@@ -68,3 +68,6 @@ built on the host it's for. Its one user develops on macOS, on Apple silicon.
   them. The rpath `build.rs` gives it, where rustc's library is for
   `target/debug/rust-js`, still names it: a binary run as it's installed,
   by its launcher, is told where the library is.
+- **Each release's notes are [CHANGELOG.md](../../CHANGELOG.md)'s**, from
+  0.0.3: what's new, which programs gave a wrong answer and now give Rust's,
+  what may now be refused, and how an app upgrades and rolls back.

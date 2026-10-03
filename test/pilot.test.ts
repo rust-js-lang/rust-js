@@ -121,20 +121,25 @@ async function open(hash = "#/"): Promise<Page> {
 }
 
 // An app of its own (ROADMAP M3.3), as one outside this repository is: its
-// crates and rust-js's packages by version, each this checkout's, and not a
-// member of its workspace.
+// crates and rust-js's packages by version, not a member of its workspace.
+// It names a release, which this checkout's crates, the ones the test
+// installs, are an upgrade of within its requirements: the pilot is the app
+// a release's upgrade is checked with (M4.3).
 test("the pilot names rust-js's crates and packages by version, not by a path into this checkout", () => {
   const version = (dir: string) => readFileSync(join(root, dir, "Cargo.toml"), "utf8").match(/^version = "([^"]+)"/m)![1];
   const manifest = JSON.parse(readFileSync(join(checkout, "package.json"), "utf8"));
   const frontend = readFileSync(join(checkout, "frontend", "Cargo.toml"), "utf8");
+  // `~0.0.2` takes 0.0.2 up to 0.1.0, as Cargo and npm both read it.
+  const minor = (v: string) => v.split(".").slice(0, 2).join(".");
   for (const [dir, crate] of [["builtins", "js"], ["webapi", "webapi"], ["react", "react"]]) {
-    expect(manifest.dependencies[`@rust-js/${dir}`]).toBe(version(dir));
-    expect(frontend).toContain(`${crate} = { package = "rust-js-${dir}", version = "~${version(dir)}" }`);
+    const named = manifest.dependencies[`@rust-js/${dir}`];
+    expect(frontend).toContain(`${crate} = { package = "rust-js-${dir}", version = "~${named}" }`);
+    expect(Bun.semver.order(version(dir), named)).toBeGreaterThanOrEqual(0);
+    expect(minor(version(dir))).toBe(minor(named));
   }
-  expect(manifest.dependencies["@rust-js/runtime"]).toBe(version("."));
-  expect(manifest.devDependencies["@rust-js/vite-plugin"]).toBe(version("."));
-  expect(manifest.devDependencies["@rust-js/build"]).toBe(version("."));
-  expect(manifest.devDependencies["@rust-js/native"]).toBe(version("."));
+  // One release of the compiler's packages, the react crate's too.
+  const release = manifest.devDependencies["@rust-js/native"];
+  expect([manifest.dependencies["@rust-js/runtime"], manifest.dependencies["@rust-js/react"], manifest.devDependencies["@rust-js/build"], manifest.devDependencies["@rust-js/vite-plugin"]]).toEqual([release, release, release, release]);
   expect(manifest.scripts.postinstall).toBe("rust-js-patch");
   for (const crate of ["frontend", "models", "server"]) {
     expect(readFileSync(join(checkout, crate, "Cargo.toml"), "utf8")).not.toContain('path = "../../');
