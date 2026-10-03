@@ -180,7 +180,7 @@ pilot. No delivery dates are assigned yet.
   rust-js's packages and crates by version, and an install from npm, its
   `postinstall` patching Cargo, builds its server and a production bundle.
   The test installs this checkout's packed crates the same way.
-- [ ] **M3.4 — Close the pilot's compatibility blockers.** Fix required gaps
+- [x] **M3.4 — Close the pilot's compatibility blockers.** Fix required gaps
   with native comparisons and readable-output snapshots. From the pilot: a
   binding as a value and a package's component as a JSX tag are fixed, and
   options objects (`RequestInit`, listener options) and the JS language's
@@ -188,6 +188,13 @@ pilot. No delivery dates are assigned yet.
   `str::bytes()` iteration ([ADR 0126](docs/decisions/0126-byte-strings.md)) and `Result::as_ref`, worked around there, are fixed. Demonstrate error
   recovery, Fast Refresh, source-level debugging, and a deployed production
   bundle. Record any remaining limitations in the supported contract.
+  Demonstrated by [the pilot's test](test/pilot.test.ts), in a browser: a save
+  of its Rust is a Fast Refresh that keeps what's typed; a compile error is
+  Vite's overlay while the app runs on, gone once fixed; the module the
+  browser runs maps back to its `.rs`; and Vite's production build, served by
+  the native server beside its API, works as the dev server's does. The
+  pilot works around nothing now, so it leaves no limitation to record in
+  the contract M1.2 consolidates.
 
 ### M4 — Deliver an installable toolchain
 

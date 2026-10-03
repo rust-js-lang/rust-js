@@ -8,23 +8,29 @@
 //! `delay` holds a response back, in milliseconds, so the client's handling
 //! of a slow, stale answer can be seen. `PORT` is where it listens, 0 for
 //! any port; it prints the address.
+//!
+//! `DIST` is the built client, `bun run build`'s `web/dist`: served beside
+//! the API, `/` its `index.html`, as a deployment of the app is.
 
 use models::{Contact, FieldError, NewContact, Problem, matches, validate};
 use serde::Serialize;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
+use std::path::{Component, Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 struct Response {
     status: u16,
-    body: String,
+    content_type: &'static str,
+    body: Vec<u8>,
 }
 
 fn json(status: u16, value: &impl Serialize) -> Response {
     Response {
         status,
-        body: serde_json::to_string(value).expect("JSON of a model"),
+        content_type: "application/json",
+        body: serde_json::to_vec(value).expect("JSON of a model"),
     }
 }
 
@@ -36,6 +42,7 @@ fn main() {
     let port = std::env::var("PORT").unwrap_or_else(|_| "3000".to_string());
     let listener = TcpListener::bind(format!("127.0.0.1:{port}")).expect("a port to listen on");
     println!("listening on http://{}", listener.local_addr().expect("an address"));
+    let dist = std::env::var_os("DIST").map(PathBuf::from);
     let contacts = Arc::new(Mutex::new(vec![
         Contact {
             id: 1,
@@ -58,15 +65,16 @@ fn main() {
     ]));
     for stream in listener.incoming().flatten() {
         let contacts = Arc::clone(&contacts);
+        let dist = dist.clone();
         std::thread::spawn(move || {
-            if let Err(error) = serve(stream, &contacts) {
+            if let Err(error) = serve(stream, &contacts, dist.as_deref()) {
                 eprintln!("connection: {error}");
             }
         });
     }
 }
 
-fn serve(mut stream: TcpStream, contacts: &Mutex<Vec<Contact>>) -> std::io::Result<()> {
+fn serve(mut stream: TcpStream, contacts: &Mutex<Vec<Contact>>, dist: Option<&Path>) -> std::io::Result<()> {
     let mut reader = BufReader::new(stream.try_clone()?);
     let mut line = String::new();
     reader.read_line(&mut line)?;
@@ -91,7 +99,7 @@ fn serve(mut stream: TcpStream, contacts: &Mutex<Vec<Contact>>) -> std::io::Resu
     }
     let mut body = vec![0; length];
     reader.read_exact(&mut body)?;
-    let response = route(&method, &target, &body, contacts);
+    let response = route(&method, &target, &body, contacts, dist);
     let reason = match response.status {
         200 => "OK",
         201 => "Created",
@@ -104,14 +112,15 @@ fn serve(mut stream: TcpStream, contacts: &Mutex<Vec<Contact>>) -> std::io::Resu
     };
     write!(
         stream,
-        "HTTP/1.1 {} {reason}\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{}",
+        "HTTP/1.1 {} {reason}\r\ncontent-type: {}\r\ncontent-length: {}\r\nconnection: close\r\n\r\n",
         response.status,
+        response.content_type,
         response.body.len(),
-        response.body
-    )
+    )?;
+    stream.write_all(&response.body)
 }
 
-fn route(method: &str, target: &str, body: &[u8], contacts: &Mutex<Vec<Contact>>) -> Response {
+fn route(method: &str, target: &str, body: &[u8], contacts: &Mutex<Vec<Contact>>, dist: Option<&Path>) -> Response {
     let (path, query) = target.split_once('?').unwrap_or((target, ""));
     let param = |name: &str| {
         query
@@ -182,7 +191,37 @@ fn route(method: &str, target: &str, body: &[u8], contacts: &Mutex<Vec<Contact>>
             json(201, &contact)
         }
         (_, Some(_)) => problem(405, "not a method this path takes"),
+        ("GET", None) if let Some(dist) = dist => file(dist, path),
         _ => problem(404, "no such path"),
+    }
+}
+
+/// A file of the built client, `/` its `index.html`: none outside it, as
+/// a path with `..` would be.
+fn file(dist: &Path, path: &str) -> Response {
+    let name = match path.trim_start_matches('/') {
+        "" => "index.html",
+        name => name,
+    };
+    let name = Path::new(name);
+    if !name.components().all(|part| matches!(part, Component::Normal(_))) {
+        return problem(404, "no such path");
+    }
+    let content_type = match name.extension().and_then(|extension| extension.to_str()) {
+        Some("html") => "text/html; charset=utf-8",
+        Some("js") => "text/javascript; charset=utf-8",
+        Some("css") => "text/css; charset=utf-8",
+        Some("svg") => "image/svg+xml",
+        Some("json" | "map") => "application/json",
+        _ => "application/octet-stream",
+    };
+    match std::fs::read(dist.join(name)) {
+        Ok(body) => Response {
+            status: 200,
+            content_type,
+            body,
+        },
+        Err(_) => problem(404, "no such path"),
     }
 }
 

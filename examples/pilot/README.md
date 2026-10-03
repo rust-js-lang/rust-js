@@ -41,7 +41,13 @@ cd examples/pilot
 bun install
 cargo +1.98.1 run -p server    # http://127.0.0.1:3000
 bun run dev                    # in another terminal
+```
+
+Deployed, the server serves the built client beside its API, one process:
+
+```bash
 bun run build                  # web/dist/
+DIST=web/dist cargo +1.98.1 run --release -p server    # http://127.0.0.1:3000
 ```
 
 The compiler is `@rust-js/native`'s, which is macOS on Apple silicon's for
@@ -63,6 +69,17 @@ in a browser, with the server running:
   and `toast()`, bound in [`frontend/src/sonner.rs`](frontend/src/sonner.rs).
 - **The server refuses** JSON that isn't a contact (400) and a contact that
   breaks the rules (422), with its reasons.
+
+And how it's developed and deployed (ROADMAP M3.4):
+
+- **A save of the Rust is a Fast Refresh**: `list.rs`'s new heading shows,
+  and the search typed stays.
+- **A compile error is Vite's overlay**, and the app runs on as it last
+  compiled; fixed, the overlay goes.
+- **The browser's devtools show the Rust**: the module it runs maps back to
+  `list.rs`, as it was saved, where its breakpoints are set.
+- **The production build**, served by the native server with `DIST`, works
+  as the dev server's does, and serves nothing outside `web/dist`.
 
 ## What it found
 

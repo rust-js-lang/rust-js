@@ -4,10 +4,12 @@
 // real browser, the server running: every flow the roadmap names.
 
 import { afterAll, beforeAll, expect, test } from "bun:test";
-import { cpSync, mkdirSync, readdirSync, readFileSync, symlinkSync } from "node:fs";
+import { cpSync, mkdirSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
+import { connect } from "node:net";
 import { dirname, join, relative } from "node:path";
 import { chromium, type Browser, type Locator, type Page } from "@playwright/test";
-import { createServer, type ViteDevServer } from "vite";
+import type { Subprocess } from "bun";
+import { build, createServer, type ViteDevServer } from "vite";
 import { checkCargo } from "../tooling/cargo.js";
 import { runSync } from "./child";
 import { buildCompiler, buildSerde, compiler, fixture, root, run } from "./support";
@@ -58,15 +60,16 @@ function writtenJs(dir: string): Map<string, string> {
   return found;
 }
 
-let api: ReturnType<typeof Bun.spawn> | undefined;
+let api: Subprocess | undefined;
 let address = "";
 let vite: ViteDevServer | undefined;
 let browser: Browser | undefined;
 
-/** The native server, on a port of its own: where it listens. */
-async function startApi(): Promise<string> {
-  api = Bun.spawn([join(pilot, "target", "debug", "server")], { env: { ...process.env, PORT: "0" }, stdout: "pipe", stderr: "inherit" });
-  const reader = (api.stdout as ReadableStream<Uint8Array>).getReader();
+/** The native server, on a port of its own, given `env`: it, and where it
+ * listens. */
+async function startServer(env: Record<string, string> = {}): Promise<[Subprocess, string]> {
+  const server = Bun.spawn([join(pilot, "target", "debug", "server")], { env: { ...process.env, PORT: "0", ...env }, stdout: "pipe", stderr: "inherit" });
+  const reader = (server.stdout as ReadableStream<Uint8Array>).getReader();
   let text = "";
   while (!text.includes("\n")) {
     const { value, done } = await reader.read();
@@ -74,7 +77,7 @@ async function startApi(): Promise<string> {
     text += new TextDecoder().decode(value);
   }
   reader.releaseLock();
-  return text.match(/listening on (\S+)/)![1];
+  return [server, text.match(/listening on (\S+)/)![1]];
 }
 
 beforeAll(async () => {
@@ -86,7 +89,7 @@ beforeAll(async () => {
   // In the pilot, whose `.cargo/config.toml` is the patch.
   const built = runSync(["cargo", `+${pin}`, "build", "--offline", "--quiet", "-p", "server"], pilot, 600_000);
   if (built.code !== 0) throw new Error(`the server's build failed:\n${built.stderr}`);
-  address = await startApi();
+  [api, address] = await startServer();
   process.env.PILOT_API = address;
   vite = await createServer({ root: join(pilot, "web"), configFile: join(pilot, "web", "vite.config.js"), logLevel: "silent", server: { port: 0 } });
   await vite.listen();
@@ -248,6 +251,118 @@ test("the server refuses invalid JSON and a contact breaking the rules", async (
   expect(invalid.status).toBe(422);
   expect((await invalid.json()).errors.map((e: { field: string }) => e.field)).toEqual(["name", "email", "age"]);
 }, 60_000);
+
+// The Rust edited as the pilot runs: `list.rs`, its heading in it.
+const list = join(pilot, "frontend", "src", "list.rs");
+const listSource = readFileSync(list, "utf8");
+const heading = (text: string) => {
+  const edited = listSource.replace('<h1>{"Contacts"}</h1>', `<h1>{"${text}"}</h1>`);
+  if (edited === listSource) throw new Error("list.rs has no heading to edit");
+  return edited;
+};
+
+// A save is a Fast Refresh (M3.4): the page shows the new Rust and keeps its
+// state, the search typed, and itself: it isn't reloaded.
+test("a save of the Rust is a Fast Refresh, which keeps what's typed", async () => {
+  const page = await open();
+  await page.getByLabel("Search").fill("gr");
+  await page.locator(".contacts li a", { hasText: "Grace Hopper" }).waitFor();
+  await page.evaluate(() => Object.assign(window, { kept: true }));
+  try {
+    writeFileSync(list, heading("People"));
+    await page.getByRole("heading", { name: "People" }).waitFor();
+    expect(await page.getByLabel("Search").inputValue()).toBe("gr");
+    expect(await page.evaluate(() => "kept" in window)).toBe(true);
+  } finally {
+    writeFileSync(list, listSource);
+  }
+  await page.getByRole("heading", { name: "Contacts" }).waitFor();
+  await page.close();
+}, 60_000);
+
+// A compile error is Vite's overlay, and the app runs on as it last compiled;
+// fixed, the overlay goes, and the page is the fix (M3.4).
+test("a compile error shows in Vite's overlay, and the app runs on until it's fixed", async () => {
+  const page = await open();
+  await page.locator(".contacts li a").first().waitFor();
+  try {
+    writeFileSync(list, listSource + "\npub fn broken(");
+    await page.locator("vite-error-overlay").waitFor();
+    await page.getByLabel("Search").fill("ada");
+    expect(await settled(page.locator(".contacts li a"), ["Ada Lovelace"])).toEqual(["Ada Lovelace"]);
+    writeFileSync(list, heading("Fixed"));
+    await page.locator("vite-error-overlay").waitFor({ state: "detached" });
+    await page.getByRole("heading", { name: "Fixed" }).waitFor();
+  } finally {
+    writeFileSync(list, listSource);
+  }
+  await page.getByRole("heading", { name: "Contacts" }).waitFor();
+  await page.close();
+}, 60_000);
+
+// What the browser runs maps back to the Rust (M3.4): its devtools show
+// `list.rs`, as it was saved, and set its breakpoints there.
+test("the client the browser runs maps back to its Rust", async () => {
+  const page = await open();
+  await page.locator(".contacts li a").first().waitFor();
+  const loaded = await page.evaluate(() => performance.getEntriesByType("resource").map((entry) => entry.name));
+  const url = loaded.find((name) => /\/list\.jsx(\?|$)/.test(name));
+  expect(url).toBeDefined();
+  const module = await (await fetch(url!)).text();
+  const inline = module.match(/\/\/# sourceMappingURL=data:application\/json;(?:charset=utf-8;)?base64,(\S+)/);
+  expect(inline).not.toBeNull();
+  const map = JSON.parse(Buffer.from(inline![1], "base64").toString("utf8"));
+  // Each source as the browser finds it, from the module's URL.
+  const sources = map.sources.map((source: string) => decodeURIComponent(new URL(source, new URL(map.sourceRoot ?? "", url)).pathname));
+  const at = sources.indexOf(`/@fs${list}`);
+  expect(at).toBeGreaterThanOrEqual(0);
+  expect(map.sourcesContent[at]).toBe(listSource);
+  await page.close();
+}, 60_000);
+
+/** What the server answers a request for `path` as it's written, which
+ * `fetch` would have made a URL of first: its status. */
+async function rawStatus(at: string, path: string): Promise<number> {
+  const { hostname, port } = new URL(at);
+  const answer = await new Promise<string>((resolve, reject) => {
+    let text = "";
+    const socket = connect(Number(port), hostname, () => socket.write(`GET ${path} HTTP/1.1\r\nhost: ${hostname}\r\n\r\n`));
+    socket.on("data", (chunk) => (text += chunk));
+    socket.on("end", () => resolve(text));
+    socket.on("error", reject);
+  });
+  return Number(answer.split(" ")[1]);
+}
+
+// A deployment (M3.4): Vite's production build, served by the native server
+// beside its API, one process, as the app is deployed.
+test("the production build, served by the native server with its API, works", async () => {
+  await build({ root: join(pilot, "web"), configFile: join(pilot, "web", "vite.config.js"), logLevel: "silent" });
+  const dist = join(pilot, "web", "dist");
+  const [server, at] = await startServer({ DIST: dist });
+  try {
+    const page = await browser!.newPage();
+    await page.goto(`${at}/#/`);
+    const names = page.locator(".contacts li a");
+    await names.first().waitFor();
+    expect(await names.allTextContents()).toEqual(["Ada Lovelace", "Alan Turing", "Grace Hopper"]);
+    await page.getByLabel("Search").fill("gr");
+    expect(await settled(names, ["Grace Hopper"])).toEqual(["Grace Hopper"]);
+    await names.first().click();
+    await page.getByRole("heading", { name: "Grace Hopper" }).waitFor();
+    expect(await page.locator("dd").allTextContents()).toEqual(["grace@example.com", "85"]);
+    await page.close();
+    // Its files, and nothing outside them.
+    const index = await fetch(`${at}/`);
+    expect(index.headers.get("content-type")).toStartWith("text/html");
+    expect(await index.text()).toBe(readFileSync(join(dist, "index.html"), "utf8"));
+    expect(await rawStatus(at, "/../../Cargo.toml")).toBe(404);
+    expect(await rawStatus(at, "/assets/../../../Cargo.toml")).toBe(404);
+    expect((await fetch(`${at}/nothing.js`)).status).toBe(404);
+  } finally {
+    server.kill();
+  }
+}, 600_000);
 
 // Last: it stops the server. The list says why it has nothing, and loads
 // once the server is back.
