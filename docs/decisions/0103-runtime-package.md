@@ -118,12 +118,14 @@ and one npm organization owns every name a release publishes.
 | `rust-js-resources` | `@rust-js/resources` |
 | `rust-js-react-generator`, `rust-js-webapi-generator`, `rust-js-wasm-web` | `@rust-js/react-generator`, `@rust-js/webapi-generator`, `@rust-js/wasm-web` |
 | `rust-js`, the repository's root | `@rust-js/workspace` |
-| `pilot-web`, `vite-react`, the example apps | `@rust-js/example-pilot-web`, `@rust-js/example-vite-react` |
+| `vite-react`, the example app | `@rust-js/example-vite-react` |
 
 A distribution's archives are named as the runtime's was, by the package's
 name in the scope: `build.tgz`, `vite-plugin.tgz`, `runtime.tgz`,
-`resources.tgz` and `native.tgz`. The root and the example apps, which
+`resources.tgz` and `native.tgz`. The root and the example app, which
 nothing publishes, are in the scope too, so no name in the workspace is
-outside it. The Rust crates (`rust-js-react`, `rust-js-webapi`, and
+outside it. (Amended: the pilot was `@rust-js/example-pilot-web`; it's an
+app of its own now, outside the workspace, as ROADMAP M3.3 has it, and is
+`pilot`.) The Rust crates (`rust-js-react`, `rust-js-webapi`, and
 `rust-js-builtins`, [ADR 0102](0102-js-and-webapi.md)'s) are Cargo's names,
 not npm's.

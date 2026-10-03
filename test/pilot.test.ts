@@ -4,11 +4,12 @@
 // real browser, the server running: every flow the roadmap names.
 
 import { afterAll, beforeAll, expect, test } from "bun:test";
-import { cpSync, readdirSync, readFileSync, symlinkSync } from "node:fs";
-import { join, relative } from "node:path";
+import { cpSync, mkdirSync, readdirSync, readFileSync, symlinkSync } from "node:fs";
+import { dirname, join, relative } from "node:path";
 import { chromium, type Browser, type Locator, type Page } from "@playwright/test";
 import { createServer, type ViteDevServer } from "vite";
 import { checkCargo } from "../tooling/cargo.js";
+import { runSync } from "./child";
 import { buildCompiler, buildSerde, compiler, fixture, root, run } from "./support";
 
 const checkout = join(root, "examples", "pilot");
@@ -16,11 +17,36 @@ const pin = readFileSync(join(root, "rust-toolchain.toml"), "utf8").match(/chann
 
 // The pilot, copied under `target/`, where its build writes its JS beside
 // its Rust (ADR 0041): never into the checkout, whatever compiler a test is
-// given. As deep as the checkout's, so its path to the bindings is theirs,
-// and its app's packages are the checkout's.
+// given.
 const pilot = fixture("pilot");
-cpSync(checkout, pilot, { recursive: true, filter: (from) => !/(^|[/\\])(target|node_modules|dist)([/\\]|$)/.test(relative(checkout, from)) });
-symlinkSync(join(checkout, "web", "node_modules"), join(pilot, "web", "node_modules"));
+cpSync(checkout, pilot, { recursive: true, filter: (from) => !/(^|[/\\])(target|node_modules|dist|\.cargo)([/\\]|$)/.test(relative(checkout, from)) });
+
+/** The pilot is an app of its own, which names its packages by version
+ * (ROADMAP M3.3): installed as a package manager installs them, this
+ * checkout's, and Cargo told where its crates are by its `postinstall`. */
+function install() {
+  const modules = join(pilot, "node_modules");
+  const packs = fixture("pilot-crates");
+  run([process.execPath, "scripts/package-npm-crates.ts", packs]);
+  for (const name of ["builtins", "webapi", "react"]) {
+    const at = join(modules, "@rust-js", name);
+    mkdirSync(at, { recursive: true });
+    run(["tar", "-xzf", join(packs, `${name}.tgz`), "-C", at, "--strip-components", "1"]);
+  }
+  // rust-js's JS packages, and the libraries, as this checkout has them.
+  const linked: [string, string][] = [
+    ["@rust-js/runtime", join(root, "runtime")],
+    ["@rust-js/vite-plugin", join(root, "vite-plugin")],
+    ["@rust-js/build", join(root, "tooling")],
+    ...["react", "react-dom", "sonner", "vite", "@vitejs/plugin-react"].map((name): [string, string] => [name, join(root, "node_modules", name)]),
+  ];
+  for (const [name, target] of linked) {
+    mkdirSync(dirname(join(modules, name)), { recursive: true });
+    symlinkSync(target, join(modules, name));
+  }
+  const patched = runSync([process.execPath, join(root, "tooling", "patch.js"), pilot], pilot, 60_000);
+  if (patched.code !== 0) throw new Error(`rust-js-patch failed:\n${patched.stderr}`);
+}
 
 /** The JS beside a pilot's Rust, by path. */
 function writtenJs(dir: string): Map<string, string> {
@@ -53,10 +79,13 @@ async function startApi(): Promise<string> {
 
 beforeAll(async () => {
   buildCompiler();
+  install();
   // serde and serde_json, fetched as serde/build.sh locks them, which the
   // pilot's lockfile has too: its build is offline.
   buildSerde();
-  run(["cargo", `+${pin}`, "build", "--offline", "--quiet", "-p", "server", "--manifest-path", join(pilot, "Cargo.toml")]);
+  // In the pilot, whose `.cargo/config.toml` is the patch.
+  const built = runSync(["cargo", `+${pin}`, "build", "--offline", "--quiet", "-p", "server"], pilot, 600_000);
+  if (built.code !== 0) throw new Error(`the server's build failed:\n${built.stderr}`);
   address = await startApi();
   process.env.PILOT_API = address;
   vite = await createServer({ root: join(pilot, "web"), configFile: join(pilot, "web", "vite.config.js"), logLevel: "silent", server: { port: 0 } });
@@ -88,13 +117,36 @@ async function open(hash = "#/"): Promise<Page> {
   return page;
 }
 
+// An app of its own (ROADMAP M3.3), as one outside this repository is: its
+// crates and rust-js's packages by version, each this checkout's, and not a
+// member of its workspace.
+test("the pilot names rust-js's crates and packages by version, not by a path into this checkout", () => {
+  const version = (dir: string) => readFileSync(join(root, dir, "Cargo.toml"), "utf8").match(/^version = "([^"]+)"/m)![1];
+  const manifest = JSON.parse(readFileSync(join(checkout, "package.json"), "utf8"));
+  const frontend = readFileSync(join(checkout, "frontend", "Cargo.toml"), "utf8");
+  for (const [dir, crate] of [["builtins", "js"], ["webapi", "webapi"], ["react", "react"]]) {
+    expect(manifest.dependencies[`@rust-js/${dir}`]).toBe(version(dir));
+    expect(frontend).toContain(`${crate} = { package = "rust-js-${dir}", version = "~${version(dir)}" }`);
+  }
+  expect(manifest.dependencies["@rust-js/runtime"]).toBe(version("."));
+  expect(manifest.devDependencies["@rust-js/vite-plugin"]).toBe(version("."));
+  expect(manifest.devDependencies["@rust-js/build"]).toBe(version("."));
+  expect(manifest.devDependencies["@rust-js/native"]).toBe(version("."));
+  expect(manifest.scripts.postinstall).toBe("rust-js-patch");
+  for (const crate of ["frontend", "models", "server"]) {
+    expect(readFileSync(join(checkout, crate, "Cargo.toml"), "utf8")).not.toContain('path = "../../');
+  }
+  const workspaces: string[] = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).workspaces;
+  expect(workspaces.filter((dir) => dir.startsWith("examples/pilot"))).toEqual([]);
+});
+
 // What's committed is what rust-js writes now: a change to the Rust is
 // committed with its JS, as ReScript's projects do.
 test("the pilot's committed JS is what rust-js writes from its Rust", async () => {
   const committed = writtenJs(checkout);
   expect(committed.size).toBeGreaterThan(0);
   // Built here, as Vite's plugin builds it, so a build that fails fails this.
-  const react = JSON.parse(readFileSync(join(pilot, "web", "node_modules", "react", "package.json"), "utf8")).version;
+  const react = JSON.parse(readFileSync(join(pilot, "node_modules", "react", "package.json"), "utf8")).version;
   await checkCargo({ manifestPath: join(pilot, "Cargo.toml"), toolchain: pin, compiler, packageName: "frontend", offline: true, react, inSource: true });
   expect(writtenJs(pilot)).toEqual(committed);
 }, 600_000);

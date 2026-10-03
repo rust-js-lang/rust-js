@@ -4,11 +4,19 @@ ROADMAP M3.3. One Cargo workspace, three crates, and a Vite app:
 
 ```
 examples/pilot/
-├── models      Contact, NewContact, Problem, and validate()  ◄── both sides
-├── server      native Rust, std::net and serde_json:  /api/contacts
-├── frontend    React, compiled by rust-js as Cargo checks it (ADR 0101)
-└── web         Vite: imports `rust-js:frontend`, proxies /api to the server
+├── package.json  rust-js's packages and crates, from npm, by version
+├── Cargo.toml    the workspace: the three crates below
+├── models        Contact, NewContact, Problem, and validate()  ◄── both sides
+├── server        native Rust, std::net and serde_json:  /api/contacts
+├── frontend      React, compiled by rust-js as Cargo checks it (ADR 0101)
+└── web           Vite: imports `rust-js:frontend`, proxies /api to the server
 ```
+
+It's an app of its own, as one `bun create @rust-js` makes is, and not part
+of this repository's workspace: rust-js's packages and its crates, `js`,
+`webapi` and `react`, come from npm, named by version in `package.json`
+and `frontend/Cargo.toml`, and `rust-js-patch`, its `postinstall`, tells
+Cargo they're in `node_modules` (ADR 0118).
 
 The JS rust-js writes is committed beside the Rust it's from, as ReScript's
 projects do (ADR 0041): [`frontend/src/api.js`](frontend/src/api.js) is
@@ -29,11 +37,16 @@ browser ──► Vite ── /api ──► server ── models::validate
 ## Run it
 
 ```bash
-bun run build                              # in the repository root, once
 cd examples/pilot
+bun install
 cargo +1.98.1 run -p server    # http://127.0.0.1:3000
-cd web && bun run dev                      # in another terminal
+bun run dev                    # in another terminal
+bun run build                  # web/dist/
 ```
+
+The compiler is `@rust-js/native`'s, which is macOS on Apple silicon's for
+now (M4.1). Elsewhere, `RUST_JS_COMPILER` names one: `bun run build` in this
+repository's root builds it, `target/debug/rust-js`.
 
 What it does, each checked by [`test/pilot.test.ts`](../../test/pilot.test.ts)
 in a browser, with the server running:
@@ -71,8 +84,6 @@ Fixed in the compiler since, for M3.4: **iterating `str::bytes()`** (ADR
 0126), which the pilot needed before it had `js::encode_uri_component`,
 and **`Result::as_ref`**, for which the form used `.ok()`.
 
-Worked around here, for M3.4:
-
-- **The bindings are a path into this repository** (`../../../react`) until
-  the resources are published (M4); an app outside it would depend on its
-  installed `@rust-js/resources/react`.
+Fixed in the packages: **the bindings were a path into this repository**
+(`../../../react`), and rust-js's packages its workspace's. They're on npm
+now (M4.2), and the pilot names them by version.

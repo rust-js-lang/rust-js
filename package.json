@@ -10,8 +10,7 @@
     "vite-plugin",
     "tooling",
     "runtime",
-    "examples/vite-react",
-    "examples/pilot/web"
+    "examples/vite-react"
   ],
   "scripts": {
     "setup": "bun install && bunx --bun playwright install chromium",
@@ -67,6 +66,7 @@
     "prettier": "3.9.9",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "sonner": "2.0.8",
     "tailwindcss": "4.3.3",
     "typescript": "7.0.2",
     "vite": "8.3.0",

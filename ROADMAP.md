@@ -54,7 +54,7 @@ arm64 from `ee083e1` before it was published (M6.1).
 | --- | --- | --- |
 | Language and std coverage | Substantial subset; important composition gaps | Current conformance inventory, then systematic closure of gaps (M1, M7) |
 | Correctness | Differential, diagnostic, and snapshot suites exist | Required CI, generated cases, and feature-interaction coverage (M2, M7) |
-| Full-stack code sharing | Cargo workspaces of shared crates build, with serde from crates.io; the pilot shares its models with a native server | The pilot outside this repository, then registry crates compiled to JS (M3, M8) |
+| Full-stack code sharing | Cargo workspaces of shared crates build, with serde from crates.io; the pilot, an app installed from npm, shares its models with a native server | Registry crates compiled to JS (M8) |
 | JavaScript and React interop | Working bindings, JSX, and Vite integration; bindings are npm packages, the first community one in its own repository | External application and library compatibility suite (M3, M9) |
 | Distribution and upgrades | 0.0.2 on npm for macOS arm64; `bun create @rust-js@latest` makes an app that installs everything from npm | A real upgrade from one release to the next, and a clean machine (M4) |
 | Performance and tooling | Scaling benchmark and source maps exist; an app is a Cargo package a plain `cargo check` checks; JSX not expanded in editors | Measured application budgets and supported editor workflow (M5, M9) |
@@ -163,7 +163,7 @@ pilot. No delivery dates are assigned yet.
   paths with spaces, source edits and failure preservation;
   [Vite tests](test/vite.test.ts) cover combined React/Serde builds and refresh.
   General Cargo graph support and browser Serde provisioning remain separate.
-- [ ] **M3.3 — Deliver a representative pilot.** Exercise routing, forms,
+- [x] **M3.3 — Deliver a representative pilot.** Exercise routing, forms,
   validation, lists, async loading/errors, cancellation or stale-response
   handling, and at least one external npm component through the supported
   interop path. Test real client/server JSON in both directions, including
@@ -175,9 +175,11 @@ pilot. No delivery dates are assigned yet.
   error states with a retry, a form validated as the server validates and
   showing the server's errors by field, Sonner's toasts, and the server's
   refusals of invalid JSON and contacts, in a browser with the server running.
-  Open: the app is still in this repository, with a path to its bindings.
-  They're on npm now, `@rust-js/builtins`, `@rust-js/webapi` and
-  `@rust-js/react` (M4.2), so it can move out and name them by version.
+  It's an app of its own, outside this repository's workspace, as one
+  `bun create @rust-js` makes is: its `package.json` and `Cargo.toml` name
+  rust-js's packages and crates by version, and an install from npm, its
+  `postinstall` patching Cargo, builds its server and a production bundle.
+  The test installs this checkout's packed crates the same way.
 - [ ] **M3.4 — Close the pilot's compatibility blockers.** Fix required gaps
   with native comparisons and readable-output snapshots. From the pilot: a
   binding as a value and a package's component as a JSX tag are fixed, and
