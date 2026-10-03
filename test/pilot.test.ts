@@ -4,7 +4,7 @@
 // real browser, the server running: every flow the roadmap names.
 
 import { afterAll, beforeAll, expect, test } from "bun:test";
-import { cpSync, mkdirSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { connect } from "node:net";
 import { dirname, join, relative } from "node:path";
 import { chromium, type Browser, type Locator, type Page } from "@playwright/test";
@@ -43,6 +43,8 @@ function install() {
     ...["react", "react-dom", "sonner", "vite", "@vitejs/plugin-react"].map((name): [string, string] => [name, join(root, "node_modules", name)]),
   ];
   for (const [name, target] of linked) {
+    // A link to nothing would be a page that never loads, each test's.
+    if (!existsSync(target)) throw new Error(`${name} isn't installed in this checkout: run \`bun install\``);
     mkdirSync(dirname(join(modules, name)), { recursive: true });
     symlinkSync(target, join(modules, name));
   }
