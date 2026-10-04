@@ -611,6 +611,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             target.write(appended, js_span, out);
             return Ok(Expr::undefined());
         }
+        if let Std::WrappingOp(op, assign) = known {
+            return self.wrapping_op(op, assign, args, span, out);
+        }
         if let Std::AssignOperator(op) = known {
             let ExprKind::Borrow { arg: place, .. } = self.thir[self.strip(args[0])].kind else {
                 return Err(self.unsupported(span, "this assignment"));
@@ -748,6 +751,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::IterLen
             | Std::ExactLen
             | Std::SizeHint(_)
+            | Std::WrappingOp(..)
             | Std::GenericSizeHint
             | Std::UserWrite
             | Std::DequeRemove

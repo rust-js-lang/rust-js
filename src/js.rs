@@ -407,6 +407,12 @@ impl Expr {
     }
 
     pub fn index(object: Expr, index: Expr) -> Expr {
+        // `[x][0]` is `x`.
+        if let (ExprKind::Array(items), Some(0)) = (&object.kind, index.as_int())
+            && items.len() == 1
+        {
+            return items[0].clone();
+        }
         Expr::new(ExprKind::Index(Box::new(object), Box::new(index)))
     }
 

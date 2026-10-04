@@ -523,4 +523,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "user_fmt_traits|generic_fmt_traits"],
   },
+  {
+    name: "wrapping-operators-unknown",
+    breaks: "`a * b` of `std::num::Wrapping`s is an error",
+    file: "src/lower/recognition.rs",
+    find: "            if let Some(op) = value_operator(tcx, trait_) {\n                return Some(Std::WrappingOp(op, false));",
+    replace: "            if let Some(op) = value_operator(tcx, trait_).filter(|_| false) {\n                return Some(Std::WrappingOp(op, false));",
+    tests: ["test/corpus.test.ts", "-t", "wrapping_type"],
+  },
+  {
+    name: "wrapping-assign-unknown",
+    breaks: "`a += b` of `std::num::Wrapping`s is an error",
+    file: "src/lower/recognition.rs",
+    find: "                return Some(Std::WrappingOp(Ok(op), true));",
+    replace: "                return None;",
+    tests: ["test/corpus.test.ts", "-t", "wrapping_type"],
+  },
 ];

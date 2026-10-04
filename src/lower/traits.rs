@@ -843,6 +843,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let from_str = Expr::arrow(vec!["s".into()], body);
             return Ok(Expr::object(vec![Prop::Field("from_str".into(), from_str)]));
         }
+        // `std::num::Wrapping`'s, its number's in its `[x]` (ADR 0175).
+        if let Some(op) = super::recognition::value_operator(self.tcx, tr.def_id)
+            && let Some(inner) = self.recognition().wrapping_of(ty.peel_refs())
+        {
+            let a = Expr::index(Expr::var("a"), Expr::int(0));
+            let (params, value) = match op {
+                Ok(op) => (
+                    vec!["a".into(), "b".into()],
+                    self.wrapping_result(op, a, Expr::var("b"), inner, span)?,
+                ),
+                Err(op) => (vec!["a".into()], self.unary(op, a, inner, span)?),
+            };
+            let body = vec![StmtKind::Return(Some(Expr::array(vec![value]))).at(js::Span::NONE)];
+            return Ok(Expr::object(vec![Prop::Field(
+                self.operator_entry(tr.def_id),
+                Expr::arrow(params, body),
+            )]));
+        }
         // A number's `+` or `-`, as `a + b` of one is (ADR 0108), of a
         // number on each side: `impl Add<Meters> for f64` is the crate's.
         let primitive =
@@ -862,16 +880,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Err(op) => (vec!["value".into()], self.unary(op, Expr::var("value"), ty, span)?),
             };
-            // Its method, `add`, after its `Output`.
-            let method = self
-                .tcx
-                .associated_items(tr.def_id)
-                .in_definition_order()
-                .find(|item| item.is_fn())
-                .expect("an operator trait has a method");
-            let name = bindings::fn_name(self.tcx, method.def_id);
             return Ok(Expr::object(vec![Prop::Field(
-                name,
+                self.operator_entry(tr.def_id),
                 Expr::arrow(params, vec![StmtKind::Return(Some(value)).at(js::Span::NONE)]),
             )]));
         }
@@ -1052,6 +1062,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Select user code before std intrinsics, so custom implementations win.
     /// A trait method call, or `None` if it isn't one rust-js dispatches.
     /// `out` gets what must run first, like a receiver computed once.
+    /// An operator trait's dictionary entry: its method, `add`, after its
+    /// `Output`.
+    fn operator_entry(&self, trait_id: DefId) -> String {
+        let method = self
+            .tcx
+            .associated_items(trait_id)
+            .in_definition_order()
+            .find(|item| item.is_fn())
+            .expect("an operator trait has a method");
+        bindings::fn_name(self.tcx, method.def_id)
+    }
+
     pub(super) fn trait_call(
         &mut self,
         id: DefId,

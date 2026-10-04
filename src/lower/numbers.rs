@@ -14,7 +14,7 @@ use crate::js::{self, Expr, Op, Prop, Stmt, UnaryOp};
 use crate::runtime::Helper;
 use rustc_hir::LangItem;
 use rustc_middle::mir::{AssignOp, BinOp, UnOp};
-use rustc_middle::thir::ExprId;
+use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 use rustc_span::Span;
 
@@ -205,6 +205,62 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => unreachable!("one of the ops above"),
         }))
+    }
+
+    /// `std::num::Wrapping`'s operator (ADR 0175): its number's, in its `[x]`,
+    /// as release Rust wraps it; a shift's amount masked to the width, as
+    /// `wrapping_shl` masks it; `a += b` a new `[x]` for `a`'s place.
+    pub(super) fn wrapping_op(
+        &mut self,
+        op: Result<BinOp, UnOp>,
+        assign: bool,
+        args: &[ExprId],
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let wrapping = self.thir[args[0]].ty.peel_refs();
+        let inner = self.recognition().wrapping_of(wrapping).expect("a `Wrapping`");
+        self.num(inner, span)?;
+        let op = match op {
+            Err(op) => {
+                let value = self.expr(args[0], out)?;
+                let result = self.unary(op, Expr::index(value, Expr::int(0)), inner, span)?;
+                return Ok(Expr::array(vec![result]));
+            }
+            Ok(op) => op,
+        };
+        let target = match assign {
+            true => {
+                let ExprKind::Borrow { arg: place, .. } = self.thir[self.strip(args[0])].kind else {
+                    return Err(self.unsupported(span, "this assignment"));
+                };
+                self.assignee(place)?
+            }
+            false => self.expr(args[0], out)?,
+        };
+        let target = if target.reads_same() {
+            target
+        } else {
+            self.spill("wrapping", target, out)
+        };
+        let rhs = self.expr(args[1], out)?;
+        let result = self.wrapping_result(op, Expr::index(target.clone(), Expr::int(0)), rhs, inner, span)?;
+        if !assign {
+            return Ok(Expr::array(vec![result]));
+        }
+        out.push(StmtKind::Assign(target, Expr::array(vec![result])).at(self.js_span(span)));
+        Ok(Expr::undefined())
+    }
+
+    /// `a op rhs` of a `Wrapping`'s number `a`, its `inner`: the result's
+    /// number. `rhs` is another `Wrapping`, or a shift's `usize` amount,
+    /// which the number's shift masks to its width, as `wrapping_shl` does.
+    pub(super) fn wrapping_result(&mut self, op: BinOp, a: Expr, rhs: Expr, inner: Ty<'tcx>, span: Span) -> R<Expr> {
+        let rhs = match op {
+            BinOp::Shl | BinOp::Shr => rhs,
+            _ => Expr::index(rhs, Expr::int(0)),
+        };
+        self.binary(op, a, rhs, None, inner, span)
     }
 
     pub(super) fn number_call(

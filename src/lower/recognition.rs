@@ -130,6 +130,9 @@ pub(super) enum Std {
     /// `it.size_hint()` of a generic iterator: exact of an array, else
     /// `(0, None)` (ADR 0170).
     GenericSizeHint,
+    /// An operator of `std::num::Wrapping`, its number's in its `[x]`
+    /// (ADR 0175): `a * b`, `-a`, or, `true`, `a += b`.
+    WrappingOp(Result<BinOp, UnOp>, bool),
     /// `write!(w, ..)` or `w.write_char(c)` of a writer of the crate's that
     /// keeps std's: its own `write_str`, given the text whole (ADR 0166).
     UserWrite,
@@ -615,6 +618,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             && self.borrows_as_itself(ty, args.type_at(1))
         {
             return Some(Std::Same);
+        }
+        // `std::num::Wrapping`'s: its number's, wrapped as release Rust wraps
+        // them (ADR 0175).
+        if self.wrapping_of(ty.peel_refs()).is_some() {
+            if let Some(op) = value_operator(tcx, trait_) {
+                return Some(Std::WrappingOp(op, false));
+            }
+            if let Some(op) = assign_operator(tcx, trait_) {
+                return Some(Std::WrappingOp(Ok(op), true));
+            }
         }
         if Num::of(ty.peel_refs()).is_some() || ty.peel_refs().is_bool() {
             let operators = [(LangItem::Neg, UnOp::Neg), (LangItem::Not, UnOp::Not)];
@@ -1885,6 +1898,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         ))
     }
 
+    /// `std::num::Wrapping<T>`'s `T`: a number in a `[x]` (ADR 0175).
+    pub(super) fn wrapping_of(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        match ty.kind() {
+            ty::Adt(adt, args) if self.tcx.is_diagnostic_item(Symbol::intern("Wrapping"), adt.did()) => {
+                Some(args.type_at(0))
+            }
+            _ => None,
+        }
+    }
+
     /// A `Cow<str>`, `{ TAG, _0 }`: its text, borrowed or owned (ADR 0172).
     pub(super) fn is_cow_str(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, args) if std_path(self.tcx, adt.did()) == "std::borrow::Cow"
@@ -2340,6 +2363,24 @@ fn std_path(tcx: TyCtxt<'_>, id: DefId) -> String {
         Some(("core" | "alloc", rest)) if !id.is_local() => format!("std::{rest}"),
         _ => path,
     }
+}
+
+/// An operator that assigns, `a += b`: the operation it does.
+pub(super) fn assign_operator(tcx: TyCtxt<'_>, id: DefId) -> Option<BinOp> {
+    [
+        (LangItem::AddAssign, BinOp::Add),
+        (LangItem::SubAssign, BinOp::Sub),
+        (LangItem::MulAssign, BinOp::Mul),
+        (LangItem::DivAssign, BinOp::Div),
+        (LangItem::RemAssign, BinOp::Rem),
+        (LangItem::BitAndAssign, BinOp::BitAnd),
+        (LangItem::BitOrAssign, BinOp::BitOr),
+        (LangItem::BitXorAssign, BinOp::BitXor),
+        (LangItem::ShlAssign, BinOp::Shl),
+        (LangItem::ShrAssign, BinOp::Shr),
+    ]
+    .into_iter()
+    .find_map(|(item, op)| tcx.is_lang_item(id, item).then_some(op))
 }
 
 pub(super) fn is_operator(tcx: TyCtxt<'_>, id: DefId) -> bool {

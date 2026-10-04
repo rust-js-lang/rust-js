@@ -96,6 +96,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Its `PartialEq` and `Clone` are its field's; its order isn't
             // (`cmp_value`).
             || self.is_reverse(ty)
+            // Its `PartialEq`, `Clone` and order are its number's (ADR 0175).
+            || self.recognition().wrapping_of(ty).is_some()
     }
 
     /// `Clone::clone` of the `ty` at `place`: the place itself when nothing

@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "        let ty = ty.peel_refs();\n",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_compare"],
   },
+  {
+    name: "wrapping-ordered-reversed",
+    breaks: "`Wrapping`s order the other way round, as `Reverse`'s",
+    file: "src/lower/ordering.rs",
+    find: "                self.cmp_value(inside(a), inside(b), args.type_at(0), partial, span, out)",
+    replace: "                self.cmp_value(inside(b), inside(a), args.type_at(0), partial, span, out)",
+    tests: ["test/corpus.test.ts", "-t", "wrapping_type"],
+  },
 ];

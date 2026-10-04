@@ -222,8 +222,8 @@ export const mutations: Mutation[] = [
     name: "operator-entry-named-output",
     breaks: "a number's `Add` dictionary's entry is named for its `Output`, not `add`",
     file: "src/lower/traits.rs",
-    find: "                .find(|item| item.is_fn())\n",
-    replace: "                .next()\n",
+    find: "            .find(|item| item.is_fn())\n",
+    replace: "            .next()\n",
     tests: ["test/corpus.test.ts","-t","generic_operators"],
   },
   {
@@ -550,5 +550,13 @@ export const mutations: Mutation[] = [
     find: "        .any(|&other| tcx.impl_trait_id(other) != tr.def_id && named(other, false, \"\") == short);",
     replace: "        .any(|&other| tcx.impl_trait_id(other) != tr.def_id && named(other, false, \"\") == short && false);",
     tests: ["test/corpus.test.ts", "-t", "impl_names"],
+  },
+  {
+    name: "wrapping-dictionary-unknown",
+    breaks: "a `T: Mul` given a `Wrapping<u8>` has no dictionary",
+    file: "src/lower/traits.rs",
+    find: "            && let Some(inner) = self.recognition().wrapping_of(ty.peel_refs())\n",
+    replace: "            && let Some(inner) = self.recognition().wrapping_of(ty.peel_refs()).filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "wrapping_type"],
   },
 ];

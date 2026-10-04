@@ -74,4 +74,12 @@ export const mutations: Mutation[] = [
     replace: "            return Ok(place);",
     tests: ["test/corpus.test.ts", "-t", "channels"],
   },
+  {
+    name: "wrapping-eq-refused",
+    breaks: "`==` of `std::num::Wrapping`s is an error",
+    file: "src/lower/std_impls.rs",
+    find: "            || self.recognition().wrapping_of(ty).is_some()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "wrapping_type"],
+  },
 ];

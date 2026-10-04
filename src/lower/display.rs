@@ -712,6 +712,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.recognition().is_path_like(ty) {
             return Ok(value);
         }
+        // A `Wrapping` shows its number, as both its `Display` and its
+        // `Debug` do (ADR 0175).
+        if let Some(inner) = self.recognition().wrapping_of(ty) {
+            return self.display_string_with(Expr::index(value, Expr::int(0)), inner, span, pretty);
+        }
         // A `TryFromIntError` is its kind, whose message is one for both
         // (ADR 0109): `value && ..` of one whose value runs code, as a kind
         // is never empty.
@@ -926,6 +931,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 list.push(Expr::bool(true));
             }
             return Ok(Expr::call(Expr::var("$debugUtf8Error"), list));
+        }
+        if let Some(inner) = self.recognition().wrapping_of(ty) {
+            return self.debug_string_with(Expr::index(value, Expr::int(0)), inner, span, pretty);
         }
         // A path shows its text as a string does (ADR 0173).
         if self.recognition().is_path_like(ty) {
