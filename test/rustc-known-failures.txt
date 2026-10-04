@@ -264,7 +264,7 @@ traits/object/ambiguity-vtable-segfault.rs	error: rust-js does not support trait
 traits/principal-less-objects.rs	error: rust-js does not support a `dyn` of a value with a destructor yet
 traits/trait-implementation-restriction-5988.rs	error: rust-js does not support this trait implementation yet
 transmute/transmute-array-to-scalar.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
-try-trait/try-operator-various-contexts.rs	error: rust-js does not support `parse` to a `T` yet
+try-trait/try-operator-various-contexts.rs	error: rust-js does not support values of type `(*const core::io::error::Custom) is !null` yet
 type/type-name-basic.rs	error: rust-js does not support `type_name` of a type parameter yet
 typeck/issue-18937-1.rs	error: rust-js does not support values of type `*mut [U]` yet
 typeck/osstring-str-equality.rs	error: rust-js does not support calling `std::convert::From::from` yet

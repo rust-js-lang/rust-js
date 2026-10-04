@@ -47,8 +47,16 @@ export const mutations: Mutation[] = [
     name: "parse-skips-user-from-str",
     breaks: "`s.parse::<Role>()` of a type's own `FromStr` is an error",
     file: "src/lower/text.rs",
-    find: "        if let Some(from_str) = self.recognition().std_from_str() {",
-    replace: "        if let Some(from_str) = self.recognition().std_from_str().filter(|_| false) {",
+    find: "        if let Some(from_str) = self.recognition().std_from_str()\n",
+    replace: "        if let Some(from_str) = self.recognition().std_from_str().filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "user_from_str"],
+  },
+  {
+    name: "parse-generic-target-refused",
+    breaks: "`s.parse::<T>()` of a generic `T: FromStr` is an error, its dictionary unused",
+    file: "src/lower/text.rs",
+    find: "            && (matches!(target.kind(), ty::Param(_)) || self.has_user_impl(from_str, target))",
+    replace: "            && self.has_user_impl(from_str, target)",
+    tests: ["test/corpus.test.ts", "-t", "generic_from_str"],
   },
 ];

@@ -37,7 +37,8 @@ function of the crate's, and `s.parse::<T>()` of the type calls it.**
 - **std's `FromStr` has no diagnostic item,** so it's known by its path,
   `core`'s `str::FromStr`.
 - **Still an error: `T: FromStr` in generic code,** whose `parse` needs a
-  dictionary rust-js doesn't pass for it: `parse` to a `T`.
+  dictionary rust-js doesn't pass for it: `parse` to a `T`. (Amended: it's
+  given one, ADR 0161.)
 
 ## Why
 

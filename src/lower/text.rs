@@ -320,7 +320,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `s.parse::<T>()`: a `Result`, whose `Err` is the error's message,
     /// which is what its `to_string()` gives.
-    fn parse_as(&mut self, text: Expr, target: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+    pub(super) fn parse_as(&mut self, text: Expr, target: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         if let Some(num) = Num::of(target) {
             if num == Num::F64 {
                 self.runtime.insert(Helper::ParseF64);
@@ -360,8 +360,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ]);
             return Ok(ok);
         }
-        // A type's own `FromStr`: its `from_str`, called (ADR 0159).
-        if let Some(from_str) = self.recognition().std_from_str() {
+        // A type's own `FromStr`: its `from_str`, called (ADR 0159), or a
+        // `T`'s, its dictionary's (ADR 0161). Not std's of another type,
+        // which has no dictionary but this.
+        if let Some(from_str) = self.recognition().std_from_str()
+            && (matches!(target.kind(), ty::Param(_)) || self.has_user_impl(from_str, target))
+        {
             let method = trait_method(self.tcx, from_str, "from_str");
             let args = self.tcx.mk_args(&[target.into()]);
             if let Some(call) = self.trait_call(method, args, vec![text], span, out)? {

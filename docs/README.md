@@ -250,6 +250,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0158 A labeled block is JS's labeled block](decisions/0158-labeled-blocks.md)
 - [0159 A type's own `FromStr` is what `parse` calls](decisions/0159-user-from-str.md)
 - [0160 A collection of the crate's: its own `IntoIterator`, `FromIterator`, `Extend`, `Sum` and `Product`](decisions/0160-user-collections.md)
+- [0161 `T: FromStr` in generic code: a dictionary, std's or the crate's](decisions/0161-generic-from-str.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

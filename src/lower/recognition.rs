@@ -1953,6 +1953,8 @@ pub(super) fn operational(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_,
         || tcx.is_diagnostic_item(Symbol::intern("Error"), id)
         // Its evidence is the writer or reader itself (ADR 0081).
         || serde_trait(tcx, id).is_some()
+        // `parse` of a `T: FromStr`: its dictionary's `from_str` (ADR 0161).
+        || is_from_str(tcx, id)
         // `a + b` of a `T: Add`, and `x.into()` of a `T: Into<U>` (ADR 0108).
         || value_operator(tcx, id).is_some()
         || tcx.is_diagnostic_item(sym::Into, id)
@@ -1983,8 +1985,6 @@ pub(super) fn implementable(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'
     operational(tcx, foreign, id)
         || tcx.is_diagnostic_item(sym::From, id)
         || tcx.is_diagnostic_item(sym::TryFrom, id)
-        // What `s.parse()` calls (ADR 0159).
-        || is_from_str(tcx, id)
         // A collection of the crate's: what `for`, `collect()`, `extend`,
         // `sum()` and `product()` call (ADR 0160).
         || tcx.is_diagnostic_item(sym::IntoIterator, id)

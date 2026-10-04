@@ -494,4 +494,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n            self.runtime.insert(Helper::JsonErrorDyn);",
     tests: ["test/serde.test.ts", "-t", "Box<dyn Error> shows as serde_json"],
   },
+  {
+    name: "std-from-str-dictionary-missing",
+    breaks: "`read::<i32>(s)` of a `T: FromStr` has no dictionary for `i32`'s",
+    file: "src/lower/traits.rs",
+    find: "        if super::recognition::is_from_str(self.tcx, tr.def_id) && parsed_by_std {",
+    replace: "        if super::recognition::is_from_str(self.tcx, tr.def_id) && parsed_by_std && false {",
+    tests: ["test/corpus.test.ts", "-t", "generic_from_str"],
+  },
 ];

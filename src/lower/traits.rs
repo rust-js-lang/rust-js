@@ -741,6 +741,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(Expr::object(vec![Prop::Field("clone".into(), clone)]));
             }
         }
+        // std's `FromStr` of a number, a `bool`, a `char` or a `String`: what
+        // `s.parse()` of it is (ADR 0161).
+        let parsed_by_std = super::representation::Num::of(ty).is_some()
+            || ty.is_bool()
+            || ty.is_char()
+            || self.is_lang_adt(ty, LangItem::String);
+        if super::recognition::is_from_str(self.tcx, tr.def_id) && parsed_by_std {
+            let mut body = Vec::new();
+            let parsed = self.parse_as(Expr::var("s"), ty, span, &mut body)?;
+            body.push(StmtKind::Return(Some(parsed)).at(js::Span::NONE));
+            let from_str = Expr::arrow(vec!["s".into()], body);
+            return Ok(Expr::object(vec![Prop::Field("from_str".into(), from_str)]));
+        }
         // A number's `+` or `-`, as `a + b` of one is (ADR 0108), of a
         // number on each side: `impl Add<Meters> for f64` is the crate's.
         let primitive =

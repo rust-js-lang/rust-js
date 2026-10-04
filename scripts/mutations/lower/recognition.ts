@@ -301,11 +301,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "user-from-str-refused",
-    breaks: "a type's own `impl FromStr` is an error",
+    breaks: "a type's own `impl FromStr` is an error, and `T: FromStr` in generic code",
     file: "src/lower/recognition.rs",
     find: "        || is_from_str(tcx, id)\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "user_from_str"],
+    tests: ["test/corpus.test.ts", "-t", "user_from_str|generic_from_str"],
   },
   {
     name: "delegated-sum-unresolved",

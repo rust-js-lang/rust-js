@@ -1026,13 +1026,13 @@ export function report() {
   }
   const match$161 = $fromJson('"a"', neverDeserialize_deserialize);
   if (match$161.TAG === "Ok") {
-    out += `ok ${match$161._0}\n`;
+    out += "ok \n";
   } else {
     out += `err ${$displayJsonError(match$161._0)} / ${$debugJsonError(match$161._0)}\n`;
   }
   const match$162 = $fromJson("{}", neverDeserialize_deserialize);
   if (match$162.TAG === "Ok") {
-    out += `ok ${match$162._0}\n`;
+    out += "ok \n";
   } else {
     out += `err ${$displayJsonError(match$162._0)} / ${$debugJsonError(match$162._0)}\n`;
   }

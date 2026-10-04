@@ -172,4 +172,12 @@ export const mutations: Mutation[] = [
     replace: "member(\"fill\")",
     tests: ["test/corpus.test.ts", "-t", "formatter_queries"],
   },
+  {
+    name: "uninhabited-debug-refused",
+    breaks: "`{:?}` of `Infallible`, which never runs, is an error, and `String`'s `FromStr` in generic code with it",
+    file: "src/lower/display.rs",
+    find: "            && adt.variants().is_empty()",
+    replace: "            && adt.variants().is_empty()\n            && false",
+    tests: ["test/corpus.test.ts", "-t", "generic_from_str"],
+  },
 ];

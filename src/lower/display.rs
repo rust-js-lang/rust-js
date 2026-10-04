@@ -796,6 +796,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_dyn_debug(ty) {
             return Ok(value);
         }
+        // An enum with no variants, `Infallible`: no value of it exists, so
+        // this never runs, as Rust's `match *self {}` doesn't (ADR 0161).
+        if let ty::Adt(adt, _) = ty.kind()
+            && adt.is_enum()
+            && adt.variants().is_empty()
+        {
+            return Ok(Expr::str(""));
+        }
         // A channel's errors (ADR 0142), as std shows them: `TryRecvError` is
         // its variant's name already.
         if let Some(error) = self.recognition().channel_error(ty) {

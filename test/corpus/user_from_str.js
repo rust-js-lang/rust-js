@@ -8,7 +8,7 @@ import {
   $splitOnce,
 } from "@rust-js/runtime";
 
-var $pointErrorDisplay;
+var $roleFromStr, $pointErrorDisplay, $pointFromStr;
 
 function total(text) {
   let sum = 0;
@@ -119,10 +119,24 @@ function pointFromStr_from_str(s) {
   return { TAG: "Ok", _0: { x: x$1, y: y$1 } };
 }
 
+export function roleFromStr() {
+  if ($roleFromStr === undefined) {
+    $roleFromStr = { from_str: roleFromStr_from_str };
+  }
+  return $roleFromStr;
+}
+
 export function pointErrorDisplay() {
   if ($pointErrorDisplay === undefined) {
     $pointErrorDisplay = { fmt: pointErrorDisplay_fmt };
   }
   return $pointErrorDisplay;
+}
+
+export function pointFromStr() {
+  if ($pointFromStr === undefined) {
+    $pointFromStr = { from_str: pointFromStr_from_str };
+  }
+  return $pointFromStr;
 }
 //# sourceMappingURL=case.js.map
