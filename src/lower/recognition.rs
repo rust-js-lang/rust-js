@@ -88,6 +88,11 @@ pub(super) enum Std {
     CellNew,
     CellGet,
     CellSet,
+    /// A `Cell`'s or `RefCell`'s `replace(v)`, or `take()`: what it held.
+    CellReplace,
+    CellTake,
+    /// `RefCell::replace_with(f)`.
+    CellReplaceWith,
     /// `RefCell::borrow`, `borrow_mut`: the cell's `value`.
     Borrow,
     /// A `Mutex`'s `lock()` or an `RwLock`'s `read()` or `write()`: `Ok` of its `value`.
@@ -764,6 +769,21 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             let set = self.is_set(ty);
             return Some(Std::Map(MapOp::From { set }));
         }
+        // `[..].into()` of a map, a set, a queue, a heap or a `Vec`: what
+        // its `from` is.
+        if tcx.is_diagnostic_item(sym::Into, trait_)
+            && let Some(to) = args.types().nth(1)
+        {
+            if self.is_map(to) {
+                return Some(Std::Map(MapOp::From { set: self.is_set(to) }));
+            }
+            if self.is_std_adt(to, Symbol::intern("BinaryHeap")) {
+                return Some(Std::Heap(HeapOp::From));
+            }
+            if self.is_std_adt(to, Symbol::intern("VecDeque")) || (self.is_std_adt(to, sym::Vec) && ty.is_array()) {
+                return Some(Std::ToVec);
+            }
+        }
         // std's own conversions that change nothing in JS (ADR 0063): to a
         // `String` from a `&str` or a `char`, and between numbers, which
         // only widen.
@@ -895,6 +915,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         )
         .or_else(|| methods::boolean(name.as_str(), owner.is_bool()))
         {
+            // A `VecDeque`'s assertion calls the count `n`.
+            let comb = match comb {
+                Comb::Rotate { left, .. } if deque => Comb::Rotate { left, count: "n" },
+                comb => comb,
+            };
             return Some(Std::Comb(comb));
         }
         Some(match tcx.item_name(def_id).as_str() {
@@ -934,6 +959,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "into_inner" | "get_mut" if adt("Mutex") || adt("RwLock") => Std::Lock,
             "get" if adt("Cell") => Std::CellGet,
             "set" if adt("Cell") => Std::CellSet,
+            "replace" if adt("Cell") || adt("RefCell") => Std::CellReplace,
+            "take" if adt("Cell") || adt("RefCell") => Std::CellTake,
+            "replace_with" if adt("RefCell") => Std::CellReplaceWith,
             "borrow" | "borrow_mut" if adt("RefCell") => Std::Borrow,
             "load" | "into_inner" if adt("Atomic") => Std::AtomicLoad,
             "store" if adt("Atomic") => Std::AtomicStore,

@@ -133,6 +133,17 @@ pub(super) fn combinator(name: &str, option: bool, result: bool, vec: bool, slic
         "is_err_and" if result => Comb::IsErrAnd,
         "contains" if slice => Comb::Contains,
         "binary_search" if slice => Comb::BinarySearch,
+        "binary_search_by" if slice => Comb::BinarySearchBy,
+        "binary_search_by_key" if slice => Comb::BinarySearchByKey,
+        "rotate_left" if slice => Comb::Rotate {
+            left: true,
+            count: "mid",
+        },
+        "rotate_right" if slice => Comb::Rotate {
+            left: false,
+            count: "k",
+        },
+        "extend_from_slice" if vec => Comb::ExtendFromSlice,
         "split_off" if vec => Comb::SplitOff,
         "insert" if vec => Comb::Insert,
         "remove" if vec => Comb::Remove,

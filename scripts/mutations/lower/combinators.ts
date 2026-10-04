@@ -106,4 +106,20 @@ export const mutations: Mutation[] = [
     replace: "        if self.is_stepping(e) {",
     tests: ["test/corpus.test.ts", "-t", "kept_generic_iterators"],
   },
+  {
+    name: "extend-from-slice-shallow",
+    breaks: "`extend_from_slice` of structs shares each with the slice it's from",
+    file: "src/lower/combinators.rs",
+    find: "                let items = if self.needs_clone(item) {",
+    replace: "                let items = if false && self.needs_clone(item) {",
+    tests: ["test/corpus.test.ts", "-t", "collection_methods"],
+  },
+  {
+    name: "binary-search-by-key-reversed",
+    breaks: "`binary_search_by_key` compares the key sought with each item's, the other way round",
+    file: "src/lower/combinators.rs",
+    find: "apply(compare, vec![mapped, key])",
+    replace: "apply(compare, vec![key, mapped])",
+    tests: ["test/corpus.test.ts", "-t", "collection_methods"],
+  },
 ];

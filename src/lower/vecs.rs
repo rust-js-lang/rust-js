@@ -48,9 +48,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Std::SliceLast => Expr::call(Expr::member(arg(), "at"), vec![Expr::int(-1)]),
             // A copy, unless it's an array just written: `vec![3, 4].into()`.
+            // Of what it borrows, `to_vec()`'s, each item a clone too.
             Std::ToVec => match arg() {
                 items if matches!(items.kind, js::ExprKind::Array(_)) => items,
-                items => Expr::call(Expr::member(items, "slice"), vec![]),
+                items => match self.slice_item(self.thir[args[0]].ty) {
+                    Some(item) if self.thir[args[0]].ty.is_ref() => self.clone_items(items, item, span)?,
+                    _ => Expr::call(Expr::member(items, "slice"), vec![]),
+                },
             },
             Std::SortBy => {
                 let (v, compare) = (arg(), arg());

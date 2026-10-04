@@ -4,6 +4,7 @@ use super::calls::{Call, apply};
 use super::recognition::Std;
 use super::{FnCx, R};
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
+use crate::runtime::Helper;
 use rustc_middle::ty::{self};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -31,6 +32,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (cell, value) = (arg(), arg());
                 out.push(StmtKind::Assign(Expr::member(cell, "value"), value).at(js_span));
                 Expr::undefined()
+            }
+            // What it held, and the new value in its place: `v`, its type's
+            // default, or what `f` makes of it, given a `&mut` to it: the
+            // object itself, or the cell's `{ value }`, which is a box (ADR 0074).
+            Std::CellReplace | Std::CellTake | Std::CellReplaceWith => {
+                let item = generic_args.type_at(0);
+                let cell = arg();
+                let (cell, next) = match known {
+                    Std::CellReplace => (cell, arg()),
+                    Std::CellTake => (cell, self.default_value(item, span)?),
+                    _ => {
+                        let cell = if cell.reads_same() {
+                            cell
+                        } else {
+                            self.spill("cell", cell, out)
+                        };
+                        let given = if self.is_object(item) {
+                            Expr::member(cell.clone(), "value")
+                        } else {
+                            cell.clone()
+                        };
+                        let next = apply(arg(), vec![given]);
+                        (cell, next)
+                    }
+                };
+                self.runtime.insert(Helper::CellReplace);
+                Expr::call(Expr::var("$cellReplace"), vec![cell, next])
             }
             // A `Ref` or `RefMut` guard is what it guards: the object itself.
             Std::Borrow => Expr::member(arg(), "value"),

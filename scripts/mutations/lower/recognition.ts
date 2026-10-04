@@ -291,4 +291,12 @@ export const mutations: Mutation[] = [
     replace: '            "trim_end_matches" if owner.is_str() => Std::Text(TextOp::TrimMatches {\n                start: true,\n                end: false,',
     tests: ["test/corpus.test.ts", "-t", "string_patterns"],
   },
+  {
+    name: "deque-rotate-count-unnamed",
+    breaks: "a `VecDeque`'s `rotate_right` past its end panics with a slice's assertion, of `k`",
+    file: "src/lower/recognition.rs",
+    find: "                Comb::Rotate { left, .. } if deque => Comb::Rotate { left, count: \"n\" },",
+    replace: "                Comb::Rotate { left, .. } if false && deque => Comb::Rotate { left, count: \"n\" },",
+    tests: ["test/corpus.test.ts", "-t", "deque_rotate_past_end"],
+  },
 ];

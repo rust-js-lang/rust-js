@@ -329,7 +329,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A clone of an array: `items.slice()`, or `items.map((item) => ..)`
     /// if its items need cloning too.
-    fn clone_items(&mut self, items: Expr, item: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub(super) fn clone_items(&mut self, items: Expr, item: Ty<'tcx>, span: Span) -> R<Expr> {
         if !self.needs_clone(item) {
             return Ok(Expr::call(Expr::member(items, "slice"), Vec::new()));
         }

@@ -197,11 +197,10 @@ Differences:
 - **Locks aren't checked:** a `Mutex` locked twice on one thread doesn't
   hang, and a lock is never poisoned ([0144](decisions/0144-locks.md)).
 
-Refused: `Rc::ptr_eq`, `strong_count`, `get_mut`,
-`make_mut` and `try_unwrap`; `Weak`; `Cell::replace`, `take` and `swap`;
-`RefCell::replace` and `try_borrow_mut`; `OnceCell`, `OnceLock` and
-`LazyLock`; `Mutex::try_lock`; a map's `get_mut` bound by a `match`
-and kept past it.
+Refused: `Rc::ptr_eq`, `strong_count`, `get_mut`, `make_mut` and
+`try_unwrap`; `Weak`; `Cell::swap`; `RefCell::try_borrow_mut`; `OnceCell`,
+`OnceLock` and `LazyLock`; `Mutex::try_lock`; a map's `get_mut` bound by a
+`match` and kept past it.
 
 ## Collections and iterators
 

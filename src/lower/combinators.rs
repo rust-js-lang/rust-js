@@ -3,6 +3,7 @@
 //! written in place, as `Option::map`'s is: `o ?? f()` is `o ?? 0` for
 //! `unwrap_or_else(|| 0)`.
 
+use super::calls::apply;
 use super::{FnCx, R, Std, representation::Num};
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use crate::runtime::Helper;
@@ -35,11 +36,22 @@ pub(super) enum Comb {
     IsErrAnd,
     Contains,
     BinarySearch,
+    /// `binary_search_by(f)`, and `_by_key(&b, f)`: by a comparison.
+    BinarySearchBy,
+    BinarySearchByKey,
+    /// `rotate_left(n)`, or `rotate_right(n)`, and what std's assertion
+    /// calls `n`: a slice's `mid` or `k`, a `VecDeque`'s `n`.
+    Rotate {
+        left: bool,
+        count: &'static str,
+    },
     SplitOff,
     /// `b.then(|| x)` and `b.then_some(x)`: `b ? x : undefined`.
     Then,
     ThenSome,
     Extend,
+    /// `v.extend_from_slice(&s)`: a clone of each of `s`'s items.
+    ExtendFromSlice,
     Insert,
     Remove,
     Swap,
@@ -650,6 +662,47 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let spread = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]);
                 helper(self, Helper::Extend, "$extend", vec![subject, spread])
             }
+            // Each item a clone, as `to_vec()` makes them.
+            Comb::ExtendFromSlice => {
+                let items = next();
+                let item = self
+                    .slice_item(subject_ty)
+                    .ok_or_else(|| self.unsupported(span, "`extend_from_slice` of this"))?;
+                let items = if self.needs_clone(item) {
+                    self.clone_items(items, item, span)?
+                } else {
+                    items
+                };
+                helper(self, Helper::Extend, "$extend", vec![subject, items])
+            }
+            Comb::BinarySearchBy => helper(self, Helper::BinarySearchBy, "$binarySearchBy", vec![subject, next()]),
+            // `f(item)` compared with `b`, by its type's `Ord`.
+            Comb::BinarySearchByKey => {
+                let (key, f) = (next(), next());
+                let key = if key.reads_same() {
+                    key
+                } else {
+                    self.spill("key", key, out)
+                };
+                let key_ty = generic_args
+                    .types()
+                    .nth(1)
+                    .expect("`binary_search_by_key` has a key type");
+                let compare = self.cmp_fn(key_ty, false, span)?;
+                let item = Expr::var("item");
+                let mapped = apply(f, vec![item]);
+                let body = vec![StmtKind::Return(Some(apply(compare, vec![mapped, key]))).at(js::Span::NONE)];
+                let by = Expr::arrow(vec!["item".into()], body);
+                helper(self, Helper::BinarySearchBy, "$binarySearchBy", vec![subject, by])
+            }
+            Comb::Rotate { left, count } => {
+                let list = vec![subject, next(), Expr::str(count)];
+                if left {
+                    helper(self, Helper::RotateLeft, "$rotateLeft", list)
+                } else {
+                    helper(self, Helper::RotateRight, "$rotateRight", list)
+                }
+            }
             Comb::Insert => helper(self, Helper::InsertAt, "$insertAt", vec![subject, next(), next()]),
             Comb::Remove => helper(self, Helper::RemoveAt, "$removeAt", vec![subject, next()]),
             Comb::Swap => helper(self, Helper::Swap, "$swap", vec![subject, next(), next()]),
@@ -678,7 +731,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// What a slice, an array or a `Vec` holds.
-    fn slice_item(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    pub(super) fn slice_item(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         let ty = ty.peel_refs();
         match ty.kind() {
             ty::Slice(item) | ty::Array(item, _) => Some(*item),

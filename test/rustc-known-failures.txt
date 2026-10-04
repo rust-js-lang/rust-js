@@ -5,7 +5,6 @@ abi/nullable-pointer-ffi-compat.rs	error: rust-js does not support calling `std:
 allocator/weak-uninhabited-type.rs	error: rust-js does not support calling `std::rc::Weak::<T>::new` yet
 array-slice-vec/destructure-array-1.rs	error: rust-js does not support moving part of a value with a destructor yet
 array-slice-vec/issue-18425.rs	error: rust-js does not support `[x; N]` of a value that isn't `Copy` yet
-array-slice-vec/slice_binary_search.rs	error: rust-js does not support calling `core::slice::<impl [T]>::binary_search_by_key` yet
 associated-consts/associated-const-type-parameters.rs	error: rust-js does not support a generic impl's constant of its parameters yet
 associated-consts/mismatched_impl_ty_2.rs	error: rust-js does not support this constant yet
 associated-consts/mismatched_impl_ty_3.rs	error: rust-js does not support this constant yet

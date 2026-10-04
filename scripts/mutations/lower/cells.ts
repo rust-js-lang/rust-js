@@ -19,4 +19,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^locks"],
     snapshots: true,
   },
+  {
+    name: "cell-take-undefined",
+    breaks: "`Cell::take()` of a number leaves `undefined`, not its default, `0`",
+    file: "src/lower/cells.rs",
+    find: "                    Std::CellTake => (cell, self.default_value(item, span)?),",
+    replace: "                    Std::CellTake => (cell, Expr::undefined()),",
+    tests: ["test/corpus.test.ts", "-t", "collection_methods"],
+  },
+  {
+    name: "replace-with-unboxed",
+    breaks: "`replace_with` of a `String` gives its closure the string, which reads it as a box's `value`",
+    file: "src/lower/cells.rs",
+    find: "                        let given = if self.is_object(item) {",
+    replace: "                        let given = if true || self.is_object(item) {",
+    tests: ["test/corpus.test.ts", "-t", "collection_methods"],
+  },
 ];
