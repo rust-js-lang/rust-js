@@ -114,4 +114,12 @@ export const mutations: Mutation[] = [
     replace: "            scope,",
     tests: ["test/corpus.test.ts", "-t", "labeled_blocks"],
   },
+  {
+    name: "user-collection-loop-refused",
+    breaks: "`for x in &cart` of a collection of the crate's is an error, its `into_iter` unused",
+    file: "src/lower/loops.rs",
+    find: "        let collection = self.user_into_iter(head_ty);",
+    replace: "        let collection = None;",
+    tests: ["test/corpus.test.ts","-t","user_collections"],
+  },
 ];

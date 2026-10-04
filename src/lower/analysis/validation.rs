@@ -80,6 +80,7 @@ pub(super) fn reject_unsupported(
                     is_std_def(tcx, tr, StdItem::Iterator)
                         || is_std_def(tcx, tr, StdItem::TryFrom)
                         || is_from_str(tcx, tr)
+                        || is_std_def(tcx, tr, StdItem::IntoIterator)
                         || traits::is_operator(tcx, tr)
                 }) =>
             {

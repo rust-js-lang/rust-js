@@ -65,6 +65,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (def_id, generic_args) = self
             .resolve_into(def_id, generic_args)
             .unwrap_or((def_id, generic_args));
+        if let Some(collection) = self.collection_as_iterable(def_id, generic_args) {
+            let what = format!("a `{collection}`, whose `IntoIterator` is the crate's, where any `IntoIterator` goes");
+            return Err(self.unsupported(span, &what));
+        }
         let call = Call {
             fun,
             def_id,
@@ -85,6 +89,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.unsupported(self.thir[fun].span, &format!("calling `{path}`")));
         };
         self.std_call(known, call, out)
+    }
+
+    /// A collection of the crate's that a call takes as any `IntoIterator`:
+    /// generic code, std's or the crate's, iterates what it's given as JS
+    /// does, which never calls the collection's own `into_iter` (ADR 0160).
+    /// Not `into_iter` itself, which is the collection's.
+    fn collection_as_iterable(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> Option<Ty<'tcx>> {
+        let into_iterator = std_item(self.tcx, StdItem::IntoIterator);
+        if self.tcx.trait_of_assoc(def_id) == Some(into_iterator) {
+            return None;
+        }
+        let predicates = self.tcx.predicates_of(def_id).instantiate(self.tcx, generic_args);
+        predicates.predicates.iter().find_map(|clause| {
+            // A bound of any lifetime, `for<'a> &'a T: IntoIterator`, is of an
+            // erased one: a type rustc can select an impl for.
+            let bound = self
+                .tcx
+                .instantiate_bound_regions_with_erased(clause.skip_normalization().as_trait_clause()?)
+                .trait_ref;
+            (bound.def_id == into_iterator)
+                .then(|| bound.self_ty())
+                .filter(|&ty| self.user_into_iter(ty).is_some())
+        })
     }
 
     /// A call of what isn't one of std's functions: the crate's own, a

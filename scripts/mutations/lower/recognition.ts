@@ -307,4 +307,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "user_from_str"],
   },
+  {
+    name: "delegated-sum-unresolved",
+    breaks: "`sum()` into a type of the crate's isn't its `Sum`",
+    file: "src/lower/recognition.rs",
+    find: "            \"sum\" => \"sum\",\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","user_collections"],
+  },
+  {
+    name: "delegated-own-param-dropped",
+    breaks: "`collect()` into a collection of the crate's resolves its `from_iter` without the iterator, which doesn't resolve",
+    file: "src/lower/recognition.rs",
+    find: "args.types().take(own)",
+    replace: "args.types().take(0)",
+    tests: ["test/corpus.test.ts","-t","user_collections"],
+  },
+  {
+    name: "generic-into-iter-refused",
+    breaks: "`items.into_iter()` of a generic `I: IntoIterator` is an error",
+    file: "src/lower/recognition.rs",
+    find: "                || matches!(ty.peel_refs().kind(), ty::Param(_)))",
+    replace: "                || false)",
+    tests: ["test/corpus.test.ts","-t","user_collections"],
+  },
 ];

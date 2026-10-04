@@ -82,4 +82,12 @@ export const mutations: Mutation[] = [
     replace: "            return Ok(Some(answer));",
     tests: ["test/corpus.test.ts", "-t", "write_to_string"],
   },
+  {
+    name: "collection-as-iterable-unchecked",
+    breaks: "a collection of the crate's given to `extend` or generic code is iterated as JS does, to nothing or a crash",
+    file: "src/lower/calls.rs",
+    find: "        if let Some(collection) = self.collection_as_iterable(def_id, generic_args) {",
+    replace: "        if let Some(collection) = self.collection_as_iterable(def_id, generic_args).filter(|_| false) {",
+    tests: ["test/diagnostics.test.ts","-t","collection of the crate"],
+  },
 ];

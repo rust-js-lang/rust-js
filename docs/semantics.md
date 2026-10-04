@@ -237,6 +237,11 @@ Refused: `Rc::ptr_eq`, `strong_count`, `get_mut`, `make_mut` and
   [0139](decisions/0139-lazy-chains.md)).
 - **An `impl Iterator` is the iterator it stands for**
   ([0061](decisions/0061-generic-iterators.md)).
+- **A collection of the crate's is its own impls':** `for` over it calls
+  its `IntoIterator`, `collect()` its `FromIterator`, `extend` its
+  `Extend`, `sum()` its `Sum` ([0160](decisions/0160-user-collections.md)).
+  Given where any `IntoIterator` goes, to `v.extend(cart)` or generic code,
+  it's refused: that code wouldn't call its `into_iter`.
 - **A function passed where a closure goes is the arrow that calls it,**
   `.map(str::len)` being `.map((s) => $byteLen(s))` and `fold(0, i32::max)`
   being `reduce((a, b) => Math.max(a, b), 0)`; a constructor's makes what

@@ -695,9 +695,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return Some(Std::IterLen);
         }
+        // Of a type parameter too: a generic one is an array or a JS iterator
+        // (ADR 0061), never a collection of the crate's (ADR 0160).
         if tcx.is_diagnostic_item(sym::IntoIterator, trait_)
             && tcx.item_name(def_id).as_str() == "into_iter"
-            && (ty.peel_refs().is_array() || ty.peel_refs().is_slice() || self.is_vec_like(ty.peel_refs()))
+            && (ty.peel_refs().is_array()
+                || ty.peel_refs().is_slice()
+                || self.is_vec_like(ty.peel_refs())
+                || matches!(ty.peel_refs().kind(), ty::Param(_)))
         {
             return Some(Std::Same);
         }
@@ -1860,6 +1865,14 @@ pub(super) fn serde_impl(tcx: TyCtxt<'_>, id: DefId) -> Option<bool> {
     serde_trait(tcx, tr.def_id).filter(|_| own)
 }
 
+/// Is `id` core's `Sum` or `Product`, of `sum()` and `product()`, which
+/// have no diagnostic items?
+pub(crate) fn is_sum_or_product(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    tcx.crate_name(id.krate) == sym::core
+        && tcx.def_kind(id) == DefKind::Trait
+        && [Symbol::intern("Sum"), Symbol::intern("Product")].contains(&tcx.item_name(id))
+}
+
 pub(super) fn is_extend(tcx: rustc_middle::ty::TyCtxt<'_>, trait_id: rustc_span::def_id::DefId) -> bool {
     tcx.crate_name(trait_id.krate) == rustc_span::sym::core && tcx.item_name(trait_id) == Symbol::intern("Extend")
 }
@@ -1972,6 +1985,12 @@ pub(super) fn implementable(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'
         || tcx.is_diagnostic_item(sym::TryFrom, id)
         // What `s.parse()` calls (ADR 0159).
         || is_from_str(tcx, id)
+        // A collection of the crate's: what `for`, `collect()`, `extend`,
+        // `sum()` and `product()` call (ADR 0160).
+        || tcx.is_diagnostic_item(sym::IntoIterator, id)
+        || tcx.is_diagnostic_item(sym::FromIterator, id)
+        || is_extend(tcx, id)
+        || is_sum_or_product(tcx, id)
         || tcx.is_diagnostic_item(sym::Eq, id)
         || tcx.is_diagnostic_item(sym::Iterator, id)
         || is_operator(tcx, id)
@@ -2102,6 +2121,49 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// Resolve blanket Into/TryInto through From/TryFrom. The caller decides
     /// whether the resulting implementation is available for emission.
+    /// A std method that only calls its bound's, `iter.sum::<S>()` that's
+    /// `<S as Sum<Item>>::sum(iter)`: `product()`, `collect()` that's
+    /// `FromIterator::from_iter`, and `parse()` that's `FromStr::from_str`.
+    /// The bound's method, its arguments, and the impl's that it resolves to
+    /// (ADR 0160). Its own type parameter, the iterator, is the receiver's.
+    pub(super) fn resolve_delegated(
+        &self,
+        def_id: DefId,
+        args: ty::GenericArgsRef<'tcx>,
+    ) -> Option<(DefId, ty::GenericArgsRef<'tcx>, DefId)> {
+        let tcx = self.tcx;
+        if tcx.crate_name(def_id.krate) != sym::core {
+            return None;
+        }
+        let wanted = match tcx.item_name(def_id).as_str() {
+            "sum" => "sum",
+            "product" => "product",
+            "collect" => "from_iter",
+            "parse" => "from_str",
+            _ => return None,
+        };
+        tcx.predicates_of(def_id).predicates.iter().find_map(|&(clause, _)| {
+            let bound = tcx
+                .instantiate_bound_regions_with_erased(clause.as_trait_clause()?)
+                .trait_ref;
+            let method = tcx
+                .associated_items(bound.def_id)
+                .in_definition_order()
+                .find(|item| item.is_fn() && item.name().as_str() == wanted)?
+                .def_id;
+            let bound_args = ty::EarlyBinder::bind(tcx, bound.args)
+                .instantiate(tcx, args)
+                .skip_normalization();
+            let own = tcx.generics_of(method).own_params.len();
+            let method_args = tcx.mk_args_from_iter(bound_args.iter().chain(args.types().take(own).map(Into::into)));
+            let method_args = tcx
+                .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(method_args))
+                .ok()?;
+            let instance = ty::Instance::try_resolve(tcx, self.typing_env, method, method_args).ok()??;
+            Some((method, method_args, instance.def_id()))
+        })
+    }
+
     pub(super) fn resolve_into(
         &self,
         def_id: DefId,
@@ -2113,7 +2175,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         } else if self.tcx.is_diagnostic_item(sym::TryInto, into) {
             self.tcx.get_diagnostic_item(sym::TryFrom)?
         } else {
-            return None;
+            return self.resolve_delegated(def_id, args);
         };
         let method = self
             .tcx

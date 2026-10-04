@@ -4,7 +4,7 @@ use super::body_queries::ForLoop;
 use super::combinators::IterSource;
 use super::drops::Drops;
 use super::ranges::RangeKind;
-use super::recognition::StdItem;
+use super::recognition::{StdItem, std_item, trait_method};
 use super::representation::Num;
 use super::{Dest, FnCx, Loop, R, Std, Var, fresh_in, is_enumerate_pair, std_impls, without_refs};
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
@@ -14,7 +14,7 @@ use rustc_hir as hir;
 use rustc_hir::{BindingMode, ByRef, HirId, LangItem};
 use rustc_middle::middle::region;
 use rustc_middle::thir::{self, ExprId, ExprKind, PatKind};
-use rustc_middle::ty;
+use rustc_middle::ty::{self, TypeVisitableExt};
 use rustc_span::{Span, sym};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -77,6 +77,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .at(span),
         );
         Ok(())
+    }
+
+    /// `IntoIterator::into_iter` of `ty`, if it's an impl of the crate's: a
+    /// collection of its own, whose items are what that gives (ADR 0160).
+    pub(super) fn user_into_iter(&self, ty: ty::Ty<'tcx>) -> Option<(hir::def_id::DefId, ty::GenericArgsRef<'tcx>)> {
+        let trait_id = std_item(self.tcx, StdItem::IntoIterator);
+        let into_iter = trait_method(self.tcx, trait_id, "into_iter");
+        if ty.has_escaping_bound_vars() {
+            return None;
+        }
+        let args = self.tcx.mk_args(&[ty.into()]);
+        let instance = self.resolve_instance(into_iter, args).ok()??;
+        self.is_rust_fn(instance.def_id()).then_some((into_iter, args))
     }
 
     /// A labeled block, `'found: { .. break 'found x; .. }`: JS's own,
@@ -160,6 +173,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let head_ty = self.reveal(self.thir[f.head].ty);
         let head_span = self.thir[f.head].span;
+        // A collection of the crate's: what its own `into_iter` gives (ADR 0160).
+        let collection = self.user_into_iter(head_ty);
         let inclusive = self.inclusive_range(f.head);
         let kind = self.range_kind(head_ty);
         // Of numbers: a `char`'s is a sequence, `$charRange(a, b)`.
@@ -236,6 +251,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 || self.is_array_iter(peeled)
                 || self.is_lazy_value(f.head)
                 || self.is_map(peeled)
+                || collection.is_some()
                 // A generic one, an array or a JS iterator: `for .. of` takes either (ADR 0061).
                 || self.bounded_by(peeled, sym::IntoIterator)
                 || matches!(self.thir[self.strip(f.head)].kind, ExprKind::Call { fun, .. } if self.std_fn(fun) == Some(Std::Same));
@@ -245,9 +261,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Its body runs between items: a chain's stages that do what can be
             // seen run lazily (ADR 0139).
             self.mark_lazy_chain(f.head, true);
-            let head = match once {
-                Some(value) => Expr::array(vec![self.expr(value, out)?]),
-                None => self.iter_value(f.head, out)?,
+            let head = match (once, collection) {
+                (Some(value), _) => Expr::array(vec![self.expr(value, out)?]),
+                (None, Some((into_iter, args))) => {
+                    let collection = self.expr(f.head, out)?;
+                    self.trait_call(into_iter, args, vec![collection], head_span, out)?
+                        .ok_or_else(|| self.unsupported(head_span, "this collection's `into_iter`"))?
+                }
+                (None, None) => self.iter_value(f.head, out)?,
             };
             let head = match option {
                 Some(item) => self.option_items(head, item, out),
