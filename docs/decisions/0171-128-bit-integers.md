@@ -28,6 +28,8 @@ same, with its width where it counts:
 - **The compiler keeps a constant as an `i128`,** which holds every
   `i128` but not a `u128` past `i128::MAX`: a `u128`'s is its bits, and a
   type's range ends at a `u128`, which `u128::MAX` needs.
+- **A float's `to_int_unchecked::<T>()` is its `as T`,** which is it
+  wherever Rust defines it: in range, as num-traits checks first.
 - **Still errors:** a 128-bit integer in JSON, read or written. serde_json
   reads one by its own rules, which aren't checked here yet.
 

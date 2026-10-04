@@ -16,6 +16,7 @@ import {
   $displayF32,
   $displayF64,
   $f64ToBig,
+  $f64ToInt,
   $fromBytes,
   $overflowing,
   $parseBig,
@@ -105,18 +106,27 @@ function main() {
   console.log(
     `${Number(BigInt.asUintN(8, BigInt.asUintN(128, big + 300n)))} ${BigInt.asUintN(128, BigInt(7) + x)}`,
   );
+  const tmp = [
+    $f64ToInt(Math.fround(3.9), 0, 255),
+    $f64ToBig(
+      -750000000000000000000,
+      -170141183460469231731687303715884105728n,
+      170141183460469231731687303715884105727n,
+    ),
+  ];
+  console.log(`${tmp[0]} ${tmp[1]}`);
   const result = $tryFromInt(big, 0n, 18446744073709551615n);
-  const tmp = result.TAG === "Ok" ? result._0 : undefined;
+  const tmp$1 = result.TAG === "Ok" ? result._0 : undefined;
   const result$1 = $tryFromInt(
     max,
     -170141183460469231731687303715884105728n,
     170141183460469231731687303715884105727n,
   );
-  const tmp$1 = result$1.TAG === "Ok" ? result$1._0 : undefined;
+  const tmp$2 = result$1.TAG === "Ok" ? result$1._0 : undefined;
   const result$2 = $tryFromInt(200n, 0, 255);
   const arg$6 = result$2.TAG === "Ok" ? result$2._0 : undefined;
   console.log(
-    `${tmp == null ? "None" : `Some(${tmp})`} ${tmp$1 == null ? "None" : `Some(${tmp$1})`} ${arg$6 == null ? "None" : `Some(${arg$6})`}`,
+    `${tmp$1 == null ? "None" : `Some(${tmp$1})`} ${tmp$2 == null ? "None" : `Some(${tmp$2})`} ${arg$6 == null ? "None" : `Some(${arg$6})`}`,
   );
   const arg$7 = $parseBig(
     "340282366920938463463374607431768211455",

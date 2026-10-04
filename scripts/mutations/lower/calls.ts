@@ -98,4 +98,12 @@ export const mutations: Mutation[] = [
     replace: "        Ok(match self.is_rust_fn(def_id) {",
     tests: ["test/corpus.test.ts", "-t", "user_as_mut"],
   },
+  {
+    name: "to-int-unchecked-unknown",
+    breaks: "a float's `to_int_unchecked()` is an error, not its `as` cast",
+    file: "src/lower/calls.rs",
+    find: "        if known == Std::Number(NumOp::ToIntUnchecked) {",
+    replace: "        if known == Std::Number(NumOp::ToIntUnchecked) && false {",
+    tests: ["test/corpus.test.ts", "-t", "integers_128"],
+  },
 ];

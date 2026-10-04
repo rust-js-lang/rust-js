@@ -498,6 +498,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Std::Text(op) = known {
             return self.text_call(op, args, generic_args, span, out);
         }
+        if known == Std::Number(NumOp::ToIntUnchecked) {
+            let value = self.expr(args[0], out)?;
+            return self.cast(value, self.thir[args[0]].ty, output, span);
+        }
         if let Std::Number(op) = known {
             // `i32::from_str_radix(s, 16)`'s is what its `Result` holds.
             let ty = match (op, output.kind()) {

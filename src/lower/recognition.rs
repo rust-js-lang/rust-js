@@ -403,6 +403,30 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if diagnostic("mem_forget") {
             return Some(Some(Std::Forget));
         }
+        // Bytes to text, as Rust validates UTF-8 (ADR 0172).
+        let utf8 = match std_path(tcx, def_id).as_str() {
+            "std::str::from_utf8" | "std::str::<impl str>::from_utf8" => Some(TextOp::FromUtf8 { owned: false }),
+            "std::string::String::from_utf8" => Some(TextOp::FromUtf8 { owned: true }),
+            "std::str::from_utf8_unchecked" | "std::str::<impl str>::from_utf8_unchecked" => {
+                Some(TextOp::Utf8Unchecked)
+            }
+            "std::string::String::from_utf8_lossy" => Some(TextOp::Utf8Lossy),
+            "std::str::Utf8Error::valid_up_to" => Some(TextOp::Utf8Part("valid_up_to")),
+            "std::str::Utf8Error::error_len" => Some(TextOp::Utf8Part("error_len")),
+            "std::string::FromUtf8Error::utf8_error" => Some(TextOp::Utf8Part("error")),
+            "std::string::FromUtf8Error::into_bytes" | "std::string::FromUtf8Error::as_bytes" => {
+                Some(TextOp::Utf8Part("bytes"))
+            }
+            // A `Cow<str>`'s text: a JS string isn't changed in place, so it's
+            // as owned as it'll be.
+            "std::borrow::Cow::<'_, B>::into_owned" if args.types().next().is_some_and(|t| t.is_str()) => {
+                Some(TextOp::Utf8Part("_0"))
+            }
+            _ => None,
+        };
+        if let Some(op) = utf8 {
+            return Some(Some(Std::Text(op)));
+        }
         if std_path(tcx, def_id) == "std::sync::mpsc::channel" {
             return Some(Some(Std::Channel(ChannelOp::New)));
         }
@@ -545,6 +569,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if diagnostic("deref_method") || diagnostic("deref_mut_method") {
             // A reference to what's inside is the same JS value (ADR 0024 for JS objects).
             let Some(ty) = self_ty else { return Some(None) };
+            // A `Cow<str>`'s text, borrowed or owned (ADR 0172).
+            if diagnostic("deref_method") && self.is_cow_str(ty) {
+                return Some(Some(Std::Text(TextOp::Utf8Part("_0"))));
+            }
             let same = self.is_string_like(ty)
                 || self.is_js_object(ty)
                 || self.is_rc(ty)
@@ -1813,6 +1841,25 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate) == rustc_span::sym::core
             && ["ParseIntError", "ParseFloatError", "ParseBoolError", "ParseCharError", "TryFromIntError"]
                 .contains(&self.tcx.item_name(adt.did()).as_str()))
+    }
+
+    /// A `Utf8Error`, `false`, or a `FromUtf8Error`, `true`: the objects the
+    /// runtime makes of them (ADR 0172).
+    pub(super) fn utf8_error(&self, ty: Ty<'tcx>) -> Option<bool> {
+        let ty::Adt(adt, _) = ty.kind() else {
+            return None;
+        };
+        match std_path(self.tcx, adt.did()).as_str() {
+            "std::str::Utf8Error" => Some(false),
+            "std::string::FromUtf8Error" => Some(true),
+            _ => None,
+        }
+    }
+
+    /// A `Cow<str>`, `{ TAG, _0 }`: its text, borrowed or owned (ADR 0172).
+    pub(super) fn is_cow_str(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, args) if std_path(self.tcx, adt.did()) == "std::borrow::Cow"
+            && args.types().next().is_some_and(|t| t.is_str()))
     }
 
     pub(super) fn is_json_error(&self, ty: Ty<'tcx>) -> bool {

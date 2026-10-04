@@ -137,8 +137,13 @@ Differences:
   ([0159](decisions/0159-user-from-str.md)); a generic `T: FromStr`'s is
   its dictionary's, std's or the crate's ([0161](decisions/0161-generic-from-str.md)).
 
-Refused, among others: `str::from_utf8`, `String::from_utf8`,
-`make_ascii_uppercase` of a `String`, and a C string, `c"..."`.
+- **Bytes become text as Rust checks UTF-8:** `str::from_utf8`'s
+  `Utf8Error` says where the first bad sequence starts and how long it is,
+  and `from_utf8_lossy` gives a U+FFFD for each
+  ([0172](decisions/0172-utf8-decoding.md)).
+
+Refused, among others: `make_ascii_uppercase` of a `String`, and a C
+string, `c"..."`.
 
 ## Formatting and printing
 

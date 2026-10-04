@@ -67,6 +67,17 @@ pub(super) enum TextOp {
     },
     /// `char::from_u32_unchecked(n)`: the code point `n` is.
     CharFromCode,
+    /// `str::from_utf8(bytes)`, or `String::from_utf8` (`owned`) (ADR 0172).
+    FromUtf8 {
+        owned: bool,
+    },
+    /// `str::from_utf8_unchecked(bytes)`: valid UTF-8's text.
+    Utf8Unchecked,
+    /// `String::from_utf8_lossy(bytes)`: a `Cow`.
+    Utf8Lossy,
+    /// A part of a `Utf8Error`, `FromUtf8Error` or `Cow<str>`, as the runtime
+    /// makes it: `valid_up_to`, `error`, `bytes`, `_0`.
+    Utf8Part(&'static str),
     /// `v.starts_with(prefix)`, or `ends_with` (`end`), of a slice whose items
     /// compare by value.
     SliceStartsWith {
@@ -288,6 +299,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 call(self, Helper::SliceSplitAt, "$sliceSplitAt", list)
             }
             TextOp::CharFromCode => Expr::call(Expr::member(Expr::var("String"), "fromCodePoint"), vec![arg()]),
+            TextOp::FromUtf8 { owned } => {
+                let mut list = vec![arg()];
+                if owned {
+                    list.push(Expr::bool(true));
+                }
+                call(self, Helper::Utf8, "$fromUtf8", list)
+            }
+            TextOp::Utf8Unchecked => call(self, Helper::Utf8, "$utf8Decode", vec![arg()]),
+            TextOp::Utf8Lossy => call(self, Helper::Utf8, "$utf8Lossy", vec![arg()]),
+            TextOp::Utf8Part(name) => Expr::member(arg(), name),
             TextOp::SliceStartsWith { end } => {
                 let mut list = vec![arg(), arg()];
                 if end {

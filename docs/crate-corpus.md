@@ -6,7 +6,7 @@ of its own, every library of its graph by rust-js as Cargo's
 `RUSTC_WRAPPER`, for its target, and records what each refused first, or
 what Cargo said where a crate failed with no refusal: a crash.
 
-Measured 2026-10-04, after ADR 0171, Rust 1.98.1, each crate at the
+Measured 2026-10-04, after ADR 0172, Rust 1.98.1, each crate at the
 newest release its requirement allows.
 
 | Crate | Verdict | First refusals in its graph |
@@ -23,8 +23,8 @@ newest release its requirement allows.
 | semver 1.0 | refused | a constant of a `NonNull` |
 | uuid 1.27 | refused | `&mut` of a `MaybeUninit` buffer's range |
 | url 2.5 | blocked | litemap: `{:?}` of a `PhantomData`; writeable: a whole value assigned through a `&mut`; smallvec's; percent-encoding: `transmute`; zerofrom: dropping an `Option<T>` |
-| regex 1.11 | blocked | memchr: a raw pointer; regex-syntax: `str::from_utf8` |
-| rust_decimal 1.38 | blocked | arrayvec: a user `io::Write`; serde_core: `size_of` of a type parameter; num-traits: `f32::to_int_unchecked` |
+| regex 1.11 | blocked | memchr: a raw pointer |
+| rust_decimal 1.38 | blocked | arrayvec: a user `io::Write`; serde_core: `size_of` of a type parameter; num-traits: `Option::map` of a value with a destructor |
 | chrono 0.4 (`alloc`) | blocked | num-traits' |
 | time 0.3 (`alloc`) | blocked | powerfmt: a `MaybeUninit`; deranged: `{:?}` of an `IntErrorKind` |
 
@@ -32,15 +32,19 @@ newest release its requirement allows.
 
 1. **Raw memory,** a raw pointer, a `NonNull`, a `MaybeUninit`,
    `transmute`, `handle_alloc_error`: 9.
-2. **num-traits' `f32::to_int_unchecked`:** 2, chrono and rust_decimal.
+2. **num-traits' `Option::map` of a value with a destructor:** 2, chrono and
+   rust_decimal.
    **A user `Future`:** 2.
-3. **One each:** `{:?}` of a `PhantomData`, `Path::display`,
-   `str::from_utf8`, `write_str` of a generic writer, `{:?}` of an
-   `IntErrorKind`, a user `io::Write`, `size_of` of a type parameter, a
-   whole value assigned through a `&mut`, dropping an `Option<T>`.
+3. **One each:** `{:?}` of a `PhantomData`, `Path::display`, `write_str` of a
+   generic writer, `{:?}` of an `IntErrorKind`, a user `io::Write`, `size_of`
+   of a type parameter, a whole value assigned through a `&mut`, dropping
+   an `Option<T>`.
 
 ## Fixed by measuring
 
+- **Bytes to text,** `str::from_utf8`, `from_utf8_lossy` and the like:
+  regex-syntax compiles now (ADR 0172). **`f32::to_int_unchecked`,**
+  num-traits' (ADR 0171).
 - **`u128` and `i128`** stopped num-traits, num-conv, zerofrom and
   serde_core; num-conv and time-core compile now (ADR 0171).
 - **A `#![no_std]` crate's std items,** which rustc names `core::str::Chars`,

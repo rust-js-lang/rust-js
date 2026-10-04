@@ -261,6 +261,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0169 A type's own `AsMut` and `BorrowMut`, called on the type](decisions/0169-user-as-mut.md)
 - [0170 `size_hint()` where its answer is known](decisions/0170-size-hint.md)
 - [0171 An `i128` or a `u128` is a BigInt, wrapped to 128 bits](decisions/0171-128-bit-integers.md)
+- [0172 Bytes to text, as Rust validates UTF-8](decisions/0172-utf8-decoding.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

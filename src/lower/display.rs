@@ -693,6 +693,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(shown);
         }
         self.can_apply(ty, pretty, span)?;
+        // A UTF-8 error's message, a `FromUtf8Error`'s its `Utf8Error`'s (ADR 0172).
+        if let Some(owned) = self.recognition().utf8_error(ty) {
+            self.runtime.insert(Helper::Utf8);
+            let error = if owned { Expr::member(value, "error") } else { value };
+            return Ok(Expr::call(Expr::var("$utf8ErrorMessage"), vec![error]));
+        }
+        if self.recognition().is_cow_str(ty) {
+            return Ok(Expr::member(value, "_0"));
+        }
         // A `TryFromIntError` is its kind, whose message is one for both
         // (ADR 0109): `value && ..` of one whose value runs code, as a kind
         // is never empty.
@@ -878,6 +887,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_json_error(ty) {
             self.runtime.insert(Helper::JsonError);
             return Ok(Expr::call(Expr::var("$debugJsonError"), vec![value]));
+        }
+        // Their derived `Debug`s (ADR 0172).
+        if let Some(owned) = self.recognition().utf8_error(ty) {
+            self.runtime.insert(Helper::Utf8);
+            let mut list = vec![value];
+            if owned {
+                list.push(Expr::bool(true));
+            }
+            return Ok(Expr::call(Expr::var("$debugUtf8Error"), list));
+        }
+        // A `Cow` shows its text, borrowed or owned.
+        if self.recognition().is_cow_str(ty) {
+            self.runtime.insert(Helper::DebugStr);
+            return Ok(Expr::call(Expr::var("$debugStr"), vec![Expr::member(value, "_0")]));
         }
         // A parse error is its message (ADR 0063), which says its kind.
         if self.is_parse_error(ty) {

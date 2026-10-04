@@ -99,6 +99,9 @@ pub(super) enum NumOp {
     /// A float's `to_bits()`, and `f64::from_bits(bits)`.
     ToBits,
     FromBits,
+    /// A float's `to_int_unchecked::<T>()`: its `as T`, which is it where
+    /// Rust defines it, in range.
+    ToIntUnchecked,
 }
 
 /// std's `f32::to_degrees` factor, its own literal, as std writes it, which
@@ -321,6 +324,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let list = vec![arg(), Expr::int((num.bits() / 8).into())];
                 helper(self, Helper::FloatFromBits, "$floatFromBits", list)
             }
+            NumOp::ToIntUnchecked => unreachable!("a cast, in `std_call`"),
             NumOp::SaturatingPow => {
                 self.runtime.insert(Helper::CheckedPow);
                 let list = vec![arg(), arg(), Expr::int(lo), Expr::int(hi)];

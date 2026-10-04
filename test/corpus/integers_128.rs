@@ -42,6 +42,9 @@ fn main() {
     println!("{} {} {}", x as u128 * 3, (max as u64), (-1i128) as u128);
     println!("{} {} {}", big as f64, 1e40f64 as u128, (-1e40f64) as i128);
     println!("{} {}", (big + 300) as u8, u128::from(7u32) + u128::from(x));
+    // SAFETY: each is in its target's range, as num-traits checks first.
+    let (small, wide) = unsafe { (3.9f32.to_int_unchecked::<u8>(), (-7.5e20f64).to_int_unchecked::<i128>()) };
+    println!("{} {}", small, wide);
     println!("{:?} {:?} {:?}", u64::try_from(big).ok(), i128::try_from(max).ok(), u8::try_from(200u128).ok());
 
     // Parsing.

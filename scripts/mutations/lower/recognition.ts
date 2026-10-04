@@ -483,4 +483,20 @@ export const mutations: Mutation[] = [
     replace: "        Some((\"alloc\", rest)) if !id.is_local() => format!(\"std::{rest}\"),",
     tests: ["test/crates.test.ts", "-t", "std items are std"],
   },
+  {
+    name: "from-utf8-unknown",
+    breaks: "`str::from_utf8(bytes)` is an error",
+    file: "src/lower/recognition.rs",
+    find: "            \"std::str::from_utf8\" | \"std::str::<impl str>::from_utf8\" => Some(TextOp::FromUtf8 { owned: false }),",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "utf8_decoding"],
+  },
+  {
+    name: "cow-str-deref-unknown",
+    breaks: "a `Cow<str>`'s text, `text.len()`, is an error",
+    file: "src/lower/recognition.rs",
+    find: "            if diagnostic(\"deref_method\") && self.is_cow_str(ty) {",
+    replace: "            if diagnostic(\"deref_method\") && self.is_cow_str(ty) && false {",
+    tests: ["test/corpus.test.ts", "-t", "utf8_decoding"],
+  },
 ];

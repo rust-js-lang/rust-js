@@ -118,6 +118,7 @@ pub(super) fn number(name: &str, num: Num) -> Option<NumOp> {
         "from_le_bytes" | "from_ne_bytes" if !float => NumOp::FromBytes { little: true },
         "to_bits" if float => NumOp::ToBits,
         "from_bits" if float => NumOp::FromBits,
+        "to_int_unchecked" if float => NumOp::ToIntUnchecked,
         "saturating_add" if !float => NumOp::Saturating(BinOp::Add),
         "saturating_sub" if !float => NumOp::Saturating(BinOp::Sub),
         "saturating_mul" if !float => NumOp::Saturating(BinOp::Mul),
