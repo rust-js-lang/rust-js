@@ -122,4 +122,12 @@ export const mutations: Mutation[] = [
     replace: "apply(compare, vec![key, mapped])",
     tests: ["test/corpus.test.ts", "-t", "collection_methods"],
   },
+  {
+    name: "result-map-or-else-no-error",
+    breaks: "a `Result`'s `map_or_else` calls its fallback without the error",
+    file: "src/lower/combinators.rs",
+    find: "                let fallback = self.call_with(g, vec![inside()], \"fallback\", out);",
+    replace: "                let fallback = self.call_with(g, Vec::new(), \"fallback\", out);",
+    tests: ["test/corpus.test.ts", "-t", "user_from_str"],
+  },
 ];

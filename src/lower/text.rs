@@ -5,7 +5,7 @@
 
 use super::calls::Call;
 use super::ranges::RangeKind;
-use super::recognition::Std;
+use super::recognition::{Std, trait_method};
 use super::representation::Num;
 use super::{FnCx, R};
 use crate::js;
@@ -275,7 +275,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .types()
                     .next()
                     .ok_or_else(|| self.unsupported(span, "this `parse`"))?;
-                self.parse_as(arg(), target, span)?
+                self.parse_as(arg(), target, span, out)?
             }
             TextOp::ByteLen => {
                 self.runtime.insert(Helper::ByteLen);
@@ -320,7 +320,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `s.parse::<T>()`: a `Result`, whose `Err` is the error's message,
     /// which is what its `to_string()` gives.
-    fn parse_as(&mut self, text: Expr, target: Ty<'tcx>, span: Span) -> R<Expr> {
+    fn parse_as(&mut self, text: Expr, target: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         if let Some(num) = Num::of(target) {
             if num == Num::F64 {
                 self.runtime.insert(Helper::ParseF64);
@@ -359,6 +359,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Prop::Field("_0".into(), text),
             ]);
             return Ok(ok);
+        }
+        // A type's own `FromStr`: its `from_str`, called (ADR 0159).
+        if let Some(from_str) = self.recognition().std_from_str() {
+            let method = trait_method(self.tcx, from_str, "from_str");
+            let args = self.tcx.mk_args(&[target.into()]);
+            if let Some(call) = self.trait_call(method, args, vec![text], span, out)? {
+                return Ok(call);
+            }
         }
         Err(self.unsupported(span, &format!("`parse` to a `{target}`")))
     }

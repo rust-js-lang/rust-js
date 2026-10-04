@@ -132,8 +132,13 @@ Differences:
 - **Strings compare by UTF-16 units:** `<`, `cmp` and `sort()` of strings
   can order a character above U+FFFF differently than Rust does.
 
+- **A type's own `FromStr` is what `parse` calls,** `s.parse::<Role>()`
+  calling `impl FromStr for Role`'s `from_str`
+  ([0159](decisions/0159-user-from-str.md)).
+
 Refused, among others: `str::from_utf8`, `String::from_utf8`,
-`make_ascii_uppercase` of a `String`, and a C string, `c"..."`.
+`make_ascii_uppercase` of a `String`, `parse` to a generic `T: FromStr`,
+and a C string, `c"..."`.
 
 ## Formatting and printing
 

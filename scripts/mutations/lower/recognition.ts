@@ -299,4 +299,12 @@ export const mutations: Mutation[] = [
     replace: "                Comb::Rotate { left, .. } if false && deque => Comb::Rotate { left, count: \"n\" },",
     tests: ["test/corpus.test.ts", "-t", "deque_rotate_past_end"],
   },
+  {
+    name: "user-from-str-refused",
+    breaks: "a type's own `impl FromStr` is an error",
+    file: "src/lower/recognition.rs",
+    find: "        || is_from_str(tcx, id)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "user_from_str"],
+  },
 ];

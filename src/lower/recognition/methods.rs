@@ -166,6 +166,8 @@ pub(super) fn combinator(name: &str, option: bool, result: bool, vec: bool, slic
         "is_none_or" if option => Comb::IsNoneOr,
         "map" if result => Comb::ResultMap,
         "map_err" if result => Comb::MapErr,
+        "map_or" if result => Comb::ResultMapOr,
+        "map_or_else" if result => Comb::ResultMapOrElse,
         "and_then" if result => Comb::ResultAndThen,
         "unwrap_or_else" if result => Comb::ResultUnwrapOrElse,
         "unwrap_or_default" if result => Comb::ResultUnwrapOrDefault,

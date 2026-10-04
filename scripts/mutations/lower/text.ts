@@ -43,4 +43,12 @@ export const mutations: Mutation[] = [
     replace: "            && !item.is_char()\n",
     tests: ["test/corpus.test.ts", "-t", "text_predicates"],
   },
+  {
+    name: "parse-skips-user-from-str",
+    breaks: "`s.parse::<Role>()` of a type's own `FromStr` is an error",
+    file: "src/lower/text.rs",
+    find: "        if let Some(from_str) = self.recognition().std_from_str() {",
+    replace: "        if let Some(from_str) = self.recognition().std_from_str().filter(|_| false) {",
+    tests: ["test/corpus.test.ts", "-t", "user_from_str"],
+  },
 ];

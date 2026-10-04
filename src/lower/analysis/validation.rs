@@ -1,6 +1,6 @@
 //! What a crate does that rust-js refuses, found before any of it is lowered.
 
-use crate::lower::recognition::{StdItem, from_serde_derive, is_std_def};
+use crate::lower::recognition::{StdItem, from_serde_derive, is_from_str, is_std_def};
 use crate::lower::traits;
 use crate::lower::{Body, strip};
 use rustc_hir::def::DefKind;
@@ -79,6 +79,7 @@ pub(super) fn reject_unsupported(
                         .def_id;
                     is_std_def(tcx, tr, StdItem::Iterator)
                         || is_std_def(tcx, tr, StdItem::TryFrom)
+                        || is_from_str(tcx, tr)
                         || traits::is_operator(tcx, tr)
                 }) =>
             {

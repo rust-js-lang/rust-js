@@ -28,6 +28,10 @@ pub(super) enum Comb {
     IsNoneOr,
     ResultMap,
     MapErr,
+    /// A `Result`'s `map_or(d, f)` and `map_or_else(g, f)`: `f` of an `Ok`'s
+    /// value, else `d`, or `g` of the `Err`'s.
+    ResultMapOr,
+    ResultMapOrElse,
     ResultAndThen,
     ResultUnwrapOrElse,
     ResultUnwrapOrDefault,
@@ -549,6 +553,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mapped = self.call_with(f, vec![value], "map", out);
                 let fallback = self.call_with(g, Vec::new(), "fallback", out);
                 Expr::cond(some, mapped, fallback)
+            }
+            Comb::ResultMapOr => {
+                let fallback = next();
+                let fallback = eager(self, fallback, out);
+                let f = next();
+                let mapped = self.call_with(f, vec![inside()], "map", out);
+                Expr::cond(tag("Ok"), mapped, fallback)
+            }
+            Comb::ResultMapOrElse => {
+                let (g, f) = (next(), next());
+                let mapped = self.call_with(f, vec![inside()], "map", out);
+                let fallback = self.call_with(g, vec![inside()], "fallback", out);
+                Expr::cond(tag("Ok"), mapped, fallback)
             }
             Comb::AndThen => {
                 let f = next();

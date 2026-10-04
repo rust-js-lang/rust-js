@@ -349,6 +349,13 @@ pub(super) enum Json {
 }
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
+    /// std's `FromStr`, found among the traits, as it has no diagnostic item.
+    pub(super) fn std_from_str(&self) -> Option<DefId> {
+        self.tcx
+            .all_traits_including_private()
+            .find(|&id| is_from_str(self.tcx, id))
+    }
+
     pub(super) fn classify(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<Std> {
         if let Some(decided) = self.classify_fn(def_id, args) {
             return decided;
@@ -1963,6 +1970,8 @@ pub(super) fn implementable(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'
     operational(tcx, foreign, id)
         || tcx.is_diagnostic_item(sym::From, id)
         || tcx.is_diagnostic_item(sym::TryFrom, id)
+        // What `s.parse()` calls (ADR 0159).
+        || is_from_str(tcx, id)
         || tcx.is_diagnostic_item(sym::Eq, id)
         || tcx.is_diagnostic_item(sym::Iterator, id)
         || is_operator(tcx, id)
@@ -2358,6 +2367,13 @@ pub(crate) fn replaces_whole(tcx: TyCtxt<'_>, id: DefId) -> bool {
 }
 
 /// Is `id` std's `item`?
+/// Is `id` std's `FromStr`, which has no diagnostic item to know it by?
+pub(crate) fn is_from_str(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    tcx.crate_name(id.krate) == sym::core
+        && tcx.def_kind(id) == DefKind::Trait
+        && tcx.def_path_str(id).ends_with("str::FromStr")
+}
+
 pub(crate) fn is_std_def(tcx: TyCtxt<'_>, id: DefId, item: StdItem) -> bool {
     tcx.is_diagnostic_item(item.name(), id)
 }
