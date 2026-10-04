@@ -68,6 +68,21 @@ pub(super) enum NumOp {
     Isqrt,
     Midpoint,
     CountZeros,
+    /// `is_positive()`, or `is_negative()`.
+    IsPositive {
+        negative: bool,
+    },
+    CheckedNeg,
+    CheckedAbs,
+    /// `checked_shl(n)` or `checked_shr(n)`: `None` from the width on.
+    CheckedShift(BinOp),
+    WrappingNeg,
+    WrappingDiv,
+    WrappingRem,
+    /// `overflowing_add`, `_sub` and `_mul`, and `overflowing_neg()`.
+    Overflowing(BinOp),
+    OverflowingNeg,
+    SaturatingPow,
 }
 
 /// std's `f32::to_degrees` factor, its own literal, as std writes it, which
@@ -145,8 +160,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let min = Expr::int(lo);
                 helper(self, Helper::CheckedDiv, "$checkedDiv", vec![arg(), arg(), min])
             }
+            NumOp::Checked(BinOp::Rem) => {
+                let list = vec![arg(), arg(), Expr::int(lo)];
+                helper(self, Helper::CheckedRem, "$checkedRem", list)
+            }
             NumOp::Checked(op) => {
                 let exact = Expr::bin(js_op(op), arg(), arg());
+                helper(
+                    self,
+                    Helper::Checked,
+                    "$checked",
+                    vec![exact, Expr::int(lo), Expr::int(hi)],
+                )
+            }
+            NumOp::CheckedNeg => {
+                let exact = Expr::unary(UnaryOp::Neg, arg());
+                helper(
+                    self,
+                    Helper::Checked,
+                    "$checked",
+                    vec![exact, Expr::int(lo), Expr::int(hi)],
+                )
+            }
+            NumOp::CheckedAbs => {
+                let exact = math("abs", vec![arg()]);
                 helper(
                     self,
                     Helper::Checked,
@@ -187,6 +224,58 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             NumOp::DivEuclid => {
                 self.runtime.insert(Helper::Div);
                 helper(self, Helper::DivEuclid, "$divEuclid", vec![arg(), arg(), Expr::int(lo)])
+            }
+            NumOp::IsPositive { negative } => Expr::bin(if negative { Op::Lt } else { Op::Gt }, arg(), Expr::int(0)),
+            // Shifted, below the width, as `<<` shifts.
+            NumOp::CheckedShift(op) => {
+                let (a, by) = (arg(), arg());
+                let a = if a.reads_same() { a } else { self.spill("n", a, out) };
+                let by = if by.reads_same() { by } else { self.spill("by", by, out) };
+                let fits = Expr::bin(Op::Lt, by.clone(), Expr::int(num.bits().into()));
+                Expr::cond(fits, self.binary(op, a, by, None, ty, span)?, Expr::undefined())
+            }
+            NumOp::WrappingNeg => num.wrap(Expr::unary(UnaryOp::Neg, arg())),
+            NumOp::WrappingDiv => helper(
+                self,
+                Helper::WrappingDiv,
+                "$wrappingDiv",
+                vec![arg(), arg(), Expr::int(lo)],
+            ),
+            NumOp::WrappingRem => helper(
+                self,
+                Helper::WrappingRem,
+                "$wrappingRem",
+                vec![arg(), arg(), Expr::int(lo)],
+            ),
+            // What wrapping gives, and the exact result, which a product past
+            // 2^53 rounds, far out of range either way.
+            NumOp::Overflowing(op) => {
+                let (a, b) = (arg(), arg());
+                let a = if a.reads_same() { a } else { self.spill("a", a, out) };
+                let b = if b.reads_same() { b } else { self.spill("b", b, out) };
+                let exact = Expr::bin(js_op(op), a.clone(), b.clone());
+                let wrapped = self.binary(op, a, b, None, ty, span)?;
+                helper(
+                    self,
+                    Helper::Overflowing,
+                    "$overflowing",
+                    vec![wrapped, exact, Expr::int(lo), Expr::int(hi)],
+                )
+            }
+            NumOp::OverflowingNeg => {
+                let x = arg();
+                let x = if x.reads_same() { x } else { self.spill("n", x, out) };
+                let overflowed = if num.signed() {
+                    Expr::bin(Op::Eq, x.clone(), Expr::int(lo))
+                } else {
+                    Expr::bin(Op::Ne, x.clone(), Expr::int(0))
+                };
+                Expr::array(vec![num.wrap(Expr::unary(UnaryOp::Neg, x)), overflowed])
+            }
+            NumOp::SaturatingPow => {
+                self.runtime.insert(Helper::CheckedPow);
+                let list = vec![arg(), arg(), Expr::int(lo), Expr::int(hi)];
+                helper(self, Helper::SaturatingPow, "$saturatingPow", list)
             }
             NumOp::Signum if num.float() => helper(self, Helper::FloatSignum, "$signum", vec![arg()]),
             NumOp::Signum => math("sign", vec![arg()]),
@@ -305,6 +394,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             NumOp::UnsignedAbs => helper(self, Helper::BigAbs, "$bigAbs", vec![arg()]),
             NumOp::Pow => num.wrap(helper(self, Helper::BigPow, "$bigPow", vec![arg(), arg()])),
             NumOp::CheckedPow => helper(self, Helper::CheckedPow, "$checkedPow", vec![arg(), arg(), lo, hi]),
+            NumOp::Checked(BinOp::Rem) => {
+                let min = if num.signed() { lo.clone() } else { Expr::undefined() };
+                helper(self, Helper::CheckedRem, "$checkedRem", vec![arg(), arg(), min])
+            }
             NumOp::Checked(BinOp::Div) => {
                 let min = if num.signed() { lo } else { Expr::undefined() };
                 helper(self, Helper::BigCheckedDiv, "$bigCheckedDiv", vec![arg(), arg(), min])
@@ -353,6 +446,57 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             NumOp::AbsDiff => helper(self, Helper::BigAbsDiff, "$bigAbsDiff", vec![arg(), arg()]),
             NumOp::Clamp => helper(self, Helper::Clamp, "$clamp", vec![arg(), arg(), arg()]),
+            NumOp::IsPositive { negative } => Expr::bin(if negative { Op::Lt } else { Op::Gt }, arg(), Expr::bigint(0)),
+            NumOp::CheckedNeg => {
+                let exact = Expr::unary(UnaryOp::Neg, arg());
+                helper(self, Helper::BigChecked, "$bigChecked", vec![exact, lo, hi])
+            }
+            NumOp::CheckedAbs => {
+                let exact = helper(self, Helper::BigAbs, "$bigAbs", vec![arg()]);
+                helper(self, Helper::BigChecked, "$bigChecked", vec![exact, lo, hi])
+            }
+            NumOp::CheckedShift(op) => {
+                let (a, by) = (arg(), arg());
+                let a = if a.reads_same() { a } else { self.spill("n", a, out) };
+                let by = if by.reads_same() { by } else { self.spill("by", by, out) };
+                let fits = Expr::bin(Op::Lt, by.clone(), Expr::int(64));
+                Expr::cond(fits, self.binary(op, a, by, None, ty, span)?, Expr::undefined())
+            }
+            NumOp::WrappingNeg => num.wrap(Expr::unary(UnaryOp::Neg, arg())),
+            NumOp::WrappingDiv => {
+                let min = if num.signed() { lo.clone() } else { Expr::undefined() };
+                helper(self, Helper::WrappingDiv, "$wrappingDiv", vec![arg(), arg(), min])
+            }
+            NumOp::WrappingRem => {
+                let min = if num.signed() { lo.clone() } else { Expr::undefined() };
+                helper(self, Helper::WrappingRem, "$wrappingRem", vec![arg(), arg(), min])
+            }
+            // The exact result, and it wrapped.
+            NumOp::Overflowing(op) => {
+                let exact = Expr::bin(js_op(op), arg(), arg());
+                let exact = self.spill("exact", exact, out);
+                let wrapped = num.wrap(exact.clone());
+                helper(self, Helper::Overflowing, "$overflowing", vec![wrapped, exact, lo, hi])
+            }
+            NumOp::OverflowingNeg => {
+                let x = arg();
+                let x = if x.reads_same() { x } else { self.spill("n", x, out) };
+                let overflowed = if num.signed() {
+                    Expr::bin(Op::Eq, x.clone(), lo)
+                } else {
+                    Expr::bin(Op::Ne, x.clone(), Expr::bigint(0))
+                };
+                Expr::array(vec![num.wrap(Expr::unary(UnaryOp::Neg, x)), overflowed])
+            }
+            NumOp::SaturatingPow => {
+                self.runtime.insert(Helper::CheckedPow);
+                helper(
+                    self,
+                    Helper::SaturatingPow,
+                    "$saturatingPow",
+                    vec![arg(), arg(), lo, hi],
+                )
+            }
             NumOp::FromStrRadix => helper(self, Helper::ParseBig, "$parseBig", vec![arg(), lo, hi, arg()]),
             NumOp::DivCeil => helper(self, Helper::DivCeil, "$divCeil", vec![arg(), arg()]),
             NumOp::Ilog { base } => helper(self, Helper::Ilog, "$ilog", vec![arg(), Expr::int(base.into())]),

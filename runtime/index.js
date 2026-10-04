@@ -1272,6 +1272,45 @@ export function $isqrt(x) {
   return root;
 }
 
+// `a.checked_rem(b)`, a number's or a BigInt's: `None` of a zero `b`, or of
+// `MIN % -1`, which overflows; never JS's `-0`.
+export function $checkedRem(a, b, min) {
+  if (b == 0 || (a === min && b == -1)) return undefined;
+  const rem = a % b;
+  return typeof rem === "bigint" ? rem : rem + 0;
+}
+
+// `a.wrapping_div(b)`, a number's or a BigInt's: `MIN / -1` is `MIN`, where
+// it would overflow; a zero `b` panics as `/` does.
+export function $wrappingDiv(a, b, min) {
+  if (b == 0) throw new Error("attempt to divide by zero");
+  if (a === min && b == -1) return a;
+  return typeof a === "bigint" ? a / b : Math.trunc(a / b) + 0;
+}
+
+// `a.wrapping_rem(b)`, a number's or a BigInt's: `MIN % -1` is 0, where it
+// would overflow; a zero `b` panics as `%` does.
+export function $wrappingRem(a, b, min) {
+  if (b == 0) throw new Error("attempt to calculate the remainder with a divisor of zero");
+  if (a === min && b == -1) return typeof a === "bigint" ? 0n : 0;
+  const rem = a % b;
+  return typeof rem === "bigint" ? rem : rem + 0;
+}
+
+// An integer's `overflowing_*`: what wrapping gives, and whether the exact
+// result was out of range.
+export function $overflowing(wrapped, exact, lo, hi) {
+  return [wrapped, exact < lo || exact > hi];
+}
+
+// `x.saturating_pow(exp)`: the power, or the bound it overflows past, `lo`
+// for a negative base to an odd power.
+export function $saturatingPow(base, exp, lo, hi) {
+  const power = $checkedPow(base, exp, lo, hi);
+  if (power !== undefined) return power;
+  return base < 0 && exp % 2 === 1 ? lo : hi;
+}
+
 // `*r = v` of an object a `&mut` is (ADR 0147): it becomes `v` in place, so
 // each name for it sees `v`. An array its items, a `Map` or a `Set` its
 // entries, an object its fields, those `v` hasn't gone, as another

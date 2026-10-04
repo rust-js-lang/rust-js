@@ -91,4 +91,20 @@ export const mutations: Mutation[] = [
     replace: "            NumOp::Midpoint => math(\n                \"floor\",",
     tests: ["test/corpus.test.ts", "-t", "number_methods"],
   },
+  {
+    name: "checked-shift-unchecked",
+    breaks: "`checked_shl` past the width is the wrapped shift, not `None`",
+    file: "src/lower/numbers.rs",
+    find: "                let fits = Expr::bin(Op::Lt, by.clone(), Expr::int(num.bits().into()));",
+    replace: "                let fits = Expr::bool(true);",
+    tests: ["test/corpus.test.ts", "-t", "integer_families"],
+  },
+  {
+    name: "overflowing-neg-unsigned",
+    breaks: "an unsigned `overflowing_neg` of 0 says it overflowed, and of anything else that it didn't",
+    file: "src/lower/numbers.rs",
+    find: "                    Expr::bin(Op::Ne, x.clone(), Expr::int(0))",
+    replace: "                    Expr::bin(Op::Eq, x.clone(), Expr::int(0))",
+    tests: ["test/corpus.test.ts", "-t", "integer_families"],
+  },
 ];

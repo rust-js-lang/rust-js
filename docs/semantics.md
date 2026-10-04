@@ -78,12 +78,14 @@ table](../ROADMAP.md) lists the larger missing pieces.
 - **Methods are std's, by its steps and with its panics:** `clamp`,
   `from_str_radix`, `div_ceil`, `ilog10`, `isqrt`, `midpoint`, a float's
   `signum`, `fract` and `to_radians`
-  ([0154](decisions/0154-number-methods.md)). A NaN's sign isn't kept, so
+  ([0154](decisions/0154-number-methods.md)), and an integer's `checked_*`,
+  `wrapping_*`, `overflowing_*` and `saturating_*`, each of the exact result
+  ([0155](decisions/0155-integer-families.md)). A NaN's sign isn't kept, so
   `is_sign_negative` of one is `false`.
 
 Refused: `i128` and `u128`; an `f32`'s or `f64`'s bits (`to_bits`,
 `from_bits`); `mul_add`; a float's `midpoint`; and some integer and float
-methods, among them `overflowing_*`, `rotate_left`, `to_be_bytes` and
+methods, among them `rotate_left`, `to_be_bytes`, `swap_bytes` and
 `copysign`.
 
 ## Text
