@@ -75,4 +75,20 @@ export const mutations: Mutation[] = [
     tests: ["test/compiler.test.ts", "-t", "iterators are array methods"],
     snapshots: true,
   },
+  {
+    name: "float-signum-math-sign",
+    breaks: "a float's `signum()` is JS's `Math.sign`, which gives 0 of 0, where Rust's gives 1",
+    file: "src/lower/numbers.rs",
+    find: "            NumOp::Signum if num.float() => helper(self, Helper::FloatSignum, \"$signum\", vec![arg()]),",
+    replace: "            NumOp::Signum if false && num.float() => helper(self, Helper::FloatSignum, \"$signum\", vec![arg()]),",
+    tests: ["test/corpus.test.ts", "-t", "number_methods"],
+  },
+  {
+    name: "midpoint-floor",
+    breaks: "an integer's `midpoint` rounds down, where Rust's rounds toward zero: `(-7).midpoint(0)` is -4",
+    file: "src/lower/numbers.rs",
+    find: "            NumOp::Midpoint => math(\n                \"trunc\",",
+    replace: "            NumOp::Midpoint => math(\n                \"floor\",",
+    tests: ["test/corpus.test.ts", "-t", "number_methods"],
+  },
 ];

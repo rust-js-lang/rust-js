@@ -4,6 +4,7 @@ use super::bindings::{JsForm, is_binding, is_method, js_form};
 use super::combinators::Comb;
 use super::combinators::StepOp;
 use super::drops::Drops;
+use super::numbers::NumOp;
 use super::recognition::{
     Catching, FmtResultAnswer, Std, StdItem, StreamOp, TypeFact, fmt_result_answer, is_std_def, std_item, trait_method,
 };
@@ -454,7 +455,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.text_call(op, args, generic_args, span, out);
         }
         if let Std::Number(op) = known {
-            let ty = self.thir[args[0]].ty.peel_refs();
+            // `i32::from_str_radix(s, 16)`'s is what its `Result` holds.
+            let ty = match (op, output.kind()) {
+                (NumOp::FromStrRadix, ty::Adt(_, result)) => result.type_at(0),
+                _ => self.thir[args[0]].ty.peel_refs(),
+            };
             return self.number_call(op, args, ty, span, out);
         }
         if let Std::ToJson(pretty) = known {

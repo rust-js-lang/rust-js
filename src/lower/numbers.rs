@@ -47,7 +47,33 @@ pub(super) enum NumOp {
     CountOnes,
     IsPowerOfTwo,
     AbsDiff,
+    /// `x.clamp(min, max)`, an integer's `Ord::clamp` or a float's own.
+    Clamp,
+    /// `T::from_str_radix(s, radix)`, as `s.parse()` reads, in a radix.
+    FromStrRadix,
+    DivCeil,
+    Fract,
+    /// `to_radians()`, or `to_degrees()`.
+    Angle {
+        radians: bool,
+    },
+    /// `is_sign_negative()`, or `is_sign_positive()`, its negation.
+    SignNegative {
+        negated: bool,
+    },
+    /// `ilog2()` or `ilog10()`: how often `base` divides into it.
+    Ilog {
+        base: u32,
+    },
+    Isqrt,
+    Midpoint,
+    CountZeros,
 }
+
+/// std's `f32::to_degrees` factor, its own literal, as std writes it, which
+/// is the `f32` nearest it.
+#[allow(clippy::excessive_precision)]
+const F32_DEGREES_PER_RADIAN: f32 = 57.2957795130823208767981548141051703;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn number_call(
@@ -162,7 +188,61 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.runtime.insert(Helper::Div);
                 helper(self, Helper::DivEuclid, "$divEuclid", vec![arg(), arg(), Expr::int(lo)])
             }
+            NumOp::Signum if num.float() => helper(self, Helper::FloatSignum, "$signum", vec![arg()]),
             NumOp::Signum => math("sign", vec![arg()]),
+            NumOp::Clamp if num.float() => {
+                let (debug_helper, debug) = if num == Num::F32 {
+                    (Helper::DebugF32, "$debugF32")
+                } else {
+                    (Helper::DebugF64, "$debugF64")
+                };
+                self.runtime.insert(debug_helper);
+                let list = vec![arg(), arg(), arg(), Expr::var(debug)];
+                helper(self, Helper::ClampFloat, "$clampFloat", list)
+            }
+            NumOp::Clamp => helper(self, Helper::Clamp, "$clamp", vec![arg(), arg(), arg()]),
+            NumOp::FromStrRadix => {
+                let list = vec![arg(), Expr::int(lo), Expr::int(hi), arg()];
+                helper(self, Helper::ParseInt, "$parseInt", list)
+            }
+            NumOp::DivCeil => helper(self, Helper::DivCeil, "$divCeil", vec![arg(), arg()]),
+            // Exact: what's after the point, in an `f32` as in an `f64`.
+            NumOp::Fract => {
+                let x = arg();
+                let x = if x.reads_same() { x } else { self.spill("x", x, out) };
+                Expr::bin(Op::Sub, x.clone(), math("trunc", vec![x]))
+            }
+            // `x * (PI / 180)` or `x * (180 / PI)`, as std's constants are: an
+            // `f32`'s of `f32`s, its degrees per radian a literal.
+            NumOp::Angle { radians } => {
+                let factor = match (num, radians) {
+                    (Num::F32, true) => Expr::num(f64::from(std::f32::consts::PI / 180.0)),
+                    (Num::F32, false) => Expr::num(f64::from(F32_DEGREES_PER_RADIAN)),
+                    (_, true) => Expr::bin(Op::Div, Expr::member(Expr::var("Math"), "PI"), Expr::num(180.0)),
+                    (_, false) => Expr::bin(Op::Div, Expr::num(180.0), Expr::member(Expr::var("Math"), "PI")),
+                };
+                rounded(Expr::bin(Op::Mul, arg(), factor))
+            }
+            NumOp::SignNegative { negated } => {
+                let negative = helper(self, Helper::SignNegative, "$signNegative", vec![arg()]);
+                if negated {
+                    Expr::unary(UnaryOp::Not, negative)
+                } else {
+                    negative
+                }
+            }
+            NumOp::Ilog { base } => helper(self, Helper::Ilog, "$ilog", vec![arg(), Expr::int(base.into())]),
+            NumOp::Isqrt => helper(self, Helper::Isqrt, "$isqrt", vec![arg()]),
+            // Rounded toward zero, as Rust's integer division is: exact, as the
+            // sum of two 32-bit integers is.
+            NumOp::Midpoint => math(
+                "trunc",
+                vec![Expr::bin(Op::Div, Expr::bin(Op::Add, arg(), arg()), Expr::num(2.0))],
+            ),
+            NumOp::CountZeros => {
+                let ones = helper(self, Helper::CountOnes, "$countOnes", vec![bits(arg())]);
+                Expr::bin(Op::Sub, Expr::int(num.bits().into()), ones)
+            }
             NumOp::LeadingZeros => {
                 let zeros = math("clz32", vec![bits(arg())]);
                 match num.bits() {
@@ -272,6 +352,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 )
             }
             NumOp::AbsDiff => helper(self, Helper::BigAbsDiff, "$bigAbsDiff", vec![arg(), arg()]),
+            NumOp::Clamp => helper(self, Helper::Clamp, "$clamp", vec![arg(), arg(), arg()]),
+            NumOp::FromStrRadix => helper(self, Helper::ParseBig, "$parseBig", vec![arg(), lo, hi, arg()]),
+            NumOp::DivCeil => helper(self, Helper::DivCeil, "$divCeil", vec![arg(), arg()]),
+            NumOp::Ilog { base } => helper(self, Helper::Ilog, "$ilog", vec![arg(), Expr::int(base.into())]),
+            NumOp::Isqrt => helper(self, Helper::Isqrt, "$isqrt", vec![arg()]),
+            // Rounded toward zero, as a BigInt's division is.
+            NumOp::Midpoint => Expr::bin(Op::Div, Expr::bin(Op::Add, arg(), arg()), Expr::bigint(2)),
+            NumOp::CountZeros => {
+                let ones = helper(self, Helper::BigBits, "$bigCountOnes", vec![arg()]);
+                Expr::bin(Op::Sub, Expr::int(64), ones)
+            }
             _ => return Err(self.unsupported(span, "this method of a 64-bit integer")),
         })
     }

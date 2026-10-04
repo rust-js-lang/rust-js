@@ -729,6 +729,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 "cmp" if comparable => Some(Std::Cmp),
                 "max" if Num::of(peeled).is_some() => Some(Std::MaxOf(true)),
                 "min" if Num::of(peeled).is_some() => Some(Std::MaxOf(false)),
+                "clamp" if Num::of(peeled).is_some() => Some(Std::Number(NumOp::Clamp)),
                 _ => None,
             };
         }

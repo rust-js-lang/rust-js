@@ -845,13 +845,28 @@ export function $bigMin(a, b) {
   return b < a ? b : a;
 }
 
-export function $parseBig(s, min, max) {
+// `s.parse()` of an `i64` or a `u64`, or `from_str_radix(s, radix)`, as
+// `$parseInt` reads a narrower integer, its value a BigInt.
+export function $parseBig(s, min, max, radix = 10) {
+  if (radix < 2 || radix > 36) {
+    throw new Error("from_ascii_radix: radix must lie in the range `[2, 36]` - found " + radix);
+  }
   const error = (message) => ({ TAG: "Err", _0: message });
   if (s === "") return error("cannot parse integer from empty string");
-  if (!(min < 0n ? /^[+-]?[0-9]+$/ : /^\+?[0-9]+$/).test(s)) return error("invalid digit found in string");
-  const n = BigInt(s);
-  if (n > max) return error("number too large to fit in target type");
-  if (n < min) return error("number too small to fit in target type");
+  if (s === "+" || s === "-") return error("invalid digit found in string");
+  const negative = s[0] === "-" && min < 0n;
+  const digits = s[0] === "+" || negative ? s.slice(1) : s;
+  const overflow = () =>
+    error(negative ? "number too small to fit in target type" : "number too large to fit in target type");
+  let n = 0n;
+  for (const c of digits) {
+    const digit = /^[0-9a-z]$/i.test(c) ? parseInt(c, 36) : radix;
+    if (digit >= radix) return error("invalid digit found in string");
+    n *= BigInt(radix);
+    if (negative ? n < min : n > max) return overflow();
+    n = negative ? n - BigInt(digit) : n + BigInt(digit);
+    if (negative ? n < min : n > max) return overflow();
+  }
   return { TAG: "Ok", _0: n };
 }
 
@@ -1193,6 +1208,68 @@ export function $cellReplace(cell, value) {
   const previous = cell.value;
   cell.value = value;
   return previous;
+}
+
+// `x.clamp(min, max)` of an integer, a number or a BigInt: `min` or `max` if
+// it's past either. Bounds the wrong way round panic as std's integers do,
+// each shown as `{:?}` shows it, which is its digits.
+export function $clamp(x, min, max) {
+  if (!(min <= max)) throw new Error("min > max. min = " + min + ", max = " + max);
+  return x < min ? min : x > max ? max : x;
+}
+
+// `x.clamp(min, max)` of a float: `min` or `max` if it's past either, and a
+// NaN itself. `min` past `max`, or either a NaN, panics, showing each with
+// `debug`, as `{:?}` shows an `f64` or an `f32`.
+export function $clampFloat(x, min, max, debug) {
+  if (!(min <= max)) {
+    throw new Error("min > max, or either was NaN. min = " + debug(min) + ", max = " + debug(max));
+  }
+  return x < min ? min : x > max ? max : x;
+}
+
+// `a.div_ceil(b)` of an unsigned integer, a number or a BigInt: `a / b`,
+// rounded up.
+export function $divCeil(a, b) {
+  if (b == 0) throw new Error("attempt to divide by zero");
+  if (typeof a === "bigint") return a / b + (a % b > 0n ? 1n : 0n);
+  return Math.trunc(a / b) + (a % b > 0 ? 1 : 0);
+}
+
+// A float's `signum()`: 1 or -1 by its sign, -0's -1 too, or a NaN.
+export function $signum(x) {
+  if (Number.isNaN(x)) return NaN;
+  return x < 0 || Object.is(x, -0) ? -1 : 1;
+}
+
+// A float's `is_sign_negative()`: below zero, or -0. A NaN's sign isn't kept
+// by JS, so a NaN is positive, as `f64::NAN` is.
+export function $signNegative(x) {
+  return x < 0 || Object.is(x, -0);
+}
+
+// `x.ilog2()` or `x.ilog10()` of an integer, a number or a BigInt: how many
+// times `base` divides into it, rounded down.
+export function $ilog(x, base) {
+  if (x <= 0) throw new Error("argument of integer logarithm must be positive");
+  let log = 0;
+  if (typeof x === "bigint") {
+    for (const b = BigInt(base); x >= b; x /= b) log++;
+  } else {
+    for (; x >= base; x = Math.floor(x / base)) log++;
+  }
+  return log;
+}
+
+// `x.isqrt()` of an integer, a number or a BigInt: its square root, rounded
+// down. A BigInt's starts from a float's guess, which it corrects.
+export function $isqrt(x) {
+  if (x < 0) throw new Error("argument of integer square root cannot be negative");
+  if (typeof x !== "bigint") return Math.floor(Math.sqrt(x));
+  let root = BigInt(Math.floor(Math.sqrt(Number(x))));
+  while (root * root > x) root--;
+  while ((root + 1n) * (root + 1n) <= x) root++;
+  return root;
 }
 
 // `*r = v` of an object a `&mut` is (ADR 0147): it becomes `v` in place, so
@@ -3834,13 +3911,31 @@ export function $heapFrom(items, cmp) {
   return heap;
 }
 
-export function $parseInt(s, min, max) {
+// `s.parse()` of an integer, or `from_str_radix(s, radix)`, as std reads it:
+// a sign, then each digit in turn, stopping at the first that isn't one or
+// overflows, so `"999x"` overflows a `u8` before its `x` is read. Each digit
+// is read before what's so far, times the radix, is checked: `"26x"` is
+// an invalid digit, though 260 is too large.
+export function $parseInt(s, min, max, radix = 10) {
+  if (radix < 2 || radix > 36) {
+    throw new Error("from_ascii_radix: radix must lie in the range `[2, 36]` - found " + radix);
+  }
   const error = (message) => ({ TAG: "Err", _0: message });
   if (s === "") return error("cannot parse integer from empty string");
-  if (!(min < 0 ? /^[+-]?[0-9]+$/ : /^\+?[0-9]+$/).test(s)) return error("invalid digit found in string");
-  const n = Number(s);
-  if (n > max) return error("number too large to fit in target type");
-  if (n < min) return error("number too small to fit in target type");
+  if (s === "+" || s === "-") return error("invalid digit found in string");
+  const negative = s[0] === "-" && min < 0;
+  const digits = s[0] === "+" || negative ? s.slice(1) : s;
+  const overflow = () =>
+    error(negative ? "number too small to fit in target type" : "number too large to fit in target type");
+  let n = 0;
+  for (const c of digits) {
+    const digit = /^[0-9a-z]$/i.test(c) ? parseInt(c, 36) : radix;
+    if (digit >= radix) return error("invalid digit found in string");
+    n *= radix;
+    if (negative ? n < min : n > max) return overflow();
+    n = negative ? n - digit : n + digit;
+    if (negative ? n < min : n > max) return overflow();
+  }
   return { TAG: "Ok", _0: n };
 }
 

@@ -194,7 +194,7 @@ never_type/regress/never-as-function-argument.rs	error: rust-js does not support
 nll/issue-24535-allow-mutable-borrow-in-match-guard.rs	error: rust-js does not support `&mut` to a `I` yet
 nll/issue-48623-closure.rs	error: rust-js does not support a `&mut` of this in a variable yet
 nll/issue-53123-raw-pointer-cast.rs	error: rust-js does not support values of type `*mut T` yet
-numbers-arithmetic/apfloat-modulo-wrong.rs	error: rust-js does not support calling `core::f64::<impl f64>::signum` yet
+numbers-arithmetic/apfloat-modulo-wrong.rs	error: rust-js does not support calling `core::f64::<impl f64>::to_bits` yet
 numbers-arithmetic/float-int-invalid-const-cast.rs	error: rust-js does not support values of type `u128` yet
 numbers-arithmetic/i128-min-literal-parses.rs	error: rust-js does not support values of type `i128` yet
 numbers-arithmetic/integer-literal-suffix-inference-2.rs	error: rust-js does not support values of type `*const ()` yet

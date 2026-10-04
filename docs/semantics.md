@@ -64,8 +64,9 @@ table](../ROADMAP.md) lists the larger missing pieces.
 - **Casts are Rust's:** an integer wraps or truncates; a float saturates,
   `300.7 as u8` is `255`, and NaN is `0`.
 - **`parse` is Rust's grammar, with Rust's errors:** `+42`, `inf`, `1e400`,
-  a leading space refused, `ParseIntError { kind: PosOverflow }`
-  ([0063](decisions/0063-text.md)).
+  a leading space refused, `ParseIntError { kind: PosOverflow }`, found
+  where Rust finds it, `"999x"` overflowing a `u8` before its `x`
+  ([0063](decisions/0063-text.md), [0154](decisions/0154-number-methods.md)).
 - **An integer is never JS's `-0`:** `-2 % 2` is `0`
   ([0064](decisions/0064-numbers.md), [`remainder_sign`](../test/corpus/remainder_sign.rs)).
 - **Arithmetic is exact; library functions are JS's.** `+ - * /` and `sqrt`
@@ -74,10 +75,16 @@ table](../ROADMAP.md) lists the larger missing pieces.
 - **`size_of`, `align_of`** are wasm32's: a pointer is 4 bytes
   ([0145](decisions/0145-type-facts.md)).
 
+- **Methods are std's, by its steps and with its panics:** `clamp`,
+  `from_str_radix`, `div_ceil`, `ilog10`, `isqrt`, `midpoint`, a float's
+  `signum`, `fract` and `to_radians`
+  ([0154](decisions/0154-number-methods.md)). A NaN's sign isn't kept, so
+  `is_sign_negative` of one is `false`.
+
 Refused: `i128` and `u128`; an `f32`'s or `f64`'s bits (`to_bits`,
-`from_bits`); `mul_add`; and some integer and float methods, among them
-`overflowing_*`, `rotate_left`, `to_be_bytes`, `from_str_radix`, `ilog2`,
-`isqrt`, `clamp`, a float's `signum`, `to_degrees`, `fract` and `copysign`.
+`from_bits`); `mul_add`; a float's `midpoint`; and some integer and float
+methods, among them `overflowing_*`, `rotate_left`, `to_be_bytes` and
+`copysign`.
 
 ## Text
 
@@ -366,7 +373,7 @@ a map key. React and JSX are [their own page](jsx.md).
 2. `usize` and `isize` are 32 bits.
 3. `i64` and `u64` are BigInts at the JS boundary.
 4. Float library functions, `sin`, `exp`, `powf`, are JS's: the last bit may
-   differ.
+   differ. A NaN's sign isn't kept.
 5. `trim()` uses JS's whitespace; strings compare by UTF-16 units.
 6. A `HashMap` iterates in insertion order.
 7. A chain a function returns runs its closures over every item.
