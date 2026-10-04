@@ -366,6 +366,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(cell) = self.makes_items(output, generic_args, args)
             && !self.is_item_call(fun)
         {
+            // Of numbers or strings in a collection: a handle on each (ADR 0152).
+            if let Some(handles) = self.item_handles(known, args, span, out)? {
+                return Ok(handles);
+            }
             let path = self.tcx.def_path_str(def_id);
             return Err(self.unsupported(span, &format!("a `{cell}` from `{path}` used as a value")));
         }

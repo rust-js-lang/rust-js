@@ -241,6 +241,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0149 A `String` changed in place is given a new string, by its byte offsets](decisions/0149-string-editing.md)
 - [0150 Splitting and searching by a pattern, as Rust searches](decisions/0150-string-patterns.md)
 - [0151 Any function taken as a value is the arrow that calls it](decisions/0151-called-function-values.md)
+- [0152 A `&mut` std hands out to a number or a string is a handle on it](decisions/0152-std-item-handles.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

@@ -90,4 +90,12 @@ export const mutations: Mutation[] = [
     replace: "            if false {",
     tests: ["test/traits.test.ts", "-t", "loop over"],
   },
+  {
+    name: "mut-map-loop-unhandled",
+    breaks: "`for (_, x) in &mut m` of numbers writes `.value` of each number, which throws",
+    file: "src/lower/loops.rs",
+    find: "                ty::Ref(_, map, Mutability::Mut)\n                    if self.is_map(map)",
+    replace: "                ty::Ref(_, map, Mutability::Mut)\n                    if false && self.is_map(map)",
+    tests: ["test/corpus.test.ts", "-t", "std_mut_items"],
+  },
 ];

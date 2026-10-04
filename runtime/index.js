@@ -1072,6 +1072,80 @@ export function $jsonErrorDyn() {
   };
 }
 
+// `v.iter_mut()` of numbers or strings, which JS can't change in place: a
+// handle on each item, whose `value` reads and writes it (ADR 0152).
+export function $mutItems(v) {
+  return Array.from(v, (_, i) => ({
+    get value() {
+      return v[i];
+    },
+    set value(item) {
+      v[i] = item;
+    },
+  }));
+}
+
+// `v.get_mut(i)`, `first_mut()` and `last_mut()` of numbers or strings: a
+// handle on the item at `i`, from the end if it's negative, or `undefined`,
+// `None`, past either end (ADR 0152).
+export function $mutAt(v, i) {
+  const at = i < 0 ? v.length + i : i;
+  if (at < 0 || at >= v.length) return undefined;
+  return {
+    get value() {
+      return v[at];
+    },
+    set value(item) {
+      v[at] = item;
+    },
+  };
+}
+
+// `m.get_mut(k)` of a map whose values are numbers or strings: a handle on
+// the key's value, which writes the map, or `undefined`, `None` (ADR 0152).
+export function $mutGet(m, key) {
+  if (!m.has(key)) return undefined;
+  return {
+    get value() {
+      return m.get(key);
+    },
+    set value(item) {
+      m.set(key, item);
+    },
+  };
+}
+
+// `m.iter_mut()`, or a `for` over `&mut m`, of a map whose values are numbers
+// or strings: each key with a handle on its value, which writes the map, in
+// the order of `entries`, a B-tree's sorted (ADR 0152).
+export function $mutEntries(m, entries = m) {
+  return Array.from(entries, ([key]) => [
+    key,
+    {
+      get value() {
+        return m.get(key);
+      },
+      set value(item) {
+        m.set(key, item);
+      },
+    },
+  ]);
+}
+
+// `m.values_mut()` of a map whose values are numbers or strings: a handle on
+// each value, which writes the map, in the order of `entries`, a B-tree's
+// sorted (ADR 0152).
+export function $mutValues(m, entries = m) {
+  return Array.from(entries, ([key]) => ({
+    get value() {
+      return m.get(key);
+    },
+    set value(item) {
+      m.set(key, item);
+    },
+  }));
+}
+
 // `*r = v` of an object a `&mut` is (ADR 0147): it becomes `v` in place, so
 // each name for it sees `v`. An array its items, a `Map` or a `Set` its
 // entries, an object its fields, those `v` hasn't gone, as another

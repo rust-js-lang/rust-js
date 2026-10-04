@@ -185,6 +185,10 @@ Refused: `{:x?}`; `{:.2e}`; options for a `&dyn Debug` made elsewhere;
   fieldless variant, whose `Off` is a string, is reached through its place
   instead, as a number is ([0147](decisions/0147-replacing-through-mut.md)).
 - **`Rc::clone` shares the one object,** as Rust's does.
+- **A `&mut` std gives to a number or a string in a collection is a
+  handle on it,** where it's used as a value: `iter_mut()`, `values_mut()`,
+  `get_mut`, `last_mut()` and a `for` over `&mut m`, each writing the slot
+  it's of ([0152](decisions/0152-std-item-handles.md)).
 
 Differences:
 
@@ -196,8 +200,8 @@ Differences:
 Refused: `Rc::ptr_eq`, `strong_count`, `get_mut`,
 `make_mut` and `try_unwrap`; `Weak`; `Cell::replace`, `take` and `swap`;
 `RefCell::replace` and `try_borrow_mut`; `OnceCell`, `OnceLock` and
-`LazyLock`; `Mutex::try_lock`; a `&mut` to a number that std gives,
-`get_mut` of a map or `iter_mut()`, used as a value.
+`LazyLock`; `Mutex::try_lock`; a map's `get_mut` bound by a `match`
+and kept past it.
 
 ## Collections and iterators
 

@@ -3,8 +3,10 @@
 //! items a std call holds (ADRs 0072, 0099).
 
 use super::bindings::{self};
-use super::{FnCx, R, camel_case};
+use super::maps::{MapOp, Part};
+use super::{FnCx, R, Std, camel_case};
 use crate::js::{Expr, Prop, Stmt, StmtKind};
+use crate::runtime::Helper;
 use rustc_ast::Mutability;
 use rustc_middle::thir::{ExprId, ExprKind, LocalVarId};
 use rustc_middle::ty::{self, Ty};
@@ -180,9 +182,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A `&mut` to a value JS can't change in place that a std call's result,
-    /// or the items of the iterator it is, holds, that neither its arguments
-    /// nor its type's parameters did: one the call made, `get_mut`'s or
-    /// `iter_mut`'s, which is the item itself (ADR 0099).
+    /// or the items of the iterator it is, holds, that neither its arguments,
+    /// their items, nor its type's parameters did: one the call made,
+    /// `get_mut`'s or `iter_mut`'s, which is the item itself (ADR 0099), or
+    /// a handle on it (ADR 0152). `filter` of handles passes them on.
     pub(super) fn makes_items(
         &self,
         output: Ty<'tcx>,
@@ -194,7 +197,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .iter()
             .map(|&a| self.thir[a].ty)
             .chain(generic_args.types())
-            .flat_map(cells)
+            .flat_map(|t| cells(t).chain(self.iterator_item(t).into_iter().flat_map(cells)))
             .collect();
         let mut made = cells(output).chain(self.iterator_item(output).into_iter().flat_map(cells));
         made.find(|t| !given.contains(t))
@@ -213,8 +216,81 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_rust_fn(def_id) || self.makes_items(self.thir[e].ty, generic_args, args).is_none() {
             return false;
         }
+        // A slice's `get_mut`, `first_mut` or `last_mut` gives a handle,
+        // which a pattern binds as a `&mut` it's given (ADR 0152).
+        if matches!(self.std_fn(fun), Some(Std::First | Std::SliceGet | Std::SliceLast)) {
+            return false;
+        }
         self.mark_item_call(fun);
         true
+    }
+
+    /// The helper that makes `item_handles`' handles, if `known` of `args`
+    /// hands out `&mut`s to items.
+    fn handle_helper(&self, known: Std, args: &[ExprId]) -> Option<(Helper, &'static str)> {
+        let receiver = self.thir[*args.first()?].ty.peel_refs();
+        let sequence = receiver.is_array() || receiver.is_slice() || self.is_vec_like(receiver);
+        let map = self.is_map(receiver) && !self.is_set(receiver);
+        Some(match known {
+            Std::Same if sequence => (Helper::MutItems, "$mutItems"),
+            Std::First | Std::SliceGet | Std::SliceLast if sequence => (Helper::MutAt, "$mutAt"),
+            Std::Map(MapOp::Get) if map => (Helper::MutGet, "$mutGet"),
+            Std::Map(MapOp::Iter(Part::Entries)) if map => (Helper::MutEntries, "$mutEntries"),
+            Std::Map(MapOp::Iter(Part::Values)) if map => (Helper::MutValues, "$mutValues"),
+            _ => return None,
+        })
+    }
+
+    /// Is `e` a handle a std call gave (`item_handles`), or a std call's that
+    /// passes one on, `unwrap()` of `v.first_mut()`'s: a cell already.
+    pub(super) fn is_handle(&self, e: ExprId) -> bool {
+        let ExprKind::Call { fun, ref args, .. } = self.thir[self.strip(e)].kind else {
+            return false;
+        };
+        let ty::FnDef(def_id, generic_args) = *self.thir[self.strip(fun)].ty.kind() else {
+            return false;
+        };
+        if self.is_rust_fn(def_id) || self.is_item_call(fun) {
+            return false;
+        }
+        match self.makes_items(self.thir[e].ty, generic_args, args) {
+            Some(_) => self
+                .std_fn(fun)
+                .is_some_and(|known| self.handle_helper(known, args).is_some()),
+            None => args.first().is_some_and(|&a| self.is_handle(a)),
+        }
+    }
+
+    /// A std call that hands out `&mut`s to items JS can't change in place,
+    /// numbers or strings, used as a value: a handle on each, whose `value`
+    /// reads and writes its item (ADR 0152), `$mutItems(v)` of
+    /// `v.iter_mut()`. `None` for another call.
+    pub(super) fn item_handles(
+        &mut self,
+        known: Std,
+        args: &[ExprId],
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Option<Expr>> {
+        let Some((helper, name)) = self.handle_helper(known, args) else {
+            return Ok(None);
+        };
+        let receiver = self.thir[args[0]].ty.peel_refs();
+        let mut values = self.operands(args, out)?;
+        match known {
+            Std::First => values.push(Expr::int(0)),
+            Std::SliceLast => values.push(Expr::int(-1)),
+            // A B-tree's in its keys' order.
+            Std::Map(MapOp::Iter(_)) if self.is_sorted(receiver) => {
+                let m = values.remove(0);
+                let m = if m.reads_same() { m } else { self.spill("map", m, out) };
+                let entries = self.in_order_of(m.clone(), receiver, span)?;
+                values = vec![m, entries];
+            }
+            _ => {}
+        }
+        self.runtime.insert(helper);
+        Ok(Some(Expr::call(Expr::var(name), values)))
     }
 
     /// A `&mut` to one of `def_id`'s type parameters that's an object in a
@@ -318,6 +394,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             } else {
                 ArgForm::Unboxed(id)
             };
+        }
+        // `&mut *v.first_mut().unwrap()`: a handle, which is a box already
+        // (ADR 0152).
+        if let ExprKind::Deref { arg: inner } = self.thir[self.strip(place)].kind
+            && self.is_cell(self.thir[inner].ty)
+            && self.is_handle(inner)
+            && (param_box || generic)
+        {
+            return ArgForm::Value;
         }
         if param_box || (generic && self.is_boxable(self.thir[place].ty)) {
             ArgForm::Boxed(place)

@@ -1071,9 +1071,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "sort_by_key" | "sort_unstable_by_key" if owner.is_slice() => Std::SortByKey,
             "reverse" if owner.is_slice() => Std::Method("reverse"),
             // `v[0]` and `v.at(-1)` are `undefined` when `v` is empty: `None`.
-            "first" if owner.is_slice() => Std::First,
-            "get" if owner.is_slice() && args.types().nth(1).is_some_and(|i| i.is_usize()) => Std::SliceGet,
-            "last" if owner.is_slice() => Std::SliceLast,
+            // A `_mut` one's item, of numbers or strings, is a handle on it
+            // (ADR 0152).
+            "first" | "first_mut" if owner.is_slice() => Std::First,
+            "get" | "get_mut" if owner.is_slice() && args.types().nth(1).is_some_and(|i| i.is_usize()) => Std::SliceGet,
+            "last" | "last_mut" if owner.is_slice() => Std::SliceLast,
             // `includes` compares strings and numbers by value, as `==` does,
             // but objects by identity: only for those.
             // A `&mut` to one is a cell, an object (ADR 0099): not by identity.

@@ -100,4 +100,28 @@ export const mutations: Mutation[] = [
     replace: "                ArgForm::Boxed(place) if false => {",
     tests: ["test/corpus.test.ts", "-t", "dyn_generic"],
   },
+  {
+    name: "map-handles-unsorted",
+    breaks: "a B-tree's `iter_mut()` and `values_mut()` go in insertion order, not its keys'",
+    file: "src/lower/mut_refs.rs",
+    find: "            Std::Map(MapOp::Iter(_)) if self.is_sorted(receiver) => {",
+    replace: "            Std::Map(MapOp::Iter(_)) if false && self.is_sorted(receiver) => {",
+    tests: ["test/corpus.test.ts", "-t", "std_mut_items"],
+  },
+  {
+    name: "handle-not-passed-on",
+    breaks: "`bump(v.first_mut().unwrap())` is refused: `unwrap()` of a handle isn't one",
+    file: "src/lower/mut_refs.rs",
+    find: "            None => args.first().is_some_and(|&a| self.is_handle(a)),",
+    replace: "            None => false,",
+    tests: ["test/corpus.test.ts", "-t", "std_mut_items"],
+  },
+  {
+    name: "slice-get-mut-item-subject",
+    breaks: "`if let Some(x) = v.get_mut(1)` binds the item, which `bump(x)` can't be given",
+    file: "src/lower/mut_refs.rs",
+    find: "        if matches!(self.std_fn(fun), Some(Std::First | Std::SliceGet | Std::SliceLast)) {\n            return false;\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "std_mut_items"],
+  },
 ];

@@ -217,6 +217,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ExprKind::Borrow { arg, .. } => {
                 matches!(self.thir[self.strip(arg)].kind, ExprKind::Deref { arg: inner } if self.is_cell_value(inner))
             }
+            // A std call's handle (ADR 0152).
+            ExprKind::Call { .. } if self.is_handle(e) => true,
             // The crate's own function, or the impl's method a trait's resolves to.
             ExprKind::Call { fun, .. } => match *self.thir[self.strip(fun)].ty.kind() {
                 ty::FnDef(def_id, _) if self.tcx.trait_of_assoc(def_id).is_none() => self.is_rust_fn(def_id),

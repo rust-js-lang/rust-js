@@ -103,7 +103,9 @@ returned. It reads and writes its place:
   error, and so is `v` as a value, which would be a handle on the
   binding's copy. A `&mut` a std call only passes on, `refs.pop()` of a
   `Vec<&mut i32>` or `o.unwrap()`, is still the crate's cell: one its
-  arguments or its type's parameters hold.
+  arguments or its type's parameters hold. (Amended: used as a value, a
+  std call's `&mut` to a number or a string is a handle on the item, ADR
+  0152.)
 
 **A `&mut` to a temporary is to a `let` of its own:** `&mut 3`, `&mut
 f()`, `let r = &mut 0;`. The temporary is `let tmp = 3;`, and the `&mut`

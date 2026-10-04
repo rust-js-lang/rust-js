@@ -214,7 +214,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Some(item) => self.option_items(head, item, out),
                 None => head,
             };
-            let head = self.in_order_of(head, head_ty, head_span)?;
+            // `for (k, n) in &mut m` of numbers or strings: each value a handle on
+            // it, which writes the map (ADR 0152).
+            let head = match *head_ty.kind() {
+                ty::Ref(_, map, Mutability::Mut)
+                    if self.is_map(map)
+                        && !self.is_set(map)
+                        && let ty::Adt(_, map_args) = map.kind()
+                        && !self.is_object(map_args.type_at(1)) =>
+                {
+                    let m = if head.reads_same() {
+                        head
+                    } else {
+                        self.spill("map", head, out)
+                    };
+                    let mut list = vec![m.clone()];
+                    if self.is_sorted(map) {
+                        list.push(self.in_order_of(m, head_ty, head_span)?);
+                    }
+                    self.runtime.insert(Helper::MutEntries);
+                    Expr::call(Expr::var("$mutEntries"), list)
+                }
+                _ => self.in_order_of(head, head_ty, head_span)?,
+            };
             (Some(self.iter_source(head, head_ty, head_span, out)?), None)
         };
 

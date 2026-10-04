@@ -254,7 +254,6 @@ structs-enums/tag-align-dyn-variants.rs	error: rust-js does not support calling 
 structs-enums/tag-align-u64.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 threads-sendsync/send_str_hashmap.rs	error: rust-js does not support values of type `std::borrow::Cow<'_, str>` yet
 threads-sendsync/send_str_treemap.rs	error: rust-js does not support values of type `std::borrow::Cow<'_, str>` yet
-threads-sendsync/send-is-not-static-par-for.rs	error: rust-js does not support a `&mut i32` from `std::iter::Iterator::enumerate` used as a value yet
 threads-sendsync/send-type-inference.rs	error: rust-js does not support a channel of a value with a destructor, `std::sync::mpsc::Sender<std::sync::mpsc::Sender<Command<K, V>>>`, yet
 threads-sendsync/sync-send-iterators-in-libcollections.rs	error: rust-js does not support calling `std::collections::BinaryHeap::<T, A>::drain` yet
 threads-sendsync/sync-send-iterators-in-libcore.rs	error: rust-js does not support calling `core::str::<impl str>::escape_debug` yet
