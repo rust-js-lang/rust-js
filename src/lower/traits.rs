@@ -1214,6 +1214,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.runtime.insert(Helper::StringError);
             return Ok(Some(Expr::call(Expr::var("$stringError"), Vec::new())));
         }
+        // One of std's parse errors, which is its message (ADR 0063).
+        if self.is_parse_error(from)
+            && let ty::Adt(adt, _) = from.kind()
+        {
+            self.runtime.insert(Helper::ParseErrorDyn);
+            let name = self.tcx.item_name(adt.did());
+            return Ok(Some(Expr::call(
+                Expr::var("$parseErrorDyn"),
+                vec![Expr::str(name.as_str())],
+            )));
+        }
+        // serde_json's, shown as serde_json shows it.
+        if self.is_json_error(from) {
+            self.runtime.insert(Helper::JsonErrorDyn);
+            return Ok(Some(Expr::call(Expr::var("$jsonErrorDyn"), Vec::new())));
+        }
         let error = std_item(self.tcx, StdItem::Error);
         let tr = ty::TraitRef::new(self.tcx, error, [from]);
         self.dictionary(tr, span).map(Some)

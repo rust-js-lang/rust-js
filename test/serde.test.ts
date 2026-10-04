@@ -26,6 +26,20 @@ fn main() { println!("{}", serde_json::to_string(&report()).unwrap()); }
 
 const cases = [
   {
+    name: "a serde_json error given by ? to a Box<dyn Error> shows as serde_json's",
+    definitions: `fn load(text: &str) -> Result<u64, Box<dyn std::error::Error>> {
+    let value: serde_json::Value = serde_json::from_str(text)?;
+    Ok(value["n"].as_u64().unwrap_or(0))
+}
+pub fn show(text: &str) -> String {
+    match load(text) {
+        Ok(n) => format!("ok {n}"),
+        Err(e) => format!("err {e} / {e:?}"),
+    }
+}`,
+    value: '(show("{\\"n\\": 3}"), show("{"), show("[1,]"), show("tru"))',
+  },
+  {
     name: "standard skip predicates recognize optional and empty fields",
     definitions: `#[derive(serde::Serialize)]
 pub struct Skips {

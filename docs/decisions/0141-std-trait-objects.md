@@ -37,6 +37,8 @@ its type (ADR 0054):
 | `missing as Box<dyn Error>`, and `?` that makes one | `{ value: missing, impl: missingError() }` |
 | `{}` and `{:?}` of a `dyn Error` | `e.impl.Display().fmt(e.value)`, `e.impl.Debug().fmt(e.value)` |
 | `Box<dyn Error>::from("too big")`, `"too big".into()` | `{ value: "too big", impl: $stringError() }` |
+| `s.parse::<i64>()?`, `u8::try_from(n)?` | `{ value: result._0, impl: $parseErrorDyn("ParseIntError") }` |
+| `serde_json::from_str(s)?` | `{ value: result._0, impl: $jsonErrorDyn() }` |
 
 - **`Error` is a trait rust-js makes dictionaries for,** as `Display` and
   `Debug` are. Its supertraits are accessors, `Display()` and `Debug()`, as
@@ -49,6 +51,12 @@ its type (ADR 0054):
   error: the dictionary has none of them, and a call would throw.
 - **std's error of a message** shows the message, and `{:?}` of it the
   message quoted, `"too big"`, as Rust's does.
+- **std's parse errors and serde_json's** show as they do elsewhere: a
+  parse error its message (ADR 0063), `{:?}` `ParseIntError { kind: .. }`,
+  a `TryFromIntError` std's one sentence, and serde_json's error its own
+  `{}` and `{:?}`; `source()` of each is `None`. (Amended: each was an
+  error, its dictionary missing; the `std_errors_boxed` corpus case and a
+  serde case compare them with native Rust.)
 - **A width or a sign for a `dyn`'s `{}` is an error,** as for a generic
   `T`'s (ADR 0058): only its dictionary knows whether it pads.
 

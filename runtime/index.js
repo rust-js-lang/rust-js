@@ -892,6 +892,29 @@ export function $append(items, other) {
   other.length = 0;
 }
 
+// One of std's parse errors, `name`, as a `dyn Error` (ADR 0141): its value
+// is its message (ADR 0063), or a `TryFromIntError`'s its kind, shown by
+// `{:?}` as Rust shows it, `ParseIntError { kind: InvalidDigit }`.
+export function $parseErrorDyn(name) {
+  return {
+    Debug: () => ({ fmt: (value) => $debugParseError(value, name) }),
+    Display: () => ({
+      fmt: (value) => (name === "TryFromIntError" ? "out of range integral type conversion attempted" : value),
+    }),
+    source: () => undefined,
+  };
+}
+
+// serde_json's error as a `dyn Error` (ADR 0141): shown as serde_json shows
+// it, `{}` its message and `{:?}` `Error("..", line: 1, column: 1)`.
+export function $jsonErrorDyn() {
+  return {
+    Debug: () => ({ fmt: $debugJsonError }),
+    Display: () => ({ fmt: $displayJsonError }),
+    source: () => undefined,
+  };
+}
+
 // `*r = v` of an object a `&mut` is (ADR 0147): it becomes `v` in place, so
 // each name for it sees `v`. An array its items, a `Map` or a `Set` its
 // entries, an object its fields, those `v` hasn't gone, as another

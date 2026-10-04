@@ -478,4 +478,20 @@ export const mutations: Mutation[] = [
     replace: "            .find(|&&(at, _, _)| at == index)",
     tests: ["test/corpus.test.ts", "-t", "type_facts"],
   },
+  {
+    name: "parse-error-dyn-refused",
+    breaks: "`s.parse::<i64>()?` into a `Box<dyn Error>` is an error",
+    file: "src/lower/traits.rs",
+    find: "        if self.is_parse_error(from)\n            && let ty::Adt(adt, _) = from.kind()",
+    replace: "        if false\n            && let ty::Adt(adt, _) = from.kind()",
+    tests: ["test/corpus.test.ts", "-t", "std_errors_boxed"],
+  },
+  {
+    name: "json-error-dyn-refused",
+    breaks: "`serde_json::from_str(s)?` into a `Box<dyn Error>` is an error",
+    file: "src/lower/traits.rs",
+    find: "        if self.is_json_error(from) {\n            self.runtime.insert(Helper::JsonErrorDyn);",
+    replace: "        if false {\n            self.runtime.insert(Helper::JsonErrorDyn);",
+    tests: ["test/serde.test.ts", "-t", "Box<dyn Error> shows as serde_json"],
+  },
 ];

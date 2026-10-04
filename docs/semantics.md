@@ -247,8 +247,9 @@ missing key, `unreachable!`, `todo!` ([0012](decisions/0012-panics-and-runtime-h
 [0026](decisions/0026-testing.md)).
 
 - **`Result` and `?` are Rust's:** `?` returns early, through the crate's
-  own `From` impls; `Box<dyn Error>` takes the crate's errors and strings,
-  `"msg".into()` ([0035](decisions/0035-results-and-throwing-js.md),
+  own `From` impls; `Box<dyn Error>` takes the crate's errors, strings,
+  `"msg".into()`, std's parse errors and serde_json's
+  ([0035](decisions/0035-results-and-throwing-js.md),
   [0141](decisions/0141-std-trait-objects.md)).
 - **Control flow is Rust's:** `loop` with a value, labeled `break` and
   `continue`, `let`-`else`, `if let` chains, match guards, `let` guards.
@@ -263,8 +264,7 @@ Differences:
   (`catch_unwind` is refused).
 
 Refused: `catch_unwind`, `panic::set_hook`, `process::exit`,
-`process::abort`; `?` from std's own error types, a `ParseIntError`, into a
-`Box<dyn Error>`; labeled blocks, and `pin!`, which is one.
+`process::abort`; labeled blocks, and `pin!`, which is one.
 
 ## Async, threads and time
 
