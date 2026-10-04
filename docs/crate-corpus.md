@@ -23,17 +23,18 @@ newest release its requirement allows.
 | uuid 1.27 | refused | a user `fmt::LowerHex` |
 | url 2.5 | blocked | utf8_iter: a user `DoubleEndedIterator`; percent-encoding: `transmute`; litemap: a user `ExactSizeIterator`; writeable: a user `fmt::Write`; smallvec's; zerofrom: `u128` |
 | regex 1.11 | blocked | memchr: a user `DoubleEndedIterator`; regex-syntax: a generic trait method where a type may have a destructor |
-| rust_decimal 1.38 | blocked | arrayvec: a generic trait method where a type may have a destructor; num-traits: an internal error, supertrait dictionary names colliding; serde_core: a user `fmt::Write` |
-| chrono 0.4 (`alloc`) | blocked | num-traits' |
+| rust_decimal 1.38 | blocked | arrayvec: a generic trait method where a type may have a destructor; num-traits: a generic trait method given a value with a destructor; serde_core: a user `fmt::Write` |
+| chrono 0.4 (`alloc`) | blocked | num-traits: a generic trait method given a value with a destructor |
 | time 0.3 (`alloc`) | blocked | powerfmt: a user `Hash`; deranged: a user `Borrow` |
 
 1 of 16 compiles. What stops the most:
 
-1. **A generic trait method where a type may have a destructor:** 8 crates.
+1. **A generic trait method where a type may have a destructor:** 9 crates.
 2. **A user `DoubleEndedIterator` or `ExactSizeIterator`:** 4.
 3. **A user `fmt` trait other than `Display` and `Debug`,** `Pointer`,
    `LowerHex`, `fmt::Write`: 4.
-4. **num-traits' supertrait dictionary names colliding,** an internal
-   error where a refusal should be: 2.
-5. **A user `Hash` or `Borrow`, and `Borrow::borrow`:** 2.
-6. **Raw memory:** `transmute`, `u128`, a raw pointer constant: 3.
+4. **A user `Hash` or `Borrow`, and `Borrow::borrow`:** 2.
+5. **Raw memory:** `transmute`, `u128`, a raw pointer constant: 3.
+
+num-traits stopped first at an internal error, its supertrait dictionary
+names colliding, which is fixed (ADR 0106); it stops at the first gap now.

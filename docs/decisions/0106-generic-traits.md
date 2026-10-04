@@ -36,7 +36,11 @@ of its own, `metersFromF64`, and a function's evidence is named apart.
   `trait Both: Label<u32> + Label<String>` has `LabelU32` and `LabelString`.
   The key is the declaration's, not an impl's arguments', so a generic
   impl's dictionary and its caller agree: `Pair<A, B>: Label<A> + Label<B>`
-  is `LabelA` and `LabelB` for `impl Pair<u32, String>` too.
+  is `LabelA` and `LabelB` for `impl Pair<u32, String>` too. (Amended:
+  where only a reference tells two apart, the reference is in the key too,
+  `AddBase` and `AddRefBase` of `Add<Base> + for<'r> Add<&'r Base>`, as
+  num-traits' `RefNum` has them, which was rust-js's internal error; the
+  `supertraits_by_reference` corpus case compares it with native Rust.)
 - **A higher-ranked supertrait, `for<'a> Greet<&'a str>`, is one
   dictionary**, its lifetime erased, as a higher-ranked bound is: rustc's
   trait selection takes none that's bound.

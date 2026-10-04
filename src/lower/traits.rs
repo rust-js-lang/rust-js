@@ -314,12 +314,23 @@ pub(super) fn supertraits<'tcx>(
         })
         .collect();
     let twice = |id: DefId| found.iter().filter(|(declared, _, _)| declared.def_id == id).count() > 1;
+    // Named by its arguments too where it's there twice, and by their
+    // references as well where they alone tell them apart: `AddBase` and
+    // `AddRefBase` of `Add<Base> + for<'r> Add<&'r Base>`.
+    let alike = |tr: ty::TraitRef<'tcx>| {
+        found
+            .iter()
+            .filter(|(declared, _, _)| trait_word(tcx, *declared) == trait_word(tcx, tr))
+            .count()
+            > 1
+    };
     found
         .iter()
         .map(|&(declared, instantiated, span)| {
-            let name = match twice(declared.def_id) {
-                true => trait_word(tcx, declared),
-                false => tcx.item_name(declared.def_id).to_string(),
+            let name = match (twice(declared.def_id), alike(declared)) {
+                (true, true) => trait_word_with_refs(tcx, declared, true),
+                (true, false) => trait_word(tcx, declared),
+                (false, _) => tcx.item_name(declared.def_id).to_string(),
             };
             (name, instantiated, span)
         })
@@ -436,6 +447,11 @@ fn type_word<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
 /// The trait and its arguments other than their defaults, as a word of a JS
 /// name: `ConvertF64` of `Convert<f64>`, `PartialEq` of `PartialEq<Self>`.
 fn trait_word<'tcx>(tcx: TyCtxt<'tcx>, tr: ty::TraitRef<'tcx>) -> String {
+    trait_word_with_refs(tcx, tr, false)
+}
+
+/// `trait_word`, each reference among its arguments a `Ref` if `refs`.
+fn trait_word_with_refs<'tcx>(tcx: TyCtxt<'tcx>, tr: ty::TraitRef<'tcx>, refs: bool) -> String {
     let mut name = tcx.item_name(tr.def_id).to_string();
     let generics = tcx.generics_of(tr.def_id);
     for (param, arg) in generics.own_params.iter().zip(tr.args).skip(1) {
@@ -447,8 +463,25 @@ fn trait_word<'tcx>(tcx: TyCtxt<'tcx>, tr: ty::TraitRef<'tcx>) -> String {
         {
             continue;
         }
-        let arg = js_word(&type_word(tcx, arg.peel_refs()));
-        let mut chars = arg.chars();
+        // `&'r Base` is `RefBase`, a reference's word before its pointee's.
+        let mut word = String::new();
+        let mut pointee = arg;
+        while let ty::Ref(_, inner, _) = *pointee.kind() {
+            if refs {
+                word.push_str("Ref");
+            }
+            pointee = inner;
+        }
+        let pointee = js_word(&type_word(tcx, pointee));
+        let mut rest = pointee.chars();
+        match word.is_empty() {
+            true => word.extend(rest),
+            false => {
+                word.extend(rest.next().map(|c| c.to_ascii_uppercase()));
+                word.extend(rest);
+            }
+        }
+        let mut chars = word.chars();
         name.extend(chars.next().map(|c| c.to_ascii_uppercase()));
         name.extend(chars);
     }
