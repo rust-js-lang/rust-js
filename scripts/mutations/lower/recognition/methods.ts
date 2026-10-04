@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: '        "as_bytes" if str => TextOp::Bytes,\n',
     tests: ["test/corpus.test.ts", "-t", "str_bytes"],
   },
+  {
+    name: "is-normal-unknown",
+    breaks: "`x.is_normal()` of a float is an error",
+    file: "src/lower/recognition/methods.rs",
+    find: "        \"is_normal\" if float => NumOp::IsNormal { subnormal: false },\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "float_normal"],
+  },
 ];

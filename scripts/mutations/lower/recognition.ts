@@ -348,14 +348,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "double_ended_iterators"],
   },
   {
-    name: "other-fmt-impls-refused",
-    breaks: "a user `LowerHex`, `Pointer` and the like are errors",
-    file: "src/lower/recognition.rs",
-    find: "        || is_other_fmt_trait(tcx, id)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "user_fmt_traits"],
-  },
-  {
     name: "user-fmt-write-refused",
     breaks: "a writer of the crate's own, `impl fmt::Write`, is an error",
     file: "src/lower/recognition.rs",
@@ -522,5 +514,13 @@ export const mutations: Mutation[] = [
     find: "            \"std::num::ParseIntError::kind\" => Some(TextOp::ParseErrorKind),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "int_error_kind"],
+  },
+  {
+    name: "other-fmt-traits-not-dictionaries",
+    breaks: "a user `LowerHex` or `Pointer` is an error, and `{:x}` of a generic `T`",
+    file: "src/lower/recognition.rs",
+    find: "        // `T: LowerHex` or `T: Pointer` (ADR 0174).\n        || is_other_fmt_trait(tcx, id)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "user_fmt_traits|generic_fmt_traits"],
   },
 ];

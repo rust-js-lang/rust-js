@@ -2,7 +2,7 @@
 
 import { $formatted, $lowerExp } from "@rust-js/runtime";
 
-var $flagsDisplay;
+var $idLowerHex, $idUpperHex, $idOctal, $idBinary, $ratioLowerExp, $handlePointer, $flagsDisplay;
 
 function main() {
   const id = [48879];
@@ -72,6 +72,48 @@ function flagsDisplay_fmt(flags, options) {
   }
   f += ".";
   return f;
+}
+
+export function idLowerHex() {
+  if ($idLowerHex === undefined) {
+    $idLowerHex = { fmt: idLowerHex_fmt };
+  }
+  return $idLowerHex;
+}
+
+export function idUpperHex() {
+  if ($idUpperHex === undefined) {
+    $idUpperHex = { fmt: idUpperHex_fmt };
+  }
+  return $idUpperHex;
+}
+
+export function idOctal() {
+  if ($idOctal === undefined) {
+    $idOctal = { fmt: idOctal_fmt };
+  }
+  return $idOctal;
+}
+
+export function idBinary() {
+  if ($idBinary === undefined) {
+    $idBinary = { fmt: idBinary_fmt };
+  }
+  return $idBinary;
+}
+
+export function ratioLowerExp() {
+  if ($ratioLowerExp === undefined) {
+    $ratioLowerExp = { fmt: ratioLowerExp_fmt };
+  }
+  return $ratioLowerExp;
+}
+
+export function handlePointer() {
+  if ($handlePointer === undefined) {
+    $handlePointer = { fmt: handlePointer_fmt };
+  }
+  return $handlePointer;
 }
 
 export function flagsDisplay() {

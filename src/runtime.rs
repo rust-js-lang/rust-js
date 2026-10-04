@@ -181,6 +181,7 @@ helpers! {
     BytesAsciiEq,
     SizeHint,
     Utf8,
+    IsNormal,
     SliceEnd,
     ByteLen,
     StrSlice,
@@ -756,6 +757,7 @@ impl Helper {
             Helper::BytesAsciiEq => include_str!("runtime/bytes_ascii_eq.js"),
             Helper::SizeHint => include_str!("runtime/size_hint.js"),
             Helper::Utf8 => include_str!("runtime/utf8.js"),
+            Helper::IsNormal => include_str!("runtime/is_normal.js"),
             // `s.len()`: its UTF-8 bytes, as Rust counts them, where JS counts
             // UTF-16 units (ADR 0138).
             Helper::ByteLen => include_str!("runtime/byte_len.js"),

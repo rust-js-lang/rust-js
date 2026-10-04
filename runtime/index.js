@@ -4232,6 +4232,13 @@ export function $debugUtf8Error(error, owned = false) {
   return `Utf8Error { valid_up_to: ${error.valid_up_to}, error_len: ${length} }`;
 }
 
+// `x.is_normal()`, or `is_subnormal()` (`subnormal`), of a float whose
+// smallest normal value is `min`: an `f64`'s, or an `f32`'s, exactly.
+export function $isNormal(x, min, subnormal = false) {
+  const size = Math.abs(x);
+  return subnormal ? size > 0 && size < min : Number.isFinite(x) && size >= min;
+}
+
 export function $sliceEnd(items, start, end = items.length) {
   if (start > end) throw new Error(`slice index starts at ${start} but ends at ${end}`);
   if (end > items.length) throw new Error(`range end index ${end} out of range for slice of length ${items.length}`);

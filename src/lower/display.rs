@@ -331,12 +331,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             WriteCall::OtherFmt => {
                 let ty = generic_args.type_at(0).peel_refs();
                 let trait_id = self.tcx.trait_of_assoc(def_id).expect("a trait's `fmt`");
-                if !self.has_user_impl(trait_id, ty) {
-                    let path = self.tcx.def_path_str(def_id);
-                    return Err(self.unsupported(span, &format!("calling `{path}` of a `{ty}`")));
+                // A generic `T`'s: its dictionary's (ADR 0174).
+                if self.is_unknown(ty) {
+                    let value = values.remove(0);
+                    self.other_fmt_dictionary(trait_id, ty, value, &pretty, span)?
+                } else {
+                    if !self.has_user_impl(trait_id, ty) {
+                        let path = self.tcx.def_path_str(def_id);
+                        return Err(self.unsupported(span, &format!("calling `{path}` of a `{ty}`")));
+                    }
+                    let args = self.tcx.mk_args(&[self.tcx.erase_and_anonymize_regions(ty).into()]);
+                    self.writer_call(def_id, args, values.remove(0), &pretty, span)?
                 }
-                let args = self.tcx.mk_args(&[self.tcx.erase_and_anonymize_regions(ty).into()]);
-                self.writer_call(def_id, args, values.remove(0), &pretty, span)?
             }
             // More than five fields: arrays of their names and strings.
             WriteCall::StructFields => {
@@ -761,6 +767,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.writer_call(fmt, args, value, pretty, span);
         }
         Err(self.unsupported(span, &format!("`{{}}` of a `{ty}`")))
+    }
+
+    /// `{:x}` or `{:p}` of a generic `T`, `LowerHex::fmt(t, f)` too: its
+    /// dictionary's `fmt`, given the placeholder's options as a `T: Display`'s
+    /// is (ADR 0174).
+    pub(super) fn other_fmt_dictionary(
+        &mut self,
+        trait_id: DefId,
+        ty: Ty<'tcx>,
+        value: Expr,
+        pretty: &Pretty,
+        span: Span,
+    ) -> R<Expr> {
+        let tr = ty::TraitRef::new(self.tcx, trait_id, [ty]);
+        let dictionary = self
+            .evidence_for(tr)
+            .ok_or_else(|| self.unsupported(span, &format!("implementation evidence for `{tr}`")))?;
+        let mut list = vec![value];
+        list.extend(self.options_arg(pretty));
+        Ok(Expr::call(Expr::member(dictionary, "fmt"), list))
     }
 
     /// `write!(w, ..)` or `w.write_char(c)` of a writer of the crate's that

@@ -36,6 +36,10 @@ pub(super) enum NumOp {
     IsNan,
     IsFinite,
     IsInfinite,
+    /// `is_normal()`, or `is_subnormal()` (`subnormal`).
+    IsNormal {
+        subnormal: bool,
+    },
     Checked(BinOp),
     Saturating(BinOp),
     Wrapping(BinOp),
@@ -175,6 +179,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             NumOp::IsNan => number("isNaN", vec![arg()]),
             NumOp::IsFinite => number("isFinite", vec![arg()]),
             NumOp::IsInfinite => Expr::bin(Op::Eq, math("abs", vec![arg()]), Expr::var("Infinity")),
+            // By the type's smallest normal value, `MIN_POSITIVE`.
+            NumOp::IsNormal { subnormal } => {
+                let min = Expr::num(match num {
+                    Num::F32 => f64::from(f32::MIN_POSITIVE),
+                    _ => f64::MIN_POSITIVE,
+                });
+                let mut list = vec![arg(), min];
+                if subnormal {
+                    list.push(Expr::bool(true));
+                }
+                helper(self, Helper::IsNormal, "$isNormal", list)
+            }
             // The exact result, if it's in range. A product past 2^53 is
             // rounded, but it's far out of range either way.
             NumOp::Checked(BinOp::Div) => {

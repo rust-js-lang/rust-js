@@ -2254,6 +2254,9 @@ pub(super) fn operational(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_,
         // `key.borrow()` of a `K: Borrow<Q>`, as a map's lookup is: its
         // dictionary's `borrow` (ADR 0167).
         || is_std_def(tcx, id, StdItem::Borrow)
+        // `{:x}`, `{:e}` and `{:p}` of the crate's types (ADR 0165), and of a
+        // `T: LowerHex` or `T: Pointer` (ADR 0174).
+        || is_other_fmt_trait(tcx, id)
         // `a + b` of a `T: Add`, and `x.into()` of a `T: Into<U>` (ADR 0108).
         || value_operator(tcx, id).is_some()
         || tcx.is_diagnostic_item(sym::Into, id)
@@ -2298,8 +2301,6 @@ pub(super) fn implementable(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'
         || tcx.is_diagnostic_item(sym::FromIterator, id)
         || is_extend(tcx, id)
         || is_sum_or_product(tcx, id)
-        // `{:x}`, `{:e}` and `{:p}` of the crate's types (ADR 0165).
-        || is_other_fmt_trait(tcx, id)
         // An iterator of the crate's from both ends, and of a known length:
         // what `rev()`, `next_back()` and `len()` call (ADR 0164).
         || is_iterator_extension(tcx, id)

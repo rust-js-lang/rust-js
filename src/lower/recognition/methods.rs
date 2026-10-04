@@ -86,6 +86,8 @@ pub(super) fn number(name: &str, num: Num) -> Option<NumOp> {
         "is_nan" if float => NumOp::IsNan,
         "is_finite" if float => NumOp::IsFinite,
         "is_infinite" if float => NumOp::IsInfinite,
+        "is_normal" if float => NumOp::IsNormal { subnormal: false },
+        "is_subnormal" if float => NumOp::IsNormal { subnormal: true },
         "checked_add" if !float => NumOp::Checked(BinOp::Add),
         "checked_sub" if !float => NumOp::Checked(BinOp::Sub),
         "checked_mul" if !float => NumOp::Checked(BinOp::Mul),

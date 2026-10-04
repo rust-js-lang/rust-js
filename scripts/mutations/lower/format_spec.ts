@@ -90,4 +90,12 @@ export const mutations: Mutation[] = [
     replace: "            if true {",
     tests: ["test/corpus.test.ts", "-t", "user_fmt_traits"],
   },
+  {
+    name: "generic-radix-options-dropped",
+    breaks: "`{:#x}` of a generic `T` is given no options, so no `0x`",
+    file: "src/lower/format_spec.rs",
+    find: "            let pretty = if !options && !spec.alternate {\n                Pretty::Plain",
+    replace: "            let pretty = if true {\n                Pretty::Plain",
+    tests: ["test/corpus.test.ts", "-t", "generic_fmt_traits"],
+  },
 ];

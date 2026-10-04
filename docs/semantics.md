@@ -378,6 +378,9 @@ What JS sees of a crate:
   [0046](decisions/0046-camel-case-crates.md)).
 - **A type's methods are its exported object's,** the receiver first:
   `Point.shift(p, by)` ([0047](decisions/0047-methods.md)).
+- **`LowerHex`, `Pointer` and the other formatting traits are
+  dictionaries too:** `{:x}` of a generic `T` is its `fmt`, given the
+  placeholder's options ([0174](decisions/0174-generic-fmt-traits.md)).
 - **`FromStr`, `AsRef` and `Borrow` are dictionaries too:** a generic
   `S: AsRef<str>` is given `{ as_ref }`, a `K: Borrow<Q>` `{ borrow }`,
   the value itself for a `String` or a `&str`

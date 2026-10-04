@@ -139,4 +139,12 @@ export const mutations: Mutation[] = [
     replace: "                let fits = Expr::bin(Op::Lt, by.clone(), Expr::int(64));",
     tests: ["test/corpus.test.ts", "-t", "integers_128"],
   },
+  {
+    name: "f32-normal-by-f64",
+    breaks: "an `f32`'s `is_normal()` is by an `f64`'s smallest normal",
+    file: "src/lower/numbers.rs",
+    find: "                    Num::F32 => f64::from(f32::MIN_POSITIVE),",
+    replace: "                    Num::F32 => f64::MIN_POSITIVE,",
+    tests: ["test/corpus.test.ts", "-t", "float_normal"],
+  },
 ];
