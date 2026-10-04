@@ -3,7 +3,7 @@
 // adapter does not infer dependencies from source files or run build scripts.
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { promisify } from "node:util";
@@ -16,11 +16,17 @@ const execute = promisify(execFile);
  * with rust-js's tool known (ADR 0112). The binding crates need it, which
  * the workspace's wrapper runs for only when they're its members, and a
  * plain rustc doesn't know the tool. The same pinned rustc, for the rest. */
-function rustcShim(compiler) {
+export function rustcShim(compiler) {
   const dir = join(tmpdir(), "rust-js", createHash("sha256").update(compiler).digest("hex").slice(0, 16));
   const shim = join(dir, "rustc");
   mkdirSync(dir, { recursive: true });
-  writeFileSync(shim, `#!/bin/sh\nexec ${JSON.stringify(compiler)} --rustc "$@"\n`, { mode: 0o755 });
+  // Written whole, then moved into place: every build with this compiler
+  // shares the shim, and one rewriting it in place while another's Cargo
+  // runs it fails both, Linux's ETXTBSY. A Cargo running it keeps the file
+  // it opened; the next one runs the new.
+  const writing = `${shim}.${process.pid}`;
+  writeFileSync(writing, `#!/bin/sh\nexec ${JSON.stringify(compiler)} --rustc "$@"\n`, { mode: 0o755 });
+  renameSync(writing, shim);
   return shim;
 }
 
