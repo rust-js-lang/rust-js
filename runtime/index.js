@@ -955,6 +955,113 @@ export function $strPop(s) {
   return [s.slice(0, s.length - size), s.slice(s.length - size)];
 }
 
+// `s.splitn(n, p)`: its first `n - 1` pieces, and what's left, whole.
+export function $splitN(s, n, p) {
+  if (n === 0) return [];
+  const parts = $split(s, p);
+  return parts.length <= n ? parts : [...parts.slice(0, n - 1), parts.slice(n - 1).join(p)];
+}
+
+// `s.rsplit(p)`, and `s.rsplitn(n, p)`: its pieces from the end, searched
+// from the end as Rust's are, so overlapping matches split where Rust's do,
+// `"aaa".rsplit("aa")` being `["", "a"]`. An empty pattern matches at each
+// `char`'s ends, `"ab".rsplit("")` being `["", "b", "a", ""]`.
+export function $rsplit(s, p, n = Infinity) {
+  if (n === 0) return [];
+  const parts = [];
+  // Where the piece being cut ends, and where a match may start, at most.
+  let end = s.length;
+  let search = s.length;
+  while (parts.length < n - 1) {
+    let at;
+    if (p === "") {
+      if (search < 0) break;
+      at = search;
+      const low = s.charCodeAt(search - 1);
+      search -= search > 1 && low >= 0xdc00 && low <= 0xdfff ? 2 : 1;
+    } else {
+      at = search - p.length < 0 ? -1 : s.lastIndexOf(p, search - p.length);
+      if (at < 0) break;
+      search = at;
+    }
+    parts.push(s.slice(at + p.length, end));
+    end = at;
+  }
+  parts.push(s.slice(0, end));
+  return parts;
+}
+
+// `s.split_terminator(p)`: `split`'s pieces, without an empty last one.
+export function $splitTerminator(s, p) {
+  const parts = $split(s, p);
+  if (parts.at(-1) === "") parts.pop();
+  return parts;
+}
+
+// `s.split_at(at)`: before and after the byte `at`, panicking as Rust's
+// `&s[..at]` does.
+export function $splitAt(s, at) {
+  return [$strSlice(s, 0, at), $strSlice(s, at)];
+}
+
+// `s.match_indices(p)`: each match, from the start, none overlapping, with
+// where it starts in UTF-8 bytes. An empty pattern matches at each `char`'s
+// ends.
+export function $matchIndices(s, p) {
+  const found = [];
+  let bytes = 0;
+  if (p === "") {
+    for (const c of s) {
+      found.push([bytes, ""]);
+      bytes += $byteLen(c);
+    }
+    found.push([bytes, ""]);
+    return found;
+  }
+  let unit = 0;
+  for (let at = s.indexOf(p); at >= 0; at = s.indexOf(p, at + p.length)) {
+    bytes += $byteLen(s.slice(unit, at));
+    unit = at;
+    found.push([bytes, p]);
+  }
+  return found;
+}
+
+// `s.matches(p)`: each match, from the start, none overlapping.
+export function $matches(s, p) {
+  if (p === "") return Array.from({ length: Array.from(s).length + 1 }, () => "");
+  const found = [];
+  for (let at = s.indexOf(p); at >= 0; at = s.indexOf(p, at + p.length)) found.push(p);
+  return found;
+}
+
+// `s.trim_matches(p)`, or `trim_start_matches` and `trim_end_matches`: `p`
+// taken off as often as it matches there, a `char` or a string, or each
+// `char` a closure says.
+export function $trimMatches(s, p, start = true, end = true) {
+  let from = 0;
+  let to = s.length;
+  const chars = typeof p === "function" ? Array.from(s) : undefined;
+  if (start) {
+    if (chars) {
+      for (const c of chars) {
+        if (!p(c)) break;
+        from += c.length;
+      }
+    } else if (p !== "") {
+      while (s.startsWith(p, from)) from += p.length;
+    }
+  }
+  if (end) {
+    if (chars) {
+      for (let i = chars.length - 1; i >= 0 && to > from && p(chars[i]); i--) to -= chars[i].length;
+    } else if (p !== "") {
+      while (to - p.length >= from && s.startsWith(p, to - p.length)) to -= p.length;
+    }
+  }
+  return s.slice(from, to);
+}
+
 // serde_json's error as a `dyn Error` (ADR 0141): shown as serde_json shows
 // it, `{}` its message and `{:?}` `Error("..", line: 1, column: 1)`.
 export function $jsonErrorDyn() {

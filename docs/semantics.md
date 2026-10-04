@@ -107,7 +107,9 @@ sharing one is copying it: `clone()` is the string itself, and `push_str` is
 - **`split`, `lines`, `split_whitespace`, `strip_prefix`, `split_once`,
   `replace`, `starts_with`** and the other common methods behave as Rust's,
   with an empty pattern too, and `split` and `contains` with a closure as
-  the pattern.
+  the pattern. `splitn`, `rsplit`, `split_terminator`, `split_at`,
+  `match_indices`, `matches` and the `trim_*_matches` search as Rust's do,
+  `rsplit` from the end ([0150](decisions/0150-string-patterns.md)).
 
 Differences:
 
@@ -117,9 +119,8 @@ Differences:
 - **Strings compare by UTF-16 units:** `<`, `cmp` and `sort()` of strings
   can order a character above U+FFFF differently than Rust does.
 
-Refused, among others: `match_indices`, `matches`, `splitn`, `rsplit`,
-`trim_matches`, `find` with a closure, `str::from_utf8`, `String::from_utf8`,
-and a C string, `c"..."`.
+Refused, among others: `find` with a closure, `str::from_utf8`,
+`String::from_utf8`, and a C string, `c"..."`.
 
 ## Formatting and printing
 

@@ -982,6 +982,37 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             {
                 return None;
             }
+            // Splitting and searching by a `&str` or a `char` (ADR 0150); trimming by
+            // a closure or a function too.
+            "splitn" | "rsplitn" | "rsplit" | "split_terminator" | "match_indices" | "matches"
+                if owner.is_str() && !self_ty.is_some_and(|p| self.is_string_like(p)) =>
+            {
+                return None;
+            }
+            "splitn" if owner.is_str() => Std::Text(TextOp::SplitN),
+            "rsplitn" if owner.is_str() => Std::Text(TextOp::Rsplit(true)),
+            "rsplit" if owner.is_str() => Std::Text(TextOp::Rsplit(false)),
+            "split_terminator" if owner.is_str() => Std::Text(TextOp::SplitTerminator),
+            "split_at" if owner.is_str() => Std::Text(TextOp::SplitAt),
+            "match_indices" if owner.is_str() => Std::Text(TextOp::MatchIndices),
+            "matches" if owner.is_str() => Std::Text(TextOp::Matches),
+            "trim_matches" | "trim_start_matches" | "trim_end_matches"
+                if owner.is_str()
+                    && !self_ty.is_some_and(|p| {
+                        self.is_string_like(p) || matches!(p.kind(), ty::Closure(..) | ty::FnDef(..))
+                    }) =>
+            {
+                return None;
+            }
+            "trim_matches" if owner.is_str() => Std::Text(TextOp::TrimMatches { start: true, end: true }),
+            "trim_start_matches" if owner.is_str() => Std::Text(TextOp::TrimMatches {
+                start: true,
+                end: false,
+            }),
+            "trim_end_matches" if owner.is_str() => Std::Text(TextOp::TrimMatches {
+                start: false,
+                end: true,
+            }),
             "find" if owner.is_str() => Std::Text(TextOp::Find(false)),
             "rfind" if owner.is_str() => Std::Text(TextOp::Find(true)),
             "starts_with" if owner.is_str() => Std::Method("startsWith"),
@@ -1594,6 +1625,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     "std::slice::Iter",
                     "std::vec::IntoIter",
                     "std::str::Bytes",
+                    "std::str::SplitN",
+                    "std::str::RSplitN",
+                    "std::str::RSplit",
+                    "std::str::SplitTerminator",
+                    "std::str::MatchIndices",
+                    "std::str::Matches",
                     "std::str::Chars",
                     "std::str::CharIndices",
                     "std::str::SplitWhitespace",

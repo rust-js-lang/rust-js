@@ -62,6 +62,21 @@ pub(super) enum TextOp {
     CharIndices,
     /// `v.drain(a..b)`: those items, taken out of `v`.
     Drain,
+    /// `s.splitn(n, p)`: its first pieces, and the rest whole (ADR 0150).
+    SplitN,
+    /// `s.rsplit(p)`, or `s.rsplitn(n, p)` if `true`: searched from the end.
+    Rsplit(bool),
+    SplitTerminator,
+    /// `s.split_at(at)`: by a UTF-8 byte offset.
+    SplitAt,
+    /// `s.match_indices(p)`: where, in UTF-8 bytes, and what.
+    MatchIndices,
+    Matches,
+    /// `s.trim_matches(p)`, or its `start` or `end` only.
+    TrimMatches {
+        start: bool,
+        end: bool,
+    },
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -132,6 +147,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut values = self.operands(args, out)?.into_iter();
         let mut arg = || values.next().expect("rustc checked the arguments");
         let method = |object: Expr, name: &str, list: Vec<Expr>| Expr::call(Expr::member(object, name), list);
+        let call = |cx: &mut Self, helper: Helper, name: &str, list: Vec<Expr>| {
+            cx.runtime.insert(helper);
+            Expr::call(Expr::var(name), list)
+        };
         Ok(match op {
             TextOp::Is(regex) => method(Expr::regex(regex), "test", vec![arg()]),
             TextOp::IsAscii => {
@@ -194,6 +213,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let encoder = Expr::new_(Expr::var("TextEncoder"), Vec::new());
                 let encoded = Expr::call(Expr::member(encoder, "encode"), vec![arg()]);
                 Expr::call(Expr::member(Expr::var("Array"), "from"), vec![encoded])
+            }
+            TextOp::SplitN => call(self, Helper::SplitN, "$splitN", vec![arg(), arg(), arg()]),
+            TextOp::Rsplit(limited) => {
+                let mut list = vec![arg()];
+                let limit = limited.then(&mut arg);
+                list.push(arg());
+                list.extend(limit);
+                call(self, Helper::Rsplit, "$rsplit", list)
+            }
+            TextOp::SplitTerminator => call(self, Helper::SplitTerminator, "$splitTerminator", vec![arg(), arg()]),
+            TextOp::SplitAt => call(self, Helper::SplitAt, "$splitAt", vec![arg(), arg()]),
+            TextOp::MatchIndices => call(self, Helper::MatchIndices, "$matchIndices", vec![arg(), arg()]),
+            TextOp::Matches => call(self, Helper::Matches, "$matches", vec![arg(), arg()]),
+            TextOp::TrimMatches { start, end } => {
+                let mut list = vec![arg(), arg()];
+                if !(start && end) {
+                    list.extend([Expr::bool(start), Expr::bool(end)]);
+                }
+                call(self, Helper::TrimMatches, "$trimMatches", list)
             }
             TextOp::Parse => {
                 let target = generic_args

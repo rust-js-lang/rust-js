@@ -283,4 +283,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "string_editing"],
   },
+  {
+    name: "trim-end-matches-start",
+    breaks: "`trim_end_matches` trims the start",
+    file: "src/lower/recognition.rs",
+    find: '            "trim_end_matches" if owner.is_str() => Std::Text(TextOp::TrimMatches {\n                start: false,\n                end: true,',
+    replace: '            "trim_end_matches" if owner.is_str() => Std::Text(TextOp::TrimMatches {\n                start: true,\n                end: false,',
+    tests: ["test/corpus.test.ts", "-t", "string_patterns"],
+  },
 ];
