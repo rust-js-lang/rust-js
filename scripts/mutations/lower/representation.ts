@@ -107,4 +107,12 @@ export const mutations: Mutation[] = [
     replace: "                    Some(&inner) => const_js(tcx, inner),",
     tests: ["test/corpus.test.ts", "-t", "nested_options"],
   },
+  {
+    name: "opaque-not-revealed",
+    breaks: "a `&mut` to an `impl Iterator` a function returns is a box, so `next()` of it is `None`",
+    file: "src/lower/representation.rs",
+    find: "        let ty = self.reveal(ty);\n        matches!(self.shape(ty), Shape::Object(_) | Shape::Array(_))",
+    replace: "        matches!(self.shape(ty), Shape::Object(_) | Shape::Array(_))",
+    tests: ["test/corpus.test.ts", "-t", "opaque_iterators"],
+  },
 ];

@@ -197,6 +197,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     pub(super) fn is_object(&self, ty: Ty<'tcx>) -> bool {
+        // An `impl Trait` a function returns is the value it stands for: a
+        // `&mut` to an `impl Iterator`'s array is the array.
+        let ty = self.reveal(ty);
         matches!(self.shape(ty), Shape::Object(_) | Shape::Array(_))
             || self.is_js_object(ty)
             // A slice or an array is a JS array: `&mut` to one, as `sort` takes, is it.

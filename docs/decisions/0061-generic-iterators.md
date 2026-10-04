@@ -44,6 +44,10 @@ rust-js knows. A generic `I` could be either form, depending on the caller.
 
 ## Consequences
 
+- An `impl Iterator` is the type it hides wherever its JS is asked for, a
+  `&mut` to one too, as `next()`, `any` and `find` take it: `tens(v).next()`
+  is `tens(v)[0]`. (Amended: a `&mut` to one a function returned was a box,
+  so `next()` of it was `None`, and `any` of it a `TypeError`.)
 - `next()` on a generic iterator is still an error. Generic code uses the
   adapters, `for`, and what consumes one.
 - A range handed over as a value (`total(0..3)`) is still an error, as a
