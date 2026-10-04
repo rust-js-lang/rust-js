@@ -207,7 +207,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Might another crate change `ty` in place (ADR 0100)? Any crate using a
     /// library's type might, and so might a library's consumers its own type
     /// they can reach. This crate can't see their code, so it assumes they do,
-    /// of a type that's a JS object: a fieldless enum's string can't change.
+    /// of a type whose values may be JS objects: a fieldless enum's string
+    /// can't change, an enum's variant with fields can.
     /// A tuple or an array is any crate's, so in a library, or a crate using
     /// one, any may cross.
     pub(super) fn crosses_crates(&self, ty: Ty<'tcx>) -> bool {
@@ -219,7 +220,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Tuple(_) | ty::Array(..) => self.krate.library || self.krate.foreign.any(),
             _ => false,
         };
-        shared && self.is_object(ty)
+        shared && self.may_be_object(ty)
     }
 
     /// Is `ty` a `Vec` type something may change (ADR 0052)? One another crate

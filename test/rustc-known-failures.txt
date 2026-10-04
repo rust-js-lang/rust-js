@@ -37,7 +37,7 @@ borrowck/issue-46095.rs	error: rust-js does not support assigning to this place 
 borrowck/issue-51348-multi-ref-mut-in-guard.rs	error: rust-js does not support a `ref mut` bound at another place in each alternative of a `|` pattern yet
 borrowck/pointer-reassignment-after-deref-78192.rs	error: rust-js does not support values of type `*const u32` yet
 borrowck/ref-mut-rebind-does-not-affect-outer.rs	error: rust-js does not support `ref mut` bindings to this type yet
-borrowck/two-phase-multiple-activations.rs	error: rust-js does not support values of type `(*const core::io::error::Custom) is !null` yet
+borrowck/two-phase-multiple-activations.rs	error: rust-js does not support `{:?}` of a `std::io::Error` yet
 box/unit/unique-in-vec-copy.rs	error: rust-js does not support assigning to this place yet
 cast/as-cast-unifies-raw-pointer-and-fn-type.rs	error: rust-js does not support values of type `*const T` yet
 cast/cast-not-treated-as-lvalue.rs	error: rust-js does not support this expression yet
@@ -126,7 +126,6 @@ drop/drop-with-trait-bound-calls-method-on-self.rs	error: rust-js does not suppo
 drop/dropck_legal_cycles.rs	error: rust-js does not support user implementations of this standard or external trait yet
 drop/if-let-guards-2.rs	error: rust-js does not support a temporary with a destructor here yet
 drop/issue-23338-ensure-param-drop-order.rs	error: rust-js does not support a temporary with a destructor in a branch yet
-drop/issue-23611-enum-swap-in-drop.rs	error: rust-js does not support assigning a whole value through a `&mut` yet
 drop/issue-90752-raw-ptr-shenanigans.rs	error: rust-js does not support values of type `*mut std::option::Option<(S<'_>, S<'_>)>` yet
 drop/multiple-drop-safe-code-25549.rs	error: rust-js does not support a `Holder<dyn Trait>`, whose last field is a `dyn` yet
 drop/or-pattern-drop-order.rs	error: rust-js does not support `std::iter::Iterator::collect` of a value with a destructor yet

@@ -59,4 +59,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "nested_options"],
     snapshots: true,
   },
+  {
+    name: "crossing-mixed-enum-not-copied",
+    breaks: "an enum with a fieldless variant another crate may change isn't copied where it's read, so a consumer's change shows in the library's value",
+    file: "src/lower/copies.rs",
+    find: "        shared && self.may_be_object(ty)",
+    replace: "        shared && self.is_object(ty)",
+    tests: ["test/crates.test.ts", "-t", "copy_enum"],
+  },
 ];

@@ -2213,6 +2213,14 @@ impl StdItem {
     }
 }
 
+/// Is `id` `mem::swap`, `mem::replace` or `mem::take`, which replace what a
+/// `&mut` is to whole (ADR 0147)?
+pub(crate) fn replaces_whole(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    tcx.is_diagnostic_item(Symbol::intern("mem_swap"), id)
+        || tcx.is_diagnostic_item(Symbol::intern("mem_replace"), id)
+        || tcx.crate_name(id.krate) == sym::core && tcx.def_path_str(id) == "std::mem::take"
+}
+
 /// Is `id` std's `item`?
 pub(crate) fn is_std_def(tcx: TyCtxt<'_>, id: DefId, item: StdItem) -> bool {
     tcx.is_diagnostic_item(item.name(), id)

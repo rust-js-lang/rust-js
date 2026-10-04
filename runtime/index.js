@@ -892,6 +892,44 @@ export function $append(items, other) {
   other.length = 0;
 }
 
+// `*r = v` of an object a `&mut` is (ADR 0147): it becomes `v` in place, so
+// each name for it sees `v`. An array its items, a `Map` or a `Set` its
+// entries, an object its fields, those `v` hasn't gone, as another
+// variant's are.
+export function $assign(target, value) {
+  if (Array.isArray(target)) {
+    target.length = value.length;
+    for (let i = 0; i < value.length; i++) target[i] = value[i];
+  } else if (target instanceof Map) {
+    target.clear();
+    for (const [key, item] of value) target.set(key, item);
+  } else if (target instanceof Set) {
+    target.clear();
+    for (const item of value) target.add(item);
+  } else {
+    for (const key of Object.keys(target)) if (!(key in value)) delete target[key];
+    Object.assign(target, value);
+  }
+}
+
+// `mem::replace(r, v)` and `mem::take(r)` of an object a `&mut` is (ADR
+// 0147): what it was, a copy, as `r` itself becomes `v` in place.
+export function $take(target, value) {
+  const old = Array.isArray(target)
+    ? target.slice()
+    : target instanceof Map || target instanceof Set
+      ? new target.constructor(target)
+      : { ...target };
+  $assign(target, value);
+  return old;
+}
+
+// `mem::swap(a, b)` of two objects `&mut`s are (ADR 0147): each becomes what
+// the other was, in place.
+export function $exchange(a, b) {
+  $assign(b, $take(a, b));
+}
+
 export function $pretty(open, items, close, rest = false) {
   if (items.length === 0) {
     return open + (rest ? ".." : "") + close;

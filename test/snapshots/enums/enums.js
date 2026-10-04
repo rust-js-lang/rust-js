@@ -116,11 +116,11 @@ export function discriminants(i) {
 }
 
 function grow(f) {
-  if (f !== "Dot") {
-    if (f.TAG === "Poly") {
-      f._0.push(0);
+  if (f.value !== "Dot") {
+    if (f.value.TAG === "Poly") {
+      f.value._0.push(0);
     } else {
-      f.r *= 2;
+      f.value.r *= 2;
     }
   }
 }
@@ -141,14 +141,20 @@ export function changed_in_place(r) {
       : poly.TAG === "Circle"
         ? { ...poly }
         : poly;
-  grow(poly);
+  const f = { value: poly };
+  grow(f);
+  poly = f.value;
   let circle$1 = { TAG: "Circle", r };
-  grow(circle$1);
+  const f$1 = { value: circle$1 };
+  grow(f$1);
+  circle$1 = f$1.value;
   if (circle$1.TAG === "Circle") {
     circle$1.r += 0.5;
   }
   let dot = "Dot";
-  grow(dot);
+  const f$2 = { value: dot };
+  grow(f$2);
+  dot = f$2.value;
   let radius;
   if (circle$1.TAG === "Circle") {
     const r$1 = circle$1.r;

@@ -174,6 +174,11 @@ Refused: `{:x?}`; `{:.2e}`; options for a `&dyn Debug` made elsewhere;
   reads back; kept elsewhere, a handle with a getter and a setter
   ([0074](decisions/0074-mut-boxes.md),
   [0099](decisions/0099-mut-references.md)).
+- **`*r = v` replaces the value whole, as Rust's does:** an object `r` is
+  becomes `v` in place, `$assign(r, v)`, so every name for it sees `v`;
+  `mem::replace`, `mem::swap` and `mem::take` the same. An enum with a
+  fieldless variant, whose `Off` is a string, is reached through its place
+  instead, as a number is ([0147](decisions/0147-replacing-through-mut.md)).
 - **`Rc::clone` shares the one object,** as Rust's does.
 
 Differences:
@@ -183,8 +188,7 @@ Differences:
 - **Locks aren't checked:** a `Mutex` locked twice on one thread doesn't
   hang, and a lock is never poisoned ([0144](decisions/0144-locks.md)).
 
-Refused: replacing a whole object through a `&mut`, `*s = S { .. }` or
-`mem::swap` of two `&mut` objects; `Rc::ptr_eq`, `strong_count`, `get_mut`,
+Refused: `Rc::ptr_eq`, `strong_count`, `get_mut`,
 `make_mut` and `try_unwrap`; `Weak`; `Cell::replace`, `take` and `swap`;
 `RefCell::replace` and `try_borrow_mut`; `OnceCell`, `OnceLock` and
 `LazyLock`; `Mutex::try_lock`; a `&mut` to a number that std gives,

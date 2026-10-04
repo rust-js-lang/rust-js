@@ -1,7 +1,9 @@
 //! The types something changes in place, which a copy is made of where
 //! it's read (ADR 0052).
 
+use crate::lower::recognition::replaces_whole;
 use crate::lower::{Body, strip};
+use rustc_ast::Mutability;
 use rustc_hir::LangItem;
 use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::ExprKind;
@@ -50,6 +52,27 @@ pub(super) fn mutated_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>])
                 }
                 _ => {}
             }
+            // `*r = v` through a `&mut` changes an object in place (ADR 0147),
+            // as `mem::swap`, `mem::replace` and `mem::take` of one do.
+            if let ExprKind::Assign { lhs, .. } = expr.kind
+                && let ExprKind::Deref { arg } = body.thir[strip(&body.thir, lhs)].kind
+                && matches!(body.thir[arg].ty.kind(), ty::Ref(_, _, Mutability::Mut))
+                && object_like(tcx, body.thir[lhs].ty)
+            {
+                mutated.insert(body.thir[lhs].ty);
+            }
+            if let ExprKind::Call { fun, ref args, .. } = expr.kind
+                && let ty::FnDef(def_id, _) = *body.thir[fun].ty.kind()
+                && replaces_whole(tcx, def_id)
+            {
+                for &arg in args.iter() {
+                    if let ty::Ref(_, inner, Mutability::Mut) = *body.thir[arg].ty.kind()
+                        && object_like(tcx, inner)
+                    {
+                        mutated.insert(inner);
+                    }
+                }
+            }
             // `a[i] = ..` changes the array `a` the same way.
             if let ExprKind::Assign { lhs, .. } | ExprKind::AssignOp { lhs, .. } = expr.kind
                 && let ExprKind::Field { lhs: object, .. } | ExprKind::Index { lhs: object, .. } =
@@ -60,6 +83,23 @@ pub(super) fn mutated_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>])
         }
     }
     mutated
+}
+
+/// May `ty` be a JS object, which a `&mut` replaces in place (ADR 0147)? A
+/// number, a string, an `Option` and a `Box` aren't: a `&mut` to one is its
+/// place's, and a string can't change.
+fn object_like<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    match ty.kind() {
+        ty::Adt(adt, _) => {
+            !adt.is_box()
+                && ![LangItem::String, LangItem::Option]
+                    .into_iter()
+                    .any(|item| tcx.is_lang_item(adt.did(), item))
+        }
+        ty::Tuple(items) => !items.is_empty(),
+        ty::Array(..) | ty::Slice(_) => true,
+        _ => false,
+    }
 }
 
 /// Does `pat` bind a variable by `ref mut`, or through a `&mut` subject?

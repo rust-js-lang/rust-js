@@ -19,4 +19,28 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","range_values"],
     snapshots: true,
   },
+  {
+    name: "replaced-whole-not-mutation",
+    breaks: "`*p = P::default()` through a `&mut` isn't a change in place, so `let b = a` shares `a`'s object, and resetting `b` resets `a`",
+    file: "src/lower/analysis/mutation.rs",
+    find: "            {\n                mutated.insert(body.thir[lhs].ty);\n            }",
+    replace: "            {}",
+    tests: ["test/corpus.test.ts", "-t", "replace_through_mut"],
+  },
+  {
+    name: "mem-swap-not-mutation",
+    breaks: "`mem::swap` of two `&mut` objects isn't a change in place, so a `Copy` value shared with the swapped one changes too",
+    file: "src/lower/analysis/mutation.rs",
+    find: "                && replaces_whole(tcx, def_id)",
+    replace: "                && replaces_whole(tcx, def_id) && false",
+    tests: ["test/corpus.test.ts", "-t", "replace_through_mut"],
+  },
+  {
+    name: "replaced-string-mutated",
+    breaks: "a `String` replaced through a `&mut` counts as changed in place, so its `clone()` is refused",
+    file: "src/lower/analysis/mutation.rs",
+    find: "                && object_like(tcx, body.thir[lhs].ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "replace_through_mut"],
+  },
 ];

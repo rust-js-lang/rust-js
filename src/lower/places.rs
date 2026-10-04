@@ -53,6 +53,15 @@ pub(super) fn only_reads(e: &Expr) -> bool {
 }
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn assign(&mut self, lhs: ExprId, rhs: ExprId, span: Span, out: &mut Vec<Stmt>) -> R<()> {
+        // `*r = v` of a `&mut` to an object: the object becomes `v`.
+        if let Some(object) = self.replaced_object(lhs) {
+            let value = self.expr(rhs, out)?;
+            let object = self.expr(object, out)?;
+            self.runtime.insert(Helper::Assign);
+            let assigned = Expr::call(Expr::var("$assign"), vec![object, value]);
+            out.push(StmtKind::Expr(assigned).at(self.js_span(span)));
+            return Ok(());
+        }
         // A plain variable can receive control flow directly, without a temporary.
         if self.slot_place(lhs).is_none()
             && self.map_slot(lhs).is_none()
@@ -642,11 +651,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// The place an assignment writes to.
-    pub(super) fn assignee(&self, e: ExprId) -> R<Expr> {
-        // `*r = v` with a `&mut` variable `r` would only rebind the JS variable.
-        // One that names a place, as a `ref mut` binding does, writes it.
-        let names_place = |arg: ExprId| match self.thir[self.strip(arg)].kind {
+    /// Does the `&mut` `arg` name a place, so `*arg = v` writes it? One
+    /// that names a variable's, as a `ref mut` binding does, a box's, or a
+    /// cell's kept in a field, `*self.0 = v`: its `value` (ADR 0099).
+    fn names_place(&self, arg: ExprId) -> bool {
+        match self.thir[self.strip(arg)].kind {
             ExprKind::VarRef { id } => {
                 self.is_boxed(id)
                     || self.is_alias(id)
@@ -656,18 +665,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .get(&id)
                         .is_some_and(|v| matches!(v.place.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..)))
             }
-            // A cell kept in a field, `*self.0 = v`: its `value` (ADR 0099).
             ExprKind::Field { .. } => self.is_cell_value(arg),
             _ => false,
+        }
+    }
+
+    /// `*r`, whose `r` is a `&mut` in a variable or a field that names no
+    /// place: `r`.
+    fn through_mut(&self, e: ExprId) -> Option<ExprId> {
+        let ExprKind::Deref { arg } = self.thir[self.strip(e)].kind else {
+            return None;
         };
-        if let ExprKind::Deref { arg } = self.thir[self.strip(e)].kind
-            && matches!(self.thir[arg].ty.kind(), ty::Ref(..))
+        (matches!(self.thir[arg].ty.kind(), ty::Ref(..))
             && matches!(
                 self.thir[self.strip(arg)].kind,
                 ExprKind::VarRef { .. } | ExprKind::Field { .. }
             )
-            && !names_place(arg)
-        {
+            && !self.names_place(arg))
+        .then_some(arg)
+    }
+
+    /// `*r` of a `&mut` to an object that names no place: `r`, which is the
+    /// object (ADR 0025), replaced whole in place, `$assign(r, v)`, as each
+    /// name for it is it (ADR 0147).
+    pub(super) fn replaced_object(&self, e: ExprId) -> Option<ExprId> {
+        self.through_mut(e).filter(|_| self.is_object(self.thir[e].ty))
+    }
+
+    /// The place an assignment writes to.
+    pub(super) fn assignee(&self, e: ExprId) -> R<Expr> {
+        // `*r = v` with a `&mut` variable `r` would only rebind the JS variable.
+        // One that names a place, as a `ref mut` binding does, writes it.
+        if self.through_mut(e).is_some() {
             return Err(self.unsupported(self.thir[e].span, "assigning a whole value through a `&mut`"));
         }
         self.place(e)
@@ -736,6 +765,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// `mem::swap`, `mem::replace` or `mem::take` of a `&mut` to an object
+    /// (ADR 0147): `$exchange(a, b)`, `$take(a, v)`, which gives what `a` was,
+    /// or `$assign(a, v)` where that isn't used. Each is the object its
+    /// `&mut` is, a variable's as much as one a parameter has.
+    fn replace_object(
+        &mut self,
+        known: Std,
+        args: &[ExprId],
+        discarded: bool,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let js_span = self.js_span(span);
+        let a = self.expr(args[0], out)?;
+        let b = match known {
+            Std::MemTake => self.default_value(self.thir[args[0]].ty.peel_refs(), span)?,
+            _ => self.expr(args[1], out)?,
+        };
+        let (helper, name) = match known {
+            Std::Swap => (Helper::Exchange, "$exchange"),
+            _ if discarded => (Helper::Assign, "$assign"),
+            _ => (Helper::Take, "$take"),
+        };
+        self.runtime.insert(helper);
+        let call = Expr::call(Expr::var(name), vec![a, b]);
+        if known == Std::Swap || discarded {
+            out.push(StmtKind::Expr(call).at(js_span));
+            return Ok(Expr::undefined());
+        }
+        Ok(call)
+    }
+
     /// `mem::swap(&mut a, &mut b)`: `const t = a; a = b; b = t;`, and
     /// `mem::replace(&mut a, v)`: `const old = a; a = v;`, and `old`. While
     /// the call has a place's `&mut`, nothing else can use the place, so
@@ -750,6 +811,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let js_span = self.js_span(span);
+        // Of a `&mut` to an object that names no place: the object, changed
+        // in place, `$replace(r, v)` giving a copy of what it was (ADR 0147).
+        let object = |cx: &Self, arg: ExprId| cx.mut_borrowed(arg).and_then(|place| cx.replaced_object(place));
+        if matches!(known, Std::Swap | Std::Replace | Std::MemTake)
+            && (object(self, args[0]).is_some() || known == Std::Swap && object(self, args[1]).is_some())
+        {
+            return self.replace_object(known, args, discarded, span, out);
+        }
         let a = self.mut_place(args[0], span)?;
         let (b, b_place) = match known {
             Std::Swap => {

@@ -130,4 +130,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^locks"],
   },
+  {
+    name: "replaced-object-refused",
+    breaks: "`*self = Counter::default()` through a `&mut` to an object is refused again",
+    file: "src/lower/places.rs",
+    find: "        self.through_mut(e).filter(|_| self.is_object(self.thir[e].ty))",
+    replace: "        self.through_mut(e).filter(|_| false)",
+    tests: ["test/corpus.test.ts", "-t", "replace_through_mut"],
+  },
 ];

@@ -280,8 +280,9 @@ pointers, and a `&mut` in a `static`.
   object's impl made `&mut self` a handle on its local, which is refused
   again. Of the 12 tests stopping at a `&mut T`, 8 pass.
 - **Anything else stays an error:** a generic `&mut T` to an object inside
-  what a generic function takes or gives, a handle to an object replaced
-  whole, and a `&mut dyn` of std's traits.
+  what a generic function takes or gives, and a `&mut dyn` of std's traits.
+  (Amended: an object replaced whole through a `&mut` is ADR 0147's, in
+  place, without a handle.)
 - Most of the 37 tests of `&mut` to a value that isn't an object need the
   first two rules only, and those come first; handles, generic `&mut T`
   and closures follow, each with its corpus cases and mutations.

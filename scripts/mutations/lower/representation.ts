@@ -115,4 +115,20 @@ export const mutations: Mutation[] = [
     replace: "        matches!(self.shape(ty), Shape::Object(_) | Shape::Array(_))",
     tests: ["test/corpus.test.ts", "-t", "opaque_iterators"],
   },
+  {
+    name: "mixed-enum-object",
+    breaks: "an enum with a fieldless variant is an object for a `&mut`, so `*self = Light::Off` is refused",
+    file: "src/lower/representation.rs",
+    find: "                && (adt.variants().iter().all(|v| !v.fields.is_empty())\n                    || !(adt.did().is_local() || self.krate.foreign.in_library(adt.did()))))",
+    replace: "                && true)",
+    tests: ["test/corpus.test.ts", "-t", "replace_through_mut"],
+  },
+  {
+    name: "std-mixed-enum-place",
+    breaks: "serde_json's `Value`, whose `Null` is fieldless, is reached through its place, so `as_object_mut()` is given a handle, not the `Value`",
+    file: "src/lower/representation.rs",
+    find: "                    || !(adt.did().is_local() || self.krate.foreign.in_library(adt.did()))))",
+    replace: "                    || false))",
+    tests: ["test/compiler.test.ts", "-t", "dynamic.report"],
+  },
 ];

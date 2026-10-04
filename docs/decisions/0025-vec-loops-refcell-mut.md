@@ -76,6 +76,8 @@ function toggle(s, id) {                  // fn toggle(s: &mut State, id: u32)
 Two things are refused, because a JS variable can't point at another
 variable. One is `&mut` to a number, a `bool` or a string. The other is
 replacing a whole value through a `&mut` held in a variable (`*r = v`).
+(Amended: the first is ADR 0099's, a place, a box or a handle; the second
+ADR 0147's, an object replaced in place.)
 
 **Also:**
 

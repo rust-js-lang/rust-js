@@ -213,11 +213,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `dyn` of the crate's trait is its pair (ADR 0049): a `&mut` to
             // one is the pair, whose `value` its `&mut self` methods write.
             || matches!(ty.kind(), ty::Dynamic(..)) && self.dynamic_trait(ty).is_some()
-            // An enum with fields: those variants are objects (ADR 0033). A
-            // fieldless one's string can't be changed through a `&mut` anyway,
-            // since `*r = ..` of a whole value isn't supported. `Option` is
-            // its value itself (ADR 0030), not an object.
+            // An enum each of whose variants has fields: each is an object
+            // (ADR 0033). A crate's own with a fieldless variant isn't: that
+            // variant is a string, which can't become another in place, so
+            // `*r = ..` is its place's, as a number's is (ADR 0147). One of
+            // std's or serde_json's is its methods' object, as it was, a
+            // `Value`'s rust-js's own (ADR 0083). `Option` is its value itself
+            // (ADR 0030), not an object.
             || matches!(ty.kind(), ty::Adt(adt, _) if adt.is_enum()
+                && !self.tcx.is_lang_item(adt.did(), LangItem::Option)
+                && adt.variants().iter().any(|v| !v.fields.is_empty())
+                && (adt.variants().iter().all(|v| !v.fields.is_empty())
+                    || !(adt.did().is_local() || self.krate.foreign.in_library(adt.did()))))
+    }
+
+    /// Might a `ty` value be a JS object something changes in place? An
+    /// object, or an enum with a fieldless variant: not an object for a `&mut`
+    /// (ADR 0147), its variants with fields are objects all the same.
+    pub(super) fn may_be_object(&self, ty: Ty<'tcx>) -> bool {
+        self.is_object(ty)
+            || matches!(self.reveal(ty).kind(), ty::Adt(adt, _) if adt.is_enum()
                 && !self.tcx.is_lang_item(adt.did(), LangItem::Option)
                 && adt.variants().iter().any(|v| !v.fields.is_empty()))
     }
