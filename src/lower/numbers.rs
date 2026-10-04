@@ -119,7 +119,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if num.big() {
             return self.big_number_call(op, args, ty, num, span, out);
         }
+        // A number's range, of 32 bits at most.
         let (lo, hi) = num.range();
+        let hi = hi as i128;
         let mut values = self.operands(args, out)?.into_iter();
         let mut arg = || values.next().expect("rustc checked the arguments");
         let math = |name: &str, list: Vec<Expr>| Expr::call(Expr::member(Expr::var("Math"), name), list);
@@ -428,18 +430,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let (lo, hi) = num.range();
-        let (lo, hi) = (Expr::bigint(lo), Expr::bigint(hi));
+        let (lo, hi) = (num.literal(lo), num.literal(hi as i128));
         let mut values = self.operands(args, out)?.into_iter();
         let mut arg = || values.next().expect("rustc checked the arguments");
         let helper = |this: &mut Self, helper: Helper, name: &str, list: Vec<Expr>| {
             this.runtime.insert(helper);
             Expr::call(Expr::var(name), list)
         };
+        // A 128-bit one's width, where a helper takes it: 64 is the default.
+        let width = |mut list: Vec<Expr>| {
+            if num.bits() == 128 {
+                list.push(Expr::int(128));
+            }
+            list
+        };
         Ok(match op {
             NumOp::Abs => num.wrap(helper(self, Helper::BigAbs, "$bigAbs", vec![arg()])),
             // An `i64::MIN`'s is 2^63, which a `u64` holds.
             NumOp::UnsignedAbs => helper(self, Helper::BigAbs, "$bigAbs", vec![arg()]),
-            NumOp::Pow => num.wrap(helper(self, Helper::BigPow, "$bigPow", vec![arg(), arg()])),
+            NumOp::Pow => num.wrap(helper(self, Helper::BigPow, "$bigPow", width(vec![arg(), arg()]))),
             NumOp::CheckedPow => helper(self, Helper::CheckedPow, "$checkedPow", vec![arg(), arg(), lo, hi]),
             NumOp::Checked(BinOp::Rem) => {
                 let min = if num.signed() { lo.clone() } else { Expr::undefined() };
@@ -478,9 +487,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 helper(self, Helper::BigDivEuclid, "$bigDivEuclid", vec![arg(), arg(), lo])
             }
             NumOp::Signum => helper(self, Helper::BigSignum, "$bigSignum", vec![arg()]),
-            NumOp::LeadingZeros => helper(self, Helper::BigBits, "$bigLeadingZeros", vec![arg()]),
-            NumOp::TrailingZeros => helper(self, Helper::BigBits, "$bigTrailingZeros", vec![arg()]),
-            NumOp::CountOnes => helper(self, Helper::BigBits, "$bigCountOnes", vec![arg()]),
+            NumOp::LeadingZeros => helper(self, Helper::BigBits, "$bigLeadingZeros", width(vec![arg()])),
+            NumOp::TrailingZeros => helper(self, Helper::BigBits, "$bigTrailingZeros", width(vec![arg()])),
+            NumOp::CountOnes => helper(self, Helper::BigBits, "$bigCountOnes", width(vec![arg()])),
             NumOp::IsPowerOfTwo => {
                 let x = arg();
                 let x = if x.reads_same() { x } else { self.spill("n", x, out) };
@@ -506,7 +515,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (a, by) = (arg(), arg());
                 let a = if a.reads_same() { a } else { self.spill("n", a, out) };
                 let by = if by.reads_same() { by } else { self.spill("by", by, out) };
-                let fits = Expr::bin(Op::Lt, by.clone(), Expr::int(64));
+                let fits = Expr::bin(Op::Lt, by.clone(), Expr::int(i128::from(num.bits())));
                 Expr::cond(fits, self.binary(op, a, by, None, ty, span)?, Expr::undefined())
             }
             NumOp::WrappingNeg => num.wrap(Expr::unary(UnaryOp::Neg, arg())),
@@ -545,8 +554,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 )
             }
             NumOp::RotateBits { left } => {
-                let x = Expr::call(Expr::member(Expr::var("BigInt"), "asUintN"), vec![Expr::int(64), arg()]);
-                let list = vec![x, arg(), Expr::int(64), Expr::bool(left)];
+                let bits = Expr::int(num.bits().into());
+                let x = Expr::call(Expr::member(Expr::var("BigInt"), "asUintN"), vec![bits.clone(), arg()]);
+                let list = vec![x, arg(), bits, Expr::bool(left)];
                 let rotated = helper(self, Helper::RotateBits, "$rotateBits", list);
                 if num.signed() { num.wrap(rotated) } else { rotated }
             }
@@ -554,10 +564,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self,
                 Helper::ToBytes,
                 "$toBytes",
-                vec![arg(), Expr::int(8), Expr::bool(little)],
+                vec![arg(), Expr::int((num.bits() / 8).into()), Expr::bool(little)],
             ),
             NumOp::FromBytes { little } => {
-                let list = vec![arg(), Expr::int(8), Expr::bool(little), Expr::bool(num.signed())];
+                let list = vec![
+                    arg(),
+                    Expr::int((num.bits() / 8).into()),
+                    Expr::bool(little),
+                    Expr::bool(num.signed()),
+                ];
                 helper(self, Helper::FromBytes, "$fromBytes", list)
             }
             NumOp::FromStrRadix => helper(self, Helper::ParseBig, "$parseBig", vec![arg(), lo, hi, arg()]),
@@ -567,10 +582,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Rounded toward zero, as a BigInt's division is.
             NumOp::Midpoint => Expr::bin(Op::Div, Expr::bin(Op::Add, arg(), arg()), Expr::bigint(2)),
             NumOp::CountZeros => {
-                let ones = helper(self, Helper::BigBits, "$bigCountOnes", vec![arg()]);
-                Expr::bin(Op::Sub, Expr::int(64), ones)
+                let ones = helper(self, Helper::BigBits, "$bigCountOnes", width(vec![arg()]));
+                Expr::bin(Op::Sub, Expr::int(num.bits().into()), ones)
             }
-            _ => return Err(self.unsupported(span, "this method of a 64-bit integer")),
+            _ => return Err(self.unsupported(span, &format!("this method of a {}-bit integer", num.bits()))),
         })
     }
 }
@@ -759,8 +774,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             BinOp::BitXor => Expr::bin(Op::BitXor, l, r),
             // The amount masked to 63, as release Rust masks it, and a BigInt,
             // whatever its own type.
-            BinOp::Shl => num.wrap(Expr::bin(Op::Shl, unwrapped(l), big_shift(r))),
-            BinOp::Shr => Expr::bin(Op::Shr, l, big_shift(r)),
+            BinOp::Shl => num.wrap(Expr::bin(Op::Shl, unwrapped(l), big_shift(r, num))),
+            BinOp::Shr => Expr::bin(Op::Shr, l, big_shift(r, num)),
             _ => return Err(self.unsupported(span, "this operator")),
         })
     }
@@ -836,7 +851,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let counting = discriminants.iter().enumerate().all(|(i, &(_, d))| d == i as i128);
             // Each one fits the target type, so there's nothing to wrap.
             let (lo, hi) = target.range();
-            let fits = target.float() || discriminants.iter().all(|&(_, d)| lo <= d && d <= hi);
+            let fits = target.float()
+                || discriminants
+                    .iter()
+                    .all(|&(_, d)| lo <= d && (d < 0 || d as u128 <= hi));
             let repr = rustc_middle::ty::util::IntTypeExt::to_ty(&adt.repr().discr_type(), self.tcx);
             let repr = Num::of(repr).unwrap_or(Num::I32);
             // The discriminants as what they're read as: the target, if each
@@ -880,7 +898,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.runtime.insert(helper);
                 Ok(Expr::call(
                     Expr::var(name),
-                    vec![v, target.literal(lo), target.literal(hi)],
+                    vec![v, target.literal(lo), target.literal(hi as i128)],
                 ))
             }
             // An `i64` or `u64` is its nearest `f64`, as `as` rounds it.
@@ -907,7 +925,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     (false, true) => target.wrap(to_bigint(v)),
                     // A constant, or what a mask keeps in range: `x & 1023n`.
                     (true, false) if let Some(n) = v.as_bigint() => target.wrap(Expr::int(n)),
-                    (true, false) if masked(&v).is_some_and(|mask| (0..=thi).contains(&mask)) => {
+                    (true, false) if masked(&v).is_some_and(|mask| mask >= 0 && mask as u128 <= thi) => {
                         Expr::call(Expr::var("Number"), vec![v])
                     }
                     // Into range as a BigInt, then a number.
@@ -952,11 +970,13 @@ pub(super) fn to_bigint(e: Expr) -> Expr {
     }
 }
 
-/// A 64-bit shift's amount: masked to 63, as a BigInt, `BigInt(n) & 63n`.
-pub(super) fn big_shift(r: Expr) -> Expr {
+/// A 64-bit or 128-bit shift's amount: masked to 63 or 127, as release
+/// Rust masks it, as a BigInt, `BigInt(n) & 63n`.
+pub(super) fn big_shift(r: Expr, num: Num) -> Expr {
+    let mask = i128::from(num.bits()) - 1;
     match r.as_int().or_else(|| r.as_bigint()) {
-        Some(n) => Expr::bigint(n & 63),
-        None => Expr::bin(Op::BitAnd, to_bigint(r), Expr::bigint(63)),
+        Some(n) => Expr::bigint(n & mask),
+        None => Expr::bin(Op::BitAnd, to_bigint(r), Expr::bigint(mask)),
     }
 }
 
@@ -1027,7 +1047,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let num = self.num(target, span)?;
                 let (lo, hi) = num.range();
                 self.runtime.insert(Helper::TryFromInt);
-                Expr::call(Expr::var("$tryFromInt"), vec![arg(), num.literal(lo), num.literal(hi)])
+                Expr::call(
+                    Expr::var("$tryFromInt"),
+                    vec![arg(), num.literal(lo), num.literal(hi as i128)],
+                )
             }
             Std::FromDigit => {
                 self.runtime.insert(Helper::FromDigit);

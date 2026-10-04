@@ -347,15 +347,15 @@ tooling while preserving rust-js's own readable-output goals.
   cases found and fixed two miscompilations (nested element writes, repeated
   index effects in compound assignment). rustc's own `run-pass` UI tests run
   the same way (`bun run test:rustc`, [ADR 0089](docs/decisions/0089-rustc-tests.md)):
-  1,910 of 2,206 in scope pass at the pinned stable release, 1.98.1, every
+  1,916 of 2,206 in scope pass at the pinned stable release, 1.98.1, every
   other one is a clear rejection, none a crash or a wrong answer, and the
   [known failures](test/rustc-known-failures.txt) only shrink. A test of a
   feature stable Rust doesn't have is out of scope, as no program of
   rust-js's can use one (`7962214`). Programs written as a person would
   probe what the rustc suite doesn't: the first, an interpreter of arithmetic
   (the [`calculator`](test/corpus/calculator.rs) case), found `collect()`
-  into a `Result` returning the array of `Result`s. The 296 rejections, by kind: values of
-  a type rust-js doesn't support (95; raw pointers the most common),
+  into a `Result` returning the array of `Result`s. The 290 rejections, by kind: values of
+  a type rust-js doesn't support (91; raw pointers the most common),
   std calls (70; intrinsics the most),
   expressions (13), constants of a type (17), statics of a type (15),
   and user implementations of a std trait (4: `Hasher`, `Future` and
@@ -373,7 +373,7 @@ tooling while preserving rust-js's own readable-output goals.
   is a JS number, each result rounded with `Math.fround`, shown with its
   own shortest digits ([ADR 0122](docs/decisions/0122-f32.md)), its bits
   exact but for a NaN's ([ADR 0156](docs/decisions/0156-integer-bits-and-bytes.md));
-  128-bit integers remain. An `Option` of what can look
+  an `i128` or a `u128` is a BigInt wrapped to 128 bits ([ADR 0171](docs/decisions/0171-128-bit-integers.md)). An `Option` of what can look
   like `None`, `Option<Option<i32>>` or `Option<()>`, boxes such a `Some`
   in concrete code as in generic code ([ADR 0051](docs/decisions/0051-generic-options.md)).
   A `Mutex` or an `RwLock` is a `RefCell` on one thread, an `Arc` an
@@ -457,7 +457,8 @@ tooling while preserving rust-js's own readable-output goals.
   `LowerHex` or `Pointer`, 2, a user `fmt::Write`, 3, a user `Borrow`, 3,
   a user `Hash`, 4, a user `AsMut` or `BorrowMut`, 2, same-named traits'
   impls named alike, slice methods, `size_hint()`, `?` of a value with a
-  destructor, a `#![no_std]` crate's std items, and two crashes.
+  destructor, a `#![no_std]` crate's std items, 128-bit integers, and two
+  crashes.
 - [ ] **M8.3 — Share behavior as well as data.** Demonstrate the same model,
   validation, serialization, and domain-logic crates on a native Rust server
   and a rust-js client, including dependencies. Require integration and
@@ -514,7 +515,7 @@ broader completeness work.
 | --- | --- | --- |
 | Dependency reuse | A Cargo workspace builds with rust-js as its wrapper ([ADR 0101](docs/decisions/0101-cargo-workspace-wrapper.md)), each crate JS of its own ([ADR 0100](docs/decisions/0100-separate-crates.md)), and an app's binding crates come from npm ([ADR 0118](docs/decisions/0118-bindings-on-npm-only.md)); registry crates compiled to JS remain open (M8.1). | Sharing a model file is easier than consuming an existing shared crate and its dependencies. |
 | JSON models | Generic derives, `flatten`, every enum representation, and `Value` are supported ([ADRs 0079–0083](docs/decisions/0083-serde-json-value.md)); `with`, `serialize_with`, `deserialize_with`, and some `Value` methods remain rejected (see [Serde diagnostics](test/diagnostics.test.ts)). | Unusual API shapes may still need new support or a documented schema choice. |
-| Numbers | [Numeric representations](src/lower/representation.rs) support 8/16/32-bit integers, `f32` ([ADR 0122](docs/decisions/0122-f32.md)), `f64`, and `i64`/`u64` as BigInts ([ADR 0086](docs/decisions/0086-64-bit-integers.md)); `usize`/`isize` are 32-bit. rustc checks programs for `wasm32-unknown-unknown`, so constants, `size_of` and `cfg` agree with the 32-bit `usize` ([ADR 0090](docs/decisions/0090-wasm32-front-end.md)). 128-bit integers are outside this set; a float's bits are exact but for a NaN's ([ADR 0156](docs/decisions/0156-integer-bits-and-bytes.md)). | External schemas and numeric code may use them. |
+| Numbers | [Numeric representations](src/lower/representation.rs) support 8/16/32-bit integers, `f32` ([ADR 0122](docs/decisions/0122-f32.md)), `f64`, and `i64`/`u64` and `i128`/`u128` as BigInts ([ADR 0086](docs/decisions/0086-64-bit-integers.md), [ADR 0171](docs/decisions/0171-128-bit-integers.md)); `usize`/`isize` are 32-bit. rustc checks programs for `wasm32-unknown-unknown`, so constants, `size_of` and `cfg` agree with the 32-bit `usize` ([ADR 0090](docs/decisions/0090-wasm32-front-end.md)). A 128-bit integer in JSON is outside this set; a float's bits are exact but for a NaN's ([ADR 0156](docs/decisions/0156-integer-bits-and-bytes.md)). | External schemas and numeric code may use them. |
 | Traits and generics | A trait's type parameters, associated types, generic methods and constants are supported ([ADR 0106](docs/decisions/0106-generic-traits.md)), const generics of functions, types and impls ([ADR 0107](docs/decisions/0107-const-generics.md)), and operators and `Into` in generic code ([ADR 0108](docs/decisions/0108-generic-operators-and-into.md)); a `dyn Display` or `dyn Error`, `Box<dyn Error>` from `?` and a message included, is a value and its dictionary ([ADR 0141](docs/decisions/0141-std-trait-objects.md)), and a `dyn` given to generic code is given Rust's built-in impl of its trait ([ADR 0049](docs/decisions/0049-traits-and-generics.md)); a placeholder's options reach a generic or `dyn` value's `fmt`, which can ask its `Formatter` for them ([ADR 0143](docs/decisions/0143-formatter-options.md)); a generic associated type of lifetimes is an associated type ([ADR 0146](docs/decisions/0146-generic-associated-types.md)); a generic function is given the size and name of a type parameter it asks for ([ADR 0145](docs/decisions/0145-type-facts.md)); [validation](src/lower/traits.rs) rejects generic const expressions, a generic associated type of a type with a bound, generic constants, and a generic impl's constant of its parameters. | Existing Rust abstractions and dependencies may not compile unchanged. |
 | Mutable references | A `&mut` in a variable, a generic `&mut T`, one to a closure, and a `&mut dyn` of the crate's traits are supported ([ADR 0099](docs/decisions/0099-mut-references.md)); a generic iterator lent as a `&mut` is the lender's JS iterator ([ADR 0071](docs/decisions/0071-stepping-iterators.md)); `*r = v`, `mem::replace`, `swap` and `take` replace an object in place ([ADR 0147](docs/decisions/0147-replacing-through-mut.md)); a `&mut` std hands out to a number or a string, `iter_mut()`'s or `get_mut`'s, is a handle on it ([ADR 0152](docs/decisions/0152-std-item-handles.md)); a generic `&mut T` to an object inside what a generic function takes or gives, a `&mut dyn` of std's traits, and a trait's `&mut self` method of a generic iterator remain. | Reusable application helpers may exceed the current reference model. |
 | Options, maps, and iterators | A `HashMap` or `HashSet` keyed by a struct, a tuple or an enum with fields, whose `Eq` is derived, finds its keys by value ([ADR 0121](docs/decisions/0121-value-keys.md)); an iterator trait object, boxed or lent, is a JS iterator ([ADR 0140](docs/decisions/0140-iterator-trait-objects.md)); an `Option` of what can look like `None` boxes its `Some` ([ADR 0051](docs/decisions/0051-generic-options.md)); `collect()` into a `Result` or an `Option` stops at the first `Err` or `None` ([ADR 0036](docs/decisions/0036-iterators-and-sorting.md)); [diagnostic cases](test/diagnostics.test.ts) include keys of a custom `PartialEq`, B-trees of struct keys, map equality, `collect()` into a `Result` of anything but an array, and held-iterator restrictions. | Combinations matter even when each broad feature is listed as supported. |

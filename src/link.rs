@@ -239,6 +239,7 @@ fn expr(e: &mut Expr, visitor: &mut Visitor<'_>) {
         }
         ExprKind::Num(_)
         | ExprKind::BigInt(_)
+        | ExprKind::BigUint(_)
         | ExprKind::Bool(_)
         | ExprKind::Str(_)
         | ExprKind::Undefined

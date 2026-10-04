@@ -105,6 +105,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if ty.is_bool() {
             return Ok(reader("bool"));
         }
+        // serde_json reads a 128-bit one by its own rules, not yet here (ADR 0171).
+        if Num::of(ty).is_some_and(|n| n.bits() == 128) {
+            return Err(unsupported(self));
+        }
         // Named as serde names them in its messages: `u32`, `usize`.
         if Num::of(ty).is_some() {
             return Ok(reader(&ty.to_string()));

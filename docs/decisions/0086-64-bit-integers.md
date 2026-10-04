@@ -1,6 +1,6 @@
 # 0086. An `i64` or a `u64` is a BigInt, wrapped as release Rust wraps it
 
-Status: Accepted. Extends [0011](0011-numbers.md), [0064](0064-numbers.md), [0077](0077-serde-json.md) and [0083](0083-serde-json-value.md).
+Status: Accepted. (Amended: 128-bit integers too, ADR 0171.) Extends [0011](0011-numbers.md), [0064](0064-numbers.md), [0077](0077-serde-json.md) and [0083](0083-serde-json-value.md).
 
 ## Context
 

@@ -379,7 +379,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.runtime.insert(helper);
             return Ok(Expr::call(
                 Expr::var(name),
-                vec![text, num.literal(lo), num.literal(hi)],
+                vec![text, num.literal(lo), num.literal(hi as i128)],
             ));
         }
         if target.is_bool() {

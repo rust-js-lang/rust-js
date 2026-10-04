@@ -785,12 +785,14 @@ export function $bigAbs(x) {
   return x < 0n ? -x : x;
 }
 
-export function $bigPow(base, exp) {
+// `x.pow(e)` of a 64-bit integer, squared as Rust squares it, wrapped each
+// time; of a 128-bit one, of `bits` 128.
+export function $bigPow(base, exp, bits = 64) {
   let result = 1n;
-  base = BigInt.asUintN(64, base);
+  base = BigInt.asUintN(bits, base);
   for (let e = exp; e > 0; e >>>= 1) {
-    if (e & 1) result = BigInt.asUintN(64, result * base);
-    base = BigInt.asUintN(64, base * base);
+    if (e & 1) result = BigInt.asUintN(bits, result * base);
+    base = BigInt.asUintN(bits, base * base);
   }
   return result;
 }
@@ -822,16 +824,17 @@ export function $bigSignum(x) {
   return x > 0n ? 1n : x < 0n ? -1n : 0n;
 }
 
-export function $bigCountOnes(x) {
-  return BigInt.asUintN(64, x).toString(2).replaceAll("0", "").length;
+// A 64-bit integer's bits, counted; a 128-bit one's, of `bits` 128.
+export function $bigCountOnes(x, bits = 64) {
+  return BigInt.asUintN(bits, x).toString(2).replaceAll("0", "").length;
 }
-export function $bigLeadingZeros(x) {
-  const bits = BigInt.asUintN(64, x);
-  return bits === 0n ? 64 : 64 - bits.toString(2).length;
+export function $bigLeadingZeros(x, bits = 64) {
+  const unsigned = BigInt.asUintN(bits, x);
+  return unsigned === 0n ? bits : bits - unsigned.toString(2).length;
 }
-export function $bigTrailingZeros(x) {
-  const bits = BigInt.asUintN(64, x).toString(2);
-  return x === 0n ? 64 : bits.length - 1 - bits.lastIndexOf("1");
+export function $bigTrailingZeros(x, bits = 64) {
+  const digits = BigInt.asUintN(bits, x).toString(2);
+  return x === 0n ? bits : digits.length - 1 - digits.lastIndexOf("1");
 }
 
 export function $bigAbsDiff(a, b) {
@@ -1330,7 +1333,11 @@ export function $rotateBits(x, n, bits, left) {
 // number's or a BigInt's, its sign in its top bit, in either order.
 export function $toBytes(x, size, little) {
   const view = new DataView(new ArrayBuffer(size));
-  if (size === 8) view.setBigUint64(0, x, little);
+  // A 128-bit one's, as its two 64-bit halves.
+  if (size === 16) {
+    view.setBigUint64(little ? 0 : 8, BigInt.asUintN(64, x), little);
+    view.setBigUint64(little ? 8 : 0, BigInt.asUintN(64, x >> 64n), little);
+  } else if (size === 8) view.setBigUint64(0, x, little);
   else if (size === 4) view.setUint32(0, x, little);
   else if (size === 2) view.setUint16(0, x, little);
   else view.setUint8(0, x);
@@ -1341,6 +1348,12 @@ export function $toBytes(x, size, little) {
 // bytes, in either order, signed or not.
 export function $fromBytes(bytes, size, little, signed) {
   const view = new DataView(Uint8Array.from(bytes).buffer);
+  if (size === 16) {
+    const low = view.getBigUint64(little ? 0 : 8, little);
+    const high = view.getBigUint64(little ? 8 : 0, little);
+    const n = (high << 64n) | low;
+    return signed ? BigInt.asIntN(128, n) : n;
+  }
   if (size === 8) return signed ? view.getBigInt64(0, little) : view.getBigUint64(0, little);
   if (size === 4) return signed ? view.getInt32(0, little) : view.getUint32(0, little);
   if (size === 2) return signed ? view.getInt16(0, little) : view.getUint16(0, little);

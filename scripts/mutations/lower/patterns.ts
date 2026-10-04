@@ -170,4 +170,12 @@ export const mutations: Mutation[] = [
     replace: "            let place = Expr::member(self.place(cell).map_or_else(Expr::undefined, |(p, _)| p), \"value\");",
     tests: ["test/corpus.test.ts", "-t", "^locks"],
   },
+  {
+    name: "range-top-of-u128-dropped",
+    breaks: "a `u128` range pattern's top is dropped as if it were the type's, `1..=u64::MAX` matching all",
+    file: "src/lower/patterns.rs",
+    find: "i128::try_from(max).is_ok_and(|max| hi.as_int() == Some(max))",
+    replace: "hi.as_int() == i128::try_from(max).ok()",
+    tests: ["test/corpus.test.ts", "-t", "integers_128"],
+  },
 ];

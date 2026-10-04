@@ -200,6 +200,8 @@ pub enum ExprKind {
     Num(f64),
     /// A `u64` or an `i64` (ADR 0086): `5n`.
     BigInt(i128),
+    /// A `u128` past `i128::MAX`, which `BigInt` can't hold (ADR 0171).
+    BigUint(u128),
     Bool(bool),
     Str(String),
     Undefined,
@@ -335,6 +337,14 @@ impl Expr {
 
     pub fn bigint(n: i128) -> Expr {
         Expr::new(ExprKind::BigInt(n))
+    }
+
+    /// A `u128`'s value, `BigInt` where it fits.
+    pub fn biguint(n: u128) -> Expr {
+        match i128::try_from(n) {
+            Ok(n) => Expr::bigint(n),
+            Err(_) => Expr::new(ExprKind::BigUint(n)),
+        }
     }
 
     pub fn bool(b: bool) -> Expr {
@@ -490,6 +500,7 @@ impl Expr {
             self.kind,
             ExprKind::Num(_)
                 | ExprKind::BigInt(_)
+                | ExprKind::BigUint(_)
                 | ExprKind::Bool(_)
                 | ExprKind::Str(_)
                 | ExprKind::Undefined
@@ -521,6 +532,7 @@ impl Expr {
             ExprKind::Template(_, values) => values.iter().any(Expr::contains_jsx),
             ExprKind::Num(_)
             | ExprKind::BigInt(_)
+            | ExprKind::BigUint(_)
             | ExprKind::Bool(_)
             | ExprKind::Str(_)
             | ExprKind::Undefined
@@ -621,6 +633,7 @@ impl Expr {
             })),
             ExprKind::Num(_)
             | ExprKind::BigInt(_)
+            | ExprKind::BigUint(_)
             | ExprKind::Bool(_)
             | ExprKind::Str(_)
             | ExprKind::Undefined
@@ -692,6 +705,7 @@ impl Expr {
         match &self.kind {
             ExprKind::Num(_)
             | ExprKind::BigInt(_)
+            | ExprKind::BigUint(_)
             | ExprKind::Bool(_)
             | ExprKind::Str(_)
             | ExprKind::Undefined

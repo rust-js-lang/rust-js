@@ -44,7 +44,7 @@ table](../ROADMAP.md) lists the larger missing pieces.
 |---|---|---|
 | `i8` `i16` `i32` `u8` `u16` `u32` | number | kept in range after each operation: `x \| 0`, `x >>> 0`, `x & 255` ([0011](decisions/0011-numbers.md)) |
 | `usize` `isize` | number, **32 bits** | rustc checks programs for `wasm32-unknown-unknown`, so `usize::MAX`, `size_of` and `cfg`s agree ([0090](decisions/0090-wasm32-front-end.md)) |
-| `i64` `u64` | BigInt, `5n` | exact, wrapped with `BigInt.asIntN` ([0086](decisions/0086-64-bit-integers.md)) |
+| `i64` `u64` `i128` `u128` | BigInt, `5n` | exact, wrapped with `BigInt.asIntN` to 64 or 128 bits ([0086](decisions/0086-64-bit-integers.md), [0171](decisions/0171-128-bit-integers.md)) |
 | `f64` | number | |
 | `f32` | number, each result rounded by `Math.fround` | printed with its own shortest digits ([0122](decisions/0122-f32.md)) |
 | `bool` | boolean | |
@@ -85,7 +85,7 @@ table](../ROADMAP.md) lists the larger missing pieces.
   ([0156](decisions/0156-integer-bits-and-bytes.md)). A NaN's sign and
   payload aren't kept, so `is_sign_negative` of one is `false`.
 
-Refused: `i128` and `u128`; `mul_add`; a float's `midpoint`; and some
+Refused: an `i128` or a `u128` in JSON; `mul_add`; a float's `midpoint`; and some
 integer and float methods, among them `swap_bytes`, `reverse_bits` and
 `copysign`.
 

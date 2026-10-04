@@ -659,6 +659,7 @@ impl<'a> Cx<'a> {
                     digits
                 }
             }
+            ExprKind::BigUint(n) => Expression::new_identifier(sp, self.name(&format!("{n}n")), b),
             ExprKind::Bool(v) => Expression::new_boolean_literal(sp, *v, b),
             ExprKind::Str(s) => Expression::new_string_literal(sp, self.allocator.alloc_str(s), None, b),
             ExprKind::Undefined => Expression::new_identifier(sp, "undefined", b),

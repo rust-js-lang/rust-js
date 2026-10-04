@@ -300,10 +300,12 @@ pub(super) enum Num {
     I16,
     I32,
     I64,
+    I128,
     U8,
     U16,
     U32,
     U64,
+    U128,
     F32,
     F64,
 }
@@ -326,10 +328,12 @@ impl Num {
             // `isize` and `usize` are 32 bits, as on wasm32 (ADR 0025).
             ty::Int(ty::IntTy::I32 | ty::IntTy::Isize) => Num::I32,
             ty::Int(ty::IntTy::I64) => Num::I64,
+            ty::Int(ty::IntTy::I128) => Num::I128,
             ty::Uint(ty::UintTy::U8) => Num::U8,
             ty::Uint(ty::UintTy::U16) => Num::U16,
             ty::Uint(ty::UintTy::U32 | ty::UintTy::Usize) => Num::U32,
             ty::Uint(ty::UintTy::U64) => Num::U64,
+            ty::Uint(ty::UintTy::U128) => Num::U128,
             ty::Float(ty::FloatTy::F32) => Num::F32,
             ty::Float(ty::FloatTy::F64) => Num::F64,
             _ => return None,
@@ -342,6 +346,7 @@ impl Num {
             Num::I16 | Num::U16 => 16,
             Num::I32 | Num::U32 | Num::F32 => 32,
             Num::I64 | Num::U64 | Num::F64 => 64,
+            Num::I128 | Num::U128 => 128,
         }
     }
 
@@ -351,26 +356,33 @@ impl Num {
     }
 
     pub(super) fn signed(self) -> bool {
-        matches!(self, Num::I8 | Num::I16 | Num::I32 | Num::I64)
+        matches!(self, Num::I8 | Num::I16 | Num::I32 | Num::I64 | Num::I128)
     }
 
-    /// An `i64` or a `u64`: a JS BigInt, which mixes only with another.
+    /// A 64-bit or a 128-bit integer: a JS BigInt, which mixes only with
+    /// another (ADRs 0086, 0171).
     pub(super) fn big(self) -> bool {
-        matches!(self, Num::I64 | Num::U64)
+        matches!(self, Num::I64 | Num::U64 | Num::I128 | Num::U128)
     }
 
-    /// `n` as a literal of this type: `5`, or `5n`.
+    /// `n` as a literal of this type: `5`, or `5n`. A `u128`'s `n` is its
+    /// bits, as an `i128` holds them: `-1` is `u128::MAX`.
     pub(super) fn literal(self, n: i128) -> Expr {
-        if self.big() { Expr::bigint(n) } else { Expr::int(n) }
+        match self {
+            Num::U128 => Expr::biguint(n as u128),
+            _ if self.big() => Expr::bigint(n),
+            _ => Expr::int(n),
+        }
     }
 
-    /// The inclusive value range, for integers.
-    pub(super) fn range(self) -> (i128, i128) {
+    /// The inclusive value range, for integers: its top a `u128`, which
+    /// `u128::MAX` needs.
+    pub(super) fn range(self) -> (i128, u128) {
         let bits = self.bits();
         if self.signed() {
-            (-(1 << (bits - 1)), (1 << (bits - 1)) - 1)
+            (i128::MIN >> (128 - bits), (i128::MAX >> (128 - bits)) as u128)
         } else {
-            (0, (1 << bits) - 1)
+            (0, u128::MAX >> (128 - bits))
         }
     }
 
@@ -385,6 +397,12 @@ impl Num {
         {
             return f32_literal(n as f32);
         }
+        // A 128-bit one is in range already: `const_int` is of `i128`s.
+        if self.bits() == 128
+            && let Some(n) = const_int(&e)
+        {
+            return self.literal(n);
+        }
         if !self.float()
             && let Some(n) = const_int(&e)
         {
@@ -396,17 +414,18 @@ impl Num {
                 wrapped
             });
         }
-        let as_n = |name: &str| Expr::call(Expr::member(Expr::var("BigInt"), name), vec![Expr::int(64), e.clone()]);
+        let bits = Expr::int(i128::from(self.bits()));
+        let as_n = |name: &str| Expr::call(Expr::member(Expr::var("BigInt"), name), vec![bits.clone(), e.clone()]);
         match self {
-            Num::I64 => as_n("asIntN"),
-            Num::U64 => as_n("asUintN"),
+            Num::I64 | Num::I128 => as_n("asIntN"),
+            Num::U64 | Num::U128 => as_n("asUintN"),
             Num::I32 => Expr::bin(Op::BitOr, e, Expr::num(0)),
             Num::U32 => Expr::bin(Op::UShr, e, Expr::num(0)),
             Num::I8 | Num::I16 => {
                 let shift = 32 - self.bits();
                 Expr::bin(Op::Shr, Expr::bin(Op::Shl, e, Expr::num(shift)), Expr::num(shift))
             }
-            Num::U8 | Num::U16 => Expr::bin(Op::BitAnd, e, Expr::int(self.range().1)),
+            Num::U8 | Num::U16 => Expr::bin(Op::BitAnd, e, Expr::int(self.range().1 as i128)),
             // The nearest `f32`: of an exact result, Rust's (ADR 0122).
             Num::F32 => Expr::call(Expr::member(Expr::var("Math"), "fround"), vec![e]),
             Num::F64 => e,

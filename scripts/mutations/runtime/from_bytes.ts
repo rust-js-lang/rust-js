@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "  if (size === 2) return view.getUint16(0, little);",
     tests: ["test/corpus.test.ts", "-t", "integer_bits"],
   },
+  {
+    name: "from-bytes-128-unsigned",
+    breaks: "an `i128` from bytes is read unsigned, `-3` as `2^128 - 3`",
+    file: "src/runtime/from_bytes.js",
+    find: "    return signed ? BigInt.asIntN(128, n) : n;",
+    replace: "    return n;",
+    tests: ["test/corpus.test.ts", "-t", "integers_128"],
+  },
 ];

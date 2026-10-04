@@ -60,7 +60,6 @@ codegen/box-str-drop-glue.rs	error: rust-js does not support calling `std::intri
 codegen/correctly-monomorphize-generic-drop-impl.rs	error: rust-js does not support `size_of` of a type parameter yet
 codegen/dont-roundup-dst-prefix-size-to-alignment.rs	error: rust-js does not support values of type `dyn std::marker::Send` yet
 codegen/dynamic-size-of-prefix-correctly-36278.rs	error: rust-js does not support `size_of_val` of a value without one size yet
-codegen/issue-101585-128bit-repeat.rs	error: rust-js does not support values of type `i128` yet
 codegen/issue-27859.rs	error: rust-js does not support calling `std::iter::ExactSizeIterator::len` yet
 coercion/any-trait-object-debug-12744.rs	error: rust-js does not support `{:?}` of a `dyn std::any::Any` yet
 coercion/basic-ptr-coercions.rs	error: rust-js does not support values of type `*const isize` yet
@@ -75,7 +74,6 @@ const-generics/type-dependent/issue-69816.rs	error: rust-js does not support `De
 const-generics/type-dependent/issue-70507.rs	error: rust-js does not support values of type `*const [T; N]` yet
 const-generics/type-dependent/issue-71805.rs	error: rust-js does not support `&mut` to a `I` of a trait's method yet
 const-ptr/pointer-address-stability.rs	error: rust-js does not support this expression yet
-consts/cast-discriminant-zst-enum.rs	error: rust-js does not support values of type `i128` yet
 consts/const_constructor/const-construct-call.rs	error: rust-js does not support constants of type `std::panic::AssertUnwindSafe<(std::option::Option<i32>, std::result::Result<i32, bool>)>` yet
 consts/const_discriminant.rs	error: rust-js does not support constants of type `std::mem::Discriminant<Test>` yet
 consts/const_fn_unsize.rs	error: rust-js does not support constants of type `std::ptr::NonNull<[i32]>` yet
@@ -91,8 +89,6 @@ consts/const-err-rpass.rs	error: rust-js does not support constants of type `*co
 consts/const-eval/issue-64908.rs	error: rust-js does not support `size_of` of a type parameter yet
 consts/const-eval/ptr_fragments.rs	error: rust-js does not support constants of type `std::mem::MaybeUninit<*const i32>` yet
 consts/const-fn-val.rs	error: rust-js does not support statics of type `Bar<fn() -> isize>` yet
-consts/const-int-arithmetic.rs	error: rust-js does not support `{:?}` of a `i128` yet
-consts/const-int-saturating-arith.rs	error: rust-js does not support this constant yet
 consts/const-region-ptrs-noncopy.rs	error: rust-js does not support this expression yet
 consts/const-typeid-of-rpass.rs	error: rust-js does not support statics of type `std::any::TypeId` yet
 consts/const-vec-of-fns.rs	error: rust-js does not support statics of type `&'static mut [S<fn()>]` yet
@@ -164,7 +160,7 @@ issues/issue-4542.rs	error: rust-js does not support iterating over `std::env::A
 iterators/bytes-iterator-clone-12677.rs	error: rust-js does not support cloning `std::str::Bytes<'_>` yet
 iterators/into-iter-on-boxed-slices-lint.rs	error: rust-js does not support calling `std::vec::Vec::<T, A>::into_boxed_slice` yet
 iterators/iter-map-fold-type-length.rs	error: rust-js does not support `&mut` to a `I` yet
-layout/aggregate-lang/struct-offsets.rs	error: rust-js does not support values of type `u128` yet
+layout/aggregate-lang/struct-offsets.rs	error: rust-js does not support calling `std::mem::zeroed` yet
 layout/issue-112048-unsizing-field-order.rs	error: rust-js does not support a `GcNode<dyn std::fmt::Debug>`, whose last field is a `dyn` yet
 layout/null-pointer-optimization.rs	error: rust-js does not support `{:?}` of a `fn()` yet
 let-else/let-else-drop-order.rs	error: rust-js does not support a `&mut` of this in a variable yet
@@ -190,8 +186,6 @@ never_type/regress/never-as-function-argument.rs	error: rust-js does not support
 nll/issue-24535-allow-mutable-borrow-in-match-guard.rs	error: rust-js does not support `&mut` to a `I` yet
 nll/issue-48623-closure.rs	error: rust-js does not support a `&mut` of this in a variable yet
 nll/issue-53123-raw-pointer-cast.rs	error: rust-js does not support values of type `*mut T` yet
-numbers-arithmetic/float-int-invalid-const-cast.rs	error: rust-js does not support values of type `u128` yet
-numbers-arithmetic/i128-min-literal-parses.rs	error: rust-js does not support values of type `i128` yet
 numbers-arithmetic/integer-literal-suffix-inference-2.rs	error: rust-js does not support values of type `*const ()` yet
 or-patterns/issue-70413-no-unreachable-pat-and-guard.rs	error: rust-js does not support a guard of a `|` pattern binding a name at another place in each alternative yet
 or-patterns/search-via-bindings.rs	error: rust-js does not support a guard of a `|` pattern binding a name at another place in each alternative yet

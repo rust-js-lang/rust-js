@@ -115,4 +115,28 @@ export const mutations: Mutation[] = [
     replace: "                    Num::I32 => arg(),",
     tests: ["test/corpus.test.ts", "-t", "integer_bits"],
   },
+  {
+    name: "big-shift-masked-to-63",
+    breaks: "a 128-bit shift's amount is masked to 63, `1u128 << 100` being `1 << 36`",
+    file: "src/lower/numbers.rs",
+    find: "    let mask = i128::from(num.bits()) - 1;",
+    replace: "    let mask = 63;",
+    tests: ["test/corpus.test.ts", "-t", "integers_128"],
+  },
+  {
+    name: "big-helpers-width-dropped",
+    breaks: "a 128-bit `pow`, `leading_zeros` or `count_ones` counts 64 bits",
+    file: "src/lower/numbers.rs",
+    find: "            if num.bits() == 128 {\n                list.push(Expr::int(128));",
+    replace: "            if num.bits() == 0 {\n                list.push(Expr::int(128));",
+    tests: ["test/corpus.test.ts", "-t", "integers_128"],
+  },
+  {
+    name: "big-checked-shift-at-64",
+    breaks: "a 128-bit `checked_shl` is `None` past 64",
+    file: "src/lower/numbers.rs",
+    find: "                let fits = Expr::bin(Op::Lt, by.clone(), Expr::int(i128::from(num.bits())));",
+    replace: "                let fits = Expr::bin(Op::Lt, by.clone(), Expr::int(64));",
+    tests: ["test/corpus.test.ts", "-t", "integers_128"],
+  },
 ];

@@ -1131,7 +1131,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if let Some(num) = Num::of(range.ty).filter(|&n| !n.float()) {
                     let (min, max) = num.range();
                     lo = lo.filter(|lo| lo.as_int() != Some(min));
-                    hi = hi.filter(|hi| !(range.end == RangeEnd::Included && hi.as_int() == Some(max)));
+                    hi = hi.filter(|hi| {
+                        !(range.end == RangeEnd::Included
+                            && i128::try_from(max).is_ok_and(|max| hi.as_int() == Some(max)))
+                    });
                 }
                 let tests: Vec<Expr> = lo
                     .map(|lo| Expr::bin(Op::Ge, subject.clone(), lo))

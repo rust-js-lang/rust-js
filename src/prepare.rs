@@ -43,6 +43,7 @@ fn prints_on_lines(value: &Expr) -> bool {
         }
         ExprKind::Num(_)
         | ExprKind::BigInt(_)
+        | ExprKind::BigUint(_)
         | ExprKind::Bool(_)
         | ExprKind::Str(_)
         | ExprKind::Undefined

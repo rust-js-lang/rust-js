@@ -6,7 +6,7 @@ of its own, every library of its graph by rust-js as Cargo's
 `RUSTC_WRAPPER`, for its target, and records what each refused first, or
 what Cargo said where a crate failed with no refusal: a crash.
 
-Measured 2026-10-04, after ADR 0170, Rust 1.98.1, each crate at the
+Measured 2026-10-04, after ADR 0171, Rust 1.98.1, each crate at the
 newest release its requirement allows.
 
 | Crate | Verdict | First refusals in its graph |
@@ -22,26 +22,27 @@ newest release its requirement allows.
 | once_cell 1.21 | refused | a constant of a raw pointer |
 | semver 1.0 | refused | a constant of a `NonNull` |
 | uuid 1.27 | refused | `&mut` of a `MaybeUninit` buffer's range |
-| url 2.5 | blocked | litemap: `{:?}` of a `PhantomData`; writeable: a whole value assigned through a `&mut`; smallvec's; percent-encoding: `transmute`; zerofrom: `u128` |
+| url 2.5 | blocked | litemap: `{:?}` of a `PhantomData`; writeable: a whole value assigned through a `&mut`; smallvec's; percent-encoding: `transmute`; zerofrom: dropping an `Option<T>` |
 | regex 1.11 | blocked | memchr: a raw pointer; regex-syntax: `str::from_utf8` |
-| rust_decimal 1.38 | blocked | arrayvec: a user `io::Write`; serde_core: `size_of` of a type parameter; num-traits: `u128` |
+| rust_decimal 1.38 | blocked | arrayvec: a user `io::Write`; serde_core: `size_of` of a type parameter; num-traits: `f32::to_int_unchecked` |
 | chrono 0.4 (`alloc`) | blocked | num-traits' |
-| time 0.3 (`alloc`) | blocked | powerfmt: a `MaybeUninit`; deranged: `{:?}` of an `IntErrorKind`; num-conv: `u128`; time-core: a generic impl's constant of its parameters |
+| time 0.3 (`alloc`) | blocked | powerfmt: a `MaybeUninit`; deranged: `{:?}` of an `IntErrorKind` |
 
 1 of 16 compiles. What stops the most, by the crates it stops:
 
 1. **Raw memory,** a raw pointer, a `NonNull`, a `MaybeUninit`,
    `transmute`, `handle_alloc_error`: 9.
-2. **`u128` and `i128`:** 4, num-traits' stopping chrono and rust_decimal.
+2. **num-traits' `f32::to_int_unchecked`:** 2, chrono and rust_decimal.
    **A user `Future`:** 2.
 3. **One each:** `{:?}` of a `PhantomData`, `Path::display`,
-   `str::from_utf8`, a generic impl's constant, `write_str` of a generic
-   writer, `{:?}` of an `IntErrorKind`, a user `io::Write`,
-   `size_of` of a type parameter, a whole value assigned through a
-   `&mut`.
+   `str::from_utf8`, `write_str` of a generic writer, `{:?}` of an
+   `IntErrorKind`, a user `io::Write`, `size_of` of a type parameter, a
+   whole value assigned through a `&mut`, dropping an `Option<T>`.
 
 ## Fixed by measuring
 
+- **`u128` and `i128`** stopped num-traits, num-conv, zerofrom and
+  serde_core; num-conv and time-core compile now (ADR 0171).
 - **A `#![no_std]` crate's std items,** which rustc names `core::str::Chars`,
   weren't recognized: num-traits' `chars()`. **`size_hint()` of a generic
   iterator,** serde_core's, bounds that hold, a listed difference (ADR 0170).
