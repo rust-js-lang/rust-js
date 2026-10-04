@@ -66,6 +66,14 @@ pub fn collect_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
                     && !is_binding(tcx, def_id.to_def_id())
             }
             DefKind::Closure => true,
+            // A generic impl's constant, which rustc can't compute for every
+            // type at once: its initializer, lowered in its dictionary (ADR 0176).
+            DefKind::AssocConst { .. } => tcx.trait_impl_of_assoc(def_id.to_def_id()).is_some_and(|imp| {
+                tcx.generics_of(imp)
+                    .own_params
+                    .iter()
+                    .any(|p| matches!(p.kind, ty::GenericParamDefKind::Type { .. }))
+            }),
             _ => false,
         })
         .filter_map(|def_id| {

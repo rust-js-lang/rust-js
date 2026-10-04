@@ -1086,6 +1086,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// A generic impl's constant of its parameters (ADR 0176): its initializer,
+    /// `() => [TConstZero.ZERO]`, lowered in its dictionary, which has the
+    /// impl's evidence.
+    /// The impl's own, `id`; a trait's default, of `Self`, isn't yet.
+    fn impl_const_getter(&mut self, id: Option<DefId>, span: Span) -> R<Expr> {
+        let id = id.ok_or_else(|| self.unsupported(span, "a generic impl's default constant of its parameters"))?;
+        let body = id
+            .as_local()
+            .and_then(|local| self.krate.closures.get(&local).copied())
+            .ok_or_else(|| self.unsupported(span, "a generic impl's constant of its parameters"))?;
+        let enclosing = self.enter_body(
+            body,
+            id,
+            super::Nested::Closure {
+                names: self.names.clone(),
+            },
+        )?;
+        let mut stmts = Vec::new();
+        let value = self.expr(body.expr, &mut stmts);
+        self.leave_body(enclosing)?;
+        stmts.push(StmtKind::Return(Some(value?)).at(js::Span::NONE));
+        Ok(Expr::arrow(Vec::new(), stmts))
+    }
+
     /// An operator trait's dictionary entry: its method, `add`, after its
     /// `Output`.
     fn operator_entry(&self, trait_id: DefId) -> String {
@@ -1572,9 +1596,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if !self.krate.library && !self.krate.generic_consts.contains(&item.def_id) {
                     continue;
                 }
-                let value = eval_const(self.tcx, self.typing_env, item.def_id, tr.args, span)
+                let Some(value) = eval_const(self.tcx, self.typing_env, item.def_id, tr.args, span)
                     .and_then(|value| const_js(self.tcx, value))
-                    .ok_or_else(|| self.unsupported(span, "a generic impl's constant of its parameters"))?;
+                else {
+                    // Of its parameters, `Wrapping(T::ZERO)`: its initializer, read
+                    // each time, as a constant is, of the impl's evidence (ADR 0176).
+                    let own = self.tcx.impl_item_implementor_ids(id).get(&item.def_id).copied();
+                    let getter = self.impl_const_getter(own, span)?;
+                    props.push(Prop::Getter(bindings::fn_name(self.tcx, item.def_id), getter));
+                    continue;
+                };
                 let ty = self
                     .tcx
                     .type_of(item.def_id)

@@ -575,4 +575,12 @@ export const mutations: Mutation[] = [
     replace: "            if false\n                && let Some(op) = super::recognition::value_operator(self.tcx, trait_id)",
     tests: ["test/corpus.test.ts", "-t", "trait_default_bounds"],
   },
+  {
+    name: "generic-impl-const-trait-item",
+    breaks: "a generic impl's constant is looked up as its trait's, which has no body here",
+    file: "src/lower/traits.rs",
+    find: "                    let own = self.tcx.impl_item_implementor_ids(id).get(&item.def_id).copied();",
+    replace: "                    let own = Some(item.def_id);",
+    tests: ["test/corpus.test.ts", "-t", "generic_impl_consts"],
+  },
 ];

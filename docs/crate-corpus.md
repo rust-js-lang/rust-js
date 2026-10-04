@@ -6,7 +6,7 @@ of its own, every library of its graph by rust-js as Cargo's
 `RUSTC_WRAPPER`, for its target, and records what each refused first, or
 what Cargo said where a crate failed with no refusal: a crash.
 
-Measured 2026-10-04, after ADR 0174, Rust 1.98.1, each crate at the
+Measured 2026-10-05, after ADR 0176, Rust 1.98.1, each crate at the
 newest release its requirement allows.
 
 | Crate | Verdict | First refusals in its graph |
@@ -24,22 +24,26 @@ newest release its requirement allows.
 | uuid 1.27 | refused | `&mut` of a `MaybeUninit` buffer's range |
 | url 2.5 | blocked | litemap: `{:?}` of a `PhantomData`; writeable: a whole value assigned through a `&mut`; smallvec's; percent-encoding: `transmute`; yoke: a raw pointer |
 | regex 1.11 | blocked | memchr: a raw pointer |
-| rust_decimal 1.38 | blocked | arrayvec: a user `io::Write`; serde_core: `size_of` of a type parameter; num-traits: a generic impl's constant of its parameters |
-| chrono 0.4 (`alloc`) | blocked | num-traits' |
-| time 0.3 (`alloc`) | blocked | powerfmt: a `MaybeUninit`; deranged: a `u8` of a range type, `NonZero`'s |
+| rust_decimal 1.38 | blocked | arrayvec: a user `io::Write`; serde_core: `size_of` of a type parameter |
+| chrono 0.4 (`alloc`) | refused | a `NonZero` integer, a pattern type; and a constant of one of its dates |
+| time 0.3 (`alloc`) | blocked | powerfmt: a `MaybeUninit`; deranged: a `NonZero` integer, a pattern type |
 
 2 of 16 compile. What stops the most, by the crates it stops:
 
 1. **Raw memory,** a raw pointer, a `NonNull`, a `MaybeUninit`,
    `transmute`, `handle_alloc_error`: 9.
-2. **num-traits' generic impl constants, `Wrapping(T::ZERO)`:** 2, chrono and
-   rust_decimal.
+2. **A `NonZero` integer, a pattern type `(u8) is 1..`:** 2, chrono and
+   deranged, so time; serde_core too behind its first.
    **A user `Future`:** 2.
-3. **One each:** `{:?}` of a generic `PhantomData`, `write_str` of a generic writer, a user `io::Write`, `size_of` of a type
-   parameter, a whole value assigned through a `&mut`, a range type.
+3. **One each:** `{:?}` of a generic `PhantomData`, `write_str` of a generic
+   writer, a user `io::Write`, `size_of` of a type parameter, a whole value
+   assigned through a `&mut`.
 
 ## Fixed by measuring
 
+- **num-traits compiles,** after `Wrapping`, a float's methods, every
+  integer's bits, defaults of `Self`, and a generic impl's constant of its
+  parameters (ADRs 0156, 0175, 0176).
 - **`{:p}` of a generic `T`:** thiserror compiles now (ADR 0174).
   **`f32::is_normal` and `classify`,** num-traits' (ADR 0122); **the bit
   methods of every integer and a float's bytes,** num-traits' `PrimInt` and

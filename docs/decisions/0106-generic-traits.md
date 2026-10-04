@@ -2,7 +2,8 @@
 
 Status: Accepted: a trait's type parameters, associated types, generic
 methods and constants. Generic associated types, and a generic impl's
-constant of its parameters, are to come. Extends [0049](0049-traits-and-generics.md)
+constant of its parameters, are to come. (Amended: a generic impl's
+constant of its parameters is in, ADR 0176.) Extends [0049](0049-traits-and-generics.md)
 and [0051](0051-generic-options.md).
 
 ## Context

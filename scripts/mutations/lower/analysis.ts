@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "user_hash"],
   },
+  {
+    name: "generic-impl-const-bodies-uncollected",
+    breaks: "a generic impl's constant of its parameters, `Wrapping(T::ZERO)`, is an error",
+    file: "src/lower/analysis.rs",
+    find: "            DefKind::AssocConst { .. } => tcx.trait_impl_of_assoc(def_id.to_def_id()).is_some_and(|imp| {",
+    replace: "            DefKind::AssocConst { .. } => tcx.trait_impl_of_assoc(def_id.to_def_id()).is_some_and(|imp| false && {",
+    tests: ["test/corpus.test.ts", "-t", "generic_impl_consts"],
+  },
 ];
