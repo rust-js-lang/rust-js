@@ -331,4 +331,12 @@ export const mutations: Mutation[] = [
     replace: "                || false)",
     tests: ["test/corpus.test.ts","-t","user_collections"],
   },
+  {
+    name: "as-ref-not-dictionary",
+    breaks: "`s.as_ref()` of a generic `S: AsRef<str>`, and a type's own `impl AsRef`, are errors",
+    file: "src/lower/recognition.rs",
+    find: "        || is_std_def(tcx, id, StdItem::AsRef)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "generic_as_ref"],
+  },
 ];

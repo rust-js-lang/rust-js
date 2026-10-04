@@ -1955,6 +1955,8 @@ pub(super) fn operational(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_,
         || serde_trait(tcx, id).is_some()
         // `parse` of a `T: FromStr`: its dictionary's `from_str` (ADR 0161).
         || is_from_str(tcx, id)
+        // `s.as_ref()` of an `S: AsRef<str>`: its dictionary's `as_ref` (ADR 0162).
+        || is_std_def(tcx, id, StdItem::AsRef)
         // `a + b` of a `T: Add`, and `x.into()` of a `T: Into<U>` (ADR 0108).
         || value_operator(tcx, id).is_some()
         || tcx.is_diagnostic_item(sym::Into, id)
@@ -2355,6 +2357,7 @@ pub(super) fn formatter_query(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Formatte
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum StdItem {
     Any,
+    AsRef,
     Atomic,
     BTreeMap,
     BTreeSet,
@@ -2389,6 +2392,7 @@ impl StdItem {
     fn name(self) -> Symbol {
         match self {
             StdItem::Any => Symbol::intern("Any"),
+            StdItem::AsRef => sym::AsRef,
             StdItem::Atomic => Symbol::intern("Atomic"),
             StdItem::BTreeMap => Symbol::intern("BTreeMap"),
             StdItem::BTreeSet => Symbol::intern("BTreeSet"),

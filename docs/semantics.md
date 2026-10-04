@@ -351,6 +351,10 @@ What JS sees of a crate:
   [0046](decisions/0046-camel-case-crates.md)).
 - **A type's methods are its exported object's,** the receiver first:
   `Point.shift(p, by)` ([0047](decisions/0047-methods.md)).
+- **`FromStr` and `AsRef` are dictionaries too:** a generic `S: AsRef<str>`
+  is given `{ as_ref }`, the value itself for a `String` or a `&str`
+  ([0161](decisions/0161-generic-from-str.md),
+  [0162](decisions/0162-generic-as-ref.md)).
 - **A generic function takes its trait dictionaries after its arguments,**
   `show(t, pointDisplay())`; a `dyn Trait` is `{ value, impl }`
   ([0049](decisions/0049-traits-and-generics.md)).

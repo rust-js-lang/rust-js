@@ -502,4 +502,12 @@ export const mutations: Mutation[] = [
     replace: "        if super::recognition::is_from_str(self.tcx, tr.def_id) && parsed_by_std && false {",
     tests: ["test/corpus.test.ts", "-t", "generic_from_str"],
   },
+  {
+    name: "std-as-ref-dictionary-missing",
+    breaks: "`shout(\"hi\")` of an `S: AsRef<str>` has no dictionary for a `&str`'s",
+    file: "src/lower/traits.rs",
+    find: "if (self.is_string_like(from) && to.is_str()) || (sequence(from) && to.is_slice()) {",
+    replace: "if false {",
+    tests: ["test/corpus.test.ts", "-t", "generic_as_ref"],
+  },
 ];

@@ -741,6 +741,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(Expr::object(vec![Prop::Field("clone".into(), clone)]));
             }
         }
+        // std's `AsRef` of text as a `str`, or of a `Vec`, an array or a slice
+        // as a slice: each is the same JS value (ADR 0162).
+        if is_std_def(self.tcx, tr.def_id, StdItem::AsRef) && !self.has_user_impl(tr.def_id, ty) {
+            let (from, to) = (ty.peel_refs(), tr.args.type_at(1));
+            let sequence = |t: Ty<'tcx>| t.is_array() || t.is_slice() || self.is_vec_like(t);
+            if (self.is_string_like(from) && to.is_str()) || (sequence(from) && to.is_slice()) {
+                let same = Expr::arrow(
+                    vec!["value".into()],
+                    vec![StmtKind::Return(Some(Expr::var("value"))).at(js::Span::NONE)],
+                );
+                return Ok(Expr::object(vec![Prop::Field("as_ref".into(), same)]));
+            }
+        }
         // std's `FromStr` of a number, a `bool`, a `char` or a `String`: what
         // `s.parse()` of it is (ADR 0161).
         let parsed_by_std = super::representation::Num::of(ty).is_some()
