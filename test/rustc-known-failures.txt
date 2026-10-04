@@ -17,7 +17,7 @@ associated-types/associated-types-doubleendediterator-object.rs	error: rust-js d
 associated-types/associated-types-iterator-binding.rs	error: rust-js does not support calling `std::iter::DoubleEndedIterator::next_back` yet
 async-await/async-fn-size-moved-locals.rs	error: rust-js does not support user implementations of this standard or external trait yet
 async-await/async-fn-size-uninit-locals.rs	error: rust-js does not support user implementations of this standard or external trait yet
-async-await/in-trait/async-default-fn-overridden.rs	error: rust-js does not support labeled blocks yet
+async-await/in-trait/async-default-fn-overridden.rs	error: rust-js does not support calling `std::pin::Pin::<Ptr>::new_unchecked` yet
 async-await/issue-73137.rs	error: rust-js does not support user implementations of this standard or external trait yet
 autoref-autoderef/deref-chain-method-calls-13264.rs	error: rust-js does not support values of type `*const Node` yet
 binding/func-arg-incomplete-pattern.rs	error: rust-js does not support values of type `*const usize` yet
@@ -145,7 +145,6 @@ fn/dyn-fn-alignment.rs	error: rust-js does not support values of type `*const A`
 for-loop-while/for-loop-has-unit-body.rs	error: rust-js does not support calling `std::mem::zeroed` yet
 for-loop-while/foreach-external-iterators-hashmap-break-restart.rs	error: rust-js does not support calling `std::iter::Iterator::by_ref` yet
 for-loop-while/issue-69841.rs	error: rust-js does not support calling `std::hint::unreachable_unchecked` yet
-for-loop-while/label_break_value.rs	error: rust-js does not support labeled blocks yet
 for-loop-while/loop-diverges.rs	error: rust-js does not support values of type `!` yet
 for-loop-while/loop-no-reinit-needed-post-bot.rs	error: rust-js does not support values of type `!` yet
 foreign/foreign-fn-linkname.rs	error: rust-js does not support calling `std::ffi::CString::new` yet

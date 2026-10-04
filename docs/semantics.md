@@ -277,7 +277,8 @@ missing key, `unreachable!`, `todo!` ([0012](decisions/0012-panics-and-runtime-h
   ([0035](decisions/0035-results-and-throwing-js.md),
   [0141](decisions/0141-std-trait-objects.md)).
 - **Control flow is Rust's:** `loop` with a value, labeled `break` and
-  `continue`, `let`-`else`, `if let` chains, match guards, `let` guards.
+  `continue`, labeled blocks ([0158](decisions/0158-labeled-blocks.md)),
+  `let`-`else`, `if let` chains, match guards, `let` guards.
 
 Differences:
 
@@ -289,7 +290,7 @@ Differences:
   (`catch_unwind` is refused).
 
 Refused: `catch_unwind`, `panic::set_hook`, `process::exit`,
-`process::abort`; labeled blocks, and `pin!`, which is one.
+`process::abort`; `pin!`, which is `Pin::new_unchecked`.
 
 ## Async, threads and time
 

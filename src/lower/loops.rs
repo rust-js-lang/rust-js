@@ -36,6 +36,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             label_base,
             label: None,
             dest: dest.clone(),
+            block: false,
         });
 
         let mut body_out = Vec::new();
@@ -75,6 +76,44 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             .at(span),
         );
+        Ok(())
+    }
+
+    /// A labeled block, `'found: { .. break 'found x; .. }`: JS's own,
+    /// `found: { .. }`, whose `break found` leaves it, each value given
+    /// to `dest` first, as a loop's `break` gives its value.
+    pub(super) fn labeled_block(
+        &mut self,
+        scope: region::Scope,
+        hir_id: HirId,
+        block: thir::BlockId,
+        dest: &Dest,
+        span: js::Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<()> {
+        let label_base = match self.tcx.hir_expect_expr(hir_id).kind {
+            hir::ExprKind::Block(_, Some(label)) => label.ident.name.as_str().trim_start_matches('\'').to_string(),
+            _ => "block".to_string(),
+        };
+        // A `break` names the block itself, not the expression it's the value of.
+        self.loops.push(Loop {
+            scope: self.thir[block].region_scope,
+            label_base,
+            label: None,
+            dest: dest.clone(),
+            block: true,
+        });
+        let mut body = Vec::new();
+        let mark = body.len();
+        self.begin_scope(scope);
+        self.block(block, dest, &mut body)?;
+        self.end_scope(mark, self.thir[block].span, &mut body)?;
+        let entry = self.loops.pop().expect("the block's");
+        match entry.label {
+            Some(label) => out.push(StmtKind::Labeled(label, body).at(span)),
+            // No `break` was written: what can't be reached of it.
+            None => out.extend(body),
+        }
         Ok(())
     }
 
@@ -328,6 +367,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             label_base,
             label: None,
             dest: Dest::Discard,
+            block: false,
         });
         if owns_items {
             let mut inner = Vec::new();
@@ -533,6 +573,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             label_base,
             label: None,
             dest: Dest::Discard,
+            block: false,
         });
         let mut body = Vec::new();
         self.stmt(f.body, &Dest::Discard, &mut body)?;
@@ -592,9 +633,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .ok_or_else(|| self.unsupported(span, "breaking out of a labeled block"))
     }
 
-    /// JS needs a label only when jumping past the innermost loop.
+    /// JS needs a label only when jumping past the innermost loop, or out
+    /// of a labeled block.
     pub(super) fn jump_label(&mut self, i: usize) -> Option<String> {
-        if i == self.loops.len() - 1 {
+        if i == self.loops.len() - 1 && !self.loops[i].block {
             return None;
         }
         if self.loops[i].label.is_none() {

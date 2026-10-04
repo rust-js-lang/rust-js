@@ -210,6 +210,9 @@ struct Loop {
     label: Option<String>,
     /// Where `break value` delivers its value.
     dest: Dest,
+    /// A labeled block, `'name: { .. }`, which only `break 'name` leaves:
+    /// JS's `break` needs its label even from inside it.
+    block: bool,
 }
 
 /// A body lowered inside the one being lowered, and what it starts from
@@ -420,6 +423,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             } => {
                 if let Some(body) = self.body_query().scoped_loop(value) {
                     self.lower_loop(region_scope, hir_id, body, dest, span, out)
+                } else if let ExprKind::Block { block } = self.thir[value].kind
+                    && self.thir[block].targeted_by_break
+                {
+                    self.labeled_block(region_scope, hir_id, block, dest, span, out)
                 } else {
                     // What ends with it is dropped once it's delivered (ADR 0098).
                     // One that fails fails its whole item, open scopes and all.
@@ -565,9 +572,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a `try` whose `finally` drops it (ADR 0098).
     fn block_rest(&mut self, block_id: BlockId, from: usize, tail: Option<&Dest>, out: &mut Vec<Stmt>) -> R<()> {
         let block = &self.thir[block_id];
-        if block.targeted_by_break {
-            return Err(self.unsupported(block.span, "labeled blocks"));
-        }
         // Every local gets a unique JS name, so a Rust block needs no JS
         // block of its own: its statements go straight into `out`.
         for (i, &stmt) in block.stmts.iter().enumerate().skip(from) {
@@ -680,6 +684,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let js_span = self.js_span(span);
         let ty = expr.ty;
         match expr.kind {
+            // A labeled block's value: what it delivers to a variable.
+            ExprKind::Scope { value, .. }
+                if let ExprKind::Block { block } = self.thir[value].kind
+                    && self.thir[block].targeted_by_break =>
+            {
+                let name = self.fresh("value");
+                out.push(StmtKind::Let(name.clone(), None).at(js_span));
+                self.stmt(e, &Dest::Assign(name.clone()), out)?;
+                Ok(Expr::var(&name))
+            }
             ExprKind::Scope {
                 value, region_scope, ..
             } if self.body_query().scoped_loop(value).is_none() => {

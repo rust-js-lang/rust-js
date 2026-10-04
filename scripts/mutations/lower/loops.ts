@@ -98,4 +98,20 @@ export const mutations: Mutation[] = [
     replace: "                ty::Ref(_, map, Mutability::Mut)\n                    if false && self.is_map(map)",
     tests: ["test/corpus.test.ts", "-t", "std_mut_items"],
   },
+  {
+    name: "labeled-block-bare-break",
+    breaks: "a `break` out of the innermost labeled block has no label, which JS's `break` needs to leave a block",
+    file: "src/lower/loops.rs",
+    find: "        if i == self.loops.len() - 1 && !self.loops[i].block {",
+    replace: "        if i == self.loops.len() - 1 {",
+    tests: ["test/corpus.test.ts", "-t", "labeled_blocks"],
+  },
+  {
+    name: "labeled-block-expression-scope",
+    breaks: "a labeled block is found by its expression's scope, which no `break` names",
+    file: "src/lower/loops.rs",
+    find: "            scope: self.thir[block].region_scope,",
+    replace: "            scope,",
+    tests: ["test/corpus.test.ts", "-t", "labeled_blocks"],
+  },
 ];
