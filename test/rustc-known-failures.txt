@@ -15,10 +15,10 @@ associated-types/associated-item-long-paths.rs	error: rust-js does not support `
 associated-types/associated-types-conditional-dispatch.rs	error: rust-js does not support calling `std::ops::Deref::deref` yet
 associated-types/associated-types-doubleendediterator-object.rs	error: rust-js does not support values of type `dyn std::iter::DoubleEndedIterator<Item = isize>` yet
 associated-types/associated-types-iterator-binding.rs	error: rust-js does not support calling `std::iter::DoubleEndedIterator::next_back` yet
-async-await/async-fn-size-moved-locals.rs	error: rust-js does not support user implementations of this standard or external trait yet
-async-await/async-fn-size-uninit-locals.rs	error: rust-js does not support user implementations of this standard or external trait yet
+async-await/async-fn-size-moved-locals.rs	error: rust-js does not support user implementations of `std::future::Future` yet
+async-await/async-fn-size-uninit-locals.rs	error: rust-js does not support user implementations of `std::future::Future` yet
 async-await/in-trait/async-default-fn-overridden.rs	error: rust-js does not support calling `std::pin::Pin::<Ptr>::new_unchecked` yet
-async-await/issue-73137.rs	error: rust-js does not support user implementations of this standard or external trait yet
+async-await/issue-73137.rs	error: rust-js does not support user implementations of `std::task::Wake` yet
 autoref-autoderef/deref-chain-method-calls-13264.rs	error: rust-js does not support values of type `*const Node` yet
 binding/func-arg-incomplete-pattern.rs	error: rust-js does not support values of type `*const usize` yet
 binding/match-pipe-binding.rs	error: rust-js does not support a guard of a `|` pattern binding a name at another place in each alternative yet
@@ -112,7 +112,7 @@ consts/tuple-struct-constructors.rs	error: rust-js does not support constants of
 consts/zst_no_llvm_alloc.rs	error: rust-js does not support constants of type `*const ()` yet
 derives/debug/derive-debug.rs	error: rust-js does not support values of type `*const (dyn std::marker::Send + 'static)` yet
 derives/derive-hash-on-unit-struct.rs	error: rust-js does not support calling `std::hash::SipHasher::new` yet
-derives/deriving-hash.rs	error: rust-js does not support user implementations of this standard or external trait yet
+derives/deriving-hash.rs	error: rust-js does not support user implementations of `std::hash::Hasher` yet
 derives/deriving-with-repr-packed-3.rs	error: rust-js does not support values of type `*const Aligned` yet
 derives/eq-ord/deriving-cmp-generic-enum.rs	error: rust-js does not support comparing `E<i32>`s yet
 derives/eq-ord/deriving-cmp-generic-struct-enum.rs	error: rust-js does not support comparing `ES<i32>`s yet
@@ -121,7 +121,7 @@ drop/drop-noncopyable-raw-pointer.rs	error: rust-js does not support values of t
 drop/drop-on-untaken-arm-raw-ptr.rs	error: rust-js does not support values of type `*mut std::boxed::Box<(dyn std::ops::Fn() + 'static)>` yet
 drop/drop-order-comparisons-let-chains.rs	error: rust-js does not support a temporary with a destructor here yet
 drop/drop-with-trait-bound-calls-method-on-self.rs	error: rust-js does not support generic trait methods, where a type may have a destructor yet
-drop/dropck_legal_cycles.rs	error: rust-js does not support user implementations of this standard or external trait yet
+drop/dropck_legal_cycles.rs	error: rust-js does not support user implementations of `std::hash::Hash` yet
 drop/if-let-guards-2.rs	error: rust-js does not support a temporary with a destructor here yet
 drop/issue-23338-ensure-param-drop-order.rs	error: rust-js does not support a temporary with a destructor in a branch yet
 drop/issue-90752-raw-ptr-shenanigans.rs	error: rust-js does not support values of type `*mut std::option::Option<(S<'_>, S<'_>)>` yet
@@ -173,7 +173,7 @@ lifetimes/any-lifetime-escape-higher-rank.rs	error: rust-js does not support cal
 lifetimes/rvalue-cleanup-shortcircuit.rs	error: rust-js does not support calling `std::env::args` yet
 lint/issue-20343.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 liveness/var-defined-after-early-return.rs	error: rust-js does not support values of type `(*const core::io::error::Custom) is !null` yet
-macros/colorful-write-macros.rs	error: rust-js does not support user implementations of this standard or external trait yet
+macros/colorful-write-macros.rs	error: rust-js does not support user implementations of `std::fmt::Write` yet
 macros/macro-variable-unused-reporting-5718.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 macros/try-macro.rs	error: rust-js does not support calling `std::convert::From::from` yet
 match/match-ref-mut-stability.rs	error: rust-js does not support values of type `*const i32` yet

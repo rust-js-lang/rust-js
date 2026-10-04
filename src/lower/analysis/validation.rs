@@ -91,18 +91,23 @@ pub(super) fn reject_unsupported(
             // which JS hasn't, or of no bound a dictionary has (ADR 0146).
             DefKind::AssocTy if traits::gat_supported(tcx, def_id.to_def_id()) => continue,
             DefKind::AssocTy => "generic associated types with bounds",
-            DefKind::Impl { of_trait: true }
-                if !tcx.is_automatically_derived(def_id.to_def_id())
-                    && !traits::implementable(
-                        tcx,
-                        foreign,
-                        tcx.impl_trait_ref(def_id)
-                            .instantiate_identity()
-                            .skip_normalization()
-                            .def_id,
-                    ) =>
-            {
-                "user implementations of this standard or external trait"
+            // Named, as which one stops a crate is what's worth knowing.
+            DefKind::Impl { of_trait: true } if !tcx.is_automatically_derived(def_id.to_def_id()) => {
+                let trait_id = tcx
+                    .impl_trait_ref(def_id)
+                    .instantiate_identity()
+                    .skip_normalization()
+                    .def_id;
+                if traits::implementable(tcx, foreign, trait_id) {
+                    continue;
+                }
+                let path = tcx.def_path_str(trait_id);
+                tcx.dcx().span_err(
+                    tcx.def_span(def_id),
+                    format!("rust-js does not support user implementations of `{path}` yet"),
+                );
+                valid = false;
+                continue;
             }
             DefKind::Static { .. } if tcx.is_thread_local_static(def_id.to_def_id()) => "`#[thread_local]` statics",
             _ => continue,
