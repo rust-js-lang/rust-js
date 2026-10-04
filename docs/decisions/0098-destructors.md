@@ -339,6 +339,10 @@ function main() {
   old `base` as any assignment does, and the `Err` it returns early with goes
   out of the function; `?`'s own bindings own neither. (Amended: either was
   an error, and stopped num-traits' `checked_pow`.)
+- **An `Option` of what may look like `None`, a generic `T`'s, drops its
+  `Some`'s value unboxed (ADR 0051),** `dropT?.($someValue(value))`, and
+  `map` moves its value into the function, which owns it then. (Amended:
+  either was an error, and stopped num-traits and zerofrom.)
 - **`mem::drop(x)` drops `x`, and `mem::forget` and `ManuallyDrop` don't.**
   A static is never dropped (ADR 0096). `mem::swap(&mut a, &mut b)` is `const t = a;
   a = b; b = t;` and `mem::replace(&mut a, v)` `const old = a; a = v;`, of

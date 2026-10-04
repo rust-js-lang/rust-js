@@ -340,11 +340,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     out.push(StmtKind::Expr(call).at(js_span));
                 }
                 if let Some(inner) = self.option_of(ty) {
-                    if self.can_be_nullish(inner) || self.boxed_payload(inner) {
-                        return Err(self.unsupported(span, &format!("dropping `{ty}`")));
-                    }
+                    // A `Some` of what may look like `None`, a generic `T`
+                    // say, is boxed (ADR 0051): its value, unboxed.
+                    let payload = match self.boxed_payload(inner) {
+                        true => self.some_value(value.clone()),
+                        false => value.clone(),
+                    };
                     let mut some = Vec::new();
-                    self.drop_in(value.clone(), inner, span, made, &mut some)?;
+                    self.drop_in(payload, inner, span, made, &mut some)?;
                     out.push(StmtKind::If(Expr::bin(Op::LooseNe, value, Expr::null()), some, None).at(js_span));
                 } else if adt.is_struct() {
                     for (i, field) in adt.non_enum_variant().fields.iter().enumerate() {

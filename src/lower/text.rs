@@ -78,6 +78,8 @@ pub(super) enum TextOp {
     /// A part of a `Utf8Error`, `FromUtf8Error` or `Cow<str>`, as the runtime
     /// makes it: `valid_up_to`, `error`, `bytes`, `_0`.
     Utf8Part(&'static str),
+    /// `e.kind()` of a `ParseIntError`, which is its message: its kind.
+    ParseErrorKind,
     /// `v.starts_with(prefix)`, or `ends_with` (`end`), of a slice whose items
     /// compare by value.
     SliceStartsWith {
@@ -309,6 +311,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TextOp::Utf8Unchecked => call(self, Helper::Utf8, "$utf8Decode", vec![arg()]),
             TextOp::Utf8Lossy => call(self, Helper::Utf8, "$utf8Lossy", vec![arg()]),
             TextOp::Utf8Part(name) => Expr::member(arg(), name),
+            TextOp::ParseErrorKind => call(self, Helper::DebugParseError, "$parseErrorKind", vec![arg()]),
             TextOp::SliceStartsWith { end } => {
                 let mut list = vec![arg(), arg()];
                 if end {

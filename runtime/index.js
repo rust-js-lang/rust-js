@@ -3962,7 +3962,9 @@ export function $unwrapErr(result, message = "called `Result::unwrap_err()` on a
   return result._0;
 }
 
-export function $debugParseError(message, name) {
+// A parse error, which is its message (ADR 0063): its kind, which
+// `ParseIntError::kind()` gives and its `Debug` shows.
+export function $parseErrorKind(message) {
   const kinds = {
     "cannot parse integer from empty string": "Empty",
     "invalid digit found in string": "InvalidDigit",
@@ -3974,8 +3976,12 @@ export function $debugParseError(message, name) {
     "cannot parse char from empty string": "EmptyString",
     "too many characters in string": "TooManyChars",
   };
+  return kinds[message];
+}
+
+export function $debugParseError(message, name) {
   if (name === "TryFromIntError") return `TryFromIntError(${message})`;
-  return name === "ParseBoolError" ? name : `${name} { kind: ${kinds[message]} }`;
+  return name === "ParseBoolError" ? name : `${name} { kind: ${$parseErrorKind(message)} }`;
 }
 
 export function $siftUp(heap, start, pos, cmp) {

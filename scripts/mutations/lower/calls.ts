@@ -106,4 +106,12 @@ export const mutations: Mutation[] = [
     replace: "        if known == Std::Number(NumOp::ToIntUnchecked) && false {",
     tests: ["test/corpus.test.ts", "-t", "integers_128"],
   },
+  {
+    name: "option-map-drops-refused",
+    breaks: "`map` of an `Option` whose value has a destructor is an error",
+    file: "src/lower/calls.rs",
+    find: "                    // Moves its value into the function, which owns it then.\n                    | Std::OptionMap\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "option_map_drops"],
+  },
 ];

@@ -6,7 +6,7 @@ of its own, every library of its graph by rust-js as Cargo's
 `RUSTC_WRAPPER`, for its target, and records what each refused first, or
 what Cargo said where a crate failed with no refusal: a crash.
 
-Measured 2026-10-04, after ADR 0172, Rust 1.98.1, each crate at the
+Measured 2026-10-04, after ADR 0173, Rust 1.98.1, each crate at the
 newest release its requirement allows.
 
 | Crate | Verdict | First refusals in its graph |
@@ -17,31 +17,33 @@ newest release its requirement allows.
 | indexmap 2.11 | blocked | hashbrown: a raw pointer |
 | bitflags 2.13 | refused | `fmt::Write::write_str` of a generic writer called |
 | smallvec 1.16 | refused | `handle_alloc_error` called |
-| thiserror 2.0 | refused | `Path::display` called |
+| thiserror 2.0 | refused | `{:p}` of a generic `T` |
 | anyhow 1.0 | refused | a raw pointer |
 | once_cell 1.21 | refused | a constant of a raw pointer |
 | semver 1.0 | refused | a constant of a `NonNull` |
 | uuid 1.27 | refused | `&mut` of a `MaybeUninit` buffer's range |
-| url 2.5 | blocked | litemap: `{:?}` of a `PhantomData`; writeable: a whole value assigned through a `&mut`; smallvec's; percent-encoding: `transmute`; zerofrom: dropping an `Option<T>` |
+| url 2.5 | blocked | litemap: `{:?}` of a `PhantomData`; writeable: a whole value assigned through a `&mut`; smallvec's; percent-encoding: `transmute`; yoke: a raw pointer |
 | regex 1.11 | blocked | memchr: a raw pointer |
-| rust_decimal 1.38 | blocked | arrayvec: a user `io::Write`; serde_core: `size_of` of a type parameter; num-traits: `Option::map` of a value with a destructor |
+| rust_decimal 1.38 | blocked | arrayvec: a user `io::Write`; serde_core: `size_of` of a type parameter; num-traits: `f32::is_normal` |
 | chrono 0.4 (`alloc`) | blocked | num-traits' |
-| time 0.3 (`alloc`) | blocked | powerfmt: a `MaybeUninit`; deranged: `{:?}` of an `IntErrorKind` |
+| time 0.3 (`alloc`) | blocked | powerfmt: a `MaybeUninit`; deranged: a `u8` of a range type, `NonZero`'s |
 
 1 of 16 compiles. What stops the most, by the crates it stops:
 
 1. **Raw memory,** a raw pointer, a `NonNull`, a `MaybeUninit`,
    `transmute`, `handle_alloc_error`: 9.
-2. **num-traits' `Option::map` of a value with a destructor:** 2, chrono and
-   rust_decimal.
+2. **num-traits' `f32::is_normal`:** 2, chrono and rust_decimal.
    **A user `Future`:** 2.
-3. **One each:** `{:?}` of a `PhantomData`, `Path::display`, `write_str` of a
-   generic writer, `{:?}` of an `IntErrorKind`, a user `io::Write`, `size_of`
-   of a type parameter, a whole value assigned through a `&mut`, dropping
-   an `Option<T>`.
+3. **One each:** `{:?}` of a generic `PhantomData`, `{:p}` of a generic `T`,
+   `write_str` of a generic writer, a user `io::Write`, `size_of` of a type
+   parameter, a whole value assigned through a `&mut`, a range type.
 
 ## Fixed by measuring
 
+- **A path's `display()`,** thiserror's (ADR 0173); **`Option::map` of a
+  value with a destructor and a generic `Option<T>`'s drop,** num-traits' and
+  zerofrom's, which compiles now (ADR 0098); **`ParseIntError::kind()` and
+  `{:?}` of `IntErrorKind`,** deranged's (ADR 0063).
 - **Bytes to text,** `str::from_utf8`, `from_utf8_lossy` and the like:
   regex-syntax compiles now (ADR 0172). **`f32::to_int_unchecked`,**
   num-traits' (ADR 0171).

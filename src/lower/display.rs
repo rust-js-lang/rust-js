@@ -702,6 +702,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.recognition().is_cow_str(ty) {
             return Ok(Expr::member(value, "_0"));
         }
+        // A path's `display()`, its text (ADR 0173).
+        if self.recognition().is_path_like(ty) {
+            return Ok(value);
+        }
         // A `TryFromIntError` is its kind, whose message is one for both
         // (ADR 0109): `value && ..` of one whose value runs code, as a kind
         // is never empty.
@@ -897,6 +901,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return Ok(Expr::call(Expr::var("$debugUtf8Error"), list));
         }
+        // A path shows its text as a string does (ADR 0173).
+        if self.recognition().is_path_like(ty) {
+            self.runtime.insert(Helper::DebugStr);
+            return Ok(Expr::call(Expr::var("$debugStr"), vec![value]));
+        }
         // A `Cow` shows its text, borrowed or owned.
         if self.recognition().is_cow_str(ty) {
             self.runtime.insert(Helper::DebugStr);
@@ -1088,6 +1097,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ],
                 );
                 Ok(self.applied(f, value))
+            }
+            // Another crate's enum without fields, std's `IntErrorKind` say:
+            // its variant's name, which it is (ADR 0013), as a derived `Debug`
+            // shows it.
+            ty::Adt(adt, _)
+                if representation::is_fieldless_enum(*adt)
+                    && !adt.did().is_local()
+                    && !self.krate.foreign.in_library(adt.did())
+                    && self.recognition().derives(std_item(self.tcx, StdItem::Debug), ty) =>
+            {
+                Ok(value)
             }
             _ => Err(self.unsupported(span, &format!("`{{:?}}` of a `{ty}`"))),
         }

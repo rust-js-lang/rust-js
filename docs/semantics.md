@@ -137,6 +137,10 @@ Differences:
   ([0159](decisions/0159-user-from-str.md)); a generic `T: FromStr`'s is
   its dictionary's, std's or the crate's ([0161](decisions/0161-generic-from-str.md)).
 
+- **A `Path` or a `PathBuf` is its text,** made from text and shown by
+  `display()`; its `==`, which compares components, is refused
+  ([0173](decisions/0173-paths-as-text.md)). A parse error's `kind()` is
+  its kind, and `{:?}` of std's `IntErrorKind` its name.
 - **Bytes become text as Rust checks UTF-8:** `str::from_utf8`'s
   `Utf8Error` says where the first bad sequence starts and how long it is,
   and `from_utf8_lossy` gives a U+FFFD for each

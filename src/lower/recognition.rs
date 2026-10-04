@@ -412,6 +412,24 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             }
             "std::string::String::from_utf8_lossy" => Some(TextOp::Utf8Lossy),
             "std::str::Utf8Error::valid_up_to" => Some(TextOp::Utf8Part("valid_up_to")),
+            "std::num::ParseIntError::kind" => Some(TextOp::ParseErrorKind),
+            _ => None,
+        };
+        if let Some(op) = utf8 {
+            return Some(Some(Std::Text(op)));
+        }
+        // A path is its text (ADR 0173): what reads it as text is itself.
+        match std_path(tcx, def_id).as_str() {
+            "std::path::Path::new"
+            | "std::path::Path::display"
+            | "std::path::Path::to_str"
+            | "std::path::Path::as_os_str"
+            | "std::ffi::OsStr::to_str"
+            | "std::path::PathBuf::as_path" => return Some(Some(Std::Same)),
+            "std::path::PathBuf::new" => return Some(Some(Std::StringNew)),
+            _ => {}
+        }
+        let utf8 = match std_path(tcx, def_id).as_str() {
             "std::str::Utf8Error::error_len" => Some(TextOp::Utf8Part("error_len")),
             "std::string::FromUtf8Error::utf8_error" => Some(TextOp::Utf8Part("error")),
             "std::string::FromUtf8Error::into_bytes" | "std::string::FromUtf8Error::as_bytes" => {
@@ -574,6 +592,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 return Some(Some(Std::Text(TextOp::Utf8Part("_0"))));
             }
             let same = self.is_string_like(ty)
+                || self.is_path_like(ty)
                 || self.is_js_object(ty)
                 || self.is_rc(ty)
                 || self.is_vec_like(ty)
@@ -908,7 +927,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             (None, None)
         };
         if let (Some(from_ty), Some(to_ty)) = (from_ty, to_ty) {
-            if self.is_lang_adt(to_ty, LangItem::String) && self.is_string_like(from_ty) {
+            if (self.is_lang_adt(to_ty, LangItem::String) || self.is_path_like(to_ty)) && self.is_string_like(from_ty) {
                 return Some(Std::Same);
             }
             // A `char` from a `u8`: the code point it is (ADR 0157).
@@ -1854,6 +1873,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "std::string::FromUtf8Error" => Some(true),
             _ => None,
         }
+    }
+
+    /// A `Path`, a `PathBuf`, what `display()` shows of one, or an `OsStr` or
+    /// `OsString`: its text, a JS string (ADR 0173). Not a string otherwise: a
+    /// path's `==` compares its components, `a/b` and `a//b` equal.
+    pub(super) fn is_path_like(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if matches!(
+            std_path(self.tcx, adt.did()).as_str(),
+            "std::path::Path" | "std::path::PathBuf" | "std::path::Display" | "std::ffi::OsStr" | "std::ffi::OsString"
+        ))
     }
 
     /// A `Cow<str>`, `{ TAG, _0 }`: its text, borrowed or owned (ADR 0172).

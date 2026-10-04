@@ -211,4 +211,12 @@ export const mutations: Mutation[] = [
     replace: "                for (place, ty) in places.into_iter().rev() {",
     tests: ["test/corpus.test.ts", "-t", "closure_drops"],
   },
+  {
+    name: "boxed-some-dropped-boxed",
+    breaks: "a generic `Option<T>`'s boxed `Some` is given to `T`'s drop as the box",
+    file: "src/lower/drops.rs",
+    find: "                        true => self.some_value(value.clone()),",
+    replace: "                        true => value.clone(),",
+    tests: ["test/corpus.test.ts", "-t", "option_map_drops"],
+  },
 ];

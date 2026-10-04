@@ -123,7 +123,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.runtime.insert(Helper::Channel);
             return Ok(Expr::call(Expr::var("$cloneSender"), vec![place]));
         }
-        if !self.needs_clone(ty) {
+        // A path is its text, which nothing changes in place (ADR 0173).
+        if !self.needs_clone(ty) || self.recognition().is_path_like(ty) {
             return Ok(place);
         }
         if self.is_unknown(ty) {

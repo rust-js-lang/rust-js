@@ -380,6 +380,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::Replace
                     | Std::Push
                     | Std::Same
+                    // Moves its value into the function, which owns it then.
+                    | Std::OptionMap
                     | Std::VecMacro
                     | Std::Unwrap
                     | Std::UnwrapOk

@@ -499,4 +499,28 @@ export const mutations: Mutation[] = [
     replace: "            if diagnostic(\"deref_method\") && self.is_cow_str(ty) && false {",
     tests: ["test/corpus.test.ts", "-t", "utf8_decoding"],
   },
+  {
+    name: "path-display-unknown",
+    breaks: "`p.display()` of a path is an error",
+    file: "src/lower/recognition.rs",
+    find: "            | \"std::path::Path::display\"\n",
+    replace: "\n",
+    tests: ["test/corpus.test.ts", "-t", "path_text"],
+  },
+  {
+    name: "path-from-text-unknown",
+    breaks: "`PathBuf::from(text)` is an error",
+    file: "src/lower/recognition.rs",
+    find: "            if (self.is_lang_adt(to_ty, LangItem::String) || self.is_path_like(to_ty)) && self.is_string_like(from_ty) {",
+    replace: "            if self.is_lang_adt(to_ty, LangItem::String) && self.is_string_like(from_ty) {",
+    tests: ["test/corpus.test.ts", "-t", "path_text"],
+  },
+  {
+    name: "parse-error-kind-unknown",
+    breaks: "`ParseIntError::kind()` is an error",
+    file: "src/lower/recognition.rs",
+    find: "            \"std::num::ParseIntError::kind\" => Some(TextOp::ParseErrorKind),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "int_error_kind"],
+  },
 ];

@@ -196,4 +196,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "user_fmt_traits"],
   },
+  {
+    name: "fieldless-std-enum-debug-refused",
+    breaks: "`{:?}` of std's `IntErrorKind`, a name, is an error",
+    file: "src/lower/display.rs",
+    find: "                    && self.recognition().derives(std_item(self.tcx, StdItem::Debug), ty) =>",
+    replace: "                    && self.recognition().derives(std_item(self.tcx, StdItem::Debug), ty) && false =>",
+    tests: ["test/corpus.test.ts", "-t", "int_error_kind"],
+  },
+  {
+    name: "path-debug-unquoted",
+    breaks: "`{:?}` of a path shows its text bare, not quoted",
+    file: "src/lower/display.rs",
+    find: "        // A path shows its text as a string does (ADR 0173).\n        if self.recognition().is_path_like(ty) {",
+    replace: "        // A path shows its text as a string does (ADR 0173).\n        if self.recognition().is_path_like(ty) && false {",
+    tests: ["test/corpus.test.ts", "-t", "path_text"],
+  },
 ];
