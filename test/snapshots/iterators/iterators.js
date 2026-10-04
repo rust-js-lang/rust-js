@@ -70,7 +70,7 @@ export function descending(v) {
 
 export function by_last_digit(v) {
   let w = v.slice();
-  const key = (x) => x % 10;
+  const key = (x) => (x % 10) | 0;
   w.sort((a, b) => $cmp(key(a), key(b)));
   return w;
 }

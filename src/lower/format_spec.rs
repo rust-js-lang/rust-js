@@ -142,20 +142,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 digits
             }
-            // `{:e}`: the shortest digits, as JS's `toExponential()` has them,
-            // written as Rust writes them, `1.2345e3`. With a precision, Rust
-            // rounds a tie to even and JS away from zero: not yet.
+            // `{:e}`: the shortest digits, an `f32`'s its own, written as Rust
+            // writes them, `1.2345e3`. With a precision, Rust rounds a tie to
+            // even and JS away from zero: not yet.
             Std::FmtExp(upper) => {
-                if num.is_none() {
+                let Some(num) = num else {
                     return Err(self.unsupported(span, &format!("`{{:e}}` of a `{ty}`")));
-                }
+                };
                 if precision.is_some() {
                     return Err(self.unsupported(span, "`{:.2e}` and the like"));
                 }
                 self.runtime.insert(Helper::LowerExp);
-                let text = Expr::call(Expr::var("$lowerExp"), vec![value]);
+                let mut args = vec![value];
+                if num == Num::F32 {
+                    args.push(Expr::bool(true));
+                }
+                let text = Expr::call(Expr::var("$lowerExp"), args);
+                // `1.2E3`, but `inf` and `NaN` as they are.
                 if upper {
-                    Expr::call(Expr::member(text, "toUpperCase"), Vec::new())
+                    Expr::call(Expr::member(text, "replace"), vec![Expr::str("e"), Expr::str("E")])
                 } else {
                     text
                 }

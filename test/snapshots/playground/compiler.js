@@ -126,7 +126,7 @@ function directoryOf(sources) {
         if (!folder.has(part)) {
           folder.set(part, new Directory(new Map()));
         }
-        folder = $unwrap(folder.get(part), "key not found").contents;
+        folder = $unwrap(folder.get(part), "no entry found for key").contents;
       }
       name = match[1];
     } else {

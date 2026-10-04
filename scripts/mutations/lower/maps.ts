@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "        let by_value = false && key.is_some_and(|key| self.is_value_key(key) && !self.is_js_key(key));",
     tests: ["test/corpus.test.ts", "-t", "value_keys"],
   },
+  {
+    name: "map-index-message",
+    breaks: "`m[&k]` of a missing key panics with `key not found`, not Rust's `no entry found for key`",
+    file: "src/lower/maps.rs",
+    find: 'vec![value, Expr::str("no entry found for key")]',
+    replace: 'vec![value, Expr::str("key not found")]',
+    tests: ["test/corpus.test.ts", "-t", "map_index_missing"],
+  },
 ];

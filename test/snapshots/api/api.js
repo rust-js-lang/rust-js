@@ -3,6 +3,7 @@
 import {
   $cmp,
   $debugF64,
+  $debugJsonError,
   $debugStr,
   $displayJsonError,
   $fromJson,
@@ -18,7 +19,7 @@ import {
 var $pageDebug, $pairDebug, $userDebug, $oddErrorDisplay, $responseDebug;
 
 export function encode(value, writeT) {
-  return $unwrapOk($toJson(value, writeT, false));
+  return $unwrapOk($toJson(value, writeT, false), undefined, $debugJsonError);
 }
 
 export function decode(text, readT) {
@@ -58,6 +59,8 @@ export function report() {
         },
         false,
       ),
+      undefined,
+      $debugJsonError,
     )}\n`;
   } else {
     out += `err ${$displayJsonError(match._0)}\n`;
@@ -77,6 +80,8 @@ export function report() {
         },
         false,
       ),
+      undefined,
+      $debugJsonError,
     )}\n`;
   } else {
     out += `err ${$displayJsonError(match$1._0)}\n`;
@@ -96,6 +101,8 @@ export function report() {
         },
         false,
       ),
+      undefined,
+      $debugJsonError,
     )}\n`;
   } else {
     out += `err ${$displayJsonError(match$2._0)}\n`;
@@ -113,6 +120,8 @@ export function report() {
         },
         false,
       ),
+      undefined,
+      $debugJsonError,
     )}\n`;
   } else {
     out += `err ${$displayJsonError(match$3._0)}\n`;
@@ -130,6 +139,8 @@ export function report() {
         },
         false,
       ),
+      undefined,
+      $debugJsonError,
     )}\n`;
   } else {
     out += `err ${$displayJsonError(match$4._0)}\n`;
@@ -151,6 +162,8 @@ export function report() {
         },
         false,
       ),
+      undefined,
+      $debugJsonError,
     )}\n`;
   } else {
     out += `err ${$displayJsonError(match$5._0)}\n`;
@@ -174,6 +187,8 @@ export function report() {
         },
         false,
       ),
+      undefined,
+      $debugJsonError,
     )}\n`;
   } else {
     out += `err ${$displayJsonError(match$6._0)}\n`;
@@ -200,6 +215,8 @@ export function report() {
         },
         false,
       ),
+      undefined,
+      $debugJsonError,
     )}\n`;
   } else {
     out += `err ${$displayJsonError(match$7._0)}\n`;
@@ -226,6 +243,8 @@ export function report() {
         },
         false,
       ),
+      undefined,
+      $debugJsonError,
     )}\n`;
   } else {
     out += `err ${$displayJsonError(match$8._0)}\n`;
@@ -243,6 +262,8 @@ export function report() {
         },
         false,
       ),
+      undefined,
+      $debugJsonError,
     )}\n`;
   } else {
     out += `err ${$displayJsonError(match$9._0)}\n`;
@@ -260,6 +281,8 @@ export function report() {
         },
         false,
       ),
+      undefined,
+      $debugJsonError,
     )}\n`;
   } else {
     out += `err ${$displayJsonError(match$10._0)}\n`;
@@ -277,6 +300,8 @@ export function report() {
         },
         false,
       ),
+      undefined,
+      $debugJsonError,
     )}\n`;
   } else {
     out += `err ${$displayJsonError(match$11._0)}\n`;
@@ -294,6 +319,8 @@ export function report() {
         },
         false,
       ),
+      undefined,
+      $debugJsonError,
     )}\n`;
   } else {
     out += `err ${$displayJsonError(match$12._0)}\n`;
@@ -318,6 +345,8 @@ export function report() {
         },
         false,
       ),
+      undefined,
+      $debugJsonError,
     )}\n`;
   } else {
     out += `err ${$displayJsonError(match$13._0)}\n`;
@@ -342,6 +371,8 @@ export function report() {
         },
         false,
       ),
+      undefined,
+      $debugJsonError,
     )}\n`;
   } else {
     out += `err ${$displayJsonError(match$14._0)}\n`;
@@ -366,6 +397,8 @@ export function report() {
         },
         false,
       ),
+      undefined,
+      $debugJsonError,
     )}\n`;
   } else {
     out += `err ${$displayJsonError(match$15._0)}\n`;
@@ -383,6 +416,8 @@ export function report() {
         },
         false,
       ),
+      undefined,
+      $debugJsonError,
     )}\n`;
   } else {
     out += `err ${$displayJsonError(match$16._0)}\n`;
@@ -402,6 +437,8 @@ export function report() {
         },
         false,
       ),
+      undefined,
+      $debugJsonError,
     )}\n`;
   } else {
     out += `err ${$displayJsonError(match$17._0)}\n`;
@@ -421,6 +458,8 @@ export function report() {
         },
         false,
       ),
+      undefined,
+      $debugJsonError,
     )}\n`;
   } else {
     out += `err ${$displayJsonError(match$18._0)}\n`;
@@ -447,6 +486,8 @@ export function report() {
         },
         false,
       ),
+      undefined,
+      $debugJsonError,
     )}\n`;
   } else {
     out += `err ${$displayJsonError(match$19._0)}\n`;
@@ -473,6 +514,8 @@ export function report() {
         },
         false,
       ),
+      undefined,
+      $debugJsonError,
     )}\n`;
   } else {
     out += `err ${$displayJsonError(match$20._0)}\n`;
@@ -499,6 +542,8 @@ export function report() {
         },
         false,
       ),
+      undefined,
+      $debugJsonError,
     )}\n`;
   } else {
     out += `err ${$displayJsonError(match$21._0)}\n`;
@@ -530,6 +575,8 @@ export function report() {
         },
         false,
       ),
+      undefined,
+      $debugJsonError,
     )}\n`;
   } else {
     out += `err ${$displayJsonError(match$22._0)}\n`;
@@ -543,6 +590,8 @@ export function report() {
       },
       true,
     ),
+    undefined,
+    $debugJsonError,
   );
   out += "\n";
   for (const text of [
@@ -554,7 +603,7 @@ export function report() {
   ]) {
     const match$23 = $fromJson(text, outcomeDeserialize_deserialize);
     if (match$23.TAG === "Ok") {
-      out += `ok ${outcomeDebug_fmt(match$23._0)} -> ${$unwrapOk($toJson(match$23._0, outcomeSerialize_serialize, false))}\n`;
+      out += `ok ${outcomeDebug_fmt(match$23._0)} -> ${$unwrapOk($toJson(match$23._0, outcomeSerialize_serialize, false), undefined, $debugJsonError)}\n`;
     } else {
       out += `err ${$displayJsonError(match$23._0)}\n`;
     }
@@ -582,7 +631,7 @@ export function report() {
     }
   }
   const temp = { celsius: -3 };
-  out += $unwrapOk($toJson(temp, tempSerialize_serialize, false));
+  out += $unwrapOk($toJson(temp, tempSerialize_serialize, false), undefined, $debugJsonError);
   out += "\n";
   out += $unwrapOk(
     $toJson(
@@ -597,6 +646,8 @@ export function report() {
       },
       false,
     ),
+    undefined,
+    $debugJsonError,
   );
   out += "\n";
   out += roundtrip(
@@ -984,7 +1035,11 @@ export function report() {
   out += tmp$24;
   out += "\n";
   const listing = { name: "p", meta: { page: 2, total: 3 }, extra: new Map() };
-  out += $unwrapOk($toJson({ listing, flag: false }, nestedSerialize_serialize, true));
+  out += $unwrapOk(
+    $toJson({ listing, flag: false }, nestedSerialize_serialize, true),
+    undefined,
+    $debugJsonError,
+  );
   out += "\n";
   for (const text$3 of [
     '{"name":"ann","tags":["a","b"],"note":null}',
@@ -994,7 +1049,7 @@ export function report() {
   ]) {
     const match$74 = $fromJson(text$3, reqDeserialize_deserialize);
     if (match$74.TAG === "Ok") {
-      out += `ok ${reqDebug_fmt(match$74._0)} -> ${$unwrapOk($toJson(match$74._0, reqSerialize_serialize, false))}\n`;
+      out += `ok ${reqDebug_fmt(match$74._0)} -> ${$unwrapOk($toJson(match$74._0, reqSerialize_serialize, false), undefined, $debugJsonError)}\n`;
     } else {
       out += `err ${$displayJsonError(match$74._0)}\n`;
     }

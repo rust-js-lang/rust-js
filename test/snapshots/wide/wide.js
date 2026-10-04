@@ -15,6 +15,7 @@ import {
   $bigTrailingZeros,
   $checkedPow,
   $cmp,
+  $debugJsonError,
   $debugParseError,
   $displayF64,
   $displayJsonError,
@@ -130,9 +131,17 @@ export function report() {
   const arg$11 = $max(stamps);
   out += `[${stamps.map((item) => String(item)).join(", ")}] ${total} ${arg$11 == null ? "None" : `Some(${arg$11})`}\n`;
   const payment = { id, cents: -1999n, at: 1700000000123n };
-  const text$1 = $unwrapOk($toJson(payment, paymentSerialize_serialize, false));
+  const text$1 = $unwrapOk(
+    $toJson(payment, paymentSerialize_serialize, false),
+    undefined,
+    $debugJsonError,
+  );
   out += `${text$1}\n`;
-  const back = $unwrapOk($fromJson(text$1, paymentDeserialize_deserialize));
+  const back = $unwrapOk(
+    $fromJson(text$1, paymentDeserialize_deserialize),
+    undefined,
+    $debugJsonError,
+  );
   out += `${$eq(back, payment)}\n`;
   for (const text$2 of [
     '{"id":18446744073709551615,"cents":-9223372036854775808,"at":0}',

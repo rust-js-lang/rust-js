@@ -25,7 +25,7 @@ pub(super) enum MapOp {
     Add,
     /// `get` and `get_mut`: `m.get(k)`, `undefined` for `None`.
     Get,
-    /// `m[k]`: `$unwrap(m.get(k), "key not found")`, which panics as Rust's does.
+    /// `m[k]`: `$unwrap(m.get(k), "no entry found for key")`, which panics as Rust's does.
     Index,
     /// `contains_key` and `contains`: `m.has(k)`.
     Has,
@@ -162,7 +162,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             MapOp::Index => {
                 let (m, k) = (arg(), arg());
                 let value = method(m, "get", vec![k]);
-                helper(self, Helper::Unwrap, "$unwrap", vec![value, Expr::str("key not found")])
+                helper(
+                    self,
+                    Helper::Unwrap,
+                    "$unwrap",
+                    vec![value, Expr::str("no entry found for key")],
+                )
             }
             MapOp::Has => {
                 let (m, k) = (arg(), arg());

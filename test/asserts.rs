@@ -92,4 +92,15 @@ mod tests {
     fn rejects_a_promise() {
         reject_later("rejected later");
     }
+
+    // A test returning a `Result` passes on `Ok`, and fails on `Err`.
+    #[test]
+    fn returns_ok() -> Result<(), String> {
+        Ok(())
+    }
+
+    #[test]
+    fn returns_an_err() -> Result<(), String> {
+        Err("no stock".to_string())
+    }
 }

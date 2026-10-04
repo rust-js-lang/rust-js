@@ -222,7 +222,7 @@ export function report() {
   }
   let lens = Array.from(words.keys());
   lens.sort((a, b) => $cmp(b, a));
-  const arg$5 = $unwrap(words.get(5), "key not found");
+  const arg$5 = $unwrap(words.get(5), "no entry found for key");
   out += `[${lens.map((item) => String(item)).join(", ")}] [${arg$5.map((item) => $debugStr(item)).join(", ")}]\n`;
   out += heaps();
   const arg$6 = deques();

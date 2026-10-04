@@ -26,7 +26,7 @@ function main() {
     `${arg} ${arg$1 == null ? "None" : `Some(${$debugStr(arg$1)})`} ${arg$2 == null ? "None" : `Some(${$debugStr(arg$2)})`}`,
   );
   console.log(
-    `${$unwrap(walls.get({ x: 1, y: 2 }), "key not found")} ${walls.has({ x: 1, y: 2 })}`,
+    `${$unwrap(walls.get({ x: 1, y: 2 }), "no entry found for key")} ${walls.has({ x: 1, y: 2 })}`,
   );
   console.log(
     `{${Array.from(walls)

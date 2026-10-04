@@ -218,7 +218,7 @@ export function map_basics(n) {
     m.has("b"),
     m.size,
     removed,
-    (total + $unwrap(m.get("a"), "key not found")) >>> 0,
+    (total + $unwrap(m.get("a"), "no entry found for key")) >>> 0,
   ];
 }
 
@@ -280,7 +280,7 @@ export function sorted_maps(text) {
   const tmp$2 = `{${Array.from($sortedKeys(set, $cmp))
     .map((item) => String(item))
     .join(", ")}} [${arg.map((item) => String(item)).join(", ")}]`;
-  const arg$1 = $unwrap(tiers.get("Bronze"), "key not found");
+  const arg$1 = $unwrap(tiers.get("Bronze"), "no entry found for key");
   return [
     tmp,
     tmp$1,

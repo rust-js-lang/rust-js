@@ -28,7 +28,7 @@ is read in place, so its fields are those constants:
 | `v.split_off(at)` | `$splitOff(v, at)`: `splice`, with Rust's panic past the end |
 | `a.total_cmp(&b)` | `$totalCmp(a, b)`: Rust's, on the bits as `i64`s |
 | `char::from_digit(n, radix)`, `char::from_u32(n)` | `$fromDigit(n, radix)`, `$fromU32(n)` |
-| `{:e}`, `{:E}` | `$lowerExp(x)`: `1.2345e3`, where JS writes `1.2345e+3` |
+| `{:e}`, `{:E}` | `$lowerExp(x)`: `1.2345e3`, where JS writes `1.2345e+3`; an `f32`'s own shortest digits, `$lowerExp(x, true)`, a 64-bit integer's every digit, `-0e0` for `-0.0`, and `{:E}` upper only in its `E`, `inf` and `NaN` as they are. (Amended: an `f32` had its `f64`'s digits, a 64-bit integer was `inf`, `-0.0` lost its sign and `{:E}` of infinity was `INF`.) |
 | `words.concat()` of strings | `words.join("")` |
 
 - **`{:.2e}` is still an error:** Rust rounds a tie to even, and JS's

@@ -37,7 +37,7 @@ function classify(input) {
 function first_even(items) {
   for (const item of items) {
     if (item != null) {
-      const value = item % 2;
+      const value = (item % 2) | 0;
       if (value === 0) {
         return item;
       }

@@ -61,27 +61,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 {
                     return Ok(Some(value.clone()));
                 }
-                // A parse error is its message (ADR 0063), which `$debug` would
-                // show as a string: its own `Debug`, `ParseIntError { kind: .. }`.
-                if let Some(error) = generic_args.types().nth(1)
-                    && self.is_parse_error(error)
-                {
-                    let e = self.fresh("e");
-                    let shown = self.debug_string(Expr::var(&e), error, span)?;
-                    if list.len() == 1 {
-                        list.push(Expr::undefined());
-                    }
-                    list.push(Expr::arrow(
-                        vec![e.into()],
-                        vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
-                    ));
+                // The error by its own `Debug`, where `$debug`, which knows no
+                // types, would show it otherwise: `Missing { name: "ink" }`, not
+                // `{ TAG: "Missing", name: "ink" }`, and a parse error, which is
+                // its message (ADR 0063), as `ParseIntError { kind: .. }`.
+                if let Some(error) = generic_args.types().nth(1) {
+                    self.typed_debug(&mut list, error, span)?;
                 }
                 self.runtime.insert(Helper::UnwrapOk);
                 Expr::call(Expr::var("$unwrapOk"), list)
             }
             Std::UnwrapErr => {
+                let mut list: Vec<Expr> = (0..args.len()).map(|_| arg()).collect();
+                if let Some(value) = generic_args.types().next() {
+                    self.typed_debug(&mut list, value, span)?;
+                }
                 self.runtime.insert(Helper::UnwrapErr);
-                let list = (0..args.len()).map(|_| arg()).collect();
                 Expr::call(Expr::var("$unwrapErr"), list)
             }
             // `r.TAG === "Ok" ? r._0 : d`, with `r` computed once, and `d` too,
@@ -227,6 +222,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => return Ok(None),
         }))
+    }
+
+    /// The `debug` a `$unwrapOk` or a `$unwrapErr` is given, after its
+    /// message: `ty`'s own `Debug`, unless `$debug`, which knows no types,
+    /// shows it as Rust does already, an integer, a `bool`, `()` or a string.
+    fn typed_debug(&mut self, list: &mut Vec<Expr>, ty: Ty<'tcx>, span: rustc_span::Span) -> R<()> {
+        let peeled = ty.peel_refs();
+        if peeled.is_integral()
+            || peeled.is_bool()
+            || peeled.is_unit()
+            || peeled.is_str()
+            || self.is_lang_adt(peeled, LangItem::String)
+        {
+            return Ok(());
+        }
+        let e = self.fresh("e");
+        let shown = self.debug_string(Expr::var(&e), ty, span)?;
+        if list.len() == 1 {
+            list.push(Expr::undefined());
+        }
+        // `stockErrorDebug_fmt` itself, not `(e) => stockErrorDebug_fmt(e)`.
+        let debug = match &shown.kind {
+            js::ExprKind::Call(callee, args)
+                if matches!(callee.kind, js::ExprKind::Var(_))
+                    && matches!(args.as_slice(), [arg] if matches!(&arg.kind, js::ExprKind::Var(name) if *name == e)) =>
+            {
+                (**callee).clone()
+            }
+            _ => Expr::arrow(vec![e.into()], vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)]),
+        };
+        list.push(debug);
+        Ok(())
     }
 
     /// `Some` of `items[index]`, or `None` if there's none (ADR 0051).

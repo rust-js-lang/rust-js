@@ -285,6 +285,19 @@ fn js_op(op: BinOp) -> Op {
     }
 }
 
+/// A signed remainder compared, `x % 2 === 0`: without the `| 0` that makes
+/// JS's `-0` a `0`, as a comparison can't tell them apart.
+fn without_zero_sign(e: Expr) -> Expr {
+    match e.kind {
+        js::ExprKind::Binary(Op::BitOr, ref rem, ref zero)
+            if matches!(rem.kind, js::ExprKind::Binary(Op::Rem, ..)) && zero.as_int() == Some(0) =>
+        {
+            (**rem).clone()
+        }
+        _ => e,
+    }
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     // ── Operators ───────────────────────────────────────────────────────
 
@@ -309,7 +322,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => None,
         };
         if let Some(js_op) = comparison {
-            return Ok(Expr::bin(js_op, l, r));
+            return Ok(Expr::bin(js_op, without_zero_sign(l), without_zero_sign(r)));
         }
 
         if ty.is_bool() {
@@ -381,8 +394,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     Expr::call(Expr::var(name), args)
                 };
-                // The remainder of in-range integers is already in range.
-                if op == BinOp::Rem && safe {
+                // The remainder of in-range integers is already in range, but a
+                // signed one can be JS's `-0`, `-2 % 2`, which `| 0` makes
+                // `0`: an integer is never `-0` (ADR 0064).
+                if op == BinOp::Rem && safe && num.signed() {
+                    Expr::bin(Op::BitOr, quotient, Expr::int(0))
+                } else if op == BinOp::Rem && safe {
                     quotient
                 } else {
                     num.wrap(quotient)

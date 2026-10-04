@@ -15,7 +15,7 @@ import {
 function produce(tx) {
   try {
     for (let id = 1; id <= 3; id++) {
-      $unwrapOk($send(tx, { id, name: `job ${id}` }));
+      $unwrapOk($send(tx, { id, name: `job ${id}` }), undefined, (e) => "SendError { .. }");
     }
   } finally {
     $dropSender(tx);
@@ -49,7 +49,7 @@ function main() {
     try {
       tx$live = false;
       produce(tx);
-      $unwrapOk($send(tx2, { id: 9, name: "late" }));
+      $unwrapOk($send(tx2, { id: 9, name: "late" }), undefined, (e) => "SendError { .. }");
       const job = $tryRecv(rx);
       if (job.TAG === "Ok") {
         console.log(`first ${job._0.id}`);
@@ -84,7 +84,7 @@ function main() {
         try {
           tx$2$live = false;
           const notify = () => {
-            $unwrapOk($send(tx$2, "done"));
+            $unwrapOk($send(tx$2, "done"), undefined, (e) => "SendError { .. }");
           };
           try {
             notify();

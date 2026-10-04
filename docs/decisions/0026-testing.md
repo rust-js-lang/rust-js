@@ -112,10 +112,14 @@ file, so each test empties `document.body` and adds the elements it needs.
   pin down every failure message.
 - `bunfig.toml` limits discovery to `test/`, so a plain `bun test` doesn't
   pick up the generated `*.test.js` files by itself.
-- `{:?}` of a struct prints `{ x: 1, y: 2 }`, not `Point { x: 1, y: 2 }`:
-  its type name isn't in the JS.
-- Not yet: formatting options (`{:>8}`, `{:.2}`, `{:#?}`), `{}` of floats or
-  of types with their own `Display`, tests returning `Result`, and
-  per-test timeouts.
+- `{:?}` of a struct prints `Point { x: 1, y: 2 }`, its type's name and all
+  (ADR 0060), and formatting options and `Display` are ADRs 0054, 0058,
+  0137 and 0143's. (Amended: each was missing here.)
+- **A test returning a `Result`** passes on `Ok` and fails on `Err`, as
+  libtest's does: `test("tests::t", () => testResult(tests.t()))`, which
+  throws `Error: ..` with the error's `$debug`. `$debug` knows no types: a
+  string's or a number's shows as Rust shows it, a struct's without its
+  name. (Amended: an `Err` passed.)
+- Not yet: per-test timeouts.
 - Panics now work everywhere, not only in tests: `unreachable!()` in a
   `match` arm is a `throw`.

@@ -48,7 +48,12 @@ const match = $try(() => JSON.parse(json));   // { TAG: "Ok", _0: .. } or { TAG:
   A `From` of std's, like into a `Box<dyn Error>`, is still an error.
 - **`Result`'s methods**: `is_ok()`, `is_err()` (`r.TAG === "Ok"`), `ok()` and
   `unwrap_or(d)` (`r.TAG === "Ok" ? r._0 : d`), and `unwrap()`, `expect(msg)`
-  (`$unwrapOk`, with Rust's message and the error's `{:?}`).
+  (`$unwrapOk`, with Rust's message and the error's `{:?}`): its type's own,
+  `(e) => stockErrorDebug_fmt(e)`, unless it's an integer, a `bool`, `()` or a
+  string, which `$debug` shows as Rust does; `unwrap_err()` the same of its
+  `Ok`. (Amended: an error was shown by `$debug`, which knows no types:
+  `{ TAG: "Missing", .. }` for `Missing { .. }`, and a string escaped as JSON
+  escapes it.)
 - **`.clone()` of a type that's never changed in place is the value itself**,
   since nothing can tell the two apart (ADR 0020). A `Result`, a `String`, most
   enums: one object serves as both.

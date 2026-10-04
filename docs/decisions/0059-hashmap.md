@@ -23,7 +23,7 @@ string (ADR 0013). Any other key is a compile error.
 | `HashMap::new()`, `HashSet::new()` | `new Map()`, `new Set()` |
 | `m.insert(k, v);`, `s.insert(x);` | `m.set(k, v)`, `s.add(x)` |
 | `let old = m.insert(k, v)` | `$insert(m, k, v)`: the old value, or `undefined` |
-| `m.get(&k)`, `m.contains_key(&k)`, `m[&k]` | `m.get(k)`, `m.has(k)`, `$unwrap(m.get(k), "key not found")` |
+| `m.get(&k)`, `m.contains_key(&k)`, `m[&k]` | `m.get(k)`, `m.has(k)`, `$unwrap(m.get(k), "no entry found for key")`, Rust's message. (Amended: it was `key not found`.) |
 | `m.remove(&k);`, `s.remove(&x)` | `m.delete(k)`, `s.delete(x)` |
 | `m.len()`, `m.is_empty()` | `m.size`, `m.size === 0` |
 | `*m.entry(k).or_insert(0) += 1` | `const current = $orInsert(m, k, 0); m.set(k, current + 1)` |

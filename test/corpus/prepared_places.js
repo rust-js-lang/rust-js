@@ -33,7 +33,7 @@ function slots(take) {
     n = (n + rhs) | 0;
     map.set(0, n);
   }
-  console.log(`${$unwrap(map.get(0), "key not found")}`);
+  console.log(`${$unwrap(map.get(0), "no entry found for key")}`);
 }
 
 function main() {
@@ -46,14 +46,14 @@ function main() {
   const current = $orInsert(map, key$1, 10);
   map.set(key$1, (current + value$1) | 0);
   console.log(
-    `[${log.map((item) => String(item)).join(", ")}] ${$unwrap(map.get(0), "key not found")}`,
+    `[${log.map((item) => String(item)).join(", ")}] ${$unwrap(map.get(0), "no entry found for key")}`,
   );
   log.length = 0;
   const key$2 = key(log);
   const current$1 = $orInsert(map, key$2, 10);
   map.set(key$2, (current$1 + value(log)) | 0);
   console.log(
-    `[${log.map((item) => String(item)).join(", ")}] ${$unwrap(map.get(0), "key not found")}`,
+    `[${log.map((item) => String(item)).join(", ")}] ${$unwrap(map.get(0), "no entry found for key")}`,
   );
 }
 

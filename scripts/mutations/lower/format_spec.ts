@@ -58,4 +58,20 @@ export const mutations: Mutation[] = [
     replace: "            '<' => \"Right\",",
     tests: ["test/corpus.test.ts", "-t", "formatter_queries"],
   },
+  {
+    name: "lower-exp-f32-as-f64",
+    breaks: "`{:e}` of an `f32` has its `f64`'s digits, `1.0000000149011612e-1` for `0.1`",
+    file: "src/lower/format_spec.rs",
+    find: "                if num == Num::F32 {\n                    args.push(Expr::bool(true));",
+    replace: "                if false {\n                    args.push(Expr::bool(true));",
+    tests: ["test/corpus.test.ts", "-t", "exp_format"],
+  },
+  {
+    name: "upper-exp-all-upper",
+    breaks: "`{:E}` of infinity is `INF`, and of NaN `NAN`",
+    file: "src/lower/format_spec.rs",
+    find: '                    Expr::call(Expr::member(text, "replace"), vec![Expr::str("e"), Expr::str("E")])',
+    replace: '                    Expr::call(Expr::member(text, "toUpperCase"), Vec::new())',
+    tests: ["test/corpus.test.ts", "-t", "exp_format"],
+  },
 ];

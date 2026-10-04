@@ -298,8 +298,9 @@ export function $retain(v, keep) {
 }
 
 export function $debug(v) {
+  // Escaped as Rust's `{:?}` escapes it, `"\u{1b}"`, not as JSON does.
   if (typeof v === "string") {
-    return JSON.stringify(v);
+    return $debugStr(v);
   }
   if (Array.isArray(v)) {
     return "[" + v.map($debug).join(", ") + "]";
@@ -3307,10 +3308,26 @@ export function $dropReceiver(channel) {
   channel.queue.length = 0;
 }
 
-export function $lowerExp(x) {
+// `{:e}` of a number, as Rust writes it: the shortest digits that read back
+// as `x`, `1.2345e3`. An `f32`'s are its own (ADR 0122), not its `f64`'s; a
+// 64-bit integer, a BigInt, has every digit; a negative zero keeps its sign.
+export function $lowerExp(x, f32) {
+  if (typeof x === "bigint") {
+    const digits = (x < 0n ? -x : x).toString();
+    const kept = digits.replace(/0+$/, "") || "0";
+    const rest = kept.length > 1 ? "." + kept.slice(1) : "";
+    return (x < 0n ? "-" : "") + kept[0] + rest + "e" + (digits.length - 1);
+  }
   if (Number.isNaN(x)) return "NaN";
   if (!Number.isFinite(x)) return x > 0 ? "inf" : "-inf";
-  return x.toExponential().replace("e+", "e");
+  const sign = x < 0 || Object.is(x, -0) ? "-" : "";
+  if (x === 0) return sign + "0e0";
+  if (f32) {
+    const [digits, point] = $f32Digits(Math.abs(x));
+    const rest = digits.length > 1 ? "." + digits.slice(1) : "";
+    return sign + digits[0] + rest + "e" + (point - 1);
+  }
+  return sign + Math.abs(x).toExponential().replace("e+", "e");
 }
 
 export function $fromDigit(num, radix) {
@@ -3361,9 +3378,9 @@ export function $restStr(it) {
   return it.items.slice(it.at).join("");
 }
 
-export function $unwrapErr(result, message = "called `Result::unwrap_err()` on an `Ok` value") {
+export function $unwrapErr(result, message = "called `Result::unwrap_err()` on an `Ok` value", debug = $debug) {
   if (result.TAG === "Ok") {
-    throw new Error(message + ": " + $debug(result._0));
+    throw new Error(message + ": " + debug(result._0));
   }
   return result._0;
 }

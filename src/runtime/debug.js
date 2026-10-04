@@ -1,7 +1,8 @@
 
 function $debug(v) {
+  // Escaped as Rust's `{:?}` escapes it, `"\u{1b}"`, not as JSON does.
   if (typeof v === "string") {
-    return JSON.stringify(v);
+    return $debugStr(v);
   }
   if (Array.isArray(v)) {
     return "[" + v.map($debug).join(", ") + "]";

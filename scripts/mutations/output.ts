@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "                drop(path.clone());\n",
     tests: ["test/crates.test.ts", "-t", "a source of the crate"],
   },
+  {
+    name: "test-result-ignored",
+    breaks: "a `#[test]` returning an `Err` passes",
+    file: "src/output.rs",
+    find: '                None if test.returns_result => format!("() => testResult({f}())"),\n',
+    replace: "",
+    tests: ["test/browser.test.ts", "-t", "fails the way"],
+  },
 ];

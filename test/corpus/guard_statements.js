@@ -63,7 +63,7 @@ function main() {
   }
   let odd = 0;
   for (let i = 0; i < 6; i++) {
-    odd = (odd + (i % 2)) | 0;
+    odd = (odd + ((i % 2) | 0)) | 0;
     if (i % 3 === 0) {
       continue;
     }

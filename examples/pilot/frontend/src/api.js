@@ -6,7 +6,15 @@ import {
   newContactSerialize_serialize,
   problemDeserialize_deserialize,
 } from "../../models/src/lib.js";
-import { $displayJsonError, $fromJson, $json, $settle, $toJson, $unwrapOk } from "@rust-js/runtime";
+import {
+  $debugJsonError,
+  $displayJsonError,
+  $fromJson,
+  $json,
+  $settle,
+  $toJson,
+  $unwrapOk,
+} from "@rust-js/runtime";
 
 export const Failure = {
   message(failure) {
@@ -93,7 +101,11 @@ export async function contact(id, signal) {
 export async function create(new$) {
   const json = new Headers();
   json.set("content-type", "application/json");
-  const body = $unwrapOk($toJson(new$, newContactSerialize_serialize, false), "JSON of a model");
+  const body = $unwrapOk(
+    $toJson(new$, newContactSerialize_serialize, false),
+    "JSON of a model",
+    $debugJsonError,
+  );
   const init = {
     method: "POST",
     headers: json,

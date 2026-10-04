@@ -347,12 +347,19 @@ fn collect_tests<'tcx>(
         };
         exported.insert(test.to_def_id());
         let should_panic = find_attr!(tcx, test, ShouldPanic { reason, .. } => reason.map(|r| r.to_string()));
+        let output = tcx
+            .fn_sig(test)
+            .instantiate_identity()
+            .skip_normalization()
+            .skip_binder()
+            .output();
         tests.push(TestFn {
             module: module_path(tcx, module),
             name: fns[&test.to_def_id()].name.clone(),
             label: label.to_string(),
             should_panic,
             ignore: find_attr!(tcx, test, Ignore { .. }),
+            returns_result: matches!(output.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Result)),
         });
     }
     tests

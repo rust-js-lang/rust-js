@@ -4,6 +4,7 @@ import {
   $cmp,
   $debugF64,
   $debugFields,
+  $debugJsonError,
   $debugStr,
   $fromJson,
   $json,
@@ -80,9 +81,13 @@ export function report() {
           },
           false,
         ),
+        undefined,
+        $debugJsonError,
       ),
       $json.vec(eventDeserialize_deserialize),
     ),
+    undefined,
+    $debugJsonError,
   );
   const msgs = $unwrapOk(
     $fromJson(
@@ -99,9 +104,13 @@ export function report() {
           },
           false,
         ),
+        undefined,
+        $debugJsonError,
       ),
       $json.vec(msgDeserialize_deserialize),
     ),
+    undefined,
+    $debugJsonError,
   );
   const loose = $unwrapOk(
     $fromJson(
@@ -118,11 +127,15 @@ export function report() {
           },
           false,
         ),
+        undefined,
+        $debugJsonError,
       ),
       $json.vec(looseDeserialize_deserialize),
     ),
+    undefined,
+    $debugJsonError,
   );
-  return `${$unwrapOk($toJson(e, everythingSerialize_serialize, false))}\n${$unwrapOk($toJson(e, everythingSerialize_serialize, true))}\n${$unwrapOk($toJson(order, orderSerialize_serialize, false))}\n[${events.map((item) => eventDebug_fmt(item)).join(", ")}]\n[${msgs.map((item) => msgDebug_fmt(item)).join(", ")}]\n[${loose.map((item) => looseDebug_fmt(item)).join(", ")}]\n`;
+  return `${$unwrapOk($toJson(e, everythingSerialize_serialize, false), undefined, $debugJsonError)}\n${$unwrapOk($toJson(e, everythingSerialize_serialize, true), undefined, $debugJsonError)}\n${$unwrapOk($toJson(order, orderSerialize_serialize, false), undefined, $debugJsonError)}\n[${events.map((item) => eventDebug_fmt(item)).join(", ")}]\n[${msgs.map((item) => msgDebug_fmt(item)).join(", ")}]\n[${loose.map((item) => looseDebug_fmt(item)).join(", ")}]\n`;
 }
 
 function orderDebug_fmt(order) {

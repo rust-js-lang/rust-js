@@ -49,6 +49,8 @@ pub struct TestFn {
     /// `#[should_panic]`, with its `expected` substring if any.
     pub should_panic: Option<Option<String>>,
     pub ignore: bool,
+    /// It returns a `Result`: an `Err` fails it, as libtest's does.
+    pub returns_result: bool,
 }
 
 /// Source arena used by the owned JS spans, with original file boundaries.

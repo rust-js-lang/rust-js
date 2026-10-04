@@ -58,4 +58,21 @@ export const mutations: Mutation[] = [
     replace: "        Ok(Expr::str(of.to_string()))",
     tests: ["test/corpus.test.ts", "-t", "std_odds"],
   },
+  {
+    name: "signed-remainder-negative-zero",
+    breaks: "`-2 % 2` of an `i32` is JS's `-0`, which an `f64` of it shows as `-0.0`",
+    file: "src/lower/numbers.rs",
+    find: "                if op == BinOp::Rem && safe && num.signed() {",
+    replace: "                if op == BinOp::Rem && safe && num.signed() && false {",
+    tests: ["test/corpus.test.ts", "-t", "remainder_sign"],
+  },
+  {
+    name: "compared-remainder-zero-sign",
+    breaks: "a signed remainder compared keeps its `| 0`, `((x % 2) | 0) === 0`, where `x % 2 === 0` is the same",
+    file: "src/lower/numbers.rs",
+    find: "            return Ok(Expr::bin(js_op, without_zero_sign(l), without_zero_sign(r)));",
+    replace: "            return Ok(Expr::bin(js_op, l, r));",
+    tests: ["test/compiler.test.ts", "-t", "iterators are array methods"],
+    snapshots: true,
+  },
 ];

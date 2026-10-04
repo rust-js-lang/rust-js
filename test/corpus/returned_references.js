@@ -30,7 +30,7 @@ function main() {
   stock.set("pen", { name: "pen", count: 3 });
   const item$1 = $unwrap(stock.get("pen"));
   item$1.count = Math.imul(item$1.count, 4) >>> 0;
-  console.log(`${$unwrap(stock.get("pen"), "key not found").count}`);
+  console.log(`${$unwrap(stock.get("pen"), "no entry found for key").count}`);
 }
 
 export function entry() {
