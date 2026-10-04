@@ -34,6 +34,7 @@ copied[0].x = 9; // `origin[0].x` was 9 too
 | `c.replace(v)`, `c.take()` of a `Cell` or `RefCell` | `$cellReplace(c, v)`, `$cellReplace(c, 0)` |
 | `c.replace_with(f)` | `$cellReplace(c, f(<&mut to its value>))` |
 | `s.split_at(mid)` | `$sliceSplitAt(s, mid)`, two copies, as `&s[..mid]` is; past the end it panics, `mid > len` |
+| `s.split_at_checked(mid)` | `$sliceSplitAt(s, mid, true)`, `undefined` past the end |
 | `s.get(a..b)` | `$sliceGet(s, a, b)`: a copy, or `undefined` where `&s[a..b]` would panic |
 | `s.starts_with(p)`, `s.ends_with(p)` of numbers, strings or `bool`s | `$sliceStartsWith(s, p)`, `$sliceStartsWith(s, p, true)`, each item by `===` |
 | `a.eq_ignore_ascii_case(b)` of bytes | `$bytesAsciiEq(a, b)` |

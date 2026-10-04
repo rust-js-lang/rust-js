@@ -21,26 +21,31 @@ function main() {
   );
   const arg = halves([1, 0, 0, 2]);
   console.log(`(${arg[0]}, ${arg[1]})`);
+  const arg$1 = $sliceSplitAt(v, 2, true);
+  const arg$2 = $sliceSplitAt(v, 6, true);
+  console.log(
+    `${arg$1 == null ? "None" : `Some(([${arg$1[0].map((item) => String(item)).join(", ")}], [${arg$1[1].map((item) => String(item)).join(", ")}]))`} ${arg$2 == null ? "None" : `Some(([${arg$2[0].map((item) => String(item)).join(", ")}], [${arg$2[1].map((item) => String(item)).join(", ")}]))`}`,
+  );
   const words = ["a", "b", "c"];
   const [first, rest] = $sliceSplitAt(words, 1);
   console.log(`${first.join("+")} ${rest.join("+")}`);
-  const arg$1 = $sliceGet(v, 1, 3);
-  const arg$2 = $sliceGet(v, 3);
-  const arg$3 = $sliceGet(v, 0, 2);
+  const arg$3 = $sliceGet(v, 1, 3);
+  const arg$4 = $sliceGet(v, 3);
+  const arg$5 = $sliceGet(v, 0, 2);
   console.log(
-    `${arg$1 == null ? "None" : `Some([${arg$1.map((item) => String(item)).join(", ")}])`} ${arg$2 == null ? "None" : `Some([${arg$2.map((item) => String(item)).join(", ")}])`} ${arg$3 == null ? "None" : `Some([${arg$3.map((item) => String(item)).join(", ")}])`}`,
+    `${arg$3 == null ? "None" : `Some([${arg$3.map((item) => String(item)).join(", ")}])`} ${arg$4 == null ? "None" : `Some([${arg$4.map((item) => String(item)).join(", ")}])`} ${arg$5 == null ? "None" : `Some([${arg$5.map((item) => String(item)).join(", ")}])`}`,
   );
-  const arg$4 = $sliceGet(v, 0);
-  const arg$5 = $sliceGet(v, 4, 9);
-  const arg$6 = $sliceGet(v, 2, 5);
+  const arg$6 = $sliceGet(v, 0);
+  const arg$7 = $sliceGet(v, 4, 9);
+  const arg$8 = $sliceGet(v, 2, 5);
   console.log(
-    `${arg$4 == null ? "None" : `Some([${arg$4.map((item) => String(item)).join(", ")}])`} ${arg$5 == null ? "None" : `Some([${arg$5.map((item) => String(item)).join(", ")}])`} ${arg$6 == null ? "None" : `Some([${arg$6.map((item) => String(item)).join(", ")}])`}`,
+    `${arg$6 == null ? "None" : `Some([${arg$6.map((item) => String(item)).join(", ")}])`} ${arg$7 == null ? "None" : `Some([${arg$7.map((item) => String(item)).join(", ")}])`} ${arg$8 == null ? "None" : `Some([${arg$8.map((item) => String(item)).join(", ")}])`}`,
   );
   const [start, end] = [3, 1];
-  const arg$7 = $sliceGet(v, start, end);
-  const arg$8 = $sliceGet(v, 5);
+  const arg$9 = $sliceGet(v, start, end);
+  const arg$10 = $sliceGet(v, 5);
   console.log(
-    `${arg$7 == null ? "None" : `Some([${arg$7.map((item) => String(item)).join(", ")}])`} ${arg$8 == null ? "None" : `Some([${arg$8.map((item) => String(item)).join(", ")}])`}`,
+    `${arg$9 == null ? "None" : `Some([${arg$9.map((item) => String(item)).join(", ")}])`} ${arg$10 == null ? "None" : `Some([${arg$10.map((item) => String(item)).join(", ")}])`}`,
   );
   const match = $sliceGet(words, 1);
   if (match != null) {

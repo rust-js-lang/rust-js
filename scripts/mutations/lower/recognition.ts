@@ -459,4 +459,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "size_hint"],
   },
+  {
+    name: "char-from-code-unknown",
+    breaks: "`char::from_u32_unchecked(n)` is an error",
+    file: "src/lower/recognition.rs",
+    find: "        if char_fn(\"from_u32_unchecked\") {",
+    replace: "        if char_fn(\"from_u32_unchecked\") && false {",
+    tests: ["test/corpus.test.ts", "-t", "char_from_code"],
+  },
 ];

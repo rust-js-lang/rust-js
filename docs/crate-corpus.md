@@ -21,27 +21,29 @@ newest release its requirement allows.
 | anyhow 1.0 | refused | a raw pointer |
 | once_cell 1.21 | refused | a constant of a raw pointer |
 | semver 1.0 | refused | a constant of a `NonNull` |
-| uuid 1.27 | refused | `IndexMut::index_mut` called |
-| url 2.5 | blocked | utf8_iter: `char::from_u32_unchecked` called; litemap: `{:?}` of a `PhantomData`; writeable: `<[T]>::split_at_checked` called; smallvec's; percent-encoding: `transmute`; zerofrom: `u128` |
+| uuid 1.27 | refused | `&mut` of a `MaybeUninit` buffer's range |
+| url 2.5 | blocked | litemap: `{:?}` of a `PhantomData`; writeable: a whole value assigned through a `&mut`; smallvec's; percent-encoding: `transmute`; zerofrom: `u128` |
 | regex 1.11 | blocked | memchr: a raw pointer; regex-syntax: `str::from_utf8` |
-| rust_decimal 1.38 | blocked | arrayvec: a user `io::Write`; serde_core: `size_hint` called; num-traits: a value with a destructor bound where it isn't supported |
+| rust_decimal 1.38 | blocked | arrayvec: a user `io::Write`; serde_core: `size_hint` called; num-traits: `chars()`'s raw pointer |
 | chrono 0.4 (`alloc`) | blocked | num-traits' |
 | time 0.3 (`alloc`) | blocked | powerfmt: a `MaybeUninit`; deranged: `{:?}` of an `IntErrorKind`; num-conv: `u128`; time-core: a generic impl's constant of its parameters |
 
 1 of 16 compiles. What stops the most, by the crates it stops:
 
 1. **Raw memory,** a raw pointer, a `NonNull`, a `MaybeUninit`,
-   `transmute`, `handle_alloc_error`: 8.
-2. **`u128`:** 2. **num-traits' value with a destructor bound:** 2.
-   **A user `Future`:** 2.
+   `transmute`, `handle_alloc_error`: 9.
+2. **`u128`:** 2. **num-traits' `chars()`:** 2. **A user `Future`:** 2.
 3. **One each:** `{:?}` of a `PhantomData`, `Path::display`,
    `str::from_utf8`, a generic impl's constant, `write_str` of a generic
    writer, `{:?}` of an `IntErrorKind`, a user `io::Write`,
-   `size_hint` of a generic iterator, `IndexMut::index_mut`,
-   `char::from_u32_unchecked`, `<[T]>::split_at_checked`.
+   `size_hint` of a generic iterator, a whole value assigned through a
+   `&mut`.
 
 ## Fixed by measuring
 
+- **`?` of a value with a destructor,** num-traits' `checked_pow` (ADR
+  0098); **`char::from_u32_unchecked`,** utf8_iter's, which now compiles
+  (ADR 0157); **`split_at_checked`,** writeable's (ADR 0153).
 - **`size_hint()`** of an iterator of the crate's, utf8_iter's (ADR 0170);
   **a slice's `starts_with` and `eq_ignore_ascii_case` of bytes,**
   writeable's and uuid's (ADR 0153).

@@ -108,6 +108,7 @@ pub(super) fn find_facts<'a, 'tcx>(cx: &FnCx<'a, 'tcx>) -> Facts {
             .collect(),
         stack: Vec::new(),
         lets: HashMap::new(),
+        passing: HashSet::new(),
         facts: Facts::default(),
     };
     // A closure called once, that moves what it holds, owns what it took,
@@ -139,6 +140,10 @@ struct Finder<'c, 'a, 'tcx> {
     stack: Vec<ExprId>,
     /// Each `let` statement's value, and its pattern.
     lets: HashMap<ExprId, &'a Pat<'tcx>>,
+    /// The bindings of `?`'s own `match`, `Continue(v) => v` and `Break(r)`:
+    /// each value passes straight through, to where `e?` goes or out of the
+    /// function, owned by neither.
+    passing: HashSet<LocalVarId>,
     facts: Facts,
 }
 
@@ -565,6 +570,7 @@ impl<'c, 'a, 'tcx> Visitor<'a, 'tcx> for Finder<'c, 'a, 'tcx> {
             ty,
             ..
         } = pat.kind
+            && !self.passing.contains(&var)
         {
             match self.cx.drops(ty) {
                 Drops::Nothing => {}
@@ -589,6 +595,17 @@ impl<'c, 'a, 'tcx> Visitor<'a, 'tcx> for Finder<'c, 'a, 'tcx> {
             self.visit_expr(&self.thir[f.body]);
             self.stack.pop();
             return;
+        }
+        if let ExprKind::Match { ref arms, .. } = expr.kind
+            && self.cx.body_query().as_question(id).is_some()
+        {
+            for &arm in arms {
+                self.thir[arm].pattern.walk_always(|p| {
+                    if let PatKind::Binding { var, .. } = p.kind {
+                        self.passing.insert(var);
+                    }
+                });
+            }
         }
         match expr.kind {
             ExprKind::VarRef { id: var } | ExprKind::UpvarRef { var_hir_id: var, .. }

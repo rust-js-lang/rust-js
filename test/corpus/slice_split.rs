@@ -1,4 +1,4 @@
-// `split_at` and `get` of a range, of a slice: each half or part a copy, as
+// `split_at`, `split_at_checked` and `get` of a range, of a slice: each half or part a copy, as
 // a shared slice is, and `None` where `&v[range]` would panic.
 
 fn halves(bytes: &[u8]) -> (u32, u32) {
@@ -15,6 +15,7 @@ fn main() {
     let (whole, empty) = v[1..].split_at(4);
     println!("{:?} {:?} {:?} {:?}", none, all, whole, empty);
     println!("{:?}", halves(&[1, 0, 0, 2]));
+    println!("{:?} {:?}", v.split_at_checked(2), v.split_at_checked(6));
     let words = vec![String::from("a"), String::from("b"), String::from("c")];
     let (first, rest) = words.split_at(1);
     println!("{} {}", first.join("+"), rest.join("+"));

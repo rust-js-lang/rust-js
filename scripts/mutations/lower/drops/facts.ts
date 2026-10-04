@@ -131,4 +131,12 @@ export const mutations: Mutation[] = [
     replace: "        if let Some(f) = self.cx.body_query().as_for(id).filter(|_| false) {",
     tests: ["test/corpus.test.ts", "-t", "loop_drops"],
   },
+  {
+    name: "question-bindings-owned",
+    breaks: "`e?` of a value with a destructor is an error, its own bindings taken for owners",
+    file: "src/lower/drops/facts.rs",
+    find: "            && !self.passing.contains(&var)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "question_drops"],
+  },
 ];

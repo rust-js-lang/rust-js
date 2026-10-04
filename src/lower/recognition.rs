@@ -482,6 +482,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if char_fn("from_u32") {
             return Some(Some(Std::FromU32));
         }
+        // Of a code point its caller checked.
+        if char_fn("from_u32_unchecked") {
+            return Some(Some(Std::Text(TextOp::CharFromCode)));
+        }
         if tcx.crate_name(def_id.krate).as_str() == "serde_json" {
             match tcx.item_name(def_id).as_str() {
                 "to_string" => return Some(Some(Std::ToJson(false))),
@@ -1085,7 +1089,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "get" if owner.is_slice() && args.types().nth(1).is_some_and(|r| self.range_kind(r).is_some()) => {
                 Std::Text(TextOp::SliceGet)
             }
-            "split_at" if owner.is_slice() => Std::Text(TextOp::SliceSplitAt),
+            "split_at" | "split_at_checked" if owner.is_slice() => Std::Text(TextOp::SliceSplitAt {
+                checked: name.as_str() == "split_at_checked",
+            }),
             "is_char_boundary" if owner.is_str() => Std::Text(TextOp::IsCharBoundary),
             "len_utf8" if owner.is_char() => Std::Text(TextOp::CharLen { utf16: false }),
             "len_utf16" if owner.is_char() => Std::Text(TextOp::CharLen { utf16: true }),

@@ -36,6 +36,7 @@ one `char`,** which each method tries on each `char` in turn:
 | `s.split_ascii_whitespace()` | `s.split(/[\t\n\f\r ]+/).filter((word) => word !== "")` |
 | `c.len_utf8()`, `len_utf16()` | `$byteLen(c)`, `c.length` |
 | `char::from(b)` of a `u8` | `String.fromCharCode(b)` |
+| `char::from_u32_unchecked(n)`, of a code point its caller checked | `String.fromCodePoint(n)` (Amended: an error; it stopped utf8_iter.) |
 | `String::from_iter(items)` | `items.join("")`, as `collect()` into a `String` is |
 
 - **Offsets are bytes,** as `find`'s are (ADR 0138): the byte where the

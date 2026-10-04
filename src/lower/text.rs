@@ -60,8 +60,13 @@ pub(super) enum TextOp {
     StrGet,
     /// `v.get(range)` of a slice: `&v[range]`, or `None` where that would panic.
     SliceGet,
-    /// `v.split_at(mid)` of a slice: `(&v[..mid], &v[mid..])`.
-    SliceSplitAt,
+    /// `v.split_at(mid)` of a slice: `(&v[..mid], &v[mid..])`; or
+    /// `split_at_checked` (`checked`), `None` past the end.
+    SliceSplitAt {
+        checked: bool,
+    },
+    /// `char::from_u32_unchecked(n)`: the code point `n` is.
+    CharFromCode,
     /// `v.starts_with(prefix)`, or `ends_with` (`end`), of a slice whose items
     /// compare by value.
     SliceStartsWith {
@@ -275,7 +280,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             TextOp::SplitTerminator => call(self, Helper::SplitTerminator, "$splitTerminator", vec![arg(), arg()]),
             TextOp::SplitAt => call(self, Helper::SplitAt, "$splitAt", vec![arg(), arg()]),
-            TextOp::SliceSplitAt => call(self, Helper::SliceSplitAt, "$sliceSplitAt", vec![arg(), arg()]),
+            TextOp::SliceSplitAt { checked } => {
+                let mut list = vec![arg(), arg()];
+                if checked {
+                    list.push(Expr::bool(true));
+                }
+                call(self, Helper::SliceSplitAt, "$sliceSplitAt", list)
+            }
+            TextOp::CharFromCode => Expr::call(Expr::member(Expr::var("String"), "fromCodePoint"), vec![arg()]),
             TextOp::SliceStartsWith { end } => {
                 let mut list = vec![arg(), arg()];
                 if end {
