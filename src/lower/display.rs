@@ -4,7 +4,7 @@
 
 use super::format_spec::Options;
 use super::recognition::{ChannelError, FormatterQuery, Std};
-use super::recognition::{StdItem, WriteCall, opt_std_item, std_item};
+use super::recognition::{StdItem, WriteCall, opt_std_item, std_item, trait_method};
 use super::representation::{self, Num};
 use super::{Dest, FnCx, R};
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
@@ -748,6 +748,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.writer_call(fmt, args, value, pretty, span);
         }
         Err(self.unsupported(span, &format!("`{{}}` of a `{ty}`")))
+    }
+
+    /// `write!(w, ..)` or `w.write_char(c)` of a writer of the crate's that
+    /// keeps std's: its own `write_str`, given the text whole, where Rust's
+    /// gives it a piece at a time (ADR 0166). Its text is Rust's; how many
+    /// calls carry it isn't.
+    pub(super) fn user_write(
+        &mut self,
+        def_id: DefId,
+        args: &[ExprId],
+        generic_args: ty::GenericArgsRef<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let trait_id = self.tcx.trait_of_assoc(def_id).expect("`fmt::Write`'s method");
+        let write_str = trait_method(self.tcx, trait_id, "write_str");
+        let values = self.operands(args, out)?;
+        self.trait_call(write_str, generic_args, values, span, out)?
+            .ok_or_else(|| self.unsupported(span, "this writer's `write_str`"))
     }
 
     /// The type `ty` shows: what a `Box`, an `Rc` or a `RefCell`'s

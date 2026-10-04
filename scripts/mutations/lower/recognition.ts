@@ -355,4 +355,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "user_fmt_traits"],
   },
+  {
+    name: "user-fmt-write-refused",
+    breaks: "a writer of the crate's own, `impl fmt::Write`, is an error",
+    file: "src/lower/recognition.rs",
+    find: "        || tcx.is_diagnostic_item(Symbol::intern(\"FmtWrite\"), id)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "user_fmt_write"],
+  },
+  {
+    name: "user-write-char-unrouted",
+    breaks: "`w.write_char(c)` of a writer that keeps std's is an error, not its `write_str`",
+    file: "src/lower/recognition.rs",
+    find: "            && matches!(tcx.item_name(def_id).as_str(), \"write_fmt\" | \"write_char\")",
+    replace: "            && matches!(tcx.item_name(def_id).as_str(), \"write_fmt\")",
+    tests: ["test/corpus.test.ts", "-t", "user_fmt_write"],
+  },
 ];

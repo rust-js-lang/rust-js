@@ -60,4 +60,5 @@ for (const item of items) {
 - `write!` into a `String`, and a `fmt::Result`'s `unwrap`, `expect`,
   `is_ok` and `is_err`, compile.
 - A user's `impl fmt::Write` is still an error, and so are a `fmt::Result`'s
-  other methods, `map_err`, and a `match` of one.
+  other methods, `map_err`, and a `match` of one. (Amended: a user's
+  `impl fmt::Write` is given its text a `write!` at a time, ADR 0166.)

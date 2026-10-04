@@ -167,10 +167,13 @@ Refused, among others: `str::from_utf8`, `String::from_utf8`,
 - **`{:x}`, `{:e}` and `{:p}` of the crate's types call its own `LowerHex`,
   `LowerExp`, `Pointer` and the like,** given the placeholder's options
   ([0165](decisions/0165-other-fmt-traits.md)).
+- **A writer of the crate's, `impl fmt::Write`, is given its text whole:**
+  one `write_str` for a `write!`, where Rust's gives it a piece at a time
+  ([0166](decisions/0166-user-fmt-write.md)).
 
 Refused: `{:x?}`; `{:.2e}`; options for a `&dyn Debug` made elsewhere;
-`f.sign_minus()` and `f.pad_integral(..)`; a user `impl fmt::Write`; `{:p}`
-of a reference; `LowerHex::fmt(&n, f)` of a number.
+`f.sign_minus()` and `f.pad_integral(..)`; a writer that fails; `{:p}` of
+a reference; `LowerHex::fmt(&n, f)` of a number.
 
 ## Values, copying and mutation
 
@@ -410,3 +413,4 @@ a map key. React and JSX are [their own page](jsx.md).
 11. Nothing calls `main`; an uncaught panic is the host's error, exit code 1.
 12. JS can catch a panic; a `drop` panicking during a panic replaces it.
 13. A value with a destructor that JS holds is never dropped.
+14. A writer of the crate's is given each `write!`'s text in one `write_str`.

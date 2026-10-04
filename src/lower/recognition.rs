@@ -123,6 +123,9 @@ pub(super) enum Std {
     /// `len()` of an iterator of the crate's whose `ExactSizeIterator` keeps
     /// std's `len`: its `size_hint()`, checked (ADR 0164).
     ExactLen,
+    /// `write!(w, ..)` or `w.write_char(c)` of a writer of the crate's that
+    /// keeps std's: its own `write_str`, given the text whole (ADR 0166).
+    UserWrite,
     Clear,
     Retain,
     /// `panic!("..")`, `assert!(..)`: `throw new Error(..)`.
@@ -765,6 +768,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 "write_fmt" | "write_str" | "write_char" => Some(Std::PushStr),
                 _ => None,
             };
+        }
+        // A writer of the crate's own: what `write!` and `write_char` give its
+        // `write_str` (ADR 0166). One it writes itself is called as it is.
+        if tcx.is_diagnostic_item(Symbol::intern("FmtWrite"), trait_)
+            && matches!(tcx.item_name(def_id).as_str(), "write_fmt" | "write_char")
+            && self.has_user_impl(trait_, ty.peel_refs())
+        {
+            return Some(Std::UserWrite);
         }
         // Writing to a standard stream (ADR 0132).
         if let Some(error) = self.stream(ty.peel_refs())
@@ -2068,6 +2079,9 @@ pub(super) fn implementable(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'
     operational(tcx, foreign, id)
         || tcx.is_diagnostic_item(sym::From, id)
         || tcx.is_diagnostic_item(sym::TryFrom, id)
+        // A writer of the crate's own, given its text a `write!` at a time
+        // (ADR 0166).
+        || tcx.is_diagnostic_item(Symbol::intern("FmtWrite"), id)
         // A collection of the crate's: what `for`, `collect()`, `extend`,
         // `sum()` and `product()` call (ADR 0160).
         || tcx.is_diagnostic_item(sym::IntoIterator, id)

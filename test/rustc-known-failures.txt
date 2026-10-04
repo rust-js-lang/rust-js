@@ -172,7 +172,7 @@ lifetimes/any-lifetime-escape-higher-rank.rs	error: rust-js does not support cal
 lifetimes/rvalue-cleanup-shortcircuit.rs	error: rust-js does not support calling `std::env::args` yet
 lint/issue-20343.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 liveness/var-defined-after-early-return.rs	error: rust-js does not support values of type `(*const core::io::error::Custom) is !null` yet
-macros/colorful-write-macros.rs	error: rust-js does not support user implementations of `std::fmt::Write` yet
+macros/colorful-write-macros.rs	error: rust-js does not support values of type `&mut dyn std::io::Write` yet
 macros/macro-variable-unused-reporting-5718.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 macros/try-macro.rs	error: rust-js does not support calling `std::convert::From::from` yet
 match/match-ref-mut-stability.rs	error: rust-js does not support values of type `*const i32` yet
