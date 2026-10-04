@@ -443,4 +443,20 @@ export const mutations: Mutation[] = [
     replace: "            \"get\" if owner.is_slice() && args.types().nth(1).is_some_and(|r| self.range_kind(r).is_some() && false) => {",
     tests: ["test/corpus.test.ts", "-t", "slice_split"],
   },
+  {
+    name: "user-size-hint-unknown",
+    breaks: "`size_hint()` of an iterator of the crate's that keeps std's is an error",
+    file: "src/lower/recognition.rs",
+    find: "                return Some(Std::SizeHint(false));",
+    replace: "                return None;",
+    tests: ["test/corpus.test.ts", "-t", "size_hint"],
+  },
+  {
+    name: "size-hint-exact-unchecked",
+    breaks: "`size_hint()` of `chars()`, whose hint isn't exact, is given as exact",
+    file: "src/lower/recognition.rs",
+    find: "                && self.is_exact_size(ty.peel_refs())\n",
+    replace: "",
+    tests: ["test/diagnostics.test.ts", "-t", "size_hint"],
+  },
 ];

@@ -62,6 +62,13 @@ pub(super) enum TextOp {
     SliceGet,
     /// `v.split_at(mid)` of a slice: `(&v[..mid], &v[mid..])`.
     SliceSplitAt,
+    /// `v.starts_with(prefix)`, or `ends_with` (`end`), of a slice whose items
+    /// compare by value.
+    SliceStartsWith {
+        end: bool,
+    },
+    /// `a.eq_ignore_ascii_case(b)` of bytes.
+    BytesAsciiEq,
     IsCharBoundary,
     /// A `char`'s `len_utf8()`, or `len_utf16()`.
     CharLen {
@@ -269,6 +276,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TextOp::SplitTerminator => call(self, Helper::SplitTerminator, "$splitTerminator", vec![arg(), arg()]),
             TextOp::SplitAt => call(self, Helper::SplitAt, "$splitAt", vec![arg(), arg()]),
             TextOp::SliceSplitAt => call(self, Helper::SliceSplitAt, "$sliceSplitAt", vec![arg(), arg()]),
+            TextOp::SliceStartsWith { end } => {
+                let mut list = vec![arg(), arg()];
+                if end {
+                    list.push(Expr::bool(true));
+                }
+                call(self, Helper::SliceStartsWith, "$sliceStartsWith", list)
+            }
+            TextOp::BytesAsciiEq => call(self, Helper::BytesAsciiEq, "$bytesAsciiEq", vec![arg(), arg()]),
             TextOp::MatchIndices => call(self, Helper::MatchIndices, "$matchIndices", vec![arg(), arg()]),
             TextOp::Matches => call(self, Helper::Matches, "$matches", vec![arg(), arg()]),
             TextOp::TrimMatches { start, end } => {

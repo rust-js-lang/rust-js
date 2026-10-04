@@ -245,6 +245,9 @@ Refused: `Rc::ptr_eq`, `strong_count`, `get_mut`, `make_mut` and
 - **A shared slice is a copy,** `&v[a..b]`, `split_at` and `get(a..b)`:
   nothing changes `v` while it's borrowed
   ([0153](decisions/0153-collection-and-cell-methods.md)).
+- **`starts_with` and `ends_with` of a slice compare items by `===`,** for
+  numbers, strings and `bool`s, as `==` does; of other items they're
+  refused ([0153](decisions/0153-collection-and-cell-methods.md)).
 - **An `impl Iterator` is the iterator it stands for**
   ([0061](decisions/0061-generic-iterators.md)).
 - **A collection of the crate's is its own impls':** `for` over it calls
@@ -254,6 +257,8 @@ Refused: `Rc::ptr_eq`, `strong_count`, `get_mut`, `make_mut` and
   it's refused: that code wouldn't call its `into_iter`. An iterator of the
   crate's runs from both ends by its own `next_back`, `rev()` included, and
   its `len()` is its `size_hint()`, checked ([0164](decisions/0164-double-ended-iterators.md)).
+  `size_hint()` is Rust's where it's known: std's `(0, None)` of one of the
+  crate's, a std `ExactSizeIterator`'s length ([0170](decisions/0170-size-hint.md)).
 - **A function passed where a closure goes is the arrow that calls it,**
   `.map(str::len)` being `.map((s) => $byteLen(s))` and `fold(0, i32::max)`
   being `reduce((a, b) => Math.max(a, b), 0)`; a constructor's makes what

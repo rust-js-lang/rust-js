@@ -327,6 +327,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(own.then_some(double_ended))
     }
 
+    /// `it.size_hint()` (ADR 0170): std's `(0, None)` of an iterator of the
+    /// crate's that keeps it, or `(n, Some(n))` of std's of length `n`.
+    pub(super) fn size_hint(&mut self, exact: bool, receiver: ExprId, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+        if exact {
+            let mut len = self.iter_len(receiver, span, out)?;
+            if !len.reads_same() {
+                len = self.spill("len", len, out);
+            }
+            return Ok(Expr::array(vec![len.clone(), len]));
+        }
+        let value = self.expr(receiver, out)?;
+        if value.has_effects() {
+            out.push(StmtKind::Expr(value).at(self.js_span(span)));
+        }
+        Ok(Expr::array(vec![Expr::int(0), Expr::undefined()]))
+    }
+
     /// `it.len()` of an iterator of the crate's that keeps std's `len`: its
     /// `size_hint()`, its own or std's `(0, None)`, checked as std checks it.
     pub(super) fn exact_len(&mut self, receiver: ExprId, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {

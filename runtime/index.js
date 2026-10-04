@@ -4127,6 +4127,20 @@ export function $sliceSplitAt(items, mid) {
   return [items.slice(0, mid), items.slice(mid)];
 }
 
+// `v.starts_with(prefix)`, or `ends_with` (`end`), of a slice whose items `==`
+// compares by value, as JS's `===` does: numbers, strings and `bool`s.
+export function $sliceStartsWith(items, prefix, end = false) {
+  const at = end ? items.length - prefix.length : 0;
+  return at >= 0 && prefix.length <= items.length && prefix.every((item, i) => item === items[at + i]);
+}
+
+// `a.eq_ignore_ascii_case(b)` of bytes: the same length, each byte equal once
+// `A`..`Z` are lowered, as Rust's `to_ascii_lowercase` does.
+export function $bytesAsciiEq(a, b) {
+  const lower = (byte) => (byte >= 65 && byte <= 90 ? byte + 32 : byte);
+  return a.length === b.length && a.every((byte, i) => lower(byte) === lower(b[i]));
+}
+
 export function $sliceEnd(items, start, end = items.length) {
   if (start > end) throw new Error(`slice index starts at ${start} but ends at ${end}`);
   if (end > items.length) throw new Error(`range end index ${end} out of range for slice of length ${items.length}`);

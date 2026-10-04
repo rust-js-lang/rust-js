@@ -527,6 +527,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if known == Std::IterLen {
             return self.iter_len(args[0], span, out);
         }
+        if let Std::SizeHint(exact) = known {
+            return self.size_hint(exact, args[0], span, out);
+        }
         if known == Std::UserWrite {
             return self.user_write(def_id, args, generic_args, span, out);
         }
@@ -733,6 +736,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::Heap(_)
             | Std::IterLen
             | Std::ExactLen
+            | Std::SizeHint(_)
             | Std::UserWrite
             | Std::DequeRemove
             | Std::Step(_)

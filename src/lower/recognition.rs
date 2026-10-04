@@ -123,6 +123,10 @@ pub(super) enum Std {
     /// `len()` of an iterator of the crate's whose `ExactSizeIterator` keeps
     /// std's `len`: its `size_hint()`, checked (ADR 0164).
     ExactLen,
+    /// `it.size_hint()`: std's `(0, None)` of an iterator of the crate's that
+    /// keeps it, or, `true`, `(n, Some(n))` of std's that knows its length
+    /// (ADR 0170).
+    SizeHint(bool),
     /// `write!(w, ..)` or `w.write_char(c)` of a writer of the crate's that
     /// keeps std's: its own `write_str`, given the text whole (ADR 0166).
     UserWrite,
@@ -647,6 +651,19 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         // An iterator is a JS array (ADR 0036), and a `split` one of strings
         // (ADR 0034). Its adapters are the array's methods.
+        // `size_hint()` of an iterator of the crate's that keeps std's, or of
+        // std's that knows its length (ADR 0170).
+        if tcx.is_diagnostic_item(sym::Iterator, trait_) && tcx.item_name(def_id).as_str() == "size_hint" {
+            if self.is_user_iterator(ty) {
+                return Some(Std::SizeHint(false));
+            }
+            if self.range_kind(ty.peel_refs()).is_none()
+                && self.is_array_iter(ty.peel_refs())
+                && self.is_exact_size(ty.peel_refs())
+            {
+                return Some(Std::SizeHint(true));
+            }
+        }
         if tcx.is_diagnostic_item(sym::Iterator, trait_) {
             let collects_string = || {
                 args.types()
@@ -1173,16 +1190,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             // `includes` compares strings and numbers by value, as `==` does,
             // but objects by identity: only for those.
             // A `&mut` to one is a cell, an object (ADR 0099): not by identity.
-            "contains"
-                if owner.is_slice()
-                    && self_ty.is_some_and(|t| {
-                        !t.walk().any(|part| {
-                            matches!(part.as_type().map(|p| *p.kind()), Some(ty::Ref(_, _, Mutability::Mut)))
-                        }) && (self.is_string_like(t) || Num::of(t).is_some() || t.is_bool())
-                    }) =>
-            {
+            "contains" if owner.is_slice() && self_ty.is_some_and(|t| self.compares_by_value(t)) => {
                 Std::Method("includes")
             }
+            "starts_with" | "ends_with" if owner.is_slice() && self_ty.is_some_and(|t| self.compares_by_value(t)) => {
+                Std::Text(TextOp::SliceStartsWith {
+                    end: name.as_str() == "ends_with",
+                })
+            }
+            // Only `[u8]` has it.
+            "eq_ignore_ascii_case" if owner.is_slice() => Std::Text(TextOp::BytesAsciiEq),
             "is_ok" if result => Std::IsOk(true),
             "is_err" if result => Std::IsOk(false),
             "ok" if result => Std::ResultOk,
@@ -1371,6 +1388,29 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.tcx
             .all_traits_including_private()
             .find(|&id| is_other_fmt_trait(self.tcx, id) && self.tcx.item_name(id).as_str() == name)
+    }
+
+    /// Does JS's `===` compare a `ty` as `==` does: a number, a string or a
+    /// `bool`. A `&mut` to one is a cell, an object (ADR 0099): not by value.
+    fn compares_by_value(&self, ty: Ty<'tcx>) -> bool {
+        !ty.walk()
+            .any(|part| matches!(part.as_type().map(|p| *p.kind()), Some(ty::Ref(_, _, Mutability::Mut))))
+            && (self.is_string_like(ty) || Num::of(ty).is_some() || ty.is_bool())
+    }
+
+    /// Is `ty` an `ExactSizeIterator`, whose `size_hint()` std makes exact?
+    fn is_exact_size(&self, ty: Ty<'tcx>) -> bool {
+        let Some(exact) = self
+            .tcx
+            .all_traits_including_private()
+            .find(|&id| is_iterator_extension(self.tcx, id) && self.tcx.item_name(id).as_str() == "ExactSizeIterator")
+        else {
+            return false;
+        };
+        let tr = ty::TraitRef::new(self.tcx, exact, [self.tcx.erase_and_anonymize_regions(ty)]);
+        self.tcx
+            .codegen_select_candidate(self.typing_env.as_query_input(tr))
+            .is_ok()
     }
 
     pub(super) fn double_ended_iterator(&self) -> Option<DefId> {

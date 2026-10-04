@@ -177,6 +177,8 @@ helpers! {
     SliceRange,
     SliceGet,
     SliceSplitAt,
+    SliceStartsWith,
+    BytesAsciiEq,
     SliceEnd,
     ByteLen,
     StrSlice,
@@ -748,6 +750,8 @@ impl Helper {
             Helper::SliceRange => include_str!("runtime/slice_range.js"),
             Helper::SliceGet => include_str!("runtime/slice_get.js"),
             Helper::SliceSplitAt => include_str!("runtime/slice_split_at.js"),
+            Helper::SliceStartsWith => include_str!("runtime/slice_starts_with.js"),
+            Helper::BytesAsciiEq => include_str!("runtime/bytes_ascii_eq.js"),
             // `s.len()`: its UTF-8 bytes, as Rust counts them, where JS counts
             // UTF-16 units (ADR 0138).
             Helper::ByteLen => include_str!("runtime/byte_len.js"),

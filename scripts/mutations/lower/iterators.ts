@@ -349,4 +349,12 @@ export const mutations: Mutation[] = [
     replace: "return self.user_iterator(value, receiver_ty, double_ended, \"next\", span);",
     tests: ["test/corpus.test.ts", "-t", "double_ended_iterators"],
   },
+  {
+    name: "size-hint-exact-unbounded",
+    breaks: "`size_hint()` of a std iterator that knows its length has no upper bound",
+    file: "src/lower/iterators.rs",
+    find: "            return Ok(Expr::array(vec![len.clone(), len]));",
+    replace: "            return Ok(Expr::array(vec![len, Expr::undefined()]));",
+    tests: ["test/corpus.test.ts", "-t", "size_hint"],
+  },
 ];
