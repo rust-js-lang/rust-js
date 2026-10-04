@@ -519,7 +519,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // A generic `T: ToString`'s, through its dictionary, where it
                 // has no `Display` bound to show it with (ADR 0049).
                 let display = ty::TraitRef::new(self.tcx, self.display_trait(), [ty]);
-                let to_string = ty::TraitRef::new(self.tcx, self.to_string_trait(), [ty]);
+                let to_string_trait = self
+                    .to_string_trait()
+                    .expect("a `to_string` call's crate has `ToString`");
+                let to_string = ty::TraitRef::new(self.tcx, to_string_trait, [ty]);
                 match self.is_unknown(ty) && self.evidence_for(display).is_none() {
                     true if let Some(dictionary) = self.evidence_for(to_string) => {
                         Expr::call(Expr::member(dictionary, "to_string"), vec![value])

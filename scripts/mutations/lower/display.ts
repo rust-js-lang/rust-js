@@ -180,4 +180,12 @@ export const mutations: Mutation[] = [
     replace: "            && adt.variants().is_empty()\n            && false",
     tests: ["test/corpus.test.ts", "-t", "generic_from_str"],
   },
+  {
+    name: "to-string-trait-assumed",
+    breaks: "a `#![no_std]` crate's trait call crashes rust-js, looking up `alloc`'s `ToString`, which isn't loaded",
+    file: "src/lower/display.rs",
+    find: "        opt_std_item(self.tcx, StdItem::ToString)",
+    replace: "        Some(std_item(self.tcx, StdItem::ToString))",
+    tests: ["test/crates.test.ts", "-t", "no_std"],
+  },
 ];

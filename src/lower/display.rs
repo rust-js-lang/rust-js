@@ -4,7 +4,7 @@
 
 use super::format_spec::Options;
 use super::recognition::{ChannelError, FormatterQuery, Std};
-use super::recognition::{StdItem, WriteCall, std_item};
+use super::recognition::{StdItem, WriteCall, opt_std_item, std_item};
 use super::representation::{self, Num};
 use super::{Dest, FnCx, R};
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
@@ -744,8 +744,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    pub(super) fn to_string_trait(&self) -> DefId {
-        std_item(self.tcx, StdItem::ToString)
+    /// `ToString`, which is `alloc`'s: a `#![no_std]` crate that doesn't load
+    /// `alloc` has none, as bitflags and num-traits don't.
+    pub(super) fn to_string_trait(&self) -> Option<DefId> {
+        opt_std_item(self.tcx, StdItem::ToString)
     }
 
     pub(super) fn debug_trait(&self) -> DefId {

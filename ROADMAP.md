@@ -450,8 +450,10 @@ tooling while preserving rust-js's own readable-output goals.
   cause. Run the corpus on compiler and toolchain upgrades.
   Started: [the crate corpus](docs/crate-corpus.md), 16 crates shared models
   use, each compiled to JS with its whole graph by `bun scripts/crate-corpus.ts`.
-  1 compiles, strum's; the rest stop at a few gaps, a generic trait method
-  where a type may have a destructor the most common, in 8.
+  1 compiles, strum's; the rest stop at a few gaps, a user
+  `DoubleEndedIterator` or `ExactSizeIterator` the most common, in 8.
+  Measuring found three more, fixed: a generic trait method where a type may
+  have a destructor stopped 9, and two crashed rust-js.
 - [ ] **M8.3 — Share behavior as well as data.** Demonstrate the same model,
   validation, serialization, and domain-logic crates on a native Rust server
   and a rust-js client, including dependencies. Require integration and

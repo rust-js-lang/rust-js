@@ -41,7 +41,16 @@ const wanted = process.argv.slice(2);
 const chosen = wanted.length ? corpus.filter((c) => wanted.includes(c.name)) : corpus;
 
 type Refusal = { crate: string; error: string };
-type Result = { name: string; version: string; compiled: string[]; refused: Refusal[]; own: "compiles" | "refused" | "blocked" };
+type Result = {
+  name: string;
+  version: string;
+  compiled: string[];
+  refused: Refusal[];
+  own: "compiles" | "refused" | "blocked";
+  // What Cargo said last where nothing was refused, though the crate wasn't
+  // compiled: a crash, or a build script's failure.
+  unexplained?: string;
+};
 const results: Result[] = [];
 
 for (const crate of chosen) {
@@ -71,7 +80,7 @@ for (const crate of chosen) {
     if (message.reason === "compiler-artifact" && message.target?.kind?.some((k: string) => k === "lib" || k === "rlib")) {
       compiled.push(id);
     }
-    if (message.reason === "compiler-message" && message.message?.level === "error" && !refused.has(id)) {
+    if (message.reason === "compiler-message" && String(message.message?.level).startsWith("error") && !refused.has(id)) {
       const text = String(message.message.message);
       if (!text.startsWith("aborting due to")) refused.set(id, text);
     }
@@ -84,9 +93,13 @@ for (const crate of chosen) {
     refused: [...refused].map(([c, error]) => ({ crate: c, error })),
     own: compiled.some(own) ? "compiles" : refused.size && [...refused.keys()].some(own) ? "refused" : "blocked",
   };
+  if (result.own !== "compiles" && !result.refused.length) {
+    result.unexplained = run.stderr.trim().split("\n").slice(-12).join("\n");
+  }
   results.push(result);
   console.log(`${crate.name}@${crate.version}: ${result.own}, ${compiled.length} compiled, ${refused.size} refused`);
   for (const { crate: c, error } of result.refused) console.log(`  ${c}: ${error}`);
+  if (result.unexplained) console.log(result.unexplained.replace(/^/gm, "  | "));
 }
 
 writeFileSync(join(root, "target/crate-corpus.json"), JSON.stringify(results, null, 2));

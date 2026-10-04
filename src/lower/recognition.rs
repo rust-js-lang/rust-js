@@ -2444,9 +2444,16 @@ pub(crate) fn is_std_def(tcx: TyCtxt<'_>, id: DefId, item: StdItem) -> bool {
     tcx.is_diagnostic_item(item.name(), id)
 }
 
-/// Std's `item`, which every std has.
+/// Std's `item`, which every std has: one of `core`'s, which a `#![no_std]`
+/// crate has too. One of `alloc`'s or `std`'s may not be loaded.
 pub(crate) fn std_item(tcx: TyCtxt<'_>, item: StdItem) -> DefId {
     tcx.get_diagnostic_item(item.name()).expect("std has it")
+}
+
+/// Std's `item` if the crate loads what has it: `alloc`'s `ToString` isn't
+/// a `#![no_std]` crate's unless it loads `alloc`.
+pub(crate) fn opt_std_item(tcx: TyCtxt<'_>, item: StdItem) -> Option<DefId> {
+    tcx.get_diagnostic_item(item.name())
 }
 
 /// The method of `trait_id` named `name`, which it has.

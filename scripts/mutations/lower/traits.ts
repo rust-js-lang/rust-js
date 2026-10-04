@@ -424,7 +424,7 @@ export const mutations: Mutation[] = [
     name: "to-string-through-dictionary",
     breaks: "`x.to_string()` of a known type, or a `dyn ToString`, goes through a dictionary it's made for it",
     file: "src/lower/traits.rs",
-    find: "        if trait_id == self.to_string_trait() {\n            return Ok(None);\n        }",
+    find: "        if Some(trait_id) == self.to_string_trait() {\n            return Ok(None);\n        }",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^locks"],
     snapshots: true,

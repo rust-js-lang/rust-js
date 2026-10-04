@@ -262,3 +262,31 @@ test("a component of another crate is a JSX tag, on a stable release", () => {
     "--", "--crate-name", "app", "--extern", `ui=${join(ui, "js", "libui.rmeta")}`, ...react]);
   expect(readFileSync(join(app, "js", "lib.jsx"), "utf8")).toContain('<Button label="go" />');
 });
+
+// A `#![no_std]` crate loads no `alloc`, so it has no `ToString`, which
+// every trait call was compared with: bitflags and num-traits crashed
+// rust-js there (docs/crate-corpus.md).
+test("a #![no_std] crate's trait calls compile, though it has no ToString", async () => {
+  const dir = fixture("no-std");
+  writeFileSync(join(dir, "lib.rs"), [
+    "#![no_std]",
+    "pub trait Area {",
+    "    fn area(&self) -> i32;",
+    "}",
+    "pub struct Square(pub i32);",
+    "impl Area for Square {",
+    "    fn area(&self) -> i32 {",
+    "        self.0 * self.0",
+    "    }",
+    "}",
+    "pub fn total<T: Area>(items: &[T]) -> i32 {",
+    "    items.iter().map(|item| item.area()).sum()",
+    "}",
+    "pub fn answer() -> i32 {",
+    "    total(&[Square(3), Square(4)]) + Square(1).area()",
+    "}",
+    "",
+  ].join("\n"));
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect((await import(join(dir, "lib.js"))).answer()).toBe(26);
+}, 300_000);

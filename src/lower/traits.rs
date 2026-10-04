@@ -727,7 +727,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let clone = self.tcx.is_lang_item(tr.def_id, LangItem::Clone);
         let eq = self.tcx.is_lang_item(tr.def_id, LangItem::PartialEq);
         let display = tr.def_id == self.display_trait();
-        let to_string = tr.def_id == self.to_string_trait();
+        let to_string = Some(tr.def_id) == self.to_string_trait();
         let debug = tr.def_id == self.debug_trait();
         let ord = tr.def_id == self.ord_trait();
         let partial_ord = tr.def_id == self.partial_ord_trait();
@@ -1034,7 +1034,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `x.to_string()` is std's, as its `Display` shows it, or a generic
         // `T: ToString`'s dictionary's, which the string call decides: of a
         // `dyn ToString` too, which has no pair to call through.
-        if trait_id == self.to_string_trait() {
+        if Some(trait_id) == self.to_string_trait() {
             return Ok(None);
         }
         // In a copied default, `Self` is the impl's type: a call on it
