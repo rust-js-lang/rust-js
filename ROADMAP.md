@@ -355,11 +355,11 @@ tooling while preserving rust-js's own readable-output goals.
   probe what the rustc suite doesn't: the first, an interpreter of arithmetic
   (the [`calculator`](test/corpus/calculator.rs) case), found `collect()`
   into a `Result` returning the array of `Result`s. The 296 rejections, by kind: values of
-  a type rust-js doesn't support (94; raw pointers the most common),
+  a type rust-js doesn't support (95; raw pointers the most common),
   std calls (70; intrinsics the most),
   expressions (13), constants of a type (17), statics of a type (15),
-  and user implementations of a std trait (5: `Hash` and `Hasher`,
-  `Future` and `Wake`). A user `fmt::Write` is given each
+  and user implementations of a std trait (4: `Hasher`, `Future` and
+  `Wake`). A user `fmt::Write` is given each
   `write!`'s text whole, a listed difference ([ADR 0166](docs/decisions/0166-user-fmt-write.md)).
 - [ ] **M7.2 — Close core representation gaps.** Design and implement the
   numeric, option, reference, slice, and resource-lifetime behavior needed for
@@ -451,11 +451,11 @@ tooling while preserving rust-js's own readable-output goals.
   Started: [the crate corpus](docs/crate-corpus.md), 16 crates shared models
   use, each compiled to JS with its whole graph by `bun scripts/crate-corpus.ts`.
   1 compiles, strum's; the rest stop at a few gaps, raw memory the most
-  common, in 5. Fixed since it was first
+  common, in 7. Fixed since it was first
   measured: a generic trait method where a type may have a destructor, which
   stopped 9, a user `DoubleEndedIterator` or `ExactSizeIterator`, 8, a user
   `LowerHex` or `Pointer`, 2, a user `fmt::Write`, 3, a user `Borrow`, 3,
-  and two crashes.
+  a user `Hash`, 4, and two crashes.
 - [ ] **M8.3 — Share behavior as well as data.** Demonstrate the same model,
   validation, serialization, and domain-logic crates on a native Rust server
   and a rust-js client, including dependencies. Require integration and

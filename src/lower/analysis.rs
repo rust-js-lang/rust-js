@@ -12,7 +12,7 @@ use super::bindings::{Export, is_binding};
 use super::recognition::TypeFact;
 use super::traits;
 use super::{Body, FnInfo, TestFn, module_path};
-use crate::lower::recognition::{StdItem, is_std_def};
+use crate::lower::recognition::{StdItem, is_hash_impl, is_std_def};
 use debug::{derived_debug, uses_format_options, uses_pretty_debug};
 use drops::drop_params;
 use mutation::mutated_types;
@@ -62,6 +62,7 @@ pub fn collect_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
                 let parent = tcx.parent(def_id.to_def_id());
                 tcx.hir_maybe_body_owned_by(def_id).is_some()
                     && (!tcx.is_automatically_derived(parent) || derived_debug(tcx, parent))
+                    && !is_hash_impl(tcx, parent)
                     && !is_binding(tcx, def_id.to_def_id())
             }
             DefKind::Closure => true,

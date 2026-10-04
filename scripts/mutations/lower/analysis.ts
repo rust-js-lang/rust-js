@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "    let pretty_debug = false && uses_pretty_debug(tcx, all_bodies);",
     tests: ["test/corpus.test.ts","-t","pretty_debug"],
   },
+  {
+    name: "user-hash-lowered",
+    breaks: "a type's own `Hash`'s `hash` is lowered, and its `Hasher` calls refused, though nothing calls it",
+    file: "src/lower/analysis.rs",
+    find: "                    && !is_hash_impl(tcx, parent)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "user_hash"],
+  },
 ];

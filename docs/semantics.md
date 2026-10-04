@@ -233,7 +233,7 @@ Refused: `Rc::ptr_eq`, `strong_count`, `get_mut`, `make_mut` and
 |---|---|
 | `Vec`, `VecDeque` | array ([0068](decisions/0068-queues.md)) |
 | `BinaryHeap` | array, in Rust's heap order: ties pop as Rust's do |
-| `HashMap`, `HashSet` | `Map`, `Set` ([0059](decisions/0059-hashmap.md)); keyed by value for a struct, tuple or enum key with a derived `Eq`, `$KeyMap` ([0121](decisions/0121-value-keys.md)) |
+| `HashMap`, `HashSet` | `Map`, `Set` ([0059](decisions/0059-hashmap.md)); keyed by value for a struct, tuple or enum key with a derived `Eq`, `$KeyMap`, whatever its `Hash` ([0121](decisions/0121-value-keys.md), [0168](decisions/0168-user-hash.md)) |
 | `BTreeMap`, `BTreeSet` | `Map`, `Set`, iterated in key order |
 
 - **An iterator chain is an array's methods,** `v.map(f).filter(p)`, when

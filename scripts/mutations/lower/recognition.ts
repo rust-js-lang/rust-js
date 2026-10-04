@@ -411,4 +411,12 @@ export const mutations: Mutation[] = [
     replace: "                        if true =>",
     tests: ["test/corpus.test.ts", "-t", "generic_borrow"],
   },
+  {
+    name: "user-hash-refused",
+    breaks: "a type's own `impl Hash` is an error",
+    file: "src/lower/recognition.rs",
+    find: "        || is_std_def(tcx, id, StdItem::Hash)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "user_hash"],
+  },
 ];

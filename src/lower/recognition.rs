@@ -2145,6 +2145,8 @@ pub(super) fn implementable(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'
     operational(tcx, foreign, id)
         || tcx.is_diagnostic_item(sym::From, id)
         || tcx.is_diagnostic_item(sym::TryFrom, id)
+        // Never called: a map keys by value (ADR 0168).
+        || is_std_def(tcx, id, StdItem::Hash)
         // A writer of the crate's own, given its text a `write!` at a time
         // (ADR 0166).
         || tcx.is_diagnostic_item(Symbol::intern("FmtWrite"), id)
@@ -2170,6 +2172,20 @@ pub(super) fn implementable(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'
         || tcx.is_lang_item(id, LangItem::FusedIterator)
         // Run where rustc drops a value (ADR 0098).
         || tcx.is_lang_item(id, LangItem::Drop)
+}
+
+/// An impl of `Hash`, derived or the crate's own: never lowered, as a map
+/// keys by value and never calls `hash` (ADRs 0121, 0168).
+pub(crate) fn is_hash_impl(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    matches!(tcx.def_kind(id), DefKind::Impl { of_trait: true })
+        && is_std_def(
+            tcx,
+            tcx.impl_trait_ref(id)
+                .instantiate_identity()
+                .skip_normalization()
+                .def_id,
+            StdItem::Hash,
+        )
 }
 
 pub(super) fn is_operator(tcx: TyCtxt<'_>, id: DefId) -> bool {
