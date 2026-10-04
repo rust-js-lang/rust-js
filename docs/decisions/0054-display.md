@@ -58,7 +58,8 @@ function pointDisplay_fmt(point) {
     `{ fmt: $displayF64 }`.
 - **Still errors:**
   - `Err(fmt::Error)`;
-  - using a `fmt::Result` as a value: matching it, `is_ok()`;
+  - using a `fmt::Result` as a value: matching it, `is_ok()`; (amended:
+    its `unwrap`, `expect`, `is_ok` and `is_err` are ADR 0148's, as an `Ok`'s)
   - `Formatter`'s options inside a `fmt`: `alternate()`, `width()`. A
     `{:>5}` of a value whose `fmt` writes with `write!` ignores its
     options, as in Rust (ADR 0058);

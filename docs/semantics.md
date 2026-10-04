@@ -137,13 +137,15 @@ string, `c"..."`.
 - **A type's own `Display` and `Debug` are given the placeholder's
   options,** and can ask its `Formatter` for them, `f.width()`, `f.pad(s)`
   ([0143](decisions/0143-formatter-options.md)).
+- **`write!` and `writeln!` into a `String` are `s += ..`,** and the
+  `fmt::Result` they give is always `Ok`: its `unwrap()` is `()`
+  ([0148](decisions/0148-write-to-string.md)).
 - **Arguments are taken in Rust's order:** `println!("{} {:?}", v.len(),
   v.pop())` reads the length before the pop
   ([0034](decisions/0034-strings-and-chars.md)).
 
 Refused: `{:x?}`; `{:.2e}`; options for a `&dyn Debug` made elsewhere;
-`f.sign_minus()` and `f.pad_integral(..)`; `write!` to a `String`; a user
-`impl fmt::Write`.
+`f.sign_minus()` and `f.pad_integral(..)`; a user `impl fmt::Write`.
 
 ## Values, copying and mutation
 

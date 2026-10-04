@@ -4,8 +4,10 @@ use super::bindings::{JsForm, is_binding, is_method, js_form};
 use super::combinators::Comb;
 use super::combinators::StepOp;
 use super::drops::Drops;
-use super::recognition::{Catching, Std, StdItem, StreamOp, TypeFact, is_std_def, std_item, trait_method};
-use super::{FnCx, R};
+use super::recognition::{
+    Catching, FmtResultAnswer, Std, StdItem, StreamOp, TypeFact, fmt_result_answer, is_std_def, std_item, trait_method,
+};
+use super::{Dest, FnCx, R};
 use crate::js;
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
 use crate::runtime::Helper;
@@ -254,12 +256,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(Some(call));
             }
         }
-        // A `fmt::Result` is nothing in JS (ADR 0054), without `Result`'s methods.
+        // A `fmt::Result` is nothing in JS (ADR 0054), and always `Ok`: its
+        // `unwrap()` is `()`, after what made it ran (ADR 0148).
         if args
             .first()
             .is_some_and(|&a| self.is_fmt_result(self.thir[a].ty.peel_refs()))
         {
-            return Err(self.unsupported(span, "methods of a `fmt::Result`"));
+            let answer = match fmt_result_answer(self.tcx, def_id) {
+                Some(FmtResultAnswer::Unit) => Expr::undefined(),
+                Some(FmtResultAnswer::Is(ok)) => Expr::bool(ok),
+                None => return Err(self.unsupported(span, "methods of a `fmt::Result`")),
+            };
+            for &arg in args {
+                self.stmt(arg, &Dest::Discard, out)?;
+            }
+            return Ok(Some(answer));
         }
         // `f.alternate()`, `f.width()` and the like: what this writer's
         // `Formatter` was given (ADRs 0137, 0143).

@@ -74,4 +74,12 @@ export const mutations: Mutation[] = [
     replace: "                    | Std::Comb(Comb::Or | Comb::OrElse | Comb::AndThen)\n",
     tests: ["test/corpus.test.ts", "-t", "nested_options"],
   },
+  {
+    name: "fmt-result-method-drops-write",
+    breaks: "`write!(t, \"!\").is_ok()` is `true` without writing",
+    file: "src/lower/calls.rs",
+    find: "            for &arg in args {\n                self.stmt(arg, &Dest::Discard, out)?;\n            }\n            return Ok(Some(answer));",
+    replace: "            return Ok(Some(answer));",
+    tests: ["test/corpus.test.ts", "-t", "write_to_string"],
+  },
 ];

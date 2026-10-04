@@ -251,4 +251,28 @@ export const mutations: Mutation[] = [
     replace: '        if tcx.def_path_str(trait_) == "std::iter::ExactSizeIterator"\n            && tcx.item_name(def_id).as_str() == "len_"\n            && self.range_kind(ty.peel_refs()).is_none()\n',
     tests: ["test/corpus.test.ts", "-t", "str_bytes"],
   },
+  {
+    name: "write-to-string-unrecognized",
+    breaks: "`write!(s, ..)` into a `String` is an error, not `s += ..`",
+    file: "src/lower/recognition.rs",
+    find: '                "write_fmt" | "write_str" | "write_char" => Some(Std::PushStr),',
+    replace: '                "write_fmt_" => Some(Std::PushStr),',
+    tests: ["test/corpus.test.ts", "-t", "write_to_string"],
+  },
+  {
+    name: "fmt-result-unwrap-refused",
+    breaks: "`write!(..).unwrap()` of a `fmt::Result` is an error",
+    file: "src/lower/recognition.rs",
+    find: '        "unwrap" | "expect" => FmtResultAnswer::Unit,',
+    replace: '        "unwrap_" => FmtResultAnswer::Unit,',
+    tests: ["test/corpus.test.ts", "-t", "write_to_string"],
+  },
+  {
+    name: "fmt-result-is-ok-false",
+    breaks: "`is_ok()` of a `fmt::Result`, always `Ok`, is `false`",
+    file: "src/lower/recognition.rs",
+    find: '        "is_ok" => FmtResultAnswer::Is(true),',
+    replace: '        "is_ok" => FmtResultAnswer::Is(false),',
+    tests: ["test/corpus.test.ts", "-t", "write_to_string"],
+  },
 ];

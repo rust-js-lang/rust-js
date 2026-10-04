@@ -723,6 +723,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 _ => None,
             };
         }
+        // `write!(s, ..)` into a `String`: `s += ..`, as `push_str` is; writing
+        // to a string can't fail, so its `fmt::Result` is nothing (ADR 0148).
+        if self.is_lang_adt(ty.peel_refs(), LangItem::String)
+            && tcx.is_diagnostic_item(Symbol::intern("FmtWrite"), trait_)
+        {
+            return match tcx.item_name(def_id).as_str() {
+                "write_fmt" | "write_str" | "write_char" => Some(Std::PushStr),
+                _ => None,
+            };
+        }
         // Writing to a standard stream (ADR 0132).
         if let Some(error) = self.stream(ty.peel_refs())
             && tcx.def_path_str(trait_) == "std::io::Write"
@@ -2124,6 +2134,25 @@ pub(super) enum FormatterQuery {
     Align,
     SignPlus,
     SignAwareZeroPad,
+}
+
+/// What a `fmt::Result`'s method gives, `Ok` being all one is (ADR 0148).
+#[derive(Clone, Copy)]
+pub(super) enum FmtResultAnswer {
+    /// `unwrap()`, `expect(..)`: `()`.
+    Unit,
+    /// `is_ok()`, `is_err()`.
+    Is(bool),
+}
+
+/// The answer of the `fmt::Result` method `def_id`, if it's one of these.
+pub(super) fn fmt_result_answer(tcx: TyCtxt<'_>, def_id: DefId) -> Option<FmtResultAnswer> {
+    Some(match tcx.item_name(def_id).as_str() {
+        "unwrap" | "expect" => FmtResultAnswer::Unit,
+        "is_ok" => FmtResultAnswer::Is(true),
+        "is_err" => FmtResultAnswer::Is(false),
+        _ => return None,
+    })
 }
 
 /// The question `def_id` asks of a `Formatter`: `f.width()` and the like.
