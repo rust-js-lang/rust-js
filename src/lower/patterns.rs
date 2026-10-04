@@ -2,7 +2,7 @@
 
 use super::{
     Binding, Dest, Evaluation, FnCx, Num, R, Shape, Var, bindings, camel_case, const_js, drops, fresh_in,
-    ordering_value, std_impls, variant_field, without_refs,
+    ordering_value, recognition::is_non_zero, std_impls, variant_field, without_refs,
 };
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use rustc_ast::{LitKind, Mutability};
@@ -1217,6 +1217,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.pattern_test(subpattern, &pointee, bindings)
             }
             PatKind::Deref { subpattern, .. } => self.pattern_test(subpattern, subject, bindings),
+            // A `NonZero` constant's pattern, `NonZero(NonZeroU64Inner(2))` as
+            // rustc writes it, is on the number both are (ADR 0177).
+            PatKind::Leaf { subpatterns }
+                if let [field] = &subpatterns[..]
+                    && let ty::Adt(adt, args) = pat.ty.kind()
+                    && (is_non_zero(adt.did())
+                        || adt.is_struct()
+                            && matches!(adt.non_enum_variant().fields.raw.as_slice(),
+                                [only] if matches!(only.ty(self.tcx, args).skip_normalization().kind(), ty::Pat(..)))) =>
+            {
+                self.pattern_test(&field.pattern, subject, bindings)
+            }
             // A struct or tuple: every field must match.
             PatKind::Leaf { subpatterns } => {
                 let mut tests = Vec::new();

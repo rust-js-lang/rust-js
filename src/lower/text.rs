@@ -401,10 +401,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (Helper::ParseInt, "$parseInt")
             };
             self.runtime.insert(helper);
-            return Ok(Expr::call(
-                Expr::var(name),
-                vec![text, num.literal(lo), num.literal(hi as i128)],
-            ));
+            let parsed = Expr::call(Expr::var(name), vec![text, num.literal(lo), num.literal(hi as i128)]);
+            // A `NonZero`'s, an error of `0` (ADR 0177).
+            if super::recognition::is_non_zero_ty(target) {
+                self.runtime.insert(Helper::NonZeroOk);
+                let zero = Expr::str("number would be zero for non-zero type");
+                return Ok(Expr::call(Expr::var("$nonZeroOk"), vec![parsed, zero]));
+            }
+            return Ok(parsed);
         }
         if target.is_bool() {
             self.runtime.insert(Helper::ParseBool);

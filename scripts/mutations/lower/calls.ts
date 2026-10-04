@@ -122,4 +122,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "option_map_drops"],
   },
+  {
+    name: "non-zero-new-keeps-zero",
+    breaks: "`NonZero::new(n)` of `0` is `Some(0)`",
+    file: "src/lower/calls.rs",
+    find: "            return Ok(Expr::cond(zero, Expr::undefined(), n));",
+    replace: "            return Ok(Expr::cond(zero, n.clone(), n));",
+    tests: ["test/corpus.test.ts", "-t", "nonzero"],
+  },
 ];

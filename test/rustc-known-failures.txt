@@ -103,7 +103,6 @@ consts/static-mut-refs.rs	error: rust-js does not support statics of type `*mut 
 consts/static-raw-pointer-interning.rs	error: rust-js does not support statics of type `Foo` yet
 consts/static-raw-pointer-interning2.rs	error: rust-js does not support statics of type `Foo` yet
 consts/std/iter.rs	error: rust-js does not support constants of type `std::iter::Empty<u32>` yet
-consts/tuple-struct-constructors.rs	error: rust-js does not support constants of type `std::num::NonZero<u64>` yet
 consts/zst_no_llvm_alloc.rs	error: rust-js does not support constants of type `*const ()` yet
 derives/debug/derive-debug.rs	error: rust-js does not support values of type `*const (dyn std::marker::Send + 'static)` yet
 derives/derive-hash-on-unit-struct.rs	error: rust-js does not support calling `std::hash::SipHasher::new` yet
@@ -230,9 +229,9 @@ stdlib-unit-tests/raw-fat-ptr.rs	error: rust-js does not support values of type 
 str/char-escape-unicode.rs	error: rust-js does not support iterating over `std::char::EscapeUnicode` yet
 structs-enums/align-struct.rs	error: rust-js does not support this expression yet
 structs-enums/enum-alignment.rs	error: rust-js does not support this expression yet
-structs-enums/enum-non-c-like-repr-c-and-int.rs	error: rust-js does not support values of type `(u32) is 0..=999999999` yet
-structs-enums/enum-non-c-like-repr-c.rs	error: rust-js does not support values of type `(u32) is 0..=999999999` yet
-structs-enums/enum-non-c-like-repr-int.rs	error: rust-js does not support values of type `(u32) is 0..=999999999` yet
+structs-enums/enum-non-c-like-repr-c-and-int.rs	error: rust-js does not support calling `std::time::Duration::from_secs` yet
+structs-enums/enum-non-c-like-repr-c.rs	error: rust-js does not support calling `std::time::Duration::from_secs` yet
+structs-enums/enum-non-c-like-repr-int.rs	error: rust-js does not support calling `std::time::Duration::from_secs` yet
 structs-enums/tag-align-dyn-u64.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 structs-enums/tag-align-dyn-variants.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 structs-enums/tag-align-u64.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet

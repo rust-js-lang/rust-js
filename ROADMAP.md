@@ -347,17 +347,17 @@ tooling while preserving rust-js's own readable-output goals.
   cases found and fixed two miscompilations (nested element writes, repeated
   index effects in compound assignment). rustc's own `run-pass` UI tests run
   the same way (`bun run test:rustc`, [ADR 0089](docs/decisions/0089-rustc-tests.md)):
-  1,921 of 2,206 in scope pass at the pinned stable release, 1.98.1, every
+  1,922 of 2,206 in scope pass at the pinned stable release, 1.98.1, every
   other one is a clear rejection, none a crash or a wrong answer, and the
   [known failures](test/rustc-known-failures.txt) only shrink. A test of a
   feature stable Rust doesn't have is out of scope, as no program of
   rust-js's can use one (`7962214`). Programs written as a person would
   probe what the rustc suite doesn't: the first, an interpreter of arithmetic
   (the [`calculator`](test/corpus/calculator.rs) case), found `collect()`
-  into a `Result` returning the array of `Result`s. The 285 rejections, by kind: values of
-  a type rust-js doesn't support (91; raw pointers the most common),
-  std calls (70; intrinsics the most),
-  expressions (13), constants of a type (17), statics of a type (15),
+  into a `Result` returning the array of `Result`s. The 284 rejections, by kind: values of
+  a type rust-js doesn't support (88; raw pointers the most common),
+  std calls (73; intrinsics the most),
+  expressions (13), constants of a type (16), statics of a type (15),
   and user implementations of a std trait (4: `Hasher`, `Future` and
   `Wake`). A user `fmt::Write` is given each
   `write!`'s text whole, a listed difference ([ADR 0166](docs/decisions/0166-user-fmt-write.md)).
@@ -458,6 +458,7 @@ tooling while preserving rust-js's own readable-output goals.
   a user `Hash`, 4, a user `AsMut` or `BorrowMut`, 2, same-named traits'
   impls named alike, slice methods, `size_hint()`, `?` of a value with a
   destructor, a `#![no_std]` crate's std items, 128-bit integers, UTF-8 decoding,
+  `NonZero` integers,
   paths as text, generic `{:x}` and `{:p}`, and two crashes.
 - [ ] **M8.3 — Share behavior as well as data.** Demonstrate the same model,
   validation, serialization, and domain-logic crates on a native Rust server

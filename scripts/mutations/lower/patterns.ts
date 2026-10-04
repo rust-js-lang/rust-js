@@ -178,4 +178,12 @@ export const mutations: Mutation[] = [
     replace: "hi.as_int() == i128::try_from(max).ok()",
     tests: ["test/corpus.test.ts", "-t", "integers_128"],
   },
+  {
+    name: "non-zero-pattern-inner-struct",
+    breaks: "a `NonZero` constant's pattern reads `[0]` of std's inner struct, of a number, and never matches",
+    file: "src/lower/patterns.rs",
+    find: "                        || adt.is_struct()\n",
+    replace: "                        || false && adt.is_struct()\n",
+    tests: ["test/corpus.test.ts", "-t", "nonzero"],
+  },
 ];

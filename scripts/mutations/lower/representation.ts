@@ -155,4 +155,20 @@ export const mutations: Mutation[] = [
     replace: "        let bits = Expr::int(64);",
     tests: ["test/corpus.test.ts", "-t", "integers_128"],
   },
+  {
+    name: "non-zero-not-a-number",
+    breaks: "a `NonZero` integer is an error, not its number",
+    file: "src/lower/representation.rs",
+    find: "            ty::Adt(adt, args) if super::recognition::is_non_zero(adt.did()) => return Num::of(args.type_at(0)),",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "nonzero"],
+  },
+  {
+    name: "non-zero-const-one-level",
+    breaks: "`NonZeroU8::MIN`, two levels of std's structs in, is an error",
+    file: "src/lower/representation.rs",
+    find: "        while let ty::ValTreeKind::Branch(items) = &**value.valtree",
+    replace: "        if let ty::ValTreeKind::Branch(items) = &**value.valtree",
+    tests: ["test/corpus.test.ts", "-t", "nonzero"],
+  },
 ];

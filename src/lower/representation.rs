@@ -336,6 +336,10 @@ impl Num {
             ty::Uint(ty::UintTy::U128) => Num::U128,
             ty::Float(ty::FloatTy::F32) => Num::F32,
             ty::Float(ty::FloatTy::F64) => Num::F64,
+            // A `NonZero<T>` is its number, and so is the pattern type it keeps
+            // it in, `(u32) is 1..` (ADR 0177).
+            ty::Pat(base, _) => return Num::of(*base),
+            ty::Adt(adt, args) if super::recognition::is_non_zero(adt.did()) => return Num::of(args.type_at(0)),
             _ => return None,
         })
     }
@@ -616,6 +620,13 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
         return value.try_to_bool().map(Expr::bool);
     }
     if let Some(num) = Num::of(ty) {
+        // A `NonZero`'s is its number, inside std's `NonZeroU8Inner` (ADR 0177).
+        let mut value = value;
+        while let ty::ValTreeKind::Branch(items) = &**value.valtree
+            && let [item] = &items[..]
+        {
+            value = item.try_to_value()?;
+        }
         return Some(num_literal(value.try_to_leaf()?.to_bits_unchecked(), num));
     }
     if let Some(c) = char_value(value) {

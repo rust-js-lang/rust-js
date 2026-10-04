@@ -4294,6 +4294,12 @@ export function $checkedEuclid(a, b, min, rem) {
   return rem ? r : q;
 }
 
+// A `NonZero`'s `parse` or `try_from`: its number's, then an error, `zero`,
+// where that's 0, as std's `NonZero::new(..)?` is (ADR 0177).
+export function $nonZeroOk(result, zero) {
+  return result.TAG === "Ok" && result._0 == 0 ? { TAG: "Err", _0: zero } : result;
+}
+
 export function $sliceEnd(items, start, end = items.length) {
   if (start > end) throw new Error(`slice index starts at ${start} but ends at ${end}`);
   if (end > items.length) throw new Error(`range end index ${end} out of range for slice of length ${items.length}`);

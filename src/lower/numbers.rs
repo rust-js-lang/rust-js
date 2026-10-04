@@ -1229,10 +1229,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let num = self.num(target, span)?;
                 let (lo, hi) = num.range();
                 self.runtime.insert(Helper::TryFromInt);
-                Expr::call(
+                let tried = Expr::call(
                     Expr::var("$tryFromInt"),
                     vec![arg(), num.literal(lo), num.literal(hi as i128)],
-                )
+                );
+                // A `NonZero`'s, an error of `0` (ADR 0177).
+                match super::recognition::is_non_zero_ty(target) {
+                    true => {
+                        self.runtime.insert(Helper::NonZeroOk);
+                        Expr::call(Expr::var("$nonZeroOk"), vec![tried, Expr::str("Zero")])
+                    }
+                    false => tried,
+                }
             }
             Std::FromDigit => {
                 self.runtime.insert(Helper::FromDigit);

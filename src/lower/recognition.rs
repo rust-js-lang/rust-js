@@ -125,6 +125,8 @@ pub(super) enum Std {
     ExactLen,
     /// `it.by_ref()`: the iterator itself, which knows where it is.
     IterByRef,
+    /// `NonZero::new(n)`: `None` of `0`, else `n` (ADR 0177).
+    NonZeroNew,
     /// `it.size_hint()`: std's `(0, None)` of an iterator of the crate's that
     /// keeps it, or, `true`, `(n, Some(n))` of std's that knows its length
     /// (ADR 0170).
@@ -432,6 +434,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             | "std::ffi::OsStr::to_str"
             | "std::path::PathBuf::as_path" => return Some(Some(Std::Same)),
             "std::path::PathBuf::new" => return Some(Some(Std::StringNew)),
+            // A `NonZero` is its number (ADR 0177).
+            "std::num::NonZero::<T>::get" | "std::num::NonZero::<T>::new_unchecked" => return Some(Some(Std::Same)),
+            "std::num::NonZero::<T>::new" => return Some(Some(Std::NonZeroNew)),
             _ => {}
         }
         let utf8 = match std_path(tcx, def_id).as_str() {
@@ -2371,6 +2376,17 @@ fn std_path(tcx: TyCtxt<'_>, id: DefId) -> String {
         Some(("core" | "alloc", rest)) if !id.is_local() => format!("std::{rest}"),
         _ => path,
     }
+}
+
+/// `std::num::NonZero`, which is its number (ADR 0177). Asked where no
+/// `TyCtxt` is passed, by `Num::of`, of rustc's own for the thread.
+pub(crate) fn is_non_zero(id: DefId) -> bool {
+    ty::tls::with_opt(|tcx| tcx.is_some_and(|tcx| tcx.is_diagnostic_item(Symbol::intern("NonZero"), id)))
+}
+
+/// A `NonZero<T>` type (ADR 0177).
+pub(crate) fn is_non_zero_ty(ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _) if is_non_zero(adt.did()))
 }
 
 /// An operator that assigns, `a += b`: the operation it does.

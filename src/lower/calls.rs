@@ -537,6 +537,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Std::SizeHint(exact) = known {
             return self.size_hint(exact, args[0], span, out);
         }
+        if known == Std::NonZeroNew {
+            let ty = self.thir[args[0]].ty;
+            let num = self.num(ty, span)?;
+            let n = self.expr(args[0], out)?;
+            // Of a constant, `NonZero::new(7)`: its answer.
+            if let Some(value) = n.as_int().or_else(|| n.as_bigint()) {
+                return Ok(if value == 0 { Expr::undefined() } else { n });
+            }
+            let n = if n.reads_same() { n } else { self.spill("n", n, out) };
+            let zero = Expr::bin(Op::Eq, n.clone(), num.literal(0));
+            return Ok(Expr::cond(zero, Expr::undefined(), n));
+        }
         // A `for` loop's is `&mut it` (`lower_for`); a chain of one would take
         // what's left of `it`, which an array's doesn't know.
         if known == Std::IterByRef {
@@ -760,6 +772,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::WrappingOp(..)
             | Std::GenericSizeHint
             | Std::IterByRef
+            | Std::NonZeroNew
             | Std::UserWrite
             | Std::DequeRemove
             | Std::Step(_)

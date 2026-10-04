@@ -266,6 +266,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0174 `{:x}` and `{:p}` of a generic `T`: its dictionary's](decisions/0174-generic-fmt-traits.md)
 - [0175 `std::num::Wrapping` is a number in a `[x]`, its arithmetic wrapped](decisions/0175-wrapping.md)
 - [0176 A generic impl's constant of its parameters is its dictionary's getter](decisions/0176-generic-impl-consts.md)
+- [0177 A `NonZero` integer is its number](decisions/0177-nonzero.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

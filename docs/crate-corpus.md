@@ -6,7 +6,7 @@ of its own, every library of its graph by rust-js as Cargo's
 `RUSTC_WRAPPER`, for its target, and records what each refused first, or
 what Cargo said where a crate failed with no refusal: a crash.
 
-Measured 2026-10-05, after ADR 0176, Rust 1.98.1, each crate at the
+Measured 2026-10-05, after ADR 0177, Rust 1.98.1, each crate at the
 newest release its requirement allows.
 
 | Crate | Verdict | First refusals in its graph |
@@ -25,22 +25,23 @@ newest release its requirement allows.
 | url 2.5 | blocked | litemap: `{:?}` of a `PhantomData`; writeable: a whole value assigned through a `&mut`; smallvec's; percent-encoding: `transmute`; yoke: a raw pointer |
 | regex 1.11 | blocked | memchr: a raw pointer |
 | rust_decimal 1.38 | blocked | arrayvec: a user `io::Write`; serde_core: `size_of` of a type parameter |
-| chrono 0.4 (`alloc`) | refused | a `NonZero` integer, a pattern type; and a constant of one of its dates |
-| time 0.3 (`alloc`) | blocked | powerfmt: a `MaybeUninit`; deranged: a `NonZero` integer, a pattern type |
+| chrono 0.4 (`alloc`) | refused | a value of an associated type that may have a destructor, `Tz::Offset` |
+| time 0.3 (`alloc`) | blocked | powerfmt: a `MaybeUninit`; deranged: a `const` block |
 
 2 of 16 compile. What stops the most, by the crates it stops:
 
 1. **Raw memory,** a raw pointer, a `NonNull`, a `MaybeUninit`,
    `transmute`, `handle_alloc_error`: 9.
-2. **A `NonZero` integer, a pattern type `(u8) is 1..`:** 2, chrono and
-   deranged, so time; serde_core too behind its first.
-   **A user `Future`:** 2.
-3. **One each:** `{:?}` of a generic `PhantomData`, `write_str` of a generic
+2. **A user `Future`:** 2.
+3. **One each:** a value of an associated type that may have a destructor,
+   a `const` block, `{:?}` of a generic `PhantomData`, `write_str` of a generic
    writer, a user `io::Write`, `size_of` of a type parameter, a whole value
    assigned through a `&mut`.
 
 ## Fixed by measuring
 
+- **A `NonZero` integer,** a pattern type `(u8) is 1..` in std, stopped
+  chrono, at 333 places, and deranged (ADR 0177).
 - **num-traits compiles,** after `Wrapping`, a float's methods, every
   integer's bits, defaults of `Self`, and a generic impl's constant of its
   parameters (ADRs 0156, 0175, 0176).
