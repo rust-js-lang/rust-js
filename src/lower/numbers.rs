@@ -40,6 +40,8 @@ pub(super) enum NumOp {
     IsNormal {
         subnormal: bool,
     },
+    /// `classify()`: its `FpCategory`.
+    Classify,
     Checked(BinOp),
     Saturating(BinOp),
     Wrapping(BinOp),
@@ -180,16 +182,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             NumOp::IsFinite => number("isFinite", vec![arg()]),
             NumOp::IsInfinite => Expr::bin(Op::Eq, math("abs", vec![arg()]), Expr::var("Infinity")),
             // By the type's smallest normal value, `MIN_POSITIVE`.
-            NumOp::IsNormal { subnormal } => {
+            NumOp::IsNormal { .. } | NumOp::Classify => {
                 let min = Expr::num(match num {
                     Num::F32 => f64::from(f32::MIN_POSITIVE),
                     _ => f64::MIN_POSITIVE,
                 });
-                let mut list = vec![arg(), min];
-                if subnormal {
-                    list.push(Expr::bool(true));
+                match op {
+                    NumOp::IsNormal { subnormal: true } => {
+                        helper(self, Helper::IsNormal, "$isNormal", vec![arg(), min, Expr::bool(true)])
+                    }
+                    NumOp::IsNormal { .. } => helper(self, Helper::IsNormal, "$isNormal", vec![arg(), min]),
+                    _ => helper(self, Helper::IsNormal, "$classify", vec![arg(), min]),
                 }
-                helper(self, Helper::IsNormal, "$isNormal", list)
             }
             // The exact result, if it's in range. A product past 2^53 is
             // rounded, but it's far out of range either way.

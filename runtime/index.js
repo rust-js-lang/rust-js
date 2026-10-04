@@ -4239,6 +4239,15 @@ export function $isNormal(x, min, subnormal = false) {
   return subnormal ? size > 0 && size < min : Number.isFinite(x) && size >= min;
 }
 
+// `x.classify()`: its `FpCategory`, a variant's name, as an enum without
+// fields is (ADR 0013).
+export function $classify(x, min) {
+  if (Number.isNaN(x)) return "Nan";
+  if (!Number.isFinite(x)) return "Infinite";
+  if (x === 0) return "Zero";
+  return Math.abs(x) < min ? "Subnormal" : "Normal";
+}
+
 export function $sliceEnd(items, start, end = items.length) {
   if (start > end) throw new Error(`slice index starts at ${start} but ends at ${end}`);
   if (end > items.length) throw new Error(`range end index ${end} out of range for slice of length ${items.length}`);

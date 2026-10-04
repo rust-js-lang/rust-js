@@ -24,7 +24,7 @@ newest release its requirement allows.
 | uuid 1.27 | refused | `&mut` of a `MaybeUninit` buffer's range |
 | url 2.5 | blocked | litemap: `{:?}` of a `PhantomData`; writeable: a whole value assigned through a `&mut`; smallvec's; percent-encoding: `transmute`; yoke: a raw pointer |
 | regex 1.11 | blocked | memchr: a raw pointer |
-| rust_decimal 1.38 | blocked | arrayvec: a user `io::Write`; serde_core: `size_of` of a type parameter; num-traits: `f32::classify` |
+| rust_decimal 1.38 | blocked | arrayvec: a user `io::Write`; serde_core: `size_of` of a type parameter; num-traits: `f32::recip` |
 | chrono 0.4 (`alloc`) | blocked | num-traits' |
 | time 0.3 (`alloc`) | blocked | powerfmt: a `MaybeUninit`; deranged: a `u8` of a range type, `NonZero`'s |
 
@@ -32,7 +32,7 @@ newest release its requirement allows.
 
 1. **Raw memory,** a raw pointer, a `NonNull`, a `MaybeUninit`,
    `transmute`, `handle_alloc_error`: 9.
-2. **num-traits' `f32::classify`:** 2, chrono and rust_decimal.
+2. **num-traits' `f32::recip`:** 2, chrono and rust_decimal.
    **A user `Future`:** 2.
 3. **One each:** `{:?}` of a generic `PhantomData`, `write_str` of a generic writer, a user `io::Write`, `size_of` of a type
    parameter, a whole value assigned through a `&mut`, a range type.
@@ -40,7 +40,7 @@ newest release its requirement allows.
 ## Fixed by measuring
 
 - **`{:p}` of a generic `T`:** thiserror compiles now (ADR 0174).
-  **`f32::is_normal`,** num-traits' (ADR 0122).
+  **`f32::is_normal` and `classify`,** num-traits' (ADR 0122).
 - **A path's `display()`,** thiserror's (ADR 0173); **`Option::map` of a
   value with a destructor and a generic `Option<T>`'s drop,** num-traits' and
   zerofrom's, which compiles now (ADR 0098); **`ParseIntError::kind()` and

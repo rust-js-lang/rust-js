@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "  return subnormal ? size > 0 && size < min : size >= min;",
     tests: ["test/corpus.test.ts", "-t", "float_normal"],
   },
+  {
+    name: "classify-zero-subnormal",
+    breaks: "`0.0.classify()` is `Subnormal`",
+    file: "src/runtime/is_normal.js",
+    find: '  if (x === 0) return "Zero";\n',
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "float_normal"],
+  },
 ];

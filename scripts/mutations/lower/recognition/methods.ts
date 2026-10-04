@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "float_normal"],
   },
+  {
+    name: "classify-unknown",
+    breaks: "`x.classify()` of a float is an error",
+    file: "src/lower/recognition/methods.rs",
+    find: "        \"classify\" if float => NumOp::Classify,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "float_normal"],
+  },
 ];
