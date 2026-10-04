@@ -530,6 +530,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Std::SizeHint(exact) = known {
             return self.size_hint(exact, args[0], span, out);
         }
+        if known == Std::GenericSizeHint {
+            let it = self.expr(args[0], out)?;
+            self.runtime.insert(Helper::SizeHint);
+            return Ok(Expr::call(Expr::var("$sizeHint"), vec![it]));
+        }
         if known == Std::UserWrite {
             return self.user_write(def_id, args, generic_args, span, out);
         }
@@ -737,6 +742,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::IterLen
             | Std::ExactLen
             | Std::SizeHint(_)
+            | Std::GenericSizeHint
             | Std::UserWrite
             | Std::DequeRemove
             | Std::Step(_)

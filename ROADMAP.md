@@ -457,7 +457,7 @@ tooling while preserving rust-js's own readable-output goals.
   `LowerHex` or `Pointer`, 2, a user `fmt::Write`, 3, a user `Borrow`, 3,
   a user `Hash`, 4, a user `AsMut` or `BorrowMut`, 2, same-named traits'
   impls named alike, slice methods, `size_hint()`, `?` of a value with a
-  destructor, and two crashes.
+  destructor, a `#![no_std]` crate's std items, and two crashes.
 - [ ] **M8.3 — Share behavior as well as data.** Demonstrate the same model,
   validation, serialization, and domain-logic crates on a native Rust server
   and a rust-js client, including dependencies. Require integration and

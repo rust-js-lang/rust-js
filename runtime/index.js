@@ -4145,6 +4145,14 @@ export function $bytesAsciiEq(a, b) {
   return a.length === b.length && a.every((byte, i) => lower(byte) === lower(b[i]));
 }
 
+// `it.size_hint()` of a generic iterator (ADR 0170): exact of an array, or of
+// one stepping through an array, and std's `(0, None)` of a lazy one, which
+// may be any length; Rust lets a hint be any bounds that hold.
+export function $sizeHint(it) {
+  const left = Array.isArray(it) ? it.length : Array.isArray(it.items) ? it.items.length - it.at : undefined;
+  return left === undefined ? [0, undefined] : [left, left];
+}
+
 export function $sliceEnd(items, start, end = items.length) {
   if (start > end) throw new Error(`slice index starts at ${start} but ends at ${end}`);
   if (end > items.length) throw new Error(`range end index ${end} out of range for slice of length ${items.length}`);

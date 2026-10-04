@@ -46,6 +46,12 @@ impl Iterator for Indexed {
     }
 }
 
+// Of a generic iterator: exact of one that's an array, std's `(0, None)` of
+// a lazy one, as serde's `iterator_len_hint` asks.
+fn hint<I: Iterator>(it: I) -> (usize, Option<usize>) {
+    it.size_hint()
+}
+
 fn main() {
     println!("{:?} {:?}", Countdown(3).size_hint(), Known(4).size_hint());
     let mut indexed = Indexed { inner: Countdown(2), at: 0 };
@@ -57,4 +63,8 @@ fn main() {
     println!("{:?}", it.size_hint());
     println!("{:?}", v.iter().map(|x| x * 2).size_hint());
     println!("{:?} {:?}", [1, 2].into_iter().size_hint(), v.clone().into_iter().size_hint());
+
+    let mut stepped = v.iter();
+    stepped.next();
+    println!("{:?} {:?} {:?}", hint(v.iter()), hint(stepped), hint(Countdown(2)));
 }

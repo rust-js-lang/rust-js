@@ -247,8 +247,8 @@ export const mutations: Mutation[] = [
     name: "iterator-len-unrecognized",
     breaks: "`it.len()` of an iterator is an error",
     file: "src/lower/recognition.rs",
-    find: '        if tcx.def_path_str(trait_) == "std::iter::ExactSizeIterator"\n            && tcx.item_name(def_id).as_str() == "len"\n            && self.range_kind(ty.peel_refs()).is_none()\n',
-    replace: '        if tcx.def_path_str(trait_) == "std::iter::ExactSizeIterator"\n            && tcx.item_name(def_id).as_str() == "len_"\n            && self.range_kind(ty.peel_refs()).is_none()\n',
+    find: '        if std_path(tcx, trait_) == "std::iter::ExactSizeIterator"\n            && tcx.item_name(def_id).as_str() == "len"\n            && self.range_kind(ty.peel_refs()).is_none()\n',
+    replace: '        if std_path(tcx, trait_) == "std::iter::ExactSizeIterator"\n            && tcx.item_name(def_id).as_str() == "len_"\n            && self.range_kind(ty.peel_refs()).is_none()\n',
     tests: ["test/corpus.test.ts", "-t", "str_bytes"],
   },
   {
@@ -466,5 +466,21 @@ export const mutations: Mutation[] = [
     find: "        if char_fn(\"from_u32_unchecked\") {",
     replace: "        if char_fn(\"from_u32_unchecked\") && false {",
     tests: ["test/corpus.test.ts", "-t", "char_from_code"],
+  },
+  {
+    name: "generic-size-hint-unknown",
+    breaks: "`size_hint()` of a generic iterator is an error",
+    file: "src/lower/recognition.rs",
+    find: "                return Some(Std::GenericSizeHint);",
+    replace: "                return None;",
+    tests: ["test/corpus.test.ts", "-t", "size_hint"],
+  },
+  {
+    name: "no-std-paths-core",
+    breaks: "a `#![no_std]` crate's std items, which rustc names `core::str::Chars`, aren't std's",
+    file: "src/lower/recognition.rs",
+    find: "        Some((\"core\" | \"alloc\", rest)) if !id.is_local() => format!(\"std::{rest}\"),",
+    replace: "        Some((\"alloc\", rest)) if !id.is_local() => format!(\"std::{rest}\"),",
+    tests: ["test/crates.test.ts", "-t", "std items are std"],
   },
 ];

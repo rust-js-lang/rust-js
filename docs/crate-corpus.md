@@ -24,7 +24,7 @@ newest release its requirement allows.
 | uuid 1.27 | refused | `&mut` of a `MaybeUninit` buffer's range |
 | url 2.5 | blocked | litemap: `{:?}` of a `PhantomData`; writeable: a whole value assigned through a `&mut`; smallvec's; percent-encoding: `transmute`; zerofrom: `u128` |
 | regex 1.11 | blocked | memchr: a raw pointer; regex-syntax: `str::from_utf8` |
-| rust_decimal 1.38 | blocked | arrayvec: a user `io::Write`; serde_core: `size_hint` called; num-traits: `chars()`'s raw pointer |
+| rust_decimal 1.38 | blocked | arrayvec: a user `io::Write`; serde_core: `size_of` of a type parameter; num-traits: `u128` |
 | chrono 0.4 (`alloc`) | blocked | num-traits' |
 | time 0.3 (`alloc`) | blocked | powerfmt: a `MaybeUninit`; deranged: `{:?}` of an `IntErrorKind`; num-conv: `u128`; time-core: a generic impl's constant of its parameters |
 
@@ -32,15 +32,19 @@ newest release its requirement allows.
 
 1. **Raw memory,** a raw pointer, a `NonNull`, a `MaybeUninit`,
    `transmute`, `handle_alloc_error`: 9.
-2. **`u128`:** 2. **num-traits' `chars()`:** 2. **A user `Future`:** 2.
+2. **`u128` and `i128`:** 4, num-traits' stopping chrono and rust_decimal.
+   **A user `Future`:** 2.
 3. **One each:** `{:?}` of a `PhantomData`, `Path::display`,
    `str::from_utf8`, a generic impl's constant, `write_str` of a generic
    writer, `{:?}` of an `IntErrorKind`, a user `io::Write`,
-   `size_hint` of a generic iterator, a whole value assigned through a
+   `size_of` of a type parameter, a whole value assigned through a
    `&mut`.
 
 ## Fixed by measuring
 
+- **A `#![no_std]` crate's std items,** which rustc names `core::str::Chars`,
+  weren't recognized: num-traits' `chars()`. **`size_hint()` of a generic
+  iterator,** serde_core's, bounds that hold, a listed difference (ADR 0170).
 - **`?` of a value with a destructor,** num-traits' `checked_pow` (ADR
   0098); **`char::from_u32_unchecked`,** utf8_iter's, which now compiles
   (ADR 0157); **`split_at_checked`,** writeable's (ADR 0153).

@@ -127,6 +127,9 @@ pub(super) enum Std {
     /// keeps it, or, `true`, `(n, Some(n))` of std's that knows its length
     /// (ADR 0170).
     SizeHint(bool),
+    /// `it.size_hint()` of a generic iterator: exact of an array, else
+    /// `(0, None)` (ADR 0170).
+    GenericSizeHint,
     /// `write!(w, ..)` or `w.write_char(c)` of a writer of the crate's that
     /// keeps std's: its own `write_str`, given the text whole (ADR 0166).
     UserWrite,
@@ -400,7 +403,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if diagnostic("mem_forget") {
             return Some(Some(Std::Forget));
         }
-        if tcx.def_path_str(def_id) == "std::sync::mpsc::channel" {
+        if std_path(tcx, def_id) == "std::sync::mpsc::channel" {
             return Some(Some(Std::Channel(ChannelOp::New)));
         }
         if diagnostic("mem_swap") {
@@ -409,15 +412,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if diagnostic("mem_replace") {
             return Some(Some(Std::Replace));
         }
-        if tcx.crate_name(def_id.krate) == sym::core && tcx.def_path_str(def_id) == "std::mem::take" {
+        if tcx.crate_name(def_id.krate) == sym::core && std_path(tcx, def_id) == "std::mem::take" {
             return Some(Some(Std::MemTake));
         }
         // `cmp::max(a, b)` of numbers is `a.max(b)`'s (ADR 0136); of anything
         // else, the call is lowered as `Ord::max`'s.
         if tcx.crate_name(def_id.krate) == sym::core
-            && let Some(max) = match tcx.def_path_str(def_id).as_str() {
-                "std::cmp::max" | "core::cmp::max" => Some(true),
-                "std::cmp::min" | "core::cmp::min" => Some(false),
+            && let Some(max) = match std_path(tcx, def_id).as_str() {
+                "std::cmp::max" => Some(true),
+                "std::cmp::min" => Some(false),
                 _ => None,
             }
             && self_ty.and_then(Num::of).is_some_and(|num| !num.float())
@@ -428,13 +431,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Some(Some(Std::Range(RangeOp::New)));
         }
         if tcx.crate_name(def_id.krate) == sym::std {
-            match tcx.def_path_str(def_id).as_str() {
+            match std_path(tcx, def_id).as_str() {
                 "std::io::stdout" | "std::io::stderr" => return Some(Some(Std::Stream(StreamOp::Open))),
                 _ => {}
             }
         }
         if tcx.crate_name(def_id.krate) == sym::core {
-            match tcx.def_path_str(def_id).as_str() {
+            match std_path(tcx, def_id).as_str() {
                 "std::any::type_name" => return Some(Some(Std::TypeName { of_val: false })),
                 "std::any::type_name_of_val" => return Some(Some(Std::TypeName { of_val: true })),
                 _ => {}
@@ -443,7 +446,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // std's iterator sources (ADR 0128), by path: most have no
         // diagnostic item.
         if tcx.crate_name(def_id.krate) == sym::core && tcx.def_kind(def_id) == DefKind::Fn {
-            let source = match tcx.def_path_str(def_id).as_str() {
+            let source = match std_path(tcx, def_id).as_str() {
                 "std::iter::once" => Some(IterSource::Once),
                 "std::iter::empty" => Some(IterSource::Empty),
                 "std::iter::repeat" => Some(IterSource::Repeat),
@@ -460,7 +463,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // libtest's `test::black_box` is the same.
         let krate = tcx.crate_name(def_id.krate);
         if tcx.item_name(def_id).as_str() == "black_box"
-            && ((krate == sym::core && tcx.def_path_str(def_id).contains("hint")) || krate.as_str() == "test")
+            && ((krate == sym::core && std_path(tcx, def_id).contains("hint")) || krate.as_str() == "test")
         {
             return Some(Some(Std::Same));
         }
@@ -474,7 +477,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let char_fn = |name: &str| {
             tcx.crate_name(def_id.krate) == sym::core
                 && tcx.item_name(def_id).as_str() == name
-                && tcx.def_path_str(def_id).contains("char")
+                && std_path(tcx, def_id).contains("char")
         };
         if char_fn("from_digit") {
             return Some(Some(Std::FromDigit));
@@ -517,7 +520,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 _ => {}
             }
         }
-        if (krate == sym::alloc && name.as_str() == "format" && tcx.def_path_str(def_id).ends_with("fmt::format"))
+        if (krate == sym::alloc && name.as_str() == "format" && std_path(tcx, def_id).ends_with("fmt::format"))
             || (krate == sym::core && name.as_str() == "must_use")
         {
             return Some(Some(Std::Same));
@@ -526,7 +529,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Some(Some(Std::Panic));
         }
         if krate == sym::std {
-            match tcx.def_path_str(def_id).as_str() {
+            match std_path(tcx, def_id).as_str() {
                 "std::io::_print" => return Some(Some(Std::Print { error: false })),
                 "std::io::_eprint" => return Some(Some(Std::Print { error: true })),
                 "std::rt::begin_panic" => return Some(Some(Std::BeginPanic)),
@@ -661,6 +664,20 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             if self.is_user_iterator(ty) {
                 return Some(Std::SizeHint(false));
             }
+            // A generic one is an array or a JS iterator (ADR 0061).
+            if matches!(
+                ty.peel_refs().kind(),
+                ty::Param(_)
+                    | ty::Alias(
+                        _,
+                        ty::AliasTy {
+                            kind: ty::Projection { .. },
+                            ..
+                        }
+                    )
+            ) {
+                return Some(Std::GenericSizeHint);
+            }
             if self.range_kind(ty.peel_refs()).is_none()
                 && self.is_array_iter(ty.peel_refs())
                 && self.is_exact_size(ty.peel_refs())
@@ -725,13 +742,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             });
         }
         // An iterator's `len()` is its `count()`, without taking its items.
-        if tcx.def_path_str(trait_) == "std::iter::ExactSizeIterator"
+        if std_path(tcx, trait_) == "std::iter::ExactSizeIterator"
             && tcx.item_name(def_id).as_str() == "len"
             && self.is_user_iterator(ty)
         {
             return Some(Std::ExactLen);
         }
-        if tcx.def_path_str(trait_) == "std::iter::ExactSizeIterator"
+        if std_path(tcx, trait_) == "std::iter::ExactSizeIterator"
             && tcx.item_name(def_id).as_str() == "len"
             && self.range_kind(ty.peel_refs()).is_none()
             && self.is_array_iter(ty.peel_refs())
@@ -756,7 +773,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             let name = tcx.item_name(def_id);
             match name.as_str() {
                 "into_iter" if tcx.is_diagnostic_item(sym::IntoIterator, trait_) => return Some(Std::Same),
-                "len" if stepped && tcx.def_path_str(trait_) == "std::iter::ExactSizeIterator" => {
+                "len" if stepped && std_path(tcx, trait_) == "std::iter::ExactSizeIterator" => {
                     return Some(Std::Range(RangeOp::Len));
                 }
                 "next_back"
@@ -808,7 +825,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         // Writing to a standard stream (ADR 0132).
         if let Some(error) = self.stream(ty.peel_refs())
-            && tcx.def_path_str(trait_) == "std::io::Write"
+            && std_path(tcx, trait_) == "std::io::Write"
         {
             return match tcx.item_name(def_id).as_str() {
                 "write_fmt" => Some(Std::Stream(StreamOp::Write { error })),
@@ -1233,7 +1250,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// standard error, `Some(true)` (ADR 0132).
     pub(super) fn stream(&self, ty: Ty<'tcx>) -> Option<bool> {
         let ty::Adt(adt, _) = ty.kind() else { return None };
-        match self.tcx.def_path_str(adt.did()).as_str() {
+        match std_path(self.tcx, adt.did()).as_str() {
             "std::io::Stdout" | "std::io::StdoutLock" => Some(false),
             "std::io::Stderr" | "std::io::StderrLock" => Some(true),
             _ => None,
@@ -1249,7 +1266,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     fn is_io_error(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(error, _) if self.tcx.def_path_str(error.did()) == "std::io::Error")
+        matches!(ty.kind(), ty::Adt(error, _) if std_path(self.tcx, error.did()) == "std::io::Error")
     }
 
     /// Which of std's ranges `ty` is, if it's one (ADR 0129).
@@ -1347,7 +1364,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty::Adt(adt, _) = ty.kind() else {
             return None;
         };
-        match self.tcx.def_path_str(adt.did()).as_str() {
+        match std_path(self.tcx, adt.did()).as_str() {
             "std::sync::mpsc::Sender" => Some(ChannelEnd::Sender),
             "std::sync::mpsc::Receiver" => Some(ChannelEnd::Receiver),
             _ => None,
@@ -1359,7 +1376,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty::Adt(adt, _) = ty.kind() else {
             return None;
         };
-        let path = self.tcx.def_path_str(adt.did());
+        let path = std_path(self.tcx, adt.did());
         if !path.starts_with("std::sync::mpsc::") && !path.starts_with("std::sync::mpmc::") {
             return None;
         }
@@ -1811,7 +1828,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(super) fn is_array_iter(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);
         let ty::Adt(adt, _) = ty.kind() else { return false };
-        let path = self.tcx.def_path_str(adt.did());
+        let path = std_path(self.tcx, adt.did());
         let krate = self.tcx.crate_name(adt.did().krate);
         (krate == sym::core || krate == sym::alloc)
             && (path.contains("::iter::")
@@ -1855,7 +1872,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(super) fn is_str_split(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate) == sym::core
             && self.tcx.item_name(adt.did()).as_str() == "Split"
-            && self.tcx.def_path_str(adt.did()).contains("str::"))
+            && std_path(self.tcx, adt.did()).contains("str::"))
     }
 
     /// A field's type, of an ADT given `args`: a projection in it, `K::Value`,
@@ -2059,7 +2076,7 @@ pub(crate) fn is_other_fmt_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.crate_name(id.krate) == sym::core
         && tcx.def_kind(id) == DefKind::Trait
         && OTHER_FMT_TRAITS.contains(&tcx.item_name(id).as_str())
-        && tcx.def_path_str(id).contains("fmt::")
+        && std_path(tcx, id).contains("fmt::")
 }
 
 /// Is `id` core's `DoubleEndedIterator` or `ExactSizeIterator`, which have
@@ -2237,6 +2254,17 @@ pub(crate) fn is_hash_impl(tcx: TyCtxt<'_>, id: DefId) -> bool {
         )
 }
 
+/// A std item's path as std names it, `std::str::Chars`: a `#![no_std]`
+/// crate's rustc names it `core::str::Chars`, or `alloc::..`, which every
+/// path compared here would miss.
+fn std_path(tcx: TyCtxt<'_>, id: DefId) -> String {
+    let path = tcx.def_path_str(id);
+    match path.split_once("::") {
+        Some(("core" | "alloc", rest)) if !id.is_local() => format!("std::{rest}"),
+        _ => path,
+    }
+}
+
 pub(super) fn is_operator(tcx: TyCtxt<'_>, id: DefId) -> bool {
     [
         LangItem::Add,
@@ -2311,7 +2339,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // std's sources that may never end (ADR 0128).
         let endless = matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate) == sym::core
             && ["std::iter::Repeat", "std::iter::RepeatWith", "std::iter::Successors", "std::iter::FromFn"]
-                .contains(&self.tcx.def_path_str(adt.did()).as_str()));
+                .contains(&std_path(self.tcx, adt.did()).as_str()));
         endless
             || self.range_kind(ty) == Some(RangeKind::From)
             || self.is_user_iterator(ty)
@@ -2529,7 +2557,7 @@ pub(crate) fn type_fact(tcx: TyCtxt<'_>, def_id: DefId) -> Option<TypeFact> {
     if diagnostic("mem_align_of") {
         return Some(TypeFact::Align);
     }
-    match tcx.def_path_str(def_id).as_str() {
+    match std_path(tcx, def_id).as_str() {
         "std::any::type_name" | "std::any::type_name_of_val" => Some(TypeFact::Name),
         _ => None,
     }
@@ -2568,7 +2596,7 @@ pub(super) fn fmt_result_answer(tcx: TyCtxt<'_>, def_id: DefId) -> Option<FmtRes
 
 /// The question `def_id` asks of a `Formatter`: `f.width()` and the like.
 pub(super) fn formatter_query(tcx: TyCtxt<'_>, def_id: DefId) -> Option<FormatterQuery> {
-    if !tcx.def_path_str(def_id).starts_with("std::fmt::Formatter") {
+    if !std_path(tcx, def_id).starts_with("std::fmt::Formatter") {
         return None;
     }
     Some(match tcx.item_name(def_id).as_str() {
@@ -2662,7 +2690,7 @@ impl StdItem {
 pub(crate) fn replaces_whole(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.is_diagnostic_item(Symbol::intern("mem_swap"), id)
         || tcx.is_diagnostic_item(Symbol::intern("mem_replace"), id)
-        || tcx.crate_name(id.krate) == sym::core && tcx.def_path_str(id) == "std::mem::take"
+        || tcx.crate_name(id.krate) == sym::core && std_path(tcx, id) == "std::mem::take"
 }
 
 /// Is `id` std's `item`?
@@ -2670,7 +2698,7 @@ pub(crate) fn replaces_whole(tcx: TyCtxt<'_>, id: DefId) -> bool {
 pub(crate) fn is_from_str(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.crate_name(id.krate) == sym::core
         && tcx.def_kind(id) == DefKind::Trait
-        && tcx.def_path_str(id).ends_with("str::FromStr")
+        && std_path(tcx, id).ends_with("str::FromStr")
 }
 
 pub(crate) fn is_std_def(tcx: TyCtxt<'_>, id: DefId, item: StdItem) -> bool {
@@ -2705,12 +2733,12 @@ pub(crate) fn is_std_method(tcx: TyCtxt<'_>, id: DefId, item: StdItem, name: &st
 
 /// `fmt::Arguments::new` and its kin, what `format_args!` makes.
 pub(crate) fn is_arguments_new(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    tcx.item_name(id).as_str() == "new" && tcx.def_path_str(id).starts_with("std::fmt::Arguments")
+    tcx.item_name(id).as_str() == "new" && std_path(tcx, id).starts_with("std::fmt::Arguments")
 }
 
 /// `f.pad(s)` of a `Formatter` (ADR 0143).
 pub(crate) fn is_formatter_pad(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    tcx.item_name(id).as_str() == "pad" && tcx.def_path_str(id).starts_with("std::fmt::Formatter")
+    tcx.item_name(id).as_str() == "pad" && std_path(tcx, id).starts_with("std::fmt::Formatter")
 }
 
 /// A std function that runs no code of the crate's (ADR 0069).

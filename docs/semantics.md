@@ -424,3 +424,4 @@ a map key. React and JSX are [their own page](jsx.md).
 12. JS can catch a panic; a `drop` panicking during a panic replaces it.
 13. A value with a destructor that JS holds is never dropped.
 14. A writer of the crate's is given each `write!`'s text in one `write_str`.
+15. A generic iterator's `size_hint()` is its array's length, or `(0, None)`.

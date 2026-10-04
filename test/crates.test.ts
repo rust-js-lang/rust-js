@@ -290,3 +290,31 @@ test("a #![no_std] crate's trait calls compile, though it has no ToString", asyn
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   expect((await import(join(dir, "lib.js"))).answer()).toBe(26);
 }, 300_000);
+
+// In a `#![no_std]` crate std's items are `core's` by path, `core::str::Chars`,
+// which recognition took for no std item: num-traits' `chars()` stepped and
+// asked `as_str()` was a raw pointer (docs/crate-corpus.md).
+test("a #![no_std] crate's std items are std's, though core names them", async () => {
+  const dir = fixture("no-std-paths");
+  writeFileSync(join(dir, "lib.rs"), [
+    "#![no_std]",
+    "pub fn shift(src: &str) -> usize {",
+    "    let mut chars = src.chars();",
+    "    chars.next();",
+    "    chars.as_str().len()",
+    "}",
+    "pub fn left(v: &[u8]) -> usize {",
+    "    let mut it = v.iter();",
+    "    it.next();",
+    "    it.len()",
+    "}",
+    "pub fn taken() -> u32 {",
+    "    let mut n = 7;",
+    "    core::mem::take(&mut n) + n",
+    "}",
+    "",
+  ].join("\n"));
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.shift("héllo"), lib.left([1, 2, 3]), lib.taken()]).toEqual([5, 2, 7]);
+}, 300_000);
