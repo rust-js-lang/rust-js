@@ -22,8 +22,9 @@ use std::cell::{Cell, RefCell};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-use rustc_ast::LitKind;
+use rustc_ast::{LitKind, Mutability};
 use rustc_hir::def::{CtorKind, DefKind};
+use rustc_hir::{CRATE_OWNER_ID, HirId, ItemLocalId};
 use rustc_middle::middle::region;
 use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::{
@@ -289,6 +290,8 @@ struct CrateFacts<'a, 'tcx> {
     serde_attrs: &'a serde::SerdeAttributes,
     /// Do its `Debug` functions take whether to be pretty (ADR 0137)?
     pretty_debug: bool,
+    /// Bodies with a call added, each the arrow a function taken as a value is.
+    called_bodies: &'a rustc_arena::TypedArena<Thir<'tcx>>,
     /// Does it give a placeholder's options to its writers and dictionaries
     /// (ADR 0058)?
     format_options: bool,
@@ -927,9 +930,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .len();
                     let params: Vec<String> = (0..count).map(|i| self.fresh(&format!("arg{i}"))).collect();
                     let values = params.iter().map(|name| Expr::var(name)).collect();
-                    let call = self
-                        .trait_call(def_id, args, values, span, out)?
-                        .ok_or_else(|| self.unsupported(span, "this trait function value"))?;
+                    // A std trait's, `ToString::to_string` or `i32::max`: what
+                    // its call is.
+                    let Some(call) = self.trait_call(def_id, args, values, span, out)? else {
+                        return self.called_value(e, span);
+                    };
                     // `(arg0) => shapeArea_area(arg0)` is `shapeArea_area`: a
                     // function by name, not a dictionary's method, read off it.
                     if let js::ExprKind::Call(callee, list) = &call.kind
@@ -986,6 +991,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 self.binding_value(def_id, args, span)
             }
+            // Any other function, `.map(str::len)` or `unwrap_or_else(Vec::new)`:
+            // the arrow that calls it.
+            ExprKind::ZstLiteral { .. } if matches!(ty.kind(), ty::FnDef(..)) => self.called_value(e, span),
             ExprKind::Closure(ref closure) => self.closure(closure, out),
             ExprKind::Tuple { ref fields } if fields.is_empty() => Ok(Expr::undefined()),
             ExprKind::Tuple { ref fields } => Ok(Expr::array(self.operands(fields, out)?)),
@@ -1408,6 +1416,77 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => self.strip_refs(arg),
             _ => self.strip(e),
         }
+    }
+
+    /// A function taken as a value that no other form fits, `Vec::new` or
+    /// `i32::max`: the arrow of its parameters that calls it, `(a, b) =>
+    /// Math.max(a, b)`, lowered as the call is, so it does what a call does.
+    /// The call is lowered in a copy of the body given its arguments, each a
+    /// variable that's a parameter.
+    pub(super) fn called_value(&mut self, fun: ExprId, span: Span) -> R<Expr> {
+        let ty::FnDef(def_id, args) = *self.thir[fun].ty.kind() else {
+            return Err(self.unsupported(span, "this expression"));
+        };
+        let sig = self.tcx.fn_sig(def_id).instantiate(self.tcx, args).skip_normalization();
+        let inputs: Vec<Ty<'tcx>> = self
+            .tcx
+            .instantiate_bound_regions_with_erased(sig)
+            .inputs()
+            .iter()
+            .map(|&input| {
+                self.tcx
+                    .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(input))
+                    .unwrap_or(input)
+            })
+            .collect();
+        // A `&mut` to a number is its place, which a parameter isn't (ADR 0099).
+        if inputs
+            .iter()
+            .any(|input| matches!(input.kind(), ty::Ref(_, _, Mutability::Mut)))
+        {
+            let path = self.tcx.def_path_str(def_id);
+            return Err(self.unsupported(span, &format!("`{path}`, which takes a `&mut`, as a value")));
+        }
+        let mut called = self.thir.clone();
+        let temp_scope_id = self.thir[fun].temp_scope_id;
+        let mut params = Vec::new();
+        let mut arguments = Vec::new();
+        for (i, &input) in inputs.iter().enumerate() {
+            // An id no variable of rustc's has: the crate root's, which has
+            // none, counted down from the last there can be.
+            let local_id = ItemLocalId::from_u32(ItemLocalId::MAX_AS_U32 - i as u32);
+            let id = LocalVarId(HirId {
+                owner: CRATE_OWNER_ID,
+                local_id,
+            });
+            let base = match inputs.len() {
+                1 => self.parameter_name(input),
+                _ => ["a", "b", "c", "d", "e", "f"].get(i).copied().unwrap_or("arg"),
+            };
+            params.push((id, self.bind(id, base, false)));
+            arguments.push(called.exprs.push(thir::Expr {
+                kind: ExprKind::VarRef { id },
+                ty: input,
+                temp_scope_id,
+                span,
+            }));
+        }
+        let called: &'a Thir<'tcx> = self.krate.called_bodies.alloc(called);
+        let body_thir = std::mem::replace(&mut self.thir, called);
+        let mut body = Vec::new();
+        let value = self.call(fun, &arguments, false, span, &mut body);
+        self.thir = body_thir;
+        // Each parameter is the arrow's alone, and its body is written: the
+        // next arrow's can be `s` too.
+        for (id, name) in &params {
+            self.locals.vars.remove(id);
+            self.names.remove(name);
+        }
+        body.push(StmtKind::Return(Some(value?)).at(self.js_span(span)));
+        Ok(Expr::arrow(
+            params.into_iter().map(|(_, name)| name.into()).collect(),
+            body,
+        ))
     }
 
     fn fresh(&mut self, base: &str) -> String {

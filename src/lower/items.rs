@@ -242,15 +242,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         };
         let input = input.peel_refs();
-        let name = if input.is_char() {
-            "c"
-        } else if self.is_string_like(input) {
-            "s"
-        } else if Num::of(input).is_some() {
-            "n"
-        } else {
-            "x"
-        };
+        let name = self.parameter_name(input);
         let x = Expr::var(name);
         let body = match known {
             Std::Trim => Expr::call(Expr::member(x, "trim"), vec![]),
@@ -280,6 +272,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             vec![name.into()],
             vec![StmtKind::Return(Some(body)).at(js_span)],
         )))
+    }
+
+    /// What an arrow's one parameter of `input` is called: `(s) => ..` of a
+    /// string, `c` of a `char`, `n` of a number.
+    pub(super) fn parameter_name(&self, input: Ty<'tcx>) -> &'static str {
+        if input.is_char() {
+            "c"
+        } else if self.is_string_like(input) {
+            "s"
+        } else if Num::of(input).is_some() {
+            "n"
+        } else {
+            "x"
+        }
     }
 
     /// The crate's own impl method a trait method call resolves to, if it

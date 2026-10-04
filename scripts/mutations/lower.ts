@@ -244,4 +244,28 @@ export const mutations: Mutation[] = [
     replace: " => {\n                match self.place(arg) {",
     tests: ["test/corpus.test.ts", "-t", "kept_generic_iterators"],
   },
+  {
+    name: "std-trait-fn-value-refused",
+    breaks: "`ToString::to_string` and `i32::max` as values are errors, std's trait functions the crate's dictionaries don't have",
+    file: "src/lower.rs",
+    find: "                        return self.called_value(e, span);",
+    replace: "                        return Err(self.unsupported(span, \"this trait function value\"));",
+    tests: ["test/corpus.test.ts", "-t", "std_function_values"],
+  },
+  {
+    name: "called-value-arguments-reversed",
+    breaks: "`sort_by(i32::cmp)` compares each pair the other way round, sorting from the largest",
+    file: "src/lower.rs",
+    find: "        let value = self.call(fun, &arguments, false, span, &mut body);",
+    replace: "        arguments.reverse();\n        let value = self.call(fun, &arguments, false, span, &mut body);",
+    tests: ["test/corpus.test.ts", "-t", "std_function_values"],
+  },
+  {
+    name: "called-value-parameters-unbound",
+    breaks: "an arrow's parameter isn't a variable of its body, which panics reading it",
+    file: "src/lower.rs",
+    find: "            params.push((id, self.bind(id, base, false)));",
+    replace: "            params.push((id, self.fresh(base)));",
+    tests: ["test/corpus.test.ts", "-t", "std_function_values"],
+  },
 ];

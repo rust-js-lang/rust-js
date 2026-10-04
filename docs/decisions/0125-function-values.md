@@ -51,4 +51,5 @@ its call makes; a closure as a `fn` is the closure:**
 - Constructors as values, closures as `fn`s and `i32::abs` compile,
   compared with native Rust by the `function_values` corpus case.
 - A library function of more than one argument as a value, and an `i64`'s
-  `abs`, are still errors.
+  `abs`, are still errors. (Amended: each is the arrow that calls it, ADR
+  0151.)

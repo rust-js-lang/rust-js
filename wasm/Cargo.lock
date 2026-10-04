@@ -1746,6 +1746,7 @@ dependencies = [
  "oxc_sourcemap",
  "oxc_span",
  "oxc_syntax",
+ "rustc_arena",
  "rustc_ast",
  "rustc_const_eval",
  "rustc_data_structures",

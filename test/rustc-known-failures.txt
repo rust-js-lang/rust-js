@@ -46,7 +46,7 @@ cast/cast-rfc0401-vtable-kinds.rs	error: rust-js does not support values of type
 cast/cast-rfc0401.rs	error: rust-js does not support values of type `*const [u8; 1]` yet
 cast/cast-to-infer-ty.rs	error: rust-js does not support values of type `*const i32` yet
 cast/cast.rs	error: rust-js does not support values of type `*const &str` yet
-cast/codegen-object-shim.rs	error: rust-js does not support this trait function value yet
+cast/codegen-object-shim.rs	error: rust-js does not support `{}` of a `dyn std::string::ToString` yet
 cast/coercion-as-explicit-cast.rs	error: rust-js does not support this expression yet
 cast/negative-integer-cast-to-pointer.rs	error: rust-js does not support values of type `*const ()` yet
 cast/supported-cast.rs	error: rust-js does not support values of type `*const std::string::String` yet

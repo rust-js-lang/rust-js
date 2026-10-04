@@ -22,7 +22,8 @@ parameter, doing what a call does:
 
 It takes the forms a call has without its arguments: a JS method, a
 `char` question, a `Math` function, a conversion that changes nothing, and
-`to_string`. Other std functions as values are still errors.
+`to_string`. Other std functions as values are still errors. (Amended: any
+whose call compiles is the arrow that calls it, ADR 0151.)
 
 - **`c.to_uppercase()` and `c.to_lowercase()`** are the `char`s JS's own
   mapping gives, `Array.from(c.toUpperCase())`. JS and Rust both use

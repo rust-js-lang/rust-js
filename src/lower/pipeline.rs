@@ -129,7 +129,9 @@ pub fn lower_crate<'tcx>(
     // the link step knows exactly which imports and local names survive.
     let mut lowered_items = Vec::new();
     let foreign = super::library::Foreign::new(tcx, dependencies);
+    let called_bodies = rustc_arena::TypedArena::default();
     let crate_facts = CrateFacts {
+        called_bodies: &called_bodies,
         foreign: &foreign,
         library: export_library,
         sources: &sources,
