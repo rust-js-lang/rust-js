@@ -9,6 +9,11 @@ sentence, borrowed from ReScript:
 
 This folder is where we write those choices down.
 
+For what Rust does under rust-js today, read
+[How Rust behaves in rust-js](semantics.md). The decisions below record why,
+as each was made: a later one may lift an earlier one's "not yet" or "still
+an error", and the page says what's current.
+
 ## The pipeline in one picture
 
 ```

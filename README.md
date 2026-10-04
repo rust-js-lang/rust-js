@@ -125,9 +125,10 @@ they are polled. This choice lets JavaScript callers receive an ordinary
 promise and lets the JavaScript event loop run the work without a Rust executor.
 It also means a future that is never awaited can still have effects.
 
-These differences belong in the design, documentation, and tests. The
-[design decisions](docs/README.md) record the behavior, its reasons, and its
-costs. When a feature has no supported translation, compilation should fail
+These differences belong in the design, documentation, and tests.
+[How Rust behaves in rust-js](docs/semantics.md) lists each one, as it is
+today, and the [design decisions](docs/README.md) record their reasons and
+costs. When a feature has no supported translation, compilation fails
 clearly.
 
 ### Make interop fundamental
@@ -161,10 +162,10 @@ rust-js supports a growing subset of Rust aimed at JavaScript applications:
 - serde-compatible JSON writing and reading, `serde_json::Value` and `json!`
   included (see the [design decisions](docs/README.md))
 
-Support is specific to each feature. For example, generic trait methods remain
-unsupported, map keys must have a supported value-based representation, and
-JSON deserialization does not yet handle borrowed strings or `#[serde(with)]`.
-The linked design decisions describe the current boundaries.
+Support is specific to each feature. For example, `i128` is refused, a
+`HashMap` iterates in insertion order, and `#[serde(with)]` is refused.
+[How Rust behaves in rust-js](docs/semantics.md) says what each part of Rust
+does today, how it differs from native Rust, and what's refused.
 
 ## Get started
 

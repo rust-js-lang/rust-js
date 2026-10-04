@@ -92,10 +92,17 @@ pilot. No delivery dates are assigned yet.
   `@rust-js/react` supports React 18.0 on; the dependency model is
   [crates as npm packages](docs/decisions/0118-bindings-on-npm-only.md).
   A matrix in one place, with browsers and JS targets, remains.
-- [ ] **M1.2 — Consolidate the semantic contract.** Give users one current
+- [x] **M1.2 — Consolidate the semantic contract.** Give users one current
   reference for numeric widths/overflow, text indexing, copying and mutation,
   eager async, panic/error behavior, and JS boundaries. Link to ADRs and tests;
   historical “not yet” notes must not masquerade as current limitations.
+  Done: [How Rust behaves in rust-js](docs/semantics.md), each part of Rust's
+  JS, its differences from native Rust in one list, and what's refused, each
+  with its ADR, checked by running programs both ways. The decisions are
+  their history: the docs index says so, and the README points at the page.
+  Researching it found six wrong answers, each fixed with a test: `next()`
+  of a returned `impl Iterator`, `{:e}`, an integer `-0` from `%`, a test
+  returning `Err` passing, and two panic messages.
 - [ ] **M1.3 — Classify the feature gaps below.** For each, choose implement
   before release, supported workaround, or explicit exclusion. The pilot must
   fit those choices without silently changing behavior.
