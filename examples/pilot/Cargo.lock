@@ -53,11 +53,11 @@ dependencies = [
 
 [[package]]
 name = "rust-js-builtins"
-version = "0.1.0"
+version = "0.0.1"
 
 [[package]]
 name = "rust-js-react"
-version = "0.1.0"
+version = "0.0.3"
 dependencies = [
  "rust-js-builtins",
  "rust-js-webapi",
@@ -65,7 +65,7 @@ dependencies = [
 
 [[package]]
 name = "rust-js-webapi"
-version = "0.1.0"
+version = "0.0.2"
 dependencies = [
  "rust-js-builtins",
 ]

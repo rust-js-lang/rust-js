@@ -11,17 +11,17 @@
   },
   "dependencies": {
     "@rust-js/builtins": "0.0.1",
-    "@rust-js/react": "0.0.2",
-    "@rust-js/runtime": "0.0.2",
+    "@rust-js/react": "0.0.3",
+    "@rust-js/runtime": "0.0.3",
     "@rust-js/webapi": "0.0.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "sonner": "^2.0.8"
   },
   "devDependencies": {
-    "@rust-js/build": "0.0.2",
-    "@rust-js/native": "0.0.2",
-    "@rust-js/vite-plugin": "0.0.2",
+    "@rust-js/build": "0.0.3",
+    "@rust-js/native": "0.0.3",
+    "@rust-js/vite-plugin": "0.0.3",
     "@vitejs/plugin-react": "^6.1.1",
     "vite": "^8.3.0"
   }

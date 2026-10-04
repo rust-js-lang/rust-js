@@ -6,17 +6,17 @@
       "name": "pilot",
       "dependencies": {
         "@rust-js/builtins": "0.0.1",
-        "@rust-js/react": "0.0.2",
-        "@rust-js/runtime": "0.0.2",
+        "@rust-js/react": "0.0.3",
+        "@rust-js/runtime": "0.0.3",
         "@rust-js/webapi": "0.0.2",
         "react": "^19.2.8",
         "react-dom": "^19.2.8",
         "sonner": "^2.0.8",
       },
       "devDependencies": {
-        "@rust-js/build": "0.0.2",
-        "@rust-js/native": "0.0.2",
-        "@rust-js/vite-plugin": "0.0.2",
+        "@rust-js/build": "0.0.3",
+        "@rust-js/native": "0.0.3",
+        "@rust-js/vite-plugin": "0.0.3",
         "@vitejs/plugin-react": "^6.1.1",
         "vite": "^8.3.0",
       },
@@ -57,17 +57,17 @@
 
     "@rolldown/pluginutils": ["@rolldown/pluginutils@1.0.1", "", {}, "sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw=="],
 
-    "@rust-js/build": ["@rust-js/build@0.0.2", "", { "bin": { "rust-js-patch": "patch.js" } }, "sha512-vcsdDsFiwUNGiCYA1rTAF1kHgKxwO+Y7rfqzjH4/+LpMxY2uSSPQvZuxnyLqBmJHOo5/MluXx0iyK/KbdARXHg=="],
+    "@rust-js/build": ["@rust-js/build@0.0.3", "", { "bin": { "rust-js-patch": "patch.js" } }, "sha512-TbfIWdhmr1Geb/pBBKJLUh0j0WAJ9MOFbA1cVEm8ColGoS0dUneTpR9h7b2kUCfgbDUb8UCfghiikJBVRfOLmA=="],
 
     "@rust-js/builtins": ["@rust-js/builtins@0.0.1", "", {}, "sha512-eI23k1euQ1Ey3bCLLI8dredds2ck0FgTATrQSc01LATURWXlRzp/rpOFZrIqk0ZcGrrXwv65LhnbfGfQxQMaPw=="],
 
-    "@rust-js/native": ["@rust-js/native@0.0.2", "", { "os": "darwin", "cpu": "arm64", "bin": { "rust-js": "bin/rust-js" } }, "sha512-4w0IM9v+hPqfZr5xBU7GRZQsadE00e7DguZICd76eUirCEixsZGWadK0D87sDPrZaBRggm0dufVTDqNa2/Bj3A=="],
+    "@rust-js/native": ["@rust-js/native@0.0.3", "", { "os": "darwin", "cpu": "arm64", "bin": { "rust-js": "bin/rust-js" } }, "sha512-KIwK2E2Cfgo1zM3nKHX20b+saFMGo31w0KaavzM5EP9/3E9jmLGYfEeMaE9DZRu2Nw1gP+xspqQe91+eVAsP7A=="],
 
-    "@rust-js/react": ["@rust-js/react@0.0.2", "", { "peerDependencies": { "@rust-js/builtins": "~0.0.1", "@rust-js/webapi": "~0.0.1", "react": ">=18.0.0", "react-dom": ">=18.0.0" } }, "sha512-CWR8/jQfOjm6ekfyNSCv6dReq+qQD+n/6R8oiiOIyyifN+2dQ8NJlg+fRVn8tYWd0GeSWRx5TrunssZfH6avsg=="],
+    "@rust-js/react": ["@rust-js/react@0.0.3", "", { "peerDependencies": { "@rust-js/builtins": "~0.0.1", "@rust-js/webapi": "~0.0.1", "react": ">=18.0.0", "react-dom": ">=18.0.0" } }, "sha512-ZKoPBiJy8G36H7iQjVuJayvZFBFLlleJRngO2kI2oXoUV5zu8ZH7dvY/z6fIl1LtnVZwjgsuaQ1OnbcmarbEcA=="],
 
-    "@rust-js/runtime": ["@rust-js/runtime@0.0.2", "", {}, "sha512-ulbuJIxKzjujnjFOg2ZaV1qf/tDM6sD6+CDVA73T0P/bxf7UZJawzSefEC8DPlU5z4g86x/rbB8CyUiReIdW0w=="],
+    "@rust-js/runtime": ["@rust-js/runtime@0.0.3", "", {}, "sha512-IA1ihXEHVqhbxcS0iRj37gU1m/+3WhbHEVg7ge9FoZcH+3ULPCYdAV0cxu/HfJ7EGAt2aEpT2+pkeMn4o1g4sg=="],
 
-    "@rust-js/vite-plugin": ["@rust-js/vite-plugin@0.0.2", "", { "dependencies": { "@rust-js/build": "0.0.2" }, "peerDependencies": { "vite": ">=8" }, "optionalPeers": ["vite"] }, "sha512-/ygAsIh503zYWNepNIvASJXN5Xt3DTIgfu/vSnstRrX8w6iy1NHr46FD/oDI34eIYFkUkkloHYDsPIZ52/SghA=="],
+    "@rust-js/vite-plugin": ["@rust-js/vite-plugin@0.0.3", "", { "dependencies": { "@rust-js/build": "0.0.3" }, "peerDependencies": { "vite": ">=8" }, "optionalPeers": ["vite"] }, "sha512-gyOhO3N7ird4t9htmKgevDaP95BJSRSYcjak9hfE2F+7J/dLVnJ/uwLI/ojoUnC9ltk9zNcCe6JW65+Pqo1xPA=="],
 
     "@rust-js/webapi": ["@rust-js/webapi@0.0.2", "", { "peerDependencies": { "@rust-js/builtins": "~0.0.1" } }, "sha512-br7RsLO6n7LPgivK+D6lAsG532v9a3Xpc1t7t3TbqOprDBjoM/KbE55JWJ8sL6aMRikolcHJ9JarOKRvHC1fwQ=="],
 

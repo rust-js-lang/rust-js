@@ -9,5 +9,5 @@ models = { path = "../models" }
 serde = "1"
 serde_json = "1"
 js = { package = "rust-js-builtins", version = "~0.0.1" }
-react = { package = "rust-js-react", version = "~0.0.2" }
+react = { package = "rust-js-react", version = "~0.0.3" }
 webapi = { package = "rust-js-webapi", version = "~0.0.2" }

@@ -33,8 +33,8 @@ the tests were rerun for this assessment. Each change is checked before it's
 pushed, by the whole suite, the rustc suite and its mutations, in a Linux VM;
 CI confirms on x86 from time to time. The latest successful
 [Check run inspected](https://github.com/rust-js-lang/rust-js/actions/runs/36274665281)
-tested `48caf69`, an earlier commit. Release 0.0.2 was qualified on macOS
-arm64 from `ee083e1` before it was published (M6.1).
+tested `48caf69`, an earlier commit. Release 0.0.3 was qualified on macOS
+arm64 from `9793b19` before it was published (M6.1).
 
 | Foundation | Evidence already in the repository |
 | --- | --- |
@@ -56,7 +56,7 @@ arm64 from `ee083e1` before it was published (M6.1).
 | Correctness | Differential, diagnostic, and snapshot suites exist | Required CI, generated cases, and feature-interaction coverage (M2, M7) |
 | Full-stack code sharing | Cargo workspaces of shared crates build, with serde from crates.io; the pilot, an app installed from npm, shares its models with a native server | Registry crates compiled to JS (M8) |
 | JavaScript and React interop | Working bindings, JSX, and Vite integration; bindings are npm packages, the first community one in its own repository | External application and library compatibility suite (M3, M9) |
-| Distribution and upgrades | 0.0.2 on npm for macOS arm64; `bun create @rust-js@latest` makes an app that installs everything from npm | A real upgrade from one release to the next, and a clean machine (M4) |
+| Distribution and upgrades | 0.0.3 on npm for macOS arm64; `bun create @rust-js@latest` makes an app that installs everything from npm; the pilot upgraded from 0.0.2 to 0.0.3 and back by [the changelog](CHANGELOG.md)'s steps | A clean machine, and a release that switches without `cargo clean` (M4) |
 | Performance and tooling | Scaling benchmark and source maps exist; an app is a Cargo package a plain `cargo check` checks; JSX not expanded in editors | Measured application budgets and supported editor workflow (M5, M9) |
 | Production evidence | Two releases qualified on their host and published; other gates remain open | Qualified release, followed by sustained independent adoption (M6, M10) |
 
@@ -215,7 +215,7 @@ pilot. No delivery dates are assigned yet.
   Distribution tests cover Node.js, including native launching and
   React/Serde preparation, with Bun out of reach; the JS and tooling target
   Node ([ADR 0095](docs/decisions/0095-node-runtime.md)).
-  Released: 0.0.1 and 0.0.2 of the compiler's packages are on npm for macOS
+  Released: 0.0.1, 0.0.2 and 0.0.3 of the compiler's packages are on npm for macOS
   arm64, built on that host with `bun run build:release` and qualified there
   ([ADR 0120](docs/decisions/0120-first-npm-release.md)). The binding crates
   are npm packages, `@rust-js/builtins`, `@rust-js/webapi` and
@@ -250,9 +250,18 @@ pilot. No delivery dates are assigned yet.
   The starter's README documents create, dev and build. Versioning rules
   are written: every compiler package at the compiler's version (ADR 0120),
   and a binding at its library's major and minor
-  ([ADR 0116](docs/decisions/0116-binding-versions.md)). Deploy commands,
-  migration notes, and an upgrade from 0.0.2 to the next release, and back,
-  remain open.
+  ([ADR 0116](docs/decisions/0116-binding-versions.md)). Each release's notes,
+  migration and rollback steps among them, are [the changelog](CHANGELOG.md)'s,
+  from 0.0.3, and the pilot's README has its deploy commands. Upgraded and
+  rolled back on macOS arm64 with the published packages: the pilot, outside
+  this checkout, from 0.0.2 to 0.0.3 and back by the changelog's steps, built
+  each time from no JS by the compiler npm installed, served by its server,
+  and used in a browser. The rollback stopped at a crate the other compiler
+  built, as Cargo couldn't tell the compilers apart: the changelog says to
+  `cargo clean`, and the next release tells Cargo which rust-js it runs
+  ([ADR 0101](docs/decisions/0101-cargo-workspace-wrapper.md)). Remaining:
+  a release that switches without `cargo clean`, and the starter's test and
+  deploy commands.
 
 ### M5 — Establish operating limits
 
@@ -298,10 +307,12 @@ pilot. No delivery dates are assigned yet.
   package test on the packaged binary, all passing; its four packages rebuilt
   byte for byte from the same source on another machine. Other hosts wait on
   correctness and completeness (M7–M10) before a release is made for them.
-  Released: 0.0.1 and 0.0.2 for macOS arm64, each qualified on that host
-  before it was published. 0.0.2, from `ee083e1`, passed 820 tests through the
+  Released: 0.0.1, 0.0.2 and 0.0.3 for macOS arm64, each qualified on that host
+  before it was published. 0.0.3, from `9793b19`, passed 915 tests through the
   installed launcher, the package test on the packaged binary, and the Vite
-  app's test, and each published package matches the tarball tested.
+  app's test, and each published package's files are the tarball tested's.
+  Its first qualification failed on the pilot's tests, whose checkout hadn't
+  installed a dependency, which they now say.
   The support matrix, the WASM compiler and performance budgets remain open.
 - [ ] **M6.2 — Complete a pilot release and upgrade.** Deploy the pilot,
   observe it for an agreed period with agreed success criteria, fix blockers,
