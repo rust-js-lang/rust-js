@@ -1,6 +1,12 @@
 # 0156. An integer's bits rotated, its bytes, and a float's bits
 
-Status: Accepted. Extends [0086](0086-64-bit-integers.md),
+Status: Accepted. (Amended: `leading_ones`, `trailing_ones`, `swap_bytes`,
+`reverse_bits`, `to_be`, `from_be`, `to_le` and `from_le`, the last two
+itself on little-endian wasm32, `checked_div_euclid` and
+`checked_rem_euclid` of every integer, by its bits as an unsigned BigInt's
+digits, `$swapBytes(x, bits, signed)`; and a float's `recip()` and
+`to_le_bytes()` and the like, by its bits' bytes. num-traits' `PrimInt`
+and `Float` asked them.) Extends [0086](0086-64-bit-integers.md),
 [0122](0122-f32.md) and [0155](0155-integer-families.md).
 
 ## Context

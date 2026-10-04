@@ -26,4 +26,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "float_normal"],
   },
+  {
+    name: "to-be-unswapped",
+    breaks: "`x.to_be()` is `x`, as if wasm32 were big-endian",
+    file: "src/lower/recognition/methods.rs",
+    find: "        \"to_be\" | \"from_be\" if !float => NumOp::Endian { swap: true },",
+    replace: "        \"to_be\" | \"from_be\" if !float => NumOp::Endian { swap: false },",
+    tests: ["test/corpus.test.ts", "-t", "bit_methods"],
+  },
+  {
+    name: "float-bytes-order-dropped",
+    breaks: "a float's `to_le_bytes()` is big-endian",
+    file: "src/lower/recognition/methods.rs",
+    find: "        \"to_le_bytes\" | \"to_ne_bytes\" if float => NumOp::FloatToBytes { little: true },",
+    replace: "        \"to_le_bytes\" | \"to_ne_bytes\" if float => NumOp::FloatToBytes { little: false },",
+    tests: ["test/corpus.test.ts", "-t", "bit_methods"],
+  },
 ];

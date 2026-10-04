@@ -509,7 +509,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let ty = match (op, output.kind()) {
                 (NumOp::FromStrRadix, ty::Adt(_, result)) => result.type_at(0),
                 // `u32::from_be_bytes(b)`'s and `f64::from_bits(b)`'s is what it makes.
-                (NumOp::FromBytes { .. } | NumOp::FromBits, _) => output,
+                (NumOp::FromBytes { .. } | NumOp::FloatFromBytes { .. } | NumOp::FromBits, _) => output,
                 _ => self.thir[args[0]].ty.peel_refs(),
             };
             return self.number_call(op, args, ty, span, out);

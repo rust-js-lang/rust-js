@@ -86,8 +86,7 @@ table](../ROADMAP.md) lists the larger missing pieces.
   payload aren't kept, so `is_sign_negative` of one is `false`.
 
 Refused: an `i128` or a `u128` in JSON; `mul_add`; a float's `midpoint`; and some
-integer and float methods, among them `swap_bytes`, `reverse_bits` and
-`copysign`.
+integer and float methods, among them `copysign`.
 
 ## Text
 

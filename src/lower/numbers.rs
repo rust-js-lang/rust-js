@@ -42,6 +42,31 @@ pub(super) enum NumOp {
     },
     /// `classify()`: its `FpCategory`.
     Classify,
+    /// `leading_ones()`, or `trailing_ones()` (`trailing`).
+    EdgeOnes {
+        trailing: bool,
+    },
+    SwapBytes,
+    ReverseBits,
+    /// `to_le()` and `from_le()`, itself on wasm32, or `to_be()` and
+    /// `from_be()` (`swap`), its bytes swapped.
+    Endian {
+        swap: bool,
+    },
+    /// `checked_div_euclid`, or `checked_rem_euclid` (`rem`).
+    CheckedEuclid {
+        rem: bool,
+    },
+    /// A float's `recip()`.
+    Recip,
+    /// A float's `to_be_bytes()` or `to_le_bytes()` (`little`).
+    FloatToBytes {
+        little: bool,
+    },
+    /// `f64::from_be_bytes(b)` or `from_le_bytes` (`little`).
+    FloatFromBytes {
+        little: bool,
+    },
     Checked(BinOp),
     Saturating(BinOp),
     Wrapping(BinOp),
@@ -116,6 +141,72 @@ pub(super) enum NumOp {
 const F32_DEGREES_PER_RADIAN: f32 = 57.2957795130823208767981548141051703;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// An integer's bits and a float's bytes, the same for every width: of a
+    /// number or a BigInt, as num-traits' `PrimInt` and `Float` ask. `None`
+    /// if `op` is another.
+    fn bits_call(&mut self, op: NumOp, args: &[ExprId], num: Num, out: &mut Vec<Stmt>) -> R<Option<Expr>> {
+        let width = Expr::int(num.bits().into());
+        let signed = Expr::bool(num.signed());
+        let bytes = Expr::int((num.bits() / 8).into());
+        let call = |this: &mut Self, helper: Helper, name: &str, list: Vec<Expr>| {
+            this.runtime.insert(helper);
+            Expr::call(Expr::var(name), list)
+        };
+        let ops = matches!(
+            op,
+            NumOp::EdgeOnes { .. }
+                | NumOp::SwapBytes
+                | NumOp::ReverseBits
+                | NumOp::Endian { .. }
+                | NumOp::CheckedEuclid { .. }
+                | NumOp::Recip
+                | NumOp::FloatToBytes { .. }
+                | NumOp::FloatFromBytes { .. }
+        );
+        if !ops {
+            return Ok(None);
+        }
+        let mut values = self.operands(args, out)?.into_iter();
+        let mut arg = || values.next().expect("rustc checked the arguments");
+        Ok(Some(match op {
+            NumOp::EdgeOnes { trailing } => {
+                let mut list = vec![arg(), width];
+                if trailing {
+                    list.push(Expr::bool(true));
+                }
+                call(self, Helper::IntBits, "$edgeOnes", list)
+            }
+            NumOp::SwapBytes | NumOp::Endian { swap: true } => {
+                call(self, Helper::IntBits, "$swapBytes", vec![arg(), width, signed])
+            }
+            NumOp::Endian { swap: false } => arg(),
+            NumOp::ReverseBits => call(self, Helper::IntBits, "$reverseBits", vec![arg(), width, signed]),
+            NumOp::CheckedEuclid { rem } => {
+                let min = match num.signed() {
+                    true => num.literal(num.range().0),
+                    false => Expr::undefined(),
+                };
+                call(
+                    self,
+                    Helper::IntBits,
+                    "$checkedEuclid",
+                    vec![arg(), arg(), min, Expr::bool(rem)],
+                )
+            }
+            NumOp::Recip => num.wrap(Expr::bin(Op::Div, Expr::num(1.0), arg())),
+            NumOp::FloatToBytes { little } => {
+                let bits = call(self, Helper::FloatToBits, "$floatToBits", vec![arg(), bytes.clone()]);
+                call(self, Helper::ToBytes, "$toBytes", vec![bits, bytes, Expr::bool(little)])
+            }
+            NumOp::FloatFromBytes { little } => {
+                let list = vec![arg(), bytes.clone(), Expr::bool(little), Expr::bool(false)];
+                let bits = call(self, Helper::FromBytes, "$fromBytes", list);
+                call(self, Helper::FloatFromBits, "$floatFromBits", vec![bits, bytes])
+            }
+            _ => unreachable!("one of the ops above"),
+        }))
+    }
+
     pub(super) fn number_call(
         &mut self,
         op: NumOp,
@@ -125,6 +216,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let num = Num::of(ty).expect("a number's method");
+        if let Some(value) = self.bits_call(op, args, num, out)? {
+            return Ok(value);
+        }
         if num.big() {
             return self.big_number_call(op, args, ty, num, span, out);
         }
@@ -345,6 +439,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 helper(self, Helper::FloatFromBits, "$floatFromBits", list)
             }
             NumOp::ToIntUnchecked => unreachable!("a cast, in `std_call`"),
+            NumOp::EdgeOnes { .. }
+            | NumOp::SwapBytes
+            | NumOp::ReverseBits
+            | NumOp::Endian { .. }
+            | NumOp::CheckedEuclid { .. }
+            | NumOp::Recip
+            | NumOp::FloatToBytes { .. }
+            | NumOp::FloatFromBytes { .. } => unreachable!("`bits_call`'s"),
             NumOp::SaturatingPow => {
                 self.runtime.insert(Helper::CheckedPow);
                 let list = vec![arg(), arg(), Expr::int(lo), Expr::int(hi)];
