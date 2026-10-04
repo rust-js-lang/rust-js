@@ -92,22 +92,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "struct_update_drops"],
   },
   {
-    name: "trait-params-refused",
-    breaks: "a trait's own type parameter given a value with a destructor is refused, though its impl's dictionary is given the drop",
-    file: "src/lower/drops/facts.rs",
-    find: "            && args[self.cx.tcx.generics_of(trait_id).count()..]",
-    replace: "            && args[1..]",
-    tests: ["test/corpus.test.ts", "-t", "trait_param_drops"],
-  },
-  {
-    name: "method-params-not-refused",
-    breaks: "a library's generic trait method given a value with a destructor is given no drop, and never drops it",
-    file: "src/lower/drops/facts.rs",
-    find: "            self.problem(expr.span, \"a generic trait method given a value with a destructor\");",
-    replace: "            let _ = expr;",
-    tests: ["test/crates.test.ts", "-t", "generic trait method given"],
-  },
-  {
     name: "closure-body-owns-nothing",
     breaks: "a closure called once doesn't own what it took: what it moves is dropped again as its call ends",
     file: "src/lower/drops/facts.rs",

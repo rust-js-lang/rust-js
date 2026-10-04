@@ -43,4 +43,12 @@ export const mutations: Mutation[] = [
     replace: "    if !crate::lower::traits::may_have_destructors(tcx, foreign) {",
     tests: ["test/crates.test.ts", "-t", "impl_drops"],
   },
+  {
+    name: "trait-method-own-drops-not-taken",
+    breaks: "an impl's generic method takes no drop for its own type parameters, so what it's given is never dropped",
+    file: "src/lower/analysis/drops.rs",
+    find: "        for index in crate::lower::traits::own_drop_params(tcx, id) {\n            given.insert((id, index));\n",
+    replace: "        for index in crate::lower::traits::own_drop_params(tcx, id) {\n            let _ = (id, index);\n",
+    tests: ["test/corpus.test.ts", "-t", "generic_method_drops"],
+  },
 ];

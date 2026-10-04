@@ -61,6 +61,14 @@ pub(super) fn drop_params<'tcx>(
             }
         }
     }
+    // A trait's generic method, and each impl's of it, is given a drop for
+    // each of its own type parameters the trait declares that isn't `Copy`:
+    // a caller through a dictionary knows only the trait (ADR 0163).
+    for &id in fns.keys() {
+        for index in crate::lower::traits::own_drop_params(tcx, id) {
+            given.insert((id, index));
+        }
+    }
     // A trait's default body is copied into each impl that keeps it (ADR 0049),
     // and dropped there as the impl's type drops: what it gives a generic
     // function of the crate's, as `discard(self)`, that function must be able

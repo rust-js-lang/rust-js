@@ -187,14 +187,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","generic_trait_methods"],
   },
   {
-    name: "generic-methods-with-destructors",
-    breaks: "a generic trait method is accepted where a type has a destructor, which a call through a dictionary would never drop",
-    file: "src/lower/traits.rs",
-    find: "            && may_have_destructors(tcx, foreign)\n",
-    replace: "            && false\n",
-    tests: ["test/diagnostics.test.ts","-t","generic trait method"],
-  },
-  {
     name: "trait-const-shared",
     breaks: "`T::ZERO` of a type changed in place is one value for every use, so a `bump` of one changes the next",
     file: "src/lower/traits.rs",
@@ -517,5 +509,21 @@ export const mutations: Mutation[] = [
     find: "                (true, true) => trait_word_with_refs(tcx, declared, true),",
     replace: "                (true, true) => trait_word(tcx, declared),",
     tests: ["test/corpus.test.ts", "-t", "supertraits_by_reference"],
+  },
+  {
+    name: "dictionary-call-own-drops-missing",
+    breaks: "a generic method called through a dictionary is given no drop for its own type parameters",
+    file: "src/lower/traits.rs",
+    find: "        for index in own_drop_params(self.tcx, id) {",
+    replace: "        for index in own_drop_params(self.tcx, id).into_iter().filter(|_| false) {",
+    tests: ["test/corpus.test.ts", "-t", "generic_method_drops"],
+  },
+  {
+    name: "dictionary-entry-own-drops-unlent",
+    breaks: "a dictionary's entry for a generic method takes its caller's drops but doesn't pass them on",
+    file: "src/lower/traits.rs",
+    find: "                replaced.push((index, self.lend_drop_param(index, name.clone())));",
+    replace: "                replaced.push((index, None));",
+    tests: ["test/corpus.test.ts", "-t", "generic_method_drops"],
   },
 ];

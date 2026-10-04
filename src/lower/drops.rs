@@ -1005,6 +1005,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.drop_state.param_drops.insert(index, name);
     }
 
+    /// A drop given for a while, a dictionary entry's for its method's own
+    /// type parameter (ADR 0163): what was given before, to put back.
+    pub(super) fn lend_drop_param(&mut self, index: u32, name: String) -> Option<String> {
+        self.drop_state.param_drops.insert(index, name)
+    }
+
+    /// Put back what `lend_drop_param` replaced.
+    pub(super) fn return_drop_param(&mut self, index: u32, before: Option<String>) {
+        match before {
+            Some(name) => self.drop_state.param_drops.insert(index, name),
+            None => self.drop_state.param_drops.remove(&index),
+        };
+    }
+
     /// A copied default body's drops, in place of this function's, for its
     /// trait's type parameters, `Self` among them (ADR 0049): each is what the
     /// impl's argument for it drops, with the impl's own drops. What was

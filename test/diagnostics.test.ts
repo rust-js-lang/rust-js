@@ -82,7 +82,6 @@ for (const [name, source, message, crate] of [
   ["a generic impl's constant of its parameters", "pub trait Size { const SIZE: usize; }\npub struct W<T>(pub T);\nimpl<T> Size for W<T> { const SIZE: usize = std::mem::size_of::<T>(); }\nfn size<S: Size>() -> usize { S::SIZE }\npub fn f() -> usize { size::<W<u8>>() }", "a generic impl's constant of its parameters"],
   ["a generic const expression", "#![feature(generic_const_exprs)]\n#![allow(incomplete_features)]\nfn count<const N: usize>() -> usize { N }\nfn one_more<const N: usize>() -> usize where [(); N + 1]: { count::<{ N + 1 }>() }\npub fn f() -> usize { one_more::<2>() }", "this const argument"],
   ["an externally implementable item", "#![feature(extern_item_impls)]\n#[eii(hello)]\nstatic HELLO: u64;\n#[hello]\nstatic HELLO_IMPL: u64 = 5;\npub fn f() -> u64 { HELLO }", "externally implementable items"],
-  ["a generic trait method, where a type has a destructor", "pub struct Guard;\nimpl Drop for Guard { fn drop(&mut self) {} }\npub trait Keep { fn keep<T>(&self, t: T) -> usize; }", "generic trait methods, where a type may have a destructor"],
   // A generic iterator lent as `&mut` is the lender's, which must know where it is (ADR 0071): a field's doesn't.
   // A trait's method is called through a dictionary, whose `&mut self` is a handle (ADR 0099).
   ["a &mut to a generic iterator in a trait's method", 'pub trait Step { fn step(&mut self) -> Option<u32>; }\nimpl<I: Iterator<Item = u32>> Step for I { fn step(&mut self) -> Option<u32> { self.next() } }', "of a trait's method"],

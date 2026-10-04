@@ -201,7 +201,9 @@ function main() {
   method's own type parameters aren't given one: those are an error where
   a type may have a destructor, of the crate's own trait where it's
   declared, and of a library's where it's called. (Amended: all of a
-  trait method's type parameters but `Self` were an error.)
+  trait method's type parameters but `Self` were an error. Amended again:
+  a generic method's own are given drops, as its trait declares them, ADR
+  0163.)
 - **A crate with no destructor, and no library's, gives no drops**: no
   value in it has one to run, so its generic impls take no `dropT`, and
   a dictionary that takes nothing else is one object. A library still

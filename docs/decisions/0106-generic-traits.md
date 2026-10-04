@@ -92,7 +92,8 @@ an impl's signature, it's that type.
 - **A default copied into an impl takes it too**, after its arguments.
 - **Where a type may have a destructor, it's an error:** called through a
   dictionary, it's given no drop function for its own type parameters, as
-  an associated type isn't.
+  an associated type isn't. (Amended: it's given them, as its trait
+  declares them, ADR 0163.)
 
 **A trait's constant is its value where the type is known, and its
 dictionary's in generic code:**

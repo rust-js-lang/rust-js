@@ -54,25 +54,6 @@ pub(super) fn validate(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_, '_
         {
             continue;
         }
-        let params = &tcx.generics_of(id).own_params;
-        let reason = if kind == DefKind::AssocFn
-            && tcx.inherent_impl_of_assoc(id.to_def_id()).is_none()
-            && params
-                .iter()
-                .any(|p| !matches!(p.kind, ty::GenericParamDefKind::Lifetime))
-            && may_have_destructors(tcx, foreign)
-        {
-            // Called through a dictionary, it's given no drop function for its
-            // own type parameters (ADR 0106).
-            Some("generic trait methods, where a type may have a destructor")
-        } else {
-            None
-        };
-        if let Some(reason) = reason {
-            tcx.dcx()
-                .span_err(tcx.def_span(id), format!("rust-js does not support {reason} yet"));
-            valid = false;
-        }
         if kind == DefKind::Trait {
             let mut names = std::collections::HashSet::new();
             let identity = ty::GenericArgs::identity_for_item(tcx, id);
@@ -155,6 +136,33 @@ pub(super) fn bounds<'tcx>(
 /// Might any value have a destructor: has the crate a `Drop` impl of its own,
 /// or a library, whose types might? Where it hasn't, what a caller gives
 /// generic code without a drop function has nothing to drop (ADR 0106).
+/// A generic trait method's own type parameters its caller gives a drop for
+/// (ADR 0163): each one the trait declares that isn't `Copy`. Decided by the
+/// trait's declaration, which a caller through a dictionary knows, so it and
+/// each impl agree; of an impl's method, its own type parameters at those
+/// places, as their indices are its.
+pub(super) fn own_drop_params(tcx: TyCtxt<'_>, method: DefId) -> Vec<u32> {
+    let declared = tcx.trait_item_of(method).unwrap_or(method);
+    if tcx.trait_of_assoc(declared).is_none() {
+        return Vec::new();
+    }
+    let types = |id: DefId| -> Vec<&ty::GenericParamDef> {
+        tcx.generics_of(id)
+            .own_params
+            .iter()
+            .filter(|p| matches!(p.kind, ty::GenericParamDefKind::Type { .. }))
+            .collect()
+    };
+    let typing_env = ty::TypingEnv::non_body_analysis(tcx, declared);
+    let own = types(method);
+    types(declared)
+        .into_iter()
+        .enumerate()
+        .filter(|(_, p)| !tcx.type_is_copy_modulo_regions(typing_env, Ty::new_param(tcx, p.index, p.name)))
+        .filter_map(|(at, _)| own.get(at).map(|p| p.index))
+        .collect()
+}
+
 pub(super) fn may_have_destructors(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_, '_>) -> bool {
     let drop_trait = tcx.lang_items().drop_trait();
     drop_trait.is_some_and(|id| tcx.all_local_trait_impls(()).contains_key(&id)) || foreign.any()
@@ -1160,6 +1168,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 )?,
             );
         }
+        // Then a drop for each of its own type parameters the trait declares
+        // one for, of the type given for it: none, left out at the end, for
+        // one with nothing to drop (ADR 0163).
+        let mut drops = Vec::new();
+        for index in own_drop_params(self.tcx, id) {
+            drops.push(self.drop_function(generic_args.type_at(index as usize), span)?);
+        }
+        while matches!(drops.last(), Some(None)) {
+            drops.pop();
+        }
+        values.extend(drops.into_iter().map(|drop| drop.unwrap_or_else(Expr::undefined)));
         Ok(values)
     }
 
@@ -1578,16 +1597,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     *value = Expr::member(std::mem::replace(value, Expr::undefined()), "value");
                 }
             }
+            // The drops its caller gives for its own type parameters, which it
+            // passes on as the method's, where the method takes them (ADR 0163).
+            let own_drops: Vec<u32> = match self.krate.drop_params.get(&method) {
+                Some(taken) if own_drop_params(self.tcx, method).iter().any(|i| taken.contains(i)) => {
+                    own_drop_params(self.tcx, item.def_id)
+                }
+                _ => Vec::new(),
+            };
+            let mut drop_names = Vec::new();
+            let mut replaced = Vec::new();
+            for &index in &own_drops {
+                let param = self.tcx.generics_of(item.def_id).param_at(index as usize, self.tcx);
+                let name = self.fresh(&format!("drop{}", param.name));
+                replaced.push((index, self.lend_drop_param(index, name.clone())));
+                drop_names.push(name);
+            }
             // Everything the method takes that its caller through the dictionary
             // doesn't give: its dictionaries, then its drops (ADR 0098), which
-            // are this impl's own.
+            // are this impl's own, and its own type parameters' it's given.
             let evidence = match declared.is_empty() {
                 true => self.evidence_args(method, instance.args, span),
                 false => self.method_evidence(method, instance.args, &declared, &names, span),
             };
             self.given.const_params.truncate(mark);
+            for (index, before) in replaced {
+                self.return_drop_param(index, before);
+            }
             let evidence = evidence?;
             params.extend(names);
+            params.extend(drop_names);
             values.extend(evidence);
             // One that passes on just what it's given, in order, is the method.
             let passed = values.len() == params.len()

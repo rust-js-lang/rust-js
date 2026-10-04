@@ -151,20 +151,22 @@ for (const name of readdirSync(pairs).sort()) {
   }, 300_000);
 }
 
-// A generic trait method is given no drop for its own type parameters (ADR
-// 0098), and a library with no destructor may have one: a consumer that
-// gives it a value with a destructor is refused, rather than never dropping it.
-test("a library's generic trait method given a value with a destructor is refused", () => {
+// A library's generic trait method is given a drop for its own type
+// parameters, as its trait declares them (ADR 0163): a consumer's value with
+// a destructor is dropped where Rust drops it, at the end of `put`, called on
+// the impl or through a dictionary. A library with no destructor of its own
+// still takes the drop: its consumers may have one.
+test("a library's generic trait method drops a consumer's value where Rust does", () => {
   const dir = fixture("generic-method-drop");
   const lib = join(dir, "dep");
   mkdirSync(lib, { recursive: true });
   writeFileSync(join(dir, "dep.rs"), "pub trait Put {\n    fn put<B>(&self, b: B) -> u32;\n}\npub struct Sink;\nimpl Put for Sink {\n    fn put<B>(&self, _b: B) -> u32 {\n        1\n    }\n}\n");
-  writeFileSync(join(dir, "app.rs"), "use dep::Put;\nstruct Loud;\nimpl Drop for Loud {\n    fn drop(&mut self) {}\n}\npub fn main() -> u32 {\n    dep::Sink.put(Loud)\n}\n");
+  writeFileSync(join(dir, "app.rs"), "use dep::Put;\nstruct Loud;\nimpl Drop for Loud {\n    fn drop(&mut self) {\n        println!(\"dropped\");\n    }\n}\nfn via<P: Put>(p: &P) -> u32 {\n    p.put(Loud)\n}\npub fn main() {\n    println!(\"{}\", dep::Sink.put(Loud));\n    println!(\"{}\", via(&dep::Sink));\n    println!(\"after\");\n}\n");
   run([compiler, join(dir, "dep.rs"), "-o", join(lib, "lib.js"), "--library", "--manifest", join(lib, "lib.manifest.json"),
     "--", "--crate-name", "dep", `--emit=metadata=${join(lib, "libdep.rmeta")}`]);
-  expect(() => run([compiler, join(dir, "app.rs"), "-o", join(dir, "app.js"), "--dependency", join(lib, "lib.manifest.json"),
-    "--", "--crate-name", "app", "--crate-type=lib", "--extern", `dep=${join(lib, "libdep.rmeta")}`]))
-    .toThrow("a generic trait method given a value with a destructor");
+  run([compiler, join(dir, "app.rs"), "-o", join(dir, "app.js"), "--dependency", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "app", "--crate-type=lib", "--extern", `dep=${join(lib, "libdep.rmeta")}`]);
+  expect(printed(join(dir, "app.js"))).toBe("dropped\n1\ndropped\n1\nafter\n");
 }, 300_000);
 
 // A library's JS and its metadata are one build's (ADR 0100): rustc writes

@@ -120,7 +120,6 @@ destructuring-assignment/drop-order.rs	error: rust-js does not support a `let` o
 drop/drop-noncopyable-raw-pointer.rs	error: rust-js does not support values of type `*const u8` yet
 drop/drop-on-untaken-arm-raw-ptr.rs	error: rust-js does not support values of type `*mut std::boxed::Box<(dyn std::ops::Fn() + 'static)>` yet
 drop/drop-order-comparisons-let-chains.rs	error: rust-js does not support a temporary with a destructor here yet
-drop/drop-with-trait-bound-calls-method-on-self.rs	error: rust-js does not support generic trait methods, where a type may have a destructor yet
 drop/dropck_legal_cycles.rs	error: rust-js does not support user implementations of `std::hash::Hash` yet
 drop/if-let-guards-2.rs	error: rust-js does not support a temporary with a destructor here yet
 drop/issue-23338-ensure-param-drop-order.rs	error: rust-js does not support a temporary with a destructor in a branch yet

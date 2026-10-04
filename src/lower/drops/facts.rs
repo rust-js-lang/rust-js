@@ -644,21 +644,6 @@ impl<'c, 'a, 'tcx> Visitor<'a, 'tcx> for Finder<'c, 'a, 'tcx> {
                 self.visit_expr(&self.thir[upvar]);
             }
         }
-        // A generic trait method's own type parameter, given a value with a
-        // destructor, would need to be given its drop, as a generic function
-        // is. The trait's, and its `Self`, are the impl's, whose dictionary
-        // is given their drops where it's made (ADR 0098).
-        if let ty::FnDef(def_id, args) = *expr.ty.kind()
-            && matches!(expr.kind, ExprKind::ZstLiteral { .. })
-            && let Some(trait_id) = self.cx.tcx.trait_of_assoc(def_id)
-            && self.cx.is_rust_trait(trait_id)
-            && args[self.cx.tcx.generics_of(trait_id).count()..]
-                .iter()
-                .filter_map(|arg| arg.as_type())
-                .any(|t| self.cx.drops(t) != Drops::Nothing)
-        {
-            self.problem(expr.span, "a generic trait method given a value with a destructor");
-        }
         visit::walk_expr(self, expr);
         self.stack.pop();
     }
