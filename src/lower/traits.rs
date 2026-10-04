@@ -795,6 +795,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(Expr::object(vec![Prop::Field("as_ref".into(), same)]));
             }
         }
+        // std's `Borrow` where it's the same JS value: a value as itself, text
+        // as a `str`, a `Vec` as a slice (ADR 0167).
+        if is_std_def(self.tcx, tr.def_id, StdItem::Borrow)
+            && !self.has_user_impl(tr.def_id, ty)
+            && self.recognition().borrows_as_itself(ty, tr.args.type_at(1))
+        {
+            let same = Expr::arrow(
+                vec!["value".into()],
+                vec![StmtKind::Return(Some(Expr::var("value"))).at(js::Span::NONE)],
+            );
+            return Ok(Expr::object(vec![Prop::Field("borrow".into(), same)]));
+        }
         // std's `FromStr` of a number, a `bool`, a `char` or a `String`: what
         // `s.parse()` of it is (ADR 0161).
         let parsed_by_std = super::representation::Num::of(ty).is_some()
@@ -1126,6 +1138,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if (super::recognition::value_operator(self.tcx, trait_id).is_some()
             || is_std_def(self.tcx, trait_id, StdItem::Into))
             && !tr.args.has_non_region_param()
+        {
+            return Ok(None);
+        }
+        // `s.borrow()` of std's where it's the same JS value: the value itself,
+        // written in place, as the types are known (ADR 0167).
+        if is_std_def(self.tcx, trait_id, StdItem::Borrow)
+            && self.recognition().borrows_as_itself(tr.self_ty(), tr.args.type_at(1))
         {
             return Ok(None);
         }
@@ -1512,8 +1531,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ty::GenericParamDefKind::Lifetime => self.tcx.lifetimes.re_erased.into(),
                 _ => self.tcx.mk_param_from_def(param),
             });
+            // rustc won't resolve one of a blanket impl over a `?Sized` type,
+            // `impl<Q: ?Sized> Equivalent<K> for Q`, as a `dyn` might be that
+            // type too: in the impl's own dictionary it's the impl's item.
+            let own = || {
+                let method = *self.tcx.impl_item_implementor_ids(id).get(&item.def_id)?;
+                let args = ty::GenericArgs::for_item(self.tcx, method, |param, _| match param.kind {
+                    ty::GenericParamDefKind::Lifetime => self.tcx.lifetimes.re_erased.into(),
+                    _ => self.tcx.mk_param_from_def(param),
+                });
+                Some(ty::Instance::new_raw(method, args))
+            };
             let instance = self
                 .resolve_instance(item.def_id, args)?
+                .or_else(own)
                 .ok_or_else(|| self.unsupported(span, "this trait implementation"))?;
             let method = instance.def_id();
             // std's own `source`: `None`.

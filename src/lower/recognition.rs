@@ -550,6 +550,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let tcx = self.tcx;
         let self_ty = args.types().next();
         let ty = self_ty?;
+        // `x.borrow()` of std's `Borrow`: the value itself, as its dictionary's
+        // is (ADR 0167). A type parameter's is its dictionary's.
+        if is_std_def(tcx, trait_, StdItem::Borrow)
+            && tcx.item_name(def_id).as_str() == "borrow"
+            && self.borrows_as_itself(ty, args.type_at(1))
+        {
+            return Some(Std::Same);
+        }
         if Num::of(ty.peel_refs()).is_some() || ty.peel_refs().is_bool() {
             let operators = [(LangItem::Neg, UnOp::Neg), (LangItem::Not, UnOp::Not)];
             if let Some(&(_, op)) = operators.iter().find(|(item, _)| tcx.is_lang_item(trait_, *item)) {
@@ -1840,6 +1848,61 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.is_std_adt(ty, sym::Rc) || self.is_std_adt(ty, sym::Arc)
     }
 
+    /// Is std's `Borrow<to>` of a `from` the same JS value (ADR 0167): a
+    /// value as itself, through a reference, a `Box` or an `Rc` (ADR 0023),
+    /// text as a `str`, and a `Vec` or an array as a slice.
+    pub(super) fn borrows_as_itself(&self, from: Ty<'tcx>, to: Ty<'tcx>) -> bool {
+        let pointee = |mut ty: Ty<'tcx>| loop {
+            ty = match ty.kind() {
+                ty::Ref(_, inner, _) => *inner,
+                ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) => args.type_at(0),
+                _ => break ty,
+            };
+        };
+        let (from, to) = (pointee(from), pointee(to));
+        from == to
+            || (self.is_string_like(from) && to.is_str())
+            || ((from.is_array() || self.is_std_adt(from, sym::Vec)) && to.is_slice())
+    }
+
+    /// A type whose `Borrow` is the crate's that a std function takes as
+    /// what it borrows as (ADR 0167): a map's `get(q)` of its keys, its
+    /// `K: Borrow<Q>`, or `[S]::join` of its items, through `[S]: Join`'s
+    /// impl's `S: Borrow<str>`. std's JS compares and joins the value itself.
+    pub(super) fn borrowed_by_user(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<Ty<'tcx>> {
+        let borrow = std_item(self.tcx, StdItem::Borrow);
+        // `borrow()` itself is the impl's.
+        if self.tcx.trait_of_assoc(def_id) == Some(borrow) {
+            return None;
+        }
+        let bounds = |id: DefId, args: ty::GenericArgsRef<'tcx>| {
+            let predicates = self.tcx.predicates_of(id).instantiate(self.tcx, args).predicates;
+            predicates
+                .into_iter()
+                .filter_map(|clause| clause.skip_normalization().as_trait_clause())
+                .map(|clause| {
+                    self.tcx
+                        .erase_and_anonymize_regions(self.tcx.instantiate_bound_regions_with_erased(clause).trait_ref)
+                })
+                .collect::<Vec<_>>()
+        };
+        let users = |tr: ty::TraitRef<'tcx>| (tr.def_id == borrow && self.is_user_impl(tr)).then(|| tr.self_ty());
+        bounds(def_id, args).into_iter().find_map(|tr| {
+            users(tr).or_else(|| {
+                // Of std's impl, whose JS is std's: the crate's is given its
+                // `Borrow`'s dictionary.
+                match self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr)) {
+                    Ok(ImplSource::UserDefined(imp))
+                        if !self.trait_impls.contains(&imp.impl_def_id) && !self.foreign.has_impl(imp.impl_def_id) =>
+                    {
+                        bounds(imp.impl_def_id, imp.args).into_iter().find_map(users)
+                    }
+                    _ => None,
+                }
+            })
+        })
+    }
+
     /// A guard of a `RefCell` or a lock: what it guards (ADR 0025).
     pub(super) fn is_guard(&self, ty: Ty<'tcx>) -> bool {
         [
@@ -2049,6 +2112,9 @@ pub(super) fn operational(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_,
         || is_from_str(tcx, id)
         // `s.as_ref()` of an `S: AsRef<str>`: its dictionary's `as_ref` (ADR 0162).
         || is_std_def(tcx, id, StdItem::AsRef)
+        // `key.borrow()` of a `K: Borrow<Q>`, as a map's lookup is: its
+        // dictionary's `borrow` (ADR 0167).
+        || is_std_def(tcx, id, StdItem::Borrow)
         // `a + b` of a `T: Add`, and `x.into()` of a `T: Into<U>` (ADR 0108).
         || value_operator(tcx, id).is_some()
         || tcx.is_diagnostic_item(sym::Into, id)
@@ -2459,6 +2525,7 @@ pub(crate) enum StdItem {
     Any,
     AsRef,
     Atomic,
+    Borrow,
     BTreeMap,
     BTreeSet,
     BinaryHeap,
@@ -2494,6 +2561,7 @@ impl StdItem {
             StdItem::Any => Symbol::intern("Any"),
             StdItem::AsRef => sym::AsRef,
             StdItem::Atomic => Symbol::intern("Atomic"),
+            StdItem::Borrow => Symbol::intern("Borrow"),
             StdItem::BTreeMap => Symbol::intern("BTreeMap"),
             StdItem::BTreeSet => Symbol::intern("BTreeSet"),
             StdItem::BinaryHeap => Symbol::intern("BinaryHeap"),

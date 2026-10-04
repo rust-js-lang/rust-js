@@ -256,6 +256,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0164 An iterator of the crate's from both ends, and of a known length](decisions/0164-double-ended-iterators.md)
 - [0165 `{:x}`, `{:e}` and `{:p}` of the crate's types call its own impls](decisions/0165-other-fmt-traits.md)
 - [0166 A writer of the crate's is given its text a `write!` at a time](decisions/0166-user-fmt-write.md)
+- [0167 `Borrow`: a dictionary, the value itself for std's](decisions/0167-borrow.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

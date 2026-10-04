@@ -526,4 +526,21 @@ export const mutations: Mutation[] = [
     replace: "                replaced.push((index, None));",
     tests: ["test/corpus.test.ts", "-t", "generic_method_drops"],
   },
+  {
+    name: "blanket-unsized-impl-unresolved",
+    breaks: "a blanket impl over a `?Sized` type, `impl<Q: ?Sized> Equivalent<K> for Q`, is an error",
+    file: "src/lower/traits.rs",
+    find: "                .or_else(own)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "generic_borrow"],
+  },
+  {
+    name: "std-borrow-through-dictionary",
+    breaks: "`s.borrow()` of std's, where the types are known, is a dictionary's call, not the value",
+    file: "src/lower/traits.rs",
+    find: "        if is_std_def(self.tcx, trait_id, StdItem::Borrow)\n            && self.recognition().borrows_as_itself(tr.self_ty(), tr.args.type_at(1))\n        {\n            return Ok(None);",
+    replace: "        if is_std_def(self.tcx, trait_id, StdItem::Borrow)\n            && self.recognition().borrows_as_itself(tr.self_ty(), tr.args.type_at(1))\n            && false\n        {\n            return Ok(None);",
+    tests: ["test/corpus.test.ts", "-t", "generic_borrow"],
+    snapshots: true,
+  },
 ];

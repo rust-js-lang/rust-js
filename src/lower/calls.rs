@@ -69,6 +69,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let what = format!("a `{collection}`, whose `IntoIterator` is the crate's, where any `IntoIterator` goes");
             return Err(self.unsupported(span, &what));
         }
+        // std's, which would take the value itself for what it borrows as.
+        if !self.is_rust_fn(def_id)
+            && let Some(ty) = self.recognition().borrowed_by_user(def_id, generic_args)
+        {
+            let path = self.tcx.def_path_str(def_id);
+            return Err(self.unsupported(span, &format!("`{path}` of a `{ty}` as what its own `Borrow` gives")));
+        }
         let call = Call {
             fun,
             def_id,
