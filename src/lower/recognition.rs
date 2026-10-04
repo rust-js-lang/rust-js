@@ -120,6 +120,9 @@ pub(super) enum Std {
     Len,
     /// `it.len()` of an `ExactSizeIterator`: how many items it has left.
     IterLen,
+    /// `len()` of an iterator of the crate's whose `ExactSizeIterator` keeps
+    /// std's `len`: its `size_hint()`, checked (ADR 0164).
+    ExactLen,
     Clear,
     Retain,
     /// `panic!("..")`, `assert!(..)`: `throw new Error(..)`.
@@ -688,6 +691,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             });
         }
         // An iterator's `len()` is its `count()`, without taking its items.
+        if tcx.def_path_str(trait_) == "std::iter::ExactSizeIterator"
+            && tcx.item_name(def_id).as_str() == "len"
+            && self.is_user_iterator(ty)
+        {
+            return Some(Std::ExactLen);
+        }
         if tcx.def_path_str(trait_) == "std::iter::ExactSizeIterator"
             && tcx.item_name(def_id).as_str() == "len"
             && self.range_kind(ty.peel_refs()).is_none()
@@ -1318,6 +1327,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         is_dyn_iter(self.tcx, ty)
     }
 
+    /// core's `DoubleEndedIterator`, found among the traits, as it has no
+    /// diagnostic item.
+    pub(super) fn double_ended_iterator(&self) -> Option<DefId> {
+        self.tcx
+            .all_traits_including_private()
+            .find(|&id| is_iterator_extension(self.tcx, id) && self.tcx.item_name(id).as_str() == "DoubleEndedIterator")
+    }
+
     pub(super) fn is_user_iterator(&self, ty: ty::Ty<'tcx>) -> bool {
         let iterator = self.tcx.get_diagnostic_item(sym::Iterator).expect("std has `Iterator`");
         matches!(ty.peel_refs().kind(), ty::Adt(..)) && self.has_user_impl(iterator, ty.peel_refs())
@@ -1873,6 +1890,18 @@ pub(crate) fn is_sum_or_product(tcx: TyCtxt<'_>, id: DefId) -> bool {
         && [Symbol::intern("Sum"), Symbol::intern("Product")].contains(&tcx.item_name(id))
 }
 
+/// Is `id` core's `DoubleEndedIterator` or `ExactSizeIterator`, which have
+/// no diagnostic items?
+pub(crate) fn is_iterator_extension(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    tcx.crate_name(id.krate) == sym::core
+        && tcx.def_kind(id) == DefKind::Trait
+        && [
+            Symbol::intern("DoubleEndedIterator"),
+            Symbol::intern("ExactSizeIterator"),
+        ]
+        .contains(&tcx.item_name(id))
+}
+
 pub(super) fn is_extend(tcx: rustc_middle::ty::TyCtxt<'_>, trait_id: rustc_span::def_id::DefId) -> bool {
     tcx.crate_name(trait_id.krate) == rustc_span::sym::core && tcx.item_name(trait_id) == Symbol::intern("Extend")
 }
@@ -1993,6 +2022,9 @@ pub(super) fn implementable(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'
         || tcx.is_diagnostic_item(sym::FromIterator, id)
         || is_extend(tcx, id)
         || is_sum_or_product(tcx, id)
+        // An iterator of the crate's from both ends, and of a known length:
+        // what `rev()`, `next_back()` and `len()` call (ADR 0164).
+        || is_iterator_extension(tcx, id)
         || tcx.is_diagnostic_item(sym::Eq, id)
         || tcx.is_diagnostic_item(sym::Iterator, id)
         || is_operator(tcx, id)

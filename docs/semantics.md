@@ -241,7 +241,9 @@ Refused: `Rc::ptr_eq`, `strong_count`, `get_mut`, `make_mut` and
   its `IntoIterator`, `collect()` its `FromIterator`, `extend` its
   `Extend`, `sum()` its `Sum` ([0160](decisions/0160-user-collections.md)).
   Given where any `IntoIterator` goes, to `v.extend(cart)` or generic code,
-  it's refused: that code wouldn't call its `into_iter`.
+  it's refused: that code wouldn't call its `into_iter`. An iterator of the
+  crate's runs from both ends by its own `next_back`, `rev()` included, and
+  its `len()` is its `size_hint()`, checked ([0164](decisions/0164-double-ended-iterators.md)).
 - **A function passed where a closure goes is the arrow that calls it,**
   `.map(str::len)` being `.map((s) => $byteLen(s))` and `fold(0, i32::max)`
   being `reduce((a, b) => Math.max(a, b), 0)`; a constructor's makes what

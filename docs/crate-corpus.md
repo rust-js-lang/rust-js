@@ -6,40 +6,43 @@ of its own, every library of its graph by rust-js as Cargo's
 `RUSTC_WRAPPER`, for its target, and records what each refused first, or
 what Cargo said where a crate failed with no refusal: a crash.
 
-Measured 2026-10-04, after `65f2760`, Rust 1.98.1, each crate at the
+Measured 2026-10-04, after ADR 0164, Rust 1.98.1, each crate at the
 newest release its requirement allows.
 
 | Crate | Verdict | First refusals in its graph |
 |---|---|---|
 | strum 0.27 (`derive`) | compiles | |
-| either 1.18 | refused | a user `DoubleEndedIterator` |
+| either 1.18 | refused | a user `Future` |
 | itertools 0.14 | blocked | either's |
-| indexmap 2.11 | blocked | equivalent: `Borrow::borrow`; hashbrown: a user `ExactSizeIterator` |
+| indexmap 2.11 | blocked | equivalent: `Borrow::borrow`; hashbrown: a raw pointer |
 | bitflags 2.13 | refused | `fmt::Write::write_str` called |
-| smallvec 1.16 | refused | a user `DoubleEndedIterator` |
+| smallvec 1.16 | refused | a user `AsMut` |
 | thiserror 2.0 | refused | a user `fmt::Pointer` |
-| anyhow 1.0 | refused | a user `DoubleEndedIterator` |
+| anyhow 1.0 | refused | a user `fmt::Write` |
 | once_cell 1.21 | refused | a constant of a raw pointer |
 | semver 1.0 | refused | a user `Hash` |
 | uuid 1.27 | refused | a user `fmt::LowerHex` |
-| url 2.5 | blocked | utf8_iter: a user `DoubleEndedIterator`; litemap: a user `ExactSizeIterator`; writeable: a user `fmt::Write`; smallvec's; percent-encoding: `transmute`; zerofrom: `u128` |
-| regex 1.11 | blocked | memchr: a user `DoubleEndedIterator`; regex-syntax: `str::from_utf8` |
-| rust_decimal 1.38 | blocked | arrayvec: a user `DoubleEndedIterator`; serde_core: a user `fmt::Write`; num-traits: a value with a destructor bound where it isn't supported |
+| url 2.5 | blocked | utf8_iter: `size_hint` called; litemap: `{:?}` of a `PhantomData`; writeable: a user `fmt::Write`; smallvec's; percent-encoding: `transmute`; zerofrom: `u128` |
+| regex 1.11 | blocked | memchr: a raw pointer; regex-syntax: `str::from_utf8` |
+| rust_decimal 1.38 | blocked | arrayvec: a user `Hash`; serde_core: a user `fmt::Write`; num-traits: a value with a destructor bound where it isn't supported |
 | chrono 0.4 (`alloc`) | blocked | num-traits' |
 | time 0.3 (`alloc`) | blocked | powerfmt: a user `Hash`; deranged: a user `Borrow`; num-conv: `u128`; time-core: a generic impl's constant of its parameters |
 
 1 of 16 compiles. What stops the most, by the crates it stops:
 
-1. **A user `DoubleEndedIterator` or `ExactSizeIterator`:** 8.
-2. **A user `fmt` trait other than `Display` and `Debug`,** `Pointer`,
-   `LowerHex`, `fmt::Write`, or `write_str` called: 5.
-3. **A user `Hash` or `Borrow`, and `Borrow::borrow`:** 3.
+1. **A user `fmt` trait other than `Display` and `Debug`,** `fmt::Write`,
+   `Pointer`, `LowerHex`, or `write_str` called: 6.
+2. **Raw memory,** a raw pointer, `transmute`: 4.
+3. **A user `Hash`:** 3. **A user `Borrow`, and `Borrow::borrow`:** 2.
 4. **`u128`:** 2. **num-traits' value with a destructor bound:** 2.
-5. **Raw memory and the rest,** one each: `transmute`, a raw pointer
-   constant, `str::from_utf8`, a generic impl's constant.
+   **A user `Future`:** 2. **A user `AsMut`:** 2.
+5. **One each:** `size_hint` called, `{:?}` of a `PhantomData`,
+   `str::from_utf8`, a generic impl's constant.
 
 ## Fixed by measuring
 
+- **A user `DoubleEndedIterator` or `ExactSizeIterator`** stopped 8
+  (ADR 0164).
 - **A generic trait method where a type may have a destructor** stopped
   9 (ADR 0163).
 - **num-traits' supertrait dictionary names colliding** was an internal

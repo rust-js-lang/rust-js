@@ -253,6 +253,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0161 `T: FromStr` in generic code: a dictionary, std's or the crate's](decisions/0161-generic-from-str.md)
 - [0162 `AsRef` in generic code: a dictionary, the value itself for std's](decisions/0162-generic-as-ref.md)
 - [0163 A trait's generic method is given drops for its own type parameters, as its trait declares them](decisions/0163-trait-method-drops.md)
+- [0164 An iterator of the crate's from both ends, and of a known length](decisions/0164-double-ended-iterators.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

@@ -341,4 +341,12 @@ export const mutations: Mutation[] = [
     replace: "            return Ok(items);",
     tests: ["test/corpus.test.ts", "-t", "str_bytes"],
   },
+  {
+    name: "rev-of-user-iterator-forwards",
+    breaks: "`rev()` of an iterator of the crate's steps it by `next`, front first",
+    file: "src/lower/iterators.rs",
+    find: "return self.user_iterator(value, receiver_ty, double_ended, \"next_back\", span);",
+    replace: "return self.user_iterator(value, receiver_ty, double_ended, \"next\", span);",
+    tests: ["test/corpus.test.ts", "-t", "double_ended_iterators"],
+  },
 ];

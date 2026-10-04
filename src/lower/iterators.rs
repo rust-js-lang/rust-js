@@ -305,8 +305,54 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(value);
         }
         let iterator = std_item(self.tcx, StdItem::Iterator);
-        let next = trait_method(self.tcx, iterator, "next");
-        let args = self.args_of(iterator, ty.peel_refs());
+        self.user_iterator(value, ty, iterator, "next", span)
+    }
+
+    /// `DoubleEndedIterator`, if `ty` is an iterator of the crate's whose
+    /// `next_back` is its own: `rev()` of it is a JS iterator of that,
+    /// `$iterator(it, spanDoubleEndedIterator_next_back)`, stepped from the
+    /// back as Rust's is (ADR 0164).
+    fn own_next_back(&self, ty: ty::Ty<'tcx>) -> R<Option<DefId>> {
+        if !self.is_user_iterator(ty) {
+            return Ok(None);
+        }
+        let Some(double_ended) = self.recognition().double_ended_iterator() else {
+            return Ok(None);
+        };
+        let next_back = trait_method(self.tcx, double_ended, "next_back");
+        let args = self.args_of(double_ended, ty.peel_refs());
+        let own = self
+            .resolve_instance(next_back, args)?
+            .is_some_and(|i| self.is_rust_fn(i.def_id()));
+        Ok(own.then_some(double_ended))
+    }
+
+    /// `it.len()` of an iterator of the crate's that keeps std's `len`: its
+    /// `size_hint()`, its own or std's `(0, None)`, checked as std checks it.
+    pub(super) fn exact_len(&mut self, receiver: ExprId, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+        let ty = self.reveal(self.thir[receiver].ty.peel_refs());
+        let value = self.expr(receiver, out)?;
+        let iterator = std_item(self.tcx, StdItem::Iterator);
+        let size_hint = trait_method(self.tcx, iterator, "size_hint");
+        let args = self.args_of(iterator, ty);
+        let hint = match self.trait_call(size_hint, args, vec![value.clone()], span, out)? {
+            Some(hint) => hint,
+            None => {
+                if value.has_effects() {
+                    out.push(StmtKind::Expr(value).at(self.js_span(span)));
+                }
+                Expr::array(vec![Expr::int(0), Expr::undefined()])
+            }
+        };
+        self.runtime.insert(Helper::ExactLen);
+        Ok(Expr::call(Expr::var("$exactLen"), vec![hint]))
+    }
+
+    /// An iterator of the crate's as a JS one, stepped by its trait's
+    /// `method`: `Iterator`'s `next`, or `DoubleEndedIterator`'s `next_back`.
+    fn user_iterator(&mut self, value: Expr, ty: ty::Ty<'tcx>, trait_id: DefId, method: &str, span: Span) -> R<Expr> {
+        let next = trait_method(self.tcx, trait_id, method);
+        let args = self.args_of(trait_id, ty.peel_refs());
         // A generic `next` boxes a `Some` that looks like `None` (ADR 0051).
         let boxed = self.resolve_instance(next, args)?.is_some_and(|instance| {
             let id = instance.def_id();
@@ -643,6 +689,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let key = self.chain_key(receiver);
                 self.chains.starts.insert(key);
             }
+        }
+        // `rev()` of an iterator of the crate's that runs from both ends: its
+        // own `next_back`, stepped lazily as Rust steps it (ADR 0164).
+        if known == Std::Rev
+            && let Some(double_ended) = self.own_next_back(receiver_ty)?
+        {
+            let value = self.iter_value(receiver, out)?;
+            return self.user_iterator(value, receiver_ty, double_ended, "next_back", span);
         }
         let items = match self.thir[self.strip(receiver)].kind {
             ExprKind::Adt(ref range)

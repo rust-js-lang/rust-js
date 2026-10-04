@@ -339,4 +339,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "generic_as_ref"],
   },
+  {
+    name: "iterator-extensions-refused",
+    breaks: "a user `DoubleEndedIterator` or `ExactSizeIterator` is an error",
+    file: "src/lower/recognition.rs",
+    find: "        || is_iterator_extension(tcx, id)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "double_ended_iterators"],
+  },
 ];

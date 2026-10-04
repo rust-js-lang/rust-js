@@ -1406,6 +1406,18 @@ export function $strGet(s, start, end) {
   return from === undefined || to === undefined ? undefined : s.slice(from, to);
 }
 
+// `it.len()` of an iterator of the crate's whose `ExactSizeIterator` keeps
+// std's: its `size_hint()`'s lower bound, which its upper must be, as std
+// asserts.
+export function $exactLen(hint) {
+  const [lower, upper] = hint;
+  if (upper !== lower) {
+    const shown = upper === undefined ? "None" : `Some(${upper})`;
+    throw new Error(`assertion \`left == right\` failed\n  left: ${shown}\n right: Some(${lower})`);
+  }
+  return lower;
+}
+
 // `*r = v` of an object a `&mut` is (ADR 0147): it becomes `v` in place, so
 // each name for it sees `v`. An array its items, a `Map` or a `Set` its
 // entries, an object its fields, those `v` hasn't gone, as another
