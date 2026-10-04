@@ -1,6 +1,11 @@
 # 0071. An iterator stepped through is a `$iter`, which knows where it is
 
-Status: Accepted. Extends [0036](0036-iterators-and-sorting.md) and [0055](0055-iterator.md).
+Status: Accepted. (Amended: `for x in &mut it` and `for x in it.by_ref()` of an
+iterator step through `it` itself, so a `break` leaves the rest in it,
+where a loop that stopped early had left `it` as it was, a wrong answer;
+`count()` of one is what it has left, where it was `undefined`; and
+`by_ref()` anywhere else is an error, as a chain of an array wouldn't
+know where it is. num-traits' float parser found them.) Extends [0036](0036-iterators-and-sorting.md) and [0055](0055-iterator.md).
 
 ## Context
 

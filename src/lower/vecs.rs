@@ -70,6 +70,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (v, x) = (arg(), arg());
                 Expr::call(Expr::member(v, "push"), vec![x])
             }
+            // `count()` of one that knows where it is (ADR 0071): what it has left,
+            // which it then has none of.
+            Std::Len if self.is_stepping(args[0]) => {
+                self.runtime.insert(Helper::Rest);
+                Expr::member(Expr::call(Expr::var("$rest"), vec![arg()]), "length")
+            }
             // `count()` of a JS iterator (ADR 0055) takes all of it.
             Std::Len if self.is_lazy_value(args[0]) => {
                 let items = self.iter_source(arg(), self.thir[args[0]].ty, span, out)?;

@@ -15,7 +15,6 @@ import {
   $nextSome,
   $partialCmp,
   $range,
-  $rest,
   $scan,
   $some,
   $someValue,
@@ -35,7 +34,7 @@ function largest(items, TPartialOrd, TCopy) {
     return undefined;
   }
   let best = TCopy.copy($someValue(value));
-  for (const item of $rest(it)) {
+  for (const item of it) {
     if (TPartialOrd.partial_cmp(item, best) > 0) {
       best = TCopy.copy(item);
     }

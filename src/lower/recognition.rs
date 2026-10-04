@@ -123,6 +123,8 @@ pub(super) enum Std {
     /// `len()` of an iterator of the crate's whose `ExactSizeIterator` keeps
     /// std's `len`: its `size_hint()`, checked (ADR 0164).
     ExactLen,
+    /// `it.by_ref()`: the iterator itself, which knows where it is.
+    IterByRef,
     /// `it.size_hint()`: std's `(0, None)` of an iterator of the crate's that
     /// keeps it, or, `true`, `(n, Some(n))` of std's that knows its length
     /// (ADR 0170).
@@ -763,6 +765,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 }
                 // One of the crate's own is its impl's `next` (ADR 0055).
                 "next" if !self.is_user_iterator(ty) => Std::Step(StepOp::Next),
+                // The iterator itself, which knows where it is (ADR 0071).
+                "by_ref" if !self.is_user_iterator(ty) => Std::IterByRef,
                 "peekable" => Std::Step(StepOp::Peekable),
                 "map" => Std::ArrayMethod("map"),
                 "filter" => Std::ArrayMethod("filter"),

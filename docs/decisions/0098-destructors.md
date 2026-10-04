@@ -341,7 +341,8 @@ function main() {
   an error, and stopped num-traits' `checked_pow`.)
 - **An `Option` of what may look like `None`, a generic `T`'s, drops its
   `Some`'s value unboxed (ADR 0051),** `dropT?.($someValue(value))`, and
-  `map` moves its value into the function, which owns it then. (Amended:
+  `map` of an `Option` or a `Result` moves its value into the function,
+  which owns it then. (Amended:
   either was an error, and stopped num-traits and zerofrom.)
 - **`mem::drop(x)` drops `x`, and `mem::forget` and `ManuallyDrop` don't.**
   A static is never dropped (ADR 0096). `mem::swap(&mut a, &mut b)` is `const t = a;

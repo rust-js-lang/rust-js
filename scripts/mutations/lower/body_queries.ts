@@ -26,4 +26,20 @@ export const mutations: Mutation[] = [
     replace: "                    && false\n",
     tests: ["test/corpus.test.ts", "-t", "lent_iterators"],
   },
+  {
+    name: "by-ref-not-stepping",
+    breaks: "`for x in it.by_ref()` takes all of `it`, so what reads it after sees nothing",
+    file: "src/lower/body_queries.rs",
+    find: "            || is_std_method(tcx, def_id, StdItem::Iterator, \"by_ref\");",
+    replace: "            || false;",
+    tests: ["test/corpus.test.ts", "-t", "iter_by_ref"],
+  },
+  {
+    name: "mut-loop-not-stepping",
+    breaks: "`for x in &mut it` that stops early leaves `it` as it was",
+    file: "src/lower/body_queries.rs",
+    find: "            && expr.ty == thir[receiver].ty\n",
+    replace: "            && expr.ty != expr.ty\n",
+    tests: ["test/corpus.test.ts", "-t", "iter_by_ref"],
+  },
 ];

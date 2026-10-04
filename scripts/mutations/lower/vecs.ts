@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "                    Some(item) if false && self.thir[args[0]].ty.is_ref() => self.clone_items(items, item, span)?,",
     tests: ["test/corpus.test.ts", "-t", "collection_methods"],
   },
+  {
+    name: "stepping-count-length",
+    breaks: "`count()` of an iterator that knows where it is is `undefined`",
+    file: "src/lower/vecs.rs",
+    find: "            Std::Len if self.is_stepping(args[0]) => {",
+    replace: "            Std::Len if false => {",
+    tests: ["test/corpus.test.ts", "-t", "iter_by_ref"],
+  },
 ];

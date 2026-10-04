@@ -133,6 +133,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `for x in &v` is `for (const x of v)`; `for i in a..b` is
     /// `for (let i = a; i < b; i++)`.
     pub(super) fn lower_for(&mut self, f: ForLoop<'a, 'tcx>, span: js::Span, out: &mut Vec<Stmt>) -> R<()> {
+        // `for x in it.by_ref()` is `for x in &mut it`: what's left of `it`, which
+        // knows where it is (ADR 0071), stays in it.
+        let mut f = f;
+        if let ExprKind::Call { fun, ref args, .. } = self.thir[self.strip(f.head)].kind
+            && self.std_fn(fun) == Some(Std::IterByRef)
+        {
+            f.head = args[0];
+        }
         let label_base = match self.tcx.hir_expect_expr(f.hir_id).kind {
             hir::ExprKind::Loop(_, Some(label), ..) => label.ident.name.as_str().trim_start_matches('\'').to_string(),
             _ => "loop".to_string(),
@@ -146,7 +154,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // an `Option`, or `iter::once(x)`, which is `[x]`: `into_iter()` of
         // one is the same.
         let owns_items = self.has_drops(f.pat.ty);
-        let mut f = f;
         let mut once = None;
         if owns_items {
             while let ExprKind::Call { fun, ref args, .. } = self.thir[self.strip(f.head)].kind {
@@ -267,6 +274,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let collection = self.expr(f.head, out)?;
                     self.trait_call(into_iter, args, vec![collection], head_span, out)?
                         .ok_or_else(|| self.unsupported(head_span, "this collection's `into_iter`"))?
+                }
+                // One that knows where it is, iterated itself: a `break` leaves
+                // what it didn't reach in it, for what reads it after (ADR 0071).
+                (None, None) if self.is_stepping(f.head) && !self.is_generic_iter(self.thir[f.head].ty) => {
+                    self.expr(f.head, out)?
                 }
                 (None, None) => self.iter_value(f.head, out)?,
             };

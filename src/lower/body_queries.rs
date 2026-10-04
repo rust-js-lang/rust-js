@@ -241,7 +241,8 @@ fn lent(thir: &Thir<'_>, e: ExprId) -> ExprId {
     }
 }
 
-/// The locals a body calls `next()` on, directly or through `&mut`: the
+/// The locals a body calls `next()` or `by_ref()` on, directly or through
+/// `&mut`, or iterates by `&mut` in a `for` loop: the
 /// ones that must know where they are (ADR 0071). So is one lent as a
 /// `&mut dyn Iterator`, or to a function of the crate's that takes a `&mut`
 /// to a generic iterator, which what it's lent to steps through.
@@ -265,11 +266,28 @@ pub(super) fn stepped_locals<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Hash
         let &ty::FnDef(def_id, _) = thir[fun].ty.kind() else {
             continue;
         };
-        let steps = is_std_method(tcx, def_id, StdItem::Iterator, "next");
+        // `by_ref()` lends it to what steps through it, a loop or a chain.
+        let steps = is_std_method(tcx, def_id, StdItem::Iterator, "next")
+            || is_std_method(tcx, def_id, StdItem::Iterator, "by_ref");
         let Some(&receiver) = args.first() else {
             continue;
         };
         if steps && let Some(id) = stepped_local(thir, receiver) {
+            stepped.insert(id);
+        }
+        // `for x in &mut it` of an iterator, whose `into_iter()` is itself:
+        // a `break` leaves the rest in it, for what reads it after.
+        if is_std_def(tcx, tcx.parent(def_id), StdItem::IntoIterator)
+            && expr.ty == thir[receiver].ty
+            && matches!(
+                thir[strip(thir, receiver)].kind,
+                ExprKind::Borrow {
+                    borrow_kind: BorrowKind::Mut { .. },
+                    ..
+                }
+            )
+            && let Some(id) = stepped_local(thir, receiver)
+        {
             stepped.insert(id);
         }
         if def_id.is_local() {

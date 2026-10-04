@@ -114,4 +114,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "option_map_drops"],
   },
+  {
+    name: "result-map-drops-refused",
+    breaks: "`map` of a `Result` whose value has a destructor is an error",
+    file: "src/lower/calls.rs",
+    find: "                    | Std::Comb(Comb::ResultMap)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "option_map_drops"],
+  },
 ];

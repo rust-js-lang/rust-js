@@ -122,4 +122,20 @@ export const mutations: Mutation[] = [
     replace: "        let collection = None;",
     tests: ["test/corpus.test.ts","-t","user_collections"],
   },
+  {
+    name: "stepping-loop-copies",
+    breaks: "a `for` loop over an iterator that knows where it is takes all it has left, though it stops early",
+    file: "src/lower/loops.rs",
+    find: "                (None, None) if self.is_stepping(f.head) && !self.is_generic_iter(self.thir[f.head].ty) => {",
+    replace: "                (None, None) if false => {",
+    tests: ["test/corpus.test.ts", "-t", "iter_by_ref"],
+  },
+  {
+    name: "for-by-ref-refused",
+    breaks: "`for x in it.by_ref()` is an error",
+    file: "src/lower/loops.rs",
+    find: "            && self.std_fn(fun) == Some(Std::IterByRef)\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "iter_by_ref"],
+  },
 ];

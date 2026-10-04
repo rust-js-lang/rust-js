@@ -382,6 +382,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::Same
                     // Moves its value into the function, which owns it then.
                     | Std::OptionMap
+                    | Std::Comb(Comb::ResultMap)
                     | Std::VecMacro
                     | Std::Unwrap
                     | Std::UnwrapOk
@@ -535,6 +536,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if let Std::SizeHint(exact) = known {
             return self.size_hint(exact, args[0], span, out);
+        }
+        // A `for` loop's is `&mut it` (`lower_for`); a chain of one would take
+        // what's left of `it`, which an array's doesn't know.
+        if known == Std::IterByRef {
+            return Err(self.unsupported(span, "`by_ref()` but as what a `for` loop iterates"));
         }
         if known == Std::GenericSizeHint {
             let it = self.expr(args[0], out)?;
@@ -753,6 +759,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::SizeHint(_)
             | Std::WrappingOp(..)
             | Std::GenericSizeHint
+            | Std::IterByRef
             | Std::UserWrite
             | Std::DequeRemove
             | Std::Step(_)

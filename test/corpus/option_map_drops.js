@@ -42,6 +42,49 @@ function keep_if(value, keep, dropT) {
   }
 }
 
+function checked(n) {
+  if (n < 9) {
+    return { TAG: "Ok", _0: [(n + 20) >>> 0] };
+  } else {
+    return { TAG: "Err", _0: `${n} is too big` };
+  }
+}
+
+function wrapped_result(value, dropT) {
+  let value$live = true;
+  try {
+    value$live = false;
+    return value.TAG === "Ok" ? { TAG: "Ok", _0: [value._0] } : value;
+  } finally {
+    if (value$live) {
+      if (value.TAG === "Ok") {
+        dropT?.(value._0);
+      }
+    }
+  }
+}
+
+function discard_result(value, keep, dropT) {
+  let value$live = true;
+  try {
+    if (keep) {
+      value$live = false;
+      if (value.TAG === "Ok") {
+        dropT?.(value._0);
+      }
+      return true;
+    } else {
+      return false;
+    }
+  } finally {
+    if (value$live) {
+      if (value.TAG === "Ok") {
+        dropT?.(value._0);
+      }
+    }
+  }
+}
+
 function main() {
   const option = make(1);
   let option$live = true;
@@ -124,7 +167,49 @@ function main() {
         });
         try {
           console.log(`${nested != null}`);
-          console.log("end");
+          const result = checked(1);
+          const ok = result.TAG === "Ok" ? { TAG: "Ok", _0: [result._0] } : result;
+          try {
+            console.log(`ok ${ok.TAG === "Ok" ? ok._0[0][0] : 0}`);
+            const result$1 = checked(12);
+            const result$2 = result$1.TAG === "Ok" ? { TAG: "Ok", _0: [result$1._0] } : result$1;
+            let result$2$Ok$0$live = true;
+            try {
+              if (result$2.TAG === "Ok") {
+                result$2$Ok$0$live = false;
+                const l = result$2._0;
+                try {
+                  console.log(`ok ${l[0][0]}`);
+                } finally {
+                  dDrop_drop(l[0]);
+                }
+              } else {
+                console.log(`err ${result$2._0}`);
+              }
+            } finally {
+              if (result$2.TAG === "Ok") {
+                if (result$2$Ok$0$live) {
+                  dDrop_drop(result$2._0[0]);
+                }
+              }
+            }
+            const generic$1 = wrapped_result(checked(2), dDrop_drop);
+            try {
+              console.log(`generic ${generic$1.TAG === "Ok" ? generic$1._0[0][0] : 0}`);
+              console.log(
+                `${discard_result(checked(3), false, dDrop_drop)} ${discard_result(checked(4), true, dDrop_drop)}`,
+              );
+              console.log("end");
+            } finally {
+              if (generic$1.TAG === "Ok") {
+                dDrop_drop(generic$1._0[0]);
+              }
+            }
+          } finally {
+            if (ok.TAG === "Ok") {
+              dDrop_drop(ok._0[0]);
+            }
+          }
         } finally {
           if (nested != null) {
             if ($someValue(nested) != null) {

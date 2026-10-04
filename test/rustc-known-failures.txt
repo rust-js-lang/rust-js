@@ -138,7 +138,6 @@ enum/enum-univariant-repr.rs	error: rust-js does not support calling `std::intri
 expr/compound-assignment/eval-order.rs	error: rust-js does not support assigning to this place yet
 fn/dyn-fn-alignment.rs	error: rust-js does not support values of type `*const A` yet
 for-loop-while/for-loop-has-unit-body.rs	error: rust-js does not support calling `std::mem::zeroed` yet
-for-loop-while/foreach-external-iterators-hashmap-break-restart.rs	error: rust-js does not support calling `std::iter::Iterator::by_ref` yet
 for-loop-while/issue-69841.rs	error: rust-js does not support calling `std::hint::unreachable_unchecked` yet
 for-loop-while/loop-diverges.rs	error: rust-js does not support values of type `!` yet
 for-loop-while/loop-no-reinit-needed-post-bot.rs	error: rust-js does not support values of type `!` yet
