@@ -24,7 +24,7 @@ newest release its requirement allows.
 | uuid 1.27 | refused | `&mut` of a `MaybeUninit` buffer's range |
 | url 2.5 | blocked | litemap: `{:?}` of a `PhantomData`; writeable: a whole value assigned through a `&mut`; smallvec's; percent-encoding: `transmute`; yoke: a raw pointer |
 | regex 1.11 | blocked | memchr: a raw pointer |
-| rust_decimal 1.38 | blocked | arrayvec: a user `io::Write`; serde_core: `size_of` of a type parameter; num-traits: `-` of `Self` in a trait's default method |
+| rust_decimal 1.38 | blocked | arrayvec: a user `io::Write`; serde_core: `size_of` of a type parameter; num-traits: a generic impl's constant of its parameters |
 | chrono 0.4 (`alloc`) | blocked | num-traits' |
 | time 0.3 (`alloc`) | blocked | powerfmt: a `MaybeUninit`; deranged: a `u8` of a range type, `NonZero`'s |
 
@@ -32,7 +32,7 @@ newest release its requirement allows.
 
 1. **Raw memory,** a raw pointer, a `NonNull`, a `MaybeUninit`,
    `transmute`, `handle_alloc_error`: 9.
-2. **num-traits' `-` of `Self` in a trait's default method:** 2, chrono and
+2. **num-traits' generic impl constants, `Wrapping(T::ZERO)`:** 2, chrono and
    rust_decimal.
    **A user `Future`:** 2.
 3. **One each:** `{:?}` of a generic `PhantomData`, `write_str` of a generic writer, a user `io::Write`, `size_of` of a type

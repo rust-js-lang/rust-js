@@ -15,6 +15,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A fresh `ty` value equal to the one at `place`: `{ ...p }`, `[t[0], t[1]]`.
     /// A field that also contains mutated types is copied in turn.
     pub(super) fn copy(&self, place: Expr, ty: Ty<'tcx>) -> Expr {
+        // A copied default's `Self` is the impl's type, a number say, which
+        // needs no copy (ADR 0049).
+        let ty = self.in_impl_terms(ty);
         if self.is_unknown(ty)
             && let Some(dictionary) =
                 self.given_evidence(|tr| tr.self_ty() == ty && self.tcx.is_lang_item(tr.def_id, LangItem::Copy))

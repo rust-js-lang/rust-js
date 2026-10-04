@@ -10,6 +10,7 @@ use crate::js::{self, Expr, Op, Prop, StmtKind};
 use crate::runtime::Helper;
 use rustc_hir::def::DefKind;
 use rustc_hir::{LangItem, Mutability};
+use rustc_middle::mir::{BinOp, UnOp};
 use rustc_middle::traits::{BuiltinImplSource, ImplSource};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeFoldable, TypeVisitableExt};
 use rustc_span::Span;
@@ -863,23 +864,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A number's `+` or `-`, as `a + b` of one is (ADR 0108), of a
         // number on each side: `impl Add<Meters> for f64` is the crate's.
-        let primitive =
-            |t: Ty<'tcx>| super::representation::Num::of(t.peel_refs()).is_some() || t.peel_refs().is_bool();
         if let Some(op) = super::recognition::value_operator(self.tcx, tr.def_id)
-            && tr.args.types().all(primitive)
+            && self.primitive_operands(tr)
         {
-            let ty = ty.peel_refs();
-            let (params, value) = match op {
-                Ok(op) => {
-                    // A shift's amount of its own type, `Shl<u64>` of a `u32`.
-                    let b = super::numbers::shift_amount_of(op, Expr::var("b"), ty, tr.args.type_at(1));
-                    (
-                        vec!["a".into(), "b".into()],
-                        self.binary(op, Expr::var("a"), b, None, ty, span)?,
-                    )
-                }
-                Err(op) => (vec!["value".into()], self.unary(op, Expr::var("value"), ty, span)?),
+            let params: Vec<js::Pattern> = match op {
+                Ok(_) => vec!["a".into(), "b".into()],
+                Err(_) => vec!["value".into()],
             };
+            let (a, b) = match op {
+                Ok(_) => (Expr::var("a"), Some(Expr::var("b"))),
+                Err(_) => (Expr::var("value"), None),
+            };
+            let value = self.number_operator(op, a, b, tr, span)?;
             return Ok(Expr::object(vec![Prop::Field(
                 self.operator_entry(tr.def_id),
                 Expr::arrow(params, vec![StmtKind::Return(Some(value)).at(js::Span::NONE)]),
@@ -1062,6 +1058,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Select user code before std intrinsics, so custom implementations win.
     /// A trait method call, or `None` if it isn't one rust-js dispatches.
     /// `out` gets what must run first, like a receiver computed once.
+    /// Are an operator's types, `tr`'s, each a number or a `bool`: JS's own
+    /// operator's (ADR 0108)?
+    fn primitive_operands(&self, tr: ty::TraitRef<'tcx>) -> bool {
+        tr.args
+            .types()
+            .all(|t| super::representation::Num::of(t.peel_refs()).is_some() || t.peel_refs().is_bool())
+    }
+
+    /// `a + b`, or `-a` where `b` is `None`, of `tr`'s numbers, as a number's
+    /// `+` is (ADR 0108): a shift's amount of its own type, `Shl<u64>` of a `u32`.
+    fn number_operator(
+        &mut self,
+        op: Result<BinOp, UnOp>,
+        a: Expr,
+        b: Option<Expr>,
+        tr: ty::TraitRef<'tcx>,
+        span: Span,
+    ) -> R<Expr> {
+        let ty = tr.self_ty().peel_refs();
+        match op {
+            Ok(op) => {
+                let b = super::numbers::shift_amount_of(op, b.expect("two operands"), ty, tr.args.type_at(1));
+                self.binary(op, a, b, None, ty, span)
+            }
+            Err(op) => self.unary(op, a, ty, span),
+        }
+    }
+
     /// An operator trait's dictionary entry: its method, `add`, after its
     /// `Output`.
     fn operator_entry(&self, trait_id: DefId) -> String {
@@ -1184,6 +1208,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || is_std_def(self.tcx, trait_id, StdItem::Into))
             && !tr.args.has_non_region_param()
         {
+            // In a copied default, the call is the trait's, of `Self`, which std's
+            // path doesn't see as the number it is here: `self - Self::one()`.
+            if self.given.self_args.is_some()
+                && let Some(op) = super::recognition::value_operator(self.tcx, trait_id)
+                && self.primitive_operands(tr)
+            {
+                let mut values = values.into_iter();
+                let a = values.next().expect("an operand");
+                return Ok(Some(self.number_operator(op, a, values.next(), tr, span)?));
+            }
             return Ok(None);
         }
         // `s.borrow()` of std's where it's the same JS value: the value itself,

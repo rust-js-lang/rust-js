@@ -249,7 +249,6 @@ traits/default-method/skip-default-method-if-normalization-fails.rs	error: rust-
 traits/dyn-drop-principal.rs	error: rust-js does not support values of type `dyn std::marker::Send` yet
 traits/encoder-trait-bounds-regression.rs	error: rust-js does not support calling `std::io::Write::write_fmt` yet
 traits/impl-object-overlap-issue-23853.rs	error: rust-js does not support this trait implementation yet
-traits/issue-3979-generics.rs	error: rust-js does not support calling `std::ops::Add::add` yet
 traits/object-one-type-two-traits.rs	error: rust-js does not support calling `<(dyn std::any::Any + 'static)>::is` yet
 traits/object/ambiguity-vtable-segfault.rs	error: rust-js does not support trait method `Q::q` yet
 traits/principal-less-objects.rs	error: rust-js does not support a `dyn` of a value with a destructor yet

@@ -1,5 +1,5 @@
-// A trait's default method comparing `Self`, as num-traits' `Signed` and
-// `One` do: `<` through a `PartialOrd` supertrait, of a number in the impl
+// A trait's default method comparing `Self`, or computing with it, as
+// num-traits' `Signed`, `Float` and `One` do: `<` through a `PartialOrd` supertrait, of a number in the impl
 // it's copied into, and `==` by the method's own `where Self: PartialEq`, of
 // a generic impl's type.
 
@@ -10,12 +10,15 @@ trait Zero {
     fn zero() -> Self;
 }
 
-trait Signed: Zero + PartialOrd + Copy {
+trait Signed: Zero + PartialOrd + Copy + std::ops::Sub<Output = Self> + std::ops::Neg<Output = Self> {
     fn negative(self) -> bool {
         self < Self::zero()
     }
     fn at_most_zero(self) -> bool {
         self <= Self::zero()
+    }
+    fn distance(self, other: Self) -> Self {
+        if self < other { other - self } else { -(other - self) }
     }
 }
 
@@ -61,4 +64,5 @@ where
 fn main() {
     println!("{} {} {} {}", (-1.5f64).negative(), 2.0f64.negative(), f64::NAN.negative(), 0i32.at_most_zero());
     println!("{} {} {}", Wrapping(1u8).is_one(), Wrapping(3u8).is_one(), 1u8.is_one());
+    println!("{} {} {}", 2.5f64.distance(-1.0), 7i32.distance(3), (-5i32).distance(5));
 }
