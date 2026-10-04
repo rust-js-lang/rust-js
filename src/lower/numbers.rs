@@ -83,6 +83,22 @@ pub(super) enum NumOp {
     Overflowing(BinOp),
     OverflowingNeg,
     SaturatingPow,
+    /// `rotate_left(n)`, or `rotate_right(n)`, of an integer's bits.
+    RotateBits {
+        left: bool,
+    },
+    /// `to_be_bytes()`, or `to_le_bytes()` and `to_ne_bytes()`, little-endian
+    /// as wasm32 is.
+    ToBytes {
+        little: bool,
+    },
+    /// `T::from_be_bytes(bytes)`, or `from_le_bytes` and `from_ne_bytes`.
+    FromBytes {
+        little: bool,
+    },
+    /// A float's `to_bits()`, and `f64::from_bits(bits)`.
+    ToBits,
+    FromBits,
 }
 
 /// std's `f32::to_degrees` factor, its own literal, as std writes it, which
@@ -271,6 +287,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Expr::bin(Op::Ne, x.clone(), Expr::int(0))
                 };
                 Expr::array(vec![num.wrap(Expr::unary(UnaryOp::Neg, x)), overflowed])
+            }
+            // Of its unsigned bits, the sign bit among them.
+            NumOp::RotateBits { left } => {
+                let x = match num {
+                    Num::I32 => Expr::bin(Op::UShr, arg(), Expr::int(0)),
+                    _ => bits(arg()),
+                };
+                let list = vec![x, arg(), Expr::int(num.bits().into()), Expr::bool(left)];
+                let rotated = helper(self, Helper::RotateBits, "$rotateBits", list);
+                if num.signed() { num.wrap(rotated) } else { rotated }
+            }
+            NumOp::ToBytes { little } => {
+                let list = vec![arg(), Expr::int((num.bits() / 8).into()), Expr::bool(little)];
+                helper(self, Helper::ToBytes, "$toBytes", list)
+            }
+            NumOp::FromBytes { little } => {
+                let list = vec![
+                    arg(),
+                    Expr::int((num.bits() / 8).into()),
+                    Expr::bool(little),
+                    Expr::bool(num.signed()),
+                ];
+                helper(self, Helper::FromBytes, "$fromBytes", list)
+            }
+            NumOp::ToBits => {
+                let list = vec![arg(), Expr::int((num.bits() / 8).into())];
+                helper(self, Helper::FloatToBits, "$floatToBits", list)
+            }
+            NumOp::FromBits => {
+                let list = vec![arg(), Expr::int((num.bits() / 8).into())];
+                helper(self, Helper::FloatFromBits, "$floatFromBits", list)
             }
             NumOp::SaturatingPow => {
                 self.runtime.insert(Helper::CheckedPow);
@@ -496,6 +543,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     "$saturatingPow",
                     vec![arg(), arg(), lo, hi],
                 )
+            }
+            NumOp::RotateBits { left } => {
+                let x = Expr::call(Expr::member(Expr::var("BigInt"), "asUintN"), vec![Expr::int(64), arg()]);
+                let list = vec![x, arg(), Expr::int(64), Expr::bool(left)];
+                let rotated = helper(self, Helper::RotateBits, "$rotateBits", list);
+                if num.signed() { num.wrap(rotated) } else { rotated }
+            }
+            NumOp::ToBytes { little } => helper(
+                self,
+                Helper::ToBytes,
+                "$toBytes",
+                vec![arg(), Expr::int(8), Expr::bool(little)],
+            ),
+            NumOp::FromBytes { little } => {
+                let list = vec![arg(), Expr::int(8), Expr::bool(little), Expr::bool(num.signed())];
+                helper(self, Helper::FromBytes, "$fromBytes", list)
             }
             NumOp::FromStrRadix => helper(self, Helper::ParseBig, "$parseBig", vec![arg(), lo, hi, arg()]),
             NumOp::DivCeil => helper(self, Helper::DivCeil, "$divCeil", vec![arg(), arg()]),

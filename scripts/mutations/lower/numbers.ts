@@ -107,4 +107,12 @@ export const mutations: Mutation[] = [
     replace: "                    Expr::bin(Op::Eq, x.clone(), Expr::int(0))",
     tests: ["test/corpus.test.ts", "-t", "integer_families"],
   },
+  {
+    name: "rotate-signed-bits-unmasked",
+    breaks: "a negative `i32`'s `rotate_left` rotates its JS number, not its 32 bits",
+    file: "src/lower/numbers.rs",
+    find: "                    Num::I32 => Expr::bin(Op::UShr, arg(), Expr::int(0)),",
+    replace: "                    Num::I32 => arg(),",
+    tests: ["test/corpus.test.ts", "-t", "integer_bits"],
+  },
 ];

@@ -10,7 +10,6 @@ for (const [name, source, message, crate] of [
   ["borrow error", 'pub fn f() -> i32 { let mut x = 1; let r = &x; x = 2; *r }', "borrowed"],
   ["unsupported type", 'pub fn f(x: u128) -> u128 { x }', "does not support"],
   // ADR 0122: an `f32`'s bits aren't yet: a NaN's payload is JS's to keep or not.
-  ["an f32's bits", "pub fn f(x: f32) -> u32 { x.to_bits() }", "to_bits"],
   // ADR 0123: what `..` binds is a copy, as `&v[a..b]` is (ADR 0063), so one to write through can't be.
   ["a &mut rest of a slice pattern", "pub fn f(v: &mut [u32]) { if let [_, rest @ ..] = v { rest[0] = 1; } }", "a `&mut` to part of a slice"],
   // ADR 0124: a choice of places, `p[0] === 0 ? p[1] : p[0]`, can't be written through.

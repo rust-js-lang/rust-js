@@ -101,7 +101,6 @@ consts/issue-17718-borrow-interior.rs	error: rust-js does not support statics of
 consts/issue-21721.rs	error: rust-js does not support values of type `*const u8` yet
 consts/issue-33537.rs	error: rust-js does not support values of type `*const i8` yet
 consts/issue-58435-ice-with-assoc-const.rs	error: rust-js does not support this constant yet
-consts/issue-69532.rs	error: rust-js does not support calling `core::f64::<impl f64>::from_bits` yet
 consts/load-preserves-partial-init.rs	error: rust-js does not support constants of type `BagOfBits<[usize; 1]>` yet
 consts/mozjs-error.rs	error: rust-js does not support this constant yet
 consts/oncecell-const-init-57781.rs	error: rust-js does not support this constant yet
@@ -194,7 +193,6 @@ never_type/regress/never-as-function-argument.rs	error: rust-js does not support
 nll/issue-24535-allow-mutable-borrow-in-match-guard.rs	error: rust-js does not support `&mut` to a `I` yet
 nll/issue-48623-closure.rs	error: rust-js does not support a `&mut` of this in a variable yet
 nll/issue-53123-raw-pointer-cast.rs	error: rust-js does not support values of type `*mut T` yet
-numbers-arithmetic/apfloat-modulo-wrong.rs	error: rust-js does not support calling `core::f64::<impl f64>::to_bits` yet
 numbers-arithmetic/float-int-invalid-const-cast.rs	error: rust-js does not support values of type `u128` yet
 numbers-arithmetic/i128-min-literal-parses.rs	error: rust-js does not support values of type `i128` yet
 numbers-arithmetic/integer-literal-suffix-inference-2.rs	error: rust-js does not support values of type `*const ()` yet
@@ -233,7 +231,6 @@ rfcs/rfc-2091-track-caller/file-is-nul-terminated.rs	error: rust-js does not sup
 rfcs/rfc-2091-track-caller/track-caller-ffi.rs	error: rust-js does not support an `extern` declaration of this crate's own `#[no_mangle]` function yet
 rfcs/rfc-2091-track-caller/tracked-trait-impls.rs	error: rust-js does not support values of type `(*const str) is !null` yet
 rfcs/rfc-2091-track-caller/tracked-trait-obj.rs	error: rust-js does not support values of type `(*const str) is !null` yet
-rfcs/rfc-2294-if-let-guard/run-pass.rs	error: rust-js does not support calling `core::num::<impl u8>::rotate_left` yet
 rfcs/rfc-3348-c-string-literals/basic.rs	error: rust-js does not support calling `std::ffi::CStr::to_bytes_with_nul` yet
 rfcs/rfc-3348-c-string-literals/non-ascii.rs	error: rust-js does not support calling `std::ffi::CStr::to_bytes_with_nul` yet
 self/self-in-mut-slot-default-method.rs	error: rust-js does not support `&mut` to a `Self` yet

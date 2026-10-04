@@ -80,12 +80,13 @@ table](../ROADMAP.md) lists the larger missing pieces.
   `signum`, `fract` and `to_radians`
   ([0154](decisions/0154-number-methods.md)), and an integer's `checked_*`,
   `wrapping_*`, `overflowing_*` and `saturating_*`, each of the exact result
-  ([0155](decisions/0155-integer-families.md)). A NaN's sign isn't kept, so
-  `is_sign_negative` of one is `false`.
+  ([0155](decisions/0155-integer-families.md)), its bits rotated and its
+  bytes, little-endian natively, as wasm32's are
+  ([0156](decisions/0156-integer-bits-and-bytes.md)). A NaN's sign and
+  payload aren't kept, so `is_sign_negative` of one is `false`.
 
-Refused: `i128` and `u128`; an `f32`'s or `f64`'s bits (`to_bits`,
-`from_bits`); `mul_add`; a float's `midpoint`; and some integer and float
-methods, among them `rotate_left`, `to_be_bytes`, `swap_bytes` and
+Refused: `i128` and `u128`; `mul_add`; a float's `midpoint`; and some
+integer and float methods, among them `swap_bytes`, `reverse_bits` and
 `copysign`.
 
 ## Text
@@ -375,7 +376,7 @@ a map key. React and JSX are [their own page](jsx.md).
 2. `usize` and `isize` are 32 bits.
 3. `i64` and `u64` are BigInts at the JS boundary.
 4. Float library functions, `sin`, `exp`, `powf`, are JS's: the last bit may
-   differ. A NaN's sign isn't kept.
+   differ. A NaN's sign and payload aren't kept.
 5. `trim()` uses JS's whitespace; strings compare by UTF-16 units.
 6. A `HashMap` iterates in insertion order.
 7. A chain a function returns runs its closures over every item.

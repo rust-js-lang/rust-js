@@ -1311,6 +1311,65 @@ export function $saturatingPow(base, exp, lo, hi) {
   return base < 0 && exp % 2 === 1 ? lo : hi;
 }
 
+// `x.rotate_left(n)`, or `rotate_right(n)`, of an integer's unsigned bits,
+// `bits` of them: what's shifted out of one end comes in at the other. A
+// number's by powers of two, which are exact; a BigInt's by shifts.
+export function $rotateBits(x, n, bits, left) {
+  const by = n % bits;
+  if (by === 0) return x;
+  const up = left ? by : bits - by;
+  if (typeof x === "bigint") {
+    const size = BigInt(bits);
+    const shift = BigInt(up);
+    return ((x << shift) | (x >> (size - shift))) & ((1n << size) - 1n);
+  }
+  return ((x * 2 ** up) % 2 ** bits) + Math.floor(x / 2 ** (bits - up));
+}
+
+// `x.to_be_bytes()` or `to_le_bytes()`: an integer's `size` bytes, a
+// number's or a BigInt's, its sign in its top bit, in either order.
+export function $toBytes(x, size, little) {
+  const view = new DataView(new ArrayBuffer(size));
+  if (size === 8) view.setBigUint64(0, x, little);
+  else if (size === 4) view.setUint32(0, x, little);
+  else if (size === 2) view.setUint16(0, x, little);
+  else view.setUint8(0, x);
+  return Array.from(new Uint8Array(view.buffer));
+}
+
+// `T::from_be_bytes(bytes)` or `from_le_bytes`: the integer of `size`
+// bytes, in either order, signed or not.
+export function $fromBytes(bytes, size, little, signed) {
+  const view = new DataView(Uint8Array.from(bytes).buffer);
+  if (size === 8) return signed ? view.getBigInt64(0, little) : view.getBigUint64(0, little);
+  if (size === 4) return signed ? view.getInt32(0, little) : view.getUint32(0, little);
+  if (size === 2) return signed ? view.getInt16(0, little) : view.getUint16(0, little);
+  return signed ? view.getInt8(0) : view.getUint8(0);
+}
+
+// `x.to_bits()`: an `f64`'s 64 bits as a `u64`, or an `f32`'s 32 as a `u32`.
+// A NaN's are JS's, which may not keep its sign and payload.
+export function $floatToBits(x, size) {
+  const view = new DataView(new ArrayBuffer(size));
+  if (size === 8) {
+    view.setFloat64(0, x);
+    return view.getBigUint64(0);
+  }
+  view.setFloat32(0, x);
+  return view.getUint32(0);
+}
+
+// `f64::from_bits(bits)` of a `u64`, or `f32::from_bits` of a `u32`.
+export function $floatFromBits(bits, size) {
+  const view = new DataView(new ArrayBuffer(size));
+  if (size === 8) {
+    view.setBigUint64(0, bits);
+    return view.getFloat64(0);
+  }
+  view.setUint32(0, bits);
+  return view.getFloat32(0);
+}
+
 // `*r = v` of an object a `&mut` is (ADR 0147): it becomes `v` in place, so
 // each name for it sees `v`. An array its items, a `Map` or a `Set` its
 // entries, an object its fields, those `v` hasn't gone, as another
