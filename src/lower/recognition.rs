@@ -8,7 +8,7 @@ use super::maps::{MapOp, Part};
 use super::numbers::NumOp;
 use super::ranges::{RangeKind, RangeOp};
 use super::representation::Num;
-use super::text::TextOp;
+use super::text::{StringEdit, TextOp};
 use rustc_ast::Mutability;
 use rustc_hir::def::DefKind;
 use rustc_hir::{self as hir, LangItem, intravisit};
@@ -175,6 +175,10 @@ pub(super) enum Std {
     Map(MapOp),
     /// A `char` or `str` method, `parse`, or slicing by a range (ADR 0063).
     Text(TextOp),
+    /// A `String` changed in place (ADR 0149).
+    StringEdit(StringEdit),
+    /// `String::with_capacity(n)`: an empty string.
+    StringWithCapacity,
     /// A range's method, or `a..=b` (ADR 0129).
     Range(RangeOp),
     /// `any::type_name::<T>()`, and `type_name_of_val(&x)`: rustc's name for
@@ -954,6 +958,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "retain" if adt("Vec") => Std::Retain,
             "iter" | "iter_mut" if owner.is_slice() => Std::Same,
             "new" if string => Std::StringNew,
+            "with_capacity" if string => Std::StringWithCapacity,
+            "pop" if string => Std::StringEdit(StringEdit::Pop),
+            "remove" if string => Std::StringEdit(StringEdit::Remove),
+            "truncate" if string => Std::StringEdit(StringEdit::Truncate),
+            "insert" | "insert_str" if string => Std::StringEdit(StringEdit::Insert),
+            "retain" if string => Std::StringEdit(StringEdit::Retain),
+            "clear" if string => Std::StringEdit(StringEdit::Clear),
             "as_str" if string => Std::Same,
             "trim" if owner.is_str() => Std::Trim,
             // A closure as the pattern (ADR 0063).

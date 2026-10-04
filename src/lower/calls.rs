@@ -505,6 +505,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return Ok(value);
         }
+        if let Std::StringEdit(edit) = known {
+            return self.string_edit(edit, args, span, out);
+        }
+        // Its capacity is the engine's: what it's given runs, for what it does.
+        if known == Std::StringWithCapacity {
+            for &arg in args {
+                self.stmt(arg, &Dest::Discard, out)?;
+            }
+            return Ok(Expr::str(""));
+        }
         // `s.push_str(t)`: JS strings don't change, so `s` gets a new one.
         if known == Std::PushStr {
             let ExprKind::Borrow { arg: place, .. } = self.thir[self.strip(args[0])].kind else {
@@ -646,7 +656,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::SortByKey => {
                 unreachable!("handled above")
             }
-            Std::PushStr | Std::AssignOperator(_) => unreachable!("handled above"),
+            Std::PushStr | Std::AssignOperator(_) | Std::StringEdit(_) | Std::StringWithCapacity => {
+                unreachable!("handled above")
+            }
             Std::VecMacro | Std::FmtNew | Std::AssertFailed => unreachable!("handled above"),
             Std::Map(_)
             | Std::Range(_)

@@ -275,4 +275,12 @@ export const mutations: Mutation[] = [
     replace: '        "is_ok" => FmtResultAnswer::Is(false),',
     tests: ["test/corpus.test.ts", "-t", "write_to_string"],
   },
+  {
+    name: "string-pop-unrecognized",
+    breaks: "`s.pop()` of a `String` is an error",
+    file: "src/lower/recognition.rs",
+    find: '            "pop" if string => Std::StringEdit(StringEdit::Pop),\n',
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "string_editing"],
+  },
 ];

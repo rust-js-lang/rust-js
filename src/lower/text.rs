@@ -16,6 +16,21 @@ use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 
+/// A `String` changed in place, its place given the new string, as JS
+/// strings don't change (ADR 0149).
+#[derive(Clone, Copy, PartialEq)]
+pub(super) enum StringEdit {
+    /// `s.pop()`: the last `char`, or `None`.
+    Pop,
+    /// `s.remove(at)`: the `char` at a byte offset.
+    Remove,
+    Truncate,
+    /// `s.insert(at, c)` and `s.insert_str(at, t)`.
+    Insert,
+    Retain,
+    Clear,
+}
+
 #[derive(Clone, Copy, PartialEq)]
 pub(super) enum TextOp {
     /// A `char` question, as a regular expression it matches.
@@ -50,6 +65,59 @@ pub(super) enum TextOp {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A `String` changed in place (ADR 0149): its place given the new
+    /// string, `s = $insertStr(s, 0, "[")`, and what `pop` and `remove` take
+    /// out, `popped[1]`. A JS string doesn't change; its place does.
+    pub(super) fn string_edit(
+        &mut self,
+        edit: StringEdit,
+        args: &[ExprId],
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let ExprKind::Borrow { arg: place, .. } = self.thir[self.strip(args[0])].kind else {
+            return Err(self.unsupported(span, "changing this string"));
+        };
+        let given = self.operands(&args[1..], out)?;
+        let (target, _) = self.prepare_assignment_target(place, true, Expr::undefined(), span, out)?;
+        let current = target.read();
+        let js_span = self.js_span(span);
+        let helper = |cx: &mut Self, helper: Helper, name: &str, mut list: Vec<Expr>| {
+            cx.runtime.insert(helper);
+            list.insert(0, current.clone());
+            Expr::call(Expr::var(name), list)
+        };
+        let (edited, taken) = match edit {
+            StringEdit::Clear => (Expr::str(""), None),
+            StringEdit::Truncate => (helper(self, Helper::StrTruncate, "$strTruncate", given), None),
+            StringEdit::Insert => (helper(self, Helper::InsertStr, "$insertStr", given), None),
+            StringEdit::Retain => {
+                let kept = Expr::call(
+                    Expr::member(
+                        Expr::call(Expr::member(Expr::var("Array"), "from"), vec![current.clone()]),
+                        "filter",
+                    ),
+                    given,
+                );
+                (Expr::call(Expr::member(kept, "join"), vec![Expr::str("")]), None)
+            }
+            StringEdit::Pop | StringEdit::Remove => {
+                let (helper_id, name, label) = match edit {
+                    StringEdit::Pop => (Helper::StrPop, "$strPop", "popped"),
+                    _ => (Helper::StrRemove, "$strRemove", "removed"),
+                };
+                let pair = helper(self, helper_id, name, given);
+                let pair = self.spill(label, pair, out);
+                (
+                    Expr::index(pair.clone(), Expr::int(0)),
+                    Some(Expr::index(pair, Expr::int(1))),
+                )
+            }
+        };
+        target.write(edited, js_span, out);
+        Ok(taken.unwrap_or_else(Expr::undefined))
+    }
+
     pub(super) fn text_call(
         &mut self,
         op: TextOp,

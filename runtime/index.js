@@ -905,6 +905,56 @@ export function $parseErrorDyn(name) {
   };
 }
 
+// Where the byte `at` of `s` is, in UTF-16 units: if a `char` starts there,
+// or it's the end. Otherwise `undefined`, as `is_char_boundary` is `false`.
+export function $charBoundary(s, at) {
+  let bytes = 0;
+  let unit = 0;
+  for (const c of s) {
+    if (bytes === at) return unit;
+    if (bytes > at) return undefined;
+    bytes += $byteLen(c);
+    unit += c.length;
+  }
+  return bytes === at ? unit : undefined;
+}
+
+// `s.truncate(n)`: its first `n` bytes, or all of it, if it has fewer;
+// inside a `char`, Rust's assertion fails.
+export function $strTruncate(s, n) {
+  if (n >= $byteLen(s)) return s;
+  const unit = $charBoundary(s, n);
+  if (unit === undefined) throw new Error("assertion failed: self.is_char_boundary(new_len)");
+  return s.slice(0, unit);
+}
+
+// `s.insert(at, c)` and `s.insert_str(at, t)`: `t` at the byte `at`, which
+// must start a `char` or be the end, as Rust asserts.
+export function $insertStr(s, at, t) {
+  const unit = $charBoundary(s, at);
+  if (unit === undefined) throw new Error("assertion failed: self.is_char_boundary(idx)");
+  return s.slice(0, unit) + t + s.slice(unit);
+}
+
+// `s.remove(at)`: `s` without the `char` at the byte `at`, and that `char`,
+// panicking as Rust's does at the end, past it or inside a `char`.
+export function $strRemove(s, at) {
+  if (at === $byteLen(s)) throw new Error("cannot remove a char from the end of a string");
+  const rest = $strSlice(s, at);
+  const c = String.fromCodePoint(rest.codePointAt(0));
+  return [s.slice(0, s.length - rest.length) + rest.slice(c.length), c];
+}
+
+// `s.pop()`: `s` without its last `char`, and that `char`, or `undefined`,
+// `None`, if it's empty.
+export function $strPop(s) {
+  if (s === "") return [s, undefined];
+  const low = s.charCodeAt(s.length - 1);
+  const high = s.length > 1 ? s.charCodeAt(s.length - 2) : 0;
+  const size = low >= 0xdc00 && low <= 0xdfff && high >= 0xd800 && high <= 0xdbff ? 2 : 1;
+  return [s.slice(0, s.length - size), s.slice(s.length - size)];
+}
+
 // serde_json's error as a `dyn Error` (ADR 0141): shown as serde_json shows
 // it, `{}` its message and `{:?}` `Error("..", line: 1, column: 1)`.
 export function $jsonErrorDyn() {

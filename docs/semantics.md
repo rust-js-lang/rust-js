@@ -93,6 +93,9 @@ sharing one is copying it: `clone()` is the string itself, and `push_str` is
   `byte index 2 is not a char boundary; it is inside 'é' (bytes 1..3 of
   string)` ([0138](decisions/0138-string-byte-counts.md)). Each counts from
   the start of the string.
+- **A `String` is edited by its bytes too:** `pop`, `insert`, `remove`,
+  `truncate`, `retain` and `clear` give its place the new string, and panic
+  where Rust's do ([0149](decisions/0149-string-editing.md)).
 - **`chars()` is by code point; `bytes()` and `as_bytes()` are the UTF-8
   bytes;** a byte string `b"GET"` is `[71, 69, 84]`
   ([0126](decisions/0126-byte-strings.md)).
@@ -116,8 +119,7 @@ Differences:
 
 Refused, among others: `match_indices`, `matches`, `splitn`, `rsplit`,
 `trim_matches`, `find` with a closure, `str::from_utf8`, `String::from_utf8`,
-`String::with_capacity`, `pop`, `truncate`, `insert`, `remove`, and a C
-string, `c"..."`.
+and a C string, `c"..."`.
 
 ## Formatting and printing
 
