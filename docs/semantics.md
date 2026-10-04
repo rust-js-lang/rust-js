@@ -116,8 +116,11 @@ sharing one is copying it: `clone()` is the string itself, and `push_str` is
   may be another Unicode version than Rust's.
 - **`split`, `lines`, `split_whitespace`, `strip_prefix`, `split_once`,
   `replace`, `starts_with`** and the other common methods behave as Rust's,
-  with an empty pattern too, and `split` and `contains` with a closure as
-  the pattern. `splitn`, `rsplit`, `split_terminator`, `split_at`,
+  with an empty pattern too. A closure, a function such as
+  `char::is_numeric`, or a set of `char`s, `[';', ',']`, is a pattern of
+  `find`, `rfind`, `split`, `contains`, `starts_with`, `ends_with` and the
+  `trim_*_matches` ([0157](decisions/0157-char-predicates.md)); `get(range)`
+  is `None` where slicing panics. `splitn`, `rsplit`, `split_terminator`, `split_at`,
   `match_indices`, `matches` and the `trim_*_matches` search as Rust's do,
   `rsplit` from the end ([0150](decisions/0150-string-patterns.md)).
 
@@ -129,8 +132,8 @@ Differences:
 - **Strings compare by UTF-16 units:** `<`, `cmp` and `sort()` of strings
   can order a character above U+FFFF differently than Rust does.
 
-Refused, among others: `find` with a closure, `str::from_utf8`,
-`String::from_utf8`, and a C string, `c"..."`.
+Refused, among others: `str::from_utf8`, `String::from_utf8`,
+`make_ascii_uppercase` of a `String`, and a C string, `c"..."`.
 
 ## Formatting and printing
 

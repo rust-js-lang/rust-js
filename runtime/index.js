@@ -1370,6 +1370,42 @@ export function $floatFromBits(bits, size) {
   return view.getFloat32(0);
 }
 
+// `s.find(p)`, or `rfind`, of a predicate of a `char`, a closure's, a
+// function's or a set's: the byte where the first, or last, `char` it holds
+// for starts, or `undefined`.
+export function $findBy(s, p, last) {
+  let bytes = 0;
+  let found;
+  for (const c of s) {
+    if (p(c)) {
+      found = bytes;
+      if (!last) return found;
+    }
+    bytes += $byteLen(c);
+  }
+  return found;
+}
+
+// `s.starts_with(p)`, or `ends_with`, of a predicate of a `char`: whether it
+// holds for the first, or last, `char`, of which an empty string has none.
+export function $startsBy(s, p, end) {
+  if (s === "") return false;
+  const at = end ? s.length - (/[\udc00-\udfff]$/.test(s) && s.length > 1 ? 2 : 1) : 0;
+  return p(String.fromCodePoint(s.codePointAt(at)));
+}
+
+// `s.get(start..end)`: the string between those bytes, or `undefined`,
+// `None`, where `&s[start..end]` would panic: past the end, backwards, or
+// inside a `char`.
+export function $strGet(s, start, end) {
+  const length = $byteLen(s);
+  end ??= length;
+  if (start > end || end > length) return undefined;
+  const from = $charBoundary(s, start);
+  const to = $charBoundary(s, end);
+  return from === undefined || to === undefined ? undefined : s.slice(from, to);
+}
+
 // `*r = v` of an object a `&mut` is (ADR 0147): it becomes `v` in place, so
 // each name for it sees `v`. An array its items, a `Map` or a `Set` its
 // entries, an object its fields, those `v` hasn't gone, as another

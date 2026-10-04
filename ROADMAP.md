@@ -347,14 +347,14 @@ tooling while preserving rust-js's own readable-output goals.
   cases found and fixed two miscompilations (nested element writes, repeated
   index effects in compound assignment). rustc's own `run-pass` UI tests run
   the same way (`bun run test:rustc`, [ADR 0089](docs/decisions/0089-rustc-tests.md)):
-  1,905 of 2,206 in scope pass at the pinned stable release, 1.98.1, every
+  1,906 of 2,206 in scope pass at the pinned stable release, 1.98.1, every
   other one is a clear rejection, none a crash or a wrong answer, and the
   [known failures](test/rustc-known-failures.txt) only shrink. A test of a
   feature stable Rust doesn't have is out of scope, as no program of
   rust-js's can use one (`7962214`). Programs written as a person would
   probe what the rustc suite doesn't: the first, an interpreter of arithmetic
   (the [`calculator`](test/corpus/calculator.rs) case), found `collect()`
-  into a `Result` returning the array of `Result`s. The 301 rejections, by kind: values of
+  into a `Result` returning the array of `Result`s. The 300 rejections, by kind: values of
   a type rust-js doesn't support (94; raw pointers the most common),
   std calls (70; intrinsics the most),
   expressions (13), constants of a type (17), statics of a type (15),
@@ -509,7 +509,7 @@ broader completeness work.
 | Mutable references | A `&mut` in a variable, a generic `&mut T`, one to a closure, and a `&mut dyn` of the crate's traits are supported ([ADR 0099](docs/decisions/0099-mut-references.md)); a generic iterator lent as a `&mut` is the lender's JS iterator ([ADR 0071](docs/decisions/0071-stepping-iterators.md)); `*r = v`, `mem::replace`, `swap` and `take` replace an object in place ([ADR 0147](docs/decisions/0147-replacing-through-mut.md)); a `&mut` std hands out to a number or a string, `iter_mut()`'s or `get_mut`'s, is a handle on it ([ADR 0152](docs/decisions/0152-std-item-handles.md)); a generic `&mut T` to an object inside what a generic function takes or gives, a `&mut dyn` of std's traits, and a trait's `&mut self` method of a generic iterator remain. | Reusable application helpers may exceed the current reference model. |
 | Options, maps, and iterators | A `HashMap` or `HashSet` keyed by a struct, a tuple or an enum with fields, whose `Eq` is derived, finds its keys by value ([ADR 0121](docs/decisions/0121-value-keys.md)); an iterator trait object, boxed or lent, is a JS iterator ([ADR 0140](docs/decisions/0140-iterator-trait-objects.md)); an `Option` of what can look like `None` boxes its `Some` ([ADR 0051](docs/decisions/0051-generic-options.md)); `collect()` into a `Result` or an `Option` stops at the first `Err` or `None` ([ADR 0036](docs/decisions/0036-iterators-and-sorting.md)); [diagnostic cases](test/diagnostics.test.ts) include keys of a custom `PartialEq`, B-trees of struct keys, map equality, `collect()` into a `Result` of anything but an array, and held-iterator restrictions. | Combinations matter even when each broad feature is listed as supported. |
 | JSX authoring | [JSX boundaries](docs/jsx.md#current-boundaries) include macro composition and missing stock editor expansion. | Daily development and reusable component patterns need a tested workflow. |
-| Text and slices | A string's length, slices and offsets count its UTF-8 bytes ([ADR 0138](docs/decisions/0138-string-byte-counts.md)); the [text contract](docs/decisions/0063-text.md) leaves `match_indices`, a closure's `find` and mutable range slices unsupported; [diagnostics](test/diagnostics.test.ts) cover stored ranges. | Portable parsing and reusable algorithms depend on precise text and borrowing semantics. |
+| Text and slices | A string's length, slices and offsets count its UTF-8 bytes ([ADR 0138](docs/decisions/0138-string-byte-counts.md)); a closure, a function or a set of `char`s is a pattern ([ADR 0157](docs/decisions/0157-char-predicates.md)); the [text contract](docs/decisions/0063-text.md) leaves mutable range slices and UTF-8 decoding unsupported; [diagnostics](test/diagnostics.test.ts) cover stored ranges. | Portable parsing and reusable algorithms depend on precise text and borrowing semantics. |
 | Resource lifetime | Destructors run where Rust runs them ([ADR 0098](docs/decisions/0098-destructors.md)); an `Rc`, an `Arc` or a thread-local holding a value with one, a `dyn` of std's traits owning one, such as `Box<dyn Send>`, a closure holding part of one, and some temporaries, such as a let-chain's, are rejected. | Native RAII cleanup cannot be assumed to follow JavaScript garbage collection. |
 
 ## Public playground track

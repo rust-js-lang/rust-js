@@ -297,7 +297,6 @@ unsafe/unsafe-pointer-assignability.rs	error: rust-js does not support values of
 unsized/issue-23649-1.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 unsized/issue-23649-2.rs	error: rust-js does not support values of type `std::path::PathBuf` yet
 unsized/nonnull-unsized-slice.rs	error: rust-js does not support values of type `(*const [u8]) is !null` yet
-whitespace/ascii_whitespace_excludes_vertical_tab.rs	error: rust-js does not support calling `core::str::<impl str>::split_ascii_whitespace` yet
 zero-sized/zero-sized-binary-heap-push.rs	error: rust-js does not support calling `std::collections::BinaryHeap::<T, A>::capacity` yet
 zero-sized/zero-sized-btreemap-insert.rs	error: rust-js does not support values of type `Zst` yet
 zero-sized/zero-sized-linkedlist-push.rs	error: rust-js does not support values of type `(*const std::collections::linked_list::Node<()>) is !null` yet

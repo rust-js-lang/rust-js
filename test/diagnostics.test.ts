@@ -38,7 +38,6 @@ for (const [name, source, message, crate] of [
   ["parse to a type without FromStr support", 'pub fn f(s: &str) -> bool { s.parse::<std::net::IpAddr>().is_ok() }', "does not support"],
   ["next() of a RangeInclusive kept as a value", 'pub fn f(r: &mut std::ops::RangeInclusive<u32>) -> Option<u32> { r.next() }', "kept as a value"],
   // A string's byte offsets are counted (ADR 0138), but not yet of a closure's matches.
-  ["find by a closure", 'pub fn f(s: &str) -> Option<usize> { s.find(|c: char| c == \'o\') }', "::find`"],
   // `a + b` of a `T: Add` is its dictionary's (ADR 0108); `a += b` isn't yet.
   ["an assigning operator in generic code", 'pub fn f<T: std::ops::AddAssign>(a: &mut T, b: T) { *a += b; }', "does not support"],
   ["a reference count", 'pub fn f(r: &std::rc::Rc<u32>) -> usize { std::rc::Rc::strong_count(r) }', "does not support"],

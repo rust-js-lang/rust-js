@@ -49,6 +49,22 @@ pub(super) enum TextOp {
     /// `s.split(|c| ..)` and `s.contains(|c| ..)`: a closure as the pattern.
     SplitBy,
     ContainsBy,
+    /// `find(p)` or `rfind(p)`, `starts_with(p)` or `ends_with(p)`, of a
+    /// predicate of a `char` (ADR 0157).
+    FindBy(bool),
+    StartsBy {
+        end: bool,
+    },
+    SplitAsciiWhitespace,
+    /// `s.get(range)`: `&s[range]`, or `None` where that would panic.
+    StrGet,
+    IsCharBoundary,
+    /// A `char`'s `len_utf8()`, or `len_utf16()`.
+    CharLen {
+        utf16: bool,
+    },
+    /// `char::from(b)` of a `u8`: the `char` of that code point.
+    CharFromByte,
     Parse,
     /// `&v[a..b]` of a slice, an array or a `Vec`.
     Slice,
@@ -141,10 +157,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        if matches!(op, TextOp::Slice | TextOp::StrSlice | TextOp::Drain) {
+        if matches!(op, TextOp::Slice | TextOp::StrSlice | TextOp::StrGet | TextOp::Drain) {
             return self.slice_range(op, args, span, out);
         }
-        let mut values = self.operands(args, out)?.into_iter();
+        let mut values = self.operands(args, out)?;
+        // A set of `char`s as a pattern is the predicate of being one of
+        // them, as a closure or a function is a predicate (ADR 0157).
+        if matches!(
+            op,
+            TextOp::SplitBy
+                | TextOp::ContainsBy
+                | TextOp::FindBy(_)
+                | TextOp::StartsBy { .. }
+                | TextOp::TrimMatches { .. }
+        ) && let Some(&pattern) = args.get(1)
+            && let ty::Array(item, _) | ty::Slice(item) = self.thir[pattern].ty.peel_refs().kind()
+            && item.is_char()
+        {
+            let set = values[1].clone();
+            let one_of = Expr::call(Expr::member(set, "includes"), vec![Expr::var("c")]);
+            values[1] = Expr::arrow(
+                vec!["c".into()],
+                vec![StmtKind::Return(Some(one_of)).at(js::Span::NONE)],
+            );
+        }
+        let mut values = values.into_iter();
         let mut arg = || values.next().expect("rustc checked the arguments");
         let method = |object: Expr, name: &str, list: Vec<Expr>| Expr::call(Expr::member(object, name), list);
         let call = |cx: &mut Self, helper: Helper, name: &str, list: Vec<Expr>| {
@@ -244,6 +281,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.runtime.insert(Helper::ByteLen);
                 Expr::call(Expr::var("$byteLen"), vec![arg()])
             }
+            TextOp::FindBy(last) => call(self, Helper::FindBy, "$findBy", vec![arg(), arg(), Expr::bool(last)]),
+            TextOp::StartsBy { end } => call(self, Helper::StartsBy, "$startsBy", vec![arg(), arg(), Expr::bool(end)]),
+            // Rust's ASCII whitespace: space, tab, line feed, form feed and
+            // carriage return, not JS's `\s`.
+            TextOp::SplitAsciiWhitespace => {
+                let pieces = method(arg(), "split", vec![Expr::regex("/[\\t\\n\\f\\r ]+/")]);
+                let word = Expr::bin(Op::Ne, Expr::var("word"), Expr::str(""));
+                let nonempty = Expr::arrow(
+                    vec!["word".into()],
+                    vec![StmtKind::Return(Some(word)).at(js::Span::NONE)],
+                );
+                method(pieces, "filter", vec![nonempty])
+            }
+            TextOp::IsCharBoundary => {
+                let unit = call(self, Helper::CharBoundary, "$charBoundary", vec![arg(), arg()]);
+                Expr::bin(Op::Ne, unit, Expr::undefined())
+            }
+            TextOp::CharLen { utf16: false } => call(self, Helper::ByteLen, "$byteLen", vec![arg()]),
+            TextOp::CharLen { utf16: true } => Expr::member(arg(), "length"),
+            TextOp::CharFromByte => Expr::call(Expr::member(Expr::var("String"), "fromCharCode"), vec![arg()]),
             TextOp::Find(last) => {
                 let (helper, name) = if last {
                     (Helper::Rfind, "$rfind")
@@ -257,7 +314,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.runtime.insert(Helper::CharIndices);
                 Expr::call(Expr::var("$charIndices"), vec![arg()])
             }
-            TextOp::Slice | TextOp::StrSlice | TextOp::Drain => unreachable!("handled above"),
+            TextOp::Slice | TextOp::StrSlice | TextOp::StrGet | TextOp::Drain => unreachable!("handled above"),
         })
     }
 
@@ -315,6 +372,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (helper, name) = match op {
             TextOp::Drain => (Helper::Drain, "$drain"),
             TextOp::StrSlice => (Helper::StrSlice, "$strSlice"),
+            TextOp::StrGet => (Helper::StrGet, "$strGet"),
             _ => (Helper::SliceRange, "$slice"),
         };
         let kind = self.range_kind(range_ty);
@@ -362,7 +420,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // `&s[..]` of a string: all of it, which is never out of bounds, nor
         // inside a character.
-        if op == TextOp::StrSlice && start.is_none() && end.is_none() {
+        if matches!(op, TextOp::StrSlice | TextOp::StrGet) && start.is_none() && end.is_none() {
             return Ok(self.operands(&[args[0]], out)?.remove(0));
         }
         let mut list = vec![args[0]];

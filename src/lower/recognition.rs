@@ -765,6 +765,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if tcx.is_diagnostic_item(sym::From, trait_) && self.is_std_adt(ty, Symbol::intern("BinaryHeap")) {
             return Some(Std::Heap(HeapOp::From));
         }
+        // `String::from_iter(items)` is `items.collect()` into a `String`.
+        if tcx.is_diagnostic_item(sym::FromIterator, trait_) && self.is_lang_adt(ty, LangItem::String) {
+            return Some(Std::CollectString);
+        }
         // `HashMap::from([(k, v)])`: `new Map([[k, v]])`.
         if tcx.is_diagnostic_item(sym::From, trait_) && self.is_map(ty) {
             let set = self.is_set(ty);
@@ -798,6 +802,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if let (Some(from_ty), Some(to_ty)) = (from_ty, to_ty) {
             if self.is_lang_adt(to_ty, LangItem::String) && self.is_string_like(from_ty) {
                 return Some(Std::Same);
+            }
+            // A `char` from a `u8`: the code point it is (ADR 0157).
+            if to_ty.is_char() && matches!(from_ty.kind(), ty::Uint(ty::UintTy::U8)) {
+                return Some(Std::Text(TextOp::CharFromByte));
             }
             // Into a `Box`, which is its value (ADR 0023): `Box::from(x)`, and
             // a `Vec`'s items as a boxed slice.
@@ -996,14 +1004,27 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "clear" if string => Std::StringEdit(StringEdit::Clear),
             "as_str" if string => Std::Same,
             "trim" if owner.is_str() => Std::Trim,
-            // A closure as the pattern (ADR 0063).
-            "split" | "contains" if owner.is_str() && self_ty.is_some_and(|p| matches!(p.kind(), ty::Closure(..))) => {
+            // A closure, a function or a set of `char`s as the pattern (ADRs 0063, 0157).
+            "split" | "contains" if owner.is_str() && self_ty.is_some_and(|p| self.is_char_predicate(p)) => {
                 Std::Text(if name.as_str() == "split" {
                     TextOp::SplitBy
                 } else {
                     TextOp::ContainsBy
                 })
             }
+            "find" | "rfind" if owner.is_str() && self_ty.is_some_and(|p| self.is_char_predicate(p)) => {
+                Std::Text(TextOp::FindBy(name.as_str() == "rfind"))
+            }
+            "starts_with" | "ends_with" if owner.is_str() && self_ty.is_some_and(|p| self.is_char_predicate(p)) => {
+                Std::Text(TextOp::StartsBy {
+                    end: name.as_str() == "ends_with",
+                })
+            }
+            "split_ascii_whitespace" if owner.is_str() => Std::Text(TextOp::SplitAsciiWhitespace),
+            "get" if owner.is_str() => Std::Text(TextOp::StrGet),
+            "is_char_boundary" if owner.is_str() => Std::Text(TextOp::IsCharBoundary),
+            "len_utf8" if owner.is_char() => Std::Text(TextOp::CharLen { utf16: false }),
+            "len_utf16" if owner.is_char() => Std::Text(TextOp::CharLen { utf16: true }),
             // Methods taking a pattern: only a string or a `char` one.
             "starts_with" | "ends_with" | "contains" | "replace" | "split" | "strip_prefix" | "strip_suffix"
             | "split_once" | "rsplit_once" | "find" | "rfind"
@@ -1026,10 +1047,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "match_indices" if owner.is_str() => Std::Text(TextOp::MatchIndices),
             "matches" if owner.is_str() => Std::Text(TextOp::Matches),
             "trim_matches" | "trim_start_matches" | "trim_end_matches"
-                if owner.is_str()
-                    && !self_ty.is_some_and(|p| {
-                        self.is_string_like(p) || matches!(p.kind(), ty::Closure(..) | ty::FnDef(..))
-                    }) =>
+                if owner.is_str() && !self_ty.is_some_and(|p| self.is_string_like(p) || self.is_char_predicate(p)) =>
             {
                 return None;
             }
@@ -1232,6 +1250,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .into_iter()
             .any(|name| self.is_std_adt(ty, Symbol::intern(name)))
             || self.is_json_map(ty)
+    }
+
+    /// A pattern that's a predicate of a `char`: a closure, a function, or a
+    /// set of `char`s, an array or a slice of them (ADR 0157).
+    pub(super) fn is_char_predicate(&self, pattern: Ty<'tcx>) -> bool {
+        match pattern.peel_refs().kind() {
+            ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..) => true,
+            ty::Array(item, _) | ty::Slice(item) => item.is_char(),
+            _ => false,
+        }
     }
 
     pub(super) fn is_set(&self, ty: Ty<'tcx>) -> bool {
