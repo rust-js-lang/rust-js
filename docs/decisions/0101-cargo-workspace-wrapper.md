@@ -70,6 +70,13 @@ cargo ──► rust-js rustc --crate-name validation --crate-type lib ...
   rustc's, its consumer would be wrong.
 - **Cargo's record of the sources lists rust-js too:** Cargo rebuilds a
   crate when a file it lists is newer than the build.
+- **`rustc -vV` says which rust-js it is too,** `rust-js: 0.0.3, Rust
+  1.98.1, ABI 1` after rustc's lines: Cargo hashes what it says into each
+  crate's fingerprint and file names, so another rust-js's build is another,
+  and both are kept. An installed compiler's file is as old as its package
+  says, older than any build, so by the record's dates alone Cargo had the
+  crates another rust-js built as done, and the identity check refused them.
+  (Amended: found rolling the pilot back from 0.0.3 to 0.0.2.)
 - **What Cargo is told is published with the JS,** the marker and the
   dep-info, staged as the metadata is: from one plan, or none of it
   (ADR 0100). Written after, a failure to write them would leave Cargo

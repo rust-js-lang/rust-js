@@ -7,8 +7,11 @@
 //! Anything else, a probe, a build script, a procedural macro, a native
 //! build, is rustc's, as Cargo asked.
 
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
+
+use crate::manifest::Compiler;
 
 /// What running rust-js as it was run comes to.
 pub enum Invocation {
@@ -33,6 +36,11 @@ pub fn translate(args: Vec<String>) -> Invocation {
         return Invocation::RustJs(args);
     };
     let given = &args[1..];
+    if let [flag] = given
+        && flag == "-vV"
+    {
+        return verbose_version(&rustc);
+    }
     let flags = match expand(given) {
         Ok(flags) => flags,
         Err(error) => {
@@ -223,6 +231,41 @@ fn expand(given: &[String]) -> Result<Vec<String>, String> {
         }
     }
     Ok(flags)
+}
+
+/// `rustc -vV`, and rust-js's own identity after it. Cargo hashes what it
+/// says into each crate's fingerprint and file names, so a build by another
+/// rust-js, an app's upgrade or its rollback, is another build: an installed
+/// compiler's file is as old as its package says, too old for Cargo to see
+/// by its date that it changed.
+fn verbose_version(rustc: &str) -> Invocation {
+    let output = match std::process::Command::new(rustc).arg("-vV").output() {
+        Ok(output) => output,
+        Err(error) => {
+            eprintln!("rust-js: cannot run {rustc}: {error}");
+            return Invocation::Rustc(ExitCode::FAILURE);
+        }
+    };
+    if !output.status.success() {
+        let _ = std::io::stderr().write_all(&output.stderr);
+        return Invocation::Rustc(ExitCode::FAILURE);
+    }
+    let Compiler {
+        version,
+        toolchain,
+        abi,
+    } = Compiler::current();
+    let mut out = std::io::stdout().lock();
+    match out
+        .write_all(&output.stdout)
+        .and_then(|()| writeln!(out, "rust-js: {version}, Rust {toolchain}, ABI {abi}"))
+    {
+        Ok(()) => Invocation::Rustc(ExitCode::SUCCESS),
+        Err(error) => {
+            eprintln!("rust-js: cannot write rustc's version: {error}");
+            Invocation::Rustc(ExitCode::FAILURE)
+        }
+    }
 }
 
 /// rustc, run as Cargo asked, with what it prints passed through.

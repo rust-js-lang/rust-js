@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "BINDINGS.contains(&name.as_str()) && false",
     tests: ["test/cargo-react.test.ts", "-t", "installed inside a Cargo workspace"],
   },
+  {
+    name: "cargo-version-without-identity",
+    breaks: "`rustc -vV` through rust-js says rustc's lines alone, so Cargo has another rust-js's crates as done",
+    file: "src/cargo.rs",
+    find: '    if let [flag] = given\n        && flag == "-vV"\n',
+    replace: '    if let [flag] = given\n        && flag == "-vV-"\n',
+    tests: ["test/cargo-workspace.test.ts", "-t", "told which rust-js"],
+  },
 ];

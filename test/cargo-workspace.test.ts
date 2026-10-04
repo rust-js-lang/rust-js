@@ -61,6 +61,24 @@ test("a Cargo workspace built with rust-js as its wrapper prints what native Rus
   expect(printed((await check(manifest, { packageName: "shell" })).js)).toBe(after);
 }, 600_000);
 
+// Which rust-js runs is in what Cargo hashes into each crate's fingerprint
+// and file names: what `rustc -vV` says through its wrapper. A build by
+// another rust-js, an app's upgrade or its rollback, is another build, as an
+// installed compiler's file is as old as its package says: by its date
+// alone, Cargo had the other one's crates as done. Found upgrading the
+// pilot to 0.0.3 and back.
+test("Cargo is told which rust-js it runs, so another one's crates are built again", async () => {
+  serde.rmeta();
+  const identity = JSON.parse(run([compiler, "--version-json"]));
+  const line = `rust-js: ${identity.version}, Rust ${identity.toolchain}, ABI ${identity.abi}`;
+  const said = run([compiler, "rustc", "-vV"]);
+  expect(said).toBe(run(["rustc", "-vV"]) + line + "\n");
+  // As Cargo asked it, and kept what it said.
+  const dir = fixture("crates-cargo-identity");
+  await check(workspace(dir));
+  expect(readFileSync(join(dir, "target", ".rustc_info.json"), "utf8")).toContain(line);
+}, 600_000);
+
 // What Cargo has as done is what rust-js made (ADR 0101): Cargo rebuilds a
 // crate when what its record of the sources lists changes, which rust-js adds
 // itself to, and a crate's JS is beside its metadata.

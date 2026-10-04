@@ -7,6 +7,17 @@ version: `@rust-js/native`, `@rust-js/build`, `@rust-js/vite-plugin`,
 `@rust-js/builtins` and `@rust-js/webapi` are released on their own, each
 at its version ([ADR 0116](docs/decisions/0116-binding-versions.md)).
 
+## Unreleased
+
+### Fixed
+
+- **Switching an app's rust-js, up or down, builds its crates again.** Cargo
+  had the crates another rust-js built as done, as an installed compiler's
+  file is as old as its package says, and the build stopped at
+  `incompatible dependency compiler identity`. Now `rustc -vV`, through
+  rust-js, says which rust-js it is, and Cargo keeps each one's build apart
+  ([ADR 0101](docs/decisions/0101-cargo-workspace-wrapper.md)).
+
 ## 0.0.3
 
 For macOS on Apple silicon, with Rust 1.98.1, as 0.0.2. `@rust-js/builtins`
@@ -73,11 +84,17 @@ serde_json's types, whose `fmt`s are rust-js's own.
    again. Commit it with the upgrade: its diff is what the new compiler
    writes differently.
 
+If the build stops at `incompatible dependency compiler identity`, Cargo
+kept crates the other rust-js built: `cargo clean --target
+wasm32-unknown-unknown`, then build again. 0.0.3 and 0.0.2 don't tell Cargo
+which rust-js built a crate; the next release does.
+
 ### Roll back to 0.0.2
 
-The same steps, with `0.0.2` and `~0.0.2`: `bun install` again, then build,
-and the JS beside your Rust is 0.0.2's again (`git checkout` of it does
-the same).
+The same steps, with `0.0.2` and `~0.0.2`: `bun install` again, then
+`cargo clean --target wasm32-unknown-unknown`, which this direction needs,
+then build, and the JS beside your Rust is 0.0.2's again (`git checkout`
+of it does the same).
 
 ## 0.0.2
 
