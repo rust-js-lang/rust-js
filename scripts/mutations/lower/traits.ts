@@ -543,4 +543,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "generic_borrow"],
     snapshots: true,
   },
+  {
+    name: "same-named-traits-collide",
+    breaks: "two traits of one name for one type, serde's `de::Error` and `ser::Error`, are named the same, an error",
+    file: "src/lower/traits.rs",
+    find: "        .any(|&other| tcx.impl_trait_id(other) != tr.def_id && named(other, false, \"\") == short);",
+    replace: "        .any(|&other| tcx.impl_trait_id(other) != tr.def_id && named(other, false, \"\") == short && false);",
+    tests: ["test/corpus.test.ts", "-t", "impl_names"],
+  },
 ];

@@ -90,4 +90,12 @@ export const mutations: Mutation[] = [
     replace: "        if let Some(collection) = self.collection_as_iterable(def_id, generic_args).filter(|_| false) {",
     tests: ["test/diagnostics.test.ts","-t","collection of the crate"],
   },
+  {
+    name: "own-borrow-mut-guarded",
+    breaks: "the crate's own `borrow_mut()`, whose trait needs its `Borrow`, is refused as a std call taking what it borrows as",
+    file: "src/lower/calls.rs",
+    find: "        Ok(match self.is_rust_fn(def_id) || crates {",
+    replace: "        Ok(match self.is_rust_fn(def_id) {",
+    tests: ["test/corpus.test.ts", "-t", "user_as_mut"],
+  },
 ];

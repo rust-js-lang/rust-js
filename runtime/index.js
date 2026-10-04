@@ -4114,6 +4114,19 @@ export function $slice(items, start, end = items.length) {
   return items.slice(start, end);
 }
 
+// `v.get(start..end)` of a slice: a copy of the items between, as `&v[..]`
+// is, or `undefined`, `None`, where that would panic.
+export function $sliceGet(items, start = 0, end = items.length) {
+  return start > end || end > items.length ? undefined : items.slice(start, end);
+}
+
+// `v.split_at(mid)` of a slice: copies of the items before `mid` and from
+// it, as `&v[..mid]` and `&v[mid..]` are, panicking as Rust's does.
+export function $sliceSplitAt(items, mid) {
+  if (mid > items.length) throw new Error("mid > len");
+  return [items.slice(0, mid), items.slice(mid)];
+}
+
 export function $sliceEnd(items, start, end = items.length) {
   if (start > end) throw new Error(`slice index starts at ${start} but ends at ${end}`);
   if (end > items.length) throw new Error(`range end index ${end} out of range for slice of length ${items.length}`);

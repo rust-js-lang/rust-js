@@ -451,11 +451,12 @@ tooling while preserving rust-js's own readable-output goals.
   Started: [the crate corpus](docs/crate-corpus.md), 16 crates shared models
   use, each compiled to JS with its whole graph by `bun scripts/crate-corpus.ts`.
   1 compiles, strum's; the rest stop at a few gaps, raw memory the most
-  common, in 7. Fixed since it was first
+  common, in 8. Fixed since it was first
   measured: a generic trait method where a type may have a destructor, which
   stopped 9, a user `DoubleEndedIterator` or `ExactSizeIterator`, 8, a user
   `LowerHex` or `Pointer`, 2, a user `fmt::Write`, 3, a user `Borrow`, 3,
-  a user `Hash`, 4, and two crashes.
+  a user `Hash`, 4, a user `AsMut` or `BorrowMut`, 2, same-named traits'
+  impls named alike, slice methods, and two crashes.
 - [ ] **M8.3 — Share behavior as well as data.** Demonstrate the same model,
   validation, serialization, and domain-logic crates on a native Rust server
   and a rust-js client, including dependencies. Require integration and

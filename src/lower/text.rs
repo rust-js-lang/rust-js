@@ -58,6 +58,10 @@ pub(super) enum TextOp {
     SplitAsciiWhitespace,
     /// `s.get(range)`: `&s[range]`, or `None` where that would panic.
     StrGet,
+    /// `v.get(range)` of a slice: `&v[range]`, or `None` where that would panic.
+    SliceGet,
+    /// `v.split_at(mid)` of a slice: `(&v[..mid], &v[mid..])`.
+    SliceSplitAt,
     IsCharBoundary,
     /// A `char`'s `len_utf8()`, or `len_utf16()`.
     CharLen {
@@ -157,7 +161,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        if matches!(op, TextOp::Slice | TextOp::StrSlice | TextOp::StrGet | TextOp::Drain) {
+        if matches!(
+            op,
+            TextOp::Slice | TextOp::StrSlice | TextOp::StrGet | TextOp::SliceGet | TextOp::Drain
+        ) {
             return self.slice_range(op, args, span, out);
         }
         let mut values = self.operands(args, out)?;
@@ -261,6 +268,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             TextOp::SplitTerminator => call(self, Helper::SplitTerminator, "$splitTerminator", vec![arg(), arg()]),
             TextOp::SplitAt => call(self, Helper::SplitAt, "$splitAt", vec![arg(), arg()]),
+            TextOp::SliceSplitAt => call(self, Helper::SliceSplitAt, "$sliceSplitAt", vec![arg(), arg()]),
             TextOp::MatchIndices => call(self, Helper::MatchIndices, "$matchIndices", vec![arg(), arg()]),
             TextOp::Matches => call(self, Helper::Matches, "$matches", vec![arg(), arg()]),
             TextOp::TrimMatches { start, end } => {
@@ -314,7 +322,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.runtime.insert(Helper::CharIndices);
                 Expr::call(Expr::var("$charIndices"), vec![arg()])
             }
-            TextOp::Slice | TextOp::StrSlice | TextOp::StrGet | TextOp::Drain => unreachable!("handled above"),
+            TextOp::Slice | TextOp::StrSlice | TextOp::StrGet | TextOp::SliceGet | TextOp::Drain => {
+                unreachable!("handled above")
+            }
         })
     }
 
@@ -385,6 +395,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TextOp::Drain => (Helper::Drain, "$drain"),
             TextOp::StrSlice => (Helper::StrSlice, "$strSlice"),
             TextOp::StrGet => (Helper::StrGet, "$strGet"),
+            TextOp::SliceGet => (Helper::SliceGet, "$sliceGet"),
             _ => (Helper::SliceRange, "$slice"),
         };
         let kind = self.range_kind(range_ty);

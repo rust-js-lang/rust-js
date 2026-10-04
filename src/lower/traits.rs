@@ -216,16 +216,17 @@ pub(super) fn own_bounds<'tcx>(
 /// defaults: `circleShape`, `metersFromF64` for `impl From<f64> for
 /// Meters`, and `versionPartialEq`, whose `Rhs` is `Self` (ADR 0052).
 pub(super) fn impl_name(tcx: TyCtxt<'_>, id: DefId) -> String {
-    let named = |id: DefId, full: bool| {
+    let named = |id: DefId, full: bool, module: &str| {
         let tr = tcx.impl_trait_ref(id).instantiate_identity().skip_normalization();
         if !full {
             return format!(
-                "{}{}",
+                "{}{module}{}",
                 lower_first(&js_word(&type_word(tcx, tr.self_ty()))),
                 trait_word(tcx, tr)
             );
         }
         let mut name = lower_first(&js_word(&full_type_word(tcx, tr.self_ty())));
+        name.push_str(module);
         name.push_str(tcx.item_name(tr.def_id).as_str());
         for arg in tr.args.iter().skip(1) {
             // A const argument by its value, `Scaled10` of `Scaled<10>` (ADR 0135).
@@ -240,21 +241,43 @@ pub(super) fn impl_name(tcx: TyCtxt<'_>, id: DefId) -> String {
         }
         name
     };
-    let name = named(id, false);
+    let tr = tcx.impl_trait_ref(id).instantiate_identity().skip_normalization();
+    // Two traits of one name for one type, serde's `de::Error` and
+    // `ser::Error`: each named with its trait's module too, `errorDeError`.
+    let short = named(id, false, "");
+    let clash = tcx
+        .trait_impls_in_crate(id.krate)
+        .iter()
+        .any(|&other| tcx.impl_trait_id(other) != tr.def_id && named(other, false, "") == short);
+    let module = match clash {
+        true => {
+            // A crate root's is its path, the crate's name, or `crate`.
+            let parent = tcx.parent(tr.def_id);
+            tcx.opt_item_name(parent)
+                .map_or_else(|| tcx.def_path_str(parent), |name| name.to_string())
+                .split('_')
+                .flat_map(|part| {
+                    let mut chars = part.chars();
+                    chars.next().map(|c| c.to_ascii_uppercase()).into_iter().chain(chars)
+                })
+                .collect()
+        }
+        false => String::new(),
+    };
+    let name = named(id, false, &module);
     // Two impls of a trait for one type with other arguments, `Vec<i32>`'s and
     // `Vec<String>`'s: each named with the arguments, its type's and its
     // trait's, `vecI32Describe`; and, two types of one name, local to two
     // functions, numbered in the order they're declared.
-    let tr = tcx.impl_trait_ref(id).instantiate_identity().skip_normalization();
     let mut alike: Vec<DefId> = tcx
         .all_impls(tr.def_id)
-        .filter(|&other| other.krate == id.krate && named(other, false) == name)
+        .filter(|&other| other.krate == id.krate && named(other, false, &module) == name)
         .collect();
     if alike.len() < 2 {
         return name;
     }
-    let full = named(id, true);
-    alike.retain(|&other| named(other, true) == full);
+    let full = named(id, true, &module);
+    alike.retain(|&other| named(other, true, &module) == full);
     alike.sort_by_key(|other| other.index);
     match alike.iter().position(|&other| other == id) {
         Some(at) if at > 0 => format!("{full}{}", at + 1),

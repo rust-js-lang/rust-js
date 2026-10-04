@@ -258,6 +258,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0166 A writer of the crate's is given its text a `write!` at a time](decisions/0166-user-fmt-write.md)
 - [0167 `Borrow`: a dictionary, the value itself for std's](decisions/0167-borrow.md)
 - [0168 A type's own `Hash` is allowed, and never lowered](decisions/0168-user-hash.md)
+- [0169 A type's own `AsMut` and `BorrowMut`, called on the type](decisions/0169-user-as-mut.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

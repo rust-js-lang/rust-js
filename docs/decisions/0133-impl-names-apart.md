@@ -28,11 +28,15 @@ same too, numbered in the order they're declared:**
 | `impl Describe for Wrapper<&str>`, `Wrapper<u8>` | `wrapperRefStrDescribe`, `wrapperU8Describe` |
 | `impl Convert<u8> for ()`, `Convert<&u8>` | `__ConvertU8`, `__ConvertRefU8` |
 | a `Local` in `first()`, and one in `second()` | `localDescribe`, `localDescribe2` |
+| `impl de::Error for Error`, `ser::Error` | `errorDeError`, `errorSerError` |
 
 - **An argument that's its parameter's default isn't named**: `Vec<i32>`
   is `VecI32`, not with its allocator.
 - **An impl whose name no other one has keeps its short name**, so a crate
   without two alike gets the JS it gets today.
+- **Two traits of one name, serde's `de::Error` and `ser::Error`, for one
+  type are named with their traits' modules too,** where they'd be the same.
+  (Amended: these were an error, and stopped serde_core.)
 - **The name is found from the crate's impls of the trait**, the same
   wherever it's asked for, so its accessor and its methods agree.
 

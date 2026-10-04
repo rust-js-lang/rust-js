@@ -72,7 +72,7 @@ const_prop/dont-propagate-generic-instance-2.rs	error: rust-js does not support 
 const_prop/dont-propagate-generic-instance.rs	error: rust-js does not support `type_name` of a type parameter yet
 const-generics/type-dependent/issue-61936.rs	error: rust-js does not support calling `std::mem::zeroed` yet
 const-generics/type-dependent/issue-69816.rs	error: rust-js does not support `Default` of `[<T as std::iter::Iterator>::Item; N]` yet
-const-generics/type-dependent/issue-70507.rs	error: rust-js does not support calling `core::slice::<impl [T]>::split_at` yet
+const-generics/type-dependent/issue-70507.rs	error: rust-js does not support values of type `*const [T; N]` yet
 const-generics/type-dependent/issue-71805.rs	error: rust-js does not support `&mut` to a `I` of a trait's method yet
 const-ptr/pointer-address-stability.rs	error: rust-js does not support this expression yet
 consts/cast-discriminant-zst-enum.rs	error: rust-js does not support values of type `i128` yet

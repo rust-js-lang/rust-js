@@ -7,7 +7,9 @@ var $vecI32Describe,
   $__ConvertU8,
   $__ConvertRefU8,
   $localDescribe,
-  $localDescribe2;
+  $localDescribe2,
+  $errorDeError,
+  $errorSerError;
 
 function first() {
   return localDescribe_describe(undefined);
@@ -17,11 +19,20 @@ function second() {
   return localDescribe2_describe(undefined);
 }
 
+function fail_de(EError) {
+  return EError.custom("eof");
+}
+
+function fail_ser(EError) {
+  return EError.custom("key");
+}
+
 function main() {
   console.log(`${vecI32Describe_describe([1, 2])} | ${vecStringDescribe_describe(["a"])}`);
   console.log(`${wrapperRefStrDescribe_describe(["x"])} | ${wrapperU8Describe_describe([7])}`);
   console.log(`${__ConvertU8_convert(undefined)} | ${__ConvertRefU8_convert(undefined)}`);
   console.log(`${first()} | ${second()}`);
+  console.log(`${fail_de(errorDeError())[0]} | ${fail_ser(errorSerError())[0]}`);
 }
 
 export function entry() {
@@ -58,6 +69,14 @@ function localDescribe_describe(local) {
 
 function localDescribe2_describe(local) {
   return "the second local";
+}
+
+function errorDeError_custom(msg) {
+  return [`de: ${msg}`];
+}
+
+function errorSerError_custom(msg) {
+  return [`ser: ${msg}`];
 }
 
 function vecI32Describe() {
@@ -114,5 +133,19 @@ function localDescribe2() {
     $localDescribe2 = { describe: localDescribe2_describe };
   }
   return $localDescribe2;
+}
+
+export function errorDeError() {
+  if ($errorDeError === undefined) {
+    $errorDeError = { custom: errorDeError_custom };
+  }
+  return $errorDeError;
+}
+
+export function errorSerError() {
+  if ($errorSerError === undefined) {
+    $errorSerError = { custom: errorSerError_custom };
+  }
+  return $errorSerError;
 }
 //# sourceMappingURL=case.js.map

@@ -1065,6 +1065,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             }
             "split_ascii_whitespace" if owner.is_str() => Std::Text(TextOp::SplitAsciiWhitespace),
             "get" if owner.is_str() => Std::Text(TextOp::StrGet),
+            "get" if owner.is_slice() && args.types().nth(1).is_some_and(|r| self.range_kind(r).is_some()) => {
+                Std::Text(TextOp::SliceGet)
+            }
+            "split_at" if owner.is_slice() => Std::Text(TextOp::SliceSplitAt),
             "is_char_boundary" if owner.is_str() => Std::Text(TextOp::IsCharBoundary),
             "len_utf8" if owner.is_char() => Std::Text(TextOp::CharLen { utf16: false }),
             "len_utf16" if owner.is_char() => Std::Text(TextOp::CharLen { utf16: true }),
@@ -1871,10 +1875,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// impl's `S: Borrow<str>`. std's JS compares and joins the value itself.
     pub(super) fn borrowed_by_user(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<Ty<'tcx>> {
         let borrow = std_item(self.tcx, StdItem::Borrow);
-        // `borrow()` itself is the impl's.
-        if self.tcx.trait_of_assoc(def_id) == Some(borrow) {
-            return None;
-        }
         let bounds = |id: DefId, args: ty::GenericArgsRef<'tcx>| {
             let predicates = self.tcx.predicates_of(id).instantiate(self.tcx, args).predicates;
             predicates
@@ -2145,6 +2145,9 @@ pub(super) fn implementable(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'
     operational(tcx, foreign, id)
         || tcx.is_diagnostic_item(sym::From, id)
         || tcx.is_diagnostic_item(sym::TryFrom, id)
+        // A `&mut` to what a type keeps, called on the type itself (ADR 0169).
+        || tcx.is_diagnostic_item(Symbol::intern("AsMut"), id)
+        || tcx.is_diagnostic_item(Symbol::intern("BorrowMut"), id)
         // Never called: a map keys by value (ADR 0168).
         || is_std_def(tcx, id, StdItem::Hash)
         // A writer of the crate's own, given its text a `write!` at a time

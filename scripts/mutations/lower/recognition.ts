@@ -419,4 +419,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "user_hash"],
   },
+  {
+    name: "user-as-mut-refused",
+    breaks: "a type's own `impl AsMut` is an error",
+    file: "src/lower/recognition.rs",
+    find: "        || tcx.is_diagnostic_item(Symbol::intern(\"AsMut\"), id)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "user_as_mut"],
+  },
+  {
+    name: "user-borrow-mut-refused",
+    breaks: "a type's own `impl BorrowMut` is an error",
+    file: "src/lower/recognition.rs",
+    find: "        || tcx.is_diagnostic_item(Symbol::intern(\"BorrowMut\"), id)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "user_as_mut"],
+  },
+  {
+    name: "slice-get-range-unknown",
+    breaks: "`v.get(1..3)` of a slice is an error",
+    file: "src/lower/recognition.rs",
+    find: "            \"get\" if owner.is_slice() && args.types().nth(1).is_some_and(|r| self.range_kind(r).is_some()) => {",
+    replace: "            \"get\" if owner.is_slice() && args.types().nth(1).is_some_and(|r| self.range_kind(r).is_some() && false) => {",
+    tests: ["test/corpus.test.ts", "-t", "slice_split"],
+  },
 ];

@@ -55,7 +55,8 @@ contains(tags, "blue", tagBorrowStr(), { eq: (a, b) => a === b });
   or join the wrong text. A lookup by the key itself is std's, and works.
   A std function that calls the crate's impl, `sort` of its own `Ord`,
   gives that impl its `Borrow`'s dictionary, and works too.
-- **Still errors:** a type's own `BorrowMut`.
+- **Still errors:** `borrow_mut()` of a generic `K: BorrowMut<Q>`. (Amended:
+  a type's own `BorrowMut` is allowed, ADR 0169.)
 
 ## Why
 

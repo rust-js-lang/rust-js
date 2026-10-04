@@ -175,6 +175,8 @@ helpers! {
     ParseBool,
     ParseChar,
     SliceRange,
+    SliceGet,
+    SliceSplitAt,
     SliceEnd,
     ByteLen,
     StrSlice,
@@ -744,6 +746,8 @@ impl Helper {
             Helper::ParseChar => include_str!("runtime/parse_char.js"),
             // `&v[a..b]`: a copy, and Rust's panic out of bounds.
             Helper::SliceRange => include_str!("runtime/slice_range.js"),
+            Helper::SliceGet => include_str!("runtime/slice_get.js"),
+            Helper::SliceSplitAt => include_str!("runtime/slice_split_at.js"),
             // `s.len()`: its UTF-8 bytes, as Rust counts them, where JS counts
             // UTF-16 units (ADR 0138).
             Helper::ByteLen => include_str!("runtime/byte_len.js"),

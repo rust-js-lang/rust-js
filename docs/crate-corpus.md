@@ -6,7 +6,7 @@ of its own, every library of its graph by rust-js as Cargo's
 `RUSTC_WRAPPER`, for its target, and records what each refused first, or
 what Cargo said where a crate failed with no refusal: a crash.
 
-Measured 2026-10-04, after ADR 0168, Rust 1.98.1, each crate at the
+Measured 2026-10-04, after ADR 0169, Rust 1.98.1, each crate at the
 newest release its requirement allows.
 
 | Crate | Verdict | First refusals in its graph |
@@ -16,31 +16,35 @@ newest release its requirement allows.
 | itertools 0.14 | blocked | either's |
 | indexmap 2.11 | blocked | hashbrown: a raw pointer |
 | bitflags 2.13 | refused | `fmt::Write::write_str` of a generic writer called |
-| smallvec 1.16 | refused | a user `AsMut` |
+| smallvec 1.16 | refused | `handle_alloc_error` called |
 | thiserror 2.0 | refused | `Path::display` called |
 | anyhow 1.0 | refused | a raw pointer |
 | once_cell 1.21 | refused | a constant of a raw pointer |
 | semver 1.0 | refused | a constant of a `NonNull` |
-| uuid 1.27 | refused | `split_at` called |
-| url 2.5 | blocked | utf8_iter: `size_hint` called; litemap: `{:?}` of a `PhantomData`; writeable: `<[T]>::get` called; smallvec's; percent-encoding: `transmute`; zerofrom: `u128` |
+| uuid 1.27 | refused | `eq_ignore_ascii_case` of a `[u8]` called |
+| url 2.5 | blocked | utf8_iter: `size_hint` called; litemap: `{:?}` of a `PhantomData`; writeable: `<[T]>::starts_with` called; smallvec's; percent-encoding: `transmute`; zerofrom: `u128` |
 | regex 1.11 | blocked | memchr: a raw pointer; regex-syntax: `str::from_utf8` |
-| rust_decimal 1.38 | blocked | arrayvec: a user `BorrowMut`; serde_core: two trait implementations' generated names colliding; num-traits: a value with a destructor bound where it isn't supported |
+| rust_decimal 1.38 | blocked | arrayvec: a user `io::Write`; serde_core: `size_hint` called; num-traits: a value with a destructor bound where it isn't supported |
 | chrono 0.4 (`alloc`) | blocked | num-traits' |
 | time 0.3 (`alloc`) | blocked | powerfmt: a `MaybeUninit`; deranged: `{:?}` of an `IntErrorKind`; num-conv: `u128`; time-core: a generic impl's constant of its parameters |
 
 1 of 16 compiles. What stops the most, by the crates it stops:
 
 1. **Raw memory,** a raw pointer, a `NonNull`, a `MaybeUninit`,
-   `transmute`: 7.
+   `transmute`, `handle_alloc_error`: 8.
 2. **`u128`:** 2. **num-traits' value with a destructor bound:** 2.
-   **A user `Future`:** 2. **A user `AsMut`:** 2.
-3. **One each:** `size_hint` called, `{:?}` of a `PhantomData`, `Path::display`,
+   **A user `Future`:** 2. **`size_hint` called:** 2.
+3. **One each:** `{:?}` of a `PhantomData`, `Path::display`,
    `str::from_utf8`, a generic impl's constant, `write_str` of a generic
-   writer, `<[T]>::get`, generated trait implementation names colliding,
-   `{:?}` of an `IntErrorKind`, `split_at`, a user `BorrowMut`.
+   writer, `{:?}` of an `IntErrorKind`, `eq_ignore_ascii_case` of a
+   `[u8]`, `<[T]>::starts_with`, a user `io::Write`.
 
 ## Fixed by measuring
 
+- **Two traits of one name for one type,** serde_core's `de::Error` and
+  `ser::Error`, named alike (ADR 0133); **a user `AsMut` or `BorrowMut`,**
+  smallvec's and arrayvec's (ADR 0169); **a slice's `split_at` and `get`
+  of a range,** uuid's and writeable's (ADR 0153).
 - **A user `Hash`** stopped semver, uuid, arrayvec and powerfmt (ADR 0168).
 - **A user `Borrow`, and `Borrow::borrow` of a generic key,** stopped uuid,
   deranged and equivalent (ADR 0167).

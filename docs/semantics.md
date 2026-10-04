@@ -242,6 +242,9 @@ Refused: `Rc::ptr_eq`, `strong_count`, `get_mut`, `make_mut` and
   lazy JS iterator, run one item at a time in Rust's order
   ([0036](decisions/0036-iterators-and-sorting.md),
   [0139](decisions/0139-lazy-chains.md)).
+- **A shared slice is a copy,** `&v[a..b]`, `split_at` and `get(a..b)`:
+  nothing changes `v` while it's borrowed
+  ([0153](decisions/0153-collection-and-cell-methods.md)).
 - **An `impl Iterator` is the iterator it stands for**
   ([0061](decisions/0061-generic-iterators.md)).
 - **A collection of the crate's is its own impls':** `for` over it calls

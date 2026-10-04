@@ -69,10 +69,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let what = format!("a `{collection}`, whose `IntoIterator` is the crate's, where any `IntoIterator` goes");
             return Err(self.unsupported(span, &what));
         }
-        // std's, which would take the value itself for what it borrows as.
-        if !self.is_rust_fn(def_id)
-            && let Some(ty) = self.recognition().borrowed_by_user(def_id, generic_args)
-        {
+        if let Some(ty) = self.borrowed_by_user(def_id, generic_args)? {
             let path = self.tcx.def_path_str(def_id);
             return Err(self.unsupported(span, &format!("`{path}` of a `{ty}` as what its own `Borrow` gives")));
         }
@@ -96,6 +93,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.unsupported(self.thir[fun].span, &format!("calling `{path}`")));
         };
         self.std_call(known, call, out)
+    }
+
+    /// A type whose `Borrow` is the crate's that std's function would take
+    /// as the value itself, for what it borrows as (ADR 0167): not the
+    /// crate's own `borrow()` or `borrow_mut()`, which is the crate's.
+    fn borrowed_by_user(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> R<Option<Ty<'tcx>>> {
+        let crates = self
+            .resolve_instance(def_id, generic_args)?
+            .is_some_and(|instance| self.is_rust_fn(instance.def_id()));
+        Ok(match self.is_rust_fn(def_id) || crates {
+            true => None,
+            false => self.recognition().borrowed_by_user(def_id, generic_args),
+        })
     }
 
     /// A collection of the crate's that a call takes as any `IntoIterator`:

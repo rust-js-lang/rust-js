@@ -1,6 +1,7 @@
 # 0153. Collection and cell methods, and `to_vec()` cloning what it copies
 
-Status: Accepted. Extends [0036](0036-iterators-and-sorting.md),
+Status: Accepted. (Amended: a slice's `split_at` and `get` of a range,
+which stopped uuid and writeable.) Extends [0036](0036-iterators-and-sorting.md),
 [0052](0052-std-trait-impls.md), [0062](0062-combinators.md) and
 [0025](0025-vec-loops-refcell-mut.md).
 
@@ -31,6 +32,8 @@ copied[0].x = 9; // `origin[0].x` was 9 too
 | `[..].into()` of a set, a map, a queue, a heap or a `Vec` | what its `from` is: `new Set([..])` |
 | `c.replace(v)`, `c.take()` of a `Cell` or `RefCell` | `$cellReplace(c, v)`, `$cellReplace(c, 0)` |
 | `c.replace_with(f)` | `$cellReplace(c, f(<&mut to its value>))` |
+| `s.split_at(mid)` | `$sliceSplitAt(s, mid)`, two copies, as `&s[..mid]` is; past the end it panics, `mid > len` |
+| `s.get(a..b)` | `$sliceGet(s, a, b)`: a copy, or `undefined` where `&s[a..b]` would panic |
 
 - **A binary search calls its comparison as Rust's does:** halving, then on
   the last item left, so a comparison that prints or counts sees the items

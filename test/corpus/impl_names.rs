@@ -68,9 +68,46 @@ fn second() -> String {
     Local.describe()
 }
 
+// Two traits of one name for one type, as serde's `de::Error` and
+// `ser::Error` are: each named with its trait's module too.
+mod de {
+    pub trait Error {
+        fn custom(msg: &str) -> Self;
+    }
+}
+
+mod ser {
+    pub trait Error {
+        fn custom(msg: &str) -> Self;
+    }
+}
+
+struct Error(String);
+
+impl de::Error for Error {
+    fn custom(msg: &str) -> Self {
+        Error(format!("de: {msg}"))
+    }
+}
+
+impl ser::Error for Error {
+    fn custom(msg: &str) -> Self {
+        Error(format!("ser: {msg}"))
+    }
+}
+
+fn fail_de<E: de::Error>() -> E {
+    E::custom("eof")
+}
+
+fn fail_ser<E: ser::Error>() -> E {
+    E::custom("key")
+}
+
 fn main() {
     println!("{} | {}", vec![1, 2].describe(), vec!["a".to_string()].describe());
     println!("{} | {}", Wrapper("x").describe(), Wrapper(7u8).describe());
     println!("{} | {}", <() as Convert<u8>>::convert(&()), <() as Convert<&u8>>::convert(&()));
     println!("{} | {}", first(), second());
+    println!("{} | {}", fail_de::<Error>().0, fail_ser::<Error>().0);
 }
