@@ -799,6 +799,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::FmtDebug
             | Std::FmtRadix(_)
             | Std::FmtExp(_)
+            | Std::FmtPointer
             | Std::FmtUsize => unreachable!("lowered by print_call"),
         })
     }

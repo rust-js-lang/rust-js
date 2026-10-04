@@ -108,7 +108,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let kind = self.std_fn(fun).filter(|k| {
                     matches!(
                         k,
-                        Std::FmtDisplay | Std::FmtDebug | Std::FmtRadix(_) | Std::FmtExp(_) | Std::FmtUsize
+                        Std::FmtDisplay
+                            | Std::FmtDebug
+                            | Std::FmtRadix(_)
+                            | Std::FmtExp(_)
+                            | Std::FmtPointer
+                            | Std::FmtUsize
                     )
                 })?;
                 let &ty::FnDef(_, generic_args) = thir[self.strip(fun)].ty.kind() else {
@@ -428,7 +433,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.debug_string(arg(), ty, span)?
             }
             // Only in a `format_args!` it recognizes whole (ADR 0058).
-            Std::FmtRadix(_) | Std::FmtExp(_) | Std::FmtUsize => {
+            Std::FmtRadix(_) | Std::FmtExp(_) | Std::FmtPointer | Std::FmtUsize => {
                 return Err(self.unsupported(span, "`{:x}` and the like here"));
             }
             _ => return Ok(None),

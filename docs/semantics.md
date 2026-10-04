@@ -164,9 +164,13 @@ Refused, among others: `str::from_utf8`, `String::from_utf8`,
 - **Arguments are taken in Rust's order:** `println!("{} {:?}", v.len(),
   v.pop())` reads the length before the pop
   ([0034](decisions/0034-strings-and-chars.md)).
+- **`{:x}`, `{:e}` and `{:p}` of the crate's types call its own `LowerHex`,
+  `LowerExp`, `Pointer` and the like,** given the placeholder's options
+  ([0165](decisions/0165-other-fmt-traits.md)).
 
 Refused: `{:x?}`; `{:.2e}`; options for a `&dyn Debug` made elsewhere;
-`f.sign_minus()` and `f.pad_integral(..)`; a user `impl fmt::Write`.
+`f.sign_minus()` and `f.pad_integral(..)`; a user `impl fmt::Write`; `{:p}`
+of a reference; `LowerHex::fmt(&n, f)` of a number.
 
 ## Values, copying and mutation
 

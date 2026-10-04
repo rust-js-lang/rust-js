@@ -74,4 +74,20 @@ export const mutations: Mutation[] = [
     replace: '                    Expr::call(Expr::member(text, "toUpperCase"), Vec::new())',
     tests: ["test/corpus.test.ts", "-t", "exp_format"],
   },
+  {
+    name: "other-fmt-placeholder-unused",
+    breaks: "`{:x}` of a type of the crate's isn't its `LowerHex`",
+    file: "src/lower/format_spec.rs",
+    find: "            && self.has_user_impl(trait_id, ty)\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "user_fmt_traits"],
+  },
+  {
+    name: "other-fmt-options-dropped",
+    breaks: "`{:#x}` and `{:>10b}` of a type of the crate's give its impl no options, so no `0x` and no padding",
+    file: "src/lower/format_spec.rs",
+    find: "            if !options && !spec.alternate {",
+    replace: "            if true {",
+    tests: ["test/corpus.test.ts", "-t", "user_fmt_traits"],
+  },
 ];

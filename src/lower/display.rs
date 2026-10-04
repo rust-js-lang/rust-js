@@ -280,8 +280,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
-        let Some(i) = self.formatter_param(def_id) else {
-            return Ok(None);
+        let i = match self.formatter_param(def_id) {
+            Some(i) => i,
+            // `Write::write_str(f, s)` of a `Formatter`: `f` is the first.
+            None if self.recognition().fmt_write_on_formatter(def_id, generic_args) => 0,
+            None => return Ok(None),
         };
         let Some((var, name)) = self.writing.writer.clone() else {
             return Err(self.unsupported(span, "a `Formatter` outside a `fmt`"));
@@ -322,6 +325,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             WriteCall::Debug => {
                 let ty = generic_args.type_at(0);
                 self.debug_string_with(values.remove(0), ty, span, &pretty)?
+            }
+            // The crate's impl, given this `Formatter`'s options; std's of a
+            // number would pad by them as it runs, which isn't here yet.
+            WriteCall::OtherFmt => {
+                let ty = generic_args.type_at(0).peel_refs();
+                let trait_id = self.tcx.trait_of_assoc(def_id).expect("a trait's `fmt`");
+                if !self.has_user_impl(trait_id, ty) {
+                    let path = self.tcx.def_path_str(def_id);
+                    return Err(self.unsupported(span, &format!("calling `{path}` of a `{ty}`")));
+                }
+                let args = self.tcx.mk_args(&[self.tcx.erase_and_anonymize_regions(ty).into()]);
+                self.writer_call(def_id, args, values.remove(0), &pretty, span)?
             }
             // More than five fields: arrays of their names and strings.
             WriteCall::StructFields => {

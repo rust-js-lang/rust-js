@@ -177,6 +177,8 @@ pub(super) enum Std {
     FmtRadix(Radix),
     /// `{:e}` (false) and `{:E}`: exponent notation.
     FmtExp(bool),
+    /// `{:p}`: of a type of the crate's, its own `Pointer` (ADR 0165).
+    FmtPointer,
     /// `Argument::from_usize`: a width or precision from an argument, `{:>w$}`.
     FmtUsize,
     /// A `HashMap` or `HashSet` method (ADR 0059).
@@ -980,6 +982,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "new_octal" if argument => Std::FmtRadix(Radix::Octal),
             "new_lower_exp" if argument => Std::FmtExp(false),
             "new_upper_exp" if argument => Std::FmtExp(true),
+            "new_pointer" if argument => Std::FmtPointer,
             "from_usize" if argument => Std::FmtUsize,
             "new" if adt("Rc") || adt("Arc") => Std::Same,
             "new" if adt("Cell") || adt("RefCell") || adt("Atomic") || adt("Mutex") || adt("RwLock") => Std::CellNew,
@@ -1329,6 +1332,24 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// core's `DoubleEndedIterator`, found among the traits, as it has no
     /// diagnostic item.
+    /// The `fmt` trait a placeholder of `kind` calls, `{:x}`'s `LowerHex`,
+    /// where it's one of `OTHER_FMT_TRAITS`.
+    pub(super) fn other_fmt_trait(&self, kind: Std) -> Option<DefId> {
+        let name = match kind {
+            Std::FmtRadix(Radix::LowerHex) => "LowerHex",
+            Std::FmtRadix(Radix::UpperHex) => "UpperHex",
+            Std::FmtRadix(Radix::Octal) => "Octal",
+            Std::FmtRadix(Radix::Binary) => "Binary",
+            Std::FmtExp(false) => "LowerExp",
+            Std::FmtExp(true) => "UpperExp",
+            Std::FmtPointer => "Pointer",
+            _ => return None,
+        };
+        self.tcx
+            .all_traits_including_private()
+            .find(|&id| is_other_fmt_trait(self.tcx, id) && self.tcx.item_name(id).as_str() == name)
+    }
+
     pub(super) fn double_ended_iterator(&self) -> Option<DefId> {
         self.tcx
             .all_traits_including_private()
@@ -1601,6 +1622,9 @@ pub(super) enum WriteCall {
     Pad,
     Display,
     Debug,
+    /// `LowerHex::fmt(x, f)` and the like: of a type of the crate's, its impl's
+    /// (ADR 0165).
+    OtherFmt,
     StructFields,
     TupleFields,
     Struct,
@@ -1619,6 +1643,18 @@ pub(super) enum SkipPredicate {
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `&mut Formatter<'_>`.
+    /// `fmt::Write`'s `write_str(f, s)` of a `Formatter`, called through the
+    /// trait: its `&mut Self` is the `Formatter`, as `f.write_str(s)`'s is.
+    pub(super) fn fmt_write_on_formatter(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+        self.tcx
+            .trait_of_assoc(def_id)
+            .is_some_and(|t| self.tcx.is_diagnostic_item(Symbol::intern("FmtWrite"), t))
+            && args
+                .types()
+                .next()
+                .is_some_and(|this| self.is_std_adt(this, Symbol::intern("Formatter")))
+    }
+
     fn is_formatter(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Ref(_, inner, Mutability::Mut)
             if self.is_std_adt(*inner, Symbol::intern("Formatter")))
@@ -1654,6 +1690,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "pad" if on_formatter => WriteCall::Pad,
             "fmt" if is_trait("Display") => WriteCall::Display,
             "fmt" if is_trait("Debug") => WriteCall::Debug,
+            "fmt" if trait_id.is_some_and(|t| is_other_fmt_trait(tcx, t)) => WriteCall::OtherFmt,
             "debug_struct_fields_finish" if on_formatter => WriteCall::StructFields,
             "debug_tuple_fields_finish" if on_formatter => WriteCall::TupleFields,
             name if on_formatter && name.starts_with("debug_struct_field") && name.ends_with("_finish") => {
@@ -1890,6 +1927,21 @@ pub(crate) fn is_sum_or_product(tcx: TyCtxt<'_>, id: DefId) -> bool {
         && [Symbol::intern("Sum"), Symbol::intern("Product")].contains(&tcx.item_name(id))
 }
 
+/// The `fmt` traits of a placeholder's other than `{}` and `{:?}`: `{:x}`'s
+/// `LowerHex` and the like, and `{:p}`'s `Pointer`, most with no diagnostic
+/// item (ADR 0165).
+const OTHER_FMT_TRAITS: [&str; 7] = [
+    "LowerHex", "UpperHex", "Octal", "Binary", "LowerExp", "UpperExp", "Pointer",
+];
+
+/// Is `id` one of core's `OTHER_FMT_TRAITS`?
+pub(crate) fn is_other_fmt_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    tcx.crate_name(id.krate) == sym::core
+        && tcx.def_kind(id) == DefKind::Trait
+        && OTHER_FMT_TRAITS.contains(&tcx.item_name(id).as_str())
+        && tcx.def_path_str(id).contains("fmt::")
+}
+
 /// Is `id` core's `DoubleEndedIterator` or `ExactSizeIterator`, which have
 /// no diagnostic items?
 pub(crate) fn is_iterator_extension(tcx: TyCtxt<'_>, id: DefId) -> bool {
@@ -2022,6 +2074,8 @@ pub(super) fn implementable(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'
         || tcx.is_diagnostic_item(sym::FromIterator, id)
         || is_extend(tcx, id)
         || is_sum_or_product(tcx, id)
+        // `{:x}`, `{:e}` and `{:p}` of the crate's types (ADR 0165).
+        || is_other_fmt_trait(tcx, id)
         // An iterator of the crate's from both ends, and of a known length:
         // what `rev()`, `next_back()` and `len()` call (ADR 0164).
         || is_iterator_extension(tcx, id)

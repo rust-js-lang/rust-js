@@ -347,4 +347,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "double_ended_iterators"],
   },
+  {
+    name: "other-fmt-impls-refused",
+    breaks: "a user `LowerHex`, `Pointer` and the like are errors",
+    file: "src/lower/recognition.rs",
+    find: "        || is_other_fmt_trait(tcx, id)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "user_fmt_traits"],
+  },
 ];

@@ -188,4 +188,12 @@ export const mutations: Mutation[] = [
     replace: "        Some(std_item(self.tcx, StdItem::ToString))",
     tests: ["test/crates.test.ts", "-t", "no_std"],
   },
+  {
+    name: "fmt-write-path-call-refused",
+    breaks: "`Write::write_str(f, s)` of a `Formatter` is an error, where `f.write_str(s)` isn't",
+    file: "src/lower/display.rs",
+    find: "            None if self.recognition().fmt_write_on_formatter(def_id, generic_args) => 0,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "user_fmt_traits"],
+  },
 ];

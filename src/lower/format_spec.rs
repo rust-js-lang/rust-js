@@ -110,7 +110,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => cx.debug_string_with(value, ty, span, &given),
             });
         }
+        // `{:x}`, `{:e}` or `{:p}` of the crate's type: its own impl's `fmt`,
+        // given the placeholder's options where there are any, `{:#x}`'s
+        // too, as its `Display`'s is (ADR 0165).
+        if let Some(trait_id) = self.recognition().other_fmt_trait(kind)
+            && self.has_user_impl(trait_id, ty)
+        {
+            let fmt = self.tcx.associated_item_def_ids(trait_id)[0];
+            let args = self.tcx.mk_args(&[self.tcx.erase_and_anonymize_regions(ty).into()]);
+            if !options && !spec.alternate {
+                return self.writer_call(fmt, args, value, &Pretty::Plain, span);
+            }
+            let given = Pretty::Given(options_object(spec, &width, &precision), spec.alternate);
+            let options = Options { spec, width, precision };
+            return self.with_options(Some(options), |cx| cx.writer_call(fmt, args, value, &given, span));
+        }
         let text = match kind {
+            Std::FmtPointer => return Err(self.unsupported(span, &format!("`{{:p}}` of a `{ty}`"))),
             Std::FmtRadix(radix) => {
                 let Some(num) = num.filter(|&n| !n.float()) else {
                     return Err(self.unsupported(span, &format!("`{{:x}}` and the like of a `{ty}`")));
