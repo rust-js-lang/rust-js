@@ -224,9 +224,32 @@ export function installRuntime(app: string) {
   symlinkSync(join(root, "runtime"), join(app, "node_modules", "@rust-js", "runtime"));
 }
 
+// Each test's own directory, in `target/fixtures/<pid>-<id>/`, its test
+// file's: a test runner's worker runs several files, each its own module,
+// so its own exit. Each removes its own as it exits, or every run would
+// leave them, tens of gigabytes in days; `RUST_JS_KEEP_FIXTURES=1` keeps
+// them to look at. A worker ended without exiting leaves its own, which the
+// next run removes: whose process is gone. Not by age: what a tarball
+// unpacks into is as old as the tarball says. Removing a directory removes
+// the links in it, not what they link to.
+export const fixtures = join(target, "fixtures");
+const mine = join(fixtures, `${process.pid}-${crypto.randomUUID().slice(0, 8)}`);
+
 export function fixture(name: string): string {
-  mkdirSync(target, { recursive: true });
-  return mkdtempSync(join(target, `${name}-`));
+  if (!existsSync(mine)) {
+    mkdirSync(mine, { recursive: true });
+    for (const entry of readdirSync(fixtures)) {
+      const owner = /^(\d+)-/.exec(entry)?.[1];
+      if (!owner || alive(Number(owner))) continue;
+      try {
+        rmSync(join(fixtures, entry), { recursive: true, force: true });
+      } catch {
+        // Another file's sweep is removing it too: it goes either way.
+      }
+    }
+    if (!process.env.RUST_JS_KEEP_FIXTURES) process.on("exit", () => rmSync(mine, { recursive: true, force: true }));
+  }
+  return mkdtempSync(join(mine, `${name}-`));
 }
 
 /** serde, serde_derive and serde_json (ADR 0077): the flags that find them,

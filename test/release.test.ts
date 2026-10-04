@@ -5,8 +5,7 @@
 // version.
 
 import { expect, test } from "bun:test";
-import { cpSync, mkdtempSync, readFileSync, realpathSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { cpSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildCompiler, compiler, fixture, root, run } from "./support";
 
@@ -17,7 +16,7 @@ const version = (Bun.TOML.parse(readFileSync(join(root, "Cargo.toml"), "utf8")) 
 
 test("each package a release publishes is publishable, at the compiler's version", () => {
   buildCompiler();
-  const dir = realpathSync(mkdtempSync(join(tmpdir(), "rust-js-release-")));
+  const dir = fixture("release");
   const bundle = join(dir, "distribution");
   if (supplied) cpSync(supplied, bundle, { recursive: true });
   else run([process.execPath, "scripts/package-distribution.ts", compiler, bundle], 600_000);

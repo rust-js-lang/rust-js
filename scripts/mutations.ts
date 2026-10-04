@@ -142,6 +142,8 @@ async function main() {
   const unknown = named.filter((name) => !mutations.some((m) => m.name === name));
   if (unknown.length > 0) throw new Error(`no mutation ${unknown.join(", ")}; there are ${mutations.map((m) => m.name).join(", ")}`);
   const chosen = named.length > 0 ? mutations.filter((m) => named.includes(m.name)) : mutations;
+  // A killed run's compilers, which it didn't get to remove.
+  rmSync(join(work, "bin"), { recursive: true, force: true });
   // Each mutation's tests pass as the compiler is, and run at all, so
   // their failing is the mutation's doing.
   const unmutated = build();
@@ -170,6 +172,9 @@ async function main() {
       continue;
     }
     const { ran, output, exit } = test(mutation.tests, compiler, mutation.snapshots);
+    // A mutant's compiler is its tests' alone: a debug build, hundreds of
+    // megabytes, which kept for each of hundreds would fill a disk.
+    rmSync(compiler, { force: true });
     // Its log, whatever it says, for what it caught or didn't.
     const log = join(work, "logs", `${mutation.name}.log`);
     mkdirSync(join(work, "logs"), { recursive: true });

@@ -449,7 +449,7 @@ pub fn App() -> Element {
 
     // A source outside the workspace, a module by `#[path]`, is one rust-js
     // read: an edit of it is one too. Found in review.
-    const shared = `${dir}-shared.rs`;
+    const shared = join(fixture("vite-cargo-shared"), "shared.rs");
     writeFileSync(shared, 'pub fn label() -> &\'static str {\n    "Shared "\n}\n');
     writeFileSync(models, `#[path = ${JSON.stringify(shared)}]\nmod shared;\n\npub fn label() -> &'static str {\n    shared::label()\n}\n`);
     // Another module is another set of files: a reload.
