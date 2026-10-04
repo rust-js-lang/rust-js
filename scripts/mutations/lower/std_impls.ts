@@ -82,4 +82,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "wrapping_type"],
   },
+  {
+    name: "given-eq-of-parametrized-ignored",
+    breaks: "`==` of a `Wrapping<T>` asks `T`'s `PartialEq`, not the one its bound gives",
+    file: "src/lower/std_impls.rs",
+    find: "        if ty.has_param() && !self.is_unknown(ty) {",
+    replace: "        if false {",
+    tests: ["test/corpus.test.ts", "-t", "trait_default_bounds"],
+  },
 ];

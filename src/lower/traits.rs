@@ -1807,6 +1807,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
                 let name = self.fresh(&js_word(&word));
                 specialized.push((bound, Expr::var(&name)));
+                // And as the body asks for it, in the impl's terms: a method's
+                // `where Self: PartialEq` of a `Wrapping<T>`'s.
+                let concrete = ty::EarlyBinder::bind(self.tcx, bound)
+                    .instantiate(self.tcx, args)
+                    .skip_normalization();
+                if concrete != bound {
+                    specialized.push((concrete, Expr::var(&name)));
+                }
                 own_params.push(name);
                 continue;
             }

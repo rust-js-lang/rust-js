@@ -559,4 +559,12 @@ export const mutations: Mutation[] = [
     replace: "            && let Some(inner) = self.recognition().wrapping_of(ty.peel_refs()).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "wrapping_type"],
   },
+  {
+    name: "default-own-bound-trait-terms",
+    breaks: "a default's `where Self: PartialEq` isn't found as the impl's type's",
+    file: "src/lower/traits.rs",
+    find: "                if concrete != bound {\n                    specialized.push((concrete, Expr::var(&name)));",
+    replace: "                if false {\n                    specialized.push((concrete, Expr::var(&name)));",
+    tests: ["test/corpus.test.ts", "-t", "trait_default_bounds"],
+  },
 ];

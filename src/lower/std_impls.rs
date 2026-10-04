@@ -12,7 +12,7 @@ use rustc_hir as hir;
 use rustc_hir::LangItem;
 use rustc_hir::def::{DefKind, Res};
 use rustc_middle::traits::ImplSource;
-use rustc_middle::ty::{self, Ty};
+use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
@@ -504,6 +504,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (b, ty) = self.through_refs(b, ty);
         if self.is_primitive_eq(ty) {
             return Ok(Expr::bin(Op::Eq, a, b));
+        }
+        // A type of a type parameter whose `PartialEq` a bound gives, a
+        // method's `where Self: PartialEq` of a `Wrapping<T>`: its dictionary's,
+        // as its parts' needn't be.
+        if ty.has_param() && !self.is_unknown(ty) {
+            let tr = ty::TraitRef::new_from_args(
+                self.tcx,
+                self.partial_eq_trait(),
+                self.args_of(self.partial_eq_trait(), ty),
+            );
+            if let Some(dictionary) = self.evidence_for(tr) {
+                return Ok(Expr::call(Expr::member(dictionary, "eq"), vec![a, b]));
+            }
         }
         if self.is_unknown(ty) {
             let tr = ty::TraitRef::new_from_args(

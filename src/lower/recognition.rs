@@ -2237,7 +2237,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return None;
         }
         let name = self.tcx.item_name(id);
-        if Num::of(tr.self_ty().peel_refs()).is_some() && name.as_str() != "partial_cmp" {
+        // A number's `max` and `cmp` are its own methods'; its `<` is JS's, as
+        // a copied default's `self < Self::zero()` of an `f64` calls it.
+        if Num::of(tr.self_ty().peel_refs()).is_some()
+            && !matches!(name.as_str(), "partial_cmp" | "lt" | "le" | "gt" | "ge")
+        {
             return None;
         }
         let call = match name.as_str() {

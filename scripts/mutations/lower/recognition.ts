@@ -539,4 +539,12 @@ export const mutations: Mutation[] = [
     replace: "                return None;",
     tests: ["test/corpus.test.ts", "-t", "wrapping_type"],
   },
+  {
+    name: "number-lt-in-default-unknown",
+    breaks: "`self < Self::zero()` in a default copied into an `f64`'s impl is an error",
+    file: "src/lower/recognition.rs",
+    find: "!matches!(name.as_str(), \"partial_cmp\" | \"lt\" | \"le\" | \"gt\" | \"ge\")",
+    replace: "!matches!(name.as_str(), \"partial_cmp\")",
+    tests: ["test/corpus.test.ts", "-t", "trait_default_bounds"],
+  },
 ];
