@@ -105,7 +105,9 @@ library behavior from local source.
    the test fail before changing the compiler.
 2. **Compare with native Rust** where the two should agree: a corpus case
    runs both and compares their output. Test intentional differences
-   explicitly.
+   explicitly. An operation on numbers, strings or chars also goes in its
+   boundary matrix, `scripts/matrix.ts`, which tries it on each value where
+   implementations go wrong ([ADR 0182](docs/decisions/0182-boundary-matrices.md)).
 3. **Read the generated JavaScript.** It should read as a person would write
    it. Review every snapshot diff before accepting it with `bun run bless`.
 4. **Prove the tests can fail.** For each new behavior or guard, add a

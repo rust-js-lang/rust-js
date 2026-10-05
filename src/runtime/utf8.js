@@ -23,9 +23,10 @@ function $utf8Check(bytes, from = 0) {
   return undefined;
 }
 
-// Valid UTF-8's text.
+// Valid UTF-8's text, a U+FEFF at its start too, which `TextDecoder` would
+// drop as a byte order mark, where Rust keeps every character.
 function $utf8Decode(bytes) {
-  return new TextDecoder().decode(Uint8Array.from(bytes));
+  return new TextDecoder("utf-8", { ignoreBOM: true }).decode(Uint8Array.from(bytes));
 }
 
 // `str::from_utf8(bytes)`, or `String::from_utf8(bytes)` (`owned`), whose

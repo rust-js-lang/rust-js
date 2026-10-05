@@ -241,6 +241,25 @@ pub fn report() -> String {
   expect(generated.report()).toBe(expected);
 });
 
+// A string whose text begins with U+FEFF keeps it, as serde_json reads
+// every byte: `TextDecoder` drops one by default, as a byte order mark
+// (found by the boundary matrices, ADR 0182).
+test("serde: a string beginning with U+FEFF keeps it", async () => {
+  const dir = fixture("serde-bom");
+  writeFileSync(join(dir, "cases.rs"), `pub fn report() -> String {
+    let mut out = String::new();
+    for text in ["\\"\\u{feff}x\\"", "\\"\\u{feff}\\"", "[\\"a\\", \\"\\u{feff}b\\u{feff}\\"]"] {
+        out.push_str(&format!("{:?} {:?}\\n", serde_json::from_str::<String>(text).ok(), serde_json::from_str::<Vec<String>>(text).ok()));
+    }
+    out
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  run([compiler, join(dir, "cases.rs"), "-o", join(dir, "cases.js"), "--", ...buildSerde()]);
+  const generated = await import(join(dir, "cases.js"));
+  expect(generated.report()).toBe(expected);
+});
+
 // A set of structs, an array in JSON, found by value as it's read (ADR
 // 0121): two equal items are one, as serde_json's `HashSet` has them.
 test("serde: a set of structs read from JSON has each value once", async () => {

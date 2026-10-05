@@ -47,6 +47,7 @@
     "bench:lowering": "cargo build --locked && bun bench/lowering.ts",
     "typecheck": "tsc --noEmit",
     "architecture": "bun scripts/architecture-report.ts",
+    "matrix": "bun scripts/matrix.ts",
     "runtime": "cargo build && ./target/debug/rust-js --runtime-module > runtime/index.js"
   },
   "devDependencies": {

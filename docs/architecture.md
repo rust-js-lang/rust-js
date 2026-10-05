@@ -411,7 +411,9 @@ A std function or method rust-js doesn't know yet:
 2. **Lower it** in its domain's function: `vecs.rs` for a `Vec`'s, `text.rs`
    for a string's, and so on. If it needs a runtime helper, add
    `src/runtime/<name>.js` and name it in `runtime.rs`.
-3. **Prove it**: a corpus case in `test/corpus/`, compared with native Rust;
+3. **Prove it**: a corpus case in `test/corpus/`, compared with native Rust,
+   and, of numbers, strings or chars, its row in the boundary matrices,
+   `scripts/matrix.ts` ([ADR 0182](decisions/0182-boundary-matrices.md));
    mutations in its module's list in `scripts/mutations/`, each a bug its
    tests must catch;
    and a design decision in `docs/decisions/` if it's a new choice.

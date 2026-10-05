@@ -330,7 +330,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             NumOp::Powi if num == Num::F32 => helper(self, Helper::PowiF32, "$powiF32", vec![arg(), arg()]),
             NumOp::Powi => helper(self, Helper::Powi, "$powi", vec![arg(), arg()]),
-            NumOp::Powf => rounded(Expr::bin(Op::Pow, arg(), arg())),
+            // `a ** b`, but where JS's `**` gives NaN, of a base of 1 or -1 to an
+            // infinite or NaN power, Rust's is 1: `$powf`, unless the power is a
+            // finite constant, `x.powf(2.0)`.
+            NumOp::Powf => {
+                let (a, b) = (arg(), arg());
+                match &b.kind {
+                    js::ExprKind::Num(n) if n.is_finite() => rounded(Expr::bin(Op::Pow, a, b)),
+                    _ => rounded(helper(self, Helper::Powf, "$powf", vec![a, b])),
+                }
+            }
             NumOp::Exp2 => rounded(Expr::bin(Op::Pow, Expr::num(2.0), arg())),
             NumOp::Round => helper(self, Helper::Round, "$round", vec![arg()]),
             NumOp::TotalCmp => helper(self, Helper::TotalCmp, "$totalCmp", vec![arg(), arg()]),

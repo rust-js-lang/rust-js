@@ -1830,7 +1830,9 @@ for (const method of [
   };
 }
 
-const $JSON_UTF8 = new TextDecoder();
+// A string's text, a U+FEFF at its start too, which `TextDecoder` would drop
+// as a byte order mark, where serde_json keeps every character.
+const $JSON_UTF8 = new TextDecoder("utf-8", { ignoreBOM: true });
 const $JSON_POW10 = Array.from({ length: 309 }, (_, i) => Number(`1e${i}`));
 
 // `significand * 10 + digit`, a BigInt once it's past 2^53.

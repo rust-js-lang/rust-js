@@ -14,6 +14,7 @@ import {
   $nextIf,
   $parseF64,
   $peek,
+  $powf,
   $slice,
 } from "@rust-js/runtime";
 
@@ -213,7 +214,7 @@ const Calculator = {
       } else if (expr._1 === "/") {
         tmp = a / b;
       } else {
-        tmp = a ** b;
+        tmp = $powf(a, b);
       }
     } else {
       const option$1 = calculator.functions.get(expr._0);

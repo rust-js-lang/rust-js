@@ -3462,7 +3462,9 @@ for (const method of [
   };
 }
 
-export const $JSON_UTF8 = new TextDecoder();
+// A string's text, a U+FEFF at its start too, which `TextDecoder` would drop
+// as a byte order mark, where serde_json keeps every character.
+export const $JSON_UTF8 = new TextDecoder("utf-8", { ignoreBOM: true });
 export const $JSON_POW10 = Array.from({ length: 309 }, (_, i) => Number(`1e${i}`));
 
 // `significand * 10 + digit`, a BigInt once it's past 2^53.
@@ -4197,9 +4199,10 @@ export function $utf8Check(bytes, from = 0) {
   return undefined;
 }
 
-// Valid UTF-8's text.
+// Valid UTF-8's text, a U+FEFF at its start too, which `TextDecoder` would
+// drop as a byte order mark, where Rust keeps every character.
 export function $utf8Decode(bytes) {
-  return new TextDecoder().decode(Uint8Array.from(bytes));
+  return new TextDecoder("utf-8", { ignoreBOM: true }).decode(Uint8Array.from(bytes));
 }
 
 // `str::from_utf8(bytes)`, or `String::from_utf8(bytes)` (`owned`), whose
@@ -4329,6 +4332,12 @@ export const $mutStringWriter = {
     w.value.value += text;
   },
 };
+
+// `a.powf(b)`, as Rust's is, IEEE's `pow`: 1 of a base of 1 to any power, a
+// NaN's too, and of -1 to an infinite one, where JS's `**` gives NaN.
+export function $powf(a, b) {
+  return a === 1 || (a === -1 && Math.abs(b) === Infinity) ? 1 : a ** b;
+}
 
 export function $sliceEnd(items, start, end = items.length) {
   if (start > end) throw new Error(`slice index starts at ${start} but ends at ${end}`);

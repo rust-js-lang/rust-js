@@ -22,6 +22,26 @@ type Printed = Pick<Exit, "stdout" | "stderr" | "bytes">;
 export const printed = (a: Printed, b: Printed, stream: "stdout" | "stderr") =>
   a[stream] === b[stream] ? `${a.bytes[stream].toString("hex")} (as bytes)\n` : a[stream];
 
+/** `printed`, cut to the lines around where it first differs from `b`'s,
+ * where it's long: a report of two whole long outputs, a boundary matrix's
+ * (ADR 0182), would be megabytes, which a test runner takes minutes to diff. */
+export const excerpt = (a: Printed, b: Printed, stream: "stdout" | "stderr", limit = 4000) => {
+  const text = printed(a, b, stream);
+  if (text.length <= limit) return text;
+  if (a[stream] === b[stream]) {
+    let at = 0;
+    while (at < a.bytes[stream].length && a.bytes[stream][at] === b.bytes[stream][at]) at++;
+    const from = Math.max(0, at - 16);
+    return `[bytes ${from} to ${at + 16} of ${a.bytes[stream].length}, from the first that differs, ${at}] ${a.bytes[stream].subarray(from, at + 16).toString("hex")} (as bytes)\n`;
+  }
+  const ours = a[stream].split("\n");
+  const theirs = b[stream].split("\n");
+  let at = 0;
+  while (at < ours.length && ours[at] === theirs[at]) at++;
+  const from = Math.max(0, at - 2);
+  return `[lines ${from + 1} to ${Math.min(at + 3, ours.length)} of ${ours.length}, from the first that differs, ${at + 1}]\n${ours.slice(from, at + 3).join("\n")}\n`;
+};
+
 // What a process may print before it's stopped: far more than any test's.
 const maxBuffer = 16 * 1024 * 1024;
 // How long output is still read after a process is stopped, if something it

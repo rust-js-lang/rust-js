@@ -23,7 +23,7 @@ import { basename, join } from "node:path";
 import { runInNewContext } from "node:vm";
 import { build } from "vite";
 
-import { printed } from "./child";
+import { excerpt } from "./child";
 import { expected, same, type Outcome } from "./oracle";
 import { agree, compileJs, node, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, compiler, fixture, root } from "./support";
@@ -116,7 +116,7 @@ async function check(file: string): Promise<string[]> {
   for (const [name, run] of runs) {
     for (const stream of ["stdout", "stderr"] as const) {
       if (!run.bytes[stream].equals(native.bytes[stream])) {
-        problems.push(`${name} ${stream}:\n${printed(run, native, stream)}\nnative ${stream}:\n${printed(native, run, stream)}`);
+        problems.push(`${name} ${stream}:\n${excerpt(run, native, stream)}\nnative ${stream}:\n${excerpt(native, run, stream)}`);
       }
     }
     if (typeof run.outcome === "string" || !same(run.outcome, native.outcome as Outcome)) {

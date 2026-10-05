@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [
     replace: '  return { TAG: "Owned", _0: $utf8Decode(bytes) };',
     tests: ["test/corpus.test.ts", "-t", "utf8_decoding"],
   },
+  {
+    name: "utf8-drops-bom",
+    breaks: "`String::from_utf8_lossy` of text beginning with U+FEFF drops it, as a byte order mark",
+    file: "src/runtime/utf8.js",
+    find: 'new TextDecoder("utf-8", { ignoreBOM: true })',
+    replace: "new TextDecoder()",
+    tests: ["test/corpus.test.ts", "-t", "matrix_strings"],
+  },
 ];

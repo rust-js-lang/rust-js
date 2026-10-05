@@ -50,7 +50,6 @@ table](../ROADMAP.md) lists the larger missing pieces.
 | `f64` | number | |
 | `f32` | number, each result rounded by `Math.fround` | printed with its own shortest digits ([0122](decisions/0122-f32.md)) |
 | `bool` | boolean | |
-| `i128` `u128` | refused | |
 
 - **Overflow wraps, as in a release build.** `i32::MAX + 1` is
   `i32::MIN`, as with `-Coverflow-checks=off`; a native debug build would
@@ -73,7 +72,9 @@ table](../ROADMAP.md) lists the larger missing pieces.
   ([0064](decisions/0064-numbers.md), [`remainder_sign`](../test/corpus/remainder_sign.rs)).
 - **Arithmetic is exact; library functions are JS's.** `+ - * /` and `sqrt`
   give Rust's answers, an `f32`'s included. `sin`, `exp`, `powf` and the
-  others are JS's `Math`, which may differ from Rust's in the last bit.
+  others are JS's `Math`, which may differ from Rust's in the last bit;
+  `powf`'s special cases are Rust's, `1.0.powf(f64::NAN)` being 1, where JS's
+  `**` gives NaN ([0182](decisions/0182-boundary-matrices.md)).
 - **`size_of`, `align_of`** are wasm32's: a pointer is 4 bytes
   ([0145](decisions/0145-type-facts.md)).
 

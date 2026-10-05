@@ -163,4 +163,12 @@ export const mutations: Mutation[] = [
     replace: "true => (b'a', b'z', Op::Add),",
     tests: ["test/corpus.test.ts", "-t", "byte_ascii"],
   },
+  {
+    name: "powf-as-js-pow",
+    breaks: "`1.0.powf(f64::INFINITY)` is NaN, as JS's `**` has it, where Rust's is 1",
+    file: "src/lower/numbers.rs",
+    find: "                    _ => rounded(helper(self, Helper::Powf, \"$powf\", vec![a, b])),",
+    replace: "                    _ => rounded(Expr::bin(Op::Pow, a, b)),",
+    tests: ["test/corpus.test.ts", "-t", "matrix_floats"],
+  },
 ];
