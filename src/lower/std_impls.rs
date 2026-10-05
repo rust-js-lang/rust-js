@@ -402,6 +402,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(Expr::undefined());
         }
+        // react's `Rest`: no props, `undefined`, which a spread spreads
+        // nothing of, and a JSX attribute isn't written for (ADR 0195).
+        if super::bindings::is_rest(self.tcx, ty) {
+            return Ok(Expr::undefined());
+        }
         if self.has_user_impl(default, ty) {
             let method = self.tcx.associated_item_def_ids(default)[0];
             return self.impl_call(method, self.args_of(default, ty), Vec::new(), span);

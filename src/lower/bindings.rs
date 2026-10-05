@@ -2,7 +2,7 @@
 
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::{ExprKind, LetStmt, Stmt, StmtKind};
-use rustc_middle::ty::{FieldDef, TyCtxt, VariantDef};
+use rustc_middle::ty::{self, FieldDef, Ty, TyCtxt, VariantDef};
 use rustc_span::def_id::{DefId, LocalModDefId};
 use rustc_span::{Span, Symbol, sym};
 
@@ -213,6 +213,13 @@ pub(super) fn is_mark(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
                 .next()
                 .is_some()
         })
+}
+
+/// Whether `ty` is react's `Rest`, the props a component's struct doesn't
+/// name: `...rest` of its destructured props (ADR 0195).
+pub(super) fn is_rest(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("rest_props")];
+    matches!(ty.kind(), ty::TyKind::Adt(adt, _) if tcx.get_attrs_by_path(adt.did(), &path).next().is_some())
 }
 
 /// A module's `js::export_default!(page)`: the function its `const _`

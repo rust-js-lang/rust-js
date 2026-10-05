@@ -68,6 +68,19 @@ pub use webapi;
 #[cfg_attr(rust_js, rust_js::jsx_element)]
 pub struct Element(PhantomData<JsObject>);
 
+/// The props a component's struct doesn't name, JS's `...rest`: a field of
+/// one, in props the component destructures, `LinkProps { href, rest }:
+/// LinkProps`, holds what a JS caller gave besides, which `<a {...rest}>`
+/// spreads onto an element. Its default is none (ADR 0195).
+#[cfg_attr(rust_js, rust_js::rest_props)]
+pub struct Rest(PhantomData<JsObject>);
+
+impl Default for Rest {
+    fn default() -> Self {
+        unreachable!("rust-js writes `undefined`")
+    }
+}
+
 /// React's empty node, `undefined`, which renders nothing: what a props
 /// struct that derives `Default` has of its `children` where they aren't
 /// given, as a JS component's binding is, `next/link`'s (ADR 0192).

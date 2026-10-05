@@ -210,4 +210,12 @@ export const mutations: Mutation[] = [
     replace: "                    Some(test) if false && names_value(&test) => test,",
     tests: ["test/compiler.test.ts", "-t", "unit variant is tested as the variant"],
   },
+  {
+    name: "rest-props-as-field",
+    breaks: "`LinkProps { href, rest }` is `{ href, rest }`, where JS's props have no `rest`, not `...rest`",
+    file: "src/lower/patterns.rs",
+    find: "                    match super::bindings::is_rest(self.tcx, fields[i].1) {",
+    replace: "                    match false && super::bindings::is_rest(self.tcx, fields[i].1) {",
+    tests: ["test/jsx.test.ts", "-t", "doesn't name as ...rest"],
+  },
 ];

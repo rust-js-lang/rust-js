@@ -767,6 +767,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let num = self.num(ty, span)?;
                 Ok(num_literal(lit.to_bits_unchecked(), num))
             }
+            // JS's props have no `rest`: what's left of them is taken apart
+            // from the rest, `{ href, ...rest }` (ADR 0195).
+            ExprKind::Field { .. } if bindings::is_rest(self.tcx, ty) => Err(self.unsupported(
+                span,
+                "reading a `Rest` of props: take it apart from them, `LinkProps { href, rest }: LinkProps`",
+            )),
             ExprKind::VarRef { .. }
             | ExprKind::UpvarRef { .. }
             | ExprKind::Field { .. }

@@ -188,12 +188,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         }
+        let rest_fields: Vec<String> = match self.shape(ty) {
+            Shape::Object(types) => types
+                .into_iter()
+                .filter(|&(_, ty)| super::bindings::is_rest(self.tcx, ty))
+                .map(|(name, _)| name)
+                .collect(),
+            _ => Vec::new(),
+        };
         let mut attrs = Vec::new();
         let mut children = Vec::new();
         for field in fields {
             match field {
                 // None given, an `Element`'s default (ADR 0192).
                 Prop::Field(name, value) if name == "children" && matches!(value.kind, js::ExprKind::Undefined) => {}
+                // What a `Rest` holds is the element's props, `{...rest}` (ADR 0195).
+                Prop::Field(name, value) if rest_fields.contains(&name) => {
+                    if !matches!(value.kind, js::ExprKind::Undefined) {
+                        attrs.push(Prop::Spread(value));
+                    }
+                }
                 Prop::Field(name, value) if name == "children" => {
                     let Shape::Object(types) = self.shape(ty) else {
                         unreachable!("a struct's fields")
@@ -341,7 +355,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             jsx.children.extend(children);
         } else {
-            if name == "..." && !matches!(self.shape(self.thir[value].ty), Shape::Object(_)) {
+            if name == "..."
+                && !matches!(self.shape(self.thir[value].ty), Shape::Object(_))
+                && !super::bindings::is_rest(self.tcx, self.thir[value].ty)
+            {
                 return Err(self.unsupported(self.thir[value].span, "JSX props spread of a non-struct value"));
             }
             let value = self.expr(value, out)?;

@@ -285,4 +285,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","block_modules"],
     snapshots: true,
   },
+  {
+    name: "rest-read-allowed",
+    breaks: "`p.rest` of props is `p.rest`, which JS's props don't have: `undefined`",
+    file: "src/lower.rs",
+    find: "            ExprKind::Field { .. } if bindings::is_rest(self.tcx, ty) => Err(self.unsupported(",
+    replace: "            ExprKind::Field { .. } if false && bindings::is_rest(self.tcx, ty) => Err(self.unsupported(",
+    tests: ["test/jsx.test.ts", "-t", "doesn't name as ...rest"],
+  },
 ];

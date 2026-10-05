@@ -739,6 +739,50 @@ pub fn Badge(p: P) -> Element {
   expect(renderToStaticMarkup(result.Badge({ class_name: "c", size: "S", title: "t" }))).toBe('<svg class="c" width="12px" height="12px" viewBox="0 0 20 20"><title>t</title><g fill="none"><path d="M0 0"></path></g></svg>');
 });
 
+// A component's props its struct doesn't name, a `react::Rest`: `...rest` of
+// its destructured props, spread onto an element, as react.dev's
+// ExternalLink takes its callers' `aria-label` (ADR 0195). A Rust caller's
+// default gives none, and no `rest` prop.
+test("JSX takes the props a component's struct doesn't name as ...rest", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{Element, Node, Rest, jsx};
+#[derive(Default)]
+pub struct LinkProps<C> { pub href: &'static str, pub rest: Rest, pub target: Option<&'static str>, pub children: C }
+pub fn ExternalLink<C: Node>(LinkProps { href, target, children, rest }: LinkProps<C>) -> Element {
+    jsx! { <a href={href} target={target.unwrap_or("_blank")} rel="noopener" {...rest}>{children}</a> }
+}
+pub fn Home() -> Element {
+    jsx! { <ExternalLink href="/home" {..Default::default()}>{"Home"}</ExternalLink> }
+}
+#[derive(Default)]
+pub struct SocialProps { pub name: &'static str, pub rest: Rest }
+pub fn Social(SocialProps { name, rest }: SocialProps) -> Element {
+    jsx! { <ExternalLink href="/social" rest={rest} {..Default::default()}>{name}</ExternalLink> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect([jsx.includes("export function ExternalLink({ href, target, children, ...rest })"), jsx.includes("{...rest}"), jsx.includes("rest=")]).toEqual([true, true, false]);
+  // One a Rust component passes on is spread too.
+  expect(jsx).toContain('<ExternalLink href="/social" {...rest}>');
+  const { ExternalLink, Home, Social } = await import(join(dir, "lib.jsx"));
+  const { createElement } = await import("react");
+  expect(renderToStaticMarkup(createElement(ExternalLink, { href: "/a", "aria-label": "A", className: "c" }, "a"))).toBe('<a href="/a" target="_blank" rel="noopener" aria-label="A" class="c">a</a>');
+  expect(renderToStaticMarkup(Home())).toBe('<a href="/home" target="_blank" rel="noopener">Home</a>');
+  expect(renderToStaticMarkup(createElement(Social, { name: "S", "aria-label": "B" }))).toBe('<a href="/social" target="_blank" rel="noopener" aria-label="B">S</a>');
+  // JS's props have no `rest`: one read as a field is an error, which says
+  // to take it apart.
+  const read = compile(`#![allow(non_snake_case)]
+use react::{Element, Rest, jsx};
+pub struct P { pub href: &'static str, pub rest: Rest }
+pub fn A(p: P) -> Element {
+    jsx! { <a href={p.href} {...p.rest} /> }
+}
+`);
+  const failed = Bun.spawnSync(read.args, { cwd: read.dir });
+  expect([failed.exitCode === 0, failed.stderr.toString().includes("take it apart from them")]).toEqual([false, true]);
+});
+
 test("JSX grammar: spread precedence, children overrides, component paths and keyed fragments", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 #[rust_js::camel_case]

@@ -24,13 +24,13 @@ use std::path::PathBuf;
 use oxc_allocator::{Allocator, ArenaBox, ArenaVec};
 use oxc_ast::ast::{
     Argument, ArrayExpressionElement, ArrowFunctionBody, AssignmentTarget, BindingIdentifier, BindingPattern,
-    BindingProperty, BlockStatement, CallExpression, CatchClause, CatchParameter, ChainElement, Declaration,
-    Expression, ForStatementInit, ForStatementLeft, FormalParameter, FormalParameterKind, FormalParameters,
-    FunctionBody, FunctionType, IdentifierName, JSXAttributeItem, JSXAttributeName, JSXAttributeValue, JSXChild,
-    JSXClosingElement, JSXClosingFragment, JSXElementName, JSXExpression, JSXIdentifier, JSXMemberExpressionObject,
-    JSXOpeningElement, JSXOpeningFragment, LabelIdentifier, ObjectPropertyKind, Program, PropertyKey, PropertyKind,
-    SimpleAssignmentTarget, Statement, StaticMemberExpression, TemplateElement, TemplateElementValue,
-    VariableDeclarationKind, VariableDeclarator,
+    BindingProperty, BindingRestElement, BlockStatement, CallExpression, CatchClause, CatchParameter, ChainElement,
+    Declaration, Expression, ForStatementInit, ForStatementLeft, FormalParameter, FormalParameterKind,
+    FormalParameters, FunctionBody, FunctionType, IdentifierName, JSXAttributeItem, JSXAttributeName,
+    JSXAttributeValue, JSXChild, JSXClosingElement, JSXClosingFragment, JSXElementName, JSXExpression, JSXIdentifier,
+    JSXMemberExpressionObject, JSXOpeningElement, JSXOpeningFragment, LabelIdentifier, ObjectPropertyKind, Program,
+    PropertyKey, PropertyKind, SimpleAssignmentTarget, Statement, StaticMemberExpression, TemplateElement,
+    TemplateElementValue, VariableDeclarationKind, VariableDeclarator,
 };
 use oxc_ast::builder::AstBuilder;
 use oxc_codegen::{Codegen, CodegenOptions, IndentChar};
@@ -627,13 +627,16 @@ impl<'a> Cx<'a> {
                 let items = items.iter().map(|item| item.as_deref().map(name));
                 BindingPattern::new_array_pattern(SPAN, ArenaVec::from_iter_in(items, b), None, b)
             }
-            js::Pattern::Object(fields) => {
+            js::Pattern::Object(fields, rest) => {
                 let fields = fields.iter().map(|(field, var)| {
                     let key = PropertyKey::new_static_identifier(SPAN, self.name(field), b);
                     // `{ x }` for `{ x: x }`.
                     BindingProperty::new(SPAN, key, name(var), field == var, false, b)
                 });
-                BindingPattern::new_object_pattern(SPAN, ArenaVec::from_iter_in(fields, b), None, b)
+                let rest = rest
+                    .as_deref()
+                    .map(|rest| ArenaBox::new_in(BindingRestElement::new(SPAN, name(rest), b), b));
+                BindingPattern::new_object_pattern(SPAN, ArenaVec::from_iter_in(fields, b), rest, b)
             }
         }
     }

@@ -113,7 +113,11 @@ fn pattern(p: &mut Pattern, visitor: &mut Visitor<'_>) {
     match p {
         Pattern::Name(n) => visitor.name(n),
         Pattern::Array(parts) => parts.iter_mut().flatten().for_each(|n| visitor.name(n)),
-        Pattern::Object(parts) => parts.iter_mut().for_each(|(_, n)| visitor.name(n)),
+        Pattern::Object(parts, rest) => parts
+            .iter_mut()
+            .map(|(_, n)| n)
+            .chain(rest)
+            .for_each(|n| visitor.name(n)),
     }
 }
 

@@ -78,14 +78,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 js::Pattern::Array(items)
             }
-            Shape::Object(fields) => js::Pattern::Object(
-                parts
-                    .into_iter()
-                    .filter_map(|(i, part)| {
-                        part.map(|(name, var, m)| (fields[i].0.clone(), self.bind(var, name.as_str(), m)))
-                    })
-                    .collect(),
-            ),
+            Shape::Object(fields) => {
+                let mut named = Vec::new();
+                let mut rest = None;
+                for (i, part) in parts {
+                    let Some((name, var, m)) = part else { continue };
+                    let bound = self.bind(var, name.as_str(), m);
+                    // The props a component's struct doesn't name, `...rest` (ADR 0195).
+                    match super::bindings::is_rest(self.tcx, fields[i].1) {
+                        true => rest = Some(bound),
+                        false => named.push((fields[i].0.clone(), bound)),
+                    }
+                }
+                js::Pattern::Object(named, rest)
+            }
             Shape::Other => return None,
         };
         Some((pattern, mutable))

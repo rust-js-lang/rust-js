@@ -26,4 +26,20 @@ export const mutations: Mutation[] = [
     replace: "                    Prop::Spread(value) => (\"props\", value),\n                };\n                if !value.is_constant() {",
     tests: ["test/jsx.test.ts", "-t", "attribute before a child once"],
   },
+  {
+    name: "rest-field-not-spread",
+    breaks: "a `Rest` a component passes on is a `rest` prop, not `{...rest}`",
+    file: "src/lower/jsx.rs",
+    find: "                        attrs.push(Prop::Spread(value));",
+    replace: "                        attrs.push(Prop::Field(name, value));",
+    tests: ["test/jsx.test.ts", "-t", "doesn't name as ...rest"],
+  },
+  {
+    name: "rest-spread-refused",
+    breaks: "`<a {...rest}>` of a `Rest` is an error, as a spread of what isn't a struct",
+    file: "src/lower/jsx.rs",
+    find: "                && !super::bindings::is_rest(self.tcx, self.thir[value].ty)\n",
+    replace: "",
+    tests: ["test/jsx.test.ts", "-t", "doesn't name as ...rest"],
+  },
 ];

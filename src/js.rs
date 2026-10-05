@@ -167,8 +167,9 @@ pub enum Pattern {
     Name(String),
     /// `None` skips an element: `[, b]`.
     Array(Vec<Option<String>>),
-    /// Each field, and the variable it goes in.
-    Object(Vec<(String, String)>),
+    /// Each field, and the variable it goes in, and the variable the rest
+    /// go in, `...rest` (ADR 0195).
+    Object(Vec<(String, String)>, Option<String>),
 }
 
 impl Pattern {
@@ -177,7 +178,11 @@ impl Pattern {
         match self {
             Pattern::Name(name) => vec![name.as_str()],
             Pattern::Array(items) => items.iter().flatten().map(String::as_str).collect(),
-            Pattern::Object(fields) => fields.iter().map(|(_, name)| name.as_str()).collect(),
+            Pattern::Object(fields, rest) => fields
+                .iter()
+                .map(|(_, name)| name.as_str())
+                .chain(rest.as_deref())
+                .collect(),
         }
     }
 }

@@ -106,4 +106,12 @@ export const mutations: Mutation[] = [
     replace: "            return Ok(Expr::null());\n        }\n        if self.has_user_impl(default, ty) {",
     tests: ["test/jsx.test.ts", "-t", "named props and the rest from a base"],
   },
+  {
+    name: "rest-default-object",
+    breaks: "a `Rest`'s default is `{}`, which a Rust caller's struct update writes as a `rest` prop",
+    file: "src/lower/std_impls.rs",
+    find: "        if super::bindings::is_rest(self.tcx, ty) {\n            return Ok(Expr::undefined());",
+    replace: "        if super::bindings::is_rest(self.tcx, ty) {\n            return Ok(Expr::object(Vec::new()));",
+    tests: ["test/jsx.test.ts", "-t", "doesn't name as ...rest"],
+  },
 ];

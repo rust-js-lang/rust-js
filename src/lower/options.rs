@@ -179,7 +179,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             .iter()
                             .position(|item| item.as_deref() == Some(name))
                             .map(|i| Expr::index(option.clone(), Expr::int(i as i128))),
-                        Some(js::Pattern::Object(fields)) => fields
+                        // The rest, `...rest`, is no field's.
+                        Some(js::Pattern::Object(_, Some(rest))) if rest == name => None,
+                        Some(js::Pattern::Object(fields, _)) => fields
                             .iter()
                             .find(|(_, var)| var == name)
                             .map(|(field, _)| Expr::member(option.clone(), field.clone())),
