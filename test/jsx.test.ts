@@ -710,6 +710,34 @@ pub fn App() -> Element {
   expect([jsx.includes('<Frame title="t">'), jsx.includes("<Frame />"), jsx.includes("match")]).toEqual([true, true, false]);
 });
 
+// A component's props are as written, its children last, then what a
+// base gives (ADR 0203). Rust makes the children before it reads the base,
+// so children that change it, `bump(&mut base)`, are made first in JS too.
+test("JSX gives a component its props as written, and children that change the base first", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{Element, jsx};
+#[derive(Clone, Copy)]
+pub struct TallyProps { pub n: u32, pub label: &'static str, pub children: u32 }
+pub fn Tally(TallyProps { n, label, children }: TallyProps) -> Element {
+    jsx! { <i title={label}>{n}{"/"}{children}</i> }
+}
+fn bump(t: &mut TallyProps) -> u32 {
+    t.n += 1;
+    5
+}
+pub fn App() -> Element {
+    let mut base = TallyProps { n: 1, label: "b", children: 0 };
+    jsx! { <Tally label="first" {..base}>{bump(&mut base)}</Tally> }
+}
+`);
+  run(args);
+  const { App } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(App())).toBe('<i title="first">2/5</i>');
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx.indexOf("bump(")).toBeLessThan(jsx.indexOf("base.n"));
+  expect(jsx).toContain('<Tally label="first"');
+});
+
 // A component generic over its children gives them on with the rest of a
 // base, `{..Default::default()}`, which needs `C: Default`: react.dev's
 // ButtonLink, of next/link. React gives a component no dictionary, so it
@@ -725,7 +753,7 @@ pub fn Frame<C: Node>(FrameProps { title, children, tags, id }: FrameProps<C>) -
 }
 pub struct CardProps<C> { pub title: &'static str, pub children: C }
 pub fn Card<C: Node + Default>(CardProps { title, children }: CardProps<C>) -> Element {
-    jsx! { <Frame title={Some(title)} tags={vec!["card"]} {..Default::default()}>{children}</Frame> }
+    jsx! { <Frame tags={vec!["card"]} title={Some(title)} {..Default::default()}>{children}</Frame> }
 }
 pub fn App() -> Element {
     jsx! { <Card title="t">{"kid"}<b>{"!"}</b></Card> }
@@ -733,7 +761,8 @@ pub fn App() -> Element {
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(jsx).toContain("export function Card({ title, children }) {\n  const tags = [\"card\"];\n  return (\n    <Frame title={title} tags={tags}>\n      {children}\n    </Frame>\n  );\n}");
+  // Its props as written, as JSX's are, not in its struct's order (ADR 0203).
+  expect(jsx).toContain("export function Card({ title, children }) {\n  return (\n    <Frame tags={[\"card\"]} title={title}>\n      {children}\n    </Frame>\n  );\n}");
   const { App, Card } = await import(join(dir, "lib.jsx"));
   const { createElement } = await import("react");
   expect(renderToStaticMarkup(App())).toBe('<section title="t" data-tags="card">kid<b>!</b></section>');

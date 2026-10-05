@@ -31,7 +31,7 @@ pub struct HomeLinkProps {
 pub fn HomeLink(HomeLinkProps { class_name, rest }: HomeLinkProps) -> Element {
     let classes = [class_name, "link"].join(" ");
     jsx! {
-        <Link href="/" className={Some(classes.as_str())} aria-label={Some("Home page")} rest={rest} {..Default::default()}>
+        <Link href="/" rest={rest} className={Some(classes.as_str())} aria-label={Some("Home page")} {..Default::default()}>
             {"Home"}
         </Link>
     }
@@ -112,7 +112,7 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   expect(readFileSync(join(dir, ".next/server/app/index.html"), "utf8")).toContain("Count <!-- -->0");
   const aboutHtml = readFileSync(join(dir, ".next/server/app/about.html"), "utf8");
   expect([aboutHtml.includes('class="home link"'), aboutHtml.includes('aria-label="Home page"')]).toEqual([true, true]);
-  // Its rest first, as a JS component's `{...props}`, which the props it names replace.
+  // Its props as written, its rest first, which the props it names replace (ADR 0203).
   expect(readFileSync(join(dir, "app/about/page.jsx"), "utf8")).toContain('<Link href="/" {...rest} className={classes} aria-label="Home page">');
 
   // A Rust error is the build's, rustc's message, and no Next.js build.

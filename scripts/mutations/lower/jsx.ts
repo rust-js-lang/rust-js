@@ -58,4 +58,28 @@ export const mutations: Mutation[] = [
     replace: "    (false && given && called && handler != param).then(|| (**tested).clone())",
     tests: ["test/jsx.test.ts", "-t", "optional event handler on as it is"],
   },
+  {
+    name: "component-props-in-struct-order",
+    breaks: "a component's props are in its struct's order, not as written: `<Frame title={title} tags={..}>` of `tags=.. title=..`",
+    file: "src/lower/jsx.rs",
+    find: "            && adt.adt_def.is_struct()\n            && fields.len() == adt.adt_def.non_enum_variant().fields.len()",
+    replace: "            && false\n            && fields.len() == adt.adt_def.non_enum_variant().fields.len()",
+    tests: ["test/jsx.test.ts", "-t", "no dictionary"],
+  },
+  {
+    name: "props-read-before-constant-base",
+    breaks: "a component's props are read into `const`s before its children where only a base's constant comes after them",
+    file: "src/lower/jsx.rs",
+    find: "                value.has_effects() || (children.has_effects() && !value.is_constant())",
+    replace: "                true",
+    tests: ["test/jsx.test.ts", "-t", "no dictionary"],
+  },
+  {
+    name: "base-read-before-children-that-change-it",
+    breaks: "`<Tally {..base}>{bump(&mut base)}</Tally>` reads `base.n` before `bump` changes it",
+    file: "src/lower/jsx.rs",
+    find: "                value.has_effects() || (children.has_effects() && !value.is_constant())",
+    replace: "                value.has_effects()",
+    tests: ["test/jsx.test.ts", "-t", "children that change the base"],
+  },
 ];

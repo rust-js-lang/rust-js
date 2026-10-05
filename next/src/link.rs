@@ -18,8 +18,8 @@ pub struct LinkProps<'a, C> {
     pub href: &'a str,
     /// What it shows.
     pub children: C,
-    /// The `<a>`'s other props, a component's `...rest` passed on: before
-    /// the ones named, which take their place.
+    /// The `<a>`'s other props, a component's `...rest` passed on, where
+    /// it's written: the props named after it take its place.
     pub rest: Rest,
     /// Replace the history's entry, not add one.
     pub replace: Option<bool>,

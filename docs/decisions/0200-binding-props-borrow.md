@@ -44,8 +44,9 @@ return (
 );
 ```
 
-- **Its `rest` is given before the props it names**, which take their
-  place, as a JS component's `{...props}` before its own `aria-label`.
+- **Its `rest` is where it's written**: before the props named after it,
+  which take its place, as a JS component's `{...props}` before its own
+  `aria-label` (ADR 0203).
 - **A component's `aria-label` is the field `aria_label`**, `-` as `_`,
   which `rust_js::name = "aria-label"` names again in the JS.
 - **`next/image`'s `ImageProps<'a>` borrows its text too.**

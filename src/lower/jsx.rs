@@ -172,10 +172,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             js::ExprKind::Object(fields) => fields,
             _ => return Ok((vec![Prop::Spread(value)], Vec::new())),
         };
-        if fields
+        // As written, as JSX's are, its children last; then what a base
+        // gives, in the struct's order (ADR 0203). Rust makes them in that
+        // order too.
+        if let ExprKind::Adt(adt) = &self.thir[super::body_queries::strip(self.thir, props)].kind
+            && adt.adt_def.is_struct()
+            && fields.len() == adt.adt_def.non_enum_variant().fields.len()
+        {
+            let mut declared: Vec<Option<Prop>> = fields.into_iter().map(Some).collect();
+            let mut written: Vec<Prop> = adt
+                .fields
+                .iter()
+                .filter_map(|f| declared[f.name.as_usize()].take())
+                .collect();
+            written.extend(declared.into_iter().flatten());
+            fields = written;
+        }
+        // Read before the children, where a prop after them, a base's, is
+        // made after them, as Rust makes it, and the order shows: it does
+        // something, or reads what children that do something might change,
+        // `{..base}` of `bump(&mut base)`. A constant is made nowhere.
+        if let Some(i) = fields
             .iter()
             .position(|p| matches!(p, Prop::Field(name, _) if name == "children"))
-            .is_some_and(|i| i + 1 < fields.len())
+            && let Prop::Field(_, children) = &fields[i]
+            && fields[i + 1..].iter().any(|p| {
+                let (Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Spread(value)) = p;
+                value.has_effects() || (children.has_effects() && !value.is_constant())
+            })
         {
             // A variable nothing writes again is read as it is, as an
             // element's attributes are (ADR 0194).
