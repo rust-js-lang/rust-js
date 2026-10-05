@@ -14,11 +14,9 @@ export function App() {
   const match = globalThis.record(1);
   const match$1 = globalThis.record(2);
   const match$2 = globalThis.record(__jsx0);
-  const title = match;
-  const children = match$2;
   return (
-    <Card title={title} key={match$1}>
-      {children}
+    <Card title={match} key={match$1}>
+      {match$2}
     </Card>
   );
 }

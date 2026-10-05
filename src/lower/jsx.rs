@@ -74,8 +74,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    fn capture_jsx_input(&mut self, base: &str, value: &mut Expr, out: &mut Vec<Stmt>) {
-        let stable = match &value.kind {
+    /// Whether `value` reads the same wherever it's read: a constant, a
+    /// function, or a variable nothing writes again, a `const` of `out`'s.
+    fn reads_alike(&self, value: &Expr, out: &[Stmt]) -> bool {
+        match &value.kind {
             js::ExprKind::Symbol(_) | js::ExprKind::Arrow(..) | js::ExprKind::AsyncArrow(..) => true,
             js::ExprKind::Var(name) => {
                 self.locals
@@ -92,7 +94,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     })
             }
             _ => value.is_constant(),
-        };
+        }
+    }
+
+    fn capture_jsx_input(&mut self, base: &str, value: &mut Expr, out: &mut Vec<Stmt>) {
+        let stable = self.reads_alike(value, out);
         if !stable && !self.capture_jsx(value, out) {
             let map = matches!(&value.kind, js::ExprKind::Call(f, _) if matches!(&f.kind, js::ExprKind::Member(_, name) if name == "map"));
             let old = std::mem::replace(value, Expr::undefined());
@@ -310,18 +316,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             unreachable!("checked above")
         };
         if !self.is_simple(value) || (name != "children" && !jsx.children.is_empty()) {
+            // One read already, a `const` of its own, is read as it is (ADR 0194).
             for prop in &mut jsx.props {
                 let (base, value) = match prop {
                     Prop::Field(name, value) | Prop::Getter(name, value) => (name.as_str(), value),
                     Prop::Spread(value) => ("props", value),
                 };
-                if !value.is_constant() {
+                if !self.reads_alike(value, out) {
                     let old = std::mem::replace(value, Expr::undefined());
                     *value = self.spill(&camel_case(&js_ident(base)), old, out);
                 }
             }
             for value in &mut jsx.children {
-                if !value.is_constant() {
+                if !self.reads_alike(value, out) {
                     let old = std::mem::replace(value, Expr::undefined());
                     *value = self.spill("children", old, out);
                 }

@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "                Prop::Field(name, value) if name == \"children\" && false && matches!(value.kind, js::ExprKind::Undefined) => {}",
     tests: ["test/jsx.test.ts", "-t", "named props and the rest from a base"],
   },
+  {
+    name: "spilled-attribute-copied",
+    breaks: "an attribute read into a `const` is copied to another, `const className$1 = className`, before a child",
+    file: "src/lower/jsx.rs",
+    find: "                    Prop::Spread(value) => (\"props\", value),\n                };\n                if !self.reads_alike(value, out) {",
+    replace: "                    Prop::Spread(value) => (\"props\", value),\n                };\n                if !value.is_constant() {",
+    tests: ["test/jsx.test.ts", "-t", "attribute before a child once"],
+  },
 ];

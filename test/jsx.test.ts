@@ -710,6 +710,35 @@ pub fn App() -> Element {
   expect([jsx.includes('<Frame title="t">'), jsx.includes("<Frame />"), jsx.includes("match")]).toEqual([true, true, false]);
 });
 
+// Attributes are read before a child that needs a statement of its own, in
+// Rust's order, each once (ADR 0194): one already a `const` isn't copied
+// to another, `const className$1 = className`, as react.dev's IconCanary was.
+test("JSX reads an attribute before a child once, not copied again", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{Element, jsx};
+pub enum Size { S, Md }
+pub struct P { pub class_name: Option<&'static str>, pub size: Option<Size>, pub title: Option<&'static str> }
+pub fn Badge(p: P) -> Element {
+    jsx! {
+        <svg
+            className={p.class_name}
+            width={if matches!(p.size, Some(Size::S)) { "12px" } else { "20px" }}
+            height={if matches!(p.size, Some(Size::S)) { "12px" } else { "20px" }}
+            viewBox="0 0 20 20"
+        >
+            {p.title.map(|title| jsx! { <title>{title}</title> })}
+            <g fill="none"><path d="M0 0" /></g>
+        </svg>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx.match(/const (\w+)\$\d+ = \1;/)).toBe(null);
+  const result = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(result.Badge({ class_name: "c", size: "S", title: "t" }))).toBe('<svg class="c" width="12px" height="12px" viewBox="0 0 20 20"><title>t</title><g fill="none"><path d="M0 0"></path></g></svg>');
+});
+
 test("JSX grammar: spread precedence, children overrides, component paths and keyed fragments", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 #[rust_js::camel_case]
