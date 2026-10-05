@@ -66,6 +66,7 @@ pub use webapi;
 /// A React element: what a component returns, and what goes in children.
 /// Construct it with `jsx! { <Tag ... /> }`.
 #[cfg_attr(rust_js, rust_js::jsx_element)]
+#[cfg_attr(rust_js, rust_js::types = "react#ReactNode")]
 pub struct Element(PhantomData<JsObject>);
 
 /// The props a component's struct doesn't name, JS's `...rest`: a field of
@@ -888,6 +889,7 @@ impl ViewTransitionInstance {
 /// A [context](https://react.dev/reference/react/createContext): a value that
 /// a component's descendants read with [`use_context`], from the nearest
 /// provider above them, or `default` without one.
+#[cfg_attr(rust_js, rust_js::types = "react#Context")]
 pub struct Context<T>(PhantomData<JsObject>, PhantomData<T>);
 
 /// [`createContext`](https://react.dev/reference/react/createContext), in a `thread_local!`.
@@ -922,6 +924,7 @@ impl<T> Component<Provider<T>, ProvidesContext> for ContextProvider<T> {}
 
 /// A component that [`memo`] made: React skips rendering it again while its
 /// props are the same as last time.
+#[cfg_attr(rust_js, rust_js::types = "react#NamedExoticComponent")]
 pub struct Memo<P>(PhantomData<JsObject>, PhantomData<P>);
 
 /// [`memo`](https://react.dev/reference/react/memo), in a `thread_local!`.

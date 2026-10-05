@@ -47,6 +47,7 @@ mod cells;
 mod channels;
 mod combinators;
 mod copies;
+mod declarations;
 mod display;
 mod drops;
 mod effects;

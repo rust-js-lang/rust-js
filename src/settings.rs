@@ -15,6 +15,9 @@ pub use cargo_toml::read;
 pub struct Settings {
     pub format: Format,
     pub hooks: Hooks,
+    /// `declarations = true`: a `.d.ts` beside each module's JS, for
+    /// TypeScript that imports it (ADR 0196).
+    pub declarations: bool,
     /// Where its `Cargo.toml` is, which its hooks are run in, and what's
     /// said of a file is said from.
     pub dir: PathBuf,
@@ -141,6 +144,8 @@ mod cargo_toml {
         format: Format,
         #[serde(default)]
         hooks: Hooks,
+        #[serde(default)]
+        declarations: bool,
     }
 
     #[derive(Deserialize)]
@@ -187,6 +192,7 @@ mod cargo_toml {
         Ok(Settings {
             format: settings.format,
             hooks: settings.hooks,
+            declarations: settings.declarations,
             dir,
         })
     }

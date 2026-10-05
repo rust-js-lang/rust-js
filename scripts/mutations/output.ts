@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/runtime-package.test.ts"],
   },
+  {
+    name: "declarations-setting-ignored",
+    breaks: "a crate's `declarations = true` writes no `.d.ts`, and TypeScript types its modules from their JS",
+    file: "src/output.rs",
+    find: "            if self.settings.declarations\n                && let Some(declarations) = &module.declarations",
+    replace: "            if false\n                && let Some(declarations) = &module.declarations",
+    tests: ["test/declarations.test.ts"],
+  },
 ];

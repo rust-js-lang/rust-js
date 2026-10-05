@@ -45,6 +45,7 @@ export function parseManifest(text) {
   if (!path(result.input) || !path(result.output) || !paths(result.sources)
       || !Array.isArray(result.modules) || !result.modules.every(module => object(module)
         && strings(module.module) && path(module.file) && path(module.map)
+        && (module.types === undefined || path(module.types))
         && (module.source === null || path(module.source)) && paths(module.imports))
       || !Array.isArray(result.artifacts) || !result.artifacts.every(artifact => object(artifact)
         && path(artifact.file) && typeof artifact.hash === "string" && /^[0-9a-f]{16}$/.test(artifact.hash))) {
@@ -55,6 +56,7 @@ export function parseManifest(text) {
   if (artifacts.size !== result.artifacts.length
       || modules.size !== result.modules.length
       || result.modules.some(module => !artifacts.has(module.file) || !artifacts.has(module.map)
+        || (module.types !== undefined && !artifacts.has(module.types))
         || module.imports.some(file => !modules.has(file)))) {
     throw new Error("Invalid rust-js manifest: inconsistent module artifacts or imports");
   }
@@ -69,6 +71,7 @@ export function mapManifestPaths(manifest, map) {
     sources: manifest.sources.map(map),
     modules: manifest.modules.map(module => ({
       ...module, file: map(module.file), map: map(module.map),
+      ...(module.types === undefined ? {} : { types: map(module.types) }),
       source: module.source === null ? null : map(module.source), imports: module.imports.map(map),
     })),
     artifacts: manifest.artifacts.map(artifact => ({ ...artifact, file: map(artifact.file) })),

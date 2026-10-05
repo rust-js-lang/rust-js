@@ -107,6 +107,21 @@ impl OutputPlan {
                     bytes: text.clone().into_bytes(),
                 });
             }
+            // What it exports, typed, for the TypeScript that imports it (ADR 0196).
+            if self.settings.declarations
+                && let Some(declarations) = &module.declarations
+            {
+                artifacts.push(Artifact {
+                    path: types_path(&js_path),
+                    bytes: format!(
+                        "{}
+
+{declarations}",
+                        js_module.header
+                    )
+                    .into_bytes(),
+                });
+            }
         }
         Ok(artifacts)
     }
@@ -329,6 +344,11 @@ impl OutputPlan {
             let file = absolute(&requested)?;
             let map = absolute(&PathBuf::from(format!("{}.map", requested.display())))?;
             planned.extend([file.clone(), map.clone()]);
+            let types = match self.settings.declarations && module.declarations.is_some() {
+                true => Some(absolute(&types_path(&requested))?),
+                false => None,
+            };
+            planned.extend(types.clone());
             let imports = module
                 .imports
                 .iter()
@@ -338,6 +358,7 @@ impl OutputPlan {
                 module: module.path.clone(),
                 file,
                 map,
+                types,
                 source: module.file.as_deref().map(absolute).transpose()?,
                 imports,
             });
@@ -445,4 +466,9 @@ impl OutputPlan {
         artifacts.extend(extra);
         Ok(ArtifactPlan { artifacts, stale })
     }
+}
+
+/// `Tag.d.ts` of `Tag.jsx` or `Tag.js`: its declarations' (ADR 0196).
+fn types_path(js: &std::path::Path) -> PathBuf {
+    js.with_extension("d.ts")
 }

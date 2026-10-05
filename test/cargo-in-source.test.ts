@@ -109,3 +109,16 @@ test("a Cargo build's JS in source is beside each module's Rust, and follows the
   await inSource();
   expect(existsSync(join(app, "notes.js"))).toBe(true);
 }, 600_000);
+// A crate's declarations (ADR 0196) are beside its Rust too, `App.d.ts`
+// beside `App.js`, each module's, for the TypeScript that imports it.
+test("a Cargo build's declarations in source are beside each module's JS", async () => {
+  const dir = fixture("cargo-in-source-declarations");
+  const src = join(dir, "src");
+  mkdirSync(src, { recursive: true });
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.1.0"\nedition = "2024"\n\n[lib]\npath = "src/App.rs"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
+  writeFileSync(join(src, "App.rs"), "mod util;\n\npub fn answer(n: u32) -> u32 {\n    util::twice(n)\n}\n");
+  writeFileSync(join(src, "util.rs"), "pub fn twice(n: u32) -> u32 {\n    n * 2\n}\n");
+  await checkCargo({ manifestPath: join(dir, "Cargo.toml"), toolchain: pin, compiler, offline: true, packageName: "app", inSource: true });
+  expect(readdirSync(src).filter((file) => file.endsWith(".d.ts")).sort()).toEqual(["App.d.ts", "util.d.ts"]);
+  expect(readFileSync(join(src, "App.d.ts"), "utf8")).toContain("export function answer(n: number): number;");
+}, 600_000);

@@ -52,6 +52,9 @@ pub struct Module {
     pub module: Vec<String>,
     pub file: PathBuf,
     pub map: PathBuf,
+    /// Its `.d.ts`, where the crate asks for one (ADR 0196).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub types: Option<PathBuf>,
     pub source: Option<PathBuf>,
     pub imports: Vec<PathBuf>,
 }

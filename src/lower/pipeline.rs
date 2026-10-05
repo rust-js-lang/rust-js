@@ -459,6 +459,7 @@ pub fn lower_crate<'tcx>(
                     }
                 }
             }
+            let declarations = super::declarations::module(tcx, module, default_export.as_deref());
             let lowered = LoweredModule {
                 path: paths[&module].clone(),
                 file: module_file(tcx, module).name.clone().into_local_path(),
@@ -470,6 +471,7 @@ pub fn lower_crate<'tcx>(
                 functions: pass.functions.remove(&module).unwrap_or_default(),
                 caches: pass.caches.remove(&module).unwrap_or_default(),
                 default_export,
+                declarations,
                 runtime: Vec::new(),
                 jsx: pass.jsx.contains(&module),
             };

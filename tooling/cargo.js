@@ -164,7 +164,7 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
  * that this build doesn't write goes, if it's still as written: an edited
  * one is a person's, and one rust-js wrote some other way isn't this
  * build's. Where each JS went.
- * @param {{ library: { name: string }, modules: { file: string, map?: string, source: string, module: string[] }[] }[]} manifests
+ * @param {{ library: { name: string }, modules: { file: string, map?: string, types?: string, source: string, module: string[] }[] }[]} manifests
  * @param {string} ledger
  * @returns {Map<string, string>}
  */
@@ -204,10 +204,16 @@ export function writeInSource(manifests, ledger) {
   const writes = new Map();
   const crates = manifests.map(({ modules }) => {
     const files = [];
-    for (const { file, map } of modules) {
+    for (const { file, map, types } of modules) {
       const to = moved.get(file);
       writes.set(to, Buffer.from(relocated(readFileSync(file, "utf8"), file, to, moved)));
       files.push(to);
+      // Its declarations, `Tag.d.ts` beside `Tag.jsx` (ADR 0196).
+      if (types && existsSync(types)) {
+        const typesTo = to.replace(/\.jsx?$/, ".d.ts");
+        writes.set(typesTo, readFileSync(types));
+        files.push(typesTo);
+      }
       if (map && existsSync(map)) {
         const json = JSON.parse(readFileSync(map, "utf8"));
         json.file = basename(to);
