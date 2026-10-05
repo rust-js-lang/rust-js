@@ -169,6 +169,27 @@ test("a library's generic trait method drops a consumer's value where Rust does"
   expect(printed(join(dir, "app.js"))).toBe("dropped\n1\ndropped\n1\nafter\n");
 }, 300_000);
 
+// A library's generic fold takes no destructor of its iterator (ADR 0190):
+// its manifest says so, and a consumer's call that gives one is refused there.
+test("a library's generic fold is given no destructor by its consumers", () => {
+  const dir = fixture("library-no-drops");
+  const lib = join(dir, "dep");
+  mkdirSync(lib, { recursive: true });
+  writeFileSync(join(dir, "dep.rs"), "pub fn total<I: Iterator<Item = u32>>(items: I) -> u32 {\n    items.fold(0, |a, b| a + b)\n}\npub fn first_long<I: Iterator<Item = B>, B: AsRef<str>>(items: I) -> Option<usize> {\n    for item in items {\n        if item.as_ref().len() > 2 {\n            return Some(item.as_ref().len());\n        }\n    }\n    None\n}\n");
+  run([compiler, join(dir, "dep.rs"), "-o", join(lib, "lib.js"), "--library", "--manifest", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "dep", `--emit=metadata=${join(lib, "libdep.rmeta")}`]);
+  const app = (source: string) => {
+    writeFileSync(join(dir, "app.rs"), source);
+    return Bun.spawnSync([compiler, join(dir, "app.rs"), "-o", join(dir, "app.js"), "--dependency", join(lib, "lib.manifest.json"),
+      "--", "--crate-name", "app", "--crate-type=lib", "--extern", `dep=${join(lib, "libdep.rmeta")}`]);
+  };
+  expect(app("pub fn main() {\n    println!(\"{} {:?}\", dep::total([1, 2, 3].into_iter()), dep::first_long([\"a\", \"bcd\"].into_iter()));\n}\n").exitCode).toBe(0);
+  expect(printed(join(dir, "app.js"))).toBe("6 Some(3)\n");
+  const refused = app("pub struct Counter(pub u32);\nimpl Iterator for Counter {\n    type Item = u32;\n    fn next(&mut self) -> Option<u32> {\n        None\n    }\n}\nimpl Drop for Counter {\n    fn drop(&mut self) {}\n}\npub fn main() {\n    println!(\"{}\", dep::total(Counter(0)));\n}\n");
+  expect(refused.exitCode).not.toBe(0);
+  expect(refused.stderr.toString()).toContain("giving `dep::total`'s `I` a type with a destructor, where it takes none");
+}, 300_000);
+
 // A library's writer that fails, as chrono's formatting does (ADR 0187): its
 // manifest says so, and a consumer's `write!` of it gives the `fmt::Error`
 // back, with what was written before it.

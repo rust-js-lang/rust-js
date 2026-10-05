@@ -9,6 +9,7 @@ use crate::runtime::Helper;
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::{DefId, LocalModDefId};
+use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 /// Retained functions and their dependencies, grouped for output.
@@ -130,6 +131,8 @@ pub fn lower_crate<'tcx>(
     // the link step knows exactly which imports and local names survive.
     let mut lowered_items = Vec::new();
     let foreign = super::library::Foreign::new(tcx, dependencies);
+    let no_drops = RefCell::new(HashMap::new());
+    let drop_checks = RefCell::new(Vec::new());
     let called_bodies = rustc_arena::TypedArena::default();
     let crate_facts = CrateFacts {
         called_bodies: &called_bodies,
@@ -143,6 +146,8 @@ pub fn lower_crate<'tcx>(
         type_facts: &type_facts,
         failing: &failing,
         any_failing: !failing.is_empty() || foreign.any_fails(),
+        no_drops: &no_drops,
+        drop_checks: &drop_checks,
         closures: &closures,
         bodies: &function_bodies,
         fns: &fns,
@@ -247,6 +252,8 @@ pub fn lower_crate<'tcx>(
             Err(_) => failed = true,
         }
     }
+    // What a function takes no destructor of, each call of it checked (ADR 0190).
+    failed |= super::drops::check_no_drops(tcx, &no_drops, &drop_checks.borrow());
     if failed {
         return None;
     }
@@ -452,8 +459,17 @@ pub fn lower_crate<'tcx>(
         })
         .collect();
     tcx.dcx().has_errors().is_none().then_some(Unlinked {
-        library: export_library
-            .then(|| super::library::exports(tcx, &fns, &drop_params, &failing, &trait_impls, dependencies)),
+        library: export_library.then(|| {
+            super::library::exports(
+                tcx,
+                &fns,
+                &drop_params,
+                &failing,
+                &no_drops.borrow(),
+                &trait_impls,
+                dependencies,
+            )
+        }),
         sources: sources.output,
         modules: lowered,
         tests,

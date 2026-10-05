@@ -19,7 +19,7 @@
 //! `body_queries` has no emission context; its cached facts belong to `Body`.
 
 use std::cell::{Cell, RefCell};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::sync::Arc;
 
 use rustc_ast::{LitKind, Mutability};
@@ -305,6 +305,10 @@ struct CrateFacts<'a, 'tcx> {
     /// the crate's or its libraries' may, as a generic `T`'s then may (ADR 0187).
     failing: &'a HashSet<DefId>,
     any_failing: bool,
+    /// The type parameters each of the crate's functions takes no destructor
+    /// of, and the calls of them to check once all are lowered (ADR 0190).
+    no_drops: &'a RefCell<HashMap<DefId, BTreeSet<u32>>>,
+    drop_checks: &'a RefCell<Vec<drops::DropCheck>>,
     closures: &'a HashMap<LocalDefId, &'a Body<'tcx>>,
     bodies: &'a HashMap<DefId, &'a Body<'tcx>>,
     fns: &'a HashMap<DefId, FnInfo>,

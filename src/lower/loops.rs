@@ -171,7 +171,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 || source.is_array()
                 || self.is_vec_like(source)
                 || self.is_lang_adt(source, LangItem::Option);
-            if !owned_source && self.drops(source) != Drops::Nothing {
+            // A generic iterator's, whose drops are its type parameters' only,
+            // is one its callers give none of (ADR 0190).
+            if !owned_source && self.drops(source) != Drops::Nothing && !self.require_no_drops(source) {
                 return Err(self.unsupported(
                     self.thir[f.head].span,
                     "a loop over an iterator that holds a value with a destructor",

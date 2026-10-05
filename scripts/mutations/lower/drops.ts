@@ -243,4 +243,20 @@ export const mutations: Mutation[] = [
     replace: "                StmtKind::If(_, then, _) => vec![then],",
     tests: ["test/corpus.test.ts", "-t", "option_combinator_drops"],
   },
+  {
+    name: "no-drops-unrequired",
+    breaks: "a generic fold that takes no destructor of its iterator is given one by a caller, and drops nothing of it",
+    file: "src/lower/drops.rs",
+    find: "            .extend(params);\n        true",
+    replace: "            .extend(params.into_iter().filter(|_| false));\n        true",
+    tests: ["test/diagnostics.test.ts","-t","a destructor given where a generic fold takes none"],
+  },
+  {
+    name: "no-drops-not-passed-on",
+    breaks: "a generic function that gives its own `J` to one that takes no destructor of it is given one",
+    file: "src/lower/drops.rs",
+    find: "                            changed |= caller.insert(param);",
+    replace: "                            changed |= false && caller.insert(param);",
+    tests: ["test/diagnostics.test.ts","-t","a destructor given through a generic function"],
+  },
 ];

@@ -724,6 +724,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ty::Instance::try_resolve(self.tcx, typing_env, def_id, args)
     }
 
+    /// Is this a trait's default body copied into an impl (ADR 0049), whose
+    /// type parameters are its trait's?
+    pub(super) fn in_copied_default(&self) -> bool {
+        self.given.self_args.is_some()
+    }
+
     /// The first dictionary this function was given whose bound `which`
     /// says is the one: `T: Copy`'s, or a codec's (ADRs 0049, 0081).
     pub(super) fn given_evidence(&self, which: impl Fn(ty::TraitRef<'tcx>) -> bool) -> Option<Expr> {
@@ -1226,6 +1232,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     pub(super) fn evidence_args(&mut self, id: DefId, args: ty::GenericArgsRef<'tcx>, span: Span) -> R<Vec<Expr>> {
+        self.check_drops_given(id, args, span)?;
         let mut values = const_params(self.tcx, id)
             .into_iter()
             .map(|param| self.const_arg(args.const_at(param.index as usize), span))

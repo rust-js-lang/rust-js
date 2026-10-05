@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
     name: "loop-source-unchecked",
     breaks: "a loop over an iterator that holds a value with a destructor, which it can't drop, isn't refused",
     file: "src/lower/loops.rs",
-    find: "            if !owned_source && self.drops(source) != Drops::Nothing {",
+    find: "            if !owned_source && self.drops(source) != Drops::Nothing && !self.require_no_drops(source) {",
     replace: "            if false {",
     tests: ["test/traits.test.ts", "-t", "loop over"],
   },
@@ -137,5 +137,13 @@ export const mutations: Mutation[] = [
     find: "            && self.std_fn(fun) == Some(Std::IterByRef)\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "iter_by_ref"],
+  },
+  {
+    name: "generic-loop-refused",
+    breaks: "a loop over a generic iterator, chrono's parser's, is an error",
+    file: "src/lower/loops.rs",
+    find: "            if !owned_source && self.drops(source) != Drops::Nothing && !self.require_no_drops(source) {",
+    replace: "            if !owned_source && self.drops(source) != Drops::Nothing {",
+    tests: ["test/crates.test.ts", "-t", "no destructor by its consumers"],
   },
 ];

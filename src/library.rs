@@ -29,6 +29,11 @@ pub struct Item {
     /// compiler wrote before had none, as it refused them.
     #[serde(default)]
     pub fails: bool,
+    /// The type parameters it takes no destructor of (ADR 0190), which its
+    /// consumers' calls are checked for. A library a compiler wrote before
+    /// had none, as it refused what needs one.
+    #[serde(default)]
+    pub no_drops: Vec<u32>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -57,6 +62,7 @@ pub struct Imported {
     pub member: Option<String>,
     pub drops: Vec<u32>,
     pub fails: bool,
+    pub no_drops: Vec<u32>,
 }
 
 /// What one library gives its consumers.
@@ -137,6 +143,7 @@ impl Dependencies {
                     member: item.member,
                     drops: item.drops,
                     fails: item.fails,
+                    no_drops: item.no_drops,
                 };
                 if exports.items.insert(item.key, imported).is_some() {
                     return Err("duplicate dependency export".into());

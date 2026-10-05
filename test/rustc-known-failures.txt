@@ -119,7 +119,7 @@ drop/if-let-guards-2.rs	error: rust-js does not support a temporary with a destr
 drop/issue-23338-ensure-param-drop-order.rs	error: rust-js does not support a temporary with a destructor in a branch yet
 drop/issue-90752-raw-ptr-shenanigans.rs	error: rust-js does not support values of type `*mut std::option::Option<(S<'_>, S<'_>)>` yet
 drop/multiple-drop-safe-code-25549.rs	error: rust-js does not support a `Holder<dyn Trait>`, whose last field is a `dyn` yet
-drop/or-pattern-drop-order.rs	error: rust-js does not support `std::iter::Iterator::collect` of a value with a destructor yet
+drop/or-pattern-drop-order.rs	error: rust-js does not support a `let` of a value with a destructor, without its value yet
 drop/rc-trait-object-double-drop.rs	error: rust-js does not support a `dyn` of a value with a destructor yet
 dropck/compound-type-of-raw-pointers.rs	error: rust-js does not support values of type `*const NoisyDrop<&std::vec::Vec<i32>>` yet
 dst/dst-coerce-rc.rs	error: rust-js does not support values of type `(*const std::rc::RcInner<i32>) is !null` yet

@@ -441,8 +441,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::IsEmpty
             )
         {
-            let path = self.tcx.def_path_str(def_id);
-            return Err(self.unsupported(span, &format!("`{path}` of a value with a destructor")));
+            // Of a type parameter's only, a generic iterator's chrono folds:
+            // one its callers give none of (ADR 0190).
+            let held: Vec<Ty<'tcx>> = args
+                .iter()
+                .filter_map(|&a| match *self.thir[a].ty.kind() {
+                    ty::Ref(_, inner, Mutability::Mut) => Some(inner),
+                    ty::Ref(..) => None,
+                    _ => Some(self.thir[a].ty),
+                })
+                .filter(|&ty| self.drops(ty) != Drops::Nothing)
+                .collect();
+            if !held
+                .iter()
+                .all(|&ty| self.drop_query().drops_but_params(ty) == Drops::Nothing)
+            {
+                let path = self.tcx.def_path_str(def_id);
+                return Err(self.unsupported(span, &format!("`{path}` of a value with a destructor")));
+            }
+            for ty in held {
+                self.require_no_drops(ty);
+            }
         }
         // A std function that makes an `Option` of a generic `T` must box it
         // (ADR 0051); these do, and others aren't supported.

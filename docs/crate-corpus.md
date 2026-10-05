@@ -13,7 +13,7 @@ the JS's beside native Rust's: **runs** where they're the same. A derive's
 code is the probe's: strum's and thiserror's compiled before what they write
 in a crate that uses them did (ADR 0186).
 
-Measured 2026-10-05, after ADR 0189, Rust 1.98.1, each crate at the
+Measured 2026-10-05, after ADR 0190, Rust 1.98.1, each crate at the
 newest release its requirement allows.
 
 | Crate | Verdict | First refusals in its graph |
@@ -29,23 +29,26 @@ newest release its requirement allows.
 | once_cell 1.21 | refused | a constant of a raw pointer |
 | semver 1.0 | refused | a constant of a `NonNull` |
 | uuid 1.27 | refused | `&mut` of a `MaybeUninit` buffer's range |
-| url 2.5 | blocked | litemap: a loop over items with a destructor; writeable: `u8::checked_ilog10` called; smallvec's; percent-encoding: `transmute`; yoke: a raw pointer |
+| url 2.5 | blocked | litemap: `{:?}` of a `PhantomData`; writeable: `u8::checked_ilog10` called; smallvec's; percent-encoding: `transmute`; yoke: a raw pointer |
 | regex 1.11 | blocked | memchr: a raw pointer |
 | rust_decimal 1.38 | blocked | arrayvec: a user `io::Write`; serde_core: `size_of` of a type parameter |
-| chrono 0.4 (`alloc`) | refused | a loop over items with a destructor |
+| chrono 0.4 (`alloc`) | refused | `From::from` called, `Box::from` of a `&str` |
 | time 0.3 (`alloc`) | blocked | powerfmt: a `MaybeUninit`; deranged: a `const` block |
 
 3 of 16 compile, and each runs as natively. What stops the most, by the crates it stops:
 
 1. **Raw memory,** a raw pointer, a `NonNull`, a `MaybeUninit`,
    `transmute`, `handle_alloc_error`: 9.
-2. **A user `Future`:** 2. **A loop over items with a destructor:** 2,
-   litemap and chrono.
+2. **A user `Future`:** 2.
 3. **One each:** a `const` block, a user `io::Write`, `size_of` of a type
-   parameter, `u8::checked_ilog10`.
+   parameter, `u8::checked_ilog10`, `{:?}` of a `PhantomData`,
+   `Box::from`.
 
 ## Fixed by measuring
 
+- **A loop over, or a fold of, a generic iterator:** taken as given no
+  destructor, and a call that gives one is an error, at the call: chrono's
+  9 refusals are 4, and litemap's loop compiles (ADR 0190).
 - **std's `Duration`, `panic!("{}", x)`, a slice into an array and
   `into_iter()` of the crate's iterator:** chrono's 18 refusals are 9 (ADRs
   0188, 0189).

@@ -5,7 +5,7 @@ use super::{FnInfo, module_path};
 use crate::library::{Dependencies, Imported, Item, Library, VERSION};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LOCAL_CRATE};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 /// What a library and its consumers both call an item: rustc's `DefPathHash`
 /// of it, the same in every crate that sees it.
@@ -27,6 +27,7 @@ pub(super) fn exports(
     functions: &HashMap<DefId, FnInfo>,
     drop_params: &HashMap<DefId, Vec<u32>>,
     failing: &HashSet<DefId>,
+    no_drops: &HashMap<DefId, BTreeSet<u32>>,
     trait_impls: &[DefId],
     dependencies: &Dependencies,
 ) -> Library {
@@ -42,6 +43,10 @@ pub(super) fn exports(
             member: info.owner.as_ref().map(|_| info.name.clone()),
             drops: drop_params.get(&id).cloned().unwrap_or_default(),
             fails: failing.contains(&id),
+            no_drops: no_drops
+                .get(&id)
+                .map(|params| params.iter().copied().collect())
+                .unwrap_or_default(),
         })
         .collect();
     items.sort_by(|a, b| a.rust_path.cmp(&b.rust_path).then_with(|| a.key.cmp(&b.key)));

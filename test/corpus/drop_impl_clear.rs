@@ -1,7 +1,8 @@
-//@ compile-fail: rust-js does not support `std::vec::Vec::<T, A>::clear` of a value with a destructor
+//@ compile-fail: rust-js does not support giving `<Wrap<T> as Empty>::empty`'s `T` a type with a destructor, where it takes none
 // A generic impl's `T` may have a destructor (ADR 0098), and `clear` would
-// empty the `Vec` without running it: that's refused, as `clear` of a `Vec`
-// of a type with one is.
+// empty the `Vec` without running it: the impl takes none of one, and a
+// call that gives one is refused (ADR 0190), as `clear` of a `Vec` of a
+// type with one is.
 trait Empty {
     fn empty(&mut self);
 }

@@ -31,6 +31,9 @@ pub(in crate::lower) enum Drops<'tcx> {
 struct Walk<'tcx> {
     seen: Vec<Ty<'tcx>>,
     reached: usize,
+    /// Its type parameters, and what only their caller knows, drop nothing
+    /// (ADR 0190): what's found is what it drops of its own.
+    params_none: bool,
 }
 
 /// What a type drops depends on, of the function being lowered, beside
@@ -98,6 +101,20 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             &mut Walk {
                 seen: Vec::new(),
                 reached: usize::MAX,
+                params_none: false,
+            },
+        )
+    }
+
+    /// What `ty` drops of its own, its type parameters, and what only their
+    /// caller knows, dropping nothing (ADR 0190).
+    pub(in crate::lower) fn drops_but_params(&self, ty: Ty<'tcx>) -> Drops<'tcx> {
+        self.drops_in(
+            ty,
+            &mut Walk {
+                seen: Vec::new(),
+                reached: usize::MAX,
+                params_none: true,
             },
         )
     }
@@ -207,7 +224,9 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             walk.reached = walk.reached.min(at);
             return Drops::Nothing;
         }
-        if let Some(&known) = self.state.cache.borrow().get(&ty) {
+        if !walk.params_none
+            && let Some(&known) = self.state.cache.borrow().get(&ty)
+        {
             return known;
         }
         let depth = walk.seen.len();
@@ -236,6 +255,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                 found => found,
             },
             ty::Adt(_, args) if ty.is_box() || self.recognition.is_vec_like(ty) => self.drops_in(args.type_at(0), walk),
+            ty::Param(_) if walk.params_none => Drops::Nothing,
             // A type parameter a caller gives a drop function for.
             ty::Param(param) if self.state.given.contains(&param.index) => Drops::Runs,
             ty::Param(param) if let Some(&(t, what)) = self.state.unsupported.get(&param.index) => {
@@ -245,6 +265,13 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             // 0106): its impl's dictionary has its drop, where it has one (ADR
             // 0178), as a library's consumers' may. One of no dictionary, of a
             // std trait's, has nothing to drop only where nothing does.
+            ty::Alias(
+                _,
+                ty::AliasTy {
+                    kind: ty::Projection { .. },
+                    ..
+                },
+            ) if walk.params_none && self.recognition.is_unknown(ty) => Drops::Nothing,
             ty::Alias(
                 _,
                 ty::AliasTy {
@@ -313,7 +340,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             _ => Drops::Nothing,
         };
         walk.seen.pop();
-        if walk.reached >= depth {
+        if walk.reached >= depth && !walk.params_none {
             self.state.cache.borrow_mut().insert(ty, found);
         }
         walk.reached = walk.reached.min(outer);

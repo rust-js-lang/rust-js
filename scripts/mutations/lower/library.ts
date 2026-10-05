@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "            fails: false && failing.contains(&id),",
     tests: ["test/crates.test.ts","-t","may fail is one its consumer"],
   },
+  {
+    name: "library-no-drops-unlisted",
+    breaks: "a library's generic fold is given a destructor by its consumer",
+    file: "src/lower/library.rs",
+    find: "            no_drops: no_drops\n                .get(&id)\n                .map(|params| params.iter().copied().collect())\n                .unwrap_or_default(),",
+    replace: "            no_drops: Vec::new(),",
+    tests: ["test/crates.test.ts","-t","no destructor by its consumers"],
+  },
 ];

@@ -8,13 +8,13 @@
 //! value with a destructor that nothing drops would be a wrong answer.
 
 use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::rc::Rc;
 
 use rustc_hir::{self as hir, HirId, Node};
 use rustc_middle::middle::region;
 use rustc_middle::thir::{BlockId, ExprId, ExprKind, LocalVarId, Pat, StmtKind as ThirStmt};
-use rustc_middle::ty::{self, Ty};
+use rustc_middle::ty::{self, GenericArgsRef, Ty, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
@@ -161,6 +161,73 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     pub(in crate::lower) fn has_drops(&self, ty: Ty<'tcx>) -> bool {
         self.drop_query().has_drops(ty)
+    }
+
+    /// A call of `callee` of `args`: the type parameters it takes no
+    /// destructor of, checked, a library's now, from its manifest, the
+    /// crate's once each is lowered (ADR 0190).
+    pub(in crate::lower) fn check_drops_given(&self, callee: DefId, args: GenericArgsRef<'tcx>, span: Span) -> R<()> {
+        let owner = self.tcx.typeck_root_def_id(self.body_owner);
+        let given: Vec<(u32, Option<Vec<u32>>)> = args
+            .iter()
+            .enumerate()
+            .filter_map(|(index, arg)| {
+                let ty = arg.as_type()?;
+                let params = owned_params(ty);
+                let own = self.drop_query().drops_but_params(ty) != Drops::Nothing;
+                (own || !params.is_empty()).then(|| (index as u32, (!own).then_some(params)))
+            })
+            .collect();
+        if given.is_empty() {
+            return Ok(());
+        }
+        if let Some(item) = self.krate.foreign.item(callee) {
+            for (index, params) in given.iter().filter(|(index, _)| item.no_drops.contains(index)) {
+                let Some(params) = params else {
+                    let (path, name) = (self.tcx.def_path_str(callee), param_name(self.tcx, callee, *index));
+                    return Err(self.unsupported(
+                        span,
+                        &format!("giving `{path}`'s `{name}` a type with a destructor, where it takes none"),
+                    ));
+                };
+                self.krate
+                    .no_drops
+                    .borrow_mut()
+                    .entry(owner)
+                    .or_default()
+                    .extend(params);
+            }
+            return Ok(());
+        }
+        if callee.is_local() {
+            self.krate.drop_checks.borrow_mut().push(DropCheck {
+                caller: owner,
+                callee,
+                span,
+                given,
+            });
+        }
+        Ok(())
+    }
+
+    /// A value of `ty` that drops only what its type parameters do, taken as
+    /// one that drops nothing, which the function's callers then give none of
+    /// (ADR 0190): a generic iterator chrono steps, loops over or folds.
+    /// `false` of one that drops something of its own, or in a copied
+    /// default, whose parameters are its trait's.
+    pub(in crate::lower) fn require_no_drops(&self, ty: Ty<'tcx>) -> bool {
+        if self.in_copied_default() || self.drop_query().drops_but_params(ty) != Drops::Nothing {
+            return false;
+        }
+        let owner = self.tcx.typeck_root_def_id(self.body_owner);
+        let params = owned_params(ty);
+        self.krate
+            .no_drops
+            .borrow_mut()
+            .entry(owner)
+            .or_default()
+            .extend(params);
+        true
     }
 
     /// Is `drop`, a type's `Drop::drop`, one rust-js runs (ADR 0100)?
@@ -1426,4 +1493,74 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None => Ok(()),
         }
     }
+}
+
+/// The type parameters a value of `ty` holds, not behind a reference: what
+/// it drops of a caller's (ADR 0190).
+fn owned_params(ty: Ty<'_>) -> Vec<u32> {
+    let mut params = Vec::new();
+    let mut walker = ty.walk();
+    while let Some(part) = walker.next() {
+        let Some(part) = part.as_type() else { continue };
+        match part.kind() {
+            ty::Ref(..) | ty::RawPtr(..) => walker.skip_current_subtree(),
+            ty::Param(param) => params.push(param.index),
+            _ => {}
+        }
+    }
+    params
+}
+
+/// A call of one of the crate's functions, given what each of its type
+/// parameters is given: `None` of a value with a destructor of its own,
+/// else the caller's type parameters it holds (ADR 0190).
+pub(super) struct DropCheck {
+    caller: DefId,
+    callee: DefId,
+    span: Span,
+    given: Vec<(u32, Option<Vec<u32>>)>,
+}
+
+/// Each call of the crate's functions given a value with a destructor where
+/// the function takes none: an error at the call. One given a caller's type
+/// parameter makes the caller take none of that either (ADR 0190). Whether
+/// any was an error.
+pub(super) fn check_no_drops(
+    tcx: TyCtxt<'_>,
+    no_drops: &RefCell<HashMap<DefId, BTreeSet<u32>>>,
+    checks: &[DropCheck],
+) -> bool {
+    let mut reported = HashSet::new();
+    let mut changed = true;
+    while changed {
+        changed = false;
+        for check in checks {
+            let required = no_drops.borrow().get(&check.callee).cloned().unwrap_or_default();
+            for (index, params) in check.given.iter().filter(|(index, _)| required.contains(index)) {
+                match params {
+                    None if reported.insert(check.span) => {
+                        let (path, name) = (tcx.def_path_str(check.callee), param_name(tcx, check.callee, *index));
+                        tcx.dcx().span_err(
+                            check.span,
+                            format!("rust-js does not support giving `{path}`'s `{name}` a type with a destructor, where it takes none yet"),
+                        );
+                    }
+                    None => {}
+                    Some(params) => {
+                        let mut no_drops = no_drops.borrow_mut();
+                        let caller = no_drops.entry(check.caller).or_default();
+                        for &param in params {
+                            changed |= caller.insert(param);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    !reported.is_empty()
+}
+
+/// The name of `callee`'s type parameter `index`, `I`.
+fn param_name(tcx: TyCtxt<'_>, callee: DefId, index: u32) -> String {
+    tcx.generics_of(callee).param_at(index as usize, tcx).name.to_string()
 }
