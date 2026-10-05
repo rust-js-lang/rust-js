@@ -215,6 +215,29 @@ pub(super) fn is_mark(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
         })
 }
 
+/// Whether `def_id` is a React component, as `jsx!` takes one: a
+/// capitalized function of its props, or none, that returns react's
+/// `Element`. React calls it with its props and a value of its own, never a
+/// drop or a dictionary (ADR 0199).
+pub(crate) fn is_component(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    if tcx.def_kind(def_id) != DefKind::Fn {
+        return false;
+    }
+    // Capitalized, as JSX tells a component from an element: no std name's.
+    let name = tcx.item_name(def_id);
+    if !name.as_str().starts_with(char::is_uppercase) {
+        return false;
+    }
+    let sig = tcx
+        .fn_sig(def_id)
+        .instantiate_identity()
+        .skip_normalization()
+        .skip_binder();
+    let element = [Symbol::intern("rust_js"), Symbol::intern("jsx_element")];
+    sig.inputs().len() <= 1
+        && matches!(sig.output().kind(), ty::TyKind::Adt(adt, _) if tcx.get_attrs_by_path(adt.did(), &element).next().is_some())
+}
+
 /// Whether `ty` is react's `Rest`, the props a component's struct doesn't
 /// name: `...rest` of its destructured props (ADR 0195).
 pub(super) fn is_rest(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {

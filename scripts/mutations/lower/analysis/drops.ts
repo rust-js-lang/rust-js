@@ -51,4 +51,20 @@ export const mutations: Mutation[] = [
     replace: "        for index in crate::lower::traits::own_drop_params(tcx, id) {\n            let _ = (id, index);\n",
     tests: ["test/corpus.test.ts", "-t", "generic_method_drops"],
   },
+  {
+    name: "component-given-library-drops",
+    breaks: "a library's generic component takes a drop of its type parameter, which React never gives: `Card({ title, children }, dropC)`",
+    file: "src/lower/analysis/drops.rs",
+    find: "            if crate::lower::bindings::is_component(tcx, id)\n",
+    replace: "            if false\n",
+    tests: ["test/jsx.test.ts", "-t", "take no drop of their type parameters"],
+  },
+  {
+    name: "component-destructor-not-refused",
+    breaks: "a component given a type with a destructor is given a drop React can't pass, and drops nothing",
+    file: "src/lower/analysis/drops.rs",
+    find: "            if crate::lower::bindings::is_component(tcx, callee) {",
+    replace: "            if false && crate::lower::bindings::is_component(tcx, callee) {",
+    tests: ["test/jsx.test.ts", "-t", "take no drop of their type parameters"],
+  },
 ];

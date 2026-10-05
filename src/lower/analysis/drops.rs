@@ -93,8 +93,10 @@ pub(super) fn drop_params<'tcx>(
     // give a value with a destructor, one that isn't `Copy`.
     if library {
         for &id in fns.keys() {
-            // A trait impl's, and its methods, are decided above.
-            if tcx.trait_of_assoc(id).is_some()
+            // A trait impl's, and its methods, are decided above, and a
+            // component is given none: React calls it (ADR 0199).
+            if crate::lower::bindings::is_component(tcx, id)
+                || tcx.trait_of_assoc(id).is_some()
                 || tcx.trait_impl_of_assoc(id).is_some()
                 || matches!(tcx.def_kind(id), DefKind::Impl { .. })
                 || !crate::lower::library::reachable(tcx, id)
@@ -122,6 +124,22 @@ pub(super) fn drop_params<'tcx>(
                 continue;
             };
             if !fns.contains_key(&callee) || tcx.trait_of_assoc(callee).is_some() {
+                continue;
+            }
+            // React calls a component, with no drop: one given a type with a
+            // destructor is an error (ADR 0199).
+            if crate::lower::bindings::is_component(tcx, callee) {
+                for (index, arg) in args.iter().enumerate() {
+                    if let Some(ty) = arg.as_type()
+                        && holds_user_drop(tcx, foreign, ty, &mut Vec::new())
+                    {
+                        let (name, param) = (tcx.item_name(callee), tcx.generics_of(callee).param_at(index, tcx).name);
+                        tcx.dcx().span_err(
+                            expr.span,
+                            format!("rust-js does not support giving component `{name}`'s `{param}` a type with a destructor yet: React gives a component no drop"),
+                        );
+                    }
+                }
                 continue;
             }
             for (index, arg) in args.iter().enumerate() {

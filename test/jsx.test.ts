@@ -826,6 +826,46 @@ pub fn Button<C: Node>(ButtonProps { children, on_click }: ButtonProps<C>) -> El
   expect([Button({ children: "b", on_click: handler }).props.onClick === handler, Button({ children: "b" }).props.onClick]).toEqual([true, undefined]);
 });
 
+// React calls a component with its props and a value of its own, never a
+// drop: a component's type parameters take no destructor, in a library too,
+// whose consumers' could (ADR 0199). One given a type with one is refused.
+test("JSX components take no drop of their type parameters", async () => {
+  const library = (source: string) => {
+    const { dir, args } = compile(source);
+    const at = args.indexOf("--");
+    return { dir, args: [...args.slice(0, at), "--library", ...args.slice(at)] };
+  };
+  const card = `#![allow(non_snake_case)]
+use react::{Element, Node, jsx};
+pub struct CardProps<C> { pub title: &'static str, pub children: C }
+pub fn Card<C: Node>(CardProps { title, children }: CardProps<C>) -> Element {
+    let heading = format!("{title}!");
+    jsx! { <section title={heading}>{children}</section> }
+}
+`;
+  const built = library(card);
+  run(built.args);
+  const jsx = readFileSync(join(built.dir, "lib.jsx"), "utf8");
+  expect([jsx.includes("export function Card({ title, children }) {"), jsx.includes("drop")]).toEqual([true, false]);
+  const given = compile(`#![allow(non_snake_case)]
+use react::{Element, jsx};
+pub struct HolderProps<T> { pub value: T }
+pub fn Holder<T>(HolderProps { value }: HolderProps<T>) -> Element {
+    let _kept = value;
+    jsx! { <i /> }
+}
+pub struct Loud;
+impl Drop for Loud {
+    fn drop(&mut self) {}
+}
+pub fn App() -> Element {
+    jsx! { <Holder value={Loud} /> }
+}
+`);
+  const refused = Bun.spawnSync(given.args, { cwd: given.dir });
+  expect([refused.exitCode === 0, refused.stderr.toString().includes("component `Holder`'s `T` a type with a destructor")]).toEqual([false, true]);
+});
+
 test("JSX grammar: spread precedence, children overrides, component paths and keyed fragments", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 #[rust_js::camel_case]
