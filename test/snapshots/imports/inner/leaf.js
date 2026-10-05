@@ -2,7 +2,11 @@
 
 import greet from "../greet.js";
 
+function join(greeting) {
+  return greeting;
+}
+
 export function hello() {
-  return greet("leaf");
+  return join(greet("leaf"));
 }
 //# sourceMappingURL=leaf.js.map

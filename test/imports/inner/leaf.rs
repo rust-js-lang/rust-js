@@ -4,6 +4,12 @@ unsafe extern "Rust" {
     safe fn greet(name: &str) -> String;
 }
 
+// Named as the root's import of `node:path`'s `join`, which this file
+// doesn't import: the root's keeps its name.
+fn join(greeting: String) -> String {
+    greeting
+}
+
 pub fn hello() -> String {
-    greet("leaf")
+    join(greet("leaf"))
 }

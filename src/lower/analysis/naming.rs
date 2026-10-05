@@ -57,19 +57,21 @@ pub(super) fn js_uses<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> Js
     uses
 }
 
-/// Each import's name, the same in every file, and unique in the crate:
-/// after the export, or the module for a default or namespace import. A
-/// default import held by one `static` is named after it, as JS code names
-/// an asset: `static hero_img` is `import heroImg from "./hero.png"`.
-/// It's named around the globals and every module's items, as `taken` has
-/// them, which then reserve it like a global.
+/// Each import's name, the same in every file, and unique among the
+/// crate's imports: after the export, or the module for a default or
+/// namespace import. A default import held by one `static` is named after
+/// it, as JS code names an asset: `static hero_img` is `import heroImg from
+/// "./hero.png"`. It's named around the globals and the items of each
+/// module that imports it, as `taken` has them, and then reserved like a
+/// global: another module's item of its name is no reason to rename it
+/// (ADR 0202).
 /// Namespaces are named last, so a module's default export gets its plain name.
 pub(super) fn name_imports(
     tcx: TyCtxt<'_>,
     uses: &JsUses,
     taken: &HashMap<LocalModDefId, HashSet<String>>,
 ) -> HashMap<Export, String> {
-    let mut reserved: HashSet<String> = uses.globals.iter().chain(taken.values().flatten()).cloned().collect();
+    let mut chosen: HashSet<String> = HashSet::new();
     let (namespaces, others): (Vec<&Export>, Vec<&Export>) =
         uses.imported.keys().partition(|(_, export)| export == "*");
     others
@@ -92,7 +94,23 @@ pub(super) fn name_imports(
                 ("default" | "*", _) => module_binding(from),
                 _ => export.clone(),
             };
-            ((from.clone(), export.clone()), fresh_in(&mut reserved, &base))
+            // A library's export (ADR 0100) is imported by the modules that
+            // turn out to use it, known only once they're lowered: it's
+            // named around every module's items.
+            let importers = &uses.imported[&export_key];
+            let items: Vec<&HashSet<String>> = if importers.is_empty() {
+                taken.values().collect()
+            } else {
+                importers.iter().filter_map(|m| taken.get(m)).collect()
+            };
+            let mut reserved: HashSet<String> = (uses.globals.iter())
+                .chain(&chosen)
+                .chain(items.into_iter().flatten())
+                .cloned()
+                .collect();
+            let name = fresh_in(&mut reserved, &base);
+            chosen.insert(name.clone());
+            ((from.clone(), export.clone()), name)
         })
         .collect()
 }

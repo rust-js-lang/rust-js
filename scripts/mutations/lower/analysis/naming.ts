@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "import-named-over-export",
     breaks: "an import takes the name of the crate's own function, which is renamed, so JS calling it by its Rust name finds none",
     file: "src/lower/analysis/naming.rs",
-    find: "    let mut reserved: HashSet<String> = uses.globals.iter().chain(taken.values().flatten()).cloned().collect();\n",
-    replace: "    let mut reserved: HashSet<String> = uses.globals.iter().chain(taken.values().flatten().filter(|_| false)).cloned().collect();\n",
+    find: "            let items: Vec<&HashSet<String>> = if importers.is_empty() {\n                taken.values().collect()",
+    replace: "            let items: Vec<&HashSet<String>> = if importers.is_empty() {\n                Vec::new()",
     tests: ["test/crates.test.ts", "-t", "two crates: same_name"],
   },
   {
@@ -17,5 +17,14 @@ export const mutations: Mutation[] = [
     find: "                [only] if tcx.def_kind(**only) == DefKind::Fn => Some(bindings::fn_name(tcx, **only)),",
     replace: "                [only] if false && tcx.def_kind(**only) == DefKind::Fn => Some(bindings::fn_name(tcx, **only)),",
     tests: ["test/next.test.ts", "-t", "build builds"],
+  },
+  {
+    name: "import-named-around-every-module",
+    breaks: "an import is renamed for another module's item, `import { join as join$1 }` for a `fn join` elsewhere",
+    file: "src/lower/analysis/naming.rs",
+    find: "                importers.iter().filter_map(|m| taken.get(m)).collect()",
+    replace: "                taken.values().collect()",
+    tests: ["test/snapshots.test.ts", "-t", "imports"],
+    snapshots: true,
   },
 ];

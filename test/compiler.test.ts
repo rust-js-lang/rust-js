@@ -257,7 +257,7 @@ test("extern items from JS modules become import statements", async () => {
   expect(lib).toContain('greet$1.polite("world")');
   // Two directories down, only what the file uses, from the same file.
   const leaf = await Bun.file(join(target, "imports", "inner", "leaf.js")).text();
-  expect(leaf).toMatch(/\nimport greet from "\.\.\/greet\.js";\n\nexport function hello/);
+  expect(leaf).toMatch(/\nimport greet from "\.\.\/greet\.js";\n\nfunction join/);
 });
 
 // ADR 0029: `async fn` is an `async function`, `.await` is `await`, and a
