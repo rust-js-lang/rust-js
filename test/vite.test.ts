@@ -9,6 +9,11 @@ import { chromium } from "@playwright/test";
 import rustJs from "../vite-plugin/index.js";
 import { buildCompiler, buildReact, compiler, fixture, root } from "./support";
 
+// Each server's optimized dependencies are its own, in its root: a fixture
+// has no package.json, so Vite's default is this checkout's node_modules/.vite,
+// which servers side by side rewrite under each other, and a page never loads.
+const cacheDir = ".vite";
+
 // Real Vite, real compiler, real React Fast Refresh. Isolated sources and
 // outputs: the example application and its development server are untouched.
 test("Vite builds and refreshes affected crates, recovers from errors and module changes", async () => {
@@ -49,7 +54,7 @@ process.exit(code);
   const plugins = () => [rustJs({ crates: ["src/App.rs", "other/lib.rs"], rustJs: wrapper, bindings: ["react", "serde"] }), react()];
   await build({ root: dir, configFile: false, plugins: plugins(), logLevel: "silent" });
   expect(readFileSync(join(dir, "dist/index.html"), "utf8")).toContain("/assets/");
-  const server = await createServer({ root: dir, configFile: false, plugins: plugins(), logLevel: "silent", server: { port: 0 } });
+  const server = await createServer({ root: dir, cacheDir, configFile: false, plugins: plugins(), logLevel: "silent", server: { port: 0 } });
   let browser;
   try {
     await server.listen();
@@ -145,7 +150,7 @@ pub fn App() -> Element {
 `;
   writeFileSync(join(dir, "src/App.rs"), app("font-bold"));
   const plugins = [rustJs({ rustJs: compiler }), react(), babel({ presets: [reactCompilerPreset()] }), tailwindcss()];
-  const server = await createServer({ root: dir, configFile: false, plugins, logLevel: "silent", server: { port: 0 } });
+  const server = await createServer({ root: dir, cacheDir, configFile: false, plugins, logLevel: "silent", server: { port: 0 } });
   let browser;
   try {
     await server.listen();
@@ -206,7 +211,7 @@ pub fn App() -> Element {
 
   // In dev too, and the map the file names but no one committed isn't an error.
   warnings.length = 0;
-  const server = await createServer({ root: dir, configFile: false, plugins: [rustJs({ rustJs: missing }), react()], customLogger: logger, logLevel: "warn", server: { port: 0 } });
+  const server = await createServer({ root: dir, cacheDir, configFile: false, plugins: [rustJs({ rustJs: missing }), react()], customLogger: logger, logLevel: "warn", server: { port: 0 } });
   try {
     await server.listen();
     if (!server.resolvedUrls) throw new Error("Vite did not expose a listening URL");
@@ -214,6 +219,9 @@ pub fn App() -> Element {
     expect(warnings.join("\n")).toContain("using the committed src/App.jsx");
     expect(warnings.join("\n")).not.toContain("source map");
   } finally {
+    // Closed while it optimizes a dependency an import of App.jsx asked for,
+    // Vite waits for that load forever: the optimization was cancelled.
+    await server.waitForRequestsIdle();
     await server.close();
   }
 
@@ -295,13 +303,14 @@ check = [
 
   unlinkSync(join(dir, "built"));
   warnings.length = 0;
-  const server = await createServer({ root: dir, configFile: false, plugins: [rustJs({ rustJs: compiler }), react()], customLogger: logger, logLevel: "warn", server: { port: 0 } });
+  const server = await createServer({ root: dir, cacheDir, configFile: false, plugins: [rustJs({ rustJs: compiler }), react()], customLogger: logger, logLevel: "warn", server: { port: 0 } });
   try {
     await server.listen();
     expect((await server.transformRequest("/src/App.jsx"))?.code).toContain("Checked");
     expect(existsSync(join(dir, "built"))).toBe(false);
     expect(warnings.join("\n")).toMatch(/src\/App\.rs:\d+:\d+: \[sh\] a note/);
   } finally {
+    await server.waitForRequestsIdle();
     await server.close();
   }
 }, 120_000);
@@ -352,7 +361,7 @@ pub fn App() -> Element {
 }
 `;
   writeFileSync(join(dir, "src/App.rs"), app("Count"));
-  const server = await createServer({ root: dir, configFile: false, plugins: [rustJs({ rustJs: compiler }), react()], logLevel: "silent", server: { port: 0 } });
+  const server = await createServer({ root: dir, cacheDir, configFile: false, plugins: [rustJs({ rustJs: compiler }), react()], logLevel: "silent", server: { port: 0 } });
   let browser;
   try {
     await server.listen();
@@ -428,7 +437,7 @@ pub fn App() -> Element {
   // crate's importing the others' there.
   expect(readFileSync(join(dir, "ui/src/lib.jsx"), "utf8")).toContain('from "../../models/src/lib.js"');
   expect(existsSync(join(dir, "models/src/lib.js"))).toBe(true);
-  const server = await createServer({ root: web, configFile: false, plugins: plugins(), logLevel: "silent", server: { port: 0 } });
+  const server = await createServer({ root: web, cacheDir, configFile: false, plugins: plugins(), logLevel: "silent", server: { port: 0 } });
   let browser;
   try {
     await server.listen();
