@@ -363,6 +363,9 @@ sequenceDiagram
     end
 ```
 
+A Cargo build's copies beside each module's Rust are published the same
+way, by `tooling/publish.js`'s `commit`, with a ledger of what they are
+in place of a manifest ([ADR 0101](decisions/0101-cargo-workspace-wrapper.md)).
 Native multi-file publication provides rollback for ordinary I/O failures; it
 does not claim crash-atomic replacement across all files. Cleanup removes only
 obsolete artifacts still matching their recorded ownership fingerprints.

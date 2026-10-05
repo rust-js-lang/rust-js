@@ -1,7 +1,7 @@
 // Native build preparation. Hosts provide scheduling and consume manifests.
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
@@ -93,9 +93,20 @@ export function createNativeBuilder({ root, rustJs = findCompiler(root), resourc
   const compilerArgs = packaged ? [compilerPath] : [];
   const metadataInputs = resourceInputs(bindings).map(p => join(repo, p));
   const pinned = () => readFileSync(join(repo, "rust-toolchain.toml"), "utf8").match(/^channel\s*=\s*"([^"]+)"/m)?.[1];
-  // What the compiler says it is, once: `--version-json`.
+  // What the compiler says it is, `--version-json`: asked again when it's
+  // replaced, as it may be while a dev server runs, which then checks the
+  // runtime and picks the toolchain by the new one's answer.
   let identity;
-  const compilerIdentity = async () => (identity ??= parseCompilerIdentity(await run(compilerCommand, [...compilerArgs, "--version-json"], root)));
+  const compilerIdentity = async () => {
+    const key = compilerInputs.map((path) => {
+      const stat = statSync(path, { throwIfNoEntry: false });
+      return stat ? `${stat.size}:${stat.mtimeMs}:${stat.ino}` : "missing";
+    }).join(" ");
+    if (identity?.key !== key) {
+      identity = { key, value: parseCompilerIdentity(await run(compilerCommand, [...compilerArgs, "--version-json"], root)) };
+    }
+    return identity.value;
+  };
 
   // Each recipe uses the pinned resources and a content-keyed cache directory.
   async function prepare() {

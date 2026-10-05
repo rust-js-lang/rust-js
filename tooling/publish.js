@@ -50,6 +50,20 @@ export function publishArtifacts(manifestPath, manifest, files) {
   const writes = new Map(files);
   writes.set(manifestPath, Buffer.from(JSON.stringify(manifest, null, 2) + "\n"));
   const stale = staleArtifacts(previous, manifest, writes);
+  commit(writes, stale.map(({ file }) => file), manifestPath);
+}
+
+/**
+ * Replace each of `writes`' files with its bytes, and remove `stale`, all
+ * or none of them for an ordinary I/O failure: every byte is staged before
+ * any file changes, each file replaced is kept until all are, and `last`,
+ * the record of what was written, is written last. A file whose bytes are
+ * already these keeps its mtime.
+ * @param {Map<string, Buffer | string>} writes
+ * @param {string[]} stale
+ * @param {string} [last]
+ */
+export function commit(writes, stale, last) {
   const id = randomUUID();
   const staged = [];
   const changed = [];
@@ -64,11 +78,11 @@ export function publishArtifacts(manifestPath, manifest, files) {
       changed.push({ path, stage, backup: `${path}.${id}.backup`, saved: false, installed: false });
     }
     // Stale files are backed up too, so an ordinary I/O failure can roll back.
-    const manifestWrite = changed.find(change => change.path === manifestPath);
-    const commit = [...changed.filter(change => change !== manifestWrite),
-      ...stale.map(({ file }) => ({ path: file, backup: `${file}.${id}.backup`, saved: false, installed: false })),
-      ...(manifestWrite ? [manifestWrite] : [])];
-    changed.splice(0, changed.length, ...commit);
+    const lastWrite = changed.find(change => change.path === last);
+    const order = [...changed.filter(change => change !== lastWrite),
+      ...stale.map((file) => ({ path: file, backup: `${file}.${id}.backup`, saved: false, installed: false })),
+      ...(lastWrite ? [lastWrite] : [])];
+    changed.splice(0, changed.length, ...order);
     for (const change of changed) {
       if (existsSync(change.path)) {
         renameSync(change.path, change.backup);

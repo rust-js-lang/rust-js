@@ -126,10 +126,19 @@ would overwrite. If that's another module's, `mod root` of a `[lib] path
 = "src/root.rs"`, or another crate's, two crates' `mod helper` of
 `sources/alpha.rs` and `sources/beta.rs`, it's an error, before anything's
 written, as rust-js's own output refuses `mod lib` of `lib.rs`. An import of
-another crate's module is of its copy, `../../models/src/lib.js`. A copy is
-written only if it changed, and one of a module that's gone goes, if
-rust-js wrote it: its first line says so. Vite serves the copies, and
-without rust-js, builds from them, as it does a committed `App.jsx`.
+another crate's module is of its copy, `../../models/src/lib.js`: only
+the import declarations each module's JS begins with, and its closing
+source-map comment, change, never a string that reads like one. A copy is
+written only if it changed, and the copies are published as a build's
+output is (ADR 0091): every byte prepared first, then all of it or none.
+A ledger beside Cargo's build records what was written beside each
+crate's Rust, and how; a copy it records that this build doesn't write
+goes, if it's still as written. (Amended: a copy went if its first line
+said rust-js wrote it, which also removed a person's edited copy, and a
+file rust-js wrote some other way.) `cargo clean` forgets the ledger,
+and then nothing in source is taken as this build's. Vite serves the
+copies, and without rust-js, builds from them, as it does a committed
+`App.jsx`.
 
 ## Why
 
