@@ -1,6 +1,8 @@
 //! Publish a complete artifact plan. No frontend, lowering or printing APIs.
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
+
+use crate::paths::parent_dir;
 
 pub(crate) struct Artifact {
     pub(crate) path: PathBuf,
@@ -18,12 +20,6 @@ impl ArtifactPlan {
     pub(crate) fn publish(self) -> Result<(), String> {
         publish(&self.artifacts, &self.stale)
     }
-}
-
-fn parent_dir(path: &Path) -> &Path {
-    path.parent()
-        .filter(|dir| !dir.as_os_str().is_empty())
-        .unwrap_or_else(|| Path::new("."))
 }
 
 fn publish(artifacts: &[Artifact], stale: &[PathBuf]) -> Result<(), String> {

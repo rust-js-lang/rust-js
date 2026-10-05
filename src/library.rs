@@ -73,10 +73,10 @@ impl Dependencies {
     pub fn load(paths: &[std::path::PathBuf], output: &Path) -> Result<Self, String> {
         let mut result = Self::default();
         let mut needed: Vec<(String, String)> = Vec::new();
-        let output = crate::output::absolute(output)?;
+        let output = crate::paths::absolute(output)?;
         let parent = output.parent().ok_or("output has no parent")?;
         for path in paths {
-            result.inputs.push(crate::output::absolute(path)?);
+            result.inputs.push(crate::paths::absolute(path)?);
             let manifest = Manifest::read(&std::fs::read(path).map_err(|e| e.to_string())?)?;
             result.inputs.extend(manifest.sources.iter().cloned());
             if manifest.compiler.as_ref() != Some(&Compiler::current()) {
@@ -101,7 +101,7 @@ impl Dependencies {
             for artifact in manifest.artifacts.iter().chain(&library.inputs) {
                 result.inputs.push(artifact.file.clone());
                 let bytes = std::fs::read(&artifact.file).map_err(|e| e.to_string())?;
-                if crate::output::fingerprint(&bytes) != artifact.hash {
+                if crate::manifest::fingerprint(&bytes) != artifact.hash {
                     return Err(format!("dependency artifact changed: {}", artifact.file.display()));
                 }
             }
@@ -121,7 +121,7 @@ impl Dependencies {
                 }
                 let imported = Imported {
                     from: {
-                        let relative = crate::output::relative(parent, &module.file);
+                        let relative = crate::paths::relative(parent, &module.file);
                         if relative.starts_with("../") || relative.starts_with("./") {
                             relative
                         } else {

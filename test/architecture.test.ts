@@ -16,7 +16,8 @@ const layers = {
   driver: ["src/main.rs", "src/cargo.rs"],
   front: ["src/lower.rs", "src/lower/", "src/jsx_syntax.rs", "src/jsx_syntax/"],
   owned: ["src/library.rs", "src/reachability.rs", "src/link.rs", "src/names.rs", "src/program.rs", "src/js.rs",
-    "src/prepare.rs", "src/output.rs", "src/publish.rs", "src/manifest.rs", "src/runtime.rs", "src/settings.rs", "src/hooks.rs"],
+    "src/prepare.rs", "src/output.rs", "src/publish.rs", "src/manifest.rs", "src/runtime.rs", "src/settings.rs", "src/hooks.rs",
+    "src/paths.rs"],
   printing: ["src/to_oxc.rs", "src/format.rs"],
 };
 const layerOf = (file: string) =>
@@ -32,8 +33,8 @@ test("every source module is in a layer", () => {
 // crate is its layer's, `crate::js` owned output's. Found in review: the
 // checks below forbid chosen APIs, so an owned module using lowering
 // broke none. Printing's own modules are named where an owned one starts
-// it: `output.rs` prints each module it plans, `settings.rs` checks a
-// formatter's options, and `hooks.rs` formats what a hook returns.
+// it: `output.rs` prints each module it plans, and `hooks.rs` formats what
+// a hook returns.
 const allowed: Record<string, string[]> = {
   driver: ["driver", "front", "owned", "printing"],
   front: ["front", "owned"],
@@ -42,7 +43,6 @@ const allowed: Record<string, string[]> = {
 };
 const orchestration: Record<string, string[]> = {
   "src/output.rs": ["src/to_oxc.rs"],
-  "src/settings.rs": ["src/format.rs"],
   "src/hooks.rs": ["src/format.rs"],
 };
 // A file's module path, `src/lower/drops/types.rs`'s `lower::drops::types`;
@@ -71,10 +71,14 @@ const firstNames = (rest: string): string[] => {
   items.push(item);
   return items.map(item => item.trim().match(/^[a-z_]\w*/)?.[0]).filter((n): n is string => !!n && n !== "self");
 };
+// What a file names when it takes the crate's root whole, `use crate::*;`
+// or `use crate as root;`: every module, then, by a name the paths below
+// can't follow (found in review). Only the driver may.
+const WHOLE = "the crate's root, whole";
 // The crate's top-level modules a file names, as the files they are: by
 // `crate::`, or by `super::` up to the crate's root, `super::lower` in a
-// top-level file, each `super` first leaving an inline `mod tests { .. }`.
-// Not in a comment, a string or a `char`.
+// top-level file, each `super` first leaving an inline `mod tests { .. }`;
+// or `WHOLE`. Not in a comment, a string or a `char`.
 const usedModules = (file: string, text: string): string[] => {
   const code = text
     .replace(/"(?:[^"\\]|\\.)*"/g, '""')
@@ -84,7 +88,7 @@ const usedModules = (file: string, text: string): string[] => {
   const names = new Set<string>();
   const inline: number[] = [];
   let depth = 0;
-  for (const m of code.matchAll(/\bmod\s+\w+\s*\{|\{|\}|\b(crate|super)((?:::super)*)::/g)) {
+  for (const m of code.matchAll(/\bmod\s+\w+\s*\{|\{|\}|\b(crate|super)((?:::super)*)(::|\s+as\b)/g)) {
     if (m[0].startsWith("mod")) inline.push(depth++);
     else if (m[0] === "{") depth++;
     else if (m[0] === "}") {
@@ -94,12 +98,19 @@ const usedModules = (file: string, text: string): string[] => {
       const supers = 1 + (m[2].match(/super/g)?.length ?? 0) - inline.length;
       const up = m[1] === "crate" ? own.length : Math.max(supers, 0);
       const base = own.slice(0, own.length - up);
-      for (const name of base.length > 0 ? [base[0]] : firstNames(code.slice(m.index! + m[0].length))) names.add(name);
+      const rest = code.slice(m.index! + m[0].length);
+      // The root, whole: aliased, globbed, or `self` of a group of it.
+      const group = rest.startsWith("{") ? rest.slice(1, rest.indexOf("}")) : "";
+      const whole = m[3] !== "::" || rest.startsWith("*") || /(^|,)\s*(\*|self\b)/.test(group);
+      if (base.length === 0 && whole) names.add(WHOLE);
+      for (const name of base.length > 0 ? [base[0]] : firstNames(rest)) names.add(name);
     }
   }
   // Its own module's items are no other module's.
   names.delete(own[0]);
-  return [...names].map(name => (sources.includes(`src/${name}.rs`) ? `src/${name}.rs` : `src/${name}/`)).sort();
+  return [...names]
+    .map(name => (name === WHOLE ? name : sources.includes(`src/${name}.rs`) ? `src/${name}.rs` : `src/${name}/`))
+    .sort();
 };
 // The checker finds a module however a file names it (found in review:
 // `super::lower` in a top-level file was missed).
@@ -113,6 +124,12 @@ test("the layer check finds a module however a file names it", () => {
     ["src/format.rs", 'mod tests {\n    use super::*;\n    fn f() { let s = "{"; let c = \'}\'; }\n}\nuse super::lower::Body;', ["src/lower.rs"]],
     ["src/manifest.rs", '// crate::lower, in a comment\nfn f() { let s = "super::lower"; }', []],
     ["src/main.rs", "use crate::cargo; mod tests { use super::lower; }", ["src/cargo.rs", "src/lower.rs"]],
+    ["src/manifest.rs", "use crate::*;\nfn sneak(_: lower::Body) {}", [WHOLE]],
+    ["src/manifest.rs", "use super::*;", [WHOLE]],
+    ["src/manifest.rs", "use crate as root;\nfn sneak(_: root::lower::Body) {}", [WHOLE]],
+    ["src/manifest.rs", "use crate::{self as root, js};", ["src/js.rs", WHOLE]],
+    ["src/format.rs", "mod tests {\n    use super::*;\n}", []],
+    ["src/lower/drops/types.rs", "use super::*;", []],
   ];
   for (const [file, text, expected] of cases) expect(usedModules(file, text), text).toEqual(expected);
 });
@@ -121,6 +138,10 @@ test("each module uses only the layers its layer may", () => {
   for (const file of sources) {
     const layer = layerOf(file)!;
     for (const used of usedModules(file, read(file))) {
+      if (used === WHOLE) {
+        if (layer !== "driver") strays.push(`${file} takes ${WHOLE}: name each module it uses`);
+        continue;
+      }
       const usedLayer = layerOf(used.endsWith("/") ? `${used}mod.rs` : used) ?? layerOf(used.replace(/\/$/, ".rs"));
       if (!usedLayer) strays.push(`${file} uses ${used}, which is in no layer`);
       else if (!allowed[layer].includes(usedLayer) && !orchestration[file]?.includes(used)) {
@@ -129,6 +150,41 @@ test("each module uses only the layers its layer may", () => {
     }
   }
   expect(strays).toEqual([]);
+});
+
+// No modules use each other in a cycle, within a layer too: each is
+// understood by what it uses (found in review: hooks and libraries asked
+// artifact planning, which runs hooks and writes libraries' manifests, for
+// its path and fingerprint helpers). Within the front end, `lower/`'s
+// modules are one: they're its parts. A type used without its module's
+// path, as a field's, isn't seen here.
+test("modules don't use each other in a cycle", () => {
+  const key = (file: string) => {
+    const [name] = modulePath(file);
+    if (!name) return file;
+    return sources.includes(`src/${name}.rs`) ? `src/${name}.rs` : `src/${name}/`;
+  };
+  const edges = new Map<string, Set<string>>();
+  for (const file of sources) {
+    const from = key(file);
+    const to = edges.get(from) ?? new Set<string>();
+    for (const used of usedModules(file, read(file))) if (used !== from) to.add(used);
+    edges.set(from, to);
+  }
+  const cycles: string[] = [];
+  const state = new Map<string, "open" | "done">();
+  const visit = (node: string, path: string[]) => {
+    if (state.get(node) === "done") return;
+    if (state.get(node) === "open") {
+      cycles.push([...path.slice(path.indexOf(node)), node].join(" -> "));
+      return;
+    }
+    state.set(node, "open");
+    for (const next of edges.get(node) ?? []) visit(next, [...path, node]);
+    state.set(node, "done");
+  };
+  for (const node of edges.keys()) visit(node, []);
+  expect(cycles).toEqual([]);
 });
 
 test("owned compiler output and downstream phases do not depend on rustc", () => {

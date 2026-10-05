@@ -1,9 +1,10 @@
 //! Resolve and validate all artifacts before touching output files.
 
 use std::collections::HashSet;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
-use crate::manifest::{self, Manifest};
+use crate::manifest::{self, Manifest, fingerprint};
+use crate::paths::{absolute, parent_dir, relative_resolved, resolve};
 
 use crate::publish::{Artifact, ArtifactPlan};
 use crate::{js, program, to_oxc};
@@ -283,35 +284,6 @@ fn relocate(specifier: &str, depth: usize) -> String {
     }
 }
 
-/// A file's directory, as a path that works even for a bare file name.
-fn parent_dir(path: &Path) -> &Path {
-    match path.parent() {
-        Some(dir) if !dir.as_os_str().is_empty() => dir,
-        _ => Path::new("."),
-    }
-}
-
-/// `to` as seen from directory `from`, e.g. `../examples/fib.rs`. Resolve
-/// existing ancestors without requiring the output directory to exist yet.
-pub(crate) fn relative(from: &Path, to: &Path) -> String {
-    relative_resolved(&resolve(from), &resolve(to))
-}
-
-/// A path with what exists of it resolved, as `relative` compares them.
-fn resolve(path: &Path) -> PathBuf {
-    absolute(path).unwrap_or_else(|_| path.to_path_buf())
-}
-
-/// `relative` of two paths already resolved.
-fn relative_resolved(from: &Path, to: &Path) -> String {
-    let from: Vec<_> = from.components().collect();
-    let to: Vec<_> = to.components().collect();
-    let common = from.iter().zip(&to).take_while(|(a, b)| a == b).count();
-    let mut relative: PathBuf = std::iter::repeat_n("..", from.len() - common).collect();
-    relative.extend(&to[common..]);
-    relative.to_string_lossy().into_owned()
-}
-
 impl OutputPlan {
     pub fn new(input: PathBuf, output: PathBuf, test: bool, manifest: Option<PathBuf>) -> Self {
         Self {
@@ -471,28 +443,4 @@ impl OutputPlan {
         artifacts.extend(extra);
         Ok(ArtifactPlan { artifacts, stale })
     }
-}
-
-pub(crate) fn absolute(path: &Path) -> Result<PathBuf, String> {
-    if cfg!(target_os = "wasi") {
-        // The virtual filesystem has absolute preopened paths; realpath is not
-        // provided by all WASI hosts (including browser shims).
-        return Ok(path.to_path_buf());
-    }
-    // Resolve existing ancestors too, so aliases through symlinks collide.
-    if path.exists() {
-        std::fs::canonicalize(path).map_err(|e| e.to_string())
-    } else {
-        let path = std::path::absolute(path).map_err(|e| e.to_string())?;
-        let parent = absolute(parent_dir(&path))?;
-        Ok(parent.join(path.file_name().ok_or("output has no filename")?))
-    }
-}
-
-pub(crate) fn fingerprint(bytes: &[u8]) -> String {
-    // Stable across compiler releases; an ownership check, not a security hash.
-    let hash = bytes.iter().fold(0xcbf29ce484222325_u64, |hash, byte| {
-        (hash ^ u64::from(*byte)).wrapping_mul(0x100000001b3)
-    });
-    format!("{hash:016x}")
 }

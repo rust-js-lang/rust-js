@@ -74,3 +74,13 @@ impl Manifest {
         Ok(manifest)
     }
 }
+
+/// An artifact's `hash`: what a build wrote, so a later one removes only
+/// what's still as written, and a consumer sees a library's file changed.
+pub(crate) fn fingerprint(bytes: &[u8]) -> String {
+    // Stable across compiler releases; an ownership check, not a security hash.
+    let hash = bytes.iter().fold(0xcbf29ce484222325_u64, |hash, byte| {
+        (hash ^ u64::from(*byte)).wrapping_mul(0x100000001b3)
+    });
+    format!("{hash:016x}")
+}

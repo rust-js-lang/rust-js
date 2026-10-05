@@ -166,7 +166,7 @@ mod cargo_toml {
         let dir = if cargo {
             std::env::var_os("CARGO_MANIFEST_DIR").map(PathBuf::from)
         } else {
-            let input = crate::output::absolute(input)?;
+            let input = crate::paths::absolute(input)?;
             input
                 .ancestors()
                 .skip(1)
@@ -184,8 +184,6 @@ mod cargo_toml {
             .and_then(|package| package.metadata)
             .and_then(|metadata| metadata.rust_js)
             .unwrap_or_default();
-        // A width oxfmt can't take fails here, once, not each module after.
-        crate::format::options_of(&settings.format).map_err(|e| format!("`{}`: {e}", path.display()))?;
         Ok(Settings {
             format: settings.format,
             hooks: settings.hooks,

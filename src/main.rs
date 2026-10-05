@@ -43,6 +43,7 @@ mod lower;
 mod manifest;
 mod names;
 mod output;
+mod paths;
 mod prepare;
 mod program;
 mod publish;
@@ -433,6 +434,12 @@ fn main() -> ExitCode {
             return ExitCode::FAILURE;
         }
     };
+    // A width oxfmt can't take fails here, once, not each module after: the
+    // printer's to say, which settings, read before it, doesn't ask.
+    if let Err(error) = format::options_of(&settings.format) {
+        eprintln!("rust-js: `{}`: {error}", settings.dir.join("Cargo.toml").display());
+        return ExitCode::FAILURE;
+    }
     let mut plan = output::OutputPlan::new(input, output, test, manifest);
     plan.metadata = metadata.clone();
     plan.settings = settings;
