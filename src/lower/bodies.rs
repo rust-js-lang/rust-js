@@ -220,6 +220,48 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 names.push(pattern);
                 continue;
             }
+            // Props with a `Rest`, which only JS's taking them apart gives,
+            // `{ label, ...rest }`, are taken apart so where they hold what
+            // has a destructor too: each part bound is the function's, as a
+            // variable is (ADR 0195), and each with one must be bound.
+            if let Some(pat) = peeled
+                && let PatKind::Leaf { subpatterns } = &pat.kind
+                && subpatterns
+                    .iter()
+                    .any(|f| super::bindings::is_rest(self.tcx, f.pattern.ty))
+            {
+                if let ty::Adt(adt, args) = param.ty.kind() {
+                    for (i, field) in adt.non_enum_variant().fields.iter_enumerated() {
+                        let bound = subpatterns
+                            .iter()
+                            .any(|f| f.field == i && matches!(f.pattern.kind, PatKind::Binding { .. }));
+                        if !bound && self.has_drops(field.ty(self.tcx, args).skip_normalization()) {
+                            return Err(self.unsupported(
+                                pat.span,
+                                &format!(
+                                    "props with a `Rest` whose `{}`, which has a destructor, isn't bound",
+                                    field.name
+                                ),
+                            ));
+                        }
+                    }
+                }
+                let Some((pattern, _)) = self.js_pattern(pat) else {
+                    return Err(
+                        self.unsupported(pat.span, "props with a `Rest` taken apart into what isn't a variable")
+                    );
+                };
+                for f in subpatterns {
+                    if let PatKind::Binding { var, ty, .. } = f.pattern.kind
+                        && self.has_drops(ty)
+                    {
+                        let place = self.locals.vars[&var].place.clone();
+                        self.own(var, place, ty, f.pattern.span, out)?;
+                    }
+                }
+                names.push(pattern);
+                continue;
+            }
             let name = match peeled {
                 Some(pat) => match &pat.kind {
                     PatKind::Binding {

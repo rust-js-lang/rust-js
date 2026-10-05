@@ -759,17 +759,29 @@ pub struct SocialProps { pub name: &'static str, pub rest: Rest }
 pub fn Social(SocialProps { name, rest }: SocialProps) -> Element {
     jsx! { <ExternalLink href="/social" rest={rest} {..Default::default()}>{name}</ExternalLink> }
 }
+// Props holding what has a destructor are taken apart where they're given
+// too, { label, ...rest }, what's bound owned by the function.
+pub struct Loud(pub &'static str);
+impl Drop for Loud {
+    fn drop(&mut self) {}
+}
+pub struct BadgeProps { pub label: Loud, pub rest: Rest }
+pub fn Badge(BadgeProps { label, rest }: BadgeProps) -> Element {
+    jsx! { <b {...rest}>{label.0}</b> }
+}
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect([jsx.includes("export function ExternalLink({ href, target, children, ...rest })"), jsx.includes("{...rest}"), jsx.includes("rest=")]).toEqual([true, true, false]);
   // One a Rust component passes on is spread too.
   expect(jsx).toContain('<ExternalLink href="/social" {...rest}>');
-  const { ExternalLink, Home, Social } = await import(join(dir, "lib.jsx"));
+  expect(jsx).toContain("export function Badge({ label, ...rest }) {");
+  const { ExternalLink, Home, Social, Badge } = await import(join(dir, "lib.jsx"));
   const { createElement } = await import("react");
   expect(renderToStaticMarkup(createElement(ExternalLink, { href: "/a", "aria-label": "A", className: "c" }, "a"))).toBe('<a href="/a" target="_blank" rel="noopener" aria-label="A" class="c">a</a>');
   expect(renderToStaticMarkup(Home())).toBe('<a href="/home" target="_blank" rel="noopener">Home</a>');
   expect(renderToStaticMarkup(createElement(Social, { name: "S", "aria-label": "B" }))).toBe('<a href="/social" target="_blank" rel="noopener" aria-label="B">S</a>');
+  expect(renderToStaticMarkup(createElement(Badge, { label: ["L"], title: "T" }))).toBe('<b title="T">L</b>');
   // JS's props have no `rest`: one read as a field is an error, which says
   // to take it apart.
   const read = compile(`#![allow(non_snake_case)]
@@ -781,6 +793,17 @@ pub fn A(p: P) -> Element {
 `);
   const failed = Bun.spawnSync(read.args, { cwd: read.dir });
   expect([failed.exitCode === 0, failed.stderr.toString().includes("take it apart from them")]).toEqual([false, true]);
+  // Nor is one taken apart anywhere but where the props are given.
+  const later = compile(`#![allow(non_snake_case)]
+use react::{Element, Rest, jsx};
+pub struct P { pub href: &'static str, pub rest: Rest }
+pub fn A(p: P) -> Element {
+    let P { href, rest } = p;
+    jsx! { <a href={href} {...rest} /> }
+}
+`);
+  const refused = Bun.spawnSync(later.args, { cwd: later.dir });
+  expect([refused.exitCode === 0, refused.stderr.toString().includes("take them apart where they're given")]).toEqual([false, true]);
 });
 
 test("JSX grammar: spread precedence, children overrides, component paths and keyed fragments", async () => {

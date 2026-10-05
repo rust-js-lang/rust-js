@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "                if false {",
     tests: ["test/diagnostics.test.ts", "-t", "generic iterator in a trait's method"],
   },
+  {
+    name: "rest-props-with-drops-not-taken-apart",
+    breaks: "props with a `Rest` and a field with a destructor are an error, where they're `{ label, ...rest }`",
+    file: "src/lower/bodies.rs",
+    find: "                    .any(|f| super::bindings::is_rest(self.tcx, f.pattern.ty))\n",
+    replace: "                    .any(|f| false && super::bindings::is_rest(self.tcx, f.pattern.ty))\n",
+    tests: ["test/jsx.test.ts", "-t", "doesn't name as ...rest"],
+  },
 ];

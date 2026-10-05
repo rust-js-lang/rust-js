@@ -218,4 +218,12 @@ export const mutations: Mutation[] = [
     replace: "                    match false && super::bindings::is_rest(self.tcx, fields[i].1) {",
     tests: ["test/jsx.test.ts", "-t", "doesn't name as ...rest"],
   },
+  {
+    name: "rest-props-taken-apart-later",
+    breaks: "`let P { href, rest } = p;` reads `p.rest`, which JS's props don't have: `undefined`",
+    file: "src/lower/patterns.rs",
+    find: "                    if bindings::is_rest(self.tcx, field.pattern.ty) {",
+    replace: "                    if false && bindings::is_rest(self.tcx, field.pattern.ty) {",
+    tests: ["test/jsx.test.ts", "-t", "doesn't name as ...rest"],
+  },
 ];

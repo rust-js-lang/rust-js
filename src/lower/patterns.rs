@@ -1255,6 +1255,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             PatKind::Leaf { subpatterns } => {
                 let mut tests = Vec::new();
                 for field in subpatterns {
+                    // JS's props have no `rest`: only taking them apart where
+                    // they're given gives what's left of them (ADR 0195).
+                    if bindings::is_rest(self.tcx, field.pattern.ty) {
+                        return Err(self.unsupported(
+                            field.pattern.span,
+                            "a `Rest` of props taken apart here: take them apart where they're given, `fn f(Props { a, rest }: Props)`",
+                        ));
+                    }
                     let part = self.project(subject.clone(), pat.ty, field.field.as_usize());
                     tests.extend(self.pattern_test(&field.pattern, &part, bindings)?);
                 }

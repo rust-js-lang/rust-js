@@ -40,8 +40,14 @@ export function ExternalLink({ href, target, children, ...rest }) {
   spreads nothing.
 - **One a component passes on is spread**, `<ExternalLink href="/social"
   {...rest}>`, as a JS one would.
-- **Read as a field, `p.rest`, it's an error**, which says to take the props
-  apart: JS's props have no `rest`.
+- **Read as a field, `p.rest`, or taken apart anywhere but where the props
+  are given, `let P { href, rest } = p;`, it's an error**, which says where
+  to take them apart: JS's props have no `rest`.
+- **Props holding what has a destructor are taken apart where they're given
+  too**, `{ label, ...rest }`, each part bound the function's to drop, as a
+  variable is (ADR 0098), and each with a destructor must be bound: found as
+  react.dev's `ExternalLink`, whose children are a type parameter's, built by
+  Cargo.
 
 ## Why
 
