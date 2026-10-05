@@ -26,14 +26,21 @@ THIR:
  printing: to_oxc.rs ─► oxc ─► format.rs ─► .js + .js.map
 ```
 
-Four layers, each allowed to depend only on what's left of it:
+Four layers. The arrows above are the order work happens in; a module uses
+only the layers its row allows. The architecture test resolves each
+module's `crate::` and `super::` paths and checks them against this table:
 
-| Layer | Modules | May not |
-|---|---|---|
-| Driver | `main.rs`, `cargo.rs` | |
-| Front end | `lower.rs`, `lower/`, `jsx_syntax.rs` | publish files; link |
-| Owned output | `js.rs`, `program.rs`, `link.rs`, `reachability.rs`, `names.rs`, `prepare.rs`, `output.rs`, `publish.rs`, `manifest.rs`, `library.rs`, `runtime.rs`, `settings.rs`, `hooks.rs` | use rustc |
-| Printing | `to_oxc.rs`, `format.rs` | be bypassed: only they use oxc |
+| Layer | Modules | May use | May not |
+|---|---|---|---|
+| Driver | `main.rs`, `cargo.rs` | every layer | |
+| Front end | `lower.rs`, `lower/`, `jsx_syntax.rs`, `jsx_syntax/` | the front end, owned output | publish files; link |
+| Owned output | `js.rs`, `program.rs`, `link.rs`, `reachability.rs`, `names.rs`, `prepare.rs`, `output.rs`, `publish.rs`, `manifest.rs`, `library.rs`, `runtime.rs`, `settings.rs`, `hooks.rs` | owned output | use rustc |
+| Printing | `to_oxc.rs`, `format.rs` | printing, owned output | be bypassed: only they use oxc |
+
+Three owned modules start printing, and are named as its exceptions:
+`output.rs` prints each module it plans (`to_oxc.rs`), `settings.rs` checks
+a formatter's options and `hooks.rs` formats what a hook returns
+(`format.rs`). Another exception is a change to this table and its test.
 
 ## Inside the front end
 
@@ -56,8 +63,8 @@ Each is checked to stay that way.
 | `recognition.rs`, `recognition/` | Which std function or method a call is, a `Std`: `classify` asks what's known by identity, then a trait's method, then a type's own |
 | `body_queries.rs` | What a body has: `for` loops, `.await`, places, stepped iterators |
 | `effects.rs` | What evaluating an expression, or calling a closure, can do that can be seen |
-| `drops/types.rs` | What dropping a type runs |
-| `drops/facts.rs` | What a body owns and moves, found before it's lowered |
+| `drops/types.rs` | What dropping a type runs, and what a pattern moves, asked through a `DropQuery`: types, the crate's facts, which type parameters have drops, and the bounds of the dictionaries given, never `FnCx` |
+| `drops/facts.rs` | What a body owns and moves, found before it's lowered, from a `DropQuery` and the body's THIR |
 | `analysis.rs`, `analysis/` | What the whole crate is, before any function is lowered: what it refuses, the names its items have in JS, the types it changes in place, its drops' and `Debug`'s needs |
 | `shortcuts.rs` | Nothing of its own: `self.is_map(ty)` for `self.recognition().is_map(ty)`, each question answered in `recognition.rs` |
 
@@ -99,7 +106,7 @@ the rest.
 | `&mut`s to values JS can't change in place | `mut_refs.rs` | `is_boxed`, `is_alias`, `slot`, `is_item_call` |
 | Writing to a `Formatter` | `display.rs` | `written`, `formatter_answer`, `with_dyn_debug` |
 | What a function or a binding is in JS | `items.rs` | `fn_ref`, `js_ref`, `resolve_instance` |
-| Dictionaries and evidence | `traits.rs` | `dictionary`, `evidence_for`, `impl_call` |
+| Dictionaries and evidence: where a given one is, by its bound (`EvidenceQuery`), and its JS | `traits.rs` | `dictionary`, `evidence_for`, `has_evidence`, `impl_call` |
 | What a generic function was given: dictionaries, a copied default's arguments, type facts (ADRs 0049, 0145) | `traits.rs` | `in_impl_terms`, `given_evidence`, `given_type_fact`, `resolve_self_instance`, `enter_default` |
 | The box of a `Some` that looks like `None` (ADR 0051) | `options.rs` | `some`, `some_value`, `some_literal`, `is_some_box` |
 | When a value is copied | `copies.rs` | `copy_if_needed`, `contains_mutated` |
@@ -136,7 +143,9 @@ Only `iterators.rs` reads either answer.
 **Runtime helpers.** The JS that generated code imports from
 `@rust-js/runtime`: each is a file, `src/runtime/<name>.js`, which
 `runtime.rs` names and orders, and the package is made from them
-([ADR 0103](decisions/0103-runtime-package.md)).
+([ADR 0103](decisions/0103-runtime-package.md)). Lowering asks for the
+helpers a module needs; `output.rs` imports the ones its prepared tree
+reads, and the printer is given that list.
 
 ## Where a change goes
 
@@ -155,5 +164,6 @@ A std function or method rust-js doesn't know yet:
 A new kind of value, construct or analysis goes with its kind above: a
 question that emits nothing in a module of its own, checked as the others
 are, and lowering in the module of the construct. Check the generated JS
-reads as a person would write it, and run the checks in
-[AGENTS.md](../AGENTS.md), in its Linux VM.
+reads as a person would write it, and run the checks
+[CONTRIBUTING.md](../CONTRIBUTING.md) asks for before pushing, as
+[AGENTS.md](../AGENTS.md) runs them, in its Linux VM.

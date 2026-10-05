@@ -33,32 +33,11 @@ interop and tooling. The first production app is an intermediate milestone.
 
 ## Making changes
 
-Read and follow [CONTRIBUTING.md](CONTRIBUTING.md), including its architecture
-principle, for every contribution.
-
-Read the relevant [design decisions](docs/README.md), including later
-amendments, and the existing implementation and tests. The
+Read and follow [CONTRIBUTING.md](CONTRIBUTING.md) for every contribution:
+correctness first, the architecture principle, how a change is made,
+proved and recorded, and what to run before pushing. The
 [architecture](docs/architecture.md) says where a change goes, and which
-boundaries [its test](test/architecture.test.ts) holds it to. Verify uncertain
-library behavior from local source. Follow the existing compiler phases and
-reuse evaluation-order machinery.
-
-Start with a small Rust example and the JavaScript it should produce. Compare
-behavior with native Rust where they should agree; test intentional differences
-explicitly. Review generated-code snapshot diffs before accepting them. Use
-real examples and the playground to check integration when relevant.
-
-Document new semantic choices and current limitations. Run checks appropriate
-to the change and report what was verified. Documentation-only edits need
-content and link checks.
-
-Track production-readiness work in [ROADMAP.md](ROADMAP.md). Update relevant
-items with evidence when their acceptance criteria are met.
-
-Use the pinned Rust toolchain and Bun for JavaScript tooling. See
-[package.json](package.json) for commands: `bun run build`, `bun run test`, and
-`bun run fmt:check`. Rebuild with `bun run wasm` when validating compiler
-changes through the browser playground.
+boundaries [its test](test/architecture.test.ts) holds it to.
 
 ## Develop in a Linux VM
 
@@ -90,8 +69,8 @@ here, and run there:
 | Run generated programs ([ADR 0092](docs/decisions/0092-generated-programs.md)) | `cargo build && FUZZ_START=1000 FUZZ_SEEDS=600 bun test test/fuzz.test.ts`; the reduced programs stay in the VM's `target/fuzz/` |
 | Build the playground's compiler | `bun run wasm` |
 
-Before pushing a change, run what the [check workflow](.github/workflows/check.yml)
-runs, `bun run typecheck`, `bun run fmt:check`,
+Before pushing a change ([CONTRIBUTING.md](CONTRIBUTING.md)), run what the
+[check workflow](.github/workflows/check.yml) runs, `bun run typecheck`, `bun run fmt:check`,
 `cargo clippy --locked -- -D warnings`, `cargo test --locked`,
 `bun run test` and `bun run --cwd examples/vite-react build`; after
 `bun run wasm`, `RUST_JS_REQUIRE_WASM=1 bun test test/snapshots.test.ts test/playground.test.ts`;
