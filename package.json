@@ -24,7 +24,7 @@
     "pack:create": "bun scripts/package-create.ts",
     "pack:crates": "bun scripts/package-crates.ts",
     "pack:npm-crates": "bun scripts/package-npm-crates.ts",
-    "test": "cargo build --quiet && RUST_JS_COMPILER=\"$PWD/target/debug/rust-js\" bun test --parallel --timings=target/test-timings.json --update-timings",
+    "test": "cargo build --quiet && RUST_JS_COMPILER=\"$PWD/target/debug/rust-js\" bun scripts/test.ts",
     "test:serial": "cargo build --quiet && RUST_JS_COMPILER=\"$PWD/target/debug/rust-js\" bun test --timeout=60000",
     "test:rustc": "cargo build --release && bun scripts/rustc-suite.ts",
     "test:rustc:bless": "cargo build --release && bun scripts/rustc-suite.ts --bless",
