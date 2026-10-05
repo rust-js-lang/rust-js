@@ -450,7 +450,8 @@ tooling while preserving rust-js's own readable-output goals.
   cause. Run the corpus on compiler and toolchain upgrades.
   Started: [the crate corpus](docs/crate-corpus.md), 16 crates shared models
   use, each compiled to JS with its whole graph by `bun scripts/crate-corpus.ts`.
-  3 compile, strum, thiserror and bitflags; the rest stop at a few gaps, raw memory the most
+  3 compile, strum, thiserror and bitflags, and each that compiles is run: bitflags
+  as natively, strum's and thiserror's derives not yet; the rest stop at a few gaps, raw memory the most
   common, in 9. Fixed since it was first
   measured: a generic trait method where a type may have a destructor, which
   stopped 9, a user `DoubleEndedIterator` or `ExactSizeIterator`, 8, a user
