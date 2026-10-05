@@ -806,6 +806,26 @@ pub fn A(p: P) -> Element {
   expect([refused.exitCode === 0, refused.stderr.toString().includes("take them apart where they're given")]).toEqual([false, true]);
 });
 
+// A component's optional handler passed on to an element, as react.dev's
+// Button does its onClick, is `onClick={onClick}` (ADR 0198): React
+// ignores what a handler returns, and no handler does what one that calls
+// nothing does.
+test("JSX passes an optional event handler on as it is", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{Element, Node, event, jsx};
+pub struct ButtonProps<C> { pub children: C, pub on_click: Option<Box<dyn Fn(&event::Mouse)>> }
+pub fn Button<C: Node>(ButtonProps { children, on_click }: ButtonProps<C>) -> Element {
+    jsx! { <button onClick={move |e| if let Some(f) = &on_click { f(e) }}>{children}</button> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect([jsx.includes("<button onClick={onClick}>"), jsx.includes("=>")]).toEqual([true, false]);
+  const { Button } = await import(join(dir, "lib.jsx"));
+  const handler = () => {};
+  expect([Button({ children: "b", on_click: handler }).props.onClick === handler, Button({ children: "b" }).props.onClick]).toEqual([true, undefined]);
+});
+
 test("JSX grammar: spread precedence, children overrides, component paths and keyed fragments", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 #[rust_js::camel_case]

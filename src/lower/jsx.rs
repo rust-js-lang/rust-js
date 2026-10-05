@@ -361,7 +361,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 return Err(self.unsupported(self.thir[value].span, "JSX props spread of a non-struct value"));
             }
-            let value = self.expr(value, out)?;
+            let mut value = self.expr(value, out)?;
+            // `(e) => { if (f != null) { f(e); } }` as an event's handler is
+            // `f`: React ignores what a handler returns, and no handler does
+            // what one that calls nothing does (ADR 0198).
+            let event = name
+                .strip_prefix("on")
+                .is_some_and(|rest| rest.starts_with(char::is_uppercase));
+            if event {
+                let spilled = match (&value.kind, out.last().map(|s| &s.kind)) {
+                    (js::ExprKind::Var(var), Some(StmtKind::Const(declared, arrow))) if var == declared => {
+                        passed_handler(arrow)
+                    }
+                    _ => None,
+                };
+                if let Some(handler) = spilled {
+                    out.pop();
+                    value = handler;
+                } else if let Some(handler) = passed_handler(&value) {
+                    value = handler;
+                }
+            }
             let js::ExprKind::Jsx(jsx) = &mut element.kind else {
                 unreachable!("checked above")
             };
@@ -383,4 +403,45 @@ fn jsx_tree(value: &Expr) -> bool {
         js::ExprKind::Array(items) => items.iter().any(jsx_tree),
         _ => false,
     }
+}
+
+/// `f` of `(e) => { if (f != null) { f(e); } }`: a handler that calls
+/// another, if there is one, with what it's given (ADR 0198).
+fn passed_handler(value: &Expr) -> Option<Expr> {
+    let js::ExprKind::Arrow(params, body) = &value.kind else {
+        return None;
+    };
+    let [js::Pattern::Name(param)] = params.as_slice() else {
+        return None;
+    };
+    let [
+        Stmt {
+            kind: StmtKind::If(test, then, None),
+            ..
+        },
+    ] = body.as_slice()
+    else {
+        return None;
+    };
+    let js::ExprKind::Binary(js::Op::LooseNe, tested, null) = &test.kind else {
+        return None;
+    };
+    let (js::ExprKind::Var(handler), js::ExprKind::Null) = (&tested.kind, &null.kind) else {
+        return None;
+    };
+    let [
+        Stmt {
+            kind: StmtKind::Expr(call),
+            ..
+        },
+    ] = then.as_slice()
+    else {
+        return None;
+    };
+    let js::ExprKind::Call(callee, args) = &call.kind else {
+        return None;
+    };
+    let given = matches!(args.as_slice(), [arg] if matches!(&arg.kind, js::ExprKind::Var(a) if a == param));
+    let called = matches!(&callee.kind, js::ExprKind::Var(c) if c == handler);
+    (given && called && handler != param).then(|| (**tested).clone())
 }

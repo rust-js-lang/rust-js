@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "doesn't name as ...rest"],
   },
+  {
+    name: "passed-handler-wrapped",
+    breaks: "an optional handler passed on to an element is wrapped, `(e) => { if (onClick != null) { onClick(e); } }`",
+    file: "src/lower/jsx.rs",
+    find: "    (given && called && handler != param).then(|| (**tested).clone())",
+    replace: "    (false && given && called && handler != param).then(|| (**tested).clone())",
+    tests: ["test/jsx.test.ts", "-t", "optional event handler on as it is"],
+  },
 ];
