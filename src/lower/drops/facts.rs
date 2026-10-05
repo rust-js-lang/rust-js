@@ -1,7 +1,7 @@
 //! What a body does with its values that have destructors, found before
 //! it's lowered (ADR 0098): the variables that own one, what moves them,
-//! and the temporaries that hold one. A walk of the THIR that reads the
-//! function's context and writes none of it.
+//! and the temporaries that hold one. A walk of the THIR that asks what
+//! types drop of a `DropQuery`, and sees nothing else of the function.
 
 use std::collections::{HashMap, HashSet};
 
@@ -13,11 +13,13 @@ use rustc_middle::thir::{
 use rustc_middle::ty::adjustment::PointerCoercion;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
+use rustc_span::def_id::DefId;
 
-use super::super::FnCx;
+use super::super::body_queries::BodyQuery;
+use super::super::effects::cannot_leave_in;
 
 use super::Path;
-use super::types::{Drops, describe};
+use super::types::{DropQuery, Drops, describe};
 
 /// What a body does with its values that have destructors.
 #[derive(Default)]
@@ -65,7 +67,7 @@ pub(in crate::lower) enum TempKind {
 
 /// The parts a struct update moves out of its base: the fields it doesn't
 /// name that have a destructor.
-fn updated_paths<'tcx>(cx: &FnCx<'_, 'tcx>, adt: &AdtExpr<'tcx>, field_types: &[Ty<'tcx>]) -> Vec<Path> {
+fn updated_paths<'tcx>(cx: &DropQuery<'_, 'tcx>, adt: &AdtExpr<'tcx>, field_types: &[Ty<'tcx>]) -> Vec<Path> {
     field_types
         .iter()
         .enumerate()
@@ -96,11 +98,11 @@ enum Taken {
 }
 
 /// Find a body's owners, and what moves them, before it's lowered.
-pub(super) fn find_facts<'a, 'tcx>(cx: &FnCx<'a, 'tcx>) -> Facts {
-    let thir = cx.thir;
+pub(super) fn find_facts<'tcx>(cx: &DropQuery<'_, 'tcx>, thir: &Thir<'tcx>, body_owner: DefId) -> Facts {
     let mut finder = Finder {
         cx,
         thir,
+        body_owner,
         ids: thir
             .exprs
             .iter_enumerated()
@@ -114,7 +116,7 @@ pub(super) fn find_facts<'a, 'tcx>(cx: &FnCx<'a, 'tcx>) -> Facts {
     // A closure called once, that moves what it holds, owns what it took,
     // and drops what it didn't move as its call ends.
     if let Some(held) = finder.consumed() {
-        let span = cx.tcx.def_span(cx.body_owner);
+        let span = cx.recognition.tcx.def_span(body_owner);
         for (var, _) in held {
             finder.facts.owners.insert(var, span);
         }
@@ -132,9 +134,11 @@ pub(super) fn find_facts<'a, 'tcx>(cx: &FnCx<'a, 'tcx>) -> Facts {
     finder.facts
 }
 
-struct Finder<'c, 'a, 'tcx> {
-    cx: &'c FnCx<'a, 'tcx>,
+struct Finder<'c, 'q, 'a, 'tcx> {
+    cx: &'c DropQuery<'q, 'tcx>,
     thir: &'a Thir<'tcx>,
+    /// The function or closure whose body this is.
+    body_owner: DefId,
     ids: HashMap<usize, ExprId>,
     /// The expressions being walked, outermost first.
     stack: Vec<ExprId>,
@@ -147,7 +151,14 @@ struct Finder<'c, 'a, 'tcx> {
     facts: Facts,
 }
 
-impl<'c, 'a, 'tcx> Finder<'c, 'a, 'tcx> {
+impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
+    fn body_query(&self) -> BodyQuery<'a, 'tcx> {
+        BodyQuery {
+            tcx: self.cx.recognition.tcx,
+            thir: self.thir,
+        }
+    }
+
     fn id(&self, e: &ThirExpr<'tcx>) -> ExprId {
         self.ids[&(std::ptr::from_ref(e) as usize)]
     }
@@ -183,6 +194,7 @@ impl<'c, 'a, 'tcx> Finder<'c, 'a, 'tcx> {
         match &expr.kind {
             ExprKind::Adt(adt) => {
                 self.cx
+                    .recognition
                     .tcx
                     .adt_destructor(adt.adt_def.did())
                     .is_some_and(|d| self.cx.runs_drop(d.did))
@@ -200,11 +212,17 @@ impl<'c, 'a, 'tcx> Finder<'c, 'a, 'tcx> {
     /// What the body, if it's a closure's that's called once, holds that
     /// has a destructor.
     fn consumed(&self) -> Option<Vec<(LocalVarId, Ty<'tcx>)>> {
-        let closure = self.cx.body_owner;
-        if !self.cx.tcx.is_closure_like(closure) {
+        let closure = self.body_owner;
+        if !self.cx.recognition.tcx.is_closure_like(closure) {
             return None;
         }
-        let ty = self.cx.tcx.type_of(closure).instantiate_identity().skip_normalization();
+        let ty = self
+            .cx
+            .recognition
+            .tcx
+            .type_of(closure)
+            .instantiate_identity()
+            .skip_normalization();
         let ty::Closure(_, args) = ty.kind() else { return None };
         if args.as_closure().kind() != ty::ClosureKind::FnOnce {
             return None;
@@ -461,7 +479,9 @@ impl<'c, 'a, 'tcx> Finder<'c, 'a, 'tcx> {
             _ => Vec::new(),
         };
         if let Some(at) = siblings.iter().position(|&s| s == child)
-            && siblings[at + 1..].iter().any(|&s| !self.cx.cannot_leave(s))
+            && siblings[at + 1..]
+                .iter()
+                .any(|&s| !cannot_leave_in(self.cx.recognition.tcx, self.thir, s))
         {
             self.facts.temps.insert(e, TempKind::Operand);
             return;
@@ -546,7 +566,7 @@ pub(in crate::lower) fn is_place(kind: &ExprKind<'_>) -> bool {
     )
 }
 
-impl<'c, 'a, 'tcx> Visitor<'a, 'tcx> for Finder<'c, 'a, 'tcx> {
+impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Finder<'c, 'q, 'a, 'tcx> {
     fn thir(&self) -> &'a Thir<'tcx> {
         self.thir
     }
@@ -589,7 +609,7 @@ impl<'c, 'a, 'tcx> Visitor<'a, 'tcx> for Finder<'c, 'a, 'tcx> {
         // A `for` loop is what it iterates, its item, which its pattern owns
         // each time round as a parameter would, and its body: not the `iter`
         // and `next()` rustc writes it with, which its lowering doesn't.
-        if let Some(f) = self.cx.body_query().as_for(id) {
+        if let Some(f) = self.body_query().as_for(id) {
             self.visit_expr(&self.thir[f.head]);
             self.visit_pat(f.pat);
             self.visit_expr(&self.thir[f.body]);
@@ -597,7 +617,7 @@ impl<'c, 'a, 'tcx> Visitor<'a, 'tcx> for Finder<'c, 'a, 'tcx> {
             return;
         }
         if let ExprKind::Match { ref arms, .. } = expr.kind
-            && self.cx.body_query().as_question(id).is_some()
+            && self.body_query().as_question(id).is_some()
         {
             for &arm in arms {
                 self.thir[arm].pattern.walk_always(|p| {
@@ -644,7 +664,7 @@ impl<'c, 'a, 'tcx> Visitor<'a, 'tcx> for Finder<'c, 'a, 'tcx> {
                 !target.is_ref()
                     && matches!(to.kind(), ty::Dynamic(predicates, ..) if match self.cx.drops(from) {
                         Drops::Nothing => false,
-                        Drops::Runs => !predicates.principal_def_id().is_some_and(|id| self.cx.is_rust_trait(id)),
+                        Drops::Runs => !predicates.principal_def_id().is_some_and(|id| self.cx.recognition.is_rust_trait(id)),
                         Drops::Unsupported(..) => true,
                     })
             } =>

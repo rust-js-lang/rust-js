@@ -29,39 +29,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// A type only a caller knows: a type parameter, or an associated type of
-    /// one, `<S as Source>::Item`, that isn't a type here (ADR 0106). Its
-    /// dictionaries are the ones a function is given. One that is a type here,
-    /// `<Count as Source>::Item` in an impl's signature, is that type.
-    pub(super) fn is_unknown(&self, ty: Ty<'tcx>) -> bool {
-        match ty.kind() {
-            ty::Param(_) => true,
-            ty::Alias(
-                _,
-                ty::AliasTy {
-                    kind: ty::Projection { .. },
-                    ..
-                },
-            ) => self
-                .tcx
-                .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(ty))
-                .map_or(true, |known| {
-                    matches!(
-                        known.kind(),
-                        ty::Param(_)
-                            | ty::Alias(
-                                _,
-                                ty::AliasTy {
-                                    kind: ty::Projection { .. },
-                                    ..
-                                }
-                            )
-                    )
-                }),
-            _ => false,
-        }
-    }
-
     /// An `Option<T>` whose `T` might look like `None`: a type parameter, or
     /// a `()` or an `Option` itself. `Some` of it is boxed when it does
     /// (ADR 0051).

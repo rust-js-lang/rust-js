@@ -127,8 +127,8 @@ export const mutations: Mutation[] = [
     name: "for-desugar-walked",
     breaks: "a `for` loop's `iter` and `next()`, which its lowering doesn't write, are taken as owners",
     file: "src/lower/drops/facts.rs",
-    find: "        if let Some(f) = self.cx.body_query().as_for(id) {",
-    replace: "        if let Some(f) = self.cx.body_query().as_for(id).filter(|_| false) {",
+    find: "        if let Some(f) = self.body_query().as_for(id) {",
+    replace: "        if let Some(f) = self.body_query().as_for(id).filter(|_| false) {",
     tests: ["test/corpus.test.ts", "-t", "loop_drops"],
   },
   {

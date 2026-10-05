@@ -137,6 +137,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.recognition().option_of(ty)
     }
 
+    /// A type only a caller knows: a type parameter, or an associated type
+    /// of one that isn't a type here (ADR 0106).
+    pub(super) fn is_unknown(&self, ty: Ty<'tcx>) -> bool {
+        self.recognition().is_unknown(ty)
+    }
+
+    /// A trait rust-js compiled: the crate's own, or a library's (ADR 0100).
+    pub(super) fn is_rust_trait(&self, id: DefId) -> bool {
+        self.recognition().is_rust_trait(id)
+    }
+
     pub(super) fn is_std_type(&self, ty: Ty<'tcx>, item: StdItem) -> bool {
         self.recognition().is_std_type(ty, item)
     }

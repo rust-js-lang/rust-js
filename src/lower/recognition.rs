@@ -2000,6 +2000,45 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .unwrap_or(ty)
     }
 
+    /// A type only a caller knows: a type parameter, or an associated type of
+    /// one, `<S as Source>::Item`, that isn't a type here (ADR 0106). Its
+    /// dictionaries are the ones a function is given. One that is a type here,
+    /// `<Count as Source>::Item` in an impl's signature, is that type.
+    pub(super) fn is_unknown(&self, ty: Ty<'tcx>) -> bool {
+        match ty.kind() {
+            ty::Param(_) => true,
+            ty::Alias(
+                _,
+                ty::AliasTy {
+                    kind: ty::Projection { .. },
+                    ..
+                },
+            ) => self
+                .tcx
+                .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(ty))
+                .map_or(true, |known| {
+                    matches!(
+                        known.kind(),
+                        ty::Param(_)
+                            | ty::Alias(
+                                _,
+                                ty::AliasTy {
+                                    kind: ty::Projection { .. },
+                                    ..
+                                }
+                            )
+                    )
+                }),
+            _ => false,
+        }
+    }
+
+    /// A trait rust-js compiled: the crate's own, or a library's (ADR 0100).
+    /// Any other is std's, whose dictionaries rust-js makes as it knows them.
+    pub(super) fn is_rust_trait(&self, id: DefId) -> bool {
+        id.is_local() || self.foreign.in_library(id)
+    }
+
     pub(super) fn reveal(&self, ty: Ty<'tcx>) -> Ty<'tcx> {
         if !rustc_middle::ty::TypeVisitableExt::has_opaque_types(&ty) {
             return ty;

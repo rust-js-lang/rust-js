@@ -134,7 +134,7 @@ pub fn emit(
     }
     // The helpers its code names, from the package (ADR 0103), with the
     // other packages' imports.
-    let helpers = crate::runtime::imported_helpers(&module.runtime, &module.read_vars());
+    let helpers = &module.helpers;
     if !helpers.is_empty() {
         if module.packages.is_empty() {
             code.push('\n');

@@ -3,7 +3,7 @@
 
 use super::bindings;
 use super::drops::Drops;
-use super::recognition::{StdItem, TraitCall, TypeFact, is_std_def, is_std_method, std_item};
+use super::recognition::{Recognition, StdItem, TraitCall, TypeFact, is_std_def, is_std_method, std_item};
 use super::representation::{const_js, eval_const};
 use super::{FnCx, R, lower_first};
 use crate::js::{self, Expr, Op, Prop, StmtKind};
@@ -456,6 +456,99 @@ enum Root {
     Item(Box<Route>, String),
 }
 
+/// Where a function's dictionaries are, by the bounds they're given for:
+/// a question of types (ADR 0178), which what a type drops asks. Their JS,
+/// `given`'s values, only `FnCx::route_expr` reads.
+pub(in crate::lower) struct EvidenceQuery<'a, 'tcx> {
+    recognition: Recognition<'a, 'tcx>,
+    given: &'a [(ty::TraitRef<'tcx>, Expr)],
+}
+
+impl<'a, 'tcx> EvidenceQuery<'a, 'tcx> {
+    /// The supertraits' accessors that lead from `from`'s dictionary to
+    /// `to`'s, none if they're one.
+    pub(super) fn super_route(&self, from: ty::TraitRef<'tcx>, to: ty::TraitRef<'tcx>) -> Option<Vec<String>> {
+        // As rustc says what they are here: `<I as Int>::T: NonZero` is
+        // `J: NonZero` of an `I: Int<T = J>`.
+        let normalized = |tr: ty::TraitRef<'tcx>| {
+            self.recognition
+                .tcx
+                .try_normalize_erasing_regions(self.recognition.typing_env, ty::Unnormalized::new_wip(tr))
+                .unwrap_or_else(|_| self.recognition.tcx.erase_and_anonymize_regions(tr))
+        };
+        if normalized(from) == normalized(to) {
+            return Some(Vec::new());
+        }
+        // A std trait's dictionary, like `Copy`'s, has no supertraits in it,
+        // but `Error`'s has its `Display` and `Debug` (ADR 0141).
+        if !self.recognition.is_rust_trait(from.def_id) && !is_std_pair_trait(self.recognition.tcx, from.def_id) {
+            return None;
+        }
+        supertraits(self.recognition.tcx, from.def_id, from.args)
+            .into_iter()
+            .find_map(|(name, tr, _)| {
+                let mut rest = self.super_route(tr, to)?;
+                rest.insert(0, name);
+                Some(rest)
+            })
+    }
+
+    /// Where the dictionary for `tr` is, among those this function was
+    /// given, or a supertrait's of one: a question of types alone, which
+    /// what's dropped asks (ADR 0178) without building its JS.
+    fn evidence_route(&self, tr: ty::TraitRef<'tcx>) -> Option<Route> {
+        self.given
+            .iter()
+            .enumerate()
+            .find_map(|(index, (bound, _))| {
+                let supers = self.super_route(*bound, tr)?;
+                Some(Route {
+                    root: Root::Given(index),
+                    supers,
+                })
+            })
+            .or_else(|| self.item_route(tr))
+    }
+
+    /// `<L as Labeled>::Label: Display`, which the trait declares, from `L`'s
+    /// `Labeled`: its `LabelDisplay`, or a supertrait's of it (ADR 0106).
+    fn item_route(&self, tr: ty::TraitRef<'tcx>) -> Option<Route> {
+        let ty::Alias(
+            _,
+            alias @ ty::AliasTy {
+                kind: ty::Projection { .. },
+                ..
+            },
+        ) = *tr.self_ty().kind()
+        else {
+            return None;
+        };
+        let owner = alias.trait_ref(self.recognition.tcx);
+        let dictionary = self.evidence_route(owner)?;
+        item_bounds(self.recognition.tcx, owner.def_id, owner.args)
+            .into_iter()
+            .find_map(|(name, bound)| {
+                let supers = self.super_route(bound, tr)?;
+                Some(Route {
+                    root: Root::Item(Box::new(dictionary.clone()), name),
+                    supers,
+                })
+            })
+    }
+
+    /// Is a dictionary for `tr` given? Without building it.
+    pub(in crate::lower) fn has_evidence(&self, tr: ty::TraitRef<'tcx>) -> bool {
+        self.evidence_route(tr).is_some()
+    }
+}
+
+/// `Display` or `Error`: a std trait whose `dyn` is a pair (ADR 0141).
+fn is_std_pair_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    [StdItem::Display, StdItem::Error]
+        .into_iter()
+        .any(|item| is_std_def(tcx, id, item))
+}
+
 /// An associated type's drop in its impl's dictionary, `$dropOffset`: a
 /// name no Rust method can have, as `$drop` is (ADR 0178).
 pub(super) fn item_drop_key(tcx: TyCtxt<'_>, item: DefId) -> String {
@@ -695,93 +788,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         value.ok_or_else(|| self.unsupported(span, "this const argument"))
     }
 
-    /// The supertraits' accessors that lead from `from`'s dictionary to
-    /// `to`'s, none if they're one.
-    fn super_route(&self, from: ty::TraitRef<'tcx>, to: ty::TraitRef<'tcx>) -> Option<Vec<String>> {
-        // As rustc says what they are here: `<I as Int>::T: NonZero` is
-        // `J: NonZero` of an `I: Int<T = J>`.
-        let normalized = |tr: ty::TraitRef<'tcx>| {
-            self.tcx
-                .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(tr))
-                .unwrap_or_else(|_| self.tcx.erase_and_anonymize_regions(tr))
-        };
-        if normalized(from) == normalized(to) {
-            return Some(Vec::new());
+    /// Where this function's dictionaries are, by their bounds (ADR 0178).
+    pub(super) fn evidence_query(&self) -> EvidenceQuery<'_, 'tcx> {
+        EvidenceQuery {
+            recognition: self.recognition(),
+            given: &self.given.evidence,
         }
-        // A std trait's dictionary, like `Copy`'s, has no supertraits in it,
-        // but `Error`'s has its `Display` and `Debug` (ADR 0141).
-        if !self.is_rust_trait(from.def_id) && !self.is_std_pair_trait(from.def_id) {
-            return None;
-        }
-        supertraits(self.tcx, from.def_id, from.args)
-            .into_iter()
-            .find_map(|(name, tr, _)| {
-                let mut rest = self.super_route(tr, to)?;
-                rest.insert(0, name);
-                Some(rest)
-            })
+    }
+
+    /// Is a dictionary for `tr` given? Without building it.
+    pub(super) fn has_evidence(&self, tr: ty::TraitRef<'tcx>) -> bool {
+        self.evidence_query().has_evidence(tr)
     }
 
     fn super_evidence(&self, from: ty::TraitRef<'tcx>, to: ty::TraitRef<'tcx>, value: Expr) -> Option<Expr> {
-        let route = self.super_route(from, to)?;
+        let route = self.evidence_query().super_route(from, to)?;
         Some(route.into_iter().fold(value, |dictionary, name| {
             Expr::call(Expr::member(dictionary, name), Vec::new())
         }))
     }
 
-    /// Where the dictionary for `tr` is, among those this function was
-    /// given, or a supertrait's of one: a question of types alone, which
-    /// what's dropped asks (ADR 0178) without building its JS.
-    fn evidence_route(&self, tr: ty::TraitRef<'tcx>) -> Option<Route> {
-        self.given
-            .evidence
-            .iter()
-            .enumerate()
-            .find_map(|(index, (bound, _))| {
-                let supers = self.super_route(*bound, tr)?;
-                Some(Route {
-                    root: Root::Given(index),
-                    supers,
-                })
-            })
-            .or_else(|| self.item_route(tr))
-    }
-
-    /// `<L as Labeled>::Label: Display`, which the trait declares, from `L`'s
-    /// `Labeled`: its `LabelDisplay`, or a supertrait's of it (ADR 0106).
-    fn item_route(&self, tr: ty::TraitRef<'tcx>) -> Option<Route> {
-        let ty::Alias(
-            _,
-            alias @ ty::AliasTy {
-                kind: ty::Projection { .. },
-                ..
-            },
-        ) = *tr.self_ty().kind()
-        else {
-            return None;
-        };
-        let owner = alias.trait_ref(self.tcx);
-        let dictionary = self.evidence_route(owner)?;
-        item_bounds(self.tcx, owner.def_id, owner.args)
-            .into_iter()
-            .find_map(|(name, bound)| {
-                let supers = self.super_route(bound, tr)?;
-                Some(Route {
-                    root: Root::Item(Box::new(dictionary.clone()), name),
-                    supers,
-                })
-            })
-    }
-
-    /// Is a dictionary for `tr` given? Without building it.
-    pub(super) fn has_evidence(&self, tr: ty::TraitRef<'tcx>) -> bool {
-        self.evidence_route(tr).is_some()
-    }
-
     /// The dictionary for `tr` among those this function was given, or
     /// a supertrait's of one.
     pub(super) fn evidence_for(&self, tr: ty::TraitRef<'tcx>) -> Option<Expr> {
-        let route = self.evidence_route(tr)?;
+        let route = self.evidence_query().evidence_route(tr)?;
         Some(self.route_expr(&route))
     }
 
@@ -1448,12 +1478,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(values)
     }
 
-    /// A trait rust-js compiled: the crate's own, or a library's (ADR 0100).
-    /// Any other is std's, whose dictionaries rust-js makes as it knows them.
-    pub(super) fn is_rust_trait(&self, id: DefId) -> bool {
-        id.is_local() || self.krate.foreign.in_library(id)
-    }
-
     /// The trait a `dyn` of `ty` is a pair of, `{ value, impl }` (ADR 0049):
     /// one rust-js compiled, or std's `Display` or `Error`, whose
     /// dictionaries it makes (ADR 0141). A `dyn Debug` is a string instead.
@@ -1538,9 +1562,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `Display` or `Error`: a std trait whose `dyn` is a pair (ADR 0141).
     pub(super) fn is_std_pair_trait(&self, id: DefId) -> bool {
-        [StdItem::Display, StdItem::Error]
-            .into_iter()
-            .any(|item| is_std_def(self.tcx, id, item))
+        is_std_pair_trait(self.tcx, id)
     }
 
     fn dyn_trait_ref(&self, ty: Ty<'tcx>, self_ty: Ty<'tcx>) -> Option<ty::TraitRef<'tcx>> {

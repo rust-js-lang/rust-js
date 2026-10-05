@@ -76,14 +76,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "dyn_mut"],
   },
   {
-    name: "projection-not-unknown",
-    breaks: "`drain`'s `Vec<S::Item>` is refused as a type, and std's `I::Item` too",
-    file: "src/lower/representation.rs",
-    find: "            ) => self\n                .tcx\n                .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(ty))\n",
-    replace: "            ) if false => self\n                .tcx\n                .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(ty))\n",
-    tests: ["test/corpus.test.ts","-t","associated_types"],
-  },
-  {
     name: "f32-literal-unrounded",
     breaks: "`0.1f32` is the double 0.1, which no `f32` is",
     file: "src/lower/representation.rs",

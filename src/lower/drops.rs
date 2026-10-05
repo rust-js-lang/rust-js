@@ -11,9 +11,9 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
-use rustc_hir::{self as hir, BindingMode, ByRef, HirId, Node};
+use rustc_hir::{self as hir, HirId, Node};
 use rustc_middle::middle::region;
-use rustc_middle::thir::{BlockId, ExprId, ExprKind, LocalVarId, Pat, PatKind, StmtKind as ThirStmt};
+use rustc_middle::thir::{BlockId, ExprId, ExprKind, LocalVarId, Pat, StmtKind as ThirStmt};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
@@ -32,7 +32,7 @@ mod types;
 pub(super) use facts::is_place;
 use facts::{Facts, TempKind, binds_any, find_facts};
 pub(super) use types::Drops;
-use types::describe;
+use types::{DropQuery, TypeDrops, describe};
 
 /// The drop functions one drop makes, which come before its code: a call
 /// to one may be in a branch, as an `Option`'s, that another isn't in.
@@ -98,6 +98,7 @@ struct BodyScopes<'tcx> {
 /// A function's drops while a copied default body has its own.
 struct SwappedDrops<'tcx> {
     params: HashMap<u32, String>,
+    given: HashSet<u32>,
     used: HashSet<u32>,
     unsupported: HashMap<u32, (Ty<'tcx>, &'static str)>,
     cache: HashMap<Ty<'tcx>, Drops<'tcx>>,
@@ -107,7 +108,8 @@ struct SwappedDrops<'tcx> {
 /// A function's drops, as its bodies are lowered.
 #[derive(Default)]
 pub(super) struct DropState<'tcx> {
-    cache: RefCell<HashMap<Ty<'tcx>, Drops<'tcx>>>,
+    /// What a type drops depends on, beside its types (ADR 0098).
+    types: TypeDrops<'tcx>,
     sizes: RefCell<HashMap<Ty<'tcx>, (usize, bool)>>,
     /// Each body's facts, by the address of its THIR: a closure's is its own.
     facts: HashMap<usize, Rc<Facts>>,
@@ -130,9 +132,6 @@ pub(super) struct DropState<'tcx> {
     param_drops: HashMap<u32, String>,
     /// The type parameters whose drops the body has used.
     used_drops: HashSet<u32>,
-    /// A copied default's type parameters whose drops rust-js can't make,
-    /// and why: an error only where the body drops one.
-    unsupported_params: HashMap<u32, (Ty<'tcx>, &'static str)>,
     part_flags: HashMap<(LocalVarId, Path), String>,
     /// Each closure made here that holds a value with a destructor: the body
     /// it's made in, and the variables it holds, which its drop drops.
@@ -145,6 +144,35 @@ pub(super) struct DropState<'tcx> {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// What a type drops, asked of types and this function's facts alone.
+    pub(super) fn drop_query(&self) -> DropQuery<'_, 'tcx> {
+        DropQuery {
+            recognition: self.recognition(),
+            evidence: self.evidence_query(),
+            library: self.krate.library,
+            state: &self.drop_state.types,
+        }
+    }
+
+    /// What dropping a `ty` runs.
+    pub(in crate::lower) fn drops(&self, ty: Ty<'tcx>) -> Drops<'tcx> {
+        self.drop_query().drops(ty)
+    }
+
+    pub(in crate::lower) fn has_drops(&self, ty: Ty<'tcx>) -> bool {
+        self.drop_query().has_drops(ty)
+    }
+
+    /// Is `drop`, a type's `Drop::drop`, one rust-js runs (ADR 0100)?
+    pub(in crate::lower) fn runs_drop(&self, drop: DefId) -> bool {
+        self.drop_query().runs_drop(drop)
+    }
+
+    /// The parts a pattern moves out of what it's matched against, by value.
+    pub(super) fn pattern_paths(&self, pat: &Pat<'tcx>) -> Option<Vec<Path>> {
+        self.drop_query().pattern_paths(pat)
+    }
+
     /// A closure, at `closure`, made here: the places its drop drops.
     pub(super) fn closure_made(&mut self, closure: DefId, places: Vec<(Expr, Ty<'tcx>)>) {
         self.drop_state.closures.insert(closure, (self.body_owner, places));
@@ -515,7 +543,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(facts) = self.drop_state.facts.get(&key) {
             return Ok(facts.clone());
         }
-        let facts = Rc::new(find_facts(self));
+        let facts = Rc::new(find_facts(&self.drop_query(), self.thir, self.body_owner));
         self.drop_state.facts.insert(key, facts.clone());
         let mut failed = None;
         for (span, what) in &facts.problems {
@@ -598,67 +626,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         names.join("$")
-    }
-
-    /// The parts a pattern moves out of what it's matched against, by value:
-    /// those it binds that have a destructor. None if it moves one a way this
-    /// doesn't follow yet, as through a `Box` or into `x @ ..`.
-    pub(super) fn pattern_paths(&self, pat: &Pat<'tcx>) -> Option<Vec<Path>> {
-        let mut found = Vec::new();
-        self.paths_in(pat, &mut Path::new(), &mut found).then_some(found)
-    }
-
-    fn paths_in(&self, pat: &Pat<'tcx>, at: &mut Path, found: &mut Vec<Path>) -> bool {
-        let moves = |p: &Pat<'tcx>| {
-            let mut any = false;
-            p.walk_always(|p| {
-                if let PatKind::Binding {
-                    mode: BindingMode(ByRef::No, _),
-                    ty,
-                    ..
-                } = p.kind
-                {
-                    any |= self.has_drops(ty);
-                }
-            });
-            any
-        };
-        match &pat.kind {
-            PatKind::Wild => true,
-            PatKind::Binding {
-                mode: BindingMode(ByRef::No, _),
-                subpattern: None,
-                ty,
-                ..
-            } => {
-                if self.has_drops(*ty) {
-                    found.push(at.clone());
-                }
-                true
-            }
-            PatKind::Binding {
-                mode: BindingMode(ByRef::Yes(..), _),
-                subpattern: None,
-                ..
-            } => true,
-            PatKind::Leaf { subpatterns } => subpatterns.iter().all(|f| {
-                at.push((None, f.field.as_usize()));
-                let ok = self.paths_in(&f.pattern, at, found);
-                at.pop();
-                ok
-            }),
-            PatKind::Variant {
-                variant_index,
-                subpatterns,
-                ..
-            } => subpatterns.iter().all(|f| {
-                at.push((Some(variant_index.as_u32()), f.field.as_usize()));
-                let ok = self.paths_in(&f.pattern, at, found);
-                at.pop();
-                ok
-            }),
-            _ => !moves(pat),
-        }
     }
 
     /// What `pat`, matched against `scrutinee`, a variable whose parts have
@@ -1016,17 +983,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The function being lowered is given a drop for its type parameter
     /// `index`, named `name` (ADR 0098).
     pub(super) fn give_drop_param(&mut self, index: u32, name: String) {
+        self.drop_state.types.given.insert(index);
         self.drop_state.param_drops.insert(index, name);
     }
 
     /// A drop given for a while, a dictionary entry's for its method's own
     /// type parameter (ADR 0163): what was given before, to put back.
     pub(super) fn lend_drop_param(&mut self, index: u32, name: String) -> Option<String> {
+        self.drop_state.types.given.insert(index);
         self.drop_state.param_drops.insert(index, name)
     }
 
     /// Put back what `lend_drop_param` replaced.
     pub(super) fn return_drop_param(&mut self, index: u32, before: Option<String>) {
+        if before.is_none() {
+            self.drop_state.types.given.remove(&index);
+        }
         match before {
             Some(name) => self.drop_state.param_drops.insert(index, name),
             None => self.drop_state.param_drops.remove(&index),
@@ -1042,12 +1014,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         drops: HashMap<u32, String>,
         unsupported: HashMap<u32, (Ty<'tcx>, &'static str)>,
     ) -> SwappedDrops<'tcx> {
-        let cache = std::mem::take(&mut *self.drop_state.cache.borrow_mut());
+        let cache = std::mem::take(&mut *self.drop_state.types.cache.borrow_mut());
         let sizes = std::mem::take(&mut *self.drop_state.sizes.borrow_mut());
+        let given = drops.keys().copied().collect();
         SwappedDrops {
             params: std::mem::replace(&mut self.drop_state.param_drops, drops),
+            given: std::mem::replace(&mut self.drop_state.types.given, given),
             used: std::mem::take(&mut self.drop_state.used_drops),
-            unsupported: std::mem::replace(&mut self.drop_state.unsupported_params, unsupported),
+            unsupported: std::mem::replace(&mut self.drop_state.types.unsupported, unsupported),
             cache,
             sizes,
         }
@@ -1060,9 +1034,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     fn restore_drops(&mut self, swapped: SwappedDrops<'tcx>) {
         self.drop_state.param_drops = swapped.params;
+        self.drop_state.types.given = swapped.given;
         self.drop_state.used_drops = swapped.used;
-        self.drop_state.unsupported_params = swapped.unsupported;
-        *self.drop_state.cache.borrow_mut() = swapped.cache;
+        self.drop_state.types.unsupported = swapped.unsupported;
+        *self.drop_state.types.cache.borrow_mut() = swapped.cache;
         *self.drop_state.sizes.borrow_mut() = swapped.sizes;
     }
 
@@ -1074,18 +1049,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         given.into_iter().map(|(_, name)| name.clone()).collect()
     }
 
-    /// The function that drops a `ty`, which a generic function is given for
-    /// its type parameter: its `drop` itself, when that's all its drop is,
-    /// `noisyDrop_drop`, or an arrow; a type parameter's is the one this
-    /// function was given. None for a type with nothing to drop.
     /// `ZZone.$dropOffset`, an associated type's drop, of the dictionary of
     /// the impl it's of, which has one where its type does (ADR 0178).
     pub(super) fn item_drop(&self, ty: Ty<'tcx>) -> Option<Expr> {
-        let (owner, item) = self.item_drop_of(ty)?;
+        let (owner, item) = self.drop_query().item_drop_of(ty)?;
         let dictionary = self.evidence_for(owner)?;
         Some(Expr::member(dictionary, item_drop_key(self.tcx, item)))
     }
 
+    /// The function that drops a `ty`, which a generic function is given for
+    /// its type parameter: its `drop` itself, when that's all its drop is,
+    /// `noisyDrop_drop`, or an arrow; a type parameter's is the one this
+    /// function was given. None for a type with nothing to drop.
     pub(super) fn drop_function(&mut self, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
         if let ty::Param(param) = ty.kind() {
             let drop = self

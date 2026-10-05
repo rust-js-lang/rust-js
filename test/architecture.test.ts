@@ -45,21 +45,82 @@ const orchestration: Record<string, string[]> = {
   "src/settings.rs": ["src/format.rs"],
   "src/hooks.rs": ["src/format.rs"],
 };
-// The crate's modules a file names, `crate::js` or `use crate::{js, program}`,
-// outside comments, as the files they are.
-const usedModules = (text: string): string[] => {
-  const code = text.replace(/\/\/.*$/gm, "");
-  const names = [...code.matchAll(/\bcrate::([a-z_]+)/g)].map(m => m[1]);
-  for (const group of code.matchAll(/\bcrate::\{([^}]*)\}/g)) {
-    names.push(...group[1].split(",").map(name => name.trim().split("::")[0]).filter(Boolean));
-  }
-  return [...new Set(names)].map(name => sources.includes(`src/${name}.rs`) ? `src/${name}.rs` : `src/${name}/`);
+// A file's module path, `src/lower/drops/types.rs`'s `lower::drops::types`;
+// `main.rs` is the crate's root.
+const modulePath = (file: string): string[] => {
+  const parts = file.replace(/^src\//, "").replace(/\.rs$/, "").split("/");
+  if (parts.at(-1) === "mod") parts.pop();
+  return parts.length === 1 && parts[0] === "main" ? [] : parts;
 };
+// The first names after a path's base: `x` of `x::y`, or each of a
+// group's, `{js::{self, Expr}, program}`'s `js` and `program`.
+const firstNames = (rest: string): string[] => {
+  if (!rest.startsWith("{")) return [rest.match(/^[a-z_]\w*/)?.[0]].filter((n): n is string => !!n);
+  const items: string[] = [];
+  let depth = 0, item = "";
+  for (const c of rest) {
+    if (c === "{" && depth++ === 0) continue;
+    if (c === "}" && --depth === 0) break;
+    if (c === "," && depth === 1) {
+      items.push(item);
+      item = "";
+      continue;
+    }
+    item += c;
+  }
+  items.push(item);
+  return items.map(item => item.trim().match(/^[a-z_]\w*/)?.[0]).filter((n): n is string => !!n && n !== "self");
+};
+// The crate's top-level modules a file names, as the files they are: by
+// `crate::`, or by `super::` up to the crate's root, `super::lower` in a
+// top-level file, each `super` first leaving an inline `mod tests { .. }`.
+// Not in a comment, a string or a `char`.
+const usedModules = (file: string, text: string): string[] => {
+  const code = text
+    .replace(/"(?:[^"\\]|\\.)*"/g, '""')
+    .replace(/'(?:[^'\\]|\\.)'/g, "' '")
+    .replace(/\/\/.*$/gm, "");
+  const own = modulePath(file);
+  const names = new Set<string>();
+  const inline: number[] = [];
+  let depth = 0;
+  for (const m of code.matchAll(/\bmod\s+\w+\s*\{|\{|\}|\b(crate|super)((?:::super)*)::/g)) {
+    if (m[0].startsWith("mod")) inline.push(depth++);
+    else if (m[0] === "{") depth++;
+    else if (m[0] === "}") {
+      if (inline.at(-1) === --depth) inline.pop();
+    } else {
+      // How far up the file's own module it climbs: `crate` to the root.
+      const supers = 1 + (m[2].match(/super/g)?.length ?? 0) - inline.length;
+      const up = m[1] === "crate" ? own.length : Math.max(supers, 0);
+      const base = own.slice(0, own.length - up);
+      for (const name of base.length > 0 ? [base[0]] : firstNames(code.slice(m.index! + m[0].length))) names.add(name);
+    }
+  }
+  // Its own module's items are no other module's.
+  names.delete(own[0]);
+  return [...names].map(name => (sources.includes(`src/${name}.rs`) ? `src/${name}.rs` : `src/${name}/`)).sort();
+};
+// The checker finds a module however a file names it (found in review:
+// `super::lower` in a top-level file was missed).
+test("the layer check finds a module however a file names it", () => {
+  const cases: [string, string, string[]][] = [
+    ["src/manifest.rs", "use crate::lower::Body;", ["src/lower.rs"]],
+    ["src/manifest.rs", "use super::lower::Body;", ["src/lower.rs"]],
+    ["src/output.rs", "use crate::{js::{self, Expr}, program, to_oxc};", ["src/js.rs", "src/program.rs", "src/to_oxc.rs"]],
+    ["src/lower/drops/types.rs", "use super::super::super::js::Expr;", ["src/js.rs"]],
+    ["src/lower/drops/types.rs", "use super::super::traits::Route;", []],
+    ["src/format.rs", 'mod tests {\n    use super::*;\n    fn f() { let s = "{"; let c = \'}\'; }\n}\nuse super::lower::Body;', ["src/lower.rs"]],
+    ["src/manifest.rs", '// crate::lower, in a comment\nfn f() { let s = "super::lower"; }', []],
+    ["src/main.rs", "use crate::cargo; mod tests { use super::lower; }", ["src/cargo.rs", "src/lower.rs"]],
+  ];
+  for (const [file, text, expected] of cases) expect(usedModules(file, text), text).toEqual(expected);
+});
 test("each module uses only the layers its layer may", () => {
   const strays: string[] = [];
   for (const file of sources) {
     const layer = layerOf(file)!;
-    for (const used of usedModules(read(file))) {
+    for (const used of usedModules(file, read(file))) {
       const usedLayer = layerOf(used.endsWith("/") ? `${used}mod.rs` : used) ?? layerOf(used.replace(/\/$/, ".rs"));
       if (!usedLayer) strays.push(`${file} uses ${used}, which is in no layer`);
       else if (!allowed[layer].includes(usedLayer) && !orchestration[file]?.includes(used)) {
@@ -86,7 +147,9 @@ test("linking uses owned output without lowering dependencies", () => {
 // printed (ADR 0103), not in the printed text, where a string can spell a
 // helper's name (found in review).
 test("runtime imports are chosen before printing", () => {
-  expect(read("src/to_oxc.rs")).toContain("imported_helpers(&module.runtime, &module.read_vars())");
+  // The printer is given them, chosen where the module is prepared.
+  expect(read("src/to_oxc.rs")).not.toMatch(/imported_helpers|read_vars/);
+  expect(read("src/output.rs")).toContain("imported_helpers(&helper_sources, &js_module.read_vars())");
   expect(read("src/runtime.rs")).not.toMatch(/fn imported_helpers\([^)]*code: &str/);
 });
 
@@ -130,12 +193,15 @@ test("effects analysis cannot access emission state", () => {
 // it's lowered (ADR 0098): the walk reads the function's context, and
 // neither writes JS nor changes what lowering keeps.
 test("the destructors' facts are found without emitting", () => {
-  const source = read("src/lower/drops/facts.rs");
-  expect(source).not.toMatch(/crate::js|runtime::|&mut\s+FnCx|\bdrop_state\b/);
-  // What a type drops, which the facts ask, is a question of types and
-  // given evidence: it builds no JS, as `item_drop` and `evidence_for` do
-  // (found in review).
-  expect(read("src/lower/drops/types.rs")).not.toMatch(/crate::js|\bExpr\b|\bevidence_for\b|\bitem_drop\(|\bdrop_function\b/);
+  // Both walks are given a `DropQuery`: types, the crate's facts, which
+  // type parameters have drops and the bounds of the dictionaries given,
+  // not the function being lowered (found in review: they were given all
+  // of `FnCx`, and one built JS to ask whether a dictionary was given).
+  for (const file of ["src/lower/drops/facts.rs", "src/lower/drops/types.rs"]) {
+    expect(read(file), file).not.toMatch(/crate::js|runtime::|\bFnCx\b|\bdrop_state\b|\bevidence_for\b|\bitem_drop\(|\bdrop_function\b/);
+  }
+  // A JS `Expr` too: the facts' `Expr` is the THIR's.
+  expect(read("src/lower/drops/types.rs")).not.toMatch(/\bExpr\b/);
 });
 
 // Whether a value is a JS iterator is one question, `is_lazy_value`: its

@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/browser.test.ts", "-t", "fails the way"],
   },
+  {
+    name: "runtime-import-missing",
+    breaks: "a module compiled against @rust-js/runtime calls its helpers, and neither defines nor imports them",
+    file: "src/output.rs",
+    find: "            js_module.helpers = crate::runtime::imported_helpers(&helper_sources, &js_module.read_vars());\n",
+    replace: "",
+    tests: ["test/runtime-package.test.ts"],
+  },
 ];

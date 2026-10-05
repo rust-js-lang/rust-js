@@ -32,9 +32,9 @@ pub struct Module {
     pub packages: Vec<Package>,
     /// Named imports, one declaration per Rust module this one uses.
     pub imports: Vec<Import>,
-    /// The runtime helpers this module uses, as JS source: what it imports
-    /// of each from `@rust-js/runtime` is the names its code has (ADR 0103).
-    pub runtime: Vec<&'static str>,
+    /// What it imports of `@rust-js/runtime`, sorted: the helpers its
+    /// prepared tree reads (ADR 0103), chosen before it's printed.
+    pub helpers: Vec<&'static str>,
     /// Types' methods, before the `const`s, whose values may call them.
     pub namespaces: Vec<Namespace>,
     /// `const` items, with the values rustc computed (ADR 0031).

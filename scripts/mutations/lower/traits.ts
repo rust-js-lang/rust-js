@@ -278,8 +278,8 @@ export const mutations: Mutation[] = [
     name: "dyn-display-refused",
     breaks: "a `dyn Display` isn't a pair, and is refused",
     file: "src/lower/traits.rs",
-    find: "        [StdItem::Display, StdItem::Error]\n            .into_iter()",
-    replace: "        [StdItem::Error]\n            .into_iter()",
+    find: "    [StdItem::Display, StdItem::Error]\n        .into_iter()",
+    replace: "    [StdItem::Error]\n        .into_iter()",
     tests: ["test/corpus.test.ts", "-t", "dyn_display"],
   },
   {
@@ -294,8 +294,8 @@ export const mutations: Mutation[] = [
     name: "error-supertraits-unseen",
     breaks: "an `Error` dictionary's `Display` and `Debug` aren't looked for, so `{e}` of a `dyn Error` is refused",
     file: "src/lower/traits.rs",
-    find: "if !self.is_rust_trait(from.def_id) && !self.is_std_pair_trait(from.def_id) {",
-    replace: "if !self.is_rust_trait(from.def_id) {",
+    find: "if !self.recognition.is_rust_trait(from.def_id) && !is_std_pair_trait(self.recognition.tcx, from.def_id) {",
+    replace: "if !self.recognition.is_rust_trait(from.def_id) {",
     tests: ["test/corpus.test.ts", "-t", "dyn_display"],
   },
   {
