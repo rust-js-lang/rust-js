@@ -439,6 +439,12 @@ pub(super) fn gat_supported(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
             })
 }
 
+/// An associated type's drop in its impl's dictionary, `$dropOffset`: a
+/// name no Rust method can have, as `$drop` is (ADR 0178).
+pub(super) fn item_drop_key(tcx: TyCtxt<'_>, item: DefId) -> String {
+    format!("$drop{}", tcx.item_name(item))
+}
+
 /// A type as a word of an evidence name: a type parameter's, `T`, or an
 /// associated type's of one, `SItem` of `<S as Source>::Item`.
 fn evidence_word<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
@@ -952,6 +958,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// method calls the pair's own, as a call on the `dyn` does,
     /// `(object) => object.impl.area(object.value)`, and each supertrait's
     /// dictionary is one of these too.
+    /// A dictionary's drops of its associated types, `$dropOffset`, which
+    /// generic code holding one of them runs, as it can't name the type
+    /// (ADR 0178): the impl's, or what a `dyn` names, `dyn Zone<Offset = T>`.
+    fn item_drops(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Vec<Prop>> {
+        let mut props = Vec::new();
+        for item in self.tcx.associated_items(tr.def_id).in_definition_order() {
+            if self.tcx.def_kind(item.def_id) != DefKind::AssocTy
+                || item.is_impl_trait_in_trait()
+                || !self.tcx.generics_of(item.def_id).own_params.is_empty()
+            {
+                continue;
+            }
+            let projection = Ty::new_projection(self.tcx, ty::IsRigid::No, item.def_id, tr.args);
+            let Ok(item_ty) = self
+                .tcx
+                .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(projection))
+            else {
+                continue;
+            };
+            if self.drops(item_ty) == Drops::Runs
+                && let Some(drop) = self.drop_function(item_ty, span)?
+            {
+                props.push(Prop::Field(item_drop_key(self.tcx, item.def_id), drop));
+            }
+        }
+        Ok(props)
+    }
+
     fn object_dictionary(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Expr> {
         let object = Expr::var("object");
         let principal = self
@@ -1019,6 +1053,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::arrow(params, vec![StmtKind::Return(Some(call)).at(js::Span::NONE)]),
             ));
         }
+        props.extend(self.item_drops(tr, span)?);
         Ok(Expr::object(props))
     }
 
@@ -1792,6 +1827,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             props.push(Prop::Field("$drop".into(), drop));
         }
+        props.extend(self.item_drops(tr, span)?);
         let object = Expr::object(props);
         let undefined = Expr::bin(Op::Eq, Expr::var(cache), Expr::undefined());
         let mut body = Vec::new();

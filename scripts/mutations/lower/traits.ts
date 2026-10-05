@@ -583,4 +583,20 @@ export const mutations: Mutation[] = [
     replace: "                    let own = Some(item.def_id);",
     tests: ["test/corpus.test.ts", "-t", "generic_impl_consts"],
   },
+  {
+    name: "impl-item-drops-left-out",
+    breaks: "an impl's dictionary has no drop for its associated types, so generic code holding one drops nothing",
+    file: "src/lower/traits.rs",
+    find: "            props.push(Prop::Field(\"$drop\".into(), drop));\n        }\n        props.extend(self.item_drops(tr, span)?);\n",
+    replace: "            props.push(Prop::Field(\"$drop\".into(), drop));\n        }\n",
+    tests: ["test/corpus.test.ts", "-t", "associated_type_drops"],
+  },
+  {
+    name: "dyn-item-drops-left-out",
+    breaks: "a `dyn`'s dictionary has no drop for the associated type its type names, so generic code given one drops nothing",
+    file: "src/lower/traits.rs",
+    find: "        }\n        props.extend(self.item_drops(tr, span)?);\n        Ok(Expr::object(props))\n",
+    replace: "        }\n        Ok(Expr::object(props))\n",
+    tests: ["test/corpus.test.ts", "-t", "associated_type_drops"],
+  },
 ];

@@ -298,8 +298,12 @@ Differences: a value with a destructor that JS holds, given out by an
 exported generic function, is never dropped; a `drop` that panics while
 another panic unwinds replaces that panic, where Rust aborts.
 
+Generic code drops a value of an associated type through its impl's
+dictionary ([0178](decisions/0178-associated-type-drops.md)).
+
 Refused: an `Rc` or an `Arc` of a value with a destructor; a lock or
-`async` code owning one.
+`async` code owning one; a value of a std trait's associated type, an
+iterator's `Item`, where a type may have a destructor.
 
 ## Panics and errors
 

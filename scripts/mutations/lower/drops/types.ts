@@ -30,8 +30,8 @@ export const mutations: Mutation[] = [
     name: "projection-drops-nothing",
     breaks: "an associated type's value is taken to have nothing to drop where a type has a destructor, and its destructor never runs",
     file: "src/lower/drops/types.rs",
-    find: "            ) if self.is_unknown(ty) => match self.may_have_destructors() {\n",
-    replace: "            ) if self.is_unknown(ty) => match false {\n",
+    find: "                (false, true) => {\n",
+    replace: "                (false, false) => {\n",
     tests: ["test/diagnostics.test.ts","-t","associated type"],
   },
   {
@@ -49,5 +49,13 @@ export const mutations: Mutation[] = [
     find: "                match self.drops_in(args.type_at(0), walk) {\n                    Drops::Nothing => Drops::Runs,\n                    _ => Drops::Unsupported(ty, \"a channel of a value with a destructor\"),",
     replace: "                match self.drops_in(args.type_at(0), walk) {\n                    Drops::Nothing => Drops::Nothing,\n                    _ => Drops::Unsupported(ty, \"a channel of a value with a destructor\"),",
     tests: ["test/corpus.test.ts", "-t", "channels"],
+  },
+  {
+    name: "library-item-drops-skipped",
+    breaks: "a library with no destructor of its own drops nothing of an associated type, though its consumers' may have one",
+    file: "src/lower/drops/types.rs",
+    find: "                (true, may) if may || self.krate.library => Drops::Runs,\n",
+    replace: "                (true, may) if may => Drops::Runs,\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: assoc_drop"],
   },
 ];

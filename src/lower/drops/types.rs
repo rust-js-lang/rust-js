@@ -129,18 +129,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Drops::Unsupported(t, what)
             }
             // An associated type only a caller knows, `<S as Source>::Item` (ADR
-            // 0106): no drop function is given for one, so it has nothing to
-            // drop only where nothing does, the crate's own types and a
-            // library's.
+            // 0106): its impl's dictionary has its drop, where it has one (ADR
+            // 0178), as a library's consumers' may. One of no dictionary, of a
+            // std trait's, has nothing to drop only where nothing does.
             ty::Alias(
                 _,
                 ty::AliasTy {
                     kind: ty::Projection { .. },
                     ..
                 },
-            ) if self.is_unknown(ty) => match self.may_have_destructors() {
-                true => Drops::Unsupported(ty, "a value of an associated type, where a type may have a destructor"),
-                false => Drops::Nothing,
+            ) if self.is_unknown(ty) => match (self.item_drop(ty).is_some(), self.may_have_destructors()) {
+                (true, may) if may || self.krate.library => Drops::Runs,
+                (false, true) => {
+                    Drops::Unsupported(ty, "a value of an associated type, where a type may have a destructor")
+                }
+                _ => Drops::Nothing,
             },
             // A channel's end: one sender fewer, or no receiver (ADR 0142). The
             // queue would drop what's still in it, its own way.

@@ -21,6 +21,7 @@ use rustc_span::def_id::DefId;
 use super::bindings::variant_name;
 use super::recognition::ChannelEnd;
 use super::representation::variant_field;
+use super::traits::item_drop_key;
 use super::{FnCx, R, lower_first};
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use crate::runtime::Helper;
@@ -303,6 +304,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.drop_state.used_drops.insert(param.index);
                 let drop = Expr::var(&self.drop_state.param_drops[&param.index]);
                 let js_span = self.js_span(span);
+                out.push(
+                    StmtKind::Expr(Expr {
+                        kind: js::ExprKind::OptionalCall(Box::new(drop), vec![value]),
+                        span: js_span,
+                    })
+                    .at(js_span),
+                );
+            }
+            // `ZZone.$dropOffset?.(value)`: its impl's, if its type has one (ADR 0178).
+            ty::Alias(..) if let Some(drop) = self.item_drop(ty) => {
                 out.push(
                     StmtKind::Expr(Expr {
                         kind: js::ExprKind::OptionalCall(Box::new(drop), vec![value]),
@@ -1067,6 +1078,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its type parameter: its `drop` itself, when that's all its drop is,
     /// `noisyDrop_drop`, or an arrow; a type parameter's is the one this
     /// function was given. None for a type with nothing to drop.
+    /// `ZZone.$dropOffset`, an associated type's drop, of the dictionary of
+    /// the impl it's of, which has one where its type does (ADR 0178).
+    pub(super) fn item_drop(&self, ty: Ty<'tcx>) -> Option<Expr> {
+        let ty::Alias(
+            _,
+            alias @ ty::AliasTy {
+                kind: ty::Projection { def_id },
+                ..
+            },
+        ) = *ty.kind()
+        else {
+            return None;
+        };
+        // An `async fn`'s in a trait, which has no name, has no dictionary's drop.
+        if self.tcx.is_impl_trait_in_trait(def_id) {
+            return None;
+        }
+        let dictionary = self.evidence_for(alias.trait_ref(self.tcx))?;
+        Some(Expr::member(dictionary, item_drop_key(self.tcx, def_id)))
+    }
+
     pub(super) fn drop_function(&mut self, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
         if let ty::Param(param) = ty.kind() {
             let drop = self
@@ -1083,6 +1115,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Drops::Nothing => return Ok(None),
             Drops::Unsupported(t, what) => return Err(self.unsupported(span, &describe(t, what))),
             Drops::Runs => {}
+        }
+        if let Some(drop) = self.item_drop(ty) {
+            return Ok(Some(drop));
         }
         let base = match ty.kind() {
             ty::Adt(adt, _) => lower_first(self.tcx.item_name(adt.did()).as_str()),
