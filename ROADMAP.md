@@ -459,7 +459,7 @@ tooling while preserving rust-js's own readable-output goals.
   impls named alike, slice methods, `size_hint()`, `?` of a value with a
   destructor, a `#![no_std]` crate's std items, 128-bit integers, UTF-8 decoding,
   `NonZero` integers, associated types' drops, `filter` and `map_or` drops,
-  generic `fmt::Write` writers,
+  generic `fmt::Write` writers, clones of std's array iterators,
   paths as text, generic `{:x}` and `{:p}`, and two crashes.
 - [ ] **M8.3 — Share behavior as well as data.** Demonstrate the same model,
   validation, serialization, and domain-logic crates on a native Rust server

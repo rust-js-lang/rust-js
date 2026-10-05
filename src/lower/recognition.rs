@@ -1941,6 +1941,20 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             && self.tcx.item_name(adt.did()).as_str() == "Reverse")
     }
 
+    /// std's iterator over an array's items, whose JS value is the array
+    /// (ADR 0061): `Some(false)` of `slice::Iter`, which borrows them, and
+    /// `Some(true)` of `array::IntoIter` and `vec::IntoIter`, which own them.
+    pub(super) fn array_source(&self, ty: Ty<'tcx>) -> Option<bool> {
+        let ty = self.reveal(ty);
+        let ty::Adt(adt, _) = ty.kind() else { return None };
+        if self.is_std_type(ty, StdItem::SliceIter) {
+            return Some(false);
+        }
+        let vec_into_iter =
+            self.tcx.crate_name(adt.did().krate) == sym::alloc && std_path(self.tcx, adt.did()) == "std::vec::IntoIter";
+        (self.is_std_type(ty, StdItem::ArrayIntoIter) || vec_into_iter).then_some(true)
+    }
+
     pub(super) fn is_array_iter(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);
         let ty::Adt(adt, _) = ty.kind() else { return false };
@@ -2807,6 +2821,7 @@ pub(super) fn formatter_query(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Formatte
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum StdItem {
     Any,
+    ArrayIntoIter,
     AsRef,
     Atomic,
     Borrow,
@@ -2844,6 +2859,7 @@ impl StdItem {
     fn name(self) -> Symbol {
         match self {
             StdItem::Any => Symbol::intern("Any"),
+            StdItem::ArrayIntoIter => Symbol::intern("ArrayIntoIter"),
             StdItem::AsRef => sym::AsRef,
             StdItem::Atomic => Symbol::intern("Atomic"),
             StdItem::Borrow => Symbol::intern("Borrow"),

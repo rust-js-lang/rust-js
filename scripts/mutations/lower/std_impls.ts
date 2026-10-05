@@ -90,4 +90,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {",
     tests: ["test/corpus.test.ts", "-t", "trait_default_bounds"],
   },
+  {
+    name: "owned-iterator-items-shared",
+    breaks: "a clone of an iterator that owns its items shares them, and changing one's changes the other's",
+    file: "src/lower/std_impls.rs",
+    find: "match owns && self.needs_clone(item) {",
+    replace: "match false && owns && self.needs_clone(item) {",
+    tests: ["test/corpus.test.ts", "-t", "iterator_clones"],
+  },
 ];

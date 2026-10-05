@@ -555,4 +555,12 @@ export const mutations: Mutation[] = [
     replace: "            ) if false => self\n                .tcx\n                .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(ty))\n",
     tests: ["test/corpus.test.ts","-t","associated_types"],
   },
+  {
+    name: "vec-into-iter-unknown",
+    breaks: "a clone of a `Vec`'s `into_iter()` is refused",
+    file: "src/lower/recognition.rs",
+    find: "== \"std::vec::IntoIter\";",
+    replace: "== \"std::vec::Nothing\";",
+    tests: ["test/corpus.test.ts", "-t", "iterator_clones"],
+  },
 ];

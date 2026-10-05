@@ -297,6 +297,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Ok(value)
             }
+            // std's iterator over an array is the array (ADR 0061), which iterating
+            // doesn't change: a clone of one that borrows its items is the array
+            // itself, of one that owns them, a copy of each that needs one (ADR 0181).
+            ty::Adt(_, args) if let Some(owns) = self.array_source(ty) => {
+                let item = args.types().next().expect("an iterator's item");
+                match owns && self.needs_clone(item) {
+                    true => self.clone_items(place, item, span),
+                    false => Ok(place),
+                }
+            }
             _ if !matches!(ty.kind(), ty::Adt(adt, _) if self.is_std(adt.did())) => match self.shape(ty) {
                 Shape::Object(fields) => self.clone_fields(place, fields, span, out),
                 Shape::Array(tys) => Ok(Expr::array(

@@ -218,6 +218,51 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(value))
     }
 
+    /// `it.clone()` of a local stepped through, a `$iter` of std's iterator
+    /// over an array (ADR 0071): what's left of its items, `it.items.slice(it.at)`,
+    /// as std's iterator over an array is the array (ADR 0061), copies of
+    /// those it owns that need one (ADR 0181). None of anything else.
+    pub(super) fn cloned_stepping(
+        &mut self,
+        def_id: DefId,
+        args: &[ExprId],
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Option<Expr>> {
+        if !self
+            .tcx
+            .trait_of_assoc(def_id)
+            .is_some_and(|t| self.tcx.is_lang_item(t, LangItem::Clone))
+        {
+            return Ok(None);
+        }
+        let [receiver] = args else { return Ok(None) };
+        let mut e = self.strip(*receiver);
+        while let ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } = self.thir[e].kind {
+            e = self.strip(arg);
+        }
+        let ExprKind::VarRef { id } = self.thir[e].kind else {
+            return Ok(None);
+        };
+        let ty = self.thir[e].ty;
+        let Some(owns) = self.array_source(ty).filter(|_| self.stepping.bound.contains(&id)) else {
+            return Ok(None);
+        };
+        let it = self.expr(e, out)?;
+        let left = Expr::call(
+            Expr::member(Expr::member(it.clone(), "items"), "slice"),
+            vec![Expr::member(it, "at")],
+        );
+        let item = self.iterator_item(ty).expect("an iterator's item");
+        Ok(Some(match owns && self.needs_clone(item) {
+            true => {
+                let clone = self.clone_fn("item", item, span)?;
+                Expr::call(Expr::member(left, "map"), vec![clone])
+            }
+            false => left,
+        }))
+    }
+
     /// An iterator that's a JS iterator, not an array (ADR 0055): one of the
     /// crate's own, or std's adapters on one.
     fn is_lazy_iter(&self, ty: ty::Ty<'tcx>) -> bool {

@@ -357,4 +357,12 @@ export const mutations: Mutation[] = [
     replace: "            return Ok(Expr::array(vec![len, Expr::undefined()]));",
     tests: ["test/corpus.test.ts", "-t", "size_hint"],
   },
+  {
+    name: "stepped-clone-from-start",
+    breaks: "a clone of an iterator stepped through starts again from its first item",
+    file: "src/lower/iterators.rs",
+    find: "vec![Expr::member(it, \"at\")],",
+    replace: "vec![],",
+    tests: ["test/corpus.test.ts", "-t", "iterator_clones"],
+  },
 ];

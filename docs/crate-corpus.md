@@ -6,7 +6,7 @@ of its own, every library of its graph by rust-js as Cargo's
 `RUSTC_WRAPPER`, for its target, and records what each refused first, or
 what Cargo said where a crate failed with no refusal: a crash.
 
-Measured 2026-10-05, after ADR 0180, Rust 1.98.1, each crate at the
+Measured 2026-10-05, after ADR 0181, Rust 1.98.1, each crate at the
 newest release its requirement allows.
 
 | Crate | Verdict | First refusals in its graph |
@@ -25,7 +25,7 @@ newest release its requirement allows.
 | url 2.5 | blocked | litemap: `{:?}` of a `PhantomData`; writeable: `u8::checked_ilog10` called; smallvec's; percent-encoding: `transmute`; yoke: a raw pointer |
 | regex 1.11 | blocked | memchr: a raw pointer |
 | rust_decimal 1.38 | blocked | arrayvec: a user `io::Write`; serde_core: `size_of` of a type parameter |
-| chrono 0.4 (`alloc`) | refused | a clone of an array's `IntoIter` |
+| chrono 0.4 (`alloc`) | refused | a `fmt::Error` |
 | time 0.3 (`alloc`) | blocked | powerfmt: a `MaybeUninit`; deranged: a `const` block |
 
 2 of 16 compile. What stops the most, by the crates it stops:
@@ -35,11 +35,12 @@ newest release its requirement allows.
 2. **A user `Future`:** 2.
 3. **One each:** a `const` block, `{:?}` of a generic `PhantomData`, a user
    `io::Write`, `size_of` of a type parameter, `Option::ok_or_else` of a
-   value with a destructor, `u8::checked_ilog10`, a clone of an array's
-   `IntoIter`.
+   value with a destructor, `u8::checked_ilog10`, a `fmt::Error`.
 
 ## Fixed by measuring
 
+- **A clone of std's iterator over an array,** chrono's `DelayedFormat`
+  items (ADR 0181).
 - **Generic code that writes to any `fmt::Write`,** chrono's, 7 refusals,
   and bitflags' `to_writer`, given a `Formatter` (ADR 0180).
 - **A byte's ASCII tests and a slice's `split_first`,** chrono's (ADRs 0157,

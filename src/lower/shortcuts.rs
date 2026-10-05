@@ -102,6 +102,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// An iterator that's a JS array (ADR 0036): a slice's or a `Vec`'s, a
     /// `split` or `chars` of a string, and the adapters on them.
+    /// std's iterator over an array: `Some(owns)` its items (ADR 0181).
+    pub(super) fn array_source(&self, ty: Ty<'tcx>) -> Option<bool> {
+        self.recognition().array_source(ty)
+    }
+
     pub(super) fn is_array_iter(&self, ty: Ty<'tcx>) -> bool {
         self.recognition().is_array_iter(ty)
     }

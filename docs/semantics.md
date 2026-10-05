@@ -264,6 +264,9 @@ Refused: `Rc::ptr_eq`, `strong_count`, `get_mut`, `make_mut` and
   refused ([0153](decisions/0153-collection-and-cell-methods.md)).
 - **An `impl Iterator` is the iterator it stands for**
   ([0061](decisions/0061-generic-iterators.md)).
+- **A clone of std's iterator over an array is what's left of the array,**
+  its owned items copied where they need it
+  ([0181](decisions/0181-iterator-clones.md)).
 - **A collection of the crate's is its own impls':** `for` over it calls
   its `IntoIterator`, `collect()` its `FromIterator`, `extend` its
   `Extend`, `sum()` its `Sum` ([0160](decisions/0160-user-collections.md)).
@@ -289,7 +292,8 @@ Differences:
 
 Refused: a `BTreeMap` keyed by a struct; a map key with a custom
 `PartialEq`; looking a key up, or joining items, by what the crate's own
-`Borrow` gives; `==` of two maps; `peekable` or `rev` of a lazy iterator.
+`Borrow` gives; `==` of two maps; `peekable` or `rev` of a lazy iterator;
+a clone of a lazy iterator, or of one of std's adapters.
 
 ## Destructors
 

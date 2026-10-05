@@ -285,6 +285,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let callee = values.remove(0);
             return Ok(Some(Expr::call(callee, values)));
         }
+        // `it.clone()` of a `$iter`, a local stepped through (ADR 0181).
+        if let Some(copy) = self.cloned_stepping(def_id, args, span, out)? {
+            return Ok(Some(copy));
+        }
         if self
             .tcx
             .trait_of_assoc(def_id)

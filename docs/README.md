@@ -270,6 +270,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0178 An impl's dictionary has its associated types' drops](decisions/0178-associated-type-drops.md)
 - [0179 `filter` and `map_or` drop what they don't keep](decisions/0179-option-filter-map-or-drops.md)
 - [0180 Generic code that writes to any writer is given a `fmt::Write` dictionary](decisions/0180-generic-writers.md)
+- [0181 A clone of std's iterator over an array is what's left of the array](decisions/0181-iterator-clones.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

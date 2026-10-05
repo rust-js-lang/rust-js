@@ -130,4 +130,12 @@ export const mutations: Mutation[] = [
     replace: "            return Ok(Expr::cond(zero, n.clone(), n));",
     tests: ["test/corpus.test.ts", "-t", "nonzero"],
   },
+  {
+    name: "stepped-clone-shared",
+    breaks: "a clone of an iterator stepped through is the same `$iter`, and stepping one steps both",
+    file: "src/lower/calls.rs",
+    find: "if let Some(copy) = self.cloned_stepping(def_id, args, span, out)? {",
+    replace: "if let Some(copy) = None::<Expr> {",
+    tests: ["test/corpus.test.ts", "-t", "iterator_clones"],
+  },
 ];
