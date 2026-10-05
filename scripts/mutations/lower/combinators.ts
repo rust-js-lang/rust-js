@@ -130,4 +130,20 @@ export const mutations: Mutation[] = [
     replace: "                let fallback = self.call_with(g, Vec::new(), \"fallback\", out);",
     tests: ["test/corpus.test.ts", "-t", "user_from_str"],
   },
+  {
+    name: "filter-drops-kept",
+    breaks: "`filter` drops the value it keeps too, so its destructor runs while it's still in use",
+    file: "src/lower/combinators.rs",
+    find: "StmtKind::If(Expr::bin(Op::And, some, unkept), drop, None)",
+    replace: "StmtKind::If(some, drop, None)",
+    tests: ["test/corpus.test.ts", "-t", "option_combinator_drops"],
+  },
+  {
+    name: "map-or-fallback-kept",
+    breaks: "`map_or`'s fallback with a destructor, unused, is never dropped",
+    file: "src/lower/combinators.rs",
+    find: "                        vec![StmtKind::Try(body, dropped).at(js_span)],\n",
+    replace: "                        body,\n",
+    tests: ["test/corpus.test.ts", "-t", "option_combinator_drops"],
+  },
 ];

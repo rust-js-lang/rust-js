@@ -458,7 +458,7 @@ tooling while preserving rust-js's own readable-output goals.
   a user `Hash`, 4, a user `AsMut` or `BorrowMut`, 2, same-named traits'
   impls named alike, slice methods, `size_hint()`, `?` of a value with a
   destructor, a `#![no_std]` crate's std items, 128-bit integers, UTF-8 decoding,
-  `NonZero` integers, associated types' drops,
+  `NonZero` integers, associated types' drops, `filter` and `map_or` drops,
   paths as text, generic `{:x}` and `{:p}`, and two crashes.
 - [ ] **M8.3 — Share behavior as well as data.** Demonstrate the same model,
   validation, serialization, and domain-logic crates on a native Rust server

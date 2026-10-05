@@ -118,8 +118,8 @@ export const mutations: Mutation[] = [
     name: "result-map-drops-refused",
     breaks: "`map` of a `Result` whose value has a destructor is an error",
     file: "src/lower/calls.rs",
-    find: "                    | Std::Comb(Comb::ResultMap)\n",
-    replace: "",
+    find: "                    | Std::Comb(Comb::ResultMap | Comb::Filter | Comb::MapOr)\n",
+    replace: "                    | Std::Comb(Comb::Filter | Comb::MapOr)\n",
     tests: ["test/corpus.test.ts", "-t", "option_map_drops"],
   },
   {

@@ -382,7 +382,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::Same
                     // Moves its value into the function, which owns it then.
                     | Std::OptionMap
-                    | Std::Comb(Comb::ResultMap)
+                    | Std::Comb(Comb::ResultMap | Comb::Filter | Comb::MapOr)
                     | Std::VecMacro
                     | Std::Unwrap
                     | Std::UnwrapOk

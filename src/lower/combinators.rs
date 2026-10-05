@@ -4,6 +4,7 @@
 //! `unwrap_or_else(|| 0)`.
 
 use super::calls::apply;
+use super::drops::Drops;
 use super::{FnCx, R, Std, representation::Num};
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use crate::runtime::Helper;
@@ -541,6 +542,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => Expr::bin(Op::Coalesce, subject, fallback),
                 }
             }
+            // A fallback with a destructor, unused, is dropped once `f` has
+            // run, or thrown, as Rust drops an argument (ADR 0179).
+            Comb::MapOr if self.drops(self.thir[args[1]].ty) != Drops::Nothing => {
+                let fallback = next();
+                let fallback = match fallback.kind {
+                    js::ExprKind::Var(_) => fallback,
+                    _ => self.spill("fallback", fallback, out),
+                };
+                let f = next();
+                let mut body = Vec::new();
+                let mapped = self.call_with(f, vec![value], "map", &mut body);
+                let result = self.fresh("mapped");
+                body.push(StmtKind::Assign(Expr::var(&result), mapped).at(js::Span::NONE));
+                let mut dropped = Vec::new();
+                self.drop_value(fallback.clone(), self.thir[args[1]].ty, span, &mut dropped)?;
+                let js_span = self.js_span(span);
+                out.push(StmtKind::Let(result.clone(), None).at(js_span));
+                out.push(
+                    StmtKind::If(
+                        some,
+                        vec![StmtKind::Try(body, dropped).at(js_span)],
+                        Some(vec![StmtKind::Assign(Expr::var(&result), fallback).at(js_span)]),
+                    )
+                    .at(js_span),
+                );
+                Expr::var(&result)
+            }
             Comb::MapOr => {
                 let fallback = next();
                 let fallback = eager(self, fallback, out);
@@ -571,6 +599,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let f = next();
                 let then = self.call_with(f, vec![value], "then", out);
                 Expr::cond(some, then, Expr::undefined())
+            }
+            // A value with a destructor its test doesn't keep is dropped once
+            // the test says so, or throws (ADR 0179).
+            Comb::Filter if self.drops(self.option_of(subject_ty).expect("an `Option`")) != Drops::Nothing => {
+                let inner = self.option_of(subject_ty).expect("an `Option`");
+                let p = next();
+                let mut body = Vec::new();
+                let keep = self.call_with(p, vec![value.clone()], "keep", &mut body);
+                let kept = self.fresh("kept");
+                let js_span = self.js_span(span);
+                body.push(
+                    StmtKind::If(
+                        Expr::bin(Op::And, some.clone(), keep),
+                        vec![StmtKind::Assign(Expr::var(&kept), subject).at(js_span)],
+                        None,
+                    )
+                    .at(js_span),
+                );
+                let mut drop = Vec::new();
+                self.drop_value(value, inner, span, &mut drop)?;
+                let unkept = Expr::bin(Op::Eq, Expr::var(&kept), Expr::undefined());
+                let dropped = vec![StmtKind::If(Expr::bin(Op::And, some, unkept), drop, None).at(js_span)];
+                out.push(StmtKind::Let(kept.clone(), None).at(js_span));
+                out.push(StmtKind::Try(body, dropped).at(js_span));
+                Expr::var(&kept)
             }
             Comb::Filter => {
                 let p = next();

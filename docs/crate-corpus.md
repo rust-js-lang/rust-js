@@ -6,7 +6,7 @@ of its own, every library of its graph by rust-js as Cargo's
 `RUSTC_WRAPPER`, for its target, and records what each refused first, or
 what Cargo said where a crate failed with no refusal: a crash.
 
-Measured 2026-10-05, after ADR 0178, Rust 1.98.1, each crate at the
+Measured 2026-10-05, after ADR 0179, Rust 1.98.1, each crate at the
 newest release its requirement allows.
 
 | Crate | Verdict | First refusals in its graph |
@@ -25,21 +25,23 @@ newest release its requirement allows.
 | url 2.5 | blocked | litemap: `{:?}` of a `PhantomData`; writeable: a whole value assigned through a `&mut`; smallvec's; percent-encoding: `transmute`; yoke: a raw pointer |
 | regex 1.11 | blocked | memchr: a raw pointer |
 | rust_decimal 1.38 | blocked | arrayvec: a user `io::Write`; serde_core: `size_of` of a type parameter |
-| chrono 0.4 (`alloc`) | refused | `Option::filter` and `map_or` of a value with a destructor |
+| chrono 0.4 (`alloc`) | refused | `fmt::Write::write_char` of a generic writer called |
 | time 0.3 (`alloc`) | blocked | powerfmt: a `MaybeUninit`; deranged: a `const` block |
 
 2 of 16 compile. What stops the most, by the crates it stops:
 
 1. **Raw memory,** a raw pointer, a `NonNull`, a `MaybeUninit`,
    `transmute`, `handle_alloc_error`: 9.
-2. **A user `Future`:** 2.
-3. **One each:** `Option::filter` of a value with a destructor, a `const`
-   block, `{:?}` of a generic `PhantomData`, `write_str` of a generic
-   writer, a user `io::Write`, `size_of` of a type parameter, a whole value
-   assigned through a `&mut`.
+2. **A user `Future`:** 2. **`fmt::Write` of a generic writer called:** 2,
+   bitflags and chrono.
+3. **One each:** a `const` block, `{:?}` of a generic `PhantomData`, a user
+   `io::Write`, `size_of` of a type parameter, a whole value assigned
+   through a `&mut`.
 
 ## Fixed by measuring
 
+- **`Option::filter` and `map_or` of a value with a destructor,** chrono's
+  (ADR 0179).
 - **A value of an associated type where a type may have a destructor,**
   chrono's `Tz::Offset`, 55 refusals (ADR 0178).
 - **A `NonZero` integer,** a pattern type `(u8) is 1..` in std, stopped

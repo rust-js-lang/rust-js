@@ -300,6 +300,8 @@ another panic unwinds replaces that panic, where Rust aborts.
 
 Generic code drops a value of an associated type through its impl's
 dictionary ([0178](decisions/0178-associated-type-drops.md)).
+`Option::filter` drops what it doesn't keep, and `map_or` its unused
+fallback ([0179](decisions/0179-option-filter-map-or-drops.md)).
 
 Refused: an `Rc` or an `Arc` of a value with a destructor; a lock or
 `async` code owning one; a value of a std trait's associated type, an
