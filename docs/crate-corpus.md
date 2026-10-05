@@ -13,7 +13,7 @@ the JS's beside native Rust's: **runs** where they're the same. A derive's
 code is the probe's: strum's and thiserror's compiled before what they write
 in a crate that uses them did (ADR 0186).
 
-Measured 2026-10-05, after ADR 0187, Rust 1.98.1, each crate at the
+Measured 2026-10-05, after ADR 0189, Rust 1.98.1, each crate at the
 newest release its requirement allows.
 
 | Crate | Verdict | First refusals in its graph |
@@ -32,20 +32,23 @@ newest release its requirement allows.
 | url 2.5 | blocked | litemap: a loop over items with a destructor; writeable: `u8::checked_ilog10` called; smallvec's; percent-encoding: `transmute`; yoke: a raw pointer |
 | regex 1.11 | blocked | memchr: a raw pointer |
 | rust_decimal 1.38 | blocked | arrayvec: a user `io::Write`; serde_core: `size_of` of a type parameter |
-| chrono 0.4 (`alloc`) | refused | `TryFrom` of a slice into an array |
+| chrono 0.4 (`alloc`) | refused | a loop over items with a destructor |
 | time 0.3 (`alloc`) | blocked | powerfmt: a `MaybeUninit`; deranged: a `const` block |
 
 3 of 16 compile, and each runs as natively. What stops the most, by the crates it stops:
 
 1. **Raw memory,** a raw pointer, a `NonNull`, a `MaybeUninit`,
    `transmute`, `handle_alloc_error`: 9.
-2. **A user `Future`:** 2.
-3. **One each:** a `const` block, a loop over items with a destructor, a user
-   `io::Write`, `size_of` of a type parameter, `u8::checked_ilog10`,
-   `TryFrom` of a slice into an array.
+2. **A user `Future`:** 2. **A loop over items with a destructor:** 2,
+   litemap and chrono.
+3. **One each:** a `const` block, a user `io::Write`, `size_of` of a type
+   parameter, `u8::checked_ilog10`.
 
 ## Fixed by measuring
 
+- **std's `Duration`, `panic!("{}", x)`, a slice into an array and
+  `into_iter()` of the crate's iterator:** chrono's 18 refusals are 9 (ADRs
+  0188, 0189).
 - **A writer's `Err(fmt::Error)`,** chrono's, at four places: thrown, with
   what was written before it, each consumer taking it as std's does (ADR
   0187).

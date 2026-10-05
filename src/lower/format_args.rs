@@ -437,6 +437,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut arg = || values.next().expect("rustc checked the arguments");
         let js_span = self.js_span(span);
         Ok(Some(match known {
+            Std::PanicDisplay => {
+                let ty = generic_args
+                    .types()
+                    .next()
+                    .expect("`panic_display` has a type argument");
+                let shown = self.display_string(arg(), ty, span)?;
+                out.push(StmtKind::Throw(Expr::new_(Expr::var("Error"), vec![shown])).at(js_span));
+                Expr::undefined()
+            }
             Std::Panic | Std::PanicFmt => {
                 out.push(StmtKind::Throw(Expr::new_(Expr::var("Error"), vec![arg()])).at(js_span));
                 Expr::undefined()

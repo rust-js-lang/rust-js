@@ -69,7 +69,7 @@ for (const [name, source, message, crate] of [
   ["comparing paths, which compares their components", "use std::path::Path;\npub fn f(a: &Path, b: &Path) -> bool { a == b }", "`==` on `std::path::Path`"],
   ["a chain of by_ref, which an array doesn't keep the place of", "pub fn f() -> i32 { let mut it = [1, 2, 3].into_iter(); let a: i32 = it.by_ref().take(1).sum(); a + it.sum::<i32>() }", "`by_ref()` but as what a `for` loop iterates"],
   ["a user impl of a std trait", 'pub struct C;\nimpl std::hash::Hasher for C { fn finish(&self) -> u64 { 0 } fn write(&mut self, _: &[u8]) {} }', "user implementations of `std::hash::Hasher`"],
-  ["comparing another crate's struct", 'pub fn f(a: std::time::Duration, b: std::time::Duration) -> bool { a < b }', "does not support"],
+  ["comparing another crate's struct", 'pub fn f(a: std::time::Instant, b: std::time::Instant) -> bool { a < b }', "does not support"],
   ["next() of an iterator in a field", 'pub struct L<\'a> { c: std::str::Chars<\'a> }\npub fn f(l: &mut L) -> Option<char> { l.c.next() }', "make it a `Peekable`"],
   ["peekable of a lazy iterator", 'pub struct C(u32);\nimpl Iterator for C { type Item = u32; fn next(&mut self) -> Option<u32> { self.0 += 1; Some(self.0) } }\npub fn f() -> Option<u32> { let mut p = C(0).peekable(); p.peek().copied() }', "`peekable` of a lazy iterator"],
   ["a new closure assigned through a &mut to one", 'pub fn replace<F: FnMut()>(f: &mut F, g: F) { *f = g; }', "assigning a whole value through a `&mut`"],

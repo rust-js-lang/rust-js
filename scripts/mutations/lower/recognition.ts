@@ -327,8 +327,8 @@ export const mutations: Mutation[] = [
     name: "generic-into-iter-refused",
     breaks: "`items.into_iter()` of a generic `I: IntoIterator` is an error",
     file: "src/lower/recognition.rs",
-    find: "                || matches!(ty.peel_refs().kind(), ty::Param(_)))",
-    replace: "                || false)",
+    find: "                || matches!(ty.peel_refs().kind(), ty::Param(_))\n                || self.is_user_iterator(ty))",
+    replace: "                || self.is_user_iterator(ty))",
     tests: ["test/corpus.test.ts","-t","user_collections"],
   },
   {
@@ -586,5 +586,21 @@ export const mutations: Mutation[] = [
     find: "        false => tcx.is_automatically_derived(id),",
     replace: "        false => false,",
     tests: ["test/corpus.test.ts", "-t", "int_error_kind"],
+  },
+  {
+    name: "panic-display-unknown",
+    breaks: "`panic!(\"{}\", x)`, std's `panic_display`, is an error",
+    file: "src/lower/recognition.rs",
+    find: "        if tcx.is_lang_item(def_id, LangItem::PanicDisplay) {",
+    replace: "        if false && tcx.is_lang_item(def_id, LangItem::PanicDisplay) {",
+    tests: ["test/corpus.test.ts","-t","panic_display"],
+  },
+  {
+    name: "user-into-iter-unknown",
+    breaks: "`into_iter()` of an iterator of the crate's is an error",
+    file: "src/lower/recognition.rs",
+    find: "                || self.is_user_iterator(ty))",
+    replace: "                || false)",
+    tests: ["test/corpus.test.ts","-t","user_into_iter"],
   },
 ];

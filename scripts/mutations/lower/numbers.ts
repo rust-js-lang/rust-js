@@ -179,4 +179,20 @@ export const mutations: Mutation[] = [
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "code_point_order"],
   },
+  {
+    name: "duration-subsec-whole",
+    breaks: "`subsec_nanos()` is all of a `Duration`'s nanoseconds, not those under a second",
+    file: "src/lower/numbers.rs",
+    find: "                        let part = Expr::bin(Op::Rem, arg(), nanos(1_000_000_000));",
+    replace: "                        let part = arg();",
+    tests: ["test/corpus.test.ts","-t","duration"],
+  },
+  {
+    name: "slice-to-array-any-length",
+    breaks: "a slice into an array of another length is `Ok`",
+    file: "src/lower/numbers.rs",
+    find: "                let fits = Expr::bin(Op::Eq, Expr::member(slice.clone(), \"length\"), Expr::int(len as i128));",
+    replace: "                let fits = Expr::bool(true || len > 0);",
+    tests: ["test/corpus.test.ts","-t","slice_to_array"],
+  },
 ];

@@ -188,6 +188,7 @@ helpers! {
     Powf,
     Trim,
     FmtError,
+    Duration,
     SliceEnd,
     ByteLen,
     StrSlice,
@@ -755,6 +756,7 @@ impl Helper {
             Helper::Powf => include_str!("runtime/powf.js"),
             Helper::Trim => include_str!("runtime/trim.js"),
             Helper::FmtError => include_str!("runtime/fmt_error.js"),
+            Helper::Duration => include_str!("runtime/duration.js"),
             // `s.len()`: its UTF-8 bytes, as Rust counts them, where JS counts
             // UTF-16 units (ADR 0138).
             Helper::ByteLen => include_str!("runtime/byte_len.js"),

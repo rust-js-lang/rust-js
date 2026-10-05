@@ -911,6 +911,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::LocalWith
             | Std::LocalBorrow => unreachable!("lowered by cell_call"),
             Std::ToBig
+            | Std::Duration(_)
+            | Std::SliceToArray { .. }
             | Std::TryFromInt { .. }
             | Std::FromDigit
             | Std::FromU32
@@ -936,6 +938,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::ToString => unreachable!("lowered by string_call"),
             Std::Panic
             | Std::PanicFmt
+            | Std::PanicDisplay
             | Std::BeginPanic
             | Std::Print { .. }
             | Std::FmtStr

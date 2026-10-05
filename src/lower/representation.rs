@@ -307,6 +307,8 @@ impl Num {
             // it in, `(u32) is 1..` (ADR 0177).
             ty::Pat(base, _) => return Num::of(*base),
             ty::Adt(adt, args) if super::recognition::is_non_zero(adt.did()) => return Num::of(args.type_at(0)),
+            // A `Duration` is its nanoseconds (ADR 0188).
+            ty::Adt(adt, _) if super::recognition::is_duration(adt.did()) => Num::U128,
             _ => return None,
         })
     }
@@ -585,6 +587,22 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
     let ty = value.ty;
     if ty.is_bool() {
         return value.try_to_bool().map(Expr::bool);
+    }
+    // A `Duration`'s is its nanoseconds, of std's `secs` and `nanos` (ADR 0188).
+    if super::recognition::is_duration_ty(ty) {
+        let ty::ValTreeKind::Branch(items) = &**value.valtree else {
+            return None;
+        };
+        let [secs, nanos] = &items[..] else { return None };
+        let secs = secs.try_to_value()?.try_to_leaf()?.to_bits_unchecked();
+        let mut nanos = nanos.try_to_value()?;
+        while let ty::ValTreeKind::Branch(items) = &**nanos.valtree
+            && let [item] = &items[..]
+        {
+            nanos = item.try_to_value()?;
+        }
+        let nanos = nanos.try_to_leaf()?.to_bits_unchecked();
+        return Some(num_literal(secs * 1_000_000_000 + nanos, Num::U128));
     }
     if let Some(num) = Num::of(ty) {
         // A `NonZero`'s is its number, inside std's `NonZeroU8Inner` (ADR 0177).

@@ -436,7 +436,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ])
     }
 
-    fn err(value: Expr) -> Expr {
+    pub(super) fn err(value: Expr) -> Expr {
         Expr::object(vec![
             Prop::Field("TAG".into(), Expr::str("Err")),
             Prop::Field("_0".into(), value),

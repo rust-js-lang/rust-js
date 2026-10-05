@@ -163,4 +163,20 @@ export const mutations: Mutation[] = [
     replace: "        if let ty::ValTreeKind::Branch(items) = &**value.valtree",
     tests: ["test/corpus.test.ts", "-t", "nonzero"],
   },
+  {
+    name: "duration-not-a-number",
+    breaks: "a `Duration` is std's struct, which rust-js has no value for",
+    file: "src/lower/representation.rs",
+    find: "            ty::Adt(adt, _) if super::recognition::is_duration(adt.did()) => Num::U128,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","duration"],
+  },
+  {
+    name: "duration-const-seconds",
+    breaks: "`Duration::MAX` has none of its nanoseconds",
+    file: "src/lower/representation.rs",
+    find: "        return Some(num_literal(secs * 1_000_000_000 + nanos, Num::U128));",
+    replace: "        return Some(num_literal(secs * 1_000_000_000 + 0 * nanos, Num::U128));",
+    tests: ["test/corpus.test.ts","-t","duration"],
+  },
 ];

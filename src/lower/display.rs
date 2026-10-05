@@ -847,6 +847,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.recognition().is_path_like(ty) {
             return Ok(value);
         }
+        if super::recognition::is_try_from_slice_error(self.tcx, ty) {
+            return Ok(Expr::str("could not convert slice to array"));
+        }
         // `format_args!`'s text (ADR 0034), which its `Display` writes as it
         // is, whatever width the `Formatter` has, as strum's derive asks.
         if self.is_lang_adt(ty, LangItem::FormatArguments) {
@@ -1030,6 +1033,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if self.recognition().is_fmt_error(ty) {
             return Ok(Expr::str("Error"));
+        }
+        if super::recognition::is_try_from_slice_error(self.tcx, ty) {
+            return Ok(Expr::str("TryFromSliceError(())"));
+        }
+        // A `Duration`'s, in its largest whole unit, `1.5s` (ADR 0188). With
+        // options, std rounds and pads it by its own rules: not yet.
+        if super::recognition::is_duration_ty(ty) {
+            if self.writing.options.is_some() || matches!(pretty, Pretty::Given(..)) {
+                return Err(self.unsupported(span, "options for a `Duration`'s `{:?}`"));
+            }
+            self.runtime.insert(Helper::Duration);
+            return Ok(Expr::call(Expr::var("$debugDuration"), vec![value]));
         }
         // A part of a `{:?}` given its options (ADR 0058): a leaf applies them.
         if self.writing.options.is_some() && self.is_debug_leaf(ty) {

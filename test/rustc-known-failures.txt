@@ -229,9 +229,9 @@ stdlib-unit-tests/raw-fat-ptr.rs	error: rust-js does not support values of type 
 str/char-escape-unicode.rs	error: rust-js does not support iterating over `std::char::EscapeUnicode` yet
 structs-enums/align-struct.rs	error: rust-js does not support this expression yet
 structs-enums/enum-alignment.rs	error: rust-js does not support this expression yet
-structs-enums/enum-non-c-like-repr-c-and-int.rs	error: rust-js does not support calling `std::time::Duration::from_secs` yet
-structs-enums/enum-non-c-like-repr-c.rs	error: rust-js does not support calling `std::time::Duration::from_secs` yet
-structs-enums/enum-non-c-like-repr-int.rs	error: rust-js does not support calling `std::time::Duration::from_secs` yet
+structs-enums/enum-non-c-like-repr-c-and-int.rs	error: rust-js does not support calling `std::mem::zeroed` yet
+structs-enums/enum-non-c-like-repr-c.rs	error: rust-js does not support calling `std::mem::zeroed` yet
+structs-enums/enum-non-c-like-repr-int.rs	error: rust-js does not support calling `std::mem::zeroed` yet
 structs-enums/tag-align-dyn-u64.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 structs-enums/tag-align-dyn-variants.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 structs-enums/tag-align-u64.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet

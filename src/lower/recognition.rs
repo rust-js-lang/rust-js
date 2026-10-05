@@ -5,7 +5,7 @@ mod methods;
 use super::combinators::{Comb, HeapOp, IterComb, IterSource, StepOp};
 use super::format_spec::Radix;
 use super::maps::{MapOp, Part};
-use super::numbers::NumOp;
+use super::numbers::{DurationOp, NumOp};
 use super::ranges::{RangeKind, RangeOp};
 use super::representation::Num;
 use super::text::{StringEdit, TextOp};
@@ -127,6 +127,15 @@ pub(super) enum Std {
     /// `len()` of an iterator of the crate's whose `ExactSizeIterator` keeps
     /// std's `len`: its `size_hint()`, checked (ADR 0164).
     ExactLen,
+    /// A `Duration`'s own, of its nanoseconds (ADR 0188).
+    Duration(DurationOp),
+    /// `panic!("{}", x)`: a panic of `x`'s `Display` (ADR 0189).
+    PanicDisplay,
+    /// `<&[T; N]>::try_from(slice)`, or `<[T; N]>`'s: `Ok` of the slice where
+    /// it's `N` long (ADR 0189).
+    SliceToArray {
+        into: bool,
+    },
     /// `format!(..)`'s `format`: its `format_args!`, a string already (ADR
     /// 0034), or std's panic where what it formats fails (ADR 0187).
     Format,
@@ -588,6 +597,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if tcx.is_lang_item(def_id, LangItem::Panic) {
             return Some(Some(Std::Panic));
         }
+        // `panic!("{}", x)`, which std writes as `panic_display(&x)` (ADR 0189).
+        if tcx.is_lang_item(def_id, LangItem::PanicDisplay) {
+            return Some(Some(Std::PanicDisplay));
+        }
         if krate == sym::std {
             match std_path(tcx, def_id).as_str() {
                 "std::io::_print" => return Some(Some(Std::Print { error: false })),
@@ -648,6 +661,19 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             let operators = [(LangItem::Neg, UnOp::Neg), (LangItem::Not, UnOp::Not)];
             if let Some(&(_, op)) = operators.iter().find(|(item, _)| tcx.is_lang_item(trait_, *item)) {
                 return Some(Std::UnaryOperator(op));
+            }
+        }
+        // A `Duration`'s `+` and `-`, which panic past it as std's do; its
+        // other operators aren't its number's (ADR 0188).
+        if is_duration_ty(ty.peel_refs()) {
+            if tcx.is_lang_item(trait_, LangItem::Add) {
+                return Some(Std::Duration(DurationOp::Add));
+            }
+            if tcx.is_lang_item(trait_, LangItem::Sub) {
+                return Some(Std::Duration(DurationOp::Sub));
+            }
+            if value_operator(tcx, trait_).is_some() || assign_operator(tcx, trait_).is_some() {
+                return None;
             }
         }
         if Num::of(ty.peel_refs()).is_some() {
@@ -834,13 +860,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Some(Std::IterLen);
         }
         // Of a type parameter too: a generic one is an array or a JS iterator
-        // (ADR 0061), never a collection of the crate's (ADR 0160).
+        // (ADR 0061), never a collection of the crate's (ADR 0160). And of an
+        // iterator of the crate's, std's for any iterator, the iterator itself
+        // (ADR 0189).
         if tcx.is_diagnostic_item(sym::IntoIterator, trait_)
             && tcx.item_name(def_id).as_str() == "into_iter"
             && (ty.peel_refs().is_array()
                 || ty.peel_refs().is_slice()
                 || self.is_vec_like(ty.peel_refs())
-                || matches!(ty.peel_refs().kind(), ty::Param(_)))
+                || matches!(ty.peel_refs().kind(), ty::Param(_))
+                || self.is_user_iterator(ty))
         {
             return Some(Std::Same);
         }
@@ -995,6 +1024,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return Some(Std::TryFromInt { into });
         }
+        // A slice into an array of its length, shared or copied (ADR 0189).
+        if let (Some(from), Some(to)) = (from_ty, to_ty)
+            && matches!(from.kind(), ty::Ref(_, slice, Mutability::Not) if slice.is_slice())
+            && match to.kind() {
+                ty::Ref(_, array, Mutability::Not) => array.is_array(),
+                _ => to.is_array(),
+            }
+        {
+            return Some(Std::SliceToArray { into });
+        }
         let from_str = tcx.is_diagnostic_item(sym::From, trait_) && self.is_lang_adt(ty, LangItem::String);
         let to_owned = tcx.is_diagnostic_item(Symbol::intern("ToOwned"), trait_) && ty.is_str();
         (from_str || to_owned).then_some(Std::Same)
@@ -1021,6 +1060,28 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let set = adt("HashSet") || adt("BTreeSet");
         let entry = adt("HashMapEntry") || adt("BTreeEntry");
         let name = tcx.item_name(def_id);
+        // A `Duration`'s: of its nanoseconds (ADR 0188).
+        if is_duration_ty(owner) {
+            const SECOND: i64 = 1_000_000_000;
+            return Some(Std::Duration(match name.as_str() {
+                "new" => DurationOp::New,
+                "from_secs" => DurationOp::From(SECOND),
+                "from_millis" => DurationOp::From(1_000_000),
+                "from_micros" => DurationOp::From(1_000),
+                "from_nanos" => DurationOp::From(1),
+                "as_secs" => DurationOp::As(SECOND),
+                "as_millis" => DurationOp::As(1_000_000),
+                "as_micros" => DurationOp::As(1_000),
+                "as_nanos" => DurationOp::As(1),
+                "subsec_nanos" => DurationOp::Subsec(1),
+                "subsec_micros" => DurationOp::Subsec(1_000),
+                "subsec_millis" => DurationOp::Subsec(1_000_000),
+                "is_zero" => DurationOp::IsZero,
+                "checked_add" => DurationOp::Checked { add: true },
+                "checked_sub" => DurationOp::Checked { add: false },
+                _ => return None,
+            }));
+        }
         let (deque, heap) = (adt("VecDeque"), adt("BinaryHeap"));
         // Theirs first: `push` and `pop` keep a heap's order, and a deque's
         // `remove` is an `Option` (ADR 0068).
@@ -2480,6 +2541,22 @@ fn std_path(tcx: TyCtxt<'_>, id: DefId) -> String {
 /// `TyCtxt` is passed, by `Num::of`, of rustc's own for the thread.
 pub(crate) fn is_non_zero(id: DefId) -> bool {
     ty::tls::with_opt(|tcx| tcx.is_some_and(|tcx| tcx.is_diagnostic_item(Symbol::intern("NonZero"), id)))
+}
+
+/// std's `Duration`, which is its nanoseconds (ADR 0188).
+pub(crate) fn is_duration(id: DefId) -> bool {
+    ty::tls::with_opt(|tcx| tcx.is_some_and(|tcx| tcx.is_diagnostic_item(Symbol::intern("Duration"), id)))
+}
+
+/// A `Duration` type (ADR 0188).
+pub(crate) fn is_duration_ty(ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _) if is_duration(adt.did()))
+}
+
+/// core's `TryFromSliceError` (ADR 0189).
+pub(crate) fn is_try_from_slice_error(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _) if tcx.crate_name(adt.did().krate) == sym::core
+        && tcx.item_name(adt.did()).as_str() == "TryFromSliceError")
 }
 
 /// A `NonZero<T>` type (ADR 0177).

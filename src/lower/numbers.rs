@@ -18,6 +18,28 @@ use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 use rustc_span::Span;
 
+/// A `Duration`'s own, of its nanoseconds, a BigInt (ADR 0188): each unit
+/// by how many nanoseconds it has.
+#[derive(Clone, Copy, PartialEq)]
+pub(super) enum DurationOp {
+    /// `Duration::new(secs, nanos)`, which panics past `MAX`.
+    New,
+    /// `from_secs` and the like.
+    From(i64),
+    /// `as_secs` and the like: the whole ones.
+    As(i64),
+    /// `subsec_nanos` and the like: of what's under a second.
+    Subsec(i64),
+    IsZero,
+    /// `+` and `-`, which panic as std's do.
+    Add,
+    Sub,
+    /// `checked_add` and `checked_sub`: `None` where `+` or `-` panics.
+    Checked {
+        add: bool,
+    },
+}
+
 #[derive(Clone, Copy, PartialEq)]
 pub(super) enum NumOp {
     /// The same in JS: `Math.floor(x)`, `Math.atan2(y, x)`.
@@ -1275,6 +1297,71 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut arg = || values.next().expect("rustc checked the arguments");
         let js_span = self.js_span(span);
         Ok(Some(match known {
+            Std::Duration(op) => {
+                let nanos = |n: i64| Expr::bigint(i128::from(n));
+                let helper = |cx: &mut Self, name: &str, args: Vec<Expr>| {
+                    cx.runtime.insert(Helper::Duration);
+                    Expr::call(Expr::var(name), args)
+                };
+                match op {
+                    DurationOp::New => {
+                        let (secs, subsec) = (arg(), arg());
+                        helper(self, "$durationNew", vec![secs, subsec])
+                    }
+                    DurationOp::From(1) | DurationOp::As(1) => arg(),
+                    DurationOp::From(unit) => Expr::bin(Op::Mul, arg(), nanos(unit)),
+                    DurationOp::As(unit) => Expr::bin(Op::Div, arg(), nanos(unit)),
+                    DurationOp::Subsec(unit) => {
+                        let part = Expr::bin(Op::Rem, arg(), nanos(1_000_000_000));
+                        let part = match unit {
+                            1 => part,
+                            _ => Expr::bin(Op::Div, part, nanos(unit)),
+                        };
+                        Expr::call(Expr::var("Number"), vec![part])
+                    }
+                    DurationOp::IsZero => Expr::bin(Op::Eq, arg(), nanos(0)),
+                    DurationOp::Add => {
+                        let (a, b) = (arg(), arg());
+                        helper(self, "$durationAdd", vec![a, b])
+                    }
+                    DurationOp::Sub => {
+                        let (a, b) = (arg(), arg());
+                        helper(self, "$durationSub", vec![a, b])
+                    }
+                    DurationOp::Checked { add: true } => {
+                        let (a, b) = (arg(), arg());
+                        helper(self, "$durationChecked", vec![Expr::bin(Op::Add, a, b)])
+                    }
+                    DurationOp::Checked { add: false } => {
+                        let (a, b) = (arg(), arg());
+                        let a = if a.reads_same() { a } else { self.spill("a", a, out) };
+                        let b = if b.reads_same() { b } else { self.spill("b", b, out) };
+                        let less = Expr::bin(Op::Lt, a.clone(), b.clone());
+                        Expr::cond(less, Expr::undefined(), Expr::bin(Op::Sub, a, b))
+                    }
+                }
+            }
+            Std::SliceToArray { into } => {
+                let target = if into {
+                    generic_args.type_at(1)
+                } else {
+                    generic_args.type_at(0)
+                };
+                let ty::Array(_, len) = target.peel_refs().kind() else {
+                    unreachable!("recognized as an array")
+                };
+                let len = len
+                    .try_to_target_usize(self.tcx)
+                    .ok_or_else(|| self.unsupported(span, "an array of a generic length here"))?;
+                let slice = arg();
+                let slice = if slice.reads_same() {
+                    slice
+                } else {
+                    self.spill("slice", slice, out)
+                };
+                let fits = Expr::bin(Op::Eq, Expr::member(slice.clone(), "length"), Expr::int(len as i128));
+                Expr::cond(fits, Self::ok(slice), Self::err(Expr::undefined()))
+            }
             Std::ToBig => Expr::call(Expr::var("BigInt"), vec![arg()]),
             Std::TryFromInt { into } => {
                 let target = if into {

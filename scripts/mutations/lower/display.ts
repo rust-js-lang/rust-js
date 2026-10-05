@@ -276,4 +276,12 @@ export const mutations: Mutation[] = [
     replace: "                _ => ok,",
     tests: ["test/corpus.test.ts","-t","fmt_error_write"],
   },
+  {
+    name: "try-from-slice-error-debug",
+    breaks: "`{:?}` of a `TryFromSliceError` isn't std's",
+    file: "src/lower/display.rs",
+    find: "            return Ok(Expr::str(\"TryFromSliceError(())\"));",
+    replace: "            return Ok(Expr::str(\"TryFromSliceError\"));",
+    tests: ["test/corpus.test.ts","-t","slice_to_array"],
+  },
 ];
