@@ -22,15 +22,7 @@ function valued(v, VValue) {
 }
 
 function take(value, TTake, dropT) {
-  let value$live = true;
-  try {
-    value$live = false;
-    TTake.take(value);
-  } finally {
-    if (value$live) {
-      dropT?.(value);
-    }
-  }
+  TTake.take(value);
 }
 
 function main() {
@@ -95,15 +87,7 @@ function wrapPass(dropT) {
       const dropSelf = (wrap) => {
         dropT?.(wrap[0]);
       };
-      let self$live = true;
-      try {
-        self$live = false;
-        helper_taking(self, dropSelf);
-      } finally {
-        if (self$live) {
-          dropSelf?.(self);
-        }
-      }
+      helper_taking(self, dropSelf);
     },
     $drop: (wrap$1) => {
       dropT?.(wrap$1[0]);

@@ -50,16 +50,8 @@ function logStore_put(log, item, TDebug, dropT) {
 }
 
 function logStore_put_all(log, items, dropI) {
-  let items$live = true;
-  try {
-    items$live = false;
-    for (const item of items) {
-      log[0].push(item);
-    }
-  } finally {
-    if (items$live) {
-      dropI?.(items);
-    }
+  for (const item of items) {
+    log[0].push(item);
   }
 }
 

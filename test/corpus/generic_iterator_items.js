@@ -61,15 +61,7 @@ function deltaAdd_add(delta, other) {
 }
 
 function deltaSum_sum(iter, dropI) {
-  let iter$live = true;
-  try {
-    iter$live = false;
-    return Iterator.from(iter).reduce((acc, x) => deltaAdd_add(acc, x), [0n]);
-  } finally {
-    if (iter$live) {
-      dropI?.(iter);
-    }
-  }
+  return Iterator.from(iter).reduce((acc, x) => deltaAdd_add(acc, x), [0n]);
 }
 
 export function deltaAdd() {

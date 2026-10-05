@@ -267,4 +267,12 @@ export const mutations: Mutation[] = [
     replace: "                .or_else(|| assigned_in_try(&lowered, &t.name).filter(|_| false))",
     tests: ["test/corpus.test.ts", "-t", "arm_temporaries"],
   },
+  {
+    name: "moved-first-still-owned",
+    breaks: "a value moved before anything can leave, `hold(l)`'s, keeps a flag and a `try` that can never drop it",
+    file: "src/lower/drops.rs",
+    find: "            .filter(|flag| cleared.contains(flag) && js::mentions_in(&body, flag) == 1 && declared(out, flag))",
+    replace: "            .filter(|flag| false && cleared.contains(flag) && js::mentions_in(&body, flag) == 1 && declared(out, flag))",
+    tests: ["test/compiler.test.ts", "-t", "moved before anything can leave"],
+  },
 ];

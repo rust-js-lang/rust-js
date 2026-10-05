@@ -6,17 +6,9 @@ var $noisyDisplay;
 
 const Wrapper = {
   replace(wrapper, value, dropT) {
-    let value$live = true;
-    try {
-      value$live = false;
-      dropT?.(wrapper.inner);
-      wrapper.inner = value;
-      console.log("replaced");
-    } finally {
-      if (value$live) {
-        dropT?.(value);
-      }
-    }
+    dropT?.(wrapper.inner);
+    wrapper.inner = value;
+    console.log("replaced");
   },
 };
 
@@ -29,15 +21,7 @@ function consume(value, dropT) {
 }
 
 function keep(value, dropT) {
-  let value$live = true;
-  try {
-    value$live = false;
-    return value;
-  } finally {
-    if (value$live) {
-      dropT?.(value);
-    }
-  }
+  return value;
 }
 
 function first(items, TClone, dropT) {
@@ -51,16 +35,8 @@ function first(items, TClone, dropT) {
 }
 
 function relay(value, dropU) {
-  let value$live = true;
-  try {
-    value$live = false;
-    consume(value, dropU);
-    console.log("relayed");
-  } finally {
-    if (value$live) {
-      dropU?.(value);
-    }
-  }
+  consume(value, dropU);
+  console.log("relayed");
 }
 
 function shown(x, Display, dropDisplay) {

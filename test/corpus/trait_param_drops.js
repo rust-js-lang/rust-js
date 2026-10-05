@@ -5,27 +5,11 @@ import { $traitImpl } from "@rust-js/runtime";
 var $sinkTakeA, $relayTakeA, $wrapTakeNoisy, $keepTakeA;
 
 function via(t, a, TTakeA, dropA) {
-  let a$live = true;
-  try {
-    a$live = false;
-    return TTakeA.take(t, a);
-  } finally {
-    if (a$live) {
-      dropA?.(a);
-    }
-  }
+  return TTakeA.take(t, a);
 }
 
 function build(a, TTakeA, dropA) {
-  let a$live = true;
-  try {
-    a$live = false;
-    return TTakeA.make(a);
-  } finally {
-    if (a$live) {
-      dropA?.(a);
-    }
-  }
+  return TTakeA.make(a);
 }
 
 function main() {
@@ -124,15 +108,7 @@ function relayTakeA_take(relay, a, STakeA, dropA, dropS) {
 }
 
 function relayTakeA_make(a, STakeA, dropA, dropS) {
-  let a$live = true;
-  try {
-    a$live = false;
-    return [STakeA.make(a)];
-  } finally {
-    if (a$live) {
-      dropA?.(a);
-    }
-  }
+  return [STakeA.make(a)];
 }
 
 function wrapTakeNoisy_make(a, TDefault, dropT) {
@@ -145,15 +121,7 @@ function wrapTakeNoisy_make(a, TDefault, dropT) {
 }
 
 function keepTakeA_take(keep, a, dropA) {
-  let a$live = true;
-  try {
-    a$live = false;
-    return 2;
-  } finally {
-    if (a$live) {
-      dropA?.(a);
-    }
-  }
+  return 2;
 }
 
 function keepTakeA_make(_a, dropA) {

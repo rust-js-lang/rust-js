@@ -5,27 +5,11 @@ import { $traitImpl } from "@rust-js/runtime";
 var $wrapConsume, $wrapTake, $wrapReset, $loudDefault;
 
 function eat(c, CConsume, dropC) {
-  let c$live = true;
-  try {
-    c$live = false;
-    return CConsume.consume(c);
-  } finally {
-    if (c$live) {
-      dropC?.(c);
-    }
-  }
+  return CConsume.consume(c);
 }
 
 function taken(c, CTake, dropC) {
-  let c$live = true;
-  try {
-    c$live = false;
-    return CTake.take(c);
-  } finally {
-    if (c$live) {
-      dropC?.(c);
-    }
-  }
+  return CTake.take(c);
 }
 
 function main() {

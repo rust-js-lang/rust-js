@@ -72,15 +72,7 @@ function main() {
     if (opt != null) {
       opt$Some$0$live = false;
       const inner = opt;
-      let inner$live = true;
-      try {
-        inner$live = false;
-        consume(inner);
-      } finally {
-        if (inner$live) {
-          noisyDrop_drop(inner);
-        }
-      }
+      consume(inner);
     }
     console.log("matched");
   } finally {

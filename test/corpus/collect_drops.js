@@ -4,118 +4,98 @@ import { $byteLen, $debugStr, $skipWhile } from "@rust-js/runtime";
 
 function main() {
   const v = [["a"], ["bb"], ["c"], ["dd"]];
-  let v$live = true;
+  const keep = (n) => $byteLen(n[0]) > 1;
+  const long = v.filter((item) => {
+    if (keep(item)) {
+      return true;
+    }
+    noisyDrop_drop(item);
+    return false;
+  });
   try {
-    v$live = false;
-    const keep = (n) => $byteLen(n[0]) > 1;
-    const long = v.filter((item) => {
-      if (keep(item)) {
+    console.log(`kept ${long.length}`);
+    const w = [["x"], ["y"], ["z"]];
+    const skip = (n) => n[0] !== "y";
+    const rest = $skipWhile(w, (item) => {
+      if (skip(item)) {
+        noisyDrop_drop(item);
         return true;
       }
-      noisyDrop_drop(item);
       return false;
     });
     try {
-      console.log(`kept ${long.length}`);
-      const w = [["x"], ["y"], ["z"]];
-      let w$live = true;
+      console.log(`rest ${rest.length}`);
+      let fragments = [["f1"], ["f2"]];
       try {
-        w$live = false;
-        const skip = (n) => n[0] !== "y";
-        const rest = $skipWhile(w, (item) => {
-          if (skip(item)) {
+        const old = fragments;
+        fragments = [];
+        const skip$1 = () => true;
+        const none = $skipWhile(old, (item) => {
+          if (skip$1(item)) {
             noisyDrop_drop(item);
             return true;
           }
           return false;
         });
         try {
-          console.log(`rest ${rest.length}`);
-          let fragments = [["f1"], ["f2"]];
-          try {
-            const old = fragments;
-            fragments = [];
-            const skip$1 = () => true;
-            const none = $skipWhile(old, (item) => {
-              if (skip$1(item)) {
-                noisyDrop_drop(item);
+          console.log(`none ${none.length} ${fragments.length}`);
+          const names = [["m1"], ["m2"]].map((n) => {
+            try {
+              return n[0];
+            } finally {
+              noisyDrop_drop(n);
+            }
+          });
+          console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
+          const keep$1 = (n) => n[0] !== "p2";
+          const checked = [["p1"], ["p2"], ["p3"]]
+            .values()
+            .filter((item) => {
+              if (keep$1(item)) {
                 return true;
               }
+              noisyDrop_drop(item);
               return false;
-            });
-            try {
-              console.log(`none ${none.length} ${fragments.length}`);
-              const names = [["m1"], ["m2"]].map((n) => {
-                try {
-                  return n[0];
-                } finally {
+            })
+            .map((n) => {
+              let n$live = true;
+              try {
+                console.log(`map ${n[0]}`);
+                n$live = false;
+                return n;
+              } finally {
+                if (n$live) {
                   noisyDrop_drop(n);
                 }
-              });
-              console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
-              const keep$1 = (n) => n[0] !== "p2";
-              const checked = [["p1"], ["p2"], ["p3"]]
-                .values()
-                .filter((item) => {
-                  if (keep$1(item)) {
-                    return true;
-                  }
-                  noisyDrop_drop(item);
-                  return false;
-                })
-                .map((n) => {
-                  let n$live = true;
-                  try {
-                    console.log(`map ${n[0]}`);
-                    n$live = false;
-                    return n;
-                  } finally {
-                    if (n$live) {
-                      noisyDrop_drop(n);
-                    }
-                  }
-                })
-                .toArray();
-              try {
-                console.log(`checked ${checked.length}`);
-                console.log("end");
-              } finally {
-                for (const item of checked) {
-                  noisyDrop_drop(item);
-                }
               }
-            } finally {
-              for (const item$1 of none) {
-                noisyDrop_drop(item$1);
-              }
-            }
+            })
+            .toArray();
+          try {
+            console.log(`checked ${checked.length}`);
+            console.log("end");
           } finally {
-            for (const item$2 of fragments) {
-              noisyDrop_drop(item$2);
+            for (const item of checked) {
+              noisyDrop_drop(item);
             }
           }
         } finally {
-          for (const item$3 of rest) {
-            noisyDrop_drop(item$3);
+          for (const item$1 of none) {
+            noisyDrop_drop(item$1);
           }
         }
       } finally {
-        if (w$live) {
-          for (const item$4 of w) {
-            noisyDrop_drop(item$4);
-          }
+        for (const item$2 of fragments) {
+          noisyDrop_drop(item$2);
         }
       }
     } finally {
-      for (const item$5 of long) {
-        noisyDrop_drop(item$5);
+      for (const item$3 of rest) {
+        noisyDrop_drop(item$3);
       }
     }
   } finally {
-    if (v$live) {
-      for (const item$6 of v) {
-        noisyDrop_drop(item$6);
-      }
+    for (const item$4 of long) {
+      noisyDrop_drop(item$4);
     }
   }
 }

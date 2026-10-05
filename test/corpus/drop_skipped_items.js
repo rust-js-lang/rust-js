@@ -4,29 +4,19 @@ import { $skipWhile } from "@rust-js/runtime";
 
 function main() {
   const fragments = [[1], [2], [3]];
-  let fragments$live = true;
-  try {
-    fragments$live = false;
-    const skip = (f) => f[0] < 2;
-    const kept = $skipWhile(fragments, (item) => {
-      if (skip(item)) {
-        fragmentDrop_drop(item);
-        return true;
-      }
-      return false;
-    });
-    try {
-      console.log(`kept ${kept.length}`);
-    } finally {
-      for (const item of kept) {
-        fragmentDrop_drop(item);
-      }
+  const skip = (f) => f[0] < 2;
+  const kept = $skipWhile(fragments, (item) => {
+    if (skip(item)) {
+      fragmentDrop_drop(item);
+      return true;
     }
+    return false;
+  });
+  try {
+    console.log(`kept ${kept.length}`);
   } finally {
-    if (fragments$live) {
-      for (const item$1 of fragments) {
-        fragmentDrop_drop(item$1);
-      }
+    for (const item of kept) {
+      fragmentDrop_drop(item);
     }
   }
 }

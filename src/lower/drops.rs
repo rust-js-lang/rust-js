@@ -1252,7 +1252,45 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// End the scope that began at `mark`: `body`, then the drops of what
     /// it owns, last first, in a `finally`.
     pub(super) fn close_scope(&mut self, mark: usize, body: Vec<Stmt>, span: Span, out: &mut Vec<Stmt>) -> R<()> {
-        let owned: Vec<Owned<'tcx>> = self.drop_state.owned.drain(mark..).collect();
+        let mut owned: Vec<Owned<'tcx>> = self.drop_state.owned.drain(mark..).collect();
+        let mut body = body;
+        // What's moved before anything in the scope can leave, its flag
+        // cleared first and never set again, `children$live = false;`, is
+        // never the scope's to drop: no flag, and no `try` for it (ADR 0197).
+        let cleared: Vec<String> = body
+            .iter()
+            .map_while(|s| match &s.kind {
+                StmtKind::Assign(target, value) if matches!(value.kind, js::ExprKind::Bool(false)) => {
+                    match &target.kind {
+                        js::ExprKind::Var(flag) => Some(flag.clone()),
+                        _ => None,
+                    }
+                }
+                _ => None,
+            })
+            .collect();
+        let declared = |out: &[Stmt], flag: &str| {
+            out.iter().any(|s| {
+                matches!(&s.kind, StmtKind::Let(name, Some(value))
+                    if name == flag && matches!(value.kind, js::ExprKind::Bool(true)))
+            })
+        };
+        let never: Vec<String> = owned
+            .iter()
+            .filter_map(|o| o.flag.as_ref().filter(|_| o.parts.is_empty()))
+            .filter(|flag| cleared.contains(flag) && js::mentions_in(&body, flag) == 1 && declared(out, flag))
+            .cloned()
+            .collect();
+        if !never.is_empty() {
+            owned.retain(|o| o.flag.as_ref().is_none_or(|flag| !never.contains(flag)));
+            let named = |s: &Stmt| match &s.kind {
+                StmtKind::Assign(target, _) => matches!(&target.kind, js::ExprKind::Var(flag) if never.contains(flag)),
+                StmtKind::Let(flag, _) => never.contains(flag),
+                _ => false,
+            };
+            body.retain(|s| !named(s));
+            out.retain(|s| !named(s));
+        }
         if owned.is_empty() {
             out.extend(body);
             return Ok(());

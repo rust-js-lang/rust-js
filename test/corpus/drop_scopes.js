@@ -66,115 +66,99 @@ function main() {
     noisyDrop_drop(_x);
   }
   const moved = ["moved"];
-  let moved$live = true;
+  consume(moved);
+  const maybe = ["maybe"];
+  let maybe$live = true;
   try {
-    moved$live = false;
-    consume(moved);
-    const maybe = ["maybe"];
-    let maybe$live = true;
+    if (early(true) === 1) {
+      maybe$live = false;
+      consume(maybe);
+    }
+    const arg = early(false);
+    const arg$1 = find([4, 5], 5);
+    const arg$2 = find([4], 5);
+    console.log(
+      `${arg} ${arg$1 == null ? "None" : `Some(${arg$1})`} ${arg$2 == null ? "None" : `Some(${arg$2})`}`,
+    );
+    const kept = made("kept");
+    let kept$live = true;
+    let slot = ["old"];
     try {
-      if (early(true) === 1) {
-        maybe$live = false;
-        consume(maybe);
-      }
-      const arg = early(false);
-      const arg$1 = find([4, 5], 5);
-      const arg$2 = find([4], 5);
-      console.log(
-        `${arg} ${arg$1 == null ? "None" : `Some(${arg$1})`} ${arg$2 == null ? "None" : `Some(${arg$2})`}`,
-      );
-      const kept = made("kept");
-      let kept$live = true;
-      let slot = ["old"];
-      try {
-        noisyDrop_drop(slot);
-        slot = ["new"];
-        console.log(`slot is ${slot[0]}`);
-        kept$live = false;
-        noisyDrop_drop(kept);
-        noisyDrop_drop(["statement"]);
-        noisyDrop_drop(["ignored"]);
-        const unit = undefined;
-        let unit$live = true;
+      noisyDrop_drop(slot);
+      slot = ["new"];
+      console.log(`slot is ${slot[0]}`);
+      kept$live = false;
+      noisyDrop_drop(kept);
+      noisyDrop_drop(["statement"]);
+      noisyDrop_drop(["ignored"]);
+      const unit = undefined;
+      unitDrop_drop({ value: unit });
+      for (let i = 0; i < 3; i++) {
+        const _each = [i === 1 ? "one" : "other"];
         try {
-          unit$live = false;
-          unitDrop_drop({ value: unit });
-          for (let i = 0; i < 3; i++) {
-            const _each = [i === 1 ? "one" : "other"];
-            try {
-              if (i === 1) {
-                break;
-              }
-            } finally {
-              noisyDrop_drop(_each);
-            }
-          }
-          const _pair = { first: ["first"], second: ["second"] };
-          try {
-            const _holder = { label: "h", inner: ["held"], count: 2 };
-            try {
-              const _list = [["v0"], ["v1"]];
-              const _some = ["some"];
-              const _none = undefined;
-              const _boxed = ["boxed"];
-              const _tuple = [["t0"], 7, ["t1"]];
-              const _shapes = [
-                "Empty",
-                { TAG: "One", _0: ["one"] },
-                { TAG: "Two", a: ["a"], b: ["b"] },
-              ];
-              try {
-                console.log("end of main");
-              } finally {
-                for (const item of _shapes) {
-                  if (item.TAG === "One") {
-                    noisyDrop_drop(item._0);
-                  }
-                  if (item.TAG === "Two") {
-                    noisyDrop_drop(item.a);
-                    noisyDrop_drop(item.b);
-                  }
-                }
-                noisyDrop_drop(_tuple[0]);
-                noisyDrop_drop(_tuple[2]);
-                noisyDrop_drop(_boxed);
-                if (_none != null) {
-                  noisyDrop_drop(_none);
-                }
-                if (_some != null) {
-                  noisyDrop_drop(_some);
-                }
-                for (const item$1 of _list) {
-                  noisyDrop_drop(item$1);
-                }
-              }
-            } finally {
-              noisyDrop_drop(_holder.inner);
-            }
-          } finally {
-            pairDrop_drop(_pair);
-            noisyDrop_drop(_pair.first);
-            noisyDrop_drop(_pair.second);
+          if (i === 1) {
+            break;
           }
         } finally {
-          if (unit$live) {
-            unitDrop_drop({ value: unit });
-          }
-        }
-      } finally {
-        noisyDrop_drop(slot);
-        if (kept$live) {
-          noisyDrop_drop(kept);
+          noisyDrop_drop(_each);
         }
       }
+      const _pair = { first: ["first"], second: ["second"] };
+      try {
+        const _holder = { label: "h", inner: ["held"], count: 2 };
+        try {
+          const _list = [["v0"], ["v1"]];
+          const _some = ["some"];
+          const _none = undefined;
+          const _boxed = ["boxed"];
+          const _tuple = [["t0"], 7, ["t1"]];
+          const _shapes = [
+            "Empty",
+            { TAG: "One", _0: ["one"] },
+            { TAG: "Two", a: ["a"], b: ["b"] },
+          ];
+          try {
+            console.log("end of main");
+          } finally {
+            for (const item of _shapes) {
+              if (item.TAG === "One") {
+                noisyDrop_drop(item._0);
+              }
+              if (item.TAG === "Two") {
+                noisyDrop_drop(item.a);
+                noisyDrop_drop(item.b);
+              }
+            }
+            noisyDrop_drop(_tuple[0]);
+            noisyDrop_drop(_tuple[2]);
+            noisyDrop_drop(_boxed);
+            if (_none != null) {
+              noisyDrop_drop(_none);
+            }
+            if (_some != null) {
+              noisyDrop_drop(_some);
+            }
+            for (const item$1 of _list) {
+              noisyDrop_drop(item$1);
+            }
+          }
+        } finally {
+          noisyDrop_drop(_holder.inner);
+        }
+      } finally {
+        pairDrop_drop(_pair);
+        noisyDrop_drop(_pair.first);
+        noisyDrop_drop(_pair.second);
+      }
     } finally {
-      if (maybe$live) {
-        noisyDrop_drop(maybe);
+      noisyDrop_drop(slot);
+      if (kept$live) {
+        noisyDrop_drop(kept);
       }
     }
   } finally {
-    if (moved$live) {
-      noisyDrop_drop(moved);
+    if (maybe$live) {
+      noisyDrop_drop(maybe);
     }
   }
 }

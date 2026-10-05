@@ -13,15 +13,7 @@ const Mapped = {
         if (option != null) {
           option$Some$0$live = false;
           const new$ = $someValue(option);
-          let new$$live = true;
-          try {
-            new$$live = false;
-            return { TAG: "Single", _0: new$ };
-          } finally {
-            if (new$$live) {
-              dropU?.(new$);
-            }
-          }
+          return { TAG: "Single", _0: new$ };
         } else {
           return "None";
         }
@@ -59,21 +51,8 @@ const Mapped = {
           temporary$0$Some$0$live = false;
           temporary$1$Some$0$live = false;
           const min = $someValue(value[0]);
-          let min$live = true;
           const max = $someValue(value[1]);
-          let max$live = true;
-          try {
-            min$live = false;
-            max$live = false;
-            return { TAG: "Ambiguous", _0: min, _1: max };
-          } finally {
-            if (max$live) {
-              dropU?.(max);
-            }
-            if (min$live) {
-              dropU?.(min);
-            }
-          }
+          return { TAG: "Ambiguous", _0: min, _1: max };
         } else {
           return "None";
         }

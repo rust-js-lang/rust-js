@@ -1198,6 +1198,21 @@ test("a Some of a unit variant is tested as the variant, without a null test", a
   expect([lib.turn("Up"), lib.turn("Down"), lib.turn(undefined), lib.size("Dot"), lib.size({ TAG: "Line", _0: 7 }), lib.size(undefined)]).toEqual([1, 2, 0, 1, 7, 0]);
 });
 
+// A value with a destructor moved before anything in its scope can leave,
+// `hold(l)`'s into what it returns, is never the scope's to drop: no flag,
+// no `try` (ADR 0197), as react.dev's ExternalLink moves its children. One
+// moved after what may panic keeps them.
+test("a value moved before anything can leave needs no drop of its scope", async () => {
+  const dir = fixture("moved-first");
+  writeFileSync(join(dir, "lib.rs"), 'pub struct Loud(pub u32);\nimpl Drop for Loud {\n    fn drop(&mut self) {}\n}\npub struct Holder {\n    pub l: Loud,\n}\npub fn hold(l: Loud) -> Holder {\n    Holder { l }\n}\npub fn checked(l: Loud, n: u32) -> Holder {\n    assert!(n > 0);\n    Holder { l }\n}\n');
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function hold(l) {\n  return { l };\n}");
+  expect(js).toContain("l$live = false;");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.hold([1]).l[0], lib.checked([2], 1).l[0]]).toEqual([1, 2]);
+});
+
 // The crates a program depends on, js, webapi and react, are stable Rust too
 // (ADR 0112): rust-js compiles them, `--rustc`, with its tool registered, so
 // they need no `register_tool`, nor any feature, nor `RUSTC_BOOTSTRAP`.

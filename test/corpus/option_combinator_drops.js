@@ -18,69 +18,33 @@ function even(d) {
 }
 
 function keep(value, test, dropT) {
-  let value$live = true;
+  let kept;
   try {
-    value$live = false;
-    let kept;
-    try {
-      const value$1 = $someValue(value);
-      if (value != null && test(value$1)) {
-        kept = value;
-      }
-    } finally {
-      if (value != null && kept === undefined) {
-        dropT?.($someValue(value));
-      }
+    const value$1 = $someValue(value);
+    if (value != null && test(value$1)) {
+      kept = value;
     }
-    return kept;
   } finally {
-    if (value$live) {
-      if (value != null) {
-        dropT?.($someValue(value));
-      }
+    if (value != null && kept === undefined) {
+      dropT?.($someValue(value));
     }
   }
+  return kept;
 }
 
 function found(value, fallback, dropT) {
-  let value$live = true;
-  let fallback$live = true;
-  try {
-    value$live = false;
-    fallback$live = false;
-    let mapped;
-    if (value != null) {
-      try {
-        const value$1 = $someValue(value);
-        const map = (t) => {
-          let t$live = true;
-          try {
-            t$live = false;
-            return t;
-          } finally {
-            if (t$live) {
-              dropT?.(t);
-            }
-          }
-        };
-        mapped = map(value$1);
-      } finally {
-        dropT?.(fallback);
-      }
-    } else {
-      mapped = fallback;
-    }
-    return mapped;
-  } finally {
-    if (fallback$live) {
+  let mapped;
+  if (value != null) {
+    try {
+      const value$1 = $someValue(value);
+      mapped = value$1;
+    } finally {
       dropT?.(fallback);
     }
-    if (value$live) {
-      if (value != null) {
-        dropT?.($someValue(value));
-      }
-    }
+  } else {
+    mapped = fallback;
   }
+  return mapped;
 }
 
 function parse(name, BNamed, dropB) {
@@ -163,15 +127,7 @@ function parse_flag(flag, BNamed, dropB) {
       }
     }
   }
-  let parsed$live = true;
-  try {
-    parsed$live = false;
-    return { TAG: "Ok", _0: parsed };
-  } finally {
-    if (parsed$live) {
-      dropB?.(parsed);
-    }
-  }
+  return { TAG: "Ok", _0: parsed };
 }
 
 function parse_pair(a, b, both, BNamed, dropB) {
@@ -253,18 +209,7 @@ function parse_pair(a, b, both, BNamed, dropB) {
       }
     }
   }
-  let pair$live = true;
-  try {
-    pair$live = false;
-    return { TAG: "Ok", _0: pair };
-  } finally {
-    if (pair$live) {
-      dropB?.(pair[0]);
-      if (pair[1] != null) {
-        dropB?.($someValue(pair[1]));
-      }
-    }
-  }
+  return { TAG: "Ok", _0: pair };
 }
 
 function main() {
@@ -595,9 +540,7 @@ function main() {
                         result$3$Ok$0$1$live = false;
                         const d$13 = result$3._0[0];
                         const e = result$3._0[1];
-                        let e$live = true;
                         try {
-                          e$live = false;
                           const map$1 = (e) => {
                             try {
                               return e[0];
@@ -607,11 +550,6 @@ function main() {
                           };
                           console.log(`pair ${d$13[0]} ${e != null ? map$1(e) : 0}`);
                         } finally {
-                          if (e$live) {
-                            if (e != null) {
-                              dDrop_drop(e);
-                            }
-                          }
                           dDrop_drop(d$13);
                         }
                       } else {

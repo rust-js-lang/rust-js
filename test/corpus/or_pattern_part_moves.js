@@ -11,15 +11,7 @@ const Mapped = {
         mapped$Single$0$live = false;
         mapped$Ambiguous$0$live = false;
         const t = mapped._0;
-        let t$live = true;
-        try {
-          t$live = false;
-          return $some(t);
-        } finally {
-          if (t$live) {
-            dropT?.(t);
-          }
-        }
+        return $some(t);
       } else {
         return undefined;
       }
@@ -45,15 +37,7 @@ const Mapped = {
         mapped$Single$0$live = false;
         mapped$Ambiguous$1$live = false;
         const t = mapped.TAG === "Single" ? mapped._0 : mapped._1;
-        let t$live = true;
-        try {
-          t$live = false;
-          return $some(t);
-        } finally {
-          if (t$live) {
-            dropT?.(t);
-          }
-        }
+        return $some(t);
       } else {
         return undefined;
       }

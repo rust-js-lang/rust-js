@@ -26,16 +26,8 @@ function radius_plus_one(s) {
 }
 
 function give(f, loud) {
-  let loud$live = true;
-  try {
-    loud$live = false;
-    f(loud);
-    console.log("given");
-  } finally {
-    if (loud$live) {
-      loudDrop_drop(loud);
-    }
-  }
+  f(loud);
+  console.log("given");
 }
 
 function main() {

@@ -3,227 +3,197 @@
 import { $byteLen, $checked, $debugStr, $index, $iterator } from "@rust-js/runtime";
 
 function first_long(items) {
-  let items$live = true;
+  const items$1 = items.values();
   try {
-    items$live = false;
-    const items$1 = items.values();
-    try {
-      for (const item of items$1) {
-        try {
-          if ($byteLen(item[0]) > 2) {
-            return item[0];
-          }
-          console.log(`short ${item[0]}`);
-        } finally {
-          noisyDrop_drop(item);
+    for (const item of items$1) {
+      try {
+        if ($byteLen(item[0]) > 2) {
+          return item[0];
         }
-      }
-    } finally {
-      for (const left of items$1) {
-        noisyDrop_drop(left);
+        console.log(`short ${item[0]}`);
+      } finally {
+        noisyDrop_drop(item);
       }
     }
-    return undefined;
   } finally {
-    if (items$live) {
-      for (const item$1 of items) {
-        noisyDrop_drop(item$1);
-      }
+    for (const left of items$1) {
+      noisyDrop_drop(left);
     }
   }
+  return undefined;
 }
 
 function main() {
   const v = [["a"], ["b"], ["c"], ["d"]];
-  let v$live = true;
+  const items = v.values();
   try {
-    v$live = false;
-    const items = v.values();
-    try {
-      for (const n of items) {
-        try {
-          if (n[0] === "b") {
-            continue;
-          }
-          if (n[0] === "c") {
-            break;
-          }
-          console.log(`got ${n[0]}`);
-        } finally {
-          noisyDrop_drop(n);
+    for (const n of items) {
+      try {
+        if (n[0] === "b") {
+          continue;
         }
-      }
-    } finally {
-      for (const left of items) {
-        noisyDrop_drop(left);
+        if (n[0] === "c") {
+          break;
+        }
+        console.log(`got ${n[0]}`);
+      } finally {
+        noisyDrop_drop(n);
       }
     }
-    console.log("after vec");
-    const items$1 = [["x"], ["y"]].values();
-    try {
-      for (const n$1 of items$1) {
-        try {
-          console.log(`array ${n$1[0]}`);
-        } finally {
-          noisyDrop_drop(n$1);
-        }
-      }
-    } finally {
-      for (const left$1 of items$1) {
-        noisyDrop_drop(left$1);
+  } finally {
+    for (const left of items) {
+      noisyDrop_drop(left);
+    }
+  }
+  console.log("after vec");
+  const items$1 = [["x"], ["y"]].values();
+  try {
+    for (const n$1 of items$1) {
+      try {
+        console.log(`array ${n$1[0]}`);
+      } finally {
+        noisyDrop_drop(n$1);
       }
     }
-    const option = ["some"];
-    const items$2 = (option == null ? [] : [option]).values();
-    try {
-      for (const n$2 of items$2) {
-        try {
-          console.log(`option ${n$2[0]}`);
-        } finally {
-          noisyDrop_drop(n$2);
-        }
-      }
-    } finally {
-      for (const left$2 of items$2) {
-        noisyDrop_drop(left$2);
+  } finally {
+    for (const left$1 of items$1) {
+      noisyDrop_drop(left$1);
+    }
+  }
+  const option = ["some"];
+  const items$2 = (option == null ? [] : [option]).values();
+  try {
+    for (const n$2 of items$2) {
+      try {
+        console.log(`option ${n$2[0]}`);
+      } finally {
+        noisyDrop_drop(n$2);
       }
     }
-    const none = undefined;
-    let none$live = true;
-    try {
-      none$live = false;
-      const items$3 = (none == null ? [] : [none]).values();
+  } finally {
+    for (const left$2 of items$2) {
+      noisyDrop_drop(left$2);
+    }
+  }
+  const none = undefined;
+  const items$3 = (none == null ? [] : [none]).values();
+  try {
+    for (const n$3 of items$3) {
       try {
-        for (const n$3 of items$3) {
-          try {
-            console.log(`never ${n$3[0]}`);
-          } finally {
-            noisyDrop_drop(n$3);
-          }
-        }
+        console.log(`never ${n$3[0]}`);
       } finally {
-        for (const left$3 of items$3) {
-          noisyDrop_drop(left$3);
-        }
+        noisyDrop_drop(n$3);
       }
-      const items$4 = [["unnamed"]].values();
+    }
+  } finally {
+    for (const left$3 of items$3) {
+      noisyDrop_drop(left$3);
+    }
+  }
+  const items$4 = [["unnamed"]].values();
+  try {
+    for (const item of items$4) {
       try {
-        for (const item of items$4) {
-          try {
-            console.log("body before the drop");
-          } finally {
-            noisyDrop_drop(item);
-          }
-        }
+        console.log("body before the drop");
       } finally {
-        for (const left$4 of items$4) {
-          noisyDrop_drop(left$4);
-        }
+        noisyDrop_drop(item);
       }
-      const items$5 = [
-        [1, ["t1"]],
-        [2, ["t2"]],
-      ].values();
+    }
+  } finally {
+    for (const left$4 of items$4) {
+      noisyDrop_drop(left$4);
+    }
+  }
+  const items$5 = [
+    [1, ["t1"]],
+    [2, ["t2"]],
+  ].values();
+  try {
+    for (const item$1 of items$5) {
+      const n$4 = item$1[1];
       try {
-        for (const item$1 of items$5) {
-          const n$4 = item$1[1];
-          try {
-            console.log(`pair ${item$1[0]} ${n$4[0]}`);
-          } finally {
-            noisyDrop_drop(n$4);
-          }
-        }
+        console.log(`pair ${item$1[0]} ${n$4[0]}`);
       } finally {
-        for (const left$5 of items$5) {
-          noisyDrop_drop(left$5[1]);
-        }
+        noisyDrop_drop(n$4);
       }
-      const items$6 = [["m1"], ["m2"]].values();
+    }
+  } finally {
+    for (const left$5 of items$5) {
+      noisyDrop_drop(left$5[1]);
+    }
+  }
+  const items$6 = [["m1"], ["m2"]].values();
+  try {
+    for (let n$5 of items$6) {
+      let n$5$live = true;
       try {
-        for (let n$5 of items$6) {
-          let n$5$live = true;
-          try {
-            if (n$5[0] === "m1") {
-              if (n$5$live) {
-                noisyDrop_drop(n$5);
-              }
-              n$5 = ["m1b"];
-              n$5$live = true;
-            } else {
-              n$5$live = false;
-              noisyDrop_drop(n$5);
-              console.log("moved");
-              continue;
-            }
-            console.log(`kept ${n$5[0]}`);
-          } finally {
-            if (n$5$live) {
-              noisyDrop_drop(n$5);
-            }
+        if (n$5[0] === "m1") {
+          if (n$5$live) {
+            noisyDrop_drop(n$5);
           }
+          n$5 = ["m1b"];
+          n$5$live = true;
+        } else {
+          n$5$live = false;
+          noisyDrop_drop(n$5);
+          console.log("moved");
+          continue;
         }
+        console.log(`kept ${n$5[0]}`);
       } finally {
-        for (const left$6 of items$6) {
-          noisyDrop_drop(left$6);
-        }
-      }
-      const items$7 = [["r1"], ["r2"]].values();
-      try {
-        outer: for (const row of items$7) {
-          try {
-            const items$8 = [["x1"], ["x2"]].values();
-            try {
-              for (const cell of items$8) {
-                try {
-                  if (cell[0] === "x2" && row[0] === "r1") {
-                    break outer;
-                  }
-                  console.log(`cell ${row[0]} ${cell[0]}`);
-                } finally {
-                  noisyDrop_drop(cell);
-                }
-              }
-            } finally {
-              for (const left$7 of items$8) {
-                noisyDrop_drop(left$7);
-              }
-            }
-          } finally {
-            noisyDrop_drop(row);
-          }
-        }
-      } finally {
-        for (const left$8 of items$7) {
-          noisyDrop_drop(left$8);
-        }
-      }
-      for (const n$6 of $iterator([3], countdownIterator_next)) {
-        try {
-          if (n$6[0] === "c1") {
-            break;
-          }
-          console.log(`count ${n$6[0]}`);
-        } finally {
-          noisyDrop_drop(n$6);
-        }
-      }
-      const arg = first_long([["s"], ["long"], ["rest"]]);
-      console.log(`${arg == null ? "None" : `Some(${$debugStr(arg)})`}`);
-      console.log("end");
-    } finally {
-      if (none$live) {
-        if (none != null) {
-          noisyDrop_drop(none);
+        if (n$5$live) {
+          noisyDrop_drop(n$5);
         }
       }
     }
   } finally {
-    if (v$live) {
-      for (const item$2 of v) {
-        noisyDrop_drop(item$2);
-      }
+    for (const left$6 of items$6) {
+      noisyDrop_drop(left$6);
     }
   }
+  const items$7 = [["r1"], ["r2"]].values();
+  try {
+    outer: for (const row of items$7) {
+      try {
+        const items$8 = [["x1"], ["x2"]].values();
+        try {
+          for (const cell of items$8) {
+            try {
+              if (cell[0] === "x2" && row[0] === "r1") {
+                break outer;
+              }
+              console.log(`cell ${row[0]} ${cell[0]}`);
+            } finally {
+              noisyDrop_drop(cell);
+            }
+          }
+        } finally {
+          for (const left$7 of items$8) {
+            noisyDrop_drop(left$7);
+          }
+        }
+      } finally {
+        noisyDrop_drop(row);
+      }
+    }
+  } finally {
+    for (const left$8 of items$7) {
+      noisyDrop_drop(left$8);
+    }
+  }
+  for (const n$6 of $iterator([3], countdownIterator_next)) {
+    try {
+      if (n$6[0] === "c1") {
+        break;
+      }
+      console.log(`count ${n$6[0]}`);
+    } finally {
+      noisyDrop_drop(n$6);
+    }
+  }
+  const arg = first_long([["s"], ["long"], ["rest"]]);
+  console.log(`${arg == null ? "None" : `Some(${$debugStr(arg)})`}`);
+  console.log("end");
 }
 
 export function entry() {

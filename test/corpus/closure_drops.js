@@ -24,15 +24,7 @@ function keep(_f, dropF) {
 }
 
 function run(f, dropF) {
-  let f$live = true;
-  try {
-    f$live = false;
-    f();
-  } finally {
-    if (f$live) {
-      dropF?.(f);
-    }
-  }
+  f();
 }
 
 function main() {
@@ -60,260 +52,138 @@ function main() {
       console.log(`${tick()}`);
       console.log("after");
       const b = ["b"];
-      let b$live = true;
       const c = ["c"];
-      let c$live = true;
-      try {
-        b$live = false;
-        c$live = false;
-        const once = () => {
-          let b$live = true;
-          try {
-            b$live = false;
-            const kept = b;
-            const held = c;
-            try {
-              console.log(`once ${kept[0]} ${held[0]}`);
-              return 2;
-            } finally {
-              noisyDrop_drop(kept);
-            }
-          } finally {
-            if (b$live) {
-              noisyDrop_drop(b);
-            }
-            noisyDrop_drop(c);
-          }
-        };
-        let once$live = true;
+      const once = () => {
         try {
-          once$live = false;
-          console.log(`${once()}`);
-          const d = ["d"];
-          let d$live = true;
-          const d2 = ["d2"];
-          let d2$live = true;
+          const kept = b;
+          const held = c;
           try {
-            d$live = false;
-            d2$live = false;
-            const _unused = () => {
-              let d$live = true;
-              try {
-                d$live = false;
-                noisyDrop_drop(d);
-                const _kept = d2;
-                return 3;
-              } finally {
-                if (d$live) {
-                  noisyDrop_drop(d);
-                }
-                noisyDrop_drop(d2);
-              }
-            };
-            try {
-              console.log("made");
-            } finally {
-              noisyDrop_drop(d);
-              noisyDrop_drop(d2);
-            }
+            console.log(`once ${kept[0]} ${held[0]}`);
+            return 2;
           } finally {
-            if (d2$live) {
-              noisyDrop_drop(d2);
-            }
-            if (d$live) {
-              noisyDrop_drop(d);
-            }
-          }
-          const p = ["p"];
-          let p$live = true;
-          const q = ["q"];
-          let q$live = true;
-          try {
-            p$live = false;
-            q$live = false;
-            run(
-              () => {
-                try {
-                  const [x, y] = [p, q];
-                  console.log(`both ${x[0]} ${y[0]}`);
-                } finally {
-                  noisyDrop_drop(p);
-                  noisyDrop_drop(q);
-                }
-              },
-              (value) => {
-                noisyDrop_drop(p);
-                noisyDrop_drop(q);
-              },
-            );
-            let r = ["r1"];
-            let r$live = true;
-            try {
-              r$live = false;
-              let r$1 = r;
-              r$live = false;
-              const take = () => {
-                let r$1$live = true;
-                try {
-                  r$1$live = false;
-                  noisyDrop_drop(r$1);
-                } finally {
-                  if (r$1$live) {
-                    noisyDrop_drop(r$1);
-                  }
-                }
-              };
-              let take$live = true;
-              try {
-                if (r$live) {
-                  noisyDrop_drop(r);
-                }
-                r = ["r2"];
-                r$live = true;
-                take$live = false;
-                take();
-                console.log(`${r[0]}`);
-                const e = ["e"];
-                let e$live = true;
-                try {
-                  e$live = false;
-                  console.log(
-                    `${call_once(
-                      () => {
-                        let e$live = true;
-                        try {
-                          e$live = false;
-                          const x = e;
-                          try {
-                            return $byteLen(x[0]);
-                          } finally {
-                            noisyDrop_drop(x);
-                          }
-                        } finally {
-                          if (e$live) {
-                            noisyDrop_drop(e);
-                          }
-                        }
-                      },
-                      (value$1) => {
-                        noisyDrop_drop(e);
-                      },
-                    )}`,
-                  );
-                  const f = ["f"];
-                  let f$live = true;
-                  try {
-                    f$live = false;
-                    keep(
-                      () => {
-                        let f$live = true;
-                        try {
-                          f$live = false;
-                          noisyDrop_drop(f);
-                          return 4;
-                        } finally {
-                          if (f$live) {
-                            noisyDrop_drop(f);
-                          }
-                        }
-                      },
-                      (value$2) => {
-                        noisyDrop_drop(f);
-                      },
-                    );
-                    const g = ["g"];
-                    let g$live = true;
-                    try {
-                      g$live = false;
-                      const read = () => {
-                        const held = g;
-                        return $byteLen(held[0]);
-                      };
-                      try {
-                        console.log(`${read()} ${read()}`);
-                      } finally {
-                        noisyDrop_drop(g);
-                      }
-                    } finally {
-                      if (g$live) {
-                        noisyDrop_drop(g);
-                      }
-                    }
-                    for (let i = 0; i < 2; i++) {
-                      const h = [i === 0 ? "h0" : "h1"];
-                      let h$live = true;
-                      try {
-                        h$live = false;
-                        const maybe = () => {
-                          let h$live = true;
-                          try {
-                            h$live = false;
-                            noisyDrop_drop(h);
-                          } finally {
-                            if (h$live) {
-                              noisyDrop_drop(h);
-                            }
-                          }
-                        };
-                        let maybe$live = true;
-                        try {
-                          if (i === 1) {
-                            maybe$live = false;
-                            maybe();
-                          }
-                          console.log(`loop ${i}`);
-                        } finally {
-                          if (maybe$live) {
-                            noisyDrop_drop(h);
-                          }
-                        }
-                      } finally {
-                        if (h$live) {
-                          noisyDrop_drop(h);
-                        }
-                      }
-                    }
-                    console.log("end");
-                  } finally {
-                    if (f$live) {
-                      noisyDrop_drop(f);
-                    }
-                  }
-                } finally {
-                  if (e$live) {
-                    noisyDrop_drop(e);
-                  }
-                }
-              } finally {
-                if (take$live) {
-                  noisyDrop_drop(r$1);
-                }
-              }
-            } finally {
-              if (r$live) {
-                noisyDrop_drop(r);
-              }
-            }
-          } finally {
-            if (q$live) {
-              noisyDrop_drop(q);
-            }
-            if (p$live) {
-              noisyDrop_drop(p);
-            }
+            noisyDrop_drop(kept);
           }
         } finally {
-          if (once$live) {
-            noisyDrop_drop(b);
-            noisyDrop_drop(c);
+          noisyDrop_drop(c);
+        }
+      };
+      console.log(`${once()}`);
+      const d = ["d"];
+      const d2 = ["d2"];
+      const _unused = () => {
+        try {
+          noisyDrop_drop(d);
+          const _kept = d2;
+          return 3;
+        } finally {
+          noisyDrop_drop(d2);
+        }
+      };
+      try {
+        console.log("made");
+      } finally {
+        noisyDrop_drop(d);
+        noisyDrop_drop(d2);
+      }
+      const p = ["p"];
+      const q = ["q"];
+      run(
+        () => {
+          try {
+            const [x, y] = [p, q];
+            console.log(`both ${x[0]} ${y[0]}`);
+          } finally {
+            noisyDrop_drop(p);
+            noisyDrop_drop(q);
+          }
+        },
+        (value) => {
+          noisyDrop_drop(p);
+          noisyDrop_drop(q);
+        },
+      );
+      let r = ["r1"];
+      let r$live = true;
+      try {
+        r$live = false;
+        let r$1 = r;
+        r$live = false;
+        const take = () => {
+          noisyDrop_drop(r$1);
+        };
+        let take$live = true;
+        try {
+          if (r$live) {
+            noisyDrop_drop(r);
+          }
+          r = ["r2"];
+          r$live = true;
+          take$live = false;
+          take();
+          console.log(`${r[0]}`);
+          const e = ["e"];
+          console.log(
+            `${call_once(
+              () => {
+                const x = e;
+                try {
+                  return $byteLen(x[0]);
+                } finally {
+                  noisyDrop_drop(x);
+                }
+              },
+              (value$1) => {
+                noisyDrop_drop(e);
+              },
+            )}`,
+          );
+          const f = ["f"];
+          keep(
+            () => {
+              noisyDrop_drop(f);
+              return 4;
+            },
+            (value$2) => {
+              noisyDrop_drop(f);
+            },
+          );
+          const g = ["g"];
+          const read = () => {
+            const held = g;
+            return $byteLen(held[0]);
+          };
+          try {
+            console.log(`${read()} ${read()}`);
+          } finally {
+            noisyDrop_drop(g);
+          }
+          for (let i = 0; i < 2; i++) {
+            const h = [i === 0 ? "h0" : "h1"];
+            const maybe = () => {
+              noisyDrop_drop(h);
+            };
+            let maybe$live = true;
+            try {
+              if (i === 1) {
+                maybe$live = false;
+                maybe();
+              }
+              console.log(`loop ${i}`);
+            } finally {
+              if (maybe$live) {
+                noisyDrop_drop(h);
+              }
+            }
+          }
+          console.log("end");
+        } finally {
+          if (take$live) {
+            noisyDrop_drop(r$1);
           }
         }
       } finally {
-        if (c$live) {
-          noisyDrop_drop(c);
-        }
-        if (b$live) {
-          noisyDrop_drop(b);
+        if (r$live) {
+          noisyDrop_drop(r);
         }
       }
     } finally {

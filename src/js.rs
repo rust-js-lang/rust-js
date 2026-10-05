@@ -67,6 +67,17 @@ impl Module {
     }
 }
 
+/// How many times `stmts` name the variable `name`, read or written.
+pub fn mentions_in(stmts: &[Stmt], name: &str) -> usize {
+    let mut count = 0;
+    visit_stmts(stmts, &mut |var| {
+        if var == name {
+            count += 1;
+        }
+    });
+    count
+}
+
 /// Each variable `stmts` read, in every statement and expression.
 fn visit_stmts<'a>(stmts: &'a [Stmt], read: &mut dyn FnMut(&'a str)) {
     for stmt in stmts {

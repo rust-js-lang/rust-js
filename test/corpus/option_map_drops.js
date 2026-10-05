@@ -11,17 +11,7 @@ function make(n) {
 }
 
 function wrapped(value, dropT) {
-  let value$live = true;
-  try {
-    value$live = false;
-    return value != null ? [$someValue(value)] : undefined;
-  } finally {
-    if (value$live) {
-      if (value != null) {
-        dropT?.($someValue(value));
-      }
-    }
-  }
+  return value != null ? [$someValue(value)] : undefined;
 }
 
 function keep_if(value, keep, dropT) {
@@ -51,17 +41,7 @@ function checked(n) {
 }
 
 function wrapped_result(value, dropT) {
-  let value$live = true;
-  try {
-    value$live = false;
-    return value.TAG === "Ok" ? { TAG: "Ok", _0: [value._0] } : value;
-  } finally {
-    if (value$live) {
-      if (value.TAG === "Ok") {
-        dropT?.(value._0);
-      }
-    }
-  }
+  return value.TAG === "Ok" ? { TAG: "Ok", _0: [value._0] } : value;
 }
 
 function discard_result(value, keep, dropT) {
