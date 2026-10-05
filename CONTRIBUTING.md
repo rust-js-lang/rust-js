@@ -44,6 +44,10 @@ When contributing code:
 - **Give each decision and state one owner.** Other pieces ask that owner
   through a clear API. Do not duplicate its rules or reach into its internal
   state.
+- **Keep changes local.** A change to one responsibility should not require
+  edits to unrelated pieces. When a change crosses several boundaries,
+  explain why each affected piece needs to change. Judge the responsibilities
+  affected, not just the number of files edited.
 - **Pass only what the work needs.** Prefer explicit inputs and narrow
   contexts over a large compiler context that exposes unrelated capabilities.
   Query code receives facts and query capabilities; emission code receives
@@ -55,11 +59,20 @@ When contributing code:
 - **Carry decisions forward as explicit data.** A later phase consumes an
   earlier phase's answer rather than reconstructing it from names, generated
   text, or implementation details.
+- **Separate transformations from external effects where practical.** Keep
+  compiler decisions testable from explicit inputs. Give filesystem access,
+  process execution, and user-facing output clear owners; orchestration
+  connects them to the transformations. Preserve rustc's established query
+  and diagnostic contracts rather than forcing every function to be pure.
 - **Keep boundaries small and meaningful.** Introduce an abstraction when it
   hides a real responsibility or protects an invariant. Avoid wrappers,
   forwarding APIs, and frameworks that merely move code around. Where
   forwarding is worth having, such as `shortcuts.rs`, keep it in the place
   the architecture names, and let it only shorten a call, never decide.
+- **Abstract demonstrated needs.** Share code when it represents the same
+  responsibility or rule. Similar-looking code with different reasons to
+  change may remain separate. Do not introduce frameworks for hypothetical
+  future requirements.
 - **Protect semantics across boundaries.** Make evaluation order, side
   effects, representations, and failure behavior explicit in contracts.
   Architectural improvements must preserve established behavior.
@@ -73,6 +86,8 @@ Before finishing a change, ask:
 > Can someone explain why this piece is correct using its own code and its
 > dependencies' contracts? Does it know, access, or decide anything that belongs
 > to another owner?
+>
+> If this requirement changes, how much unrelated code must change with it?
 
 If answering requires inspecting unrelated internals, improve the boundary or
 explain why that coupling is necessary.
@@ -97,11 +112,13 @@ library behavior from local source.
    mutation to its module's list in `scripts/mutations/`: a plausible bug
    that its tests must catch ([ADR 0093](docs/decisions/0093-mutations.md)).
    A mutation that survives means a missing test.
-5. **Record the decision.** A new semantic choice gets a design decision in
-   `docs/decisions/`, indexed in [docs/README.md](docs/README.md); a change
-   to an existing one amends it, saying what changed and why. A difference
-   from native Rust also goes in [the semantics](docs/semantics.md), with
-   its section's other differences and in the list at its end.
+5. **Record the decision.** A new semantic choice or important architectural
+   tradeoff gets a design decision in `docs/decisions/`, indexed in
+   [docs/README.md](docs/README.md). Explain the choice, its reasons, and the
+   alternatives and costs considered. A change to an existing decision amends
+   it, saying what changed and why. A difference from native Rust also goes in
+   [the semantics](docs/semantics.md), with its section's other differences
+   and in the list at its end.
 6. **Track progress.** Update [roadmap](ROADMAP.md) items when their
    acceptance criteria are met, with evidence, and
    [the crate corpus](docs/crate-corpus.md) when a change moves it.
