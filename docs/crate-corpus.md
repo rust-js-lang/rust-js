@@ -13,7 +13,7 @@ the JS's beside native Rust's: **runs** where they're the same. A derive's
 code is the probe's: strum's and thiserror's compiled before what they write
 in a crate that uses them did (ADR 0186).
 
-Measured 2026-10-05, after ADR 0186, Rust 1.98.1, each crate at the
+Measured 2026-10-05, after ADR 0187, Rust 1.98.1, each crate at the
 newest release its requirement allows.
 
 | Crate | Verdict | First refusals in its graph |
@@ -32,7 +32,7 @@ newest release its requirement allows.
 | url 2.5 | blocked | litemap: a loop over items with a destructor; writeable: `u8::checked_ilog10` called; smallvec's; percent-encoding: `transmute`; yoke: a raw pointer |
 | regex 1.11 | blocked | memchr: a raw pointer |
 | rust_decimal 1.38 | blocked | arrayvec: a user `io::Write`; serde_core: `size_of` of a type parameter |
-| chrono 0.4 (`alloc`) | refused | a `fmt::Error` |
+| chrono 0.4 (`alloc`) | refused | `TryFrom` of a slice into an array |
 | time 0.3 (`alloc`) | blocked | powerfmt: a `MaybeUninit`; deranged: a `const` block |
 
 3 of 16 compile, and each runs as natively. What stops the most, by the crates it stops:
@@ -41,11 +41,14 @@ newest release its requirement allows.
    `transmute`, `handle_alloc_error`: 9.
 2. **A user `Future`:** 2.
 3. **One each:** a `const` block, a loop over items with a destructor, a user
-   `io::Write`, `size_of` of a type parameter, `u8::checked_ilog10`, a
-   `fmt::Error`.
+   `io::Write`, `size_of` of a type parameter, `u8::checked_ilog10`,
+   `TryFrom` of a slice into an array.
 
 ## Fixed by measuring
 
+- **A writer's `Err(fmt::Error)`,** chrono's, at four places: thrown, with
+  what was written before it, each consumer taking it as std's does (ADR
+  0187).
 - **What another crate's derive writes,** strum's `IntoEnumIterator` and
   thiserror's `From`, was skipped as std's derives' is; `Display` of a
   `fmt::Arguments`; std's `Error` of a parse error as a dictionary: strum

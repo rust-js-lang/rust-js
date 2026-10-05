@@ -2,6 +2,7 @@
 
 mod debug;
 mod drops;
+mod fmt_failures;
 mod mutation;
 mod naming;
 mod type_facts;
@@ -140,6 +141,8 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// Each generic function's type parameters it's given a size, an
     /// alignment or a name of (ADR 0145), by their indices.
     pub type_facts: HashMap<DefId, Vec<(u32, TypeFact)>>,
+    /// The functions that may return `Err(fmt::Error)` (ADR 0187).
+    pub failing: HashSet<DefId>,
     pub generic_consts: HashSet<DefId>,
     /// Whether the crate shows anything with `{:#?}`, or asks a `Formatter`
     /// if it's alternate: then its `Debug` functions take whether (ADR 0137).
@@ -303,6 +306,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let changed_vecs = changed_vecs(tcx, all_bodies);
     let drop_params = drop_params(tcx, all_bodies, &fns, &foreign, library);
     let type_facts = type_fact_params(tcx, all_bodies, &fns, library);
+    let failing = fmt_failures::failing_fns(tcx, all_bodies, &foreign);
     let generic_consts = generic_consts(tcx, all_bodies);
     let pretty_debug = uses_pretty_debug(tcx, all_bodies);
     let format_options = uses_format_options(tcx, all_bodies);
@@ -328,6 +332,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         changed_vecs,
         drop_params,
         type_facts,
+        failing,
         generic_consts,
         pretty_debug,
         format_options,

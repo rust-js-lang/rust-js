@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "                (None, Some(_)) => Some(error.clone()),\n                (None, Some(dictionary)) => Some(Expr::object(vec![",
     tests: ["test/corpus.test.ts", "-t", "dyn_display"],
   },
+  {
+    name: "question-fmt-error-dropped",
+    breaks: "`?` of a `write!` that fails drops the `fmt::Error`",
+    file: "src/lower/results.rs",
+    find: "        if self.is_fmt_result(ty) && self.krate.any_failing {",
+    replace: "        if false && self.is_fmt_result(ty) && self.krate.any_failing {",
+    tests: ["test/corpus.test.ts","-t","fmt_error_write"],
+  },
 ];

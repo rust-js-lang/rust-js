@@ -25,6 +25,10 @@ pub struct Item {
     pub member: Option<String>,
     /// The type parameters it's given a `dropT` for (ADR 0098).
     pub drops: Vec<u32>,
+    /// Whether it may return `Err(fmt::Error)` (ADR 0187). A library a
+    /// compiler wrote before had none, as it refused them.
+    #[serde(default)]
+    pub fails: bool,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -52,6 +56,7 @@ pub struct Imported {
     pub export: String,
     pub member: Option<String>,
     pub drops: Vec<u32>,
+    pub fails: bool,
 }
 
 /// What one library gives its consumers.
@@ -131,6 +136,7 @@ impl Dependencies {
                     export: item.export,
                     member: item.member,
                     drops: item.drops,
+                    fails: item.fails,
                 };
                 if exports.items.insert(item.key, imported).is_some() {
                     return Err("duplicate dependency export".into());

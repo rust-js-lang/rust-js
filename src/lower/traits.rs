@@ -1386,10 +1386,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             values.insert(0, this);
             values.extend(self.own_evidence(id, generic_args, span)?);
-            return Ok(Some(Expr::call(
-                Expr::member(dictionary, bindings::fn_name(self.tcx, id)),
-                values,
-            )));
+            let called = Expr::call(Expr::member(dictionary, bindings::fn_name(self.tcx, id)), values);
+            return Ok(Some(self.fmt_result_value(id, generic_args, called)));
         }
         if let Some(instance) = self.resolve_self_instance(id, generic_args)?
             && self.is_rust_fn(instance.def_id())
@@ -1397,7 +1395,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let mut values = values;
             values.extend(self.evidence_args(instance.def_id(), instance.args, span)?);
-            return Ok(Some(Expr::call(self.fn_ref(instance.def_id()), values)));
+            let called = Expr::call(self.fn_ref(instance.def_id()), values);
+            return Ok(Some(self.fmt_result_value(instance.def_id(), instance.args, called)));
         }
         // What rust-js writes itself, in place: `c.clone()` of a struct is a
         // copy of it, not a dictionary's `clone` (ADR 0052).
@@ -2264,6 +2263,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .filter(|i| self.is_rust_fn(i.def_id()))
             .ok_or_else(|| self.unsupported(span, "this implementation"))?;
         values.extend(self.evidence_args(instance.def_id(), instance.args, span)?);
-        Ok(Expr::call(self.fn_ref(instance.def_id()), values))
+        let called = Expr::call(self.fn_ref(instance.def_id()), values);
+        Ok(self.fmt_result_value(instance.def_id(), instance.args, called))
     }
 }

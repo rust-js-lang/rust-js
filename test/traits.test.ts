@@ -197,8 +197,6 @@ for (const [name, source, diagnostic] of [
   ["clone_from", `#[derive(Clone)] pub struct P { pub v: Vec<u32> } pub fn f(a: &mut P, b: &P) { a.clone_from(b); }`, "calling \`std::clone::Clone::clone_from\`"],
   // A `&dyn Debug` is the string it shows (ADR 0060): one made plain is shown plain (ADR 0137).
   ["{:#?} of a kept &dyn Debug", `pub fn f(x: &[u8]) -> String { let d: &dyn std::fmt::Debug = &x; format!("{:#?}", d) }`, "\`{:#?}\` of a \`&dyn Debug\` made elsewhere"],
-  // A `fmt` returns its string (ADR 0054): a `fmt::Error` has nowhere to go.
-  ["fmt::Error", `use std::fmt; pub struct P; impl fmt::Display for P { fn fmt(&self, _: &mut fmt::Formatter) -> fmt::Result { Err(fmt::Error) } }`, "a \`fmt::Error\`"],
   ["fmt::Result methods", `use std::fmt; pub struct P; impl fmt::Display for P { fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { f.write_str("a").map_err(|e| e) } }`, "methods of a \`fmt::Result\`"],
   // An `Iterator` is a JS iterator (ADR 0055), which can't go backwards: no `DoubleEndedIterator`.
   ["generic From", `pub fn f<T: From<u32>>() -> T { T::from(1) }`, "calling \`std::convert::From::from\`"],

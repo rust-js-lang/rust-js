@@ -5,7 +5,7 @@ use super::{FnInfo, module_path};
 use crate::library::{Dependencies, Imported, Item, Library, VERSION};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LOCAL_CRATE};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 /// What a library and its consumers both call an item: rustc's `DefPathHash`
 /// of it, the same in every crate that sees it.
@@ -26,6 +26,7 @@ pub(super) fn exports(
     tcx: TyCtxt<'_>,
     functions: &HashMap<DefId, FnInfo>,
     drop_params: &HashMap<DefId, Vec<u32>>,
+    failing: &HashSet<DefId>,
     trait_impls: &[DefId],
     dependencies: &Dependencies,
 ) -> Library {
@@ -40,6 +41,7 @@ pub(super) fn exports(
             export: info.owner.clone().unwrap_or_else(|| info.name.clone()),
             member: info.owner.as_ref().map(|_| info.name.clone()),
             drops: drop_params.get(&id).cloned().unwrap_or_default(),
+            fails: failing.contains(&id),
         })
         .collect();
     items.sort_by(|a, b| a.rust_path.cmp(&b.rust_path).then_with(|| a.key.cmp(&b.key)));
@@ -126,6 +128,16 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
                 self.tcx.crate_name(id.krate)
             )
         })
+    }
+
+    /// May `id`, a library's, return `Err(fmt::Error)` (ADR 0187)?
+    pub(super) fn fails(&self, id: DefId) -> bool {
+        self.item(id).is_some_and(|item| item.fails)
+    }
+
+    /// May any of the libraries' items?
+    pub(super) fn any_fails(&self) -> bool {
+        self.all().any(|item| item.fails)
     }
 
     /// Is `id` a library's trait impl, one its consumers call?

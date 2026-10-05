@@ -187,6 +187,7 @@ helpers! {
     StringWriter,
     Powf,
     Trim,
+    FmtError,
     SliceEnd,
     ByteLen,
     StrSlice,
@@ -322,6 +323,7 @@ impl Helper {
     fn dependencies(self) -> &'static [Helper] {
         match self {
             Helper::DebugF64 => &[Helper::DisplayF64],
+            Helper::FmtError => &[Helper::Print],
             Helper::DisplayF32 => &[Helper::F32Digits],
             Helper::LowerExp => &[Helper::F32Digits],
             Helper::Take => &[Helper::Assign],
@@ -752,6 +754,7 @@ impl Helper {
             Helper::StringWriter => include_str!("runtime/string_writer.js"),
             Helper::Powf => include_str!("runtime/powf.js"),
             Helper::Trim => include_str!("runtime/trim.js"),
+            Helper::FmtError => include_str!("runtime/fmt_error.js"),
             // `s.len()`: its UTF-8 bytes, as Rust counts them, where JS counts
             // UTF-16 units (ADR 0138).
             Helper::ByteLen => include_str!("runtime/byte_len.js"),

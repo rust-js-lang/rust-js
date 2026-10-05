@@ -1,6 +1,8 @@
 # 0054. `Display`: a `fmt` returns the string it writes
 
 Status: Accepted. Extends [0034](0034-strings-and-chars.md) and [0052](0052-std-trait-impls.md).
+(Amended: `Err(fmt::Error)` is thrown, with what the writer wrote, and
+each consumer takes it as std's does, ADR 0187.)
 
 ## Context
 

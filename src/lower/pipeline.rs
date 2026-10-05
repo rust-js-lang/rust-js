@@ -58,6 +58,7 @@ pub fn lower_crate<'tcx>(
         changed_vecs,
         drop_params,
         type_facts,
+        failing,
         generic_consts,
         pretty_debug,
         format_options,
@@ -140,6 +141,8 @@ pub fn lower_crate<'tcx>(
         changed_vecs: &changed_vecs,
         drop_params: &drop_params,
         type_facts: &type_facts,
+        failing: &failing,
+        any_failing: !failing.is_empty() || foreign.any_fails(),
         closures: &closures,
         bodies: &function_bodies,
         fns: &fns,
@@ -449,7 +452,8 @@ pub fn lower_crate<'tcx>(
         })
         .collect();
     tcx.dcx().has_errors().is_none().then_some(Unlinked {
-        library: export_library.then(|| super::library::exports(tcx, &fns, &drop_params, &trait_impls, dependencies)),
+        library: export_library
+            .then(|| super::library::exports(tcx, &fns, &drop_params, &failing, &trait_impls, dependencies)),
         sources: sources.output,
         modules: lowered,
         tests,

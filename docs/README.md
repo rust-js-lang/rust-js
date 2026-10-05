@@ -276,6 +276,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0184 `ok_or_else` keeps its value, a branch's operand is dropped in its branch, and `by_ref()` of the crate's iterator](decisions/0184-bitflags-gaps.md)
 - [0185 A library's trait's defaults are its functions over `Self`](decisions/0185-library-trait-defaults.md)
 - [0186 What another crate's derive writes is the crate's own code](decisions/0186-other-crates-derives.md)
+- [0187 A writer's `Err(fmt::Error)` is thrown, with what it wrote, and each consumer takes it as std's does](decisions/0187-fmt-error.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

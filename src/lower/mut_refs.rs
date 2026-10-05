@@ -553,6 +553,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call(Expr::member(dictionary, bindings::fn_name(self.tcx, def_id)), values)
             }
         };
+        let call = self.fmt_result_value(def_id, generic_args, call);
         let output = self
             .tcx
             .fn_sig(def_id)

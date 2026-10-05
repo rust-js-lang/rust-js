@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "            if let Some(library) = self.dependencies.libraries.get(name.as_str()).filter(|_| false)\n",
     tests: ["test/crates.test.ts", "-t", "another build"],
   },
+  {
+    name: "library-fails-unlisted",
+    breaks: "a library's writer that may fail is listed as one that never does",
+    file: "src/lower/library.rs",
+    find: "            fails: failing.contains(&id),",
+    replace: "            fails: false && failing.contains(&id),",
+    tests: ["test/crates.test.ts","-t","may fail is one its consumer"],
+  },
 ];

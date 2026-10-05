@@ -127,6 +127,9 @@ pub(super) enum Std {
     /// `len()` of an iterator of the crate's whose `ExactSizeIterator` keeps
     /// std's `len`: its `size_hint()`, checked (ADR 0164).
     ExactLen,
+    /// `format!(..)`'s `format`: its `format_args!`, a string already (ADR
+    /// 0034), or std's panic where what it formats fails (ADR 0187).
+    Format,
     /// `it.by_ref()`: the iterator itself, which knows where it is.
     IterByRef,
     /// `NonZero::new(n)`: `None` of `0`, else `n` (ADR 0177).
@@ -576,9 +579,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 _ => {}
             }
         }
-        if (krate == sym::alloc && name.as_str() == "format" && std_path(tcx, def_id).ends_with("fmt::format"))
-            || (krate == sym::core && name.as_str() == "must_use")
-        {
+        if krate == sym::alloc && name.as_str() == "format" && std_path(tcx, def_id).ends_with("fmt::format") {
+            return Some(Some(Std::Format));
+        }
+        if krate == sym::core && name.as_str() == "must_use" {
             return Some(Some(Std::Same));
         }
         if tcx.is_lang_item(def_id, LangItem::Panic) {
@@ -1843,6 +1847,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let result = self.tcx.fn_sig(fmt).skip_binder().skip_binder().output();
         self.tcx.erase_and_anonymize_regions(ty) == self.tcx.erase_and_anonymize_regions(result)
     }
+    /// Is `ty` a `fmt::Error`, a `fmt::Result`'s `Err` (ADR 0187)?
+    pub(super) fn is_fmt_error(&self, ty: Ty<'tcx>) -> bool {
+        let fmt = self.tcx.associated_item_def_ids(self.display_trait())[0];
+        let result = self.tcx.fn_sig(fmt).skip_binder().skip_binder().output();
+        matches!(result.kind(), ty::Adt(_, args) if self.tcx.erase_and_anonymize_regions(ty) == self.tcx.erase_and_anonymize_regions(args.type_at(1)))
+    }
     pub(super) fn formatter_param(&self, def_id: DefId) -> Option<usize> {
         let sig = self.tcx.fn_sig(def_id).skip_binder().skip_binder();
         if !self.is_fmt_result(sig.output()) {
@@ -2793,6 +2803,55 @@ pub(crate) fn type_fact(tcx: TyCtxt<'_>, def_id: DefId) -> Option<TypeFact> {
     }
 }
 
+/// Is `ty` a `fmt::Result` (ADR 0054)?
+pub(crate) fn is_fmt_result_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    let Some(display) = tcx.get_diagnostic_item(Symbol::intern("Display")) else {
+        return false;
+    };
+    let fmt = tcx.associated_item_def_ids(display)[0];
+    let result = tcx.fn_sig(fmt).skip_binder().skip_binder().output();
+    tcx.erase_and_anonymize_regions(ty) == tcx.erase_and_anonymize_regions(result)
+}
+
+/// Is `variant` a `Result`'s `Err`?
+pub(crate) fn is_err_variant(tcx: TyCtxt<'_>, variant: DefId) -> bool {
+    tcx.is_lang_item(variant, LangItem::ResultErr)
+}
+
+/// The fmt trait whose `fmt` of its type argument `def_id` calls: a
+/// placeholder's `Argument::new_display` its `Display`, `new_lower_hex` its
+/// `LowerHex`, and `to_string` its `Display` (ADR 0187).
+pub(crate) fn fmt_trait_called(tcx: TyCtxt<'_>, def_id: DefId) -> Option<DefId> {
+    let named = |name: &str| match name {
+        "Display" | "Debug" => tcx.get_diagnostic_item(Symbol::intern(name)),
+        _ => tcx
+            .all_traits_including_private()
+            .find(|&id| is_other_fmt_trait(tcx, id) && tcx.item_name(id).as_str() == name),
+    };
+    if tcx.is_diagnostic_item(Symbol::intern("to_string_method"), def_id) {
+        return named("Display");
+    }
+    let owner = tcx.inherent_impl_of_assoc(def_id)?;
+    let ty::Adt(adt, _) = tcx.type_of(owner).instantiate_identity().skip_normalization().kind() else {
+        return None;
+    };
+    if !tcx.is_lang_item(adt.did(), LangItem::FormatArgument) {
+        return None;
+    }
+    named(match tcx.item_name(def_id).as_str() {
+        "new_display" => "Display",
+        "new_debug" => "Debug",
+        "new_lower_hex" => "LowerHex",
+        "new_upper_hex" => "UpperHex",
+        "new_binary" => "Binary",
+        "new_octal" => "Octal",
+        "new_lower_exp" => "LowerExp",
+        "new_upper_exp" => "UpperExp",
+        "new_pointer" => "Pointer",
+        _ => return None,
+    })
+}
+
 /// What a writer asks its `Formatter` (ADRs 0137, 0143).
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub(super) enum FormatterQuery {
@@ -2805,11 +2864,14 @@ pub(super) enum FormatterQuery {
     SignAwareZeroPad,
 }
 
-/// What a `fmt::Result`'s method gives, `Ok` being all one is (ADR 0148).
+/// What a `fmt::Result`'s method gives (ADR 0148), of an `Ok` and, where
+/// it may be one, of an `Err` (ADR 0187).
 #[derive(Clone, Copy)]
 pub(super) enum FmtResultAnswer {
-    /// `unwrap()`, `expect(..)`: `()`.
-    Unit,
+    /// `unwrap()`: `()`, or a panic.
+    Unwrap,
+    /// `expect(..)`: `()`, or a panic with its message.
+    Expect,
     /// `is_ok()`, `is_err()`.
     Is(bool),
 }
@@ -2817,7 +2879,8 @@ pub(super) enum FmtResultAnswer {
 /// The answer of the `fmt::Result` method `def_id`, if it's one of these.
 pub(super) fn fmt_result_answer(tcx: TyCtxt<'_>, def_id: DefId) -> Option<FmtResultAnswer> {
     Some(match tcx.item_name(def_id).as_str() {
-        "unwrap" | "expect" => FmtResultAnswer::Unit,
+        "unwrap" => FmtResultAnswer::Unwrap,
+        "expect" => FmtResultAnswer::Expect,
         "is_ok" => FmtResultAnswer::Is(true),
         "is_err" => FmtResultAnswer::Is(false),
         _ => return None,

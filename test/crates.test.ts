@@ -169,6 +169,22 @@ test("a library's generic trait method drops a consumer's value where Rust does"
   expect(printed(join(dir, "app.js"))).toBe("dropped\n1\ndropped\n1\nafter\n");
 }, 300_000);
 
+// A library's writer that fails, as chrono's formatting does (ADR 0187): its
+// manifest says so, and a consumer's `write!` of it gives the `fmt::Error`
+// back, with what was written before it.
+test("a library's writer that may fail is one its consumer catches", () => {
+  const dir = fixture("library-fmt-error");
+  const lib = join(dir, "dep");
+  mkdirSync(lib, { recursive: true });
+  writeFileSync(join(dir, "dep.rs"), "use std::fmt::{self, Write};\n\npub struct Hours(pub u32);\n\nimpl fmt::Display for Hours {\n    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {\n        if self.0 > 23 {\n            return Err(fmt::Error);\n        }\n        write!(f, \"{:02}h\", self.0)\n    }\n}\n\npub fn check(h: &Hours) -> fmt::Result {\n    let mut s = String::new();\n    write!(s, \"[{h}]\")\n}\n");
+  writeFileSync(join(dir, "app.rs"), "use std::fmt::Write;\n\npub fn main() {\n    let mut s = String::new();\n    let r = write!(s, \"{} {}\", dep::Hours(5), dep::Hours(50));\n    println!(\"{} {s:?}\", r.is_err());\n    println!(\"{}\", dep::Hours(7));\n    println!(\"{:?} {:?}\", dep::check(&dep::Hours(8)), dep::check(&dep::Hours(80)));\n}\n");
+  run([compiler, join(dir, "dep.rs"), "-o", join(lib, "lib.js"), "--library", "--manifest", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "dep", `--emit=metadata=${join(lib, "libdep.rmeta")}`]);
+  run([compiler, join(dir, "app.rs"), "-o", join(dir, "app.js"), "--dependency", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "app", "--crate-type=lib", "--extern", `dep=${join(lib, "libdep.rmeta")}`]);
+  expect(printed(join(dir, "app.js"))).toBe("true \"05h \"\n07h\nOk(()) Err(Error)\n");
+}, 300_000);
+
 // A library's trait's default is the library's (ADR 0185): a consumer's impl
 // that doesn't write it calls the library's, which calls the impl's methods,
 // and its overrides, through its dictionary.

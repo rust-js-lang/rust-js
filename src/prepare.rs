@@ -154,6 +154,12 @@ impl Context {
                     self.reserve_stmt(s);
                 }
             }
+            StmtKind::TryCatch(body, error, handler) => {
+                self.names.insert(error.clone());
+                for s in body.iter().chain(handler) {
+                    self.reserve_stmt(s);
+                }
+            }
             StmtKind::ForOf {
                 pattern,
                 iterable,
@@ -259,7 +265,7 @@ impl Context {
                     self.block(body);
                 }
                 StmtKind::Labeled(_, body) => self.block(body),
-                StmtKind::Try(body, finally) => {
+                StmtKind::Try(body, finally) | StmtKind::TryCatch(body, _, finally) => {
                     self.block(body);
                     self.block(finally);
                 }

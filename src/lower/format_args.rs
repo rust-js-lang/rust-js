@@ -3,7 +3,7 @@
 //! literal, in Rust's order (ADRs 0034, 0058, 0066).
 
 use super::calls::Call;
-use super::display::Pretty;
+use super::display::{Pretty, append_written};
 use super::format_spec::Spec;
 use super::{FnCx, R, Std};
 use crate::js;
@@ -383,6 +383,48 @@ pub(super) fn decode_template(template: &[u8]) -> Option<Vec<Piece>> {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// `format!`, `to_string()` and `print!` of what may fail (ADR 0187): what
+    /// each writes, in a `try`. A `fmt::Error` is std's panic, each its own,
+    /// and `print!` writes what was written before it, as std's does.
+    pub(super) fn failing_consumer(&mut self, known: Std, call: Call<'_, 'tcx>, out: &mut Vec<Stmt>) -> R<Expr> {
+        self.runtime.insert(Helper::FmtError);
+        let js_span = self.js_span(call.span);
+        let mut body = Vec::new();
+        let mut values = self.operands(call.args, &mut body)?.into_iter();
+        if let Std::Print { error } = known {
+            self.runtime.insert(Helper::Print);
+            let (text, caught) = (self.fresh("text"), self.fresh("error"));
+            let written = values.next().expect("`print!` has its text");
+            append_written(&Expr::var(&text), written, true, js_span, &mut body);
+            let failed = Expr::call(
+                Expr::var("$fmtPrintFailed"),
+                vec![Expr::var(&caught), Expr::var(&text), Expr::bool(error)],
+            );
+            out.push(StmtKind::Let(text.clone(), Some(Expr::str(""))).at(js_span));
+            out.push(StmtKind::TryCatch(body, caught, vec![StmtKind::Expr(failed).at(js_span)]).at(js_span));
+            return Ok(Expr::call(
+                Expr::var(if error { "$eprint" } else { "$print" }),
+                vec![Expr::var(&text)],
+            ));
+        }
+        let (value, message) = match known {
+            Std::ToString => (
+                self.string_call(known, call, &mut values)?
+                    .expect("`to_string` is a string call"),
+                "a Display implementation returned an error unexpectedly: Error",
+            ),
+            _ => (
+                values.next().expect("`format!` has its text"),
+                "a formatting trait implementation returned an error when the underlying stream did not: Error",
+            ),
+        };
+        body.push(StmtKind::Return(Some(value)).at(js_span));
+        Ok(Expr::call(
+            Expr::var("$fmtOrPanic"),
+            vec![Expr::arrow(Vec::new(), body), Expr::str(message)],
+        ))
+    }
+
     /// What `print!`, `panic!` and `format_args!` hand their values to (ADRs 0026, 0034): `None` if `known` is another.
     pub(super) fn print_call(
         &mut self,

@@ -1,6 +1,8 @@
 # 0148. `write!` into a `String` adds to it, and a `fmt::Result` is always `Ok`
 
-Status: Accepted. Extends [0054](0054-display.md).
+Status: Accepted. Extends [0054](0054-display.md). (Amended: a `fmt::Result`
+that may be an `Err` is `undefined` or the `fmt::Error`, and its methods
+ask which, ADR 0187.)
 
 ## Context
 

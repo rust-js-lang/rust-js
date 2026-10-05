@@ -3,6 +3,7 @@
 use super::bindings::{JsForm, is_binding, is_method, js_form};
 use super::combinators::Comb;
 use super::combinators::StepOp;
+use super::display::append_written;
 use super::drops::Drops;
 use super::numbers::NumOp;
 use super::recognition::{
@@ -213,7 +214,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let mut args = values;
             args.extend(self.evidence_args(def_id, generic_args, span)?);
-            return Ok(Some(Expr::call(callee.or_at(fun_span), args)));
+            let called = Expr::call(callee.or_at(fun_span), args);
+            return Ok(Some(self.fmt_result_value(def_id, generic_args, called)));
         }
         if is_binding(self.tcx, def_id) {
             // An `#[eii]` function is declared in an `extern` block too, but
@@ -305,21 +307,60 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(Some(call));
             }
         }
-        // A `fmt::Result` is nothing in JS (ADR 0054), and always `Ok`: its
-        // `unwrap()` is `()`, after what made it ran (ADR 0148).
+        // An `Ok` `fmt::Result` is nothing in JS (ADR 0054): its `unwrap()` is
+        // `()`, after what made it ran (ADR 0148). One that may be an `Err`
+        // is `undefined` or the `fmt::Error` (ADR 0187).
         if args
             .first()
             .is_some_and(|&a| self.is_fmt_result(self.thir[a].ty.peel_refs()))
         {
-            let answer = match fmt_result_answer(self.tcx, def_id) {
-                Some(FmtResultAnswer::Unit) => Expr::undefined(),
-                Some(FmtResultAnswer::Is(ok)) => Expr::bool(ok),
-                None => return Err(self.unsupported(span, "methods of a `fmt::Result`")),
+            let Some(answer) = fmt_result_answer(self.tcx, def_id) else {
+                return Err(self.unsupported(span, "methods of a `fmt::Result`"));
             };
-            for &arg in args {
-                self.stmt(arg, &Dest::Discard, out)?;
+            let constant = match answer {
+                FmtResultAnswer::Unwrap | FmtResultAnswer::Expect => Expr::undefined(),
+                FmtResultAnswer::Is(ok) => Expr::bool(ok),
+            };
+            if !self.krate.any_failing {
+                for &arg in args {
+                    self.stmt(arg, &Dest::Discard, out)?;
+                }
+                return Ok(Some(constant));
             }
-            return Ok(Some(answer));
+            let result = self.expr(args[0], out)?;
+            let message = match args.get(1) {
+                Some(&message) => Some(self.expr(message, out)?),
+                None => None,
+            };
+            // Only what `$fmtTry` caught may be an `Err`, or a variable it's in.
+            let may_be_err = match &result.kind {
+                js::ExprKind::Call(callee, _) => matches!(&callee.kind, js::ExprKind::Var(name) if name == "$fmtTry"),
+                js::ExprKind::Var(_) => true,
+                _ => false,
+            };
+            if !may_be_err {
+                for value in std::iter::once(result).chain(message) {
+                    if value.has_effects() {
+                        out.push(StmtKind::Expr(value).at(self.js_span(span)));
+                    }
+                }
+                return Ok(Some(constant));
+            }
+            let result = if result.reads_same() {
+                result
+            } else {
+                self.spill("result", result, out)
+            };
+            let ok = Expr::bin(Op::Eq, result.clone(), Expr::undefined());
+            return Ok(Some(match answer {
+                FmtResultAnswer::Is(true) => ok,
+                FmtResultAnswer::Is(false) => Expr::bin(Op::Ne, result, Expr::undefined()),
+                FmtResultAnswer::Unwrap | FmtResultAnswer::Expect => {
+                    let message = message.unwrap_or_else(|| Expr::str("called `Result::unwrap()` on an `Err` value"));
+                    self.runtime.insert(Helper::FmtError);
+                    Expr::call(Expr::var("$fmtExpect"), vec![result, message])
+                }
+            }));
         }
         // `f.alternate()`, `f.width()` and the like: what this writer's
         // `Formatter` was given (ADRs 0137, 0143).
@@ -621,21 +662,45 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let ExprKind::Borrow { arg: place, .. } = self.thir[self.strip(args[0])].kind else {
                 return Err(self.unsupported(span, "`push_str` on this"));
             };
-            let value = self.expr(args[1], out)?;
+            // A `write!` of what may fail: piece by piece, so what came
+            // before is written, and its `fmt::Result` the error, if any
+            // (ADR 0187).
+            let fails = self.formats_may_fail(args[1]);
+            let mut written = Vec::new();
+            let into = if fails { &mut written } else { &mut *out };
+            let value = self.expr(args[1], into)?;
             let js_span = self.js_span(span);
             // A place is written where it is: `t` can't change the `s` it's
             // pushed to, which Rust has borrowed.
             if self.slot_place(place).is_none() && self.map_slot(place).is_none() && self.place(place).is_some() {
                 let target = self.assignee(place)?;
-                out.push(StmtKind::Assign(target.clone(), Expr::bin(Op::Add, target, value)).at(js_span));
-                return Ok(Expr::undefined());
+                append_written(&target, value, fails, js_span, into);
+                // What a writer wrote before it failed is the string's, as
+                // Rust's writes it there: `t += $fmtPartial(error)`.
+                if fails {
+                    let caught = self.fresh("error");
+                    let partial = Expr::call(Expr::var("$fmtPartial"), vec![Expr::var(&caught)]);
+                    let handler = vec![
+                        StmtKind::Assign(target.clone(), Expr::bin(Op::Add, target, partial)).at(js_span),
+                        StmtKind::Throw(Expr::var(&caught)).at(js_span),
+                    ];
+                    let body = std::mem::take(&mut written);
+                    written.push(StmtKind::TryCatch(body, caught, handler).at(js_span));
+                }
+            } else {
+                // Else where `+=` would write: a map's slot, or what a call's cell
+                // points at, `pick(&mut a, &mut b).push_str(t)` (ADR 0099).
+                if fails {
+                    return Err(self.unsupported(span, "a `write!` here of what may fail"));
+                }
+                let (target, value) = self.prepare_assignment_target(place, true, value, span, into)?;
+                let appended = Expr::bin(Op::Add, target.read(), value);
+                target.write(appended, js_span, into);
             }
-            // Else where `+=` would write: a map's slot, or what a call's cell
-            // points at, `pick(&mut a, &mut b).push_str(t)` (ADR 0099).
-            let (target, value) = self.prepare_assignment_target(place, true, value, span, out)?;
-            let appended = Expr::bin(Op::Add, target.read(), value);
-            target.write(appended, js_span, out);
-            return Ok(Expr::undefined());
+            return Ok(match fails {
+                true => self.fmt_try(written),
+                false => Expr::undefined(),
+            });
         }
         if let Std::WrappingOp(op, assign) = known {
             return self.wrapping_op(op, assign, args, span, out);
@@ -707,6 +772,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ) {
             return self.swap_or_replace(known, args, discarded, span, out);
         }
+        // `format!`, `to_string()` and `print!` of what may fail: what they
+        // write, in a `try`, a `fmt::Error` std's panic (ADR 0187).
+        let fails = match known {
+            Std::Format | Std::Print { .. } => self.formats_may_fail(args[0]),
+            Std::ToString => self.fmt_may_fail(self.display_trait(), generic_args.type_at(0)),
+            _ => false,
+        };
+        if fails {
+            return self.failing_consumer(known, call, out);
+        }
         let mut values = self.operands(args, out)?.into_iter();
         if let Some(js) = self.vec_call(known, call, &mut values, boxed, out)? {
             return Ok(js);
@@ -739,7 +814,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // An `Rc` is the JS reference itself: the garbage collector does
             // its counting, so a clone is the same object.
-            Std::Same => arg(),
+            Std::Same | Std::Format => arg(),
             Std::Pointee => self.through_refs(arg(), self.thir[args[0]].ty).0,
             Std::Last
             | Std::Cloned

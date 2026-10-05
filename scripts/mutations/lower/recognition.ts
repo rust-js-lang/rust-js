@@ -263,8 +263,8 @@ export const mutations: Mutation[] = [
     name: "fmt-result-unwrap-refused",
     breaks: "`write!(..).unwrap()` of a `fmt::Result` is an error",
     file: "src/lower/recognition.rs",
-    find: '        "unwrap" | "expect" => FmtResultAnswer::Unit,',
-    replace: '        "unwrap_" => FmtResultAnswer::Unit,',
+    find: '        "unwrap" => FmtResultAnswer::Unwrap,',
+    replace: '        "unwrap_" => FmtResultAnswer::Unwrap,',
     tests: ["test/corpus.test.ts", "-t", "write_to_string"],
   },
   {

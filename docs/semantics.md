@@ -166,8 +166,12 @@ string, `c"..."`.
   options,** and can ask its `Formatter` for them, `f.width()`, `f.pad(s)`
   ([0143](decisions/0143-formatter-options.md)).
 - **`write!` and `writeln!` into a `String` are `s += ..`,** and the
-  `fmt::Result` they give is always `Ok`: its `unwrap()` is `()`
+  `fmt::Result` they give is `Ok` but where what they write fails
   ([0148](decisions/0148-write-to-string.md)).
+- **A writer's `Err(fmt::Error)`,** as chrono's formatting returns, goes up
+  through each `?` with what was written before it: a `write!` to a
+  `String` gives it back, and `to_string()`, `format!` and `println!` panic
+  as std's do ([0187](decisions/0187-fmt-error.md)).
 - **Arguments are taken in Rust's order:** `println!("{} {:?}", v.len(),
   v.pop())` reads the length before the pop
   ([0034](decisions/0034-strings-and-chars.md)).

@@ -20,6 +20,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let span = self.thir[question].span;
         let ty = self.thir[tried].ty;
+        // A `fmt::Error` is thrown, and `?` passes it on (ADR 0187).
+        if self.is_fmt_result(ty) && self.krate.any_failing {
+            let value = self.expr(tried, out)?;
+            self.fmt_check(value, self.js_span(span), out);
+            return Ok(Expr::undefined());
+        }
         // A write never fails (ADR 0054, ADR 0132).
         if self.is_fmt_result(ty) || self.recognition().is_io_unit_result(ty) {
             self.stmt(tried, &Dest::Discard, out)?;

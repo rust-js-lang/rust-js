@@ -3,9 +3,11 @@
 //! value (ADR 0125).
 
 use super::bindings;
+use super::recognition::{StdItem, is_std_def};
 use super::representation::ordering_value;
-use super::{FnCx, R, Shape, assembled};
+use super::{Dest, FnCx, R, Shape, assembled};
 use crate::js::{self, Expr, Prop, Stmt, StmtKind};
+use crate::runtime::Helper;
 use rustc_hir::def::CtorKind;
 use rustc_middle::thir::{self as thir, AdtExprBase, ExprId};
 use rustc_middle::ty::{self, Ty};
@@ -17,12 +19,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A struct literal: `{ x: 1, y: 2 }`, or `[1, 2]` for a tuple struct.
     pub(super) fn adt(&mut self, adt: &thir::AdtExpr<'tcx>, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         let variant = adt.adt_def.variant(adt.variant_index);
-        // A `fmt::Result` is always `Ok`, and nothing (ADR 0054), and so is
-        // an `io::Result<()>` (ADR 0132).
+        // A `fmt::Result`'s `Ok` is nothing (ADR 0054), and so is an
+        // `io::Result<()>`'s (ADR 0132). A `fmt::Error` is thrown, for the
+        // writers it passes out of and what they wrote (ADR 0187).
         if self.is_fmt_result(ty) || self.recognition().is_io_unit_result(ty) {
             return match variant.name.as_str() {
                 "Ok" => Ok(Expr::undefined()),
-                _ if self.is_fmt_result(ty) => Err(self.unsupported(span, "a `fmt::Error`")),
+                // A writer of the crate's is given each `write!`'s text whole (ADR
+                // 0166), where Rust gives it a piece at a time: one that fails
+                // would fail where Rust's doesn't.
+                _ if self.is_fmt_result(ty)
+                    && self
+                        .tcx
+                        .trait_impl_of_assoc(self.item)
+                        .and_then(|imp| self.tcx.impl_opt_trait_id(imp))
+                        .is_some_and(|tr| is_std_def(self.tcx, tr, StdItem::FmtWrite)) =>
+                {
+                    Err(self.unsupported(span, "a `fmt::Error` of a writer of the crate's"))
+                }
+                _ if self.is_fmt_result(ty) => {
+                    for field in &adt.fields {
+                        self.stmt(field.expr, &Dest::Discard, out)?;
+                    }
+                    self.runtime.insert(Helper::FmtError);
+                    Ok(Expr::call(Expr::var("$fmtError"), Vec::new()))
+                }
                 _ => Err(self.unsupported(span, "an `io::Error`")),
             };
         }

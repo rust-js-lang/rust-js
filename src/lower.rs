@@ -301,6 +301,10 @@ struct CrateFacts<'a, 'tcx> {
     drop_params: &'a HashMap<DefId, Vec<u32>>,
     /// Each generic function's type parameters it's given a fact of (ADR 0145).
     type_facts: &'a HashMap<DefId, Vec<(u32, TypeFact)>>,
+    /// The functions that may return `Err(fmt::Error)`, and whether any of
+    /// the crate's or its libraries' may, as a generic `T`'s then may (ADR 0187).
+    failing: &'a HashSet<DefId>,
+    any_failing: bool,
     closures: &'a HashMap<LocalDefId, &'a Body<'tcx>>,
     bodies: &'a HashMap<DefId, &'a Body<'tcx>>,
     fns: &'a HashMap<DefId, FnInfo>,

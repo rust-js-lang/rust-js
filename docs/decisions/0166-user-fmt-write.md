@@ -1,6 +1,8 @@
 # 0166. A writer of the crate's is given its text a `write!` at a time
 
-Status: Accepted. Amends [0148](0148-write-to-string.md).
+Status: Accepted. Amends [0148](0148-write-to-string.md). (Amended: a
+`fmt::Error` is thrown now, ADR 0187, but this writer's is still an error,
+given its text whole where Rust fails at a piece.)
 
 ## Context
 

@@ -247,7 +247,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let body = match known {
             Std::Trim { start, end } => self.trimmed(x, start, end),
             Std::Method(method) => Expr::call(Expr::member(x, method), vec![]),
-            Std::Same => x,
+            Std::Same | Std::Format => x,
             Std::IsSome => Expr::bin(Op::LooseNe, x, Expr::null()),
             Std::IsNone => Expr::bin(Op::LooseEq, x, Expr::null()),
             Std::ToBig => Expr::call(Expr::var("BigInt"), vec![x]),

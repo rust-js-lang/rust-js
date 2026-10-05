@@ -24,11 +24,11 @@ use std::path::PathBuf;
 use oxc_allocator::{Allocator, ArenaBox, ArenaVec};
 use oxc_ast::ast::{
     Argument, ArrayExpressionElement, ArrowFunctionBody, AssignmentTarget, BindingIdentifier, BindingPattern,
-    BindingProperty, BlockStatement, CallExpression, ChainElement, Declaration, Expression, ForStatementInit,
-    ForStatementLeft, FormalParameter, FormalParameterKind, FormalParameters, FunctionBody, FunctionType,
-    IdentifierName, JSXAttributeItem, JSXAttributeName, JSXAttributeValue, JSXChild, JSXClosingElement,
-    JSXClosingFragment, JSXElementName, JSXExpression, JSXIdentifier, JSXMemberExpressionObject, JSXOpeningElement,
-    JSXOpeningFragment, LabelIdentifier, ObjectPropertyKind, Program, PropertyKey, PropertyKind,
+    BindingProperty, BlockStatement, CallExpression, CatchClause, CatchParameter, ChainElement, Declaration,
+    Expression, ForStatementInit, ForStatementLeft, FormalParameter, FormalParameterKind, FormalParameters,
+    FunctionBody, FunctionType, IdentifierName, JSXAttributeItem, JSXAttributeName, JSXAttributeValue, JSXChild,
+    JSXClosingElement, JSXClosingFragment, JSXElementName, JSXExpression, JSXIdentifier, JSXMemberExpressionObject,
+    JSXOpeningElement, JSXOpeningFragment, LabelIdentifier, ObjectPropertyKind, Program, PropertyKey, PropertyKind,
     SimpleAssignmentTarget, Statement, StaticMemberExpression, TemplateElement, TemplateElementValue,
     VariableDeclarationKind, VariableDeclarator,
 };
@@ -525,6 +525,27 @@ impl<'a> Cx<'a> {
                 Some(BlockStatement::boxed(SPAN, self.stmts(finally), b)),
                 b,
             ),
+            StmtKind::TryCatch(body, error, handler) => {
+                let param = CatchParameter::new(
+                    SPAN,
+                    BindingPattern::new_binding_identifier(SPAN, self.name(error), b),
+                    None,
+                    b,
+                );
+                let clause = CatchClause::boxed(
+                    SPAN,
+                    Some(param),
+                    BlockStatement::boxed(SPAN, self.stmts(handler), b),
+                    b,
+                );
+                Statement::new_try_statement(
+                    sp,
+                    BlockStatement::boxed(SPAN, self.stmts(body), b),
+                    Some(clause),
+                    None,
+                    b,
+                )
+            }
             StmtKind::While { label, cond, body } => {
                 let w = Statement::new_while_statement(sp, self.expr(cond), self.block(body), b);
                 self.labeled(sp, label.as_deref(), w)

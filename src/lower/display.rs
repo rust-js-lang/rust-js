@@ -1,15 +1,17 @@
 //! `Display` (ADR 0054): a function that writes to a `Formatter` returns the
 //! string it writes. Its formatter is a local string, each write is `f += s`,
-//! and `fmt::Result`, which is always `Ok`, is nothing at all.
+//! and an `Ok` `fmt::Result` is nothing at all; an `Err`, which chrono's
+//! formatting returns, is thrown, with what was written before it (ADR 0187).
 
 use super::format_spec::{Options, Radix};
 use super::recognition::{ChannelError, FormatterQuery, Std};
-use super::recognition::{StdItem, WriteCall, opt_std_item, std_item, trait_method};
+use super::recognition::{StdItem, WriteCall, fmt_trait_called, opt_std_item, std_item, trait_method};
 use super::representation::{self, Num};
 use super::{Dest, FnCx, R};
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use crate::runtime::Helper;
 use rustc_hir::LangItem;
+use rustc_middle::thir::visit::{self, Visitor};
 use rustc_middle::thir::{self, ExprId, ExprKind, LocalVarId, PatKind};
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 use rustc_span::Span;
@@ -85,6 +87,111 @@ impl Pretty {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// May calling `def_id` of `args` return `Err(fmt::Error)` (ADR 0187):
+    /// the crate's or a library's function that may, or a dictionary's,
+    /// which may be any, where any of the crate's or its libraries' may.
+    pub(super) fn call_may_fail(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+        if !self.krate.any_failing {
+            return false;
+        }
+        match ty::Instance::try_resolve(self.tcx, self.typing_env, def_id, args) {
+            Ok(Some(instance)) if matches!(instance.def, ty::InstanceKind::Virtual(..)) => true,
+            Ok(Some(instance)) => {
+                self.krate.failing.contains(&instance.def_id()) || self.krate.foreign.fails(instance.def_id())
+            }
+            Ok(None) => args.has_param(),
+            Err(_) => false,
+        }
+    }
+
+    /// May formatting a `ty` by `fmt_trait` fail: its impl's `fmt`, or that of
+    /// a type it holds, as std's `Vec<T>` calls `T`'s (ADR 0187)?
+    pub(super) fn fmt_may_fail(&self, fmt_trait: DefId, ty: Ty<'tcx>) -> bool {
+        if !self.krate.any_failing {
+            return false;
+        }
+        let fmt = self.tcx.associated_item_def_ids(fmt_trait)[0];
+        ty.walk()
+            .filter_map(|part| part.as_type())
+            .any(|part| self.call_may_fail(fmt, self.tcx.mk_args(&[part.into()])))
+    }
+
+    /// May what `e` formats fail: a `format_args!`'s arguments, or a
+    /// `to_string()`'s value, by their traits (ADR 0187)?
+    pub(super) fn formats_may_fail(&self, e: ExprId) -> bool {
+        if !self.krate.any_failing {
+            return false;
+        }
+        let mut found = Called {
+            thir: self.thir,
+            calls: Vec::new(),
+        };
+        found.visit_expr(&self.thir[e]);
+        found.calls.into_iter().any(|(id, args)| {
+            fmt_trait_called(self.tcx, id)
+                .is_some_and(|fmt_trait| args.types().next().is_some_and(|ty| self.fmt_may_fail(fmt_trait, ty)))
+        })
+    }
+
+    /// A call's value, of a function that returns a `fmt::Result` and may
+    /// fail, the crate's or a library's: `$fmtTry(() => show(s, h))`, the
+    /// `fmt::Error` it threw caught (ADR 0187). A writer's write, given its
+    /// `Formatter`, is its writer's to pass on.
+    pub(super) fn fmt_result_value(&mut self, def_id: DefId, args: ty::GenericArgsRef<'tcx>, value: Expr) -> Expr {
+        let output = self
+            .tcx
+            .fn_sig(def_id)
+            .instantiate(self.tcx, args)
+            .skip_normalization()
+            .skip_binder()
+            .output();
+        if !self.is_fmt_result(output) || self.formatter_param(def_id).is_some() || !self.call_may_fail(def_id, args) {
+            return value;
+        }
+        self.fmt_try(vec![StmtKind::Return(Some(value)).at(js::Span::NONE)])
+    }
+
+    /// `?` of a `fmt::Result`: its error, on, thrown (ADR 0187). What
+    /// `$fmtTry` would catch runs as it is; another may be the error.
+    pub(super) fn fmt_check(&mut self, value: Expr, js_span: js::Span, out: &mut Vec<Stmt>) {
+        if matches!(value.kind, js::ExprKind::Undefined) {
+            return;
+        }
+        let tried = matches!(&value.kind, js::ExprKind::Call(callee, args)
+            if matches!(&callee.kind, js::ExprKind::Var(name) if name == "$fmtTry")
+                && matches!(args.first().map(|a| &a.kind), Some(js::ExprKind::Arrow(params, _)) if params.is_empty()));
+        if !tried {
+            self.runtime.insert(Helper::FmtError);
+            out.push(StmtKind::Expr(Expr::call(Expr::var("$fmtCheck"), vec![value])).at(js_span));
+            return;
+        }
+        let js::ExprKind::Call(_, mut args) = value.kind else {
+            unreachable!("checked")
+        };
+        let js::ExprKind::Arrow(_, body) = args.remove(0).kind else {
+            unreachable!("checked")
+        };
+        for stmt in body {
+            match stmt.kind {
+                StmtKind::Return(Some(returned)) => out.push(StmtKind::Expr(returned).at(stmt.span)),
+                kind => out.push(kind.at(stmt.span)),
+            }
+        }
+    }
+
+    /// `$fmtTry(() => { .. })`: what `body` writes, as a `fmt::Result`,
+    /// `undefined` or the `fmt::Error` it failed with (ADR 0187).
+    pub(super) fn fmt_try(&mut self, body: Vec<Stmt>) -> Expr {
+        self.runtime.insert(Helper::FmtError);
+        Expr::call(Expr::var("$fmtTry"), vec![Expr::arrow(Vec::new(), body)])
+    }
+
+    /// Is the function being lowered one that may return `Err(fmt::Error)`
+    /// (ADR 0187)?
+    pub(super) fn writer_fails(&self) -> bool {
+        self.krate.failing.contains(&self.item)
+    }
+
     /// In a function that writes to a `Formatter` (ADR 0054): the JS string
     /// it's written, which a `return` gives back.
     pub(super) fn written(&self) -> Option<String> {
@@ -231,6 +338,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.writing.writer = previous;
         self.writing.given = previous_given;
         lowered?;
+        // One that may fail gives what it wrote before, in front of what
+        // what it called did, to the writer or the consumer it fails to
+        // (ADR 0187): `let f = ""; try { .. } catch (error) { .. } return f;`.
+        if self.writer_fails() {
+            self.runtime.insert(Helper::FmtError);
+            let error = self.fresh("error");
+            let written = Expr::call(Expr::var("$fmtWritten"), vec![Expr::var(&error), Expr::var(&name)]);
+            out.push(StmtKind::Let(name.clone(), Some(Expr::str(""))).at(js::Span::NONE));
+            out.push(
+                StmtKind::TryCatch(body_out, error, vec![StmtKind::Throw(written).at(js::Span::NONE)])
+                    .at(js::Span::NONE),
+            );
+            out.push(StmtKind::Return(Some(Expr::var(&name))).at(js::Span::NONE));
+            return Ok(js_params);
+        }
         // Each way through writes once: each is a `return` of what it writes.
         if let Some(returns) = as_returns(&body_out, &name) {
             out.extend(returns);
@@ -420,7 +542,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let target = Expr::var(&name);
         let js_span = self.js_span(span);
-        out.push(StmtKind::Assign(target.clone(), Expr::bin(Op::Add, target, written)).at(js_span));
+        let pieces = others.iter().any(|&other| self.formats_may_fail(other));
+        append_written(&target, written, pieces, js_span, out);
         Ok(Some(Expr::undefined()))
     }
 
@@ -896,6 +1019,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// value is shown as the value is.
     pub(super) fn debug_string_with(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, pretty: &Pretty) -> R<Expr> {
         let (value, ty) = self.through_refs(value, ty);
+        // A `fmt::Result`: `undefined`, `Ok`, or the `fmt::Error` it caught
+        // (ADR 0187), and a `fmt::Error`, which holds nothing.
+        if self.is_fmt_result(ty) {
+            let ok = Expr::str("Ok(())");
+            return Ok(match value.kind {
+                js::ExprKind::Undefined => ok,
+                _ => Expr::cond(Expr::bin(Op::Eq, value, Expr::undefined()), ok, Expr::str("Err(Error)")),
+            });
+        }
+        if self.recognition().is_fmt_error(ty) {
+            return Ok(Expr::str("Error"));
+        }
         // A part of a `{:?}` given its options (ADR 0058): a leaf applies them.
         if self.writing.options.is_some() && self.is_debug_leaf(ty) {
             let options = self.writing.options.take().expect("checked");
@@ -1465,5 +1600,51 @@ fn shown_number(value: Expr) -> Expr {
     match value.as_int() {
         Some(n) => Expr::str(n.to_string()),
         None => Expr::call(Expr::var("String"), vec![value]),
+    }
+}
+
+/// The functions an expression calls, each with its arguments: not those its
+/// calls' arguments call, as a `write!` inside a `format_args!`, another
+/// consumer, which takes its own `fmt::Error` (ADR 0187).
+struct Called<'a, 'tcx> {
+    thir: &'a thir::Thir<'tcx>,
+    calls: Vec<(DefId, ty::GenericArgsRef<'tcx>)>,
+}
+
+impl<'a, 'tcx> Visitor<'a, 'tcx> for Called<'a, 'tcx> {
+    fn thir(&self) -> &'a thir::Thir<'tcx> {
+        self.thir
+    }
+
+    fn visit_expr(&mut self, expr: &'a thir::Expr<'tcx>) {
+        match expr.kind {
+            ExprKind::Call { fun, .. } => {
+                if let &ty::FnDef(id, args) = self.thir[fun].ty.kind() {
+                    self.calls.push((id, args));
+                }
+            }
+            _ => visit::walk_expr(self, expr),
+        }
+    }
+}
+
+/// `target += written`: piece by piece, `pieces`, where what it writes may
+/// fail, so what came before it is written (ADR 0187).
+pub(super) fn append_written(target: &Expr, written: Expr, pieces: bool, js_span: js::Span, out: &mut Vec<Stmt>) {
+    let parts = if pieces && let js::ExprKind::Template(texts, values) = &written.kind {
+        let mut parts = Vec::new();
+        let mut values = values.iter().cloned();
+        for text in texts {
+            if !text.is_empty() {
+                parts.push(Expr::str(text));
+            }
+            parts.extend(values.next());
+        }
+        parts
+    } else {
+        vec![written]
+    };
+    for part in parts {
+        out.push(StmtKind::Assign(target.clone(), Expr::bin(Op::Add, target.clone(), part)).at(js_span));
     }
 }

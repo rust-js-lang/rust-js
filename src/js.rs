@@ -101,7 +101,7 @@ fn visit_stmts<'a>(stmts: &'a [Stmt], read: &mut dyn FnMut(&'a str)) {
                 visit_stmts(body, read);
             }
             StmtKind::Labeled(_, body) => visit_stmts(body, read),
-            StmtKind::Try(body, finally) => {
+            StmtKind::Try(body, finally) | StmtKind::TryCatch(body, _, finally) => {
                 visit_stmts(body, read);
                 visit_stmts(finally, read);
             }
@@ -237,6 +237,9 @@ pub enum StmtKind {
     /// `try { .. } finally { .. }`: a scope, and the drops that end it,
     /// however it's left (ADR 0098).
     Try(Vec<Stmt>, Vec<Stmt>),
+    /// `try { .. } catch (error) { .. }`: a writer's `fmt::Error`, given
+    /// what it wrote, or taken as a `fmt::Result` (ADR 0187).
+    TryCatch(Vec<Stmt>, String, Vec<Stmt>),
     Break(Option<String>),
     Continue(Option<String>),
     Return(Option<Expr>),

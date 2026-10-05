@@ -463,7 +463,7 @@ tooling while preserving rust-js's own readable-output goals.
   generic `fmt::Write` writers, clones of std's array iterators,
   `ok_or_else` drops, a branch's temporaries, the crate's `by_ref()`,
   a library's trait's defaults, a number's `LowerHex` given a `Formatter`,
-  another crate's derives,
+  another crate's derives, a writer's `fmt::Error`,
   paths as text, generic `{:x}` and `{:p}`, and two crashes.
 - [ ] **M8.3 — Share behavior as well as data.** Demonstrate the same model,
   validation, serialization, and domain-logic crates on a native Rust server
