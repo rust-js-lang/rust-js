@@ -4,7 +4,112 @@ How rust-js is put together: what each part does, what it may not do, and
 where a change goes. The [design decisions](README.md) say why each part
 works the way it does; this page says where it is. The boundaries below
 are executable: [architecture.test.ts](../test/architecture.test.ts)
-checks each one.
+checks each one. What isn't built yet is at [the end](#not-yet), and the
+[roadmap](../ROADMAP.md) tracks it.
+
+## Policies
+
+### One pinned Rust toolchain per release
+
+Each rust-js release supports one exact Rust toolchain. The current pin is
+the stable release `1.98.1`; [rust-toolchain.toml](../rust-toolchain.toml) is the source of
+truth. This follows [ADR 0003](decisions/0003-pin-nightly-toolchain.md) and
+[ADR 0109](decisions/0109-stable-release.md).
+
+The compiler uses rustc's internal APIs and THIR, so a toolchain upgrade is a
+deliberate compatibility change. Update the pin, adapt frontend and lowering
+assumptions, rebuild matching dependencies and WASI artifacts, and run the
+conformance, snapshot, and native/browser parity suites together. Compiler
+metadata and caches must not be reused across incompatible toolchains.
+
+Older application source may compile under the pinned frontend within our
+supported language subset. That does not promise the behavior or diagnostics
+of an older rustc. Rust editions and compiler versions are separate concerns.
+Users needing an earlier toolchain use a matching earlier rust-js distribution.
+
+Simultaneous support for multiple rustc versions is outside this architecture's
+current scope. Do not add version-specific frontend adapters or another typed
+Rust representation solely for hypothetical multi-version support.
+
+### Modern JavaScript output; downstream compatibility
+
+rust-js emits readable modern, standardized JavaScript, ES modules, and JSX
+where requested by the program. It does not offer separate ES6, ES8, or
+browser-specific code-generation modes. There is no internal JavaScript
+compatibility or downlevel-transformation phase.
+
+The application configures its JavaScript toolchain to transform syntax, process
+JSX, bundle modules, and provide the runtime polyfills its deployment targets
+need. Syntax transformation alone does not supply missing runtime APIs. Both
+generated application code and emitted runtime helpers must pass through this
+pipeline, with source maps preserved back to the Rust source.
+
+| Responsibility | Owner |
+| --- | --- |
+| Rust evaluation order, copying, overflow, representations, and errors | rust-js |
+| Readable modern JS/JSX, ES modules, semantic helpers, and source maps | rust-js |
+| Browser targets, syntax lowering, JSX transformation, and module conversion | Application's JavaScript toolchain |
+| Compatibility polyfills, bundling, minification, and code splitting | Application's JavaScript toolchain |
+
+Modern output is a documented release contract, not permission to emit arbitrary
+experimental syntax. Each release must declare its syntax baseline, required
+runtime capabilities, and supported environments for direct execution without
+transformation. New requirements need compatibility tests and release notes.
+
+Not every capability can be supplied by ordinary downlevel transforms or
+polyfills. For example, helpers currently use native BigInt arithmetic. The
+supported deployment configuration must preserve those semantics or exclude
+environments that cannot provide them. Choosing an old syntax target alone is
+not proof of runtime compatibility.
+
+Integration tests exercise representative downstream production builds and their
+source maps. The playground must either run on an environment satisfying the
+direct-execution contract or apply the same downstream transformations before
+running generated programs.
+
+## Hosts
+
+Native and browser builds use the same compiler implementation. Hosts supply
+inputs and consume results; they do not implement Rust semantics. The browser
+uses a worker running the WASI compiler, with a supported virtual filesystem
+and dependency set.
+
+```mermaid
+flowchart TB
+    CLI["Command-line host"]
+    Vite["Vite host: watch, overlay, refresh"]
+    Browser["Playground host: editor and worker lifecycle"]
+    Build["Build adapter: resolve inputs, prepare dependencies, cache"]
+    Native["Native compiler process"]
+    Worker["Browser worker and WASI host"]
+    Core["Shared compiler implementation"]
+    Result["Diagnostics or complete artifact set and manifest"]
+    NativeOutput["Native publication: stage, replace, rollback"]
+    BrowserOutput["Browser publication: expose successful virtual output"]
+    App["Application JS, JSX, source maps and runtime modules"]
+
+    CLI --> Build
+    Vite --> Build
+    Browser --> Worker
+    Build --> Native
+    Native --> Core
+    Worker --> Core
+    Core --> Result
+    Result --> NativeOutput
+    Result --> BrowserOutput
+    NativeOutput --> App
+    BrowserOutput --> App
+```
+
+The native build adapter resolves the supported Cargo dependency graph, features,
+bindings, compiler version, and toolchain. It produces explicit compilation
+inputs. The browser host supplies equivalent inputs for its supported scope;
+arbitrary Cargo build scripts and procedural macros are not implicitly promised
+in a browser.
+
+Vite owns rebuild scheduling and development feedback. It does not know where
+binding source files live or how to build React or Serde metadata. Installed
+compiler and binding packages can be used without a source checkout.
 
 ## The pipeline
 
@@ -42,6 +147,26 @@ Three owned modules start printing, and are named as its exceptions:
 a formatter's options and `hooks.rs` formats what a hook returns
 (`format.rs`). Another exception is a change to this table and its test.
 
+**Who owns each phase.** A failure at any phase produces diagnostics and
+prevents publication; rustc remains the authority on Rust validity. THIR
+is captured before rustc's analysis consumes it, but capturing a body
+doesn't authorize emitting it: lowering starts only once the analysis gate
+passes.
+
+| Owner | Owns | Does not own |
+| --- | --- | --- |
+| Driver | Compiler invocation, rustc callbacks, phase sequencing, diagnostic gates | Feature lowering or Vite behavior |
+| Syntax expansion | JSX-to-Rust syntax translation and source provenance | Bypassing Rust checks or deciding JS representations |
+| Analysis | Definition indexes, validated bindings, trait and representation facts, item names and reserved imports | Mutable function state, emission, filesystem writes |
+| Lowering pipeline | Work scheduling, demand-driven codecs, Rust-specific retention policy and module assembly | Import alias resolution, runtime dependency closure, publication |
+| Lowering | Rust-to-JS semantics, control flow, places, copying, evaluation order | Formatting, output paths, installation |
+| Linker | Symbol resolution, collision-free aliases, runtime dependency closure, completed linked output | Rust-specific retention policy, re-lowering bodies or changing expression semantics |
+| Runtime catalog | Helper implementations, exported names, transitive dependencies | Rust syntax recognition or host setup |
+| Preparation | Readability transformations that preserve evaluation regions | New language semantics or predicted printer indentation |
+| Printer adapter | oxc conversion, formatting, source-map generation | Rust type decisions, choosing runtime imports, or artifact publication |
+| Artifact planner | Filenames, collisions, manifest, each module's runtime imports, complete generated bytes | Rust semantics or editor lifecycle |
+| Publisher | Output ownership, unchanged-file preservation, stale cleanup, failure recovery | Compiler transformations |
+
 ## Inside the front end
 
 The front end turns one function's THIR into JS. `FnCx` holds what that
@@ -52,6 +177,28 @@ iterator chains are beyond their types (`iterators::Chains`), which locals
 are stepped through (`iterators::Stepping`), what the `&mut`s to values JS
 can't change in place are (`mut_refs::MutRefs`, in `Locals`), what walks of
 types found (`TypeWalks`), and what's dropped where (`drops::DropState`).
+
+State follows three lifetimes:
+
+- **Compilation:** immutable definition and representation facts, shared by all
+  functions. Any analysis cache has an explicit owner and input key.
+- **Function:** local bindings, allocated names, scopes, and accumulated symbol
+  and helper dependencies. Nested function contexts inherit only what they need
+  and return their dependencies explicitly.
+- **Expression invocation:** evaluated operands, saved struct fields, branch
+  statements, and destination information. These are local values or explicit
+  arguments, never a single shared scratch slot on the function context.
+
+An expression result makes its prerequisite statements and resulting value
+explicit. The common sequencing engine evaluates operands in Rust order and
+captures earlier values when later prerequisites could change them. Branch,
+loop, closure, and short-circuit prerequisites remain inside their own execution
+regions. A statement destination remains explicit: return, assign, or discard.
+
+Operation classification is side-effect-free. It identifies a supported
+operation and its representation requirements before emission. Prefer rustc
+identities and diagnostic items; unavoidable library-layout assumptions live in
+one recognition boundary and have toolchain-upgrade tests.
 
 Its modules come in four kinds.
 
@@ -147,6 +294,106 @@ Only `iterators.rs` reads either answer.
 helpers a module needs; `output.rs` imports the ones its prepared tree
 reads, and the printer is given that list.
 
+## Owned output and source origins
+
+The JS tree remains small and independent of rustc and oxc. Lowering may use rustc
+types internally, but completed phase outputs do not expose `TyCtxt`, `DefId`, or
+borrowed rustc source files to printing or publication.
+
+Symbolic references use explicit symbol identities rather than special strings
+masquerading as JavaScript identifiers. Linking resolves them into ordinary
+names. The linked output contract forbids unresolved references; validate that
+invariant before printing.
+
+Source origins use compiler-owned file identities and spans. They retain the
+origin of copied trait bodies, macro expansions, and cross-module code, so output
+is not restricted to one source file per generated module. JSX expansion and
+formatting preserve or explicitly remap this provenance.
+
+Use named phase outputs to make ownership visible: captured input, analyzed
+facts, lowered modules, linked modules, and artifact plan. Introduce only the
+types needed to enforce real invariants; avoid parallel copies of every tree.
+
+## Libraries
+
+A library rust-js compiles is JS of its own, with a versioned manifest of
+what crosses to its consumers: exported representations, trait evidence,
+symbol identities, and runtime ABI
+([ADR 0100](decisions/0100-separate-crates.md)); Cargo runs each crate's
+compilation ([ADR 0101](decisions/0101-cargo-workspace-wrapper.md)). rustc
+metadata alone is not a substitute for JavaScript linkage information. A
+manifest from another build, or a library a consumer wasn't told of, is
+refused. Compiled output is reusable only when its source inputs,
+dependencies, features, target options, compiler, toolchain, and ABI
+versions agree.
+
+## Publication
+
+A versioned manifest is the contract between compiler and hosts. Named producer
+types and validating consumers agree on sources, modules, imports, artifact
+paths, fingerprints, and compiler/ABI identity. Hosts reject incompatible
+versions with an actionable error. Virtual paths are remapped as structured
+fields, never by replacing text inside serialized JSON.
+
+```mermaid
+sequenceDiagram
+    participant Host as CLI or Vite
+    participant Build as Build adapter
+    participant Compiler as Compiler pipeline
+    participant Publisher as Native publisher
+    Host->>Build: Build changed inputs
+    Build->>Build: Resolve dependencies and validate cache keys
+    Build->>Compiler: Compile explicit inputs
+    alt Any compiler phase fails
+        Compiler-->>Build: Diagnostics
+        Build-->>Host: Failure - previous artifacts remain
+    else Compilation succeeds
+        Compiler->>Publisher: Complete validated artifact plan
+        Publisher->>Publisher: Stage files and preserve originals
+        alt Publication fails
+            Publisher->>Publisher: Roll back and report recovery errors
+            Publisher-->>Build: Publication failure
+            Build-->>Host: Failure - no successful build notification
+        else Publication succeeds
+            Publisher->>Publisher: Publish manifest last
+            Publisher-->>Build: Successful manifest
+            Build-->>Host: Changed artifacts and dependencies
+            Host->>Host: Update watches and refresh affected modules
+        end
+    end
+```
+
+Native multi-file publication provides rollback for ordinary I/O failures; it
+does not claim crash-atomic replacement across all files. Cleanup removes only
+obsolete artifacts still matching their recorded ownership fingerprints.
+Browser compilation writes into a fresh virtual filesystem and exposes the
+result only after success. Browser and native results obey the same semantic
+contract despite these different publication mechanisms.
+
+The playground's execution frame is a separate trust boundary from its compiler
+worker and editor. Untrusted programs run in an isolated origin or appropriately
+sandboxed frame, with validated messages and run identities. Worker cancellation
+and preview recovery are host responsibilities.
+
+## Where the code is
+
+One compiler crate, whose module visibility and owned phase outputs keep
+the boundaries; packages split only when independent reuse, dependency
+isolation, or release needs justify it. Only the linker can construct the
+`Linked` value artifact planning requires. Build hosts consume the manifest
+instead of inferring compiler output.
+
+| Responsibility | Code |
+| --- | --- |
+| Driver and syntax | `src/main.rs`, `src/jsx_syntax.rs` |
+| Analysis and lowering | `src/lower/analysis.rs`, `src/lower/pipeline.rs`, `src/lower.rs`, `src/lower/` |
+| Linking and runtime | `src/link.rs`, `src/names.rs`, `src/runtime.rs`, `src/runtime/` |
+| JS tree and presentation | `src/js.rs`, `src/prepare.rs`, `src/to_oxc.rs`, `src/format.rs` |
+| Owned modules and source origins | `src/program.rs`, `src/lower/sources.rs` |
+| Artifact planning, manifest and publication | `src/output.rs`, `src/manifest.rs`, `src/publish.rs` |
+| Build adapter and native host | `tooling/build.js`, `tooling/manifest.js`, `vite-plugin/index.js` |
+| Browser host | `wasm/web/compile-rust.ts`, `tooling/publish.js`, `wasm/web/compiler-client.js`, `wasm/web/compiler-worker.js`, `wasm/web/rust/compiler.rs` |
+
 ## Where a change goes
 
 A std function or method rust-js doesn't know yet:
@@ -167,3 +414,17 @@ are, and lowering in the module of the construct. Check the generated JS
 reads as a person would write it, and run the checks
 [CONTRIBUTING.md](../CONTRIBUTING.md) asks for before pushing, as
 [AGENTS.md](../AGENTS.md) runs them, in its Linux VM.
+
+## Not yet
+
+The boundaries above hold today. These are targets the
+[roadmap](../ROADMAP.md) tracks:
+
+- **A numbered ES baseline and environment matrix** for running output
+  directly, without the application's transformations (M1.1, M5.2).
+- **General Cargo dependency graphs** compiled crate by crate (M8.1), and
+  packaged releases beyond macOS arm64 (M4).
+- **Measured budgets** for phase time, peak memory, generated bytes, and
+  edit-to-refresh latency on application-scale workloads (M5.1).
+- **Required checks:** the check workflow runs when started by hand, not on
+  each push or pull request.
