@@ -11,14 +11,29 @@ const bin = join(root, "next-plugin/bin.js");
 const about = `#![allow(non_snake_case)]
 
 use next::link::Link;
-use react::{Element, jsx};
+use react::{Element, Rest, jsx};
 
 pub fn About() -> Element {
     jsx! {
         <main>
             <h1>{"About, in Rust"}</h1>
-            <Link href="/" {..Default::default()}>{"Home"}</Link>
+            <HomeLink className="home" {..Default::default()} />
         </main>
+    }
+}
+
+#[derive(Default)]
+pub struct HomeLinkProps {
+    pub class_name: &'static str,
+    pub rest: Rest,
+}
+
+pub fn HomeLink(HomeLinkProps { class_name, rest }: HomeLinkProps) -> Element {
+    let classes = [class_name, "link"].join(" ");
+    jsx! {
+        <Link href="/" className={Some(classes.as_str())} aria-label={Some("Home page")} rest={rest} {..Default::default()}>
+            {"Home"}
+        </Link>
     }
 }
 
@@ -29,7 +44,8 @@ js::export_default!(About);
 // and the crates by path from this checkout, as the example has them. A
 // Server Component's route, app/page.rs, renders a client component of its
 // crate's, app/counter.rs, and a route below it, app/about/page.rs, links
-// back (ADR 0192).
+// back (ADR 0192), by a link of its own that gives next/link a class it
+// computes, an aria-label, and the props it isn't given by name (ADR 0200).
 function app(name: string): string {
   const dir = fixture(name);
   cpSync(example, dir, {
@@ -94,6 +110,10 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   expect(readFileSync(join(dir, "app/about/page.jsx"), "utf8")).toContain('import Link from "next/link";');
   // The Server Component's page is rendered at build time, the counter in it.
   expect(readFileSync(join(dir, ".next/server/app/index.html"), "utf8")).toContain("Count <!-- -->0");
+  const aboutHtml = readFileSync(join(dir, ".next/server/app/about.html"), "utf8");
+  expect([aboutHtml.includes('class="home link"'), aboutHtml.includes('aria-label="Home page"')]).toEqual([true, true]);
+  // Its rest first, as a JS component's `{...props}`, which the props it names replace.
+  expect(readFileSync(join(dir, "app/about/page.jsx"), "utf8")).toContain('<Link href="/" {...rest} className={classes} aria-label="Home page">');
 
   // A Rust error is the build's, rustc's message, and no Next.js build.
   writeFileSync(join(dir, "app/counter.rs"), counter("Count ") + "pub fn broken(");

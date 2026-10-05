@@ -177,12 +177,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .position(|p| matches!(p, Prop::Field(name, _) if name == "children"))
             .is_some_and(|i| i + 1 < fields.len())
         {
+            // A variable nothing writes again is read as it is, as an
+            // element's attributes are (ADR 0194).
             for prop in &mut fields {
                 let (name, value) = match prop {
                     Prop::Field(name, value) | Prop::Getter(name, value) => (name.as_str(), value),
                     Prop::Spread(value) => ("props", value),
                 };
-                if !value.is_constant() {
+                if !self.reads_alike(value, out) {
                     let old = std::mem::replace(value, Expr::undefined());
                     *value = self.spill(&camel_case(&js_ident(name)), old, out);
                 }

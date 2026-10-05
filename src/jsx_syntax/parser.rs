@@ -425,7 +425,10 @@ impl Jsx<'_> {
             }
             let mut fields = Vec::new();
             for (attr, value, at) in attrs {
-                fields.extend(template(self.sess, format!("r#{}:", snake(&attr)), at).iter().cloned());
+                // `aria-label` is a field a Rust struct can have, `aria_label`,
+                // which `rust_js::name` gives JS's name again (ADR 0200).
+                let field = snake(&attr).replace('-', "_");
+                fields.extend(template(self.sess, format!("r#{field}:"), at).iter().cloned());
                 fields.extend(value.iter().cloned());
                 fields.extend(template(self.sess, ",".into(), at).iter().cloned());
             }
