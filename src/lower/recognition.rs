@@ -2881,6 +2881,17 @@ pub(crate) fn is_arguments_new(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.item_name(id).as_str() == "new" && std_path(tcx, id).starts_with("std::fmt::Arguments")
 }
 
+/// `Argument::new_debug(&x)`, which `format_args!` makes of a `{:?}`
+/// placeholder's argument (ADR 0137), as `classify` has it.
+pub(crate) fn is_debug_argument(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    tcx.item_name(id).as_str() == "new_debug"
+        && tcx.opt_parent(id).is_some_and(|parent| {
+            matches!(tcx.def_kind(parent), DefKind::Impl { .. })
+                && matches!(tcx.type_of(parent).skip_binder().kind(),
+                    ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::FormatArgument))
+        })
+}
+
 /// `f.pad(s)` of a `Formatter` (ADR 0143).
 pub(crate) fn is_formatter_pad(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.item_name(id).as_str() == "pad" && std_path(tcx, id).starts_with("std::fmt::Formatter")

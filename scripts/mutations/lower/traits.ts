@@ -134,7 +134,7 @@ export const mutations: Mutation[] = [
     name: "item-evidence-missing",
     breaks: "`tag` has no dictionary for `<L as Labeled>::Label: Display`, which the trait declares",
     file: "src/lower/traits.rs",
-    find: "            .or_else(|| self.item_evidence(tr))\n",
+    find: "            .or_else(|| self.item_route(tr))\n",
     replace: "\n",
     tests: ["test/corpus.test.ts","-t","associated_types"],
   },

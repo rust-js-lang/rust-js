@@ -8,6 +8,8 @@
 //! Every node carries a `Span`: byte offsets into the Rust source file. That
 //! is what lets the source map point from JS back to Rust.
 
+use std::collections::BTreeSet;
+
 /// Byte offsets `lo..hi` into the Rust source file. `Span::NONE` (empty)
 /// means "no mapping": oxc skips empty spans when building the source map.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -40,6 +42,72 @@ pub struct Module {
     pub functions: Vec<Function>,
     /// Lazy trait dictionary caches. `var` without an initializer is cycle-safe.
     pub caches: Vec<String>,
+}
+
+impl Module {
+    /// Each variable its code reads, a helper's `$cmp` or its own: what it
+    /// imports of the package is the helpers among them (ADR 0103), found
+    /// in its tree, not in its text, where a string can spell one.
+    pub fn read_vars(&self) -> BTreeSet<&str> {
+        let mut vars = BTreeSet::new();
+        let mut read = |name| {
+            vars.insert(name);
+        };
+        for function in self.namespaces.iter().flat_map(|n| &n.methods).chain(&self.functions) {
+            visit_stmts(&function.body, &mut read);
+        }
+        for constant in &self.consts {
+            constant.value.visit_vars(&mut read);
+        }
+        vars
+    }
+}
+
+/// Each variable `stmts` read, in every statement and expression.
+fn visit_stmts<'a>(stmts: &'a [Stmt], read: &mut dyn FnMut(&'a str)) {
+    for stmt in stmts {
+        match &stmt.kind {
+            StmtKind::Const(_, value)
+            | StmtKind::Destructure { value, .. }
+            | StmtKind::Expr(value)
+            | StmtKind::Throw(value) => value.visit_vars(read),
+            StmtKind::Let(_, value) | StmtKind::Return(value) => {
+                if let Some(value) = value {
+                    value.visit_vars(read);
+                }
+            }
+            StmtKind::Assign(target, value) => {
+                target.visit_vars(read);
+                value.visit_vars(read);
+            }
+            StmtKind::If(test, then, els) => {
+                test.visit_vars(read);
+                visit_stmts(then, read);
+                if let Some(els) = els {
+                    visit_stmts(els, read);
+                }
+            }
+            StmtKind::While { cond, body, .. } => {
+                cond.visit_vars(read);
+                visit_stmts(body, read);
+            }
+            StmtKind::ForOf { iterable, body, .. } => {
+                iterable.visit_vars(read);
+                visit_stmts(body, read);
+            }
+            StmtKind::For { start, test, body, .. } => {
+                start.visit_vars(read);
+                test.visit_vars(read);
+                visit_stmts(body, read);
+            }
+            StmtKind::Labeled(_, body) => visit_stmts(body, read),
+            StmtKind::Try(body, finally) => {
+                visit_stmts(body, read);
+                visit_stmts(finally, read);
+            }
+            StmtKind::Break(_) | StmtKind::Continue(_) => {}
+        }
+    }
 }
 
 /// A type's methods (ADR 0047), an object named after the type:
@@ -512,6 +580,58 @@ impl Expr {
                 | ExprKind::Undefined
                 | ExprKind::Null
         )
+    }
+
+    /// Each variable this reads, closures' bodies too, but not a string's
+    /// or a regular expression's text, nor a property's name.
+    fn visit_vars<'a>(&'a self, read: &mut dyn FnMut(&'a str)) {
+        let props = |props: &'a [Prop], read: &mut dyn FnMut(&'a str)| {
+            for prop in props {
+                match prop {
+                    Prop::Field(_, value) | Prop::Spread(value) | Prop::Getter(_, value) => value.visit_vars(read),
+                }
+            }
+        };
+        match &self.kind {
+            ExprKind::Var(name) => read(name),
+            ExprKind::Member(a, _)
+            | ExprKind::OptionalMember(a, _)
+            | ExprKind::Unary(_, a)
+            | ExprKind::Await(a)
+            | ExprKind::Handle(a) => a.visit_vars(read),
+            ExprKind::Index(a, b) | ExprKind::Binary(_, a, b) | ExprKind::Pair(a, b) => {
+                a.visit_vars(read);
+                b.visit_vars(read);
+            }
+            ExprKind::Cond(a, b, c) => {
+                a.visit_vars(read);
+                b.visit_vars(read);
+                c.visit_vars(read);
+            }
+            ExprKind::Call(f, args) | ExprKind::OptionalCall(f, args) | ExprKind::New(f, args) => {
+                f.visit_vars(read);
+                args.iter().for_each(|a| a.visit_vars(read));
+            }
+            ExprKind::Array(items) | ExprKind::Template(_, items) => items.iter().for_each(|a| a.visit_vars(read)),
+            ExprKind::Object(fields) => props(fields, read),
+            ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => visit_stmts(body, read),
+            ExprKind::Jsx(jsx) => {
+                if let JsxTag::Component(tag) = &jsx.tag {
+                    tag.visit_vars(read);
+                }
+                props(&jsx.props, read);
+                jsx.children.iter().for_each(|c| c.visit_vars(read));
+            }
+            ExprKind::Num(_)
+            | ExprKind::BigInt(_)
+            | ExprKind::BigUint(_)
+            | ExprKind::Bool(_)
+            | ExprKind::Str(_)
+            | ExprKind::Undefined
+            | ExprKind::Null
+            | ExprKind::Symbol(_)
+            | ExprKind::Regex(_) => {}
+        }
     }
 
     /// Is there JSX in this, like `items.map((t) => <li>..</li>)`?

@@ -28,6 +28,48 @@ test("every source module is in a layer", () => {
   expect(sources.length).toBeGreaterThan(40);
 });
 
+// The layers each layer's modules may use, crate-wide: a module of the
+// crate is its layer's, `crate::js` owned output's. Found in review: the
+// checks below forbid chosen APIs, so an owned module using lowering
+// broke none. Printing's own modules are named where an owned one starts
+// it: `output.rs` prints each module it plans, `settings.rs` checks a
+// formatter's options, and `hooks.rs` formats what a hook returns.
+const allowed: Record<string, string[]> = {
+  driver: ["driver", "front", "owned", "printing"],
+  front: ["front", "owned"],
+  owned: ["owned"],
+  printing: ["printing", "owned"],
+};
+const orchestration: Record<string, string[]> = {
+  "src/output.rs": ["src/to_oxc.rs"],
+  "src/settings.rs": ["src/format.rs"],
+  "src/hooks.rs": ["src/format.rs"],
+};
+// The crate's modules a file names, `crate::js` or `use crate::{js, program}`,
+// outside comments, as the files they are.
+const usedModules = (text: string): string[] => {
+  const code = text.replace(/\/\/.*$/gm, "");
+  const names = [...code.matchAll(/\bcrate::([a-z_]+)/g)].map(m => m[1]);
+  for (const group of code.matchAll(/\bcrate::\{([^}]*)\}/g)) {
+    names.push(...group[1].split(",").map(name => name.trim().split("::")[0]).filter(Boolean));
+  }
+  return [...new Set(names)].map(name => sources.includes(`src/${name}.rs`) ? `src/${name}.rs` : `src/${name}/`);
+};
+test("each module uses only the layers its layer may", () => {
+  const strays: string[] = [];
+  for (const file of sources) {
+    const layer = layerOf(file)!;
+    for (const used of usedModules(read(file))) {
+      const usedLayer = layerOf(used.endsWith("/") ? `${used}mod.rs` : used) ?? layerOf(used.replace(/\/$/, ".rs"));
+      if (!usedLayer) strays.push(`${file} uses ${used}, which is in no layer`);
+      else if (!allowed[layer].includes(usedLayer) && !orchestration[file]?.includes(used)) {
+        strays.push(`${file} (${layer}) uses ${used} (${usedLayer})`);
+      }
+    }
+  }
+  expect(strays).toEqual([]);
+});
+
 test("owned compiler output and downstream phases do not depend on rustc", () => {
   for (const file of sources.filter(file => layerOf(file) === "owned" || layerOf(file) === "printing")) {
     expect(read(file), file).not.toMatch(/(?:use\s+|\b)rustc_\w+::/);
@@ -38,6 +80,14 @@ test("linking uses owned output without lowering dependencies", () => {
   for (const file of ["src/reachability.rs", "src/link.rs", "src/names.rs"]) {
     expect(read(file), file).not.toMatch(/(?:crate|super)::lower\b/);
   }
+});
+
+// What a module imports of the package is found in its tree before it's
+// printed (ADR 0103), not in the printed text, where a string can spell a
+// helper's name (found in review).
+test("runtime imports are chosen before printing", () => {
+  expect(read("src/to_oxc.rs")).toContain("imported_helpers(&module.runtime, &module.read_vars())");
+  expect(read("src/runtime.rs")).not.toMatch(/fn imported_helpers\([^)]*code: &str/);
 });
 
 test("oxc APIs stay behind the printing and formatting adapters", () => {
@@ -82,6 +132,10 @@ test("effects analysis cannot access emission state", () => {
 test("the destructors' facts are found without emitting", () => {
   const source = read("src/lower/drops/facts.rs");
   expect(source).not.toMatch(/crate::js|runtime::|&mut\s+FnCx|\bdrop_state\b/);
+  // What a type drops, which the facts ask, is a question of types and
+  // given evidence: it builds no JS, as `item_drop` and `evidence_for` do
+  // (found in review).
+  expect(read("src/lower/drops/types.rs")).not.toMatch(/crate::js|\bExpr\b|\bevidence_for\b|\bitem_drop\(|\bdrop_function\b/);
 });
 
 // Whether a value is a JS iterator is one question, `is_lazy_value`: its
@@ -227,7 +281,7 @@ const identity: [string, RegExp][] = [
   ["a diagnostic item", /\b(?:is|get)_diagnostic_item\s*\(/],
   ["a std type's name", /Symbol::intern\("[A-Z][A-Za-z]+"\)/],
   ["a path compared", /def_path_str\([^)]*\)(?:\.as_str\(\))?\s*(?:==|\.starts_with|\.contains)/],
-  ["a method's name compared", /item_name\([^)]*\)(?:\.as_str\(\))?\s*==|match\s+(?:self\.)?tcx\.item_name\([^)]*\)\.as_str\(\)/],
+  ["a method's name compared", /item_name\([^)]*\)(?:\.as_str\(\))?\s*(?:==|\.starts_with|\.ends_with|\.contains)|match\s+(?:self\.)?tcx\.item_name\([^)]*\)\.as_str\(\)/],
   ["a std type by its name", /\bis_std_adt\s*\(/],
 ];
 test("only recognition spells std's names", () => {

@@ -1081,22 +1081,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `ZZone.$dropOffset`, an associated type's drop, of the dictionary of
     /// the impl it's of, which has one where its type does (ADR 0178).
     pub(super) fn item_drop(&self, ty: Ty<'tcx>) -> Option<Expr> {
-        let ty::Alias(
-            _,
-            alias @ ty::AliasTy {
-                kind: ty::Projection { def_id },
-                ..
-            },
-        ) = *ty.kind()
-        else {
-            return None;
-        };
-        // An `async fn`'s in a trait, which has no name, has no dictionary's drop.
-        if self.tcx.is_impl_trait_in_trait(def_id) {
-            return None;
-        }
-        let dictionary = self.evidence_for(alias.trait_ref(self.tcx))?;
-        Some(Expr::member(dictionary, item_drop_key(self.tcx, def_id)))
+        let (owner, item) = self.item_drop_of(ty)?;
+        let dictionary = self.evidence_for(owner)?;
+        Some(Expr::member(dictionary, item_drop_key(self.tcx, item)))
     }
 
     pub(super) fn drop_function(&mut self, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {

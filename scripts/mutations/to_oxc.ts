@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "runtime-import-missing",
     breaks: "a module compiled against @rust-js/runtime calls its helpers, and neither defines nor imports them",
     file: "src/to_oxc.rs",
-    find: "    let helpers = crate::runtime::imported_helpers(&module.runtime, &generated.code);\n",
+    find: "    let helpers = crate::runtime::imported_helpers(&module.runtime, &module.read_vars());\n",
     replace: "    let helpers = Vec::<&str>::new();\n",
     tests: ["test/runtime-package.test.ts"],
   },

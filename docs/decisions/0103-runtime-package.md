@@ -45,7 +45,9 @@ compiler's version, released with it, as ReScript's is:
 - **A module imports the helpers its code names,** and defines none:
   `import { $debugStr, $index } from "@rust-js/runtime";`. It asks for
   helpers as it's lowered, as ADR 0012 has it; of those, and of what they
-  use, it imports the names its code has. What only another helper uses,
+  use, it imports the names its code reads, found in its tree before it's
+  printed: a string that spells one is text (Amended: the printed text was
+  scanned, which a string could fool). What only another helper uses,
   the package has for it. There's no other way to have them: every build,
   one file's or Cargo's, imports the package, as every ReScript module does.
 - **A helper's state is the app's now, not each module's:** `$printed`, the

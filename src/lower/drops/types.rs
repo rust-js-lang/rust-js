@@ -41,6 +41,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         super::super::traits::may_have_destructors(self.tcx, self.krate.foreign)
     }
 
+    /// An associated type's trait and item, `<Z as Zone>::Offset`'s
+    /// `Z: Zone` and `Offset`, whose drop its impl's dictionary has where
+    /// its type has one (ADR 0178). Not an `async fn`'s, which has no name.
+    pub(in crate::lower) fn item_drop_of(&self, ty: Ty<'tcx>) -> Option<(ty::TraitRef<'tcx>, DefId)> {
+        let ty::Alias(
+            _,
+            alias @ ty::AliasTy {
+                kind: ty::Projection { def_id },
+                ..
+            },
+        ) = *ty.kind()
+        else {
+            return None;
+        };
+        (!self.tcx.is_impl_trait_in_trait(def_id)).then(|| (alias.trait_ref(self.tcx), def_id))
+    }
+
+    /// Is an associated type's drop given, in a dictionary this function has?
+    fn has_item_drop(&self, ty: Ty<'tcx>) -> bool {
+        self.item_drop_of(ty).is_some_and(|(owner, _)| self.has_evidence(owner))
+    }
+
     pub(in crate::lower) fn drops(&self, ty: Ty<'tcx>) -> Drops<'tcx> {
         self.drops_in(
             ty,
@@ -138,7 +160,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     kind: ty::Projection { .. },
                     ..
                 },
-            ) if self.is_unknown(ty) => match (self.item_drop(ty).is_some(), self.may_have_destructors()) {
+            ) if self.is_unknown(ty) => match (self.has_item_drop(ty), self.may_have_destructors()) {
                 (true, may) if may || self.krate.library => Drops::Runs,
                 (false, true) => {
                     Drops::Unsupported(ty, "a value of an associated type, where a type may have a destructor")

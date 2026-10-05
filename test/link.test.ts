@@ -93,3 +93,23 @@ test("heap modules import only their operations, and the package has what those 
     expect(code).not.toContain("$sift");
   }
 });
+
+// What a module imports of the package is the helpers its code calls, not
+// names its strings happen to spell: `"$bigCountOnes"` is text (found in
+// review: the printed JS was scanned for them).
+test("a string that spells a helper's name doesn't import it", () => {
+  const dir = fixture("helper-names-in-strings");
+  writeFileSync(join(dir, "main.rs"), `
+    fn main() {
+      let n: u64 = 5;
+      println!("{}", n.leading_zeros());
+      println!("$bigTrailingZeros and $bigCountOnes");
+      println!("$bigCountOnes");
+    }
+  `);
+  run([compiler, join(dir, "main.rs"), "-o", join(dir, "main.js")]);
+  const code = readFileSync(join(dir, "main.js"), "utf8");
+  expect(code).toContain(`import { $bigLeadingZeros } from "@rust-js/runtime";`);
+  expect(code).toContain(`"$bigTrailingZeros and $bigCountOnes"`);
+  expect(code).toContain(`console.log("$bigCountOnes")`);
+});

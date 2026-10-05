@@ -295,28 +295,12 @@ pub fn package_module() -> String {
 }
 
 /// What a module imports of the package, sorted: each name its helpers,
-/// `sources`, declare that its `code` refers to. A name one of them
+/// `sources`, declare that its code reads, `read`. A name one of them
 /// declares that only another helper uses stays in the package.
-pub fn imported_helpers(sources: &[&'static str], code: &str) -> Vec<&'static str> {
+pub fn imported_helpers(sources: &[&'static str], read: &std::collections::BTreeSet<&str>) -> Vec<&'static str> {
     let declared: std::collections::BTreeSet<&'static str> =
         sources.iter().flat_map(|source| declared(source)).collect();
-    let bytes = code.as_bytes();
-    let ident = |b: u8| b.is_ascii_alphanumeric() || b == b'_' || b == b'$';
-    let mut used = std::collections::BTreeSet::new();
-    let mut i = 0;
-    while i < bytes.len() {
-        // A `$` that starts a name, not one inside `text$1`.
-        if bytes[i] == b'$' && (i == 0 || !ident(bytes[i - 1])) {
-            let end = (i + 1..bytes.len()).find(|&j| !ident(bytes[j])).unwrap_or(bytes.len());
-            if let Some(name) = declared.get(&code[i..end]) {
-                used.insert(*name);
-            }
-            i = end;
-        } else {
-            i += 1;
-        }
-    }
-    used.into_iter().collect()
+    declared.into_iter().filter(|name| read.contains(name)).collect()
 }
 
 /// Resolve helper dependencies once at the linking boundary, in stable order.

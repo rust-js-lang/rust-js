@@ -439,6 +439,23 @@ pub(super) fn gat_supported(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
             })
 }
 
+/// Where a dictionary is found, before its JS is built: one a function
+/// was given, or an associated type's of one, then its supertraits'
+/// accessors, `SShape.Named()`.
+#[derive(Clone)]
+struct Route {
+    root: Root,
+    supers: Vec<String>,
+}
+
+#[derive(Clone)]
+enum Root {
+    /// The function's given dictionary at this index.
+    Given(usize),
+    /// An associated type's, `LabelDisplay`, of its trait's dictionary.
+    Item(Box<Route>, String),
+}
+
 /// An associated type's drop in its impl's dictionary, `$dropOffset`: a
 /// name no Rust method can have, as `$drop` is (ADR 0178).
 pub(super) fn item_drop_key(tcx: TyCtxt<'_>, item: DefId) -> String {
@@ -678,7 +695,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         value.ok_or_else(|| self.unsupported(span, "this const argument"))
     }
 
-    fn super_evidence(&self, from: ty::TraitRef<'tcx>, to: ty::TraitRef<'tcx>, value: Expr) -> Option<Expr> {
+    /// The supertraits' accessors that lead from `from`'s dictionary to
+    /// `to`'s, none if they're one.
+    fn super_route(&self, from: ty::TraitRef<'tcx>, to: ty::TraitRef<'tcx>) -> Option<Vec<String>> {
         // As rustc says what they are here: `<I as Int>::T: NonZero` is
         // `J: NonZero` of an `I: Int<T = J>`.
         let normalized = |tr: ty::TraitRef<'tcx>| {
@@ -687,35 +706,50 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .unwrap_or_else(|_| self.tcx.erase_and_anonymize_regions(tr))
         };
         if normalized(from) == normalized(to) {
-            return Some(value);
+            return Some(Vec::new());
         }
         // A std trait's dictionary, like `Copy`'s, has no supertraits in it,
         // but `Error`'s has its `Display` and `Debug` (ADR 0141).
         if !self.is_rust_trait(from.def_id) && !self.is_std_pair_trait(from.def_id) {
             return None;
         }
-        for (name, tr, _) in supertraits(self.tcx, from.def_id, from.args) {
-            let parent = Expr::call(Expr::member(value.clone(), name), Vec::new());
-            if let Some(found) = self.super_evidence(tr, to, parent) {
-                return Some(found);
-            }
-        }
-        None
+        supertraits(self.tcx, from.def_id, from.args)
+            .into_iter()
+            .find_map(|(name, tr, _)| {
+                let mut rest = self.super_route(tr, to)?;
+                rest.insert(0, name);
+                Some(rest)
+            })
     }
 
-    /// The dictionary for `tr` among those this function was given, or
-    /// a supertrait's of one.
-    pub(super) fn evidence_for(&self, tr: ty::TraitRef<'tcx>) -> Option<Expr> {
+    fn super_evidence(&self, from: ty::TraitRef<'tcx>, to: ty::TraitRef<'tcx>, value: Expr) -> Option<Expr> {
+        let route = self.super_route(from, to)?;
+        Some(route.into_iter().fold(value, |dictionary, name| {
+            Expr::call(Expr::member(dictionary, name), Vec::new())
+        }))
+    }
+
+    /// Where the dictionary for `tr` is, among those this function was
+    /// given, or a supertrait's of one: a question of types alone, which
+    /// what's dropped asks (ADR 0178) without building its JS.
+    fn evidence_route(&self, tr: ty::TraitRef<'tcx>) -> Option<Route> {
         self.given
             .evidence
             .iter()
-            .find_map(|(bound, value)| self.super_evidence(*bound, tr, value.clone()))
-            .or_else(|| self.item_evidence(tr))
+            .enumerate()
+            .find_map(|(index, (bound, _))| {
+                let supers = self.super_route(*bound, tr)?;
+                Some(Route {
+                    root: Root::Given(index),
+                    supers,
+                })
+            })
+            .or_else(|| self.item_route(tr))
     }
 
     /// `<L as Labeled>::Label: Display`, which the trait declares, from `L`'s
     /// `Labeled`: its `LabelDisplay`, or a supertrait's of it (ADR 0106).
-    fn item_evidence(&self, tr: ty::TraitRef<'tcx>) -> Option<Expr> {
+    fn item_route(&self, tr: ty::TraitRef<'tcx>) -> Option<Route> {
         let ty::Alias(
             _,
             alias @ ty::AliasTy {
@@ -727,13 +761,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return None;
         };
         let owner = alias.trait_ref(self.tcx);
-        let dictionary = self.evidence_for(owner)?;
+        let dictionary = self.evidence_route(owner)?;
         item_bounds(self.tcx, owner.def_id, owner.args)
             .into_iter()
             .find_map(|(name, bound)| {
-                let found = Expr::call(Expr::member(dictionary.clone(), name), Vec::new());
-                self.super_evidence(bound, tr, found)
+                let supers = self.super_route(bound, tr)?;
+                Some(Route {
+                    root: Root::Item(Box::new(dictionary.clone()), name),
+                    supers,
+                })
             })
+    }
+
+    /// Is a dictionary for `tr` given? Without building it.
+    pub(super) fn has_evidence(&self, tr: ty::TraitRef<'tcx>) -> bool {
+        self.evidence_route(tr).is_some()
+    }
+
+    /// The dictionary for `tr` among those this function was given, or
+    /// a supertrait's of one.
+    pub(super) fn evidence_for(&self, tr: ty::TraitRef<'tcx>) -> Option<Expr> {
+        let route = self.evidence_route(tr)?;
+        Some(self.route_expr(&route))
+    }
+
+    fn route_expr(&self, route: &Route) -> Expr {
+        let call = |dictionary: Expr, name: &str| Expr::call(Expr::member(dictionary, name), Vec::new());
+        let root = match &route.root {
+            Root::Given(index) => self.given.evidence[*index].1.clone(),
+            Root::Item(owner, name) => call(self.route_expr(owner), name),
+        };
+        route
+            .supers
+            .iter()
+            .fold(root, |dictionary, name| call(dictionary, name))
     }
 
     pub(super) fn dictionary(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Expr> {

@@ -3,7 +3,7 @@
 
 use crate::lower::format_args::{Piece, decode_template};
 use crate::lower::recognition::{
-    FormatterQuery, StdItem, formatter_query, is_arguments_new, is_formatter_pad, is_std_def,
+    FormatterQuery, StdItem, formatter_query, is_arguments_new, is_debug_argument, is_formatter_pad, is_std_def,
 };
 use crate::lower::{Body, strip};
 use rustc_hir::def::DefKind;
@@ -100,7 +100,7 @@ pub(super) fn uses_pretty_debug(tcx: TyCtxt<'_>, all_bodies: &[&Body<'_>]) -> bo
                 let Some(&field) = fields.get(index) else { return true };
                 match thir[field].kind {
                     ExprKind::Call { fun, .. } => match thir[fun].ty.kind() {
-                        &ty::FnDef(made_by, _) => tcx.item_name(made_by).as_str().starts_with("new_debug"),
+                        &ty::FnDef(made_by, _) => is_debug_argument(tcx, made_by),
                         _ => true,
                     },
                     _ => true,

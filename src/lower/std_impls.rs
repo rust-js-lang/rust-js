@@ -534,8 +534,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.partial_ord_trait(),
                 self.args_of(self.partial_ord_trait(), ty),
             );
-            if self.evidence_for(ord).is_some() || self.evidence_for(partial_ord).is_some() {
-                let order = self.cmp_value(a, b, ty, self.evidence_for(ord).is_none(), span, out)?;
+            if self.has_evidence(ord) || self.has_evidence(partial_ord) {
+                let order = self.cmp_value(a, b, ty, !self.has_evidence(ord), span, out)?;
                 return Ok(Expr::bin(Op::Eq, order, Expr::int(0)));
             }
             return Err(self.unsupported(span, &format!("implementation evidence for `{tr}`")));
