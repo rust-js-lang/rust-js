@@ -112,7 +112,7 @@ const Parser = {
       return { TAG: "Ok", _0: { TAG: "Num", _0: match._0 } };
     } else if (match != null && match.TAG === "Ident") {
       const value = Parser.peek(parser);
-      if (value != null && value === "LParen") {
+      if (value === "LParen") {
         Parser.next(parser);
         let args = [];
         if (Parser.peek(parser) !== "RParen") {
@@ -123,7 +123,7 @@ const Parser = {
           args.push(result$1._0);
           while (true) {
             const value$1 = Parser.peek(parser);
-            if (value$1 != null && value$1 === "Comma") {
+            if (value$1 === "Comma") {
               Parser.next(parser);
               const result$2 = Parser.expr(parser);
               if (result$2.TAG === "Err") {
@@ -143,7 +143,7 @@ const Parser = {
       } else {
         return { TAG: "Ok", _0: { TAG: "Var", _0: match._0 } };
       }
-    } else if (match != null && match === "LParen") {
+    } else if (match === "LParen") {
       const result$4 = Parser.expr(parser);
       if (result$4.TAG === "Err") {
         return result$4;

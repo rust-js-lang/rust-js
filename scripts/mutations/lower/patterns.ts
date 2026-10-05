@@ -202,4 +202,12 @@ export const mutations: Mutation[] = [
     replace: "            self.stmt(arm.body, dest, &mut arm_body)?;",
     tests: ["test/corpus.test.ts", "-t", "arm_temporaries"],
   },
+  {
+    name: "some-variant-null-tested",
+    breaks: "`Some(Direction::Up)` is `d != null && d === \"Up\"`, where `d === \"Up\"` says it",
+    file: "src/lower/patterns.rs",
+    find: "                    Some(test) if names_value(&test) => test,",
+    replace: "                    Some(test) if false && names_value(&test) => test,",
+    tests: ["test/compiler.test.ts", "-t", "unit variant is tested as the variant"],
+  },
 ];

@@ -43,11 +43,11 @@ function probeDisplay_fmt(probe, options) {
   let f = "";
   let align;
   const match = options?.align;
-  if (match != null && match === "Left") {
+  if (match === "Left") {
     align = "left";
-  } else if (match != null && match === "Right") {
+  } else if (match === "Right") {
     align = "right";
-  } else if (match != null && match === "Center") {
+  } else if (match === "Center") {
     align = "center";
   } else {
     align = "none";

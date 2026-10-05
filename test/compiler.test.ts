@@ -1185,6 +1185,19 @@ test("js::directive! and js::export_default! make a module a Next.js route", asy
   expect([lib.default(), lib.page(), sub.default()]).toEqual([3, 3, 2]);
 });
 
+// `Some(Direction::Up)` of an `Option` of a unit variant is `d === "Up"`:
+// `undefined === "Up"` is false too, so it's said without `d != null`, as
+// a constant is. Where the variant is an object's, `d.TAG`, it's needed.
+test("a Some of a unit variant is tested as the variant, without a null test", async () => {
+  const dir = fixture("option-unit-variant");
+  writeFileSync(join(dir, "lib.rs"), 'pub enum Direction {\n    Up,\n    Down,\n}\npub enum Shape {\n    Dot,\n    Line(u32),\n}\npub fn turn(d: Option<Direction>) -> u32 {\n    match d {\n        Some(Direction::Up) => 1,\n        Some(Direction::Down) => 2,\n        None => 0,\n    }\n}\npub fn size(s: Option<Shape>) -> u32 {\n    match s {\n        Some(Shape::Dot) => 1,\n        Some(Shape::Line(n)) => n,\n        None => 0,\n    }\n}\n');
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect([js.includes('if (d === "Up")'), js.includes("d != null"), js.includes('if (s === "Dot")'), js.includes("s != null && s.TAG")]).toEqual([true, false, true, true]);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.turn("Up"), lib.turn("Down"), lib.turn(undefined), lib.size("Dot"), lib.size({ TAG: "Line", _0: 7 }), lib.size(undefined)]).toEqual([1, 2, 0, 1, 7, 0]);
+});
+
 // The crates a program depends on, js, webapi and react, are stable Rust too
 // (ADR 0112): rust-js compiles them, `--rustc`, with its tool registered, so
 // they need no `register_tool`, nor any feature, nor `RUSTC_BOOTSTRAP`.

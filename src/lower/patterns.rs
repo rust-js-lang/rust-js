@@ -1175,6 +1175,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let inner = self.pattern_test(&field.pattern, &value, bindings)?;
                 let present = Expr::bin(Op::LooseNe, subject.clone(), Expr::null());
+                // `d === "Up"` of a unit variant, or `o === 0` of `Ordering::Equal`:
+                // `undefined === "Up"` is false too (ADR 0193).
+                let names_value = |test: &Expr| {
+                    matches!(&test.kind, js::ExprKind::Binary(Op::Eq, left, right)
+                        if same_place(left, subject)
+                            && matches!(right.kind, js::ExprKind::Str(_) | js::ExprKind::Num(_) | js::ExprKind::Bool(_)))
+                };
                 let mut value = &field.pattern;
                 while let PatKind::Deref { subpattern, .. } = &value.kind {
                     value = subpattern;
@@ -1182,6 +1189,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(Some(match inner {
                     // `undefined >= 1` is false too.
                     Some(test) if matches!(value.kind, PatKind::Constant { .. } | PatKind::Range(_)) => test,
+                    Some(test) if names_value(&test) => test,
                     Some(test) => Expr::bin(Op::And, present, test),
                     None => present,
                 }))
