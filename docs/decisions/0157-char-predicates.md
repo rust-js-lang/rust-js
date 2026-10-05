@@ -36,6 +36,8 @@ one `char`,** which each method tries on each `char` in turn:
 | `s.split_ascii_whitespace()` | `s.split(/[\t\n\f\r ]+/).filter((word) => word !== "")` |
 | `c.len_utf8()`, `len_utf16()` | `$byteLen(c)`, `c.length` |
 | `char::from(b)` of a `u8` | `String.fromCharCode(b)` |
+| `b.is_ascii_digit()` of a `u8`, and its other ASCII tests | `b >= 48 && b <= 57`, Rust's ranges (Amended: chrono's parser.) |
+| `b.to_ascii_uppercase()` of a `u8` | `b >= 97 && b <= 122 ? b - 32 : b` |
 | `char::from_u32_unchecked(n)`, of a code point its caller checked | `String.fromCodePoint(n)` (Amended: an error; it stopped utf8_iter.) |
 | `String::from_iter(items)` | `items.join("")`, as `collect()` into a `String` is |
 
@@ -54,6 +56,7 @@ one `char`,** which each method tries on each `char` in turn:
 
 - **It's exact:** the `text_predicates` corpus case compares each with
   native Rust, offsets past a multi-byte `char`, an emoji, empty strings
-  and ranges inside a `char` included.
+  and ranges inside a `char` included; `byte_ascii` each of a byte's ASCII
+  tests on all 256 bytes.
 - **It's the JS a person writes:** `(c) => [";", ","].includes(c)`, the
   predicate a closure would be.

@@ -59,4 +59,12 @@ export const mutations: Mutation[] = [
     replace: "            && self.has_user_impl(from_str, target)",
     tests: ["test/corpus.test.ts", "-t", "generic_from_str"],
   },
+  {
+    name: "split-last-keeps-last",
+    breaks: "`split_last()`'s rest keeps the last item too",
+    file: "src/lower/text.rs",
+    find: "vec![Expr::int(0), Expr::int(-1)],",
+    replace: "vec![Expr::int(0)],",
+    tests: ["test/corpus.test.ts", "-t", "^slice_split.rs"],
+  },
 ];

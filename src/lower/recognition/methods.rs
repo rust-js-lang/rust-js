@@ -161,6 +161,21 @@ pub(super) fn number(name: &str, num: Num) -> Option<NumOp> {
         "trailing_zeros" if !float => NumOp::TrailingZeros,
         "count_ones" if !float => NumOp::CountOnes,
         "is_power_of_two" if !float && !signed => NumOp::IsPowerOfTwo,
+        "is_ascii_digit" if num == Num::U8 => NumOp::AsciiIs(&[(b'0', b'9')]),
+        "is_ascii_hexdigit" if num == Num::U8 => NumOp::AsciiIs(&[(b'0', b'9'), (b'A', b'F'), (b'a', b'f')]),
+        "is_ascii_alphabetic" if num == Num::U8 => NumOp::AsciiIs(&[(b'A', b'Z'), (b'a', b'z')]),
+        "is_ascii_alphanumeric" if num == Num::U8 => NumOp::AsciiIs(&[(b'0', b'9'), (b'A', b'Z'), (b'a', b'z')]),
+        "is_ascii_uppercase" if num == Num::U8 => NumOp::AsciiIs(&[(b'A', b'Z')]),
+        "is_ascii_lowercase" if num == Num::U8 => NumOp::AsciiIs(&[(b'a', b'z')]),
+        "is_ascii_whitespace" if num == Num::U8 => NumOp::AsciiIs(&[(b'\t', b'\n'), (0x0c, b'\r'), (b' ', b' ')]),
+        "is_ascii_punctuation" if num == Num::U8 => {
+            NumOp::AsciiIs(&[(b'!', b'/'), (b':', b'@'), (b'[', b'`'), (b'{', b'~')])
+        }
+        "is_ascii_graphic" if num == Num::U8 => NumOp::AsciiIs(&[(b'!', b'~')]),
+        "is_ascii_control" if num == Num::U8 => NumOp::AsciiIs(&[(0, 0x1f), (0x7f, 0x7f)]),
+        "is_ascii" if num == Num::U8 => NumOp::AsciiIs(&[(0, 0x7f)]),
+        "to_ascii_uppercase" if num == Num::U8 => NumOp::AsciiCase { upper: true },
+        "to_ascii_lowercase" if num == Num::U8 => NumOp::AsciiCase { upper: false },
         "abs_diff" if !float => NumOp::AbsDiff,
         _ => return None,
     })

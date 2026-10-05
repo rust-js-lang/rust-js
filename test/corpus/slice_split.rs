@@ -7,6 +7,14 @@ fn halves(bytes: &[u8]) -> (u32, u32) {
     (fold(high), fold(low))
 }
 
+// Each item in turn, as chrono's queue of format items is read.
+fn total(items: &[u32]) -> u32 {
+    match items.split_first() {
+        Some((first, rest)) => first + total(rest),
+        None => 0,
+    }
+}
+
 fn main() {
     let v = [1, 2, 3, 4, 5];
     let (left, right) = v.split_at(2);
@@ -24,6 +32,10 @@ fn main() {
     println!("{:?} {:?} {:?}", v.get(..), v.get(4..9), v.get(2..=4));
     let (start, end) = (3, 1);
     println!("{:?} {:?}", v.get(start..end), v.get(5..));
+    println!("{:?} {:?} {:?}", v.split_first(), v.split_last(), v[..0].split_first());
+    println!("{} {:?}", total(&v), words.split_last().map(|(last, rest)| (last.len(), rest.len())));
+    let one = [9];
+    println!("{:?} {:?}", one.split_first(), one.split_last());
     match words.get(1..) {
         Some(tail) => println!("{}", tail.len()),
         None => println!("none"),

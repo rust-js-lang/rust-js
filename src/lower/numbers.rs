@@ -78,6 +78,12 @@ pub(super) enum NumOp {
     CountOnes,
     IsPowerOfTwo,
     AbsDiff,
+    /// A byte's ASCII test, `is_ascii_digit()`: the inclusive ranges it holds.
+    AsciiIs(&'static [(u8, u8)]),
+    /// A byte's `to_ascii_uppercase()`, or `to_ascii_lowercase()`.
+    AsciiCase {
+        upper: bool,
+    },
     /// `x.clamp(min, max)`, an integer's `Ord::clamp` or a float's own.
     Clamp,
     /// `T::from_str_radix(s, radix)`, as `s.parse()` reads, in a radix.
@@ -594,6 +600,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 )
             }
             NumOp::AbsDiff => math("abs", vec![Expr::bin(Op::Sub, arg(), arg())]),
+            // `b >= 48 && b <= 57`, as `(b'0'..=b'9').contains(&b)` is.
+            NumOp::AsciiIs(ranges) => {
+                let b = arg();
+                let b = if b.reads_same() { b } else { self.spill("b", b, out) };
+                let int = |n: u8| Expr::int(i128::from(n));
+                ranges
+                    .iter()
+                    .map(|&(lo, hi)| match (lo, hi) {
+                        _ if lo == hi => Expr::bin(Op::Eq, b.clone(), int(lo)),
+                        (0, _) => Expr::bin(Op::Le, b.clone(), int(hi)),
+                        _ => Expr::bin(
+                            Op::And,
+                            Expr::bin(Op::Ge, b.clone(), int(lo)),
+                            Expr::bin(Op::Le, b.clone(), int(hi)),
+                        ),
+                    })
+                    .reduce(|a, b| Expr::bin(Op::Or, a, b))
+                    .expect("a range")
+            }
+            // `b >= 97 && b <= 122 ? b - 32 : b`: a letter's other case, 32 apart.
+            NumOp::AsciiCase { upper } => {
+                let b = arg();
+                let b = if b.reads_same() { b } else { self.spill("b", b, out) };
+                let (lo, hi, op) = match upper {
+                    true => (b'a', b'z', Op::Sub),
+                    false => (b'A', b'Z', Op::Add),
+                };
+                let letter = Expr::bin(
+                    Op::And,
+                    Expr::bin(Op::Ge, b.clone(), Expr::int(i128::from(lo))),
+                    Expr::bin(Op::Le, b.clone(), Expr::int(i128::from(hi))),
+                );
+                Expr::cond(letter, Expr::bin(op, b.clone(), Expr::int(32)), b)
+            }
         })
     }
 }

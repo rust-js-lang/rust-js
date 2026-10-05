@@ -65,6 +65,11 @@ pub(super) enum TextOp {
     SliceSplitAt {
         checked: bool,
     },
+    /// `v.split_first()`, or `split_last()` (`last`): the item and a copy
+    /// of the rest, or `None` of an empty slice.
+    SliceSplitFirst {
+        last: bool,
+    },
     /// `char::from_u32_unchecked(n)`: the code point `n` is.
     CharFromCode,
     /// `str::from_utf8(bytes)`, or `String::from_utf8` (`owned`) (ADR 0172).
@@ -299,6 +304,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     list.push(Expr::bool(true));
                 }
                 call(self, Helper::SliceSplitAt, "$sliceSplitAt", list)
+            }
+            // `v.length === 0 ? undefined : [v[0], v.slice(1)]`.
+            TextOp::SliceSplitFirst { last } => {
+                let items = arg();
+                let items = if items.reads_same() {
+                    items
+                } else {
+                    self.spill("items", items, out)
+                };
+                let length = Expr::member(items.clone(), "length");
+                let empty = Expr::bin(Op::Eq, length.clone(), Expr::int(0));
+                let (item, rest) = match last {
+                    false => (Expr::int(0), vec![Expr::int(1)]),
+                    true => (
+                        Expr::bin(Op::Sub, length, Expr::int(1)),
+                        vec![Expr::int(0), Expr::int(-1)],
+                    ),
+                };
+                let split = Expr::array(vec![
+                    Expr::index(items.clone(), item),
+                    Expr::call(Expr::member(items, "slice"), rest),
+                ]);
+                Expr::cond(empty, Expr::undefined(), split)
             }
             TextOp::CharFromCode => Expr::call(Expr::member(Expr::var("String"), "fromCodePoint"), vec![arg()]),
             TextOp::FromUtf8 { owned } => {

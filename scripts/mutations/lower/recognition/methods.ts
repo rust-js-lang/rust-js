@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [
     replace: "        \"to_le_bytes\" | \"to_ne_bytes\" if float => NumOp::FloatToBytes { little: false },",
     tests: ["test/corpus.test.ts", "-t", "bit_methods"],
   },
+  {
+    name: "ascii-whitespace-vertical-tab",
+    breaks: "a byte's `is_ascii_whitespace()` holds of a vertical tab, as Rust's doesn't",
+    file: "src/lower/recognition/methods.rs",
+    find: "(0x0c, b'\\r')",
+    replace: "(0x0b, b'\\r')",
+    tests: ["test/corpus.test.ts", "-t", "byte_ascii"],
+  },
 ];

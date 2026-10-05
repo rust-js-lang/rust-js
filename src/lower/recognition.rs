@@ -1178,6 +1178,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "split_at" | "split_at_checked" if owner.is_slice() => Std::Text(TextOp::SliceSplitAt {
                 checked: name.as_str() == "split_at_checked",
             }),
+            "split_first" | "split_last" if owner.is_slice() => Std::Text(TextOp::SliceSplitFirst {
+                last: name.as_str() == "split_last",
+            }),
             "is_char_boundary" if owner.is_str() => Std::Text(TextOp::IsCharBoundary),
             "len_utf8" if owner.is_char() => Std::Text(TextOp::CharLen { utf16: false }),
             "len_utf16" if owner.is_char() => Std::Text(TextOp::CharLen { utf16: true }),

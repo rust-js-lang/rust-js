@@ -40,6 +40,8 @@ newest release its requirement allows.
 
 ## Fixed by measuring
 
+- **A byte's ASCII tests and a slice's `split_first`,** chrono's (ADRs 0157,
+  0153).
 - **`Option::filter` and `map_or` of a value with a destructor,** chrono's
   (ADR 0179).
 - **A value of an associated type where a type may have a destructor,**

@@ -147,4 +147,20 @@ export const mutations: Mutation[] = [
     replace: "                    Num::F32 => f64::MIN_POSITIVE,",
     tests: ["test/corpus.test.ts", "-t", "float_normal"],
   },
+  {
+    name: "ascii-range-from-zero-open",
+    breaks: "a byte's ASCII range from 0 leaves out its top, `is_ascii()` false of 127",
+    file: "src/lower/numbers.rs",
+    find: "(0, _) => Expr::bin(Op::Le, b.clone(), int(hi)),",
+    replace: "(0, _) => Expr::bin(Op::Lt, b.clone(), int(hi)),",
+    tests: ["test/corpus.test.ts", "-t", "byte_ascii"],
+  },
+  {
+    name: "ascii-upper-adds",
+    breaks: "a byte's `to_ascii_uppercase()` moves a letter further from its case",
+    file: "src/lower/numbers.rs",
+    find: "true => (b'a', b'z', Op::Sub),",
+    replace: "true => (b'a', b'z', Op::Add),",
+    tests: ["test/corpus.test.ts", "-t", "byte_ascii"],
+  },
 ];
