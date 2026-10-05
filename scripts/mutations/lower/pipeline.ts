@@ -50,4 +50,20 @@ export const mutations: Mutation[] = [
     replace: "tcx.trait_of_assoc(id).is_none()",
     tests: ["test/crates.test.ts","-t","defaults are what"],
   },
+  {
+    name: "directive-unwritten",
+    breaks: "a client component's module has no \`\"use client\";\`, and Next.js renders it as a Server Component",
+    file: "src/lower/pipeline.rs",
+    find: "                    Some(directive) => directives.push(directive.to_string()),",
+    replace: "                    Some(_) => {}",
+    tests: ["test/compiler.test.ts", "-t", "make a module a Next.js route"],
+  },
+  {
+    name: "default-export-unwritten",
+    breaks: "a Rust route's module has no default export, which Next.js takes as its page",
+    file: "src/lower/pipeline.rs",
+    find: "                        default_export = Some(super::bindings::fn_name(tcx, function));",
+    replace: "                        let _ = function;",
+    tests: ["test/compiler.test.ts", "-t", "make a module a Next.js route"],
+  },
 ];

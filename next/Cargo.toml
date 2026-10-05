@@ -1,0 +1,27 @@
+# Next.js for rust-js as a Cargo dependency (ADR 0192): its components and
+# hooks, bound as any JS is, for an app's routes written in Rust.
+[package]
+name = "rust-js-next"
+version = "0.0.3"
+edition = "2024"
+description = "Next.js for rust-js: an app's routes and components written in Rust"
+license = "MIT"
+repository = "https://github.com/rust-js-lang/rust-js"
+readme = "README.md"
+include = ["src", "README.md"]
+
+[lib]
+name = "next"
+path = "src/lib.rs"
+
+[dependencies]
+js = { package = "rust-js-builtins", path = "../builtins", version = "~0.0.1" }
+react = { package = "rust-js-react", path = "../react", version = "~0.0.3" }
+
+# The npm package it binds, which an app has beside it.
+[package.metadata.rust-js]
+npm = { next = ">=16.0.0" }
+
+# rust-js compiles with `--cfg=rust_js` (ADR 0113): a `cfg` Cargo checks for.
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(rust_js)"] }

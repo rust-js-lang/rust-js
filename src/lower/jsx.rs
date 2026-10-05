@@ -186,6 +186,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut children = Vec::new();
         for field in fields {
             match field {
+                // None given, an `Element`'s default (ADR 0192).
+                Prop::Field(name, value) if name == "children" && matches!(value.kind, js::ExprKind::Undefined) => {}
                 Prop::Field(name, value) if name == "children" => {
                     let Shape::Object(types) = self.shape(ty) else {
                         unreachable!("a struct's fields")

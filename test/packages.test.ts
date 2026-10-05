@@ -36,7 +36,7 @@ test(`installed packages compile using ${runtime} without the other runtime`, ()
     else run(pack);
     const distribution = JSON.parse(readFileSync(join(bundle, "distribution.json"), "utf8"));
     expect(distribution.compiler).toEqual(JSON.parse(run([compiler, "--version-json"])));
-    expect(distribution.artifacts).toHaveLength(5);
+    expect(distribution.artifacts).toHaveLength(6);
     run(["shasum", "-a", "256", "-c", "SHA256SUMS"], bundle);
     const previousDistribution = readFileSync(join(bundle, "distribution.json"), "utf8");
     expect(() => run(pack)).toThrow("Output already exists");

@@ -1,0 +1,25 @@
+# The app's crate, app/page.rs, which rust-js-next builds with Cargo, and an
+# editor's rust-analyzer checks (ADR 0114). Its crates are npm packages,
+# named by version, which rust-js-patch, the app's `postinstall`, tells
+# Cargo are in node_modules; rust-js's own example has them by path.
+[package]
+name = "app"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[lib]
+path = "app/page.rs"
+
+[dependencies]
+js = { package = "rust-js-builtins", path = "../../builtins" }
+next = { package = "rust-js-next", path = "../../next" }
+react = { package = "rust-js-react", path = "../../react" }
+
+# rust-js compiles with `--cfg=rust_js` (ADR 0113): a `cfg` Cargo checks for,
+# here too, in what `js::export_default!` expands to.
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(rust_js)"] }
+
+# Standalone: not part of a workspace of the directories above it.
+[workspace]

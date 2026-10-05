@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-// `bun create @rust-js my-app` (ADR 0105): the vite-react example, packed
-// beside this as `template/`, copied into a new directory and named for it,
-// with rust-js's packages at this release's version, or with `--local`, a
-// distribution's, before a release is on npm.
+// `bun create @rust-js my-app` (ADR 0105): the vite-react example, or with
+// `--template next` the Next.js one (ADR 0192), packed beside this as
+// `templates/vite` and `templates/next`, copied into a new directory and
+// named for it, with rust-js's packages at this release's version, or with
+// `--local`, a distribution's, before a release is on npm.
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,12 +16,21 @@ function fail(message) {
   process.exit(1);
 }
 
+// What each template is, as its app says once it's made.
+const templates = {
+  vite: { made: "a Vite and React app, its component src/App.rs, in Rust" },
+  next: { made: "a Next.js app, its page app/page.rs, in Rust" },
+};
+
 const args = process.argv.slice(2);
+const chosen = args.indexOf("--template");
+const template = chosen >= 0 ? args.splice(chosen, 2)[1] : "vite";
+if (!Object.hasOwn(templates, template)) fail(`--template is ${Object.keys(templates).join(" or ")}`);
 const at = args.indexOf("--local");
 const local = at >= 0 ? args.splice(at, 2)[1] : undefined;
 if (at >= 0 && !local) fail("--local needs a distribution, the directory `bun run pack:distribution` makes");
 const [directory, ...extra] = args;
-if (!directory || extra.length) fail("usage: bun create @rust-js@latest <directory> [--local <distribution>]");
+if (!directory || extra.length) fail("usage: bun create @rust-js@latest <directory> [--template vite|next] [--local <distribution>]");
 
 // A distribution is for one host, and one compiler: this one's.
 const dist = local && resolve(local);
@@ -38,7 +48,7 @@ if (dist) {
 const app = resolve(directory);
 if (existsSync(app) && readdirSync(app).length > 0) fail(`${directory} isn't empty: choose a new directory`);
 mkdirSync(app, { recursive: true });
-cpSync(join(here, "template"), app, { recursive: true });
+cpSync(join(here, "templates", template), app, { recursive: true });
 // npm leaves a package's `.gitignore` out, so it's packed as `_gitignore`.
 renameSync(join(app, "_gitignore"), join(app, ".gitignore"));
 
@@ -72,7 +82,7 @@ writeFileSync(path, JSON.stringify(manifest, null, 2) + "\n");
 const agent = process.env.npm_config_user_agent?.split("/")[0];
 const manager = agent || (process.versions.bun ? "bun" : "npm");
 const { toolchain } = self.rustJs;
-console.log(`Made ${directory}: a Vite and React app, its component src/App.rs, in Rust.
+console.log(`Made ${directory}: ${templates[template].made}.
 
 rust-js runs with rustc's own libraries, of the Rust release it's built with. Once:
 

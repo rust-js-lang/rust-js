@@ -68,6 +68,32 @@ test("a packed @rust-js/create makes the vite-react example's app, named for its
   expect(made.stdout).toContain("bun install");
 });
 
+// `--template next`: the Next.js example's app (ADR 0192), its page Rust,
+// its crates npm packages as the Vite one's are, and `next` among them.
+test("--template next makes the Next.js example's app, named for its directory", () => {
+  const index = packed();
+  const cwd = fixture("create-next");
+  const made = runSync([process.execPath, index, "my-site", "--template", "next"], cwd, 60_000);
+  expect(made.code).toBe(0);
+  const app = join(cwd, "my-site");
+  const example = run(["git", "ls-files", "examples/next"]).trim().split("\n")
+    .map((file) => relative("examples/next", file)).sort();
+  expect(files(app)).toEqual(example);
+  expect(readFileSync(join(app, "app/page.rs"), "utf8")).toBe(readFileSync(join(root, "examples/next/app/page.rs"), "utf8"));
+  const manifest = JSON.parse(readFileSync(join(app, "package.json"), "utf8"));
+  const crate = (dir: string) => readFileSync(join(root, dir, "Cargo.toml"), "utf8").match(/^version = "([^"]+)"/m)![1];
+  expect(manifest.name).toBe("my-site");
+  expect(manifest.scripts).toMatchObject({ dev: "rust-js-next dev", build: "rust-js-next build", postinstall: "rust-js-patch" });
+  expect(manifest.dependencies).toMatchObject({ "@rust-js/next": crate("next"), "@rust-js/react": crate("react"), "@rust-js/webapi": crate("webapi"), "@rust-js/builtins": crate("builtins") });
+  expect(manifest.devDependencies["@rust-js/next-plugin"]).toBe(version);
+  expect(JSON.stringify(manifest)).not.toContain("workspace:");
+  const cargoToml = readFileSync(join(app, "Cargo.toml"), "utf8");
+  expect(cargoToml).not.toContain('path = "../');
+  expect(cargoToml).toContain(`next = { package = "rust-js-next", version = "~${crate("next")}" }`);
+  expect(made.stdout).toContain("Made my-site: a Next.js app, its page app/page.rs, in Rust.");
+  expect(runSync([process.execPath, index, "other", "--template", "remix"], cwd, 60_000).stderr).toContain("--template is vite or next");
+});
+
 // An app is a Cargo package, which Vite builds in Cargo's way (ADR 0101),
 // and an editor checks: its crates, `js`, `webapi` and `react`, are npm
 // packages, named in its Cargo.toml by version, which `rust-js-patch`, as
@@ -102,6 +128,21 @@ test("a created app has its crates from npm, which its patch tells Cargo where t
   expect(warnings.filter((line) => !/^warning: (unused variable: |static `\w+` is never used)/.test(line))).toEqual([]);
   expect(check.stderr).not.toMatch(/`rust-js-\w+` \(lib\) generated/);
   expect(check.code).toBe(0);
+
+  // A Next.js app's, `next` among them, as the same packages.
+  expect(runSync([process.execPath, index, "site", "--template", "next"], cwd, 60_000).code).toBe(0);
+  const site = join(cwd, "site");
+  for (const name of ["builtins", "webapi", "react", "next"]) {
+    const at = join(site, "node_modules", "@rust-js", name);
+    mkdirSync(at, { recursive: true });
+    run(["tar", "-xzf", join(packs, `${name}.tgz`), "-C", at, "--strip-components", "1"]);
+  }
+  expect(runSync([process.execPath, join(root, "tooling", "patch.js"), site], site, 60_000).code).toBe(0);
+  const next = runSync(["cargo", "check", "--offline", "--quiet", "--manifest-path", join(site, "Cargo.toml")], site, 300_000, { RUSTC_BOOTSTRAP: undefined });
+  // What's used only in JSX, `Image`, which react's placeholder `jsx!` doesn't look inside.
+  const nextWarnings = next.stderr.split("\n").filter((line) => /^(warning|error)\b/.test(line) && !/\(lib\) generated \d+ warnings?/.test(line));
+  expect(nextWarnings.filter((line) => !/^warning: unused import: /.test(line))).toEqual([]);
+  expect(next.code).toBe(0);
 }, 900_000);
 
 // Before a release is on npm: the packages `pack:distribution` made, each

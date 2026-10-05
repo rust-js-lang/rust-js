@@ -1,12 +1,12 @@
 // Pack the crates rust-js releases on npm, `@rust-js/builtins`,
-// `@rust-js/webapi` and `@rust-js/react`: each is Cargo's own packaging of its crate, which
+// `@rust-js/webapi`, `@rust-js/react` and `@rust-js/next`: each is Cargo's own packaging of its crate, which
 // `package-crates.ts` makes and verifies with a plain stable rustc, in an
 // npm package that names the crate. What a crate shares with an app, the
 // crates it depends on, is a peer dependency, so an app has one copy of
 // each; Cargo finds them in its `node_modules` by a patch. This never
 // publishes.
 //
-//   bun scripts/package-npm-crates.ts <out-dir>   # <out-dir>/builtins.tgz, webapi.tgz, react.tgz
+//   bun scripts/package-npm-crates.ts <out-dir>   # <out-dir>/builtins.tgz, webapi.tgz, react.tgz, next.tgz
 
 import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -18,7 +18,7 @@ if (args.length !== 1 || args[0].startsWith("-")) throw new Error("Usage: bun sc
 const out = resolve(args[0]);
 
 /** Each crate released on npm, by its directory, and its package's name. */
-const packages: Record<string, string> = { builtins: "@rust-js/builtins", webapi: "@rust-js/webapi", react: "@rust-js/react" };
+const packages: Record<string, string> = { builtins: "@rust-js/builtins", webapi: "@rust-js/webapi", react: "@rust-js/react", next: "@rust-js/next" };
 
 type Manifest = {
   package: {

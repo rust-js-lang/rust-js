@@ -98,4 +98,12 @@ export const mutations: Mutation[] = [
     replace: "match false && owns && self.needs_clone(item) {",
     tests: ["test/corpus.test.ts", "-t", "iterator_clones"],
   },
+  {
+    name: "element-default-null",
+    breaks: "an \`Element\`'s default, children not given, is \`null\`, written as a child",
+    file: "src/lower/std_impls.rs",
+    find: "            return Ok(Expr::undefined());\n        }\n        if self.has_user_impl(default, ty) {",
+    replace: "            return Ok(Expr::null());\n        }\n        if self.has_user_impl(default, ty) {",
+    tests: ["test/jsx.test.ts", "-t", "named props and the rest from a base"],
+  },
 ];

@@ -428,15 +428,48 @@ pub fn lower_crate<'tcx>(
                     });
                 }
             }
+            // `js::directive!("use client");` and `js::export_default!(page);`,
+            // what a Next.js route's module has (ADR 0192).
+            let mut directives = Vec::new();
+            for attr in super::bindings::marks(tcx, module, "directive") {
+                match attr.value_str() {
+                    Some(directive) => directives.push(directive.to_string()),
+                    None => {
+                        tcx.dcx()
+                            .span_err(attr.span(), "rust-js: write it `js::directive!(\"use client\");`");
+                    }
+                }
+            }
+            let mut default_export = None;
+            for (function, span) in super::bindings::default_exports(tcx, module) {
+                match function {
+                    Some(function)
+                        if default_export.is_none()
+                            && function
+                                .as_local()
+                                .is_some_and(|local| tcx.parent_module_from_def_id(local) == module) =>
+                    {
+                        default_export = Some(super::bindings::fn_name(tcx, function));
+                    }
+                    _ => {
+                        tcx.dcx().span_err(
+                            span,
+                            "rust-js: `js::export_default!` names one function of its own module, once",
+                        );
+                    }
+                }
+            }
             let lowered = LoweredModule {
                 path: paths[&module].clone(),
                 file: module_file(tcx, module).name.clone().into_local_path(),
+                directives,
                 packages,
                 imports: Vec::new(),
                 namespaces: pass.namespaces.remove(&module).unwrap_or_default(),
                 consts: const_items.remove(&module).unwrap_or_default(),
                 functions: pass.functions.remove(&module).unwrap_or_default(),
                 caches: pass.caches.remove(&module).unwrap_or_default(),
+                default_export,
                 runtime: Vec::new(),
                 jsx: pass.jsx.contains(&module),
             };

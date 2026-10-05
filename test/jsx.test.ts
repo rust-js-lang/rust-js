@@ -379,7 +379,7 @@ for (const [name, body, message] of [
   ["missing component prop", '<Card />', 'missing field'],
   ["unknown component prop", '<Card nope="x" />', 'no field named'],
   ["invalid spread", '<div {...123} />', 'non-struct'],
-  ["mixed component spread", '<Card title="x" {...Props { title: "y" }} />', 'either named props or a props spread'],
+  ["mixed component spread", '<Card title="x" {...Props { title: "y" }} />', "not JSX's `{...base}`"],
   ["adjacent roots", '<div /><span />', 'wrap adjacent JSX elements'],
   ["spread followed by attribute", '<div {...Props { title: "x" }} id="y" />', 'put the props spread last'],
   ["multiple spreads", '<div {...Props { title: "x" }} {...Props { title: "y" }} />', 'put the props spread last'],
@@ -673,6 +673,41 @@ pub fn Attributes() -> Element {
   expect(renderToStaticMarkup(result.Expressions(true))).toBe('<section>1234<b>yes</b>on6</section>');
   expect(renderToStaticMarkup(result.Expressions(false))).toBe('<section>1234off6</section>');
   expect(renderToStaticMarkup(result.Attributes())).toBe('<button disabled="" title="2" aria-label="Save" data-state="ready" tabindex="3"></button><input value="a"/><div style="color:red"><b>raw</b></div>');
+});
+
+// A component's named props with the rest from a base, `{..Default::default()}`,
+// as Rust's struct update has them: what a binding of a JS component with
+// many optional props, `next/image`'s, is given (ADR 0192). `{...base}` with
+// named props stays an error, as JSX's spread would override them.
+test("JSX gives a component its named props and the rest from a base", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{Element, jsx};
+#[derive(Default)]
+pub struct Opts { pub title: Option<&'static str>, pub width: Option<u32> }
+pub fn Card(o: Opts) -> Element { jsx! { <section title={o.title.unwrap_or("none")}>{o.width.unwrap_or(0)}</section> } }
+// An Element's default is React's empty node, undefined, as next/link's
+// children are given, or not.
+#[derive(Default)]
+pub struct Framed { pub title: Option<&'static str>, pub children: Element }
+pub fn Frame(f: Framed) -> Element { jsx! { <div title={f.title.unwrap_or("bare")}>{f.children}</div> } }
+pub fn App() -> Element {
+    jsx! {
+        <>
+            <Card title={Some("named")} {..Default::default()} />
+            <Card width={Some(3)} {..Opts { title: Some("base"), width: Some(9) }} />
+            <Frame title={Some("t")} {..Default::default()}><b>{"kid"}</b></Frame>
+            <Frame {..Default::default()} />
+        </>
+    }
+}
+`);
+  run(args);
+  const result = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(result.App())).toBe('<section title="named">0</section><section title="base">3</section><div title="t"><b>kid</b></div><div title="bare"></div>');
+  // The JSX one writes: the base evaluated last, as Rust's is, with nothing
+  // kept of it, and no children where none are given.
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect([jsx.includes('<Frame title="t">'), jsx.includes("<Frame />"), jsx.includes("match")]).toEqual([true, true, false]);
 });
 
 test("JSX grammar: spread precedence, children overrides, component paths and keyed fragments", async () => {

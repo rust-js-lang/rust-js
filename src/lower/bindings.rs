@@ -1,9 +1,10 @@
 //! Decode the binding language independently of call lowering.
 
-use rustc_hir::def::DefKind;
+use rustc_hir::def::{DefKind, Res};
+use rustc_hir::{ExprKind, LetStmt, Stmt, StmtKind};
 use rustc_middle::ty::{FieldDef, TyCtxt, VariantDef};
 use rustc_span::def_id::{DefId, LocalModDefId};
-use rustc_span::{Symbol, sym};
+use rustc_span::{Span, Symbol, sym};
 
 /// Validate tool bindings even if no function calls them. A malformed binding
 /// must not silently become an ordinary Rust function with an unreachable body.
@@ -201,14 +202,48 @@ pub(super) fn marks<'tcx>(
     })
 }
 
-/// Is `def_id` a `js::import!`'s or `js::camel_case!`'s `const _`, which
-/// is rust-js's to read, and has nothing to write?
+/// Is `def_id` a `js::import!`'s, `js::camel_case!`'s, `js::directive!`'s
+/// or `js::export_default!`'s `const _`, which is rust-js's to read, and
+/// has nothing to write?
 pub(super) fn is_mark(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
-    ["import", "camel_case"].iter().any(|name| {
-        tcx.get_attrs_by_path(def_id, &[Symbol::intern("rust_js"), Symbol::intern(name)])
-            .next()
-            .is_some()
-    })
+    ["import", "camel_case", "directive", "export_default"]
+        .iter()
+        .any(|name| {
+            tcx.get_attrs_by_path(def_id, &[Symbol::intern("rust_js"), Symbol::intern(name)])
+                .next()
+                .is_some()
+        })
+}
+
+/// A module's `js::export_default!(page)`: the function its `const _`
+/// names, `let _ = page;`, and where it's written (ADR 0192).
+pub(super) fn default_exports(tcx: TyCtxt<'_>, module: LocalModDefId) -> Vec<(Option<DefId>, Span)> {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("export_default")];
+    tcx.hir_module_free_items(module)
+        .filter(|item| tcx.get_attrs_by_path(item.owner_id.to_def_id(), &path).next().is_some())
+        .map(|item| {
+            let def = item.owner_id.def_id;
+            let named = match tcx.hir_body_owned_by(def).value.kind {
+                ExprKind::Block(block, _) => match block.stmts {
+                    [
+                        Stmt {
+                            kind: StmtKind::Let(LetStmt { init: Some(init), .. }),
+                            ..
+                        },
+                    ] => match &init.kind {
+                        ExprKind::Path(path) => match tcx.typeck(def).qpath_res(path, init.hir_id) {
+                            Res::Def(DefKind::Fn, function) => Some(function),
+                            _ => None,
+                        },
+                        _ => None,
+                    },
+                    _ => None,
+                },
+                _ => None,
+            };
+            (named, tcx.def_span(def))
+        })
+        .collect()
 }
 
 /// What an item of this crate is called in JS: its `#[rust_js::name]`, or

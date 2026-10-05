@@ -1,0 +1,26 @@
+{
+  "name": "@rust-js/next-plugin",
+  "version": "0.0.3",
+  "type": "module",
+  "description": "Compile a Next.js app's Rust with rust-js, beside `next dev` and before `next build`. See docs/decisions/0192-next.md.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rust-js-lang/rust-js.git",
+    "directory": "next-plugin"
+  },
+  "bin": {
+    "rust-js-next": "./bin.js"
+  },
+  "exports": "./index.js",
+  "files": [
+    "index.js",
+    "bin.js"
+  ],
+  "dependencies": {
+    "@rust-js/build": "workspace:*"
+  },
+  "peerDependencies": {
+    "next": ">=16"
+  }
+}

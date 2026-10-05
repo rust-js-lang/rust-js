@@ -42,6 +42,7 @@ arm64 from `9793b19` before it was published (M6.1).
 | Collections, traits, generics, iterators, async, and common std operations within a defined subset | [Design decisions](docs/README.md), [native comparisons](test/compiler.test.ts), [trait tests](test/traits.test.ts) |
 | Readable JS/JSX and source maps | [Snapshots](test/snapshots/), [JSX tests](test/jsx.test.ts), [emission tests](test/emission.test.ts) |
 | React, DOM bindings, Vite, and Fast Refresh | [React guide](react/README.md), [Vite tests](test/vite.test.ts), [browser tests](test/browser.test.ts) |
+| Next.js routes and components in Rust | [Next.js example](examples/next/README.md), [ADR 0192](docs/decisions/0192-next.md), [Next.js tests](test/next.test.ts) |
 | Serde-compatible JSON writing and reading for supported types | [Writing contract](docs/decisions/0077-serde-json.md), [reading contract](docs/decisions/0078-serde-json-reading.md), [differential tests](test/serde.test.ts) |
 | Browser compiler and playground | [WASM build](wasm/README.md), [playground tests](test/playground.test.ts) |
 | Automated checks and a compiler scaling benchmark | [Nightly workflow](.github/workflows/check.yml), [benchmark](bench/lowering.ts) |
@@ -55,7 +56,7 @@ arm64 from `9793b19` before it was published (M6.1).
 | Language and std coverage | Substantial subset; important composition gaps | Current conformance inventory, then systematic closure of gaps (M1, M7) |
 | Correctness | Differential, diagnostic, and snapshot suites exist | Required CI, generated cases, and feature-interaction coverage (M2, M7) |
 | Full-stack code sharing | Cargo workspaces of shared crates build, with serde from crates.io; the pilot, an app installed from npm, shares its models with a native server | Registry crates compiled to JS (M8) |
-| JavaScript and React interop | Working bindings, JSX, and Vite integration; bindings are npm packages, the first community one in its own repository | External application and library compatibility suite (M3, M9) |
+| JavaScript and React interop | Working bindings, JSX, and Vite and Next.js integration; bindings are npm packages, the first community one in its own repository | External application and library compatibility suite (M3, M9) |
 | Distribution and upgrades | 0.0.3 on npm for macOS arm64; `bun create @rust-js@latest` makes an app that installs everything from npm; the pilot upgraded from 0.0.2 to 0.0.3 and back by [the changelog](CHANGELOG.md)'s steps | A clean machine, and a release that switches without `cargo clean` (M4) |
 | Performance and tooling | Scaling benchmark and source maps exist; an app is a Cargo package a plain `cargo check` checks; JSX not expanded in editors | Measured application budgets and supported editor workflow (M5, M9) |
 | Production evidence | Two releases qualified on their host and published; other gates remain open | Qualified release, followed by sustained independent adoption (M6, M10) |

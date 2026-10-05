@@ -207,6 +207,8 @@ impl Jsx<'_> {
         }
         let mut attrs: Vec<(String, TokenStream, Span)> = Vec::new();
         let mut spread = None;
+        // `{..base}`, Rust's struct update, where `{...base}` is JSX's spread.
+        let mut struct_update = false;
         while !self.is(TokenKind::Gt) && !self.is(TokenKind::Slash) {
             self.mark(indent + 4);
             let attr_span = self.tokens.get(self.at).map_or(span, TokenTree::span);
@@ -216,6 +218,7 @@ impl Jsx<'_> {
                 if spread.is_some() {
                     return Err(self.error("only one props spread is supported"));
                 }
+                struct_update = matches!(tokens.get(0), Some(TokenTree::Token(t, _)) if t.kind == TokenKind::DotDot);
                 if let Some(layout) = &mut self.layout
                     && let Some(TokenTree::Delimited(span, _, _, tokens)) = self.tokens.get(self.at)
                 {
@@ -332,11 +335,12 @@ impl Jsx<'_> {
         // A props literal already evaluates its fields in source order.
         // Capture only when the separate key or spread would change that
         // order. Ordinary components must stay ordinary JSX expressions.
+        // `{..base}` is Rust's struct update, evaluated last, as Rust's is.
         let capture = attrs
             .iter()
             .position(|(name, _, _)| name == "key")
             .is_some_and(|at| at + 1 != attrs.len() || spread.is_some() || has_children)
-            || (spread.is_some() && has_children)
+            || (spread.is_some() && has_children && !struct_update)
             || attrs.iter().any(|(name, _, _)| name == "ref");
         // Evaluate attributes in written order, including `key`, before
         // constructing props. The match bindings cannot capture user names:
@@ -368,8 +372,8 @@ impl Jsx<'_> {
                 true
             }
         });
-        if spread.is_some() && !attrs.is_empty() {
-            return Err(self.error("a component takes either named props or a props spread; use a Rust struct update inside the spread to override fields"));
+        if spread.is_some() && !attrs.is_empty() && !struct_update {
+            return Err(self.error("a component's named props take the rest from `{..base}`, Rust's struct update, not JSX's `{...base}`, which would override them"));
         }
         let mut reference_prop = None;
         attrs.retain(|(name, value, _)| {

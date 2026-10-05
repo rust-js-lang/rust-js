@@ -22,7 +22,7 @@ test("each package a release publishes is publishable, at the compiler's version
   else run([process.execPath, "scripts/package-distribution.ts", compiler, bundle], 600_000);
   run([process.execPath, "scripts/package-create.ts", join(bundle, "create.tgz")]);
   const names: string[] = [];
-  for (const file of ["runtime.tgz", "resources.tgz", "native.tgz", "build.tgz", "vite-plugin.tgz", "create.tgz"]) {
+  for (const file of ["runtime.tgz", "resources.tgz", "native.tgz", "build.tgz", "vite-plugin.tgz", "next-plugin.tgz", "create.tgz"]) {
     const unpacked = fixture(`release-${file}`);
     run(["tar", "-xzf", join(bundle, file), "-C", unpacked]);
     const pkg = JSON.parse(readFileSync(join(unpacked, "package", "package.json"), "utf8"));
@@ -37,5 +37,5 @@ test("each package a release publishes is publishable, at the compiler's version
       }
     }
   }
-  expect(names.sort()).toEqual(["@rust-js/build", "@rust-js/create", "@rust-js/native", "@rust-js/resources", "@rust-js/runtime", "@rust-js/vite-plugin"]);
+  expect(names.sort()).toEqual(["@rust-js/build", "@rust-js/create", "@rust-js/native", "@rust-js/next-plugin", "@rust-js/resources", "@rust-js/runtime", "@rust-js/vite-plugin"]);
 }, 900_000);

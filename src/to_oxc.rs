@@ -105,6 +105,9 @@ pub fn emit(
     // The header, imports and runtime helpers are plain text above the
     // generated code. None of them map to Rust.
     let mut code = format!("{}\n", module.header);
+    for directive in &module.directives {
+        code.push_str(&format!("\n{directive:?};\n"));
+    }
     if !module.packages.is_empty() {
         code.push('\n');
         for package in &module.packages {
@@ -233,6 +236,10 @@ pub fn emit(
         }
         places.push(parts);
         previous = Some(line);
+    }
+    // After everything it maps, so the map's lines stay where they are.
+    if let Some(function) = &module.default_export {
+        code.push_str(&format!("\nexport default {function};\n"));
     }
     let map = generated.map.expect("a source map, since source_map_path is set");
     // The sources the map points into, and only those, named from here.

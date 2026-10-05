@@ -10,7 +10,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { fingerprint, publishArtifacts } from "../tooling/publish.js";
+import { commit, fingerprint, publishArtifacts } from "../tooling/publish.js";
 import { buildCompiler, compiler, fixture } from "./support";
 
 beforeAll(buildCompiler, 600_000);
@@ -89,3 +89,24 @@ for (const c of cases) {
     expect(existsSync(file)).toBe(c.kept);
   });
 }
+
+// A file a build replaces is never missing, even for a moment: a bundler
+// watching it, Next.js's Turbopack, would take it for deleted, and what
+// imports it for broken (ADR 0192). Another process looks for it while it's
+// replaced, again and again.
+test("a file commit replaces is never missing while it's replaced", async () => {
+  const dir = fixture("commit-atomic");
+  const file = join(dir, "page.jsx"), stop = join(dir, "stop");
+  writeFileSync(file, "0");
+  const looking = Bun.spawn([process.execPath, "-e", `const fs = require("fs"); let missing = 0;
+console.log("looking");
+while (!fs.existsSync(${JSON.stringify(stop)})) if (!fs.existsSync(${JSON.stringify(file)})) missing++;
+console.log(missing);`], { stdout: "pipe" });
+  const reader = looking.stdout.getReader();
+  let said = "";
+  while (!said.includes("looking")) said += new TextDecoder().decode((await reader.read()).value);
+  for (let i = 1; i <= 2000; i++) commit(new Map([[file, String(i)]]), []);
+  writeFileSync(stop, "");
+  for (let chunk; !(chunk = await reader.read()).done;) said += new TextDecoder().decode(chunk.value);
+  expect([readFileSync(file, "utf8"), Number(said.replace("looking", "").trim())]).toEqual(["2000", 0]);
+});

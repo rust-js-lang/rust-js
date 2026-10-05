@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "    marks(tcx, LocalModDefId::CRATE_DEF_ID, \"none\").next().is_some()\n",
     tests: ["test/react.test.ts","-t","camel_case crate"],
   },
+  {
+    name: "route-marks-written",
+    breaks: "\`js::directive!\`'s and \`js::export_default!\`'s \`const _\` is written to the JS",
+    file: "src/lower/bindings.rs",
+    find: '    ["import", "camel_case", "directive", "export_default"]\n',
+    replace: '    ["import", "camel_case"]\n',
+    tests: ["test/compiler.test.ts", "-t", "make a module a Next.js route"],
+  },
 ];

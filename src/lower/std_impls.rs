@@ -13,8 +13,8 @@ use rustc_hir::LangItem;
 use rustc_hir::def::{DefKind, Res};
 use rustc_middle::traits::ImplSource;
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
-use rustc_span::Span;
 use rustc_span::def_id::DefId;
+use rustc_span::{Span, Symbol};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn clone_trait(&self) -> DefId {
@@ -390,6 +390,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Some(dictionary) => Ok(Expr::call(Expr::member(dictionary, "default"), Vec::new())),
                 None => Err(self.unsupported(span, &format!("implementation evidence for `{tr}`"))),
             };
+        }
+        // A React element's, React's empty node (ADR 0192): the react
+        // crate's `impl` has no JS of its own.
+        if let ty::Adt(adt, _) = ty.kind()
+            && self
+                .tcx
+                .get_attrs_by_path(adt.did(), &[Symbol::intern("rust_js"), Symbol::intern("jsx_element")])
+                .next()
+                .is_some()
+        {
+            return Ok(Expr::undefined());
         }
         if self.has_user_impl(default, ty) {
             let method = self.tcx.associated_item_def_ids(default)[0];

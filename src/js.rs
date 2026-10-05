@@ -28,6 +28,8 @@ impl Span {
 
 pub struct Module {
     pub header: String,
+    /// `"use client"`, before its imports (ADR 0192).
+    pub directives: Vec<String>,
     /// Imports from JS modules, from `#[link_name = "module#path"]` (ADR 0028).
     pub packages: Vec<Package>,
     /// Named imports, one declaration per Rust module this one uses.
@@ -42,6 +44,8 @@ pub struct Module {
     pub functions: Vec<Function>,
     /// Lazy trait dictionary caches. `var` without an initializer is cycle-safe.
     pub caches: Vec<String>,
+    /// `export default page;`, after its functions (ADR 0192).
+    pub default_export: Option<String>,
 }
 
 impl Module {

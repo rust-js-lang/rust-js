@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "    let mut reserved: HashSet<String> = uses.globals.iter().chain(taken.values().flatten().filter(|_| false)).cloned().collect();\n",
     tests: ["test/crates.test.ts", "-t", "two crates: same_name"],
   },
+  {
+    name: "component-default-import-unnamed",
+    breaks: "\`next/image#default\` of \`fn Image\` is \`image\`, which JSX takes for an element",
+    file: "src/lower/analysis/naming.rs",
+    find: "                [only] if tcx.def_kind(**only) == DefKind::Fn => Some(bindings::fn_name(tcx, **only)),",
+    replace: "                [only] if false && tcx.def_kind(**only) == DefKind::Fn => Some(bindings::fn_name(tcx, **only)),",
+    tests: ["test/next.test.ts", "-t", "build builds"],
+  },
 ];

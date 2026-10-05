@@ -21,6 +21,31 @@ macro_rules! import {
     };
 }
 
+/// The module's directive, the first statement of its JS: `"use client";`
+/// of a React component a Next.js Server Component renders, written
+/// `js::directive!("use client");` (ADR 0192).
+#[macro_export]
+macro_rules! directive {
+    ($directive:literal) => {
+        #[cfg_attr(rust_js, rust_js::directive = $directive)]
+        const _: () = ();
+    };
+}
+
+/// The module's default export, a function of its own, which keeps its
+/// name too: `js::export_default!(page);` is `export default page;`, what a
+/// Next.js route's `page.jsx` has (ADR 0192). The function is named in a
+/// `const _`, so a plain rustc checks it's there.
+#[macro_export]
+macro_rules! export_default {
+    ($function:path) => {
+        #[cfg_attr(rust_js, rust_js::export_default)]
+        const _: () = {
+            let _ = $function;
+        };
+    };
+}
+
 /// The crate's own functions, fields and props are camelCase in JS, as its
 /// variables are (ADRs 0046 and 0110): `js::camel_case!();` at the crate root.
 #[macro_export]

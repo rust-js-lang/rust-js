@@ -68,6 +68,15 @@ pub use webapi;
 #[cfg_attr(rust_js, rust_js::jsx_element)]
 pub struct Element(PhantomData<JsObject>);
 
+/// React's empty node, `undefined`, which renders nothing: what a props
+/// struct that derives `Default` has of its `children` where they aren't
+/// given, as a JS component's binding is, `next/link`'s (ADR 0192).
+impl Default for Element {
+    fn default() -> Self {
+        unreachable!("rust-js writes `undefined`")
+    }
+}
+
 /// JSX, `jsx! { <h1>{"Hi"}</h1> }`, which rust-js compiles itself (ADR 0040):
 /// to rust-js, the Rust it writes for it, which it gives as `@rust_js ..`; to
 /// a plain rustc, a user's own `cargo check`, an `Element` it doesn't look

@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "                let tag = match self.binding_component(component).filter(|_| false) {\n",
     tests: ["test/jsx.test.ts", "-t", "a binding is a value"],
   },
+  {
+    name: "undefined-children-written",
+    breaks: "\`<Frame {..Default::default()} />\` is \`<Frame>{undefined}</Frame>\`",
+    file: "src/lower/jsx.rs",
+    find: "                Prop::Field(name, value) if name == \"children\" && matches!(value.kind, js::ExprKind::Undefined) => {}",
+    replace: "                Prop::Field(name, value) if name == \"children\" && false && matches!(value.kind, js::ExprKind::Undefined) => {}",
+    tests: ["test/jsx.test.ts", "-t", "named props and the rest from a base"],
+  },
 ];

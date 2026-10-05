@@ -19,6 +19,8 @@ pub struct LoweredModule {
     pub path: Vec<String>,
     /// The `.rs` file the module's code lives in.
     pub file: Option<PathBuf>,
+    /// Its directives, `"use client"` (ADR 0192).
+    pub directives: Vec<String>,
     /// What it imports from JS modules (ADR 0028), with the modules' names
     /// as written in `#[link_name]`.
     pub packages: Vec<js::Package>,
@@ -27,6 +29,8 @@ pub struct LoweredModule {
     pub consts: Vec<js::Const>,
     pub functions: Vec<js::Function>,
     pub caches: Vec<String>,
+    /// The function it exports as its default too (ADR 0192).
+    pub default_export: Option<String>,
     /// Runtime helpers its functions use.
     pub runtime: Vec<Helper>,
     /// Whether it has JSX, so it's a `.jsx` file (ADR 0040).

@@ -20,10 +20,10 @@ function files(dir: string): string[] {
     .sort();
 }
 
-test("builtins, webapi and react are npm packages of their crates, which an app's Cargo finds in node_modules", () => {
+test("builtins, webapi, react and next are npm packages of their crates, which an app's Cargo finds in node_modules", () => {
   const out = fixture("npm-crates");
   run([process.execPath, "scripts/package-npm-crates.ts", out], 600_000, { RUSTC_BOOTSTRAP: "" });
-  expect(readdirSync(out).sort()).toEqual(["builtins.tgz", "react.tgz", "webapi.tgz"]);
+  expect(readdirSync(out).sort()).toEqual(["builtins.tgz", "next.tgz", "react.tgz", "webapi.tgz"]);
 
   const unpacked = (name: string) => {
     const dir = join(fixture(`npm-crate-${name}`));
@@ -37,6 +37,8 @@ test("builtins, webapi and react are npm packages of their crates, which an app'
     ["webapi", { "@rust-js/builtins": crates["@rust-js/builtins"] }, ["src/lib.rs"]],
     // React's own, the library it binds, and what its build script reads.
     ["react", { ...crates, react: ">=18.0.0", "react-dom": ">=18.0.0" }, ["build.rs", "src/dom.rs", "src/elements.rs", "src/event.rs", "src/lib.rs", "versions.json"]],
+    // Next.js's, the library it binds, and React's crate, which it uses.
+    ["next", { "@rust-js/builtins": crates["@rust-js/builtins"], "@rust-js/react": `~${cargo("react").package.version}`, next: ">=16.0.0" }, ["src/image.rs", "src/lib.rs", "src/link.rs", "src/navigation.rs"]],
   ] as const) {
     const dir = unpacked(name);
     const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));

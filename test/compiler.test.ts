@@ -1166,6 +1166,25 @@ test("js::import! imports a module where it's written, and writes nothing of its
   expect(panel).not.toContain("app.css");
 });
 
+// `js::directive!("use client");` is the module's directive, its first
+// statement, and `js::export_default!(page);` its default export, of a
+// function that stays named for the crate's other modules (ADR 0192): what a
+// Next.js route is, `app/page.jsx`.
+test("js::directive! and js::export_default! make a module a Next.js route", async () => {
+  const dir = fixture("js-route");
+  writeFileSync(join(dir, "lib.rs"), 'js::directive!("use client");\npub fn page() -> u32 {\n    about::about() + 1\n}\njs::export_default!(page);\npub mod about {\n    pub fn about() -> u32 {\n        2\n    }\n    js::export_default!(about);\n}\n');
+  buildWebapi();
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const top = readFileSync(join(dir, "lib.js"), "utf8"), about = readFileSync(join(dir, "about.js"), "utf8");
+  const statements = (js: string) => js.split("\n").filter((line) => line && !line.startsWith("//"));
+  expect(statements(top)[0]).toBe('"use client";');
+  expect(statements(about)[0]).not.toBe('"use client";');
+  expect(top).toContain("export default page;");
+  expect(top).not.toContain("const _");
+  const [lib, sub] = [await import(join(dir, "lib.js")), await import(join(dir, "about.js"))];
+  expect([lib.default(), lib.page(), sub.default()]).toEqual([3, 3, 2]);
+});
+
 // The crates a program depends on, js, webapi and react, are stable Rust too
 // (ADR 0112): rust-js compiles them, `--rustc`, with its tool registered, so
 // they need no `register_tool`, nor any feature, nor `RUSTC_BOOTSTRAP`.

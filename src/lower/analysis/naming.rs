@@ -81,6 +81,10 @@ pub(super) fn name_imports(
                 [only] if matches!(tcx.def_kind(**only), DefKind::Static { .. }) => {
                     Some(camel_case(tcx.item_name(**only).as_str()))
                 }
+                // A component's, `next/image#default` of `fn Image`, is its
+                // name, `import Image from "next/image"`, as JSX needs one
+                // that's capitalized (ADR 0192).
+                [only] if tcx.def_kind(**only) == DefKind::Fn => Some(bindings::fn_name(tcx, **only)),
                 _ => None,
             };
             let base = match (export.as_str(), held_by) {

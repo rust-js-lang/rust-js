@@ -1,5 +1,5 @@
 // Host publication for a successful WASI build. The manifest is committed last.
-import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, join, resolve, sep } from "node:path";
 import { randomUUID } from "node:crypto";
 import { parseManifest } from "./manifest.js";
@@ -75,7 +75,7 @@ export function commit(writes, stale, last) {
       const stage = `${path}.${id}.stage`;
       staged.push(stage);
       writeFileSync(stage, data, { flag: "wx" });
-      changed.push({ path, stage, backup: `${path}.${id}.backup`, saved: false, installed: false });
+      changed.push({ path, data, stage, backup: `${path}.${id}.backup`, saved: false, installed: false });
     }
     // Stale files are backed up too, so an ordinary I/O failure can roll back.
     const lastWrite = changed.find(change => change.path === last);
@@ -84,21 +84,34 @@ export function commit(writes, stale, last) {
       ...(lastWrite ? [lastWrite] : [])];
     changed.splice(0, changed.length, ...order);
     for (const change of changed) {
-      if (existsSync(change.path)) {
-        renameSync(change.path, change.backup);
+      // One replaced is kept by a copy, and written in place, as an
+      // editor saves a file: a bundler watching it, Next.js's Turbopack,
+      // sees it change, where it can miss one renamed over it, and never
+      // sees it missing (ADR 0192). A new one is renamed into place, and a
+      // stale one moved away, as it's removed.
+      const replaced = change.stage && existsSync(change.path);
+      if (replaced) {
+        copyFileSync(change.path, change.backup);
         change.saved = true;
-      }
-      if (change.stage) {
-        renameSync(change.stage, change.path);
+        writeFileSync(change.path, change.data);
         change.installed = true;
+      } else {
+        if (existsSync(change.path)) {
+          renameSync(change.path, change.backup);
+          change.saved = true;
+        }
+        if (change.stage) {
+          renameSync(change.stage, change.path);
+          change.installed = true;
+        }
       }
     }
   } catch (error) {
     const recovery = [];
     for (const change of [...changed].reverse()) {
       try {
-        if (change.installed) rmSync(change.path);
         if (change.saved) renameSync(change.backup, change.path);
+        else if (change.installed) rmSync(change.path);
       } catch (failure) { recovery.push(`${change.path}: ${failure}; backup: ${change.backup}`); }
     }
     throw new Error(`${error}${recovery.length ? `\nRecovery failures:\n${recovery.join("\n")}` : ""}`);

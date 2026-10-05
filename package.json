@@ -10,7 +10,9 @@
     "vite-plugin",
     "tooling",
     "runtime",
-    "examples/vite-react"
+    "examples/vite-react",
+    "next-plugin",
+    "examples/next"
   ],
   "scripts": {
     "setup": "bun install && bunx --bun playwright install chromium",

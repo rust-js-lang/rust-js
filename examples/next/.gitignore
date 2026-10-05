@@ -1,0 +1,53 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# app/page.jsx is written by rust-js from app/page.rs, and committed, as
+# ReScript recommends for its JS. Its source map isn't.
+*.jsx.map
+*.js.map
+
+# What Cargo writes, and the patch rust-js-patch writes, of what's
+# installed: its crates are npm packages, which the lockfile of the app's
+# package manager pins.
+/target
+/Cargo.lock
+/.cargo

@@ -15,6 +15,7 @@ const versions: Record<string, string> = {
   "rust-js-builtins": versionOf("builtins"),
   "rust-js-webapi": versionOf("webapi"),
   "rust-js-react": versionOf("react"),
+  "rust-js-next": versionOf("next"),
 };
 
 test("the binding crates package for crates.io, each at its version", () => {
@@ -22,7 +23,7 @@ test("the binding crates package for crates.io, each at its version", () => {
   const packaged = runSync([process.execPath, "scripts/package-crates.ts", out], root, 600_000, { RUSTC_BOOTSTRAP: undefined });
   expect(packaged.stderr).not.toContain("error");
   expect(packaged.code).toBe(0);
-  const crates = ["rust-js-builtins", "rust-js-webapi", "rust-js-react"].map((name) => `${name}-${versions[name]}.crate`);
+  const crates = ["rust-js-builtins", "rust-js-webapi", "rust-js-react", "rust-js-next"].map((name) => `${name}-${versions[name]}.crate`);
   expect(readdirSync(out).sort()).toEqual([...crates].sort());
   // Each is its Rust, and what react's build script reads: not the
   // repository's tools that generate or build it.
@@ -36,4 +37,5 @@ test("the binding crates package for crates.io, each at its version", () => {
   expect(listed("rust-js-webapi")).toEqual(["README.md", "src/lib.rs"]);
   expect(versionOf("react")).toBe(versionOf("."));
   expect(listed("rust-js-react")).toEqual(["README.md", "build.rs", "src/dom.rs", "src/elements.rs", "src/event.rs", "src/lib.rs", "versions.json"]);
+  expect(listed("rust-js-next")).toEqual(["README.md", "src/image.rs", "src/lib.rs", "src/link.rs", "src/navigation.rs"]);
 }, 600_000);
