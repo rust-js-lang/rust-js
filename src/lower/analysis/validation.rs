@@ -1,5 +1,6 @@
 //! What a crate does that rust-js refuses, found before any of it is lowered.
 
+use crate::lower::bindings;
 use crate::lower::recognition::{StdItem, from_serde_derive, is_from_str, is_std_def, known_derive};
 use crate::lower::traits;
 use crate::lower::{Body, strip};
@@ -7,11 +8,11 @@ use rustc_hir::def::DefKind;
 use rustc_hir::find_attr;
 use rustc_middle::middle::codegen_fn_attrs::CodegenFnAttrFlags;
 use rustc_middle::mir::BorrowKind;
-use rustc_middle::thir::{ExprId, ExprKind, Thir};
+use rustc_middle::thir::{AdtExprBase, ExprId, ExprKind, Thir};
 use rustc_middle::ty;
 use rustc_middle::ty::TyCtxt;
-use rustc_span::Symbol;
 use rustc_span::def_id::{DefId, LocalDefId};
+use rustc_span::{Span, Symbol};
 use std::collections::HashSet;
 
 /// Report each item rust-js can't compile yet. False if there was one.
@@ -179,4 +180,120 @@ pub(super) fn in_thread_local(tcx: TyCtxt<'_>, d: LocalDefId) -> Option<LocalDef
         parent = tcx.opt_local_parent(p);
     }
     None
+}
+
+/// Report what flattened props (ADR 0204) can't be: a struct with more than
+/// one rest, or one flattened field that isn't a struct of named fields,
+/// or whose fields' names are its parent's too; a flattened field read,
+/// which JS's props don't have; and a struct with one made anywhere but as
+/// JSX's props, which hold it flat. False if there was one.
+pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> bool {
+    let mut valid = true;
+    let mut refuse = |span: Span, what: String| {
+        tcx.dcx().span_err(span, format!("rust-js does not support {what} yet"));
+        valid = false;
+    };
+    for id in tcx.hir_crate_items(()).definitions() {
+        if tcx.def_kind(id) != DefKind::Struct {
+            continue;
+        }
+        let parent = tcx.adt_def(id).non_enum_variant();
+        let Some(field) = parent.fields.iter().find(|f| bindings::is_flatten(tcx, f)) else {
+            continue;
+        };
+        let span = tcx.def_span(field.did);
+        let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+        let rests = (0..parent.fields.len())
+            .filter(|&i| bindings::is_rest_field(tcx, tcx.type_of(id).instantiate_identity().skip_normalization(), i))
+            .count();
+        if rests > 1 {
+            refuse(
+                span,
+                "props with more than one rest: they have one rest, a `Rest` or a flattened field".into(),
+            );
+            continue;
+        }
+        let ty::Adt(inner, _) = ty.kind() else {
+            refuse(
+                span,
+                format!("flattening `{ty}`: a flattened field is a struct of named fields"),
+            );
+            continue;
+        };
+        let inner = inner.non_enum_variant();
+        if !ty.ty_adt_def().is_some_and(|adt| adt.is_struct()) || inner.ctor.is_some() {
+            refuse(
+                span,
+                format!("flattening `{ty}`: a flattened field is a struct of named fields"),
+            );
+            continue;
+        }
+        let own: HashSet<String> = parent
+            .fields
+            .iter()
+            .filter(|f| f.did != field.did)
+            .map(|f| bindings::field_key(tcx, f))
+            .collect();
+        for f in &inner.fields {
+            let key = bindings::field_key(tcx, f);
+            if own.contains(&key) {
+                refuse(
+                    span,
+                    format!(
+                        "flattened props whose `{key}` is `{}`'s too: JS's props have one of each name",
+                        tcx.item_name(id.to_def_id())
+                    ),
+                );
+            }
+            if bindings::is_flatten(tcx, f) {
+                refuse(span, "flattened props within flattened props".into());
+            }
+        }
+    }
+    for body in all_bodies {
+        let thir = &body.thir;
+        // Each struct JSX gives a component as its props, `<*>`'s second.
+        let mut props = HashSet::new();
+        for expr in thir.exprs.iter() {
+            if let ExprKind::Call { fun, ref args, .. } = expr.kind
+                && let ty::FnDef(def_id, _) = *thir[fun].ty.kind()
+                && matches!(bindings::js_form(tcx, def_id), bindings::JsForm::Jsx(tag) if tag == "*")
+                && let [_, given] = args[..]
+            {
+                let given = strip(thir, given);
+                props.insert(given);
+                // And its base, `{..Default::default()}`, which is taken apart.
+                if let ExprKind::Adt(ref adt) = thir[given].kind
+                    && let AdtExprBase::Base(ref fru) = adt.base
+                {
+                    props.insert(strip(thir, fru.base));
+                }
+            }
+        }
+        for (e, expr) in thir.exprs.iter_enumerated() {
+            match expr.kind {
+                ExprKind::Field { lhs, name, .. }
+                    if bindings::is_rest_field(tcx, thir[lhs].ty, name.as_usize())
+                        && !bindings::is_rest(tcx, expr.ty) =>
+                {
+                    refuse(
+                        expr.span,
+                        "reading flattened props: take them apart where they're given, `Props { a, anchor }: Props`"
+                            .into(),
+                    );
+                }
+                ExprKind::Adt(_) | ExprKind::Call { .. }
+                    if bindings::has_flatten(tcx, expr.ty) && !props.contains(&e) =>
+                {
+                    refuse(
+                        expr.span,
+                        "props with a flattened field made here: they're made only as JSX's, `<Card anchor={..} />`"
+                            .into(),
+                    );
+                }
+                _ => {}
+            }
+        }
+    }
+    valid
 }

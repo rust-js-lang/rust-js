@@ -38,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "rest-field-not-spread",
     breaks: "a `Rest` a component passes on is a `rest` prop, not `{...rest}`",
     file: "src/lower/jsx.rs",
-    find: "                        attrs.push(Prop::Spread(value));",
-    replace: "                        attrs.push(Prop::Field(name, value));",
+    find: "                    _ => attrs.push(Prop::Spread(value)),",
+    replace: "                    _ => attrs.push(Prop::Field(name, value)),",
     tests: ["test/jsx.test.ts", "-t", "doesn't name as ...rest"],
   },
   {
@@ -81,5 +81,13 @@ export const mutations: Mutation[] = [
     find: "                value.has_effects() || (children.has_effects() && !value.is_constant())",
     replace: "                value.has_effects()",
     tests: ["test/jsx.test.ts", "-t", "children that change the base"],
+  },
+  {
+    name: "flattened-literal-spread",
+    breaks: "a flattened struct made in JSX is spread, `{...{ href: \"/learn\" }}`, not its fields as attributes",
+    file: "src/lower/jsx.rs",
+    find: "                    js::ExprKind::Object(props) => attrs.extend(props),\n",
+    replace: "",
+    tests: ["test/jsx.test.ts", "-t", "flattened struct"],
   },
 ];

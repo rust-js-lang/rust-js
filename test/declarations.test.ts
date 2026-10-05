@@ -46,6 +46,40 @@ pub fn ExternalLink<C: Node>(LinkProps { href, children, rest }: LinkProps<C>) -
     jsx! { <a href={href} {...rest}>{children}</a> }
 }
 
+#[derive(Default)]
+pub struct Anchor {
+    pub href: Option<&'static str>,
+    pub target: Option<&'static str>,
+}
+
+// A flattened field's fields are its parent's: extends Anchor (ADR 0204).
+pub struct ButtonProps {
+    pub size: Option<&'static str>,
+    #[rust_js::flatten]
+    pub anchor: Anchor,
+}
+
+pub fn Button(ButtonProps { size, anchor }: ButtonProps) -> Element {
+    jsx! { <a className={size} {...anchor} /> }
+}
+
+pub mod far {
+    #[derive(Default)]
+    pub struct Far {
+        pub id: Option<&'static str>,
+    }
+}
+
+// One of another module, which TypeScript here can't see, is a Rest's.
+pub struct CardProps {
+    #[rust_js::flatten]
+    pub far: far::Far,
+}
+
+pub fn Card(CardProps { far }: CardProps) -> Element {
+    jsx! { <b {...far} /> }
+}
+
 pub struct IconProps {
     pub class_name: Option<&'static str>,
 }
@@ -71,21 +105,25 @@ pub fn words(n: u64, flags: Vec<bool>) -> String {
     "export function Tag(props: TagProps): ReactNode;",
     "export interface LinkProps<C> {\n  href?: string;\n  children: C;\n  [prop: string]: unknown;\n}",
     "export function ExternalLink<C>(props: LinkProps<C>): ReactNode;",
+    "export interface ButtonProps extends Anchor {\n  size?: string;\n}",
+    "export interface CardProps {\n  [prop: string]: unknown;\n}",
     "export const Icon: NamedExoticComponent<IconProps>;",
     "export function words(n: bigint, flags: boolean[]): string;",
   ]) {
     expect(declarations).toContain(line);
   }
   // TypeScript that uses them: optional props left out, a JS caller's own
-  // passed on, and a wrong one, the only error.
-  writeFileSync(join(dir, "use.tsx"), `import { ExternalLink, Icon, Tag, words } from "./lib.jsx";
+  // passed on, a flattened struct's as its own, and wrong ones, the only errors.
+  writeFileSync(join(dir, "use.tsx"), `import { Button, ExternalLink, Icon, Tag, words } from "./lib.jsx";
 export const ok = [
   <Tag variant="advanced" count={2} />,
   <ExternalLink href="/a" aria-label="A">a</ExternalLink>,
   <Icon class_name="c" />,
   words(1n, [true]),
+  <Button size="lg" href="/b" target="_blank" />,
 ];
 export const wrong = <Tag variant="intermediate" count={2} />;
+export const wrongHref = <Button href={1} />;
 `);
   writeFileSync(join(dir, "tsconfig.json"), JSON.stringify({
     compilerOptions: { jsx: "react-jsx", strict: true, noEmit: true, module: "esnext", moduleResolution: "bundler", allowJs: true, skipLibCheck: true, typeRoots: [join(root, "node_modules/@types")] },
@@ -93,7 +131,9 @@ export const wrong = <Tag variant="intermediate" count={2} />;
   }));
   const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
   const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
-  expect(errors.length).toBe(1);
-  expect(errors[0]).toContain("use.tsx(8,");
+  expect(errors.length).toBe(2);
+  expect(errors[0]).toContain("use.tsx(9,");
   expect(errors[0]).toContain('"intermediate"');
+  // A flattened struct's field is checked as the component's own.
+  expect(errors[1]).toContain("use.tsx(10,");
 });

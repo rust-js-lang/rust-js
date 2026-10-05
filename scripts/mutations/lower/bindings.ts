@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: '    ["import", "camel_case"]\n',
     tests: ["test/compiler.test.ts", "-t", "make a module a Next.js route"],
   },
+  {
+    name: "flatten-not-a-rest",
+    breaks: "a flattened field is a field, `{ size, children, anchor }`, not `...anchor`",
+    file: "src/lower/bindings.rs",
+    find: "        .is_some_and(|field| is_flatten(tcx, field) || is_rest(tcx, field.ty(tcx, args).skip_normalization()))",
+    replace: "        .is_some_and(|field| is_rest(tcx, field.ty(tcx, args).skip_normalization()))",
+    tests: ["test/jsx.test.ts", "-t", "flattened struct"],
+  },
 ];

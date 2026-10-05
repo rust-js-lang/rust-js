@@ -70,8 +70,8 @@ export const mutations: Mutation[] = [
     name: "rest-props-with-drops-not-taken-apart",
     breaks: "props with a `Rest` and a field with a destructor are an error, where they're `{ label, ...rest }`",
     file: "src/lower/bodies.rs",
-    find: "                    .any(|f| super::bindings::is_rest(self.tcx, f.pattern.ty))\n",
-    replace: "                    .any(|f| false && super::bindings::is_rest(self.tcx, f.pattern.ty))\n",
+    find: "                    .any(|f| super::bindings::is_rest_field(self.tcx, param.ty, f.field.as_usize()))\n",
+    replace: "                    .any(|f| false && super::bindings::is_rest_field(self.tcx, param.ty, f.field.as_usize()))\n",
     tests: ["test/jsx.test.ts", "-t", "doesn't name as ...rest"],
   },
 ];

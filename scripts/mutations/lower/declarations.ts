@@ -36,4 +36,20 @@ export const mutations: Mutation[] = [
     replace: "                if false\n                    && let Some(declared) = tcx\n",
     tests,
   },
+  {
+    name: "flattened-declared-nested",
+    breaks: "a flattened field is declared a field, `anchor: Anchor`, not `extends Anchor`",
+    file: "src/lower/declarations.rs",
+    find: "            Some(ts) if ts != \"any\" => format!(\" extends {ts}\"),",
+    replace: "            Some(ts) if false => format!(\" extends {ts}\"),",
+    tests,
+  },
+  {
+    name: "flattened-extends-any",
+    breaks: "another module's flattened struct is `extends any`, which TypeScript refuses",
+    file: "src/lower/declarations.rs",
+    find: "            Some(ts) if ts != \"any\" => format!(\" extends {ts}\"),",
+    replace: "            Some(ts) => format!(\" extends {ts}\"),",
+    tests,
+  },
 ];

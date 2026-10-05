@@ -245,6 +245,33 @@ pub(super) fn is_rest(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::TyKind::Adt(adt, _) if tcx.get_attrs_by_path(adt.did(), &path).next().is_some())
 }
 
+/// Whether `field` is flattened, `#[rust_js::flatten]`: its struct's fields
+/// are its parent's in JS, as `A & B`'s are in TypeScript (ADR 0204).
+pub(super) fn is_flatten(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("flatten")];
+    tcx.get_attrs_by_path(field.did, &path).next().is_some()
+}
+
+/// Whether field `i` of `ty`, a struct, holds what JS's `...rest` does: a
+/// `Rest` (ADR 0195), or a flattened struct, typed (ADR 0204).
+pub(super) fn is_rest_field<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, i: usize) -> bool {
+    let ty::Adt(adt, args) = ty.kind() else { return false };
+    if !adt.is_struct() {
+        return false;
+    }
+    adt.non_enum_variant()
+        .fields
+        .iter()
+        .nth(i)
+        .is_some_and(|field| is_flatten(tcx, field) || is_rest(tcx, field.ty(tcx, args).skip_normalization()))
+}
+
+/// Whether `ty` is a struct with a flattened field, which JS holds flat:
+/// made only as JSX's props, which flatten it (ADR 0204).
+pub(super) fn has_flatten(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && adt.non_enum_variant().fields.iter().any(|f| is_flatten(tcx, f)))
+}
+
 /// Whether `id` is react's `Node`, what React renders as a child: a
 /// sealed trait, its types std's and React's (ADR 0201).
 pub(super) fn is_jsx_node(tcx: TyCtxt<'_>, id: DefId) -> bool {

@@ -710,6 +710,69 @@ pub fn App() -> Element {
   expect([jsx.includes('<Frame title="t">'), jsx.includes("<Frame />"), jsx.includes("match")]).toEqual([true, true, false]);
 });
 
+// A props struct's flattened field, `#[rust_js::flatten]`, holds a struct
+// whose fields are the component's own props, as TypeScript's
+// `AnchorProps & ButtonLinkProps` has them: `...anchor` where they're
+// taken apart, and in JSX each one given, an attribute (ADR 0204).
+test("JSX gives a flattened struct's fields as a component's own props", async () => {
+  const flattened = `#![allow(non_snake_case)]
+use react::{Element, Node, jsx};
+#[derive(Default)]
+pub struct Anchor {
+    pub href: Option<&'static str>,
+    pub target: Option<&'static str>,
+    #[cfg_attr(rust_js, rust_js::name = "aria-label")]
+    pub aria_label: Option<&'static str>,
+}
+#[derive(Default)]
+pub struct ButtonLinkProps<C> {
+    pub size: Option<&'static str>,
+    pub children: C,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub anchor: Anchor,
+}
+pub fn ButtonLink<C: Node>(ButtonLinkProps { size, children, anchor }: ButtonLinkProps<C>) -> Element {
+    let class = if size == Some("lg") { "big" } else { "small" };
+    let target = anchor.target.unwrap_or("_self");
+    jsx! { <a className={class} target={target} {...anchor}>{children}</a> }
+}
+`;
+  const { dir, args } = compile(flattened + `
+pub fn App() -> Element {
+    jsx! {
+        <ButtonLink
+            size={Some("lg")}
+            anchor={Anchor { href: Some("/learn"), aria_label: Some("Learn"), ..Default::default() }}
+            {..Default::default()}
+        >
+            {"Learn"}
+        </ButtonLink>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("export function ButtonLink({ size, children, ...anchor }) {");
+  expect(jsx).toContain('<ButtonLink size="lg" href="/learn" aria-label="Learn">');
+  const { App, ButtonLink } = await import(join(dir, "lib.jsx"));
+  const { createElement } = await import("react");
+  expect(renderToStaticMarkup(App())).toBe('<a class="big" target="_self" href="/learn" aria-label="Learn">Learn</a>');
+  expect(renderToStaticMarkup(createElement(ButtonLink, { href: "/x", target: "_blank" }, "x"))).toBe('<a class="small" target="_blank" href="/x">x</a>');
+  // What JS's props can't be is an error: the field read whole, the
+  // struct made anywhere but as JSX's props, two rests, and a name both have.
+  const refused = (source: string, says: string) => {
+    const c = compile(source);
+    const failed = Bun.spawnSync(c.args, { cwd: c.dir });
+    expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining(says)]);
+  };
+  refused(flattened + "pub fn read(p: ButtonLinkProps<()>) -> Option<&'static str> { let a = p.anchor; a.href }\n", "flattened props");
+  refused(flattened + "pub fn made() -> Element { ButtonLink(ButtonLinkProps { size: None, children: (), anchor: Anchor::default() }) }\n", "made only as JSX");
+  refused(flattened + "pub fn defaulted() -> ButtonLinkProps<()> { ButtonLinkProps::default() }\n", "made only as JSX");
+  refused(flattened + "pub fn matched(p: ButtonLinkProps<()>) -> Option<&'static str> { match p { ButtonLinkProps { anchor, .. } => anchor.href } }\n", "flattened props taken apart here");
+  refused(flattened.replace("pub children: C,", "pub children: C,\n    pub rest: react::Rest,").replace("{ size, children, anchor }", "{ size, children, anchor, .. }"), "one rest");
+  refused(flattened.replace("pub target: Option", "pub size: Option<&'static str>,\n    pub target: Option"), "`size`");
+});
+
 // A component's props are as written, its children last, then what a
 // base gives (ADR 0203). Rust makes the children before it reads the base,
 // so children that change it, `bump(&mut base)`, are made first in JS too.

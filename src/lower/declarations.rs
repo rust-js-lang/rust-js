@@ -14,7 +14,7 @@ use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::Symbol;
 use rustc_span::def_id::{DefId, LocalModDefId};
 
-use super::bindings::{field_key, fn_name, is_binding, is_mark, is_rest, variant_name};
+use super::bindings::{field_key, fn_name, is_binding, is_flatten, is_mark, is_rest, variant_name};
 use super::recognition::{StdItem, is_std_def};
 use super::representation::Num;
 
@@ -140,12 +140,27 @@ impl<'tcx> Declarations<'tcx> {
             return;
         }
         let name = self.tcx.item_name(def_id);
-        let _ = writeln!(out, "export interface {name}{} {{", self.generics(def_id));
+        // A flattened field's struct is what this one extends (ADR 0204):
+        // one TypeScript can't see, another module's (`any`), is what a
+        // `Rest` is.
+        let flattened = variant
+            .fields
+            .iter()
+            .find(|f| is_flatten(self.tcx, f))
+            .map(|field| self.ts(self.tcx.type_of(field.did).instantiate_identity().skip_normalization()));
+        let extends = match &flattened {
+            Some(ts) if ts != "any" => format!(" extends {ts}"),
+            _ => String::new(),
+        };
+        let _ = writeln!(out, "export interface {name}{}{extends} {{", self.generics(def_id));
         for field in &variant.fields {
             let ty = self.tcx.type_of(field.did).instantiate_identity().skip_normalization();
             // What a JS caller gives besides, `...rest` (ADR 0195).
-            if is_rest(self.tcx, ty) {
+            if is_rest(self.tcx, ty) || (is_flatten(self.tcx, field) && extends.is_empty()) {
                 let _ = writeln!(out, "  [prop: string]: unknown;");
+                continue;
+            }
+            if is_flatten(self.tcx, field) {
                 continue;
             }
             let key = field_key(self.tcx, field);

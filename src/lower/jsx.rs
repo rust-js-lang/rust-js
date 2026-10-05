@@ -215,10 +215,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         let rest_fields: Vec<String> = match self.shape(ty) {
-            Shape::Object(types) => types
-                .into_iter()
-                .filter(|&(_, ty)| super::bindings::is_rest(self.tcx, ty))
-                .map(|(name, _)| name)
+            Shape::Object(types) => (types.into_iter().enumerate())
+                .filter(|&(i, _)| super::bindings::is_rest_field(self.tcx, ty, i))
+                .map(|(_, (name, _))| name)
                 .collect(),
             _ => Vec::new(),
         };
@@ -228,12 +227,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             match field {
                 // None given, an `Element`'s default (ADR 0192).
                 Prop::Field(name, value) if name == "children" && matches!(value.kind, js::ExprKind::Undefined) => {}
-                // What a `Rest` holds is the element's props, `{...rest}` (ADR 0195).
-                Prop::Field(name, value) if rest_fields.contains(&name) => {
-                    if !matches!(value.kind, js::ExprKind::Undefined) {
-                        attrs.push(Prop::Spread(value));
-                    }
-                }
+                // What a `Rest` holds is the element's props, `{...rest}` (ADR 0195),
+                // and so is a flattened struct's: one made here, each field
+                // given, an attribute of its own (ADR 0204).
+                Prop::Field(name, value) if rest_fields.contains(&name) => match value.kind {
+                    js::ExprKind::Undefined => {}
+                    js::ExprKind::Object(props) => attrs.extend(props),
+                    _ => attrs.push(Prop::Spread(value)),
+                },
                 Prop::Field(name, value) if name == "children" => {
                     let Shape::Object(types) = self.shape(ty) else {
                         unreachable!("a struct's fields")

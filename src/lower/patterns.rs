@@ -84,8 +84,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 for (i, part) in parts {
                     let Some((name, var, m)) = part else { continue };
                     let bound = self.bind(var, name.as_str(), m);
-                    // The props a component's struct doesn't name, `...rest` (ADR 0195).
-                    match super::bindings::is_rest(self.tcx, fields[i].1) {
+                    // The props a component's struct doesn't name, `...rest` (ADR
+                    // 0195), or a flattened struct's, typed (ADR 0204).
+                    match super::bindings::is_rest_field(self.tcx, pat.ty, i) {
                         true => rest = Some(bound),
                         false => named.push((fields[i].0.clone(), bound)),
                     }
@@ -1261,6 +1262,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         return Err(self.unsupported(
                             field.pattern.span,
                             "a `Rest` of props taken apart here: take them apart where they're given, `fn f(Props { a, rest }: Props)`",
+                        ));
+                    }
+                    if bindings::is_rest_field(self.tcx, pat.ty, field.field.as_usize()) {
+                        return Err(self.unsupported(
+                            field.pattern.span,
+                            "flattened props taken apart here: take them apart where they're given, `fn f(Props { a, anchor }: Props)`",
                         ));
                     }
                     let part = self.project(subject.clone(), pat.ty, field.field.as_usize());

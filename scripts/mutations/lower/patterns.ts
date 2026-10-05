@@ -214,8 +214,8 @@ export const mutations: Mutation[] = [
     name: "rest-props-as-field",
     breaks: "`LinkProps { href, rest }` is `{ href, rest }`, where JS's props have no `rest`, not `...rest`",
     file: "src/lower/patterns.rs",
-    find: "                    match super::bindings::is_rest(self.tcx, fields[i].1) {",
-    replace: "                    match false && super::bindings::is_rest(self.tcx, fields[i].1) {",
+    find: "                    match super::bindings::is_rest_field(self.tcx, pat.ty, i) {",
+    replace: "                    match false && super::bindings::is_rest_field(self.tcx, pat.ty, i) {",
     tests: ["test/jsx.test.ts", "-t", "doesn't name as ...rest"],
   },
   {
@@ -225,5 +225,13 @@ export const mutations: Mutation[] = [
     find: "                    if bindings::is_rest(self.tcx, field.pattern.ty) {",
     replace: "                    if false && bindings::is_rest(self.tcx, field.pattern.ty) {",
     tests: ["test/jsx.test.ts", "-t", "doesn't name as ...rest"],
+  },
+  {
+    name: "flattened-taken-apart-in-match",
+    breaks: "a match takes flattened props apart, reading a field JS's props don't have",
+    file: "src/lower/patterns.rs",
+    find: "                    if bindings::is_rest_field(self.tcx, pat.ty, field.field.as_usize()) {",
+    replace: "                    if false && bindings::is_rest_field(self.tcx, pat.ty, field.field.as_usize()) {",
+    tests: ["test/jsx.test.ts", "-t", "flattened struct"],
   },
 ];

@@ -29,7 +29,7 @@ use rustc_span::def_id::{DefId, LocalDefId, LocalModDefId};
 use std::collections::{BTreeMap, HashMap, HashSet};
 use type_facts::type_fact_params;
 pub(super) use validation::is_thread_local;
-use validation::{in_thread_local, reject_static_references, reject_unsupported};
+use validation::{in_thread_local, reject_flatten_misuse, reject_static_references, reject_unsupported};
 
 /// Made by serde's `#[derive(Serialize)]` or `#[derive(Deserialize)]`, or
 /// inside what they made (its `const _: () = { .. }`): left out, since
@@ -186,7 +186,10 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     };
     let all_bodies: Vec<&Body<'tcx>> = all_bodies.iter().filter(|body| !is_harness(body.def_id)).collect();
 
-    if !reject_unsupported(tcx, &foreign, &markers) || !reject_static_references(tcx, &all_bodies) {
+    if !reject_unsupported(tcx, &foreign, &markers)
+        || !reject_static_references(tcx, &all_bodies)
+        || !reject_flatten_misuse(tcx, &all_bodies)
+    {
         return None;
     }
 

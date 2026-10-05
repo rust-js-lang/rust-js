@@ -228,7 +228,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && let PatKind::Leaf { subpatterns } = &pat.kind
                 && subpatterns
                     .iter()
-                    .any(|f| super::bindings::is_rest(self.tcx, f.pattern.ty))
+                    .any(|f| super::bindings::is_rest_field(self.tcx, param.ty, f.field.as_usize()))
             {
                 if let ty::Adt(adt, args) = param.ty.kind() {
                     for (i, field) in adt.non_enum_variant().fields.iter_enumerated() {
