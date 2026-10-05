@@ -35,13 +35,15 @@ macro_rules! directive {
 /// The module's default export, a function of its own, which keeps its
 /// name too: `js::export_default!(page);` is `export default page;`, what a
 /// Next.js route's `page.jsx` has (ADR 0192). The function is named in a
-/// `const _`, so a plain rustc checks it's there.
+/// `const _`'s `use`, so a plain rustc checks it's there, a generic one's
+/// too.
 #[macro_export]
 macro_rules! export_default {
     ($function:path) => {
         #[cfg_attr(rust_js, rust_js::export_default)]
         const _: () = {
-            let _ = $function;
+            #[allow(unused_imports)]
+            use $function as _;
         };
     };
 }

@@ -1,7 +1,7 @@
 //! Decode the binding language independently of call lowering.
 
 use rustc_hir::def::{DefKind, Res};
-use rustc_hir::{ExprKind, LetStmt, Stmt, StmtKind};
+use rustc_hir::{ExprKind, ItemKind, Stmt, StmtKind};
 use rustc_middle::ty::{self, FieldDef, Ty, TyCtxt, VariantDef};
 use rustc_span::def_id::{DefId, LocalModDefId};
 use rustc_span::{Span, Symbol, sym};
@@ -230,16 +230,18 @@ pub(super) fn default_exports(tcx: TyCtxt<'_>, module: LocalModDefId) -> Vec<(Op
         .filter(|item| tcx.get_attrs_by_path(item.owner_id.to_def_id(), &path).next().is_some())
         .map(|item| {
             let def = item.owner_id.def_id;
+            // `use page as _;`: a generic function's too, which Rust can't
+            // name as a value unless it's given its types.
             let named = match tcx.hir_body_owned_by(def).value.kind {
                 ExprKind::Block(block, _) => match block.stmts {
                     [
                         Stmt {
-                            kind: StmtKind::Let(LetStmt { init: Some(init), .. }),
+                            kind: StmtKind::Item(item),
                             ..
                         },
-                    ] => match &init.kind {
-                        ExprKind::Path(path) => match tcx.typeck(def).qpath_res(path, init.hir_id) {
-                            Res::Def(DefKind::Fn, function) => Some(function),
+                    ] => match tcx.hir_item(*item).kind {
+                        ItemKind::Use(path, _) => match path.res.value_ns {
+                            Some(Res::Def(DefKind::Fn, function)) => Some(function),
                             _ => None,
                         },
                         _ => None,

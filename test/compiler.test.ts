@@ -1172,7 +1172,7 @@ test("js::import! imports a module where it's written, and writes nothing of its
 // Next.js route is, `app/page.jsx`.
 test("js::directive! and js::export_default! make a module a Next.js route", async () => {
   const dir = fixture("js-route");
-  writeFileSync(join(dir, "lib.rs"), 'js::directive!("use client");\npub fn page() -> u32 {\n    about::about() + 1\n}\njs::export_default!(page);\npub mod about {\n    pub fn about() -> u32 {\n        2\n    }\n    js::export_default!(about);\n}\n');
+  writeFileSync(join(dir, "lib.rs"), 'js::directive!("use client");\npub fn page() -> u32 {\n    about::about() + 1\n}\njs::export_default!(page);\npub mod about {\n    pub fn about() -> u32 {\n        2\n    }\n    js::export_default!(about);\n}\npub mod generic {\n    pub fn first<T>(items: Vec<T>) -> Option<T> {\n        items.into_iter().next()\n    }\n    js::export_default!(first);\n}\n');
   buildWebapi();
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const top = readFileSync(join(dir, "lib.js"), "utf8"), about = readFileSync(join(dir, "about.js"), "utf8");
@@ -1183,6 +1183,9 @@ test("js::directive! and js::export_default! make a module a Next.js route", asy
   expect(top).not.toContain("const _");
   const [lib, sub] = [await import(join(dir, "lib.js")), await import(join(dir, "about.js"))];
   expect([lib.default(), lib.page(), sub.default()]).toEqual([3, 3, 2]);
+  // A generic function's too, which Rust can't name as a value unless it's
+  // given its types.
+  expect((await import(join(dir, "generic.js"))).default([7, 8])).toBe(7);
 });
 
 // `Some(Direction::Up)` of an `Option` of a unit variant is `d === "Up"`:
