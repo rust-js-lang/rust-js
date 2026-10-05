@@ -85,7 +85,8 @@ Two things came with it:
   of `map`'s calls, then all of `filter`'s. So does a chain that `find`s:
   Rust stops at the first match, and JS has run earlier steps on every
   element. Infinite iterators (`0..`) don't work.
-- `$cmp` on strings compares UTF-16 units, as `<` does (ADR 0034).
+- `$cmp` on strings compares code points, as Rust does (ADR 0183). (Amended:
+  it was UTF-16 units, as `<`.)
 - `a..=b` includes its end: `for (let i = a; i <= b; i++)`, and
   `$range(a, b + 1)` as an iterator. A search that takes its iterator by `&mut`,
   `(0..n).all(f)` or `any`, `find` or `position`, is of the range it

@@ -36,33 +36,6 @@ const STRINGS: &[&str] = &[
     "1_000",
 ];
 
-// The semantics page's listed differences, found exactly on both sides, by
-// numbers: strings compare by UTF-16 units, and `trim()` uses JS's
-// whitespace. Where one shows, the line says "listed".
-
-fn units(s: &str) -> Vec<u32> {
-    let mut out = Vec::new();
-    for c in s.chars() {
-        let c = c as u32;
-        if c > 0xffff {
-            out.push(0xd800 + ((c - 0x10000) >> 10));
-            out.push(0xdc00 + (c & 0x3ff));
-        } else {
-            out.push(c);
-        }
-    }
-    out
-}
-
-fn order_listed(a: &str, b: &str) -> bool {
-    let points = |s: &str| s.chars().map(|c| c as u32).collect::<Vec<u32>>();
-    points(a).cmp(&points(b)) != units(a).cmp(&units(b))
-}
-
-fn trim_listed(a: &str) -> bool {
-    a.contains('\u{85}') || a.contains('\u{feff}')
-}
-
 fn main() {
     for &a in STRINGS {
         println!(
@@ -77,12 +50,11 @@ fn main() {
             a.to_ascii_uppercase(),
             a.to_ascii_lowercase(),
         );
-        let trims = match trim_listed(a) {
-            true => "listed".to_string(),
-            false => format!("{:?} {:?} {:?}", a.trim(), a.trim_start(), a.trim_end()),
-        };
         println!(
-            "{a:?}: trim {trims} {:?} {:?} words {:?} lines {:?}",
+            "{a:?}: trim {:?} {:?} {:?} {:?} {:?} words {:?} lines {:?}",
+            a.trim(),
+            a.trim_start(),
+            a.trim_end(),
             a.trim_matches(' '),
             a.trim_start_matches('a'),
             a.split_whitespace().collect::<Vec<_>>(),
@@ -118,15 +90,14 @@ fn main() {
             a.chars().all(char::is_whitespace),
         );
         for &b in STRINGS {
-            let order = match order_listed(a, b) {
-                true => "listed".to_string(),
-                false => format!("{:?} {}", a.cmp(b), a < b),
-            };
             println!(
-                "{a:?} {b:?}: {} {} {} {order} {} {} {:?} {:?} {:?} {}",
+                "{a:?} {b:?}: {} {} {} {:?} {} {} {} {} {:?} {:?} {:?} {}",
                 a.starts_with(b),
                 a.ends_with(b),
                 a.contains(b),
+                a.cmp(b),
+                a < b,
+                a.max(b),
                 a == b,
                 a.eq_ignore_ascii_case(b),
                 a.find(b),

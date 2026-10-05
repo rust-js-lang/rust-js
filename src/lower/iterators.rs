@@ -1046,7 +1046,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Std::Fuse => items,
             // Sorting, in place (ADR 0036). JS's `sort()` compares as strings:
-            // right for strings and `bool`s, and numbers need `a - b`.
+            // right for `bool`s, and numbers need `a - b`, strings `$cmp`, by
+            // code point (ADR 0183).
             Std::Sort => {
                 let elem = match receiver_ty.peel_refs().kind() {
                     ty::Slice(t) | ty::Array(t, _) => *t,
@@ -1060,7 +1061,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         vec![StmtKind::Return(Some(Expr::bin(Op::Sub, a, b))).at(js_span)],
                     );
                     method(items, "sort", vec![f])
-                } else if self.is_string_like(elem) || elem.is_bool() {
+                } else if elem.is_bool() {
                     method(items, "sort", vec![])
                 } else {
                     // By its `cmp`: JS's `sort` is stable too (ADR 0057).

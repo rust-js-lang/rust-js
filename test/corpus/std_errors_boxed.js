@@ -10,13 +10,14 @@ import {
   $parseErrorDyn,
   $parseF64,
   $parseInt,
+  $trim,
   $tryFromInt,
 } from "@rust-js/runtime";
 
 var $negativeDebug, $negativeDisplay, $negativeError;
 
 function parse_positive(s) {
-  const result = $parseBig(s.trim(), -9223372036854775808n, 9223372036854775807n);
+  const result = $parseBig($trim(s), -9223372036854775808n, 9223372036854775807n);
   if (result.TAG === "Err") {
     return { TAG: "Err", _0: { value: result._0, impl: $parseErrorDyn("ParseIntError") } };
   }

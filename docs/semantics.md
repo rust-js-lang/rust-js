@@ -125,14 +125,10 @@ sharing one is copying it: `clone()` is the string itself, and `push_str` is
   is `None` where slicing panics. `splitn`, `rsplit`, `split_terminator`, `split_at`,
   `match_indices`, `matches` and the `trim_*_matches` search as Rust's do,
   `rsplit` from the end ([0150](decisions/0150-string-patterns.md)).
-
-Differences:
-
-- **`trim()` uses JavaScript's whitespace:** it removes U+FEFF, which Rust
-  keeps, and keeps U+0085, which Rust removes.
-  `split_whitespace` is exact.
-- **Strings compare by UTF-16 units:** `<`, `cmp` and `sort()` of strings
-  can order a character above U+FFFF differently than Rust does.
+- **Strings and `char`s order by code point,** `<`, `cmp`, `sort()`, a
+  `BTreeMap`'s keys and a range of `char`s, an emoji after U+FFFD as in
+  Rust; **`trim()` removes Unicode's White_Space,** U+0085 but not U+FEFF
+  ([0183](decisions/0183-code-point-order-and-trim.md)).
 
 - **A type's own `FromStr` is what `parse` calls,** `s.parse::<Role>()`
   calling `impl FromStr for Role`'s `from_str`
@@ -442,14 +438,13 @@ a map key. React and JSX are [their own page](jsx.md).
 3. `i64` and `u64` are BigInts at the JS boundary.
 4. Float library functions, `sin`, `exp`, `powf`, are JS's: the last bit may
    differ. A NaN's sign and payload aren't kept.
-5. `trim()` uses JS's whitespace; strings compare by UTF-16 units.
-6. A `HashMap` iterates in insertion order.
-7. A chain a function returns runs its closures over every item.
-8. `RefCell` borrows and locks aren't checked.
-9. A future starts when it's made, and runs though no one awaits it.
-10. There's one thread: a channel's `recv()` that would wait forever panics.
-11. Nothing calls `main`; an uncaught panic is the host's error, exit code 1.
-12. JS can catch a panic; a `drop` panicking during a panic replaces it.
-13. A value with a destructor that JS holds is never dropped.
-14. A writer of the crate's is given each `write!`'s text in one `write_str`.
-15. A generic iterator's `size_hint()` is its array's length, or `(0, None)`.
+5. A `HashMap` iterates in insertion order.
+6. A chain a function returns runs its closures over every item.
+7. `RefCell` borrows and locks aren't checked.
+8. A future starts when it's made, and runs though no one awaits it.
+9. There's one thread: a channel's `recv()` that would wait forever panics.
+10. Nothing calls `main`; an uncaught panic is the host's error, exit code 1.
+11. JS can catch a panic; a `drop` panicking during a panic replaces it.
+12. A value with a destructor that JS holds is never dropped.
+13. A writer of the crate's is given each `write!`'s text in one `write_str`.
+14. A generic iterator's `size_hint()` is its array's length, or `(0, None)`.

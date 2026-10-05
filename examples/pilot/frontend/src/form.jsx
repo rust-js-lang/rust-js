@@ -3,7 +3,7 @@
 import { validate } from "../../models/src/lib.js";
 import { useState } from "react";
 import { toast } from "sonner";
-import { $debugStr, $parseInt, $retain } from "@rust-js/runtime";
+import { $debugStr, $parseInt, $retain, $trim } from "@rust-js/runtime";
 
 import { Failure, create } from "./api.js";
 import { go } from "./route.js";
@@ -21,7 +21,7 @@ export function NewContactForm() {
   const [sending, setSending] = useState(false);
   const submit = (e) => {
     e.preventDefault();
-    const result = $parseInt(age.trim(), 0, 4294967295);
+    const result = $parseInt($trim(age), 0, 4294967295);
     const parsed = result.TAG === "Ok" ? result._0 : undefined;
     const new$ = { name, email, age: parsed ?? 0 };
     let found = validate(new$);

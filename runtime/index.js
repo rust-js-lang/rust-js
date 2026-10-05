@@ -4339,6 +4339,21 @@ export function $powf(a, b) {
   return a === 1 || (a === -1 && Math.abs(b) === Infinity) ? 1 : a ** b;
 }
 
+// `s.trim()`, `trim_start()` and `trim_end()`, by Unicode's White_Space, as
+// Rust's are: U+0085 trimmed, and U+FEFF kept, where JS's `trim()` does
+// the other (ADR 0183).
+export function $trim(s) {
+  return s.replace(/^\p{White_Space}+|\p{White_Space}+$/gu, "");
+}
+
+export function $trimStart(s) {
+  return s.replace(/^\p{White_Space}+/u, "");
+}
+
+export function $trimEnd(s) {
+  return s.replace(/\p{White_Space}+$/u, "");
+}
+
 export function $sliceEnd(items, start, end = items.length) {
   if (start > end) throw new Error(`slice index starts at ${start} but ends at ${end}`);
   if (end > items.length) throw new Error(`range end index ${end} out of range for slice of length ${items.length}`);
@@ -4600,7 +4615,22 @@ export function $range(start, end) {
   return Array.from({ length: Math.max(0, end - start) }, (_, i) => start + i);
 }
 
+// A comparison's `Ordering`, -1, 0 or 1, as JS's `<` orders numbers and
+// `bool`s. Strings and `char`s by code point, as Rust orders them, where
+// `<` compares UTF-16 units: where they first differ, a surrogate, of a
+// character past U+FFFF, comes after a unit from U+E000 by code point, and
+// before it by unit (ADR 0183).
 export function $cmp(a, b) {
+  if (typeof a === "string") {
+    let i = 0;
+    while (i < a.length && i < b.length && a.charCodeAt(i) === b.charCodeAt(i)) i++;
+    if (i < a.length && i < b.length) {
+      const x = a.charCodeAt(i);
+      const y = b.charCodeAt(i);
+      if (x >= 0xd800 && y >= 0xd800 && x < 0xe000 !== y < 0xe000) return x < 0xe000 ? 1 : -1;
+      return x < y ? -1 : 1;
+    }
+  }
   return a < b ? -1 : a > b ? 1 : 0;
 }
 

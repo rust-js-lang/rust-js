@@ -4,7 +4,6 @@ import {
   $asciiCase,
   $byteLen,
   $cmp,
-  $cmpItems,
   $debugStr,
   $fromDigit,
   $fromU32,
@@ -51,16 +50,6 @@ const CHARS = [
   "􏿿",
 ];
 
-function units(c) {
-  const c$1 = c.codePointAt(0);
-  const match = c$1 > 65535;
-  if (match === true) {
-    return [(55296 + (((c$1 - 65536) >>> 0) >>> 10)) >>> 0, (56320 + ((c$1 & 1023) >>> 0)) >>> 0];
-  } else {
-    return [c$1];
-  }
-}
-
 function main() {
   for (const c of CHARS) {
     const arg = /^\p{Alphabetic}$/u.test(c);
@@ -103,29 +92,24 @@ function main() {
       `${$debugStr(c, "'")}: case ${$debugStr(arg$19)} ${$debugStr(arg$20)} ${$debugStr(arg$21, "'")} ${$debugStr(arg$22, "'")} digit ${arg$23 == null ? "None" : `Some(${arg$23})`} ${arg$24 == null ? "None" : `Some(${arg$24})`} ${arg$25 == null ? "None" : `Some(${arg$25})`} len ${arg$26} ${arg$27} as ${arg$28} ${arg$29} ${$debugStr(arg$30, "'")} ${arg$31 == null ? "None" : `Some(${$debugStr(arg$31, "'")})`} fmt [${$pad(c, 4, ">")}] [${$pad(c, 3, "<")}] ${arg$32}`,
     );
     for (const d of CHARS) {
-      let order;
-      const tmp = $cmp(c.codePointAt(0), d.codePointAt(0));
-      const left = units(c);
-      const right = units(d);
-      const match = tmp !== $cmpItems(left, right, $cmp);
-      if (match === true) {
-        order = "listed";
-      } else {
-        order = `${
-          ["Less", "Equal", "Greater"][$cmp(c, d) + 1]
-        } ${c < d} ${$cmp(c, d) > 0 ? c : d}`;
-      }
-      const arg$33 = c === d;
-      const arg$34 = $asciiCase(c) === $asciiCase(d);
-      console.log(`${$debugStr(c, "'")} ${$debugStr(d, "'")}: ${order} ${arg$33} ${arg$34}`);
+      const arg$33 = $cmp(c, d);
+      const arg$34 = $cmp(c, d) < 0;
+      const arg$35 = $cmp(c, d) > 0 ? c : d;
+      const arg$36 = c === d;
+      const arg$37 = $asciiCase(c) === $asciiCase(d);
+      console.log(
+        `${$debugStr(c, "'")} ${$debugStr(d, "'")}: ${
+          ["Less", "Equal", "Greater"][arg$33 + 1]
+        } ${arg$34} ${arg$35} ${arg$36} ${arg$37}`,
+      );
     }
   }
   for (const n of [0, 7, 9, 10, 15, 35, 36]) {
-    const arg$35 = $fromDigit(n, 10);
-    const arg$36 = $fromDigit(n, 16);
-    const arg$37 = $fromDigit(n, 36);
+    const arg$38 = $fromDigit(n, 10);
+    const arg$39 = $fromDigit(n, 16);
+    const arg$40 = $fromDigit(n, 36);
     console.log(
-      `${n}: ${arg$35 == null ? "None" : `Some(${$debugStr(arg$35, "'")})`} ${arg$36 == null ? "None" : `Some(${$debugStr(arg$36, "'")})`} ${arg$37 == null ? "None" : `Some(${$debugStr(arg$37, "'")})`}`,
+      `${n}: ${arg$38 == null ? "None" : `Some(${$debugStr(arg$38, "'")})`} ${arg$39 == null ? "None" : `Some(${$debugStr(arg$39, "'")})`} ${arg$40 == null ? "None" : `Some(${$debugStr(arg$40, "'")})`}`,
     );
   }
 }

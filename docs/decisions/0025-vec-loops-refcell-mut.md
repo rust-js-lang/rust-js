@@ -120,7 +120,8 @@ ADR 0147's, an object replaced in place.)
 - `usize` arithmetic wraps at 2^32, not 2^64 as on a 64-bit native build.
   Tests that compare against native Rust only differ on overflow.
 - `str::len` is refused: Rust counts UTF-8 bytes, JS counts UTF-16 units.
-  JS's `trim` also removes U+FEFF, which Rust's doesn't.
+  JS's `trim` also removes U+FEFF, which Rust's doesn't. (Amended: `trim`
+  is Unicode's White_Space now, ADR 0183.)
 - Not yet: indexing (`v[i]`), iterator adapters (`map`, `filter`,
   `enumerate`, `count`), `remove`, `insert`, sorting, `HashMap`, and `&mut`
   to numbers.

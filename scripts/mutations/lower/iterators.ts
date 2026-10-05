@@ -365,4 +365,12 @@ export const mutations: Mutation[] = [
     replace: "vec![],",
     tests: ["test/corpus.test.ts", "-t", "iterator_clones"],
   },
+  {
+    name: "string-sort-by-units",
+    breaks: "`sort()` of strings is JS's, by UTF-16 units",
+    file: "src/lower/iterators.rs",
+    find: "                } else if elem.is_bool() {",
+    replace: "                } else if elem.is_bool() || self.is_string_like(elem) {",
+    tests: ["test/corpus.test.ts", "-t", "code_point_order"],
+  },
 ];

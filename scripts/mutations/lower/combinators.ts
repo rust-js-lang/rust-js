@@ -146,4 +146,12 @@ export const mutations: Mutation[] = [
     replace: "                        body,\n",
     tests: ["test/corpus.test.ts", "-t", "option_combinator_drops"],
   },
+  {
+    name: "string-binary-search-refused",
+    breaks: "`binary_search` of strings is refused",
+    file: "src/lower/combinators.rs",
+    find: "                if self.is_text_ord(item) {",
+    replace: "                if false && self.is_text_ord(item) {",
+    tests: ["test/corpus.test.ts", "-t", "code_point_order"],
+  },
 ];

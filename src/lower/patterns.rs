@@ -1110,7 +1110,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(Some(Expr::bin(Op::Eq, subject.clone(), value)))
             }
             // `1..=9`, `i32::MIN..0`, `'a'..='z'`: between its bounds, as `<`
-            // compares numbers, and `char`s by their UTF-16 units (ADR 0034).
+            // compares numbers, and `char`s by code point (ADR 0183).
             PatKind::Range(range) => {
                 let bound = |boundary: &PatRangeBoundary<'tcx>| match *boundary {
                     PatRangeBoundary::Finite(valtree) => {
@@ -1136,11 +1136,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             && i128::try_from(max).is_ok_and(|max| hi.as_int() == Some(max)))
                     });
                 }
-                let tests: Vec<Expr> = lo
-                    .map(|lo| Expr::bin(Op::Ge, subject.clone(), lo))
-                    .into_iter()
-                    .chain(hi.map(|hi| Expr::bin(below, subject.clone(), hi)))
-                    .collect();
+                let text = range.ty.is_char();
+                let mut tests = Vec::new();
+                for (op, bound) in [(Op::Ge, lo), (below, hi)] {
+                    let Some(bound) = bound else { continue };
+                    tests.push(match text {
+                        true => self.text_compare(op, subject.clone(), bound),
+                        false => Expr::bin(op, subject.clone(), bound),
+                    });
+                }
                 Ok(tests.into_iter().reduce(|a, b| Expr::bin(Op::And, a, b)))
             }
             // `Some(p)`: not `null` or `undefined`, and the value itself matches `p`.

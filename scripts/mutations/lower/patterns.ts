@@ -186,4 +186,12 @@ export const mutations: Mutation[] = [
     replace: "                        || false && adt.is_struct()\n",
     tests: ["test/corpus.test.ts", "-t", "nonzero"],
   },
+  {
+    name: "char-pattern-by-units",
+    breaks: "`matches!(c, '\\u{e000}'..='\\u{f8ff}')` holds of 🦀, by UTF-16 units",
+    file: "src/lower/patterns.rs",
+    find: "                        true => self.text_compare(op, subject.clone(), bound),",
+    replace: "                        true => Expr::bin(op, subject.clone(), bound),",
+    tests: ["test/corpus.test.ts", "-t", "code_point_order"],
+  },
 ];

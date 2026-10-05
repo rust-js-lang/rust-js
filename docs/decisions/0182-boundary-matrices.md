@@ -41,6 +41,7 @@ implementations go wrong, and print each result exactly:**
 - **A listed difference is shown, not skipped:** where strings' order by
   UTF-16 units, or JS's `trim()`, would differ, as the semantics page
   lists, the line says `listed`, found the same way on both sides.
+  (Amended: ADR 0183 closed both; the matrices print them whole.)
 - **The generator writes them, and a test checks it did:** an edit goes in
   `scripts/matrix.ts`, `bun run matrix`.
 

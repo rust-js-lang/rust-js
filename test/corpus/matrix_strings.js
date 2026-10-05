@@ -6,7 +6,6 @@ import {
   $charBoundary,
   $charIndices,
   $cmp,
-  $cmpItems,
   $debugF64,
   $debugParseError,
   $debugStr,
@@ -23,7 +22,10 @@ import {
   $strGet,
   $stripPrefix,
   $stripSuffix,
+  $trim,
+  $trimEnd,
   $trimMatches,
+  $trimStart,
   $utf8Lossy,
 } from "@rust-js/runtime";
 
@@ -60,34 +62,6 @@ const STRINGS = [
   "1_000",
 ];
 
-function units(s) {
-  let out = [];
-  for (const c of Array.from(s)) {
-    const c$1 = c.codePointAt(0);
-    if (c$1 > 65535) {
-      out.push((55296 + (((c$1 - 65536) >>> 0) >>> 10)) >>> 0);
-      out.push((56320 + ((c$1 & 1023) >>> 0)) >>> 0);
-    } else {
-      out.push(c$1);
-    }
-  }
-  return out;
-}
-
-function order_listed(a, b) {
-  const points = (s) => Array.from(s).map((c) => c.codePointAt(0));
-  const left = points(a);
-  const right = points(b);
-  const tmp = $cmpItems(left, right, $cmp);
-  const left$1 = units(a);
-  const right$1 = units(b);
-  return tmp !== $cmpItems(left$1, right$1, $cmp);
-}
-
-function trim_listed(a) {
-  return a.includes("") || a.includes("﻿");
-}
-
 function main() {
   for (const a of STRINGS) {
     const arg = $byteLen(a);
@@ -102,66 +76,60 @@ function main() {
     console.log(
       `${$debugStr(a)}: len ${arg} ${arg$1} ${arg$2} chars ${arg$3 == null ? "None" : `Some(${$debugStr(arg$3, "'")})`} rev ${$debugStr(arg$4)} case ${$debugStr(arg$5)} ${$debugStr(arg$6)} ${$debugStr(arg$7)} ${$debugStr(arg$8)}`,
     );
-    let trims;
-    const match = trim_listed(a);
-    if (match === true) {
-      trims = "listed";
-    } else {
-      trims = `${$debugStr(a.trim())} ${$debugStr(a.trimStart())} ${$debugStr(a.trimEnd())}`;
-    }
-    const arg$9 = $trimMatches(a, " ");
-    const arg$10 = $trimMatches(a, "a", true, false);
-    const arg$11 = a.split(/\p{White_Space}+/u).filter((word) => word !== "");
-    const arg$12 = $lines(a);
+    const arg$9 = $trim(a);
+    const arg$10 = $trimStart(a);
+    const arg$11 = $trimEnd(a);
+    const arg$12 = $trimMatches(a, " ");
+    const arg$13 = $trimMatches(a, "a", true, false);
+    const arg$14 = a.split(/\p{White_Space}+/u).filter((word) => word !== "");
+    const arg$15 = $lines(a);
     console.log(
-      `${$debugStr(a)}: trim ${trims} ${$debugStr(arg$9)} ${$debugStr(arg$10)} words [${arg$11.map((item) => $debugStr(item)).join(", ")}] lines [${arg$12.map((item) => $debugStr(item)).join(", ")}]`,
+      `${$debugStr(a)}: trim ${$debugStr(arg$9)} ${$debugStr(arg$10)} ${$debugStr(arg$11)} ${$debugStr(arg$12)} ${$debugStr(arg$13)} words [${arg$14.map((item) => $debugStr(item)).join(", ")}] lines [${arg$15.map((item) => $debugStr(item)).join(", ")}]`,
     );
-    const arg$13 = a.split(",");
-    const arg$14 = $splitN(a, 2, " ").slice();
-    const arg$15 = $rsplit(a, " ").slice();
-    const arg$16 = $splitOnce(a, ",");
-    const arg$17 = Array.from(new TextEncoder().encode(a))
+    const arg$16 = a.split(",");
+    const arg$17 = $splitN(a, 2, " ").slice();
+    const arg$18 = $rsplit(a, " ").slice();
+    const arg$19 = $splitOnce(a, ",");
+    const arg$20 = Array.from(new TextEncoder().encode(a))
       .map((n) => n)
       .reduce((a, b) => (a + b) >>> 0, 0);
-    const arg$18 = $charIndices(a).slice();
-    const arg$19 = $charBoundary(a, 1) !== undefined;
-    const arg$20 = $strGet(a, 0, 1);
-    const arg$21 = $charIndices(a).toReversed()[0];
+    const arg$21 = $charIndices(a).slice();
+    const arg$22 = $charBoundary(a, 1) !== undefined;
+    const arg$23 = $strGet(a, 0, 1);
+    const arg$24 = $charIndices(a).toReversed()[0];
     console.log(
-      `${$debugStr(a)}: split [${arg$13.map((item) => $debugStr(item)).join(", ")}] [${arg$14.map((item) => $debugStr(item)).join(", ")}] [${arg$15.map((item) => $debugStr(item)).join(", ")}] ${arg$16 == null ? "None" : `Some((${$debugStr(arg$16[0])}, ${$debugStr(arg$16[1])}))`} bytes ${arg$17} [${arg$18.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] ${arg$19} ${arg$20 == null ? "None" : `Some(${$debugStr(arg$20)})`} ${arg$21 == null ? "None" : `Some((${arg$21[0]}, ${$debugStr(arg$21[1], "'")}))`}`,
+      `${$debugStr(a)}: split [${arg$16.map((item) => $debugStr(item)).join(", ")}] [${arg$17.map((item) => $debugStr(item)).join(", ")}] [${arg$18.map((item) => $debugStr(item)).join(", ")}] ${arg$19 == null ? "None" : `Some((${$debugStr(arg$19[0])}, ${$debugStr(arg$19[1])}))`} bytes ${arg$20} [${arg$21.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] ${arg$22} ${arg$23 == null ? "None" : `Some(${$debugStr(arg$23)})`} ${arg$24 == null ? "None" : `Some((${arg$24[0]}, ${$debugStr(arg$24[1], "'")}))`}`,
     );
-    const arg$22 = $find(a, "a");
-    const arg$23 = $rfind(a, "a");
-    const arg$24 = $find(a, "b");
-    const arg$25 = $matches(a, "a").length;
-    const arg$26 = a.replaceAll("a", "xy");
-    const arg$27 = a.repeat(2);
-    const arg$28 = $parseInt(a, -2147483648, 2147483647);
-    const arg$29 = $parseF64(a);
-    const arg$30 = $utf8Lossy(Array.from(new TextEncoder().encode(a)));
-    const arg$31 = Array.from(a).every((c) => /^\p{White_Space}$/u.test(c));
+    const arg$25 = $find(a, "a");
+    const arg$26 = $rfind(a, "a");
+    const arg$27 = $find(a, "b");
+    const arg$28 = $matches(a, "a").length;
+    const arg$29 = a.replaceAll("a", "xy");
+    const arg$30 = a.repeat(2);
+    const arg$31 = $parseInt(a, -2147483648, 2147483647);
+    const arg$32 = $parseF64(a);
+    const arg$33 = $utf8Lossy(Array.from(new TextEncoder().encode(a)));
+    const arg$34 = Array.from(a).every((c) => /^\p{White_Space}$/u.test(c));
     console.log(
-      `${$debugStr(a)}: find ${arg$22 == null ? "None" : `Some(${arg$22})`} ${arg$23 == null ? "None" : `Some(${arg$23})`} ${arg$24 == null ? "None" : `Some(${arg$24})`} ${arg$25} replace ${$debugStr(arg$26)} ${$debugStr(arg$27)} fmt [${$pad(a, 8, ">")}] [${$pad(a, 8, "<")}] [${$pad(a, 8, "^")}] [${Array.from(a).slice(0, 2).join("")}] parse ${arg$28.TAG === "Ok" ? `Ok(${arg$28._0})` : `Err(${$debugParseError(arg$28._0, "ParseIntError")})`} ${arg$29.TAG === "Ok" ? `Ok(${$debugF64(arg$29._0)})` : `Err(${$debugParseError(arg$29._0, "ParseFloatError")})`} lossy ${$debugStr(arg$30._0)} all ${arg$31}`,
+      `${$debugStr(a)}: find ${arg$25 == null ? "None" : `Some(${arg$25})`} ${arg$26 == null ? "None" : `Some(${arg$26})`} ${arg$27 == null ? "None" : `Some(${arg$27})`} ${arg$28} replace ${$debugStr(arg$29)} ${$debugStr(arg$30)} fmt [${$pad(a, 8, ">")}] [${$pad(a, 8, "<")}] [${$pad(a, 8, "^")}] [${Array.from(a).slice(0, 2).join("")}] parse ${arg$31.TAG === "Ok" ? `Ok(${arg$31._0})` : `Err(${$debugParseError(arg$31._0, "ParseIntError")})`} ${arg$32.TAG === "Ok" ? `Ok(${$debugF64(arg$32._0)})` : `Err(${$debugParseError(arg$32._0, "ParseFloatError")})`} lossy ${$debugStr(arg$33._0)} all ${arg$34}`,
     );
     for (const b of STRINGS) {
-      let order;
-      const match$1 = order_listed(a, b);
-      if (match$1 === true) {
-        order = "listed";
-      } else {
-        order = `${["Less", "Equal", "Greater"][$cmp(a, b) + 1]} ${a < b}`;
-      }
-      const arg$32 = a.startsWith(b);
-      const arg$33 = a.endsWith(b);
-      const arg$34 = a.includes(b);
-      const arg$35 = a === b;
-      const arg$36 = $asciiCase(a) === $asciiCase(b);
-      const arg$37 = $find(a, b);
-      const arg$38 = $stripPrefix(a, b);
-      const arg$39 = $stripSuffix(a, b);
-      const arg$40 = $byteLen(a + b);
+      const arg$35 = a.startsWith(b);
+      const arg$36 = a.endsWith(b);
+      const arg$37 = a.includes(b);
+      const arg$38 = $cmp(a, b);
+      const arg$39 = $cmp(a, b) < 0;
+      const arg$40 = $cmp(a, b) > 0 ? a : b;
+      const arg$41 = a === b;
+      const arg$42 = $asciiCase(a) === $asciiCase(b);
+      const arg$43 = $find(a, b);
+      const arg$44 = $stripPrefix(a, b);
+      const arg$45 = $stripSuffix(a, b);
+      const arg$46 = $byteLen(a + b);
       console.log(
-        `${$debugStr(a)} ${$debugStr(b)}: ${arg$32} ${arg$33} ${arg$34} ${order} ${arg$35} ${arg$36} ${arg$37 == null ? "None" : `Some(${arg$37})`} ${arg$38 == null ? "None" : `Some(${$debugStr(arg$38)})`} ${arg$39 == null ? "None" : `Some(${$debugStr(arg$39)})`} ${arg$40}`,
+        `${$debugStr(a)} ${$debugStr(b)}: ${arg$35} ${arg$36} ${arg$37} ${
+          ["Less", "Equal", "Greater"][arg$38 + 1]
+        } ${arg$39} ${arg$40} ${arg$41} ${arg$42} ${arg$43 == null ? "None" : `Some(${arg$43})`} ${arg$44 == null ? "None" : `Some(${$debugStr(arg$44)})`} ${arg$45 == null ? "None" : `Some(${$debugStr(arg$45)})`} ${arg$46}`,
       );
     }
   }

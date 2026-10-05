@@ -702,10 +702,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .ok_or_else(|| self.unsupported(span, "`binary_search` of this"))?;
                 // What `<` orders as `Ord` does: integers, `char`s, strings. Not
                 // a `&mut` to one, a cell (ADR 0099).
-                let ordered = !self.has_cell_layer(item) && (Num::of(item).is_some_and(|n| !n.float()))
-                    || item.is_char()
-                    || item.is_bool()
-                    || self.is_string_like(item);
+                let ordered =
+                    !self.has_cell_layer(item) && (Num::of(item).is_some_and(|n| !n.float())) || item.is_bool();
+                // Strings and `char`s by code point, `$cmp` (ADR 0183).
+                if self.is_text_ord(item) {
+                    let x = if x.reads_same() { x } else { self.spill("item", x, out) };
+                    let order = self.text_order(Expr::var("each"), x);
+                    let f = Expr::arrow(
+                        vec!["each".into()],
+                        vec![StmtKind::Return(Some(order)).at(js::Span::NONE)],
+                    );
+                    return Ok(helper(
+                        self,
+                        Helper::BinarySearchBy,
+                        "$binarySearchBy",
+                        vec![subject, f],
+                    ));
+                }
                 if !ordered {
                     return Err(self.unsupported(span, &format!("`binary_search` of `{item}`s")));
                 }

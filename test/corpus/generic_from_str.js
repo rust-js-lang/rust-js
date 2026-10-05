@@ -11,6 +11,7 @@ import {
   $parseF64,
   $parseInt,
   $some,
+  $trim,
 } from "@rust-js/runtime";
 
 var $unitDebug, $unitFromStr;
@@ -21,7 +22,7 @@ function read(s, TFromStr) {
 }
 
 function read_or(s, fallback, TFromStr) {
-  const result = TFromStr.from_str(s.trim());
+  const result = TFromStr.from_str($trim(s));
   return result.TAG === "Ok" ? result._0 : fallback;
 }
 

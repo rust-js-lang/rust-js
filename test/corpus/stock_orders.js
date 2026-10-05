@@ -19,6 +19,7 @@ import {
   $sortedEntries,
   $splitOnce,
   $toFixed,
+  $trim,
   $unwrap,
   $zeroPad,
 } from "@rust-js/runtime";
@@ -85,7 +86,7 @@ const Inventory = {
     let skus = Array.from(inventory.items.values())
       .filter((item) => item.stock < below)
       .map((item) => item.sku);
-    skus.sort();
+    skus.sort($cmp);
     return skus;
   },
   value_cents(inventory) {
@@ -104,7 +105,7 @@ function parse_order(text) {
     text
       .split(",")
       .values()
-      .map((s) => s.trim())
+      .map((s) => $trim(s))
       .filter((part) => part.length !== 0)
       .map((part) => {
         const option = $splitOnce(part, "x");
@@ -114,7 +115,7 @@ function parse_order(text) {
           return result;
         }
         const [sku, quantity] = result._0;
-        const result$1 = $parseInt(quantity.trim(), 0, 4294967295);
+        const result$1 = $parseInt($trim(quantity), 0, 4294967295);
         const result$2 =
           result$1.TAG === "Err"
             ? { TAG: "Err", _0: `${$debugStr(part)}: ${result$1._0}` }
@@ -123,7 +124,7 @@ function parse_order(text) {
           return result$2;
         }
         const quantity$1 = result$2._0;
-        return { TAG: "Ok", _0: [sku.trim().toUpperCase(), quantity$1] };
+        return { TAG: "Ok", _0: [$trim(sku).toUpperCase(), quantity$1] };
       }),
   );
 }

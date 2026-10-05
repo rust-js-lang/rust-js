@@ -2,7 +2,7 @@
 
 import { compileInWorker } from "../../compiler-client.js";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { $rsplitOnce, $stripSuffix } from "@rust-js/runtime";
+import { $rsplitOnce, $stripSuffix, $trim } from "@rust-js/runtime";
 
 import { outputState, sourceState } from "../codemirror.js";
 import { load, loadExample, mb, ms } from "../compiler.js";
@@ -198,7 +198,7 @@ export function App() {
     } else {
       return;
     }
-    const path = answer.trim();
+    const path = $trim(answer);
     if (path.length === 0) {
       return;
     }

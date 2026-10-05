@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "contains-inclusive-end-excluded",
     breaks: "`(1..=7).contains(&7)` is false",
     file: "src/lower/ranges.rs",
-    find: "                    Expr::bin(Op::Le, item, end.clone()),\n                ],\n                (RangeKind::From, [start])",
-    replace: "                    Expr::bin(Op::Lt, item, end.clone()),\n                ],\n                (RangeKind::From, [start])",
+    find: "                    compare(Op::Le, item, end.clone()),\n                ],\n                (RangeKind::From, [start])",
+    replace: "                    compare(Op::Lt, item, end.clone()),\n                ],\n                (RangeKind::From, [start])",
     tests: ["test/corpus.test.ts","-t","range_values"],
   },
   {
@@ -33,5 +33,13 @@ export const mutations: Mutation[] = [
     find: "                Expr::call(Expr::member(Expr::var(\"Math\"), \"max\"), vec![Expr::int(0), count])",
     replace: "                count",
     tests: ["test/corpus.test.ts","-t","range_values"],
+  },
+  {
+    name: "char-range-contains-by-units",
+    breaks: "`('a'..='\\u{ffff}').contains(&'🦀')` is true, by UTF-16 units",
+    file: "src/lower/ranges.rs",
+    find: "                true => self.text_compare(op, a, b),",
+    replace: "                true => Expr::bin(op, a, b),",
+    tests: ["test/corpus.test.ts", "-t", "code_point_order"],
   },
 ];

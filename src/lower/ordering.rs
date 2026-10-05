@@ -24,15 +24,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.tcx.require_lang_item(LangItem::PartialOrd, DUMMY_SP)
     }
 
-    /// Does JS's `<` order `ty` as Rust does? Numbers, strings, `char`s,
-    /// `bool`s (`false < true`), and `Ordering`s, which are numbers.
+    /// Does JS's `<` order `ty` as Rust does? Numbers, `bool`s (`false <
+    /// true`), and `Ordering`s, which are numbers. Not strings and `char`s,
+    /// which `<` orders by UTF-16 units (ADR 0183).
     pub(super) fn is_primitive_ord(&self, ty: Ty<'tcx>) -> bool {
         // A `&mut` to a number is a cell, an object (ADR 0099).
         if self.has_cell_layer(ty) {
             return false;
         }
         let ty = ty.peel_refs();
-        Num::of(ty).is_some() || self.is_string_like(ty) || ty.is_bool() || self.is_lang_adt(ty, LangItem::OrderingEnum)
+        Num::of(ty).is_some() || ty.is_bool() || self.is_lang_adt(ty, LangItem::OrderingEnum)
+    }
+
+    /// Strings and `char`s, which `$cmp` orders by code point (ADR 0183).
+    pub(super) fn is_text_ord(&self, ty: Ty<'tcx>) -> bool {
+        !self.has_cell_layer(ty) && self.is_string_like(ty.peel_refs())
+    }
+
+    /// `$cmp(a, b)`, of strings or `char`s: their `Ordering` by code point.
+    pub(super) fn text_order(&mut self, a: Expr, b: Expr) -> Expr {
+        self.runtime.insert(Helper::Cmp);
+        Expr::call(Expr::var("$cmp"), vec![a, b])
+    }
+
+    /// `a < b` and the rest, of strings or `char`s, by code point, as Rust
+    /// orders them (ADR 0183): JS's own operator where one is a literal whose
+    /// characters are all below U+D800, which it orders the same, `c >=
+    /// "a"`; else `$cmp(a, b) < 0`.
+    pub(super) fn text_compare(&mut self, op: Op, a: Expr, b: Expr) -> Expr {
+        let exact = |e: &Expr| matches!(&e.kind, js::ExprKind::Str(s) if s.chars().all(|c| (c as u32) < 0xd800));
+        if exact(&a) || exact(&b) {
+            return Expr::bin(op, a, b);
+        }
+        self.runtime.insert(Helper::Cmp);
+        Expr::bin(op, Expr::call(Expr::var("$cmp"), vec![a, b]), Expr::int(0))
     }
 
     /// Is `ty` `Ord`, so that its `partial_cmp` is never `None`?
@@ -62,7 +87,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.runtime.insert(Helper::PartialCmp);
             return Ok(Expr::call(Expr::var("$partialCmp"), vec![a, b]));
         }
-        if self.is_primitive_ord(ty) {
+        if self.is_primitive_ord(ty) || self.is_text_ord(ty) {
             self.runtime.insert(Helper::Cmp);
             return Ok(Expr::call(Expr::var("$cmp"), vec![a, b]));
         }
@@ -223,11 +248,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let [a, b]: [Expr; 2] = values
             .try_into()
             .map_err(|_| self.unsupported(span, "this comparison"))?;
-        // JS's own `<` orders strings and `bool`s as Rust does.
+        // JS's own `<` orders numbers and `bool`s as Rust does, and strings
+        // where one is a literal below U+D800 (ADR 0183).
         if let Some(op) = operator
             && self.is_primitive_ord(ty)
         {
             return Ok(Some(Expr::bin(op, a, b)));
+        }
+        if let Some(op) = operator
+            && self.is_text_ord(ty)
+        {
+            return Ok(Some(self.text_compare(op, a, b)));
         }
         // `max` and `min` return one of them, so each is read twice.
         let (a, b) = if matches!(call, OrderingCall::Max | OrderingCall::Min) {

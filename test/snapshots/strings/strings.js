@@ -9,6 +9,8 @@ import {
   $stripPrefix,
   $stripSuffix,
   $toFixed,
+  $trimEnd,
+  $trimStart,
   $zeroPad,
 } from "@rust-js/runtime";
 
@@ -25,7 +27,7 @@ export function cases(s) {
 }
 
 export function trimmed(s) {
-  return [s.trimStart(), s.trimEnd()];
+  return [$trimStart(s), $trimEnd(s)];
 }
 
 export function replaced(s) {

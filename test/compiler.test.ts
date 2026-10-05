@@ -1098,7 +1098,7 @@ test("the store's JS: let-else, ranges, and writes through a map's value", async
 // constant index below its length is read directly.
 test("the report's JS: function values, case mapping, and plain array reads", async () => {
   const js = await Bun.file(join(target, "report.js")).text();
-  expect(js).toContain('const parts = line.split(",").map((s) => s.trim());');
+  expect(js).toContain('const parts = line.split(",").map((s) => $trim(s));');
   expect(js).toContain(".flatMap((c) => Array.from(c.toUpperCase()))");
   expect(js).toContain('.map((c) => /^\\p{White_Space}$/u.test(c))');
   expect(js).toContain(".map((n) => Math.sqrt(n))");

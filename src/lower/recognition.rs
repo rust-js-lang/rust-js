@@ -110,7 +110,11 @@ pub(super) enum Std {
     /// `String + &str`.
     Concat,
     StringNew,
-    Trim,
+    /// `trim()`, `trim_start()` or `trim_end()`, by Unicode's White_Space.
+    Trim {
+        start: bool,
+        end: bool,
+    },
     /// `is_empty` on a string or a `Vec`: `x.length === 0`.
     IsEmpty,
     VecNew,
@@ -1153,7 +1157,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "retain" if string => Std::StringEdit(StringEdit::Retain),
             "clear" if string => Std::StringEdit(StringEdit::Clear),
             "as_str" if string => Std::Same,
-            "trim" if owner.is_str() => Std::Trim,
+            "trim" if owner.is_str() => Std::Trim { start: true, end: true },
             // A closure, a function or a set of `char`s as the pattern (ADRs 0063, 0157).
             "split" | "contains" if owner.is_str() && self_ty.is_some_and(|p| self.is_char_predicate(p)) => {
                 Std::Text(if name.as_str() == "split" {
@@ -1232,8 +1236,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "rsplit_once" if owner.is_str() => Std::RsplitOnce,
             "to_uppercase" if owner.is_str() => Std::Method("toUpperCase"),
             "to_lowercase" if owner.is_str() => Std::Method("toLowerCase"),
-            "trim_start" if owner.is_str() => Std::Method("trimStart"),
-            "trim_end" if owner.is_str() => Std::Method("trimEnd"),
+            "trim_start" if owner.is_str() => Std::Trim {
+                start: true,
+                end: false,
+            },
+            "trim_end" if owner.is_str() => Std::Trim {
+                start: false,
+                end: true,
+            },
             "repeat" if owner.is_str() => Std::Method("repeat"),
             "join" if owner.is_slice() => Std::Method("join"),
             "push_str" | "push" if string => Std::PushStr,

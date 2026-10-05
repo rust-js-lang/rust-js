@@ -171,4 +171,12 @@ export const mutations: Mutation[] = [
     replace: "                    _ => rounded(Expr::bin(Op::Pow, a, b)),",
     tests: ["test/corpus.test.ts", "-t", "matrix_floats"],
   },
+  {
+    name: "char-operator-by-units",
+    breaks: "`c > '！'` of a `char` past U+FFFF is false, by UTF-16 units",
+    file: "src/lower/numbers.rs",
+    find: "            && ty.is_char()\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "code_point_order"],
+  },
 ];

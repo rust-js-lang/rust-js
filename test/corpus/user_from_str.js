@@ -6,6 +6,7 @@ import {
   $debugStr,
   $parseInt,
   $splitOnce,
+  $trim,
 } from "@rust-js/runtime";
 
 var $roleFromStr, $pointErrorDisplay, $pointFromStr;
@@ -65,7 +66,7 @@ export function entry() {
 }
 
 function roleFromStr_from_str(s) {
-  const match = s.trim().toLowerCase();
+  const match = $trim(s).toLowerCase();
   if (match === "admin") {
     return { TAG: "Ok", _0: "Admin" };
   } else if (match === "member") {
@@ -102,14 +103,14 @@ function pointFromStr_from_str(s) {
     return result;
   }
   const [x, y] = result._0;
-  const result$1 = $parseInt(x.trim(), -2147483648, 2147483647);
+  const result$1 = $parseInt($trim(x), -2147483648, 2147483647);
   const result$2 =
     result$1.TAG === "Err" ? { TAG: "Err", _0: { TAG: "Number", _0: result$1._0 } } : result$1;
   if (result$2.TAG === "Err") {
     return result$2;
   }
   const x$1 = result$2._0;
-  const result$3 = $parseInt(y.trim(), -2147483648, 2147483647);
+  const result$3 = $parseInt($trim(y), -2147483648, 2147483647);
   const result$4 =
     result$3.TAG === "Err" ? { TAG: "Err", _0: { TAG: "Number", _0: result$3._0 } } : result$3;
   if (result$4.TAG === "Err") {

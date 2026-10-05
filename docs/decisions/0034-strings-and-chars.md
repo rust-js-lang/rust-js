@@ -23,7 +23,7 @@ count: Rust's `len()` and `&s[a..b]` count UTF-8 bytes, and JS's `length` and
 | `s.starts_with(p)`, `s.ends_with(p)`, `s.contains(p)` | `s.startsWith(p)`, `s.endsWith(p)`, `s.includes(p)` |
 | `s.replace(a, b)` | `s.replaceAll(a, b)` |
 | `s.to_uppercase()`, `s.to_lowercase()` | `s.toUpperCase()`, `s.toLowerCase()` |
-| `s.trim_start()`, `s.trim_end()`, `s.repeat(n)` | `s.trimStart()`, `s.trimEnd()`, `s.repeat(n)` |
+| `s.trim_start()`, `s.trim_end()`, `s.repeat(n)` | `$trimStart(s)`, `$trimEnd(s)`, `s.repeat(n)`: Unicode's White_Space (ADR 0183). (Amended: it was `s.trimStart()`, `s.trimEnd()`.) |
 | `s.strip_prefix(p)`, `s.strip_suffix(p)` | `$stripPrefix(s, p)`, `$stripSuffix(s, p)`: an `Option` (ADR 0030) |
 | `s.split_once(p)`, `s.rsplit_once(p)` | `$splitOnce(s, p)`, `$rsplitOnce(s, p)`: an `Option` of the two sides |
 | `s.split(p)` | `s.split(p)`, an array: for `for`, `collect()`, `last()` (`.at(-1)`), `count()` |
@@ -104,9 +104,9 @@ one by a range, say that JS counts differently. `is_empty()` works.
 
 ## Consequences
 
-- JS and Rust disagree at the edges: `trim_*` uses JS's whitespace, which is
-  nearly Rust's, and comparing `char`s with `<` compares UTF-16 units, which
-  orders a few characters above U+FFFF differently than Rust does.
+- `trim_*` removes Unicode's White_Space, and `char`s compare by code point,
+  as Rust's do (ADR 0183). (Amended: they were JS's whitespace and UTF-16
+  units, which ordered a few characters above U+FFFF differently.)
 - `{}` takes strings, `char`s, integers, `bool`s and floats, and formatting
   options (`{:>8}`, `{:.2}`, `{:#x}`) are ADR 0058's.
 - `lines`, `split_whitespace`, `parse` and `char`'s questions are ADR 0063's.

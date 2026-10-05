@@ -865,6 +865,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             BinOp::Ge => Some(Op::Ge),
             _ => None,
         };
+        // `char`s by code point, as Rust orders them (ADR 0183).
+        if let Some(js_op) = comparison
+            && ty.is_char()
+            && !matches!(op, BinOp::Eq | BinOp::Ne)
+        {
+            return Ok(self.text_compare(js_op, l, r));
+        }
         if let Some(js_op) = comparison {
             return Ok(Expr::bin(js_op, without_zero_sign(l), without_zero_sign(r)));
         }

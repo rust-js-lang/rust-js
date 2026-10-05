@@ -130,6 +130,19 @@ pub(super) enum TextOp {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// `s.trim()`, `trim_start()` or `trim_end()`, by Unicode's White_Space, as
+    /// Rust's `char::is_whitespace` has it: `$trim(s)`, which trims U+0085
+    /// and keeps U+FEFF, where JS's `trim()` does the other (ADR 0183).
+    pub(super) fn trimmed(&mut self, s: Expr, start: bool, end: bool) -> Expr {
+        self.runtime.insert(Helper::Trim);
+        let name = match (start, end) {
+            (true, true) => "$trim",
+            (true, false) => "$trimStart",
+            _ => "$trimEnd",
+        };
+        Expr::call(Expr::var(name), vec![s])
+    }
+
     /// A `String` changed in place (ADR 0149): its place given the new
     /// string, `s = $insertStr(s, 0, "[")`, and what `pop` and `remove` take
     /// out, `popped[1]`. A JS string doesn't change; its place does.
@@ -590,7 +603,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Std::Chars => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![arg()]),
             Std::StringNew => Expr::str(""),
-            Std::Trim => Expr::call(Expr::member(arg(), "trim"), vec![]),
+            Std::Trim { start, end } => self.trimmed(arg(), start, end),
             Std::AsciiCase { upper } => {
                 self.runtime.insert(Helper::AsciiCase);
                 let mut list = vec![arg()];

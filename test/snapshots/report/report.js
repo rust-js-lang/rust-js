@@ -17,6 +17,7 @@ import {
   $position,
   $sortedEntries,
   $toFixed,
+  $trim,
   $unwrapErr,
   $windows,
 } from "@rust-js/runtime";
@@ -26,7 +27,7 @@ var $rowErrorDisplay;
 const HEADERS = ["name", "team", "score", "age"];
 
 function parse_row(line) {
-  const parts = line.split(",").map((s) => s.trim());
+  const parts = line.split(",").map((s) => $trim(s));
   if (parts.length !== 4) {
     return { TAG: "Err", _0: { TAG: "Fields", _0: parts.length } };
   }

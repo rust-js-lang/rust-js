@@ -205,7 +205,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let index = self.range_index(range_ty);
         if op == RangeOp::Contains {
             let item_ty = self.thir[args[1]].ty.peel_refs();
-            if index.is_none_or(|index| index.peel_refs() != item_ty || !self.is_primitive_ord(index)) {
+            if index.is_none_or(|index| {
+                index.peel_refs() != item_ty || !(self.is_primitive_ord(index) || self.is_text_ord(index))
+            }) {
                 return Err(self.unsupported(span, &format!("`contains` of a `{range_ty}`")));
             }
             let [range, item]: [Expr; 2] = self.operands(args, out)?.try_into().ok().unwrap();
@@ -215,19 +217,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             } else {
                 self.spill("item", item, out)
             };
-            // As Rust's: the start's test, then the end's.
+            // As Rust's: the start's test, then the end's; of `char`s, by code
+            // point (ADR 0183).
+            let text = index.is_some_and(|index| self.is_text_ord(index));
+            let mut compare = |op: Op, a: Expr, b: Expr| match text {
+                true => self.text_compare(op, a, b),
+                false => Expr::bin(op, a, b),
+            };
             let tests: Vec<Expr> = match (kind, parts.as_slice()) {
                 (RangeKind::Exclusive, [start, end]) => vec![
-                    Expr::bin(Op::Le, start.clone(), item.clone()),
-                    Expr::bin(Op::Lt, item, end.clone()),
+                    compare(Op::Le, start.clone(), item.clone()),
+                    compare(Op::Lt, item, end.clone()),
                 ],
                 (RangeKind::Inclusive, [start, end]) => vec![
-                    Expr::bin(Op::Le, start.clone(), item.clone()),
-                    Expr::bin(Op::Le, item, end.clone()),
+                    compare(Op::Le, start.clone(), item.clone()),
+                    compare(Op::Le, item, end.clone()),
                 ],
-                (RangeKind::From, [start]) => vec![Expr::bin(Op::Le, start.clone(), item)],
-                (RangeKind::To, [end]) => vec![Expr::bin(Op::Lt, item, end.clone())],
-                (RangeKind::ToInclusive, [end]) => vec![Expr::bin(Op::Le, item, end.clone())],
+                (RangeKind::From, [start]) => vec![compare(Op::Le, start.clone(), item)],
+                (RangeKind::To, [end]) => vec![compare(Op::Lt, item, end.clone())],
+                (RangeKind::ToInclusive, [end]) => vec![compare(Op::Le, item, end.clone())],
                 _ => vec![Expr::bool(true)],
             };
             return Ok(tests

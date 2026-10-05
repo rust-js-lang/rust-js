@@ -9,6 +9,7 @@ import {
   $splitBy,
   $startsBy,
   $strGet,
+  $trim,
   $trimMatches,
 } from "@rust-js/runtime";
 
@@ -30,7 +31,7 @@ function main() {
     `${$startsBy(line, (c) => /^\p{Alphabetic}$/u.test(c), false)} ${$startsBy(line, (c) => /^[0-9]$/.test(c), true)} ${$startsBy("", () => true, false)} ${$startsBy("😀x", (c) => $byteLen(c) === 4, false)}`,
   );
   console.log(`${$startsBy("x😀", (c) => $byteLen(c) === 4, true)}`);
-  const fields = $splitBy(line, (c) => [";", ","].includes(c)).map((s) => s.trim());
+  const fields = $splitBy(line, (c) => [";", ","].includes(c)).map((s) => $trim(s));
   console.log(`[${fields.map((item) => $debugStr(item)).join(", ")}]`);
   const words = $splitBy("a1b22c", (c) => /^\p{N}$/u.test(c));
   console.log(

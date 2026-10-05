@@ -77,7 +77,7 @@ export function by_last_digit(v) {
 
 export function sorted_words(words) {
   let w = words.map((s) => s);
-  w.sort();
+  w.sort($cmp);
   w.reverse();
   return w;
 }

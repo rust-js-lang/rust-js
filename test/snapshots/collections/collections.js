@@ -15,6 +15,7 @@ import {
   $retain,
   $sortedEntries,
   $sortedKeys,
+  $trim,
   $unwrap,
 } from "@rust-js/runtime";
 
@@ -158,7 +159,7 @@ export function shared(times) {
 
 export function words(s) {
   const owned = s;
-  const trimmed = owned.trim();
+  const trimmed = $trim(owned);
   return [trimmed, trimmed.length === 0, trimmed === "hi"];
 }
 

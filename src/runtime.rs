@@ -186,6 +186,7 @@ helpers! {
     NonZeroOk,
     StringWriter,
     Powf,
+    Trim,
     SliceEnd,
     ByteLen,
     StrSlice,
@@ -750,6 +751,7 @@ impl Helper {
             Helper::NonZeroOk => include_str!("runtime/non_zero_ok.js"),
             Helper::StringWriter => include_str!("runtime/string_writer.js"),
             Helper::Powf => include_str!("runtime/powf.js"),
+            Helper::Trim => include_str!("runtime/trim.js"),
             // `s.len()`: its UTF-8 bytes, as Rust counts them, where JS counts
             // UTF-16 units (ADR 0138).
             Helper::ByteLen => include_str!("runtime/byte_len.js"),

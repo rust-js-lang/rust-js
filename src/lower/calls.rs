@@ -851,7 +851,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::RsplitOnce
             | Std::Chars
             | Std::StringNew
-            | Std::Trim
+            | Std::Trim { .. }
             | Std::AsciiCase { .. }
             | Std::AsciiEq
             | Std::ToString => unreachable!("lowered by string_call"),
