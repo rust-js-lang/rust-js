@@ -710,6 +710,47 @@ pub fn App() -> Element {
   expect([jsx.includes('<Frame title="t">'), jsx.includes("<Frame />"), jsx.includes("match")]).toEqual([true, true, false]);
 });
 
+// A component generic over its children gives them on with the rest of a
+// base, `{..Default::default()}`, which needs `C: Default`: react.dev's
+// ButtonLink, of next/link. React gives a component no dictionary, so it
+// takes none, and a default the update replaces, a `Node`'s, which does
+// nothing, isn't made: no `base` is kept (ADR 0201).
+test("JSX gives a generic component's children on with a base, and the component no dictionary", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{Element, Node, jsx};
+#[derive(Default)]
+pub struct FrameProps<C> { pub title: Option<&'static str>, pub children: C, pub tags: Vec<&'static str>, pub id: Option<&'static str> }
+pub fn Frame<C: Node>(FrameProps { title, children, tags, id }: FrameProps<C>) -> Element {
+    jsx! { <section title={title.unwrap_or("bare")} id={id} data-tags={tags.join(" ")}>{children}</section> }
+}
+pub struct CardProps<C> { pub title: &'static str, pub children: C }
+pub fn Card<C: Node + Default>(CardProps { title, children }: CardProps<C>) -> Element {
+    jsx! { <Frame title={Some(title)} tags={vec!["card"]} {..Default::default()}>{children}</Frame> }
+}
+pub fn App() -> Element {
+    jsx! { <Card title="t">{"kid"}<b>{"!"}</b></Card> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("export function Card({ title, children }) {\n  const tags = [\"card\"];\n  return (\n    <Frame title={title} tags={tags}>\n      {children}\n    </Frame>\n  );\n}");
+  const { App, Card } = await import(join(dir, "lib.jsx"));
+  const { createElement } = await import("react");
+  expect(renderToStaticMarkup(App())).toBe('<section title="t" data-tags="card">kid<b>!</b></section>');
+  expect(renderToStaticMarkup(createElement(Card, { title: "js" }, "child"))).toBe('<section title="js" data-tags="card">child</section>');
+  // One that would use a dictionary, React's not giving it one, is an error.
+  const uses = compile(`#![allow(non_snake_case)]
+use react::{Element, Node, jsx};
+pub struct P<C> { pub children: C }
+pub fn Echo<C: Node + Default>(P { children }: P<C>) -> Element {
+    let empty = C::default();
+    jsx! { <p>{children}{empty}</p> }
+}
+`);
+  const failed = Bun.spawnSync(uses.args, { cwd: uses.dir });
+  expect([failed.exitCode === 0, failed.stderr.toString().includes("React gives a component no")]).toEqual([false, true]);
+});
+
 // Attributes are read before a child that needs a statement of its own, in
 // Rust's order, each once (ADR 0194): one already a `const` isn't copied
 // to another, `const className$1 = className`, as react.dev's IconCanary was.

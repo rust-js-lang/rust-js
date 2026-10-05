@@ -388,7 +388,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let tr = ty::TraitRef::new(self.tcx, default, [ty]);
             return match self.evidence_for(tr) {
                 Some(dictionary) => Ok(Expr::call(Expr::member(dictionary, "default"), Vec::new())),
-                None => Err(self.unsupported(span, &format!("implementation evidence for `{tr}`"))),
+                None => Err(self.no_evidence(span, tr)),
             };
         }
         // A React element's, React's empty node (ADR 0192): the react
@@ -564,7 +564,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let order = self.cmp_value(a, b, ty, !self.has_evidence(ord), span, out)?;
                 return Ok(Expr::bin(Op::Eq, order, Expr::int(0)));
             }
-            return Err(self.unsupported(span, &format!("implementation evidence for `{tr}`")));
+            return Err(self.no_evidence(span, tr));
         }
         if self.has_user_impl(self.partial_eq_trait(), ty) {
             let eq = self.tcx.associated_item_def_ids(self.partial_eq_trait())[0];

@@ -688,4 +688,12 @@ export const mutations: Mutation[] = [
     replace: "                let dictionary = self.dictionary(supertrait, span)?;",
     tests: ["test/corpus.test.ts","-t","std_errors_boxed"],
   },
+  {
+    name: "component-takes-dictionary",
+    breaks: "a component bound by `Default` takes a dictionary, `Card(props, CDefault)`, which React never gives",
+    file: "src/lower/traits.rs",
+    find: "    if bindings::is_component(tcx, id) {\n        return result;\n    }",
+    replace: "",
+    tests: ["test/jsx.test.ts","-t","and the component no dictionary"],
+  },
 ];

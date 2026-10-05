@@ -218,7 +218,7 @@ pub(super) fn is_mark(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 /// Whether `def_id` is a React component, as `jsx!` takes one: a
 /// capitalized function of its props, or none, that returns react's
 /// `Element`. React calls it with its props and a value of its own, never a
-/// drop or a dictionary (ADR 0199).
+/// drop (ADR 0199) or a dictionary (ADR 0201).
 pub(crate) fn is_component(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     if tcx.def_kind(def_id) != DefKind::Fn {
         return false;
@@ -243,6 +243,13 @@ pub(crate) fn is_component(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 pub(super) fn is_rest(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("rest_props")];
     matches!(ty.kind(), ty::TyKind::Adt(adt, _) if tcx.get_attrs_by_path(adt.did(), &path).next().is_some())
+}
+
+/// Whether `id` is react's `Node`, what React renders as a child: a
+/// sealed trait, its types std's and React's (ADR 0201).
+pub(super) fn is_jsx_node(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("jsx_node")];
+    tcx.get_attrs_by_path(id, &path).next().is_some()
 }
 
 /// A module's `js::export_default!(page)`: the function its `const _`

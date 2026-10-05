@@ -116,12 +116,17 @@ fn const_params(tcx: TyCtxt<'_>, id: DefId) -> Vec<&ty::GenericParamDef> {
 }
 
 /// Signature order, including parent impl bounds. Never depend on body usage.
+/// A component has none: React calls it with its props, never a dictionary
+/// (ADR 0201).
 pub(super) fn bounds<'tcx>(
     tcx: TyCtxt<'tcx>,
     foreign: &super::library::Foreign<'_, 'tcx>,
     id: DefId,
 ) -> Vec<ty::TraitRef<'tcx>> {
     let mut result = Vec::new();
+    if bindings::is_component(tcx, id) {
+        return result;
+    }
     if let Some(trait_id) = tcx.trait_of_assoc(id)
         && operational(tcx, foreign, trait_id)
     {
@@ -1093,7 +1098,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     vec![StmtKind::Return(Some(Expr::var("value"))).at(js::Span::NONE)],
                 )
             } else {
-                return Err(self.unsupported(span, &format!("implementation evidence for `{tr}`")));
+                return Err(self.no_evidence(span, tr));
             };
             return Ok(Expr::object(vec![Prop::Field("into".into(), value)]));
         }
@@ -1124,7 +1129,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Ok(ImplSource::Builtin(BuiltinImplSource::Object(_), _)) = selected {
             return self.object_dictionary(tr, span);
         }
-        Err(self.unsupported(span, &format!("implementation evidence for `{tr}`")))
+        Err(self.no_evidence(span, tr))
     }
 
     /// Rust's built-in `impl Trait for dyn Trait`, of `tr`, the `dyn`'s
@@ -1164,7 +1169,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let object = Expr::var("object");
         let principal = self
             .dyn_trait_ref(tr.self_ty(), tr.self_ty())
-            .ok_or_else(|| self.unsupported(span, &format!("implementation evidence for `{tr}`")))?;
+            .ok_or_else(|| self.no_evidence(span, tr))?;
         let mut props = Vec::new();
         let returning = |value: Expr| Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(value)).at(js::Span::NONE)]);
         for (name, supertrait, _) in supertraits(self.tcx, tr.def_id, tr.args) {
@@ -1209,7 +1214,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             let dictionary = self
                 .super_evidence(principal, tr, Expr::member(pair.clone(), "impl"))
-                .ok_or_else(|| self.unsupported(span, &format!("implementation evidence for `{tr}`")))?;
+                .ok_or_else(|| self.no_evidence(span, tr))?;
             let this = match mutable {
                 true => pair,
                 false => Expr::member(pair, "value"),

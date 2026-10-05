@@ -902,9 +902,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if self.is_unknown(ty) {
             let tr = ty::TraitRef::new(self.tcx, display, [ty]);
-            let dictionary = self
-                .evidence_for(tr)
-                .ok_or_else(|| self.unsupported(span, &format!("implementation evidence for `{tr}`")))?;
+            let dictionary = self.evidence_for(tr).ok_or_else(|| self.no_evidence(span, tr))?;
             let mut list = vec![value];
             list.extend(self.options_arg(pretty));
             return Ok(Expr::call(Expr::member(dictionary, "fmt"), list));
@@ -929,9 +927,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Expr> {
         let tr = ty::TraitRef::new(self.tcx, trait_id, [ty]);
-        let dictionary = self
-            .evidence_for(tr)
-            .ok_or_else(|| self.unsupported(span, &format!("implementation evidence for `{tr}`")))?;
+        let dictionary = self.evidence_for(tr).ok_or_else(|| self.no_evidence(span, tr))?;
         let mut list = vec![value];
         list.extend(self.options_arg(pretty));
         Ok(Expr::call(Expr::member(dictionary, "fmt"), list))
@@ -1164,9 +1160,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let debug = self.debug_trait();
         if self.is_unknown(ty) {
             let tr = ty::TraitRef::new(self.tcx, debug, [ty]);
-            let dictionary = self
-                .evidence_for(tr)
-                .ok_or_else(|| self.unsupported(span, &format!("implementation evidence for `{tr}`")))?;
+            let dictionary = self.evidence_for(tr).ok_or_else(|| self.no_evidence(span, tr))?;
             let mut list = vec![value];
             list.extend(self.options_arg(pretty));
             return Ok(Expr::call(Expr::member(dictionary, "fmt"), list));

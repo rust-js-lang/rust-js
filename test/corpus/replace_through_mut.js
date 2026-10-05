@@ -16,8 +16,7 @@ const Counter = {
     $assign(counter, { n: 0, label: "", items: [] });
   },
   restart(counter, n) {
-    const base = { n: 0, label: "", items: [] };
-    $assign(counter, { n, label: `from ${counter.n}`, items: base.items });
+    $assign(counter, { n, label: `from ${counter.n}`, items: [] });
     counter.items.push(n);
   },
 };
@@ -102,13 +101,13 @@ function main() {
   console.log(`${counterDebug_fmt(c)}`);
   const old = replace_with(c, 7);
   console.log(`${counterDebug_fmt(old)} ${counterDebug_fmt(c)}`);
-  const base = { n: 0, label: "", items: [] };
-  let d = { n: 1, label: base.label, items: base.items };
+  let d = { n: 1, label: "", items: [] };
   swap_two(c, d);
   console.log(`${counterDebug_fmt(c)} ${counterDebug_fmt(d)}`);
-  const tmp = { n: 0, label: "", items: [] };
-  const base$1 = { n: 0, label: "", items: [] };
-  let row = [tmp, { n: 2, label: base$1.label, items: base$1.items }];
+  let row = [
+    { n: 0, label: "", items: [] },
+    { n: 2, label: "", items: [] },
+  ];
   Counter.restart($index(row, 1), 6);
   console.log(`[${row.map((item) => counterDebug_fmt(item)).join(", ")}]`);
   let items = [4, 5];

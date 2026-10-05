@@ -293,4 +293,12 @@ export const mutations: Mutation[] = [
     replace: "            ExprKind::Field { .. } if false && bindings::is_rest(self.tcx, ty) => Err(self.unsupported(",
     tests: ["test/jsx.test.ts", "-t", "doesn't name as ...rest"],
   },
+  {
+    name: "component-evidence-unnamed",
+    breaks: "a component that would use a dictionary is rust-js's \"implementation evidence\" error, not that React gives a component none",
+    file: "src/lower.rs",
+    find: "        if bindings::is_component(self.tcx, self.item) {\n            self.tcx.dcx().span_err(",
+    replace: "        if false {\n            self.tcx.dcx().span_err(",
+    tests: ["test/jsx.test.ts","-t","and the component no dictionary"],
+  },
 ];

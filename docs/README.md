@@ -291,6 +291,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0198 An optional handler passed on to an element is that handler](decisions/0198-optional-handlers.md)
 - [0199 A component takes no drop of its type parameters](decisions/0199-components-take-no-drops.md)
 - [0200 A binding's props borrow their text, and take `aria-label` and the rest](decisions/0200-binding-props-borrow.md)
+- [0201 A component takes no dictionary, and an update makes no default it replaces](decisions/0201-components-take-no-dictionaries.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

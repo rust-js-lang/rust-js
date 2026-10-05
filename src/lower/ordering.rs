@@ -98,9 +98,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(Expr::call(Expr::member(dictionary, "cmp"), vec![a, b]));
             }
             let tr = ty::TraitRef::new_from_args(self.tcx, partial_ord, self.args_of(partial_ord, ty));
-            let dictionary = self
-                .evidence_for(tr)
-                .ok_or_else(|| self.unsupported(span, &format!("implementation evidence for `{tr}`")))?;
+            let dictionary = self.evidence_for(tr).ok_or_else(|| self.no_evidence(span, tr))?;
             return Ok(Expr::call(Expr::member(dictionary, "partial_cmp"), vec![a, b]));
         }
         // A hand-written one: `cmp`, or `partial_cmp` if that's what's asked

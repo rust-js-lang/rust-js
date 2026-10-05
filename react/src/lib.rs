@@ -105,8 +105,14 @@ macro_rules! jsx {
 /// `Vec`s and `Option`s of them. A tuple is several children, `("Count is ",
 /// count)`; a `Vec` is a list, whose items each need a [`key`](Element::key);
 /// `None` is nothing. Each is the JS value React expects already, so nothing
-/// converts them.
-pub trait Node {}
+/// converts them. Only these are: what each one's `Default` makes is
+/// std's or React's, which rust-js knows does nothing else.
+#[cfg_attr(rust_js, rust_js::jsx_node)]
+pub trait Node: sealed::Sealed {}
+
+mod sealed {
+    pub trait Sealed {}
+}
 
 impl Node for Element {}
 impl Node for &str {}
@@ -116,15 +122,24 @@ impl Node for bool {}
 impl<T: Node + ?Sized> Node for &T {}
 impl<T: Node> Node for Option<T> {}
 impl<T: Node> Node for Vec<T> {}
+impl sealed::Sealed for Element {}
+impl sealed::Sealed for &str {}
+impl sealed::Sealed for String {}
+impl sealed::Sealed for () {}
+impl sealed::Sealed for bool {}
+impl<T: Node + ?Sized> sealed::Sealed for &T {}
+impl<T: Node> sealed::Sealed for Option<T> {}
+impl<T: Node> sealed::Sealed for Vec<T> {}
 
 macro_rules! numbers {
-    ($($t:ty),*) => { $(impl Node for $t {} impl Value for $t {})* };
+    ($($t:ty),*) => { $(impl Node for $t {} impl sealed::Sealed for $t {} impl Value for $t {})* };
 }
 numbers!(i8, i16, i32, u8, u16, u32, usize, f64);
 
 macro_rules! tuples {
     ($($name:ident)+) => {
         impl<$($name: Node),+> Node for ($($name,)+) {}
+        impl<$($name: Node),+> sealed::Sealed for ($($name,)+) {}
         impl<$($name),+> Deps for ($($name,)+) {}
     };
 }
@@ -731,6 +746,9 @@ macro_rules! built_in {
 
         $(#[cfg($cfg)])?
         impl Node for $name {}
+
+        $(#[cfg($cfg)])?
+        impl crate::sealed::Sealed for $name {}
 
         $(#[cfg($cfg)])?
         #[doc(hidden)]

@@ -3,7 +3,7 @@
 //! value (ADR 0125).
 
 use super::bindings;
-use super::recognition::{StdItem, is_std_def};
+use super::recognition::{StdItem, is_std_def, std_item};
 use super::representation::ordering_value;
 use super::{Dest, FnCx, R, Shape, assembled};
 use crate::js::{self, Expr, Prop, Stmt, StmtKind};
@@ -79,6 +79,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Keep the saved fields local: lowering the base can itself lower
         // another struct literal or update.
         let mut spilled_fields = None;
+        let mut defaults = None;
         let base = match &adt.base {
             AdtExprBase::None => None,
             AdtExprBase::Base(fru) => match self.place(fru.base) {
@@ -98,15 +99,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         spilled.push(value);
                     }
                     spilled_fields = Some(spilled);
-                    let base = self.expr(fru.base, out)?;
-                    // An object of constants, as a derived `Default` is, is read
-                    // in place: its fields are those constants (`Expr::member`).
-                    let constants = matches!(&base.kind, js::ExprKind::Object(props)
-                        if props.iter().all(|p| matches!(p, Prop::Field(_, v) if v.is_constant())));
-                    Some(if base.reads_same() || constants {
-                        base
-                    } else {
-                        self.spill("base", base, out)
+                    let given: Vec<usize> = adt.fields.iter().map(|f| f.name.as_usize()).collect();
+                    let base = match self.derived_default_fields(fru.base, ty) {
+                        Some(fields) => {
+                            let (props, kept) = self.update_default(fields, &given, span)?;
+                            // Each default the update reads is made in its place,
+                            // in the order the base would make them, unless one
+                            // it doesn't read is made for its effects, a
+                            // hand-written one's: then the base is made whole.
+                            if !kept {
+                                defaults = Some(props.into_iter().map(|(_, value)| value).collect::<Vec<_>>());
+                                None
+                            } else {
+                                Some(Expr::object(
+                                    props
+                                        .into_iter()
+                                        .map(|(name, value)| Prop::Field(name, value))
+                                        .collect(),
+                                ))
+                            }
+                        }
+                        None => Some(self.expr(fru.base, out)?),
+                    };
+                    base.map(|base| {
+                        // An object of constants is read in place: its fields
+                        // are those constants (`Expr::member`).
+                        let constants = matches!(&base.kind, js::ExprKind::Object(props)
+                            if props.iter().all(|p| matches!(p, Prop::Field(_, v) if v.is_constant())));
+                        if base.reads_same() || constants {
+                            base
+                        } else {
+                            self.spill("base", base, out)
+                        }
                     })
                 }
             },
@@ -161,11 +185,82 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for (i, field_ty) in field_tys.into_iter().enumerate() {
             items.push(match (given.remove(&i), &base) {
                 (Some(value), _) => value,
+                (None, None) if let Some(defaults) = &mut defaults => {
+                    std::mem::replace(&mut defaults[i], Expr::undefined())
+                }
                 (None, Some(base)) => self.copy_if_needed(self.project(base.clone(), ty, i), field_ty),
                 (None, None) => unreachable!("rustc checked that every field is given"),
             });
         }
         Ok(assembled(shape, tag, items))
+    }
+
+    /// The fields of `ty`, a struct whose `Default` is derived, when `base`
+    /// is its `Default::default()`: what an update's base is made of.
+    fn derived_default_fields(&self, base: ExprId, ty: Ty<'tcx>) -> Option<Vec<(String, Ty<'tcx>)>> {
+        let thir::ExprKind::Call { fun, args, .. } = &self.thir[super::body_queries::strip(self.thir, base)].kind
+        else {
+            return None;
+        };
+        let default = std_item(self.tcx, StdItem::Default);
+        let ty::FnDef(id, _) = *self.thir[*fun].ty.kind() else {
+            return None;
+        };
+        let ty::Adt(adt, _) = ty.kind() else { return None };
+        if !args.is_empty()
+            || self.tcx.trait_of_assoc(id) != Some(default)
+            || !adt.is_struct()
+            || self.is_std(adt.did())
+            || self.has_user_impl(default, ty)
+        {
+            return None;
+        }
+        match self.shape(ty) {
+            Shape::Object(fields) => Some(fields),
+            _ => None,
+        }
+    }
+
+    /// An update's derived `Default` base, `..Default::default()`, of
+    /// `fields`: each one's default, but none for a field the update gives
+    /// where making it does nothing, as a `Node`'s does (ADR 0201). And
+    /// whether one the update gives is made still, for its effects.
+    fn update_default(
+        &mut self,
+        fields: Vec<(String, Ty<'tcx>)>,
+        given: &[usize],
+        span: Span,
+    ) -> R<(Vec<(String, Expr)>, bool)> {
+        let mut props = Vec::new();
+        let mut kept = false;
+        for (i, (name, field_ty)) in fields.into_iter().enumerate() {
+            let replaced = given.contains(&i);
+            let value = if replaced && self.is_node_param(field_ty) {
+                Expr::undefined()
+            } else {
+                let value = self.default_value(field_ty, span)?;
+                if replaced && !value.has_effects() {
+                    Expr::undefined()
+                } else {
+                    kept |= replaced;
+                    value
+                }
+            };
+            props.push((name, value));
+        }
+        Ok((props, kept))
+    }
+
+    /// Is `ty` a type parameter this function bounds by react's `Node`? Each
+    /// type that is one is std's or React's, whose default does nothing.
+    fn is_node_param(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Param(_))
+            && self.typing_env.param_env.caller_bounds().iter().any(|clause| {
+                clause.as_trait_clause().is_some_and(|tr| {
+                    let tr = tr.skip_binder();
+                    tr.self_ty() == ty && bindings::is_jsx_node(self.tcx, tr.def_id())
+                })
+            })
     }
 
     /// A constructor as a value, `.map(Some)` or `.map(Shape::Circle)`: an
