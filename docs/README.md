@@ -274,6 +274,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0182 Boundary matrices: each operation on the values where implementations go wrong](decisions/0182-boundary-matrices.md)
 - [0183 Strings and `char`s order by code point, and `trim` removes Unicode's White_Space](decisions/0183-code-point-order-and-trim.md)
 - [0184 `ok_or_else` keeps its value, a branch's operand is dropped in its branch, and `by_ref()` of the crate's iterator](decisions/0184-bitflags-gaps.md)
+- [0185 A library's trait's defaults are its functions over `Self`](decisions/0185-library-trait-defaults.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

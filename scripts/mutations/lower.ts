@@ -268,4 +268,21 @@ export const mutations: Mutation[] = [
     replace: "            params.push((id, self.fresh(base)));",
     tests: ["test/corpus.test.ts", "-t", "std_function_values"],
   },
+  {
+    name: "block-modules-one-file",
+    breaks: "two modules of one name in blocks of a module, bitflags' macro's, are one file",
+    file: "src/lower.rs",
+    find: "        Some(at) if at > 0 => path.push(format!(\"{name}${at}\")),",
+    replace: "        Some(at) if false && at > 0 => path.push(format!(\"{name}${at}\")),",
+    tests: ["test/corpus.test.ts","-t","block_modules"],
+  },
+  {
+    name: "block-module-before-declared",
+    breaks: "a module its parent declares is numbered after a block's of its name written before it",
+    file: "src/lower.rs",
+    find: "    namesakes.sort_by_key(|&m| (in_block(m), m.to_local_def_id().local_def_index));",
+    replace: "    namesakes.sort_by_key(|&m| (false && in_block(m), m.to_local_def_id().local_def_index));",
+    tests: ["test/corpus.test.ts","-t","block_modules"],
+    snapshots: true,
+  },
 ];

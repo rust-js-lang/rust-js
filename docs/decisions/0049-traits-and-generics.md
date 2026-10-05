@@ -162,6 +162,9 @@ implementation's module as well.
 
 This favors straightforward dispatch over deduplicating large defaults.
 Sharing default bodies later is an internal optimization, not a JS ABI change.
+(Amended: a library's trait's default, whose body a consumer can't copy, is
+a function of the library's over `Self` that the consumer's impl calls, ADR
+0185.)
 
 ### Trait objects
 

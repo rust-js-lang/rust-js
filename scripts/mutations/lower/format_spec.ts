@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
     name: "i128-hex-signed",
     breaks: "`{:x}` of a negative `i128` is `-80..`, not its two's complement bits",
     file: "src/lower/format_spec.rs",
-    find: "                    Num::I128 => Num::U128.wrap(value),\n",
+    find: "            Num::I128 => Num::U128.wrap(value),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "matrix_integers"],
   },

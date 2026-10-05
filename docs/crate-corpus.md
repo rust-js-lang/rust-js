@@ -6,7 +6,7 @@ of its own, every library of its graph by rust-js as Cargo's
 `RUSTC_WRAPPER`, for its target, and records what each refused first, or
 what Cargo said where a crate failed with no refusal: a crash.
 
-Measured 2026-10-05, after ADR 0184, Rust 1.98.1, each crate at the
+Measured 2026-10-05, after ADR 0185, Rust 1.98.1, each crate at the
 newest release its requirement allows.
 
 | Crate | Verdict | First refusals in its graph |
@@ -22,7 +22,7 @@ newest release its requirement allows.
 | once_cell 1.21 | refused | a constant of a raw pointer |
 | semver 1.0 | refused | a constant of a `NonNull` |
 | uuid 1.27 | refused | `&mut` of a `MaybeUninit` buffer's range |
-| url 2.5 | blocked | litemap: `{:?}` of a `PhantomData`; writeable: `u8::checked_ilog10` called; smallvec's; percent-encoding: `transmute`; yoke: a raw pointer |
+| url 2.5 | blocked | litemap: a loop over items with a destructor; writeable: `u8::checked_ilog10` called; smallvec's; percent-encoding: `transmute`; yoke: a raw pointer |
 | regex 1.11 | blocked | memchr: a raw pointer |
 | rust_decimal 1.38 | blocked | arrayvec: a user `io::Write`; serde_core: `size_of` of a type parameter |
 | chrono 0.4 (`alloc`) | refused | a `fmt::Error` |
@@ -33,7 +33,7 @@ newest release its requirement allows.
 1. **Raw memory,** a raw pointer, a `NonNull`, a `MaybeUninit`,
    `transmute`, `handle_alloc_error`: 9.
 2. **A user `Future`:** 2.
-3. **One each:** a `const` block, `{:?}` of a generic `PhantomData`, a user
+3. **One each:** a `const` block, a loop over items with a destructor, a user
    `io::Write`, `size_of` of a type parameter, `u8::checked_ilog10`, a
    `fmt::Error`.
 
@@ -41,9 +41,9 @@ newest release its requirement allows.
 
 - **`ok_or_else` of a value with a destructor, a temporary of one in a
   branch, and `by_ref()` of an iterator of the crate's:** bitflags compiles
-  (ADR 0184). A crate that uses its macro doesn't yet: the macro implements
-  bitflags' `Flags`, whose default methods a consumer can't copy (ADR 0100),
-  and calls `fmt::LowerHex::fmt` of a number.
+  (ADR 0184). **A library's trait's defaults, a number's `LowerHex` given a
+  `Formatter`, and modules of one name in blocks:** a crate that uses its
+  macro compiles, and runs as natively (ADR 0185).
 - **A clone of std's iterator over an array,** chrono's `DelayedFormat`
   items (ADR 0181).
 - **Generic code that writes to any `fmt::Write`,** chrono's, 7 refusals,

@@ -212,4 +212,28 @@ export const mutations: Mutation[] = [
     replace: "        // A path shows its text as a string does (ADR 0173).\n        if self.recognition().is_path_like(ty) && false {",
     tests: ["test/corpus.test.ts", "-t", "path_text"],
   },
+  {
+    name: "std-radix-call-refused",
+    breaks: "`LowerHex::fmt(&self.0, f)` of a number, bitflags' macro's, is an error",
+    file: "src/lower/display.rs",
+    find: "                } else if let Some((num, radix)) = std_radix {",
+    replace: "                } else if let Some((num, radix)) = std_radix.filter(|_| false) {",
+    tests: ["test/corpus.test.ts","-t","user_fmt_traits"],
+  },
+  {
+    name: "std-radix-unprefixed",
+    breaks: "`{:#x}` through a delegating impl shows no `0x`",
+    file: "src/lower/display.rs",
+    find: "                let prefix = Expr::cond(pretty.alternate(), Expr::str(radix.prefix()), Expr::str(\"\"));",
+    replace: "                let prefix = Expr::str(\"\");",
+    tests: ["test/corpus.test.ts","-t","user_fmt_traits"],
+  },
+  {
+    name: "std-radix-unpadded",
+    breaks: "`{:04x}` through a delegating impl isn't padded",
+    file: "src/lower/display.rs",
+    find: "            Pretty::When(options) if self.krate.format_options => {\n                self.runtime.insert(Helper::Formatted);\n                Expr::call(Expr::var(\"$formatted\"), vec![text, options.clone(), Expr::bool(true)])",
+    replace: "            Pretty::When(options) if false && self.krate.format_options => {\n                self.runtime.insert(Helper::Formatted);\n                Expr::call(Expr::var(\"$formatted\"), vec![text, options.clone(), Expr::bool(true)])",
+    tests: ["test/corpus.test.ts","-t","user_fmt_traits"],
+  },
 ];

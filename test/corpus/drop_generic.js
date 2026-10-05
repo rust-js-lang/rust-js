@@ -2,6 +2,8 @@
 
 import { $index } from "@rust-js/runtime";
 
+var $noisyDisplay;
+
 const Wrapper = {
   replace(wrapper, value, dropT) {
     let value$live = true;
@@ -61,6 +63,14 @@ function relay(value, dropU) {
   }
 }
 
+function shown(x, Display, dropDisplay) {
+  try {
+    return `<${Display.fmt(x)}>`;
+  } finally {
+    dropDisplay?.(x);
+  }
+}
+
 function main() {
   consume(["a"], noisyDrop_drop);
   consume(5);
@@ -76,6 +86,7 @@ function main() {
       let wrapper = { inner: ["w1"] };
       try {
         Wrapper.replace(wrapper, ["w2"], noisyDrop_drop);
+        console.log(`${shown(["s"], noisyDisplay(), noisyDrop_drop)} ${shown(7, { fmt: String })}`);
         console.log(`${kept[0]} ${copy[0]} ${wrapper.inner[0]} end`);
       } finally {
         noisyDrop_drop(wrapper.inner);
@@ -94,5 +105,16 @@ export function entry() {
 
 function noisyDrop_drop(noisy) {
   console.log(`drop ${noisy[0]}`);
+}
+
+function noisyDisplay_fmt(noisy) {
+  return noisy[0];
+}
+
+export function noisyDisplay() {
+  if ($noisyDisplay === undefined) {
+    $noisyDisplay = { fmt: noisyDisplay_fmt, $drop: noisyDrop_drop };
+  }
+  return $noisyDisplay;
 }
 //# sourceMappingURL=case.js.map

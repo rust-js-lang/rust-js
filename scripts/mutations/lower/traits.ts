@@ -648,4 +648,28 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "generic_writers"],
     snapshots: true,
   },
+  {
+    name: "library-default-copied",
+    breaks: "a consumer's impl copies a library's default, whose body it can't read",
+    file: "src/lower/traits.rs",
+    find: "            let library_default = self.krate.foreign.in_library(method);\n",
+    replace: "            let library_default = false && self.krate.foreign.in_library(method);\n",
+    tests: ["test/crates.test.ts","-t","defaults are what"],
+  },
+  {
+    name: "std-radix-dictionary-missing",
+    breaks: "`impl<T: LowerHex> LowerHex for Bits<T>` of a `u8` has no `u8: LowerHex` to call",
+    file: "src/lower/traits.rs",
+    find: "            && let Some(radix) = self.radix_trait(tr.def_id)\n",
+    replace: "            && let Some(radix) = self.radix_trait(tr.def_id).filter(|_| false)\n",
+    tests: ["test/corpus.test.ts","-t","user_fmt_traits"],
+  },
+  {
+    name: "impl-trait-drop-named-as-written",
+    breaks: "the drop of an `impl fmt::Display` argument is named `dropimpl fmt::Display`, which isn't JS",
+    file: "src/lower/traits.rs",
+    find: "    let Some(bound) = name.as_str().strip_prefix(\"impl \") else {",
+    replace: "    let Some(bound) = name.as_str().strip_prefix(\"impl \").filter(|_| false) else {",
+    tests: ["test/corpus.test.ts","-t","drop_generic"],
+  },
 ];

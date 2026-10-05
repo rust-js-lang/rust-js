@@ -77,6 +77,40 @@ pub(super) enum Radix {
     Octal,
 }
 
+impl Radix {
+    /// The `{:#x}` that shows it: `0x`.
+    pub(super) fn prefix(self) -> &'static str {
+        match self {
+            Radix::LowerHex | Radix::UpperHex => "0x",
+            Radix::Binary => "0b",
+            Radix::Octal => "0o",
+        }
+    }
+
+    /// An integer's digits in it: a negative number's bits, as Rust shows
+    /// them, `-1i32` is `ffffffff`.
+    pub(super) fn digits(self, value: Expr, num: Num) -> Expr {
+        let bits = match num {
+            Num::I8 => Expr::bin(Op::BitAnd, value, Expr::int(0xff)),
+            Num::I16 => Expr::bin(Op::BitAnd, value, Expr::int(0xffff)),
+            Num::I32 => Expr::bin(Op::UShr, value, Expr::int(0)),
+            Num::I64 => Num::U64.wrap(value),
+            Num::I128 => Num::U128.wrap(value),
+            _ => value,
+        };
+        let base = match self {
+            Radix::LowerHex | Radix::UpperHex => 16,
+            Radix::Binary => 2,
+            Radix::Octal => 8,
+        };
+        let digits = Expr::call(Expr::member(bits, "toString"), vec![Expr::int(base)]);
+        match self {
+            Radix::UpperHex => Expr::call(Expr::member(digits, "toUpperCase"), Vec::new()),
+            _ => digits,
+        }
+    }
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// One placeholder's string: `value` shown as `kind` says, with `spec`'s
     /// options, and its `width` and `precision`: numbers, or other arguments.
@@ -145,33 +179,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let Some(num) = num.filter(|&n| !n.float()) else {
                     return Err(self.unsupported(span, &format!("`{{:x}}` and the like of a `{ty}`")));
                 };
-                // A negative number's bits, as Rust shows them: `-1i32` is `ffffffff`.
-                let bits = match num {
-                    Num::I8 => Expr::bin(Op::BitAnd, value, Expr::int(0xff)),
-                    Num::I16 => Expr::bin(Op::BitAnd, value, Expr::int(0xffff)),
-                    Num::I32 => Expr::bin(Op::UShr, value, Expr::int(0)),
-                    Num::I64 => Num::U64.wrap(value),
-                    Num::I128 => Num::U128.wrap(value),
-                    _ => value,
-                };
-                let base = match radix {
-                    Radix::LowerHex | Radix::UpperHex => 16,
-                    Radix::Binary => 2,
-                    Radix::Octal => 8,
-                };
-                let mut digits = Expr::call(Expr::member(bits, "toString"), vec![Expr::int(base)]);
-                if radix == Radix::UpperHex {
-                    digits = Expr::call(Expr::member(digits, "toUpperCase"), Vec::new());
+                let digits = radix.digits(value, num);
+                match spec.alternate {
+                    true => Expr::bin(Op::Add, Expr::str(radix.prefix()), digits),
+                    false => digits,
                 }
-                if spec.alternate {
-                    let prefix = match radix {
-                        Radix::LowerHex | Radix::UpperHex => "0x",
-                        Radix::Binary => "0b",
-                        Radix::Octal => "0o",
-                    };
-                    digits = Expr::bin(Op::Add, Expr::str(prefix), digits);
-                }
-                digits
             }
             // `{:e}`: the shortest digits, an `f32`'s its own, written as Rust
             // writes them, `1.2345e3`. With a precision, Rust rounds a tie to

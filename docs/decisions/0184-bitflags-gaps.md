@@ -62,4 +62,4 @@ let parsed_flag = if let Some(flag) = flag.strip_prefix("0x") {
 - **A crate that uses bitflags' macro doesn't compile yet:** the macro
   implements bitflags' `Flags`, whose default methods are bitflags', which
   a consumer can't copy (ADR 0100), and calls `fmt::LowerHex::fmt` of the
-  bits.
+  bits. (Amended: it does, and runs as natively, ADR 0185.)

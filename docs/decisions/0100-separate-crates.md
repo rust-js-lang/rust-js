@@ -178,7 +178,8 @@ or a box (ADR 0074). ADR 0099's handles have the same `value`.
 - **Implementing another crate's trait that has default methods:** a
   default's body is copied into each impl (ADR 0049), and a consumer can't
   read the library's. The library could export each default as a generic
-  function over `Self`; that's a decision of its own.
+  function over `Self`; that's a decision of its own. (Amended: it does,
+  ADR 0185.)
 - A library's `static` used from another crate: its one value is the
   library's, which a consumer would import. A `const` is its value, as
   within a crate (ADR 0031), and a copy of it the consumer's own.

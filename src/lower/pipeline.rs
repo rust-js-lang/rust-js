@@ -151,7 +151,12 @@ pub fn lower_crate<'tcx>(
     };
     let mut work: Vec<(DefId, Option<&Body<'tcx>>)> = bodies
         .iter()
-        .filter(|b| tcx.trait_of_assoc(b.def_id.to_def_id()).is_none())
+        // A trait's default is copied into each impl (ADR 0049); a library's
+        // is a function of its own too, for its consumers' impls (ADR 0185).
+        .filter(|b| {
+            let id = b.def_id.to_def_id();
+            tcx.trait_of_assoc(id).is_none() || (export_library && super::library::reachable(tcx, id))
+        })
         .map(|b| (b.def_id.to_def_id(), Some(*b)))
         .chain(dictionaries.iter().map(|id| (*id, None)))
         .chain(initialized.iter().map(|body| (body.def_id.to_def_id(), Some(*body))))

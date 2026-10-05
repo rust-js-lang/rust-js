@@ -1,7 +1,8 @@
 // The crate's own `fmt` traits besides `Display` and `Debug`: `{:x}`, `{:X}`,
 // `{:o}`, `{:b}`, `{:e}` and `{:p}` of its types call its impls, given the
 // placeholder's options, as uuid's and thiserror's are. And `write_str`
-// called through `fmt::Write` on a `Formatter`, as bitflags writes.
+// called through `fmt::Write` on a `Formatter`, as bitflags writes, and
+// std's of a number given the `Formatter`, as bitflags' macro delegates.
 
 use std::fmt::{self, Binary, LowerExp, LowerHex, Octal, Pointer, UpperHex, Write};
 
@@ -71,6 +72,32 @@ impl fmt::Display for Flags {
     }
 }
 
+struct Bits<T>(T);
+
+impl<T: LowerHex> LowerHex for Bits<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        LowerHex::fmt(&self.0, f)
+    }
+}
+
+impl UpperHex for Bits<u8> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        UpperHex::fmt(&self.0, f)
+    }
+}
+
+impl Octal for Bits<u8> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        Octal::fmt(&self.0, f)
+    }
+}
+
+impl Binary for Bits<i8> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        Binary::fmt(&self.0, f)
+    }
+}
+
 fn main() {
     let id = Id(48879);
     println!("{:x} {:#x} {:X} {:o} [{:>10b}]", id, id, id, id, Id(5));
@@ -78,4 +105,8 @@ fn main() {
     println!("{} {}", Flags(5), Flags(7));
     let shown = format!("{:x}-{}", Id(255), Flags(2));
     println!("{shown}");
+    let b = Bits(42u8);
+    println!("{:x} {:#x} {:04x} {:#06x} [{:>6x}] [{:<6x}] {:+x}", b, b, b, b, b, b, b);
+    println!("{:X} {:#X} {:o} {:#o} {:x}", b, b, b, b, Bits(-1i8));
+    println!("{:b} {:#010b} {:#b}", Bits(-2i8), Bits(5i8), Bits(0i8));
 }

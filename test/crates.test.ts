@@ -169,6 +169,22 @@ test("a library's generic trait method drops a consumer's value where Rust does"
   expect(printed(join(dir, "app.js"))).toBe("dropped\n1\ndropped\n1\nafter\n");
 }, 300_000);
 
+// A library's trait's default is the library's (ADR 0185): a consumer's impl
+// that doesn't write it calls the library's, which calls the impl's methods,
+// and its overrides, through its dictionary.
+test("a library's trait's defaults are what a consumer's impl doesn't write", () => {
+  const dir = fixture("library-defaults");
+  const lib = join(dir, "dep");
+  mkdirSync(lib, { recursive: true });
+  writeFileSync(join(dir, "dep.rs"), "pub trait Counter {\n    fn get(&self) -> u32;\n    fn make(n: u32) -> Self\n    where\n        Self: Sized;\n    fn double(&self) -> u32 {\n        self.get() * 2\n    }\n    fn quadruple(&self) -> u32 {\n        self.double() * 2\n    }\n    fn zero() -> Self\n    where\n        Self: Sized,\n    {\n        Self::make(0)\n    }\n    fn label(&self) -> String {\n        format!(\"count {}\", self.get())\n    }\n    fn consume(self) -> u32\n    where\n        Self: Sized,\n    {\n        self.get() + 100\n    }\n    fn bump(&mut self)\n    where\n        Self: Sized,\n    {\n        let next = Self::make(self.get() + 1);\n        *self = next;\n    }\n}\npub fn total<C: Counter>(c: &C) -> u32 {\n    c.quadruple() + c.get()\n}\n");
+  writeFileSync(join(dir, "app.rs"), "use dep::Counter;\nstruct One(u32);\nimpl Counter for One {\n    fn get(&self) -> u32 {\n        self.0\n    }\n    fn make(n: u32) -> Self {\n        One(n)\n    }\n}\nstruct Odd(u32);\nimpl Counter for Odd {\n    fn get(&self) -> u32 {\n        self.0\n    }\n    fn make(n: u32) -> Self {\n        Odd(n + 1)\n    }\n    fn double(&self) -> u32 {\n        self.0 * 2 + 1\n    }\n}\nstruct Loud(u32);\nimpl Drop for Loud {\n    fn drop(&mut self) {\n        println!(\"dropped {}\", self.0);\n    }\n}\nimpl Counter for Loud {\n    fn get(&self) -> u32 {\n        self.0\n    }\n    fn make(n: u32) -> Self {\n        Loud(n)\n    }\n}\nfn via<C: Counter>(c: &C) -> u32 {\n    c.double()\n}\nfn bumped<C: Counter>(mut c: C) -> u32 {\n    c.bump();\n    c.get()\n}\npub fn main() {\n    println!(\"{} {} {}\", One(3).double(), One(3).quadruple(), One(3).label());\n    println!(\"{} {}\", Odd(3).double(), Odd(3).quadruple());\n    println!(\"{} {}\", One::zero().get(), Odd::zero().get());\n    println!(\"{} {}\", via(&One(5)), via(&Odd(5)));\n    println!(\"{} {}\", dep::total(&One(1)), dep::total(&Odd(1)));\n    println!(\"{}\", Loud(7).consume());\n    let mut one = One(8);\n    one.bump();\n    println!(\"{} {}\", one.get(), bumped(Odd(8)));\n    let mut loud = Loud(9);\n    loud.bump();\n    println!(\"{} {}\", loud.get(), bumped(Loud(20)));\n}\n");
+  run([compiler, join(dir, "dep.rs"), "-o", join(lib, "lib.js"), "--library", "--manifest", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "dep", `--emit=metadata=${join(lib, "libdep.rmeta")}`]);
+  run([compiler, join(dir, "app.rs"), "-o", join(dir, "app.js"), "--dependency", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "app", "--crate-type=lib", "--extern", `dep=${join(lib, "libdep.rmeta")}`]);
+  expect(printed(join(dir, "app.js"))).toBe("6 12 count 3\n7 14\n0 1\n10 11\n5 7\ndropped 7\n107\n9 10\ndropped 9\ndropped 20\ndropped 21\n10 21\ndropped 10\n");
+}, 300_000);
+
 // A library's JS and its metadata are one build's (ADR 0100): rustc writes
 // the metadata where it's staged, and it's published with the JS, from one
 // plan, or neither is. Found in review, each: JS published beside metadata

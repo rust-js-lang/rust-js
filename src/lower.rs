@@ -118,8 +118,29 @@ fn module_path(tcx: TyCtxt<'_>, module: LocalModDefId) -> Vec<String> {
     if module == LocalModDefId::CRATE_DEF_ID {
         return Vec::new();
     }
-    let mut path = module_path(tcx, tcx.parent_module_from_def_id(module.to_local_def_id()));
-    path.push(tcx.item_name(module.to_def_id()).to_string());
+    let parent = tcx.parent_module_from_def_id(module.to_local_def_id());
+    let mut path = module_path(tcx, parent);
+    let name = tcx.item_name(module.to_def_id());
+    // A module in a block, as bitflags' macro writes in a function, is one of
+    // its own, though another of its parent's has its name: numbered in the
+    // order they're written, after the one the parent declares, `names$1`.
+    let in_block = |m: LocalModDefId| tcx.def_kind(tcx.local_parent(m.to_local_def_id())) != DefKind::Mod;
+    let mut namesakes: Vec<LocalModDefId> = tcx
+        .hir_crate_items(())
+        .definitions()
+        .filter(|&id| tcx.def_kind(id) == DefKind::Mod)
+        .map(LocalModDefId::new_unchecked)
+        .filter(|&m| {
+            m != LocalModDefId::CRATE_DEF_ID
+                && tcx.item_name(m.to_def_id()) == name
+                && tcx.parent_module_from_def_id(m.to_local_def_id()) == parent
+        })
+        .collect();
+    namesakes.sort_by_key(|&m| (in_block(m), m.to_local_def_id().local_def_index));
+    match namesakes.iter().position(|&m| m == module) {
+        Some(at) if at > 0 => path.push(format!("{name}${at}")),
+        _ => path.push(name.to_string()),
+    }
     path
 }
 

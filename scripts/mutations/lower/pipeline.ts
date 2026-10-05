@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [
     replace: "                    .or_else(|| (initializer && false).then(|| def_id.expect_local())) =>",
     tests: ["test/corpus.test.ts", "-t", "static_fns"],
   },
+  {
+    name: "library-defaults-unexported",
+    breaks: "a library's trait's defaults aren't in its JS, which its consumers' impls import",
+    file: "src/lower/pipeline.rs",
+    find: "tcx.trait_of_assoc(id).is_none() || (export_library && super::library::reachable(tcx, id))",
+    replace: "tcx.trait_of_assoc(id).is_none()",
+    tests: ["test/crates.test.ts","-t","defaults are what"],
+  },
 ];

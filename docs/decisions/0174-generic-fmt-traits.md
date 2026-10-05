@@ -36,7 +36,8 @@ function hex(t, TLowerHex) {
 - **The crate's is its impl's,** `handleLowerHex()`.
 - **Still errors:** std's, of a number given where a `T: LowerHex` goes,
   whose `fmt` would apply the options itself, and of a reference, whose
-  address JS hasn't (ADR 0165).
+  address JS hasn't (ADR 0165). (Amended: a number's is a dictionary that
+  applies them as it runs, ADR 0185.)
 
 ## Why
 

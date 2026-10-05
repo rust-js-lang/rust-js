@@ -2,12 +2,13 @@
 //! lazy dictionaries for impls, and `{ value, impl }` for trait objects.
 
 use super::bindings;
+use super::display::Pretty;
 use super::drops::Drops;
 use super::recognition::{
     Recognition, StdItem, TraitCall, TypeFact, in_std_dictionary, is_std_def, is_std_method, is_writer_default,
     std_item,
 };
-use super::representation::{const_js, eval_const};
+use super::representation::{Num, const_js, eval_const};
 use super::{FnCx, R, lower_first};
 use crate::js::{self, Expr, Op, Prop, StmtKind};
 use crate::runtime::Helper;
@@ -16,8 +17,8 @@ use rustc_hir::{LangItem, Mutability};
 use rustc_middle::mir::{BinOp, UnOp};
 use rustc_middle::traits::{BuiltinImplSource, ImplSource};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeFoldable, TypeVisitableExt};
-use rustc_span::Span;
 use rustc_span::def_id::DefId;
+use rustc_span::{Span, Symbol};
 use std::collections::HashMap;
 
 /// A trait whose bounds take dictionaries (ADR 0049): the crate's own, and
@@ -647,6 +648,19 @@ fn js_word(text: &str) -> String {
         .collect()
 }
 
+/// A type parameter's name as part of a JS name: `T`, or of `x: impl
+/// fmt::Display`, which rustc names as it's written, its trait's, `Display`.
+fn param_word(name: Symbol) -> String {
+    let Some(bound) = name.as_str().strip_prefix("impl ") else {
+        return name.to_string();
+    };
+    let path: String = bound
+        .chars()
+        .take_while(|&c| c.is_alphanumeric() || c == '_' || c == ':')
+        .collect();
+    path.rsplit("::").next().unwrap_or_default().to_string()
+}
+
 /// What a copied default body replaced of the given of the item it's
 /// lowered in, its evidence and arguments, to put back when it's done.
 pub(super) struct GivenScope<'tcx> {
@@ -759,7 +773,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 TypeFact::Align => "Align",
                 TypeFact::Name => "Name",
             };
-            let name = self.fresh(&format!("{}{word}", param.name));
+            let name = self.fresh(&format!("{}{word}", param_word(param.name)));
             self.given.type_facts.push((index, fact, Expr::var(&name)));
             params.push(name.into());
         }
@@ -767,7 +781,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // with a destructor, `dropT` (ADR 0098).
         for &index in self.krate.drop_params.get(&id).into_iter().flatten() {
             let param = self.tcx.generics_of(id).param_at(index as usize, self.tcx);
-            let name = self.fresh(&format!("drop{}", param.name));
+            let name = self.fresh(&format!("drop{}", param_word(param.name)));
             self.give_drop_param(index, name.clone());
             params.push(name.into());
         }
@@ -847,6 +861,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Derived and std impls of `Default` and `Clone` (ADR 0052).
         let ty = tr.self_ty();
+        // std's `LowerHex` and the like of an integer: its digits, given the
+        // options its caller is, as std's `Debug` of one is (ADR 0185).
+        if let Some(num) = Num::of(ty).filter(|n| !n.float())
+            && let Some(radix) = self.radix_trait(tr.def_id)
+            && !self.has_user_impl(tr.def_id, ty)
+        {
+            let (params, pretty): (Vec<js::Pattern>, _) = match self.writers_take_options() {
+                true => (
+                    vec!["value".into(), "options".into()],
+                    Pretty::When(Expr::var("options")),
+                ),
+                false => (vec!["value".into()], Pretty::Plain),
+            };
+            let text = self.radix_text(Expr::var("value"), num, radix, &pretty);
+            let fmt = Expr::arrow(params, vec![StmtKind::Return(Some(text)).at(js::Span::NONE)]);
+            return Ok(Expr::object(vec![Prop::Field("fmt".into(), fmt)]));
+        }
         let default = is_std_def(self.tcx, tr.def_id, StdItem::Default);
         let clone = self.tcx.is_lang_item(tr.def_id, LangItem::Clone);
         let eq = self.tcx.is_lang_item(tr.def_id, LangItem::PartialEq);
@@ -1851,18 +1882,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 props.push(Prop::Field(bindings::fn_name(self.tcx, item.def_id), write_str));
                 continue;
             }
-            // A library's trait's default, whose body is the library's (ADR 0100).
-            if self.krate.foreign.in_library(method) {
+            // A library's trait's default, whose body is the library's (ADR 0100):
+            // its function over `Self`, given this impl's dictionary as any of
+            // its generic functions is (ADR 0185).
+            let library_default = self.krate.foreign.in_library(method);
+            if library_default && self.krate.foreign.item(method).is_none() {
                 let what = format!(
                     "implementing another crate's trait without its default `{}`: write the method in the impl",
                     self.tcx.def_path_str(method)
                 );
                 return Err(self.unsupported(span, &what));
             }
-            if !self.krate.fns.contains_key(&method) {
+            if !library_default && !self.krate.fns.contains_key(&method) {
                 return Err(self.unsupported(span, &format!("trait method `{}`", self.tcx.def_path_str(method))));
             }
-            if self.tcx.trait_of_assoc(method).is_some() {
+            if !library_default && self.tcx.trait_of_assoc(method).is_some() {
                 let value = self.default_method(method, instance.args)?;
                 props.push(Prop::Field(bindings::fn_name(self.tcx, item.def_id), value));
                 continue;
@@ -1935,7 +1969,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut replaced = Vec::new();
             for &index in &own_drops {
                 let param = self.tcx.generics_of(item.def_id).param_at(index as usize, self.tcx);
-                let name = self.fresh(&format!("drop{}", param.name));
+                let name = self.fresh(&format!("drop{}", param_word(param.name)));
                 replaced.push((index, self.lend_drop_param(index, name.clone())));
                 drop_names.push(name);
             }
@@ -2111,7 +2145,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let name = match &drop.kind {
                 js::ExprKind::Var(name) => name.clone(),
                 _ => {
-                    let name = self.fresh(&format!("drop{}", generics.param_at(index, self.tcx).name));
+                    let name = self.fresh(&format!("drop{}", param_word(generics.param_at(index, self.tcx).name)));
                     made.push((index as u32, StmtKind::Const(name.clone(), drop).at(js::Span::NONE)));
                     name
                 }

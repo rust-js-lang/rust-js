@@ -44,6 +44,18 @@ fn relay<U>(value: U) {
     println!("relayed");
 }
 
+// Of an `impl Trait` argument, whose type parameter rustc names as it's
+// written: `dropDisplay`.
+fn shown(x: impl std::fmt::Display) -> String {
+    format!("<{x}>")
+}
+
+impl std::fmt::Display for Noisy {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.write_str(self.0)
+    }
+}
+
 fn main() {
     consume(Noisy("a"));
     consume(5);
@@ -54,5 +66,6 @@ fn main() {
     consume(Pair { a: Noisy("p"), b: 1 });
     let mut wrapper = Wrapper { inner: Noisy("w1") };
     wrapper.replace(Noisy("w2"));
+    println!("{} {}", shown(Noisy("s")), shown(7));
     println!("{} {} {} end", kept.0, copy.0, wrapper.inner.0);
 }

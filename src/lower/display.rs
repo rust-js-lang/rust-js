@@ -2,7 +2,7 @@
 //! string it writes. Its formatter is a local string, each write is `f += s`,
 //! and `fmt::Result`, which is always `Ok`, is nothing at all.
 
-use super::format_spec::Options;
+use super::format_spec::{Options, Radix};
 use super::recognition::{ChannelError, FormatterQuery, Std};
 use super::recognition::{StdItem, WriteCall, opt_std_item, std_item, trait_method};
 use super::representation::{self, Num};
@@ -326,15 +326,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let ty = generic_args.type_at(0);
                 self.debug_string_with(values.remove(0), ty, span, &pretty)?
             }
-            // The crate's impl, given this `Formatter`'s options; std's of a
-            // number would pad by them as it runs, which isn't here yet.
+            // The crate's impl, given this `Formatter`'s options, or std's of a
+            // number, padded by them as it runs (ADR 0185).
             WriteCall::OtherFmt => {
                 let ty = generic_args.type_at(0).peel_refs();
                 let trait_id = self.tcx.trait_of_assoc(def_id).expect("a trait's `fmt`");
+                let std_radix = (!self.has_user_impl(trait_id, ty))
+                    .then(|| Num::of(ty).filter(|n| !n.float()).zip(self.radix_trait(trait_id)))
+                    .flatten();
                 // A generic `T`'s: its dictionary's (ADR 0174).
                 if self.is_unknown(ty) {
                     let value = values.remove(0);
                     self.other_fmt_dictionary(trait_id, ty, value, &pretty, span)?
+                } else if let Some((num, radix)) = std_radix {
+                    self.radix_text(values.remove(0), num, radix, &pretty)
                 } else {
                     if !self.has_user_impl(trait_id, ty) {
                         let path = self.tcx.def_path_str(def_id);
@@ -799,6 +804,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut list = vec![value];
         list.extend(self.options_arg(pretty));
         Ok(Expr::call(Expr::member(dictionary, "fmt"), list))
+    }
+
+    /// std's `LowerHex`, `UpperHex`, `Octal` or `Binary` of an integer, given a
+    /// `Formatter`'s options as it runs: its digits, its prefix where it's
+    /// alternate, padded as a number is (ADR 0185).
+    pub(super) fn radix_text(&mut self, value: Expr, num: Num, radix: Radix, pretty: &Pretty) -> Expr {
+        let digits = radix.digits(value, num);
+        let text = match pretty.known() {
+            Some(true) => Expr::bin(Op::Add, Expr::str(radix.prefix()), digits),
+            Some(false) => digits,
+            None => {
+                let prefix = Expr::cond(pretty.alternate(), Expr::str(radix.prefix()), Expr::str(""));
+                Expr::bin(Op::Add, prefix, digits)
+            }
+        };
+        match pretty {
+            Pretty::When(options) if self.krate.format_options => {
+                self.runtime.insert(Helper::Formatted);
+                Expr::call(Expr::var("$formatted"), vec![text, options.clone(), Expr::bool(true)])
+            }
+            _ => text,
+        }
+    }
+
+    /// The radix std's `LowerHex`, `UpperHex`, `Octal` or `Binary` shows.
+    pub(super) fn radix_trait(&self, trait_id: DefId) -> Option<Radix> {
+        [Radix::LowerHex, Radix::UpperHex, Radix::Octal, Radix::Binary]
+            .into_iter()
+            .find(|&radix| self.recognition().other_fmt_trait(Std::FmtRadix(radix)) == Some(trait_id))
     }
 
     /// `write!(w, ..)` or `w.write_char(c)` of a writer of the crate's that

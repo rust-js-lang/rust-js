@@ -51,6 +51,8 @@ mod helpers { .. }  ──► out/helpers.js       inline modules too
 - **Paths**: the crate root goes to the output file (`-o`, or `<input>.js`).
   Module `a::b` goes to `a/b.js` next to it, mirroring how Rust lays out
   `src/`. A module whose path would collide with the root's file is an error.
+  (Amended: a module in a block of the same name as another of its parent's
+  is numbered, `names$1.js`, ADR 0185.)
 - **Cross-module calls** become namespace imports, as in ReScript:
   `math::add(x, y)` ⟶ `import * as math from "./math.js"` at the top and
   `math.add(x, y)` at the call. The alias is the module's last path segment
