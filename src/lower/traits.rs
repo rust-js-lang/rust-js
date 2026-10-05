@@ -6,7 +6,7 @@ use super::display::Pretty;
 use super::drops::Drops;
 use super::recognition::{
     Recognition, StdItem, TraitCall, TypeFact, in_std_dictionary, is_std_def, is_std_method, is_writer_default,
-    std_item,
+    known_derive, std_item,
 };
 use super::representation::{Num, const_js, eval_const};
 use super::{FnCx, R, lower_first};
@@ -52,7 +52,7 @@ pub(super) fn validate(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_, '_
         }
         // A derived impl's methods are never lowered: `#[derive(Hash)]`'s
         // generic `hash<H>` is no reason to reject the crate.
-        let derived = |id: rustc_span::def_id::LocalDefId| tcx.is_automatically_derived(id.to_def_id());
+        let derived = |id: rustc_span::def_id::LocalDefId| known_derive(tcx, id.to_def_id());
         if derived(id)
             || (kind == DefKind::AssocFn && tcx.opt_local_parent(id).is_some_and(derived))
             || super::analysis::from_serde_derive(tcx, id)
@@ -861,6 +861,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Derived and std impls of `Default` and `Clone` (ADR 0052).
         let ty = tr.self_ty();
+        // std's `Error` of one of its parse errors: its `Display` and `Debug`, as
+        // a crate's impl's dictionary has them, and no `source`, which none of
+        // them has (ADR 0186).
+        if is_std_def(self.tcx, tr.def_id, StdItem::Error) && self.is_parse_error(ty) {
+            let mut props = Vec::new();
+            for (name, supertrait, _) in supertraits(self.tcx, tr.def_id, tr.args) {
+                if !operational(self.tcx, self.krate.foreign, supertrait.def_id) {
+                    continue;
+                }
+                let dictionary = self.dictionary(supertrait, span)?;
+                props.push(Prop::Field(
+                    name,
+                    Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(dictionary)).at(js::Span::NONE)]),
+                ));
+            }
+            let none = Expr::arrow(
+                Vec::new(),
+                vec![StmtKind::Return(Some(Expr::undefined())).at(js::Span::NONE)],
+            );
+            props.push(Prop::Field("source".into(), none));
+            return Ok(Expr::object(props));
+        }
         // std's `LowerHex` and the like of an integer: its digits, given the
         // options its caller is, as std's `Debug` of one is (ADR 0185).
         if let Some(num) = Num::of(ty).filter(|n| !n.float())

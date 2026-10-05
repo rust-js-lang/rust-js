@@ -571,4 +571,20 @@ export const mutations: Mutation[] = [
     replace: "                \"by_ref\" if !self.is_user_iterator(ty) => Std::IterByRef,",
     tests: ["test/corpus.test.ts", "-t", "iter_by_ref"],
   },
+  {
+    name: "other-derives-skipped",
+    breaks: "what another crate's derive writes, strum's or thiserror's, is skipped as std's derives' is",
+    file: "src/lower/recognition.rs",
+    find: "        true => tcx.is_builtin_derived(id),",
+    replace: "        true => tcx.is_automatically_derived(id),",
+    tests: ["test/cargo-workspace.test.ts","-t","another crate's derive"],
+  },
+  {
+    name: "foreign-std-derives-unknown",
+    breaks: "core's derived `Debug` of `IntErrorKind` isn't known as derived, and `{:?}` of one is an error",
+    file: "src/lower/recognition.rs",
+    find: "        false => tcx.is_automatically_derived(id),",
+    replace: "        false => false,",
+    tests: ["test/corpus.test.ts", "-t", "int_error_kind"],
+  },
 ];

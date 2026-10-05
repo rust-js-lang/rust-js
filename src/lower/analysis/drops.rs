@@ -1,7 +1,7 @@
 //! What dropping takes, crate-wide: the generic parameters given a drop,
 //! and the derives that drop nothing (ADR 0098).
 
-use crate::lower::recognition::{StdItem, is_std_def, serde_impl};
+use crate::lower::recognition::{StdItem, is_std_def, known_derive, serde_impl};
 use crate::lower::{Body, FnInfo};
 use rustc_hir::LangItem;
 use rustc_hir::def::DefKind;
@@ -163,7 +163,7 @@ pub(super) fn drop_params<'tcx>(
 /// `Clone`'s, `Debug`'s, `Default`'s and the comparisons', or serde's, whose
 /// codecs rust-js writes (ADR 0077)?
 pub(super) fn drops_nothing_derived(tcx: TyCtxt<'_>, imp: DefId) -> bool {
-    if !tcx.is_automatically_derived(imp) {
+    if !known_derive(tcx, imp) {
         return false;
     }
     let tr = tcx

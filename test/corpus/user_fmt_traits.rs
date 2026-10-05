@@ -98,6 +98,16 @@ impl Binary for Bits<i8> {
     }
 }
 
+// What strum's `Display` derive writes: `format_args!`'s text, which a
+// `Formatter`'s width doesn't pad.
+struct Circle(u32);
+
+impl fmt::Display for Circle {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Display::fmt(&format_args!("circle of {}", self.0), f)
+    }
+}
+
 fn main() {
     let id = Id(48879);
     println!("{:x} {:#x} {:X} {:o} [{:>10b}]", id, id, id, id, Id(5));
@@ -109,4 +119,5 @@ fn main() {
     println!("{:x} {:#x} {:04x} {:#06x} [{:>6x}] [{:<6x}] {:+x}", b, b, b, b, b, b, b);
     println!("{:X} {:#X} {:o} {:#o} {:x}", b, b, b, b, Bits(-1i8));
     println!("{:b} {:#010b} {:#b}", Bits(-2i8), Bits(5i8), Bits(0i8));
+    println!("[{}] [{:>14}]", Circle(3), Circle(4));
 }

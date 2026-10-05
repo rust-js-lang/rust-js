@@ -252,7 +252,7 @@ pub fn lower_crate<'tcx>(
     // rather than scanning every edge again for every reached function.
     let derived: HashSet<DefId> = trait_impls
         .iter()
-        .filter(|&&id| tcx.is_automatically_derived(id))
+        .filter(|&&id| super::recognition::known_derive(tcx, id))
         .flat_map(|&id| std::iter::once(id).chain(tcx.associated_item_def_ids(id).iter().copied()))
         .collect();
     let edges = lowered_items

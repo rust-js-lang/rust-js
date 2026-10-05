@@ -4,6 +4,7 @@
 use crate::lower::format_args::{Piece, decode_template};
 use crate::lower::recognition::{
     FormatterQuery, StdItem, formatter_query, is_arguments_new, is_debug_argument, is_formatter_pad, is_std_def,
+    known_derive,
 };
 use crate::lower::{Body, strip};
 use rustc_hir::def::DefKind;
@@ -172,7 +173,7 @@ pub(super) fn uses_format_options(tcx: TyCtxt<'_>, all_bodies: &[&Body<'_>]) -> 
 
 /// A `#[derive(Debug)]` impl: lowered, since it's how `{:?}` shows its type.
 pub(super) fn derived_debug(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    tcx.is_automatically_derived(id)
+    known_derive(tcx, id)
         && matches!(tcx.def_kind(id), DefKind::Impl { of_trait: true })
         && is_std_def(
             tcx,

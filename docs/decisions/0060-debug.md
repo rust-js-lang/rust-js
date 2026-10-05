@@ -1,6 +1,8 @@
 # 0060. `{:?}` by the type, and a derived `Debug` is a function
 
 Status: Accepted. Extends [0054](0054-display.md).
+(Amended: a `Debug` another crate's derive writes is the crate's own impl,
+ADR 0186.)
 
 ## Context
 

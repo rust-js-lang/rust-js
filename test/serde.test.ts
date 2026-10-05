@@ -285,6 +285,29 @@ pub fn report() -> String {
   expect(generated.report()).toBe(expected);
 });
 
+// A generic type's derived codec, of a value with a destructor: rust-js's,
+// as serde's derive is (ADR 0077), though another crate's derive writes code
+// of the crate's own (ADR 0186).
+test("serde: a generic type's derived codec of a value with a destructor", async () => {
+  const dir = fixture("serde-generic-drop");
+  writeFileSync(join(dir, "cases.rs"), `#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct Page<T> { pub items: Vec<T>, pub total: u32 }
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct Item { pub id: u32 }
+impl Drop for Item {
+    fn drop(&mut self) {}
+}
+pub fn report() -> String {
+    let page: Page<Item> = serde_json::from_str(r#"{"items":[{"id":1},{"id":2}],"total":2}"#).unwrap();
+    format!("{} {}", serde_json::to_string(&page).unwrap(), page.items.len())
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  run([compiler, join(dir, "cases.rs"), "-o", join(dir, "cases.js"), "--", ...buildSerde()]);
+  const generated = await import(join(dir, "cases.js"));
+  expect(generated.report()).toBe(expected);
+});
+
 // Numbers chosen at random, the same ones each run: an f64 from any 64 bits,
 // written with `to_string`, and number texts of every form, read with
 // `from_str` as an `f64` and an `i32`. serde_json's float parsing isn't

@@ -2,6 +2,7 @@
 
 import {
   $debugF64,
+  $debugParseError,
   $debugStr,
   $index,
   $parseBig,
@@ -10,11 +11,13 @@ import {
   $parseErrorDyn,
   $parseF64,
   $parseInt,
+  $traitImpl,
   $trim,
   $tryFromInt,
+  $unwrapErr,
 } from "@rust-js/runtime";
 
-var $negativeDebug, $negativeDisplay, $negativeError;
+var $negativeDebug, $negativeDisplay, $negativeError, $tAsDyn;
 
 function parse_positive(s) {
   const result = $parseBig($trim(s), -9223372036854775808n, 9223372036854775807n);
@@ -58,6 +61,11 @@ function settings(text) {
   return { TAG: "Ok", _0: [scale, on, mark, small] };
 }
 
+function describe(e, EError) {
+  const arg = EError.source(e) != null;
+  return `${EError.Display().fmt(e)} | ${EError.Debug().fmt(e)} | ${arg}`;
+}
+
 function main() {
   for (const s of ["42", " 7 ", "-3", "x", "99999999999999999999", ""]) {
     const match = parse_positive(s);
@@ -82,6 +90,41 @@ function main() {
       );
     }
   }
+  const err = $unwrapErr($parseInt("x", -2147483648, 2147483647));
+  console.log(
+    `${describe(err, {
+      Debug: () => ({ fmt: (value) => $debugParseError(value, "ParseIntError") }),
+      Display: () => ({ fmt: (value) => value }),
+      source: () => undefined,
+    })}`,
+  );
+  const tmp = tAsDyn_as_dyn(err, {
+    Debug: () => ({ fmt: (value) => $debugParseError(value, "ParseIntError") }),
+    Display: () => ({ fmt: (value) => value }),
+    source: () => undefined,
+  });
+  const receiver = tAsDyn_as_dyn(err, {
+    Debug: () => ({ fmt: (value) => $debugParseError(value, "ParseIntError") }),
+    Display: () => ({ fmt: (value) => value }),
+    source: () => undefined,
+  });
+  console.log(
+    `${tmp.impl.Display().fmt(tmp.value)} ${receiver.impl.source(receiver.value) == null}`,
+  );
+  console.log(
+    `${describe($unwrapErr($tryFromInt(300, 0, 255)), {
+      Debug: () => ({ fmt: (value) => $debugParseError(value, "TryFromIntError") }),
+      Display: () => ({ fmt: (value) => "out of range integral type conversion attempted" }),
+      source: () => undefined,
+    })}`,
+  );
+  console.log(
+    `${describe($unwrapErr($parseBool("maybe")), {
+      Debug: () => ({ fmt: (value) => $debugParseError(value, "ParseBoolError") }),
+      Display: () => ({ fmt: (value) => value }),
+      source: () => undefined,
+    })}`,
+  );
 }
 
 export function entry() {
@@ -94,6 +137,10 @@ function negativeDebug_fmt(negative) {
 
 function negativeDisplay_fmt(negative) {
   return `${negative[0]} is negative`;
+}
+
+function tAsDyn_as_dyn(self, TError) {
+  return { value: self, impl: TError };
 }
 
 export function negativeDebug() {
@@ -119,5 +166,12 @@ export function negativeError() {
     };
   }
   return $negativeError;
+}
+
+function tAsDyn(TError) {
+  if ($tAsDyn === undefined) {
+    $tAsDyn = new WeakMap();
+  }
+  return $traitImpl($tAsDyn, [TError], () => ({ as_dyn: (arg0) => tAsDyn_as_dyn(arg0, TError) }));
 }
 //# sourceMappingURL=case.js.map

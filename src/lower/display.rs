@@ -724,6 +724,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.recognition().is_path_like(ty) {
             return Ok(value);
         }
+        // `format_args!`'s text (ADR 0034), which its `Display` writes as it
+        // is, whatever width the `Formatter` has, as strum's derive asks.
+        if self.is_lang_adt(ty, LangItem::FormatArguments) {
+            return Ok(value);
+        }
         // A `Wrapping` shows its number, as both its `Display` and its
         // `Debug` do (ADR 0175).
         if let Some(inner) = self.recognition().wrapping_of(ty) {

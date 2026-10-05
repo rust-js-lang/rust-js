@@ -2180,7 +2180,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let tr = self.tcx.erase_and_anonymize_regions(tr);
         matches!(self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr)),
             Ok(ImplSource::UserDefined(imp)) if self.trait_impls.contains(&imp.impl_def_id)
-                && self.tcx.is_automatically_derived(imp.impl_def_id))
+                && known_derive(self.tcx, imp.impl_def_id))
     }
 
     /// Is `ty`'s impl of `trait_id` a `#[derive]`d one, whether or not
@@ -2189,7 +2189,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let tr = ty::TraitRef::new_from_args(self.tcx, trait_id, self.args_of(trait_id, ty));
         let tr = self.tcx.erase_and_anonymize_regions(tr);
         matches!(self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr)),
-            Ok(ImplSource::UserDefined(imp)) if self.tcx.is_automatically_derived(imp.impl_def_id))
+            Ok(ImplSource::UserDefined(imp)) if known_derive(self.tcx, imp.impl_def_id))
     }
 }
 
@@ -2201,6 +2201,20 @@ pub(super) fn serde_trait(tcx: TyCtxt<'_>, trait_id: DefId) -> Option<bool> {
         "Serialize" => Some(true),
         "Deserialize" | "DeserializeOwned" => Some(false),
         _ => None,
+    }
+}
+
+/// A derive whose meaning rust-js has itself, never its body's: std's own,
+/// `#[derive(Clone)]` and the rest. Another crate's, strum's or thiserror's,
+/// writes code like any of the crate's, `#[automatically_derived]` though it
+/// is (ADR 0186); serde's is left out where it's read, as its codecs are
+/// rust-js's (ADR 0077). rustc tells which macro wrote only this crate's,
+/// the one compiled here: another's, core's `IntErrorKind`'s `Debug`, is as
+/// it says.
+pub(crate) fn known_derive(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    match id.is_local() {
+        true => tcx.is_builtin_derived(id),
+        false => tcx.is_automatically_derived(id),
     }
 }
 

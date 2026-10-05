@@ -161,3 +161,26 @@ test("a Cargo build that can't record what it made leaves the previous build's J
   await expect(check(manifest, { packageName: "app" })).rejects.toThrow();
   expect(readFileSync(js, "utf8")).toBe(before);
 }, 600_000);
+// Another crate's derive, as strum's and thiserror's are: what it writes is
+// `#[automatically_derived]`, as std's derives' is, but it's the crate's own
+// code, called, given as a dictionary, and a `From` that `?` uses.
+test("what another crate's derive writes is compiled as the crate's own code", async () => {
+  const dir = fixture("cargo-derive");
+  const crates: Record<string, [string, string, string]> = {
+    describe_derive: ["", "[lib]\nproc-macro = true\n", "use proc_macro::TokenStream;\n\n// The name after `struct` or `enum`: enough for the types it's given.\nfn name(input: &TokenStream) -> String {\n    let text = input.to_string();\n    let mut words = text.split_whitespace();\n    while let Some(word) = words.next() {\n        if word == \"struct\" || word == \"enum\" {\n            let next = words.next().unwrap();\n            return next.chars().take_while(|c| c.is_alphanumeric() || *c == '_').collect();\n        }\n    }\n    panic!(\"no type\")\n}\n\n#[proc_macro_derive(Describe)]\npub fn describe(input: TokenStream) -> TokenStream {\n    let name = name(&input);\n    format!(\"#[automatically_derived] impl ::describe::Describe for {name} {{ fn describe(&self) -> String {{ format!(\\\"{name}: {{:?}}\\\", self) }} }}\")\n        .parse()\n        .unwrap()\n}\n\n#[proc_macro_derive(FromCode)]\npub fn from_code(input: TokenStream) -> TokenStream {\n    let name = name(&input);\n    format!(\"#[automatically_derived] impl ::core::convert::From<u32> for {name} {{ fn from(code: u32) -> Self {{ {name}::Code(code) }} }}\")\n        .parse()\n        .unwrap()\n}\n"],
+    describe: ['describe_derive = { path = "../describe_derive" }\n', "", "pub use describe_derive::{Describe, FromCode};\n\npub trait Describe {\n    fn describe(&self) -> String;\n    fn shout(&self) -> String {\n        self.describe().to_uppercase()\n    }\n}\n"],
+    app: ['describe = { path = "../describe" }\n', "", "use describe::{Describe, FromCode};\n\n#[derive(Debug, Describe)]\npub struct Point(pub i32, pub i32);\n\n#[derive(Debug, Describe, FromCode)]\npub enum Failure {\n    Code(u32),\n    Other,\n}\n\nfn all<T: Describe>(items: &[T]) -> Vec<String> {\n    items.iter().map(|item| item.describe()).collect()\n}\n\nfn verify(code: u32) -> Result<(), Failure> {\n    let found: Result<(), u32> = if code > 0 { Err(code) } else { Ok(()) };\n    found?;\n    Ok(())\n}\n\npub fn main() {\n    println!(\"{}\", Point(1, 2).describe());\n    println!(\"{}\", Point(3, 4).shout());\n    println!(\"{:?}\", all(&[Failure::Code(7), Failure::Other]));\n    println!(\"{:?} {:?}\", verify(0), verify(5));\n    let failure: Failure = 9.into();\n    println!(\"{}\", failure.describe());\n}\n"],
+  };
+  writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["describe_derive", "describe", "app", "check"]\nresolver = "2"\n');
+  for (const [name, [uses, lib, source]] of Object.entries(crates)) {
+    mkdirSync(join(dir, name, "src"), { recursive: true });
+    writeFileSync(join(dir, name, "Cargo.toml"), `[package]\nname = "${name}"\nversion = "0.1.0"\nedition = "2024"\n\n${lib}[dependencies]\n${uses}`);
+    writeFileSync(join(dir, name, "src", "lib.rs"), source);
+  }
+  mkdirSync(join(dir, "check", "src"), { recursive: true });
+  writeFileSync(join(dir, "check", "Cargo.toml"), '[package]\nname = "check"\nversion = "0.1.0"\nedition = "2024"\n\n[dependencies]\napp = { path = "../app" }\n');
+  writeFileSync(join(dir, "check", "src", "main.rs"), "fn main() {\n    app::main();\n}\n");
+  const manifest = join(dir, "Cargo.toml");
+  const { js } = await check(manifest, { packageName: "app" });
+  expect(printed(js)).toBe(run(cargo(manifest, "run", "-p", "check")));
+}, 600_000);

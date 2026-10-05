@@ -1,6 +1,8 @@
 # 0052. The crate's own `Default`, `From` and `Clone`, and the trait ABI kept
 
 Status: Accepted. Extends [0049](0049-traits-and-generics.md) and [0020](0020-structs-and-tuples.md).
+(Amended: a derived impl here is std's derive's; another crate's derive's is
+the crate's own code, ADR 0186.)
 
 ## Context
 

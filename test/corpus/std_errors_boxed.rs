@@ -33,6 +33,23 @@ fn settings(text: &str) -> Result<(f64, bool, char, u8), Box<dyn Error>> {
     Ok((scale, on, mark, small))
 }
 
+// Given where an `E: Error` goes, as thiserror's `#[error(transparent)]`
+// gives one to its blanket `AsDynError`: std's `Error` of it, its message
+// and `Debug`, and no source.
+trait AsDyn<'a> {
+    fn as_dyn(&self) -> &(dyn Error + 'a);
+}
+
+impl<'a, T: Error + 'a> AsDyn<'a> for T {
+    fn as_dyn(&self) -> &(dyn Error + 'a) {
+        self
+    }
+}
+
+fn describe<E: Error>(e: &E) -> String {
+    format!("{e} | {e:?} | {}", e.source().is_some())
+}
+
 fn main() {
     for s in ["42", " 7 ", "-3", "x", "99999999999999999999", ""] {
         match parse_positive(s) {
@@ -46,4 +63,9 @@ fn main() {
             Err(e) => println!("err {e} / {e:?}"),
         }
     }
+    let err = "x".parse::<i32>().unwrap_err();
+    println!("{}", describe(&err));
+    println!("{} {}", err.as_dyn(), err.as_dyn().source().is_none());
+    println!("{}", describe(&u8::try_from(300i32).unwrap_err()));
+    println!("{}", describe(&"maybe".parse::<bool>().unwrap_err()));
 }

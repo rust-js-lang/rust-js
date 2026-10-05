@@ -236,4 +236,12 @@ export const mutations: Mutation[] = [
     replace: "            Pretty::When(options) if false && self.krate.format_options => {\n                self.runtime.insert(Helper::Formatted);\n                Expr::call(Expr::var(\"$formatted\"), vec![text, options.clone(), Expr::bool(true)])",
     tests: ["test/corpus.test.ts","-t","user_fmt_traits"],
   },
+  {
+    name: "format-arguments-display-refused",
+    breaks: "`Display::fmt(&format_args!(..), f)`, strum's derive's, is an error",
+    file: "src/lower/display.rs",
+    find: "        if self.is_lang_adt(ty, LangItem::FormatArguments) {",
+    replace: "        if false && self.is_lang_adt(ty, LangItem::FormatArguments) {",
+    tests: ["test/corpus.test.ts","-t","user_fmt_traits"],
+  },
 ];

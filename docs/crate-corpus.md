@@ -10,21 +10,21 @@ Compiled isn't run. Where a crate compiles, its probe,
 [`scripts/crate-corpus/<name>.rs`](../scripts/crate-corpus/), a library that
 uses it as a shared model would, is compiled with it, and its `report()` run,
 the JS's beside native Rust's: **runs** where they're the same. A derive's
-code is the probe's: strum's and thiserror's compile, but what they write in
-a crate that uses them doesn't yet.
+code is the probe's: strum's and thiserror's compiled before what they write
+in a crate that uses them did (ADR 0186).
 
-Measured 2026-10-05, after ADR 0185, Rust 1.98.1, each crate at the
+Measured 2026-10-05, after ADR 0186, Rust 1.98.1, each crate at the
 newest release its requirement allows.
 
 | Crate | Verdict | First refusals in its graph |
 |---|---|---|
-| strum 0.27 (`derive`) | compiles; its probe is refused: a derived `IntoEnumIterator`'s dictionary | |
+| strum 0.27 (`derive`) | runs | |
 | either 1.18 | refused | a user `Future` |
 | itertools 0.14 | blocked | either's |
 | indexmap 2.11 | blocked | hashbrown: a raw pointer |
 | bitflags 2.13 | runs | |
 | smallvec 1.16 | refused | `handle_alloc_error` called |
-| thiserror 2.0 | compiles; its probe is refused: `?` through a derived `From` | |
+| thiserror 2.0 | runs | |
 | anyhow 1.0 | refused | a raw pointer |
 | once_cell 1.21 | refused | a constant of a raw pointer |
 | semver 1.0 | refused | a constant of a `NonNull` |
@@ -35,7 +35,7 @@ newest release its requirement allows.
 | chrono 0.4 (`alloc`) | refused | a `fmt::Error` |
 | time 0.3 (`alloc`) | blocked | powerfmt: a `MaybeUninit`; deranged: a `const` block |
 
-3 of 16 compile, and bitflags runs as natively. What stops the most, by the crates it stops:
+3 of 16 compile, and each runs as natively. What stops the most, by the crates it stops:
 
 1. **Raw memory,** a raw pointer, a `NonNull`, a `MaybeUninit`,
    `transmute`, `handle_alloc_error`: 9.
@@ -46,6 +46,10 @@ newest release its requirement allows.
 
 ## Fixed by measuring
 
+- **What another crate's derive writes,** strum's `IntoEnumIterator` and
+  thiserror's `From`, was skipped as std's derives' is; `Display` of a
+  `fmt::Arguments`; std's `Error` of a parse error as a dictionary: strum
+  and thiserror run (ADR 0186).
 - **`ok_or_else` of a value with a destructor, a temporary of one in a
   branch, and `by_ref()` of an iterator of the crate's:** bitflags compiles
   (ADR 0184). **A library's trait's defaults, a number's `LowerHex` given a

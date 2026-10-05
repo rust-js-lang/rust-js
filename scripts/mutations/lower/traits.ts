@@ -672,4 +672,20 @@ export const mutations: Mutation[] = [
     replace: "    let Some(bound) = name.as_str().strip_prefix(\"impl \").filter(|_| false) else {",
     tests: ["test/corpus.test.ts","-t","drop_generic"],
   },
+  {
+    name: "std-error-dictionary-missing",
+    breaks: "a `ParseIntError` given where an `E: Error` goes, as thiserror's `transparent` does, has no dictionary",
+    file: "src/lower/traits.rs",
+    find: "        if is_std_def(self.tcx, tr.def_id, StdItem::Error) && self.is_parse_error(ty) {",
+    replace: "        if false && is_std_def(self.tcx, tr.def_id, StdItem::Error) && self.is_parse_error(ty) {",
+    tests: ["test/corpus.test.ts","-t","std_errors_boxed"],
+  },
+  {
+    name: "std-error-dictionary-markers",
+    breaks: "std's `Error` dictionary asks one of `MetaSized`, which has none",
+    file: "src/lower/traits.rs",
+    find: "                if !operational(self.tcx, self.krate.foreign, supertrait.def_id) {\n                    continue;\n                }\n                let dictionary = self.dictionary(supertrait, span)?;",
+    replace: "                let dictionary = self.dictionary(supertrait, span)?;",
+    tests: ["test/corpus.test.ts","-t","std_errors_boxed"],
+  },
 ];

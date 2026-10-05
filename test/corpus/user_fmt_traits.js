@@ -12,7 +12,8 @@ var $idLowerHex,
   $bitsLowerHex,
   $bitsUpperHex,
   $bitsOctal,
-  $bitsBinary;
+  $bitsBinary,
+  $circleDisplay;
 
 function main() {
   const id = [48879];
@@ -67,6 +68,9 @@ function main() {
       width: 10,
       zero: true,
     })} ${bitsBinary_fmt([0], { alternate: true })}`,
+  );
+  console.log(
+    `[${circleDisplay_fmt([3])}] [${circleDisplay_fmt([4], { width: 14, align: "Right" })}]`,
   );
 }
 
@@ -146,6 +150,10 @@ function bitsBinary_fmt(bits, options) {
   return $formatted((options?.alternate ? "0b" : "") + (bits[0] & 255).toString(2), options, true);
 }
 
+function circleDisplay_fmt(circle, options) {
+  return `circle of ${circle[0]}`;
+}
+
 export function idLowerHex() {
   if ($idLowerHex === undefined) {
     $idLowerHex = { fmt: idLowerHex_fmt };
@@ -223,5 +231,12 @@ export function bitsBinary() {
     $bitsBinary = { fmt: bitsBinary_fmt };
   }
   return $bitsBinary;
+}
+
+export function circleDisplay() {
+  if ($circleDisplay === undefined) {
+    $circleDisplay = { fmt: circleDisplay_fmt };
+  }
+  return $circleDisplay;
 }
 //# sourceMappingURL=case.js.map

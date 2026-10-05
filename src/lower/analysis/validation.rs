@@ -1,6 +1,6 @@
 //! What a crate does that rust-js refuses, found before any of it is lowered.
 
-use crate::lower::recognition::{StdItem, from_serde_derive, is_from_str, is_std_def};
+use crate::lower::recognition::{StdItem, from_serde_derive, is_from_str, is_std_def, known_derive};
 use crate::lower::traits;
 use crate::lower::{Body, strip};
 use rustc_hir::def::DefKind;
@@ -92,7 +92,7 @@ pub(super) fn reject_unsupported(
             DefKind::AssocTy if traits::gat_supported(tcx, def_id.to_def_id()) => continue,
             DefKind::AssocTy => "generic associated types with bounds",
             // Named, as which one stops a crate is what's worth knowing.
-            DefKind::Impl { of_trait: true } if !tcx.is_automatically_derived(def_id.to_def_id()) => {
+            DefKind::Impl { of_trait: true } if !known_derive(tcx, def_id.to_def_id()) => {
                 let trait_id = tcx
                     .impl_trait_ref(def_id)
                     .instantiate_identity()
