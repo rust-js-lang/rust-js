@@ -33,6 +33,9 @@ interop and tooling. The first production app is an intermediate milestone.
 
 ## Making changes
 
+Read and follow [CONTRIBUTING.md](CONTRIBUTING.md), including its architecture
+principle, for every contribution.
+
 Read the relevant [design decisions](docs/README.md), including later
 amendments, and the existing implementation and tests. The
 [architecture](docs/architecture.md) says where a change goes, and which
