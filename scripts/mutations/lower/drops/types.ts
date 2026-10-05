@@ -66,4 +66,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","generic_iterator_items"],
   },
+  {
+    name: "or-alternatives-not-apart",
+    breaks: "`(Some(t), _) | (_, Some(t))` of a pair of two is taken as moving both, and the one left isn't dropped",
+    file: "src/lower/drops/types.rs",
+    find: "                let apart = each.iter().enumerate().all(|(i, moved)| {",
+    replace: "                let apart = true || each.iter().enumerate().all(|(i, moved)| {",
+    tests: ["test/diagnostics.test.ts", "-t", "no variant tells apart"],
+  },
+  {
+    name: "or-variant-not-excluding",
+    breaks: "chrono's `Single(t) | Ambiguous(t, _)` is refused, as another variant's part isn't taken as absent",
+    file: "src/lower/drops/types.rs",
+    find: "        } => variant != Some(variant_index.as_u32()) || inside(subpatterns),",
+    replace: "        } => inside(subpatterns),",
+    tests: ["test/corpus.test.ts", "-t", "or_pattern_part_moves"],
+  },
+  {
+    name: "or-moves-not-collected",
+    breaks: "what an or-pattern moves out is dropped again where the value is",
+    file: "src/lower/drops/types.rs",
+    find: "                    if !found.contains(&path) {",
+    replace: "                    if false && !found.contains(&path) {",
+    tests: ["test/corpus.test.ts", "-t", "or_pattern_part_moves"],
+  },
 ];

@@ -716,8 +716,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if i == arms.len() - 1 && arm.guard.is_none() {
                 test = None;
             }
+            // What ends with the arm, `f(v)` of a body that's `match f(v) {
+            // .. }`, is dropped as it ends, before what it binds (ADR 0191).
             let mut arm_body = Vec::new();
+            self.begin_scope(arm.scope);
             self.stmt(arm.body, dest, &mut arm_body)?;
+            self.end_scope(0, arm.span, &mut arm_body)?;
             self.close_scope(mark, arm_body, arm.span, &mut body)?;
             let done = test.is_none() && guarded.is_none();
             chain.push((test, guarded, body, arm_span));

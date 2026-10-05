@@ -978,7 +978,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             match lowered
                 .iter()
                 .position(|s| matches!(&s.kind, StmtKind::Const(n, _) if *n == t.name))
+                .or_else(|| assigned_in_try(&lowered, &t.name))
             {
+                Some(at) if placed.iter().any(|&(other, _)| other == at) => {
+                    return Err(self.unsupported(span, "a temporary with a destructor in a branch"));
+                }
                 Some(at) => placed.push((at, t)),
                 None if t.operand.is_some() && t.parts.is_empty() => in_branches.push(t),
                 None => return Err(self.unsupported(span, "a temporary with a destructor in a branch")),
@@ -1493,6 +1497,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None => Ok(()),
         }
     }
+}
+
+/// Where a temporary declared before an earlier one's `try`, `let tuple;
+/// try { arg = f(b); tuple = [option, arg]; } finally { .. }`, is owned
+/// from: that `try`, if nothing after the assignment in it can leave early.
+/// Should `f(b)` panic, the temporary was never made, so isn't dropped
+/// (ADR 0191).
+fn assigned_in_try(lowered: &[Stmt], name: &str) -> Option<usize> {
+    let assigns = |s: &Stmt, name: Option<&str>| {
+        matches!(&s.kind, StmtKind::Assign(Expr { kind: js::ExprKind::Var(n), .. }, value)
+            if name.is_none_or(|name| n == name) && (name.is_some() || value.reads_same()))
+    };
+    lowered.iter().position(|s| match &s.kind {
+        StmtKind::Try(body, _) => body
+            .iter()
+            .position(|s| assigns(s, Some(name)))
+            .is_some_and(|at| body[at + 1..].iter().all(|s| assigns(s, None))),
+        _ => false,
+    })
 }
 
 /// The type parameters a value of `ty` holds, not behind a reference: what

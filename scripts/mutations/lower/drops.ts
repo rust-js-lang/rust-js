@@ -259,4 +259,12 @@ export const mutations: Mutation[] = [
     replace: "                            changed |= false && caller.insert(param);",
     tests: ["test/diagnostics.test.ts","-t","a destructor given through a generic function"],
   },
+  {
+    name: "temp-assigned-in-try-unplaced",
+    breaks: "`match (f(a), f(b)) { .. }` is refused, the pair declared before the `try` that drops `f(a)` should `f(b)` panic",
+    file: "src/lower/drops.rs",
+    find: "                .or_else(|| assigned_in_try(&lowered, &t.name))",
+    replace: "                .or_else(|| assigned_in_try(&lowered, &t.name).filter(|_| false))",
+    tests: ["test/corpus.test.ts", "-t", "arm_temporaries"],
+  },
 ];

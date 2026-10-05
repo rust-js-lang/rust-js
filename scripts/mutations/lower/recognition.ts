@@ -503,8 +503,8 @@ export const mutations: Mutation[] = [
     name: "path-from-text-unknown",
     breaks: "`PathBuf::from(text)` is an error",
     file: "src/lower/recognition.rs",
-    find: "            if (self.is_lang_adt(to_ty, LangItem::String) || self.is_path_like(to_ty)) && self.is_string_like(from_ty) {",
-    replace: "            if self.is_lang_adt(to_ty, LangItem::String) && self.is_string_like(from_ty) {",
+    find: "            if (self.is_lang_adt(to_ty, LangItem::String) || self.is_path_like(to_ty) || boxed_str)",
+    replace: "            if (self.is_lang_adt(to_ty, LangItem::String) || boxed_str)",
     tests: ["test/corpus.test.ts", "-t", "path_text"],
   },
   {
@@ -602,5 +602,13 @@ export const mutations: Mutation[] = [
     find: "                || self.is_user_iterator(ty))",
     replace: "                || false)",
     tests: ["test/corpus.test.ts","-t","user_into_iter"],
+  },
+  {
+    name: "boxed-str-unconverted",
+    breaks: "chrono's `Box::from(s)` of a `&str` is refused",
+    file: "src/lower/recognition.rs",
+    find: "            let boxed_str = to_ty.is_box() && to_ty.boxed_ty().is_some_and(|inner| inner.is_str());",
+    replace: "            let boxed_str = false;",
+    tests: ["test/corpus.test.ts", "-t", "boxed_str"],
   },
 ];

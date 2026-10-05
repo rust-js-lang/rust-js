@@ -465,6 +465,7 @@ tooling while preserving rust-js's own readable-output goals.
   a library's trait's defaults, a number's `LowerHex` given a `Formatter`,
   another crate's derives, a writer's `fmt::Error`, `Duration`, `panic!("{}", x)`,
   a slice into an array, generic loops and folds whose callers give no destructor,
+  or-patterns' moves, an arm's temporaries, `Box::from` of a `&str`,
   paths as text, generic `{:x}` and `{:p}`, and two crashes.
 - [ ] **M8.3 — Share behavior as well as data.** Demonstrate the same model,
   validation, serialization, and domain-logic crates on a native Rust server

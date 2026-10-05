@@ -977,8 +977,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             }
         }
         // std's own conversions that change nothing in JS (ADR 0063): to a
-        // `String` from a `&str` or a `char`, and between numbers, which
-        // only widen.
+        // `String` or a `Box<str>` (ADR 0191) from a `&str` or a `char`, and
+        // between numbers, which only widen.
         let (from_ty, to_ty) = if tcx.is_diagnostic_item(sym::Into, trait_) {
             (Some(ty), args.types().nth(1))
         } else if tcx.is_diagnostic_item(sym::From, trait_) {
@@ -987,7 +987,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             (None, None)
         };
         if let (Some(from_ty), Some(to_ty)) = (from_ty, to_ty) {
-            if (self.is_lang_adt(to_ty, LangItem::String) || self.is_path_like(to_ty)) && self.is_string_like(from_ty) {
+            let boxed_str = to_ty.is_box() && to_ty.boxed_ty().is_some_and(|inner| inner.is_str());
+            if (self.is_lang_adt(to_ty, LangItem::String) || self.is_path_like(to_ty) || boxed_str)
+                && self.is_string_like(from_ty)
+            {
                 return Some(Std::Same);
             }
             // A `char` from a `u8`: the code point it is (ADR 0157).

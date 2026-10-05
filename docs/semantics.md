@@ -315,10 +315,14 @@ fallback ([0179](decisions/0179-option-filter-map-or-drops.md)).
 Generic code that loops over or folds an iterator of a type parameter
 takes no destructor of it: a call that gives one is refused, at the call
 ([0190](decisions/0190-generic-no-destructor.md)).
+An or-pattern moves what each alternative moves, where a variant tells
+them apart, and a temporary in an arm's body ends with the arm
+([0191](decisions/0191-or-patterns-arm-temporaries-boxed-str.md)).
 
 Refused: an `Rc` or an `Arc` of a value with a destructor; a lock or
 `async` code owning one; a value of a std trait's associated type, an
-iterator's `Item`, where a type may have a destructor.
+iterator's `Item`, where a type may have a destructor; an or-pattern
+whose alternatives move parts no variant tells apart.
 
 ## Panics and errors
 

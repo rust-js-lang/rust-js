@@ -280,6 +280,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0188 A `Duration` is its nanoseconds, a BigInt](decisions/0188-duration.md)
 - [0189 `panic!("{}", x)`, a slice into an array, and `into_iter()` of the crate's iterator](decisions/0189-panic-display-slice-arrays.md)
 - [0190 Generic code may take no destructor of a type parameter, and its callers are checked](decisions/0190-generic-no-destructor.md)
+- [0191 An or-pattern's moves, an arm's temporaries, and `Box::from` of a `&str`](decisions/0191-or-patterns-arm-temporaries-boxed-str.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

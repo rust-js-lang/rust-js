@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet};
 use crate::lower::recognition::{Recognition, StdItem};
 use crate::lower::traits::{EvidenceQuery, may_have_destructors};
 use rustc_hir::{BindingMode, ByRef, LangItem};
-use rustc_middle::thir::{LocalVarId, Pat, PatKind};
+use rustc_middle::thir::{FieldPat, LocalVarId, Pat, PatKind};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::def_id::DefId;
 
@@ -203,6 +203,32 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                 at.pop();
                 ok
             }),
+            // `Single(t) | Ambiguous(t, _)` (ADR 0191): every alternative's,
+            // as their flags are cleared whichever matched, so what one moves
+            // that another doesn't must be of a variant the other excludes.
+            PatKind::Or { pats } => {
+                let mut each = Vec::new();
+                for p in pats {
+                    let mut moved = Vec::new();
+                    if !self.paths_in(p, at, &mut moved) {
+                        return false;
+                    }
+                    each.push(moved);
+                }
+                let apart = each.iter().enumerate().all(|(i, moved)| {
+                    moved.iter().all(|path| {
+                        pats.iter()
+                            .enumerate()
+                            .all(|(j, other)| i == j || each[j].contains(path) || excludes(other, &path[at.len()..]))
+                    })
+                });
+                for path in each.into_iter().flatten() {
+                    if !found.contains(&path) {
+                        found.push(path);
+                    }
+                }
+                apart
+            }
             _ => !moves(pat),
         }
     }
@@ -345,6 +371,32 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
         }
         walk.reached = walk.reached.min(outer);
         found
+    }
+}
+
+/// Whether what matches `pat` can't hold a part at `path`: a variant on the
+/// way to it is another.
+fn excludes(pat: &Pat<'_>, path: &[(Option<u32>, usize)]) -> bool {
+    let Some(&(variant, field)) = path.first() else {
+        return false;
+    };
+    let inside = |subpatterns: &[FieldPat<'_>]| {
+        subpatterns
+            .iter()
+            .any(|f| f.field.as_usize() == field && excludes(&f.pattern, &path[1..]))
+    };
+    match &pat.kind {
+        PatKind::Variant {
+            variant_index,
+            subpatterns,
+            ..
+        } => variant != Some(variant_index.as_u32()) || inside(subpatterns),
+        PatKind::Leaf { subpatterns } => inside(subpatterns),
+        PatKind::Binding {
+            subpattern: Some(sub), ..
+        } => excludes(sub, path),
+        PatKind::Or { pats } => pats.iter().all(|p| excludes(p, path)),
+        _ => false,
     }
 }
 

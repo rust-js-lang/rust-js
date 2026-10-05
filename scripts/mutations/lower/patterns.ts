@@ -194,4 +194,12 @@ export const mutations: Mutation[] = [
     replace: "                        true => Expr::bin(op, subject.clone(), bound),",
     tests: ["test/corpus.test.ts", "-t", "code_point_order"],
   },
+  {
+    name: "arm-scope-not-opened",
+    breaks: "`match f(v) { .. }` as an arm's body is refused, its temporary ending with no scope that's open",
+    file: "src/lower/patterns.rs",
+    find: "            self.begin_scope(arm.scope);\n            self.stmt(arm.body, dest, &mut arm_body)?;\n            self.end_scope(0, arm.span, &mut arm_body)?;",
+    replace: "            self.stmt(arm.body, dest, &mut arm_body)?;",
+    tests: ["test/corpus.test.ts", "-t", "arm_temporaries"],
+  },
 ];
