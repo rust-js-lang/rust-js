@@ -353,7 +353,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition.rs",
     find: "        || tcx.is_diagnostic_item(Symbol::intern(\"FmtWrite\"), id)\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "user_fmt_write"],
+    tests: ["test/corpus.test.ts", "-t", "user_fmt_write|generic_writers"],
   },
   {
     name: "user-write-char-unrouted",

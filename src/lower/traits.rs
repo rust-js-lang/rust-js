@@ -3,7 +3,10 @@
 
 use super::bindings;
 use super::drops::Drops;
-use super::recognition::{Recognition, StdItem, TraitCall, TypeFact, is_std_def, is_std_method, std_item};
+use super::recognition::{
+    Recognition, StdItem, TraitCall, TypeFact, in_std_dictionary, is_std_def, is_std_method, is_writer_default,
+    std_item,
+};
 use super::representation::{const_js, eval_const};
 use super::{FnCx, R, lower_first};
 use crate::js::{self, Expr, Op, Prop, StmtKind};
@@ -905,6 +908,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // std's `AsRef` of text as a `str`, or of a `Vec`, an array or a slice
         // as a slice: each is the same JS value (ADR 0162).
+        // A `String`'s, or a `Formatter`'s, given in a box of its text: what's
+        // written is added to it; of a `&mut` to one taken by value, to the
+        // box the `&mut` given is to (ADR 0180). A `&mut` to an object
+        // writer is the object, as is the `&mut` given to its own methods.
+        if is_std_def(self.tcx, tr.def_id, StdItem::FmtWrite) {
+            let text =
+                |ty: Ty<'tcx>| self.is_lang_adt(ty, LangItem::String) || self.recognition().is_formatter_type(ty);
+            if text(ty) {
+                self.runtime.insert(Helper::StringWriter);
+                return Ok(Expr::var("$stringWriter"));
+            }
+            if let ty::Ref(_, inner, Mutability::Mut) = *ty.kind() {
+                if text(inner) {
+                    self.runtime.insert(Helper::StringWriter);
+                    return Ok(Expr::var("$mutStringWriter"));
+                }
+                if self.is_object(inner) {
+                    return self.dictionary(ty::TraitRef::new(self.tcx, tr.def_id, [inner]), span);
+                }
+            }
+        }
         if is_std_def(self.tcx, tr.def_id, StdItem::AsRef) && !self.has_user_impl(tr.def_id, ty) {
             let (from, to) = (ty.peel_refs(), tr.args.type_at(1));
             let sequence = |t: Ty<'tcx>| t.is_array() || t.is_slice() || self.is_vec_like(t);
@@ -1101,7 +1125,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 || self.tcx.generics_require_sized_self(item.def_id)
                 || (!self.is_rust_trait(tr.def_id)
                     && self.tcx.defaultness(item.def_id).has_value()
-                    && !self.is_error_source(item.def_id))
+                    && !in_std_dictionary(self.tcx, item.def_id))
             {
                 continue;
             }
@@ -1275,7 +1299,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if matches!(tr.self_ty().kind(), ty::Dynamic(..)) && operational(self.tcx, self.krate.foreign, trait_id) {
             // A std trait's dictionary has only what it's given: `Error`'s, its
             // `source` (ADR 0141), and none of the methods std provides.
-            if !self.is_rust_trait(trait_id) && self.tcx.defaultness(id).has_value() && !self.is_error_source(id) {
+            if !self.is_rust_trait(trait_id) && self.tcx.defaultness(id).has_value() && !in_std_dictionary(self.tcx, id)
+            {
                 let what = format!("`{}` of a `{}`", self.tcx.item_name(id), tr.self_ty());
                 return Err(self.unsupported(span, &what));
             }
@@ -1377,10 +1402,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(None);
         }
-        // A std trait's dictionary has only its required methods.
+        // Where the writer is known, `write!(c, ..)` is its own `write_str`, or
+        // a string's `+=`, written in place (ADRs 0148, 0166): a dictionary is
+        // for generic code (ADR 0180).
+        if is_std_def(self.tcx, trait_id, StdItem::FmtWrite) && !tr.args.has_non_region_param() {
+            return Ok(None);
+        }
+        // A std trait's dictionary has only its required methods, and those
+        // provided ones it's given.
         if operational(self.tcx, self.krate.foreign, trait_id)
             && !self.is_rust_trait(trait_id)
             && self.tcx.defaultness(id).has_value()
+            && !in_std_dictionary(self.tcx, id)
         {
             let what = format!("calling `{}`", self.tcx.def_path_str(id));
             return Err(self.unsupported(span, &what));
@@ -1684,6 +1717,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let tr = self.tcx.impl_trait_ref(id).instantiate_identity().skip_normalization();
         let params = self.evidence_params(id);
         let mut props = Vec::new();
+        // What the dictionary's entries share, named once before it's made.
+        let mut shared = Vec::new();
         for (name, supertrait, _) in supertraits(self.tcx, tr.def_id, tr.args) {
             if operational(self.tcx, self.krate.foreign, supertrait.def_id) {
                 let dictionary = self.dictionary(supertrait, span)?;
@@ -1747,9 +1782,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A std trait's provided methods, like `Clone::clone_from`,
             // aren't in its dictionary: nothing calls them through it. But a
-            // `dyn Error` calls `source` (ADR 0141).
+            // `dyn Error` calls `source` (ADR 0141), and generic code writing
+            // to any writer `write_char` and `write_fmt` (ADR 0180).
             let source = self.is_error_source(item.def_id);
-            if !self.is_rust_trait(tr.def_id) && self.tcx.defaultness(item.def_id).has_value() && !source {
+            if !self.is_rust_trait(tr.def_id)
+                && self.tcx.defaultness(item.def_id).has_value()
+                && !in_std_dictionary(self.tcx, item.def_id)
+            {
                 continue;
             }
             // The method's own parameters: lifetimes, `fn bar<'b>`, are erased,
@@ -1782,6 +1821,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     vec![StmtKind::Return(Some(Expr::undefined())).at(js::Span::NONE)],
                 );
                 props.push(Prop::Field(bindings::fn_name(self.tcx, item.def_id), none));
+                continue;
+            }
+            // std's own `write_char` and `write_fmt`: its `write_str`, given a
+            // `char`'s text or a `write!`'s, as std's give it (ADR 0180).
+            if is_writer_default(self.tcx, item.def_id) && !self.krate.fns.contains_key(&method) {
+                let write_str = props.iter().find_map(|prop| match prop {
+                    Prop::Field(name, value) if name == "write_str" => Some(value.clone()),
+                    _ => None,
+                });
+                let write_str = write_str.ok_or_else(|| self.unsupported(span, "a writer without its `write_str`"))?;
+                // One function for the three, named once where it's more than
+                // a name: `{ write_str, write_char: write_str, .. }`.
+                let write_str = match write_str.kind {
+                    js::ExprKind::Var(_) | js::ExprKind::Symbol(_) => write_str,
+                    _ => {
+                        let name = self.fresh("write_str");
+                        shared.push(StmtKind::Const(name.clone(), write_str).at(js::Span::NONE));
+                        for prop in &mut props {
+                            if let Prop::Field(field, value) = prop
+                                && field == "write_str"
+                            {
+                                *value = Expr::var(&name);
+                            }
+                        }
+                        Expr::var(&name)
+                    }
+                };
+                props.push(Prop::Field(bindings::fn_name(self.tcx, item.def_id), write_str));
                 continue;
             }
             // A library's trait's default, whose body is the library's (ADR 0100).
@@ -1918,7 +1985,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             body.push(
                 StmtKind::If(
                     undefined,
-                    vec![StmtKind::Assign(Expr::var(cache), object).at(js::Span::NONE)],
+                    [
+                        shared,
+                        vec![StmtKind::Assign(Expr::var(cache), object).at(js::Span::NONE)],
+                    ]
+                    .concat(),
                     None,
                 )
                 .at(js::Span::NONE),
@@ -1953,7 +2024,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .chain(self.given_drops().iter().map(|name| Expr::var(name)))
                     .collect(),
             );
-            let make = Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(object)).at(js::Span::NONE)]);
+            let make = Expr::arrow(
+                Vec::new(),
+                [shared, vec![StmtKind::Return(Some(object)).at(js::Span::NONE)]].concat(),
+            );
             body.push(
                 StmtKind::Return(Some(Expr::call(
                     Expr::var("$traitImpl"),

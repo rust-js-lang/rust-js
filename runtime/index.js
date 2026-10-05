@@ -4300,6 +4300,36 @@ export function $nonZeroOk(result, zero) {
   return result.TAG === "Ok" && result._0 == 0 ? { TAG: "Err", _0: zero } : result;
 }
 
+// A `String`, or a `Formatter`'s text, as a `fmt::Write` generic code is
+// given, in a box: what it writes is added to the box's `value`, which the
+// caller takes back (ADR 0180). A `char` and a `write!`'s text are strings.
+export const $stringWriter = {
+  write_str(w, s) {
+    w.value += s;
+  },
+  write_char(w, c) {
+    w.value += c;
+  },
+  write_fmt(w, text) {
+    w.value += text;
+  },
+};
+
+// A `&mut String` or `&mut Formatter` taken by value, `writer: impl Write`,
+// which std's `impl Write for &mut W` writes through: generic code gives
+// a `&mut` to the writer, whose `value` is the caller's box (ADR 0180).
+export const $mutStringWriter = {
+  write_str(w, s) {
+    w.value.value += s;
+  },
+  write_char(w, c) {
+    w.value.value += c;
+  },
+  write_fmt(w, text) {
+    w.value.value += text;
+  },
+};
+
 export function $sliceEnd(items, start, end = items.length) {
   if (start > end) throw new Error(`slice index starts at ${start} but ends at ${end}`);
   if (end > items.length) throw new Error(`range end index ${end} out of range for slice of length ${items.length}`);

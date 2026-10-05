@@ -180,6 +180,10 @@ string, `c"..."`.
 - **A writer of the crate's, `impl fmt::Write`, is given its text whole:**
   one `write_str` for a `write!`, where Rust's gives it a piece at a time
   ([0166](decisions/0166-user-fmt-write.md)).
+- **Generic code that writes to any writer, a `W: fmt::Write`,** is given
+  a `String`, a `Formatter` or the crate's own writer in a box, with a
+  dictionary of its `write_str`, `write_char` and `write_fmt`
+  ([0180](decisions/0180-generic-writers.md)).
 
 Refused: `{:x?}`; `{:.2e}`; options for a `&dyn Debug` made elsewhere;
 `f.sign_minus()` and `f.pad_integral(..)`; a writer that fails; `{:p}` of

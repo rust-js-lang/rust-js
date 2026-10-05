@@ -184,6 +184,7 @@ helpers! {
     IsNormal,
     IntBits,
     NonZeroOk,
+    StringWriter,
     SliceEnd,
     ByteLen,
     StrSlice,
@@ -746,6 +747,7 @@ impl Helper {
             Helper::IsNormal => include_str!("runtime/is_normal.js"),
             Helper::IntBits => include_str!("runtime/int_bits.js"),
             Helper::NonZeroOk => include_str!("runtime/non_zero_ok.js"),
+            Helper::StringWriter => include_str!("runtime/string_writer.js"),
             // `s.len()`: its UTF-8 bytes, as Rust counts them, where JS counts
             // UTF-16 units (ADR 0138).
             Helper::ByteLen => include_str!("runtime/byte_len.js"),

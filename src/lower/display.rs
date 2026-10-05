@@ -675,6 +675,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(Expr::undefined()))
     }
 
+    /// The JS string a place is, if it's the `Formatter` being written, `*f`:
+    /// given where a writer goes, it's boxed, and taken back (ADR 0180).
+    pub(super) fn formatter_text(&self, place: ExprId) -> Option<String> {
+        let (writer, text) = self.writing.writer.as_ref()?;
+        (writer.is_some() && self.formatter_var(place) == *writer).then(|| text.clone())
+    }
+
     /// The variable a `Formatter` argument is: `f`, or `&mut *f`.
     fn formatter_var(&self, e: ExprId) -> Option<thir::LocalVarId> {
         match self.thir[self.strip(e)].kind {

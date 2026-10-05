@@ -1813,6 +1813,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 .is_some_and(|this| self.is_std_adt(this, Symbol::intern("Formatter")))
     }
 
+    /// A `Formatter`, whose text is a string in JS (ADR 0054).
+    pub(super) fn is_formatter_type(&self, ty: Ty<'tcx>) -> bool {
+        self.is_std_adt(ty, Symbol::intern("Formatter"))
+    }
+
     fn is_formatter(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Ref(_, inner, Mutability::Mut)
             if self.is_std_adt(*inner, Symbol::intern("Formatter")))
@@ -2338,6 +2343,11 @@ pub(super) fn operational(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_,
         // `a + b` of a `T: Add`, and `x.into()` of a `T: Into<U>` (ADR 0108).
         || value_operator(tcx, id).is_some()
         || tcx.is_diagnostic_item(sym::Into, id)
+        // A writer of the crate's own, given its text a `write!` at a time
+        // (ADR 0166), and generic code that writes to any writer, a `W:
+        // fmt::Write`: its dictionary's `write_str`, `write_char` and
+        // `write_fmt` (ADR 0180).
+        || tcx.is_diagnostic_item(Symbol::intern("FmtWrite"), id)
 }
 
 /// An operator that makes a value, `a + b` or `-a`: what a number's is, as
@@ -2370,9 +2380,6 @@ pub(super) fn implementable(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'
         || tcx.is_diagnostic_item(Symbol::intern("BorrowMut"), id)
         // Never called: a map keys by value (ADR 0168).
         || is_std_def(tcx, id, StdItem::Hash)
-        // A writer of the crate's own, given its text a `write!` at a time
-        // (ADR 0166).
-        || tcx.is_diagnostic_item(Symbol::intern("FmtWrite"), id)
         // A collection of the crate's: what `for`, `collect()`, `extend`,
         // `sum()` and `product()` call (ADR 0160).
         || tcx.is_diagnostic_item(sym::IntoIterator, id)
@@ -2813,6 +2820,7 @@ pub(crate) enum StdItem {
     Display,
     Eq,
     Error,
+    FmtWrite,
     From,
     Hash,
     Into,
@@ -2849,6 +2857,7 @@ impl StdItem {
             StdItem::Display => Symbol::intern("Display"),
             StdItem::Eq => sym::Eq,
             StdItem::Error => Symbol::intern("Error"),
+            StdItem::FmtWrite => Symbol::intern("FmtWrite"),
             StdItem::From => sym::From,
             StdItem::Hash => sym::Hash,
             StdItem::Into => sym::Into,
@@ -2913,6 +2922,20 @@ pub(crate) fn trait_method(tcx: TyCtxt<'_>, trait_id: DefId, name: &str) -> DefI
 /// Is `id` the method `name` of std's trait `item`, `Error::source`?
 pub(crate) fn is_std_method(tcx: TyCtxt<'_>, id: DefId, item: StdItem, name: &str) -> bool {
     tcx.item_name(id).as_str() == name && tcx.trait_of_assoc(id).is_some_and(|tr| is_std_def(tcx, tr, item))
+}
+
+/// A provided method of a std trait that rust-js's dictionary of it has,
+/// which a `dyn` or generic code calls through it: `Error::source` (ADR
+/// 0141), and `fmt::Write`'s `write_char` and `write_fmt` (ADR 0180).
+pub(crate) fn in_std_dictionary(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    is_std_method(tcx, id, StdItem::Error, "source") || is_writer_default(tcx, id)
+}
+
+/// `fmt::Write`'s `write_char` or `write_fmt`, which std's writes with
+/// `write_str`: a `char`'s text, or a `write!`'s, which is a string in JS
+/// (ADR 0166).
+pub(crate) fn is_writer_default(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    is_std_method(tcx, id, StdItem::FmtWrite, "write_char") || is_std_method(tcx, id, StdItem::FmtWrite, "write_fmt")
 }
 
 /// `fmt::Arguments::new` and its kin, what `format_args!` makes.

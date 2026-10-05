@@ -368,10 +368,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// How `arg` is given as parameter `i` of `fn_id`: in a box, if that's a
     /// box (`param_is_box`), and its place isn't one already.
     pub(super) fn arg_form(&self, fn_id: DefId, i: usize, arg: ExprId) -> ArgForm {
-        let Some(place) = self.mut_borrowed(arg) else {
-            return ArgForm::Value;
-        };
-        let param_box = self.param_is_box(fn_id, i);
         // A `&mut` to a number given where a `T` goes is a box too, as a `&mut`
         // to one is anywhere (ADR 0074).
         let generic = self
@@ -383,6 +379,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .inputs()
             .get(i)
             .is_some_and(|input| matches!(input.kind(), ty::Param(_)));
+        let Some(place) = self.mut_borrowed(arg) else {
+            // The `Formatter` being written, given itself where a `W: Write`
+            // goes, as bitflags' `to_writer(flags, f)`: its text, boxed (ADR 0180).
+            if generic && self.formatter_text(arg).is_some() {
+                return ArgForm::Boxed(arg);
+            }
+            return ArgForm::Value;
+        };
+        let param_box = self.param_is_box(fn_id, i);
         // `&mut *out` of a box: the box itself, or, to a parameter that's
         // the value, as an object impl's `&mut self` is, what's in it.
         if let ExprKind::Deref { arg: inner } = self.thir[self.strip(place)].kind
@@ -404,7 +409,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return ArgForm::Value;
         }
-        if param_box || (generic && self.is_boxable(self.thir[place].ty)) {
+        // The `Formatter` being written is its text, a string (ADR 0180).
+        let boxable = self.is_boxable(self.thir[place].ty) || self.formatter_text(place).is_some();
+        if param_box || (generic && boxable) {
             ArgForm::Boxed(place)
         } else {
             ArgForm::Value
@@ -502,10 +509,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     values.push(handle);
                 }
                 ArgForm::Boxed(place) => {
-                    let current = self.expr(place, out)?;
-                    let target = match self.element(place) {
-                        Some(_) => self.element_target(place, out)?,
-                        None => self.assignee(place)?,
+                    // The `Formatter` being written is its text (ADR 0180).
+                    let (current, target) = match self.formatter_text(place) {
+                        Some(text) => (Expr::var(&text), Expr::var(&text)),
+                        None => {
+                            let current = self.expr(place, out)?;
+                            let target = match self.element(place) {
+                                Some(_) => self.element_target(place, out)?,
+                                None => self.assignee(place)?,
+                            };
+                            (current, target)
+                        }
                     };
                     let name = self.fresh(&camel_case(names.get(i).map_or("value", String::as_str)));
                     let boxed = Expr::object(vec![Prop::Field("value".into(), current)]);

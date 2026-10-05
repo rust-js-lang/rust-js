@@ -2,7 +2,7 @@
 
 import { $byteLen, $debugStr, $pad } from "@rust-js/runtime";
 
-var $pointDisplay;
+var $collectorWrite, $shoutingWrite, $pointDisplay;
 
 function describe(out, p) {
   collectorWrite_write_str(out, `at ${pointDisplay_fmt(p)} [${$pad("zoë", 6, ">")}]\n`);
@@ -47,6 +47,26 @@ function shoutingWrite_write_char(shouting, c) {
 
 function pointDisplay_fmt(point) {
   return `(${point.x}, ${point.y})`;
+}
+
+export function collectorWrite() {
+  if ($collectorWrite === undefined) {
+    const write_str = (arg0, arg1) => collectorWrite_write_str(arg0.value, arg1);
+    $collectorWrite = { write_str, write_char: write_str, write_fmt: write_str };
+  }
+  return $collectorWrite;
+}
+
+export function shoutingWrite() {
+  if ($shoutingWrite === undefined) {
+    const write_str = (arg0, arg1) => shoutingWrite_write_str(arg0.value, arg1);
+    $shoutingWrite = {
+      write_str,
+      write_char: (arg0, arg1) => shoutingWrite_write_char(arg0.value, arg1),
+      write_fmt: write_str,
+    };
+  }
+  return $shoutingWrite;
 }
 
 export function pointDisplay() {

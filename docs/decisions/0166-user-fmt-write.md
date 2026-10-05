@@ -36,7 +36,8 @@ collectorWrite_write_str(collector, `1 and ${$debugStr("two")}`);
   `Ok` in JS (ADR 0054), so a `write_str` that returns `Err(fmt::Error)`
   is refused, rather than taken as `Ok`.
 - **Still an error:** a generic `W: fmt::Write` given a `Formatter`, as
-  bitflags' `to_writer` is.
+  bitflags' `to_writer` is. (Amended: generic code that writes to any
+  writer is given a dictionary, [ADR 0180](0180-generic-writers.md).)
 
 ## Why
 
