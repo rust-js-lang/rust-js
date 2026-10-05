@@ -563,4 +563,12 @@ export const mutations: Mutation[] = [
     replace: "== \"std::vec::Nothing\";",
     tests: ["test/corpus.test.ts", "-t", "iterator_clones"],
   },
+  {
+    name: "user-by-ref-unknown",
+    breaks: "`for x in it.by_ref()` of an iterator of the crate's, bitflags', is an error",
+    file: "src/lower/recognition.rs",
+    find: "                \"by_ref\" => Std::IterByRef,",
+    replace: "                \"by_ref\" if !self.is_user_iterator(ty) => Std::IterByRef,",
+    tests: ["test/corpus.test.ts", "-t", "iter_by_ref"],
+  },
 ];

@@ -5,7 +5,8 @@ iterator step through `it` itself, so a `break` leaves the rest in it,
 where a loop that stopped early had left `it` as it was, a wrong answer;
 `count()` of one is what it has left, where it was `undefined`; and
 `by_ref()` anywhere else is an error, as a chain of an array wouldn't
-know where it is. num-traits' float parser found them.) Extends [0036](0036-iterators-and-sorting.md) and [0055](0055-iterator.md).
+know where it is. num-traits' float parser found them. `by_ref()` of an
+iterator of the crate's is the iterator too, ADR 0184.) Extends [0036](0036-iterators-and-sorting.md) and [0055](0055-iterator.md).
 
 ## Context
 

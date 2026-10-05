@@ -50,6 +50,8 @@ for (const [name, source, message, crate] of [
   ["an Rc<dyn> of a value with a destructor", 'pub struct D;\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f() { let _: std::rc::Rc<dyn Send> = std::rc::Rc::new(D); }', "a `dyn` of a value with a destructor"],
   // A std call given an iterator whose destructors rust-js can't follow would drop what it skips silently.
   ["last of owned items", 'pub struct D;\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(v: Vec<D>) -> Option<D> { v.into_iter().last() }', "`std::iter::Iterator::last` of a value with a destructor"],
+  // `ok_or_else` keeps its value, but its function, unrun for a `Some`, is dropped.
+  ["ok_or_else whose function holds a value with a destructor", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(o: Option<D>, held: D) -> Result<D, u32> { o.ok_or_else(move || { let h = held; h.0 }) }', "`std::option::Option::<T>::ok_or_else` of a value with a destructor"],
   // A size of a type parameter is its caller's (ADR 0145), but `size_of_val` of an unsized one is the value's.
   ["size_of_val of an unsized type parameter", 'pub fn f<T: ?Sized>(x: &T) -> usize { std::mem::size_of_val(x) }\npub fn g() -> usize { f("ab") }', "`size_of` of a type parameter"],
   // `ToString` is a dictionary of a generic `T`'s, but a `dyn ToString` has no pair to call through.

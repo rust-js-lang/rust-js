@@ -901,17 +901,60 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             out.extend(lowered);
             return Ok(());
         }
-        // Each is declared in the scope's own JS, not in a branch of it.
+        // Each is declared in the scope's own JS, not in a branch of it. An
+        // operand may be, `B::from_name(flag).ok_or_else(f)?` in an `else`: it's
+        // moved where it's made, so its branch's `finally` is the scope's.
+        let mut lowered = lowered;
         let mut placed = Vec::new();
+        let mut in_branches = Vec::new();
         for t in temps {
-            let at = lowered
+            match lowered
                 .iter()
                 .position(|s| matches!(&s.kind, StmtKind::Const(n, _) if *n == t.name))
-                .ok_or_else(|| self.unsupported(span, "a temporary with a destructor in a branch"))?;
-            placed.push((at, t));
+            {
+                Some(at) => placed.push((at, t)),
+                None if t.operand.is_some() && t.parts.is_empty() => in_branches.push(t),
+                None => return Err(self.unsupported(span, "a temporary with a destructor in a branch")),
+            }
+        }
+        // Last first: wrapping one makes the `const`s after it assignments,
+        // where a later one's wouldn't be found.
+        for t in in_branches.into_iter().rev() {
+            if self.place_in_branch(&mut lowered, t, span)?.is_some() {
+                return Err(self.unsupported(span, "a temporary with a destructor in a branch"));
+            }
         }
         placed.sort_by_key(|(at, _)| *at);
         self.wrap_temps(lowered, placed, span, out)
+    }
+
+    /// `temp` dropped after the rest of the branch of `stmts` that declares
+    /// it, or given back if none does.
+    fn place_in_branch(&mut self, stmts: &mut Vec<Stmt>, temp: Temp<'tcx>, span: Span) -> R<Option<Temp<'tcx>>> {
+        if let Some(at) = stmts
+            .iter()
+            .position(|s| matches!(&s.kind, StmtKind::Const(n, _) if *n == temp.name))
+        {
+            let mut wrapped = Vec::new();
+            self.wrap_temps(std::mem::take(stmts), vec![(at, temp)], span, &mut wrapped)?;
+            *stmts = wrapped;
+            return Ok(None);
+        }
+        let mut temp = temp;
+        for s in stmts.iter_mut() {
+            let branches: Vec<&mut Vec<Stmt>> = match &mut s.kind {
+                StmtKind::If(_, then, els) => std::iter::once(then).chain(els.as_mut()).collect(),
+                StmtKind::Labeled(_, body) | StmtKind::Try(body, _) => vec![body],
+                _ => Vec::new(),
+            };
+            for branch in branches {
+                match self.place_in_branch(branch, temp, span)? {
+                    Some(back) => temp = back,
+                    None => return Ok(None),
+                }
+            }
+        }
+        Ok(Some(temp))
     }
 
     fn wrap_temps(

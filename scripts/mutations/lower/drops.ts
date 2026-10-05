@@ -219,4 +219,28 @@ export const mutations: Mutation[] = [
     replace: "                        true => value.clone(),",
     tests: ["test/corpus.test.ts", "-t", "option_map_drops"],
   },
+  {
+    name: "branch-operand-refused",
+    breaks: "`B::from_name(flag).ok_or_else(f)?` in a branch, bitflags' parser's, is an error",
+    file: "src/lower/drops.rs",
+    find: "                None if t.operand.is_some() && t.parts.is_empty() => in_branches.push(t),",
+    replace: "                None if false => in_branches.push(t),",
+    tests: ["test/corpus.test.ts", "-t", "option_combinator_drops"],
+  },
+  {
+    name: "branch-operands-first-first",
+    breaks: "two temporaries with destructors in one branch are an error",
+    file: "src/lower/drops.rs",
+    find: "        for t in in_branches.into_iter().rev() {",
+    replace: "        for t in in_branches {",
+    tests: ["test/corpus.test.ts", "-t", "option_combinator_drops"],
+  },
+  {
+    name: "branch-operand-at-top",
+    breaks: "an `else`'s temporary is looked for in the `if`'s branch only",
+    file: "src/lower/drops.rs",
+    find: "                StmtKind::If(_, then, els) => std::iter::once(then).chain(els.as_mut()).collect(),",
+    replace: "                StmtKind::If(_, then, _) => vec![then],",
+    tests: ["test/corpus.test.ts", "-t", "option_combinator_drops"],
+  },
 ];

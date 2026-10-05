@@ -774,8 +774,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 }
                 // One of the crate's own is its impl's `next` (ADR 0055).
                 "next" if !self.is_user_iterator(ty) => Std::Step(StepOp::Next),
-                // The iterator itself, which knows where it is (ADR 0071).
-                "by_ref" if !self.is_user_iterator(ty) => Std::IterByRef,
+                // The iterator itself, which knows where it is (ADR 0071), as
+                // one of the crate's does.
+                "by_ref" => Std::IterByRef,
                 "peekable" => Std::Step(StepOp::Peekable),
                 "map" => Std::ArrayMethod("map"),
                 "filter" => Std::ArrayMethod("filter"),

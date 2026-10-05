@@ -6,7 +6,7 @@ of its own, every library of its graph by rust-js as Cargo's
 `RUSTC_WRAPPER`, for its target, and records what each refused first, or
 what Cargo said where a crate failed with no refusal: a crash.
 
-Measured 2026-10-05, after ADR 0181, Rust 1.98.1, each crate at the
+Measured 2026-10-05, after ADR 0184, Rust 1.98.1, each crate at the
 newest release its requirement allows.
 
 | Crate | Verdict | First refusals in its graph |
@@ -15,7 +15,7 @@ newest release its requirement allows.
 | either 1.18 | refused | a user `Future` |
 | itertools 0.14 | blocked | either's |
 | indexmap 2.11 | blocked | hashbrown: a raw pointer |
-| bitflags 2.13 | refused | `Option::ok_or_else` of a value with a destructor |
+| bitflags 2.13 | compiles | |
 | smallvec 1.16 | refused | `handle_alloc_error` called |
 | thiserror 2.0 | compiles | |
 | anyhow 1.0 | refused | a raw pointer |
@@ -28,17 +28,22 @@ newest release its requirement allows.
 | chrono 0.4 (`alloc`) | refused | a `fmt::Error` |
 | time 0.3 (`alloc`) | blocked | powerfmt: a `MaybeUninit`; deranged: a `const` block |
 
-2 of 16 compile. What stops the most, by the crates it stops:
+3 of 16 compile. What stops the most, by the crates it stops:
 
 1. **Raw memory,** a raw pointer, a `NonNull`, a `MaybeUninit`,
    `transmute`, `handle_alloc_error`: 9.
 2. **A user `Future`:** 2.
 3. **One each:** a `const` block, `{:?}` of a generic `PhantomData`, a user
-   `io::Write`, `size_of` of a type parameter, `Option::ok_or_else` of a
-   value with a destructor, `u8::checked_ilog10`, a `fmt::Error`.
+   `io::Write`, `size_of` of a type parameter, `u8::checked_ilog10`, a
+   `fmt::Error`.
 
 ## Fixed by measuring
 
+- **`ok_or_else` of a value with a destructor, a temporary of one in a
+  branch, and `by_ref()` of an iterator of the crate's:** bitflags compiles
+  (ADR 0184). A crate that uses its macro doesn't yet: the macro implements
+  bitflags' `Flags`, whose default methods a consumer can't copy (ADR 0100),
+  and calls `fmt::LowerHex::fmt` of a number.
 - **A clone of std's iterator over an array,** chrono's `DelayedFormat`
   items (ADR 0181).
 - **Generic code that writes to any `fmt::Write`,** chrono's, 7 refusals,

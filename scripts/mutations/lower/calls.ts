@@ -11,6 +11,22 @@ export const mutations: Mutation[] = [
     tests: ["test/diagnostics.test.ts", "-t", "last of owned items"],
   },
   {
+    name: "ok-or-else-refused",
+    breaks: "`ok_or_else` of a value with a destructor, bitflags' parser's, is an error",
+    file: "src/lower/calls.rs",
+    find: "        let keeps_value = known == Std::Comb(Comb::OkOrElse) && !holds_drops(self.thir[args[1]].ty);\n",
+    replace: "        let keeps_value = false && !holds_drops(self.thir[args[1]].ty);\n",
+    tests: ["test/corpus.test.ts", "-t", "option_combinator_drops"],
+  },
+  {
+    name: "ok-or-else-function-unchecked",
+    breaks: "`ok_or_else` of a `Some` leaves a function that holds a value with a destructor undropped",
+    file: "src/lower/calls.rs",
+    find: "        let keeps_value = known == Std::Comb(Comb::OkOrElse) && !holds_drops(self.thir[args[1]].ty);\n",
+    replace: "        let keeps_value = known == Std::Comb(Comb::OkOrElse);\n",
+    tests: ["test/diagnostics.test.ts", "-t", "ok_or_else whose function"],
+  },
+  {
     name: "compare-mut-cells",
     breaks: "`p == q` of two `&mut`s to numbers compares their handles, not what they point at",
     file: "src/lower/calls.rs",

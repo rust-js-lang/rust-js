@@ -427,7 +427,7 @@ traits.
   struct update from one, a `let x;` without its value, and `async` code
   that owns one are errors until they're done. (Since done: temporaries
   taken apart, ADR 0131; a condition's and a tail's temporaries, and
-  struct updates, above.)
+  struct updates, above; an operand made in a branch, ADR 0184.)
 - A generic function given a value with a destructor has a JS parameter
   more than its Rust one has, as its dictionaries are (ADR 0052). A JS
   caller of an exported one passes none, and the drop doesn't run: a Rust

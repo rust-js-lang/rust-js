@@ -374,8 +374,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Ref(..) => false,
             _ => holds_drops(self.thir[a].ty),
         });
+        // Its value moves into the `Ok`; its function, run only for a `None`,
+        // would be dropped unrun, so it mustn't hold one.
+        let keeps_value = known == Std::Comb(Comb::OkOrElse) && !holds_drops(self.thir[args[1]].ty);
         if takes_drops
             && !drained
+            && !keeps_value
             && !matches!(
                 known,
                 Std::Drop
