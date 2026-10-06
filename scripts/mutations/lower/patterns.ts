@@ -290,4 +290,28 @@ export const mutations: Mutation[] = [
     replace: "                    js::ExprKind::Bool(false) if false => Expr::unary(UnaryOp::Not, subject.clone()),",
     tests: ["test/compiler.test.ts", "-t", "two-arm match"],
   },
+  {
+    name: "prop-default-not-written",
+    breaks: "a props field's default isn't written where JS takes them apart, `{ size }`, so a JS caller's missing one is undefined",
+    file: "src/lower/patterns.rs",
+    find: "                            let default = self.prop_default(pat.ty, i, pat.span);",
+    replace: "                            let default = None;",
+    tests: ["test/jsx.test.ts", "-t", "a props field"],
+  },
+  {
+    name: "prop-default-string-ignored",
+    breaks: "`#[rust_js::default = \"_self\"]` is its type's default, `\"\"`, not the string it says",
+    file: "src/lower/patterns.rs",
+    find: "            Some(text) => Expr::str(text.as_str()),",
+    replace: "            Some(text) => Expr::str(\"\"),",
+    tests: ["test/jsx.test.ts", "-t", "a props field"],
+  },
+  {
+    name: "prop-default-made",
+    breaks: "a default that's made, `new Map()`, is written where the linker doesn't see it",
+    file: "src/lower/patterns.rs",
+    find: "        if !is_literal(&default) {",
+    replace: "        if false {",
+    tests: ["test/jsx.test.ts", "-t", "a props field"],
+  },
 ];

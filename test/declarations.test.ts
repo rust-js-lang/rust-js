@@ -151,6 +151,17 @@ pub fn Crumbs(CrumbsProps { items, level }: CrumbsProps) -> Element {
     jsx! { <nav title={label}>{items.len()}</nav> }
 }
 
+// A field with a default is one a caller may leave out (ADR 0212).
+pub struct ChipProps {
+    pub label: &'static str,
+    #[rust_js::default]
+    pub count: u32,
+}
+
+pub fn Chip(ChipProps { label, count }: ChipProps) -> Element {
+    jsx! { <b title={label}>{count}</b> }
+}
+
 pub mod far {
     #[derive(Default)]
     pub struct Far {
@@ -198,6 +209,7 @@ pub fn words(n: u64, flags: Vec<bool>) -> String {
     "export interface CardProps {\n    [prop: string]: unknown;\n}",
     'import type { AnchorHTMLAttributes, NamedExoticComponent, ReactNode } from "react";\nimport type { Level, RouteItem } from "./routes.js";',
     "export interface CrumbsProps {\n    items: RouteItem[];\n    level: Level;\n}",
+    "export interface ChipProps {\n    label: string;\n    count?: number;\n}",
     "export interface Linked extends Html {\n    href?: string;\n}",
     'export interface LinkButtonProps extends Omit<Linked, "href" | "className"> {\n    href: string;\n    className?: string;\n}',
     'export interface TitledProps extends Omit<Html, "title"> {\n    title: string;\n}',
@@ -209,7 +221,7 @@ pub fn words(n: u64, flags: Vec<bool>) -> String {
   }
   // TypeScript that uses them: optional props left out, a JS caller's own
   // passed on, a flattened struct's as its own, and wrong ones, the only errors.
-  writeFileSync(join(dir, "use.tsx"), `import { Button, Crumbs, Download, ExternalLink, Icon, LinkButton, Tag, words } from "./lib.jsx";
+  writeFileSync(join(dir, "use.tsx"), `import { Button, Chip, Crumbs, Download, ExternalLink, Icon, LinkButton, Tag, words } from "./lib.jsx";
 export const ok = [
   <Tag variant="advanced" count={2} />,
   <ExternalLink href="/a" aria-label="A">a</ExternalLink>,
@@ -219,6 +231,7 @@ export const ok = [
   <LinkButton href="/c" title="t" />,
   <Download label="d" download="file" referrerPolicy="no-referrer" />,
   <Crumbs items={[{ title: "Home" }, { title: "Learn", path: "/learn" }]} level="basic" />,
+  <Chip label="c" />,
 ];
 export const wrong = <Tag variant="intermediate" count={2} />;
 export const wrongHref = <Button href={1} />;
@@ -232,12 +245,12 @@ export const wrongLevel = <Crumbs items={[]} level="expert" />;
   const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
   const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
   expect(errors.length).toBe(3);
-  expect(errors[0]).toContain("use.tsx(12,");
+  expect(errors[0]).toContain("use.tsx(13,");
   expect(errors[0]).toContain('"intermediate"');
   // A flattened struct's field is checked as the component's own.
-  expect(errors[1]).toContain("use.tsx(13,");
+  expect(errors[1]).toContain("use.tsx(14,");
   // Another module's type, as it declares it.
-  expect(errors[2]).toContain("use.tsx(14,");
+  expect(errors[2]).toContain("use.tsx(15,");
 });
 
 // TypeScript prints them (ADR 0207), through @rust-js/typescript, which a

@@ -710,6 +710,53 @@ pub fn App() -> Element {
   expect([jsx.includes('<Frame title="t">'), jsx.includes("<Frame />"), jsx.includes("match")]).toEqual([true, true, false]);
 });
 
+// A props field's default, `#[rust_js::default]`, its type's, or
+// `#[rust_js::default = "_self"]`, is where JS takes it, its destructuring's:
+// `{ size = "md" }`, as React's `type = "primary"` is (ADR 0212).
+test("JSX gives a props field's default where the props are taken apart", async () => {
+  const chip = `#![allow(non_snake_case)]
+use react::{Element, jsx};
+#[derive(Default)]
+pub enum Size {
+    #[default]
+    #[cfg_attr(rust_js, rust_js::name = "md")]
+    Md,
+    #[cfg_attr(rust_js, rust_js::name = "lg")]
+    Lg,
+}
+pub struct ChipProps {
+    pub label: &'static str,
+    #[cfg_attr(rust_js, rust_js::default)]
+    pub size: Size,
+    #[cfg_attr(rust_js, rust_js::default = "_self")]
+    pub target: &'static str,
+}
+pub fn Chip(ChipProps { label, size, target }: ChipProps) -> Element {
+    let class = match size {
+        Size::Md => "md",
+        Size::Lg => "lg",
+    };
+    jsx! { <a className={class} target={target}>{label}</a> }
+}
+`;
+  const { dir, args } = compile(chip);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain('export function Chip({ label, size = "md", target = "_self" }) {');
+  const { Chip } = await import(join(dir, "lib.jsx"));
+  const { createElement } = await import("react");
+  expect(renderToStaticMarkup(createElement(Chip, { label: "x" }))).toBe('<a class="md" target="_self">x</a>');
+  expect(renderToStaticMarkup(createElement(Chip, { label: "y", size: "lg", target: "_blank" }))).toBe('<a class="lg" target="_blank">y</a>');
+  // Props not taken apart where they're given would have no default.
+  const whole = compile(chip + "pub fn Whole(props: ChipProps) -> Element {\n    jsx! { <b>{props.label}</b> }\n}\n");
+  const failed = Bun.spawnSync(whole.args, { cwd: whole.dir });
+  expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("taken apart where they're given")]);
+  // A default that's made, not written, is said: a literal is JS's.
+  const made = compile(chip + "pub struct MapProps {\n    #[cfg_attr(rust_js, rust_js::default)]\n    pub seen: std::collections::HashMap<u32, u32>,\n}\npub fn Seen(MapProps { seen }: MapProps) -> Element {\n    jsx! { <b>{seen.len()}</b> }\n}\n");
+  const unmade = Bun.spawnSync(made.args, { cwd: made.dir });
+  expect([unmade.exitCode === 0, unmade.stderr.toString()]).toEqual([false, expect.stringContaining("isn't a literal")]);
+});
+
 // A props struct's flattened field, `#[rust_js::flatten]`, holds a struct
 // whose fields are the component's own props, as TypeScript's
 // `AnchorProps & ButtonLinkProps` has them: `...anchor` where they're

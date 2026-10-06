@@ -9,7 +9,7 @@ use rustc_ast::{LitKind, Mutability};
 use rustc_hir::{BindingMode, ByRef, LangItem, RangeEnd};
 use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::{self, ArmId, ExprId, ExprKind, LogicalOp, Pat, PatKind, PatRangeBoundary};
-use rustc_middle::ty;
+use rustc_middle::ty::{self, Ty};
 use rustc_span::{DesugaringKind, Span};
 
 /// One level of a let chain: what runs before its test, its test's parts, and
@@ -88,7 +88,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // 0195), or a flattened struct's, typed (ADR 0204).
                     match super::bindings::is_rest_field(self.tcx, pat.ty, i) {
                         true => rest = Some(bound),
-                        false => named.push((fields[i].0.clone(), bound)),
+                        false => {
+                            let default = self.prop_default(pat.ty, i, pat.span);
+                            named.push((fields[i].0.clone(), bound, default))
+                        }
                     }
                 }
                 // What the rest holds is what isn't named, so a field the
@@ -96,10 +99,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // _className`, or the rest would hold it (ADR 0205).
                 if rest.is_some() {
                     for (i, (key, _)) in fields.iter().enumerate() {
-                        if !super::bindings::is_rest_field(self.tcx, pat.ty, i) && !named.iter().any(|(k, _)| k == key)
+                        if !super::bindings::is_rest_field(self.tcx, pat.ty, i)
+                            && !named.iter().any(|(k, _, _)| k == key)
                         {
                             let unused = self.fresh(&format!("_{}", camel_case(&js_ident(key))));
-                            named.push((key.clone(), unused));
+                            named.push((key.clone(), unused, None));
                         }
                     }
                 }
@@ -108,6 +112,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Shape::Other => return None,
         };
         Some((pattern, mutable))
+    }
+
+    /// Field `i`'s default, of `ty`, a props struct, where JS takes it
+    /// apart, `{ size = "md" }` (ADR 0212): its type's `Default`, which is
+    /// a literal, or the string its `#[rust_js::default]` says.
+    fn prop_default(&mut self, ty: Ty<'tcx>, i: usize, span: Span) -> Option<Expr> {
+        let ty::Adt(adt, args) = ty.kind() else { return None };
+        let field = adt.non_enum_variant().fields.iter().nth(i)?;
+        let default = match bindings::field_default(self.tcx, field)? {
+            Some(text) => Expr::str(text.as_str()),
+            None => self
+                .default_value(field.ty(self.tcx, args).skip_normalization(), span)
+                .ok()?,
+        };
+        if !is_literal(&default) {
+            self.unsupported(
+                span,
+                "a props field's default that isn't a literal: say it, `#[rust_js::default = \"..\"]`",
+            );
+            return None;
+        }
+        Some(default)
     }
 
     pub(super) fn lower_let(
@@ -1507,5 +1533,17 @@ fn same_place(a: &Expr, b: &Expr) -> bool {
             same_place(f, g) && xs.len() == ys.len() && xs.iter().zip(ys).all(|(x, y)| same_place(x, y))
         }
         _ => false,
+    }
+}
+
+/// A literal: a constant, or an array or object of them, which a default
+/// in JS's destructuring is (ADR 0212).
+fn is_literal(value: &Expr) -> bool {
+    match &value.kind {
+        js::ExprKind::Array(items) => items.iter().all(is_literal),
+        js::ExprKind::Object(props) => props
+            .iter()
+            .all(|p| matches!(p, js::Prop::Field(_, v) if is_literal(v))),
+        _ => value.is_constant(),
     }
 }

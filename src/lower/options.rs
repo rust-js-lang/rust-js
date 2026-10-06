@@ -183,8 +183,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Some(js::Pattern::Object(_, Some(rest))) if rest == name => None,
                         Some(js::Pattern::Object(fields, _)) => fields
                             .iter()
-                            .find(|(_, var)| var == name)
-                            .map(|(field, _)| Expr::member(option.clone(), field.clone())),
+                            .find(|(_, var, _)| var == name)
+                            .map(|(field, _, _)| Expr::member(option.clone(), field.clone())),
                     };
                     body.substitute(&with)
                 });

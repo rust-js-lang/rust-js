@@ -178,9 +178,10 @@ pub enum Pattern {
     Name(String),
     /// `None` skips an element: `[, b]`.
     Array(Vec<Option<String>>),
-    /// Each field, and the variable it goes in, and the variable the rest
-    /// go in, `...rest` (ADR 0195).
-    Object(Vec<(String, String)>, Option<String>),
+    /// Each field, the variable it goes in, and its default where it's
+    /// missing, `{ size = "md" }` (ADR 0212), a literal; and the variable the
+    /// rest go in, `...rest` (ADR 0195).
+    Object(Vec<(String, String, Option<Expr>)>, Option<String>),
 }
 
 impl Pattern {
@@ -191,7 +192,7 @@ impl Pattern {
             Pattern::Array(items) => items.iter().flatten().map(String::as_str).collect(),
             Pattern::Object(fields, rest) => fields
                 .iter()
-                .map(|(_, name)| name.as_str())
+                .map(|(_, name, _)| name.as_str())
                 .chain(rest.as_deref())
                 .collect(),
         }

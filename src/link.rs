@@ -115,7 +115,7 @@ fn pattern(p: &mut Pattern, visitor: &mut Visitor<'_>) {
         Pattern::Array(parts) => parts.iter_mut().flatten().for_each(|n| visitor.name(n)),
         Pattern::Object(parts, rest) => parts
             .iter_mut()
-            .map(|(_, n)| n)
+            .map(|(_, n, _)| n)
             .chain(rest)
             .for_each(|n| visitor.name(n)),
     }

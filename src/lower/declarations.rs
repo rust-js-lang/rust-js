@@ -15,7 +15,7 @@ use rustc_span::Symbol;
 use rustc_span::def_id::{DefId, LocalModDefId};
 use serde_json::{Value, json};
 
-use super::bindings::{field_key, fn_name, is_binding, is_flatten, is_mark, is_rest, variant_name};
+use super::bindings::{field_default, field_key, fn_name, is_binding, is_flatten, is_mark, is_rest, variant_name};
 use super::recognition::{StdItem, is_std_def};
 use super::representation::Num;
 
@@ -202,9 +202,11 @@ impl<'tcx> Declarations<'_, 'tcx> {
             if is_flatten(self.tcx, field) {
                 continue;
             }
+            // A field with a default, JS's where it's missing, is one a caller
+            // may leave out (ADR 0212).
             let (optional, ty) = match self.option(ty) {
                 Some(inner) => (true, inner),
-                None => (false, ty),
+                None => (field_default(self.tcx, field).is_some(), ty),
             };
             members.push(json!({
                 "kind": "property",

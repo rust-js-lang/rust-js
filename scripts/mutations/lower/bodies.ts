@@ -74,4 +74,12 @@ export const mutations: Mutation[] = [
     replace: "                    .any(|f| false && super::bindings::is_rest_field(self.tcx, param.ty, f.field.as_usize()))\n",
     tests: ["test/jsx.test.ts", "-t", "doesn't name as ...rest"],
   },
+  {
+    name: "props-with-default-taken-whole",
+    breaks: "a component taking its props whole has no defaults, its JS callers' missing ones undefined",
+    file: "src/lower/bodies.rs",
+    find: "                && !peeled.is_some_and(|p| matches!(p.kind, PatKind::Leaf { .. }))",
+    replace: "                && false",
+    tests: ["test/jsx.test.ts", "-t", "a props field"],
+  },
 ];

@@ -110,7 +110,7 @@ impl Context {
             Pattern::Array(items) => self.names.extend(items.iter().flatten().cloned()),
             Pattern::Object(fields, rest) => self
                 .names
-                .extend(fields.iter().map(|(_, name)| name.clone()).chain(rest.clone())),
+                .extend(fields.iter().map(|(_, name, _)| name.clone()).chain(rest.clone())),
         }
     }
     fn reserve_stmt(&mut self, stmt: &Stmt) {

@@ -92,4 +92,12 @@ export const mutations: Mutation[] = [
     replace: "                    let path = &super::module_path(tcx, home);",
     tests,
   },
+  {
+    name: "defaulted-field-required",
+    breaks: "a field with a default is declared required, `count: number`, where a caller may leave it out",
+    file: "src/lower/declarations.rs",
+    find: "                None => (field_default(self.tcx, field).is_some(), ty),",
+    replace: "                None => (false, ty),",
+    tests,
+  },
 ];

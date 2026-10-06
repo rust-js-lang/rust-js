@@ -628,10 +628,15 @@ impl<'a> Cx<'a> {
                 BindingPattern::new_array_pattern(SPAN, ArenaVec::from_iter_in(items, b), None, b)
             }
             js::Pattern::Object(fields, rest) => {
-                let fields = fields.iter().map(|(field, var)| {
+                let fields = fields.iter().map(|(field, var, default)| {
                     let key = PropertyKey::new_static_identifier(SPAN, self.name(field), b);
+                    // `{ size = "md" }`, where it's missing (ADR 0212).
+                    let value = match default {
+                        Some(default) => BindingPattern::new_assignment_pattern(SPAN, name(var), self.expr(default), b),
+                        None => name(var),
+                    };
                     // `{ x }` for `{ x: x }`.
-                    BindingProperty::new(SPAN, key, name(var), field == var, false, b)
+                    BindingProperty::new(SPAN, key, value, field == var, false, b)
                 });
                 let rest = rest
                     .as_deref()

@@ -252,6 +252,15 @@ pub(super) fn is_flatten(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
     tcx.get_attrs_by_path(field.did, &path).next().is_some()
 }
 
+/// A props field's default, `#[rust_js::default]` (ADR 0212): `Some(None)`
+/// of its type's `Default`, `Some(Some("_self"))` of the string it says.
+pub(super) fn field_default(tcx: TyCtxt<'_>, field: &FieldDef) -> Option<Option<Symbol>> {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("default")];
+    tcx.get_attrs_by_path(field.did, &path)
+        .next()
+        .map(|attr| attr.value_str())
+}
+
 /// Whether field `i` of `ty`, a struct, is flattened (ADR 0204).
 pub(super) fn is_flatten_field(tcx: TyCtxt<'_>, ty: Ty<'_>, i: usize) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct()

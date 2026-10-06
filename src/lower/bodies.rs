@@ -209,6 +209,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             } else {
                 param.pat.as_deref()
             };
+            // A props field's default is where JS takes them apart (ADR 0212):
+            // a component's props taken whole would have none.
+            if super::bindings::is_component(self.tcx, self.body_owner)
+                && let ty::Adt(adt, _) = param.ty.kind()
+                && adt.is_struct()
+                && (adt.non_enum_variant().fields.iter()).any(|f| super::bindings::field_default(self.tcx, f).is_some())
+                && !peeled.is_some_and(|p| matches!(p.kind, PatKind::Leaf { .. }))
+            {
+                return Err(self.unsupported(
+                    span,
+                    "props with a default taken whole: they're taken apart where they're given, `fn f(Props { size, .. }: Props)`",
+                ));
+            }
             // `Props { initial, label }: Props` is `{ initial, label }`, as a
             // React component takes its props.
             // One with a destructor is owned by the function, less what its
