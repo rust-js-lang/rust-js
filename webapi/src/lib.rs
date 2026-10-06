@@ -70,24 +70,32 @@ pub mod event_target {
     /// given the event the name is on this target (ADR 0223): a button's `Click` is a
     /// `PointerEvent`. One the data doesn't know is `add_event_listener_named`'s.
     #[cfg_attr(rust_js, rust_js::link_name = "addEventListener")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
     pub fn add_event_listener<T: Listen<E>, E>(this: &T, event: E, listener: Box<dyn FnMut(&<T as Listen<E>>::Event)>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener)
     #[cfg_attr(rust_js, rust_js::link_name = "addEventListener")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
     pub fn add_event_listener_with_options<T: Listen<E>, E>(this: &T, event: E, listener: Box<dyn FnMut(&<T as Listen<E>>::Event)>, options: AddEventListenerOptionsOrBool<'_>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/removeEventListener)
     #[cfg_attr(rust_js, rust_js::link_name = "removeEventListener")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
     pub fn remove_event_listener<T: Listen<E>, E>(this: &T, event: E, listener: Box<dyn FnMut(&<T as Listen<E>>::Event)>) {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/removeEventListener)
     #[cfg_attr(rust_js, rust_js::link_name = "removeEventListener")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
     pub fn remove_event_listener_with_options<T: Listen<E>, E>(this: &T, event: E, listener: Box<dyn FnMut(&<T as Listen<E>>::Event)>, options: EventListenerOptionsOrBool) {
         unreachable!()
     }
@@ -1233,6 +1241,8 @@ pub mod document {
     /// `create_element(document, Button)` a `HtmlButtonElement`. Another name is
     /// `create_element_named`'s, an `Element`.
     #[cfg_attr(rust_js, rust_js::link_name = "createElement")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
     pub fn create_element<T: Tag>(this: &Document, tag: T) -> &'static <T as Tag>::Element {
         unreachable!()
     }
