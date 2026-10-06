@@ -8,7 +8,9 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax.rs",
     find: "    let span = expanded(sess, span);\n",
     replace: "",
-    tests: ["test/jsx.test.ts","-t","JSX supports components across modules"],
+    // A test that builds the react crate in its body: the mutant can't, and
+    // a failure in a file's setup is no test's (ADR 0093).
+    tests: ["test/react.test.ts", "-t", "JSX preparation preserves evaluation order"],
   },
   {
     name: "jsx-call-keeps-its-jsx",
