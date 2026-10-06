@@ -96,8 +96,8 @@ function main() {
       const arg$5 = f64_bits(a * b);
       const arg$6 = f64_bits(a / b);
       const arg$7 = f64_bits(a % b);
-      const arg$8 = f64_bits($f64Min(a, b));
-      const arg$9 = f64_bits($f64Max(a, b));
+      const arg$8 = a === b && a === 0 ? "±0" : f64_bits($f64Min(a, b));
+      const arg$9 = a === b && a === 0 ? "±0" : f64_bits($f64Max(a, b));
       const arg$10 = b - Math.trunc(b) === 0 || !Number.isFinite(b) ? f64_bits($powf(a, b)) : "-";
       const arg$11 = $totalCmp(a, b);
       const arg$12 = $partialCmp(a, b);
@@ -154,8 +154,8 @@ function main() {
       const arg$18 = f32_bits(Math.fround(a$1 * b$1));
       const arg$19 = f32_bits(Math.fround(a$1 / b$1));
       const arg$20 = f32_bits(a$1 % b$1);
-      const arg$21 = f32_bits($f64Min(a$1, b$1));
-      const arg$22 = f32_bits($f64Max(a$1, b$1));
+      const arg$21 = a$1 === b$1 && a$1 === 0 ? "±0" : f32_bits($f64Min(a$1, b$1));
+      const arg$22 = a$1 === b$1 && a$1 === 0 ? "±0" : f32_bits($f64Max(a$1, b$1));
       const arg$23 =
         b$1 - Math.trunc(b$1) === 0 || !Number.isFinite(b$1)
           ? f32_bits(Math.fround($powf(a$1, b$1)))
