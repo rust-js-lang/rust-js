@@ -60,6 +60,7 @@ impl<'a> From<&'a str> for Src<'a> {
   | `bool` | `typeof v === "boolean"` |
   | a `Vec`, an array, a slice, a tuple | `Array.isArray(v)` |
   | a JS object type, `RegExp` (ADR 0111) | `v instanceof RegExp` |
+  | one whose `#[rust_js::test]` names what tells it, react's `ReactElement` (ADR 0226) | `isValidElement(v)` |
   | a closure or a function | `typeof v === "function"` |
   | a struct of the crate's | `typeof v === "object"` |
 

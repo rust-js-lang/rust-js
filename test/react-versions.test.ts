@@ -42,7 +42,8 @@ function exported(entry: string, name: string, release: string): boolean {
 }
 
 // What the crate imports from React's packages, built for `release`:
-// `module#name` from each binding's `link_name`.
+// `module#name` from each binding's `link_name`, and each type's `test`,
+// `isValidElement` of `ReactElement` (ADR 0214).
 function bindings(release: string): Set<string> {
   const out = join(target, "react-docs", release);
   mkdirSync(out, { recursive: true });
@@ -62,7 +63,7 @@ function bindings(release: string): Set<string> {
   const found = new Set<string>();
   for (const item of Object.values(docs.index) as { attrs?: { other?: string }[] }[]) {
     for (const attr of item.attrs ?? []) {
-      const name = attr.other?.match(/rust_js::link_name = "(.*)"\]$/)?.[1] ?? attr.other?.match(/LinkName \{name: "(.*)"\}/)?.[1];
+      const name = attr.other?.match(/rust_js::(?:link_name|test) = "(.*)"\]$/)?.[1] ?? attr.other?.match(/LinkName \{name: "(.*)"\}/)?.[1];
       // An import, as a call, a constructor or a component: `react#useState`,
       // `new x#Y`, `<react#Suspense>`.
       const path = name?.replace(/^new /, "").replace(/^<(.*)>$/, "$1");
@@ -106,9 +107,10 @@ test("no binding is gated later than the first release that has it", () => {
 // exports must be bound.
 const LEFT_OUT: Record<string, string[]> = {
   // Legacy APIs (react.dev/reference/react/legacy): class components, which
-  // rust-js can't write, and what JSX and hooks replaced.
+  // rust-js can't write, and what JSX and hooks replaced. `Children`,
+  // `cloneElement` and `isValidElement` are bound, as MDX components use them.
   react: [
-    "Children", "Component", "PureComponent", "cloneElement", "createElement", "createRef", "isValidElement",
+    "Component", "PureComponent", "createElement", "createRef",
     // Internal, and unstable.
     "__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE", "__COMPILER_RUNTIME", "unstable_useCacheRefresh",
   ],

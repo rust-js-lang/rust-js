@@ -27,4 +27,12 @@ export const mutations: Mutation[] = [
     tests: ["test/snapshots.test.ts", "-t", "imports"],
     snapshots: true,
   },
+  {
+    name: "tested-variant-unimported",
+    breaks: "a `match` of an element calls `isValidElement`, which the module doesn't import",
+    file: "src/lower/analysis/naming.rs",
+    find: "        for arm in body.thir.arms.iter() {\n            tested(&arm.pattern);\n        }\n",
+    replace: "",
+    tests: ["test/jsx.test.ts", "-t", "look inside their children"],
+  },
 ];

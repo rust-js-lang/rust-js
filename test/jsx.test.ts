@@ -1374,6 +1374,69 @@ pub fn Labeled<C: Node>(LabeledProps { children }: LabeledProps<C>) -> Element {
   expect(renderToStaticMarkup(createElement(Labeled, { children: ["A ", createElement("code", null, "b")] }))).toBe('<h2 title="Link for this heading">A <code>b</code></h2>');
 });
 
+// A component looks inside its children as React's own API does, as
+// react.dev's MDX components do: `Children.toArray`, an element told apart by
+// `isValidElement`, its `type`, `props` and `key`, and `cloneElement`.
+test("JSX components look inside their children with React's Children", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use js::Kind;
+use react::children::{self, Child};
+use react::{Element, Node, NodeKind, clone_element, jsx, kind_of};
+pub struct ListProps<C: Node> {
+    pub children: C,
+}
+pub fn Kinds<C: Node>(ListProps { children }: ListProps<C>) -> Element {
+    let mut kinds = Vec::new();
+    for child in children::to_array(&children) {
+        kinds.push(match child {
+            Child::Text(text) => format!("text {text}"),
+            Child::Number(n) => format!("number {n}"),
+            Child::Element(element) => match js::classify(element.r#type()) {
+                Kind::String(tag) => format!("<{tag}> {}", element.key().unwrap_or("")),
+                _ => "component".to_string(),
+            },
+            Child::Other(_) => "other".to_string(),
+        });
+    }
+    jsx! { <p>{kinds.join(", ")}</p> }
+}
+pub struct Linked<'a> {
+    #[rust_js::name = "data-linked"]
+    pub linked: &'a str,
+}
+pub fn Only<C: Node>(ListProps { children }: ListProps<C>) -> Element {
+    match kind_of(&children) {
+        NodeKind::Element(element) => clone_element(element, Linked { linked: "yes" }),
+        NodeKind::Text(text) => jsx! { <i>{text}</i> },
+        NodeKind::Other(_) => jsx! { <b>{"other"}</b> },
+    }
+}
+pub fn Id<C: Node>(ListProps { children }: ListProps<C>) -> Element {
+    let id = match kind_of(&children) {
+        NodeKind::Element(element) => js::get(element.props(), "id").map(js::classify),
+        _ => None,
+    };
+    jsx! { <p>{if let Some(Kind::String(id)) = id { id } else { "none" }}</p> }
+}
+`);
+  args.push("--extern", `js=${join(target, "libjs.rmeta")}`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("Children.toArray(children)");
+  expect(jsx).toContain("isValidElement(");
+  expect(jsx).toContain("cloneElement(");
+  const { Kinds, Only, Id } = await import(join(dir, "lib.jsx"));
+  const { createElement } = await import("react");
+  const Component = () => null;
+  expect(renderToStaticMarkup(createElement(Kinds, null, "a", 1, createElement("img", { key: "k" }), createElement(Component), null, true)))
+    .toBe("<p>text a, number 1, &lt;img&gt; .$k, component</p>");
+  expect(renderToStaticMarkup(createElement(Only, null, createElement("a", { href: "/" }, "x")))).toBe('<a href="/" data-linked="yes">x</a>');
+  expect(renderToStaticMarkup(createElement(Only, null, "t"))).toBe("<i>t</i>");
+  expect(renderToStaticMarkup(createElement(Only, null, "t", "u"))).toBe("<b>other</b>");
+  expect(renderToStaticMarkup(createElement(Id, null, createElement("h4", { id: "deep" })))).toBe("<p>deep</p>");
+  expect(renderToStaticMarkup(createElement(Id, null, "t"))).toBe("<p>none</p>");
+});
+
 // A DOM element's tag as a value, a `react::Tag`, is the tag JSX names by a
 // capitalized parameter or `let` of its function, as react.dev's Heading
 // renders `<Comp>` of `{ as: Comp = "div" }`.

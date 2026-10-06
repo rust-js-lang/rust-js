@@ -74,4 +74,20 @@ export const mutations: Mutation[] = [
     replace: "                    if false {\n",
     tests: ["test/diagnostics.test.ts", "-t", "otherwise variant before"],
   },
+  {
+    name: "tested-variant-always",
+    breaks: "an element of an untagged enum is whatever its test's turn comes to, a list of children cloned as an element",
+    file: "src/lower/untagged.rs",
+    find: "            Kind::Test(test) => Expr::call(class(test), vec![value.clone()]),\n",
+    replace: "            Kind::Test(_) => Expr::bool(true),\n",
+    tests: ["test/jsx.test.ts", "-t", "look inside their children"],
+  },
+  {
+    name: "tested-type-a-class",
+    breaks: "`ReactElement`, told by `isValidElement`, is told by `instanceof ReactElement`, a class there's none of",
+    file: "src/lower/untagged.rs",
+    find: "            && let Some(test) = bindings::test_of(self.tcx, adt.did())\n",
+    replace: "            && let Some(test) = None::<String>\n",
+    tests: ["test/jsx.test.ts", "-t", "look inside their children"],
+  },
 ];
