@@ -36,6 +36,10 @@ spawn(Box::new(async move {                            // runs, unawaited
   gives, or `webapi`'s `response::json(r)`. `classify(value)` tells what it is,
   a `Kind` to `match`, by `typeof`; `get(value, key)` and `set(value, key, to)`
   are `value[key]`; `object::keys(value)` is `Object.keys`.
+- `Json` is a JSON value, ReScript's `JSON.t`: `Json::parse(text)`, then
+  `match`, a `null` the `None` of the `Option` holding it; its objects are
+  `Dict<Option<Json>>`. A `Dict<T>` is a plain object of `T`s by name:
+  `dict::get(d, key)`, `dict::entries(d)`, `dict::set(d, key, value)`.
 - `object::from_entries(entries)` is a JS object of keys and values, as an API
   taking a dictionary wants, and `object::is(a, b)` is `Object.is`: whether two
   JS objects are one.

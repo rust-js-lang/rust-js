@@ -114,6 +114,90 @@ pub fn set<T>(this: &Unknown, key: &str, to: T) {
     unreachable!()
 }
 
+/// A plain JS object of `T`s by their names (ADR 0225), as ReScript's `dict`
+/// and TypeScript's `Record<string, T>` are: a JSON object, or a
+/// dictionary an API takes. [`dict::get`] reads one by its key.
+pub struct Dict<T>(PhantomData<JsObject>, PhantomData<T>);
+
+/// A JSON value (ADR 0225), as ReScript's `JSON.t` is: each variant's value
+/// is the value itself (ADR 0214), and a JSON `null` is `None` of the
+/// `Option<Json>` that holds it, an array's item or an object's.
+#[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
+pub enum Json<'a> {
+    String(&'a str),
+    Number(f64),
+    Bool(bool),
+    Array(&'a [Option<Json<'a>>]),
+    #[cfg_attr(rust_js, rust_js::otherwise)]
+    Object(&'a Dict<Option<Json<'a>>>),
+}
+
+impl Json<'static> {
+    /// [`JSON.parse(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse):
+    /// the value `text` is, `None` of `null`, or what it threw for text that
+    /// isn't JSON (ADR 0035).
+    #[cfg_attr(rust_js, rust_js::link_name = "JSON.parse")]
+    #[allow(unused_variables)]
+    pub fn parse(text: &str) -> Result<Option<Json<'static>>, &'static JsError> {
+        unreachable!()
+    }
+}
+
+impl Json<'_> {
+    /// [`JSON.stringify(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify):
+    /// its JSON text.
+    #[cfg_attr(rust_js, rust_js::link_name = "JSON.stringify")]
+    #[allow(unused_variables)]
+    pub fn stringify(value: &Json<'_>) -> String {
+        unreachable!()
+    }
+}
+
+/// A [`Dict`]'s functions.
+pub mod dict {
+    use super::*;
+
+    /// Its value of `key`: `None` where the key isn't its own, and of a
+    /// `Dict<Option<_>>`, `Some(None)` of a JSON `null`.
+    #[cfg_attr(rust_js, rust_js::link_name = "@rust-js/runtime#$dictGet")]
+    #[allow(unused_variables)]
+    pub fn get<'a, T>(dict: &'a Dict<T>, key: &str) -> Option<&'a T> {
+        unreachable!()
+    }
+
+    /// `dict[key] = value`.
+    #[cfg_attr(rust_js, rust_js::link_name = "set []")]
+    #[allow(unused_variables)]
+    pub fn set<T>(this: &Dict<T>, key: &str, value: T) {
+        unreachable!()
+    }
+
+    /// [`Object.keys(dict)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/keys):
+    /// its keys, in order.
+    #[cfg_attr(rust_js, rust_js::link_name = "Object.keys")]
+    #[allow(unused_variables)]
+    pub fn keys<T>(dict: &Dict<T>) -> Vec<String> {
+        unreachable!()
+    }
+
+    /// [`Object.entries(dict)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/entries):
+    /// each key and its value, in order.
+    #[cfg_attr(rust_js, rust_js::link_name = "Object.entries")]
+    #[allow(unused_variables)]
+    pub fn entries<T>(dict: &Dict<T>) -> Vec<(String, T)> {
+        unreachable!()
+    }
+
+    /// [`Object.fromEntries(entries)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/fromEntries):
+    /// a dictionary of these keys and values.
+    #[cfg_attr(rust_js, rust_js::link_name = "Object.fromEntries")]
+    #[allow(unused_variables)]
+    pub fn from_entries<T>(entries: Vec<(String, T)>) -> &'static Dict<T> {
+        unreachable!()
+    }
+}
+
 /// A JS [`Promise`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)
 /// of a `T`. `.await` on one is JS's `await`; a rejected one throws, like a
 /// panic. See ADR 0029.

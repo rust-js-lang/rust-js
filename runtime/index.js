@@ -370,6 +370,13 @@ export function $someAt(items, index) {
   return index >= 0 && index < items.length ? $some(items[index]) : undefined;
 }
 
+// A dictionary's value of `key` (ADR 0225): `Some` of it, boxed where it
+// looks like `None`, a JSON `null`'s `Some(None)`; `None` where the key
+// isn't its own, as `toString` isn't.
+export function $dictGet(dict, key) {
+  return Object.hasOwn(dict, key) ? $some(dict[key]) : undefined;
+}
+
 // `Vec::pop` of a generic `T`: `None` for an empty one, else `Some` of the last.
 export function $pop(items) {
   return items.length === 0 ? undefined : $some(items.pop());
