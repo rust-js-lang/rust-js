@@ -178,4 +178,12 @@ export const mutations: Mutation[] = [
     replace: "        if false && fails {\n            return self.failing_consumer(known, call, out);\n        }",
     tests: ["test/corpus.test.ts","-t","fmt_error_to_string"],
   },
+  {
+    name: "omitted-prop-called",
+    breaks: "a prop `jsx!` isn't given is a call of `__omitted()`, which has no JS",
+    file: "src/lower/calls.rs",
+    find: "        if is_omitted(self.tcx, def_id) {",
+    replace: "        if false && is_omitted(self.tcx, def_id) {",
+    tests: ["test/jsx.test.ts", "-t", "flattened props where they"],
+  },
 ];

@@ -27,6 +27,6 @@ export function Ordinary(reference) {
   const match = globalThis.record(3);
   globalThis.record(4);
   const match$1 = reference;
-  return <Normal ref={match$1} title={match} />;
+  return <Normal title={match} ref={match$1} />;
 }
 //# sourceMappingURL=lib.jsx.map

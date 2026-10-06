@@ -1,0 +1,72 @@
+# 0213. A component's props are given as one flat list
+
+Status: Accepted. Builds on [0203](0203-component-props-as-written.md),
+[0204](0204-flattened-props.md), [0205](0205-flattened-chains.md) and
+[0212](0212-props-defaults.md).
+
+## Context
+
+`jsx!` gave a component a struct literal of its props, so a Rust caller
+named the flattened struct and filled it, and gave every field, the rest
+from a base:
+
+```rust
+<ButtonLink href="/x" props={AnchorHtmlAttributes { download: Some("f"), ..Default::default() }} {..Default::default()}>
+```
+
+where a JS caller writes `<ButtonLink href="/x" download="f">`.
+
+## Decision
+
+**A props struct has a companion, a macro of its name, which builds it
+from the names `jsx!` gives it: each of its own fields, and every other
+name its flattened field's, by that struct's companion. A field not given
+is left out, of an `Option`, a `Rest` or one with a default; a required
+one not given is an error that names it.**
+
+```rust
+<ButtonLink href="/x" download={Some("f")}>{"Docs"}</ButtonLink>
+```
+
+```jsx
+<ButtonLink href="/x" download="f">Docs</ButtonLink>
+```
+
+```text
+error: missing prop `href` of `ButtonLinkProps`
+```
+
+- **It's made for the crate's components' props structs and every
+  `Default` struct**, as a flattened one is, beside the struct, of its
+  visibility; a component whose props have one is given them by it.
+- **What's left out is `undefined`**, `react::__omitted()`, which JSX
+  doesn't write, and the component's own default then is (ADR 0212);
+  children not given are their type's `Default`.
+- **A name nothing has is rustc's error**, at the name.
+- **With a base, `{..base}`, it's the struct literal with it**, as before.
+- **The props are as written**, by where each one's value is (ADR 0203),
+  a flattened struct's too; Rust makes them in the companion's order, so
+  what does something, reordered, is made first in that order, and an
+  object made here, a flattened struct's, is made each of its values, so
+  it stays one taken apart where it's given.
+- **A `Default` struct of only `Option`s and the like, none flattened,
+  is its literal with its `Default`**: its companion has no slot for each
+  of its fields, which React's `HtmlAttributes` has hundreds of.
+
+## Why
+
+- **It's how JSX is written**: one list, the component's props and the
+  element's alike, what isn't given left out.
+- **It's Rust's**: a struct literal, checked by rustc, a required field
+  said missing, a wrong name rustc's error, each value of its field's
+  type.
+- **It's tested**: a JSX test gives a component of a flattened chain its
+  props as one list, in an order of the caller's own, with a default and a
+  required prop, and checks the JSX, what renders, and the order what does
+  something is made in, and refuses a missing prop and a wrong name.
+
+## Costs
+
+- **A Rust caller still writes `Some(..)`** of an `Option` prop.
+- **A component's props type beside it, or a `Default` struct, has a
+  companion**: one elsewhere is given a struct literal, as before.

@@ -148,12 +148,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let reordered = !adt.fields.is_sorted_by_key(|f| f.name);
         if reordered && values.iter().filter(|v| v.has_effects()).count() > 1 {
             for (field, value) in adt.fields.iter().zip(&mut values) {
-                if value.has_effects() {
-                    let name = self.fresh(variant.fields[field.name].name.as_str());
-                    let v = std::mem::replace(value, Expr::var(&name));
-                    let span = v.span;
-                    out.push(StmtKind::Const(name, v).at(span));
-                }
+                self.made_first(variant.fields[field.name].name.as_str(), value, out);
             }
         }
         // `..p` moves the fields it doesn't name out of `p` once every
@@ -193,6 +188,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             });
         }
         Ok(assembled(shape, tag, items))
+    }
+
+    /// `value`, if it does something, made first, in a `const` of its own;
+    /// an object made here each of its values, so it stays one, as a
+    /// flattened struct's is taken apart where it's given (ADR 0213).
+    fn made_first(&mut self, name: &str, value: &mut Expr, out: &mut Vec<Stmt>) {
+        if let js::ExprKind::Object(props) = &mut value.kind {
+            for prop in props {
+                let (Prop::Field(key, value) | Prop::Getter(key, value)) = prop else {
+                    continue;
+                };
+                let key = key.clone();
+                self.made_first(&key, value, out);
+            }
+        } else if value.has_effects() {
+            let fresh = self.fresh(name);
+            let made = std::mem::replace(value, Expr::var(&fresh));
+            let span = made.span;
+            out.push(StmtKind::Const(fresh, made).at(span));
+        }
     }
 
     /// The fields of `ty`, a struct whose `Default` is derived, when `base`

@@ -695,6 +695,15 @@ pub fn use_debug_value_with<T>(value: T, format: impl Fn(&T) -> String + 'static
 
 /// An element of a component: `component(Counter, CounterProps { initial: 1 })`
 /// is `<Counter initial={1} />`. Its props are a struct, whose `children`
+/// What `jsx!` gives a component's prop it isn't given, an `Option` or one
+/// with a default: none, `undefined`, which JSX leaves out, and which the
+/// component's own default then is (ADR 0213).
+#[cfg_attr(rust_js, rust_js::omitted)]
+#[doc(hidden)]
+pub fn __omitted<T>() -> T {
+    unreachable!()
+}
+
 /// field, if it has one, is the element's children; `()` for a component that
 /// takes none, `component(App, ())`. A component's name starts with an
 /// uppercase letter, as JSX and Fast Refresh need.

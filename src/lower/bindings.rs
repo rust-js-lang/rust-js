@@ -252,6 +252,13 @@ pub(super) fn is_flatten(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
     tcx.get_attrs_by_path(field.did, &path).next().is_some()
 }
 
+/// Whether `def_id` is react's `__omitted`, what `jsx!` gives a prop it isn't
+/// given: `undefined` (ADR 0213).
+pub(super) fn is_omitted(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("omitted")];
+    tcx.get_attrs_by_path(def_id, &path).next().is_some()
+}
+
 /// A props field's default, `#[rust_js::default]` (ADR 0212): `Some(None)`
 /// of its type's `Default`, `Some(Some("_self"))` of the string it says.
 pub(super) fn field_default(tcx: TyCtxt<'_>, field: &FieldDef) -> Option<Option<Symbol>> {

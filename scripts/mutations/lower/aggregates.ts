@@ -43,4 +43,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "replace_through_mut"],
     snapshots: true,
   },
+  {
+    name: "flattened-literal-made-whole",
+    breaks: "a flattened struct made here, reordered, is made into a `const` whole, nested, and spread so",
+    file: "src/lower/aggregates.rs",
+    find: "        if let js::ExprKind::Object(props) = &mut value.kind {",
+    replace: "        if let (false, js::ExprKind::Object(props)) = (true, &mut value.kind) {",
+    tests: ["test/jsx.test.ts", "-t", "flattened props where they"],
+  },
 ];

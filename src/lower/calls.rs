@@ -1,6 +1,6 @@
 //! Calls to local functions, JavaScript bindings, closures and standard operations.
 
-use super::bindings::{JsForm, is_binding, is_method, js_form};
+use super::bindings::{JsForm, is_binding, is_method, is_omitted, js_form};
 use super::combinators::Comb;
 use super::combinators::StepOp;
 use super::display::append_written;
@@ -144,6 +144,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             discarded,
             span,
         } = call;
+        // A prop `jsx!` isn't given: none, which JSX leaves out (ADR 0213).
+        if is_omitted(self.tcx, def_id) {
+            return Ok(Some(Expr::undefined()));
+        }
         if let Some(callee) = self.boxed_callee(def_id, generic_args, args, span)? {
             return self.call_with_boxes(callee, args, discarded, span, out).map(Some);
         }

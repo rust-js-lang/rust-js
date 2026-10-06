@@ -6,7 +6,8 @@ use rustc_ast::tokenstream::{DelimSpacing, DelimSpan, Spacing, TokenStream, Toke
 use rustc_ast::{self as ast, FnRetTy, ItemKind, TyKind};
 use rustc_parse::parser::{AllowConstBlockItems, ForceCollect, Parser};
 use rustc_session::Session;
-use rustc_span::{ErrorGuaranteed, Span};
+use rustc_span::{ErrorGuaranteed, Ident, Span};
+use std::collections::HashSet;
 
 use super::formatting::Layout;
 use super::{rust_expression, template};
@@ -551,12 +552,11 @@ fn method_call(sess: &Session, receiver: TokenStream, method: &str, args: Vec<To
     call(sess, function, args, span)
 }
 
-/// A hygienic props constructor beside a component. Rust resolves its props
-/// type in the definition's module, including aliases and private imports.
-/// Calling it through an imported/renamed component uses Rust's macro namespace.
-pub(super) fn component(sess: &Session, item: &ast::Item) -> Option<Box<ast::Item>> {
+/// A component's name, what it's called by, its props' type and, of a
+/// `ForwardRef`, its handle's: `None` of what's no component.
+fn signature(sess: &Session, item: &ast::Item) -> Option<(Ident, String, String, Option<String>)> {
     super::configured_attrs(sess, &item.attrs)?;
-    let (ident, target, props, handle) = match &item.kind {
+    let signature = match &item.kind {
         ItemKind::Fn(f) => {
             let FnRetTy::Ty(ret) = &f.sig.decl.output else {
                 return None;
@@ -599,9 +599,33 @@ pub(super) fn component(sess: &Session, item: &ast::Item) -> Option<Box<ast::Ite
         }
         _ => return None,
     };
-    if !ident.as_str().starts_with(char::is_uppercase) {
-        return None;
-    }
+    signature
+        .0
+        .as_str()
+        .starts_with(char::is_uppercase)
+        .then_some(signature)
+}
+
+/// The props types the components among `item` take, by their names: a
+/// function's, a `static`'s or a `thread_local!`'s, `ButtonLinkProps`.
+pub(super) fn props_names(sess: &Session, item: &ast::Item) -> Vec<String> {
+    let declarations = thread_local_declarations(sess, item).unwrap_or_else(|| vec![Box::new(item.clone())]);
+    declarations
+        .iter()
+        .filter_map(|declaration| signature(sess, declaration))
+        .filter_map(|(_, _, props, _)| props.rsplit("::").next().map(str::to_string))
+        .filter(|name| !name.is_empty())
+        .collect()
+}
+
+/// A hygienic props constructor beside a component. Rust resolves its props
+/// type in the definition's module, including aliases and private imports.
+/// Calling it through an imported/renamed component uses Rust's macro
+/// namespace. Its props are built by their type's companion where it has
+/// one, `built` (ADR 0213), else they're a struct literal.
+pub(super) fn component(sess: &Session, item: &ast::Item, built: &HashSet<String>) -> Option<Box<ast::Item>> {
+    let (ident, target, props, handle) = signature(sess, item)?;
+    let companion = props.rsplit("::").next().is_some_and(|name| built.contains(name));
     let pattern = if props.is_empty() {
         ""
     } else {
@@ -609,13 +633,18 @@ pub(super) fn component(sess: &Session, item: &ast::Item) -> Option<Box<ast::Ite
     };
     let value = if props.is_empty() {
         "()".to_string()
+    } else if companion {
+        format!("{props}!(@given [$($field: $value,)*] [$($base)?])")
     } else {
         format!("{props} {{ $($field: $value,)* $(..$base)? }}")
     };
     let call = |target: &str, value: &str| format!("#[rust_js::jsx] ::react::component({target}, {value})");
     let arm = |prefix: &str, body: &str| format!("({prefix} {pattern}) => {{ {body} }}");
     let mut arms = vec![arm("", &call(&target, &value))];
-    let ref_value = format!("{props} {{ r#ref: $reference, $($field: $value,)* $(..$base)? }}");
+    let ref_value = match companion {
+        true => format!("{props}!(@given [r#ref: $reference, $($field: $value,)*] [$($base)?])"),
+        false => format!("{props} {{ r#ref: $reference, $($field: $value,)* $(..$base)? }}"),
+    };
     if let Some(handle) = handle {
         let body = format!(
             "#[rust_js::jsx] ({}).r#ref(::react::checked_ref::<{handle}, _, _>($reference))",
@@ -675,9 +704,21 @@ fn props_path(ty: &ast::Ty) -> Option<String> {
 
 // rustc stores module items in boxes.
 #[allow(clippy::vec_box)]
-pub(super) fn thread_local_components(sess: &Session, item: &ast::Item) -> Vec<Box<ast::Item>> {
+pub(super) fn thread_local_components(
+    sess: &Session,
+    item: &ast::Item,
+    built: &HashSet<String>,
+) -> Vec<Box<ast::Item>> {
+    (thread_local_declarations(sess, item).into_iter().flatten())
+        .filter_map(|declaration| component(sess, &declaration, built))
+        .collect()
+}
+
+/// A `thread_local!`'s declarations, each a `static`; `None` of another item.
+#[allow(clippy::vec_box)]
+fn thread_local_declarations(sess: &Session, item: &ast::Item) -> Option<Vec<Box<ast::Item>>> {
     let ItemKind::MacCall(mac) = &item.kind else {
-        return Vec::new();
+        return None;
     };
     if mac
         .path
@@ -685,17 +726,13 @@ pub(super) fn thread_local_components(sess: &Session, item: &ast::Item) -> Vec<B
         .last()
         .is_none_or(|s| s.ident.as_str() != "thread_local")
     {
-        return Vec::new();
+        return None;
     }
     let mut parser = Parser::new(&sess.psess, mac.args.tokens.clone(), Some("JSX component declarations"));
-    let mut companions = Vec::new();
+    let mut declarations = Vec::new();
     while parser.token.kind != TokenKind::Eof {
         match parser.parse_item(ForceCollect::No, AllowConstBlockItems::No) {
-            Ok(Some(declaration)) => {
-                if let Some(companion) = component(sess, &declaration) {
-                    companions.push(companion);
-                }
-            }
+            Ok(Some(declaration)) => declarations.push(declaration),
             Ok(None) => break,
             // Not an item, as `thread_local!`'s last declaration, which needs
             // no `;`, isn't: the macro's own expansion says what's wrong, if
@@ -706,5 +743,146 @@ pub(super) fn thread_local_components(sess: &Session, item: &ast::Item) -> Vec<B
             }
         }
     }
-    companions
+    Some(declarations)
+}
+
+/// A props struct's companion (ADR 0213): a macro of its name beside it,
+/// which builds it from what JSX gives, `S!(@given [r#href: "/a",] [])`,
+/// each of its own fields in its slot, and every other name its flattened
+/// field's, by that struct's companion. One not given is left out,
+/// `__omitted()`, of an `Option`, a `Rest` or a field with a default; its
+/// children are their type's `Default`; and one that's required is said
+/// missing. With a base, `[base]`, it's the struct literal with it, as
+/// before. A `Default` struct of only `Option`s and the like, none
+/// flattened, is its literal with its `Default`.
+///
+/// It's made for the crate's components' props structs, `props`, and for
+/// every `Default` struct, as a flattened one is.
+pub(super) fn props_companion(sess: &Session, item: &ast::Item, props: &HashSet<String>) -> Option<Box<ast::Item>> {
+    let ItemKind::Struct(ident, _, ast::VariantData::Struct { fields, .. }) = &item.kind else {
+        return None;
+    };
+    let attrs = super::configured_attrs(sess, &item.attrs)?;
+    let derives_default = attrs.iter().any(|attr| {
+        attr.has_name(rustc_span::sym::derive)
+            && attr
+                .meta_item_list()
+                .is_some_and(|list| list.iter().any(|m| m.ident().is_some_and(|i| i.as_str() == "Default")))
+    });
+    let name = ident.as_str().to_string();
+    if !derives_default && !props.contains(&name) {
+        return None;
+    }
+    let tool = |attrs: &ast::AttrVec, wanted: &str| {
+        attrs.iter().any(|attr| match &attr.kind {
+            ast::AttrKind::Normal(normal) => matches!(&normal.item.path.segments[..],
+                [tool, item] if tool.ident.as_str() == "rust_js" && item.ident.as_str() == wanted),
+            _ => false,
+        })
+    };
+    // Each own field, how a slot of it left empty is filled, and whether it
+    // has a default; and the flattened one, its name and its type's path.
+    let mut own = Vec::new();
+    let mut flatten = None;
+    for field in fields {
+        let field_name = field.ident?.as_str().to_string();
+        let attrs = super::configured_attrs(sess, &field.attrs)?;
+        if tool(&attrs, "flatten") {
+            flatten = Some((field_name, props_path(&field.ty)?));
+            continue;
+        }
+        let last = match &field.ty.kind {
+            TyKind::Path(_, path) => path.segments.last().map(|s| s.ident.as_str().to_string()),
+            _ => None,
+        };
+        let defaulted = tool(&attrs, "default");
+        let empty = if defaulted || matches!(last.as_deref(), Some("Option" | "Rest")) {
+            "omitted"
+        } else if field_name == "children" {
+            "children"
+        } else {
+            "required"
+        };
+        own.push((field_name, empty, defaulted));
+    }
+    let given = "(@given [$($pairs:tt)*] [$base:expr]) => { NAME { $($pairs)* ..$base } }".to_string();
+    let simple = derives_default
+        && flatten.is_none()
+        && own
+            .iter()
+            .all(|&(_, empty, defaulted)| !defaulted && empty != "required");
+    let arms = if simple {
+        vec![
+            given,
+            "(@given [$($name:ident: $value:expr,)*] []) => { NAME { $($name: $value,)* ..::core::default::Default::default() } }"
+                .to_string(),
+        ]
+    } else {
+        let n = own.len();
+        let patterns = (0..n).map(|i| format!("$s{i}:tt")).collect::<Vec<_>>().join(" ");
+        let filled = |slot: usize| {
+            (0..n)
+                .map(|i| {
+                    if i == slot {
+                        "[$v]".to_string()
+                    } else {
+                        format!("$s{i}")
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join(" ")
+        };
+        let mut arms = vec![
+            given,
+            format!(
+                "(@given [$($name:ident: $value:expr,)*] []) => {{ NAME!(@slots [{}] [] $($name: $value,)*) }}",
+                vec!["[]"; n].join(" ")
+            ),
+        ];
+        for (i, (field, _, _)) in own.iter().enumerate() {
+            arms.push(format!(
+                "(@slots [{patterns}] [$($rest:tt)*] r#{field}: $v:expr, $($tail:tt)*) => {{ NAME!(@slots [{}] [$($rest)*] $($tail)*) }}",
+                filled(i)
+            ));
+        }
+        let other = match flatten {
+            Some(_) => "NAME!(@slots [$($s)*] [$($rest)* $name: $v,] $($tail)*)",
+            // rustc's own error, at the name: `NAME` has no field `nope`.
+            None => "NAME { $name: $v, ..::core::panic!() }",
+        };
+        arms.push(format!(
+            "(@slots [$($s:tt)*] [$($rest:tt)*] $name:ident: $v:expr, $($tail:tt)*) => {{ {other} }}"
+        ));
+        let mut values: Vec<String> = (own.iter().enumerate())
+            .map(|(i, (field, empty, _))| format!("r#{field}: NAME!(@slot {empty} \"{field}\" $s{i})"))
+            .collect();
+        if let Some((field, path)) = &flatten {
+            values.push(format!("r#{field}: {path}!(@given [$($rest)*] [])"));
+        }
+        arms.push(format!(
+            "(@slots [{patterns}] [$($rest:tt)*]) => {{ NAME {{ {} }} }}",
+            values.join(", ")
+        ));
+        arms.push("(@slot $empty:ident $name:literal [$v:expr]) => { $v }".to_string());
+        arms.push(
+            "(@slot required $name:literal []) => { ::core::compile_error!(concat!(\"missing prop `\", $name, \"` of `NAME`\")) }"
+                .to_string(),
+        );
+        arms.push("(@slot omitted $name:literal []) => { ::react::__omitted() }".to_string());
+        arms.push("(@slot children $name:literal []) => { ::core::default::Default::default() }".to_string());
+        arms
+    };
+    let source = format!("macro {name} {{ {} }}", arms.join(", ")).replace("NAME", &name);
+    let mut parser = Parser::new(&sess.psess, template(sess, source, item.span), Some("JSX props"));
+    match parser.parse_item(ForceCollect::No, AllowConstBlockItems::No) {
+        Ok(Some(mut companion)) => {
+            companion.vis = item.vis.clone();
+            Some(companion)
+        }
+        Ok(None) => None,
+        Err(e) => {
+            e.emit();
+            None
+        }
+    }
 }

@@ -5,7 +5,7 @@
 pub mod formatting;
 mod parser;
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
@@ -158,7 +158,24 @@ impl Expand<'_> {
     // rustc owns boxed items in both crate and module ASTs.
     #[allow(clippy::vec_box)]
     fn items(&mut self, items: &mut Vec<Box<ast::Item>>) {
+        // The props structs the components here take, and their companions,
+        // which build them from what JSX gives (ADR 0213).
+        let props: HashSet<String> = (items.iter())
+            .filter(|item| configured_attrs(self.sess, &item.attrs).is_some())
+            .flat_map(|item| parser::props_names(self.sess, item))
+            .collect();
         let mut companions = Vec::new();
+        let mut built = HashSet::new();
+        for item in items.iter() {
+            if configured_attrs(self.sess, &item.attrs).is_some()
+                && let Some(companion) = parser::props_companion(self.sess, item, &props)
+            {
+                if let Some(ident) = companion.kind.ident() {
+                    built.insert(ident.as_str().to_string());
+                }
+                companions.push(companion);
+            }
+        }
         for item in items.iter_mut() {
             // Expand cfg_attr when finding #[path], and never open a cfg'd-out
             // file. Leave actual cfg removal and feature validation to rustc.
@@ -166,8 +183,8 @@ impl Expand<'_> {
                 continue;
             };
             self.item(item, &attrs);
-            companions.extend(parser::thread_local_components(self.sess, item));
-            if let Some(companion) = parser::component(self.sess, item) {
+            companions.extend(parser::thread_local_components(self.sess, item, &built));
+            if let Some(companion) = parser::component(self.sess, item, &built) {
                 companions.push(companion);
             }
         }

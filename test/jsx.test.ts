@@ -376,7 +376,7 @@ for (const [name, body, message] of [
   ["invalid event", '<button onClick={123} />', 'expected a'],
   ["invalid prop type", '<button disabled={"wrong"} />', 'expected `bool`'],
   ["duplicate attribute", '<button disabled disabled />', 'duplicate attribute'],
-  ["missing component prop", '<Card />', 'missing field'],
+  ["missing component prop", '<Card />', "missing prop `title`"],
   ["unknown component prop", '<Card nope="x" />', 'no field named'],
   ["invalid spread", '<div {...123} />', 'non-struct'],
   ["mixed component spread", '<Card title="x" {...Props { title: "y" }} />', "not JSX's `{...base}`"],
@@ -708,6 +708,130 @@ pub fn App() -> Element {
   // kept of it, and no children where none are given.
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect([jsx.includes('<Frame title="t">'), jsx.includes("<Frame />"), jsx.includes("match")]).toEqual([true, true, false]);
+});
+
+// A component's props are given as one flat list, `<ButtonLink href="/a"
+// target={..} id={..}>`, its own fields and its flattened structs' alike,
+// as JSX's caller writes them: what isn't given is left out, a field with a
+// default or an `Option`, and one that's required is said (ADR 0213).
+test("JSX takes a component's flattened props where they're written, none given left out", async () => {
+  const flat = `#![allow(non_snake_case)]
+use react::{Element, Node, jsx};
+#[derive(Default)]
+pub struct Html {
+    pub id: Option<&'static str>,
+    #[cfg_attr(rust_js, rust_js::name = "className")]
+    pub class_name: Option<&'static str>,
+}
+#[derive(Default)]
+pub struct Anchor {
+    pub href: Option<&'static str>,
+    pub target: Option<&'static str>,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub html: Html,
+}
+#[derive(Default)]
+pub enum Size {
+    #[default]
+    #[cfg_attr(rust_js, rust_js::name = "md")]
+    Md,
+    #[cfg_attr(rust_js, rust_js::name = "lg")]
+    Lg,
+}
+pub struct ButtonLinkProps<C> {
+    pub href: &'static str,
+    #[cfg_attr(rust_js, rust_js::default)]
+    pub size: Size,
+    pub label: Option<&'static str>,
+    pub children: C,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub props: Anchor,
+}
+pub fn ButtonLink<C: Node + Default>(ButtonLinkProps { href, size, label, children, props }: ButtonLinkProps<C>) -> Element {
+    let class = match size {
+        Size::Md => "md",
+        Size::Lg => "lg",
+    };
+    jsx! { <a href={href} data-size={class} aria-label={label} {...props}>{children}</a> }
+}
+`;
+  const { dir, args } = compile(flat + `
+pub fn App() -> Element {
+    jsx! {
+        <>
+            <ButtonLink target={Some("_blank")} href="/a" id={Some("x")} size={Size::Lg}>{"A"}</ButtonLink>
+            <ButtonLink href="/b" className={Some("c")}>{"B"}</ButtonLink>
+        </>
+    }
+}
+// What does something is made in Rust's order, the struct's, though the
+// JSX writes it as the caller does.
+fn note(text: &'static str) -> &'static str {
+    println!("{text}");
+    text
+}
+pub fn Noted() -> Element {
+    jsx! { <ButtonLink target={Some(note("t"))} href={note("h")}>{"N"}</ButtonLink> }
+}
+// Its own fields written out of its order: Rust makes \`href\` first.
+fn big() -> Size {
+    println!("big");
+    Size::Lg
+}
+pub fn Sized() -> Element {
+    jsx! { <ButtonLink size={big()} href={note("h")}>{"S"}</ButtonLink> }
+}
+// A variable is read as it is, beside a prop that does something.
+pub fn Kept(h: &'static str) -> Element {
+    jsx! { <ButtonLink target={Some(note("t"))} href={h}>{"K"}</ButtonLink> }
+}
+// Its flattened struct first, no children: Rust makes \`target\` first.
+pub struct LinkyProps {
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub anchor: Anchor,
+    pub label: &'static str,
+}
+pub fn Linky(LinkyProps { anchor, label }: LinkyProps) -> Element {
+    jsx! { <a title={label} {...anchor} /> }
+}
+pub fn Linked() -> Element {
+    jsx! { <Linky label={note("l")} target={Some(note("t"))} /> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain('<ButtonLink target="_blank" href="/a" id="x" size="lg">');
+  expect(jsx).toContain('<ButtonLink href="/b" className="c">');
+  const { App, Noted, Linked, Sized } = await import(join(dir, "lib.jsx"));
+  const logged: string[] = [];
+  const log = console.log;
+  console.log = (line: string) => logged.push(line);
+  try {
+    expect(renderToStaticMarkup(Noted())).toBe('<a href="h" data-size="md" target="t">N</a>');
+  } finally {
+    console.log = log;
+  }
+  console.log = (line: string) => logged.push(line);
+  try {
+    expect(renderToStaticMarkup(Linked())).toBe('<a title="l" target="t"></a>');
+    expect(renderToStaticMarkup(Sized())).toBe('<a href="h" data-size="lg">S</a>');
+  } finally {
+    console.log = log;
+  }
+  expect(logged).toEqual(["h", "t", "l", "t", "h", "big"]);
+  expect(jsx).toMatch(/<ButtonLink size=\{\w+\} href=\{\w+\}>/);
+  expect(jsx).toContain("<Linky label={label} target={target} />");
+  expect(jsx).toMatch(/<ButtonLink target=\{\w+\} href=\{h\}>/);
+  expect(jsx).toMatch(/<ButtonLink target=\{\w+\} href=\{\w+\}>/);
+  expect(renderToStaticMarkup(App())).toBe('<a href="/a" data-size="lg" target="_blank" id="x">A</a><a href="/b" data-size="md" class="c">B</a>');
+  const refused = (source: string, says: string) => {
+    const c = compile(source);
+    const failed = Bun.spawnSync(c.args, { cwd: c.dir });
+    expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining(says)]);
+  };
+  // A required prop not given, and a name nothing has.
+  refused(flat + `pub fn Missing() -> Element {\n    jsx! { <ButtonLink id={Some("x")}>{"A"}</ButtonLink> }\n}\n`, "missing prop \`href\`");
+  refused(flat + `pub fn Unknown() -> Element {\n    jsx! { <ButtonLink href="/a" colour={Some("red")}>{"A"}</ButtonLink> }\n}\n`, "colour");
 });
 
 // A props field's default, `#[rust_js::default]`, its type's, or

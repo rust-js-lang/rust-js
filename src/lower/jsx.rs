@@ -5,10 +5,11 @@ use crate::js;
 use crate::js::{Expr, Prop, Stmt, StmtKind};
 use rustc_ast::LitKind;
 use rustc_hir::def::DefKind;
-use rustc_middle::thir::{ExprId, ExprKind};
+use rustc_middle::thir::{self, ExprId, ExprKind};
 use rustc_middle::ty;
 use rustc_middle::ty::Ty;
-use rustc_span::Span;
+use rustc_span::{BytePos, Span};
+use std::collections::HashMap;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Element construction is inert (ADR 0040). Capture its inputs at the
@@ -201,17 +202,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 value.has_effects() || (children.has_effects() && !value.is_constant())
             })
         {
-            // A variable nothing writes again is read as it is, as an
-            // element's attributes are (ADR 0194).
             for prop in &mut fields {
-                let (name, value) = match prop {
-                    Prop::Field(name, value) | Prop::Getter(name, value) => (name.as_str(), value),
-                    Prop::Spread(value) => ("props", value),
-                };
-                if !self.reads_alike(value, out) {
-                    let old = std::mem::replace(value, Expr::undefined());
-                    *value = self.spill(&camel_case(&js_ident(name)), old, out);
-                }
+                self.read_first(prop, out);
             }
         }
         let rest_fields: Vec<String> = match self.shape(ty) {
@@ -221,6 +213,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .collect(),
             _ => Vec::new(),
         };
+        // Where each prop is written, by its name: its value's place in the
+        // source, a flattened struct made here followed in (ADR 0213).
+        let mut written = HashMap::new();
+        self.written_at(props, ty, &mut written);
         let mut attrs = Vec::new();
         let mut children = Vec::new();
         for field in fields {
@@ -240,7 +236,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .map(|(n, _)| n.clone())
                         .collect();
                     let span = self.thir[props].span;
-                    attrs.extend(self.flattened_attrs(field_ty, value, &own, span)?);
+                    for prop in self.flattened_attrs(field_ty, value, &own, span)? {
+                        // A spread is where its struct is written.
+                        let at = match &prop {
+                            Prop::Spread(_) => written.get(&name).copied(),
+                            Prop::Field(key, _) | Prop::Getter(key, _) => written.get(key).copied(),
+                        };
+                        attrs.push((at, prop));
+                    }
                 }
                 Prop::Field(name, value) if name == "children" => {
                     let Shape::Object(types) = self.shape(ty) else {
@@ -249,10 +252,88 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let child_ty = types.into_iter().find(|(n, _)| *n == name).expect("the field").1;
                     children = self.spread_children(value, child_ty, out);
                 }
-                other => attrs.push(other),
+                other => {
+                    let at = match &other {
+                        Prop::Field(key, _) | Prop::Getter(key, _) => written.get(key).copied(),
+                        Prop::Spread(_) => None,
+                    };
+                    attrs.push((at, other));
+                }
             }
         }
+        // As written, where a struct's companion made them in its order
+        // (ADR 0213): what does something is made first, in Rust's order.
+        let order = |attrs: &[(Option<BytePos>, Prop)]| -> Vec<usize> {
+            let mut order: Vec<usize> = (0..attrs.len()).collect();
+            order.sort_by_key(|&i| attrs[i].0.unwrap_or(BytePos(u32::MAX)));
+            order
+        };
+        let sorted = order(&attrs);
+        if sorted.iter().enumerate().any(|(i, &j)| i != j) {
+            let effects = |(_, prop): &(Option<BytePos>, Prop)| {
+                let (Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Spread(value)) = prop;
+                value.has_effects()
+            };
+            if attrs.iter().filter(|attr| effects(attr)).count() > 1 {
+                for (_, prop) in &mut attrs {
+                    self.read_first(prop, out);
+                }
+            }
+        }
+        let mut attrs: Vec<Option<Prop>> = attrs.into_iter().map(|(_, prop)| Some(prop)).collect();
+        let attrs = sorted.into_iter().filter_map(|i| attrs[i].take()).collect();
         Ok((attrs, children))
+    }
+
+    /// `prop`'s value read into a `const` first where it isn't read alike
+    /// (ADR 0194), an object made here each of its values, so a flattened
+    /// struct's stays one, taken apart where it's given (ADR 0213).
+    fn read_first(&mut self, prop: &mut Prop, out: &mut Vec<Stmt>) {
+        let (name, value) = match prop {
+            Prop::Field(name, value) | Prop::Getter(name, value) => (name.as_str(), value),
+            Prop::Spread(value) => ("props", value),
+        };
+        if let js::ExprKind::Object(props) = &mut value.kind {
+            for prop in props {
+                self.read_first(prop, out);
+            }
+        } else if !self.reads_alike(value, out) {
+            let old = std::mem::replace(value, Expr::undefined());
+            *value = self.spill(&camel_case(&js_ident(name)), old, out);
+        }
+    }
+
+    /// Where each prop `props`, a struct of type `ty`, is given is written,
+    /// by its name: a field's value's place, and a flattened struct's made
+    /// here, each of its own (ADR 0213).
+    fn written_at(&self, props: ExprId, ty: Ty<'tcx>, written: &mut HashMap<String, BytePos>) {
+        let ExprKind::Adt(adt) = &self.thir[super::body_queries::strip(self.thir, props)].kind else {
+            return;
+        };
+        let Shape::Object(types) = self.shape(ty) else { return };
+        let made_here = |field: &thir::FieldExpr| {
+            let i = field.name.as_usize();
+            super::bindings::is_flatten_field(self.tcx, ty, i)
+                && matches!(
+                    self.thir[super::body_queries::strip(self.thir, field.expr)].kind,
+                    ExprKind::Adt(_)
+                )
+        };
+        // Its own names first, which a flattened struct's of the same name,
+        // never given, doesn't take the place of (ADR 0205).
+        for field in adt.fields.iter().filter(|field| !made_here(field)) {
+            let key = &types[field.name.as_usize()].0;
+            written
+                .entry(key.clone())
+                .or_insert(self.thir[field.expr].span.source_callsite().lo());
+        }
+        for field in adt.fields.iter().filter(|field| made_here(field)) {
+            let mut inner = HashMap::new();
+            self.written_at(field.expr, types[field.name.as_usize()].1, &mut inner);
+            for (key, at) in inner {
+                written.entry(key).or_insert(at);
+            }
+        }
     }
 
     /// The attributes `value`, a flattened struct of type `ty`, gives: each
