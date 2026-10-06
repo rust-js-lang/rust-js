@@ -42,7 +42,7 @@ export default Tag;
 | `Vec<T>`, a slice, an array, a tuple | `T[]`, `[A, B]` |
 | a struct with named fields, a unit-only enum | an `interface`, the union of its names |
 | a type alias, `pub type Toc = Vec<TocItem>` | `export type Toc = TocItem[]` |
-| react's `Element`, `Memo<P>`, `Context<T>` | `ReactNode`, `NamedExoticComponent<P>`, `Context<T>` |
+| react's `Element`, `Memo<P>`, `Context<T>`, `Style` | `ReactNode`, `NamedExoticComponent<P>`, `Context<T>`, `CSSProperties` |
 | a `Rest` of props (ADR 0195) | `[prop: string]: unknown` |
 | react's events, `event::Mouse<T>` | @types/react's, `MouseEvent<T>`, `SyntheticEvent<T>` of `Event<T>` |
 | `webapi`'s interfaces, `HtmlButtonElement` | the DOM lib's, `HTMLButtonElement` |
@@ -55,6 +55,8 @@ export default Tag;
   imported from `react`, or a global's, `"HTMLElement"`, without a module.
   Arguments written are all of its own, `<>` none: react's `Element<T>` is
   `react#ReactNode<>`, a `ReactNode` whatever its tag's element (ADR 0224).
+  Its `Style` is `react#CSSProperties`, as a tag's `style` is. (Amended: it
+  was `any`.)
   One written `{ [key: string]: T }` is an object of `T`s by name, its `T`
   the Rust type's, as `js::Dict<T>`'s is: `Record<string, T>` couldn't be in
   a recursive alias. **A type parameter bound by a trait that says its type

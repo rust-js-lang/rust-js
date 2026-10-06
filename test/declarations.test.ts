@@ -363,6 +363,41 @@ export const wrong: BadgeProps = { title: null };
   expect([shown(null), shown(undefined), shown("a")]).toEqual(["none", "none", "a"]);
 });
 
+// A style is React's `CSSProperties`, as a `<button>`'s `style` is, where it
+// was `any`.
+test("declarations type a style as React does", () => {
+  buildReact();
+  const dir = fixture("declarations-style");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
+  writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
+use react::{Element, Style, jsx};
+
+pub struct BoxProps {
+    pub style: Option<Style>,
+}
+
+pub fn Panel(BoxProps { style }: BoxProps) -> Element {
+    jsx! { <div style={style.unwrap_or(Style::new())} /> }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain('import type { CSSProperties, ReactNode } from "react";');
+  expect(declarations).toContain("style?: CSSProperties;");
+  writeFileSync(join(dir, "use.tsx"), `import { Panel } from "./lib.jsx";
+export const ok = <Panel style={{ color: "red", fontSize: 12 }} />;
+export const wrong = <Panel style={{ color: 1 }} />;
+`);
+  writeFileSync(join(dir, "tsconfig.json"), JSON.stringify({
+    compilerOptions: { jsx: "react-jsx", strict: true, noEmit: true, module: "esnext", moduleResolution: "bundler", allowJs: true, skipLibCheck: false, typeRoots: [join(root, "node_modules/@types")] },
+    files: ["use.tsx"],
+  }));
+  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
+  const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
+  expect(errors.length).toBe(1);
+  expect(errors[0]).toContain("use.tsx(3,");
+});
+
 // A function is typed as Rust types it, react.dev's Button's `onClick` a
 // `(event: MouseEvent<Element>) => void`, where it was `(...args: any[]) => any`.
 test("declarations type a function by what it takes and gives", () => {

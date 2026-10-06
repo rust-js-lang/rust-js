@@ -45,7 +45,9 @@ export interface ButtonLinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorEle
 - **Each field is optional, its type its values'**: a string, or a type
   that takes one, `&'a str`; a number `f64`; a boolean or `Booleanish`
   `bool`; an event handler `Box<dyn Fn(&event::Mouse)>`, its event as
-  `elements.rs` has it; `style` a `Style`. A type alias is followed in the
+  `elements.rs` has it; `style` a `Style`, which a tag's `style` takes as it
+  is, `None` none, as react.dev's Button's `style={style}` passes its own
+  on. (Amended: it took only a `Style`.) A type alias is followed in the
   file. What `lib.rs` writes by hand, `children`, `ref`, `key`,
   `dangerouslySetInnerHTML`, `action` and `formAction`, isn't one.
 - **`next/link`'s `LinkProps` flattens `AnchorHtmlAttributes`**, as
