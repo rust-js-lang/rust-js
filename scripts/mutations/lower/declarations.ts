@@ -180,4 +180,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/declarations.test.ts", "-t", "private default"],
   },
+  {
+    name: "node-bound-unconstrained",
+    breaks: "a type parameter bound by react's `Node` is declared `<C>`, so props that extend React's attributes, whose `children` is a `ReactNode`, don't typecheck",
+    file: "src/lower/declarations.rs",
+    find: "                    1 => json!({ \"name\": param.name.as_str(), \"constraint\": constraints[0] }),\n",
+    replace: "                    1 => json!({ \"name\": param.name.as_str() }),\n",
+    tests: ["test/declarations.test.ts", "-t", "typed as React types them"],
+  },
 ];

@@ -19,7 +19,7 @@ export interface AnchorProps<T> extends HTMLProps<T>, Aria {
 
 export type Size = "md" | "lg" | 1 | true | null;
 
-export function Link<C>(props: AnchorProps<C>, children?: readonly (string | number)[]): ReactNode;
+export function Link<C extends ReactNode>(props: AnchorProps<C>, children?: readonly (string | number)[]): ReactNode;
 
 export const Icon: [
     boolean,
@@ -49,7 +49,7 @@ test("read gives a file's declarations, by TypeScript's own parser", async () =>
       name: "AnchorProps",
       exported: true,
       declare: false,
-      typeParameters: ["T"],
+      typeParameters: [{ name: "T" }],
       extends: [
         { kind: "reference", name: "HTMLProps", args: [{ kind: "reference", name: "T", args: [] }] },
         { kind: "reference", name: "Aria", args: [] },
@@ -77,6 +77,7 @@ test("read gives a file's declarations, by TypeScript's own parser", async () =>
         },
       ],
     });
+    expect(read[3].typeParameters).toEqual([{ name: "C", constraint: { kind: "reference", name: "ReactNode", args: [] } }]);
     expect(read[2]).toMatchObject({
       type: {
         kind: "union",

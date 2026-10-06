@@ -247,7 +247,7 @@ pub fn count(items: Items<u32>) -> usize {
     "export interface TagProps {\n    variant: RouteTag;\n    text?: string;\n    count: number;\n}",
     "export function Tag(props: TagProps): ReactNode;",
     "export interface LinkProps<C> {\n    href?: string;\n    children: C;\n    [prop: string]: unknown;\n}",
-    "export function ExternalLink<C>(props: LinkProps<C>): ReactNode;",
+    "export function ExternalLink<C extends ReactNode>(props: LinkProps<C>): ReactNode;",
     "export interface ButtonProps extends Anchor {\n    size?: string;\n}",
     "export interface CardProps {\n    [prop: string]: unknown;\n}",
     'import type { AnchorHTMLAttributes, NamedExoticComponent, ReactNode } from "react";\nimport type { Level, RouteItem } from "./routes.js";',
@@ -457,27 +457,28 @@ test("props that flatten React's attributes are typed as React types them", asyn
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
   writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
 use react::attributes::AnchorHtmlAttributes;
-use react::{Element, jsx};
+use react::{Element, Node, jsx};
 
-pub struct ButtonLinkProps<'a> {
+pub struct ButtonLinkProps<'a, C: Node> {
     pub href: &'a str,
     #[rust_js::name = "className"]
     pub class_name: Option<&'a str>,
+    pub children: C,
     #[rust_js::flatten]
     pub props: AnchorHtmlAttributes<'a>,
 }
 
-pub fn ButtonLink(ButtonLinkProps { href, class_name, props }: ButtonLinkProps) -> Element {
-    jsx! { <a href={href} className={class_name.unwrap_or("button")} {...props} /> }
+pub fn ButtonLink<C: Node>(ButtonLinkProps { href, class_name, children, props }: ButtonLinkProps<C>) -> Element {
+    jsx! { <a href={href} className={class_name.unwrap_or("button")} {...props}>{children}</a> }
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(declarations).toContain('import type { AnchorHTMLAttributes, ReactNode } from "react";');
-  expect(declarations).toContain('export interface ButtonLinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href" | "className"> {');
+  expect(declarations).toContain('export interface ButtonLinkProps<C extends ReactNode> extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href" | "className"> {');
   writeFileSync(join(dir, "use.tsx"), `import { ButtonLink } from "./lib.jsx";
-export const ok = <ButtonLink href="/a" className="c" download="file" aria-label="A" onClick={(event) => event.currentTarget.href} />;
-export const wrong = <ButtonLink href="/a" hrefLang={1} />;
+export const ok = <ButtonLink href="/a" className="c" download="file" aria-label="A" onClick={(event) => event.currentTarget.href}>Go</ButtonLink>;
+export const wrong = <ButtonLink href="/a" hrefLang={1}>Go</ButtonLink>;
 `);
   writeFileSync(join(dir, "tsconfig.json"), JSON.stringify({
     compilerOptions: { jsx: "react-jsx", strict: true, noEmit: true, module: "esnext", moduleResolution: "bundler", allowJs: true, skipLibCheck: false, typeRoots: [join(root, "node_modules/@types")] },
@@ -485,6 +486,7 @@ export const wrong = <ButtonLink href="/a" hrefLang={1} />;
   }));
   const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
   const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
+  expect(declarations).toContain("export function ButtonLink<C extends ReactNode>(props: ButtonLinkProps<C>): ReactNode;");
   expect(errors.length).toBe(1);
   expect(errors[0]).toContain("use.tsx(3,");
   const { ButtonLink } = await import(join(dir, "lib.jsx"));

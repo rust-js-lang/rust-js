@@ -98,6 +98,13 @@ pub(super) fn module(
     Some(json!({ "declarations": declarations }))
 }
 
+/// What `#[rust_js::types]` says an item is to TypeScript.
+fn written_types(tcx: TyCtxt<'_>, did: DefId) -> Option<String> {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("types")];
+    let declared = tcx.get_attrs_by_path(did, &path).next()?.value_str()?;
+    Some(declared.to_string())
+}
+
 /// A type the model names, with its arguments: `ReactNode`, `Omit<A, "b">`.
 fn reference(name: &str, args: Vec<Value>) -> Value {
     json!({ "kind": "reference", "name": name, "args": args })
@@ -127,12 +134,81 @@ struct Declarations<'a, 'tcx> {
 }
 
 impl<'tcx> Declarations<'_, 'tcx> {
-    /// `["C"]`: an item's type parameters, but those `impl Trait` stands for.
-    fn generics(&self, def_id: DefId) -> Vec<String> {
-        (self.tcx.generics_of(def_id).own_params.iter())
+    /// `<C extends ReactNode>`: an item's type parameters, but those `impl
+    /// Trait` stands for, each extending what a trait it's bound by is to
+    /// TypeScript, as the trait's `#[rust_js::types]` says: react's `Node`
+    /// is a `ReactNode`.
+    fn generics(&mut self, def_id: DefId) -> Vec<Value> {
+        let tcx = self.tcx;
+        let clauses = tcx.clauses_of(def_id).clauses;
+        (tcx.generics_of(def_id).own_params.iter())
             .filter(|param| matches!(param.kind, ty::GenericParamDefKind::Type { synthetic: false, .. }))
-            .map(|param| param.name.to_string())
+            .map(|param| {
+                let constraints: Vec<Value> = (clauses.iter())
+                    .filter_map(|(clause, _)| clause.as_trait_clause())
+                    .map(|bound| bound.skip_binder())
+                    .filter(|bound| matches!(bound.self_ty().kind(), ty::Param(p) if p.index == param.index))
+                    .filter_map(|bound| {
+                        let declared = written_types(tcx, bound.def_id())?;
+                        Some(self.written(bound.def_id(), &declared, ty::List::empty()))
+                    })
+                    .collect();
+                match constraints.len() {
+                    0 => json!({ "name": param.name.as_str() }),
+                    1 => json!({ "name": param.name.as_str(), "constraint": constraints[0] }),
+                    _ => json!({ "name": param.name.as_str(), "constraint": { "kind": "intersection", "types": constraints } }),
+                }
+            })
             .collect()
+    }
+
+    /// A type as its binding says TypeScript has it, `#[rust_js::types]`, of
+    /// its Rust type's arguments `args`.
+    fn written(&mut self, did: DefId, declared: &str, args: ty::GenericArgsRef<'tcx>) -> Value {
+        let params = &self.tcx.generics_of(did).own_params;
+        // `{ [key: string]: T }`, an object of `T`s by name, as
+        // `Dict<T>` is: TypeScript's own spelling of one, which a
+        // recursive alias may hold, as `Record<string, T>` it may not.
+        if let Some(index) = declared.strip_prefix("{ [").and_then(|d| d.strip_suffix(" }"))
+            && let Some((key, value)) = index.split_once("]: ")
+            && let Some((parameter, key)) = key.split_once(": ")
+        {
+            let value = match params.iter().find(|p| p.name.as_str() == value) {
+                Some(param) => self.ts(args.type_at(param.index as usize)),
+                None => reference(value, Vec::new()),
+            };
+            return json!({ "kind": "object", "members": [
+                { "kind": "index", "parameter": parameter, "key": keyword(key), "type": value },
+            ] });
+        }
+        let (from, named) = match declared.rsplit_once('#') {
+            Some((from, named)) => (Some(from), named),
+            None => (None, declared),
+        };
+        // Arguments written are all of TypeScript's type's, `<>` none:
+        // react's `Element<T>` is a `ReactNode` whatever its tag's
+        // element (ADR 0224). Else they're the Rust type's.
+        let (name, given) = match named.split_once('<') {
+            Some((name, given)) => (name, Some(given.trim_end_matches('>'))),
+            None => (named, None),
+        };
+        if let Some(from) = from {
+            self.imports.insert((from.to_string(), name.to_string()));
+        }
+        // A written argument that's one of the Rust type's own type
+        // parameters is what it's given: `Map<string, T>` of a
+        // `Dict<f64>` would be `Map<string, number>`.
+        let type_args: Vec<Value> = match given {
+            Some(given) => (given.split(',').map(str::trim))
+                .filter(|arg| !arg.is_empty())
+                .map(|arg| match params.iter().find(|p| p.name.as_str() == arg) {
+                    Some(param) => self.ts(args.type_at(param.index as usize)),
+                    None => reference(arg, Vec::new()),
+                })
+                .collect(),
+            None => args.types().map(|t| self.ts(t)).collect(),
+        };
+        reference(name, type_args)
     }
 
     /// `export function Tag(props: TagProps): ReactNode;`
@@ -374,57 +450,8 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 // A binding's, as it says it's typed: React's `Memo<P>`,
                 // `react#NamedExoticComponent`, is `NamedExoticComponent<P>`,
                 // and `react#AnchorHTMLAttributes<HTMLAnchorElement>` that.
-                let path = [Symbol::intern("rust_js"), Symbol::intern("types")];
-                if let Some(declared) = tcx
-                    .get_attrs_by_path(did, &path)
-                    .next()
-                    .and_then(|attr| attr.value_str())
-                {
-                    let declared = declared.to_string();
-                    let params = &tcx.generics_of(did).own_params;
-                    // `{ [key: string]: T }`, an object of `T`s by name, as
-                    // `Dict<T>` is: TypeScript's own spelling of one, which a
-                    // recursive alias may hold, as `Record<string, T>` it may not.
-                    if let Some(index) = declared.strip_prefix("{ [").and_then(|d| d.strip_suffix(" }"))
-                        && let Some((key, value)) = index.split_once("]: ")
-                        && let Some((parameter, key)) = key.split_once(": ")
-                    {
-                        let value = match params.iter().find(|p| p.name.as_str() == value) {
-                            Some(param) => self.ts(args.type_at(param.index as usize)),
-                            None => reference(value, Vec::new()),
-                        };
-                        return json!({ "kind": "object", "members": [
-                            { "kind": "index", "parameter": parameter, "key": keyword(key), "type": value },
-                        ] });
-                    }
-                    let (from, named) = match declared.rsplit_once('#') {
-                        Some((from, named)) => (Some(from), named),
-                        None => (None, declared.as_str()),
-                    };
-                    // Arguments written are all of TypeScript's type's, `<>` none:
-                    // react's `Element<T>` is a `ReactNode` whatever its tag's
-                    // element (ADR 0224). Else they're the Rust type's.
-                    let (name, given) = match named.split_once('<') {
-                        Some((name, given)) => (name, Some(given.trim_end_matches('>'))),
-                        None => (named, None),
-                    };
-                    if let Some(from) = from {
-                        self.imports.insert((from.to_string(), name.to_string()));
-                    }
-                    // A written argument that's one of the Rust type's own type
-                    // parameters is what it's given: `Map<string, T>` of a
-                    // `Dict<f64>` would be `Map<string, number>`.
-                    let type_args: Vec<Value> = match given {
-                        Some(given) => (given.split(',').map(str::trim))
-                            .filter(|arg| !arg.is_empty())
-                            .map(|arg| match params.iter().find(|p| p.name.as_str() == arg) {
-                                Some(param) => self.ts(args.type_at(param.index as usize)),
-                                None => reference(arg, Vec::new()),
-                            })
-                            .collect(),
-                        None => args.types().map(|t| self.ts(t)).collect(),
-                    };
-                    return reference(name, type_args);
+                if let Some(declared) = written_types(tcx, did) {
+                    return self.written(did, &declared, args);
                 }
                 // Another crate's untagged enum, `js::Json`: declared here, as
                 // this crate's are, the union of its payloads (ADR 0225).
