@@ -191,6 +191,8 @@ sooner, at more minutes.
   the push that completes the change, not after every push. Don't wait for
   the run, poll it, or schedule a check of it: read it with `bun run
   ci:status` when the desktop app says it's done, or when asked.
+- **Five minutes per local command, at most** ([AGENTS.md](AGENTS.md#five-minutes-per-local-command)):
+  each is run with a timeout; what may take longer is CI's.
 - **The inner loop is never delegated.** The failing test is seen to fail
   here, before the fix, and its mutations caught here, before the push.
 - **Merge only green, and only after reading every bless patch.**
