@@ -53,6 +53,9 @@ use std::thread::LocalKey;
 
 use js::{JsError, JsObject, Promise};
 
+/// Each element's attributes, as @types/react types them, for props to
+/// flatten: `#[rust_js::flatten] anchor: attributes::AnchorHtmlAttributes<'a>`.
+pub mod attributes;
 pub mod dom;
 mod elements;
 pub mod event;

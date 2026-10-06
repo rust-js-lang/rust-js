@@ -33,6 +33,7 @@
     "fmt:check": "bun scripts/format.ts --check",
     "generate": "bun webapi/generate.ts",
     "generate:react": "bun react/generate.ts",
+    "generate:attributes": "bun react/attributes.ts",
     "react-example": "bun run --cwd examples/vite-react dev",
     "wasm": "wasm/build.sh",
     "dev": "bun run --cwd wasm/web dev",

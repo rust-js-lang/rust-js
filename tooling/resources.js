@@ -3,7 +3,7 @@
 export const bindingInputs = {
   react: [
     "react/build.sh", "react/cfg.js", "react/versions.json",
-    "react/src/lib.rs", "react/src/event.rs", "react/src/dom.rs", "react/src/elements.rs",
+    "react/src/lib.rs", "react/src/event.rs", "react/src/dom.rs", "react/src/elements.rs", "react/src/attributes.rs",
     "react/Cargo.toml", "react/build.rs",
     "webapi/build.sh", "webapi/src/lib.rs", "webapi/Cargo.toml",
     "builtins/build.sh", "builtins/src/lib.rs", "builtins/Cargo.toml",

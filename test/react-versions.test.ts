@@ -139,6 +139,13 @@ test("elements.rs is what react/generate.ts makes of versions.json", () => {
   expect(readFileSync(out, "utf8")).toBe(readFileSync(join(root, "react/src/elements.rs"), "utf8"));
 }, 60_000);
 
+// Each element's attributes, as @types/react types them (ADR 0208).
+test("attributes.rs is what react/attributes.ts makes of @types/react", () => {
+  const out = join(fixture("react-attributes"), "attributes.rs");
+  run(["bun", "react/attributes.ts", out]);
+  expect(readFileSync(out, "utf8")).toBe(readFileSync(join(root, "react/src/attributes.rs"), "utf8"));
+}, 60_000);
+
 // A program for React 18.2 can't use what React 19.2 added: it's a compile
 // error, which names the release it needs, not a crash in the browser.
 const usesUseEffectEvent = `#![allow(non_snake_case)]

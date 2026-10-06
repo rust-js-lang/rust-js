@@ -217,3 +217,47 @@ test("declarations where @rust-js/typescript isn't say to add it", () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+// React's own element attributes, flattened (ADR 0208): the props are an
+// anchor's, as TypeScript's `AnchorHTMLAttributes & ButtonLinkProps` is.
+test("props that flatten React's attributes are typed as React types them", async () => {
+  buildReact();
+  const dir = fixture("declarations-attributes");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
+  writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
+use react::attributes::AnchorHtmlAttributes;
+use react::{Element, jsx};
+
+pub struct ButtonLinkProps<'a> {
+    pub href: &'a str,
+    #[rust_js::name = "className"]
+    pub class_name: Option<&'a str>,
+    #[rust_js::flatten]
+    pub props: AnchorHtmlAttributes<'a>,
+}
+
+pub fn ButtonLink(ButtonLinkProps { href, class_name, props }: ButtonLinkProps) -> Element {
+    jsx! { <a href={href} className={class_name.unwrap_or("button")} {...props} /> }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain('import type { AnchorHTMLAttributes, ReactNode } from "react";');
+  expect(declarations).toContain('export interface ButtonLinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href" | "className"> {');
+  writeFileSync(join(dir, "use.tsx"), `import { ButtonLink } from "./lib.jsx";
+export const ok = <ButtonLink href="/a" className="c" download="file" aria-label="A" onClick={(event) => event.currentTarget.href} />;
+export const wrong = <ButtonLink href="/a" hrefLang={1} />;
+`);
+  writeFileSync(join(dir, "tsconfig.json"), JSON.stringify({
+    compilerOptions: { jsx: "react-jsx", strict: true, noEmit: true, module: "esnext", moduleResolution: "bundler", allowJs: true, skipLibCheck: false, typeRoots: [join(root, "node_modules/@types")] },
+    files: ["use.tsx"],
+  }));
+  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
+  const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
+  expect(errors.length).toBe(1);
+  expect(errors[0]).toContain("use.tsx(3,");
+  const { ButtonLink } = await import(join(dir, "lib.jsx"));
+  const { createElement } = await import("react");
+  const { renderToStaticMarkup } = await import("react-dom/server");
+  expect(renderToStaticMarkup(createElement(ButtonLink, { href: "/a", download: "f", className: "c" }))).toBe('<a href="/a" class="c" download="f"></a>');
+});
