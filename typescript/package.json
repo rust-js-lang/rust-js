@@ -1,0 +1,26 @@
+{
+  "name": "@rust-js/typescript",
+  "version": "0.0.3",
+  "type": "module",
+  "description": "TypeScript's own parser and printer, and a model of declarations between them: what rust-js reads TypeScript with and writes its .d.ts with. See docs/decisions/0206-typescript-module.md.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rust-js-lang/rust-js.git",
+    "directory": "typescript"
+  },
+  "bin": {
+    "rust-js-typescript": "./bin.js"
+  },
+  "exports": {
+    ".": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "bin.js",
+    "README.md"
+  ],
+  "dependencies": {
+    "typescript": "7.0.2"
+  }
+}
