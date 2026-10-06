@@ -39,6 +39,7 @@ helpers! {
     Some,
     SomeValue,
     SomeAt,
+    DictGet,
     Pop,
     Iterator,
     Insert,
@@ -353,6 +354,7 @@ impl Helper {
             Helper::KeyMap => &[Helper::Key],
             Helper::KeySet => &[Helper::Key],
             Helper::SomeAt => &[Helper::Some],
+            Helper::DictGet => &[Helper::Some],
             Helper::Pop => &[Helper::Some],
             Helper::Iterator => &[Helper::SomeValue],
             Helper::DebugFields => &[Helper::Pretty],
@@ -587,6 +589,7 @@ impl Helper {
             Helper::Some => include_str!("runtime/some.js"),
             Helper::SomeValue => include_str!("runtime/some_value.js"),
             Helper::SomeAt => include_str!("runtime/some_at.js"),
+            Helper::DictGet => include_str!("runtime/dict_get.js"),
             Helper::Pop => include_str!("runtime/pop.js"),
             Helper::Iterator => include_str!("runtime/iterator.js"),
             // A key as a string of its value (ADR 0121): the same for two keys

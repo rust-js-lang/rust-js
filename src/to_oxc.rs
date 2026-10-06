@@ -108,9 +108,24 @@ pub fn emit(
     for directive in &module.directives {
         code.push_str(&format!("\n{directive:?};\n"));
     }
-    if !module.packages.is_empty() {
+    // A binding of a runtime helper, the js crate's `dict::get`'s
+    // `$dictGet` (ADR 0225), is imported with the helpers its code names.
+    let is_helper = |package: &js::Package| {
+        package.from == crate::runtime::PACKAGE
+            && package.default.is_none()
+            && package.namespace.is_none()
+            && package.named.iter().all(|(export, local)| export == local)
+    };
+    let packages: Vec<&js::Package> = module.packages.iter().filter(|p| !is_helper(p)).collect();
+    let mut helpers: Vec<&str> = module.helpers.clone();
+    for package in module.packages.iter().filter(|p| is_helper(p)) {
+        helpers.extend(package.named.iter().map(|(export, _)| export.as_str()));
+    }
+    helpers.sort_unstable();
+    helpers.dedup();
+    if !packages.is_empty() {
         code.push('\n');
-        for package in &module.packages {
+        for package in &packages {
             let named: Vec<String> = package
                 .named
                 .iter()
@@ -137,9 +152,8 @@ pub fn emit(
     }
     // The helpers its code names, from the package (ADR 0103), with the
     // other packages' imports.
-    let helpers = &module.helpers;
     if !helpers.is_empty() {
-        if module.packages.is_empty() {
+        if packages.is_empty() {
             code.push('\n');
         }
         code.push_str(&format!(

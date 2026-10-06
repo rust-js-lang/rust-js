@@ -864,6 +864,71 @@ pub fn report(error: &js::JsError) {
   expect(js).toContain("window.reportError(error);");
 });
 
+// ADR 0225: JSON is a typed value, `js::Json`, as ReScript's `JSON.t` is,
+// and an object of it a `js::Dict`, ReScript's `dict`, TypeScript's
+// `Record<string, T>`: a JSON `null` is `None`, a key that isn't there too,
+// told apart by `dict::get`.
+test("JSON is a typed value, and its objects dictionaries", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("json");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Dict, Json, dict};
+fn show(value: Option<Json>) -> String {
+    match value {
+        None => "null".to_string(),
+        Some(Json::String(text)) => format!("'{text}'"),
+        Some(Json::Number(n)) => n.to_string(),
+        Some(Json::Bool(b)) => b.to_string(),
+        Some(Json::Array(items)) => format!("[{}]", items.iter().map(|item| show(*item)).collect::<Vec<_>>().join(",")),
+        Some(Json::Object(fields)) => format!(
+            "{{{}}}",
+            dict::entries(fields).into_iter().map(|(key, value)| format!("{key}:{}", show(value))).collect::<Vec<_>>().join(",")
+        ),
+    }
+}
+pub fn parsed(text: &str) -> String {
+    match Json::parse(text) {
+        Ok(value) => show(value),
+        Err(_) => "invalid".to_string(),
+    }
+}
+pub fn lookup(text: &str, key: &str) -> String {
+    match Json::parse(text) {
+        Ok(Some(Json::Object(fields))) => match dict::get(fields, key) {
+            None => "missing".to_string(),
+            Some(value) => show(*value),
+        },
+        _ => "not an object".to_string(),
+    }
+}
+pub fn round_trip(text: &str) -> String {
+    match Json::parse(text) {
+        Ok(Some(value)) => Json::stringify(&value),
+        _ => "null".to_string(),
+    }
+}
+pub fn built() -> Vec<String> {
+    let numbers: &Dict<f64> = dict::from_entries(vec![("a".to_string(), 1.0)]);
+    dict::set(numbers, "b", 2.0);
+    dict::keys(numbers)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  // A lookup is the runtime's `$dictGet`, imported with its other helpers.
+  expect(js).toContain('import { $dictGet, $displayF64, $someValue, $try } from "@rust-js/runtime";');
+  expect(js).toContain("Object.entries(value)");
+  expect(js).toContain("const match$1 = $dictGet(match._0, key);");
+  expect(js).toContain("return JSON.stringify(match._0);");
+  expect(js).toContain('const numbers = Object.fromEntries([["a", 1]]);\n  numbers.b = 2;');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.parsed('{"a":[1,"x",null,true],"b":{}}'), lib.parsed("null"), lib.parsed("nope")])
+    .toEqual(["{a:[1,'x',null,true],b:{}}", "null", "invalid"]);
+  expect([lib.lookup('{"a":null,"b":1}', "a"), lib.lookup('{"a":null,"b":1}', "b"), lib.lookup('{"a":null}', "c"), lib.lookup('{"a":null}', "toString"), lib.lookup("[1]", "a")])
+    .toEqual(["null", "1", "missing", "missing", "not an object"]);
+  expect(lib.round_trip('{"a": [1, null]}')).toBe('{"a":[1,null]}');
+  expect(lib.built()).toEqual(["a", "b"]);
+});
+
 // An element's constructor is WebIDL's `[HTMLConstructor]`, which only a
 // custom element's class can call: `new HTMLDivElement()` in a page throws
 // "Illegal constructor". So webapi binds none, and an element is made with

@@ -80,6 +80,18 @@ value.name = "new";
   `reportError`, a stream's `cancel`. (Amended: they were skipped.) A
   dictionary's field typed `any` is still left out, as a struct's field
   can't be generic.
+- **JSON is a typed value too, `js::Json`**, as ReScript's `JSON.t` is: an
+  untagged enum of `String`, `Number`, `Bool`, `Array(&[Option<Json>])`
+  and, otherwise, `Object(&Dict<Option<Json>>)`, a JSON `null` the `None`
+  of the `Option` that holds it. `Json::parse(text)` is `JSON.parse`, and
+  `Json::stringify(&value)` `JSON.stringify`. (Amended.)
+- **A dictionary is `js::Dict<T>`**, ReScript's `dict`, TypeScript's
+  `Record<string, T>`: a plain object. `dict::entries`, `keys`,
+  `from_entries` and `set` are `Object`'s; `dict::get(d, key)` is the
+  runtime's `$dictGet`, `Object.hasOwn(d, key) ? $some(d[key]) : undefined`,
+  so a key that isn't its own, `toString`, is `None`, and of a
+  `Dict<Option<_>>` a JSON `null` is `Some(None)`, as `d[key]` alone
+  couldn't tell. A binding of a runtime helper is imported with the helpers.
 - **Its `.d.ts` is TypeScript's `unknown`**: `#[rust_js::types = "unknown"]`.
 - **Every step out of the types is written**: `classify`, `get`, a `match`.
   There's no `any` that a value becomes silently, as TypeScript's is, and
@@ -98,8 +110,8 @@ value.name = "new";
 
 ## Not yet
 
-- **A typed JSON value**, ReScript's `JSON.t`: an object's fields would need
-  a dictionary type, which the `js` crate doesn't have.
+- **`Json`'s and `Dict`'s declarations**, TypeScript's `JSON` union and
+  `Record<string, T>`: they're `any` in a `.d.ts` still.
 
 ## Costs
 
