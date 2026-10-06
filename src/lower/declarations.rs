@@ -205,17 +205,21 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 continue;
             }
             // A field with a default, JS's where it's missing, is one a caller
-            // may leave out (ADR 0212).
+            // may leave out (ADR 0212); one of an `Option` too, or gives `null`,
+            // which rust-js reads as `None` (ADR 0030).
             let (optional, ty) = match self.option(ty) {
-                Some(inner) => (true, inner),
-                None => (field_default(self.tcx, field).is_some(), ty),
+                Some(inner) => (
+                    true,
+                    json!({ "kind": "union", "types": [self.ts(inner), keyword("null")] }),
+                ),
+                None => (field_default(self.tcx, field).is_some(), self.ts(ty)),
             };
             members.push(json!({
                 "kind": "property",
                 "name": field_key(self.tcx, field),
                 "optional": optional,
                 "readonly": false,
-                "type": self.ts(ty),
+                "type": ty,
             }));
         }
         Some(json!({

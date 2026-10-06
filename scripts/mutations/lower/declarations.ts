@@ -8,8 +8,8 @@ export const mutations: Mutation[] = [
     name: "declared-option-required",
     breaks: "an `Option` field is a required prop to TypeScript, `text: string`, which a caller leaving it out is an error of",
     file: "src/lower/declarations.rs",
-    find: "                Some(inner) => (true, inner),",
-    replace: "                Some(inner) => (false, inner),",
+    find: "                Some(inner) => (\n                    true,\n",
+    replace: "                Some(inner) => (\n                    false,\n",
     tests,
   },
   {
@@ -96,8 +96,8 @@ export const mutations: Mutation[] = [
     name: "defaulted-field-required",
     breaks: "a field with a default is declared required, `count: number`, where a caller may leave it out",
     file: "src/lower/declarations.rs",
-    find: "                None => (field_default(self.tcx, field).is_some(), ty),",
-    replace: "                None => (false, ty),",
+    find: "                None => (field_default(self.tcx, field).is_some(), self.ts(ty)),",
+    replace: "                None => (false, self.ts(ty)),",
     tests,
   },
   {
@@ -114,6 +114,14 @@ export const mutations: Mutation[] = [
     file: "src/lower/declarations.rs",
     find: "                    return json!({ \"kind\": \"union\", \"types\": [self.ts(args.type_at(0)), keyword(\"null\"), keyword(\"undefined\")] });\n",
     replace: "                    return json!({ \"kind\": \"union\", \"types\": [self.ts(args.type_at(0)), keyword(\"undefined\")] });\n",
+    tests: ["test/declarations.test.ts", "-t", "null for an Option"],
+  },
+  {
+    name: "option-field-without-null",
+    breaks: "an `Option` field is declared `?: T`, so a TypeScript caller's `{ label: null }`, which rust-js reads as `None`, doesn't typecheck",
+    file: "src/lower/declarations.rs",
+    find: "                    json!({ \"kind\": \"union\", \"types\": [self.ts(inner), keyword(\"null\")] }),\n",
+    replace: "                    self.ts(inner),\n",
     tests: ["test/declarations.test.ts", "-t", "null for an Option"],
   },
 ];
