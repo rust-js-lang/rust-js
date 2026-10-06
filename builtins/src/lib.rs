@@ -179,6 +179,7 @@ tuples! {
 /// A plain JS object of `T`s by their names (ADR 0225), as ReScript's `dict`
 /// and TypeScript's `Record<string, T>` are: a JSON object, or a
 /// dictionary an API takes. [`dict::get`] reads one by its key.
+#[cfg_attr(rust_js, rust_js::types = "{ [key: string]: T }")]
 pub struct Dict<T>(PhantomData<JsObject>, PhantomData<T>);
 
 /// A JSON value (ADR 0225), as ReScript's `JSON.t` is: each variant's value

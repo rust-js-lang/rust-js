@@ -105,6 +105,11 @@ value.name = "new";
   `Dict<Option<_>>` a JSON `null` is `Some(None)`, as `d[key]` alone
   couldn't tell. A binding of a runtime helper is imported with the helpers.
 - **Its `.d.ts` is TypeScript's `unknown`**: `#[rust_js::types = "unknown"]`.
+  A `Dict<T>`'s is `{ [key: string]: T }`, and a `Json`'s the union of its
+  payloads, declared in the module that names it, as another crate's
+  untagged enum is, named, so it can be recursive:
+  `type Json = string | number | boolean | (Json | null | undefined)[] | { [key: string]: Json | null | undefined }`.
+  (Amended: they were `any`.)
 - **Every step out of the types is written**: `classify`, `get`, a `match`.
   There's no `any` that a value becomes silently, as TypeScript's is, and
   no raw JS, ReScript's `%raw`, which rust-js couldn't read.
@@ -119,11 +124,6 @@ value.name = "new";
   isn't JSON, and binds `response.json()`; the JS is a `typeof` chain,
   `match[key]`, `value.name = ..` and `response.json()`; and a declarations
   test's function of `Unknown`s is declared `unknown`.
-
-## Not yet
-
-- **`Json`'s and `Dict`'s declarations**, TypeScript's `JSON` union and
-  `Record<string, T>`: they're `any` in a `.d.ts` still.
 
 ## Costs
 

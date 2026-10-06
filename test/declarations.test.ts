@@ -200,6 +200,16 @@ pub fn first(values: Vec<&'static react::js::Unknown>) -> Option<&'static react:
     values.first().copied()
 }
 
+// JSON is TypeScript's union of what it may be, declared here as another
+// crate's untagged enum is, and a dictionary a Record (ADR 0225).
+pub fn parsed(text: &str) -> Option<react::js::Json<'static>> {
+    react::js::Json::parse(text).ok().flatten()
+}
+
+pub fn names(numbers: &react::js::Dict<f64>) -> Vec<String> {
+    react::js::dict::keys(numbers)
+}
+
 // An untagged enum is TypeScript's union of its payloads (ADR 0214).
 #[rust_js::untagged]
 pub enum Size {
@@ -250,6 +260,9 @@ pub fn count(items: Items<u32>) -> usize {
     "export const Icon: NamedExoticComponent<IconProps>;",
     "export function words(n: bigint, flags: boolean[]): string;",
     "export function first(values: unknown[]): unknown | null | undefined;",
+    "export function parsed(text: string): Json | null | undefined;",
+    "export function names(numbers: {\n    [key: string]: number;\n}): string[];",
+    "type Json = string | number | boolean | (Json | null | undefined)[] | {\n    [key: string]: Json | null | undefined;\n};",
     "export type Size = string | number;",
     "export function width(size: Size): string;",
     "export type Items<T> = T[] | string;",
