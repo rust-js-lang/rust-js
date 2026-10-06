@@ -20,6 +20,7 @@
 
 use std::cell::{Cell, RefCell};
 use std::collections::{BTreeSet, HashMap, HashSet};
+use std::rc::Rc;
 use std::sync::Arc;
 
 use rustc_ast::{LitKind, Mutability};
@@ -388,8 +389,10 @@ struct FnCx<'a, 'tcx> {
     cloning: Vec<(Ty<'tcx>, String)>,
     /// The item being lowered: what `fn_ref` records as using its target.
     item: DefId,
-    /// What walks of types found, each walked once.
-    walks: TypeWalks<'tcx>,
+    /// What walks of types found, each walked once, under each typing
+    /// environment: what a type holds depends on the bounds in force, as a
+    /// copied default's `T::Item` is a number and its sibling's a `Vec`.
+    walks: RefCell<HashMap<ty::TypingEnv<'tcx>, Rc<TypeWalks<'tcx>>>>,
     /// What's dropped, and where (ADR 0098).
     drop_state: drops::DropState<'tcx>,
     /// Whose body `thir` is: its scope tree says where temporaries end.
@@ -442,6 +445,11 @@ impl Default for TypeWalks<'_> {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// What walks of types found under the typing environment in force.
+    fn walks(&self) -> Rc<TypeWalks<'tcx>> {
+        Rc::clone(self.walks.borrow_mut().entry(self.typing_env).or_default())
+    }
+
     // ── Statement mode ──────────────────────────────────────────────────
 
     /// Emit statements that compute `e` and deliver its value to `dest`.

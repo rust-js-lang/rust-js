@@ -164,18 +164,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => {}
         }
-        if let Some(&found) = self.walks.representable.borrow().get(&ty) {
+        if let Some(&found) = self.walks().representable.borrow().get(&ty) {
             return found;
         }
         // Inside itself, `Tree` in `Box<Tree>`: fine, if it is where it's
         // being walked further out, so what's found under that is only as
         // sure as the walk out there is.
         if let Some(at) = seen.iter().position(|&t| t == ty) {
-            self.walks.assumed.set(self.walks.assumed.get().min(at));
+            self.walks().assumed.set(self.walks().assumed.get().min(at));
             return None;
         }
         let depth = seen.len();
-        let outer = self.walks.assumed.replace(usize::MAX);
+        let outer = self.walks().assumed.replace(usize::MAX);
         seen.push(ty);
         let found = match (ty.kind(), self.shape(ty)) {
             // An enum with fields (ADR 0033): every variant's fields.
@@ -189,12 +189,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => Some(ty),
         };
         seen.pop();
-        let assumed = self.walks.assumed.get();
-        self.walks.assumed.set(outer.min(assumed));
+        let assumed = self.walks().assumed.get();
+        self.walks().assumed.set(outer.min(assumed));
         // What it can't be is sure; that it's fine is, unless the walk under
         // it took a type further out as fine.
         if found.is_some() || assumed >= depth {
-            self.walks.representable.borrow_mut().insert(ty, found);
+            self.walks().representable.borrow_mut().insert(ty, found);
         }
         found
     }

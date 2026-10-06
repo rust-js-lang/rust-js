@@ -192,11 +192,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn contains_mutated(&self, ty: Ty<'tcx>) -> bool {
         // Each type once: a type met along two paths isn't walked twice. It
         // ends at a `Box`, which is `Other`, so no answer depends on another.
-        if let Some(&mutated) = self.walks.mutated.borrow().get(&ty) {
+        if let Some(&mutated) = self.walks().mutated.borrow().get(&ty) {
             return mutated;
         }
         let mutated = self.contains_mutated_uncached(ty);
-        self.walks.mutated.borrow_mut().insert(ty, mutated);
+        self.walks().mutated.borrow_mut().insert(ty, mutated);
         mutated
     }
 
