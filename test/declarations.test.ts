@@ -363,6 +363,42 @@ export const wrong: BadgeProps = { title: null };
   expect([shown(null), shown(undefined), shown("a")]).toEqual(["none", "none", "a"]);
 });
 
+// A component only `js::export_default!` exports is declared, not exported
+// by its name, as react.dev's `function Recap() {..} export default Recap;`.
+test("declarations declare a private default export", () => {
+  buildReact();
+  const dir = fixture("declarations-default");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
+  writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
+use react::{Element, jsx};
+
+pub struct CalloutProps<'a> {
+    pub title: &'a str,
+}
+
+fn Callout(CalloutProps { title }: CalloutProps) -> Element {
+    jsx! { <b>{title}</b> }
+}
+
+js::export_default!(Callout);
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("declare function Callout(props: CalloutProps): ReactNode;\n\nexport default Callout;");
+  writeFileSync(join(dir, "use.tsx"), `import Callout from "./lib.jsx";
+export const ok = <Callout title="a" />;
+export const wrong = <Callout title={1} />;
+`);
+  writeFileSync(join(dir, "tsconfig.json"), JSON.stringify({
+    compilerOptions: { jsx: "react-jsx", strict: true, noEmit: true, module: "esnext", moduleResolution: "bundler", allowJs: true, skipLibCheck: false, typeRoots: [join(root, "node_modules/@types")] },
+    files: ["use.tsx"],
+  }));
+  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
+  const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
+  expect(errors.length).toBe(1);
+  expect(errors[0]).toContain("use.tsx(3,");
+});
+
 // A type alias is TypeScript's, \`export type Toc = TocItem[];\`, which
 // TypeScript that imports it names, as react.dev's Toc imports \`Toc\`.
 test("declarations name a type alias", () => {

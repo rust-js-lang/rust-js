@@ -26,7 +26,7 @@ use super::representation::Num;
 pub(super) fn module(
     tcx: TyCtxt<'_>,
     module: LocalModId,
-    default_export: Option<&str>,
+    default_export: Option<DefId>,
     files: &HashMap<LocalModId, Vec<String>>,
 ) -> Option<Value> {
     let mut out = Declarations {
@@ -55,8 +55,16 @@ pub(super) fn module(
         };
         items.extend(declaration);
     }
-    if let Some(name) = default_export {
-        items.push(json!({ "kind": "export-default", "name": name }));
+    if let Some(def_id) = default_export {
+        // One only `js::export_default!` exports is declared, but exported
+        // by no name of its own, as `function Recap() {..}` is in JS.
+        if !tcx.visibility(def_id).is_public() {
+            let mut declared = out.function(def_id);
+            declared["exported"] = json!(false);
+            declared["declare"] = json!(true);
+            items.push(declared);
+        }
+        items.push(json!({ "kind": "export-default", "name": fn_name(tcx, def_id) }));
     }
     // Another crate's untagged enums it names, `js::Json`, each declared here,
     // not exported: the union of its payloads, named, so it can be recursive.

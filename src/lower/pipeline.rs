@@ -449,7 +449,7 @@ pub fn lower_crate<'tcx>(
                                 .as_local()
                                 .is_some_and(|local| tcx.parent_module_from_def_id(local) == module) =>
                     {
-                        default_export = Some(super::bindings::fn_name(tcx, function));
+                        default_export = Some(function);
                     }
                     _ => {
                         tcx.dcx().span_err(
@@ -459,7 +459,7 @@ pub fn lower_crate<'tcx>(
                     }
                 }
             }
-            let declarations = super::declarations::module(tcx, module, default_export.as_deref(), &paths);
+            let declarations = super::declarations::module(tcx, module, default_export, &paths);
             let lowered = LoweredModule {
                 path: paths[&module].clone(),
                 file: module_file(tcx, module).name.clone().into_local_path(),
@@ -470,7 +470,7 @@ pub fn lower_crate<'tcx>(
                 consts: const_items.remove(&module).unwrap_or_default(),
                 functions: pass.functions.remove(&module).unwrap_or_default(),
                 caches: pass.caches.remove(&module).unwrap_or_default(),
-                default_export,
+                default_export: default_export.map(|function| super::bindings::fn_name(tcx, function)),
                 declarations,
                 runtime: Vec::new(),
                 jsx: pass.jsx.contains(&module),

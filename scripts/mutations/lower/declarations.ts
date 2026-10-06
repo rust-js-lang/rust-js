@@ -164,4 +164,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/declarations.test.ts", "-t", "type alias"],
   },
+  {
+    name: "private-default-undeclared",
+    breaks: "a component only `js::export_default!` exports isn't declared, so its `.d.ts` says `export default Callout;` of no `Callout`, which TypeScript refuses",
+    file: "src/lower/declarations.rs",
+    find: "        if !tcx.visibility(def_id).is_public() {\n",
+    replace: "        if false {\n",
+    tests: ["test/declarations.test.ts", "-t", "private default"],
+  },
+  {
+    name: "private-default-exported",
+    breaks: "a component only `js::export_default!` exports is declared `export function Callout`, which its JS doesn't export by that name",
+    file: "src/lower/declarations.rs",
+    find: "            declared[\"exported\"] = json!(false);\n            declared[\"declare\"] = json!(true);\n",
+    replace: "",
+    tests: ["test/declarations.test.ts", "-t", "private default"],
+  },
 ];

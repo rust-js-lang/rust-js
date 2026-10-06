@@ -66,6 +66,10 @@ export default Tag;
   `#[rust_js::nullable]` takes `null` too, `?: T | null`, where the data has
   it: react.dev's errors page gives its `ErrorDecoderContext` `{ errorMessage:
   string | null }`.
+- **A function only `js::export_default!` exports is declared, not exported
+  by its name**, `declare function Recap(props: RecapProps): ReactNode;`
+  before `export default Recap;`, as its JS has it. (Amended: it wasn't
+  declared, so TypeScript found no `Recap`.)
 - **What it can't type is `any`**, so TypeScript holds a caller to no more
   than Rust does: another module's type, which would need its import, a
   binding's JS object, an enum with fields.
