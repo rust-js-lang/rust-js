@@ -103,6 +103,15 @@ pub fn panics(i: usize) -> u32 {
 pub fn joined(path: Vec<u32>, last: u32) -> Vec<u32> {
     [path.as_slice(), &[last]].concat()
 }
+// `then` of a closure that only returns is its value in place, closures in
+// it too: `ok ? items.map((n) => n + 1) : undefined`.
+pub fn bumped(ok: bool, items: Vec<u32>) -> Option<Vec<u32>> {
+    ok.then(|| items.iter().map(|n| n + 1).collect())
+}
+// One that reads the value it's given is called: `x` is the argument.
+pub fn shifted(by: Option<u32>, items: Vec<u32>) -> Option<Vec<u32>> {
+    by.map(|x| items.iter().map(|n| n + x).collect())
+}
 pub fn report() -> String {
     let mut out = String::new();
     for n in [0, 4, 5, 8] {
@@ -114,6 +123,8 @@ pub fn report() -> String {
     for n in [0, 5] {
         out.push_str(&format!("{:?} {:?} {:?}\n", iters(n), consumers(n), vecs(n)));
         out.push_str(&format!("{:?}\n", joined(vec![1, n], n + 1)));
+        out.push_str(&format!("{:?}\n", bumped(n > 0, vec![1, n])));
+        out.push_str(&format!("{:?}\n", shifted(Some(n), vec![1, n])));
     }
     out
 }

@@ -33,6 +33,13 @@ value written in place,** as `Option::map` already was:
 
 - **A closure made of statements gets a name first:** `const then = (x) =>
   { .. }; r.TAG === "Ok" ? then(r._0) : r`.
+- **Closures inside the body don't stop it going in place,** unless they
+  read the closure's parameter: `ok.then(|| items.iter().map(|n| n +
+  1).collect())` is `ok ? items.map((n) => (n + 1) >>> 0) : undefined`. A
+  closure that reads none of the names replaced is the same closure
+  wherever it's made. One that reads `x` of `by.map(|x| ..)` still names
+  the outer closure, as before: whether it runs at once is the method's,
+  not the closure's, to say.
 - **Rust's order is kept:**
   - an argument Rust computes whatever happens, like `map_or`'s default,
     goes in a `const` first if it has effects;

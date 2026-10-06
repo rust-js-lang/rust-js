@@ -569,6 +569,12 @@ test("concat of parts written out is an array of them, spread", async () => {
   expect(js).toContain("[1, 2, 3]];");
 });
 
+// A closure called in place is its value, closures in it too.
+test("then of a closure that only returns is its value in place", async () => {
+  const js = await Bun.file(join(target, "combinators.js")).text();
+  expect(js).toContain("export function bumped(ok, items) {\n  return ok ? items.map((n) => (n + 1) >>> 0) : undefined;\n}");
+});
+
 // ADR 0034: strings are JS strings, and their methods JS's.
 test("string methods are JS's, and format! is a template literal", async () => {
   const js = await Bun.file(join(target, "strings.js")).text();

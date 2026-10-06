@@ -744,6 +744,16 @@ impl Expr {
                 Some(e) => return Some(e.or_at(self.span)),
                 None => ExprKind::Var(name.clone()),
             },
+            // A closure reading none of the names replaced is the same
+            // closure, whenever it runs.
+            ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) if {
+                let mut replaced = false;
+                self.visit_vars(&mut |name| replaced |= with(name).is_some());
+                !replaced
+            } =>
+            {
+                self.kind.clone()
+            }
             ExprKind::Arrow(params, body) if callbacks => {
                 let [
                     Stmt {

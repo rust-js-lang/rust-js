@@ -147,6 +147,15 @@ export function joined(path, last) {
   return [...path, last];
 }
 
+export function bumped(ok, items) {
+  return ok ? items.map((n) => (n + 1) >>> 0) : undefined;
+}
+
+export function shifted(by, items) {
+  const map = (x) => items.map((n) => (n + x) >>> 0);
+  return by != null ? map(by) : undefined;
+}
+
 export function report() {
   let out = "";
   for (const n of [0, 4, 5, 8]) {
@@ -166,6 +175,10 @@ export function report() {
     out += `[${joined([1, n$1], (n$1 + 1) >>> 0)
       .map((item) => String(item))
       .join(", ")}]\n`;
+    const arg$6 = bumped(n$1 > 0, [1, n$1]);
+    out += `${arg$6 == null ? "None" : `Some([${arg$6.map((item) => String(item)).join(", ")}])`}\n`;
+    const arg$7 = shifted(n$1, [1, n$1]);
+    out += `${arg$7 == null ? "None" : `Some([${arg$7.map((item) => String(item)).join(", ")}])`}\n`;
   }
   return out;
 }
