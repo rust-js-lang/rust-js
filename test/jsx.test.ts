@@ -1220,6 +1220,43 @@ pub fn Badge(p: P) -> Element {
   expect(renderToStaticMarkup(result.Badge({ class_name: "c", size: "S", title: "t" }))).toBe('<svg class="c" width="12px" height="12px" viewBox="0 0 20 20"><title>t</title><g fill="none"><path d="M0 0"></path></g></svg>');
 });
 
+// A comparison of what reads the same reads the same after a later child's
+// statement too, so it stays in place, as react.dev's PageHeading tests its
+// version (ADR 0218).
+test("JSX keeps a comparison of what reads the same in place", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{Element, jsx};
+pub enum Version { Canary, Rc }
+pub fn Heading(title: &'static str, version: Option<Version>, done: bool, status: Option<&'static str>) -> Element {
+    jsx! {
+        <h1>
+            {title}
+            {matches!(version, Some(Version::Canary)).then(|| jsx! { <i>{"canary"}</i> })}
+            {(!matches!(version, Some(Version::Rc))).then(|| jsx! { <b>{"stable"}</b> })}
+            {(!done).then(|| jsx! { <s>{"todo"}</s> })}
+            {status.filter(|s| !s.is_empty()).map(|s| jsx! { <em>{s}</em> })}
+        </h1>
+    }
+}
+// One of a variable a later child writes is read before the write.
+pub fn Count() -> Element {
+    let mut n = 0;
+    jsx! { <p>{(n == 0).then(|| jsx! { <i>{"zero"}</i> })}{{ n += 1; n }}</p> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx.slice(0, jsx.indexOf("export function Count"))).not.toContain("const condition");
+  expect(jsx).toContain("const condition = n === 0;\n  n = (n + 1) | 0;");
+  expect(jsx).toContain('{version === "Canary" ? <i>canary</i> : undefined}');
+  expect(jsx).toContain('{version !== "Rc" ? <b>stable</b> : undefined}');
+  expect(jsx).toContain("{!done ? <s>todo</s> : undefined}");
+  const result = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(result.Heading("T", "Canary", false, ""))).toBe("<h1>T<i>canary</i><b>stable</b><s>todo</s></h1>");
+  expect(renderToStaticMarkup(result.Heading("T", "Rc", true, "new"))).toBe("<h1>T<em>new</em></h1>");
+  expect(renderToStaticMarkup(result.Count())).toBe("<p><i>zero</i>1</p>");
+});
+
 // A component's props its struct doesn't name, a `react::Rest`: `...rest` of
 // its destructured props, spread onto an element, as react.dev's
 // ExternalLink takes its callers' `aria-label` (ADR 0195). A Rust caller's

@@ -37,7 +37,12 @@ several, as a person writes it:**
 
 - **What keeps Rust's order still goes first**: a prop read before a child
   whose statements do more than read (ADR 0194), and an element's inputs
-  before a later operand's statements, as before.
+  before a later operand's statements, as before. An input that reads the
+  same wherever it's read stays: a constant, a function, a variable nothing
+  writes again, and a comparison of them, `===`, `!==`, `== null` or `!`,
+  which runs no code of its own. `{version === "canary" ? .. : undefined}`
+  stays in place before `status.filter(..)`'s `const`; `n === 0` before a
+  later child's `n += 1` still goes first.
 - **A handler of one call is still an arrow of it**, `() => setCount(1)`,
   as React ignores what it returns.
 

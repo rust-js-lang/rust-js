@@ -79,10 +79,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether `value` reads the same wherever it's read: a constant, a
-    /// function, or a variable nothing writes again, a `const` of `out`'s.
+    /// function, or a variable nothing writes again, a `const` of `out`'s,
+    /// and a comparison of them, which runs no code of its own:
+    /// `version === "canary"`, `!done`, `status != null`.
     fn reads_alike(&self, value: &Expr, out: &[Stmt]) -> bool {
         match &value.kind {
             js::ExprKind::Symbol(_) | js::ExprKind::Arrow(..) | js::ExprKind::AsyncArrow(..) => true,
+            js::ExprKind::Binary(js::Op::Eq | js::Op::Ne | js::Op::LooseEq | js::Op::LooseNe, a, b) => {
+                self.reads_alike(a, out) && self.reads_alike(b, out)
+            }
+            js::ExprKind::Unary(js::UnaryOp::Not, a) => self.reads_alike(a, out),
             js::ExprKind::Var(name) => {
                 self.locals
                     .vars

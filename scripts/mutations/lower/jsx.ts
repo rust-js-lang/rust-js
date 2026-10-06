@@ -154,4 +154,28 @@ export const mutations: Mutation[] = [
     replace: "        if !first.is_empty() || (name != \"children\" && !jsx.children.is_empty()) {\n",
     tests: ["test/jsx.test.ts", "-t", "attribute before a child once"],
   },
+  {
+    name: "comparison-spilled",
+    breaks: "a comparison of what reads the same is spilled before a later child's statement: `const condition = version === \"Canary\"`",
+    file: "src/lower/jsx.rs",
+    find: "                self.reads_alike(a, out) && self.reads_alike(b, out)\n",
+    replace: "                false && self.reads_alike(a, out) && self.reads_alike(b, out)\n",
+    tests: ["test/jsx.test.ts", "-t", "comparison of what reads the same"],
+  },
+  {
+    name: "comparison-of-anything-alike",
+    breaks: "a comparison of a variable written later reads alike, and JSX reads it after the write",
+    file: "src/lower/jsx.rs",
+    find: "                self.reads_alike(a, out) && self.reads_alike(b, out)\n",
+    replace: "                true\n",
+    tests: ["test/jsx.test.ts"],
+  },
+  {
+    name: "negation-spilled",
+    breaks: "a negation of what reads the same is spilled before a later child's statement: `const condition = !done`",
+    file: "src/lower/jsx.rs",
+    find: "            js::ExprKind::Unary(js::UnaryOp::Not, a) => self.reads_alike(a, out),\n",
+    replace: "            js::ExprKind::Unary(js::UnaryOp::Not, a) => false && self.reads_alike(a, out),\n",
+    tests: ["test/jsx.test.ts", "-t", "comparison of what reads the same"],
+  },
 ];
