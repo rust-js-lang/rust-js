@@ -19,15 +19,15 @@ test("React components are hand-written JSX, and React runs them", () => {
   expect(js).toContain("export function Card({ title, children }) {\n  return (\n    <div className=\"card\">\n      <h2>{title}</h2>\n      {children}\n    </div>\n  );\n}");
   expect(js).toContain('const [draft, setDraft] = useState("");');
   expect(js).toContain("const left = useMemo(() => todos.filter((t) => !t.done).length, [todos]);");
-  // A handler of one call stays in the JSX; one with statements is named first.
-  expect(js).toContain("onChange={(e) => setDraft(e.target.value)}\n          onKeyDown={onKeyDown}\n        />");
+  // A handler stays in the JSX, of one call or of statements, as a person
+  // writes it (ADR 0218).
+  expect(js).toContain("onChange={(e) => setDraft(e.target.value)}\n          onKeyDown={(e) => {\n            if (e.key === \"Enter\") {\n              add();\n            }\n          }}\n        />");
   const todos = js.slice(js.indexOf("export function Todos()"), js.indexOf("export function Clock()"));
   expect(todos).not.toMatch(/const\s+\S+\s*=\s*\(?\s*</);
   expect(todos).toMatch(/<Card title="Todos">\s*<>\s*<input/);
   expect(todos).toContain("<ul>{items}</ul>");
-  expect(js).toContain("const onKeyDown = (e) => {");
   // A list, with its keys.
-  expect(js).toContain("return (\n      <li key={t.id} className={t.done ? \"done\" : \"\"} onClick={onClick}>\n        {t.text}\n      </li>");
+  expect(js).toContain("<li\n      key={t.id}\n      className={t.done ? \"done\" : \"\"}\n      onClick={() => dispatch({ TAG: \"Toggle\", _0: t.id })}\n    >\n      {t.text}\n    </li>");
   expect(js).toContain("<ul>{items}</ul>");
   // `Option::map` to an element: the element, or nothing.
   expect(js).toContain('{t != null ? <p className="latest">{t.text}</p> : undefined}');
@@ -187,7 +187,7 @@ test("React's and React DOM's APIs are hand-written React, and they run", () => 
   expect(js).toContain('<Activity mode={hidden ? "hidden" : "visible"}>');
   expect(js).toContain("{[1, 2].map((n) => (\n          <Fragment key={n}>");
   // Objects built by methods: a style, raw HTML, and options.
-  expect(js).toContain("const style = { color: \"red\", fontSize: 12, \"--gap\": \"4px\" };");
+  expect(js).toContain('style={{ color: "red", fontSize: 12, "--gap": "4px" }}');
   expect(js).toContain('dangerouslySetInnerHTML={{ __html: "<i>raw</i>" }}');
   expect(js).toContain('return renderToString(<Page />, { identifierPrefix: "s-" });');
   expect(js).toContain('const root = createRoot(container, { identifierPrefix: "c-" });');

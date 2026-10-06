@@ -48,16 +48,19 @@ export function Store() {
   const [pending, start] = useTransition();
   const [filter, setFilter] = useState(0);
   const deferred = useDeferredValue(filter);
-  const onClick = () =>
-    start(() => {
-      setFilter(7);
-    });
   return (
     <div>
       <span className="store">{value}</span>
       <span className="deferred">{deferred}</span>
       <span className="pending">{pending ? "pending" : "idle"}</span>
-      <button className="transition" onClick={onClick}>
+      <button
+        className="transition"
+        onClick={() =>
+          start(() => {
+            setFilter(7);
+          })
+        }
+      >
         go
       </button>
     </div>
@@ -110,17 +113,22 @@ export function Refs() {
   useEffect(() => {
     onLog();
   }, [shown]);
-  const ref = (node) => {
-    globalThis.log(node != null ? "attached" : "null");
-    return () => {
-      globalThis.log("detached");
-    };
-  };
   return (
     <div>
       <FancyInput handle={handle} />
       <p ref={element}>with a ref</p>
-      {shown ? <b ref={ref}>callback</b> : undefined}
+      {shown ? (
+        <b
+          ref={(node) => {
+            globalThis.log(node != null ? "attached" : "null");
+            return () => {
+              globalThis.log("detached");
+            };
+          }}
+        >
+          callback
+        </b>
+      ) : undefined}
       <button className="hide" onClick={() => setShown(false)}>
         hide
       </button>
@@ -140,12 +148,6 @@ export function Counter() {
 export function Places() {
   const [hidden, setHidden] = useState(false);
   const [flushed, setFlushed] = useState(0);
-  const onClick = () => {
-    flushSync(() => {
-      setFlushed(1);
-    });
-    globalThis.log(`flushed ${globalThis.flushedText()}`);
-  };
   return (
     <>
       <Activity mode={hidden ? "hidden" : "visible"}>
@@ -155,7 +157,15 @@ export function Places() {
         toggle
       </button>
       {createPortal(<span className="portaled">in the portal</span>, globalThis.portalTarget)}
-      <button className="flush" onClick={onClick}>
+      <button
+        className="flush"
+        onClick={() => {
+          flushSync(() => {
+            setFlushed(1);
+          });
+          globalThis.log(`flushed ${globalThis.flushedText()}`);
+        }}
+      >
         {flushed}
       </button>
     </>
@@ -169,20 +179,21 @@ export function Misc() {
     20,
     (start) => (Math.imul(start, 2) + 2) | 0,
   );
-  const onRender = (id, phase) => {
-    let tmp;
-    if (phase === "mount") {
-      tmp = "mount";
-    } else if (phase === "update") {
-      tmp = "update";
-    } else {
-      tmp = "nested";
-    }
-    globalThis.log(`${id} ${tmp}`);
-  };
-  const style = { color: "red", fontSize: 12, "--gap": "4px" };
   return (
-    <Profiler id="misc" onRender={onRender}>
+    <Profiler
+      id="misc"
+      onRender={(id, phase) => {
+        let tmp;
+        if (phase === "mount") {
+          tmp = "mount";
+        } else if (phase === "update") {
+          tmp = "update";
+        } else {
+          tmp = "nested";
+        }
+        globalThis.log(`${id} ${tmp}`);
+      }}
+    >
       <ul>
         {[1, 2].map((n) => (
           <Fragment key={n}>
@@ -191,7 +202,7 @@ export function Misc() {
           </Fragment>
         ))}
       </ul>
-      <div className="styled" style={style} />
+      <div className="styled" style={{ color: "red", fontSize: 12, "--gap": "4px" }} />
       <div className="raw" dangerouslySetInnerHTML={{ __html: "<i>raw</i>" }} />
       <span className="id" data-id={id}>
         {total}

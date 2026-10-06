@@ -67,13 +67,12 @@ export function NewContactForm() {
       </label>
     );
   };
-  const children = field("Name", "name", name, (v) => {
-    setName(v);
-  });
   return (
     <form onSubmit={submit} noValidate>
       <h1>New contact</h1>
-      {children}
+      {field("Name", "name", name, (v) => {
+        setName(v);
+      })}
       {field("Email", "email", email, (v) => {
         setEmail(v);
       })}

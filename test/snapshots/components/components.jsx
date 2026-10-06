@@ -50,21 +50,17 @@ export function Todos() {
       setDraft("");
     }
   };
-  const items = todos.map((t) => {
-    const onClick = () => dispatch({ TAG: "Toggle", _0: t.id });
-    return (
-      <li key={t.id} className={t.done ? "done" : ""} onClick={onClick}>
-        {t.text}
-      </li>
-    );
-  });
+  const items = todos.map((t) => (
+    <li
+      key={t.id}
+      className={t.done ? "done" : ""}
+      onClick={() => dispatch({ TAG: "Toggle", _0: t.id })}
+    >
+      {t.text}
+    </li>
+  ));
   const condition = todos.length === 0;
   const t = todos.at(-1);
-  const onKeyDown = (e) => {
-    if (e.key === "Enter") {
-      add();
-    }
-  };
   return (
     <Card title="Todos">
       <>
@@ -72,7 +68,11 @@ export function Todos() {
           id={id}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={onKeyDown}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              add();
+            }
+          }}
         />
         <button className="add" onClick={() => add()}>
           Add

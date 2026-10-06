@@ -5,12 +5,11 @@ import { Suspense, createContext } from "react";
 const THEME = createContext("light");
 
 export function App() {
-  const ref = () => {};
   return (
     <THEME.Provider value="dark">
       <Suspense key="body" fallback="loading">
         <form action="/save">
-          <input ref={ref} />
+          <input ref={() => {}} />
         </form>
       </Suspense>
     </THEME.Provider>

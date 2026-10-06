@@ -4,15 +4,12 @@ import { Activity, Profiler, StrictMode, Suspense, ViewTransition, useRef } from
 
 export function App() {
   const object = useRef(undefined);
-  const onRender = () => {};
-  const action = () => {};
-  const ref = () => {};
   return (
-    <Profiler id="test" onRender={onRender}>
+    <Profiler id="test" onRender={() => {}}>
       <ViewTransition name="page">
-        <form action={action}>
+        <form action={() => {}}>
           <input ref={object} />
-          <input ref={ref} />
+          <input ref={() => {}} />
           <button formAction="/save" style={{ color: "red" }}>
             Save
           </button>

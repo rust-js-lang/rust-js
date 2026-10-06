@@ -31,18 +31,17 @@ export function Editor({ state, view, onSubmit }) {
       setTheme(editor, dark);
     }
   }, [state, dark]);
-  const onKeyDownCapture = (e) => {
-    if (onSubmit != null && (e.metaKey || e.ctrlKey) && e.key === "Enter") {
-      e.preventDefault();
-      e.stopPropagation();
-      onSubmit();
-    }
-  };
   return (
     <div
       className={"min-w-0 overflow-hidden [&_.cm-editor]:h-full [&_.cm-editor]:text-[13px]"}
       ref={parent}
-      onKeyDownCapture={onKeyDownCapture}
+      onKeyDownCapture={(e) => {
+        if (onSubmit != null && (e.metaKey || e.ctrlKey) && e.key === "Enter") {
+          e.preventDefault();
+          e.stopPropagation();
+          onSubmit();
+        }
+      }}
     />
   );
 }

@@ -250,6 +250,34 @@ pub fn crumbs(crumbs: &[Crumb]) -> Vec<Element> {
   expect(js).not.toContain("const key");
 });
 
+// A list whose callback has statements, and a handler of several, stay in
+// their JSX, as a person writes them: oxfmt lays them out where they are
+// (ADR 0218), as react.dev's `Breadcrumbs` maps its crumbs.
+test("a callback of several statements stays in its JSX", () => {
+  const source = `#![allow(non_snake_case)]
+use react::{Element, jsx, use_state};
+pub struct Crumb { pub title: String }
+pub fn list(crumbs: &[Crumb]) -> Element {
+    let (count, set_count) = use_state(0);
+    jsx! {
+        <div onClick={move |_| { set_count.set(count + 1); set_count.set(count + 2); }}>
+            {crumbs.iter().map(|crumb| {
+                let t = crumb.title.as_str();
+                if t.is_empty() { jsx! { <i /> } } else { jsx! { <b key={t}>{t}</b> } }
+            }).collect::<Vec<_>>()}
+        </div>
+    }
+}
+`;
+  const { dir, args } = compile(source);
+  run(args);
+  const js = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(js).toContain("{crumbs.map((crumb) => {");
+  expect(js).toContain("onClick={() => {");
+  expect(js).not.toContain("const items");
+  expect(js).not.toContain("const onClick");
+});
+
 test("nested component JSX stays readable, contextually typed and mapped to the original Rust", async () => {
   const source = `#![deny(warnings)]
 #![allow(non_snake_case)]
