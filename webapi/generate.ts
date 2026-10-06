@@ -225,6 +225,9 @@ const NUMBERS: Record<string, string> = {
 
 type Position = "param" | "result";
 
+/** What a parameter typed `any` is, until its function names its type parameter. */
+const ANY = "<any>";
+
 /** The Rust type for a (non-union) WebIDL type, or why there isn't one. */
 function rustType(t: IdlType, at: Position): string | { skip: string } {
   if (t.union) return { skip: "union" };
@@ -253,7 +256,8 @@ function rustType(t: IdlType, at: Position): string | { skip: string } {
   if (name === "EventListener" && at === "param") return "Box<dyn FnMut(&Event)>";
   // A value of any shape a function gives is the js crate's `Unknown`, or
   // `None` of `undefined` and `null` (ADR 0225): `response.json()`.
-  if (name === "any") return at === "result" ? "Option<&'static Unknown>" : { skip: "any parameter" };
+  // One it takes is of any type, as JS has it: a generic `M`, `message: M`.
+  if (name === "any") return at === "result" ? "Option<&'static Unknown>" : ANY;
   // Any JS object: a Rust value of any type in, an opaque object out.
   if (name === "object") return at === "param" ? "&dyn core::any::Any" : "&'static JsObject";
   const dictionary = dictionaries.get(name);
@@ -309,7 +313,8 @@ function paramDictionary(d: Def): string | { skip: string } {
     const fields: Field[] = [];
     for (const m of dictionaryMembers(d)) {
       const chosen = FIELD_TYPES[`${d.name}.${m.name}`] ?? paramType(m.idlType!);
-      if (!chosen || chosen.includes("dyn core::any::Any")) continue;
+      // A field typed `any` is left out, as a struct field can't be generic.
+      if (!chosen || chosen.includes("dyn core::any::Any") || chosen.includes(ANY)) continue;
       // A borrow in a field lives as long as the struct's: `&'a str`.
       const type = chosen.replace(/&(?!')/g, "&'a ").replace(/<'_>/g, "<'a>");
       fields.push({ rust: snake(m.name!), js: m.name!, type, optional: !m.required });
@@ -705,13 +710,43 @@ line(`}`);
 
 let count = 0;
 
+/**
+ * A function with a parameter typed `any`, as a generic Rust one, which an
+ * extern one can't be: each such parameter of a type parameter of its own,
+ * named after it, `message: M` (ADR 0225).
+ */
+function generic(f: Fn): string {
+  const names: string[] = [];
+  const params = f.params.map((p) => {
+    if (!p.endsWith(`: ${ANY}`)) return p;
+    const param = p.slice(0, -`: ${ANY}`.length);
+    let type = param[0].toUpperCase();
+    while (names.includes(type)) type += "1";
+    names.push(type);
+    return `${param}: ${type}`;
+  });
+  const result = f.result === "()" ? "" : ` -> ${f.result}`;
+  return [
+    ...f.doc.map((d) => `    /// ${d}`),
+    `    #[cfg_attr(rust_js, rust_js::link_name = ${JSON.stringify(f.jsName)})]`,
+    "    // rust-js writes its JS: the body never runs, nor reads a parameter.",
+    "    #[allow(unused_variables)]",
+    `    pub fn ${f.name}<${names.join(", ")}>(${params.join(", ")})${result} {`,
+    "        unreachable!()",
+    "    }",
+  ].join("\n");
+}
+
 /** `pub mod <name> { .. }`, holding a type's or a namespace's functions. */
-function module(name: string, fns: Fn[], typed: string[] = []) {
-  if (fns.length === 0) return;
-  count += fns.length;
+function module(name: string, all: Fn[], typed: string[] = []) {
+  if (all.length === 0) return;
+  count += all.length;
+  const fns = all.filter((f) => !f.params.some((p) => p.endsWith(`: ${ANY}`)));
+  typed = [...all.filter((f) => !fns.includes(f)).map(generic), ...typed];
   line();
   line(`pub mod ${name} {`);
   line(`    use super::*;`);
+  if (fns.length > 0) {
   line();
   line(`    unsafe extern "Rust" {`);
   fns.forEach((f, k) => {
@@ -722,6 +757,7 @@ function module(name: string, fns: Fn[], typed: string[] = []) {
     line(`        pub safe fn ${f.name}(${f.params.join(", ")})${result};`);
   });
   line(`    }`);
+  }
   for (const t of typed) {
     line();
     line(t);

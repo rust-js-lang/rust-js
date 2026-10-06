@@ -73,7 +73,13 @@ value.name = "new";
 - **What WebIDL types `any`, `webapi` gives as an `Option<&'static Unknown>`**:
   `response::json(r)` is a `Promise<Option<&'static Unknown>>`, and so are
   `MessageEvent.data`, `History.state`, `Window.opener` and
-  `AbortSignal.reason`, which were skipped.
+  `AbortSignal.reason`, which were skipped. **And one it takes is of any
+  type**, as JS has it: a generic parameter of its own, `push_state<D>(history,
+  data: D, ..)`, so `push_state(history, Saved { page }, "")` is
+  `history.pushState({ page }, "")`: `postMessage`, `structuredClone`,
+  `reportError`, a stream's `cancel`. (Amended: they were skipped.) A
+  dictionary's field typed `any` is still left out, as a struct's field
+  can't be generic.
 - **Its `.d.ts` is TypeScript's `unknown`**: `#[rust_js::types = "unknown"]`.
 - **Every step out of the types is written**: `classify`, `get`, a `match`.
   There's no `any` that a value becomes silently, as TypeScript's is, and
@@ -92,8 +98,6 @@ value.name = "new";
 
 ## Not yet
 
-- **A WebIDL parameter typed `any`**, seven of them, `postMessage`'s say:
-  still skipped, as what Rust gives one is open.
 - **A typed JSON value**, ReScript's `JSON.t`: an object's fields would need
   a dictionary type, which the `js` crate doesn't have.
 
