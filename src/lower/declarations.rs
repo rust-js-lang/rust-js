@@ -114,6 +114,25 @@ fn erasures(tcx: TyCtxt<'_>, def_id: DefId) -> Vec<(u32, DefId)> {
         .collect()
 }
 
+/// A parameter's name, of its type's: `event` of a `MouseEvent`, `element`
+/// of an `HTMLButtonElement`, its last word's; `value` of any other.
+fn param_name(ty: &Value) -> String {
+    let Some(name) = ty["name"].as_str().filter(|_| ty["kind"] == "reference") else {
+        return "value".to_string();
+    };
+    let start = (name.char_indices())
+        .filter(|&(i, c)| c.is_uppercase() && name[i + c.len_utf8()..].starts_with(|n: char| n.is_lowercase()))
+        .map(|(i, _)| i)
+        .last()
+        .unwrap_or(0);
+    let word = &name[start..];
+    let mut chars = word.chars();
+    match chars.next() {
+        Some(first) => first.to_lowercase().chain(chars).collect(),
+        None => "value".to_string(),
+    }
+}
+
 /// What `#[rust_js::types]` says an item is to TypeScript.
 fn written_types(tcx: TyCtxt<'_>, did: DefId) -> Option<String> {
     let path = [Symbol::intern("rust_js"), Symbol::intern("types")];
@@ -426,6 +445,34 @@ impl<'tcx> Declarations<'_, 'tcx> {
         }
     }
 
+    /// `(event: MouseEvent<Element>) => void`: a function type, each
+    /// parameter named by its type, as a person names one.
+    fn function_type(&mut self, inputs: &[Ty<'tcx>], output: Ty<'tcx>) -> Value {
+        let mut names: Vec<String> = Vec::new();
+        let params: Vec<Value> = (inputs.iter())
+            .map(|&input| {
+                let ty = self.ts(input);
+                let base = param_name(&ty);
+                let taken = names
+                    .iter()
+                    .filter(|n| n.trim_end_matches(char::is_numeric) == base)
+                    .count();
+                let name = if taken == 0 {
+                    base
+                } else {
+                    format!("{base}{}", taken + 1)
+                };
+                names.push(name.clone());
+                json!({ "name": name, "optional": false, "rest": false, "type": ty })
+            })
+            .collect();
+        let returns = match output.is_unit() {
+            true => keyword("void"),
+            false => self.ts(output),
+        };
+        json!({ "kind": "function", "typeParameters": [], "params": params, "returns": returns })
+    }
+
     /// `ty` as a TypeScript type.
     fn ts(&mut self, ty: Ty<'tcx>) -> Value {
         let tcx = self.tcx;
@@ -448,8 +495,29 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 Some(erased) => erased.clone(),
                 None => reference(param.name.as_str(), Vec::new()),
             },
-            // `(...args: any[]) => any`.
-            ty::FnPtr(..) | ty::Closure(..) | ty::Dynamic(..) => json!({
+            // A function of what Rust says it takes and gives:
+            // `dyn Fn(&event::Mouse)` is `(event: MouseEvent<Element>) => void`.
+            ty::FnPtr(..) => {
+                let sig = ty.fn_sig(tcx).skip_binder();
+                self.function_type(sig.inputs(), sig.output())
+            }
+            ty::Dynamic(traits, ..)
+                if traits
+                    .principal_def_id()
+                    .is_some_and(|t| tcx.fn_trait_kind_from_def_id(t).is_some()) =>
+            {
+                let inputs = match traits.principal().map(|p| p.skip_binder().args.type_at(0).kind()) {
+                    Some(ty::Tuple(inputs)) => inputs.as_slice(),
+                    _ => &[],
+                };
+                let output = (traits.projection_bounds())
+                    .find_map(|output| output.skip_binder().term.as_type())
+                    .unwrap_or(tcx.types.unit);
+                self.function_type(inputs, output)
+            }
+            // `(...args: any[]) => any`: a closure's own type, which no
+            // signature names, or a `dyn` of another trait.
+            ty::Closure(..) | ty::Dynamic(..) => json!({
                 "kind": "function",
                 "typeParameters": [],
                 "params": [{
