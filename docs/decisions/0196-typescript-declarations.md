@@ -44,7 +44,10 @@ export default Tag;
 | a type alias, `pub type Toc = Vec<TocItem>` | `export type Toc = TocItem[]` |
 | react's `Element`, `Memo<P>`, `Context<T>` | `ReactNode`, `NamedExoticComponent<P>`, `Context<T>` |
 | a `Rest` of props (ADR 0195) | `[prop: string]: unknown` |
-| a closure, a function | `(...args: any[]) => any` |
+| react's events, `event::Mouse<T>` | @types/react's, `MouseEvent<T>`, `SyntheticEvent<T>` of `Event<T>` |
+| `webapi`'s interfaces, `HtmlButtonElement` | the DOM lib's, `HTMLButtonElement` |
+| a `dyn Fn`, an `fn` pointer | a function of what it takes and gives, `(event: MouseEvent<Element>) => void` |
+| a closure's own type, a `dyn` of another trait | `(...args: any[]) => any` |
 | a type of another module's, a JS object's, the rest | `any` |
 
 - **A binding's type says what it is to TypeScript**, `#[rust_js::types =
@@ -66,6 +69,15 @@ export default Tag;
   **Another crate's untagged enum is declared in the
   module that names it**, not exported, the union of its payloads, as this
   crate's are (ADR 0225).
+- **A function is typed as Rust types it**: `Box<dyn Fn(&event::Mouse)>`
+  is `(event: MouseEvent<Element>) => void`, an `fn(u32, u32) -> String`
+  `(value: number, value2: number) => string`, each parameter named by its
+  type's last word, as a person names one, and react's events and
+  `webapi`'s interfaces are @types/react's and the DOM lib's, by
+  `#[rust_js::types]`, which `webapi`'s generator writes of each. A handler
+  of a button's event, `event::Mouse<webapi::HtmlButtonElement>`, is
+  `MouseEvent<HTMLButtonElement>`, as react.dev's Button's TypeScript has
+  it. (Amended: each was `(...args: any[]) => any`, which took any function.)
 - **An `Option` takes JS's `null` too**, `T | null | undefined`, as rust-js
   reads `None` `!= null` (ADR 0030): a TypeScript caller's `null`, react.dev's
   Page giving its `LanguagesContext` `Languages | null`, is `None`.
@@ -95,5 +107,8 @@ export default Tag;
 
 ## Costs
 
+- **`InputEvent` and `ToggleEvent` are @types/react 19's**: a project on 18's
+  types finds no such type in a `.d.ts` that names one.
 - **Another module's types are `any`**, until a declaration imports its own.
-- **Closures are untyped**, `(...args: any[]) => any`.
+- **A closure's own type is untyped**, `(...args: any[]) => any`, as no
+  signature names it. (Amended: every function was.)

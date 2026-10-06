@@ -204,4 +204,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/declarations.test.ts", "-t", "typed as React types them"],
   },
+  {
+    name: "dyn-fn-untyped",
+    breaks: "a `Box<dyn Fn(&event::Mouse)>` prop is declared `(...args: any[]) => any`, so a TypeScript caller's handler is checked against nothing",
+    file: "src/lower/declarations.rs",
+    find: "                    .is_some_and(|t| tcx.fn_trait_kind_from_def_id(t).is_some()) =>\n",
+    replace: "                    .is_some_and(|_| false) =>\n",
+    tests: ["test/declarations.test.ts", "-t", "by what it takes"],
+  },
+  {
+    name: "fn-pointer-untyped",
+    breaks: "a `fn(u32, u32) -> String` is declared `any`",
+    file: "src/lower/declarations.rs",
+    find: "            ty::FnPtr(..) => {\n",
+    replace: "            ty::Never => {\n",
+    tests: ["test/declarations.test.ts", "-t", "by what it takes"],
+  },
+  {
+    name: "fn-param-names-collide",
+    breaks: "two parameters of one type are both `value`, which TypeScript refuses as a duplicate",
+    file: "src/lower/declarations.rs",
+    find: "                let name = if taken == 0 {\n",
+    replace: "                let name = if true || taken == 0 {\n",
+    tests: ["test/declarations.test.ts", "-t", "by what it takes"],
+  },
 ];
