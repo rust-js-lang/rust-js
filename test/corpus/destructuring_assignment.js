@@ -41,10 +41,7 @@ function main() {
   first = tmp$2[0];
   last = tmp$2[3];
   console.log(
-    `[${slots
-      .slice()
-      .map((item) => String(item))
-      .join(", ")}] ${first} ${last} ${fibonacci(10)}`,
+    `[${slots.map((item) => String(item)).join(", ")}] ${first} ${last} ${fibonacci(10)}`,
   );
 }
 

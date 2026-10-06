@@ -1677,6 +1677,30 @@ pub fn marker() -> Marker {
   expect([lib.click(), lib.passed(), lib.constant(), lib.marker()]).toEqual(["click", "click", "click", undefined]);
 });
 
+// A value shown is only read, through the reference `format_args!` takes,
+// which nothing can change before it's shown: a `Copy` one changed elsewhere
+// is shown in place, not copied first, as a read of it by value is (ADR 0020).
+test("a formatted value is read in place, not copied", async () => {
+  const dir = fixture("format-in-place");
+  writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy, Debug)]
+pub struct P {
+    pub x: i32,
+}
+pub fn show(mut p: P) -> String {
+    let q = p;
+    p.x += 1;
+    let all = [q, p];
+    format!("{q:?} {p:?} {all:?}")
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const q = { ...p };");
+  expect(js).toContain("${pDebug_fmt(q)} ${pDebug_fmt(p)} [${all.map((item) => pDebug_fmt(item))");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.show({ x: 1 })).toBe("P { x: 1 } P { x: 2 } [P { x: 1 }, P { x: 2 }]");
+});
+
 // A two-arm `match` as a value, its arms plain and binding nothing, is a
 // conditional, as a person writes it (ADR 0209): its subject in place
 // where the test reads it once, else in a `const` of its own.

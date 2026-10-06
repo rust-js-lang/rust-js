@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "formatted-copied",
+    breaks: "a `Copy` value changed elsewhere is copied before it's shown, `pDebug_fmt({ ...q })`, though showing it only reads it",
+    file: "src/lower/format_args.rs",
+    find: "                *value = place;\n",
+    replace: "",
+    tests: ["test/compiler.test.ts", "-t", "read in place"],
+  },
+  {
     name: "begin-panic-payload",
     breaks: "`panic!(5)` before edition 2021 throws a message Rust never shows",
     file: "src/lower/format_args.rs",

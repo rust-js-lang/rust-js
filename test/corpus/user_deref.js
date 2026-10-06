@@ -21,9 +21,7 @@ function main() {
   trackedDerefMut_deref_mut(t).y = 0;
   const copied = { ...trackedDeref_deref(t) };
   trackedDerefMut_deref_mut(t).x = -1;
-  console.log(
-    `${pointDebug_fmt({ ...copied })} ${pointDebug_fmt({ ...t.point })} ${t.reads.value}`,
-  );
+  console.log(`${pointDebug_fmt(copied)} ${pointDebug_fmt(t.point)} ${t.reads.value}`);
   const outer = [{ point: { x: 4, y: 5 }, reads: { value: 0 } }];
   console.log(
     `${Point.sum(trackedDeref_deref(outerDeref_deref(outer)))} ${trackedDeref_deref(outerDeref_deref(outer)).x} ${outerDeref_deref(outer).reads.value}`,

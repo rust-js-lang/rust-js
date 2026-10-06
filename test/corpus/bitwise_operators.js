@@ -17,7 +17,7 @@ const RUN = [4];
 function main() {
   const rw = flagsBitOr_bitor([READ[0]], [WRITE[0]]);
   console.log(
-    `${flagsDebug_fmt([rw[0]])} ${flagsDebug_fmt(flagsBitAnd_bitand([rw[0]], [WRITE[0]]))} ${flagsDebug_fmt(flagsBitXor_bitxor([rw[0]], [RUN[0]]))}`,
+    `${flagsDebug_fmt(rw)} ${flagsDebug_fmt(flagsBitAnd_bitand([rw[0]], [WRITE[0]]))} ${flagsDebug_fmt(flagsBitXor_bitxor([rw[0]], [RUN[0]]))}`,
   );
   console.log(`${Flags.has([rw[0]], [WRITE[0]])} ${Flags.has([rw[0]], [RUN[0]])}`);
   console.log(
@@ -26,24 +26,21 @@ function main() {
   console.log(`${flagsDebug_fmt(refFlagsBitOr_bitor([READ[0]], [RUN[0]]))}`);
   let f = [READ[0]];
   flagsBitOrAssign_bitor_assign(f, [RUN[0]]);
-  console.log(`${flagsDebug_fmt([f[0]])}`);
+  console.log(`${flagsDebug_fmt(f)}`);
   flagsBitAndAssign_bitand_assign(f, [RUN[0]]);
-  console.log(`${flagsDebug_fmt([f[0]])}`);
+  console.log(`${flagsDebug_fmt(f)}`);
   flagsBitXorAssign_bitxor_assign(f, [WRITE[0]]);
-  console.log(`${flagsDebug_fmt([f[0]])}`);
+  console.log(`${flagsDebug_fmt(f)}`);
   flagsShrAssignU32_shr_assign(f, 1);
-  console.log(`${flagsDebug_fmt([f[0]])}`);
+  console.log(`${flagsDebug_fmt(f)}`);
   flagsShlAssignU8_shl_assign(f, 2);
-  console.log(`${flagsDebug_fmt([f[0]])}`);
+  console.log(`${flagsDebug_fmt(f)}`);
   let all = [[READ[0]], [WRITE[0]]];
   flagsBitOrAssign_bitor_assign(all[1], [RUN[0]]);
   let user = [[READ[0]], "ann"];
   flagsBitOrAssign_bitor_assign(user[0], [WRITE[0]]);
   console.log(
-    `[${all
-      .map((item) => [item[0]])
-      .map((item) => flagsDebug_fmt(item))
-      .join(", ")}] ${flagsDebug_fmt([user[0][0]])} ${user[1]}`,
+    `[${all.map((item) => flagsDebug_fmt(item)).join(", ")}] ${flagsDebug_fmt(user[0])} ${user[1]}`,
   );
 }
 

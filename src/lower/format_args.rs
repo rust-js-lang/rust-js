@@ -249,6 +249,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Pretty::Always
         };
         let mut values = self.with_dyn_debug(pretty, |cx| cx.operands(&f.values, out))?;
+        // What's shown is only read, through the reference `format_args!`
+        // takes, which nothing can change before it's shown: a place itself,
+        // not the copy a read of a `Copy` value changed elsewhere is (ADR 0052).
+        for (value, &e) in values.iter_mut().zip(&f.values) {
+            let ty = self.thir[e].ty;
+            if self.is_copy(ty)
+                && self.contains_mutated(ty)
+                && let Some((place, _)) = self.place(e)
+            {
+                *value = place;
+            }
+        }
         let effects = values.iter().any(Expr::has_effects);
         let named: Vec<bool> = (0..values.len())
             .map(|i| {

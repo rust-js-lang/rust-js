@@ -32,9 +32,7 @@ function counted() {
 }
 
 function main() {
-  console.log(
-    `${pointDebug_fmt(moved(5))} ${pointDebug_fmt({ ...ORIGIN })} ${pointDebug_fmt(moved(-2))}`,
-  );
+  console.log(`${pointDebug_fmt(moved(5))} ${pointDebug_fmt(ORIGIN)} ${pointDebug_fmt(moved(-2))}`);
   console.log(`${LIMIT} ${GREETING} ${NAMES.join(",")}`);
   console.log(
     `[${PRIMES.map((item) => String(item)).join(", ")}] ${PRIMES.reduce((a, b) => (a + b) >>> 0, 0)} [${EMPTY.map((item) => String(item)).join(", ")}]`,
@@ -44,7 +42,7 @@ function main() {
   );
   console.log(`${(BOXED.x + BOXED.y) | 0} ${COMPUTED} ${counted()}`);
   console.log(
-    `${pointDebug_fmt({ ...CORNER })} [${SIDES.map((item) => String(item)).join(", ")}] ${NAME}`,
+    `${pointDebug_fmt(CORNER)} [${SIDES.map((item) => String(item)).join(", ")}] ${NAME}`,
   );
   for (const name of NAMES) {
     $print(`${name} `);
