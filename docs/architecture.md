@@ -423,7 +423,7 @@ question that emits nothing in a module of its own, checked as the others
 are, and lowering in the module of the construct. Check the generated JS
 reads as a person would write it, and run the checks
 [CONTRIBUTING.md](../CONTRIBUTING.md) asks for before pushing, as
-[AGENTS.md](../AGENTS.md) runs them, in its Linux VM.
+[AGENTS.md](../AGENTS.md) runs them.
 
 ## Not yet
 

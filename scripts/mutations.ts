@@ -10,8 +10,9 @@
 //   bun scripts/mutations.ts --shard=2/6      # a sixth of them, as CI splits them
 //
 // The mutations themselves are in `mutations/`, one list for each source
-// file. Each builds natively a few test programs, which macOS makes slow:
-// run them in the Linux VM (AGENTS.md).
+// file. Each builds natively a few test programs: on macOS, with the app
+// that runs them under Developer Tools, or the first run of each is slow
+// (AGENTS.md).
 
 import { chmodSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
