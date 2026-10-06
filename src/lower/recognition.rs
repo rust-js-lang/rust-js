@@ -1326,6 +1326,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 Std::Range(RangeOp::IsEmpty)
             }
             "as_ref" | "as_mut" if option => Std::Pointee,
+            // A `String`'s `&str` is the string, a `Vec`'s slice the array
+            // (ADR 0211): of an `Option` of one, it's the option.
+            "as_deref" | "as_deref_mut"
+                if option
+                    && self_ty
+                        .is_some_and(|t| self.is_lang_adt(t, LangItem::String) || self.is_std_adt(t, sym::Vec)) =>
+            {
+                Std::Pointee
+            }
             // A reference is the value (ADR 0023): what's in the `Result` is.
             "as_ref" if result => Std::Same,
             "into_inner" if adt("Cell") || adt("RefCell") => Std::CellGet,

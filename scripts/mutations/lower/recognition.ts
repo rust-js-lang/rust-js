@@ -611,4 +611,12 @@ export const mutations: Mutation[] = [
     replace: "            let boxed_str = false;",
     tests: ["test/corpus.test.ts", "-t", "boxed_str"],
   },
+  {
+    name: "option-as-deref-unknown",
+    breaks: "`path.as_deref()` of an `Option<String>` is an error, where it's the option",
+    file: "src/lower/recognition.rs",
+    find: "            \"as_deref\" | \"as_deref_mut\"",
+    replace: "            \"as_deref_never\"",
+    tests: ["test/compiler.test.ts", "-t", "as_deref"],
+  },
 ];

@@ -1376,3 +1376,22 @@ pub fn dropped() -> &'static str {
   }
   expect(logged).toEqual(["drop 1", "after"]);
 });
+
+// `Option::as_deref` of a `String` or a `Vec` is the option itself: a
+// `&str` is the string a `String` is, a slice the array (ADR 0211).
+test("Option::as_deref of a String or a Vec is the option itself", async () => {
+  const dir = fixture("option-as-deref");
+  writeFileSync(join(dir, "lib.rs"), `pub fn path_is(path: Option<String>, want: &str) -> bool {
+    path.as_deref() == Some(want)
+}
+pub fn first(items: Option<Vec<u32>>) -> Option<u32> {
+    items.as_deref().and_then(|items| items.first().copied())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toContain("as_deref");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.path_is("/learn", "/learn"), lib.path_is("/a", "/learn"), lib.path_is(undefined, "/learn")]).toEqual([true, false, false]);
+  expect([lib.first([4, 5]), lib.first([]), lib.first(undefined)]).toEqual([4, undefined, undefined]);
+});
