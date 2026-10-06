@@ -6,15 +6,19 @@
 //
 //   bun scripts/mutations.ts                  # every mutation
 //   bun scripts/mutations.ts copy-on-read ..  # the ones named
+//   bun scripts/mutations.ts --changed=main   # a change's, since where it left main
+//   bun scripts/mutations.ts --shard=2/6      # a sixth of them, as CI splits them
 //
 // The mutations themselves are in `mutations/`, one list for each source
 // file. Each builds natively a few test programs, which macOS makes slow:
 // run them in the Linux VM (AGENTS.md).
 
-import { chmodSync, cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { chmodSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 
 import { runSync, stopped, type Exit } from "../test/child";
+import { shard, shardArg } from "./shard";
 
 const root = join(import.meta.dir, "..");
 
@@ -40,6 +44,44 @@ for (const path of [...new Bun.Glob("**/*.ts").scanSync(join(import.meta.dir, "m
   lists.push({ path, mutations: (await import(`./mutations/${path}`)).mutations });
 }
 export const mutations: Mutation[] = lists.flatMap((list) => list.mutations);
+
+/** A change's mutations (DEVELOPMENT.md): those of a file it changes, and
+ * those it adds or edits, of `base`'s, which a change to their tests
+ * alone wouldn't name. */
+export function changedMutations(now: Mutation[], base: Mutation[], changedFiles: string[]): Mutation[] {
+  const same = (a: Mutation, b: Mutation) => JSON.stringify(a) === JSON.stringify(b);
+  return now.filter((m) => changedFiles.includes(m.file) || !base.some((b) => same(b, m)));
+}
+
+/** The files changed since where this branch left `base`, and the
+ * mutations as they were there. */
+async function since(base: string): Promise<{ files: string[]; mutations: Mutation[] }> {
+  const git = (args: string[]) => {
+    const p = runSync(["git", ...args], root, 60_000);
+    if (p.code !== 0) throw new Error(`git ${args.join(" ")} failed:\n${p.stderr}`);
+    return p.stdout;
+  };
+  const from = git(["merge-base", base, "HEAD"]).trim();
+  const files = git(["diff", "--name-only", from]).split("\n").filter(Boolean);
+  // Each list as it was there, where the change touched it; a new one had none.
+  const there = mkdtempSync(join(tmpdir(), "mutations-base-"));
+  const old: Mutation[] = [];
+  for (const { path, mutations: listed } of lists) {
+    const file = `scripts/mutations/${path}`;
+    if (!files.includes(file)) {
+      old.push(...listed);
+      continue;
+    }
+    const shown = runSync(["git", "show", `${from}:${file}`], root, 60_000);
+    if (shown.code !== 0) continue;
+    const copy = join(there, path);
+    mkdirSync(dirname(copy), { recursive: true });
+    writeFileSync(copy, shown.stdout);
+    old.push(...(await import(copy)).mutations);
+  }
+  rmSync(there, { recursive: true, force: true });
+  return { files, mutations: old };
+}
 
 // Where the mutated crate is built, and the compilers kept: one copy of
 // the crate, remade for each mutation, and one target, so only rust-js is
@@ -138,10 +180,25 @@ function test(tests: string[], compiler: string, snapshots = false): { passed: b
 }
 
 async function main() {
-  const named = process.argv.slice(2);
+  const args = process.argv.slice(2);
+  const named = args.filter((arg) => !arg.startsWith("--"));
   const unknown = named.filter((name) => !mutations.some((m) => m.name === name));
   if (unknown.length > 0) throw new Error(`no mutation ${unknown.join(", ")}; there are ${mutations.map((m) => m.name).join(", ")}`);
-  const chosen = named.length > 0 ? mutations.filter((m) => named.includes(m.name)) : mutations;
+  let chosen = named.length > 0 ? mutations.filter((m) => named.includes(m.name)) : mutations;
+  const changed = args.find((arg) => arg.startsWith("--changed="))?.slice("--changed=".length);
+  if (changed) {
+    const { files, mutations: base } = await since(changed);
+    chosen = changedMutations(chosen, base, files);
+  }
+  const sharded = shardArg(args);
+  if (sharded) {
+    const names = shard(chosen.map((m) => m.name), sharded.index, sharded.count);
+    chosen = chosen.filter((m) => names.includes(m.name));
+  }
+  if (chosen.length === 0) {
+    console.log("no mutations to run");
+    return;
+  }
   // A killed run's compilers, which it didn't get to remove.
   rmSync(join(work, "bin"), { recursive: true, force: true });
   // Each mutation's tests pass as the compiler is, and run at all, so
