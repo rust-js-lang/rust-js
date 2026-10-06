@@ -228,6 +228,11 @@ type Position = "param" | "result";
 /** What a parameter typed `any` is, until its function names its type parameter. */
 const ANY = "<any>";
 
+// The `any` parameters the browser copies with its structured clone, by
+// operation and parameter: a value only of a type it copies as it is,
+// `js::StructuredClone` (ADR 0225). WebIDL doesn't say which they are.
+const CLONED = new Set(["postMessage.message", "pushState.data", "replaceState.data", "structuredClone.value"]);
+
 /** The Rust type for a (non-union) WebIDL type, or why there isn't one. */
 function rustType(t: IdlType, at: Position): string | { skip: string } {
   if (t.union) return { skip: "union" };
@@ -698,7 +703,7 @@ line(`#![allow(invalid_runtime_symbol_definitions)]`);
 line();
 line(`use core::marker::PhantomData;`);
 line(`use core::ops::Deref;`);
-line(`use js::{ArrayBuffer, JsObject, Promise, Uint8Array, Unknown};`);
+line(`use js::{ArrayBuffer, Defined, JsObject, Promise, StructuredClone, Uint8Array, Unknown};`);
 line();
 line(`unsafe extern "Rust" {`);
 GLOBALS.forEach(([name, type], k) => {
@@ -721,8 +726,8 @@ function generic(f: Fn): string {
     if (!p.endsWith(`: ${ANY}`)) return p;
     const param = p.slice(0, -`: ${ANY}`.length);
     let type = param[0].toUpperCase();
-    while (names.includes(type)) type += "1";
-    names.push(type);
+    while (names.some((n) => n.split(":")[0] === type)) type += "1";
+    names.push(CLONED.has(`${f.jsName}.${param}`) ? `${type}: StructuredClone` : type);
     return `${param}: ${type}`;
   });
   const result = f.result === "()" ? "" : ` -> ${f.result}`;
@@ -898,6 +903,15 @@ for (const tag of tagNames) line(`impl Tag for tags::${nameType(tag)} { type Ele
 line();
 for (const name of INTERFACES) {
   for (const a of [name, ...chain(name)]) line(`unsafe impl IsA<${typeName(a)}> for ${typeName(name)} {}`);
+}
+
+// What WebIDL marks `[Serializable]`, a `Blob` say, the browser's structured
+// clone copies (ADR 0225); and an object is never nullish.
+line();
+for (const name of INTERFACES) {
+  const serializable = read.some((d) => d.type === "interface" && d.name === name && (d.extAttrs ?? []).some((a) => a.name === "Serializable"));
+  if (serializable) line(`unsafe impl StructuredClone for ${typeName(name)} {}`);
+  line(`unsafe impl Defined for ${typeName(name)} {}`);
 }
 
 await Bun.write(new URL("./src/lib.rs", import.meta.url), `${out.join("\n")}\n`);

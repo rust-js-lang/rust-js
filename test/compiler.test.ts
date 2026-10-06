@@ -773,7 +773,7 @@ pub fn wire() -> &'static webapi::HtmlButtonElement {
     ["use webapi::events::{Click, Keydown};", "use webapi::events::{Click, Keydown, Message};\nfn message(b: &webapi::HtmlButtonElement) { event_target::add_event_listener(b, Message, Box::new(|_| ())); }", "the trait `webapi::Listen<webapi::events::Message>` is not implemented for `webapi::HtmlButtonElement`"],
   ]) {
     writeFileSync(join(dir, "lib.rs"), source.replace(wrong, error));
-    const result = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "wrong.js"), ...withWeb]);
+    const result = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "wrong.js"), ...withWeb], { cwd: dir });
     expect(result.exitCode).not.toBe(0);
     expect(result.stderr.toString()).toContain(message);
   }
@@ -838,30 +838,56 @@ pub fn body(response: &webapi::Response) -> Promise<Option<&'static Unknown>> {
   expect(lib.renamed('{"name":"old","n":2}')).toBe("{name:'new',n:2}");
 });
 
-// ADR 0225: a WebIDL parameter typed `any` takes a value of any Rust type,
-// as JS has it: a struct is an object, a string a string.
-test("webapi's any parameters take any value as JS has it", async () => {
+// ADR 0225: a WebIDL parameter typed `any` takes a value as JS has it, and
+// one the browser copies, `postMessage`'s, `pushState`'s and
+// `structuredClone`'s, only a value it copies as it is: `js::StructuredClone`.
+// A closure, which it can't copy, and `Some(None)`, which would arrive as
+// rust-js's box, are rustc's errors; `reportError` takes anything still.
+test("webapi's any parameters take any value as JS has it, and a clone only one it copies", async () => {
   const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("any-params");
-  writeFileSync(join(dir, "lib.rs"), `use webapi::{history, window};
+  const source = `use js::StructuredClone;
+use webapi::{history, window};
 pub struct Saved {
     pub page: u32,
 }
+// Its fields are numbers, which the browser copies.
+unsafe impl StructuredClone for Saved {}
 pub fn save(page: u32) {
     history::push_state(window::history(window), Saved { page }, "");
 }
 pub fn copy(text: &str) -> Option<&'static js::Unknown> {
     window::structured_clone(window, text)
 }
+pub fn copies(blob: &webapi::Blob) -> Option<&'static js::Unknown> {
+    window::structured_clone(window, (vec![Some(1.5), None], "a", blob))
+}
+pub fn send(text: String) {
+    window::post_message(window, Some(text), "*");
+}
 pub fn report(error: &js::JsError) {
     window::report_error(window, error);
+    window::report_error(window, || ());
 }
-`);
+`;
+  writeFileSync(join(dir, "lib.rs"), source);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('window.history.pushState({ page }, "");');
   expect(js).toContain("return window.structuredClone(text);");
+  expect(js).toContain('return window.structuredClone([[1.5, undefined], "a", blob]);');
+  expect(js).toContain('window.postMessage(text, "*");');
   expect(js).toContain("window.reportError(error);");
+  for (const [written, error] of [
+    ["window::structured_clone(window, || ())", "the trait `js::StructuredClone` is not implemented for closure"],
+    ["window::structured_clone(window, Some(None::<i32>))", "the trait `js::Defined` is not implemented for `std::option::Option<i32>`"],
+    ["window::structured_clone(window, window)", "the trait `js::StructuredClone` is not implemented for `webapi::Window`"],
+  ]) {
+    writeFileSync(join(dir, "lib.rs"), source.replace("window::structured_clone(window, text)", written));
+    const result = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "wrong.js"), ...withWeb], { cwd: dir });
+    expect(result.exitCode).not.toBe(0);
+    expect(result.stderr.toString()).toContain(error);
+  }
 });
 
 // ADR 0225: JSON is a typed value, `js::Json`, as ReScript's `JSON.t` is,

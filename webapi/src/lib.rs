@@ -18,7 +18,7 @@
 
 use core::marker::PhantomData;
 use core::ops::Deref;
-use js::{ArrayBuffer, JsObject, Promise, Uint8Array, Unknown};
+use js::{ArrayBuffer, Defined, JsObject, Promise, StructuredClone, Uint8Array, Unknown};
 
 unsafe extern "Rust" {
     /// The `document` global.
@@ -4731,7 +4731,7 @@ pub mod window {
     #[cfg_attr(rust_js, rust_js::link_name = "postMessage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn post_message<M>(this: &Window, message: M, target_origin: &str) {
+    pub fn post_message<M: StructuredClone>(this: &Window, message: M, target_origin: &str) {
         unreachable!()
     }
 
@@ -4739,7 +4739,7 @@ pub mod window {
     #[cfg_attr(rust_js, rust_js::link_name = "postMessage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn post_message_with_transfer<M>(this: &Window, message: M, target_origin: &str, transfer: &[&dyn core::any::Any]) {
+    pub fn post_message_with_transfer<M: StructuredClone>(this: &Window, message: M, target_origin: &str, transfer: &[&dyn core::any::Any]) {
         unreachable!()
     }
 
@@ -4747,7 +4747,7 @@ pub mod window {
     #[cfg_attr(rust_js, rust_js::link_name = "postMessage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn post_message_with_options<M>(this: &Window, message: M, options: WindowPostMessageOptions<'_>) {
+    pub fn post_message_with_options<M: StructuredClone>(this: &Window, message: M, options: WindowPostMessageOptions<'_>) {
         unreachable!()
     }
 
@@ -4763,7 +4763,7 @@ pub mod window {
     #[cfg_attr(rust_js, rust_js::link_name = "structuredClone")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn structured_clone<V>(this: &Window, value: V) -> Option<&'static Unknown> {
+    pub fn structured_clone<V: StructuredClone>(this: &Window, value: V) -> Option<&'static Unknown> {
         unreachable!()
     }
 }
@@ -4895,7 +4895,7 @@ pub mod history {
     #[cfg_attr(rust_js, rust_js::link_name = "pushState")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn push_state<D>(this: &History, data: D, unused: &str) {
+    pub fn push_state<D: StructuredClone>(this: &History, data: D, unused: &str) {
         unreachable!()
     }
 
@@ -4903,7 +4903,7 @@ pub mod history {
     #[cfg_attr(rust_js, rust_js::link_name = "pushState")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn push_state_with_url<D>(this: &History, data: D, unused: &str, url: &str) {
+    pub fn push_state_with_url<D: StructuredClone>(this: &History, data: D, unused: &str, url: &str) {
         unreachable!()
     }
 
@@ -4911,7 +4911,7 @@ pub mod history {
     #[cfg_attr(rust_js, rust_js::link_name = "replaceState")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn replace_state<D>(this: &History, data: D, unused: &str) {
+    pub fn replace_state<D: StructuredClone>(this: &History, data: D, unused: &str) {
         unreachable!()
     }
 
@@ -4919,7 +4919,7 @@ pub mod history {
     #[cfg_attr(rust_js, rust_js::link_name = "replaceState")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn replace_state_with_url<D>(this: &History, data: D, unused: &str, url: &str) {
+    pub fn replace_state_with_url<D: StructuredClone>(this: &History, data: D, unused: &str, url: &str) {
         unreachable!()
     }
 }
@@ -12676,3 +12676,84 @@ unsafe impl IsA<Navigator> for Navigator {}
 unsafe impl IsA<Clipboard> for Clipboard {}
 unsafe impl IsA<EventTarget> for Clipboard {}
 unsafe impl IsA<ClipboardItem> for ClipboardItem {}
+
+unsafe impl Defined for EventTarget {}
+unsafe impl Defined for Event {}
+unsafe impl Defined for Node {}
+unsafe impl Defined for CharacterData {}
+unsafe impl Defined for Text {}
+unsafe impl Defined for Comment {}
+unsafe impl Defined for Element {}
+unsafe impl Defined for Document {}
+unsafe impl Defined for DocumentFragment {}
+unsafe impl Defined for DomTokenList {}
+unsafe impl Defined for NodeList {}
+unsafe impl Defined for HtmlCollection {}
+unsafe impl Defined for AbortController {}
+unsafe impl Defined for AbortSignal {}
+unsafe impl Defined for HtmlElement {}
+unsafe impl Defined for HtmlAnchorElement {}
+unsafe impl Defined for HtmlButtonElement {}
+unsafe impl Defined for HtmlDivElement {}
+unsafe impl Defined for HtmlFormElement {}
+unsafe impl Defined for HtmlHeadingElement {}
+unsafe impl Defined for HtmlImageElement {}
+unsafe impl Defined for HtmlInputElement {}
+unsafe impl Defined for HtmlLabelElement {}
+unsafe impl Defined for HtmlLiElement {}
+unsafe impl Defined for HtmlOListElement {}
+unsafe impl Defined for HtmlOptionElement {}
+unsafe impl Defined for HtmlOutputElement {}
+unsafe impl Defined for HtmlParagraphElement {}
+unsafe impl Defined for HtmlSelectElement {}
+unsafe impl Defined for HtmlSpanElement {}
+unsafe impl Defined for HtmlTextAreaElement {}
+unsafe impl Defined for HtmlUListElement {}
+unsafe impl Defined for HtmlTableElement {}
+unsafe impl Defined for HtmlTableSectionElement {}
+unsafe impl Defined for HtmlTableRowElement {}
+unsafe impl Defined for HtmlTableCellElement {}
+unsafe impl Defined for HtmlIFrameElement {}
+unsafe impl Defined for HtmlCanvasElement {}
+unsafe impl Defined for Window {}
+unsafe impl Defined for Location {}
+unsafe impl Defined for History {}
+unsafe impl Defined for Storage {}
+unsafe impl Defined for DataTransfer {}
+unsafe impl Defined for ToggleEvent {}
+unsafe impl Defined for MessageEvent {}
+unsafe impl Defined for SubmitEvent {}
+unsafe impl Defined for Performance {}
+unsafe impl Defined for UiEvent {}
+unsafe impl Defined for FocusEvent {}
+unsafe impl Defined for MouseEvent {}
+unsafe impl Defined for KeyboardEvent {}
+unsafe impl Defined for InputEvent {}
+unsafe impl Defined for PointerEvent {}
+unsafe impl Defined for CssStyleDeclaration {}
+unsafe impl Defined for CssStyleProperties {}
+unsafe impl StructuredClone for DomRectReadOnly {}
+unsafe impl Defined for DomRectReadOnly {}
+unsafe impl StructuredClone for DomRect {}
+unsafe impl Defined for DomRect {}
+unsafe impl Defined for MediaQueryList {}
+unsafe impl Defined for MediaQueryListEvent {}
+unsafe impl Defined for Headers {}
+unsafe impl Defined for Request {}
+unsafe impl Defined for Response {}
+unsafe impl Defined for FormData {}
+unsafe impl Defined for ReadableStream {}
+unsafe impl Defined for Touch {}
+unsafe impl Defined for TouchList {}
+unsafe impl Defined for TextEncoder {}
+unsafe impl Defined for TextDecoder {}
+unsafe impl Defined for WebAssemblyModule {}
+unsafe impl Defined for WebAssemblyInstance {}
+unsafe impl Defined for WebAssemblyMemory {}
+unsafe impl StructuredClone for Blob {}
+unsafe impl Defined for Blob {}
+unsafe impl StructuredClone for File {}
+unsafe impl Defined for File {}
+unsafe impl Defined for Navigator {}
+unsafe impl Defined for Clipboard {}
+unsafe impl Defined for ClipboardItem {}
