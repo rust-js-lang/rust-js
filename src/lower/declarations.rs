@@ -370,18 +370,23 @@ impl<'tcx> Declarations<'_, 'tcx> {
                         Some((from, named)) => (Some(from), named),
                         None => (None, declared.as_str()),
                     };
+                    // Arguments written are all of TypeScript's type's, `<>` none:
+                    // react's `Element<T>` is a `ReactNode` whatever its tag's
+                    // element (ADR 0224). Else they're the Rust type's.
                     let (name, given) = match named.split_once('<') {
-                        Some((name, given)) => (name, given.trim_end_matches('>')),
-                        None => (named, ""),
+                        Some((name, given)) => (name, Some(given.trim_end_matches('>'))),
+                        None => (named, None),
                     };
                     if let Some(from) = from {
                         self.imports.insert((from.to_string(), name.to_string()));
                     }
-                    let mut type_args: Vec<Value> = (given.split(',').map(str::trim))
-                        .filter(|arg| !arg.is_empty())
-                        .map(|arg| reference(arg, Vec::new()))
-                        .collect();
-                    type_args.extend(args.types().map(|t| self.ts(t)));
+                    let type_args: Vec<Value> = match given {
+                        Some(given) => (given.split(',').map(str::trim))
+                            .filter(|arg| !arg.is_empty())
+                            .map(|arg| reference(arg, Vec::new()))
+                            .collect(),
+                        None => args.types().map(|t| self.ts(t)).collect(),
+                    };
                     return reference(name, type_args);
                 }
                 // One of the crate's, declared: this module's by its name,

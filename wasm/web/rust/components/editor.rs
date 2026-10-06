@@ -54,7 +54,7 @@ pub fn Editor(EditorProps { state, view, on_submit }: EditorProps) -> Element {
             className="min-w-0 overflow-hidden [&_.cm-editor]:h-full [&_.cm-editor]:text-[13px]"
             ref={parent}
             // Before CodeMirror sees it, since its own Mod-Enter inserts a line.
-            onKeyDownCapture={move |e: &Keyboard| {
+            onKeyDownCapture={move |e: &Keyboard<_>| {
                 if let Some(submit) = &on_submit
                 && (e.meta_key() || e.ctrl_key())
                 && e.key() == "Enter"

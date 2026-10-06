@@ -117,7 +117,17 @@ work for these declarations too. For a component value whose props type is not
 available to the syntax pass (for example, an imported value or a local alias),
 use `<Selected {...props} />`, with `{...()}` for no props.
 
-DOM `ref` accepts a ref object or callback. `action` and `formAction` accept
+A tag's handlers and `ref` are of its DOM element (ADR 0224): a `<button>`'s
+`onClick` gets an `event::Mouse<webapi::HtmlButtonElement>`, whose
+`current_target()` is the button. A closure written outside the JSX can name
+its event `&event::Mouse<_>`, the tag filling in its element. A handler of
+any element's event, `Box<dyn Fn(&event::Mouse)>`, is passed as
+`event::Mouse::widen(handler)`, and an event given to one is `e.upcast()`;
+each is the value itself in JS. Whatever its tag, what JSX makes is an
+`Element`.
+
+DOM `ref` accepts a ref object or callback, of the tag's element or one it
+extends: an `<input>`'s ref on a `<button>` is rustc's error. `action` and `formAction` accept
 URLs, or on React 19+, functions and action dispatches. Write
 `style={Style::new().color("red")}` for a typed style object.
 

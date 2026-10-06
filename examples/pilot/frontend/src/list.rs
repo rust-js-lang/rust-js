@@ -69,7 +69,7 @@ pub fn ContactList() -> Element {
                 placeholder="Search"
                 aria-label="Search"
                 value={query.clone()}
-                onChange={move |e: &Change| set_query.set(e.value())} />
+                onChange={move |e: &Change<_>| set_query.set(e.value())} />
             {results}
         </section>
     }

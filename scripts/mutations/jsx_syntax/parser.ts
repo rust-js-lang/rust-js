@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "tag-element-unfinished",
+    breaks: "a tag's JSX is of its DOM element, `Element<HtmlSpanElement>`, where an `Element` is wanted: a `<span>` or a `<b>` isn't a value of one type",
+    file: "src/jsx_syntax/parser.rs",
+    find: "            if intrinsic {\n                expr = call(\n",
+    replace: "            if false && intrinsic {\n                expr = call(\n",
+    tests: ["test/jsx.test.ts", "-t", "tag's element"],
+  },
+  {
     name: "props-macro-not-allowed",
     breaks: "a component's props `macro` writes `#[rust_js::jsx]` on an expression, which its expansion may not",
     file: "src/jsx_syntax/parser.rs",

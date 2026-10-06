@@ -1,6 +1,12 @@
 //! [React's events](https://react.dev/reference/react-dom/components/common#react-event-object),
 //! which wrap the DOM's. Each derefs to the one it extends, as React's do:
 //! a [`Pointer`] is a [`Mouse`], which is a [`Ui`], which is an [`Event`].
+//!
+//! Each is of an element, `Mouse<T = webapi::Element>`, as React's
+//! `MouseEvent<T = Element>` is: a `<button>`'s handler gets a
+//! `Mouse<webapi::HtmlButtonElement>`, whose `current_target` is the button
+//! (ADR 0224). A handler of any element's event is `Mouse::widen`ed, and an
+//! event `upcast` to any element's.
 
 use core::marker::PhantomData;
 use core::ops::Deref;
@@ -9,9 +15,9 @@ use js::JsObject;
 
 /// A [React event](https://react.dev/reference/react-dom/components/common#react-event-object):
 /// what every handler gets.
-pub struct Event(PhantomData<JsObject>);
+pub struct Event<T = webapi::Element>(PhantomData<JsObject>, PhantomData<T>);
 
-impl Event {
+impl<T> Event<T> {
     /// Stop the browser's default action, like submitting a form.
     #[cfg_attr(rust_js, rust_js::link_name = "preventDefault")]
     pub fn prevent_default(&self) {
@@ -38,7 +44,7 @@ impl Event {
 /// Getters, one per React event field: `client_x` is `e.clientX`.
 macro_rules! fields {
     ($type:ident { $($(#[doc = $doc:literal])* $method:ident: $ty:ty = $js:literal;)* }) => {
-        impl $type {
+        impl<T: 'static> $type<T> {
             $(
                 $(#[doc = $doc])*
                 #[cfg_attr(rust_js, rust_js::link_name = concat!("get ", $js))]
@@ -53,13 +59,14 @@ macro_rules! fields {
 fields!(Event {
     bubbles: bool = "bubbles";
     cancelable: bool = "cancelable";
-    /// The element whose handler this is.
-    current_target: &'static webapi::Element = "currentTarget";
+    /// The element whose handler this is: a `<button>`'s is a `HtmlButtonElement`.
+    current_target: &'static T = "currentTarget";
     default_prevented: bool = "defaultPrevented";
     event_phase: u32 = "eventPhase";
     is_trusted: bool = "isTrusted";
-    /// Where it happened.
-    target: &'static webapi::Element = "target";
+    /// Where it happened: the element, or one inside it, or what isn't an
+    /// element, as `EventTarget` is in the DOM and in @types/react.
+    target: &'static webapi::EventTarget = "target";
     time_stamp: f64 = "timeStamp";
     /// The DOM's event that this wraps.
     native_event: &'static webapi::Event = "nativeEvent";
@@ -67,23 +74,52 @@ fields!(Event {
     type_: String = "type";
 });
 
+/// What any element's event is to one of an element (ADR 0224): a handler of
+/// any element's, widened, and an element's event, upcast. Each is the value
+/// itself in JS.
+macro_rules! widen {
+    ($name:ident) => {
+        impl $name {
+            /// A handler of any element's event, where an element's is wanted:
+            /// `<button onClick={event::Mouse::widen(on_click)}>`. One that takes
+            /// any element's event takes a button's.
+            #[cfg_attr(rust_js, rust_js::link_name = "this")]
+            pub fn widen<T: webapi::IsA<webapi::Element>>(this: Box<dyn Fn(&$name)>) -> Box<dyn Fn(&$name<T>)> {
+                unreachable!()
+            }
+        }
+
+        impl<T: webapi::IsA<webapi::Element>> $name<T> {
+            /// This event, as any element's: for a handler that takes any
+            /// element's, `move |e| f(e.upcast())`.
+            #[cfg_attr(rust_js, rust_js::link_name = "this")]
+            pub fn upcast(&self) -> &$name {
+                unreachable!()
+            }
+        }
+    };
+}
+
+widen!(Event);
+
 /// Declares an event type that extends another.
 macro_rules! events {
     ($($(#[doc = $doc:literal])* $name:ident: $parent:ident { $($body:tt)* })*) => {
         $(
             $(#[doc = $doc])*
-            pub struct $name(PhantomData<JsObject>);
+            pub struct $name<T = webapi::Element>(PhantomData<JsObject>, PhantomData<T>);
 
-            impl Deref for $name {
-                type Target = $parent;
+            impl<T> Deref for $name<T> {
+                type Target = $parent<T>;
 
-                fn deref(&self) -> &$parent {
+                fn deref(&self) -> &$parent<T> {
                     // Never runs: rust-js compiles this `Deref` to the object itself.
-                    unsafe { &*(self as *const Self as *const $parent) }
+                    unsafe { &*(self as *const Self as *const $parent<T>) }
                 }
             }
 
             fields!($name { $($body)* });
+            widen!($name);
         )*
     };
 }
@@ -222,7 +258,7 @@ events! {
     }
 }
 
-impl Mouse {
+impl<T> Mouse<T> {
     /// Whether a modifier key, like `"Shift"` or `"CapsLock"`, is down.
     #[cfg_attr(rust_js, rust_js::link_name = "getModifierState")]
     pub fn get_modifier_state(&self, key: &str) -> bool {
@@ -230,7 +266,7 @@ impl Mouse {
     }
 }
 
-impl Keyboard {
+impl<T> Keyboard<T> {
     #[cfg_attr(rust_js, rust_js::link_name = "getModifierState")]
     pub fn get_modifier_state(&self, key: &str) -> bool {
         unreachable!()

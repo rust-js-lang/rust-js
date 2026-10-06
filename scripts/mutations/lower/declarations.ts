@@ -5,6 +5,14 @@ const tests = ["test/declarations.test.ts"];
 
 export const mutations: Mutation[] = [
   {
+    name: "types-args-appended",
+    breaks: "a `types` written with its arguments, `react#ReactNode<>`, takes the Rust type's too: `ReactNode<any>`",
+    file: "src/lower/declarations.rs",
+    find: "                        Some((name, given)) => (name, Some(given.trim_end_matches('>'))),",
+    replace: "                        Some((name, _)) => (name, None::<&str>),",
+    tests: ["test/declarations.test.ts", "-t", "declarations type what a module exports"],
+  },
+  {
     name: "declared-option-required",
     breaks: "an `Option` field is a required prop to TypeScript, `text: string`, which a caller leaving it out is an error of",
     file: "src/lower/declarations.rs",

@@ -594,6 +594,51 @@ pub fn App() -> Element {
   expect(renderToStaticMarkup(createElement(result.App))).toBe("<i>a</i><i>b</i><b>dark</b><b>legacy</b>plain");
 });
 
+// ADR 0224: a tag's element reaches its handlers' events and its `ref`, as
+// @types/react's `IntrinsicElements` gives them, while what JSX makes is an
+// `Element` whatever its tag. A handler of any element's event is widened.
+test("JSX gives a tag's element to its handlers and its ref", () => {
+  const source = `#![deny(warnings)]
+#![allow(non_snake_case)]
+use react::{Element, event, jsx, use_ref, webapi};
+pub struct ButtonProps {
+    pub on_click: Box<dyn Fn(&event::Mouse)>,
+}
+pub fn Button(ButtonProps { on_click }: ButtonProps) -> Element {
+    jsx! { <button onClick={event::Mouse::widen(on_click)}>{"Go"}</button> }
+}
+pub fn App(busy: bool) -> Element {
+    let input = use_ref(None::<&'static webapi::HtmlInputElement>);
+    let label = if busy { jsx! { <span>{"…"}</span> } } else { jsx! { <b>{"Save"}</b> } };
+    jsx! {
+        <form>
+            <input ref={input} />
+            <button onClick={|e| webapi::html_button_element::set_disabled(e.current_target(), true)}>{label}</button>
+        </form>
+    }
+}
+`;
+  const { dir, args } = compile(source);
+  run(args);
+  const code = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(code).toContain('<button onClick={onClick}>Go</button>');
+  expect(code).toContain("<input ref={input} />");
+  expect(code).toContain("const label = busy ? <span>…</span> : <b>Save</b>;");
+  expect(code).toContain("onClick={(e) => {\n          e.currentTarget.disabled = true;\n        }}");
+  // An input's ref on a button, a handler of an input's event on it, and a
+  // handler of any element's event not widened, are each rustc's error.
+  for (const [wrong, written, error] of [
+    ["<input ref={input} />", "<button ref={input} />", "the trait `react::webapi::IsA<react::webapi::HtmlInputElement>` is not implemented for `react::webapi::HtmlButtonElement`"],
+    ["onClick={|e| webapi::html_button_element::set_disabled(e.current_target(), true)}", "onClick={|e: &event::Mouse<webapi::HtmlInputElement>| { let _ = e; }}", "expected closure signature `for<'a> fn(&'a Mouse<react::webapi::HtmlButtonElement>) -> _`"],
+    ["onClick={event::Mouse::widen(on_click)}", "onClick={on_click}", "found `dyn for<'a> std::ops::Fn(&'a react::event::Mouse)`"],
+  ]) {
+    writeFileSync(join(dir, "lib.rs"), source.replace(wrong, written));
+    const result = Bun.spawnSync(args, { cwd: dir });
+    expect(result.exitCode).not.toBe(0);
+    expect(result.stderr.toString()).toContain(error);
+  }
+});
+
 test("JSX built-ins finish as elements and use one spelling for ref and form actions", () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{Element, Style, jsx, use_ref, webapi};
@@ -625,17 +670,19 @@ pub fn App() -> Element {
 });
 
 for (const [name, body] of [
-  ["constructor", "react::html::div()"],
-  ["import alias", "{ use react::html::div as make; make() }"],
-  ["function value", "{ let make = react::html::div; make() }"],
+  // A tag's builder is of its element (ADR 0224): `react::element` makes
+  // it an `Element`, so what's refused is the builder, not its type.
+  ["constructor", "react::element(react::html::div())"],
+  ["import alias", "{ use react::html::div as make; react::element(make()) }"],
+  ["function value", "{ let make = react::html::div; react::element(make()) }"],
   ["method", "jsx! { <div /> }.children(\"no\")"],
   ["UFCS", "react::Element::children(jsx! { <div /> }, \"no\")"],
   ["component", "react::component(Card, ())"],
   ["fragment", "react::fragment(())"],
-  ["inside JSX expression", "jsx! { <div>{react::html::span()}</div> }"],
-  ["inside component prop", "jsx! { <Wrapper content={react::html::span()} /> }"],
+  ["inside JSX expression", "jsx! { <div>{react::element(react::html::span())}</div> }"],
+  ["inside component prop", "jsx! { <Wrapper content={react::element(react::html::span())} /> }"],
   ["inside closure", "jsx! { <button onClick={|_| { let _ = react::html::span(); }} /> }"],
-  ["ordinary macro", "{ macro_rules! old { () => { react::html::span() } } old!() }"],
+  ["ordinary macro", "{ macro_rules! old { () => { react::element(react::html::span()) } } old!() }"],
 ] as const) {
   test(`direct element builder ${name} is rejected without replacing output`, () => {
     const { dir, args } = compile(`#![allow(non_snake_case, dead_code)]
@@ -1480,7 +1527,7 @@ test("JSX passes an optional event handler on as it is", async () => {
 use react::{Element, Node, event, jsx};
 pub struct ButtonProps<C> { pub children: C, pub on_click: Option<Box<dyn Fn(&event::Mouse)>> }
 pub fn Button<C: Node>(ButtonProps { children, on_click }: ButtonProps<C>) -> Element {
-    jsx! { <button onClick={move |e| if let Some(f) = &on_click { f(e) }}>{children}</button> }
+    jsx! { <button onClick={move |e| if let Some(f) = &on_click { f(e.upcast()) }}>{children}</button> }
 }
 `);
   run(args);

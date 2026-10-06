@@ -355,6 +355,16 @@ impl Jsx<'_> {
             if has_children || (builtin.is_some() && name != "StrictMode") {
                 expr = method_call(self.sess, expr, "children", vec![children], span);
             }
+            // A tag's is of its DOM element while its props are set, which its
+            // handlers and `ref` take; what it makes is an `Element` (ADR 0224).
+            if intrinsic {
+                expr = call(
+                    self.sess,
+                    template(self.sess, "::react::element".into(), span),
+                    vec![expr],
+                    span,
+                );
+            }
             return Ok(expr);
         }
         // A props literal already evaluates its fields in source order.

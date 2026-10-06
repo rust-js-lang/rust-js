@@ -78,11 +78,13 @@ pub(super) fn is_binding(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 }
 
 /// A JS function whose first parameter is named `this` is a method:
-/// `f(x, a)` calls `x.f(a)`. So is a Rust method's `self`.
+/// `f(x, a)` calls `x.f(a)`, a type's own as well, `Mouse::widen(this)`.
+/// So is a Rust method's `self`.
 pub(super) fn is_method(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let named_this = || matches!(tcx.fn_arg_idents(def_id).first(), Some(Some(ident)) if ident.name.as_str() == "this");
     match tcx.def_kind(def_id) {
-        DefKind::Fn => matches!(tcx.fn_arg_idents(def_id).first(), Some(Some(ident)) if ident.name.as_str() == "this"),
-        DefKind::AssocFn => tcx.associated_item(def_id).is_method(),
+        DefKind::Fn => named_this(),
+        DefKind::AssocFn => tcx.associated_item(def_id).is_method() || named_this(),
         _ => false,
     }
 }

@@ -27,7 +27,7 @@ pub fn ExamplePicker(
             className={CONTROL}
             aria-label="Example"
             value={chosen}
-            onChange={move |e: &Change| on_choose(e.value())}
+            onChange={move |e: &Change<_>| on_choose(e.value())}
         >
             {examples.iter().map(|example| jsx! {
                 <option key={example.name.clone()} value={example.name.clone()}>{example.title.clone()}</option>
