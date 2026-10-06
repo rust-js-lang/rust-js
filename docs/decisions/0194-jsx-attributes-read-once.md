@@ -22,11 +22,13 @@ const className$1 = className;
 again, is read as it is**, as a value a hook or a closure captures is: it
 reads the same wherever it's read.
 
-**Only a child whose JS needs a statement reads the attributes before it
-first**, its statements lowered aside and looked at: one that doesn't, a
-`<Link>` whose props flatten an anchor's in react.dev's `Breadcrumbs`, is
-read where JSX reads it, after them, as Rust reads it, where a child
-Rust's expression made look complex read `key` into a `const`.
+**Only a child that does more than read, and whose JS needs a statement,
+reads the attributes before it first**, its statements lowered aside and
+looked at: one without, a `<Link>` whose props flatten an anchor's in
+react.dev's `Breadcrumbs`, is read where JSX reads it, after them, as Rust
+reads it, where a child Rust's expression made look complex read `key`
+into a `const`; and one that only reads, `IconCanary`'s `const title =
+props.title`, leaves them in place, as reads in either order are alike.
 
 ## Why
 

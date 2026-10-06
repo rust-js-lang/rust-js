@@ -1163,6 +1163,8 @@ pub fn Badge(p: P) -> Element {
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx.match(/const (\w+)\$\d+ = \1;/)).toBe(null);
+  // Its child's statement only reads, so the attributes before it stay in place.
+  expect(jsx).not.toContain("const className");
   const result = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(result.Badge({ class_name: "c", size: "S", title: "t" }))).toBe('<svg class="c" width="12px" height="12px" viewBox="0 0 20 20"><title>t</title><g fill="none"><path d="M0 0"></path></g></svg>');
 });

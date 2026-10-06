@@ -488,7 +488,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // The value, and what it needs done first, its statements, aside: JSX
         // reads its attributes in order, then its children, as Rust does, so
         // only those statements, which run before the whole element, would
-        // jump ahead of what's read already.
+        // jump ahead of what's read already, and only matter where the
+        // value does more than read.
         let mut first = Vec::new();
         let (children, mut lowered) = match name.as_str() {
             "children" => (self.jsx_children(value, &mut first)?, None),
@@ -502,7 +503,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let js::ExprKind::Jsx(jsx) = &mut element.kind else {
             unreachable!("checked above")
         };
-        if !first.is_empty() || (name != "children" && !jsx.children.is_empty()) {
+        if (!first.is_empty() && !self.is_simple(value)) || (name != "children" && !jsx.children.is_empty()) {
             // One read already, a `const` of its own, is read as it is (ADR 0194).
             for prop in &mut jsx.props {
                 let (base, value) = match prop {

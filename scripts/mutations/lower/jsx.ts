@@ -142,8 +142,16 @@ export const mutations: Mutation[] = [
     name: "jsx-prop-read-first-for-any-child",
     breaks: "a prop before children that aren't simple is read into a `const` first, though their JS needs no statements",
     file: "src/lower/jsx.rs",
-    find: "        if !first.is_empty() || (name != \"children\" && !jsx.children.is_empty()) {\n",
+    find: "        if (!first.is_empty() && !self.is_simple(value)) || (name != \"children\" && !jsx.children.is_empty()) {\n",
     replace: "        if !self.is_simple(value) || (name != \"children\" && !jsx.children.is_empty()) {\n",
     tests: ["test/jsx.test.ts", "-t", "a prop before children"],
+  },
+  {
+    name: "jsx-prop-read-first-for-reads",
+    breaks: "a child's statement that only reads makes the attributes before it `const`s first, `const className = props.className`",
+    file: "src/lower/jsx.rs",
+    find: "        if (!first.is_empty() && !self.is_simple(value)) || (name != \"children\" && !jsx.children.is_empty()) {\n",
+    replace: "        if !first.is_empty() || (name != \"children\" && !jsx.children.is_empty()) {\n",
+    tests: ["test/jsx.test.ts", "-t", "attribute before a child once"],
   },
 ];
