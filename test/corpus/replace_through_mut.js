@@ -23,13 +23,7 @@ const Counter = {
 
 const Light = {
   toggle(self) {
-    let tmp;
-    if (self.value === "Off") {
-      tmp = { TAG: "On", level: 5 };
-    } else {
-      tmp = "Off";
-    }
-    self.value = tmp;
+    self.value = self.value === "Off" ? { TAG: "On", level: 5 } : "Off";
   },
 };
 

@@ -301,4 +301,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n            self.tcx.dcx().span_err(",
     tests: ["test/jsx.test.ts","-t","and the component no dictionary"],
   },
+  {
+    name: "conditional-match-not-simple",
+    breaks: "`let kind = match ..` of two plain arms is `let kind; if .. else ..`, not a conditional",
+    file: "src/lower.rs",
+    find: "            } if self.body_query().as_for(e).is_none() && self.is_conditional_match(arms) => self.is_simple(scrutinee),",
+    replace: "            } if false && self.is_conditional_match(arms) => self.is_simple(scrutinee),",
+    tests: ["test/compiler.test.ts", "-t", "two-arm match"],
+  },
 ];

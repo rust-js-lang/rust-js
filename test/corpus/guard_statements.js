@@ -11,35 +11,28 @@ function size(s) {
 }
 
 function describe(s, seen) {
-  if (s.TAG === "Square") {
-    let tmp;
-    if (s.TAG === "Square") {
-      tmp = s._0 > 2;
-    } else {
-      tmp = false;
-    }
-    if (tmp) {
-      return "big square";
-    }
-  }
-  if (s.TAG === "Square") {
-    seen.value = (seen.value + 1) | 0;
-    if (seen.value > 2) {
-      return "square, seen often";
-    }
-  }
-  if (s.TAG === "Square") {
-    return "square";
-  } else if (size(s) > 10) {
-    return "big";
+  if (s.TAG === "Square" && (s.TAG === "Square" ? s._0 > 2 : false)) {
+    return "big square";
   } else {
-    if (s.TAG === "Rect") {
-      const half = (s.w / 2) | 0;
-      if (half > 0) {
-        return "wide rect";
+    if (s.TAG === "Square") {
+      seen.value = (seen.value + 1) | 0;
+      if (seen.value > 2) {
+        return "square, seen often";
       }
     }
-    return "other";
+    if (s.TAG === "Square") {
+      return "square";
+    } else if (size(s) > 10) {
+      return "big";
+    } else {
+      if (s.TAG === "Rect") {
+        const half = (s.w / 2) | 0;
+        if (half > 0) {
+          return "wide rect";
+        }
+      }
+      return "other";
+    }
   }
 }
 

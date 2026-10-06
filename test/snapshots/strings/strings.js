@@ -123,7 +123,7 @@ export function tagged(s) {
   const match = s.endsWith("/");
   if (top === "ab") {
     n = 1;
-  } else if (top === "" && match === true) {
+  } else if (top === "" && match) {
     n = 2;
   } else if (top == null) {
     n = 3;

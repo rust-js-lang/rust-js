@@ -1267,3 +1267,112 @@ test("a plain `cargo check` checks the vite-react example", () => {
   expect(p.stderr).not.toMatch(/`rust-js-\w+` \(lib\) generated/);
   expect(p.code).toBe(0);
 }, 300_000);
+
+// A two-arm `match` as a value, its arms plain and binding nothing, is a
+// conditional, as a person writes it (ADR 0209): its subject in place
+// where the test reads it once, else in a `const` of its own.
+test("a two-arm match that's a value is a conditional expression", async () => {
+  const dir = fixture("match-conditional");
+  writeFileSync(join(dir, "lib.rs"), `pub enum Kind {
+    Primary,
+    Secondary,
+}
+pub fn button_class(kind: Option<Kind>) -> &'static str {
+    let class = match kind.unwrap_or(Kind::Primary) {
+        Kind::Primary => "bg-link",
+        Kind::Secondary => "text-primary",
+    };
+    class
+}
+pub fn low(x: u32) -> &'static str {
+    let size = match x % 3 {
+        0 | 1 => "low",
+        _ => "high",
+    };
+    size
+}
+// A plain guard is the arm's test too.
+pub fn guarded(n: u32, flag: bool) -> &'static str {
+    let label = match n {
+        0 if flag => "flagged zero",
+        _ => "other",
+    };
+    label
+}
+// A &mut to a number, a cell, is tested by its value.
+pub fn zero(n: &mut i32) -> &'static str {
+    let label = match n {
+        &mut 0 => "zero",
+        _ => "other",
+    };
+    label
+}
+// A bool tested against true is the bool, as JS has it.
+pub fn emptiness(xs: Vec<u32>) -> &'static str {
+    let label = match xs.is_empty() {
+        true => "empty",
+        false => "some",
+    };
+    label
+}
+pub fn toggle(flag: bool) -> &'static str {
+    let label = match flag {
+        false => "off",
+        true => "on",
+    };
+    label
+}
+// A first arm that takes everything is the value, its guard the test.
+#[allow(unreachable_patterns)]
+pub fn every(n: u32, flag: bool) -> &'static str {
+    let all = match n {
+        _ => "all",
+        1 => "one",
+    };
+    let guarded = match n {
+        _ if flag => "flag",
+        _ => "no flag",
+    };
+    if all == "all" { guarded } else { "never" }
+}
+// A subject with a destructor is dropped where Rust drops it.
+pub struct Loud(pub u32);
+impl Drop for Loud {
+    fn drop(&mut self) {
+        println!("drop {}", self.0);
+    }
+}
+pub fn dropped() -> &'static str {
+    let label = match Loud(1) {
+        Loud(1) => "one",
+        _ => "other",
+    };
+    println!("after");
+    label
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('(kind ?? "Primary") === "Primary" ? "bg-link" : "text-primary"');
+  expect(js).toContain('match === 0 || match === 1 ? "low" : "high"');
+  expect(js).toContain('const label = n === 0 && flag ? "flagged zero" : "other";');
+  expect(js).toContain('const label = n.value === 0 ? "zero" : "other";');
+  expect(js).toContain('const label = xs.length === 0 ? "empty" : "some";');
+  expect(js).toContain('const label = !flag ? "off" : "on";');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.button_class(undefined), lib.button_class("Secondary"), lib.low(4), lib.low(5)]).toEqual(["bg-link", "text-primary", "low", "high"]);
+  expect([lib.guarded(0, true), lib.guarded(0, false), lib.guarded(1, true)]).toEqual(["flagged zero", "other", "other"]);
+  expect([lib.zero({ value: 0 }), lib.zero({ value: 3 })]).toEqual(["zero", "other"]);
+  expect([lib.every(1, true), lib.every(1, false)]).toEqual(["flag", "no flag"]);
+  expect([lib.emptiness([]), lib.emptiness([1])]).toEqual(["empty", "some"]);
+  expect([lib.toggle(false), lib.toggle(true)]).toEqual(["off", "on"]);
+  const logged: string[] = [];
+  const log = console.log;
+  console.log = (line: string) => logged.push(line);
+  try {
+    expect(lib.dropped()).toBe("one");
+  } finally {
+    console.log = log;
+  }
+  expect(logged).toEqual(["drop 1", "after"]);
+});

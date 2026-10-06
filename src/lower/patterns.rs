@@ -4,7 +4,7 @@ use super::{
     Binding, Dest, Evaluation, FnCx, Num, R, Shape, Var, bindings, camel_case, const_js, drops, fresh_in, js_ident,
     ordering_value, recognition::is_non_zero, std_impls, variant_field, without_refs,
 };
-use crate::js::{self, Expr, Op, Stmt, StmtKind};
+use crate::js::{self, Expr, Op, Stmt, StmtKind, UnaryOp};
 use rustc_ast::{LitKind, Mutability};
 use rustc_hir::{BindingMode, ByRef, LangItem, RangeEnd};
 use rustc_middle::mir::BorrowKind;
@@ -1040,6 +1040,98 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `matches!(x, pat)`, or `match x { pat if guard => true, _ => false }`:
     /// just the test, `x.TAG === "Circle"`, when the pattern binds nothing
     /// the guard can't read where it is.
+    /// `(kind ?? "Primary") === "Primary" ? a : b`: a two-arm `match` as a
+    /// value, as a person writes it, its arms plain, unguarded and binding
+    /// nothing (ADR 0209). Its subject is in place where the test reads it
+    /// once, else in a `const` of its own; `None` where it's statements.
+    pub(super) fn match_conditional(
+        &mut self,
+        scrutinee: ExprId,
+        arms: &[ArmId],
+        span: js::Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Option<Expr>> {
+        let &[first, second] = arms else { return Ok(None) };
+        if !self.is_conditional_match(arms) {
+            return Ok(None);
+        }
+        // Tested where it is, or, of what isn't a place, read once: a name
+        // no Rust one has, which the test is read for.
+        const SUBJECT: &str = "$subject";
+        let (subject, value) = match self.stable_place(scrutinee) {
+            Some(place) => (place, None),
+            None => (Expr::var(SUBJECT), Some(self.expr(scrutinee, out)?)),
+        };
+        let mut bindings = Vec::new();
+        // A first arm that takes everything has no test: its guard is it,
+        // or its body is the value, the second never reached.
+        let Some(mut test) = self.pattern_test(&self.thir[first].pattern, &subject, &mut bindings)? else {
+            if let Some(value) = value.filter(Expr::has_effects) {
+                out.push(StmtKind::Expr(value).at(span));
+            }
+            let test = match self.thir[first].guard {
+                Some(guard) => self.expr(guard, out)?,
+                None => return Ok(Some(self.expr(self.thir[first].body, out)?)),
+            };
+            let (yes, no) = (
+                self.evaluated(self.thir[first].body)?,
+                self.evaluated(self.thir[second].body)?,
+            );
+            return Ok(Some(self.conditional(test, yes, no, span, out)));
+        };
+        if let Some(value) = value {
+            let mut reads = 0;
+            test.visit_vars(&mut |var| reads += usize::from(var == SUBJECT));
+            let read = match reads {
+                1 => value,
+                _ => {
+                    let name = self.fresh("match");
+                    out.push(StmtKind::Const(name.clone(), value).at(span));
+                    Expr::var(&name)
+                }
+            };
+            test = test
+                .substitute(&|var| (var == SUBJECT).then(|| read.clone()))
+                .expect("a test has no closure inside");
+        }
+        // A guard is the arm's test too, `n === 0 && flag`, made only if it matches.
+        if let Some(guard) = self.thir[first].guard {
+            let guard = self.evaluated(guard)?;
+            test = match guard.statements.is_empty() {
+                true => Expr::bin(Op::And, test, guard.value),
+                false => {
+                    let otherwise = Evaluation {
+                        statements: Vec::new(),
+                        value: Expr::bool(false),
+                    };
+                    self.conditional(test, guard, otherwise, span, out)
+                }
+            };
+        }
+        let (yes, no) = (
+            self.evaluated(self.thir[first].body)?,
+            self.evaluated(self.thir[second].body)?,
+        );
+        Ok(Some(self.conditional(test, yes, no, span, out)))
+    }
+
+    /// Is this `match` one `match_conditional` writes: two arms, plain and
+    /// binding nothing, the first's guard plain too? The second can't be
+    /// guarded but where it's never reached.
+    pub(super) fn is_conditional_match(&self, arms: &[ArmId]) -> bool {
+        let binds = |pat: &Pat<'tcx>| {
+            let mut binds = false;
+            pat.walk_always(|p| binds |= matches!(p.kind, PatKind::Binding { .. }));
+            binds
+        };
+        let &[first, _] = arms else { return false };
+        self.thir[first].guard.is_none_or(|guard| self.is_simple(guard))
+            && arms.iter().all(|&arm| {
+                let arm = &self.thir[arm];
+                !binds(&arm.pattern) && self.is_simple(arm.body)
+            })
+    }
+
     pub(super) fn as_matches(&mut self, scrutinee: ExprId, arms: &[ArmId], out: &mut Vec<Stmt>) -> R<Option<Expr>> {
         let is_bool = |arm: ArmId, want: bool| matches!(self.thir[self.strip(self.thir[arm].body)].kind, ExprKind::Literal { lit, .. } if lit.node == LitKind::Bool(want));
         let &[first, rest] = arms else { return Ok(None) };
@@ -1130,7 +1222,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             PatKind::Constant { value } => {
                 let value = self.const_value(*value, pat.span)?;
-                Ok(Some(Expr::bin(Op::Eq, subject.clone(), value)))
+                // A `bool` is JS's own: `true` is the subject, `false` its negation
+                // (ADR 0209).
+                Ok(Some(match value.kind {
+                    js::ExprKind::Bool(true) if pat.ty.is_bool() => subject.clone(),
+                    js::ExprKind::Bool(false) if pat.ty.is_bool() => Expr::unary(UnaryOp::Not, subject.clone()),
+                    _ => Expr::bin(Op::Eq, subject.clone(), value),
+                }))
             }
             // `1..=9`, `i32::MIN..0`, `'a'..='z'`: between its bounds, as `<`
             // compares numbers, and `char`s by code point (ADR 0183).

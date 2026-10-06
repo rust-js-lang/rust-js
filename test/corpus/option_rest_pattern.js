@@ -10,12 +10,7 @@ function main() {
     console.log("Some matched Some(..)");
   }
   for (const value of [none, some]) {
-    let name;
-    if (value != null) {
-      name = "some";
-    } else {
-      name = "none";
-    }
+    const name = value != null ? "some" : "none";
     console.log(`${name} ${value != null}`);
   }
 }

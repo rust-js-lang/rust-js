@@ -607,7 +607,7 @@ impl Expr {
 
     /// Each variable this reads, closures' bodies too, but not a string's
     /// or a regular expression's text, nor a property's name.
-    fn visit_vars<'a>(&'a self, read: &mut dyn FnMut(&'a str)) {
+    pub fn visit_vars<'a>(&'a self, read: &mut dyn FnMut(&'a str)) {
         let props = |props: &'a [Prop], read: &mut dyn FnMut(&'a str)| {
             for prop in props {
                 match prop {

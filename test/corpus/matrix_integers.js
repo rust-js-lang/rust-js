@@ -110,13 +110,10 @@ function main() {
       `i8 ${a}: signed ${arg$29} ${arg$30} ${arg$31 == null ? "None" : `Some(${arg$31})`} ${Math.abs(a)}`,
     );
     for (const b of values) {
-      let quotient;
-      const match = $checkedDiv(a, b, -128);
-      if (match != null) {
-        quotient = `${($div(a, b, -128) << 24) >> 24} ${($rem(a, b, -128) << 24) >> 24}`;
-      } else {
-        quotient = "-";
-      }
+      const quotient =
+        $checkedDiv(a, b, -128) != null
+          ? `${($div(a, b, -128) << 24) >> 24} ${($rem(a, b, -128) << 24) >> 24}`
+          : "-";
       const arg$32 = ((a + b) << 24) >> 24;
       const arg$33 = ((a - b) << 24) >> 24;
       const arg$34 = ((a * b) << 24) >> 24;
@@ -199,13 +196,10 @@ function main() {
       `i16 ${a$1}: signed ${arg$83} ${arg$84} ${arg$85 == null ? "None" : `Some(${arg$85})`} ${Math.abs(a$1)}`,
     );
     for (const b$1 of values$1) {
-      let quotient$1;
-      const match$1 = $checkedDiv(a$1, b$1, -32768);
-      if (match$1 != null) {
-        quotient$1 = `${($div(a$1, b$1, -32768) << 16) >> 16} ${($rem(a$1, b$1, -32768) << 16) >> 16}`;
-      } else {
-        quotient$1 = "-";
-      }
+      const quotient$1 =
+        $checkedDiv(a$1, b$1, -32768) != null
+          ? `${($div(a$1, b$1, -32768) << 16) >> 16} ${($rem(a$1, b$1, -32768) << 16) >> 16}`
+          : "-";
       const arg$86 = ((a$1 + b$1) << 16) >> 16;
       const arg$87 = ((a$1 - b$1) << 16) >> 16;
       const arg$88 = ((a$1 * b$1) << 16) >> 16;
@@ -288,13 +282,10 @@ function main() {
       `i32 ${a$2}: signed ${arg$137} ${arg$138} ${arg$139 == null ? "None" : `Some(${arg$139})`} ${Math.abs(a$2)}`,
     );
     for (const b$2 of values$2) {
-      let quotient$2;
-      const match$2 = $checkedDiv(a$2, b$2, -2147483648);
-      if (match$2 != null) {
-        quotient$2 = `${$div(a$2, b$2, -2147483648) | 0} ${$rem(a$2, b$2, -2147483648) | 0}`;
-      } else {
-        quotient$2 = "-";
-      }
+      const quotient$2 =
+        $checkedDiv(a$2, b$2, -2147483648) != null
+          ? `${$div(a$2, b$2, -2147483648) | 0} ${$rem(a$2, b$2, -2147483648) | 0}`
+          : "-";
       const arg$140 = (a$2 + b$2) | 0;
       const arg$141 = (a$2 - b$2) | 0;
       const arg$142 = Math.imul(a$2, b$2);
@@ -394,13 +385,10 @@ function main() {
       `i64 ${a$3}: signed ${arg$193} ${arg$194} ${arg$195 == null ? "None" : `Some(${arg$195})`} ${$bigAbs(a$3)}`,
     );
     for (const b$3 of values$3) {
-      let quotient$3;
-      const match$3 = $bigCheckedDiv(a$3, b$3, -9223372036854775808n);
-      if (match$3 != null) {
-        quotient$3 = `${$bigDiv(a$3, b$3, -9223372036854775808n)} ${$bigRem(a$3, b$3, -9223372036854775808n)}`;
-      } else {
-        quotient$3 = "-";
-      }
+      const quotient$3 =
+        $bigCheckedDiv(a$3, b$3, -9223372036854775808n) != null
+          ? `${$bigDiv(a$3, b$3, -9223372036854775808n)} ${$bigRem(a$3, b$3, -9223372036854775808n)}`
+          : "-";
       const tmp = BigInt.asIntN(64, a$3 + b$3);
       const tmp$1 = BigInt.asIntN(64, a$3 - b$3);
       const tmp$2 = BigInt.asIntN(64, a$3 * b$3);
@@ -535,13 +523,10 @@ function main() {
       `i128 ${a$4}: signed ${arg$236} ${arg$237} ${arg$238 == null ? "None" : `Some(${arg$238})`} ${$bigAbs(a$4)}`,
     );
     for (const b$4 of values$4) {
-      let quotient$4;
-      const match$4 = $bigCheckedDiv(a$4, b$4, -170141183460469231731687303715884105728n);
-      if (match$4 != null) {
-        quotient$4 = `${$bigDiv(a$4, b$4, -170141183460469231731687303715884105728n)} ${$bigRem(a$4, b$4, -170141183460469231731687303715884105728n)}`;
-      } else {
-        quotient$4 = "-";
-      }
+      const quotient$4 =
+        $bigCheckedDiv(a$4, b$4, -170141183460469231731687303715884105728n) != null
+          ? `${$bigDiv(a$4, b$4, -170141183460469231731687303715884105728n)} ${$bigRem(a$4, b$4, -170141183460469231731687303715884105728n)}`
+          : "-";
       const tmp$13 = BigInt.asIntN(128, a$4 + b$4);
       const tmp$14 = BigInt.asIntN(128, a$4 - b$4);
       const tmp$15 = BigInt.asIntN(128, a$4 * b$4);
@@ -661,13 +646,8 @@ function main() {
     }
     console.log(`u8 ${a$5}: unsigned ${a$5 !== 0 && (a$5 & (a$5 - 1)) === 0}`);
     for (const b$5 of values$5) {
-      let quotient$5;
-      const match$5 = $checkedDiv(a$5, b$5, 0);
-      if (match$5 != null) {
-        quotient$5 = `${$div(a$5, b$5) & 255} ${$rem(a$5, b$5) & 255}`;
-      } else {
-        quotient$5 = "-";
-      }
+      const quotient$5 =
+        $checkedDiv(a$5, b$5, 0) != null ? `${$div(a$5, b$5) & 255} ${$rem(a$5, b$5) & 255}` : "-";
       const arg$277 = (a$5 + b$5) & 255;
       const arg$278 = (a$5 - b$5) & 255;
       const arg$279 = (a$5 * b$5) & 255;
@@ -745,13 +725,10 @@ function main() {
     }
     console.log(`u16 ${a$6}: unsigned ${a$6 !== 0 && (a$6 & (a$6 - 1)) === 0}`);
     for (const b$6 of values$6) {
-      let quotient$6;
-      const match$6 = $checkedDiv(a$6, b$6, 0);
-      if (match$6 != null) {
-        quotient$6 = `${$div(a$6, b$6) & 65535} ${$rem(a$6, b$6) & 65535}`;
-      } else {
-        quotient$6 = "-";
-      }
+      const quotient$6 =
+        $checkedDiv(a$6, b$6, 0) != null
+          ? `${$div(a$6, b$6) & 65535} ${$rem(a$6, b$6) & 65535}`
+          : "-";
       const arg$328 = (a$6 + b$6) & 65535;
       const arg$329 = (a$6 - b$6) & 65535;
       const arg$330 = (a$6 * b$6) & 65535;
@@ -829,13 +806,8 @@ function main() {
     }
     console.log(`u32 ${a$7}: unsigned ${a$7 !== 0 && (a$7 & (a$7 - 1)) === 0}`);
     for (const b$7 of values$7) {
-      let quotient$7;
-      const match$7 = $checkedDiv(a$7, b$7, 0);
-      if (match$7 != null) {
-        quotient$7 = `${$div(a$7, b$7) >>> 0} ${$rem(a$7, b$7) >>> 0}`;
-      } else {
-        quotient$7 = "-";
-      }
+      const quotient$7 =
+        $checkedDiv(a$7, b$7, 0) != null ? `${$div(a$7, b$7) >>> 0} ${$rem(a$7, b$7) >>> 0}` : "-";
       const arg$379 = (a$7 + b$7) >>> 0;
       const arg$380 = (a$7 - b$7) >>> 0;
       const arg$381 = Math.imul(a$7, b$7) >>> 0;
@@ -925,13 +897,10 @@ function main() {
     }
     console.log(`u64 ${a$8}: unsigned ${a$8 !== 0n && (a$8 & (a$8 - 1n)) === 0n}`);
     for (const b$8 of values$8) {
-      let quotient$8;
-      const match$8 = $bigCheckedDiv(a$8, b$8, undefined);
-      if (match$8 != null) {
-        quotient$8 = `${$bigDiv(a$8, b$8)} ${$bigRem(a$8, b$8)}`;
-      } else {
-        quotient$8 = "-";
-      }
+      const quotient$8 =
+        $bigCheckedDiv(a$8, b$8, undefined) != null
+          ? `${$bigDiv(a$8, b$8)} ${$bigRem(a$8, b$8)}`
+          : "-";
       const tmp$26 = BigInt.asUintN(64, a$8 + b$8);
       const tmp$27 = BigInt.asUintN(64, a$8 - b$8);
       const tmp$28 = BigInt.asUintN(64, a$8 * b$8);
@@ -1024,13 +993,10 @@ function main() {
     }
     console.log(`u128 ${a$9}: unsigned ${a$9 !== 0n && (a$9 & (a$9 - 1n)) === 0n}`);
     for (const b$9 of values$9) {
-      let quotient$9;
-      const match$9 = $bigCheckedDiv(a$9, b$9, undefined);
-      if (match$9 != null) {
-        quotient$9 = `${$bigDiv(a$9, b$9)} ${$bigRem(a$9, b$9)}`;
-      } else {
-        quotient$9 = "-";
-      }
+      const quotient$9 =
+        $bigCheckedDiv(a$9, b$9, undefined) != null
+          ? `${$bigDiv(a$9, b$9)} ${$bigRem(a$9, b$9)}`
+          : "-";
       const tmp$39 = BigInt.asUintN(128, a$9 + b$9);
       const tmp$40 = BigInt.asUintN(128, a$9 - b$9);
       const tmp$41 = BigInt.asUintN(128, a$9 * b$9);

@@ -76,15 +76,7 @@ export function entry() {
 }
 
 function unitDebug_fmt(unit) {
-  let f = "";
-  let tmp;
-  if (unit === "Kg") {
-    tmp = "Kg";
-  } else {
-    tmp = "Lb";
-  }
-  f += tmp;
-  return f;
+  return unit === "Kg" ? "Kg" : "Lb";
 }
 
 function unitFromStr_from_str(s) {

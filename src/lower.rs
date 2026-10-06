@@ -1128,6 +1128,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ExprKind::Match {
                 scrutinee, ref arms, ..
             } if let Some(test) = self.as_matches(scrutinee, arms, out)? => Ok(test),
+            ExprKind::Match {
+                scrutinee, ref arms, ..
+            } if self.body_query().as_for(e).is_none()
+                && let Some(value) = self.match_conditional(scrutinee, arms, js_span, out)? =>
+            {
+                Ok(value)
+            }
             ExprKind::If {
                 cond,
                 then,
@@ -1359,6 +1366,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 else_opt: Some(els),
                 ..
             } => self.is_simple(cond) && self.is_simple(then) && self.is_simple(els),
+            // A two-arm `match` that's a conditional (ADR 0209).
+            ExprKind::Match {
+                scrutinee, ref arms, ..
+            } if self.body_query().as_for(e).is_none() && self.is_conditional_match(arms) => self.is_simple(scrutinee),
             // `format_args!`, whose arguments are written in place if they can be.
             // Out of order, its arguments may need `const`s (`lower_format_args`).
             ExprKind::Block { .. } if let Some(f) = self.as_format_args(e) => {

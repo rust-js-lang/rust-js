@@ -51,7 +51,7 @@ export function prepare(files, modules, styles, rootFile, test, run) {
     .map(([path, code]) => [path, code])
     .map(([path, code]) => {
       const match = path.endsWith(".jsx");
-      if (match === true) {
+      if (match) {
         const options = { transforms: ["jsx"], jsxRuntime: "automatic", production: true };
         const code$1 = transform(code, options).code;
         return [path, code$1];
@@ -93,13 +93,7 @@ export function prepare(files, modules, styles, rootFile, test, run) {
       }
     });
   }
-  let look;
-  const match$1 = css.length === 0;
-  if (match$1 === true) {
-    look = FRAME_STYLE;
-  } else {
-    look = `<style>\n${css.join("")}</style>`;
-  }
+  const look = css.length === 0 ? FRAME_STYLE : `<style>\n${css.join("")}</style>`;
   const imports = new RegExp('^import (?:[^;]+? from )?"([^"]+)";', "gm");
   let external = [];
   for (const item$1 of sources) {
