@@ -46,7 +46,7 @@ pub fn use_route() -> Route {
                 window,
                 "hashchange",
                 Box::new(move |_| set_current.set(hash())),
-                options,
+                options.into(),
             );
             move || abort_controller::abort(controller)
         },

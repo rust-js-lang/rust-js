@@ -9,7 +9,7 @@ const URL: &str = "data:text/plain,Hello from a fetch!";
 
 async fn load(url: &str, output: &'static Element) {
     node::set_text_content(output, "Loading…");
-    let response = window::fetch(window, url).await;
+    let response = window::fetch(window, url.into()).await;
     let text = response::text(response).await;
     let status = response::status(response).to_string();
     node::set_text_content(output, &(status + " " + &text));
@@ -23,6 +23,6 @@ pub fn main() {
     event_target::add_event_listener(button, "click", Box::new(move |_| {
         spawn(Box::new(load(URL, output)));
     }));
-    element::append(app, button);
-    element::append(app, output);
+    element::append(app, button.into());
+    element::append(app, output.into());
 }

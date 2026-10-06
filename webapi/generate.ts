@@ -11,7 +11,7 @@ import idl from "@webref/idl";
 import webref from "@webref/idl/package.json" with { type: "json" };
 
 // The specs to read. Partial interfaces and mixins from these are merged in.
-const SPECS = ["dom", "html", "hr-time", "uievents", "pointerevents", "cssom", "cssom-view", "geometry", "fetch", "encoding", "wasm-js-api", "wasm-web-api", "xhr", "streams", "touch-events"];
+const SPECS = ["dom", "html", "hr-time", "uievents", "pointerevents", "cssom", "cssom-view", "geometry", "fetch", "encoding", "wasm-js-api", "wasm-web-api", "xhr", "streams", "touch-events", "FileAPI"];
 
 // The everyday DOM. Members that use any other interface are skipped.
 const INTERFACES = [
@@ -42,6 +42,8 @@ const INTERFACES = [
   "TextEncoder", "TextDecoder",
   // wasm-js-api: `WebAssembly.Module` and friends
   "Module", "Instance", "Memory",
+  // FileAPI: raw data, a fetch's body or a download's
+  "Blob", "File",
 ];
 const known = new Set(INTERFACES);
 
@@ -86,18 +88,6 @@ const NAMESPACES = ["WebAssembly"];
 
 // JS's own types that WebIDL uses, declared by hand at the crate root.
 const BUILTINS = new Set(["ArrayBuffer", "Uint8Array"]);
-
-// ReScript's webapi, where WebIDL has several forms of one function (ADR
-// 0102): the one most programs call gets the plain name, and the others
-// say what sets them apart. By interface and member, the form's type:
-// `fetch(url)`, and `fetch_with_request(request)`.
-const PRIMARY: Record<string, string> = { "Window.fetch": "str", "Request.constructor": "str" };
-
-// Names a type can't give, as ReScript's: `Request.fromURL`.
-const RENAMES: Record<string, string> = {
-  "request::from_str": "from_url",
-  "request::from_str_with_init": "from_url_with_init",
-};
 
 // A dictionary field's type, where WebIDL's is one Rust can't take: a
 // `HeadersInit` is a sequence or a record, and `fetch` takes a `Headers` too.
@@ -293,7 +283,7 @@ function dictionaryMembers(d: Def): Member[] {
  * unless given, which JS reads as not given, and with none required it has
  * `Default`: `RequestInit { method: Some("POST"), ..Default::default() }`.
  * What it borrows lives for `'a`. A member of a type Rust can't take is
- * left out; one of a union is its string, if it can be one.
+ * left out; one of a union is its enum (ADR 0215).
  */
 function paramDictionary(d: Def): string | { skip: string } {
   if (usedDictionaries.has(d.name)) return { skip: `${d.name} as a result too` };
@@ -301,9 +291,7 @@ function paramDictionary(d: Def): string | { skip: string } {
   if (!known) {
     const fields: Field[] = [];
     for (const m of dictionaryMembers(d)) {
-      const alts = alternatives(m.idlType!);
-      const given = FIELD_TYPES[`${d.name}.${m.name}`];
-      const chosen = given ?? (isUnion(m.idlType!) ? alts.find((a) => a === "&str") ?? alts[0] : alts[0]);
+      const chosen = FIELD_TYPES[`${d.name}.${m.name}`] ?? paramType(m.idlType!);
       if (!chosen || chosen.includes("dyn core::any::Any")) continue;
       // A borrow in a field lives as long as the struct's: `&'a str`.
       const type = chosen.replace(/^&(?!')/, "&'a ").replace(/^([A-Z]\w*)<'_>$/, "$1<'a>");
@@ -336,8 +324,82 @@ function isUnion(t: IdlType): boolean {
   return t.union || (!!aliased && isUnion(aliased));
 }
 
-/** `&str` → `str`, `&HtmlElement` → `html_element`: for `append_with_str`. */
+/** `&str` → `str`, `&HtmlElement` → `html_element`: for `instantiate_with_web_assembly_module`. */
 const suffix = (rust: string) => snake(rust.replace(/^&/, "").replace(/^Box<dyn FnMut.*$/, "listener"));
+
+// ── Unions ──────────────────────────────────────────────────────────────
+
+/**
+ * What JS tells a value of a parameter type by, as an untagged enum's
+ * variant is told (ADR 0214): a primitive's `typeof`, or a class's own name.
+ * A dictionary is an object. `object`, any object, tells nothing apart.
+ */
+function kindOf(rust: string): string | null {
+  if (rust === "&str") return "string";
+  if (rust === "bool") return "boolean";
+  if (Object.values(NUMBERS).includes(rust)) return "number";
+  if (rust.startsWith("Box<dyn FnMut")) return "function";
+  if (rust.includes("dyn core::any::Any")) return null;
+  if (isDictionary(rust)) return "object";
+  return rust.replace(/^&/, "").replace(/<.*$/, "");
+}
+
+/** A variant's name: its type's, or of a primitive its kind's, `Str`. */
+function variantName(rust: string): string {
+  const kind = kindOf(rust);
+  if (kind === "string") return "Str";
+  if (kind === "boolean") return "Bool";
+  if (kind === "number") return "Number";
+  if (kind === "function") return "Listener";
+  return rust.replace(/^&/, "").replace(/<.*$/, "");
+}
+
+/** What TypeScript calls a variant's type: `string`, `Node`, `HTMLElement`. */
+function tsName(rust: string): string {
+  const kind = kindOf(rust);
+  if (kind === "string" || kind === "boolean" || kind === "number") return kind;
+  if (kind === "function") return "EventListener";
+  const name = variantName(rust);
+  const idl = INTERFACES.find((n) => typeName(n) === name);
+  return idl ? jsName(interfaces.get(idl)!) : name;
+}
+
+/** A WebIDL union as an untagged enum (ADR 0215): a variant per kind. */
+type Union = { name: string; variants: { name: string; type: string; ts: string }[]; borrows: boolean };
+const unions = new Map<string, Union>();
+
+/**
+ * A union's enum: its members, of each kind JS tells apart the first, as
+ * TypeScript's union of them. Named as its typedef is, `BodyInit`, or after
+ * its members, `NodeOrStr`. None, of fewer than two members Rust can take.
+ */
+function unionOf(t: IdlType): Union | null {
+  const kinds = new Set<string>();
+  const variants: Union["variants"] = [];
+  for (const alt of alternatives(t)) {
+    const kind = kindOf(alt);
+    if (!kind || kinds.has(kind)) continue;
+    kinds.add(kind);
+    // What it borrows lives as long as the enum: `&'a str`.
+    const type = alt.replace(/^&(?!')/, "&'a ").replace(/<'_>$/, "<'a>");
+    variants.push({ name: variantName(alt), type, ts: tsName(alt) });
+  }
+  if (variants.length < 2) return null;
+  const typedef = !t.union && !t.generic && typedefs.has(t.idlType as string) ? (t.idlType as string) : undefined;
+  const name = typedef ? typeName(typedef) : variants.map((v) => v.name).join("Or");
+  return { name, variants, borrows: variants.some((v) => v.type.includes("'a")) };
+}
+
+/**
+ * The Rust type a parameter, a setter or a dictionary's field takes: a
+ * union's enum (ADR 0215), or the one type of its that Rust can take.
+ */
+function paramType(t: IdlType): string | undefined {
+  const union = isUnion(t) ? unionOf(t) : null;
+  if (!union) return alternatives(t)[0];
+  unions.set(union.name, union);
+  return `${union.name}${union.borrows ? "<'_>" : ""}`;
+}
 
 // ── Generating ──────────────────────────────────────────────────────────
 
@@ -367,72 +429,45 @@ function functionsOf(i: Interface): Fn[] {
   const nullable = (t: IdlType) => t.nullable || typedefs.get(t.idlType as string)?.nullable;
   const orNull = (rust: string, t: IdlType) => (nullable(t) ? `Option<${rust}>` : rust);
 
-  // Arguments up to the first optional one, as lists of Rust types to try.
-  const signatures = (args: Arg[]): { names: string[]; options: string[][] } | { skip: string } => {
+  // Arguments up to the first optional one, each of the one type it takes:
+  // a union's is its enum (ADR 0215).
+  const signatures = (args: Arg[]): { names: string[]; types: string[] } | { skip: string } => {
     const names: string[] = [];
-    const options: string[][] = [];
+    const types: string[] = [];
     for (const a of args) {
       if (a.optional) break;
-      const alts = alternatives(a.idlType);
-      if (alts.length === 0) {
+      const type = paramType(a.idlType);
+      if (!type) {
         const why = rustType(a.idlType, "param");
         return { skip: typeof why === "string" ? "?" : why.skip };
       }
       names.push(snake(a.name));
-      options.push(alts);
+      types.push(type);
     }
-    return { names, options };
+    return { names, types };
   };
 
-  // Each union parameter's alternatives make their own function: the first
-  // keeps the name, the others add `_with_<type>`. Only the first union
-  // varies; any others take their first alternative.
   // Each optional argument, in order, gives one more form, after the
-  // required ones: `encode_with_input(this, input)`. One that's a union
-  // gives a form per member, named after its type: `decode_with_uint8_array`.
-  // Later ones add `_and_<name>`. The first unsupported one ends them.
-  const optionalForms = (base: string, lead: string[], sig: { names: string[]; options: string[][] }, args: Arg[]) => {
+  // required ones, named after it: `encode_with_input(this, input)`. Later
+  // ones add `_and_<name>`. The first unsupported one ends them.
+  const optionalForms = (base: string, lead: string[], sig: { names: string[]; types: string[] }, args: Arg[]) => {
     const forms: { name: string; params: string[] }[] = [];
-    const params = sig.options.map((o, j) => `${sig.names[j]}: ${o[0]}`);
+    const params = sig.types.map((type, j) => `${sig.names[j]}: ${type}`);
     const words: string[] = [];
     for (const a of args.filter((a) => a.optional)) {
-      const alts = alternatives(a.idlType);
-      if (alts.length === 0) break;
-      const union = isUnion(a.idlType);
-      // A union's dictionary is named after the argument, as ReScript's
-      // `~options=?` is: `add_event_listener_with_options`, then `_with_bool`.
-      const word = (alt: string) => (union && !isDictionary(alt) ? suffix(alt) : snakeWords(a.name));
-      if (union) alts.sort((x, y) => Number(isDictionary(y)) - Number(isDictionary(x)));
-      for (const alt of union ? alts : alts.slice(0, 1)) {
-        forms.push({ name: `${base}_with_${[...lead, ...words, word(alt)].join("_and_")}`, params: [...params, `${snake(a.name)}: ${alt}`] });
-      }
-      words.push(word(alts[0]));
-      params.push(`${snake(a.name)}: ${alts[0]}`);
+      const type = paramType(a.idlType);
+      if (!type) break;
+      words.push(snakeWords(a.name));
+      params.push(`${snake(a.name)}: ${type}`);
+      forms.push({ name: `${base}_with_${[...lead, ...words].join("_and_")}`, params: [...params] });
     }
     return forms;
   };
 
-  // The form ReScript gives the plain name, first: `fetch(url)`.
-  const primary = (key: string, sig: { names: string[]; options: string[][] }) => {
-    const wanted = PRIMARY[key];
-    if (!wanted) return sig;
-    const options = sig.options.map((o) => {
-      const k = o.findIndex((alt) => suffix(alt) === wanted);
-      return k > 0 ? [o[k], ...o.filter((_, j) => j !== k)] : o;
-    });
-    return { names: sig.names, options };
-  };
-
-  const variants = (base: string, sig: { names: string[]; options: string[][] }, named = false) => {
-    const varying = sig.options.findIndex((o) => o.length > 1);
-    const pick = (k: number) => sig.options.map((o, j) => (j === varying ? o[k] : o[0]));
-    const count = varying < 0 ? 1 : sig.options[varying].length;
-    return Array.from({ length: count }, (_, k) => ({
-      // `named`: each after its type, the first too, as ReScript's `from*`.
-      name: named ? `${base}_${suffix(sig.options[varying][k])}` : k === 0 ? base : `${base}_with_${suffix(sig.options[varying][k])}`,
-      params: pick(k).map((ty, j) => `${sig.names[j]}: ${ty}`),
-    }));
-  };
+  const requiredForm = (base: string, sig: { names: string[]; types: string[] }) => ({
+    name: base,
+    params: sig.types.map((type, j) => `${sig.names[j]}: ${type}`),
+  });
 
   for (const [index, { member: m }] of i.members.entries()) {
     if (m.type === "constructor") {
@@ -440,20 +475,13 @@ function functionsOf(i: Interface): Fn[] {
       // on its interface: only a custom element's class calls it, and `new`
       // of it in a page throws "Illegal constructor".
       if (!i.constructible || (m.extAttrs ?? []).some((a) => a.name === "HTMLConstructor")) continue;
-      const found = signatures(m.arguments ?? []);
-      if ("skip" in found) {
-        skip(found.skip);
+      const sig = signatures(m.arguments ?? []);
+      if ("skip" in sig) {
+        skip(sig.skip);
         continue;
       }
-      const sig = primary(`${i.name}.constructor`, found);
-      // As ReScript names them: one signature is `new`, its optional
-      // arguments `new_with_<name>`; a family of sources is `from_<type>`,
-      // `request::from_url`, and the optional arguments of its first follow.
-      const family = sig.options.some((o) => o.length > 1);
-      const forms = family
-        ? [...variants("from", sig, true), ...optionalForms(`from_${suffix(sig.options[sig.options.findIndex((o) => o.length > 1)][0])}`, [], sig, m.arguments ?? [])]
-        : [...variants("new", sig), ...optionalForms("new", [], sig, m.arguments ?? [])];
-      for (const v of forms) {
+      // As ReScript names them: `new`, its optional arguments `new_with_<name>`.
+      for (const v of [requiredForm("new", sig), ...optionalForms("new", [], sig, m.arguments ?? [])]) {
         fns.push({ name: v.name, jsName: `new ${jsName(i)}`, params: v.params, result: `&'static ${typeName(i.name)}`, doc: [`[MDN](${mdn(i.name, i.name)})`] });
       }
     } else if (m.type === "attribute") {
@@ -464,14 +492,14 @@ function functionsOf(i: Interface): Fn[] {
       const result = rustType(m.idlType!, "result");
       const doc = [`[MDN](${mdn(i.name, m.name)})`];
       // A getter whose type isn't supported (a union, say) is skipped, but
-      // its setter can still take the union's first supported member.
+      // its setter can still take the union's enum.
       if (typeof result === "string") {
         fns.push({ name: snake(m.name!), jsName: `get ${m.name}`, params: self, result: orNull(result, m.idlType!), doc });
       } else {
         skip(result.skip);
       }
       const forwards = (m.extAttrs ?? []).some((a) => a.name === "PutForwards" || a.name === "Replaceable");
-      const value = alternatives(m.idlType!)[0];
+      const value = paramType(m.idlType!);
       if (!m.readonly && !forwards && value) {
         fns.push({ name: `set_${snakeWords(m.name!)}`, jsName: `set ${m.name}`, params: [...self, `value: ${value}`], result: "()", doc });
       }
@@ -481,12 +509,11 @@ function functionsOf(i: Interface): Fn[] {
         continue;
       }
       const result = rustType(m.idlType!, "result");
-      const found = signatures(m.arguments ?? []);
-      if (typeof result !== "string" || "skip" in found) {
-        skip(typeof result !== "string" ? result.skip : (found as { skip: string }).skip);
+      const sig = signatures(m.arguments ?? []);
+      if (typeof result !== "string" || "skip" in sig) {
+        skip(typeof result !== "string" ? result.skip : (sig as { skip: string }).skip);
         continue;
       }
-      const sig = primary(`${i.name}.${m.name}`, found);
       const doc = [`[MDN](${mdn(i.name, m.name)})`];
       // A later overload is named, as web-sys does, after the required
       // arguments that set it apart from the first: by name where the first
@@ -499,10 +526,10 @@ function functionsOf(i: Interface): Fn[] {
       const lead = !first
         ? []
         : required.flatMap((a, j) =>
-            !firstRequired[j] ? [snake(a.name)] : key(firstRequired[j]) !== key(a) ? [suffix(sig.options[j][0])] : [],
+            !firstRequired[j] ? [snake(a.name)] : key(firstRequired[j]) !== key(a) ? [suffix(sig.types[j])] : [],
           );
       const base = lead.length > 0 ? `${snake(m.name)}_with_${lead.join("_and_")}` : snake(m.name);
-      for (const v of [...variants(base, sig), ...optionalForms(snake(m.name), lead, sig, m.arguments ?? [])]) {
+      for (const v of [requiredForm(base, sig), ...optionalForms(snake(m.name), lead, sig, m.arguments ?? [])]) {
         fns.push({ name: v.name, jsName: member(m.name), params: [...self, ...v.params], result: orNull(result, m.idlType!), doc });
       }
     }
@@ -542,8 +569,8 @@ line(`//! (\`element::append\`). Inheritance is \`Deref\`, so an \`&HtmlButtonEl
 line(`//! goes wherever an \`&Element\` or \`&Node\` is expected. See ADR 0024.`);
 line(`//! The JS language's own types, \`Promise\` and \`ArrayBuffer\` say, are the js crate's (ADR 0102).`);
 line();
-line(`// Many Rust functions call the same JS name: an overload per union member
-// (\`before\`, \`before_with_str\`), and methods of the same name on different
+line(`// Many Rust functions call the same JS name: a form per optional argument
+// (\`new\`, \`new_with_body\`), and methods of the same name on different
 // interfaces. rustc warns because in native code they would be one symbol.`);
 line(`#![allow(clashing_extern_declarations)]`);
 line(`// And some are named as libc's functions are, \`open\`, \`close\` and \`write\`:
@@ -578,7 +605,7 @@ function module(name: string, fns: Fn[]) {
     for (const d of f.doc) line(`        /// ${d}`);
     if (f.jsName !== f.name) line(`        #[link_name = ${JSON.stringify(f.jsName)}]`);
     const result = f.result === "()" ? "" : ` -> ${f.result}`;
-    line(`        pub safe fn ${RENAMES[`${name}::${f.name}`] ?? f.name}(${f.params.join(", ")})${result};`);
+    line(`        pub safe fn ${f.name}(${f.params.join(", ")})${result};`);
   });
   line(`    }`);
   line(`}`);
@@ -589,6 +616,8 @@ for (const name of INTERFACES) {
   const type = typeName(name);
   line();
   line(`/// [\`${jsName(i)}\`](${mdn(name)})`);
+  // Its JS class, as `instanceof` names it, where its Rust name isn't (ADR 0214).
+  if (jsName(i) !== type) line(`#[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(jsName(i))})]`);
   line(`pub struct ${type}(PhantomData<JsObject>);`);
   if (i.parent && known.has(i.parent)) {
     const parent = typeName(i.parent);
@@ -633,7 +662,38 @@ for (const [name, { fields, borrows }] of [...paramDictionaries].sort(([a], [b])
   line(`}`);
 }
 
+// The unions functions take (ADR 0215): untagged enums, each value the
+// member itself, as TypeScript's union is (ADR 0214). Each member converts
+// into it, and so does each interface that extends a class member but no
+// other: an `&HtmlElement` into `NodeOrStr`'s `Node`.
+const ancestors = (name: string): string[] => {
+  const parent = interfaces.get(name)?.parent;
+  return parent && known.has(parent) ? [parent, ...ancestors(parent)] : [];
+};
+for (const union of [...unions.values()].sort((a, b) => a.name.localeCompare(b.name))) {
+  const lifetime = union.borrows ? "<'a>" : "";
+  line();
+  line(`/// \`${union.variants.map((v) => v.ts).join(" | ")}\`: each variant's value is the member itself (ADR 0215).`);
+  line(`#[cfg_attr(rust_js, rust_js::untagged)]`);
+  line(`pub enum ${union.name}${lifetime} {`);
+  for (const v of union.variants) line(`    ${v.name}(${v.type}),`);
+  line(`}`);
+  const classes = new Set(union.variants.map((v) => INTERFACES.find((n) => typeName(n) === v.name)).filter((n) => n !== undefined));
+  for (const v of union.variants) {
+    const own = INTERFACES.find((n) => typeName(n) === v.name);
+    const extending = own ? INTERFACES.filter((n) => n !== own && ancestors(n).find((a) => classes.has(a)) === own) : [];
+    for (const from of [v.type, ...extending.map((n) => `&'a ${typeName(n)}`)]) {
+      line();
+      line(`impl${lifetime} From<${from}> for ${union.name}${lifetime} {`);
+      line(`    fn from(value: ${from}) -> Self {`);
+      line(`        ${union.name}::${v.name}(value)`);
+      line(`    }`);
+      line(`}`);
+    }
+  }
+}
+
 await Bun.write(new URL("./src/lib.rs", import.meta.url), `${out.join("\n")}\n`);
 const reasons = [...skipped].sort((a, b) => b[1] - a[1]).map(([why, n]) => `${why} ${n}`);
-console.log(`src/lib.rs: ${INTERFACES.length} interfaces, ${NAMESPACES.length} namespaces, ${count} functions`);
+console.log(`src/lib.rs: ${INTERFACES.length} interfaces, ${NAMESPACES.length} namespaces, ${count} functions, ${unions.size} unions`);
 console.log(`skipped: ${reasons.slice(0, 12).join(", ")}${reasons.length > 12 ? ", ..." : ""}`);

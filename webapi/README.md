@@ -25,16 +25,16 @@ element::append(app, b);                                  // app.append(b)
   `html_input_element::unchecked_from(document::create_element(document, "input"))`.
 - A result that may be `null` is an `Option`:
   `document::get_element_by_id(document, "app").expect("the page has an #app")`.
-- A promise is a `Promise<T>`, the js crate's, to `.await`: `window::fetch(window, url).await`
+- A promise is a `Promise<T>`, the js crate's, to `.await`: `window::fetch(window, url.into()).await`
   ([ADR 0029](../docs/decisions/0029-async-await.md)). `js::settle(p).await` is a `Result`.
 - Binary data is JS's `ArrayBuffer` and `Uint8Array`, the js crate's: `response::bytes(r).await`.
-- Names follow ReScript's webapi ([ADR 0102](../docs/decisions/0102-js-and-webapi.md)): the common
-  form keeps the plain name, `window::fetch(window, url)`, and the others say what's
-  different, `fetch_with_request`. An optional argument adds a form:
-  `window::fetch_with_init(window, url, init)`, `text_encoder::encode_with_input(e, "hi")`.
+- A union is an untagged enum, whose value is the member itself ([ADR 0215](../docs/decisions/0215-webapi-unions.md)):
+  `element::before(el, "text".into())` is `el.before("text")`, and
+  `response::new_with_body(blob.into())` is `new Response(blob)`. An optional argument adds a form:
+  `window::fetch_with_init(window, url.into(), init)`, `text_encoder::encode_with_input(e, "hi")`.
 - An options object is a struct of `Option` fields, the rest `..Default::default()`:
-  `RequestInit { method: Some("POST"), body: Some(&json), ..Default::default() }`.
-- A constructor is `new`, `event::new("ping")`, or one per source, `request::from_url(url)`.
+  `RequestInit { method: Some("POST"), body: Some(json.into()), ..Default::default() }`.
+- A constructor is `new`, `event::new("ping")`, and `request::new(url.into())`.
 - A namespace is a module: `web_assembly::compile(bytes).await` is
   `await WebAssembly.compile(bytes)`. An `object` parameter takes any Rust value
   as `&dyn Any`, such as a struct for an import object.

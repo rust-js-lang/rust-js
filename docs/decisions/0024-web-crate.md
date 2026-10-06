@@ -1,6 +1,6 @@
 # 0024. The `webapi` crate: DOM bindings generated from WebIDL
 
-Status: Accepted. Extends [0021](0021-js-interop.md). Named `webapi`, and its JS-language types moved to the `js` crate, by [0102](0102-js-and-webapi.md), which also names its forms as ReScript's.
+Status: Accepted. Amended by [0215](0215-webapi-unions.md): a union is its untagged enum, where it was a function per member. Extends [0021](0021-js-interop.md). Named `webapi`, and its JS-language types moved to the `js` crate, by [0102](0102-js-and-webapi.md), which also names its forms as ReScript's.
 
 ## Context
 

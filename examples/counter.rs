@@ -34,9 +34,9 @@ pub fn main() {
     let output = document::create_element(document, "output");
     node::set_text_content(output, "0");
     // An `Element` is a `Node` (`Deref`), so it goes where `append` wants a `Node`.
-    element::append(app, stepper("-", -1, &count, output));
-    element::append(app, output);
-    element::append(app, stepper("+", 1, &count, output));
+    element::append(app, stepper("-", -1, &count, output).into());
+    element::append(app, output.into());
+    element::append(app, stepper("+", 1, &count, output).into());
 }
 
 // Tests, in Rust (ADR 0026): `rust-js --test` compiles them, and `bun test`
@@ -52,7 +52,7 @@ mod tests {
         node::set_text_content(body, "");
         let app = document::create_element(document, "div");
         element::set_id(app, "app");
-        element::append(body, app);
+        element::append(body, app.into());
         app
     }
 

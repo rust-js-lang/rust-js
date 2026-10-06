@@ -22,6 +22,12 @@ export function round_trip(text) {
   return [bytes.length, back];
 }
 
+export function bodies(url) {
+  const blob = new Blob();
+  const response = new Response(blob);
+  return [response, window.fetch(url)];
+}
+
 export function from_frame(frame, e) {
   const sender = e.source;
   const windowOf = frame.contentWindow;

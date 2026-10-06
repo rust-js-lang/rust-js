@@ -680,7 +680,7 @@ test("the webapi crate's bindings become plain JS", async () => {
   // A result that may be `null` is an `Option` (ADR 0030), unwrapped here.
   expect(js).toContain('const app = $unwrap(document.getElementById("app"), "the page has an #app");');
   expect(js).toContain("return $unwrap(app.textContent) + input.value;");
-  // A union member other than the first gets its own Rust function, same JS.
+  // A union is its untagged enum, whose value is the member itself (ADR 0215).
   expect(js).toContain("app.append(input);");
   expect(js).toContain('app.append("!");');
   // Constructors, and a global used as an `EventTarget` through `Deref`.
@@ -688,12 +688,14 @@ test("the webapi crate's bindings become plain JS", async () => {
   // A closure returning \`()\` is a block body: JS gets no return value Rust didn't have.
   expect(js).toContain('app.addEventListener("ping", (e) => {\n    e.preventDefault();\n  });');
   expect(js).toContain("window.dispatchEvent(ping);");
-  // Optional arguments: `encode_with_input`, and a union member by type.
+  // Optional arguments: `encode_with_input`, and a union's enum.
   expect(js).toContain('const bytes = new TextEncoder().encode(text);');
   expect(js).toContain('const back = new TextDecoder("utf-8").decode(bytes);');
   // An iframe's window is a `Window` (a WindowProxy, in WebIDL); a message's
   // sender, a union, an object; and `performance` of hr-time.
   expect(js).toContain("const sender = e.source;\n  const windowOf = frame.contentWindow;\n  return [Object.is(sender, windowOf), window.performance.now()];");
+  // A body of a `Blob` and a fetch of a URL, each the value itself.
+  expect(js).toContain("const blob = new Blob();\n  const response = new Response(blob);\n  return [response, window.fetch(url)];");
   // A canvas's size, its setters and getters (HTMLCanvasElement).
   expect(js).toContain('const canvas = document.createElement("canvas");\n  canvas.width = 320;\n  canvas.height = 200;\n  return [canvas.width, canvas.height];');
   const { round_trip } = await import(join(target, "web_forms.js"));

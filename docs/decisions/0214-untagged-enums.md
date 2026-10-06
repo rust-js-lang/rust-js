@@ -89,8 +89,8 @@ impl<'a> From<&'a str> for Src<'a> {
 
 ## Consequences
 
-- A program's own bindings take one where TS takes a union, and so can
-  the webapi crate's, which gives a function per member.
+- A program's own bindings take one where TS takes a union, and so do
+  the webapi crate's (ADR 0215).
 - A program's own JS class can say what it extends by a `Deref`, as the
   webapi crate's do: its body, a cast of a pointer, is never lowered, as
   a call of it is the object itself.

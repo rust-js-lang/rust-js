@@ -47,8 +47,8 @@ pub fn main() {
             running.set(false);
         }));
     }));
-    element::append(app, start);
-    element::append(app, output);
+    element::append(app, start.into());
+    element::append(app, output.into());
 }
 
 #[cfg(test)]
@@ -62,7 +62,7 @@ mod tests {
         node::set_text_content(body, "");
         let app = document::create_element(document, "div");
         element::set_id(app, "app");
-        element::append(body, app);
+        element::append(body, app.into());
         app
     }
 

@@ -305,6 +305,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0212 A props field's default is where JS takes them apart](decisions/0212-props-defaults.md)
 - [0213 A component's props are given as one flat list](decisions/0213-props-as-written.md)
 - [0214 An untagged enum is its payload: TS's `string | Blob`](decisions/0214-untagged-enums.md)
+- [0215 The webapi crate's unions are untagged enums](decisions/0215-webapi-unions.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

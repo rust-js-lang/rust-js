@@ -82,7 +82,7 @@ impl<T> core::future::Future for Promise<T> {
 /// `promise`, settled either way: its `.await` is `Ok` of what it fulfils
 /// with, or `Err` of what it's rejected with, where the `.await` of the
 /// promise itself would throw. For a promise of the webapi crate's, as
-/// `settle(window::fetch(window, url)).await` is a network error's `Err`
+/// `settle(window::fetch(window, url.into())).await` is a network error's `Err`
 /// (ADR 0035).
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
 #[allow(unused_variables)]
