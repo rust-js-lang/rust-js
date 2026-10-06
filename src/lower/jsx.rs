@@ -479,6 +479,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let message = "rust-js makes JSX from one expression: set an element's props in the chain that makes it";
             return Err(self.tcx.dcx().span_err(self.thir[args[0]].span, message));
         }
+        if name == "..."
+            && !matches!(self.shape(self.thir[value].ty), Shape::Object(_))
+            && !super::bindings::is_rest(self.tcx, self.thir[value].ty)
+        {
+            return Err(self.unsupported(self.thir[value].span, "JSX props spread of a non-struct value"));
+        }
+        // The value, and what it needs done first, its statements, aside: JSX
+        // reads its attributes in order, then its children, as Rust does, so
+        // only those statements, which run before the whole element, would
+        // jump ahead of what's read already.
+        let mut first = Vec::new();
+        let (children, mut lowered) = match name.as_str() {
+            "children" => (self.jsx_children(value, &mut first)?, None),
+            _ => (Vec::new(), Some(self.expr(value, &mut first)?)),
+        };
         // The receiver is evaluated before the argument. JSX prints attributes
         // before children; later attributes must not jump ahead of earlier
         // children. Likewise, statements introduced by an argument must not
@@ -487,7 +502,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let js::ExprKind::Jsx(jsx) = &mut element.kind else {
             unreachable!("checked above")
         };
-        if !self.is_simple(value) || (name != "children" && !jsx.children.is_empty()) {
+        if !first.is_empty() || (name != "children" && !jsx.children.is_empty()) {
             // One read already, a `const` of its own, is read as it is (ADR 0194).
             for prop in &mut jsx.props {
                 let (base, value) = match prop {
@@ -506,49 +521,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         }
-        if name == "children" {
-            let children = self.jsx_children(value, out)?;
-            let js::ExprKind::Jsx(jsx) = &mut element.kind else {
-                unreachable!("checked above")
-            };
+        out.extend(first);
+        let js::ExprKind::Jsx(jsx) = &mut element.kind else {
+            unreachable!("checked above")
+        };
+        let Some(mut value) = lowered.take() else {
             jsx.children.extend(children);
-        } else {
-            if name == "..."
-                && !matches!(self.shape(self.thir[value].ty), Shape::Object(_))
-                && !super::bindings::is_rest(self.tcx, self.thir[value].ty)
-            {
-                return Err(self.unsupported(self.thir[value].span, "JSX props spread of a non-struct value"));
-            }
-            let mut value = self.expr(value, out)?;
-            // `(e) => { if (f != null) { f(e); } }` as an event's handler is
-            // `f`: React ignores what a handler returns, and no handler does
-            // what one that calls nothing does (ADR 0198).
-            let event = name
-                .strip_prefix("on")
-                .is_some_and(|rest| rest.starts_with(char::is_uppercase));
-            if event {
-                let spilled = match (&value.kind, out.last().map(|s| &s.kind)) {
-                    (js::ExprKind::Var(var), Some(StmtKind::Const(declared, arrow))) if var == declared => {
-                        passed_handler(arrow)
-                    }
-                    _ => None,
-                };
-                if let Some(handler) = spilled {
-                    out.pop();
-                    value = handler;
-                } else if let Some(handler) = passed_handler(&value) {
-                    value = handler;
+            return Ok(element);
+        };
+        // `(e) => { if (f != null) { f(e); } }` as an event's handler is
+        // `f`: React ignores what a handler returns, and no handler does
+        // what one that calls nothing does (ADR 0198).
+        let event = name
+            .strip_prefix("on")
+            .is_some_and(|rest| rest.starts_with(char::is_uppercase));
+        if event {
+            let spilled = match (&value.kind, out.last().map(|s| &s.kind)) {
+                (js::ExprKind::Var(var), Some(StmtKind::Const(declared, arrow))) if var == declared => {
+                    passed_handler(arrow)
                 }
-            }
-            let js::ExprKind::Jsx(jsx) = &mut element.kind else {
-                unreachable!("checked above")
+                _ => None,
             };
-            jsx.props.push(if name == "..." {
-                Prop::Spread(value)
-            } else {
-                Prop::Field(name, value)
-            });
+            if let Some(handler) = spilled {
+                out.pop();
+                value = handler;
+            } else if let Some(handler) = passed_handler(&value) {
+                value = handler;
+            }
         }
+        jsx.props.push(if name == "..." {
+            Prop::Spread(value)
+        } else {
+            Prop::Field(name, value)
+        });
         Ok(element)
     }
 }

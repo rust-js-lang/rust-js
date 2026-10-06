@@ -215,6 +215,41 @@ pub fn App() -> Element {
   }
 });
 
+// Children whose JS needs no statements of its own read nothing ahead of a
+// prop written before them: JSX reads its props, then its children, as Rust
+// does. A `Link` whose props flatten an anchor's is such a child, as
+// react.dev's `Breadcrumbs` has it.
+test("a prop before children that need no statements stays where it's written", () => {
+  const source = `#![allow(non_snake_case)]
+use react::attributes::AnchorHtmlAttributes;
+use react::{Element, Fragment, Node, jsx};
+pub struct Crumb { pub title: String }
+#[rust_js::link_name = "next/link#default"]
+pub fn Link<C: Node>(props: LinkProps<'_, C>) -> Element { unreachable!() }
+#[derive(Default)]
+pub struct LinkProps<'a, C> {
+    pub href: &'a str,
+    pub children: C,
+    #[rust_js::flatten]
+    pub anchor: AnchorHtmlAttributes<'a>,
+    #[rust_js::name = "className"]
+    pub class_name: Option<&'a str>,
+}
+pub fn crumbs(crumbs: &[Crumb]) -> Vec<Element> {
+    crumbs.iter().map(|crumb| jsx! {
+        <Fragment key={crumb.title.as_str()}>
+            <Link href={crumb.title.as_str()} className={Some("crumb")}>{crumb.title.as_str()}</Link>
+        </Fragment>
+    }).collect()
+}
+`;
+  const { dir, args } = compile(source);
+  run(args);
+  const js = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(js).toContain("<Fragment key={crumb.title}>");
+  expect(js).not.toContain("const key");
+});
+
 test("nested component JSX stays readable, contextually typed and mapped to the original Rust", async () => {
   const source = `#![deny(warnings)]
 #![allow(non_snake_case)]

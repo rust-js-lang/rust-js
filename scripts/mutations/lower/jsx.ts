@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
     name: "rest-spread-refused",
     breaks: "`<a {...rest}>` of a `Rest` is an error, as a spread of what isn't a struct",
     file: "src/lower/jsx.rs",
-    find: "                && !super::bindings::is_rest(self.tcx, self.thir[value].ty)\n",
+    find: "            && !super::bindings::is_rest(self.tcx, self.thir[value].ty)\n",
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "doesn't name as ...rest"],
   },
@@ -137,5 +137,13 @@ export const mutations: Mutation[] = [
     find: "                .or_insert(self.thir[field.expr].span.source_callsite().lo());",
     replace: "                .or_insert(self.thir[field.expr].span.lo());",
     tests: ["test/jsx.test.ts", "-t", "no dictionary"],
+  },
+  {
+    name: "jsx-prop-read-first-for-any-child",
+    breaks: "a prop before children that aren't simple is read into a `const` first, though their JS needs no statements",
+    file: "src/lower/jsx.rs",
+    find: "        if !first.is_empty() || (name != \"children\" && !jsx.children.is_empty()) {\n",
+    replace: "        if !self.is_simple(value) || (name != \"children\" && !jsx.children.is_empty()) {\n",
+    tests: ["test/jsx.test.ts", "-t", "a prop before children"],
   },
 ];

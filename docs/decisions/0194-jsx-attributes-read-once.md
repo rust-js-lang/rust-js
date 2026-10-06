@@ -22,6 +22,12 @@ const className$1 = className;
 again, is read as it is**, as a value a hook or a closure captures is: it
 reads the same wherever it's read.
 
+**Only a child whose JS needs a statement reads the attributes before it
+first**, its statements lowered aside and looked at: one that doesn't, a
+`<Link>` whose props flatten an anchor's in react.dev's `Breadcrumbs`, is
+read where JSX reads it, after them, as Rust reads it, where a child
+Rust's expression made look complex read `key` into a `const`.
+
 ## Why
 
 - **It's the JS a person writes**, and it's exact: a `const` is the same
