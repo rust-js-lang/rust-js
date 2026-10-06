@@ -39,6 +39,22 @@ proved and recorded, and what to run before pushing. The
 [architecture](docs/architecture.md) says where a change goes, and which
 boundaries [its test](test/architecture.test.ts) holds it to.
 
+## Five minutes per local command
+
+A hard rule: every command run on this machine, on the Mac or in the VM,
+is given a timeout of at most five minutes, the tool's own or `timeout
+300` in front of it. Nothing runs here without one.
+
+- **What may take longer goes to CI**, not here: push the branch and start
+  `bun run ci:check`, or the [workflow](.github/workflows) that runs it.
+  The whole suite, all mutations, rustc's whole suite and the WASM build
+  are CI's ([DEVELOPMENT.md](DEVELOPMENT.md)).
+- **A command that times out isn't run again with more time.** Split it, a
+  file's tests, `-t <name>`, one mutation, a folder of rustc's tests, or
+  send it to CI.
+- **This wins** where the rest of this file, or CONTRIBUTING.md, asks for a
+  run here that takes longer.
+
 ## Develop in a Linux VM
 
 On macOS, the system scans each newly built binary before its first run, one
