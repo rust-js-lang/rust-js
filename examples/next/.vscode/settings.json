@@ -1,0 +1,5 @@
+{
+  // rust-analyzer checks the app through rust-js, which reads inside JSX,
+  // as a plain rustc doesn't (ADR 0222).
+  "rust-analyzer.check.overrideCommand": ["./node_modules/.bin/rust-js-check"]
+}

@@ -10,7 +10,8 @@
     "directory": "tooling"
   },
   "bin": {
-    "rust-js-patch": "./patch.js"
+    "rust-js-patch": "./patch.js",
+    "rust-js-check": "./check.js"
   },
   "exports": {
     "./build": "./build.js",
@@ -26,6 +27,7 @@
     "publish.js",
     "README.md",
     "cargo.js",
-    "patch.js"
+    "patch.js",
+    "check.js"
   ]
 }

@@ -312,6 +312,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0219 A sequence a webapi function takes is a slice](decisions/0219-webapi-sequences.md)
 - [0220 A JSX tag can be a value, named by a capitalized local](decisions/0220-jsx-tag-values.md)
 - [0221 A binding's last slice can be its rest arguments](decisions/0221-variadic-bindings.md)
+- [0222 An editor checks the app through rust-js](decisions/0222-editor-check.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

@@ -15,4 +15,4 @@ node_modules/
 /.vitest
 /test-results
 /playwright-report
-.vscode
+/.vscode

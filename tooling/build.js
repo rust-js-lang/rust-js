@@ -6,7 +6,7 @@ import { createRequire } from "node:module";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { cargoWorkspace, checkCargo } from "./cargo.js";
+import { cargoWorkspace, checkCargo, editorCheck } from "./cargo.js";
 import { resourceInputs } from "./resources.js";
 import { parseCompilerIdentity } from "./manifest.js";
 
@@ -184,6 +184,11 @@ export function createNativeBuilder({ root, rustJs = findCompiler(root), resourc
       const identity = await compilerIdentity();
       checkRuntime(root, identity.version);
       return checkCargo({ ...options, toolchain: identity.toolchain, compiler: rustJs, react: installedReact(root) ?? undefined });
+    },
+    /** The check an editor runs (ADR 0222), as `checkCargo`'s, its
+     * messages printed as they come; no JS in source, and no runtime needed. */
+    async editorCheck(options) {
+      return editorCheck({ ...options, toolchain: await toolchain(), compiler: rustJs, react: installedReact(root) ?? undefined });
     },
     /** The workspace of a Cargo manifest, and its target directory. */
     async cargoWorkspace(options) {

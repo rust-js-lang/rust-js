@@ -150,7 +150,9 @@ editor format-on-save integration.
   macro's token arguments, or emitted by another macro, is not expanded by this
   pass. Bind it first, then pass the value (`let item = jsx! { <p /> }; vec![item]`).
 - This is a rust-js extension. Stock rustc and rust-analyzer do not expand it;
-  editor completion inside the markup is not provided here. Use the formatting
+  editor completion inside the markup is not provided here. rust-analyzer's
+  check can run through rust-js, `rust-js-check` as its
+  `check.overrideCommand` (ADR 0222), which checks inside the markup. Use the formatting
   command above for indentation.
 - The browser playground compiles and displays JSX. Its existing preview runner
   runs plain JavaScript/DOM programs; it does not mount React examples. Use the

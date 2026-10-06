@@ -25,6 +25,7 @@
     "babel-plugin-react-compiler": "^1.0.0",
     "oxlint": "^1.81.0",
     "vite": "^8.3.0",
-    "@rust-js/vite-plugin": "workspace:*"
+    "@rust-js/vite-plugin": "workspace:*",
+    "@rust-js/build": "workspace:*"
   }
 }
