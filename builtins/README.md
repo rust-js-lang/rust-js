@@ -40,6 +40,9 @@ spawn(Box::new(async move {                            // runs, unawaited
   `match`, a `null` the `None` of the `Option` holding it; its objects are
   `Dict<Option<Json>>`. A `Dict<T>` is a plain object of `T`s by name:
   `dict::get(d, key)`, `dict::entries(d)`, `dict::set(d, key, value)`.
+- `StructuredClone` is what the browser's structured clone copies as it is:
+  what `postMessage`, `pushState` and `structuredClone` take. A struct is one
+  by `unsafe impl StructuredClone for Saved {}`, which vouches its fields are.
 - `object::from_entries(entries)` is a JS object of keys and values, as an API
   taking a dictionary wants, and `object::is(a, b)` is `Object.is`: whether two
   JS objects are one.

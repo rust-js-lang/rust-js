@@ -114,6 +114,68 @@ pub fn set<T>(this: &Unknown, key: &str, to: T) {
     unreachable!()
 }
 
+/// A value the browser's [structured clone](https://developer.mozilla.org/docs/Web/API/Web_Workers_API/Structured_clone_algorithm)
+/// copies as it is (ADR 0225): what `postMessage`, `pushState` and
+/// `structuredClone` take, which a closure or a DOM node isn't, nor
+/// `Some(None)`, whose box would arrive as an object. Numbers, strings and
+/// `bool`s are, and arrays, tuples and `Vec`s of them, an `Option` of a
+/// [`Defined`] one, `Json`, `Dict`, `Unknown`, and what WebIDL marks
+/// `[Serializable]`, a `Blob`. A struct is one as its fields are: unsafe to
+/// implement, as its `impl` vouches they are, `unsafe impl StructuredClone for Saved {}`.
+pub unsafe trait StructuredClone {}
+
+/// A value that's never `undefined` nor `null` in JS, as `None` is: an
+/// `Option` of one is the value or `undefined`, not a box (ADR 0051), so
+/// one a clone copies as it is.
+pub unsafe trait Defined {}
+
+/// Numbers, strings and the js crate's own: each copied, and never nullish.
+macro_rules! cloned {
+    ($($t:ty),* $(,)?) => {
+        $(
+            unsafe impl StructuredClone for $t {}
+            unsafe impl Defined for $t {}
+        )*
+    };
+}
+
+cloned!(bool, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize, f32, f64, char, str, String);
+cloned!(Unknown, ArrayBuffer, Uint8Array, Json<'_>);
+
+unsafe impl<T: StructuredClone + ?Sized> StructuredClone for &T {}
+unsafe impl<T: Defined + ?Sized> Defined for &T {}
+unsafe impl<T: StructuredClone + ?Sized> StructuredClone for Box<T> {}
+unsafe impl<T: Defined + ?Sized> Defined for Box<T> {}
+unsafe impl<T: StructuredClone> StructuredClone for [T] {}
+unsafe impl<T> Defined for [T] {}
+unsafe impl<T: StructuredClone, const N: usize> StructuredClone for [T; N] {}
+unsafe impl<T, const N: usize> Defined for [T; N] {}
+unsafe impl<T: StructuredClone> StructuredClone for Vec<T> {}
+unsafe impl<T> Defined for Vec<T> {}
+unsafe impl<T: StructuredClone> StructuredClone for Dict<T> {}
+unsafe impl<T> Defined for Dict<T> {}
+// `Some(x)` is `x` itself only where `x` can't look like `None`.
+unsafe impl<T: StructuredClone + Defined> StructuredClone for Option<T> {}
+
+/// A tuple is an array (ADR 0020): copied if its items are, never nullish.
+macro_rules! tuples {
+    ($(($($t:ident),+))*) => {
+        $(
+            unsafe impl<$($t: StructuredClone),+> StructuredClone for ($($t,)+) {}
+            unsafe impl<$($t),+> Defined for ($($t,)+) {}
+        )*
+    };
+}
+
+tuples! {
+    (A)
+    (A, B)
+    (A, B, C)
+    (A, B, C, D)
+    (A, B, C, D, E)
+    (A, B, C, D, E, F)
+}
+
 /// A plain JS object of `T`s by their names (ADR 0225), as ReScript's `dict`
 /// and TypeScript's `Record<string, T>` are: a JSON object, or a
 /// dictionary an API takes. [`dict::get`] reads one by its key.

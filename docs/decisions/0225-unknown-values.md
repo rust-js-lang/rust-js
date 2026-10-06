@@ -80,6 +80,18 @@ value.name = "new";
   `reportError`, a stream's `cancel`. (Amended: they were skipped.) A
   dictionary's field typed `any` is still left out, as a struct's field
   can't be generic.
+- **One the browser copies takes only what it copies as it is**,
+  `js::StructuredClone`: `postMessage`'s message, `pushState`'s and
+  `replaceState`'s data, and `structuredClone`'s value, as the generator
+  lists them, which WebIDL doesn't say. Numbers, strings and `bool`s are,
+  arrays, tuples, `Vec`s and `Box`es of them, an `Option` of what's
+  `js::Defined`, never nullish, so never `Some(None)`'s box, `Json`,
+  `Dict`, `Unknown`, and what WebIDL marks `[Serializable]`, a `Blob`. A
+  struct is one by its `unsafe impl`, which vouches its fields are. A
+  closure, which the browser can't copy, a `Window`, and `Some(None)`,
+  which would arrive as rust-js's `{ $someNone }`, are rustc's errors.
+  `reportError`'s error and `cancel`'s reason, which nothing copies, take
+  anything still, as JS does. (Amended: they took anything.)
 - **JSON is a typed value too, `js::Json`**, as ReScript's `JSON.t` is: an
   untagged enum of `String`, `Number`, `Bool`, `Array(&[Option<Json>])`
   and, otherwise, `Object(&Dict<Option<Json>>)`, a JSON `null` the `None`

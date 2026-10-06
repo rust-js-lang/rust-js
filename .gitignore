@@ -16,3 +16,5 @@ node_modules/
 /test-results
 /playwright-report
 /.vscode
+# What rustc writes of a long type's name, beside where it runs.
+/*.long-type-*.txt
