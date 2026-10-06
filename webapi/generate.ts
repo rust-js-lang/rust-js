@@ -28,7 +28,7 @@ const INTERFACES = [
   "HTMLOListElement", "HTMLOptionElement", "HTMLOutputElement", "HTMLParagraphElement",
   "HTMLSelectElement", "HTMLSpanElement", "HTMLTextAreaElement", "HTMLUListElement",
   "HTMLTableElement", "HTMLTableSectionElement", "HTMLTableRowElement", "HTMLTableCellElement", "HTMLIFrameElement",
-  "HTMLCanvasElement",
+  "HTMLCanvasElement", "HTMLDetailsElement",
   "Window", "Location", "History", "Storage", "DataTransfer", "ToggleEvent", "MessageEvent", "SubmitEvent",
   // hr-time: `window.performance`, the page's clock
   "Performance",

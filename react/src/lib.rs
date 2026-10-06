@@ -141,6 +141,9 @@ impl Node for bool {}
 impl<T: Node + ?Sized> Node for &T {}
 impl<T: Node> Node for Option<T> {}
 impl<T: Node> Node for Vec<T> {}
+impl<T: Node> Node for [T] {}
+/// What JS gives untyped, a child's `props.children` say, as JSX renders it.
+impl Node for Unknown {}
 impl sealed::Sealed for Element {}
 impl sealed::Sealed for &str {}
 impl sealed::Sealed for String {}
@@ -149,17 +152,24 @@ impl sealed::Sealed for bool {}
 impl<T: Node + ?Sized> sealed::Sealed for &T {}
 impl<T: Node> sealed::Sealed for Option<T> {}
 impl<T: Node> sealed::Sealed for Vec<T> {}
+impl<T: Node> sealed::Sealed for [T] {}
+impl sealed::Sealed for Unknown {}
 
 /// A node, told apart by what it is, as JSX's `typeof children ===
-/// "string"` and `isValidElement(children)`: text, an element, or any other
-/// node, a list say, of [`kind_of`] (ADR 0214).
+/// "string"`, `isValidElement(children)` and `Array.isArray(children)`:
+/// text, an element, a list of nodes, as JSX gives several children, or any
+/// other node, of [`kind_of`] (ADR 0214). Each is a node itself.
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum NodeKind<'a> {
     Text(&'a str),
     Element(&'a ReactElement),
+    List(&'a [NodeKind<'a>]),
     #[cfg_attr(rust_js, rust_js::otherwise)]
     Other(&'a JsObject),
 }
+
+impl Node for NodeKind<'_> {}
+impl sealed::Sealed for NodeKind<'_> {}
 
 /// What `node` is, its text, an element or another node: the node itself,
 /// matched, `if let NodeKind::Text(text) = kind_of(&children)`.

@@ -627,6 +627,7 @@ pub fn App(busy: bool) -> Element {
         <form>
             <input ref={input} />
             <button onClick={|e| webapi::html_button_element::set_disabled(e.current_target(), true)}>{label}</button>
+            <details onToggle={|e| webapi::html_details_element::set_open(e.current_target(), false)} />
         </form>
     }
 }
@@ -638,6 +639,7 @@ pub fn App(busy: bool) -> Element {
   expect(code).toContain("<input ref={input} />");
   expect(code).toContain("const label = busy ? <span>…</span> : <b>Save</b>;");
   expect(code).toContain("onClick={(e) => {\n          e.currentTarget.disabled = true;\n        }}");
+  expect(code).toContain("e.currentTarget.open = false;");
   // An input's ref on a button, a handler of an input's event on it, and a
   // handler of any element's event not widened, are each rustc's error.
   for (const [wrong, written, error] of [
@@ -1408,7 +1410,7 @@ pub fn Only<C: Node>(ListProps { children }: ListProps<C>) -> Element {
     match kind_of(&children) {
         NodeKind::Element(element) => clone_element(element, Linked { linked: "yes" }),
         NodeKind::Text(text) => jsx! { <i>{text}</i> },
-        NodeKind::Other(_) => jsx! { <b>{"other"}</b> },
+        NodeKind::List(_) | NodeKind::Other(_) => jsx! { <b>{"other"}</b> },
     }
 }
 pub fn Id<C: Node>(ListProps { children }: ListProps<C>) -> Element {
@@ -1435,6 +1437,41 @@ pub fn Id<C: Node>(ListProps { children }: ListProps<C>) -> Element {
   expect(renderToStaticMarkup(createElement(Only, null, "t", "u"))).toBe("<b>other</b>");
   expect(renderToStaticMarkup(createElement(Id, null, createElement("h4", { id: "deep" })))).toBe("<p>deep</p>");
   expect(renderToStaticMarkup(createElement(Id, null, "t"))).toBe("<p>none</p>");
+});
+
+// Children that are a list, as JSX gives several, are that list, which a
+// component takes apart, as react.dev's ExpandableExample renders its first
+// child's `children` as its title and the rest as its body.
+test("JSX components take apart a list of children", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{Element, Node, NodeKind, jsx, kind_of};
+pub struct ListProps<C: Node> {
+    pub children: C,
+}
+pub fn Titled<C: Node>(ListProps { children }: ListProps<C>) -> Element {
+    let NodeKind::List(items) = kind_of(&children) else {
+        panic!("expected a title and a body");
+    };
+    let Some(NodeKind::Element(first)) = items.first() else {
+        panic!("expected a title first");
+    };
+    jsx! {
+        <section>
+            <h4>{js::get(first.props(), "children")}</h4>
+            <div>{&items[1..]}</div>
+        </section>
+    }
+}
+`);
+  args.push("--extern", `js=${join(target, "libjs.rmeta")}`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("Array.isArray(");
+  const { Titled } = await import(join(dir, "lib.jsx"));
+  const { createElement } = await import("react");
+  expect(renderToStaticMarkup(createElement(Titled, null, createElement("h4", null, "Title"), "a", createElement("b", null, "b"))))
+    .toBe("<section><h4>Title</h4><div>a<b>b</b></div></section>");
+  expect(() => renderToStaticMarkup(createElement(Titled, null, "only"))).toThrow("expected a title and a body");
 });
 
 // A DOM element's tag as a value, a `react::Tag`, is the tag JSX names by a

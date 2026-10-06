@@ -60,7 +60,13 @@ cloneElement(element, { isLink: true })
 - **`Child` and `NodeKind` are untagged enums** of what React's children
   are: `Children.toArray` leaves out `null`, `undefined` and booleans, so a
   `Child` is text, a number, an element, or `Other`, a portal say; a node
-  of `kind_of` is text, an element, or `Other`, a list say.
+  of `kind_of` is text, an element, a `List` of nodes, as JSX gives several
+  children, or `Other`. A list is the children themselves, not
+  `Children.toArray`'s keyed copy: react.dev's ExpandableExample takes its
+  first child as its title and renders `&items[1..]`, `children.slice(1)`.
+  Each kind is a node, and a slice of nodes, and a `js::Unknown`, which a
+  child's `props.children` is, as JSX renders anything. (Amended: there was
+  no `List`, and an `Unknown` didn't render.)
 - **What an element holds is a `js::Unknown`** (ADR 0225), its `type` and
   `props`, as @types/react's `ReactElement` has them `any`: a component's
   own properties, react.dev's `mdxName`, and a child's props are the
