@@ -1,7 +1,7 @@
 // Cargo's builds of rust-js crates (ADR 0101), and the experimental
 // local-library planning before them (ADR 0085). Cargo owns resolution; this
 // adapter does not infer dependencies from source files or run build scripts.
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -11,6 +11,36 @@ import { promisify } from "node:util";
 import { commit, fingerprint } from "./publish.js";
 
 const execute = promisify(execFile);
+
+/** Cargo's environment of a check through rust-js: the workspace's
+ * wrapper, rustc's shim, and the React the react crate is built for. */
+function cargoEnv(compiler, react) {
+  const env = { ...process.env, RUSTC_WORKSPACE_WRAPPER: resolve(compiler), RUSTC: rustcShim(resolve(compiler)) };
+  if (react) env.RUST_JS_REACT = react;
+  else delete env.RUST_JS_REACT;
+  return env;
+}
+
+/**
+ * The check an editor runs, rust-analyzer's `check.overrideCommand` (ADR
+ * 0222): the app's `cargo check`, as its build's, through rust-js, which
+ * reads inside JSX as a plain rustc doesn't, Cargo's JSON messages printed as
+ * they come. In a target directory of its own, `targetDir`, it neither waits
+ * for the dev server's check nor makes it check again.
+ * @param {{ manifestPath: string, toolchain: string, compiler: string, react?: string, targetDir: string }} options
+ * @returns {Promise<number>} Cargo's exit code
+ */
+export function editorCheck({ manifestPath, toolchain, compiler, react, targetDir }) {
+  if (!exactToolchain(toolchain)) throw new Error("Cargo builds require an exact toolchain pin");
+  const manifest = resolve(manifestPath);
+  const args = [`+${toolchain}`, "check", "--message-format=json", "--target", "wasm32-unknown-unknown", "--manifest-path", manifest];
+  const env = { ...cargoEnv(compiler, react), CARGO_TARGET_DIR: targetDir };
+  return new Promise((done, failed) => {
+    spawn("cargo", args, { cwd: dirname(manifest), env, stdio: ["ignore", "inherit", "inherit"] })
+      .on("error", failed)
+      .on("close", (code) => done(code ?? 1));
+  });
+}
 
 /** Cargo's rustc, for every crate it compiles: rust-js's `--rustc`, rustc
  * with rust-js's tool known (ADR 0112). The binding crates need it, which
@@ -106,9 +136,7 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
   if (features.length) args.push("--features", features.join(","));
   if (noDefaultFeatures) args.push("--no-default-features");
   if (offline) args.push("--offline");
-  const env = { ...process.env, RUSTC_WORKSPACE_WRAPPER: resolve(compiler), RUSTC: rustcShim(resolve(compiler)) };
-  if (react) env.RUST_JS_REACT = react;
-  else delete env.RUST_JS_REACT;
+  const env = cargoEnv(compiler, react);
   const { stdout } = await execute("cargo", args, { cwd: dirname(manifest), env, maxBuffer: 64 * 1024 * 1024 }).catch((error) => {
     const messages = String(error.stdout ?? "").split("\n").filter(Boolean).map(line => JSON.parse(line));
     const rendered = messages.filter(m => m.reason === "compiler-message").map(m => m.message.rendered).join("");

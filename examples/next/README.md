@@ -41,8 +41,10 @@ compiled; `rust-js-next build` stops at one.
   with Cargo, and your editor's rust-analyzer checks. Its crates, `next`,
   `react` and `js`, are npm packages, named in `Cargo.toml` by version:
   `rust-js-patch`, the app's `postinstall`, tells Cargo they're in
-  `node_modules`. rust-analyzer doesn't look inside `jsx!`, so what's used
-  only in JSX, `Image`, shows as unused there.
+  `node_modules`. rust-analyzer checks it through rust-js, `rust-js-check`
+  in `.vscode/settings.json`, which reads inside `jsx!`: what's wrong in
+  JSX shows where it is, and what's used only there, `Image`, is used. Its
+  own completion and hover still don't look inside `jsx!`.
 - **Cargo builds into `node_modules/.cache/rust-js/target`**, which Next.js
   doesn't watch, where a `target/` in the app would be many changes to it on
   each save. Give rust-analyzer the same, `rust-analyzer.cargo.targetDir`.

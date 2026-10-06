@@ -56,6 +56,9 @@ test("a packed @rust-js/create makes the vite-react example's app, named for its
   expect(readFileSync(join(app, "README.md"), "utf8")).not.toContain("repository root");
   const manifest = JSON.parse(readFileSync(join(app, "package.json"), "utf8"));
   expect(manifest.name).toBe("my-app");
+  // Its editor checks it through rust-js, which reads inside JSX (ADR 0222).
+  expect(readFileSync(join(app, ".vscode/settings.json"), "utf8")).toContain('"rust-analyzer.check.overrideCommand": ["./node_modules/.bin/rust-js-check"]');
+  expect(manifest.devDependencies["@rust-js/build"]).toBe(version);
   expect(manifest.dependencies["@rust-js/runtime"]).toBe(version);
   expect(manifest.devDependencies["@rust-js/vite-plugin"]).toBe(version);
   // The compiler, which a release of @rust-js/build doesn't bring: the app's own.
@@ -86,6 +89,8 @@ test("--template next makes the Next.js example's app, named for its directory",
   expect(manifest.scripts).toMatchObject({ dev: "rust-js-next dev", build: "rust-js-next build", postinstall: "rust-js-patch" });
   expect(manifest.dependencies).toMatchObject({ "@rust-js/next": crate("next"), "@rust-js/react": crate("react"), "@rust-js/webapi": crate("webapi"), "@rust-js/builtins": crate("builtins") });
   expect(manifest.devDependencies["@rust-js/next-plugin"]).toBe(version);
+  expect(readFileSync(join(app, ".vscode/settings.json"), "utf8")).toContain("rust-js-check");
+  expect(manifest.devDependencies["@rust-js/build"]).toBe(version);
   expect(JSON.stringify(manifest)).not.toContain("workspace:");
   const cargoToml = readFileSync(join(app, "Cargo.toml"), "utf8");
   expect(cargoToml).not.toContain('path = "../');

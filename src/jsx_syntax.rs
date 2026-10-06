@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use rustc_ast::ast_traits::{HasAttrs, HasTokens};
+use rustc_ast::attr;
 use rustc_ast::mut_visit::{self, FnKind, MutVisitor};
 use rustc_ast::token::{IdentIsRaw, TokenKind};
 use rustc_ast::tokenstream::{DelimSpacing, LazyAttrTokenStream, Spacing, TokenStream, TokenTree};
@@ -210,6 +211,39 @@ impl Expand<'_> {
     // rustc owns boxed items in both crate and module ASTs.
     #[allow(clippy::vec_box)]
     fn items(&mut self, items: &mut Vec<Box<ast::Item>>) {
+        // A function only `js::export_default!` names is the module's
+        // default export, which JS uses: not dead code to rustc (ADR 0222).
+        let exported: HashSet<Symbol> = (items.iter())
+            .filter_map(|item| match &item.kind {
+                ItemKind::MacCall(mac)
+                    if mac
+                        .path
+                        .segments
+                        .last()
+                        .is_some_and(|s| s.ident.as_str() == "export_default") =>
+                {
+                    match mac.args.tokens.iter().collect::<Vec<_>>().as_slice() {
+                        [TokenTree::Token(token, _)] => token.ident().map(|(ident, _)| ident.name),
+                        _ => None,
+                    }
+                }
+                _ => None,
+            })
+            .collect();
+        for item in items.iter_mut() {
+            if let ItemKind::Fn(function) = &item.kind
+                && exported.contains(&function.ident.name)
+            {
+                let allow = attr::mk_attr_nested_word(
+                    &self.sess.psess.attr_id_generator,
+                    ast::AttrStyle::Outer,
+                    sym::allow,
+                    sym::dead_code,
+                    item.span,
+                );
+                item.attrs.push(allow);
+            }
+        }
         // The props structs the components here take, and their companions,
         // which build them from what JSX gives (ADR 0213).
         let props: HashSet<String> = (items.iter())

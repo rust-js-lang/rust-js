@@ -44,8 +44,10 @@ version that compiled. The browser's source map points at `App.rs`.
   in `Cargo.toml` by version: `rust-js-patch`, the app's `postinstall`, tells
   Cargo they're in `node_modules`, in `.cargo/config.toml`. A binding of another
   library, `@rust-js-bindings/canvas-confetti`, is added the same way: its npm
-  package, and a line in `Cargo.toml`. rust-analyzer doesn't look inside
-  `jsx!`, so a variable used only in JSX shows as unused there.
+  package, and a line in `Cargo.toml`. rust-analyzer checks it through
+  rust-js, `rust-js-check` in `.vscode/settings.json`, which reads inside
+  `jsx!`: what's wrong in JSX shows where it is, and what's used only there
+  is used. Its own completion and hover still don't look inside `jsx!`.
 - **`Cargo.toml` also sets how the JS is laid out**, by oxfmt's options,
   `[package.metadata.rust-js.format]` with `printWidth = 120`, say, and can run
   your own tools on it, a formatter or a linter, in

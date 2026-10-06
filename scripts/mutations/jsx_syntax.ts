@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "                let _ = ident;\n",
     tests: ["test/jsx.test.ts", "-t", "tag that.s a value"],
   },
+  {
+    name: "export-default-dead",
+    breaks: "a function only `js::export_default!` names is dead code to rustc, a warning in the editor's check",
+    file: "src/jsx_syntax.rs",
+    find: "                item.attrs.push(allow);\n",
+    replace: "                drop(allow);\n",
+    tests: ["test/editor-check.test.ts", "-t", "reads inside JSX"],
+  },
 ];

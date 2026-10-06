@@ -39,6 +39,7 @@
         "react-dom": "19.2.8",
       },
       "devDependencies": {
+        "@rust-js/build": "workspace:*",
         "@rust-js/next-plugin": "workspace:*",
         "@tailwindcss/postcss": "^4",
         "eslint": "^9",
@@ -59,6 +60,7 @@
       "devDependencies": {
         "@babel/core": "^7.29.7",
         "@rolldown/plugin-babel": "^0.2.3",
+        "@rust-js/build": "workspace:*",
         "@rust-js/vite-plugin": "workspace:*",
         "@types/react": "^19.2.18",
         "@types/react-dom": "^19.2.7",
@@ -98,6 +100,7 @@
       "version": "0.0.3",
       "bin": {
         "rust-js-patch": "./patch.js",
+        "rust-js-check": "./check.js",
       },
     },
     "typescript": {
