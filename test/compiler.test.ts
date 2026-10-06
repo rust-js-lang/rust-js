@@ -469,6 +469,10 @@ test("the builtins crate's object and js_error functions are JS's", async () => 
     }
   })();
   expect(await builtins.thrown()).toEqual([message, "not an Error"]);
+  // A future is the promise it is, unawaited where it's handed on.
+  expect(await builtins.promised(4)).toBe(8);
+  const js = await Bun.file(join(target, "builtins.js")).text();
+  expect(js).toContain("const pending = doubled(n);");
 });
 
 // Timers, globals of every JS runtime, as ReScript's standard library has

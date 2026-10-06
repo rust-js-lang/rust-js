@@ -37,5 +37,5 @@ test("the binding crates package for crates.io, each at its version", () => {
   expect(listed("rust-js-webapi")).toEqual(["README.md", "src/lib.rs"]);
   expect(versionOf("react")).toBe(versionOf("."));
   expect(listed("rust-js-react")).toEqual(["README.md", "build.rs", "src/attributes.rs", "src/dom.rs", "src/elements.rs", "src/event.rs", "src/lib.rs", "versions.json"]);
-  expect(listed("rust-js-next")).toEqual(["README.md", "src/image.rs", "src/lib.rs", "src/link.rs", "src/navigation.rs"]);
+  expect(listed("rust-js-next")).toEqual(["README.md", "src/image.rs", "src/lib.rs", "src/link.rs", "src/navigation.rs", "src/router.rs"]);
 }, 600_000);

@@ -63,3 +63,14 @@ pub fn every(ms: u32, tick: Box<dyn FnMut()>) -> &'static js::IntervalId {
 pub fn stop(id: &js::IntervalId) {
     js::clear_interval(id);
 }
+
+async fn doubled(n: u32) -> u32 {
+    n * 2
+}
+
+/// A future, unawaited, as the promise it is: what a binding taking a
+/// promise is given, as react.dev's "Copy page" gives `ClipboardItem` one.
+pub async fn promised(n: u32) -> u32 {
+    let pending: js::Promise<u32> = js::promise(doubled(n));
+    js::settle(pending).await.unwrap_or(0)
+}

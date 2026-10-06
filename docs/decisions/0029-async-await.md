@@ -110,5 +110,8 @@ still runs. `test/async.rs` and the countdown example pin this down.
 - Rust has no `#[test] async fn` (rustc rejects it), so tests can only see
   what runs before the first `.await`. The countdown's test checks that
   a click shows "3" at once.
+- A future handed on unawaited, to a binding that takes a promise, is
+  `js::promise(f())`: in JS the call's promise itself, as an `async fn`'s
+  call is one already.
 - Not yet: `async` functions in traits, `IntoFuture` for your own types,
   streams, and joining several futures (`Promise.all`).

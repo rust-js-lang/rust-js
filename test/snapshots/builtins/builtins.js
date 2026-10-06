@@ -51,4 +51,14 @@ export function every(ms, tick) {
 export function stop(id) {
   clearInterval(id);
 }
+
+async function doubled(n) {
+  return Math.imul(n, 2) >>> 0;
+}
+
+export async function promised(n) {
+  const pending = doubled(n);
+  const result = await $settle(pending);
+  return result.TAG === "Ok" ? result._0 : 0;
+}
 //# sourceMappingURL=builtins.js.map

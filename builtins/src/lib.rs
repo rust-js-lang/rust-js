@@ -90,6 +90,15 @@ pub fn settle<T>(this: Promise<T>) -> Promise<Result<T, &'static JsError>> {
     unreachable!()
 }
 
+/// A future as the promise it is in JS, where a call of an `async fn` is
+/// one already: handed, unawaited, to what takes a promise, as
+/// `new ClipboardItem({ "text/plain": promise(fetch_blob()) })`.
+#[cfg_attr(rust_js, rust_js::link_name = "this")]
+#[allow(unused_variables)]
+pub fn promise<T>(this: impl core::future::Future<Output = T>) -> Promise<T> {
+    unreachable!()
+}
+
 unsafe extern "Rust" {
     /// Run a future without waiting for it, as from an event handler:
     /// `spawn(Box::new(async move { .. }))`. A JS promise is already
