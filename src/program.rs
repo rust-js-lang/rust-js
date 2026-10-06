@@ -31,8 +31,9 @@ pub struct LoweredModule {
     pub caches: Vec<String>,
     /// The function it exports as its default too (ADR 0192).
     pub default_export: Option<String>,
-    /// What its `.d.ts` says of what it exports, but the header (ADR 0196).
-    pub declarations: Option<String>,
+    /// What its `.d.ts` says of what it exports, but the header (ADR 0196):
+    /// @rust-js/typescript's model, which TypeScript prints (ADR 0207).
+    pub declarations: Option<serde_json::Value>,
     /// Runtime helpers its functions use.
     pub runtime: Vec<Helper>,
     /// Whether it has JSX, so it's a `.jsx` file (ADR 0040).

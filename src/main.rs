@@ -51,6 +51,7 @@ mod reachability;
 mod runtime;
 mod settings;
 mod to_oxc;
+mod typescript;
 
 use std::path::PathBuf;
 use std::process::ExitCode;

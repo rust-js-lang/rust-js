@@ -35,6 +35,7 @@ impl OutputPlan {
         sources: &program::Sources,
     ) -> Result<Vec<Artifact>, String> {
         let mut artifacts = Vec::new();
+        let mut typed = Vec::new();
         // Each source's path is resolved once, and each module's directory:
         // a module's map asks for a path only to the sources it points into
         // (found in review).
@@ -109,17 +110,20 @@ impl OutputPlan {
             }
             // What it exports, typed, for the TypeScript that imports it (ADR 0196).
             if self.settings.declarations
-                && let Some(declarations) = &module.declarations
+                && let Some(mut declarations) = module.declarations
             {
+                declarations["header"] = js_module.header.clone().into();
+                typed.push((types_path(&js_path), declarations));
+            }
+        }
+        // Printed by TypeScript, all in one session of its (ADR 0207).
+        if !typed.is_empty() {
+            let (paths, models): (Vec<PathBuf>, Vec<serde_json::Value>) = typed.into_iter().unzip();
+            let texts = crate::typescript::print(&self.settings, &models)?;
+            for (path, text) in paths.into_iter().zip(texts) {
                 artifacts.push(Artifact {
-                    path: types_path(&js_path),
-                    bytes: format!(
-                        "{}
-
-{declarations}",
-                        js_module.header
-                    )
-                    .into_bytes(),
+                    path,
+                    bytes: text.into_bytes(),
                 });
             }
         }

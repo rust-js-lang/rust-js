@@ -11,14 +11,14 @@ const files = (directory: string): string[] => readdirSync(join(root, directory)
 // Every source module is in a layer, so a module added later is checked
 // by the rules of its layer, not left out of a list (found in review).
 //
-//   driver ──► front end (rustc) ──► owned output ──► printing (oxc)
+//   driver ──► front end (rustc) ──► owned output ──► printing (oxc, TypeScript)
 const layers = {
   driver: ["src/main.rs", "src/cargo.rs"],
   front: ["src/lower.rs", "src/lower/", "src/jsx_syntax.rs", "src/jsx_syntax/"],
   owned: ["src/library.rs", "src/reachability.rs", "src/link.rs", "src/names.rs", "src/program.rs", "src/js.rs",
     "src/prepare.rs", "src/output.rs", "src/publish.rs", "src/manifest.rs", "src/runtime.rs", "src/settings.rs", "src/hooks.rs",
     "src/paths.rs"],
-  printing: ["src/to_oxc.rs", "src/format.rs"],
+  printing: ["src/to_oxc.rs", "src/format.rs", "src/typescript.rs"],
 };
 const layerOf = (file: string) =>
   Object.entries(layers).find(([, paths]) => paths.some(p => p.endsWith("/") ? file.startsWith(p) : file === p))?.[0];
@@ -33,8 +33,9 @@ test("every source module is in a layer", () => {
 // crate is its layer's, `crate::js` owned output's. Found in review: the
 // checks below forbid chosen APIs, so an owned module using lowering
 // broke none. Printing's own modules are named where an owned one starts
-// it: `output.rs` prints each module it plans, and `hooks.rs` formats what
-// a hook returns.
+// it: `output.rs` prints each module it plans, its JS by oxc and its
+// declarations by TypeScript (ADR 0207), and `hooks.rs` formats what a
+// hook returns.
 const allowed: Record<string, string[]> = {
   driver: ["driver", "front", "owned", "printing"],
   front: ["front", "owned"],
@@ -42,7 +43,7 @@ const allowed: Record<string, string[]> = {
   printing: ["printing", "owned"],
 };
 const orchestration: Record<string, string[]> = {
-  "src/output.rs": ["src/to_oxc.rs"],
+  "src/output.rs": ["src/to_oxc.rs", "src/typescript.rs"],
   "src/hooks.rs": ["src/format.rs"],
 };
 // A file's module path, `src/lower/drops/types.rs`'s `lower::drops::types`;

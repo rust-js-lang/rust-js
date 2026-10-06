@@ -112,6 +112,22 @@ export async function open(files = []) {
   };
 }
 
+/**
+ * Each of `modules` as TypeScript prints it, in one session: what rust-js
+ * writes each module's `.d.ts` with (ADR 0207).
+ * @param {Module[]} modules
+ */
+export async function printModules(modules) {
+  const ts = await open();
+  try {
+    const texts = [];
+    for (const module of modules) texts.push(await ts.print(module));
+    return texts;
+  } finally {
+    await ts.close();
+  }
+}
+
 // ── Reading: TypeScript's syntax tree, as the model ───────────────────────
 
 /** The text `node` spans. */
@@ -419,6 +435,12 @@ function statement(declaration) {
     case "export-default":
       return f.createExportAssignment(undefined, false, undefined, id(declaration.name));
     case "namespace":
+      // What it prints is erasable syntax only, TypeScript's
+      // `erasableSyntaxOnly`: a namespace that holds values is JS, but a
+      // `declare`d one's.
+      if (!declaration.declare && !declaration.declarations.every(erasable)) {
+        throw new Error(`namespace ${declaration.name} holds values, which isn't erasable: declare it`);
+      }
       return f.createModuleDeclaration(
         modifiers(declaration),
         SyntaxKind.NamespaceKeyword,
@@ -427,6 +449,20 @@ function statement(declaration) {
       );
     default:
       throw new Error(`a ${declaration.kind} declaration isn't one TypeScript is given`);
+  }
+}
+
+/** A declaration that makes nothing in JS: a type, or a namespace of them. */
+function erasable(/** @type {Declaration} */ declaration) {
+  switch (declaration.kind) {
+    case "interface":
+    case "type":
+    case "import":
+      return true;
+    case "namespace":
+      return declaration.declare || declaration.declarations.every(erasable);
+    default:
+      return false;
   }
 }
 

@@ -9,15 +9,11 @@
     "url": "git+https://github.com/rust-js-lang/rust-js.git",
     "directory": "typescript"
   },
-  "bin": {
-    "rust-js-typescript": "./bin.js"
-  },
   "exports": {
     ".": "./index.js"
   },
   "files": [
     "index.js",
-    "bin.js",
     "README.md"
   ],
   "dependencies": {

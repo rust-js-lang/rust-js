@@ -3,73 +3,79 @@
 //! each by the name it has in JS. An `Option` field is optional, a unit-only
 //! enum its names, a `memo`'s component its props. What has no type here,
 //! another module's type or a JS object's, is `any`, so a caller isn't held
-//! to less than Rust holds it to.
+//! to less than Rust holds it to. They're the model of @rust-js/typescript
+//! (ADR 0206), which TypeScript prints (ADR 0207).
 
 use std::collections::BTreeSet;
-use std::fmt::Write;
 
 use rustc_hir::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::Symbol;
 use rustc_span::def_id::{DefId, LocalModDefId};
+use serde_json::{Value, json};
 
 use super::bindings::{field_key, fn_name, is_binding, is_flatten, is_mark, is_rest, variant_name};
 use super::recognition::{StdItem, is_std_def};
 use super::representation::Num;
 
-/// What a module's `.d.ts` says, but its header: `None` where it exports nothing.
-pub(super) fn module(tcx: TyCtxt<'_>, module: LocalModDefId, default_export: Option<&str>) -> Option<String> {
+/// What a module's `.d.ts` declares, but its header: `None` where it
+/// exports nothing.
+pub(super) fn module(tcx: TyCtxt<'_>, module: LocalModDefId, default_export: Option<&str>) -> Option<Value> {
     let mut out = Declarations {
         tcx,
         module,
         imports: BTreeSet::new(),
     };
-    // Each declaration, a blank line between them, as one writes them.
     let mut items = Vec::new();
     for item in tcx.hir_module_free_items(module) {
         let def_id = item.owner_id.to_def_id();
         if !tcx.visibility(def_id).is_public() || is_mark(tcx, def_id) {
             continue;
         }
-        let mut item = String::new();
-        match tcx.def_kind(def_id) {
-            DefKind::Fn if !is_binding(tcx, def_id) => out.function(def_id, &mut item),
-            DefKind::Struct => out.structure(def_id, &mut item),
-            DefKind::Enum => out.enumeration(def_id, &mut item),
+        let declaration = match tcx.def_kind(def_id) {
+            DefKind::Fn if !is_binding(tcx, def_id) => Some(out.function(def_id)),
+            DefKind::Struct => out.structure(def_id),
+            DefKind::Enum => Some(out.enumeration(def_id)),
             DefKind::Const { .. } | DefKind::Static { .. } if tcx.item_name(def_id).as_str() != "_" => {
-                out.constant(def_id, &mut item)
+                Some(out.constant(def_id))
             }
-            _ => {}
-        }
-        if !item.is_empty() {
-            items.push(item);
-        }
+            _ => None,
+        };
+        items.extend(declaration);
     }
     if let Some(name) = default_export {
-        items.push(format!("export default {name};\n"));
+        items.push(json!({ "kind": "export-default", "name": name }));
     }
     if items.is_empty() {
         return None;
     }
-    let body = items.join("\n");
     // `import type { NamedExoticComponent, ReactNode } from "react";`, each module's.
-    let mut imports = String::new();
+    let mut declarations = Vec::new();
     let mut modules: Vec<&str> = out.imports.iter().map(|(from, _)| from.as_str()).collect();
     modules.dedup();
     for from in modules {
-        let names: Vec<&str> = out
-            .imports
-            .iter()
+        let names: Vec<&str> = (out.imports.iter())
             .filter(|(f, _)| f == from)
             .map(|(_, n)| n.as_str())
             .collect();
-        let _ = writeln!(imports, "import type {{ {} }} from {from:?};", names.join(", "));
+        declarations.push(json!({ "kind": "import", "from": from, "names": names, "typeOnly": true }));
     }
-    if !imports.is_empty() {
-        imports.push('\n');
-    }
-    Some(imports + &body)
+    declarations.extend(items);
+    Some(json!({ "declarations": declarations }))
+}
+
+/// A type the model names, with its arguments: `ReactNode`, `Omit<A, "b">`.
+fn reference(name: &str, args: Vec<Value>) -> Value {
+    json!({ "kind": "reference", "name": name, "args": args })
+}
+
+fn keyword(keyword: &str) -> Value {
+    json!({ "kind": "keyword", "keyword": keyword })
+}
+
+fn is_any(ty: &Value) -> bool {
+    ty["kind"] == "keyword" && ty["keyword"] == "any"
 }
 
 struct Declarations<'tcx> {
@@ -80,24 +86,16 @@ struct Declarations<'tcx> {
 }
 
 impl<'tcx> Declarations<'tcx> {
-    /// `<C>`: an item's type parameters, but those `impl Trait` stands for.
-    fn generics(&self, def_id: DefId) -> String {
-        let names: Vec<String> = self
-            .tcx
-            .generics_of(def_id)
-            .own_params
-            .iter()
+    /// `["C"]`: an item's type parameters, but those `impl Trait` stands for.
+    fn generics(&self, def_id: DefId) -> Vec<String> {
+        (self.tcx.generics_of(def_id).own_params.iter())
             .filter(|param| matches!(param.kind, ty::GenericParamDefKind::Type { synthetic: false, .. }))
             .map(|param| param.name.to_string())
-            .collect();
-        match names.is_empty() {
-            true => String::new(),
-            false => format!("<{}>", names.join(", ")),
-        }
+            .collect()
     }
 
     /// `export function Tag(props: TagProps): ReactNode;`
-    fn function(&mut self, def_id: DefId, out: &mut String) {
+    fn function(&mut self, def_id: DefId) -> Value {
         let sig = self
             .tcx
             .fn_sig(def_id)
@@ -105,115 +103,143 @@ impl<'tcx> Declarations<'tcx> {
             .skip_normalization()
             .skip_binder();
         let idents = self.tcx.fn_arg_idents(def_id);
-        let params: Vec<String> = sig
-            .inputs()
-            .iter()
-            .enumerate()
+        let params: Vec<Value> = (sig.inputs().iter().enumerate())
             .map(|(i, &ty)| {
                 let name = match idents.get(i).copied().flatten() {
                     Some(ident) => super::camel_case(ident.name.as_str()),
                     // A pattern, `TagProps { variant, .. }`: its props'.
                     None => "props".to_string(),
                 };
-                format!("{name}: {}", self.ts(ty))
+                json!({ "name": name, "optional": false, "rest": false, "type": self.ts(ty) })
             })
             .collect();
         let output = sig.output();
-        let ret = match output.is_unit() {
-            true => "void".to_string(),
+        let returns = match output.is_unit() {
+            true => keyword("void"),
             false => self.ts(output),
         };
-        let _ = writeln!(
-            out,
-            "export function {}{}({}): {ret};",
-            fn_name(self.tcx, def_id),
-            self.generics(def_id),
-            params.join(", ")
-        );
+        json!({
+            "kind": "function",
+            "name": fn_name(self.tcx, def_id),
+            "exported": true,
+            "declare": false,
+            "typeParameters": self.generics(def_id),
+            "params": params,
+            "returns": returns,
+        })
     }
 
     /// `export interface TagProps { variant: RouteTag; text?: string; }`
-    fn structure(&mut self, def_id: DefId, out: &mut String) {
+    fn structure(&mut self, def_id: DefId) -> Option<Value> {
         let adt = self.tcx.adt_def(def_id);
         let variant = adt.non_enum_variant();
         if variant.ctor.is_some() {
-            return;
+            return None;
         }
-        let name = self.tcx.item_name(def_id);
         // A flattened field's struct is what this one extends (ADR 0204):
         // one TypeScript can't see, another module's (`any`), is what a
-        // `Rest` is.
-        // A name both have is this one's, which TypeScript's `Omit` says
-        // (ADR 0205).
-        let flattened = variant.fields.iter().find(|f| is_flatten(self.tcx, f)).map(|field| {
-            let ty = self.tcx.type_of(field.did).instantiate_identity().skip_normalization();
-            let own: Vec<String> = (variant.fields.iter())
-                .filter(|f| f.did != field.did)
-                .map(|f| field_key(self.tcx, f))
-                .collect();
-            let shadowed: Vec<String> = flattened_keys(self.tcx, ty)
-                .into_iter()
-                .filter(|key| own.contains(key))
-                .map(|key| format!("{key:?}"))
-                .collect();
-            (self.ts(ty), shadowed)
-        });
-        let extends = match &flattened {
-            Some((ts, _)) if ts == "any" => String::new(),
-            Some((ts, shadowed)) if shadowed.is_empty() => format!(" extends {ts}"),
-            Some((ts, shadowed)) => format!(" extends Omit<{ts}, {}>", shadowed.join(" | ")),
-            None => String::new(),
+        // `Rest` is. A name both have is this one's, which TypeScript's
+        // `Omit` says (ADR 0205).
+        let extends: Vec<Value> = match variant.fields.iter().find(|f| is_flatten(self.tcx, f)) {
+            Some(field) => {
+                let ty = self.tcx.type_of(field.did).instantiate_identity().skip_normalization();
+                let own: Vec<String> = (variant.fields.iter())
+                    .filter(|f| f.did != field.did)
+                    .map(|f| field_key(self.tcx, f))
+                    .collect();
+                let shadowed: Vec<Value> = (flattened_keys(self.tcx, ty).into_iter())
+                    .filter(|key| own.contains(key))
+                    .map(|key| json!({ "kind": "literal", "value": key }))
+                    .collect();
+                let inner = self.ts(ty);
+                match (is_any(&inner), shadowed.len()) {
+                    (true, _) => Vec::new(),
+                    (false, 0) => vec![inner],
+                    (false, _) => vec![reference(
+                        "Omit",
+                        vec![inner, json!({ "kind": "union", "types": shadowed })],
+                    )],
+                }
+            }
+            None => Vec::new(),
         };
-        let _ = writeln!(out, "export interface {name}{}{extends} {{", self.generics(def_id));
+        let mut members = Vec::new();
         for field in &variant.fields {
             let ty = self.tcx.type_of(field.did).instantiate_identity().skip_normalization();
             // What a JS caller gives besides, `...rest` (ADR 0195).
             if is_rest(self.tcx, ty) || (is_flatten(self.tcx, field) && extends.is_empty()) {
-                let _ = writeln!(out, "  [prop: string]: unknown;");
+                members.push(json!({
+                    "kind": "index",
+                    "parameter": "prop",
+                    "key": keyword("string"),
+                    "type": keyword("unknown"),
+                }));
                 continue;
             }
             if is_flatten(self.tcx, field) {
                 continue;
             }
-            let key = field_key(self.tcx, field);
-            match self.option(ty) {
-                Some(inner) => {
-                    let _ = writeln!(out, "  {key}?: {};", self.ts(inner));
-                }
-                None => {
-                    let _ = writeln!(out, "  {key}: {};", self.ts(ty));
-                }
-            }
+            let (optional, ty) = match self.option(ty) {
+                Some(inner) => (true, inner),
+                None => (false, ty),
+            };
+            members.push(json!({
+                "kind": "property",
+                "name": field_key(self.tcx, field),
+                "optional": optional,
+                "readonly": false,
+                "type": self.ts(ty),
+            }));
         }
-        let _ = writeln!(out, "}}");
+        Some(json!({
+            "kind": "interface",
+            "name": self.tcx.item_name(def_id).as_str(),
+            "exported": true,
+            "declare": false,
+            "typeParameters": self.generics(def_id),
+            "extends": extends,
+            "members": members,
+        }))
     }
 
     /// `export type RouteTag = "foundation" | "intermediate";`, of an enum
     /// whose variants hold nothing: each is its name (ADR 0013).
-    fn enumeration(&mut self, def_id: DefId, out: &mut String) {
+    fn enumeration(&mut self, def_id: DefId) -> Value {
         let adt = self.tcx.adt_def(def_id);
-        let name = self.tcx.item_name(def_id);
         let union = match adt.variants().iter().all(|v| v.fields.is_empty()) {
-            true => adt
-                .variants()
-                .iter()
-                .map(|v| format!("{:?}", variant_name(self.tcx, v)))
-                .collect::<Vec<_>>()
-                .join(" | "),
-            false => "any".to_string(),
+            true => json!({
+                "kind": "union",
+                "types": (adt.variants().iter())
+                    .map(|v| json!({ "kind": "literal", "value": variant_name(self.tcx, v) }))
+                    .collect::<Vec<_>>(),
+            }),
+            false => keyword("any"),
         };
-        let _ = writeln!(out, "export type {name} = {union};");
+        json!({
+            "kind": "type",
+            "name": self.tcx.item_name(def_id).as_str(),
+            "exported": true,
+            "declare": false,
+            "typeParameters": [],
+            "type": union,
+        })
     }
 
     /// `export const IconChevron: NamedExoticComponent<IconChevronProps>;`, a
     /// `thread_local!`'s value, or a `const`'s.
-    fn constant(&mut self, def_id: DefId, out: &mut String) {
+    fn constant(&mut self, def_id: DefId) -> Value {
         let ty = self.tcx.type_of(def_id).instantiate_identity().skip_normalization();
         let ty = match ty.kind() {
             ty::Adt(adt, args) if is_std_def(self.tcx, adt.did(), StdItem::LocalKey) => args.type_at(0),
             _ => ty,
         };
-        let _ = writeln!(out, "export const {}: {};", fn_name(self.tcx, def_id), self.ts(ty));
+        json!({
+            "kind": "const",
+            "name": fn_name(self.tcx, def_id),
+            "exported": true,
+            "declare": false,
+            "type": self.ts(ty),
+        })
     }
 
     fn option(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
@@ -224,42 +250,56 @@ impl<'tcx> Declarations<'tcx> {
     }
 
     /// `ty` as a TypeScript type.
-    fn ts(&mut self, ty: Ty<'tcx>) -> String {
+    fn ts(&mut self, ty: Ty<'tcx>) -> Value {
         let tcx = self.tcx;
         if let Some(num) = Num::of(ty) {
-            return if num.big() { "bigint" } else { "number" }.to_string();
+            return keyword(if num.big() { "bigint" } else { "number" });
         }
         match ty.kind() {
-            ty::Bool => "boolean".to_string(),
-            ty::Char | ty::Str => "string".to_string(),
+            ty::Bool => keyword("boolean"),
+            ty::Char | ty::Str => keyword("string"),
             ty::Ref(_, inner, _) => self.ts(*inner),
-            ty::Tuple(items) if items.is_empty() => "undefined".to_string(),
+            ty::Tuple(items) if items.is_empty() => keyword("undefined"),
             ty::Tuple(items) => {
-                let items: Vec<String> = items.iter().map(|t| self.ts(t)).collect();
-                format!("[{}]", items.join(", "))
+                let elements: Vec<Value> = items.iter().map(|t| self.ts(t)).collect();
+                json!({ "kind": "tuple", "elements": elements })
             }
-            ty::Array(item, _) | ty::Slice(item) => format!("{}[]", self.grouped(*item)),
-            ty::Param(param) => param.name.to_string(),
-            ty::FnPtr(..) | ty::Closure(..) | ty::Dynamic(..) => "(...args: any[]) => any".to_string(),
+            ty::Array(item, _) | ty::Slice(item) => {
+                json!({ "kind": "array", "element": self.ts(*item), "readonly": false })
+            }
+            ty::Param(param) => reference(param.name.as_str(), Vec::new()),
+            // `(...args: any[]) => any`.
+            ty::FnPtr(..) | ty::Closure(..) | ty::Dynamic(..) => json!({
+                "kind": "function",
+                "typeParameters": [],
+                "params": [{
+                    "name": "args",
+                    "optional": false,
+                    "rest": true,
+                    "type": { "kind": "array", "element": keyword("any"), "readonly": false },
+                }],
+                "returns": keyword("any"),
+            }),
             ty::Adt(adt, args) => {
                 let did = adt.did();
                 if tcx.is_lang_item(did, LangItem::Option) {
-                    return format!("{} | undefined", self.ts(args.type_at(0)));
+                    return json!({ "kind": "union", "types": [self.ts(args.type_at(0)), keyword("undefined")] });
                 }
                 if tcx.is_lang_item(did, LangItem::String) {
-                    return "string".to_string();
+                    return keyword("string");
                 }
                 if is_std_def(tcx, did, StdItem::Vec) {
-                    return format!("{}[]", self.grouped(args.type_at(0)));
+                    return json!({ "kind": "array", "element": self.ts(args.type_at(0)), "readonly": false });
                 }
                 if ty.is_box() {
                     return self.ts(args.type_at(0));
                 }
                 if is_rest(tcx, ty) {
-                    return "Record<string, unknown>".to_string();
+                    return reference("Record", vec![keyword("string"), keyword("unknown")]);
                 }
                 // A binding's, as it says it's typed: React's `Memo<P>`,
-                // `react#NamedExoticComponent`, is `NamedExoticComponent<P>`.
+                // `react#NamedExoticComponent`, is `NamedExoticComponent<P>`,
+                // and `react#AnchorHTMLAttributes<HTMLAnchorElement>` that.
                 let path = [Symbol::intern("rust_js"), Symbol::intern("types")];
                 if let Some(declared) = tcx
                     .get_attrs_by_path(did, &path)
@@ -267,21 +307,23 @@ impl<'tcx> Declarations<'tcx> {
                     .and_then(|attr| attr.value_str())
                 {
                     let declared = declared.to_string();
-                    // `react#AnchorHTMLAttributes<HTMLAnchorElement>` imports
-                    // the name, and is the type it names.
-                    let name = match declared.rsplit_once('#') {
-                        Some((from, name)) => {
-                            let imported = name.split('<').next().unwrap_or(name);
-                            self.imports.insert((from.to_string(), imported.to_string()));
-                            name.to_string()
-                        }
-                        None => declared,
+                    let (from, named) = match declared.rsplit_once('#') {
+                        Some((from, named)) => (Some(from), named),
+                        None => (None, declared.as_str()),
                     };
-                    let args: Vec<String> = args.types().map(|t| self.ts(t)).collect();
-                    return match args.is_empty() {
-                        true => name,
-                        false => format!("{name}<{}>", args.join(", ")),
+                    let (name, given) = match named.split_once('<') {
+                        Some((name, given)) => (name, given.trim_end_matches('>')),
+                        None => (named, ""),
                     };
+                    if let Some(from) = from {
+                        self.imports.insert((from.to_string(), name.to_string()));
+                    }
+                    let mut type_args: Vec<Value> = (given.split(',').map(str::trim))
+                        .filter(|arg| !arg.is_empty())
+                        .map(|arg| reference(arg, Vec::new()))
+                        .collect();
+                    type_args.extend(args.types().map(|t| self.ts(t)));
+                    return reference(name, type_args);
                 }
                 // One of this module's, by its name; another's is `any`, as
                 // its declarations aren't imported (ADR 0196).
@@ -290,24 +332,12 @@ impl<'tcx> Declarations<'tcx> {
                     .is_some_and(|local| tcx.parent_module_from_def_id(local) == self.module)
                     && tcx.visibility(did).is_public();
                 if !ours {
-                    return "any".to_string();
+                    return keyword("any");
                 }
-                let args: Vec<String> = args.types().map(|t| self.ts(t)).collect();
-                match args.is_empty() {
-                    true => tcx.item_name(did).to_string(),
-                    false => format!("{}<{}>", tcx.item_name(did), args.join(", ")),
-                }
+                let type_args = args.types().map(|t| self.ts(t)).collect();
+                reference(tcx.item_name(did).as_str(), type_args)
             }
-            _ => "any".to_string(),
-        }
-    }
-
-    /// `ty`, in parentheses where it's a union: `(string | undefined)[]`.
-    fn grouped(&mut self, ty: Ty<'tcx>) -> String {
-        let ts = self.ts(ty);
-        match ts.contains(' ') {
-            true => format!("({ts})"),
-            false => ts,
+            _ => keyword("any"),
         }
     }
 }

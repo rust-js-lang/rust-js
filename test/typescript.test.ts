@@ -153,3 +153,31 @@ test("read takes @types/react's element attributes apart", async () => {
     await ts.close();
   }
 }, 60_000);
+
+// What it prints is erasable syntax only, TypeScript's `erasableSyntaxOnly`
+// (ADR 0206): types, which TypeScript checks as a .ts file's, and no
+// namespace of values, which it refuses to print.
+test("print writes erasable syntax only", async () => {
+  const dir = fixture("typescript-erasable");
+  const ts = await open();
+  try {
+    const types = await ts.print({
+      declarations: [
+        { kind: "import", from: "./other", names: ["Other"], typeOnly: true },
+        { kind: "type", name: "Size", exported: true, declare: false, typeParameters: [], type: { kind: "union", types: [{ kind: "literal", value: "md" }, { kind: "literal", value: "lg" }] } },
+        { kind: "interface", name: "Props", exported: true, declare: false, typeParameters: [], extends: [{ kind: "reference", name: "Other", args: [] }], members: [{ kind: "property", name: "size", optional: true, readonly: false, type: { kind: "reference", name: "Size", args: [] } }] },
+        { kind: "namespace", name: "Types", exported: true, declare: false, declarations: [{ kind: "type", name: "Inner", exported: true, declare: false, typeParameters: [], type: { kind: "keyword", keyword: "string" } }] },
+      ],
+    });
+    writeFileSync(join(dir, "other.ts"), "export interface Other { id?: string }\n");
+    writeFileSync(join(dir, "types.ts"), types);
+    writeFileSync(join(dir, "tsconfig.json"), JSON.stringify({ compilerOptions: { strict: true, noEmit: true, erasableSyntaxOnly: true, verbatimModuleSyntax: true, module: "esnext", moduleResolution: "bundler" }, files: ["types.ts"] }));
+    const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
+    expect(checked.stdout.toString()).toBe("");
+    const values = { kind: "namespace" as const, name: "Values", exported: true, declare: false, declarations: [{ kind: "const" as const, name: "x", exported: true, declare: false, type: { kind: "keyword" as const, keyword: "number" } }] };
+    expect(ts.print({ declarations: [values] })).rejects.toThrow("isn't erasable");
+    expect(await ts.print({ declarations: [{ ...values, declare: true }] })).toContain("declare namespace Values");
+  } finally {
+    await ts.close();
+  }
+});

@@ -40,6 +40,10 @@ await ts.close();
 - **`print` is TypeScript's factory and printer**: the model as
   TypeScript's syntax tree, each declaration printed by TypeScript, a
   blank line between them, as TypeScript writes them.
+- **What it prints is erasable syntax only**, as TypeScript's
+  `erasableSyntaxOnly` says: there's no `enum`, parameter property or
+  `import =` in the model, and a namespace holding values is refused but a
+  `declare`d one's.
 - **TypeScript is 7.0.2**, its latest release, pinned, as its API is
   `unstable`: a session is its native process, the async API's, which
   works under Node and Bun alike, where the sync API needs Node's.
