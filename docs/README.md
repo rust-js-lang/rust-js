@@ -325,6 +325,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 Explorations that aren't decisions yet:
 
 - [An in-browser rust-js playground](research/in-browser-playground.md): run rustc's front end + rust-js as WebAssembly
+- [Type foundations](research/type-foundations.md): how TypeScript, Scala.js, ReScript and rust-js type JS from the language up to React, and what on par takes
 
 ## Adding a decision
 
