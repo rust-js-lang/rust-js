@@ -532,7 +532,9 @@ impl Helper {
             Helper::DebugF64 => include_str!("runtime/debug_f64.js"),
             // `{:?}` of a string, or of a `char` in `'`: quoted, with what Rust
             // doesn't print as it is escaped: controls, formats, private use,
-            // separators, combining marks, and spaces other than `" "`.
+            // separators, combining marks but halfwidth katakana's voiced ones,
+            // what Unicode says to ignore, as U+FFA0, a letter, and spaces other
+            // than `" "`.
             Helper::DebugStr => include_str!("runtime/debug_str.js"),
             // A derived `Debug` of a struct with more than five fields: its
             // fields' names, and their strings (ADR 0060).

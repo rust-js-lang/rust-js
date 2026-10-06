@@ -48,6 +48,9 @@ const CHARS = [
   "�",
   "🦀",
   "􏿿",
+  "́",
+  "ﾞ",
+  "ﾟ",
 ];
 
 function main() {

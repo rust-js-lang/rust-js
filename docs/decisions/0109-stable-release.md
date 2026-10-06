@@ -94,7 +94,11 @@ nightly's. A stable release ships them too, in its `rustc-dev` component, and
   never have bound vars, so rust-js reads them unbound, `fn_def`, as
   rustc's own MIR building does.
 - **1.99's messages**: a radix past 36 panics naming
-  `from_ascii_bytes_radix`, where it was `from_ascii_radix`.
+  `from_ascii_bytes_radix`, where it was `from_ascii_radix`; `{:?}` shows
+  halfwidth katakana's voiced marks, U+FF9E and U+FF9F, as they are,
+  where it escaped them as the combining marks Unicode makes them. A
+  character Unicode says to ignore, U+FFA0 say, a letter, it escapes, as
+  rust-js now does too, which a test of these found.
 - **A JS method named as libc's functions are**, `open`, `close`,
   `write`, is one in native code of the runtime's symbols, which 1.99's
   `invalid_runtime_symbol_definitions` checks, an error: the webapi crate
