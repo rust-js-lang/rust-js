@@ -5,7 +5,8 @@ found as the impl's type's too, and `==` of a type of a type parameter
 whose `PartialEq` a bound gives is that dictionary's, as num-traits'
 `is_one` asks; a number's `<`, `-` and the like in a copied default, `self <
 Self::zero()`, are JS's; what a copied default finds of a type is its own
-bounds', not a sibling's.) Extends [0047](0047-methods.md),
+bounds', not a sibling's; a generic function's own `Holder<T>` is any
+`Holder<..>` changed in place.) Extends [0047](0047-methods.md),
 [0023](0023-strings-references-shared-state.md), and
 [0039](0039-generic-bindings.md). Replaces 0047's rejection of trait methods
 for the supported subset below.
@@ -122,7 +123,12 @@ operation copies according to the concrete Rust representation; it does not
 call a user `Clone`. A type mutated in a generic function keeps its
 parameters, so it covers exactly the types it could be: `Holder<T>` changed
 there means every `Holder<..>` may need copies, while a changed `Pair<u32>`
-is no reason to copy a `Pair<bool>`.
+is no reason to copy a `Pair<bool>`. The other way round too: a generic
+function's `Holder<T>` is whichever `Holder<..>` its callers give it, so
+one changed in place anywhere, `Holder<Numbers>`, makes its clone a copy.
+Before, only a parameter it held was taken as maybe changed: a
+`Holder<T>` whose field is `T::Item`, a number under its bound, was
+shared, and a caller's `copy.item += 1` changed the original. (Amended.)
 
 Array and slice indexing used by generic functions checks bounds before
 reading, and applies the appropriate Copy operation to the result.

@@ -259,11 +259,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Is `ty` one of the types `general` stands for? A type mutated in a
     /// generic function has its parameters: `Holder<T>` stands for every
     /// `Holder<..>`, but `Pair<u32>` only for itself, so a `Pair<bool>`
-    /// needn't be copied because a `Pair<u32>` is changed. Lifetimes don't
+    /// needn't be copied because a `Pair<u32>` is changed. And `ty` of a
+    /// generic function's is any its parameters may be: its `Holder<T>` is
+    /// the `Holder<Numbers>` changed in place by its caller. Lifetimes don't
     /// matter.
     pub(super) fn instance_of(&self, ty: Ty<'tcx>, general: Ty<'tcx>) -> bool {
         match (ty.kind(), general.kind()) {
-            _ if self.is_unknown(general) => true,
+            _ if self.is_unknown(general) || self.is_unknown(ty) => true,
             (ty::Adt(adt, args), ty::Adt(general_adt, general_args)) => {
                 adt.did() == general_adt.did()
                     && args.iter().zip(general_args.iter()).all(|(arg, general)| {

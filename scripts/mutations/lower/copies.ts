@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "generic-instance-unmatched",
+    breaks: "a generic function's clone of `Holder<T>` shares it, though its caller changes the `Holder<Numbers>` in place",
+    file: "src/lower/copies.rs",
+    find: "            _ if self.is_unknown(general) || self.is_unknown(ty) => true,",
+    replace: "            _ if self.is_unknown(general) => true,",
+    tests: ["test/corpus.test.ts", "-t", "copy_mutation"],
+  },
+  {
     name: "copy-on-read",
     breaks: "a `Copy` value read from a place is that place, not a copy",
     file: "src/lower/copies.rs",
