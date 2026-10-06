@@ -44,9 +44,12 @@ boundaries [its test](test/architecture.test.ts) holds it to.
 On macOS, the system scans each newly built binary before its first run, one
 at a time, so tests that build native programs, the corpus, rustc's tests,
 generated programs and mutations, take many times longer there than on
-Linux: rustc's `drop` tests took 23 seconds against 1. So develop in a
-[Tart](https://tart.run) Linux VM on the same Mac, and run every check
-there, through [`scripts/linux-vm.sh`](scripts/linux-vm.sh):
+Linux: rustc's `drop` tests took 23 seconds against 1. With the app that
+runs them added to Developer Tools, there's no scan, and the Mac is about
+1.6 times slower than Linux, not 17 ([DEVELOPMENT.md](DEVELOPMENT.md#the-mac-with-the-scan-off)).
+So run the failing test and a module's focused tests on the Mac, and every
+other check in a [Tart](https://tart.run) Linux VM on the same Mac, through
+[`scripts/linux-vm.sh`](scripts/linux-vm.sh):
 
 ```bash
 scripts/linux-vm.sh 'bun run test'
@@ -61,7 +64,7 @@ here, and run there:
 
 | To | Run in the VM |
 |---|---|
-| Test | `bun run test`, or `bun test test/<file>.test.ts -t <name>` |
+| Test | `bun run test`; a module's, `bun test test/<file>.test.ts -t <name>`, runs on the Mac |
 | Bless snapshots | `bun run bless` |
 | Put a known bug back, and see its tests catch it ([ADR 0093](docs/decisions/0093-mutations.md)) | `bun scripts/mutations.ts <name>`, or all of them with no name |
 | Check rustc's tests against the known failures ([ADR 0089](docs/decisions/0089-rustc-tests.md)) | `bun run test:rustc`, or some: `bun run test:rustc drop/ closures/` |
