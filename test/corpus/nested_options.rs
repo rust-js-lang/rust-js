@@ -78,4 +78,13 @@ fn main() {
     }
     // A found `None` is `Some(None)`, and none found is `None`.
     println!("{:?} {:?}", table.into_iter().find(|x| x.is_none()), table.into_iter().find(|x| *x == Some(2)));
+    // `flatten` is one `Option` of two: `Some(None)` is `None`, at any depth.
+    let nested = [Some(Some(1)), Some(None), None];
+    println!("{:?}", nested.iter().map(|o| o.flatten()).collect::<Vec<_>>());
+    println!("{:?} {:?}", Some(Some(None::<i32>)).flatten(), Some(Some(Some(()))).flatten());
+    println!("{:?} {:?}", flat(Some(Some(Unit))), flat::<Unit>(Some(None)));
+}
+
+fn flat<T>(o: Option<Option<T>>) -> Option<T> {
+    o.flatten()
 }

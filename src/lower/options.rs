@@ -211,6 +211,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let option = arg();
                 self.option_items(option, item, out)
             }
+            // An `Option` of an `Option` is the inner one, or its box one
+            // level deeper (ADR 0051): `$someValue` takes a level off,
+            // `Some(None)` to `None`, and `None` is itself.
+            Std::OptionFlatten => self.some_value(arg()),
             // `Some(&x)` is `x`, and its clone is `x`'s.
             Std::OptionCloned => {
                 let item = generic_args.types().next().expect("`Option<T>` has a `T`");

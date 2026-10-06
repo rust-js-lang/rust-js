@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "flatten-unboxed",
+    breaks: "`Some(None).flatten()` is the box `Some(None)` is, not `None`",
+    file: "src/lower/options.rs",
+    find: "            Std::OptionFlatten => self.some_value(arg()),",
+    replace: "            Std::OptionFlatten => arg(),",
+    tests: ["test/corpus.test.ts", "-t", "nested_options"],
+  },
+  {
     name: "some-literal-boxed",
     breaks: "`Some(Some(4))` is `$some(4)`: right, but not the JS a person writes",
     file: "src/lower/options.rs",

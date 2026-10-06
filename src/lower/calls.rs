@@ -552,6 +552,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // The old value, as it's kept: boxed already.
                     | Std::OptionTake
                     | Std::OptionReplace
+                    // The inner `Option`, box and all.
+                    | Std::OptionFlatten
             )
         {
             return Err(self.unsupported(span, "this call, for an `Option` of what could look like `None`"));
@@ -931,7 +933,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::UnwrapOr
             | Std::OptionMap
             | Std::OptionIter
-            | Std::OptionCloned => unreachable!("lowered by option_call"),
+            | Std::OptionCloned
+            | Std::OptionFlatten => unreachable!("lowered by option_call"),
             Std::Channel(_) => unreachable!("lowered by channel_call"),
             Std::CellNew
             | Std::CellGet
