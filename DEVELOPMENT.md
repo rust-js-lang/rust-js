@@ -68,8 +68,8 @@ more, as each sets itself up again.
 
 | Check | Inner loop (local) | `bun run ci:check` | By hand, before a release |
 |---|---|---|---|
-| The new test, seen to fail, then pass | yes: it's the point | in the suite | in the suite |
-| Its module's focused tests, `bun test test/<file>.test.ts -t <name>` | yes | in the suite | in the suite |
+| The new test, seen to fail, then pass | yes, on the Mac: it's the point | in the suite | in the suite |
+| Its module's focused tests, `bun test test/<file>.test.ts -t <name>` | yes, on the Mac | in the suite | in the suite |
 | The new mutations, `bun scripts/mutations.ts <name>` | yes, in the VM | the changed ones | all 919 |
 | Reading the generated JS and snapshot diffs | yes | the bless patch, read before merging | |
 | `bun run typecheck`, `fmt:check`, clippy, `cargo test` | | **lint** job | |
@@ -81,10 +81,59 @@ more, as each sets itself up again.
 | Release qualification | | | yes |
 | react.dev port: build and the 823 pages compared | yes: the port has no remote | | |
 
-The VM stays: for the inner loop's checks that build native programs (the
-corpus, mutations), which are many times slower on macOS, and for
-reproducing a CI failure. It's no longer where the whole suite must pass
-before every push.
+The VM stays: for the inner loop's checks that build many native programs
+(the corpus, mutations, a folder of rustc's tests), which are still faster
+there, and for reproducing a CI failure. It's no longer where the whole
+suite must pass before every push.
+
+## The Mac, with the scan off
+
+macOS checks each newly built binary before its first run, one at a time,
+whatever the number of cores. That check, not the Mac, is what made the VM
+necessary. It can be turned off for the programs one app starts: add the app
+under **System Settings → Privacy & Security → Developer Tools**, then quit
+and reopen it.
+
+For the Claude desktop app, the app that starts commands isn't `Claude.app`
+itself, but Claude Code inside it, which a helper makes responsible for what
+it runs:
+
+```
+Claude.app
+  └─ Contents/Helpers/disclaimer      hands responsibility to its child
+       └─ claude.app                  ~/Library/Application Support/Claude/
+            └─ zsh, bun, the tests       claude-code/<version>/<hash>/claude.app
+```
+
+So add both: `/Applications/Claude.app`, and that `claude.app` (press ⌘⇧G in
+the file picker to paste its path). Add a terminal you run tests from too,
+Ghostty or iTerm. The folder has Claude Code's version in its name, so
+after an update, measure again; if first runs are slow again, add the new
+one.
+
+Eighty small programs, built and run at once, on an M3 Max (14 cores) and
+in the VM (10):
+
+| | Mac, scanned | Mac, scan off | VM |
+|---|---|---|---|
+| Their first runs | 15 000 ms | 26 ms | 11 ms |
+| Building them | 1 400 ms | 1 300 ms | 900 ms |
+| Forty of them, built and run | 7 550 ms | 720 ms | 440 ms |
+| Starting one process | 2.4 ms | 1.9 ms | 0.25 ms |
+
+With the scan off, the Mac is about 1.6 times slower than the VM, not 17:
+what's left is macOS's own, heavier way of starting processes and writing
+files. So:
+
+- **The Mac** runs what we wait on while editing: the failing test, a
+  module's focused tests. No sync, no copy-back, and the files stay ours to
+  edit.
+- **The VM** runs what builds many programs, where 1.6 adds up: mutations,
+  the corpus, a folder of rustc's tests.
+- They run at the same time, so a busy VM no longer stops the work.
+
+The trade: whatever these apps start isn't checked for malware, including
+what an agent runs. Turn it off in the same place.
 
 ## Branches, pull requests, merging
 
