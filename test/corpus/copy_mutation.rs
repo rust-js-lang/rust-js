@@ -17,6 +17,41 @@ fn moved(mut p: Point) -> Point {
     p
 }
 
+// A generic function's clone of a type changed in place elsewhere, as
+// `Tagged<Meters>` and `Holder<Numbers>` are below: its fields are known,
+// but which of its types it's given isn't.
+#[derive(Clone)]
+struct Tagged<T> {
+    n: i32,
+    unit: std::marker::PhantomData<T>,
+}
+
+#[derive(Clone)]
+struct Meters;
+
+fn duplicate<T: Clone>(t: &Tagged<T>) -> Tagged<T> {
+    t.clone()
+}
+
+#[derive(Clone)]
+struct Holder<T: Iterator> {
+    item: T::Item,
+}
+
+#[derive(Clone)]
+struct Numbers;
+
+impl Iterator for Numbers {
+    type Item = u32;
+    fn next(&mut self) -> Option<u32> {
+        None
+    }
+}
+
+fn held<T: Iterator<Item = u32> + Clone>(h: &Holder<T>) -> Holder<T> {
+    h.clone()
+}
+
 fn main() {
     let a = Point { x: 1, y: 2 };
     let mut b = a;
@@ -51,4 +86,14 @@ fn main() {
     nested[0].push(9);
     nested[1][0] = 0;
     println!("{nested:?} {snapshot:?}");
+
+    let tagged = Tagged::<Meters> { n: 1, unit: std::marker::PhantomData };
+    let mut copy = duplicate(&tagged);
+    copy.n += 1;
+    println!("{} {}", tagged.n, copy.n);
+
+    let holder = Holder::<Numbers> { item: 1 };
+    let mut copy = held(&holder);
+    copy.item += 1;
+    println!("{} {}", holder.item, copy.item);
 }

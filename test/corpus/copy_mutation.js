@@ -7,6 +7,14 @@ function moved(p) {
   return p;
 }
 
+function duplicate(t, TClone) {
+  return { ...t, unit: t.unit };
+}
+
+function held(h, TClone) {
+  return { ...h };
+}
+
 function main() {
   const a = { x: 1, y: 2 };
   let b = { ...a };
@@ -51,6 +59,14 @@ function main() {
   console.log(
     `[${nested.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${snapshot.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
   );
+  const tagged = { n: 1, unit: undefined };
+  let copy$1 = duplicate(tagged, { clone: (value) => value });
+  copy$1.n = (copy$1.n + 1) | 0;
+  console.log(`${tagged.n} ${copy$1.n}`);
+  const holder = { item: 1 };
+  let copy$2 = held(holder, { clone: (value) => value });
+  copy$2.item = (copy$2.item + 1) >>> 0;
+  console.log(`${holder.item} ${copy$2.item}`);
 }
 
 export function entry() {
@@ -63,5 +79,9 @@ function pointDebug_fmt(point) {
 
 function shapeDebug_fmt(shape) {
   return `Shape { name: ${$debugStr(shape.name)}, points: [${shape.points.map((item) => pointDebug_fmt(item)).join(", ")}] }`;
+}
+
+function numbersIterator_next(self) {
+  return undefined;
 }
 //# sourceMappingURL=case.js.map
