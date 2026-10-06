@@ -108,4 +108,12 @@ export const mutations: Mutation[] = [
     replace: "            _ if false => {\n",
     tests: ["test/declarations.test.ts", "-t", "type what a module exports"],
   },
+  {
+    name: "option-declared-without-null",
+    breaks: "an `Option` is declared `T | undefined`, so a TypeScript caller's `null`, which rust-js reads as `None`, doesn't typecheck",
+    file: "src/lower/declarations.rs",
+    find: "                    return json!({ \"kind\": \"union\", \"types\": [self.ts(args.type_at(0)), keyword(\"null\"), keyword(\"undefined\")] });\n",
+    replace: "                    return json!({ \"kind\": \"union\", \"types\": [self.ts(args.type_at(0)), keyword(\"undefined\")] });\n",
+    tests: ["test/declarations.test.ts", "-t", "null for an Option"],
+  },
 ];

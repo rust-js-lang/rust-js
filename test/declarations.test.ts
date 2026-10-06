@@ -290,6 +290,51 @@ export const wrongSize = width(true);
   expect(errors[3]).toContain("use.tsx(18,");
 });
 
+// An `Option` is `None` of JS's `null` too, read `!= null` (ADR 0030):
+// declared so, a TypeScript caller gives one, as react.dev's Page gives its
+// `LanguagesContext` `Languages | null`. An optional prop stays `?: T`.
+test("declarations take JS's null for an Option", async () => {
+  buildReact();
+  const dir = fixture("declarations-null");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
+  writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
+use react::{Context, create_context};
+
+pub struct LanguageItem {
+    pub code: String,
+}
+
+thread_local! {
+    pub static LanguagesContext: Context<Option<Vec<LanguageItem>>> = create_context(None);
+}
+
+pub fn shown(name: Option<&str>) -> String {
+    name.unwrap_or("none").to_string()
+}
+
+pub struct BadgeProps<'a> {
+    pub label: Option<&'a str>,
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("export const LanguagesContext: Context<LanguageItem[] | null | undefined>;");
+  expect(declarations).toContain("export function shown(name: string | null | undefined): string;");
+  expect(declarations).toContain("export interface BadgeProps {\n    label?: string;\n}");
+  writeFileSync(join(dir, "use.tsx"), `import { LanguagesContext, shown } from "./lib.jsx";
+const languages: { code: string }[] | null = null;
+export const ok = [<LanguagesContext value={languages}>{shown(null)}</LanguagesContext>, shown(undefined), shown("a")];
+`);
+  writeFileSync(join(dir, "tsconfig.json"), JSON.stringify({
+    compilerOptions: { jsx: "react-jsx", strict: true, noEmit: true, module: "esnext", moduleResolution: "bundler", allowJs: true, skipLibCheck: false, typeRoots: [join(root, "node_modules/@types")] },
+    files: ["use.tsx"],
+  }));
+  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
+  expect(checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"))).toEqual([]);
+  const { shown } = await import(join(dir, "lib.jsx"));
+  expect([shown(null), shown(undefined), shown("a")]).toEqual(["none", "none", "a"]);
+});
+
 // TypeScript prints them (ADR 0207), through @rust-js/typescript, which a
 // crate without it is told to add, its build failing.
 test("declarations where @rust-js/typescript isn't say to add it", () => {
