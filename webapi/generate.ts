@@ -251,6 +251,9 @@ function rustType(t: IdlType, at: Position): string | { skip: string } {
   if (NUMBERS[name]) return NUMBERS[name];
   if (STRINGS.has(name) || enums.has(name)) return at === "param" ? "&str" : "String";
   if (name === "EventListener" && at === "param") return "Box<dyn FnMut(&Event)>";
+  // A value of any shape a function gives is the js crate's `Unknown`, or
+  // `None` of `undefined` and `null` (ADR 0225): `response.json()`.
+  if (name === "any") return at === "result" ? "Option<&'static Unknown>" : { skip: "any parameter" };
   // Any JS object: a Rust value of any type in, an opaque object out.
   if (name === "object") return at === "param" ? "&dyn core::any::Any" : "&'static JsObject";
   const dictionary = dictionaries.get(name);
@@ -690,7 +693,7 @@ line(`#![allow(invalid_runtime_symbol_definitions)]`);
 line();
 line(`use core::marker::PhantomData;`);
 line(`use core::ops::Deref;`);
-line(`use js::{ArrayBuffer, JsObject, Promise, Uint8Array};`);
+line(`use js::{ArrayBuffer, JsObject, Promise, Uint8Array, Unknown};`);
 line();
 line(`unsafe extern "Rust" {`);
 GLOBALS.forEach(([name, type], k) => {

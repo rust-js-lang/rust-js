@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "named-key-indexed",
+    breaks: "`js::set(value, \"name\", ..)` is `value[\"name\"]`, where a person writes `value.name`",
+    file: "src/lower/calls.rs",
+    find: "            Expr::member(this, name.clone())",
+    replace: "            Expr::index(this, key.clone())",
+    tests: ["test/compiler.test.ts", "-t", "unknown JS value"],
+  },
+  {
     name: "unfollowed-drops-taken",
     breaks: "a std call takes an iterator whose destructors rust-js can't follow, and drops what it skips silently",
     file: "src/lower/calls.rs",

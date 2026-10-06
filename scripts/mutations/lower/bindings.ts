@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "get-index-unread",
+    breaks: "`js::get(value, key)`'s `get []` is a method of that name, not `value[key]`",
+    file: "src/lower/bindings.rs",
+    find: "        \"get []\" => return JsForm::GetIndex,\n",
+    replace: "",
+    tests: ["test/compiler.test.ts", "-t", "unknown JS value"],
+  },
+  {
     name: "assoc-this-not-method",
     breaks: "a type's own function whose first parameter is `this`, `Mouse::widen(this)`, isn't a method: rust-js refuses it",
     file: "src/lower/bindings.rs",

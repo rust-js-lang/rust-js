@@ -779,6 +779,65 @@ pub fn wire() -> &'static webapi::HtmlButtonElement {
   }
 });
 
+// ADR 0225: a JS value of unknown shape is a `js::Unknown`, as TypeScript's
+// `unknown` and ReScript's are, which `classify` tells by `typeof`, and
+// whose properties are read and set by name, as `obj[key]` is.
+test("an unknown JS value is classified, and its properties read by name", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("unknown");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Kind, Promise, Unknown, classify, json, object};
+fn show(value: Option<&Unknown>) -> String {
+    match value {
+        None => "null".to_string(),
+        Some(value) => match classify(value) {
+            Kind::String(text) => format!("'{text}'"),
+            Kind::Number(n) => n.to_string(),
+            Kind::BigInt(n) => format!("{n}n"),
+            Kind::Bool(b) => b.to_string(),
+            Kind::Array(items) => format!("[{}]", items.iter().map(|item| show(*item)).collect::<Vec<_>>().join(",")),
+            Kind::Object(fields) => format!(
+                "{{{}}}",
+                object::keys(fields).iter().map(|key| format!("{key}:{}", show(js::get(fields, key)))).collect::<Vec<_>>().join(",")
+            ),
+        },
+    }
+}
+pub fn parsed(text: &str) -> String {
+    match json::parse(text) {
+        Ok(value) => show(value),
+        Err(_) => "invalid".to_string(),
+    }
+}
+pub fn renamed(text: &str) -> String {
+    match json::parse(text) {
+        Ok(Some(value)) => {
+            js::set(value, "name", "new");
+            show(Some(value))
+        }
+        _ => "invalid".to_string(),
+    }
+}
+pub fn body(response: &webapi::Response) -> Promise<Option<&'static Unknown>> {
+    webapi::response::json(response)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  // `classify` is the value, each variant told by `typeof`; a key that's a
+  // variable is `[key]`, one written that's a name `.name`.
+  expect(js).toContain('if (typeof match === "string") {');
+  expect(js).toContain("} else if (Array.isArray(match)) {");
+  expect(js).toContain("Object.keys(match)");
+  expect(js).toContain("show(match[key])");
+  expect(js).toContain('match._0.name = "new";');
+  expect(js).toContain("const match = $try(() => JSON.parse(text));");
+  expect(js).toContain("return response.json();");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.parsed('{"a":[1,"x",null,true],"b":{}}'), lib.parsed("12"), lib.parsed("null"), lib.parsed("nope")])
+    .toEqual(["{a:[1,'x',null,true],b:{}}", "12", "null", "invalid"]);
+  expect(lib.renamed('{"name":"old","n":2}')).toBe("{name:'new',n:2}");
+});
+
 // An element's constructor is WebIDL's `[HTMLConstructor]`, which only a
 // custom element's class can call: `new HTMLDivElement()` in a page throws
 // "Illegal constructor". So webapi binds none, and an element is made with
