@@ -40,7 +40,7 @@ export function vectors() {
     { x: 0, y: 0 },
   );
   vec2AddAssign_add_assign(c, { ...b });
-  return `${vec2Debug_fmt({ ...c })} ${$displayF64(Vec2.len(a))} ${$debugF64(Vec2.len(vec2Sub_sub({ ...a }, { ...b })))} ${$displayF64(0)}`;
+  return `${vec2Debug_fmt(c)} ${$displayF64(Vec2.len(a))} ${$debugF64(Vec2.len(vec2Sub_sub({ ...a }, { ...b })))} ${$displayF64(0)}`;
 }
 
 export function integers(a, b) {

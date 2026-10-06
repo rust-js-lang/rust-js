@@ -32,13 +32,7 @@ function main() {
   const value$2 = at(7) | 0;
   v[$at(v, 1)] = (v[$at(v, 1)] + value$2) | 0;
   console.log(
-    `[${grid
-      .map((item) => item.slice())
-      .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
-      .join(", ")}] [${ps.map((item) => pDebug_fmt(item)).join(", ")}] [${arr
-      .map((item) => ({ ...item }))
-      .map((item) => pDebug_fmt(item))
-      .join(", ")}] [${v.map((item) => String(item)).join(", ")}]`,
+    `[${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${ps.map((item) => pDebug_fmt(item)).join(", ")}] [${arr.map((item) => pDebug_fmt(item)).join(", ")}] [${v.map((item) => String(item)).join(", ")}]`,
   );
   console.log(`[${log.map((item) => String(item)).join(", ")}]`);
 }

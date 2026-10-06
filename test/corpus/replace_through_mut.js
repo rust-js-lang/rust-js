@@ -113,15 +113,13 @@ function main() {
   const a = { x: 1, y: 2 };
   let b = { ...a };
   origin(b);
-  console.log(`${pDebug_fmt({ ...a })} ${pDebug_fmt({ ...b })}`);
+  console.log(`${pDebug_fmt(a)} ${pDebug_fmt(b)}`);
   console.log(`${through_ref_mut()}`);
   const first = { x: 3 };
   let second = { ...first };
   let third = { x: 5 };
   swap_points(second, third);
-  console.log(
-    `${qDebug_fmt({ ...first })} ${qDebug_fmt({ ...second })} ${qDebug_fmt({ ...third })}`,
-  );
+  console.log(`${qDebug_fmt(first)} ${qDebug_fmt(second)} ${qDebug_fmt(third)}`);
   let l = "Off";
   const self = { value: l };
   Light.toggle(self);

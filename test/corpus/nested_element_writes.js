@@ -11,13 +11,7 @@ function main() {
   grid[0][1] = 5;
   grid[1][2] = (grid[1][2] + 7) | 0;
   console.log(
-    `[${grid
-      .map((item) => item.slice())
-      .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
-      .join(", ")}] [${row
-      .slice()
-      .map((item) => String(item))
-      .join(", ")}]`,
+    `[${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${row.map((item) => String(item)).join(", ")}]`,
   );
   let rows = [
     [0, 0],
@@ -30,10 +24,7 @@ function main() {
   let cells = [[{ value: 1 }, { value: 2 }]];
   cells[0][1].value = Math.imul(cells[0][1].value, 10);
   console.log(
-    `[${cells
-      .map((item) => item.map((item) => ({ ...item })))
-      .map((item) => `[${item.map((item) => cellDebug_fmt(item)).join(", ")}]`)
-      .join(", ")}]`,
+    `[${cells.map((item) => `[${item.map((item) => cellDebug_fmt(item)).join(", ")}]`).join(", ")}]`,
   );
   const i = 1;
   let deep = [
@@ -48,15 +39,8 @@ function main() {
   ];
   const items = $index(deep, i)[0];
   items[$at(items, i)] = 9;
-  const arg = deep[1][0][1];
   console.log(
-    `[${deep
-      .map((item) => item.map((item) => item.slice()))
-      .map(
-        (item) =>
-          `[${item.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
-      )
-      .join(", ")}] ${arg}`,
+    `[${deep.map((item) => `[${item.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`).join(", ")}] ${deep[1][0][1]}`,
   );
 }
 

@@ -79,7 +79,10 @@ explicit, but only where they would be visible:
    changes is copied item by item, or a closure given its items by value,
    `into_iter().map(|mut p| ..)`, would change the array they came from, as
    JS gives a callback the items themselves. (Amended: an array counted
-   only when an index of it was assigned.) `a.b.c = ..`
+   only when an index of it was assigned.) A value shown,
+   `format!("{q:?}")`, is only read, through the reference `format_args!`
+   takes, which nothing can change before it's shown: it isn't copied.
+   (Amended: it was, `pDebug_fmt({ ...q })`.) `a.b.c = ..`
    changes the object `a.b`, so it's `a.b`'s type that counts. Every other
    type's objects never change after they're built, so sharing them is
    the same as copying them. The type can be inside an `Option`, since

@@ -69,7 +69,7 @@ function main() {
   const result$1 = pair(o$4, p$1);
   b = o$4.value;
   a = p$1.value;
-  console.log(`${x} ${s} ${tmp == null ? "None" : `Some(${tmp})`} ${tmp$1} ${result$1}`);
+  console.log(`${x} ${s} ${n == null ? "None" : `Some(${n})`} ${tmp$1} ${result$1}`);
 }
 
 export function entry() {

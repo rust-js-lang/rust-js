@@ -87,7 +87,7 @@ function main() {
   for (const item of walls) {
     let key = { ...item[0] };
     key.x = (key.x + 100) | 0;
-    console.log(`${pointDebug_fmt({ ...key })} ${item[1]}`);
+    console.log(`${pointDebug_fmt(key)} ${item[1]}`);
   }
   const arg$13 = copy.get({ x: 1, y: 2 });
   console.log(

@@ -77,7 +77,7 @@ function main() {
     code = match.x;
   }
   console.log(
-    `${valueDebug_fmt(list)} ${valueDebug_fmt(kept)} ${spotDebug_fmt(typeof spot === "object" ? { ...spot } : spot)} ${spotDebug_fmt(typeof copied === "object" ? { ...copied } : copied)} ${code} ${valueDebug_fmt(START)}`,
+    `${valueDebug_fmt(list)} ${valueDebug_fmt(kept)} ${spotDebug_fmt(spot)} ${spotDebug_fmt(copied)} ${code} ${valueDebug_fmt(START)}`,
   );
   const left = ["Ada"];
   const right = ["ADA"];

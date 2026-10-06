@@ -19,7 +19,7 @@ function main() {
   const a = { x: 1, y: 2 };
   let b = { ...a };
   b.x = 10;
-  console.log(`${pointDebug_fmt({ ...a })} ${pointDebug_fmt({ ...b })}`);
+  console.log(`${pointDebug_fmt(a)} ${pointDebug_fmt(b)}`);
   let grid = [
     [0, 0, 0],
     [0, 0, 0],
@@ -27,13 +27,7 @@ function main() {
   const row = grid[0].slice();
   grid[0][1] = 5;
   console.log(
-    `[${grid
-      .map((item) => item.slice())
-      .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
-      .join(", ")}] [${row
-      .slice()
-      .map((item) => String(item))
-      .join(", ")}]`,
+    `[${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${row.map((item) => String(item)).join(", ")}]`,
   );
   const shape = { name: "tri", points: [{ ...a }, { ...b }] };
   let copy = { ...shape, points: shape.points.map((item) => ({ ...item })) };
@@ -43,7 +37,7 @@ function main() {
   console.log(`${shapeDebug_fmt(shape)}\n${shapeDebug_fmt(copy)}`);
   const c = moved({ ...a });
   const arg = $eq(a, { x: 1, y: 2 });
-  console.log(`${pointDebug_fmt({ ...a })} ${pointDebug_fmt({ ...c })} ${arg}`);
+  console.log(`${pointDebug_fmt(a)} ${pointDebug_fmt(c)} ${arg}`);
   const item = { ...a };
   let points = Array.from({ length: 3 }, () => ({ ...item }));
   for (const p of points) {
@@ -52,7 +46,7 @@ function main() {
   const first = { ...$index(points, 0) };
   $index(points, 0).x = 42;
   console.log(
-    `[${points.map((item) => pointDebug_fmt(item)).join(", ")}] ${pointDebug_fmt({ ...first })}`,
+    `[${points.map((item) => pointDebug_fmt(item)).join(", ")}] ${pointDebug_fmt(first)}`,
   );
   let nested = [[1, 2], [3]];
   const snapshot = nested.map((item) => item.slice());
@@ -83,13 +77,7 @@ function main() {
   let copied = points$1.map((item) => ({ ...item }));
   copied[0].y = 0;
   console.log(
-    `[${points$1
-      .map((item) => ({ ...item }))
-      .map((item) => pointDebug_fmt(item))
-      .join(", ")}] [${moved$1.map((item) => pointDebug_fmt(item)).join(", ")}] [${copied
-      .map((item) => ({ ...item }))
-      .map((item) => pointDebug_fmt(item))
-      .join(", ")}]`,
+    `[${points$1.map((item) => pointDebug_fmt(item)).join(", ")}] [${moved$1.map((item) => pointDebug_fmt(item)).join(", ")}] [${copied.map((item) => pointDebug_fmt(item)).join(", ")}]`,
   );
 }
 

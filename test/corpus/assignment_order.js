@@ -56,12 +56,7 @@ function main() {
   const arg = $index(ps, 0).x;
   const arg$1 = $index(totals, 0);
   console.log(
-    `[${v.map((item) => String(item)).join(", ")}] [${a
-      .slice()
-      .map((item) => String(item))
-      .join(
-        ", ",
-      )}] ${arg} ${totalDebug_fmt(arg$1)} [${rows.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
+    `[${v.map((item) => String(item)).join(", ")}] [${a.map((item) => String(item)).join(", ")}] ${arg} ${totalDebug_fmt(arg$1)} [${rows.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
   );
   let x = 1;
   let one = [0];
@@ -143,13 +138,7 @@ function main() {
   const o = cur$3;
   o[0] = (o[0] + 1) | 0;
   console.log(
-    `[${a$4
-      .slice()
-      .map((item) => String(item))
-      .join(", ")}] [${b$3
-      .slice()
-      .map((item) => String(item))
-      .join(", ")}]`,
+    `[${a$4.map((item) => String(item)).join(", ")}] [${b$3.map((item) => String(item)).join(", ")}]`,
   );
   let empty = [];
   const value$14 = (value("out of bounds", 8) << 24) >> 24;
