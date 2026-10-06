@@ -1380,7 +1380,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A two-arm `match` that's a conditional (ADR 0209).
             ExprKind::Match {
                 scrutinee, ref arms, ..
-            } if self.body_query().as_for(e).is_none() && self.is_conditional_match(arms) => self.is_simple(scrutinee),
+            } if self.body_query().as_for(e).is_none() && self.is_conditional_match(scrutinee, arms) => {
+                self.is_simple(scrutinee)
+            }
             // `format_args!`, whose arguments are written in place if they can be.
             // Out of order, its arguments may need `const`s (`lower_format_args`).
             ExprKind::Block { .. } if let Some(f) = self.as_format_args(e) => {

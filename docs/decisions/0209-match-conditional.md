@@ -26,6 +26,13 @@ const look = css.length === 0 ? FRAME_STYLE : `<style>\n${css.join("")}</style>`
 
 - **A first arm that takes everything is the value**, its guard, if it
   has one, the test, the second arm never reached.
+- **Arms may bind what a subject in place holds**, read only and owning
+  nothing: each name is its place, as an `if let` or `matches!` binds it.
+  `match item { Some(Item { path: Some(path), .. }) => path.as_str(), _ =>
+  "none" }` is `item != null && item.path != null ? item.path : "none"`,
+  and `Err(n) => n + 1` reads `r._0`. A binding that owns what it binds,
+  a `mut` one, or one of a subject that isn't a place is statements, as
+  before.
 - **What its subject holds is as before**: a `&mut` number's value,
   `n.value === 0`, and a destructor's subject dropped in a `finally`.
 

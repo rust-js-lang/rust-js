@@ -10,16 +10,10 @@ import { HEADING } from "../styles.js";
 
 export function ResultFrame({ program, onOutcome }) {
   const frame = useRef(undefined);
-  let tmp;
-  if (program != null) {
-    tmp = [program.run, program.page];
-  } else {
-    tmp = [0, ""];
-  }
-  const tmp$1 = tmp;
+  const tmp = program != null ? [program.run, program.page] : [0, ""];
   useEffect(() => {
     const controller = new AbortController();
-    if (tmp$1[0] > 0) {
+    if (tmp[0] > 0) {
       const reported = { value: false };
       const heard = reported;
       const told = onOutcome;
@@ -36,7 +30,7 @@ export function ResultFrame({ program, onOutcome }) {
           }
           let report;
           const match$1 = readReport(e);
-          if (match$1 != null && fromFrame && match$1.run == tmp$1[0]) {
+          if (match$1 != null && fromFrame && match$1.run == tmp[0]) {
             report = match$1;
           } else {
             return;
@@ -66,7 +60,7 @@ export function ResultFrame({ program, onOutcome }) {
     return () => {
       controller.abort();
     };
-  }, [tmp$1[0]]);
+  }, [tmp[0]]);
   return (
     <section id="result-section" className="mt-3" hidden={program == null}>
       <h2 className={HEADING}>
@@ -77,13 +71,13 @@ export function ResultFrame({ program, onOutcome }) {
         </span>
       </h2>
       <iframe
-        key={tmp$1[0]}
+        key={tmp[0]}
         ref={frame}
         id="result"
         className="block h-[280px] w-full rounded-md border border-line bg-page"
         title="Result"
         sandbox="allow-scripts"
-        srcDoc={tmp$1[1]}
+        srcDoc={tmp[1]}
       />
     </section>
   );

@@ -1069,9 +1069,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// just the test, `x.TAG === "Circle"`, when the pattern binds nothing
     /// the guard can't read where it is.
     /// `(kind ?? "Primary") === "Primary" ? a : b`: a two-arm `match` as a
-    /// value, as a person writes it, its arms plain, unguarded and binding
-    /// nothing (ADR 0209). Its subject is in place where the test reads it
-    /// once, else in a `const` of its own; `None` where it's statements.
+    /// value, as a person writes it, its arms plain (ADR 0209). Its subject
+    /// is in place where the test reads it once, else in a `const` of its
+    /// own; what its arms bind, of a subject in place, is named where it is,
+    /// `item.path`. `None` where it's statements.
     pub(super) fn match_conditional(
         &mut self,
         scrutinee: ExprId,
@@ -1080,7 +1081,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
         let &[first, second] = arms else { return Ok(None) };
-        if !self.is_conditional_match(arms) {
+        if !self.is_conditional_match(scrutinee, arms) {
             return Ok(None);
         }
         // Tested where it is, or, of what isn't a place, read once: a name
@@ -1090,10 +1091,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(place) => (place, None),
             None => (Expr::var(SUBJECT), Some(self.expr(scrutinee, out)?)),
         };
-        let mut bindings = Vec::new();
+        let (mut bindings, mut otherwise) = (Vec::new(), Vec::new());
+        let first_test = self.pattern_test(&self.thir[first].pattern, &subject, &mut bindings)?;
+        self.pattern_test(&self.thir[second].pattern, &subject, &mut otherwise)?;
+        if !self.binds_in_place(&bindings, self.thir[first].guard.is_some())?
+            || !self.binds_in_place(&otherwise, false)?
+        {
+            return Ok(None);
+        }
+        let items = self.item_subject(scrutinee);
+        self.bind_all(bindings, true, items, span, out)?;
         // A first arm that takes everything has no test: its guard is it,
         // or its body is the value, the second never reached.
-        let Some(mut test) = self.pattern_test(&self.thir[first].pattern, &subject, &mut bindings)? else {
+        let Some(mut test) = first_test else {
             if let Some(value) = value.filter(Expr::has_effects) {
                 out.push(StmtKind::Expr(value).at(span));
             }
@@ -1101,10 +1111,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Some(guard) => self.expr(guard, out)?,
                 None => return Ok(Some(self.expr(self.thir[first].body, out)?)),
             };
-            let (yes, no) = (
-                self.evaluated(self.thir[first].body)?,
-                self.evaluated(self.thir[second].body)?,
-            );
+            let yes = self.evaluated(self.thir[first].body)?;
+            self.bind_all(otherwise, true, items, span, out)?;
+            let no = self.evaluated(self.thir[second].body)?;
             return Ok(Some(self.conditional(test, yes, no, span, out)));
         };
         if let Some(value) = value {
@@ -1136,27 +1145,63 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             };
         }
-        let (yes, no) = (
-            self.evaluated(self.thir[first].body)?,
-            self.evaluated(self.thir[second].body)?,
-        );
+        let yes = self.evaluated(self.thir[first].body)?;
+        self.bind_all(otherwise, true, items, span, out)?;
+        let no = self.evaluated(self.thir[second].body)?;
         Ok(Some(self.conditional(test, yes, no, span, out)))
     }
 
-    /// Is this `match` one `match_conditional` writes: two arms, plain and
-    /// binding nothing, the first's guard plain too? The second can't be
-    /// guarded but where it's never reached.
-    pub(super) fn is_conditional_match(&self, arms: &[ArmId]) -> bool {
-        let binds = |pat: &Pat<'tcx>| {
-            let mut binds = false;
-            pat.walk_always(|p| binds |= matches!(p.kind, PatKind::Binding { .. }));
-            binds
+    /// Does `bind_all` name each of these where it is, with no statement:
+    /// read only, owning nothing, no cell, nor a `|` pattern's choice a
+    /// guard reads?
+    fn binds_in_place(&mut self, bindings: &[Binding<'tcx>], guarded: bool) -> R<bool> {
+        if bindings.len() > 1 && bindings.iter().any(|b| b.whole) {
+            return Ok(false);
+        }
+        for b in bindings {
+            if b.mutable
+                || b.by_ref_mut
+                || (guarded && b.chosen)
+                || b.place.has_effects()
+                || self.is_cell(b.ty)
+                || self.is_owner(b.var)?
+            {
+                return Ok(false);
+            }
+        }
+        Ok(true)
+    }
+
+    /// Is this `match` one `match_conditional` writes: two arms, plain,
+    /// the first's guard plain too? The second can't be guarded but where
+    /// it's never reached.
+    pub(super) fn is_conditional_match(&self, scrutinee: ExprId, arms: &[ArmId]) -> bool {
+        // What an arm binds is named where it is, so only a place's: read
+        // only, owning nothing (`binds_in_place` checks the rest as it binds).
+        let place = self.stable_place(scrutinee).is_some();
+        let in_place = |pat: &Pat<'tcx>| {
+            let mut in_place = true;
+            pat.walk_always(|p| {
+                if let PatKind::Binding {
+                    mode: BindingMode(by_ref, mutability),
+                    ty,
+                    ..
+                } = p.kind
+                {
+                    in_place &= place
+                        && mutability == Mutability::Not
+                        && !matches!(by_ref, ByRef::Yes(_, Mutability::Mut))
+                        && !(ty.is_ref() && ty.is_mutable_ptr())
+                        && !(matches!(by_ref, ByRef::No) && self.has_drops(ty));
+                }
+            });
+            in_place
         };
         let &[first, _] = arms else { return false };
         self.thir[first].guard.is_none_or(|guard| self.is_simple(guard))
             && arms.iter().all(|&arm| {
                 let arm = &self.thir[arm];
-                !binds(&arm.pattern) && self.is_simple(arm.body)
+                in_place(&arm.pattern) && self.is_simple(arm.body)
             })
     }
 

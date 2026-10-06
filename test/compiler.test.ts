@@ -1323,6 +1323,77 @@ test("a plain `cargo check` checks the vite-react example", () => {
   expect(p.code).toBe(0);
 }, 300_000);
 
+// One whose arms bind what their subject holds, named where it is, is a
+// conditional too (ADR 0209), as react.dev's DocsFooter picks a link or a
+// `<div />`. What needs a `const` of its own is statements, as before.
+test("a two-arm match whose arms bind places is a conditional expression", async () => {
+  const dir = fixture("match-conditional-binds");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Item {
+    pub title: String,
+    pub path: Option<String>,
+}
+pub fn path(item: Option<&Item>) -> &str {
+    let label = match item {
+        Some(Item { path: Some(path), .. }) => path.as_str(),
+        _ => "none",
+    };
+    label
+}
+// The second arm's too.
+pub fn either(r: Result<u32, u32>) -> u32 {
+    let v = match r {
+        Ok(n) => n,
+        Err(n) => n + 1,
+    };
+    v
+}
+// A guard reads what its arm binds.
+pub fn titled(item: Option<&Item>) -> &str {
+    let label = match item {
+        Some(item) if item.path.is_some() => item.title.as_str(),
+        _ => "untitled",
+    };
+    label
+}
+// What's owned has a \`const\` of its own, dropped where Rust drops it.
+pub struct Loud(pub u32);
+impl Drop for Loud {
+    fn drop(&mut self) {
+        println!("drop {}", self.0);
+    }
+}
+pub fn owned(some: bool) -> u32 {
+    let l = if some { Some(Loud(7)) } else { None };
+    let n = match l {
+        Some(l) => l.0,
+        None => 0,
+    };
+    println!("after");
+    n
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('const label = item != null && item.path != null ? item.path : "none";');
+  expect(js).toContain('const v = r.TAG === "Ok" ? r._0 : (r._0 + 1) >>> 0;');
+  expect(js).toContain('const label = item != null && item.path != null ? item.title : "untitled";');
+  expect(js).not.toContain("let tmp");
+  const lib = await import(join(dir, "lib.js"));
+  const item = { title: "T", path: "/p" };
+  expect([lib.path(item), lib.path({ title: "T" }), lib.path(undefined)]).toEqual(["/p", "none", "none"]);
+  expect([lib.either({ TAG: "Ok", _0: 1 }), lib.either({ TAG: "Err", _0: 1 })]).toEqual([1, 2]);
+  expect([lib.titled(item), lib.titled({ title: "T" })]).toEqual(["T", "untitled"]);
+  const logs: string[] = [];
+  const log = console.log;
+  console.log = (line: string) => logs.push(line);
+  try {
+    expect([lib.owned(true), lib.owned(false)]).toEqual([7, 0]);
+  } finally {
+    console.log = log;
+  }
+  expect(logs).toEqual(["drop 7", "after", "after"]);
+});
+
 // A two-arm `match` as a value, its arms plain and binding nothing, is a
 // conditional, as a person writes it (ADR 0209): its subject in place
 // where the test reads it once, else in a `const` of its own.

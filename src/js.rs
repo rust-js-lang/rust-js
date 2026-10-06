@@ -746,11 +746,12 @@ impl Expr {
             },
             // A closure reading none of the names replaced is the same
             // closure, whenever it runs.
-            ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) if {
-                let mut replaced = false;
-                self.visit_vars(&mut |name| replaced |= with(name).is_some());
-                !replaced
-            } =>
+            ExprKind::Arrow(..) | ExprKind::AsyncArrow(..)
+                if {
+                    let mut replaced = false;
+                    self.visit_vars(&mut |name| replaced |= with(name).is_some());
+                    !replaced
+                } =>
             {
                 self.kind.clone()
             }

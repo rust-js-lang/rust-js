@@ -11,13 +11,7 @@ const Item = {
     }
   },
   text(item) {
-    let tmp;
-    if (item.TAG === "Literal") {
-      tmp = item._0;
-    } else {
-      tmp = item._0;
-    }
-    return tmp;
+    return item.TAG === "Literal" ? item._0 : item._0;
   },
 };
 

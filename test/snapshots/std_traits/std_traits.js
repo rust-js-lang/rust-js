@@ -106,12 +106,7 @@ export function enum_clones() {
   }
   const dot = "Dot";
   const f = figureClone_clone({ TAG: "Poly", _0: [1, 2, 3] });
-  let n;
-  if (f === "Dot") {
-    n = 0;
-  } else {
-    n = f._0.length;
-  }
+  const n = f === "Dot" ? 0 : f._0.length;
   return [points(a), points(b), (points(dot) + n) >>> 0];
 }
 

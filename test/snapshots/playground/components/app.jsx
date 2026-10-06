@@ -116,12 +116,7 @@ export function App() {
     const sources = Project.sources(project, live());
     const root = project.root;
     const rootJs = jsName(project.root);
-    let shown;
-    if (output.TAG === "Files") {
-      shown = output.shown;
-    } else {
-      shown = "";
-    }
+    const shown = output.TAG === "Files" ? output.shown : "";
     setStatus(say(test ? "Compiling the tests…" : "Compiling…", "Plain"));
     startTransition(() =>
       (async () => {
@@ -164,12 +159,7 @@ export function App() {
     }
   };
   const onExample = (name) => {
-    let chosen;
-    if (loaded != null) {
-      chosen = loaded.examples.find((e) => e.name === name);
-    } else {
-      chosen = undefined;
-    }
+    const chosen = loaded != null ? loaded.examples.find((e) => e.name === name) : undefined;
     if (chosen != null) {
       const [root, files] = [chosen.root, chosen.files.slice()];
       setExample(name);
@@ -255,21 +245,10 @@ export function App() {
     }
   }, [output]);
   const sourceTree = useMemo(() => buildTree(Project.paths(project)), [project]);
-  let tmp;
-  if (output.TAG === "Files") {
-    tmp = [output.files.map((param) => param[0]), output.shown];
-  } else {
-    tmp = [[], ""];
-  }
-  const tmp$1 = tmp;
-  const outputTree = useMemo(() => buildTree(tmp$1[0]), [output]);
-  let tmp$2;
-  if (loaded != null) {
-    tmp$2 = loaded.examples;
-  } else {
-    tmp$2 = [];
-  }
-  const examples = tmp$2;
+  const tmp =
+    output.TAG === "Files" ? [output.files.map((param) => param[0]), output.shown] : [[], ""];
+  const outputTree = useMemo(() => buildTree(tmp[0]), [output]);
+  const examples = loaded != null ? loaded.examples : [];
   const submit = onCompile;
   return (
     <>
@@ -325,7 +304,7 @@ export function App() {
                   tree={outputTree}
                   depth={0}
                   first={jsName(project.root)}
-                  selected={tmp$1[1]}
+                  selected={tmp[1]}
                   onOpen={openOutput}
                 />
               )}

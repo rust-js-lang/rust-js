@@ -218,12 +218,10 @@ export async function compile(loaded, sources, rootFile, test) {
   const started = $try(() => wasi.start(instance));
   const t2 = performance.now();
   const ok = started.TAG === "Ok" && started._0 === 0;
-  let exit;
-  if (started.TAG === "Ok") {
-    exit = String(started._0);
-  } else {
-    exit = `trap (${started._0 instanceof Error ? started._0.message : String(started._0)})`;
-  }
+  const exit =
+    started.TAG === "Ok"
+      ? String(started._0)
+      : `trap (${started._0 instanceof Error ? started._0.message : String(started._0)})`;
   let files = [];
   if (ok) {
     jsFilesIn(outDir.dir, "", files);
