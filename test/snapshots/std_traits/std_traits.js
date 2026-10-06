@@ -274,8 +274,7 @@ export function generic_iterations() {
     ).toArray(),
     $max(
       $iterator({ n: 5 }, countdownIterator_next)
-        .map((x, i) => [i, x])
-        .map(([i, x]) => Math.imul(i, x) >>> 0)
+        .map((x, i) => Math.imul(i, x) >>> 0)
         .toArray(),
     ),
   ];

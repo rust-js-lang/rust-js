@@ -30,6 +30,14 @@ pub fn indexed(words: &[&str]) -> Vec<String> {
     words.iter().enumerate().map(|(i, w)| format!("{i}:{w}")).collect()
 }
 
+// Whether a word is as long as where it is, and the first long one's
+// place: a `find` keeps its pairs, which its `map` takes apart.
+pub fn placed(words: &[&str]) -> (bool, Option<usize>) {
+    let fits = words.iter().enumerate().any(|(i, w)| w.len() == i);
+    let long = words.iter().enumerate().find(|(i, w)| w.len() > 2 + i).map(|(i, _)| i);
+    (fits, long)
+}
+
 pub fn middle(v: &[i32]) -> Vec<i32> {
     v.iter().skip(1).take(2).rev().copied().collect()
 }

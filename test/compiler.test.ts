@@ -427,6 +427,9 @@ test("iterators are array methods, and sorting takes comparators", async () => {
   expect(js).toContain("  const anyNegative = v.some((x) => x < 0);");
   expect(js).toContain("  return v.slice(1).slice(0, 2).toReversed();");
   expect(js).toContain('  return words.map((w) => w.toUpperCase()).join("-");');
+  // `enumerate()` then `map` is one `map`, whose callback JS gives the index too.
+  expect(js).toContain("  return words.map((w, i) => `${i}:${w}`);");
+  expect(js).toContain("const fits = words.some((w, i) => $byteLen(w) === i);");
   expect(js).toContain('  return Array.from(s).toReversed().join("");');
   // Numbers sort by `a - b`: JS's own `sort()` would compare them as strings.
   expect(js).toContain("  w.sort((a, b) => a - b);");

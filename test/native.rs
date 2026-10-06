@@ -340,6 +340,7 @@ fn main() {
     for words in word_lists {
         let arg = words.to_vec();
         case_with("iterators.indexed", &[&arg], || iterators::indexed(words));
+        case_with("iterators.placed", &[&arg], || iterators::placed(words));
         case_with("iterators.non_empty", &[&arg], || iterators::non_empty(words));
         case_with("iterators.shouted", &[&arg], || iterators::shouted(words));
         case_with("iterators.sorted_words", &[&arg], || iterators::sorted_words(words));

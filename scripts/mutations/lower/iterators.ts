@@ -373,4 +373,12 @@ export const mutations: Mutation[] = [
     replace: "                } else if elem.is_bool() || self.is_string_like(elem) {",
     tests: ["test/corpus.test.ts", "-t", "code_point_order"],
   },
+  {
+    name: "enumerate-map-kept-apart",
+    breaks: "`enumerate()` then `map` is a `map` of pairs, then one taking them apart, where JS gives the callback the index",
+    file: "src/lower/iterators.rs",
+    find: "                None => match indexed_callback(&items, name, next()) {\n",
+    replace: "                None => match Err::<(Expr, Expr), Expr>(next()) {\n",
+    tests: ["test/compiler.test.ts", "-t", "iterators are array methods"],
+  },
 ];

@@ -872,7 +872,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let keep = self.dropping_discarded(test, item, false, span, out)?;
                     method(items, name, vec![keep])
                 }
-                None => method(items, name, vec![next()]),
+                None => match indexed_callback(&items, name, next()) {
+                    Ok((source, f)) => method(source, name, vec![f]),
+                    Err(f) => method(items, name, vec![f]),
+                },
             },
             Std::Enumerate => {
                 let pair = Expr::array(vec![Expr::var("i"), Expr::var("x")]);
@@ -1181,4 +1184,55 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.is_peekable(ty)
             || matches!(self.thir[e].kind, ExprKind::VarRef { id } if self.stepping.bound.contains(&id))
     }
+}
+
+/// `enumerate()` then a method whose callback takes each pair apart,
+/// `.map((x, i) => [i, x]).map(([i, w]) => ..)`: the method of the items
+/// themselves, whose callback JS gives each one's index too, `.map((w, i)
+/// => ..)` (ADR 0217). Not `filter` or `find`, which give back the pairs.
+/// `Err` gives back the callback, of any other.
+fn indexed_callback(items: &Expr, name: &str, f: Expr) -> Result<(Expr, Expr), Expr> {
+    if !["map", "forEach", "some", "every", "flatMap"].contains(&name) {
+        return Err(f);
+    }
+    let js::ExprKind::Call(callee, args) = &items.kind else {
+        return Err(f);
+    };
+    let js::ExprKind::Member(source, method) = &callee.kind else {
+        return Err(f);
+    };
+    if method != "map" || !matches!(&args[..], [pairing] if is_enumerate_pairing(pairing)) {
+        return Err(f);
+    }
+    let js::ExprKind::Arrow(params, body) = &f.kind else {
+        return Err(f);
+    };
+    let [js::Pattern::Array(parts)] = &params[..] else {
+        return Err(f);
+    };
+    let [index, item] = &parts[..] else { return Err(f) };
+    // The item's name, `_` where only the index is read: no Rust variable is.
+    let mut params = vec![js::Pattern::Name(item.clone().unwrap_or_else(|| "_".into()))];
+    params.extend(index.clone().map(js::Pattern::Name));
+    Ok(((**source).clone(), Expr::arrow(params, body.clone())))
+}
+
+/// `(x, i) => [i, x]`, which `enumerate()` maps each item with.
+fn is_enumerate_pairing(e: &Expr) -> bool {
+    let var = |e: &Expr, name: &str| matches!(&e.kind, js::ExprKind::Var(v) if v == name);
+    let js::ExprKind::Arrow(params, body) = &e.kind else {
+        return false;
+    };
+    let [js::Pattern::Name(x), js::Pattern::Name(i)] = &params[..] else {
+        return false;
+    };
+    let [stmt] = &body[..] else { return false };
+    let StmtKind::Return(Some(pair)) = &stmt.kind else {
+        return false;
+    };
+    let js::ExprKind::Array(parts) = &pair.kind else {
+        return false;
+    };
+    (x.as_str(), i.as_str()) == ("x", "i")
+        && matches!(&parts[..], [first, second] if var(first, "i") && var(second, "x"))
 }
