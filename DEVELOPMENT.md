@@ -100,8 +100,9 @@ before every push.
 - **Changes stack.** A change that needs one not yet merged starts from its
   branch. When the earlier one goes red, fix it there and rebase the later
   ones on it. When it merges, rebase them on `main`.
-- **A check started again cancels the last of that branch**, so only the
-  latest commit is checked.
+- **One run at a time.** A new check, of any branch, or a `rustc tests`
+  run started by hand, cancels the one running: the latest is what's
+  checked, and two never spend minutes at once.
 
 ## When CI writes something: bless patches
 
@@ -151,8 +152,8 @@ sooner, at more minutes.
 
 ### `check.yml`, started by `bun run ci:check`
 
-`workflow_dispatch` of a branch, with `test_shards`, 1, 2 or 4. A new run
-of a branch cancels the one in progress. Its jobs run at once:
+`workflow_dispatch` of a branch, with `test_shards`, 1, 2 or 4. A new run,
+of any branch, cancels the one in progress. Its jobs run at once:
 
 | Job | What | Time, about |
 |---|---|---|
