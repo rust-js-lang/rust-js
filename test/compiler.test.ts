@@ -838,6 +838,32 @@ pub fn body(response: &webapi::Response) -> Promise<Option<&'static Unknown>> {
   expect(lib.renamed('{"name":"old","n":2}')).toBe("{name:'new',n:2}");
 });
 
+// ADR 0225: a WebIDL parameter typed `any` takes a value of any Rust type,
+// as JS has it: a struct is an object, a string a string.
+test("webapi's any parameters take any value as JS has it", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("any-params");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{history, window};
+pub struct Saved {
+    pub page: u32,
+}
+pub fn save(page: u32) {
+    history::push_state(window::history(window), Saved { page }, "");
+}
+pub fn copy(text: &str) -> Option<&'static js::Unknown> {
+    window::structured_clone(window, text)
+}
+pub fn report(error: &js::JsError) {
+    window::report_error(window, error);
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('window.history.pushState({ page }, "");');
+  expect(js).toContain("return window.structuredClone(text);");
+  expect(js).toContain("window.reportError(error);");
+});
+
 // An element's constructor is WebIDL's `[HTMLConstructor]`, which only a
 // custom element's class can call: `new HTMLDivElement()` in a page throws
 // "Illegal constructor". So webapi binds none, and an element is made with

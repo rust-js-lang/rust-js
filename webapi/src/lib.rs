@@ -1418,6 +1418,14 @@ pub mod abort_controller {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AbortController/abort)
         pub safe fn abort(this: &AbortController);
     }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AbortController/abort)
+    #[cfg_attr(rust_js, rust_js::link_name = "abort")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn abort_with_reason<R>(this: &AbortController, reason: R) {
+        unreachable!()
+    }
 }
 
 /// [`AbortSignal`](https://developer.mozilla.org/docs/Web/API/AbortSignal)
@@ -4353,6 +4361,14 @@ pub mod html_canvas_element {
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static HtmlCanvasElement;
     }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCanvasElement/toDataURL)
+    #[cfg_attr(rust_js, rust_js::link_name = "toDataURL")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn to_data_url_with_type_and_quality<Q>(this: &HtmlCanvasElement, type_: &str, quality: Q) -> String {
+        unreachable!()
+    }
 }
 
 /// [`Window`](https://developer.mozilla.org/docs/Web/API/Window)
@@ -4702,6 +4718,54 @@ pub mod window {
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static Window;
     }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/opener)
+    #[cfg_attr(rust_js, rust_js::link_name = "set opener")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_opener<V>(this: &Window, value: V) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/postMessage)
+    #[cfg_attr(rust_js, rust_js::link_name = "postMessage")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn post_message<M>(this: &Window, message: M, target_origin: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/postMessage)
+    #[cfg_attr(rust_js, rust_js::link_name = "postMessage")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn post_message_with_transfer<M>(this: &Window, message: M, target_origin: &str, transfer: &[&dyn core::any::Any]) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/postMessage)
+    #[cfg_attr(rust_js, rust_js::link_name = "postMessage")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn post_message_with_options<M>(this: &Window, message: M, options: WindowPostMessageOptions<'_>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/reportError)
+    #[cfg_attr(rust_js, rust_js::link_name = "reportError")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn report_error<E>(this: &Window, e: E) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/structuredClone)
+    #[cfg_attr(rust_js, rust_js::link_name = "structuredClone")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn structured_clone<V>(this: &Window, value: V) -> Option<&'static Unknown> {
+        unreachable!()
+    }
 }
 
 /// [`Location`](https://developer.mozilla.org/docs/Web/API/Location)
@@ -4825,6 +4889,38 @@ pub mod history {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/History/forward)
         pub safe fn forward(this: &History);
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/History/pushState)
+    #[cfg_attr(rust_js, rust_js::link_name = "pushState")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn push_state<D>(this: &History, data: D, unused: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/History/pushState)
+    #[cfg_attr(rust_js, rust_js::link_name = "pushState")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn push_state_with_url<D>(this: &History, data: D, unused: &str, url: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/History/replaceState)
+    #[cfg_attr(rust_js, rust_js::link_name = "replaceState")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn replace_state<D>(this: &History, data: D, unused: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/History/replaceState)
+    #[cfg_attr(rust_js, rust_js::link_name = "replaceState")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn replace_state_with_url<D>(this: &History, data: D, unused: &str, url: &str) {
+        unreachable!()
     }
 }
 
@@ -5006,6 +5102,38 @@ pub mod message_event {
         /// a `MessagePort` or a `ServiceWorker`, as an object: `js::object::is` tells which.
         #[link_name = "get source"]
         pub safe fn source(this: &MessageEvent) -> Option<&'static JsObject>;
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/initMessageEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initMessageEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_message_event_with_bubbles_and_cancelable_and_data<D>(this: &MessageEvent, type_: &str, bubbles: bool, cancelable: bool, data: D) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/initMessageEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initMessageEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_message_event_with_bubbles_and_cancelable_and_data_and_origin<D>(this: &MessageEvent, type_: &str, bubbles: bool, cancelable: bool, data: D, origin: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/initMessageEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initMessageEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_message_event_with_bubbles_and_cancelable_and_data_and_origin_and_last_event_id<D>(this: &MessageEvent, type_: &str, bubbles: bool, cancelable: bool, data: D, origin: &str, last_event_id: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/initMessageEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initMessageEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_message_event_with_bubbles_and_cancelable_and_data_and_origin_and_last_event_id_and_source<D>(this: &MessageEvent, type_: &str, bubbles: bool, cancelable: bool, data: D, origin: &str, last_event_id: &str, source: &Window) {
+        unreachable!()
     }
 }
 
@@ -6193,6 +6321,14 @@ pub mod readable_stream {
         #[link_name = "pipeThrough"]
         pub safe fn pipe_through_with_options(this: &ReadableStream, transform: ReadableWritablePair<'_>, options: StreamPipeOptions<'_>) -> &'static ReadableStream;
     }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStream/cancel)
+    #[cfg_attr(rust_js, rust_js::link_name = "cancel")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn cancel_with_reason<R>(this: &ReadableStream, reason: R) -> Promise<()> {
+        unreachable!()
+    }
 }
 
 /// [`Touch`](https://developer.mozilla.org/docs/Web/API/Touch)
@@ -6391,6 +6527,14 @@ pub mod web_assembly_memory {
         /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Memory/buffer)
         #[link_name = "get buffer"]
         pub safe fn buffer(this: &WebAssemblyMemory) -> &'static ArrayBuffer;
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Memory/grow)
+    #[cfg_attr(rust_js, rust_js::link_name = "grow")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn grow<D>(this: &WebAssemblyMemory, delta: D) -> Option<&'static Unknown> {
+        unreachable!()
     }
 }
 
@@ -7243,6 +7387,13 @@ pub struct WebAssemblyCompileOptions<'a> {
     #[cfg_attr(rust_js, rust_js::name = "importedStringConstants")]
     pub imported_string_constants: Option<&'a str>,
     pub builtins: Option<&'a [&'a str]>,
+}
+
+/// The [`WindowPostMessageOptions`](https://developer.mozilla.org/docs/Web/API/WindowPostMessageOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct WindowPostMessageOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "targetOrigin")]
+    pub target_origin: Option<&'a str>,
 }
 
 /// `AddEventListenerOptions | boolean`: each variant's value is the member itself (ADR 0215).
