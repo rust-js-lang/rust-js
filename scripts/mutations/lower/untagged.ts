@@ -58,4 +58,20 @@ export const mutations: Mutation[] = [
     replace: "        if false\n",
     tests: ["test/diagnostics.test.ts", "-t", "serde of an untagged"],
   },
+  {
+    name: "otherwise-tested-as-its-kind",
+    breaks: "the `#[rust_js::otherwise]` variant is tested as its own value's kind, an object, so an array or a number is neither variant",
+    file: "src/lower/untagged.rs",
+    find: "        if otherwise(variant) {\n",
+    replace: "        if false && otherwise(variant) {\n",
+    tests: ["test/compiler.test.ts", "-t", "untagged enum is its payload"],
+  },
+  {
+    name: "otherwise-anywhere",
+    breaks: "an untagged enum's `#[rust_js::otherwise]` variant before another is taken, shadowing it",
+    file: "src/lower/untagged.rs",
+    find: "                    if i != last {\n",
+    replace: "                    if false {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "otherwise variant before"],
+  },
 ];

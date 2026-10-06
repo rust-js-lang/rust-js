@@ -555,12 +555,15 @@ test("an untagged enum is its payload, told apart by its runtime kind", async ()
   expect(untagged.text("a.png")).toBe("a.png");
   expect(untagged.numbers([1, 2])).toEqual([1, 2]);
   expect(untagged.shown(2.5)).toBe("2.5");
+  expect([untagged.label("Recap"), untagged.label(["a", {}])]).toEqual(["Link for Recap", "Link for this heading"]);
+  expect([untagged.is_other(["x"]), untagged.is_other(3), untagged.is_other("s")]).toEqual([true, true, false]);
 
   const js = await Bun.file(join(target, "untagged.js")).text();
   expect(js).toContain("src instanceof Error && !(src instanceof TypeError)");
   expect(js).toContain('typeof src === "object" &&\n    !Array.isArray(src) &&\n    !(src instanceof RegExp) &&\n    !(src instanceof ArrayBuffer) &&\n    !(src instanceof Error)\n  ) {');
   expect(js).toContain("export function text(s) {\n  return s;\n}");
   expect(js).toContain("String(n)");
+  expect(js).toContain('return typeof value !== "string";');
 });
 
 // A slice's `concat` of parts written out is an array of them, spread, as

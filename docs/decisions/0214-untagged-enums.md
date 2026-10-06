@@ -71,6 +71,13 @@ impl<'a> From<&'a str> for Src<'a> {
   two strings couldn't be told apart. Nor can a payload be what has no
   kind, `Option` (`undefined`), `()`, a generic `T`, another enum: each is
   an error where the enum is declared.
+- **The last variant may be what the others aren't**,
+  `#[cfg_attr(rust_js, rust_js::otherwise)]`, of a value of any kind, as
+  TS's `string | ReactNode` is told by `typeof children === "string"`:
+  its test is none of theirs, `typeof value !== "string"`. React's
+  `NodeKind`, `Text(&str)` or `Other`, is one, which `react::kind_of(&children)`
+  gives a node as, the node itself, as react.dev's Heading labels its link.
+  One before another is an error.
 - **A `From` into one is the value itself**, at a call, `"a.png".into()`,
   as in generic code (ADR 0108): its `from` must be the variant of its
   argument, `Src::Text(s)`, which is checked where it's declared, so a

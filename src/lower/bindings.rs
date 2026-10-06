@@ -189,6 +189,13 @@ pub(super) fn is_untagged(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
 }
 
+/// Whether an untagged enum's variant is what its others aren't,
+/// `#[rust_js::otherwise]` (ADR 0214).
+pub(super) fn is_otherwise(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("otherwise")];
+    tcx.get_attrs_by_path(def_id, &path).next().is_some()
+}
+
 /// A JS object type's class, as `instanceof` names it: its
 /// `#[rust_js::name = ".."]`, `HTMLElement` of `HtmlElement`, or its name.
 pub(super) fn class_name(tcx: TyCtxt<'_>, def_id: DefId) -> String {

@@ -84,3 +84,24 @@ unsafe extern "Rust" {
 pub fn shown(n: f64) -> String {
     to_text(Src::Number(n))
 }
+
+/// TS's `string | ReactNode`: text, or whatever else it is, the last
+/// variant's, `#[rust_js::otherwise]`, of what the others aren't.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Label<'a> {
+    Text(&'a str),
+    #[cfg_attr(rust_js, rust_js::otherwise)]
+    Other(&'a JsObject),
+}
+
+pub fn label(value: Label) -> String {
+    let mut label = "Link for this heading".to_string();
+    if let Label::Text(text) = value {
+        label = format!("Link for {text}");
+    }
+    label
+}
+
+pub fn is_other(value: Label) -> bool {
+    matches!(value, Label::Other(_))
+}

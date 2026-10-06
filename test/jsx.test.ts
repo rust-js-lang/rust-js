@@ -1253,6 +1253,32 @@ pub fn Badge(p: P) -> Element {
   expect(renderToStaticMarkup(result.Badge({ class_name: "c", size: "S", title: "t" }))).toBe('<svg class="c" width="12px" height="12px" viewBox="0 0 20 20"><title>t</title><g fill="none"><path d="M0 0"></path></g></svg>');
 });
 
+// A node told apart by what it is, `react::kind_of`: text, or anything else
+// a node is, as react.dev's Heading labels its link `typeof children ===
+// "string"` (ADR 0214).
+test("JSX tells text children from any other node", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{Element, Node, NodeKind, jsx, kind_of};
+pub struct LabeledProps<C> {
+    pub children: C,
+}
+pub fn Labeled<C: Node>(LabeledProps { children }: LabeledProps<C>) -> Element {
+    let mut label = "Link for this heading".to_string();
+    if let NodeKind::Text(text) = kind_of(&children) {
+        label = format!("Link for {text}");
+    }
+    jsx! { <h2 title={label.as_str()}>{children}</h2> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain('if (typeof text === "string") {');
+  const { Labeled } = await import(join(dir, "lib.jsx"));
+  const { createElement } = await import("react");
+  expect(renderToStaticMarkup(createElement(Labeled, { children: "Recap" }))).toBe('<h2 title="Link for Recap">Recap</h2>');
+  expect(renderToStaticMarkup(createElement(Labeled, { children: ["A ", createElement("code", null, "b")] }))).toBe('<h2 title="Link for this heading">A <code>b</code></h2>');
+});
+
 // A DOM element's tag as a value, a `react::Tag`, is the tag JSX names by a
 // capitalized parameter or `let` of its function, as react.dev's Heading
 // renders `<Comp>` of `{ as: Comp = "div" }`.

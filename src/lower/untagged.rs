@@ -167,9 +167,19 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         value: &Expr,
         class: &dyn Fn(&str) -> Expr,
     ) -> Expr {
+        let otherwise = |v: &VariantDef| bindings::is_otherwise(self.tcx, v.def_id);
+        // What the others aren't: none of their tests.
+        if otherwise(variant) {
+            let none = (adt.variants().iter().filter(|v| !otherwise(v)))
+                .map(|v| Expr::unary(UnaryOp::Not, self.untagged_test(adt, args, v, value, class)));
+            return none
+                .reduce(|all, test| Expr::bin(Op::And, all, test))
+                .unwrap_or(Expr::bool(true));
+        }
         let kinds: Vec<Kind> = adt
             .variants()
             .iter()
+            .filter(|v| !otherwise(v))
             .filter_map(|v| self.untagged_kind(v.fields.iter().next()?.ty(self.tcx, args).skip_normalization()))
             .collect();
         let own = variant
@@ -246,7 +256,8 @@ pub(super) fn validate<'tcx>(tcx: TyCtxt<'tcx>, foreign: &super::library::Foreig
             let adt = tcx.adt_def(def_id);
             let args = ty::GenericArgs::identity_for_item(tcx, def_id);
             let mut seen: Vec<(Kind, String)> = Vec::new();
-            for variant in adt.variants() {
+            let last = adt.variants().len() - 1;
+            for (i, variant) in adt.variants().iter().enumerate() {
                 let span = tcx.def_span(variant.def_id);
                 let ([field], Some(CtorKind::Fn)) = (&variant.fields.raw[..], variant.ctor_kind()) else {
                     error(
@@ -258,6 +269,19 @@ pub(super) fn validate<'tcx>(tcx: TyCtxt<'tcx>, foreign: &super::library::Foreig
                     );
                     continue;
                 };
+                // What the others aren't holds anything, and comes last.
+                if bindings::is_otherwise(tcx, variant.def_id) {
+                    if i != last {
+                        error(
+                            span,
+                            format!(
+                                "an untagged enum's `#[rust_js::otherwise]` variant, `{}`, is its last (ADR 0214)",
+                                variant.name
+                            ),
+                        );
+                    }
+                    continue;
+                }
                 let ty = field.ty(tcx, args).skip_normalization();
                 let Some(kind) = recognition.untagged_kind(ty) else {
                     error(

@@ -134,6 +134,23 @@ impl<T: Node + ?Sized> sealed::Sealed for &T {}
 impl<T: Node> sealed::Sealed for Option<T> {}
 impl<T: Node> sealed::Sealed for Vec<T> {}
 
+/// A node, told apart by what it is, as JSX's `typeof children ===
+/// "string"`: text, or any other node, of [`kind_of`] (ADR 0214).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum NodeKind<'a> {
+    Text(&'a str),
+    #[cfg_attr(rust_js, rust_js::otherwise)]
+    Other(&'a JsObject),
+}
+
+/// What `node` is, its text or another node: the node itself, matched,
+/// `if let NodeKind::Text(text) = kind_of(&children)`.
+#[cfg_attr(rust_js, rust_js::link_name = "this")]
+#[allow(unused_variables)]
+pub fn kind_of<C: Node>(this: &C) -> NodeKind<'_> {
+    unreachable!()
+}
+
 macro_rules! numbers {
     ($($t:ty),*) => { $(impl Node for $t {} impl sealed::Sealed for $t {} impl Value for $t {})* };
 }

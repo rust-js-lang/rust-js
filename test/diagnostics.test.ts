@@ -108,6 +108,7 @@ for (const [name, source, message, crate] of [
   // An untagged enum (ADR 0214): JS tells a variant by its payload's kind, so each holds one
   // value of a kind of its own, and a `From` into one is its variant of its argument.
   ["an untagged enum's variants of one kind", '#[rust_js::untagged] pub enum E { A(String), B(&\'static str) }\npub fn f(e: E) -> u32 { match e { E::A(_) => 1, E::B(_) => 2 } }', "which JS can't tell apart"],
+  ["an untagged enum's otherwise variant before another", '#[rust_js::untagged] pub enum E { #[rust_js::otherwise] A(String), B(u32) }\npub fn f(e: E) -> u32 { match e { E::A(_) => 0, E::B(n) => n } }', "is its last"],
   ["an untagged enum's variant of no value", '#[rust_js::untagged] pub enum E { A(u32), B }\npub fn f(e: E) -> u32 { match e { E::A(n) => n, E::B => 0 } }', "holds one value"],
   ["an untagged enum's variant of an Option", '#[rust_js::untagged] pub enum E { A(Option<u32>), B(String) }\npub fn f(e: &E) -> u32 { match e { E::A(_) => 1, E::B(_) => 2 } }', "from another variant's value"],
   ["a From into an untagged enum that does more", '#[rust_js::untagged] pub enum E { A(u32), B(String) }\nimpl From<u32> for E { fn from(n: u32) -> Self { E::A(n + 1) } }\npub fn f(n: u32) -> E { n.into() }', "is its variant of its argument"],
