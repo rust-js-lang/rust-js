@@ -35,6 +35,10 @@ tart exec "$VM" bash -lc "
   . \"\$HOME/.cargo/env\"
   export PATH=\"\$HOME/.bun/bin:\$PATH\" NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
   rsync -a --delete --filter=':- .gitignore' /mnt/shared/rust-js/ \"\$HOME/rust-js/\"
+  # And every file git tracks, which a .gitignore's \`!\` keeps, as rsync's
+  # reading of it doesn't: an example's .vscode/settings.json.
+  ( cd \"\$HOME/rust-js\" && git ls-files -z --cached ) |
+    rsync -a --from0 --ignore-missing-args --files-from=- /mnt/shared/rust-js/ \"\$HOME/rust-js/\"
   cd \"\$HOME/rust-js\"
   touch /tmp/rust-js-synced
   status=0
