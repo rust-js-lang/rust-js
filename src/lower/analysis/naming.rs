@@ -6,7 +6,7 @@ use crate::lower::bindings::{Export, is_binding, js_import, js_path, module_bind
 use crate::lower::traits;
 use crate::lower::{Body, FnInfo, camel_case, fresh_in};
 use rustc_hir::def::DefKind;
-use rustc_middle::thir::ExprKind;
+use rustc_middle::thir::{ExprKind, Pat, PatKind, StmtKind};
 use rustc_middle::ty;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
@@ -53,6 +53,38 @@ pub(super) fn js_uses<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> Js
                 None => {}
             }
         }
+        // An untagged enum's variant told by a function its payload's type
+        // names, `isValidElement`: the function, where a pattern tests it.
+        let mut tested = |pat: &Pat<'tcx>| {
+            pat.walk_always(|p| {
+                if let PatKind::Variant {
+                    adt_def,
+                    args,
+                    variant_index,
+                    ..
+                } = &p.kind
+                {
+                    for test in crate::lower::untagged::tests_of(tcx, *adt_def, args, adt_def.variant(*variant_index)) {
+                        if let Some((export, _)) = js_import(&test) {
+                            uses.imported.entry(export).or_default().insert(module);
+                        }
+                    }
+                }
+            });
+        };
+        for arm in body.thir.arms.iter() {
+            tested(&arm.pattern);
+        }
+        for stmt in body.thir.stmts.iter() {
+            if let StmtKind::Let { pattern, .. } = &stmt.kind {
+                tested(pattern);
+            }
+        }
+        for expr in body.thir.exprs.iter() {
+            if let ExprKind::Let { pat, .. } = &expr.kind {
+                tested(pat);
+            }
+        }
     }
     uses
 }
@@ -79,7 +111,13 @@ pub(super) fn name_imports(
         .chain(namespaces)
         .map(|(from, export)| {
             let export_key = (from.clone(), export.clone());
-            let held_by = match uses.bound_to[&export_key].iter().collect::<Vec<_>>().as_slice() {
+            let held_by = match uses
+                .bound_to
+                .get(&export_key)
+                .map(|held| held.iter().collect::<Vec<_>>())
+                .unwrap_or_default()
+                .as_slice()
+            {
                 [only] if matches!(tcx.def_kind(**only), DefKind::Static { .. }) => {
                     Some(camel_case(tcx.item_name(**only).as_str()))
                 }

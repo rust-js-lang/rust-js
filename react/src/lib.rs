@@ -51,11 +51,12 @@ use core::marker::PhantomData;
 use core::ops::Deref;
 use std::thread::LocalKey;
 
-use js::{JsError, JsObject, Promise};
+use js::{JsError, JsObject, Promise, Unknown};
 
 /// Each element's attributes, as @types/react types them, for props to
 /// flatten: `#[rust_js::flatten] anchor: attributes::AnchorHtmlAttributes<'a>`.
 pub mod attributes;
+pub mod children;
 pub mod dom;
 mod elements;
 pub mod event;
@@ -150,19 +151,61 @@ impl<T: Node> sealed::Sealed for Option<T> {}
 impl<T: Node> sealed::Sealed for Vec<T> {}
 
 /// A node, told apart by what it is, as JSX's `typeof children ===
-/// "string"`: text, or any other node, of [`kind_of`] (ADR 0214).
+/// "string"` and `isValidElement(children)`: text, an element, or any other
+/// node, a list say, of [`kind_of`] (ADR 0214).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum NodeKind<'a> {
     Text(&'a str),
+    Element(&'a ReactElement),
     #[cfg_attr(rust_js, rust_js::otherwise)]
     Other(&'a JsObject),
 }
 
-/// What `node` is, its text or another node: the node itself, matched,
-/// `if let NodeKind::Text(text) = kind_of(&children)`.
+/// What `node` is, its text, an element or another node: the node itself,
+/// matched, `if let NodeKind::Text(text) = kind_of(&children)`.
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
 #[allow(unused_variables)]
 pub fn kind_of<C: Node>(this: &C) -> NodeKind<'_> {
+    unreachable!()
+}
+
+/// A React element, what JSX makes, `{ type, props, key }`, as
+/// [`isValidElement`](https://react.dev/reference/react/isValidElement)
+/// tells one: a node that's one, of [`kind_of`] or [`children::to_array`].
+#[cfg_attr(rust_js, rust_js::test = "react#isValidElement")]
+#[cfg_attr(rust_js, rust_js::types = "react#ReactElement")]
+pub struct ReactElement(PhantomData<JsObject>);
+
+impl ReactElement {
+    /// Its `type`: a DOM element's tag, `"img"`, or a component, whose own
+    /// properties `js::get` reads.
+    #[cfg_attr(rust_js, rust_js::link_name = "get type")]
+    pub fn r#type(&self) -> &'static Unknown {
+        unreachable!()
+    }
+
+    /// Its `props`, `children` among them, which `js::get` reads.
+    #[cfg_attr(rust_js, rust_js::link_name = "get props")]
+    pub fn props(&self) -> &'static Unknown {
+        unreachable!()
+    }
+
+    /// Its `key`, `None` where it has none.
+    #[cfg_attr(rust_js, rust_js::link_name = "get key")]
+    pub fn key(&self) -> Option<&'static str> {
+        unreachable!()
+    }
+}
+
+impl Node for ReactElement {}
+impl sealed::Sealed for ReactElement {}
+
+/// [`cloneElement`](https://react.dev/reference/react/cloneElement):
+/// `element` again, `props`' fields over its own,
+/// `clone_element(child, Linked { is_link: true })`.
+#[cfg_attr(rust_js, rust_js::link_name = "react#cloneElement")]
+#[allow(unused_variables)]
+pub fn clone_element<P>(element: &ReactElement, props: P) -> Element {
     unreachable!()
 }
 

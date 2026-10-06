@@ -1,6 +1,7 @@
 //! Untagged enums (ADR 0214): an enum marked `#[rust_js::untagged]` is its
 //! payload, as TS's `string | Blob` is, and a variant is told apart by its
-//! payload's runtime kind, `typeof`, `Array.isArray` or `instanceof`.
+//! payload's runtime kind, `typeof`, `Array.isArray`, `instanceof`, or the
+//! function its type says tells one, `isValidElement`.
 
 use super::FnCx;
 use super::bindings;
@@ -27,6 +28,9 @@ pub(super) enum Kind {
     /// A class, `instanceof`: its JS name, and the Rust type that's it, whose
     /// `Deref` names the class it extends.
     Class(String, Option<DefId>),
+    /// What a function says is one, `isValidElement(v)`: its JS path, a
+    /// JS object type's `#[rust_js::test]`. An object no other kind is.
+    Test(String),
 }
 
 impl Kind {
@@ -39,7 +43,7 @@ impl Kind {
             Kind::Boolean => Some("boolean"),
             Kind::Function => Some("function"),
             Kind::Object => Some("object"),
-            Kind::Array | Kind::Class(..) => None,
+            Kind::Array | Kind::Class(..) | Kind::Test(_) => None,
         }
     }
 
@@ -48,10 +52,47 @@ impl Kind {
         match self {
             Kind::Array => "an array".into(),
             Kind::Class(name, _) => format!("a `{name}`"),
+            Kind::Test(test) => format!("what `{test}` says is one"),
             Kind::Object => "an object".into(),
             _ => format!("a `{}`", self.type_of().expect("a `typeof` kind")),
         }
     }
+}
+
+/// The functions `variant`'s test calls, of its enum's payloads' types'
+/// `#[rust_js::test]`s: its own; or, of what's left out, each, as the
+/// `otherwise` variant's and a plain object's tests leave them out.
+pub(super) fn tests_of<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    adt: AdtDef<'tcx>,
+    args: GenericArgsRef<'tcx>,
+    variant: &VariantDef,
+) -> Vec<String> {
+    if !adt.is_enum() || !bindings::is_untagged(tcx, adt.did()) {
+        return Vec::new();
+    }
+    let payload = |v: &VariantDef| {
+        v.fields
+            .iter()
+            .next()
+            .map(|f| f.ty(tcx, args).skip_normalization().peel_refs())
+    };
+    let test = |v: &VariantDef| match payload(v)?.kind() {
+        ty::Adt(payload, _) => bindings::test_of(tcx, payload.did()),
+        _ => None,
+    };
+    if let Some(own) = test(variant) {
+        return vec![own];
+    }
+    // A struct of fields is an object, whose test leaves out a tested one's.
+    let object = payload(variant).is_some_and(|ty| {
+        matches!(ty.kind(), ty::Adt(s, own) if s.is_struct() && s.non_enum_variant().ctor_kind().is_none()
+            && !s.non_enum_variant().fields.iter().next().is_some_and(|f| f.ty(tcx, own).skip_normalization().is_phantom_data()))
+    });
+    if bindings::is_otherwise(tcx, variant.def_id) || object {
+        return adt.variants().iter().filter_map(test).collect();
+    }
+    Vec::new()
 }
 
 /// Whether `ty` is an untagged enum, `#[rust_js::untagged]`.
@@ -89,6 +130,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             || matches!(ty.kind(), ty::Tuple(items) if !items.is_empty())
         {
             return Some(Kind::Array);
+        }
+        if let ty::Adt(adt, _) = ty.kind()
+            && self.is_js_object(ty)
+            && let Some(test) = bindings::test_of(self.tcx, adt.did())
+        {
+            return Some(Kind::Test(test));
         }
         if let ty::Adt(adt, _) = ty.kind()
             && self.is_js_object(ty)
@@ -191,6 +238,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let test = |kind: &Kind| match kind {
             Kind::Array => Expr::call(Expr::member(Expr::var("Array"), "isArray"), vec![value.clone()]),
             Kind::Class(name, _) => Expr::bin(Op::InstanceOf, value.clone(), class(name)),
+            Kind::Test(test) => Expr::call(class(test), vec![value.clone()]),
             other => Expr::bin(
                 Op::Eq,
                 Expr::unary(UnaryOp::Typeof, value.clone()),
@@ -200,7 +248,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let narrower: Vec<&Kind> = kinds
             .iter()
             .filter(|kind| match (&own, kind) {
-                (Kind::Object, Kind::Array | Kind::Class(..)) => true,
+                (Kind::Object, Kind::Array | Kind::Class(..) | Kind::Test(_)) => true,
                 (Kind::Class(_, Some(base)), Kind::Class(_, Some(sub))) => self.superclasses(*sub).contains(base),
                 _ => false,
             })

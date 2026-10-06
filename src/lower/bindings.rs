@@ -218,6 +218,14 @@ pub(super) fn is_otherwise(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
 }
 
+/// A JS object type's test, `#[rust_js::test = "react#isValidElement"]`:
+/// the function that says a value is one, where no class does (ADR 0214).
+pub(super) fn test_of(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("test")];
+    let test = tcx.get_attrs_by_path(def_id, &path).next()?.value_str()?;
+    Some(test.to_string())
+}
+
 /// A JS object type's class, as `instanceof` names it: its
 /// `#[rust_js::name = ".."]`, `HTMLElement` of `HtmlElement`, or its name.
 pub(super) fn class_name(tcx: TyCtxt<'_>, def_id: DefId) -> String {
