@@ -314,4 +314,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {",
     tests: ["test/jsx.test.ts", "-t", "a props field"],
   },
+  {
+    name: "untagged-pattern-tag",
+    breaks: "`match` of an untagged enum tests a `TAG` its values haven't",
+    file: "src/lower/patterns.rs",
+    find: "            } if self.untagged(pat.ty).is_some() => {\n",
+    replace: "            } if false => {\n",
+    tests: ["test/compiler.test.ts", "-t", "untagged enum"],
+  },
 ];

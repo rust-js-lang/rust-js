@@ -67,4 +67,12 @@ export const mutations: Mutation[] = [
     replace: "        shared && self.is_object(ty)",
     tests: ["test/crates.test.ts", "-t", "copy_enum"],
   },
+  {
+    name: "untagged-copy-shared",
+    breaks: "a copy of a `Copy` untagged enum shares its struct, which a change through the first changes",
+    file: "src/lower/copies.rs",
+    find: "                if self.untagged(ty).is_some() {\n                    return once(place, &|e| {\n",
+    replace: "                if false {\n                    return once(place, &|e| {\n",
+    tests: ["test/corpus.test.ts", "-t", "untagged_enums"],
+  },
 ];

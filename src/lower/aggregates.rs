@@ -60,6 +60,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 None => Ok(Expr::undefined()),
             };
         }
+        // An untagged enum's variant is its payload (ADR 0214).
+        if self.untagged(ty).is_some() {
+            let [field] = &adt.fields[..] else {
+                return Err(self.unsupported(span, "this untagged enum's variant"));
+            };
+            return self.expr(field.expr, out);
+        }
         // A variant without fields is its name (ADR 0013). One with fields is an
         // object tagged with it, `{ TAG: "Circle", _0: r }` (ADR 0033), built
         // below like a struct.
@@ -299,7 +306,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             count => (0..count).map(|i| format!("_{i}")).collect(),
         };
         let items: Vec<Expr> = params.iter().map(|name| Expr::var(name)).collect();
-        let value = if let Some(inner) = self.option_of(ty) {
+        let value = if self.untagged(ty).is_some() {
+            // An untagged enum's variant is its payload (ADR 0214).
+            let [item] = <[Expr; 1]>::try_from(items).map_err(|_| self.unsupported(span, "this constructor"))?;
+            item
+        } else if let Some(inner) = self.option_of(ty) {
             // `Some`: the value, as `Some(x)` is `x` (ADR 0030), or boxed where
             // it could look like `None` (ADR 0051).
             let [item] = <[Expr; 1]>::try_from(items).map_err(|_| self.unsupported(span, "this constructor"))?;

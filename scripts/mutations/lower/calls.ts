@@ -186,4 +186,12 @@ export const mutations: Mutation[] = [
     replace: "        if false && is_omitted(self.tcx, def_id) {",
     tests: ["test/jsx.test.ts", "-t", "flattened props where they"],
   },
+  {
+    name: "untagged-from-called",
+    breaks: "`s.into()` into an untagged enum calls its `from`, where it's the value itself",
+    file: "src/lower/calls.rs",
+    find: "            && self.recognition().converts_to_untagged(def_id, generic_args)\n",
+    replace: "            && false\n",
+    tests: ["test/compiler.test.ts", "-t", "untagged enum"],
+  },
 ];

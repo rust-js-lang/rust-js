@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [
     replace: "            DefKind::AssocConst { .. } => tcx.trait_impl_of_assoc(def_id.to_def_id()).is_some_and(|imp| false && {",
     tests: ["test/corpus.test.ts", "-t", "generic_impl_consts"],
   },
+  {
+    name: "js-object-deref-lowered",
+    breaks: "a JS class's `Deref` to the class it extends is lowered, a pointer cast rust-js refuses",
+    file: "src/lower/analysis.rs",
+    find: "                    && !is_js_object_deref(tcx, parent)\n",
+    replace: "",
+    tests: ["test/compiler.test.ts", "-t", "untagged enum"],
+  },
 ];

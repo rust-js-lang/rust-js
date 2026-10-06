@@ -117,6 +117,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if !self.is_copy_enum(ty) {
                     return place;
                 }
+                // An untagged enum's variant is its payload (ADR 0214): one that
+                // changes gets the payload's copy, told by its kind.
+                if self.untagged(ty).is_some() {
+                    return once(place, &|e| {
+                        let mut value = e.clone();
+                        for variant in adt.variants().iter().rev() {
+                            let Some(&(_, t)) = self.variant_fields(variant, args).first() else {
+                                continue;
+                            };
+                            if !self.contains_mutated(t) {
+                                continue;
+                            }
+                            let test = self.untagged_variant_test(ty, variant, &e);
+                            value = Expr::cond(test, self.copy(e.clone(), t), value);
+                        }
+                        value
+                    });
+                }
                 // `{ TAG: "Line", _0: .. }`: a variant with a part that changes
                 // gets a copy, and every other value is itself.
                 once(place, &|e| {

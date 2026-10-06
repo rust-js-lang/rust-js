@@ -2547,6 +2547,57 @@ pub(crate) fn is_hash_impl(tcx: TyCtxt<'_>, id: DefId) -> bool {
         )
 }
 
+/// What a conversion makes, a `From` or an `Into`: the trait's method's
+/// target, of its `args`, or the impl's own type of a `from` a call resolves
+/// to. An untagged enum's is the value itself (ADR 0214).
+pub(crate) fn conversion_target<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Option<Ty<'tcx>> {
+    if let Some(imp) = tcx.trait_impl_of_assoc(def_id) {
+        let trait_ref = tcx.impl_trait_ref(imp).instantiate_identity().skip_normalization();
+        return tcx
+            .is_diagnostic_item(sym::From, trait_ref.def_id)
+            .then(|| trait_ref.self_ty());
+    }
+    let trait_ = tcx.trait_of_assoc(def_id)?;
+    if tcx.is_diagnostic_item(sym::From, trait_) {
+        return Some(args.type_at(0));
+    }
+    tcx.is_diagnostic_item(sym::Into, trait_).then(|| args.type_at(1))
+}
+
+/// A JS object type's `Deref` to the class it extends, `TypeError`'s to
+/// `Error`: never lowered, as a call of it is the object itself (ADR 0024),
+/// and its body, a cast of a pointer, means nothing in JS.
+pub(crate) fn is_js_object_deref(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    matches!(tcx.def_kind(id), DefKind::Impl { of_trait: true })
+        && [LangItem::Deref, LangItem::DerefMut].into_iter().any(|item| {
+            tcx.is_lang_item(
+                tcx.impl_trait_ref(id)
+                    .instantiate_identity()
+                    .skip_normalization()
+                    .def_id,
+                item,
+            )
+        })
+        && matches!(tcx.type_of(id).instantiate_identity().skip_normalization().kind(),
+        ty::Adt(adt, _) if adt.is_struct()
+            && adt.non_enum_variant().fields.iter().next().is_some_and(|first| {
+                matches!(tcx.type_of(first.did).instantiate_identity().skip_normalization().kind(),
+                    ty::Adt(marker, marked) if marker.is_phantom_data()
+                        && marked.types().next().is_some_and(|t| match t.kind() {
+                            ty::Foreign(_) => true,
+                            ty::Adt(object, _) => tcx
+                                .get_attrs_by_path(object.did(), &[Symbol::intern("rust_js"), Symbol::intern("js_object")])
+                                .next()
+                                .is_some(),
+                            _ => false,
+                        }))
+            }))
+}
+
 /// A std item's path as std names it, `std::str::Chars`: a `#![no_std]`
 /// crate's rustc names it `core::str::Chars`, or `alloc::..`, which every
 /// path compared here would miss.

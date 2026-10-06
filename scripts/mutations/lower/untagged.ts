@@ -1,0 +1,61 @@
+// Mutations of src/lower/untagged.rs (ADR 0093).
+import type { Mutation } from "../../mutations";
+
+export const mutations: Mutation[] = [
+  {
+    name: "untagged-bigint-number",
+    breaks: "an untagged enum's `i64` is told as a number, where JS's is a BigInt",
+    file: "src/lower/untagged.rs",
+    find: "            return Some(if num.big() { Kind::BigInt } else { Kind::Number });\n",
+    replace: "            return Some(Kind::Number);\n",
+    tests: ["test/compiler.test.ts", "-t", "untagged enum"],
+  },
+  {
+    name: "untagged-object-takes-arrays",
+    breaks: "an untagged enum's struct variant takes an array, or a class's instance, as `typeof` says object of each",
+    file: "src/lower/untagged.rs",
+    find: "                (Kind::Object, Kind::Array | Kind::Class(..)) => true,\n",
+    replace: "",
+    tests: ["test/compiler.test.ts", "-t", "untagged enum"],
+  },
+  {
+    name: "untagged-class-takes-subclass",
+    breaks: "an untagged enum's `Error` variant takes a `TypeError`, another variant's",
+    file: "src/lower/untagged.rs",
+    find: "                (Kind::Class(_, Some(base)), Kind::Class(_, Some(sub))) => self.superclasses(*sub).contains(base),\n",
+    replace: "",
+    tests: ["test/compiler.test.ts", "-t", "untagged enum"],
+  },
+  {
+    name: "untagged-subclass-left-out-twice",
+    breaks: "an untagged enum's test leaves out a `TypeError` as well as the `Error` it is",
+    file: "src/lower/untagged.rs",
+    find: "            .filter(|kind| !narrower.iter().any(|base| extends(kind, base)))\n",
+    replace: "",
+    tests: ["test/compiler.test.ts", "-t", "untagged enum"],
+  },
+  {
+    name: "untagged-kinds-alike",
+    breaks: "an untagged enum's two string variants are accepted, which JS can't tell apart",
+    file: "src/lower/untagged.rs",
+    find: "                if let Some((_, other)) = seen.iter().find(|(k, _)| *k == kind) {\n",
+    replace: "                if let Some((_, other)) = seen.iter().find(|_| false) {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "variants of one kind"],
+  },
+  {
+    name: "untagged-from-unchecked",
+    breaks: "a `From` into an untagged enum that does more than make the variant is accepted, and skipped where called",
+    file: "src/lower/untagged.rs",
+    find: "    (!variant_of_param).then(|| {\n",
+    replace: "    (variant_of_param && !variant_of_param).then(|| {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "From into an untagged enum"],
+  },
+  {
+    name: "untagged-serde-accepted",
+    breaks: "serde of an untagged enum is accepted, and its codec reads a `TAG` its values haven't",
+    file: "src/lower/untagged.rs",
+    find: "        if serde_impl(tcx, def_id.to_def_id()).is_some()\n",
+    replace: "        if false\n",
+    tests: ["test/diagnostics.test.ts", "-t", "serde of an untagged"],
+  },
+];

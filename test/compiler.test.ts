@@ -526,6 +526,34 @@ test("a throwing JS call is a Result, and ? returns early", async () => {
   expect(results).toContain('    r.TAG === "Ok" ? r._0 : 99,');
 });
 
+// ADR 0214: an untagged enum is its payload, TS's union: JS passes in what
+// it has, each told apart by its runtime kind, and gets back the value.
+test("an untagged enum is its payload, told apart by its runtime kind", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  run([compiler, "test/untagged.rs", "-o", join(target, "untagged.js"), ...withWeb]);
+  const untagged = await import(join(target, "untagged.js"));
+  expect(untagged.kind("a")).toBe("text a");
+  expect(untagged.kind(1.5)).toBe("number 1.5");
+  expect(untagged.kind(12n)).toBe("big 12");
+  expect(untagged.kind(false)).toBe("flag false");
+  expect(untagged.kind(["x", "y"])).toBe("names x+y");
+  expect(untagged.kind(/x/)).toBe("pattern");
+  expect(untagged.kind(new ArrayBuffer(3))).toBe("bytes 3");
+  expect(untagged.kind(new Error("e"))).toBe("error");
+  expect(untagged.kind(new TypeError("t"))).toBe("type error");
+  expect(untagged.kind((n: number) => n + 1)).toBe("step 2");
+  expect(untagged.kind({ x: 1, y: 2 })).toBe("point 3");
+  expect(untagged.text("a.png")).toBe("a.png");
+  expect(untagged.numbers([1, 2])).toEqual([1, 2]);
+  expect(untagged.shown(2.5)).toBe("2.5");
+
+  const js = await Bun.file(join(target, "untagged.js")).text();
+  expect(js).toContain("src instanceof Error && !(src instanceof TypeError)");
+  expect(js).toContain('typeof src === "object" &&\n    !Array.isArray(src) &&\n    !(src instanceof RegExp) &&\n    !(src instanceof ArrayBuffer) &&\n    !(src instanceof Error)\n  ) {');
+  expect(js).toContain("export function text(s) {\n  return s;\n}");
+  expect(js).toContain("String(n)");
+});
+
 // ADR 0034: strings are JS strings, and their methods JS's.
 test("string methods are JS's, and format! is a template literal", async () => {
   const js = await Bun.file(join(target, "strings.js")).text();

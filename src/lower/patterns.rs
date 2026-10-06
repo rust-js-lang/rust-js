@@ -1339,6 +1339,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None => present,
                 }))
             }
+            // An untagged enum's variant (ADR 0214): its payload's kind, then
+            // the payload itself, which is the value.
+            PatKind::Variant {
+                adt_def,
+                variant_index,
+                subpatterns,
+                ..
+            } if self.untagged(pat.ty).is_some() => {
+                let variant = adt_def.variant(*variant_index);
+                let mut tests = vec![self.untagged_variant_test(pat.ty, variant, subject)];
+                for field in subpatterns {
+                    tests.extend(self.pattern_test(&field.pattern, subject, bindings)?);
+                }
+                Ok(tests.into_iter().reduce(|a, b| Expr::bin(Op::And, a, b)))
+            }
             // A variant (ADR 0013, 0033): its name, or its `TAG`, then its fields.
             // An enum with one variant needs no test.
             PatKind::Variant {

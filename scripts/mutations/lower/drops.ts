@@ -275,4 +275,20 @@ export const mutations: Mutation[] = [
     replace: "            .filter(|flag| false && cleared.contains(flag) && js::mentions_in(&body, flag) == 1 && declared(out, flag))",
     tests: ["test/compiler.test.ts", "-t", "moved before anything can leave"],
   },
+  {
+    name: "untagged-drop-part",
+    breaks: "dropping an untagged enum reads a `_0` its value hasn't",
+    file: "src/lower/drops.rs",
+    find: "                        let untagged = self.untagged(ty).is_some();\n",
+    replace: "                        let untagged = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "untagged_enums"],
+  },
+  {
+    name: "untagged-drop-owned-part",
+    breaks: "dropping an owned untagged enum reads a `_0` its value hasn't",
+    file: "src/lower/drops.rs",
+    find: "            ty::Adt(adt, args) if adt.is_enum() => {\n                // An untagged enum's variant is its payload (ADR 0214).\n                let untagged = self.untagged(ty).is_some();\n",
+    replace: "            ty::Adt(adt, args) if adt.is_enum() => {\n                // An untagged enum's variant is its payload (ADR 0214).\n                let untagged = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "untagged_enums"],
+  },
 ];

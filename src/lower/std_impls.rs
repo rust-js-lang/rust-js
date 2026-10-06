@@ -277,6 +277,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let none = Expr::bin(Op::LooseEq, place.clone(), Expr::null());
                 Ok(Expr::cond(none, place, some))
             }
+            // An untagged enum's variant is its payload (ADR 0214): one that
+            // needs it gets the payload's clone, told by its kind: being changed
+            // in place, as a tagged one's object is, is the payload's.
+            ty::Adt(adt, args) if self.untagged(ty).is_some() => {
+                let mut value = place.clone();
+                for variant in adt.variants().iter().rev() {
+                    let Some(field) = variant.fields.iter().next() else {
+                        continue;
+                    };
+                    let payload = self.field_ty(field, args);
+                    if !self.needs_clone(payload) {
+                        continue;
+                    }
+                    let copy = self.clone_value(place.clone(), payload, span, out)?;
+                    let test = self.untagged_variant_test(ty, variant, &place);
+                    value = Expr::cond(test, copy, value);
+                }
+                Ok(value)
+            }
             ty::Adt(adt, args) if adt.is_enum() && (!self.is_std(adt.did()) || self.is_known_std(ty)) => {
                 // `{ TAG: "Line", _0: .. }` (ADR 0033): a variant with fields
                 // that need it gets a copy, and every other value is itself.
@@ -638,6 +657,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Expr::bin(Op::LooseEq, b.clone(), Expr::null()),
                 );
                 Ok(Expr::cond(none, Expr::bin(Op::LooseEq, a, b), some))
+            }
+            // An untagged enum's variant is its payload (ADR 0214): the same
+            // variant, told by its kind, and its payloads equal.
+            ty::Adt(adt, args) if self.untagged(ty).is_some() => {
+                let mut value = Expr::bool(false);
+                for variant in adt.variants().iter().rev() {
+                    let Some(field) = variant.fields.iter().next() else {
+                        continue;
+                    };
+                    let payload = self.field_ty(field, args);
+                    let same = self.eq_value(a.clone(), b.clone(), payload, span, out)?;
+                    let both = Expr::bin(Op::And, self.untagged_variant_test(ty, variant, &b), same);
+                    value = Expr::cond(self.untagged_variant_test(ty, variant, &a), both, value);
+                }
+                Ok(value)
             }
             ty::Adt(adt, args) if adt.is_enum() => {
                 // `{ TAG: "Line", _0: .. }` (ADR 0033): a variant with a custom

@@ -463,8 +463,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else if adt.is_enum() {
                     for variant in adt.variants() {
                         let mut fields = Vec::new();
+                        // An untagged enum's variant is its payload (ADR 0214).
+                        let untagged = self.untagged(ty).is_some();
                         for (i, field) in variant.fields.iter().enumerate() {
-                            let part = Expr::member(value.clone(), variant_field(self.tcx, variant, i));
+                            let part = match untagged {
+                                true => value.clone(),
+                                false => Expr::member(value.clone(), variant_field(self.tcx, variant, i)),
+                            };
                             self.drop_in(part, self.field_ty(field, args), span, made, &mut fields)?;
                         }
                         if fields.is_empty() {
@@ -473,6 +478,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let tag = Expr::str(variant_name(self.tcx, variant));
                         let test = match adt.variants().len() {
                             1 => Expr::bool(true),
+                            _ if untagged => self.untagged_variant_test(ty, variant, &value),
                             _ => Expr::bin(Op::Eq, Expr::member(value.clone(), "TAG"), tag),
                         };
                         out.push(StmtKind::If(test, fields, None).at(js_span));
@@ -546,10 +552,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
             ty::Adt(adt, args) if adt.is_enum() => {
+                // An untagged enum's variant is its payload (ADR 0214).
+                let untagged = self.untagged(ty).is_some();
                 for (index, variant) in adt.variants().iter().enumerate() {
                     let mut fields = Vec::new();
                     for (i, field) in variant.fields.iter().enumerate() {
-                        let part = Expr::member(value.clone(), variant_field(self.tcx, variant, i));
+                        let part = match untagged {
+                            true => value.clone(),
+                            false => Expr::member(value.clone(), variant_field(self.tcx, variant, i)),
+                        };
                         self.drop_owned(
                             part,
                             self.field_ty(field, args),
@@ -563,6 +574,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     let test = match adt.variants().len() {
                         1 => Expr::bool(true),
+                        _ if untagged => self.untagged_variant_test(ty, variant, &value),
                         _ => Expr::bin(
                             Op::Eq,
                             Expr::member(value.clone(), "TAG"),

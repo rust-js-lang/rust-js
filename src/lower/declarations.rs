@@ -15,7 +15,9 @@ use rustc_span::Symbol;
 use rustc_span::def_id::{DefId, LocalModId};
 use serde_json::{Value, json};
 
-use super::bindings::{field_default, field_key, fn_name, is_binding, is_flatten, is_mark, is_rest, variant_name};
+use super::bindings::{
+    field_default, field_key, fn_name, is_binding, is_flatten, is_mark, is_rest, is_untagged, variant_name,
+};
 use super::recognition::{StdItem, is_std_def};
 use super::representation::Num;
 
@@ -231,7 +233,18 @@ impl<'tcx> Declarations<'_, 'tcx> {
     /// whose variants hold nothing: each is its name (ADR 0013).
     fn enumeration(&mut self, def_id: DefId) -> Value {
         let adt = self.tcx.adt_def(def_id);
+        let untagged = is_untagged(self.tcx, def_id);
         let union = match adt.variants().iter().all(|v| v.fields.is_empty()) {
+            // `export type Size = string | number;` of an untagged enum, its
+            // payloads' union (ADR 0214).
+            _ if untagged => {
+                let args = ty::GenericArgs::identity_for_item(self.tcx, def_id);
+                let types: Vec<Value> = (adt.variants().iter())
+                    .filter_map(|v| v.fields.iter().next())
+                    .map(|field| self.ts(field.ty(self.tcx, args).skip_normalization()))
+                    .collect();
+                json!({ "kind": "union", "types": types })
+            }
             true => json!({
                 "kind": "union",
                 "types": (adt.variants().iter())
@@ -245,7 +258,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
             "name": self.tcx.item_name(def_id).as_str(),
             "exported": true,
             "declare": false,
-            "typeParameters": [],
+            "typeParameters": self.generics(def_id),
             "type": union,
         })
     }

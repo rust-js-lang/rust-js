@@ -181,6 +181,19 @@ pub(super) fn variant_name(tcx: TyCtxt<'_>, variant: &VariantDef) -> String {
     given_name(tcx, variant.def_id).unwrap_or_else(|| variant.name.to_string())
 }
 
+/// Whether an enum is untagged, `#[rust_js::untagged]`: a value is its
+/// payload, as TS's `string | Blob` is (ADR 0214).
+pub(super) fn is_untagged(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("untagged")];
+    tcx.get_attrs_by_path(def_id, &path).next().is_some()
+}
+
+/// A JS object type's class, as `instanceof` names it: its
+/// `#[rust_js::name = ".."]`, `HTMLElement` of `HtmlElement`, or its name.
+pub(super) fn class_name(tcx: TyCtxt<'_>, def_id: DefId) -> String {
+    given_name(tcx, def_id).unwrap_or_else(|| tcx.item_name(def_id).to_string())
+}
+
 /// `js::camel_case!();` at the crate root: the crate's own functions and
 /// fields are camelCase in JS, as its variables are (ADRs 0046 and 0110).
 pub(super) fn camel_case_crate(tcx: TyCtxt<'_>) -> bool {

@@ -1,0 +1,344 @@
+//! Untagged enums (ADR 0214): an enum marked `#[rust_js::untagged]` is its
+//! payload, as TS's `string | Blob` is, and a variant is told apart by its
+//! payload's runtime kind, `typeof`, `Array.isArray` or `instanceof`.
+
+use super::FnCx;
+use super::bindings;
+use super::recognition::{Recognition, conversion_target, serde_impl};
+use super::representation::Num;
+use crate::js::{Expr, Op, UnaryOp};
+use rustc_hir as hir;
+use rustc_hir::attrs::lang_items::LangItem;
+use rustc_hir::def::{CtorKind, CtorOf, DefKind, Res};
+use rustc_middle::ty::{self, AdtDef, GenericArgsRef, Ty, TyCtxt, VariantDef};
+use rustc_span::def_id::DefId;
+use rustc_span::sym;
+
+/// What JS can tell a value is.
+#[derive(Clone, PartialEq)]
+pub(super) enum Kind {
+    String,
+    Number,
+    BigInt,
+    Boolean,
+    Array,
+    Function,
+    Object,
+    /// A class, `instanceof`: its JS name, and the Rust type that's it, whose
+    /// `Deref` names the class it extends.
+    Class(String, Option<DefId>),
+}
+
+impl Kind {
+    /// What `typeof` says of it, for the kinds it tells.
+    fn type_of(&self) -> Option<&'static str> {
+        match self {
+            Kind::String => Some("string"),
+            Kind::Number => Some("number"),
+            Kind::BigInt => Some("bigint"),
+            Kind::Boolean => Some("boolean"),
+            Kind::Function => Some("function"),
+            Kind::Object => Some("object"),
+            Kind::Array | Kind::Class(..) => None,
+        }
+    }
+
+    /// What it is in an error: TS's name for it.
+    fn describe(&self) -> String {
+        match self {
+            Kind::Array => "an array".into(),
+            Kind::Class(name, _) => format!("a `{name}`"),
+            Kind::Object => "an object".into(),
+            _ => format!("a `{}`", self.type_of().expect("a `typeof` kind")),
+        }
+    }
+}
+
+/// Whether `ty` is an untagged enum, `#[rust_js::untagged]`.
+pub(super) fn untagged_adt<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(AdtDef<'tcx>, GenericArgsRef<'tcx>)> {
+    match *ty.kind() {
+        ty::Adt(adt, args) if adt.is_enum() && bindings::is_untagged(tcx, adt.did()) => Some((adt, args)),
+        _ => None,
+    }
+}
+
+impl<'a, 'tcx> Recognition<'a, 'tcx> {
+    /// What JS can tell a payload of type `ty` is, if anything: not an
+    /// `Option`'s `undefined`, a `()`, a generic `T` or an enum.
+    pub(super) fn untagged_kind(&self, ty: Ty<'tcx>) -> Option<Kind> {
+        let ty = ty.peel_refs();
+        let ty = ty.boxed_ty().unwrap_or(ty);
+        if self.is_string_like(ty) || ty.is_char() {
+            return Some(Kind::String);
+        }
+        if let Some(num) = Num::of(ty) {
+            return Some(if num.big() { Kind::BigInt } else { Kind::Number });
+        }
+        if ty.is_bool() {
+            return Some(Kind::Boolean);
+        }
+        if self.is_map(ty) {
+            return Some(Kind::Class("Map".into(), None));
+        }
+        if self.is_set(ty) {
+            return Some(Kind::Class("Set".into(), None));
+        }
+        if ty.is_array()
+            || ty.is_slice()
+            || self.is_vec_like(ty)
+            || matches!(ty.kind(), ty::Tuple(items) if !items.is_empty())
+        {
+            return Some(Kind::Array);
+        }
+        if let ty::Adt(adt, _) = ty.kind()
+            && self.is_js_object(ty)
+        {
+            return Some(Kind::Class(bindings::class_name(self.tcx, adt.did()), Some(adt.did())));
+        }
+        let fn_trait = |id: DefId| self.tcx.fn_trait_kind_from_def_id(id).is_some();
+        match ty.kind() {
+            ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..) => Some(Kind::Function),
+            ty::Dynamic(predicates, ..) if predicates.principal_def_id().is_some_and(fn_trait) => Some(Kind::Function),
+            // A struct of fields is an object, and of a tuple's an array (ADR 0033).
+            ty::Adt(adt, _) if adt.is_struct() && !self.is_std(adt.did()) => match adt.non_enum_variant().ctor_kind() {
+                None => Some(Kind::Object),
+                Some(CtorKind::Fn) if !adt.non_enum_variant().fields.is_empty() => Some(Kind::Array),
+                Some(_) => None,
+            },
+            _ => None,
+        }
+    }
+
+    /// A `From` into an untagged enum, or `into()` to one: the trait's method,
+    /// or the crate's `from` a call of it resolves to. Each is the value
+    /// itself, as its `from` is the variant of its argument, which is checked
+    /// where it's declared.
+    pub(super) fn converts_to_untagged(&self, def_id: DefId, args: GenericArgsRef<'tcx>) -> bool {
+        conversion_target(self.tcx, def_id, args).is_some_and(|target| untagged_adt(self.tcx, target).is_some())
+    }
+
+    /// The classes the JS object type `def_id` extends, nearest first: what
+    /// its `Deref` goes to, and on, as the webapi crate's types say theirs.
+    fn superclasses(&self, def_id: DefId) -> Vec<DefId> {
+        let tcx = self.tcx;
+        let Some(deref) = tcx.lang_items().get(LangItem::Deref) else {
+            return Vec::new();
+        };
+        let mut found = Vec::new();
+        let mut at = def_id;
+        while let Some(parent) = tcx.all_impls(deref).find_map(|imp| {
+            let self_ty = tcx.type_of(imp).instantiate_identity().skip_normalization();
+            let ty::Adt(adt, _) = self_ty.kind() else { return None };
+            if adt.did() != at {
+                return None;
+            }
+            let target = tcx
+                .associated_items(imp)
+                .filter_by_name_unhygienic(sym::Target)
+                .next()?;
+            match tcx
+                .type_of(target.def_id)
+                .instantiate_identity()
+                .skip_normalization()
+                .kind()
+            {
+                ty::Adt(parent, _) => Some(parent.did()),
+                _ => None,
+            }
+        }) {
+            if found.contains(&parent) {
+                break;
+            }
+            found.push(parent);
+            at = parent;
+        }
+        found
+    }
+
+    /// `variant`'s test of `value`: its payload's kind, leaving out
+    /// what another variant's more exactly is, so each test holds of its
+    /// own values only, whatever order they're tried in. A class's leaves out
+    /// its subclasses in the enum; an object's every array and class.
+    pub(super) fn untagged_test(
+        &self,
+        adt: AdtDef<'tcx>,
+        args: GenericArgsRef<'tcx>,
+        variant: &VariantDef,
+        value: &Expr,
+        class: &dyn Fn(&str) -> Expr,
+    ) -> Expr {
+        let kinds: Vec<Kind> = adt
+            .variants()
+            .iter()
+            .filter_map(|v| self.untagged_kind(v.fields.iter().next()?.ty(self.tcx, args).skip_normalization()))
+            .collect();
+        let own = variant
+            .fields
+            .iter()
+            .next()
+            .and_then(|f| self.untagged_kind(f.ty(self.tcx, args).skip_normalization()))
+            .expect("an untagged enum's variant has a kind, as its declaration was checked");
+        let test = |kind: &Kind| match kind {
+            Kind::Array => Expr::call(Expr::member(Expr::var("Array"), "isArray"), vec![value.clone()]),
+            Kind::Class(name, _) => Expr::bin(Op::InstanceOf, value.clone(), class(name)),
+            other => Expr::bin(
+                Op::Eq,
+                Expr::unary(UnaryOp::Typeof, value.clone()),
+                Expr::str(other.type_of().expect("a `typeof` kind")),
+            ),
+        };
+        let narrower: Vec<&Kind> = kinds
+            .iter()
+            .filter(|kind| match (&own, kind) {
+                (Kind::Object, Kind::Array | Kind::Class(..)) => true,
+                (Kind::Class(_, Some(base)), Kind::Class(_, Some(sub))) => self.superclasses(*sub).contains(base),
+                _ => false,
+            })
+            .collect();
+        // A subclass of what's left out already is too: `!(v instanceof
+        // Error)` leaves out each `TypeError`.
+        let extends = |kind: &Kind, base: &Kind| match (kind, base) {
+            (Kind::Class(_, Some(sub)), Kind::Class(_, Some(base))) => self.superclasses(*sub).contains(base),
+            _ => false,
+        };
+        let narrower: Vec<&Kind> = narrower
+            .iter()
+            .filter(|kind| !narrower.iter().any(|base| extends(kind, base)))
+            .copied()
+            .collect();
+        narrower.into_iter().fold(test(&own), |all, kind| {
+            Expr::bin(Op::And, all, Expr::unary(UnaryOp::Not, test(kind)))
+        })
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Whether `ty` is an untagged enum, `#[rust_js::untagged]` (ADR 0214).
+    pub(super) fn untagged(&self, ty: Ty<'tcx>) -> Option<(AdtDef<'tcx>, GenericArgsRef<'tcx>)> {
+        untagged_adt(self.tcx, ty)
+    }
+
+    /// `variant` of the untagged enum `ty`'s test of `value`.
+    pub(super) fn untagged_variant_test(&self, ty: Ty<'tcx>, variant: &VariantDef, value: &Expr) -> Expr {
+        let (adt, args) = self.untagged(ty).expect("an untagged enum");
+        self.recognition()
+            .untagged_test(adt, args, variant, value, &|name| self.js_ref(name))
+    }
+}
+
+/// Report each untagged enum JS couldn't tell the variants of apart, and
+/// each `From` into one that isn't its variant of its argument. False if
+/// there was one.
+pub(super) fn validate<'tcx>(tcx: TyCtxt<'tcx>, foreign: &super::library::Foreign<'_, 'tcx>) -> bool {
+    let mut valid = true;
+    let mut error = |span, message: String| {
+        tcx.dcx().span_err(span, message);
+        valid = false;
+    };
+    for def_id in tcx.hir_crate_items(()).definitions() {
+        if tcx.def_kind(def_id) == DefKind::Enum && bindings::is_untagged(tcx, def_id.to_def_id()) {
+            let recognition = Recognition {
+                tcx,
+                typing_env: ty::TypingEnv::non_body_analysis(tcx, def_id),
+                trait_impls: &[],
+                foreign,
+            };
+            let adt = tcx.adt_def(def_id);
+            let args = ty::GenericArgs::identity_for_item(tcx, def_id);
+            let mut seen: Vec<(Kind, String)> = Vec::new();
+            for variant in adt.variants() {
+                let span = tcx.def_span(variant.def_id);
+                let ([field], Some(CtorKind::Fn)) = (&variant.fields.raw[..], variant.ctor_kind()) else {
+                    error(
+                        span,
+                        format!(
+                            "an untagged enum's variant holds one value, as `{}(&'a str)` does (ADR 0214)",
+                            variant.name
+                        ),
+                    );
+                    continue;
+                };
+                let ty = field.ty(tcx, args).skip_normalization();
+                let Some(kind) = recognition.untagged_kind(ty) else {
+                    error(
+                        span,
+                        format!(
+                            "JS can't tell a `{ty}` from another variant's value: an untagged enum's variant holds a string, a number, a `bool`, an array, a JS object, a function or a struct (ADR 0214)"
+                        ),
+                    );
+                    continue;
+                };
+                if let Some((_, other)) = seen.iter().find(|(k, _)| *k == kind) {
+                    error(
+                        span,
+                        format!(
+                            "`{}` and `{other}` both hold {}, which JS can't tell apart in an untagged enum (ADR 0214)",
+                            variant.name,
+                            kind.describe()
+                        ),
+                    );
+                }
+                seen.push((kind, variant.name.to_string()));
+            }
+        }
+        if let Some(message) = untagged_from_misuse(tcx, def_id.to_def_id()) {
+            error(tcx.def_span(def_id), message);
+        }
+        // serde's codecs read and write a tagged enum (ADR 0079): one without
+        // a tag is serde's own `#[serde(untagged)]`, which is to come.
+        if serde_impl(tcx, def_id.to_def_id()).is_some()
+            && let Some((adt, _)) = untagged_adt(tcx, tcx.type_of(def_id).instantiate_identity().skip_normalization())
+        {
+            error(
+                tcx.def_span(def_id),
+                format!(
+                    "rust-js does not support serde of the untagged enum `{}` yet (ADR 0214)",
+                    tcx.item_name(adt.did())
+                ),
+            );
+        }
+    }
+    valid
+}
+
+/// A `From` into an untagged enum is the value itself where it's called
+/// (ADR 0214), so its `from` must be the variant of its argument,
+/// `Src::Text(s)`: what else it did, a call that's the value would skip.
+fn untagged_from_misuse(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
+    if tcx.def_kind(def_id) != DefKind::AssocFn || tcx.trait_impl_of_assoc(def_id).is_none() {
+        return None;
+    }
+    let target = conversion_target(tcx, def_id, ty::GenericArgs::identity_for_item(tcx, def_id))?;
+    let (adt, _) = untagged_adt(tcx, target)?;
+    let local = def_id.as_local()?;
+    let body = tcx.hir_body_owned_by(local);
+    let param = body.params.first()?;
+    let mut value = body.value;
+    while let hir::ExprKind::Block(block, _) = value.kind
+        && block.stmts.is_empty()
+        && let Some(inner) = block.expr
+    {
+        value = inner;
+    }
+    let typeck = tcx.typeck(local);
+    let variant_of_param = match value.kind {
+        hir::ExprKind::Call(callee, [arg]) => {
+            let ctor = match callee.kind {
+                hir::ExprKind::Path(ref qpath) => typeck.qpath_res(qpath, callee.hir_id),
+                _ => Res::Err,
+            };
+            let of_adt = matches!(ctor, Res::Def(DefKind::Ctor(CtorOf::Variant, CtorKind::Fn), id)
+                if tcx.parent(tcx.parent(id)) == adt.did());
+            let of_param = matches!(arg.kind, hir::ExprKind::Path(hir::QPath::Resolved(None, path))
+                if path.res == Res::Local(param.pat.hir_id));
+            of_adt && of_param
+        }
+        _ => false,
+    };
+    (!variant_of_param).then(|| {
+        let name = tcx.item_name(adt.did());
+        format!(
+            "a `From` into the untagged enum `{name}` is its variant of its argument, `{name}::Variant(value)`, as rust-js makes it the value itself (ADR 0214)"
+        )
+    })
+}

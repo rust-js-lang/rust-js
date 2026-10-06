@@ -78,6 +78,7 @@ mod std_impls;
 mod support;
 mod text;
 mod traits;
+mod untagged;
 mod vecs;
 
 use crate::names::{fresh_in, js_ident};

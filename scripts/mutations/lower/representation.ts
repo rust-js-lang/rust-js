@@ -187,4 +187,12 @@ export const mutations: Mutation[] = [
     replace: "            (Shape::Object(_), _) if false && super::bindings::is_flatten_field(self.tcx, ty, i) => base,",
     tests: ["test/jsx.test.ts", "-t", "chain of flattened"],
   },
+  {
+    name: "untagged-const-tagged",
+    breaks: "a `const` of an untagged enum is a tagged object",
+    file: "src/lower/representation.rs",
+    find: "            if super::bindings::is_untagged(tcx, adt.did()) {\n",
+    replace: "            if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "untagged_enums"],
+  },
 ];

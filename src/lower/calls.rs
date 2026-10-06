@@ -150,6 +150,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if is_omitted(self.tcx, def_id) {
             return Ok(Some(Expr::undefined()));
         }
+        // A `From` into an untagged enum, or `into()` to one: the value (ADR 0214).
+        if let [value] = args
+            && self.recognition().converts_to_untagged(def_id, generic_args)
+        {
+            return self.expr(*value, out).map(Some);
+        }
         if let Some(callee) = self.boxed_callee(def_id, generic_args, args, span)? {
             return self.call_with_boxes(callee, args, discarded, span, out).map(Some);
         }

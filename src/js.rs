@@ -378,6 +378,8 @@ pub enum UnaryOp {
     Neg,
     Not,
     BitNot,
+    /// `typeof x`: what an untagged enum's variant is told by (ADR 0214).
+    Typeof,
 }
 
 #[derive(Clone, Copy, PartialEq)]

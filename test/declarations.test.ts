@@ -194,6 +194,34 @@ thread_local! {
 pub fn words(n: u64, flags: Vec<bool>) -> String {
     format!("{n} {}", flags.len())
 }
+
+// An untagged enum is TypeScript's union of its payloads (ADR 0214).
+#[rust_js::untagged]
+pub enum Size {
+    Named(&'static str),
+    Pixels(f64),
+}
+
+pub fn width(size: Size) -> String {
+    match size {
+        Size::Named(name) => name.to_string(),
+        Size::Pixels(n) => format!("{n}px"),
+    }
+}
+
+// Of its type parameters too.
+#[rust_js::untagged]
+pub enum Items<T> {
+    Many(Vec<T>),
+    Label(&'static str),
+}
+
+pub fn count(items: Items<u32>) -> usize {
+    match items {
+        Items::Many(all) => all.len(),
+        Items::Label(_) => 1,
+    }
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
@@ -216,12 +244,16 @@ pub fn words(n: u64, flags: Vec<bool>) -> String {
     "export interface DownloadProps extends AnchorHTMLAttributes<HTMLAnchorElement> {\n    label: string;\n}",
     "export const Icon: NamedExoticComponent<IconProps>;",
     "export function words(n: bigint, flags: boolean[]): string;",
+    "export type Size = string | number;",
+    "export function width(size: Size): string;",
+    "export type Items<T> = T[] | string;",
+    "export function count(items: Items<number>): number;",
   ]) {
     expect(declarations).toContain(line);
   }
   // TypeScript that uses them: optional props left out, a JS caller's own
   // passed on, a flattened struct's as its own, and wrong ones, the only errors.
-  writeFileSync(join(dir, "use.tsx"), `import { Button, Chip, Crumbs, Download, ExternalLink, Icon, LinkButton, Tag, words } from "./lib.jsx";
+  writeFileSync(join(dir, "use.tsx"), `import { Button, Chip, Crumbs, Download, ExternalLink, Icon, LinkButton, Tag, width, words } from "./lib.jsx";
 export const ok = [
   <Tag variant="advanced" count={2} />,
   <ExternalLink href="/a" aria-label="A">a</ExternalLink>,
@@ -232,10 +264,13 @@ export const ok = [
   <Download label="d" download="file" referrerPolicy="no-referrer" />,
   <Crumbs items={[{ title: "Home" }, { title: "Learn", path: "/learn" }]} level="basic" />,
   <Chip label="c" />,
+  width("lg"),
+  width(3),
 ];
 export const wrong = <Tag variant="intermediate" count={2} />;
 export const wrongHref = <Button href={1} />;
 export const wrongLevel = <Crumbs items={[]} level="expert" />;
+export const wrongSize = width(true);
 `);
   writeFileSync(join(dir, "tsconfig.json"), JSON.stringify({
     // Its declarations checked too, as TypeScript reads them (ADR 0207).
@@ -244,13 +279,15 @@ export const wrongLevel = <Crumbs items={[]} level="expert" />;
   }));
   const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
   const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
-  expect(errors.length).toBe(3);
-  expect(errors[0]).toContain("use.tsx(13,");
+  expect(errors.length).toBe(4);
+  expect(errors[0]).toContain("use.tsx(15,");
   expect(errors[0]).toContain('"intermediate"');
   // A flattened struct's field is checked as the component's own.
-  expect(errors[1]).toContain("use.tsx(14,");
+  expect(errors[1]).toContain("use.tsx(16,");
   // Another module's type, as it declares it.
-  expect(errors[2]).toContain("use.tsx(15,");
+  expect(errors[2]).toContain("use.tsx(17,");
+  // Not one of an untagged enum's kinds.
+  expect(errors[3]).toContain("use.tsx(18,");
 });
 
 // TypeScript prints them (ADR 0207), through @rust-js/typescript, which a

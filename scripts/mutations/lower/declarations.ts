@@ -100,4 +100,12 @@ export const mutations: Mutation[] = [
     replace: "                None => (false, ty),",
     tests,
   },
+  {
+    name: "untagged-declared-any",
+    breaks: "an untagged enum is declared `any`, not TS's union of its payloads",
+    file: "src/lower/declarations.rs",
+    find: "            _ if untagged => {\n",
+    replace: "            _ if false => {\n",
+    tests: ["test/declarations.test.ts", "-t", "type what a module exports"],
+  },
 ];

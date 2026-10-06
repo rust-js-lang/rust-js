@@ -654,6 +654,10 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
             if let Some(n) = ordering_value(tcx, adt.did(), variant.name) {
                 return Some(Expr::int(n));
             }
+            // An untagged enum's variant is its payload (ADR 0214).
+            if super::bindings::is_untagged(tcx, adt.did()) {
+                return fields.first().and_then(|&payload| const_js(tcx, payload));
+            }
             if fields.is_empty() {
                 return Some(Expr::str(super::bindings::variant_name(tcx, variant)));
             }

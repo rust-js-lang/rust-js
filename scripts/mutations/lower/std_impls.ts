@@ -114,4 +114,20 @@ export const mutations: Mutation[] = [
     replace: "        if super::bindings::is_rest(self.tcx, ty) {\n            return Ok(Expr::object(Vec::new()));",
     tests: ["test/jsx.test.ts", "-t", "doesn't name as ...rest"],
   },
+  {
+    name: "untagged-clone-shared",
+    breaks: "a clone of an untagged enum's `Vec` is the same array, which a push to the first changes",
+    file: "src/lower/std_impls.rs",
+    find: "            ty::Adt(adt, args) if self.untagged(ty).is_some() => {\n                let mut value = place.clone();\n",
+    replace: "            ty::Adt(adt, args) if false => {\n                let mut value = place.clone();\n",
+    tests: ["test/corpus.test.ts", "-t", "untagged_enums"],
+  },
+  {
+    name: "untagged-eq-tagged",
+    breaks: "`==` of an untagged enum compares tags it hasn't",
+    file: "src/lower/std_impls.rs",
+    find: "            ty::Adt(adt, args) if self.untagged(ty).is_some() => {\n                let mut value = Expr::bool(false);\n",
+    replace: "            ty::Adt(adt, args) if false => {\n                let mut value = Expr::bool(false);\n",
+    tests: ["test/corpus.test.ts", "-t", "untagged_enums"],
+  },
 ];

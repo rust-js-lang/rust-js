@@ -51,4 +51,20 @@ export const mutations: Mutation[] = [
     replace: "        if let (false, js::ExprKind::Object(props)) = (true, &mut value.kind) {",
     tests: ["test/jsx.test.ts", "-t", "flattened props where they"],
   },
+  {
+    name: "untagged-variant-tagged",
+    breaks: "an untagged enum's variant is a tagged object, `{ TAG: \"Text\", _0: s }`, which no JS API takes",
+    file: "src/lower/aggregates.rs",
+    find: "        // An untagged enum's variant is its payload (ADR 0214).\n        if self.untagged(ty).is_some() {\n",
+    replace: "        // An untagged enum's variant is its payload (ADR 0214).\n        if false {\n",
+    tests: ["test/compiler.test.ts", "-t", "untagged enum"],
+  },
+  {
+    name: "untagged-constructor-tagged",
+    breaks: "`.map(Src::Number)` makes tagged objects of an untagged enum's values",
+    file: "src/lower/aggregates.rs",
+    find: "        let value = if self.untagged(ty).is_some() {\n",
+    replace: "        let value = if false {\n",
+    tests: ["test/compiler.test.ts", "-t", "untagged enum"],
+  },
 ];

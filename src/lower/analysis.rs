@@ -13,7 +13,7 @@ use super::bindings::{Export, is_binding};
 use super::recognition::TypeFact;
 use super::traits;
 use super::{Body, FnInfo, TestFn, module_path};
-use crate::lower::recognition::{StdItem, is_hash_impl, is_std_def, known_derive};
+use crate::lower::recognition::{StdItem, is_hash_impl, is_js_object_deref, is_std_def, known_derive};
 use debug::{derived_debug, uses_format_options, uses_pretty_debug};
 use drops::drop_params;
 use mutation::mutated_types;
@@ -64,6 +64,7 @@ pub fn collect_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
                 tcx.hir_maybe_body_owned_by(def_id).is_some()
                     && (!known_derive(tcx, parent) || derived_debug(tcx, parent))
                     && !is_hash_impl(tcx, parent)
+                    && !is_js_object_deref(tcx, parent)
                     && !is_binding(tcx, def_id.to_def_id())
             }
             DefKind::Closure => true,
@@ -162,6 +163,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     if !bindings::validate(tcx)
         || !traits::validate(tcx, &foreign)
         || !super::jsx_api::validate(tcx)
+        || !super::untagged::validate(tcx, &foreign)
         || !foreign.check()
     {
         return None;
