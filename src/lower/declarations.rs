@@ -16,7 +16,7 @@ use rustc_span::def_id::{DefId, LocalModId};
 use serde_json::{Value, json};
 
 use super::bindings::{
-    field_default, field_key, fn_name, is_binding, is_flatten, is_mark, is_rest, is_untagged, variant_name,
+    field_default, field_key, fn_name, is_binding, is_flatten, is_mark, is_nullable, is_rest, is_untagged, variant_name,
 };
 use super::recognition::{StdItem, is_std_def};
 use super::representation::Num;
@@ -205,13 +205,15 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 continue;
             }
             // A field with a default, JS's where it's missing, is one a caller
-            // may leave out (ADR 0212); one of an `Option` too, or gives `null`,
-            // which rust-js reads as `None` (ADR 0030).
+            // may leave out (ADR 0212); one of an `Option` too, and one marked
+            // `#[rust_js::nullable]` may be `null`, which rust-js reads as
+            // `None` (ADR 0030), where TypeScript's data has it.
             let (optional, ty) = match self.option(ty) {
-                Some(inner) => (
+                Some(inner) if is_nullable(self.tcx, field) => (
                     true,
                     json!({ "kind": "union", "types": [self.ts(inner), keyword("null")] }),
                 ),
+                Some(inner) => (true, self.ts(inner)),
                 None => (field_default(self.tcx, field).is_some(), self.ts(ty)),
             };
             members.push(json!({

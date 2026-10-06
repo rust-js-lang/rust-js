@@ -287,6 +287,13 @@ pub(super) fn is_omitted(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
 }
 
+/// Whether a field of an `Option` is declared to take `null` too,
+/// `#[rust_js::nullable]` (ADR 0196).
+pub(super) fn is_nullable(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("nullable")];
+    tcx.get_attrs_by_path(field.did, &path).next().is_some()
+}
+
 /// A props field's default, `#[rust_js::default]` (ADR 0212): `Some(None)`
 /// of its type's `Default`, `Some(Some(..))` of the literal it says,
 /// `"_self"` or `true`.

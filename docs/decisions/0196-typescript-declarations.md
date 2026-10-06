@@ -38,7 +38,7 @@ export default Tag;
 | Rust | TypeScript |
 |---|---|
 | `bool`, a number, a 64-bit one, `&str`, `String`, `char` | `boolean`, `number`, `bigint`, `string` |
-| `Option<T>`, a field of one | `T \| null \| undefined`, an optional field `?: T \| null` |
+| `Option<T>`, a field of one | `T \| null \| undefined`, an optional field `?: T` |
 | `Vec<T>`, a slice, an array, a tuple | `T[]`, `[A, B]` |
 | a struct with named fields, a unit-only enum | an `interface`, the union of its names |
 | react's `Element`, `Memo<P>`, `Context<T>` | `ReactNode`, `NamedExoticComponent<P>`, `Context<T>` |
@@ -51,8 +51,13 @@ export default Tag;
   imported from `react`, or a global's, `"HTMLElement"`, without a module.
 - **An `Option` takes JS's `null` too**, `T | null | undefined`, as rust-js
   reads `None` `!= null` (ADR 0030): a TypeScript caller's `null`, react.dev's
-  Page giving its `LanguagesContext` `Languages | null`, is `None`. A field
-  of one is optional, as a caller leaves it out, or gives `null`: `?: T | null`.
+  Page giving its `LanguagesContext` `Languages | null`, is `None`.
+- **A field of one is optional, `?: T`, as TypeScript's own data has it**:
+  TypeScript reads it too, and gives what it reads to a prop whose default,
+  JS's `= []`, takes `undefined` and not `null`. One marked
+  `#[rust_js::nullable]` takes `null` too, `?: T | null`, where the data has
+  it: react.dev's errors page gives its `ErrorDecoderContext` `{ errorMessage:
+  string | null }`.
 - **What it can't type is `any`**, so TypeScript holds a caller to no more
   than Rust does: another module's type, which would need its import, a
   binding's JS object, an enum with fields.
