@@ -295,6 +295,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0202 An import is named around the modules that import it](decisions/0202-imports-named-around-importers.md)
 - [0203 A component's props are as written](decisions/0203-component-props-as-written.md)
 - [0204 A flattened field's struct is its parent's props](decisions/0204-flattened-props.md)
+- [0205 Flattened structs chain, and the props' own name is theirs](decisions/0205-flattened-chains.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

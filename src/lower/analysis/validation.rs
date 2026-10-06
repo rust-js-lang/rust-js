@@ -182,11 +182,11 @@ pub(super) fn in_thread_local(tcx: TyCtxt<'_>, d: LocalDefId) -> Option<LocalDef
     None
 }
 
-/// Report what flattened props (ADR 0204) can't be: a struct with more than
-/// one rest, or one flattened field that isn't a struct of named fields,
-/// or whose fields' names are its parent's too; a flattened field read,
-/// which JS's props don't have; and a struct with one made anywhere but as
-/// JSX's props, which hold it flat. False if there was one.
+/// Report what flattened props (ADR 0204, 0205) can't be: a struct with
+/// more than one rest, or a flattened field that isn't a struct of named
+/// fields; a flattened field read whole, which JS's props don't have; and
+/// a struct with one made anywhere but as JSX's props, or a flattened
+/// field's value there, which JSX holds flat. False if there was one.
 pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> bool {
     let mut valid = true;
     let mut refuse = |span: Span, what: String| {
@@ -202,84 +202,74 @@ pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body
             continue;
         };
         let span = tcx.def_span(field.did);
-        let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
-        let rests = (0..parent.fields.len())
-            .filter(|&i| bindings::is_rest_field(tcx, tcx.type_of(id).instantiate_identity().skip_normalization(), i))
-            .count();
-        if rests > 1 {
+        let own = tcx.type_of(id).instantiate_identity().skip_normalization();
+        if (0..parent.fields.len())
+            .filter(|&i| bindings::is_rest_field(tcx, own, i))
+            .count()
+            > 1
+        {
             refuse(
                 span,
                 "props with more than one rest: they have one rest, a `Rest` or a flattened field".into(),
             );
             continue;
         }
-        let ty::Adt(inner, _) = ty.kind() else {
+        let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+        if !ty
+            .ty_adt_def()
+            .is_some_and(|adt| adt.is_struct() && adt.non_enum_variant().ctor.is_none())
+        {
             refuse(
                 span,
                 format!("flattening `{ty}`: a flattened field is a struct of named fields"),
             );
-            continue;
-        };
-        let inner = inner.non_enum_variant();
-        if !ty.ty_adt_def().is_some_and(|adt| adt.is_struct()) || inner.ctor.is_some() {
-            refuse(
-                span,
-                format!("flattening `{ty}`: a flattened field is a struct of named fields"),
-            );
-            continue;
-        }
-        let own: HashSet<String> = parent
-            .fields
-            .iter()
-            .filter(|f| f.did != field.did)
-            .map(|f| bindings::field_key(tcx, f))
-            .collect();
-        for f in &inner.fields {
-            let key = bindings::field_key(tcx, f);
-            if own.contains(&key) {
-                refuse(
-                    span,
-                    format!(
-                        "flattened props whose `{key}` is `{}`'s too: JS's props have one of each name",
-                        tcx.item_name(id.to_def_id())
-                    ),
-                );
-            }
-            if bindings::is_flatten(tcx, f) {
-                refuse(span, "flattened props within flattened props".into());
-            }
         }
     }
     for body in all_bodies {
         let thir = &body.thir;
-        // Each struct JSX gives a component as its props, `<*>`'s second.
-        let mut props = HashSet::new();
+        // Each struct JSX gives a component as its props, `<*>`'s second,
+        // with its base, `{..Default::default()}`, and its flattened
+        // fields' values, made there as structs or defaults: JSX takes
+        // them apart.
+        let mut made = Vec::new();
         for expr in thir.exprs.iter() {
             if let ExprKind::Call { fun, ref args, .. } = expr.kind
                 && let ty::FnDef(def_id, _) = *thir[fun].ty.kind()
                 && matches!(bindings::js_form(tcx, def_id), bindings::JsForm::Jsx(tag) if tag == "*")
                 && let [_, given] = args[..]
             {
-                let given = strip(thir, given);
-                props.insert(given);
-                // And its base, `{..Default::default()}`, which is taken apart.
-                if let ExprKind::Adt(ref adt) = thir[given].kind
-                    && let AdtExprBase::Base(ref fru) = adt.base
-                {
-                    props.insert(strip(thir, fru.base));
+                made.push(strip(thir, given));
+            }
+        }
+        let mut props = HashSet::new();
+        while let Some(e) = made.pop() {
+            props.insert(e);
+            if let ExprKind::Adt(ref adt) = thir[e].kind {
+                if let AdtExprBase::Base(ref fru) = adt.base {
+                    made.push(strip(thir, fru.base));
+                }
+                for field in &adt.fields {
+                    if bindings::is_flatten_field(tcx, thir[e].ty, field.name.as_usize()) {
+                        made.push(strip(thir, field.expr));
+                    }
                 }
             }
         }
+        // A flattened field read through, `props.html.title`, is its parent's.
+        let read_through: HashSet<ExprId> = (thir.exprs.iter())
+            .filter_map(|expr| match expr.kind {
+                ExprKind::Field { lhs, .. } => Some(strip(thir, lhs)),
+                _ => None,
+            })
+            .collect();
         for (e, expr) in thir.exprs.iter_enumerated() {
             match expr.kind {
                 ExprKind::Field { lhs, name, .. }
-                    if bindings::is_rest_field(tcx, thir[lhs].ty, name.as_usize())
-                        && !bindings::is_rest(tcx, expr.ty) =>
+                    if bindings::is_flatten_field(tcx, thir[lhs].ty, name.as_usize()) && !read_through.contains(&e) =>
                 {
                     refuse(
                         expr.span,
-                        "reading flattened props: take them apart where they're given, `Props { a, anchor }: Props`"
-                            .into(),
+                        "reading flattened props whole: take them apart where they're given, `Props { a, anchor }: Props`, or read through them, `anchor.html.title`".into(),
                     );
                 }
                 ExprKind::Adt(_) | ExprKind::Call { .. }

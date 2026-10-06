@@ -179,4 +179,12 @@ export const mutations: Mutation[] = [
     replace: "        return Some(num_literal(secs * 1_000_000_000 + 0 * nanos, Num::U128));",
     tests: ["test/corpus.test.ts","-t","duration"],
   },
+  {
+    name: "flattened-field-read-as-member",
+    breaks: "`props.html.title` is `props.html.title`, which JS's flat props don't have",
+    file: "src/lower/representation.rs",
+    find: "            (Shape::Object(_), _) if super::bindings::is_flatten_field(self.tcx, ty, i) => base,",
+    replace: "            (Shape::Object(_), _) if false && super::bindings::is_flatten_field(self.tcx, ty, i) => base,",
+    tests: ["test/jsx.test.ts", "-t", "chain of flattened"],
+  },
 ];

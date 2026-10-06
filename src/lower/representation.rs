@@ -248,6 +248,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A part of `[a, b]` (a `match (a, b)` subject) is just `a`.
             (Shape::Array(_), js::ExprKind::Array(items)) if !base.has_effects() => items[i].clone(),
             (Shape::Array(_), _) => Expr::index(base, Expr::int(i as i128)),
+            // A flattened struct's fields are its parent's: read through it,
+            // `props.html.title` is `props.title` (ADR 0205).
+            (Shape::Object(_), _) if super::bindings::is_flatten_field(self.tcx, ty, i) => base,
             (Shape::Object(fields), _) => Expr::member(base, fields[i].0.clone()),
             (Shape::Other, _) => unreachable!("fields of a type without fields"),
         }

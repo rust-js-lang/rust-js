@@ -63,6 +63,50 @@ pub fn Button(ButtonProps { size, anchor }: ButtonProps) -> Element {
     jsx! { <a className={size} {...anchor} /> }
 }
 
+// A chain: what the props have too is theirs, TypeScript's Omit (ADR 0205).
+#[derive(Default)]
+pub struct Html {
+    pub title: Option<&'static str>,
+    #[rust_js::name = "className"]
+    pub class_name: Option<&'static str>,
+}
+
+#[derive(Default)]
+pub struct Linked {
+    pub href: Option<&'static str>,
+    #[rust_js::flatten]
+    pub html: Html,
+}
+
+pub struct LinkButtonProps {
+    pub href: &'static str,
+    #[rust_js::name = "className"]
+    pub class_name: Option<&'static str>,
+    #[rust_js::flatten]
+    pub linked: Linked,
+}
+
+pub fn LinkButton(LinkButtonProps { href, class_name, linked }: LinkButtonProps) -> Element {
+    jsx! { <a href={href} className={class_name} {...linked} /> }
+}
+
+// One React types, as its rust_js::types says: what the props extend.
+#[rust_js::types = "react#AnchorHTMLAttributes<HTMLAnchorElement>"]
+#[derive(Default)]
+pub struct ReactAnchor {
+    pub download: Option<&'static str>,
+}
+
+pub struct DownloadProps {
+    pub label: &'static str,
+    #[rust_js::flatten]
+    pub anchor: ReactAnchor,
+}
+
+pub fn Download(DownloadProps { label, anchor }: DownloadProps) -> Element {
+    jsx! { <a {...anchor}>{label}</a> }
+}
+
 pub mod far {
     #[derive(Default)]
     pub struct Far {
@@ -99,7 +143,6 @@ pub fn words(n: u64, flags: Vec<bool>) -> String {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
   for (const line of [
-    'import type { NamedExoticComponent, ReactNode } from "react";',
     'export type RouteTag = "foundation" | "advanced";',
     "export interface TagProps {\n  variant: RouteTag;\n  text?: string;\n  count: number;\n}",
     "export function Tag(props: TagProps): ReactNode;",
@@ -107,6 +150,10 @@ pub fn words(n: u64, flags: Vec<bool>) -> String {
     "export function ExternalLink<C>(props: LinkProps<C>): ReactNode;",
     "export interface ButtonProps extends Anchor {\n  size?: string;\n}",
     "export interface CardProps {\n  [prop: string]: unknown;\n}",
+    'import type { AnchorHTMLAttributes, NamedExoticComponent, ReactNode } from "react";',
+    "export interface Linked extends Html {\n  href?: string;\n}",
+    'export interface LinkButtonProps extends Omit<Linked, "href" | "className"> {\n  href: string;\n  className?: string;\n}',
+    "export interface DownloadProps extends AnchorHTMLAttributes<HTMLAnchorElement> {\n  label: string;\n}",
     "export const Icon: NamedExoticComponent<IconProps>;",
     "export function words(n: bigint, flags: boolean[]): string;",
   ]) {
@@ -114,13 +161,15 @@ pub fn words(n: u64, flags: Vec<bool>) -> String {
   }
   // TypeScript that uses them: optional props left out, a JS caller's own
   // passed on, a flattened struct's as its own, and wrong ones, the only errors.
-  writeFileSync(join(dir, "use.tsx"), `import { Button, ExternalLink, Icon, Tag, words } from "./lib.jsx";
+  writeFileSync(join(dir, "use.tsx"), `import { Button, Download, ExternalLink, Icon, LinkButton, Tag, words } from "./lib.jsx";
 export const ok = [
   <Tag variant="advanced" count={2} />,
   <ExternalLink href="/a" aria-label="A">a</ExternalLink>,
   <Icon class_name="c" />,
   words(1n, [true]),
   <Button size="lg" href="/b" target="_blank" />,
+  <LinkButton href="/c" title="t" />,
+  <Download label="d" download="file" referrerPolicy="no-referrer" />,
 ];
 export const wrong = <Tag variant="intermediate" count={2} />;
 export const wrongHref = <Button href={1} />;
@@ -132,8 +181,8 @@ export const wrongHref = <Button href={1} />;
   const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
   const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
   expect(errors.length).toBe(2);
-  expect(errors[0]).toContain("use.tsx(9,");
+  expect(errors[0]).toContain("use.tsx(11,");
   expect(errors[0]).toContain('"intermediate"');
   // A flattened struct's field is checked as the component's own.
-  expect(errors[1]).toContain("use.tsx(10,");
+  expect(errors[1]).toContain("use.tsx(12,");
 });

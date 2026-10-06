@@ -234,4 +234,12 @@ export const mutations: Mutation[] = [
     replace: "                    if false && bindings::is_rest_field(self.tcx, pat.ty, field.field.as_usize()) {",
     tests: ["test/jsx.test.ts", "-t", "flattened struct"],
   },
+  {
+    name: "unbound-field-in-rest",
+    breaks: "a field the pattern leaves, `..`, is in the rest, `...props` holding `className`",
+    file: "src/lower/patterns.rs",
+    find: "                if rest.is_some() {",
+    replace: "                if false && rest.is_some() {",
+    tests: ["test/jsx.test.ts", "-t", "chain of flattened"],
+  },
 ];

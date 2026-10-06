@@ -770,7 +770,83 @@ pub fn App() -> Element {
   refused(flattened + "pub fn defaulted() -> ButtonLinkProps<()> { ButtonLinkProps::default() }\n", "made only as JSX");
   refused(flattened + "pub fn matched(p: ButtonLinkProps<()>) -> Option<&'static str> { match p { ButtonLinkProps { anchor, .. } => anchor.href } }\n", "flattened props taken apart here");
   refused(flattened.replace("pub children: C,", "pub children: C,\n    pub rest: react::Rest,").replace("{ size, children, anchor }", "{ size, children, anchor, .. }"), "one rest");
-  refused(flattened.replace("pub target: Option", "pub size: Option<&'static str>,\n    pub target: Option"), "`size`");
+});
+
+// Flattened structs chain, as TypeScript's interfaces extend one another,
+// and a name its props have too is theirs, as TypeScript's `Omit` has it:
+// what's taken apart besides holds none of it. A flattened field is read
+// through, `props.html.title` is `props.title`, never whole (ADR 0205).
+test("JSX gives a chain of flattened structs as props, a name the props have their own", async () => {
+  const chained = `#![allow(non_snake_case)]
+use react::{Element, Node, jsx};
+#[derive(Default)]
+pub struct Html {
+    pub id: Option<&'static str>,
+    pub title: Option<&'static str>,
+    #[cfg_attr(rust_js, rust_js::name = "className")]
+    pub class_name: Option<&'static str>,
+}
+#[derive(Default)]
+pub struct Anchor {
+    pub href: Option<&'static str>,
+    pub target: Option<&'static str>,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub html: Html,
+}
+#[derive(Default)]
+pub struct ButtonLinkProps<C> {
+    pub href: &'static str,
+    #[cfg_attr(rust_js, rust_js::name = "className")]
+    pub class_name: Option<&'static str>,
+    pub children: C,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub props: Anchor,
+}
+pub fn ButtonLink<C: Node>(ButtonLinkProps { href, class_name, children, props }: ButtonLinkProps<C>) -> Element {
+    let title = props.html.title.unwrap_or("none");
+    jsx! { <a href={href} className={class_name.unwrap_or("x")} data-title={title} {...props}>{children}</a> }
+}
+// What it leaves, .., the rest does not hold.
+pub fn Plain<C: Node>(ButtonLinkProps { href, props, .. }: ButtonLinkProps<C>) -> Element {
+    jsx! { <a href={href} {...props} /> }
+}
+`;
+  const { dir, args } = compile(chained + `
+pub fn App() -> Element {
+    jsx! {
+        <ButtonLink
+            href="/a"
+            props={Anchor { target: Some("_blank"), html: Html { id: Some("i"), ..Default::default() }, ..Default::default() }}
+            {..Default::default()}
+        >
+            {"A"}
+        </ButtonLink>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("export function ButtonLink({ href, className, children, ...props }) {");
+  expect(jsx).toContain('const title = props.title ?? "none";');
+  expect(jsx).toContain('<ButtonLink href="/a" target="_blank" id="i">');
+  expect(jsx).toContain("export function Plain({ href, className: _className, children: _children, ...props }) {");
+  const { App, ButtonLink, Plain } = await import(join(dir, "lib.jsx"));
+  const { createElement } = await import("react");
+  expect(renderToStaticMarkup(App())).toBe('<a href="/a" class="x" data-title="none" target="_blank" id="i">A</a>');
+  expect(renderToStaticMarkup(createElement(ButtonLink, { href: "/b", className: "c", title: "T", rel: "r" }, "b"))).toBe('<a href="/b" class="c" data-title="T" title="T" rel="r">b</a>');
+  expect(renderToStaticMarkup(createElement(Plain, { href: "/p", className: "c", title: "t" }, "kid"))).toBe('<a href="/p" title="t"></a>');
+  const refused = (source: string, says: string) => {
+    const c = compile(source);
+    const failed = Bun.spawnSync(c.args, { cwd: c.dir });
+    expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining(says)]);
+  };
+  // A Rust caller giving a name the props have, which would be lost.
+  refused(chained + `pub fn Both() -> Element {
+    jsx! { <ButtonLink href="/a" props={Anchor { href: Some("/b"), ..Default::default() }} {..Default::default()}>{"A"}</ButtonLink> }
+}
+`, "`href`, which the props have too");
+  // The chain's field read whole.
+  refused(chained.replace("let title = props.html.title.unwrap_or(\"none\");", "let html = &props.html;\n    let title = html.title.unwrap_or(\"none\");"), "reading flattened props");
 });
 
 // A component's props are as written, its children last, then what a

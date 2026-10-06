@@ -230,11 +230,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // What a `Rest` holds is the element's props, `{...rest}` (ADR 0195),
                 // and so is a flattened struct's: one made here, each field
                 // given, an attribute of its own (ADR 0204).
-                Prop::Field(name, value) if rest_fields.contains(&name) => match value.kind {
-                    js::ExprKind::Undefined => {}
-                    js::ExprKind::Object(props) => attrs.extend(props),
-                    _ => attrs.push(Prop::Spread(value)),
-                },
+                Prop::Field(name, value) if rest_fields.contains(&name) => {
+                    let Shape::Object(types) = self.shape(ty) else {
+                        unreachable!("a struct's fields")
+                    };
+                    let field_ty = types.iter().find(|(n, _)| *n == name).expect("the field").1;
+                    let own: Vec<String> = (types.iter())
+                        .filter(|(n, _)| !rest_fields.contains(n))
+                        .map(|(n, _)| n.clone())
+                        .collect();
+                    let span = self.thir[props].span;
+                    attrs.extend(self.flattened_attrs(field_ty, value, &own, span)?);
+                }
                 Prop::Field(name, value) if name == "children" => {
                     let Shape::Object(types) = self.shape(ty) else {
                         unreachable!("a struct's fields")
@@ -246,6 +253,46 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         Ok((attrs, children))
+    }
+
+    /// The attributes `value`, a flattened struct of type `ty`, gives: each
+    /// field of one made here, and of a flattened one in it, but one whose
+    /// name the props have, `own`, which theirs is (ADR 0205); another
+    /// value, `{...value}`.
+    fn flattened_attrs(&mut self, ty: Ty<'tcx>, value: Expr, own: &[String], span: Span) -> R<Vec<Prop>> {
+        let js::ExprKind::Object(props) = value.kind else {
+            return Ok(match value.kind {
+                js::ExprKind::Undefined => Vec::new(),
+                _ => vec![Prop::Spread(value)],
+            });
+        };
+        let Shape::Object(types) = self.shape(ty) else {
+            unreachable!("a flattened struct's fields")
+        };
+        let mut shadowing = own.to_vec();
+        shadowing.extend(
+            (types.iter().enumerate())
+                .filter(|&(i, _)| !super::bindings::is_flatten_field(self.tcx, ty, i))
+                .map(|(_, (n, _))| n.clone()),
+        );
+        let mut attrs = Vec::new();
+        for (i, prop) in props.into_iter().enumerate() {
+            match prop {
+                Prop::Field(_, value) if super::bindings::is_flatten_field(self.tcx, ty, i) => {
+                    attrs.extend(self.flattened_attrs(types[i].1, value, &shadowing, span)?);
+                }
+                Prop::Field(name, value) if own.contains(&name) => {
+                    if !matches!(value.kind, js::ExprKind::Undefined) {
+                        return Err(self.unsupported(
+                            span,
+                            &format!("giving flattened props' `{name}`, which the props have too: give theirs"),
+                        ));
+                    }
+                }
+                prop => attrs.push(prop),
+            }
+        }
+        Ok(attrs)
     }
 
     pub(super) fn jsx_children(&mut self, e: ExprId, out: &mut Vec<Stmt>) -> R<Vec<Expr>> {

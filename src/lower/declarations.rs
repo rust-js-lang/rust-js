@@ -143,14 +143,26 @@ impl<'tcx> Declarations<'tcx> {
         // A flattened field's struct is what this one extends (ADR 0204):
         // one TypeScript can't see, another module's (`any`), is what a
         // `Rest` is.
-        let flattened = variant
-            .fields
-            .iter()
-            .find(|f| is_flatten(self.tcx, f))
-            .map(|field| self.ts(self.tcx.type_of(field.did).instantiate_identity().skip_normalization()));
+        // A name both have is this one's, which TypeScript's `Omit` says
+        // (ADR 0205).
+        let flattened = variant.fields.iter().find(|f| is_flatten(self.tcx, f)).map(|field| {
+            let ty = self.tcx.type_of(field.did).instantiate_identity().skip_normalization();
+            let own: Vec<String> = (variant.fields.iter())
+                .filter(|f| f.did != field.did)
+                .map(|f| field_key(self.tcx, f))
+                .collect();
+            let shadowed: Vec<String> = flattened_keys(self.tcx, ty)
+                .into_iter()
+                .filter(|key| own.contains(key))
+                .map(|key| format!("{key:?}"))
+                .collect();
+            (self.ts(ty), shadowed)
+        });
         let extends = match &flattened {
-            Some(ts) if ts != "any" => format!(" extends {ts}"),
-            _ => String::new(),
+            Some((ts, _)) if ts == "any" => String::new(),
+            Some((ts, shadowed)) if shadowed.is_empty() => format!(" extends {ts}"),
+            Some((ts, shadowed)) => format!(" extends Omit<{ts}, {}>", shadowed.join(" | ")),
+            None => String::new(),
         };
         let _ = writeln!(out, "export interface {name}{}{extends} {{", self.generics(def_id));
         for field in &variant.fields {
@@ -255,9 +267,12 @@ impl<'tcx> Declarations<'tcx> {
                     .and_then(|attr| attr.value_str())
                 {
                     let declared = declared.to_string();
+                    // `react#AnchorHTMLAttributes<HTMLAnchorElement>` imports
+                    // the name, and is the type it names.
                     let name = match declared.rsplit_once('#') {
                         Some((from, name)) => {
-                            self.imports.insert((from.to_string(), name.to_string()));
+                            let imported = name.split('<').next().unwrap_or(name);
+                            self.imports.insert((from.to_string(), imported.to_string()));
                             name.to_string()
                         }
                         None => declared,
@@ -295,4 +310,24 @@ impl<'tcx> Declarations<'tcx> {
             false => ts,
         }
     }
+}
+
+/// The JS names of `ty`'s fields, a flattened struct's, and of those of
+/// the flattened struct in it (ADR 0205).
+fn flattened_keys<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Vec<String> {
+    let ty::Adt(adt, args) = ty.kind() else {
+        return Vec::new();
+    };
+    if !adt.is_struct() {
+        return Vec::new();
+    }
+    let mut keys = Vec::new();
+    for field in &adt.non_enum_variant().fields {
+        if is_flatten(tcx, field) {
+            keys.extend(flattened_keys(tcx, field.ty(tcx, args).skip_normalization()));
+        } else {
+            keys.push(field_key(tcx, field));
+        }
+    }
+    keys
 }

@@ -1,7 +1,7 @@
 //! Bindings, destructuring and match/let-chain evaluation regions.
 
 use super::{
-    Binding, Dest, Evaluation, FnCx, Num, R, Shape, Var, bindings, camel_case, const_js, drops, fresh_in,
+    Binding, Dest, Evaluation, FnCx, Num, R, Shape, Var, bindings, camel_case, const_js, drops, fresh_in, js_ident,
     ordering_value, recognition::is_non_zero, std_impls, variant_field, without_refs,
 };
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
@@ -89,6 +89,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     match super::bindings::is_rest_field(self.tcx, pat.ty, i) {
                         true => rest = Some(bound),
                         false => named.push((fields[i].0.clone(), bound)),
+                    }
+                }
+                // What the rest holds is what isn't named, so a field the
+                // pattern leaves, `..` or `_`, is named still, `className:
+                // _className`, or the rest would hold it (ADR 0205).
+                if rest.is_some() {
+                    for (i, (key, _)) in fields.iter().enumerate() {
+                        if !super::bindings::is_rest_field(self.tcx, pat.ty, i) && !named.iter().any(|(k, _)| k == key)
+                        {
+                            let unused = self.fresh(&format!("_{}", camel_case(&js_ident(key))));
+                            named.push((key.clone(), unused));
+                        }
                     }
                 }
                 js::Pattern::Object(named, rest)

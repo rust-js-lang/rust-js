@@ -1,6 +1,8 @@
 # 0204. A flattened field's struct is its parent's props
 
-Status: Accepted. Extends [0195](0195-rest-props.md) and [0196](0196-typescript-declarations.md).
+Status: Accepted. Extends [0195](0195-rest-props.md) and [0196](0196-typescript-declarations.md);
+amended by [0205](0205-flattened-chains.md), which chains them and gives a
+name both have to the props.
 
 ## Context
 
@@ -84,4 +86,5 @@ export interface ButtonLinkProps<C> extends Anchor {
 - **What a JS caller gives besides is in it too**, as TypeScript's `&`
   allows: `{...anchor}` passes it on.
 - **No `Omit`**: a name both structs have is an error, so a flattened
-  struct holds only what its parent doesn't.
+  struct holds only what its parent doesn't. ADR 0205 gives it to the
+  parent.

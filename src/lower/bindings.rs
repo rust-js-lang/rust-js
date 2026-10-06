@@ -252,6 +252,12 @@ pub(super) fn is_flatten(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
     tcx.get_attrs_by_path(field.did, &path).next().is_some()
 }
 
+/// Whether field `i` of `ty`, a struct, is flattened (ADR 0204).
+pub(super) fn is_flatten_field(tcx: TyCtxt<'_>, ty: Ty<'_>, i: usize) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct()
+        && adt.non_enum_variant().fields.iter().nth(i).is_some_and(|field| is_flatten(tcx, field)))
+}
+
 /// Whether field `i` of `ty`, a struct, holds what JS's `...rest` does: a
 /// `Rest` (ADR 0195), or a flattened struct, typed (ADR 0204).
 pub(super) fn is_rest_field<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, i: usize) -> bool {
