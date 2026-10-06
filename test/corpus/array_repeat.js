@@ -17,12 +17,20 @@ function main() {
   let grid = Array.from({ length: 4 }, () => item.slice());
   grid[1][2] = 7;
   console.log(
-    `[${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
+    `[${grid
+      .map((item) => item.slice())
+      .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
+      .join(", ")}]`,
   );
   const item$1 = { x: 1 };
   let points = Array.from({ length: 3 }, () => ({ ...item$1 }));
   points[0].x = 5;
-  console.log(`[${points.map((item) => pDebug_fmt(item)).join(", ")}]`);
+  console.log(
+    `[${points
+      .map((item) => ({ ...item }))
+      .map((item) => pDebug_fmt(item))
+      .join(", ")}]`,
+  );
   const once = new Array(3).fill(made("once", 4));
   const none = new Array(0).fill(made("none", 9));
   console.log(
@@ -42,9 +50,10 @@ function main() {
     `[${row
       .slice()
       .map((item) => String(item))
-      .join(
-        ", ",
-      )}] [${pair.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
+      .join(", ")}] [${pair
+      .map((item) => item.slice())
+      .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
+      .join(", ")}]`,
   );
 }
 

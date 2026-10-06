@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "array-items-unmutated",
+    breaks: "an array of `Copy` structs changed in place isn't copied: a copy's item, and a closure's by-value one, change the array they came from",
+    file: "src/lower/copies.rs",
+    find: "                    ty::Array(item, _) => self.contains_mutated(*item),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "copy_mutation"],
+  },
+  {
     name: "generic-instance-unmatched",
     breaks: "a generic function's clone of `Holder<T>` shares it, though its caller changes the `Holder<Numbers>` in place",
     file: "src/lower/copies.rs",

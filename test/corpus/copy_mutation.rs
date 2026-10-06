@@ -96,4 +96,16 @@ fn main() {
     let mut copy = held(&holder);
     copy.item += 1;
     println!("{} {}", holder.item, copy.item);
+
+    // An array of what's changed in place is copied as it is: what a
+    // closure given its items by value changes, and a copy's item, leave
+    // the array they came from as it was.
+    let points = [Point { x: 1, y: 2 }, Point { x: 3, y: 4 }];
+    let moved: Vec<Point> = points.into_iter().map(|mut p| {
+        p.x += 10;
+        p
+    }).collect();
+    let mut copied = points;
+    copied[0].y = 0;
+    println!("{points:?} {moved:?} {copied:?}");
 }

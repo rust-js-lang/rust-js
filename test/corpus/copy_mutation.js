@@ -27,7 +27,10 @@ function main() {
   const row = grid[0].slice();
   grid[0][1] = 5;
   console.log(
-    `[${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${row
+    `[${grid
+      .map((item) => item.slice())
+      .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
+      .join(", ")}] [${row
       .slice()
       .map((item) => String(item))
       .join(", ")}]`,
@@ -67,6 +70,27 @@ function main() {
   let copy$2 = held(holder, { clone: (value) => value });
   copy$2.item = (copy$2.item + 1) >>> 0;
   console.log(`${holder.item} ${copy$2.item}`);
+  const points$1 = [
+    { x: 1, y: 2 },
+    { x: 3, y: 4 },
+  ];
+  const moved$1 = points$1
+    .map((item) => ({ ...item }))
+    .map((p) => {
+      p.x = (p.x + 10) | 0;
+      return p;
+    });
+  let copied = points$1.map((item) => ({ ...item }));
+  copied[0].y = 0;
+  console.log(
+    `[${points$1
+      .map((item) => ({ ...item }))
+      .map((item) => pointDebug_fmt(item))
+      .join(", ")}] [${moved$1.map((item) => pointDebug_fmt(item)).join(", ")}] [${copied
+      .map((item) => ({ ...item }))
+      .map((item) => pointDebug_fmt(item))
+      .join(", ")}]`,
+  );
 }
 
 export function entry() {
