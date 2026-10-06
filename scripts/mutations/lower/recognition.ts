@@ -617,7 +617,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition.rs",
     find: "            \"as_deref\" | \"as_deref_mut\"",
     replace: "            \"as_deref_never\"",
-    tests: ["test/compiler.test.ts", "-t", "as_deref"],
+    tests: ["test/corpus.test.ts", "-t", "option_as_deref"],
   },
   {
     name: "boxed-array-into-iter-refused",
