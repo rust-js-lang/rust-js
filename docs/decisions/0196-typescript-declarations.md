@@ -54,7 +54,12 @@ export default Tag;
   `react#ReactNode<>`, a `ReactNode` whatever its tag's element (ADR 0224).
   One written `{ [key: string]: T }` is an object of `T`s by name, its `T`
   the Rust type's, as `js::Dict<T>`'s is: `Record<string, T>` couldn't be in
-  a recursive alias. **Another crate's untagged enum is declared in the
+  a recursive alias. **A type parameter bound by a trait that says its type
+  extends it**: react's `Node` is `react#ReactNode<>`, so `C: Node` is
+  `C extends ReactNode`, and props of `children: C` can extend React's
+  attributes, whose `children` is one. (Amended: it was `<C>`, which they
+  couldn't, react.dev's `ButtonLinkProps` TypeScript's error.)
+  **Another crate's untagged enum is declared in the
   module that names it**, not exported, the union of its payloads, as this
   crate's are (ADR 0225).
 - **An `Option` takes JS's `null` too**, `T | null | undefined`, as rust-js

@@ -33,7 +33,10 @@ await ts.close();
   their members, type aliases, functions, constants, `export default` and
   namespaces; and types: keywords, literals, references with their
   arguments, unions, intersections, arrays, tuples, functions and object
-  types. What it doesn't take apart is `other`, as it was written.
+  types. What it doesn't take apart is `other`, as it was written. A type
+  parameter is its name and what it extends, where it's said,
+  `{ name: "C", constraint: ReactNode }`. (Amended: it was its name
+  alone.)
 - **`read` is TypeScript's parser**, `typescript/unstable/async`'s
   program of the files a session opens: each file's syntax tree, as the
   model.
@@ -68,3 +71,6 @@ await ts.close();
   pin is moved deliberately.
 - **The model is what rust-js needs**: classes, enums, overloads,
   conditional and mapped types are `other`, written as they were.
+- **The compiler prints through the package a project has installed**, so
+  a change to the model needs both released together: an older
+  `@rust-js/typescript` can't print a newer compiler's type parameters.

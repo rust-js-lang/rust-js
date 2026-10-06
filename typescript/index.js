@@ -15,20 +15,22 @@ import * as f from "typescript/unstable/ast/factory";
  * @typedef {{ declarations: Declaration[], header?: string }} Module
  *
  * @typedef {{ kind: "import", from: string, names: string[], typeOnly: boolean }
- *   | { kind: "interface", name: string, exported: boolean, declare: boolean, typeParameters: string[], extends: Type[], members: Member[] }
- *   | { kind: "type", name: string, exported: boolean, declare: boolean, typeParameters: string[], type: Type }
- *   | { kind: "function", name: string, exported: boolean, declare: boolean, typeParameters: string[], params: Param[], returns: Type }
+ *   | { kind: "interface", name: string, exported: boolean, declare: boolean, typeParameters: TypeParameter[], extends: Type[], members: Member[] }
+ *   | { kind: "type", name: string, exported: boolean, declare: boolean, typeParameters: TypeParameter[], type: Type }
+ *   | { kind: "function", name: string, exported: boolean, declare: boolean, typeParameters: TypeParameter[], params: Param[], returns: Type }
  *   | { kind: "const", name: string, exported: boolean, declare: boolean, type: Type }
  *   | { kind: "export-default", name: string }
  *   | { kind: "namespace", name: string, exported: boolean, declare: boolean, declarations: Declaration[] }
  *   | { kind: "other", text: string }} Declaration
  *
  * @typedef {{ kind: "property", name: string, optional: boolean, readonly: boolean, type: Type }
- *   | { kind: "method", name: string, optional: boolean, typeParameters: string[], params: Param[], returns: Type }
+ *   | { kind: "method", name: string, optional: boolean, typeParameters: TypeParameter[], params: Param[], returns: Type }
  *   | { kind: "index", parameter: string, key: Type, type: Type }
  *   | { kind: "other", text: string }} Member
  *
  * @typedef {{ name: string, optional: boolean, rest: boolean, type: Type }} Param
+ *
+ * @typedef {{ name: string, constraint?: Type }} TypeParameter
  *
  * @typedef {{ kind: "keyword", keyword: string }
  *   | { kind: "literal", value: string | number | boolean }
@@ -37,7 +39,7 @@ import * as f from "typescript/unstable/ast/factory";
  *   | { kind: "intersection", types: Type[] }
  *   | { kind: "array", element: Type, readonly: boolean }
  *   | { kind: "tuple", elements: Type[] }
- *   | { kind: "function", typeParameters: string[], params: Param[], returns: Type }
+ *   | { kind: "function", typeParameters: TypeParameter[], params: Param[], returns: Type }
  *   | { kind: "object", members: Member[] }
  *   | { kind: "other", text: string }} Type
  */
@@ -143,8 +145,11 @@ function declared(node) {
   return !!node.modifiers?.some((m) => m.kind === SyntaxKind.DeclareKeyword);
 }
 
-function typeParameters(node) {
-  return (node.typeParameters ?? []).map((p) => p.name.text);
+/** `<C extends ReactNode>`: each name, and what it extends, where it's said. */
+function typeParameters(node, text) {
+  return (node.typeParameters ?? []).map((p) =>
+    p.constraint ? { name: p.name.text, constraint: readType(p.constraint, text) } : { name: p.name.text },
+  );
 }
 
 function nameOf(name, text) {
@@ -179,7 +184,7 @@ function readStatements(statements, text) {
           name: node.name.text,
           exported: exported(node),
           declare: declared(node),
-          typeParameters: typeParameters(node),
+          typeParameters: typeParameters(node, text),
           extends: (node.heritageClauses ?? []).flatMap((clause) => clause.types.map((t) => readType(t, text))),
           members: node.members.map((m) => readMember(m, text)),
         });
@@ -190,7 +195,7 @@ function readStatements(statements, text) {
           name: node.name.text,
           exported: exported(node),
           declare: declared(node),
-          typeParameters: typeParameters(node),
+          typeParameters: typeParameters(node, text),
           type: readType(node.type, text),
         });
         break;
@@ -200,7 +205,7 @@ function readStatements(statements, text) {
           name: node.name?.text ?? "default",
           exported: exported(node),
           declare: declared(node),
-          typeParameters: typeParameters(node),
+          typeParameters: typeParameters(node, text),
           params: node.parameters.map((p) => readParam(p, text)),
           returns: node.type ? readType(node.type, text) : { kind: "keyword", keyword: "void" },
         });
@@ -263,7 +268,7 @@ function readMember(node, text) {
         kind: "method",
         name: nameOf(node.name, text),
         optional: optional(node),
-        typeParameters: typeParameters(node),
+        typeParameters: typeParameters(node, text),
         params: node.parameters.map((p) => readParam(p, text)),
         returns: node.type ? readType(node.type, text) : { kind: "keyword", keyword: "any" },
       };
@@ -342,7 +347,7 @@ function readType(node, text) {
     case SyntaxKind.FunctionType:
       return {
         kind: "function",
-        typeParameters: typeParameters(node),
+        typeParameters: typeParameters(node, text),
         params: node.parameters.map((p) => readParam(p, text)),
         returns: readType(node.type, text),
       };
@@ -366,8 +371,12 @@ function modifiers(declaration) {
   return tokens.length ? tokens : undefined;
 }
 
-function typeParameterNodes(names) {
-  return names?.length ? names.map((name) => f.createTypeParameterDeclaration(undefined, id(name))) : undefined;
+function typeParameterNodes(parameters) {
+  return parameters?.length
+    ? parameters.map((p) =>
+        f.createTypeParameterDeclaration(undefined, id(p.name), p.constraint ? typeNode(p.constraint) : undefined),
+      )
+    : undefined;
 }
 
 /** A model's name, as TypeScript has one: `React.ReactNode` as written. */
