@@ -56,7 +56,9 @@ generic bindings:
   The key stands for the value: `use_context(&THEME)` is `useContext(THEME)`,
   and `component(&FAST, props)` is `<FAST .. />`. A provider is
   `component(&THEME, Provider { value, children })`, which is React 19's
-  `<THEME value={..}>`. Like rescript-react's `Context.provider` and
+  `<THEME value={..}>`. Its children are any `Node`, a list or text, as a
+  component's are: react.dev's Toc gives its `IsInTocContext.Provider` its
+  headings' list. Like rescript-react's `Context.provider` and
   `memo`, these are plain bindings: nothing in the compiler knows about them.
 - **`dom::create_root(..).render(..)`** is React DOM's client.
 - Traits say what goes where: `Node` for a child, `Text` for a text
