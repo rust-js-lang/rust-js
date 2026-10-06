@@ -89,8 +89,11 @@ macro_rules! floats {
                     $bits(a * b),
                     $bits(a / b),
                     $bits(a % b),
-                    $bits(a.min(b)),
-                    $bits(a.max(b)),
+                    // Of inputs that compare equal, +0.0 and -0.0, either may be
+                    // returned: x86's native max gives -0.0, arm64's and JS's
+                    // +0.0. So their sign isn't printed then.
+                    if a == b && a == 0.0 { "±0".to_string() } else { $bits(a.min(b)) },
+                    if a == b && a == 0.0 { "±0".to_string() } else { $bits(a.max(b)) },
                     if b.fract() == 0.0 || !b.is_finite() { $bits(a.powf(b)) } else { "-".to_string() },
                     a.total_cmp(&b),
                     a.partial_cmp(&b),
