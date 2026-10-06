@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "array-map-unknown",
+    breaks: "`[T; N]::map` is refused, where it's an array's own `map`",
+    file: "src/lower/recognition.rs",
+    find: "            \"map\" if owner.is_array() => Std::Method(\"map\"),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "array_map"],
+  },
+  {
     name: "trait-of-no-items-impl",
     breaks: "an impl of a trait of no items, `unsafe impl Sync`, `impl FusedIterator`, is rejected, though it runs nothing",
     file: "src/lower/recognition.rs",
