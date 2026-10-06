@@ -36,6 +36,7 @@ pub(super) fn module(
         imports: BTreeSet::new(),
         module_imports: BTreeSet::new(),
         foreign: BTreeMap::new(),
+        erased: HashMap::new(),
     };
     let mut items = Vec::new();
     for item in tcx.hir_module_free_items(module) {
@@ -43,6 +44,7 @@ pub(super) fn module(
         if !tcx.visibility(def_id).is_public() || is_mark(tcx, def_id) {
             continue;
         }
+        out.erased = out.erased(def_id);
         let declaration = match tcx.def_kind(def_id) {
             DefKind::Fn if !is_binding(tcx, def_id) => Some(out.function(def_id)),
             DefKind::Struct => out.structure(def_id),
@@ -59,6 +61,7 @@ pub(super) fn module(
         // One only `js::export_default!` exports is declared, but exported
         // by no name of its own, as `function Recap() {..}` is in JS.
         if !tcx.visibility(def_id).is_public() {
+            out.erased = out.erased(def_id);
             let mut declared = out.function(def_id);
             declared["exported"] = json!(false);
             declared["declare"] = json!(true);
@@ -98,6 +101,38 @@ pub(super) fn module(
     Some(json!({ "declarations": declarations }))
 }
 
+/// An item's type parameters bound by a trait that says what it is to
+/// TypeScript, each with the trait: `(0, Node)` of `fn Tag<C: Node>`.
+fn erasures(tcx: TyCtxt<'_>, def_id: DefId) -> Vec<(u32, DefId)> {
+    (tcx.clauses_of(def_id).clauses.iter())
+        .filter_map(|(clause, _)| clause.as_trait_clause())
+        .map(|bound| bound.skip_binder())
+        .filter_map(|bound| match bound.self_ty().kind() {
+            ty::Param(param) if written_types(tcx, bound.def_id()).is_some() => Some((param.index, bound.def_id())),
+            _ => None,
+        })
+        .collect()
+}
+
+/// A parameter's name, of its type's: `event` of a `MouseEvent`, `element`
+/// of an `HTMLButtonElement`, its last word's; `value` of any other.
+fn param_name(ty: &Value) -> String {
+    let Some(name) = ty["name"].as_str().filter(|_| ty["kind"] == "reference") else {
+        return "value".to_string();
+    };
+    let start = (name.char_indices())
+        .filter(|&(i, c)| c.is_uppercase() && name[i + c.len_utf8()..].starts_with(|n: char| n.is_lowercase()))
+        .map(|(i, _)| i)
+        .last()
+        .unwrap_or(0);
+    let word = &name[start..];
+    let mut chars = word.chars();
+    match chars.next() {
+        Some(first) => first.to_lowercase().chain(chars).collect(),
+        None => "value".to_string(),
+    }
+}
+
 /// What `#[rust_js::types]` says an item is to TypeScript.
 fn written_types(tcx: TyCtxt<'_>, did: DefId) -> Option<String> {
     let path = [Symbol::intern("rust_js"), Symbol::intern("types")];
@@ -131,34 +166,46 @@ struct Declarations<'a, 'tcx> {
     /// Another crate's untagged enums it names, by name: each one's
     /// declaration, `None` while it's being made, as a payload names it.
     foreign: BTreeMap<String, Option<Value>>,
+    /// The type parameters of the item being declared that are a type of
+    /// TypeScript's, by index: `C: Node`'s `ReactNode`.
+    erased: HashMap<u32, Value>,
 }
 
 impl<'tcx> Declarations<'_, 'tcx> {
-    /// `<C extends ReactNode>`: an item's type parameters, but those `impl
-    /// Trait` stands for, each extending what a trait it's bound by is to
-    /// TypeScript, as the trait's `#[rust_js::types]` says: react's `Node`
-    /// is a `ReactNode`.
+    /// `["C"]`: an item's type parameters, but those `impl Trait` stands
+    /// for, and those that are a type of TypeScript's.
     fn generics(&mut self, def_id: DefId) -> Vec<Value> {
-        let tcx = self.tcx;
-        let clauses = tcx.clauses_of(def_id).clauses;
-        (tcx.generics_of(def_id).own_params.iter())
+        let erased = erasures(self.tcx, def_id);
+        (self.tcx.generics_of(def_id).own_params.iter())
             .filter(|param| matches!(param.kind, ty::GenericParamDefKind::Type { synthetic: false, .. }))
-            .map(|param| {
-                let constraints: Vec<Value> = (clauses.iter())
-                    .filter_map(|(clause, _)| clause.as_trait_clause())
-                    .map(|bound| bound.skip_binder())
-                    .filter(|bound| matches!(bound.self_ty().kind(), ty::Param(p) if p.index == param.index))
-                    .filter_map(|bound| {
-                        let declared = written_types(tcx, bound.def_id())?;
-                        Some(self.written(bound.def_id(), &declared, ty::List::empty()))
-                    })
-                    .collect();
-                match constraints.len() {
-                    0 => json!({ "name": param.name.as_str() }),
-                    1 => json!({ "name": param.name.as_str(), "constraint": constraints[0] }),
-                    _ => json!({ "name": param.name.as_str(), "constraint": { "kind": "intersection", "types": constraints } }),
-                }
-            })
+            .filter(|param| !erased.iter().any(|(index, _)| *index == param.index))
+            .map(|param| json!({ "name": param.name.as_str() }))
+            .collect()
+    }
+
+    /// An item's type parameters that are a type of TypeScript's, by index,
+    /// as the trait each is bound by says (`#[rust_js::types]`): `C: Node`
+    /// is a `ReactNode`, as a person writes `children: ReactNode`.
+    fn erased(&mut self, def_id: DefId) -> HashMap<u32, Value> {
+        let mut erased = HashMap::new();
+        for (index, bound) in erasures(self.tcx, def_id) {
+            if !erased.contains_key(&index)
+                && let Some(declared) = written_types(self.tcx, bound)
+            {
+                erased.insert(index, self.written(bound, &declared, ty::List::empty()));
+            }
+        }
+        erased
+    }
+
+    /// The arguments `did`'s declaration takes of `args`: those of its
+    /// type parameters that aren't a type of TypeScript's.
+    fn type_args(&mut self, did: DefId, args: ty::GenericArgsRef<'tcx>) -> Vec<Value> {
+        let erased = erasures(self.tcx, did);
+        (args.iter().enumerate())
+            .filter(|(index, _)| !erased.iter().any(|(e, _)| *e as usize == *index))
+            .filter_map(|(_, arg)| arg.as_type())
+            .map(|t| self.ts(t))
             .collect()
     }
 
@@ -398,6 +445,34 @@ impl<'tcx> Declarations<'_, 'tcx> {
         }
     }
 
+    /// `(event: MouseEvent<Element>) => void`: a function type, each
+    /// parameter named by its type, as a person names one.
+    fn function_type(&mut self, inputs: &[Ty<'tcx>], output: Ty<'tcx>) -> Value {
+        let mut names: Vec<String> = Vec::new();
+        let params: Vec<Value> = (inputs.iter())
+            .map(|&input| {
+                let ty = self.ts(input);
+                let base = param_name(&ty);
+                let taken = names
+                    .iter()
+                    .filter(|n| n.trim_end_matches(char::is_numeric) == base)
+                    .count();
+                let name = if taken == 0 {
+                    base
+                } else {
+                    format!("{base}{}", taken + 1)
+                };
+                names.push(name.clone());
+                json!({ "name": name, "optional": false, "rest": false, "type": ty })
+            })
+            .collect();
+        let returns = match output.is_unit() {
+            true => keyword("void"),
+            false => self.ts(output),
+        };
+        json!({ "kind": "function", "typeParameters": [], "params": params, "returns": returns })
+    }
+
     /// `ty` as a TypeScript type.
     fn ts(&mut self, ty: Ty<'tcx>) -> Value {
         let tcx = self.tcx;
@@ -416,9 +491,33 @@ impl<'tcx> Declarations<'_, 'tcx> {
             ty::Array(item, _) | ty::Slice(item) => {
                 json!({ "kind": "array", "element": self.ts(*item), "readonly": false })
             }
-            ty::Param(param) => reference(param.name.as_str(), Vec::new()),
-            // `(...args: any[]) => any`.
-            ty::FnPtr(..) | ty::Closure(..) | ty::Dynamic(..) => json!({
+            ty::Param(param) => match self.erased.get(&param.index) {
+                Some(erased) => erased.clone(),
+                None => reference(param.name.as_str(), Vec::new()),
+            },
+            // A function of what Rust says it takes and gives:
+            // `dyn Fn(&event::Mouse)` is `(event: MouseEvent<Element>) => void`.
+            ty::FnPtr(..) => {
+                let sig = ty.fn_sig(tcx).skip_binder();
+                self.function_type(sig.inputs(), sig.output())
+            }
+            ty::Dynamic(traits, ..)
+                if traits
+                    .principal_def_id()
+                    .is_some_and(|t| tcx.fn_trait_kind_from_def_id(t).is_some()) =>
+            {
+                let inputs = match traits.principal().map(|p| p.skip_binder().args.type_at(0).kind()) {
+                    Some(ty::Tuple(inputs)) => inputs.as_slice(),
+                    _ => &[],
+                };
+                let output = (traits.projection_bounds())
+                    .find_map(|output| output.skip_binder().term.as_type())
+                    .unwrap_or(tcx.types.unit);
+                self.function_type(inputs, output)
+            }
+            // `(...args: any[]) => any`: a closure's own type, which no
+            // signature names, or a `dyn` of another trait.
+            ty::Closure(..) | ty::Dynamic(..) => json!({
                 "kind": "function",
                 "typeParameters": [],
                 "params": [{
@@ -459,11 +558,14 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     let name = tcx.item_name(did).to_string();
                     if !self.foreign.contains_key(&name) {
                         self.foreign.insert(name.clone(), None);
+                        let inner = self.erased(did);
+                        let outer = std::mem::replace(&mut self.erased, inner);
                         let mut declared = self.enumeration(did);
+                        self.erased = outer;
                         declared["exported"] = json!(false);
                         self.foreign.insert(name.clone(), Some(declared));
                     }
-                    let type_args = args.types().map(|t| self.ts(t)).collect();
+                    let type_args = self.type_args(did, args);
                     return reference(&name, type_args);
                 }
                 // One of the crate's, declared: this module's by its name,
@@ -489,7 +591,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     self.module_imports
                         .insert((path.clone(), tcx.item_name(did).to_string()));
                 }
-                let type_args = args.types().map(|t| self.ts(t)).collect();
+                let type_args = self.type_args(did, args);
                 reference(tcx.item_name(did).as_str(), type_args)
             }
             _ => keyword("any"),

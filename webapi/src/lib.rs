@@ -35,6 +35,7 @@ unsafe extern "Rust" {
 }
 
 /// [`EventTarget`](https://developer.mozilla.org/docs/Web/API/EventTarget)
+#[cfg_attr(rust_js, rust_js::types = "EventTarget")]
 pub struct EventTarget(PhantomData<JsObject>);
 
 pub mod event_target {
@@ -102,6 +103,7 @@ pub mod event_target {
 }
 
 /// [`Event`](https://developer.mozilla.org/docs/Web/API/Event)
+#[cfg_attr(rust_js, rust_js::types = "Event")]
 pub struct Event(PhantomData<JsObject>);
 
 pub mod event {
@@ -203,6 +205,7 @@ pub mod event {
 }
 
 /// [`Node`](https://developer.mozilla.org/docs/Web/API/Node)
+#[cfg_attr(rust_js, rust_js::types = "Node")]
 pub struct Node(PhantomData<JsObject>);
 
 impl Deref for Node {
@@ -355,6 +358,7 @@ pub mod node {
 }
 
 /// [`CharacterData`](https://developer.mozilla.org/docs/Web/API/CharacterData)
+#[cfg_attr(rust_js, rust_js::types = "CharacterData")]
 pub struct CharacterData(PhantomData<JsObject>);
 
 impl Deref for CharacterData {
@@ -430,6 +434,7 @@ pub mod character_data {
 }
 
 /// [`Text`](https://developer.mozilla.org/docs/Web/API/Text)
+#[cfg_attr(rust_js, rust_js::types = "Text")]
 pub struct Text(PhantomData<JsObject>);
 
 impl Deref for Text {
@@ -468,6 +473,7 @@ pub mod text {
 }
 
 /// [`Comment`](https://developer.mozilla.org/docs/Web/API/Comment)
+#[cfg_attr(rust_js, rust_js::types = "Comment")]
 pub struct Comment(PhantomData<JsObject>);
 
 impl Deref for Comment {
@@ -498,6 +504,7 @@ pub mod comment {
 }
 
 /// [`Element`](https://developer.mozilla.org/docs/Web/API/Element)
+#[cfg_attr(rust_js, rust_js::types = "Element")]
 pub struct Element(PhantomData<JsObject>);
 
 impl Deref for Element {
@@ -844,6 +851,7 @@ pub mod element {
 }
 
 /// [`Document`](https://developer.mozilla.org/docs/Web/API/Document)
+#[cfg_attr(rust_js, rust_js::types = "Document")]
 pub struct Document(PhantomData<JsObject>);
 
 impl Deref for Document {
@@ -1249,6 +1257,7 @@ pub mod document {
 }
 
 /// [`DocumentFragment`](https://developer.mozilla.org/docs/Web/API/DocumentFragment)
+#[cfg_attr(rust_js, rust_js::types = "DocumentFragment")]
 pub struct DocumentFragment(PhantomData<JsObject>);
 
 impl Deref for DocumentFragment {
@@ -1318,6 +1327,7 @@ pub mod document_fragment {
 
 /// [`DOMTokenList`](https://developer.mozilla.org/docs/Web/API/DOMTokenList)
 #[cfg_attr(rust_js, rust_js::name = "DOMTokenList")]
+#[cfg_attr(rust_js, rust_js::types = "DOMTokenList")]
 pub struct DomTokenList(PhantomData<JsObject>);
 
 pub mod dom_token_list {
@@ -1364,6 +1374,7 @@ pub mod dom_token_list {
 }
 
 /// [`NodeList`](https://developer.mozilla.org/docs/Web/API/NodeList)
+#[cfg_attr(rust_js, rust_js::types = "NodeList")]
 pub struct NodeList(PhantomData<JsObject>);
 
 pub mod node_list {
@@ -1381,6 +1392,7 @@ pub mod node_list {
 
 /// [`HTMLCollection`](https://developer.mozilla.org/docs/Web/API/HTMLCollection)
 #[cfg_attr(rust_js, rust_js::name = "HTMLCollection")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLCollection")]
 pub struct HtmlCollection(PhantomData<JsObject>);
 
 pub mod html_collection {
@@ -1401,6 +1413,7 @@ pub mod html_collection {
 }
 
 /// [`AbortController`](https://developer.mozilla.org/docs/Web/API/AbortController)
+#[cfg_attr(rust_js, rust_js::types = "AbortController")]
 pub struct AbortController(PhantomData<JsObject>);
 
 pub mod abort_controller {
@@ -1429,6 +1442,7 @@ pub mod abort_controller {
 }
 
 /// [`AbortSignal`](https://developer.mozilla.org/docs/Web/API/AbortSignal)
+#[cfg_attr(rust_js, rust_js::types = "AbortSignal")]
 pub struct AbortSignal(PhantomData<JsObject>);
 
 impl Deref for AbortSignal {
@@ -1464,6 +1478,7 @@ pub mod abort_signal {
 
 /// [`HTMLElement`](https://developer.mozilla.org/docs/Web/API/HTMLElement)
 #[cfg_attr(rust_js, rust_js::name = "HTMLElement")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLElement")]
 pub struct HtmlElement(PhantomData<JsObject>);
 
 impl Deref for HtmlElement {
@@ -1736,6 +1751,7 @@ pub mod html_element {
 
 /// [`HTMLAnchorElement`](https://developer.mozilla.org/docs/Web/API/HTMLAnchorElement)
 #[cfg_attr(rust_js, rust_js::name = "HTMLAnchorElement")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLAnchorElement")]
 pub struct HtmlAnchorElement(PhantomData<JsObject>);
 
 impl Deref for HtmlAnchorElement {
@@ -1951,6 +1967,7 @@ pub mod html_anchor_element {
 
 /// [`HTMLButtonElement`](https://developer.mozilla.org/docs/Web/API/HTMLButtonElement)
 #[cfg_attr(rust_js, rust_js::name = "HTMLButtonElement")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLButtonElement")]
 pub struct HtmlButtonElement(PhantomData<JsObject>);
 
 impl Deref for HtmlButtonElement {
@@ -2106,6 +2123,7 @@ pub mod html_button_element {
 
 /// [`HTMLDivElement`](https://developer.mozilla.org/docs/Web/API/HTMLDivElement)
 #[cfg_attr(rust_js, rust_js::name = "HTMLDivElement")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLDivElement")]
 pub struct HtmlDivElement(PhantomData<JsObject>);
 
 impl Deref for HtmlDivElement {
@@ -2137,6 +2155,7 @@ pub mod html_div_element {
 
 /// [`HTMLFormElement`](https://developer.mozilla.org/docs/Web/API/HTMLFormElement)
 #[cfg_attr(rust_js, rust_js::name = "HTMLFormElement")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLFormElement")]
 pub struct HtmlFormElement(PhantomData<JsObject>);
 
 impl Deref for HtmlFormElement {
@@ -2270,6 +2289,7 @@ pub mod html_form_element {
 
 /// [`HTMLHeadingElement`](https://developer.mozilla.org/docs/Web/API/HTMLHeadingElement)
 #[cfg_attr(rust_js, rust_js::name = "HTMLHeadingElement")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLHeadingElement")]
 pub struct HtmlHeadingElement(PhantomData<JsObject>);
 
 impl Deref for HtmlHeadingElement {
@@ -2301,6 +2321,7 @@ pub mod html_heading_element {
 
 /// [`HTMLImageElement`](https://developer.mozilla.org/docs/Web/API/HTMLImageElement)
 #[cfg_attr(rust_js, rust_js::name = "HTMLImageElement")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLImageElement")]
 pub struct HtmlImageElement(PhantomData<JsObject>);
 
 impl Deref for HtmlImageElement {
@@ -2519,6 +2540,7 @@ pub mod html_image_element {
 
 /// [`HTMLInputElement`](https://developer.mozilla.org/docs/Web/API/HTMLInputElement)
 #[cfg_attr(rust_js, rust_js::name = "HTMLInputElement")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLInputElement")]
 pub struct HtmlInputElement(PhantomData<JsObject>);
 
 impl Deref for HtmlInputElement {
@@ -2949,6 +2971,7 @@ pub mod html_input_element {
 
 /// [`HTMLLabelElement`](https://developer.mozilla.org/docs/Web/API/HTMLLabelElement)
 #[cfg_attr(rust_js, rust_js::name = "HTMLLabelElement")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLLabelElement")]
 pub struct HtmlLabelElement(PhantomData<JsObject>);
 
 impl Deref for HtmlLabelElement {
@@ -2988,6 +3011,7 @@ pub mod html_label_element {
 
 /// [`HTMLLIElement`](https://developer.mozilla.org/docs/Web/API/HTMLLIElement)
 #[cfg_attr(rust_js, rust_js::name = "HTMLLIElement")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLLIElement")]
 pub struct HtmlLiElement(PhantomData<JsObject>);
 
 impl Deref for HtmlLiElement {
@@ -3027,6 +3051,7 @@ pub mod html_li_element {
 
 /// [`HTMLOListElement`](https://developer.mozilla.org/docs/Web/API/HTMLOListElement)
 #[cfg_attr(rust_js, rust_js::name = "HTMLOListElement")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLOListElement")]
 pub struct HtmlOListElement(PhantomData<JsObject>);
 
 impl Deref for HtmlOListElement {
@@ -3082,6 +3107,7 @@ pub mod html_o_list_element {
 
 /// [`HTMLOptionElement`](https://developer.mozilla.org/docs/Web/API/HTMLOptionElement)
 #[cfg_attr(rust_js, rust_js::name = "HTMLOptionElement")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLOptionElement")]
 pub struct HtmlOptionElement(PhantomData<JsObject>);
 
 impl Deref for HtmlOptionElement {
@@ -3161,6 +3187,7 @@ pub mod html_option_element {
 
 /// [`HTMLOutputElement`](https://developer.mozilla.org/docs/Web/API/HTMLOutputElement)
 #[cfg_attr(rust_js, rust_js::name = "HTMLOutputElement")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLOutputElement")]
 pub struct HtmlOutputElement(PhantomData<JsObject>);
 
 impl Deref for HtmlOutputElement {
@@ -3244,6 +3271,7 @@ pub mod html_output_element {
 
 /// [`HTMLParagraphElement`](https://developer.mozilla.org/docs/Web/API/HTMLParagraphElement)
 #[cfg_attr(rust_js, rust_js::name = "HTMLParagraphElement")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLParagraphElement")]
 pub struct HtmlParagraphElement(PhantomData<JsObject>);
 
 impl Deref for HtmlParagraphElement {
@@ -3275,6 +3303,7 @@ pub mod html_paragraph_element {
 
 /// [`HTMLSelectElement`](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement)
 #[cfg_attr(rust_js, rust_js::name = "HTMLSelectElement")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLSelectElement")]
 pub struct HtmlSelectElement(PhantomData<JsObject>);
 
 impl Deref for HtmlSelectElement {
@@ -3431,6 +3460,7 @@ pub mod html_select_element {
 
 /// [`HTMLSpanElement`](https://developer.mozilla.org/docs/Web/API/HTMLSpanElement)
 #[cfg_attr(rust_js, rust_js::name = "HTMLSpanElement")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLSpanElement")]
 pub struct HtmlSpanElement(PhantomData<JsObject>);
 
 impl Deref for HtmlSpanElement {
@@ -3454,6 +3484,7 @@ pub mod html_span_element {
 
 /// [`HTMLTextAreaElement`](https://developer.mozilla.org/docs/Web/API/HTMLTextAreaElement)
 #[cfg_attr(rust_js, rust_js::name = "HTMLTextAreaElement")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLTextAreaElement")]
 pub struct HtmlTextAreaElement(PhantomData<JsObject>);
 
 impl Deref for HtmlTextAreaElement {
@@ -3672,6 +3703,7 @@ pub mod html_text_area_element {
 
 /// [`HTMLUListElement`](https://developer.mozilla.org/docs/Web/API/HTMLUListElement)
 #[cfg_attr(rust_js, rust_js::name = "HTMLUListElement")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLUListElement")]
 pub struct HtmlUListElement(PhantomData<JsObject>);
 
 impl Deref for HtmlUListElement {
@@ -3711,6 +3743,7 @@ pub mod html_u_list_element {
 
 /// [`HTMLTableElement`](https://developer.mozilla.org/docs/Web/API/HTMLTableElement)
 #[cfg_attr(rust_js, rust_js::name = "HTMLTableElement")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLTableElement")]
 pub struct HtmlTableElement(PhantomData<JsObject>);
 
 impl Deref for HtmlTableElement {
@@ -3866,6 +3899,7 @@ pub mod html_table_element {
 
 /// [`HTMLTableSectionElement`](https://developer.mozilla.org/docs/Web/API/HTMLTableSectionElement)
 #[cfg_attr(rust_js, rust_js::name = "HTMLTableSectionElement")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLTableSectionElement")]
 pub struct HtmlTableSectionElement(PhantomData<JsObject>);
 
 impl Deref for HtmlTableSectionElement {
@@ -3937,6 +3971,7 @@ pub mod html_table_section_element {
 
 /// [`HTMLTableRowElement`](https://developer.mozilla.org/docs/Web/API/HTMLTableRowElement)
 #[cfg_attr(rust_js, rust_js::name = "HTMLTableRowElement")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLTableRowElement")]
 pub struct HtmlTableRowElement(PhantomData<JsObject>);
 
 impl Deref for HtmlTableRowElement {
@@ -4024,6 +4059,7 @@ pub mod html_table_row_element {
 
 /// [`HTMLTableCellElement`](https://developer.mozilla.org/docs/Web/API/HTMLTableCellElement)
 #[cfg_attr(rust_js, rust_js::name = "HTMLTableCellElement")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLTableCellElement")]
 pub struct HtmlTableCellElement(PhantomData<JsObject>);
 
 impl Deref for HtmlTableCellElement {
@@ -4163,6 +4199,7 @@ pub mod html_table_cell_element {
 
 /// [`HTMLIFrameElement`](https://developer.mozilla.org/docs/Web/API/HTMLIFrameElement)
 #[cfg_attr(rust_js, rust_js::name = "HTMLIFrameElement")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLIFrameElement")]
 pub struct HtmlIFrameElement(PhantomData<JsObject>);
 
 impl Deref for HtmlIFrameElement {
@@ -4318,6 +4355,7 @@ pub mod html_i_frame_element {
 
 /// [`HTMLCanvasElement`](https://developer.mozilla.org/docs/Web/API/HTMLCanvasElement)
 #[cfg_attr(rust_js, rust_js::name = "HTMLCanvasElement")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLCanvasElement")]
 pub struct HtmlCanvasElement(PhantomData<JsObject>);
 
 impl Deref for HtmlCanvasElement {
@@ -4372,6 +4410,7 @@ pub mod html_canvas_element {
 }
 
 /// [`Window`](https://developer.mozilla.org/docs/Web/API/Window)
+#[cfg_attr(rust_js, rust_js::types = "Window")]
 pub struct Window(PhantomData<JsObject>);
 
 impl Deref for Window {
@@ -4769,6 +4808,7 @@ pub mod window {
 }
 
 /// [`Location`](https://developer.mozilla.org/docs/Web/API/Location)
+#[cfg_attr(rust_js, rust_js::types = "Location")]
 pub struct Location(PhantomData<JsObject>);
 
 pub mod location {
@@ -4855,6 +4895,7 @@ pub mod location {
 }
 
 /// [`History`](https://developer.mozilla.org/docs/Web/API/History)
+#[cfg_attr(rust_js, rust_js::types = "History")]
 pub struct History(PhantomData<JsObject>);
 
 pub mod history {
@@ -4925,6 +4966,7 @@ pub mod history {
 }
 
 /// [`Storage`](https://developer.mozilla.org/docs/Web/API/Storage)
+#[cfg_attr(rust_js, rust_js::types = "Storage")]
 pub struct Storage(PhantomData<JsObject>);
 
 pub mod storage {
@@ -4956,6 +4998,7 @@ pub mod storage {
 }
 
 /// [`DataTransfer`](https://developer.mozilla.org/docs/Web/API/DataTransfer)
+#[cfg_attr(rust_js, rust_js::types = "DataTransfer")]
 pub struct DataTransfer(PhantomData<JsObject>);
 
 pub mod data_transfer {
@@ -5005,6 +5048,7 @@ pub mod data_transfer {
 }
 
 /// [`ToggleEvent`](https://developer.mozilla.org/docs/Web/API/ToggleEvent)
+#[cfg_attr(rust_js, rust_js::types = "ToggleEvent")]
 pub struct ToggleEvent(PhantomData<JsObject>);
 
 impl Deref for ToggleEvent {
@@ -5047,6 +5091,7 @@ pub mod toggle_event {
 }
 
 /// [`MessageEvent`](https://developer.mozilla.org/docs/Web/API/MessageEvent)
+#[cfg_attr(rust_js, rust_js::types = "MessageEvent")]
 pub struct MessageEvent(PhantomData<JsObject>);
 
 impl Deref for MessageEvent {
@@ -5138,6 +5183,7 @@ pub mod message_event {
 }
 
 /// [`SubmitEvent`](https://developer.mozilla.org/docs/Web/API/SubmitEvent)
+#[cfg_attr(rust_js, rust_js::types = "SubmitEvent")]
 pub struct SubmitEvent(PhantomData<JsObject>);
 
 impl Deref for SubmitEvent {
@@ -5172,6 +5218,7 @@ pub mod submit_event {
 }
 
 /// [`Performance`](https://developer.mozilla.org/docs/Web/API/Performance)
+#[cfg_attr(rust_js, rust_js::types = "Performance")]
 pub struct Performance(PhantomData<JsObject>);
 
 impl Deref for Performance {
@@ -5206,6 +5253,7 @@ pub mod performance {
 
 /// [`UIEvent`](https://developer.mozilla.org/docs/Web/API/UIEvent)
 #[cfg_attr(rust_js, rust_js::name = "UIEvent")]
+#[cfg_attr(rust_js, rust_js::types = "UIEvent")]
 pub struct UiEvent(PhantomData<JsObject>);
 
 impl Deref for UiEvent {
@@ -5268,6 +5316,7 @@ pub mod ui_event {
 }
 
 /// [`FocusEvent`](https://developer.mozilla.org/docs/Web/API/FocusEvent)
+#[cfg_attr(rust_js, rust_js::types = "FocusEvent")]
 pub struct FocusEvent(PhantomData<JsObject>);
 
 impl Deref for FocusEvent {
@@ -5302,6 +5351,7 @@ pub mod focus_event {
 }
 
 /// [`MouseEvent`](https://developer.mozilla.org/docs/Web/API/MouseEvent)
+#[cfg_attr(rust_js, rust_js::types = "MouseEvent")]
 pub struct MouseEvent(PhantomData<JsObject>);
 
 impl Deref for MouseEvent {
@@ -5472,6 +5522,7 @@ pub mod mouse_event {
 }
 
 /// [`KeyboardEvent`](https://developer.mozilla.org/docs/Web/API/KeyboardEvent)
+#[cfg_attr(rust_js, rust_js::types = "KeyboardEvent")]
 pub struct KeyboardEvent(PhantomData<JsObject>);
 
 impl Deref for KeyboardEvent {
@@ -5590,6 +5641,7 @@ pub mod keyboard_event {
 }
 
 /// [`InputEvent`](https://developer.mozilla.org/docs/Web/API/InputEvent)
+#[cfg_attr(rust_js, rust_js::types = "InputEvent")]
 pub struct InputEvent(PhantomData<JsObject>);
 
 impl Deref for InputEvent {
@@ -5632,6 +5684,7 @@ pub mod input_event {
 }
 
 /// [`PointerEvent`](https://developer.mozilla.org/docs/Web/API/PointerEvent)
+#[cfg_attr(rust_js, rust_js::types = "PointerEvent")]
 pub struct PointerEvent(PhantomData<JsObject>);
 
 impl Deref for PointerEvent {
@@ -5707,6 +5760,7 @@ pub mod pointer_event {
 
 /// [`CSSStyleDeclaration`](https://developer.mozilla.org/docs/Web/API/CSSStyleDeclaration)
 #[cfg_attr(rust_js, rust_js::name = "CSSStyleDeclaration")]
+#[cfg_attr(rust_js, rust_js::types = "CSSStyleDeclaration")]
 pub struct CssStyleDeclaration(PhantomData<JsObject>);
 
 pub mod css_style_declaration {
@@ -5752,6 +5806,7 @@ pub mod css_style_declaration {
 
 /// [`CSSStyleProperties`](https://developer.mozilla.org/docs/Web/API/CSSStyleProperties)
 #[cfg_attr(rust_js, rust_js::name = "CSSStyleProperties")]
+#[cfg_attr(rust_js, rust_js::types = "CSSStyleProperties")]
 pub struct CssStyleProperties(PhantomData<JsObject>);
 
 impl Deref for CssStyleProperties {
@@ -5783,6 +5838,7 @@ pub mod css_style_properties {
 
 /// [`DOMRectReadOnly`](https://developer.mozilla.org/docs/Web/API/DOMRectReadOnly)
 #[cfg_attr(rust_js, rust_js::name = "DOMRectReadOnly")]
+#[cfg_attr(rust_js, rust_js::types = "DOMRectReadOnly")]
 pub struct DomRectReadOnly(PhantomData<JsObject>);
 
 pub mod dom_rect_read_only {
@@ -5849,6 +5905,7 @@ pub mod dom_rect_read_only {
 
 /// [`DOMRect`](https://developer.mozilla.org/docs/Web/API/DOMRect)
 #[cfg_attr(rust_js, rust_js::name = "DOMRect")]
+#[cfg_attr(rust_js, rust_js::types = "DOMRect")]
 pub struct DomRect(PhantomData<JsObject>);
 
 impl Deref for DomRect {
@@ -5923,6 +5980,7 @@ pub mod dom_rect {
 }
 
 /// [`MediaQueryList`](https://developer.mozilla.org/docs/Web/API/MediaQueryList)
+#[cfg_attr(rust_js, rust_js::types = "MediaQueryList")]
 pub struct MediaQueryList(PhantomData<JsObject>);
 
 impl Deref for MediaQueryList {
@@ -5961,6 +6019,7 @@ pub mod media_query_list {
 }
 
 /// [`MediaQueryListEvent`](https://developer.mozilla.org/docs/Web/API/MediaQueryListEvent)
+#[cfg_attr(rust_js, rust_js::types = "MediaQueryListEvent")]
 pub struct MediaQueryListEvent(PhantomData<JsObject>);
 
 impl Deref for MediaQueryListEvent {
@@ -5999,6 +6058,7 @@ pub mod media_query_list_event {
 }
 
 /// [`Headers`](https://developer.mozilla.org/docs/Web/API/Headers)
+#[cfg_attr(rust_js, rust_js::types = "Headers")]
 pub struct Headers(PhantomData<JsObject>);
 
 pub mod headers {
@@ -6031,6 +6091,7 @@ pub mod headers {
 }
 
 /// [`Request`](https://developer.mozilla.org/docs/Web/API/Request)
+#[cfg_attr(rust_js, rust_js::types = "Request")]
 pub struct Request(PhantomData<JsObject>);
 
 pub mod request {
@@ -6147,6 +6208,7 @@ pub mod request {
 }
 
 /// [`Response`](https://developer.mozilla.org/docs/Web/API/Response)
+#[cfg_attr(rust_js, rust_js::types = "Response")]
 pub struct Response(PhantomData<JsObject>);
 
 pub mod response {
@@ -6231,6 +6293,7 @@ pub mod response {
 }
 
 /// [`FormData`](https://developer.mozilla.org/docs/Web/API/FormData)
+#[cfg_attr(rust_js, rust_js::types = "FormData")]
 pub struct FormData(PhantomData<JsObject>);
 
 pub mod form_data {
@@ -6288,6 +6351,7 @@ pub mod form_data {
 }
 
 /// [`ReadableStream`](https://developer.mozilla.org/docs/Web/API/ReadableStream)
+#[cfg_attr(rust_js, rust_js::types = "ReadableStream")]
 pub struct ReadableStream(PhantomData<JsObject>);
 
 pub mod readable_stream {
@@ -6332,6 +6396,7 @@ pub mod readable_stream {
 }
 
 /// [`Touch`](https://developer.mozilla.org/docs/Web/API/Touch)
+#[cfg_attr(rust_js, rust_js::types = "Touch")]
 pub struct Touch(PhantomData<JsObject>);
 
 pub mod touch {
@@ -6381,6 +6446,7 @@ pub mod touch {
 }
 
 /// [`TouchList`](https://developer.mozilla.org/docs/Web/API/TouchList)
+#[cfg_attr(rust_js, rust_js::types = "TouchList")]
 pub struct TouchList(PhantomData<JsObject>);
 
 pub mod touch_list {
@@ -6397,6 +6463,7 @@ pub mod touch_list {
 }
 
 /// [`TextEncoder`](https://developer.mozilla.org/docs/Web/API/TextEncoder)
+#[cfg_attr(rust_js, rust_js::types = "TextEncoder")]
 pub struct TextEncoder(PhantomData<JsObject>);
 
 pub mod text_encoder {
@@ -6421,6 +6488,7 @@ pub mod text_encoder {
 }
 
 /// [`TextDecoder`](https://developer.mozilla.org/docs/Web/API/TextDecoder)
+#[cfg_attr(rust_js, rust_js::types = "TextDecoder")]
 pub struct TextDecoder(PhantomData<JsObject>);
 
 pub mod text_decoder {
@@ -6466,6 +6534,7 @@ pub mod text_decoder {
 
 /// [`WebAssembly.Module`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Module)
 #[cfg_attr(rust_js, rust_js::name = "WebAssembly.Module")]
+#[cfg_attr(rust_js, rust_js::types = "WebAssembly.Module")]
 pub struct WebAssemblyModule(PhantomData<JsObject>);
 
 pub mod web_assembly_module {
@@ -6484,6 +6553,7 @@ pub mod web_assembly_module {
 
 /// [`WebAssembly.Instance`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Instance)
 #[cfg_attr(rust_js, rust_js::name = "WebAssembly.Instance")]
+#[cfg_attr(rust_js, rust_js::types = "WebAssembly.Instance")]
 pub struct WebAssemblyInstance(PhantomData<JsObject>);
 
 pub mod web_assembly_instance {
@@ -6506,6 +6576,7 @@ pub mod web_assembly_instance {
 
 /// [`WebAssembly.Memory`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Memory)
 #[cfg_attr(rust_js, rust_js::name = "WebAssembly.Memory")]
+#[cfg_attr(rust_js, rust_js::types = "WebAssembly.Memory")]
 pub struct WebAssemblyMemory(PhantomData<JsObject>);
 
 pub mod web_assembly_memory {
@@ -6539,6 +6610,7 @@ pub mod web_assembly_memory {
 }
 
 /// [`Blob`](https://developer.mozilla.org/docs/Web/API/Blob)
+#[cfg_attr(rust_js, rust_js::types = "Blob")]
 pub struct Blob(PhantomData<JsObject>);
 
 pub mod blob {
@@ -6584,6 +6656,7 @@ pub mod blob {
 }
 
 /// [`File`](https://developer.mozilla.org/docs/Web/API/File)
+#[cfg_attr(rust_js, rust_js::types = "File")]
 pub struct File(PhantomData<JsObject>);
 
 impl Deref for File {
@@ -6618,6 +6691,7 @@ pub mod file {
 }
 
 /// [`Navigator`](https://developer.mozilla.org/docs/Web/API/Navigator)
+#[cfg_attr(rust_js, rust_js::types = "Navigator")]
 pub struct Navigator(PhantomData<JsObject>);
 
 pub mod navigator {
@@ -6707,6 +6781,7 @@ pub mod navigator {
 }
 
 /// [`Clipboard`](https://developer.mozilla.org/docs/Web/API/Clipboard)
+#[cfg_attr(rust_js, rust_js::types = "Clipboard")]
 pub struct Clipboard(PhantomData<JsObject>);
 
 impl Deref for Clipboard {
@@ -6740,6 +6815,7 @@ pub mod clipboard {
 }
 
 /// [`ClipboardItem`](https://developer.mozilla.org/docs/Web/API/ClipboardItem)
+#[cfg_attr(rust_js, rust_js::types = "ClipboardItem")]
 pub struct ClipboardItem(PhantomData<JsObject>);
 
 pub mod clipboard_item {

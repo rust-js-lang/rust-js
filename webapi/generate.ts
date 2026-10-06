@@ -777,6 +777,8 @@ for (const name of INTERFACES) {
   line(`/// [\`${jsName(i)}\`](${mdn(name)})`);
   // Its JS class, as `instanceof` names it, where its Rust name isn't (ADR 0214).
   if (jsName(i) !== type) line(`#[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(jsName(i))})]`);
+  // What it is to TypeScript: its DOM lib's interface of the same name.
+  line(`#[cfg_attr(rust_js, rust_js::types = ${JSON.stringify(jsName(i))})]`);
   line(`pub struct ${type}(PhantomData<JsObject>);`);
   if (i.parent && known.has(i.parent)) {
     const parent = typeName(i.parent);

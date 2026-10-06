@@ -247,7 +247,7 @@ pub fn count(items: Items<u32>) -> usize {
     "export interface TagProps {\n    variant: RouteTag;\n    text?: string;\n    count: number;\n}",
     "export function Tag(props: TagProps): ReactNode;",
     "export interface LinkProps<C> {\n    href?: string;\n    children: C;\n    [prop: string]: unknown;\n}",
-    "export function ExternalLink<C extends ReactNode>(props: LinkProps<C>): ReactNode;",
+    "export function ExternalLink(props: LinkProps<ReactNode>): ReactNode;",
     "export interface ButtonProps extends Anchor {\n    size?: string;\n}",
     "export interface CardProps {\n    [prop: string]: unknown;\n}",
     'import type { AnchorHTMLAttributes, NamedExoticComponent, ReactNode } from "react";\nimport type { Level, RouteItem } from "./routes.js";',
@@ -363,6 +363,45 @@ export const wrong: BadgeProps = { title: null };
   expect([shown(null), shown(undefined), shown("a")]).toEqual(["none", "none", "a"]);
 });
 
+// A function is typed as Rust types it, react.dev's Button's `onClick` a
+// `(event: MouseEvent<Element>) => void`, where it was `(...args: any[]) => any`.
+test("declarations type a function by what it takes and gives", () => {
+  buildReact();
+  const dir = fixture("declarations-functions");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
+  writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
+use react::{Element, event, jsx};
+
+pub struct ButtonProps {
+    #[rust_js::name = "onClick"]
+    pub on_click: Option<Box<dyn Fn(&event::Mouse)>>,
+    pub format: fn(u32, u32) -> String,
+}
+
+pub fn Button(ButtonProps { on_click, format }: ButtonProps) -> Element {
+    jsx! { <button onClick={move |e| if let Some(f) = &on_click { f(e.upcast()) }}>{format(1, 2)}</button> }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain('import type { MouseEvent, ReactNode } from "react";');
+  expect(declarations).toContain("onClick?: (event: MouseEvent<Element>) => void;");
+  expect(declarations).toContain("format: (value: number, value2: number) => string;");
+  writeFileSync(join(dir, "use.tsx"), `import { Button } from "./lib.jsx";
+const format = (a: number, b: number) => \`\${a}/\${b}\`;
+export const ok = <Button format={format} onClick={(event) => event.currentTarget.tagName} />;
+export const wrong = <Button format={format} onClick={(event: number) => event} />;
+`);
+  writeFileSync(join(dir, "tsconfig.json"), JSON.stringify({
+    compilerOptions: { jsx: "react-jsx", strict: true, noEmit: true, module: "esnext", moduleResolution: "bundler", allowJs: true, skipLibCheck: false, typeRoots: [join(root, "node_modules/@types")] },
+    files: ["use.tsx"],
+  }));
+  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
+  const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
+  expect(errors.length).toBe(1);
+  expect(errors[0]).toContain("use.tsx(4,");
+});
+
 // A component only `js::export_default!` exports is declared, not exported
 // by its name, as react.dev's `function Recap() {..} export default Recap;`.
 test("declarations declare a private default export", () => {
@@ -475,7 +514,7 @@ pub fn ButtonLink<C: Node>(ButtonLinkProps { href, class_name, children, props }
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(declarations).toContain('import type { AnchorHTMLAttributes, ReactNode } from "react";');
-  expect(declarations).toContain('export interface ButtonLinkProps<C extends ReactNode> extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href" | "className"> {');
+  expect(declarations).toContain('export interface ButtonLinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href" | "className"> {\n    href: string;\n    className?: string;\n    children: ReactNode;\n}');
   writeFileSync(join(dir, "use.tsx"), `import { ButtonLink } from "./lib.jsx";
 export const ok = <ButtonLink href="/a" className="c" download="file" aria-label="A" onClick={(event) => event.currentTarget.href}>Go</ButtonLink>;
 export const wrong = <ButtonLink href="/a" hrefLang={1}>Go</ButtonLink>;
@@ -486,7 +525,7 @@ export const wrong = <ButtonLink href="/a" hrefLang={1}>Go</ButtonLink>;
   }));
   const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
   const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
-  expect(declarations).toContain("export function ButtonLink<C extends ReactNode>(props: ButtonLinkProps<C>): ReactNode;");
+  expect(declarations).toContain("export function ButtonLink(props: ButtonLinkProps): ReactNode;");
   expect(errors.length).toBe(1);
   expect(errors[0]).toContain("use.tsx(3,");
   const { ButtonLink } = await import(join(dir, "lib.jsx"));

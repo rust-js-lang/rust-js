@@ -14,7 +14,9 @@ use core::ops::Deref;
 use js::JsObject;
 
 /// A [React event](https://react.dev/reference/react-dom/components/common#react-event-object):
-/// what every handler gets.
+/// what every handler gets. To TypeScript, @types/react's of the same
+/// name, but this one's, `SyntheticEvent`.
+#[cfg_attr(rust_js, rust_js::types = "react#SyntheticEvent<T>")]
 pub struct Event<T = webapi::Element>(PhantomData<JsObject>, PhantomData<T>);
 
 impl<T> Event<T> {
@@ -102,11 +104,12 @@ macro_rules! widen {
 
 widen!(Event);
 
-/// Declares an event type that extends another.
+/// Declares an event type that extends another, and what it is to TypeScript.
 macro_rules! events {
-    ($($(#[doc = $doc:literal])* $name:ident: $parent:ident { $($body:tt)* })*) => {
+    ($($(#[doc = $doc:literal])* $name:ident as $ts:literal: $parent:ident { $($body:tt)* })*) => {
         $(
             $(#[doc = $doc])*
+            #[cfg_attr(rust_js, rust_js::types = $ts)]
             pub struct $name<T = webapi::Element>(PhantomData<JsObject>, PhantomData<T>);
 
             impl<T> Deref for $name<T> {
@@ -126,13 +129,13 @@ macro_rules! events {
 
 events! {
     /// A [UI event](https://developer.mozilla.org/docs/Web/API/UIEvent), like a scroll.
-    Ui: Event {
+    Ui as "react#UIEvent<T>": Event {
         detail: i32 = "detail";
         view: &'static webapi::Window = "view";
     }
 
     /// A click, or another [mouse event](https://developer.mozilla.org/docs/Web/API/MouseEvent).
-    Mouse: Ui {
+    Mouse as "react#MouseEvent<T>": Ui {
         alt_key: bool = "altKey";
         /// Which button: 0 is the main one.
         button: i32 = "button";
@@ -153,7 +156,7 @@ events! {
 
     /// A [pointer event](https://developer.mozilla.org/docs/Web/API/PointerEvent):
     /// mouse, pen or touch.
-    Pointer: Mouse {
+    Pointer as "react#PointerEvent<T>": Mouse {
         height: f64 = "height";
         is_primary: bool = "isPrimary";
         pointer_id: i32 = "pointerId";
@@ -169,12 +172,12 @@ events! {
 
     /// A [drag event](https://developer.mozilla.org/docs/Web/API/DragEvent).
     /// Call `prevent_default` in `on_drag_over` to allow a drop.
-    Drag: Mouse {
+    Drag as "react#DragEvent<T>": Mouse {
         data_transfer: &'static webapi::DataTransfer = "dataTransfer";
     }
 
     /// A [wheel event](https://developer.mozilla.org/docs/Web/API/WheelEvent).
-    Wheel: Mouse {
+    Wheel as "react#WheelEvent<T>": Mouse {
         delta_mode: u32 = "deltaMode";
         delta_x: f64 = "deltaX";
         delta_y: f64 = "deltaY";
@@ -182,13 +185,13 @@ events! {
     }
 
     /// Focus coming or going: `on_focus` and `on_blur`, which bubble in React.
-    Focus: Ui {
+    Focus as "react#FocusEvent<T>": Ui {
         /// Where focus went, or came from.
         related_target: Option<&'static webapi::Element> = "relatedTarget";
     }
 
     /// A key pressed or let go.
-    Keyboard: Ui {
+    Keyboard as "react#KeyboardEvent<T>": Ui {
         alt_key: bool = "altKey";
         /// Which key it is on the keyboard, like `"KeyA"`.
         code: String = "code";
@@ -203,7 +206,7 @@ events! {
     }
 
     /// A [touch event](https://developer.mozilla.org/docs/Web/API/TouchEvent).
-    Touch: Ui {
+    Touch as "react#TouchEvent<T>": Ui {
         alt_key: bool = "altKey";
         changed_touches: &'static webapi::TouchList = "changedTouches";
         ctrl_key: bool = "ctrlKey";
@@ -214,43 +217,43 @@ events! {
     }
 
     /// A CSS [animation event](https://developer.mozilla.org/docs/Web/API/AnimationEvent).
-    Animation: Event {
+    Animation as "react#AnimationEvent<T>": Event {
         animation_name: String = "animationName";
         elapsed_time: f64 = "elapsedTime";
         pseudo_element: String = "pseudoElement";
     }
 
     /// A CSS [transition event](https://developer.mozilla.org/docs/Web/API/TransitionEvent).
-    Transition: Event {
+    Transition as "react#TransitionEvent<T>": Event {
         elapsed_time: f64 = "elapsedTime";
         property_name: String = "propertyName";
         pseudo_element: String = "pseudoElement";
     }
 
     /// Copying, cutting or pasting.
-    Clipboard: Event {
+    Clipboard as "react#ClipboardEvent<T>": Event {
         clipboard_data: &'static webapi::DataTransfer = "clipboardData";
     }
 
     /// Text being composed with an input method.
-    Composition: Event {
+    Composition as "react#CompositionEvent<T>": Event {
         data: String = "data";
     }
 
     /// `on_before_input`: text about to be typed.
-    Input: Event {
+    Input as "react#InputEvent<T>": Event {
         data: Option<String> = "data";
     }
 
     /// A popover or `<details>` opening or closing: `on_toggle`, `on_before_toggle`.
-    Toggle: Event {
+    Toggle as "react#ToggleEvent<T>": Event {
         /// `"open"` or `"closed"`.
         new_state: String = "newState";
         old_state: String = "oldState";
     }
 
     /// An `<input>`, `<select>` or `<textarea>` changing: `on_change`, `on_input`.
-    Change: Event {
+    Change as "react#ChangeEvent<T>": Event {
         /// What's in it now: `e.target.value`.
         value: String = "target.value";
         /// Whether a checkbox is checked now: `e.target.checked`.

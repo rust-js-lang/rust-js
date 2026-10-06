@@ -122,7 +122,8 @@ macro_rules! jsx {
 /// `None` is nothing. Each is the JS value React expects already, so nothing
 /// converts them. Only these are: what each one's `Default` makes is
 /// std's or React's, which rust-js knows does nothing else. To TypeScript,
-/// a type parameter of one is a `ReactNode`, `C extends ReactNode`.
+/// a type parameter of one is a `ReactNode`: `children: C` of a `C: Node`
+/// is `children: ReactNode`.
 #[cfg_attr(rust_js, rust_js::jsx_node)]
 #[cfg_attr(rust_js, rust_js::types = "react#ReactNode<>")]
 pub trait Node: sealed::Sealed {}
