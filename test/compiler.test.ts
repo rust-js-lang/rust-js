@@ -738,6 +738,47 @@ test("the webapi crate's bindings become plain JS", async () => {
 });
 
 
+// ADR 0223: an event's name gives its listener the event its target takes,
+// and a tag's name the element it makes, from `@webref/events` and
+// `@webref/elements`, as TypeScript's `HTMLElementEventMap` and
+// `HTMLElementTagNameMap` do. Each name is a type whose value is its string.
+test("webapi's event and tag maps type a listener and an element", () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-maps");
+  const source = `use webapi::events::{Click, Keydown};
+use webapi::tags::Button;
+use webapi::{document, event_target, html_button_element, keyboard_event, mouse_event};
+pub fn wire() -> &'static webapi::HtmlButtonElement {
+    let button = document::create_element(document, Button);
+    html_button_element::set_disabled(button, false);
+    event_target::add_event_listener(button, Click, Box::new(|e| {
+        let _ = mouse_event::client_x(e);
+    }));
+    event_target::add_event_listener(document, Keydown, Box::new(|e| {
+        let _ = keyboard_event::key(e);
+    }));
+    button
+}
+`;
+  writeFileSync(join(dir, "lib.rs"), source);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('const button = document.createElement("button");');
+  expect(js).toContain("button.disabled = false;");
+  expect(js).toContain('button.addEventListener("click", (e) => {');
+  expect(js).toContain('document.addEventListener("keydown", (e) => {');
+  // A key's event isn't a mouse's, and a button takes no window's message.
+  for (const [wrong, error, message] of [
+    ["add_event_listener(document, Keydown, Box::new(|e| {\n        let _ = keyboard_event::key(e);", "add_event_listener(document, Keydown, Box::new(|e| {\n        let _ = mouse_event::client_x(e);", "expected `&MouseEvent`, found `&KeyboardEvent`"],
+    ["use webapi::events::{Click, Keydown};", "use webapi::events::{Click, Keydown, Message};\nfn message(b: &webapi::HtmlButtonElement) { event_target::add_event_listener(b, Message, Box::new(|_| ())); }", "the trait `webapi::Listen<webapi::events::Message>` is not implemented for `webapi::HtmlButtonElement`"],
+  ]) {
+    writeFileSync(join(dir, "lib.rs"), source.replace(wrong, error));
+    const result = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "wrong.js"), ...withWeb]);
+    expect(result.exitCode).not.toBe(0);
+    expect(result.stderr.toString()).toContain(message);
+  }
+});
+
 // An element's constructor is WebIDL's `[HTMLConstructor]`, which only a
 // custom element's class can call: `new HTMLDivElement()` in a page throws
 // "Illegal constructor". So webapi binds none, and an element is made with
@@ -1426,6 +1467,38 @@ pub fn largest_of(values: Vec<f64>) -> f64 {
   expect(js).toContain("return Math.max(...values);");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.largest(-3, -2), lib.largest(4, 2), lib.largest_of([2, 9, 4])]).toEqual([1, 4, 9]);
+});
+
+// A unit struct named `#[rust_js::name]` is that string, as a fieldless
+// variant is (ADR 0013): `webapi`'s event names, `Click`, are types whose
+// value is `"click"` (ADR 0223). One without a name holds nothing.
+test("a named unit struct is its name", async () => {
+  const dir = fixture("named-unit-struct");
+  writeFileSync(join(dir, "lib.rs"), `#[rust_js::name = "click"]
+pub struct Click;
+pub struct Marker;
+const CLICK: Click = Click;
+fn pass<E>(event: E) -> E {
+    event
+}
+pub fn click() -> Click {
+    Click
+}
+pub fn passed() -> Click {
+    pass(Click)
+}
+pub fn constant() -> Click {
+    CLICK
+}
+pub fn marker() -> Marker {
+    Marker
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('return "click";');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.click(), lib.passed(), lib.constant(), lib.marker()]).toEqual(["click", "click", "click", undefined]);
 });
 
 // A two-arm `match` as a value, its arms plain and binding nothing, is a

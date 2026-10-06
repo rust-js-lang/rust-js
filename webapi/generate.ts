@@ -9,6 +9,10 @@
 
 import idl from "@webref/idl";
 import webref from "@webref/idl/package.json" with { type: "json" };
+import webrefEvents from "@webref/events";
+import eventsPackage from "@webref/events/package.json" with { type: "json" };
+import webrefElements from "@webref/elements";
+import elementsPackage from "@webref/elements/package.json" with { type: "json" };
 
 // The specs to read. Partial interfaces and mixins from these are merged in.
 const SPECS = ["dom", "html", "hr-time", "uievents", "pointerevents", "cssom", "cssom-view", "geometry", "fetch", "encoding", "wasm-js-api", "wasm-web-api", "xhr", "streams", "touch-events", "FileAPI", "clipboard-apis"];
@@ -25,11 +29,13 @@ const INTERFACES = [
   "HTMLSelectElement", "HTMLSpanElement", "HTMLTextAreaElement", "HTMLUListElement",
   "HTMLTableElement", "HTMLTableSectionElement", "HTMLTableRowElement", "HTMLTableCellElement", "HTMLIFrameElement",
   "HTMLCanvasElement",
-  "Window", "Location", "History", "Storage", "DataTransfer", "ToggleEvent", "MessageEvent",
+  "Window", "Location", "History", "Storage", "DataTransfer", "ToggleEvent", "MessageEvent", "SubmitEvent",
   // hr-time: `window.performance`, the page's clock
   "Performance",
   // uievents
   "UIEvent", "FocusEvent", "MouseEvent", "KeyboardEvent", "InputEvent",
+  // pointerevents: a click is a `PointerEvent`
+  "PointerEvent",
   // cssom
   "CSSStyleDeclaration", "CSSStyleProperties",
   // cssom-view, geometry: where things are on the page
@@ -418,6 +424,14 @@ const skip = (why: string) => skipped.set(why, (skipped.get(why) ?? 0) + 1);
 
 type Fn = { name: string; jsName: string; params: string[]; result: string; doc: string[] };
 
+// Operations whose typed form, by an event's or a tag's type (ADR 0223), has
+// their name: the form that takes any string is `_named`.
+const NAMED: Record<string, string> = {
+  "EventTarget.addEventListener": "add_event_listener_named",
+  "EventTarget.removeEventListener": "remove_event_listener_named",
+  "Document.createElement": "create_element_named",
+};
+
 /** The root of `name`'s inheritance chain within INTERFACES. */
 function root(name: string): string {
   const parent = interfaces.get(name)!.parent;
@@ -538,8 +552,9 @@ function functionsOf(i: Interface): Fn[] {
         : required.flatMap((a, j) =>
             !firstRequired[j] ? [snake(a.name)] : key(firstRequired[j]) !== key(a) ? [suffix(sig.types[j])] : [],
           );
-      const base = lead.length > 0 ? `${snake(m.name)}_with_${lead.join("_and_")}` : snake(m.name);
-      for (const v of [requiredForm(base, sig), ...optionalForms(snake(m.name), lead, sig, m.arguments ?? [])]) {
+      const name = NAMED[`${i.name}.${m.name}`] ?? snake(m.name);
+      const base = lead.length > 0 ? `${name}_with_${lead.join("_and_")}` : name;
+      for (const v of [requiredForm(base, sig), ...optionalForms(name, lead, sig, m.arguments ?? [])]) {
         fns.push({ name: v.name, jsName: member(m.name), params: [...self, ...v.params], result: orNull(result, m.idlType!), doc });
       }
     }
@@ -568,6 +583,90 @@ function functionsOf(i: Interface): Fn[] {
   });
 }
 
+// ── Events and tags (ADR 0223) ──────────────────────────────────────────
+
+// Every interface WebIDL has, in any spec, by its parent: an event's or an
+// element's interface this crate doesn't bind is the nearest one it does.
+const parents = new Map(everywhere.filter((d) => d.type === "interface" && !d.partial).map((d) => [d.name, d.inheritance ?? undefined]));
+const chain = (name: string): string[] => {
+  const parent = interfaces.get(name)?.parent;
+  return parent && known.has(parent) ? [parent, ...chain(parent)] : [];
+};
+const bound = (name: string): string => {
+  for (let n: string | undefined = name; n; n = parents.get(n)) if (known.has(n)) return n;
+  return "Event";
+};
+/** An event's or a tag's name as a type: `click` → `Click`, `h1` → `H1`. */
+const nameType = (name: string) =>
+  name.split(/[^A-Za-z0-9]+/).filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join("");
+
+// Where each event is fired, or bubbles to, by target and name: its interfaces.
+type WebrefEvent = { type: string; interface: string; targets?: { target: string; bubblingPath?: string[] }[] };
+const fired = new Map<string, Map<string, Set<string>>>();
+for (const e of Object.values(await webrefEvents.listAll()) as WebrefEvent[]) {
+  for (const t of e.targets ?? []) {
+    for (const at of [t.target, ...(t.bubblingPath ?? [])]) {
+      const names = fired.get(at) ?? new Map<string, Set<string>>();
+      names.set(e.type, (names.get(e.type) ?? new Set<string>()).add(bound(e.interface)));
+      fired.set(at, names);
+    }
+  }
+}
+// What each target this crate binds takes: each name its own interface, or
+// the nearest ancestor, fires; its event the one interface they say, or
+// `Event` where specs disagree.
+let disagreeing = 0;
+const listens = new Map<string, Map<string, string>>();
+for (const name of INTERFACES) {
+  if (name !== "EventTarget" && !chain(name).includes("EventTarget")) continue;
+  const map = new Map<string, string>();
+  for (const level of [name, ...chain(name)]) {
+    for (const [event, given] of fired.get(level) ?? []) {
+      if (map.has(event)) continue;
+      if (given.size > 1) disagreeing++;
+      map.set(event, given.size === 1 ? [...given][0] : "Event");
+    }
+  }
+  if (map.size > 0) listens.set(name, map);
+}
+const eventNames = [...new Set([...listens.values()].flatMap((m) => [...m.keys()]))].sort();
+
+// Each HTML element by its tag: the interface it is, or the nearest one
+// bound. Not SVG's nor MathML's, nor an obsolete one.
+type WebrefElements = { elements: { name: string; interface?: string; obsolete?: boolean }[] };
+const tagElements = new Map<string, string>();
+for (const spec of Object.values(await webrefElements.listAll()) as WebrefElements[]) {
+  for (const el of spec.elements) {
+    if (!el.interface || el.obsolete || tagElements.has(el.name)) continue;
+    const lineage: string[] = [];
+    for (let n: string | undefined = el.interface; n; n = parents.get(n)) lineage.push(n);
+    if (lineage.includes("HTMLElement")) tagElements.set(el.name, bound(el.interface));
+  }
+}
+const tagNames = [...tagElements.keys()].sort();
+for (const names of [eventNames, tagNames]) {
+  const types = names.map(nameType);
+  const clash = types.find((t, k) => types.indexOf(t) !== k);
+  if (clash) throw new Error(`two names are ${clash}`);
+}
+
+// The typed forms of the `_named` operations: generic, so Rust functions
+// whose JS is the operation's, not extern ones.
+const typed = (doc: string[], js: string, signature: string) =>
+  [...doc.map((d) => `    /// ${d}`), `    #[cfg_attr(rust_js, rust_js::link_name = ${JSON.stringify(js)})]`, `    pub fn ${signature} {`, `        unreachable!()`, `    }`].join("\n");
+const listener = "Box<dyn FnMut(&<T as Listen<E>>::Event)>";
+const TYPED: Record<string, string[]> = {
+  EventTarget: [
+    typed([`[MDN](${mdn("EventTarget", "addEventListener")}): \`listener\` for each event of a name here,`, "given the event the name is on this target (ADR 0223): a button's `Click` is a", "`PointerEvent`. One the data doesn't know is `add_event_listener_named`'s."], "addEventListener", `add_event_listener<T: Listen<E>, E>(this: &T, event: E, listener: ${listener})`),
+    typed([`[MDN](${mdn("EventTarget", "addEventListener")})`], "addEventListener", `add_event_listener_with_options<T: Listen<E>, E>(this: &T, event: E, listener: ${listener}, options: AddEventListenerOptionsOrBool<'_>)`),
+    typed([`[MDN](${mdn("EventTarget", "removeEventListener")})`], "removeEventListener", `remove_event_listener<T: Listen<E>, E>(this: &T, event: E, listener: ${listener})`),
+    typed([`[MDN](${mdn("EventTarget", "removeEventListener")})`], "removeEventListener", `remove_event_listener_with_options<T: Listen<E>, E>(this: &T, event: E, listener: ${listener}, options: EventListenerOptionsOrBool)`),
+  ],
+  Document: [
+    typed([`[MDN](${mdn("Document", "createElement")}): the element a tag is (ADR 0223),`, "`create_element(document, Button)` a `HtmlButtonElement`. Another name is", "`create_element_named`'s, an `Element`."], "createElement", `create_element<T: Tag>(this: &Document, tag: T) -> &'static <T as Tag>::Element`),
+  ],
+};
+
 const out: string[] = [];
 const line = (s = "") => out.push(s);
 
@@ -578,6 +677,8 @@ line(`//! Each interface is a type (\`Element\`) and a module of its members`);
 line(`//! (\`element::append\`). Inheritance is \`Deref\`, so an \`&HtmlButtonElement\``);
 line(`//! goes wherever an \`&Element\` or \`&Node\` is expected. See ADR 0024.`);
 line(`//! The JS language's own types, \`Promise\` and \`ArrayBuffer\` say, are the js crate's (ADR 0102).`);
+line(`//! Each event's name and each tag is a type too (ADR 0223), from \`@webref/events\` ${eventsPackage.version}`);
+line(`//! and \`@webref/elements\` ${elementsPackage.version}: \`events::Click\`, whose value is \`"click"\`.`);
 line();
 line(`// Many Rust functions call the same JS name: a form per optional argument
 // (\`new\`, \`new_with_body\`), and methods of the same name on different
@@ -602,7 +703,7 @@ line(`}`);
 let count = 0;
 
 /** `pub mod <name> { .. }`, holding a type's or a namespace's functions. */
-function module(name: string, fns: Fn[]) {
+function module(name: string, fns: Fn[], typed: string[] = []) {
   if (fns.length === 0) return;
   count += fns.length;
   line();
@@ -618,6 +719,10 @@ function module(name: string, fns: Fn[]) {
     line(`        pub safe fn ${f.name}(${f.params.join(", ")})${result};`);
   });
   line(`    }`);
+  for (const t of typed) {
+    line();
+    line(t);
+  }
   line(`}`);
 }
 
@@ -641,7 +746,7 @@ for (const name of INTERFACES) {
     line(`    }`);
     line(`}`);
   }
-  module(snake(qualified(name)), [...functionsOf(i), ...(EXTRA[name] ?? [])]);
+  module(snake(qualified(name)), [...functionsOf(i), ...(EXTRA[name] ?? [])], TYPED[name] ?? []);
 }
 
 for (const name of NAMESPACES) {
@@ -703,7 +808,61 @@ for (const union of [...unions.values()].sort((a, b) => a.name.localeCompare(b.n
   }
 }
 
+
+// Each event's name and each tag, as a type whose value is its string, and
+// what each is (ADR 0223); and each interface's ancestors.
+line();
+line(`/// What an event of a name is on a target, from \`@webref/events\` (ADR 0223):`);
+line(`/// a button's \`Click\` is a \`PointerEvent\`, a document's \`Keydown\` a \`KeyboardEvent\`.`);
+line(`pub trait Listen<E> {`);
+line(`    type Event;`);
+line(`}`);
+line();
+line(`/// The element a tag makes, from \`@webref/elements\` (ADR 0223): \`Button\`'s is a \`HtmlButtonElement\`.`);
+line(`pub trait Tag {`);
+line(`    type Element;`);
+line(`}`);
+line();
+line(`/// \`Self\` is a \`T\`, or extends one, as WebIDL says: a \`HtmlButtonElement\` is an \`Element\` (ADR 0223).`);
+line(`/// Unsafe to implement: something that takes a \`T\` is given a \`Self\` unchecked.`);
+line(`pub unsafe trait IsA<T> {}`);
+line();
+line(`/// Each event's name, a type whose value is its string: \`Click\` is \`"click"\` (ADR 0223).`);
+line(`pub mod events {`);
+eventNames.forEach((name, k) => {
+  if (k > 0) line();
+  line(`    /// \`"${name}"\``);
+  line(`    #[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(name)})]`);
+  line(`    pub struct ${nameType(name)};`);
+});
+line(`}`);
+line();
+line(`/// Each HTML element's tag, a type whose value is its name: \`Button\` is \`"button"\` (ADR 0223).`);
+line(`pub mod tags {`);
+tagNames.forEach((name, k) => {
+  if (k > 0) line();
+  line(`    /// \`<${name}>\``);
+  line(`    #[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(name)})]`);
+  line(`    pub struct ${nameType(name)};`);
+});
+line(`}`);
+let impls = 0;
+for (const [target, map] of listens) {
+  line();
+  for (const event of [...map.keys()].sort()) {
+    line(`impl Listen<events::${nameType(event)}> for ${typeName(target)} { type Event = ${typeName(map.get(event)!)}; }`);
+    impls++;
+  }
+}
+line();
+for (const tag of tagNames) line(`impl Tag for tags::${nameType(tag)} { type Element = ${typeName(tagElements.get(tag)!)}; }`);
+line();
+for (const name of INTERFACES) {
+  for (const a of [name, ...chain(name)]) line(`unsafe impl IsA<${typeName(a)}> for ${typeName(name)} {}`);
+}
+
 await Bun.write(new URL("./src/lib.rs", import.meta.url), `${out.join("\n")}\n`);
 const reasons = [...skipped].sort((a, b) => b[1] - a[1]).map(([why, n]) => `${why} ${n}`);
 console.log(`src/lib.rs: ${INTERFACES.length} interfaces, ${NAMESPACES.length} namespaces, ${count} functions, ${unions.size} unions`);
+console.log(`events: ${eventNames.length} names, ${impls} on ${listens.size} targets (${disagreeing} where specs disagree, as \`Event\`); tags: ${tagNames.length}`);
 console.log(`skipped: ${reasons.slice(0, 12).join(", ")}${reasons.length > 12 ? ", ..." : ""}`);

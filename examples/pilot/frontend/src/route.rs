@@ -1,6 +1,7 @@
 //! Where the app is: its URL's hash, `#/contacts/2`, followed as it changes.
 
 use react::{use_effect, use_state};
+use webapi::events::Hashchange;
 use webapi::{AddEventListenerOptions, abort_controller, event_target, location, window};
 
 #[derive(Clone, Copy, PartialEq)]
@@ -44,7 +45,7 @@ pub fn use_route() -> Route {
             };
             event_target::add_event_listener_with_options(
                 window,
-                "hashchange",
+                Hashchange,
                 Box::new(move |_| set_current.set(hash())),
                 options.into(),
             );

@@ -5,6 +5,8 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 use js::{Promise, spawn};
+use webapi::events::Click;
+use webapi::tags::{Button, Div, Output};
 use webapi::{Element, document, element, event_target, node};
 
 unsafe extern "Rust" {
@@ -31,12 +33,12 @@ async fn count_down(output: &'static Element, from: u32) {
 
 pub fn main() {
     let app = document::get_element_by_id(document, "app").expect("the page has an #app");
-    let start = document::create_element(document, "button");
+    let start = document::create_element(document, Button);
     node::set_text_content(start, "Start");
-    let output = document::create_element(document, "output");
+    let output = document::create_element(document, Output);
     // One countdown at a time.
     let running = Rc::new(Cell::new(false));
-    event_target::add_event_listener(start, "click", Box::new(move |_| {
+    event_target::add_event_listener(start, Click, Box::new(move |_| {
         if running.get() {
             return;
         }
@@ -60,7 +62,7 @@ mod tests {
     fn page() -> &'static Element {
         let body = document::body(document).unwrap();
         node::set_text_content(body, "");
-        let app = document::create_element(document, "div");
+        let app = document::create_element(document, Div);
         element::set_id(app, "app");
         element::append(body, app.into());
         app

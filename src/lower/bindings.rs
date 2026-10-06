@@ -178,6 +178,13 @@ fn given_name(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
 /// What a variant without fields is in JS: its name, or its
 /// `#[rust_js::name = ".."]`, for a string that isn't a Rust name, as in
 /// `enum Mode { #[rust_js::name = "hidden"] Hidden, .. }` (ADR 0039).
+/// A unit struct's `#[rust_js::name]`, the string it is, as a fieldless
+/// variant is (ADR 0013): `webapi`'s event names (ADR 0223). Without one,
+/// it's `undefined`, holding nothing, as `()` does.
+pub(super) fn unit_name(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
+    given_name(tcx, def_id)
+}
+
 pub(super) fn variant_name(tcx: TyCtxt<'_>, variant: &VariantDef) -> String {
     given_name(tcx, variant.def_id).unwrap_or_else(|| variant.name.to_string())
 }

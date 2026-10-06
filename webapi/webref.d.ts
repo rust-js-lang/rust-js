@@ -2,7 +2,15 @@
 // Keep in sync with the pinned @webref package APIs.
 declare module "@webref/elements" {
   export function listAll(): Promise<Record<string, {
-    elements: { name: string; obsolete?: boolean }[];
+    elements: { name: string; interface?: string; obsolete?: boolean }[];
+  }>>;
+}
+
+declare module "@webref/events" {
+  export function listAll(): Promise<Record<string, {
+    type: string;
+    interface: string;
+    targets?: { target: string; bubbles?: boolean; bubblingPath?: string[] }[];
   }>>;
 }
 

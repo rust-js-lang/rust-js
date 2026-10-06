@@ -5,6 +5,8 @@
 //! (`element::append`). Inheritance is `Deref`, so an `&HtmlButtonElement`
 //! goes wherever an `&Element` or `&Node` is expected. See ADR 0024.
 //! The JS language's own types, `Promise` and `ArrayBuffer` say, are the js crate's (ADR 0102).
+//! Each event's name and each tag is a type too (ADR 0223), from `@webref/events` 1.27.0
+//! and `@webref/elements` 2.9.0: `events::Click`, whose value is `"click"`.
 
 // Many Rust functions call the same JS name: a form per optional argument
 // (`new`, `new_with_body`), and methods of the same name on different
@@ -45,23 +47,49 @@ pub mod event_target {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener)
         #[link_name = "addEventListener"]
-        pub safe fn add_event_listener(this: &EventTarget, type_: &str, callback: Box<dyn FnMut(&Event)>);
+        pub safe fn add_event_listener_named(this: &EventTarget, type_: &str, callback: Box<dyn FnMut(&Event)>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener)
         #[link_name = "addEventListener"]
-        pub safe fn add_event_listener_with_options(this: &EventTarget, type_: &str, callback: Box<dyn FnMut(&Event)>, options: AddEventListenerOptionsOrBool<'_>);
+        pub safe fn add_event_listener_named_with_options(this: &EventTarget, type_: &str, callback: Box<dyn FnMut(&Event)>, options: AddEventListenerOptionsOrBool<'_>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/removeEventListener)
         #[link_name = "removeEventListener"]
-        pub safe fn remove_event_listener(this: &EventTarget, type_: &str, callback: Box<dyn FnMut(&Event)>);
+        pub safe fn remove_event_listener_named(this: &EventTarget, type_: &str, callback: Box<dyn FnMut(&Event)>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/removeEventListener)
         #[link_name = "removeEventListener"]
-        pub safe fn remove_event_listener_with_options(this: &EventTarget, type_: &str, callback: Box<dyn FnMut(&Event)>, options: EventListenerOptionsOrBool);
+        pub safe fn remove_event_listener_named_with_options(this: &EventTarget, type_: &str, callback: Box<dyn FnMut(&Event)>, options: EventListenerOptionsOrBool);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/dispatchEvent)
         #[link_name = "dispatchEvent"]
         pub safe fn dispatch_event(this: &EventTarget, event: &Event) -> bool;
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener): `listener` for each event of a name here,
+    /// given the event the name is on this target (ADR 0223): a button's `Click` is a
+    /// `PointerEvent`. One the data doesn't know is `add_event_listener_named`'s.
+    #[cfg_attr(rust_js, rust_js::link_name = "addEventListener")]
+    pub fn add_event_listener<T: Listen<E>, E>(this: &T, event: E, listener: Box<dyn FnMut(&<T as Listen<E>>::Event)>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener)
+    #[cfg_attr(rust_js, rust_js::link_name = "addEventListener")]
+    pub fn add_event_listener_with_options<T: Listen<E>, E>(this: &T, event: E, listener: Box<dyn FnMut(&<T as Listen<E>>::Event)>, options: AddEventListenerOptionsOrBool<'_>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/removeEventListener)
+    #[cfg_attr(rust_js, rust_js::link_name = "removeEventListener")]
+    pub fn remove_event_listener<T: Listen<E>, E>(this: &T, event: E, listener: Box<dyn FnMut(&<T as Listen<E>>::Event)>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/removeEventListener)
+    #[cfg_attr(rust_js, rust_js::link_name = "removeEventListener")]
+    pub fn remove_event_listener_with_options<T: Listen<E>, E>(this: &T, event: E, listener: Box<dyn FnMut(&<T as Listen<E>>::Event)>, options: EventListenerOptionsOrBool) {
+        unreachable!()
     }
 }
 
@@ -873,11 +901,11 @@ pub mod document {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/createElement)
         #[link_name = "createElement"]
-        pub safe fn create_element(this: &Document, local_name: &str) -> &'static Element;
+        pub safe fn create_element_named(this: &Document, local_name: &str) -> &'static Element;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/createElement)
         #[link_name = "createElement"]
-        pub safe fn create_element_with_options(this: &Document, local_name: &str, options: StrOrElementCreationOptions<'_>) -> &'static Element;
+        pub safe fn create_element_named_with_options(this: &Document, local_name: &str, options: StrOrElementCreationOptions<'_>) -> &'static Element;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/createElementNS)
         #[link_name = "createElementNS"]
@@ -1199,6 +1227,14 @@ pub mod document {
         /// Treats `this` as `Document` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static Document;
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/createElement): the element a tag is (ADR 0223),
+    /// `create_element(document, Button)` a `HtmlButtonElement`. Another name is
+    /// `create_element_named`'s, an `Element`.
+    #[cfg_attr(rust_js, rust_js::link_name = "createElement")]
+    pub fn create_element<T: Tag>(this: &Document, tag: T) -> &'static <T as Tag>::Element {
+        unreachable!()
     }
 }
 
@@ -4947,6 +4983,40 @@ pub mod message_event {
     }
 }
 
+/// [`SubmitEvent`](https://developer.mozilla.org/docs/Web/API/SubmitEvent)
+pub struct SubmitEvent(PhantomData<JsObject>);
+
+impl Deref for SubmitEvent {
+    type Target = Event;
+
+    fn deref(&self) -> &Event {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const Event) }
+    }
+}
+
+pub mod submit_event {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SubmitEvent/SubmitEvent)
+        #[link_name = "new SubmitEvent"]
+        pub safe fn new(type_: &str) -> &'static SubmitEvent;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SubmitEvent/SubmitEvent)
+        #[link_name = "new SubmitEvent"]
+        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: SubmitEventInit<'_>) -> &'static SubmitEvent;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SubmitEvent/submitter)
+        #[link_name = "get submitter"]
+        pub safe fn submitter(this: &SubmitEvent) -> Option<&'static HtmlElement>;
+
+        /// Treats `this` as `SubmitEvent` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &Event) -> &'static SubmitEvent;
+    }
+}
+
 /// [`Performance`](https://developer.mozilla.org/docs/Web/API/Performance)
 pub struct Performance(PhantomData<JsObject>);
 
@@ -5404,6 +5474,80 @@ pub mod input_event {
         /// Treats `this` as `InputEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static InputEvent;
+    }
+}
+
+/// [`PointerEvent`](https://developer.mozilla.org/docs/Web/API/PointerEvent)
+pub struct PointerEvent(PhantomData<JsObject>);
+
+impl Deref for PointerEvent {
+    type Target = MouseEvent;
+
+    fn deref(&self) -> &MouseEvent {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const MouseEvent) }
+    }
+}
+
+pub mod pointer_event {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/PointerEvent)
+        #[link_name = "new PointerEvent"]
+        pub safe fn new(type_: &str) -> &'static PointerEvent;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/PointerEvent)
+        #[link_name = "new PointerEvent"]
+        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: PointerEventInit<'_>) -> &'static PointerEvent;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/pointerId)
+        #[link_name = "get pointerId"]
+        pub safe fn pointer_id(this: &PointerEvent) -> i32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/width)
+        #[link_name = "get width"]
+        pub safe fn width(this: &PointerEvent) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/height)
+        #[link_name = "get height"]
+        pub safe fn height(this: &PointerEvent) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/tiltX)
+        #[link_name = "get tiltX"]
+        pub safe fn tilt_x(this: &PointerEvent) -> i32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/tiltY)
+        #[link_name = "get tiltY"]
+        pub safe fn tilt_y(this: &PointerEvent) -> i32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/twist)
+        #[link_name = "get twist"]
+        pub safe fn twist(this: &PointerEvent) -> i32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/altitudeAngle)
+        #[link_name = "get altitudeAngle"]
+        pub safe fn altitude_angle(this: &PointerEvent) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/azimuthAngle)
+        #[link_name = "get azimuthAngle"]
+        pub safe fn azimuth_angle(this: &PointerEvent) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/pointerType)
+        #[link_name = "get pointerType"]
+        pub safe fn pointer_type(this: &PointerEvent) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/isPrimary)
+        #[link_name = "get isPrimary"]
+        pub safe fn is_primary(this: &PointerEvent) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/persistentDeviceId)
+        #[link_name = "get persistentDeviceId"]
+        pub safe fn persistent_device_id(this: &PointerEvent) -> i32;
+
+        /// Treats `this` as `PointerEvent` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &Event) -> &'static PointerEvent;
     }
 }
 
@@ -6762,6 +6906,79 @@ pub struct MouseEventInit<'a> {
     pub related_target: Option<&'a EventTarget>,
 }
 
+/// The [`PointerEventInit`](https://developer.mozilla.org/docs/Web/API/PointerEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct PointerEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    pub view: Option<&'a Window>,
+    pub detail: Option<i32>,
+    #[cfg_attr(rust_js, rust_js::name = "ctrlKey")]
+    pub ctrl_key: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "shiftKey")]
+    pub shift_key: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "altKey")]
+    pub alt_key: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "metaKey")]
+    pub meta_key: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "modifierAltGraph")]
+    pub modifier_alt_graph: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "modifierCapsLock")]
+    pub modifier_caps_lock: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "modifierFn")]
+    pub modifier_fn: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "modifierFnLock")]
+    pub modifier_fn_lock: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "modifierHyper")]
+    pub modifier_hyper: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "modifierNumLock")]
+    pub modifier_num_lock: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "modifierScrollLock")]
+    pub modifier_scroll_lock: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "modifierSuper")]
+    pub modifier_super: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "modifierSymbol")]
+    pub modifier_symbol: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "modifierSymbolLock")]
+    pub modifier_symbol_lock: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "screenX")]
+    pub screen_x: Option<i32>,
+    #[cfg_attr(rust_js, rust_js::name = "screenY")]
+    pub screen_y: Option<i32>,
+    #[cfg_attr(rust_js, rust_js::name = "clientX")]
+    pub client_x: Option<i32>,
+    #[cfg_attr(rust_js, rust_js::name = "clientY")]
+    pub client_y: Option<i32>,
+    pub button: Option<i16>,
+    pub buttons: Option<u16>,
+    #[cfg_attr(rust_js, rust_js::name = "relatedTarget")]
+    pub related_target: Option<&'a EventTarget>,
+    #[cfg_attr(rust_js, rust_js::name = "pointerId")]
+    pub pointer_id: Option<i32>,
+    pub width: Option<f64>,
+    pub height: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "tiltX")]
+    pub tilt_x: Option<i32>,
+    #[cfg_attr(rust_js, rust_js::name = "tiltY")]
+    pub tilt_y: Option<i32>,
+    pub twist: Option<i32>,
+    #[cfg_attr(rust_js, rust_js::name = "altitudeAngle")]
+    pub altitude_angle: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "azimuthAngle")]
+    pub azimuth_angle: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "pointerType")]
+    pub pointer_type: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "isPrimary")]
+    pub is_primary: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "persistentDeviceId")]
+    pub persistent_device_id: Option<i32>,
+    #[cfg_attr(rust_js, rust_js::name = "coalescedEvents")]
+    pub coalesced_events: Option<&'a [&'a PointerEvent]>,
+    #[cfg_attr(rust_js, rust_js::name = "predictedEvents")]
+    pub predicted_events: Option<&'a [&'a PointerEvent]>,
+}
+
 /// The [`QueuingStrategy`](https://developer.mozilla.org/docs/Web/API/QueuingStrategy) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct QueuingStrategy {
@@ -6909,6 +7126,15 @@ pub struct StreamPipeOptions<'a> {
     #[cfg_attr(rust_js, rust_js::name = "preventCancel")]
     pub prevent_cancel: Option<bool>,
     pub signal: Option<&'a AbortSignal>,
+}
+
+/// The [`SubmitEventInit`](https://developer.mozilla.org/docs/Web/API/SubmitEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct SubmitEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    pub submitter: Option<&'a HtmlElement>,
 }
 
 /// The [`TextDecodeOptions`](https://developer.mozilla.org/docs/Web/API/TextDecodeOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -7909,3 +8135,4361 @@ impl<'a> From<bool> for TogglePopoverOptionsOrBool<'a> {
         TogglePopoverOptionsOrBool::Bool(value)
     }
 }
+
+/// What an event of a name is on a target, from `@webref/events` (ADR 0223):
+/// a button's `Click` is a `PointerEvent`, a document's `Keydown` a `KeyboardEvent`.
+pub trait Listen<E> {
+    type Event;
+}
+
+/// The element a tag makes, from `@webref/elements` (ADR 0223): `Button`'s is a `HtmlButtonElement`.
+pub trait Tag {
+    type Element;
+}
+
+/// `Self` is a `T`, or extends one, as WebIDL says: a `HtmlButtonElement` is an `Element` (ADR 0223).
+/// Unsafe to implement: something that takes a `T` is given a `Self` unchecked.
+pub unsafe trait IsA<T> {}
+
+/// Each event's name, a type whose value is its string: `Click` is `"click"` (ADR 0223).
+pub mod events {
+    /// `"DOMActivate"`
+    #[cfg_attr(rust_js, rust_js::name = "DOMActivate")]
+    pub struct DOMActivate;
+
+    /// `"DOMContentLoaded"`
+    #[cfg_attr(rust_js, rust_js::name = "DOMContentLoaded")]
+    pub struct DOMContentLoaded;
+
+    /// `"DOMFocusIn"`
+    #[cfg_attr(rust_js, rust_js::name = "DOMFocusIn")]
+    pub struct DOMFocusIn;
+
+    /// `"DOMFocusOut"`
+    #[cfg_attr(rust_js, rust_js::name = "DOMFocusOut")]
+    pub struct DOMFocusOut;
+
+    /// `"abort"`
+    #[cfg_attr(rust_js, rust_js::name = "abort")]
+    pub struct Abort;
+
+    /// `"afterprint"`
+    #[cfg_attr(rust_js, rust_js::name = "afterprint")]
+    pub struct Afterprint;
+
+    /// `"animationcancel"`
+    #[cfg_attr(rust_js, rust_js::name = "animationcancel")]
+    pub struct Animationcancel;
+
+    /// `"animationend"`
+    #[cfg_attr(rust_js, rust_js::name = "animationend")]
+    pub struct Animationend;
+
+    /// `"animationiteration"`
+    #[cfg_attr(rust_js, rust_js::name = "animationiteration")]
+    pub struct Animationiteration;
+
+    /// `"animationstart"`
+    #[cfg_attr(rust_js, rust_js::name = "animationstart")]
+    pub struct Animationstart;
+
+    /// `"appinstalled"`
+    #[cfg_attr(rust_js, rust_js::name = "appinstalled")]
+    pub struct Appinstalled;
+
+    /// `"autofill"`
+    #[cfg_attr(rust_js, rust_js::name = "autofill")]
+    pub struct Autofill;
+
+    /// `"auxclick"`
+    #[cfg_attr(rust_js, rust_js::name = "auxclick")]
+    pub struct Auxclick;
+
+    /// `"beforeinput"`
+    #[cfg_attr(rust_js, rust_js::name = "beforeinput")]
+    pub struct Beforeinput;
+
+    /// `"beforeinstallprompt"`
+    #[cfg_attr(rust_js, rust_js::name = "beforeinstallprompt")]
+    pub struct Beforeinstallprompt;
+
+    /// `"beforematch"`
+    #[cfg_attr(rust_js, rust_js::name = "beforematch")]
+    pub struct Beforematch;
+
+    /// `"beforeprint"`
+    #[cfg_attr(rust_js, rust_js::name = "beforeprint")]
+    pub struct Beforeprint;
+
+    /// `"beforetoggle"`
+    #[cfg_attr(rust_js, rust_js::name = "beforetoggle")]
+    pub struct Beforetoggle;
+
+    /// `"beforeunload"`
+    #[cfg_attr(rust_js, rust_js::name = "beforeunload")]
+    pub struct Beforeunload;
+
+    /// `"beforexrselect"`
+    #[cfg_attr(rust_js, rust_js::name = "beforexrselect")]
+    pub struct Beforexrselect;
+
+    /// `"blur"`
+    #[cfg_attr(rust_js, rust_js::name = "blur")]
+    pub struct Blur;
+
+    /// `"cancel"`
+    #[cfg_attr(rust_js, rust_js::name = "cancel")]
+    pub struct Cancel;
+
+    /// `"change"`
+    #[cfg_attr(rust_js, rust_js::name = "change")]
+    pub struct Change;
+
+    /// `"click"`
+    #[cfg_attr(rust_js, rust_js::name = "click")]
+    pub struct Click;
+
+    /// `"clipboardchange"`
+    #[cfg_attr(rust_js, rust_js::name = "clipboardchange")]
+    pub struct Clipboardchange;
+
+    /// `"command"`
+    #[cfg_attr(rust_js, rust_js::name = "command")]
+    pub struct Command;
+
+    /// `"compositionend"`
+    #[cfg_attr(rust_js, rust_js::name = "compositionend")]
+    pub struct Compositionend;
+
+    /// `"compositionstart"`
+    #[cfg_attr(rust_js, rust_js::name = "compositionstart")]
+    pub struct Compositionstart;
+
+    /// `"compositionupdate"`
+    #[cfg_attr(rust_js, rust_js::name = "compositionupdate")]
+    pub struct Compositionupdate;
+
+    /// `"contentvisibilityautostatechange"`
+    #[cfg_attr(rust_js, rust_js::name = "contentvisibilityautostatechange")]
+    pub struct Contentvisibilityautostatechange;
+
+    /// `"contextlost"`
+    #[cfg_attr(rust_js, rust_js::name = "contextlost")]
+    pub struct Contextlost;
+
+    /// `"contextmenu"`
+    #[cfg_attr(rust_js, rust_js::name = "contextmenu")]
+    pub struct Contextmenu;
+
+    /// `"contextrestored"`
+    #[cfg_attr(rust_js, rust_js::name = "contextrestored")]
+    pub struct Contextrestored;
+
+    /// `"copy"`
+    #[cfg_attr(rust_js, rust_js::name = "copy")]
+    pub struct Copy;
+
+    /// `"cut"`
+    #[cfg_attr(rust_js, rust_js::name = "cut")]
+    pub struct Cut;
+
+    /// `"dblclick"`
+    #[cfg_attr(rust_js, rust_js::name = "dblclick")]
+    pub struct Dblclick;
+
+    /// `"devicemotion"`
+    #[cfg_attr(rust_js, rust_js::name = "devicemotion")]
+    pub struct Devicemotion;
+
+    /// `"deviceorientation"`
+    #[cfg_attr(rust_js, rust_js::name = "deviceorientation")]
+    pub struct Deviceorientation;
+
+    /// `"deviceorientationabsolute"`
+    #[cfg_attr(rust_js, rust_js::name = "deviceorientationabsolute")]
+    pub struct Deviceorientationabsolute;
+
+    /// `"drag"`
+    #[cfg_attr(rust_js, rust_js::name = "drag")]
+    pub struct Drag;
+
+    /// `"dragend"`
+    #[cfg_attr(rust_js, rust_js::name = "dragend")]
+    pub struct Dragend;
+
+    /// `"dragenter"`
+    #[cfg_attr(rust_js, rust_js::name = "dragenter")]
+    pub struct Dragenter;
+
+    /// `"dragleave"`
+    #[cfg_attr(rust_js, rust_js::name = "dragleave")]
+    pub struct Dragleave;
+
+    /// `"dragover"`
+    #[cfg_attr(rust_js, rust_js::name = "dragover")]
+    pub struct Dragover;
+
+    /// `"dragstart"`
+    #[cfg_attr(rust_js, rust_js::name = "dragstart")]
+    pub struct Dragstart;
+
+    /// `"drop"`
+    #[cfg_attr(rust_js, rust_js::name = "drop")]
+    pub struct Drop;
+
+    /// `"enterpictureinpicture"`
+    #[cfg_attr(rust_js, rust_js::name = "enterpictureinpicture")]
+    pub struct Enterpictureinpicture;
+
+    /// `"error"`
+    #[cfg_attr(rust_js, rust_js::name = "error")]
+    pub struct Error;
+
+    /// `"fencedtreeclick"`
+    #[cfg_attr(rust_js, rust_js::name = "fencedtreeclick")]
+    pub struct Fencedtreeclick;
+
+    /// `"focus"`
+    #[cfg_attr(rust_js, rust_js::name = "focus")]
+    pub struct Focus;
+
+    /// `"focusin"`
+    #[cfg_attr(rust_js, rust_js::name = "focusin")]
+    pub struct Focusin;
+
+    /// `"focusout"`
+    #[cfg_attr(rust_js, rust_js::name = "focusout")]
+    pub struct Focusout;
+
+    /// `"formdata"`
+    #[cfg_attr(rust_js, rust_js::name = "formdata")]
+    pub struct Formdata;
+
+    /// `"freeze"`
+    #[cfg_attr(rust_js, rust_js::name = "freeze")]
+    pub struct Freeze;
+
+    /// `"fullscreenchange"`
+    #[cfg_attr(rust_js, rust_js::name = "fullscreenchange")]
+    pub struct Fullscreenchange;
+
+    /// `"fullscreenerror"`
+    #[cfg_attr(rust_js, rust_js::name = "fullscreenerror")]
+    pub struct Fullscreenerror;
+
+    /// `"gamepadconnected"`
+    #[cfg_attr(rust_js, rust_js::name = "gamepadconnected")]
+    pub struct Gamepadconnected;
+
+    /// `"gamepaddisconnected"`
+    #[cfg_attr(rust_js, rust_js::name = "gamepaddisconnected")]
+    pub struct Gamepaddisconnected;
+
+    /// `"gotpointercapture"`
+    #[cfg_attr(rust_js, rust_js::name = "gotpointercapture")]
+    pub struct Gotpointercapture;
+
+    /// `"hashchange"`
+    #[cfg_attr(rust_js, rust_js::name = "hashchange")]
+    pub struct Hashchange;
+
+    /// `"input"`
+    #[cfg_attr(rust_js, rust_js::name = "input")]
+    pub struct Input;
+
+    /// `"installresult"`
+    #[cfg_attr(rust_js, rust_js::name = "installresult")]
+    pub struct Installresult;
+
+    /// `"invalid"`
+    #[cfg_attr(rust_js, rust_js::name = "invalid")]
+    pub struct Invalid;
+
+    /// `"keydown"`
+    #[cfg_attr(rust_js, rust_js::name = "keydown")]
+    pub struct Keydown;
+
+    /// `"keypress"`
+    #[cfg_attr(rust_js, rust_js::name = "keypress")]
+    pub struct Keypress;
+
+    /// `"keyup"`
+    #[cfg_attr(rust_js, rust_js::name = "keyup")]
+    pub struct Keyup;
+
+    /// `"languagechange"`
+    #[cfg_attr(rust_js, rust_js::name = "languagechange")]
+    pub struct Languagechange;
+
+    /// `"leavepictureinpicture"`
+    #[cfg_attr(rust_js, rust_js::name = "leavepictureinpicture")]
+    pub struct Leavepictureinpicture;
+
+    /// `"load"`
+    #[cfg_attr(rust_js, rust_js::name = "load")]
+    pub struct Load;
+
+    /// `"lostpointercapture"`
+    #[cfg_attr(rust_js, rust_js::name = "lostpointercapture")]
+    pub struct Lostpointercapture;
+
+    /// `"message"`
+    #[cfg_attr(rust_js, rust_js::name = "message")]
+    pub struct Message;
+
+    /// `"messageerror"`
+    #[cfg_attr(rust_js, rust_js::name = "messageerror")]
+    pub struct Messageerror;
+
+    /// `"mousedown"`
+    #[cfg_attr(rust_js, rust_js::name = "mousedown")]
+    pub struct Mousedown;
+
+    /// `"mouseenter"`
+    #[cfg_attr(rust_js, rust_js::name = "mouseenter")]
+    pub struct Mouseenter;
+
+    /// `"mouseleave"`
+    #[cfg_attr(rust_js, rust_js::name = "mouseleave")]
+    pub struct Mouseleave;
+
+    /// `"mousemove"`
+    #[cfg_attr(rust_js, rust_js::name = "mousemove")]
+    pub struct Mousemove;
+
+    /// `"mouseout"`
+    #[cfg_attr(rust_js, rust_js::name = "mouseout")]
+    pub struct Mouseout;
+
+    /// `"mouseover"`
+    #[cfg_attr(rust_js, rust_js::name = "mouseover")]
+    pub struct Mouseover;
+
+    /// `"mouseup"`
+    #[cfg_attr(rust_js, rust_js::name = "mouseup")]
+    pub struct Mouseup;
+
+    /// `"navbeforefocus"`
+    #[cfg_attr(rust_js, rust_js::name = "navbeforefocus")]
+    pub struct Navbeforefocus;
+
+    /// `"navnotarget"`
+    #[cfg_attr(rust_js, rust_js::name = "navnotarget")]
+    pub struct Navnotarget;
+
+    /// `"offline"`
+    #[cfg_attr(rust_js, rust_js::name = "offline")]
+    pub struct Offline;
+
+    /// `"online"`
+    #[cfg_attr(rust_js, rust_js::name = "online")]
+    pub struct Online;
+
+    /// `"orientationchange"`
+    #[cfg_attr(rust_js, rust_js::name = "orientationchange")]
+    pub struct Orientationchange;
+
+    /// `"pagehide"`
+    #[cfg_attr(rust_js, rust_js::name = "pagehide")]
+    pub struct Pagehide;
+
+    /// `"pagereveal"`
+    #[cfg_attr(rust_js, rust_js::name = "pagereveal")]
+    pub struct Pagereveal;
+
+    /// `"pageshow"`
+    #[cfg_attr(rust_js, rust_js::name = "pageshow")]
+    pub struct Pageshow;
+
+    /// `"pageswap"`
+    #[cfg_attr(rust_js, rust_js::name = "pageswap")]
+    pub struct Pageswap;
+
+    /// `"paste"`
+    #[cfg_attr(rust_js, rust_js::name = "paste")]
+    pub struct Paste;
+
+    /// `"pointercancel"`
+    #[cfg_attr(rust_js, rust_js::name = "pointercancel")]
+    pub struct Pointercancel;
+
+    /// `"pointerdown"`
+    #[cfg_attr(rust_js, rust_js::name = "pointerdown")]
+    pub struct Pointerdown;
+
+    /// `"pointerenter"`
+    #[cfg_attr(rust_js, rust_js::name = "pointerenter")]
+    pub struct Pointerenter;
+
+    /// `"pointerleave"`
+    #[cfg_attr(rust_js, rust_js::name = "pointerleave")]
+    pub struct Pointerleave;
+
+    /// `"pointerlockchange"`
+    #[cfg_attr(rust_js, rust_js::name = "pointerlockchange")]
+    pub struct Pointerlockchange;
+
+    /// `"pointerlockerror"`
+    #[cfg_attr(rust_js, rust_js::name = "pointerlockerror")]
+    pub struct Pointerlockerror;
+
+    /// `"pointermove"`
+    #[cfg_attr(rust_js, rust_js::name = "pointermove")]
+    pub struct Pointermove;
+
+    /// `"pointerout"`
+    #[cfg_attr(rust_js, rust_js::name = "pointerout")]
+    pub struct Pointerout;
+
+    /// `"pointerover"`
+    #[cfg_attr(rust_js, rust_js::name = "pointerover")]
+    pub struct Pointerover;
+
+    /// `"pointerrawupdate"`
+    #[cfg_attr(rust_js, rust_js::name = "pointerrawupdate")]
+    pub struct Pointerrawupdate;
+
+    /// `"pointerup"`
+    #[cfg_attr(rust_js, rust_js::name = "pointerup")]
+    pub struct Pointerup;
+
+    /// `"popstate"`
+    #[cfg_attr(rust_js, rust_js::name = "popstate")]
+    pub struct Popstate;
+
+    /// `"portalactivate"`
+    #[cfg_attr(rust_js, rust_js::name = "portalactivate")]
+    pub struct Portalactivate;
+
+    /// `"prerenderingchange"`
+    #[cfg_attr(rust_js, rust_js::name = "prerenderingchange")]
+    pub struct Prerenderingchange;
+
+    /// `"promptaction"`
+    #[cfg_attr(rust_js, rust_js::name = "promptaction")]
+    pub struct Promptaction;
+
+    /// `"promptdismiss"`
+    #[cfg_attr(rust_js, rust_js::name = "promptdismiss")]
+    pub struct Promptdismiss;
+
+    /// `"readystatechange"`
+    #[cfg_attr(rust_js, rust_js::name = "readystatechange")]
+    pub struct Readystatechange;
+
+    /// `"rejectionhandled"`
+    #[cfg_attr(rust_js, rust_js::name = "rejectionhandled")]
+    pub struct Rejectionhandled;
+
+    /// `"reset"`
+    #[cfg_attr(rust_js, rust_js::name = "reset")]
+    pub struct Reset;
+
+    /// `"resize"`
+    #[cfg_attr(rust_js, rust_js::name = "resize")]
+    pub struct Resize;
+
+    /// `"resourcetimingbufferfull"`
+    #[cfg_attr(rust_js, rust_js::name = "resourcetimingbufferfull")]
+    pub struct Resourcetimingbufferfull;
+
+    /// `"resume"`
+    #[cfg_attr(rust_js, rust_js::name = "resume")]
+    pub struct Resume;
+
+    /// `"scroll"`
+    #[cfg_attr(rust_js, rust_js::name = "scroll")]
+    pub struct Scroll;
+
+    /// `"scrollend"`
+    #[cfg_attr(rust_js, rust_js::name = "scrollend")]
+    pub struct Scrollend;
+
+    /// `"securitypolicyviolation"`
+    #[cfg_attr(rust_js, rust_js::name = "securitypolicyviolation")]
+    pub struct Securitypolicyviolation;
+
+    /// `"select"`
+    #[cfg_attr(rust_js, rust_js::name = "select")]
+    pub struct Select;
+
+    /// `"selectionchange"`
+    #[cfg_attr(rust_js, rust_js::name = "selectionchange")]
+    pub struct Selectionchange;
+
+    /// `"selectstart"`
+    #[cfg_attr(rust_js, rust_js::name = "selectstart")]
+    pub struct Selectstart;
+
+    /// `"slotchange"`
+    #[cfg_attr(rust_js, rust_js::name = "slotchange")]
+    pub struct Slotchange;
+
+    /// `"storage"`
+    #[cfg_attr(rust_js, rust_js::name = "storage")]
+    pub struct Storage;
+
+    /// `"submit"`
+    #[cfg_attr(rust_js, rust_js::name = "submit")]
+    pub struct Submit;
+
+    /// `"textInput"`
+    #[cfg_attr(rust_js, rust_js::name = "textInput")]
+    pub struct TextInput;
+
+    /// `"touchcancel"`
+    #[cfg_attr(rust_js, rust_js::name = "touchcancel")]
+    pub struct Touchcancel;
+
+    /// `"touchend"`
+    #[cfg_attr(rust_js, rust_js::name = "touchend")]
+    pub struct Touchend;
+
+    /// `"touchmove"`
+    #[cfg_attr(rust_js, rust_js::name = "touchmove")]
+    pub struct Touchmove;
+
+    /// `"touchstart"`
+    #[cfg_attr(rust_js, rust_js::name = "touchstart")]
+    pub struct Touchstart;
+
+    /// `"transitioncancel"`
+    #[cfg_attr(rust_js, rust_js::name = "transitioncancel")]
+    pub struct Transitioncancel;
+
+    /// `"transitionend"`
+    #[cfg_attr(rust_js, rust_js::name = "transitionend")]
+    pub struct Transitionend;
+
+    /// `"transitionrun"`
+    #[cfg_attr(rust_js, rust_js::name = "transitionrun")]
+    pub struct Transitionrun;
+
+    /// `"transitionstart"`
+    #[cfg_attr(rust_js, rust_js::name = "transitionstart")]
+    pub struct Transitionstart;
+
+    /// `"unhandledrejection"`
+    #[cfg_attr(rust_js, rust_js::name = "unhandledrejection")]
+    pub struct Unhandledrejection;
+
+    /// `"unload"`
+    #[cfg_attr(rust_js, rust_js::name = "unload")]
+    pub struct Unload;
+
+    /// `"validationstatuschange"`
+    #[cfg_attr(rust_js, rust_js::name = "validationstatuschange")]
+    pub struct Validationstatuschange;
+
+    /// `"visibilitychange"`
+    #[cfg_attr(rust_js, rust_js::name = "visibilitychange")]
+    pub struct Visibilitychange;
+
+    /// `"webglcontextcreationerror"`
+    #[cfg_attr(rust_js, rust_js::name = "webglcontextcreationerror")]
+    pub struct Webglcontextcreationerror;
+
+    /// `"webglcontextlost"`
+    #[cfg_attr(rust_js, rust_js::name = "webglcontextlost")]
+    pub struct Webglcontextlost;
+
+    /// `"webglcontextrestored"`
+    #[cfg_attr(rust_js, rust_js::name = "webglcontextrestored")]
+    pub struct Webglcontextrestored;
+
+    /// `"wheel"`
+    #[cfg_attr(rust_js, rust_js::name = "wheel")]
+    pub struct Wheel;
+}
+
+/// Each HTML element's tag, a type whose value is its name: `Button` is `"button"` (ADR 0223).
+pub mod tags {
+    /// `<a>`
+    #[cfg_attr(rust_js, rust_js::name = "a")]
+    pub struct A;
+
+    /// `<abbr>`
+    #[cfg_attr(rust_js, rust_js::name = "abbr")]
+    pub struct Abbr;
+
+    /// `<address>`
+    #[cfg_attr(rust_js, rust_js::name = "address")]
+    pub struct Address;
+
+    /// `<area>`
+    #[cfg_attr(rust_js, rust_js::name = "area")]
+    pub struct Area;
+
+    /// `<article>`
+    #[cfg_attr(rust_js, rust_js::name = "article")]
+    pub struct Article;
+
+    /// `<aside>`
+    #[cfg_attr(rust_js, rust_js::name = "aside")]
+    pub struct Aside;
+
+    /// `<audio>`
+    #[cfg_attr(rust_js, rust_js::name = "audio")]
+    pub struct Audio;
+
+    /// `<b>`
+    #[cfg_attr(rust_js, rust_js::name = "b")]
+    pub struct B;
+
+    /// `<base>`
+    #[cfg_attr(rust_js, rust_js::name = "base")]
+    pub struct Base;
+
+    /// `<bdi>`
+    #[cfg_attr(rust_js, rust_js::name = "bdi")]
+    pub struct Bdi;
+
+    /// `<bdo>`
+    #[cfg_attr(rust_js, rust_js::name = "bdo")]
+    pub struct Bdo;
+
+    /// `<blockquote>`
+    #[cfg_attr(rust_js, rust_js::name = "blockquote")]
+    pub struct Blockquote;
+
+    /// `<body>`
+    #[cfg_attr(rust_js, rust_js::name = "body")]
+    pub struct Body;
+
+    /// `<br>`
+    #[cfg_attr(rust_js, rust_js::name = "br")]
+    pub struct Br;
+
+    /// `<button>`
+    #[cfg_attr(rust_js, rust_js::name = "button")]
+    pub struct Button;
+
+    /// `<camera>`
+    #[cfg_attr(rust_js, rust_js::name = "camera")]
+    pub struct Camera;
+
+    /// `<canvas>`
+    #[cfg_attr(rust_js, rust_js::name = "canvas")]
+    pub struct Canvas;
+
+    /// `<caption>`
+    #[cfg_attr(rust_js, rust_js::name = "caption")]
+    pub struct Caption;
+
+    /// `<cite>`
+    #[cfg_attr(rust_js, rust_js::name = "cite")]
+    pub struct Cite;
+
+    /// `<code>`
+    #[cfg_attr(rust_js, rust_js::name = "code")]
+    pub struct Code;
+
+    /// `<col>`
+    #[cfg_attr(rust_js, rust_js::name = "col")]
+    pub struct Col;
+
+    /// `<colgroup>`
+    #[cfg_attr(rust_js, rust_js::name = "colgroup")]
+    pub struct Colgroup;
+
+    /// `<data>`
+    #[cfg_attr(rust_js, rust_js::name = "data")]
+    pub struct Data;
+
+    /// `<datalist>`
+    #[cfg_attr(rust_js, rust_js::name = "datalist")]
+    pub struct Datalist;
+
+    /// `<dd>`
+    #[cfg_attr(rust_js, rust_js::name = "dd")]
+    pub struct Dd;
+
+    /// `<del>`
+    #[cfg_attr(rust_js, rust_js::name = "del")]
+    pub struct Del;
+
+    /// `<details>`
+    #[cfg_attr(rust_js, rust_js::name = "details")]
+    pub struct Details;
+
+    /// `<dfn>`
+    #[cfg_attr(rust_js, rust_js::name = "dfn")]
+    pub struct Dfn;
+
+    /// `<dialog>`
+    #[cfg_attr(rust_js, rust_js::name = "dialog")]
+    pub struct Dialog;
+
+    /// `<div>`
+    #[cfg_attr(rust_js, rust_js::name = "div")]
+    pub struct Div;
+
+    /// `<dl>`
+    #[cfg_attr(rust_js, rust_js::name = "dl")]
+    pub struct Dl;
+
+    /// `<dt>`
+    #[cfg_attr(rust_js, rust_js::name = "dt")]
+    pub struct Dt;
+
+    /// `<em>`
+    #[cfg_attr(rust_js, rust_js::name = "em")]
+    pub struct Em;
+
+    /// `<embed>`
+    #[cfg_attr(rust_js, rust_js::name = "embed")]
+    pub struct Embed;
+
+    /// `<fencedframe>`
+    #[cfg_attr(rust_js, rust_js::name = "fencedframe")]
+    pub struct Fencedframe;
+
+    /// `<fieldset>`
+    #[cfg_attr(rust_js, rust_js::name = "fieldset")]
+    pub struct Fieldset;
+
+    /// `<figcaption>`
+    #[cfg_attr(rust_js, rust_js::name = "figcaption")]
+    pub struct Figcaption;
+
+    /// `<figure>`
+    #[cfg_attr(rust_js, rust_js::name = "figure")]
+    pub struct Figure;
+
+    /// `<footer>`
+    #[cfg_attr(rust_js, rust_js::name = "footer")]
+    pub struct Footer;
+
+    /// `<form>`
+    #[cfg_attr(rust_js, rust_js::name = "form")]
+    pub struct Form;
+
+    /// `<geolocation>`
+    #[cfg_attr(rust_js, rust_js::name = "geolocation")]
+    pub struct Geolocation;
+
+    /// `<h1>`
+    #[cfg_attr(rust_js, rust_js::name = "h1")]
+    pub struct H1;
+
+    /// `<h2>`
+    #[cfg_attr(rust_js, rust_js::name = "h2")]
+    pub struct H2;
+
+    /// `<h3>`
+    #[cfg_attr(rust_js, rust_js::name = "h3")]
+    pub struct H3;
+
+    /// `<h4>`
+    #[cfg_attr(rust_js, rust_js::name = "h4")]
+    pub struct H4;
+
+    /// `<h5>`
+    #[cfg_attr(rust_js, rust_js::name = "h5")]
+    pub struct H5;
+
+    /// `<h6>`
+    #[cfg_attr(rust_js, rust_js::name = "h6")]
+    pub struct H6;
+
+    /// `<head>`
+    #[cfg_attr(rust_js, rust_js::name = "head")]
+    pub struct Head;
+
+    /// `<header>`
+    #[cfg_attr(rust_js, rust_js::name = "header")]
+    pub struct Header;
+
+    /// `<hgroup>`
+    #[cfg_attr(rust_js, rust_js::name = "hgroup")]
+    pub struct Hgroup;
+
+    /// `<hr>`
+    #[cfg_attr(rust_js, rust_js::name = "hr")]
+    pub struct Hr;
+
+    /// `<html>`
+    #[cfg_attr(rust_js, rust_js::name = "html")]
+    pub struct Html;
+
+    /// `<i>`
+    #[cfg_attr(rust_js, rust_js::name = "i")]
+    pub struct I;
+
+    /// `<iframe>`
+    #[cfg_attr(rust_js, rust_js::name = "iframe")]
+    pub struct Iframe;
+
+    /// `<img>`
+    #[cfg_attr(rust_js, rust_js::name = "img")]
+    pub struct Img;
+
+    /// `<input>`
+    #[cfg_attr(rust_js, rust_js::name = "input")]
+    pub struct Input;
+
+    /// `<ins>`
+    #[cfg_attr(rust_js, rust_js::name = "ins")]
+    pub struct Ins;
+
+    /// `<install>`
+    #[cfg_attr(rust_js, rust_js::name = "install")]
+    pub struct Install;
+
+    /// `<kbd>`
+    #[cfg_attr(rust_js, rust_js::name = "kbd")]
+    pub struct Kbd;
+
+    /// `<label>`
+    #[cfg_attr(rust_js, rust_js::name = "label")]
+    pub struct Label;
+
+    /// `<legend>`
+    #[cfg_attr(rust_js, rust_js::name = "legend")]
+    pub struct Legend;
+
+    /// `<li>`
+    #[cfg_attr(rust_js, rust_js::name = "li")]
+    pub struct Li;
+
+    /// `<link>`
+    #[cfg_attr(rust_js, rust_js::name = "link")]
+    pub struct Link;
+
+    /// `<main>`
+    #[cfg_attr(rust_js, rust_js::name = "main")]
+    pub struct Main;
+
+    /// `<map>`
+    #[cfg_attr(rust_js, rust_js::name = "map")]
+    pub struct Map;
+
+    /// `<mark>`
+    #[cfg_attr(rust_js, rust_js::name = "mark")]
+    pub struct Mark;
+
+    /// `<menu>`
+    #[cfg_attr(rust_js, rust_js::name = "menu")]
+    pub struct Menu;
+
+    /// `<meta>`
+    #[cfg_attr(rust_js, rust_js::name = "meta")]
+    pub struct Meta;
+
+    /// `<meter>`
+    #[cfg_attr(rust_js, rust_js::name = "meter")]
+    pub struct Meter;
+
+    /// `<microphone>`
+    #[cfg_attr(rust_js, rust_js::name = "microphone")]
+    pub struct Microphone;
+
+    /// `<model>`
+    #[cfg_attr(rust_js, rust_js::name = "model")]
+    pub struct Model;
+
+    /// `<nav>`
+    #[cfg_attr(rust_js, rust_js::name = "nav")]
+    pub struct Nav;
+
+    /// `<noscript>`
+    #[cfg_attr(rust_js, rust_js::name = "noscript")]
+    pub struct Noscript;
+
+    /// `<object>`
+    #[cfg_attr(rust_js, rust_js::name = "object")]
+    pub struct Object;
+
+    /// `<ol>`
+    #[cfg_attr(rust_js, rust_js::name = "ol")]
+    pub struct Ol;
+
+    /// `<optgroup>`
+    #[cfg_attr(rust_js, rust_js::name = "optgroup")]
+    pub struct Optgroup;
+
+    /// `<option>`
+    #[cfg_attr(rust_js, rust_js::name = "option")]
+    pub struct Option;
+
+    /// `<output>`
+    #[cfg_attr(rust_js, rust_js::name = "output")]
+    pub struct Output;
+
+    /// `<p>`
+    #[cfg_attr(rust_js, rust_js::name = "p")]
+    pub struct P;
+
+    /// `<picture>`
+    #[cfg_attr(rust_js, rust_js::name = "picture")]
+    pub struct Picture;
+
+    /// `<portal>`
+    #[cfg_attr(rust_js, rust_js::name = "portal")]
+    pub struct Portal;
+
+    /// `<pre>`
+    #[cfg_attr(rust_js, rust_js::name = "pre")]
+    pub struct Pre;
+
+    /// `<progress>`
+    #[cfg_attr(rust_js, rust_js::name = "progress")]
+    pub struct Progress;
+
+    /// `<q>`
+    #[cfg_attr(rust_js, rust_js::name = "q")]
+    pub struct Q;
+
+    /// `<rp>`
+    #[cfg_attr(rust_js, rust_js::name = "rp")]
+    pub struct Rp;
+
+    /// `<rt>`
+    #[cfg_attr(rust_js, rust_js::name = "rt")]
+    pub struct Rt;
+
+    /// `<ruby>`
+    #[cfg_attr(rust_js, rust_js::name = "ruby")]
+    pub struct Ruby;
+
+    /// `<s>`
+    #[cfg_attr(rust_js, rust_js::name = "s")]
+    pub struct S;
+
+    /// `<samp>`
+    #[cfg_attr(rust_js, rust_js::name = "samp")]
+    pub struct Samp;
+
+    /// `<script>`
+    #[cfg_attr(rust_js, rust_js::name = "script")]
+    pub struct Script;
+
+    /// `<search>`
+    #[cfg_attr(rust_js, rust_js::name = "search")]
+    pub struct Search;
+
+    /// `<section>`
+    #[cfg_attr(rust_js, rust_js::name = "section")]
+    pub struct Section;
+
+    /// `<select>`
+    #[cfg_attr(rust_js, rust_js::name = "select")]
+    pub struct Select;
+
+    /// `<selectedcontent>`
+    #[cfg_attr(rust_js, rust_js::name = "selectedcontent")]
+    pub struct Selectedcontent;
+
+    /// `<slot>`
+    #[cfg_attr(rust_js, rust_js::name = "slot")]
+    pub struct Slot;
+
+    /// `<small>`
+    #[cfg_attr(rust_js, rust_js::name = "small")]
+    pub struct Small;
+
+    /// `<source>`
+    #[cfg_attr(rust_js, rust_js::name = "source")]
+    pub struct Source;
+
+    /// `<span>`
+    #[cfg_attr(rust_js, rust_js::name = "span")]
+    pub struct Span;
+
+    /// `<strong>`
+    #[cfg_attr(rust_js, rust_js::name = "strong")]
+    pub struct Strong;
+
+    /// `<style>`
+    #[cfg_attr(rust_js, rust_js::name = "style")]
+    pub struct Style;
+
+    /// `<sub>`
+    #[cfg_attr(rust_js, rust_js::name = "sub")]
+    pub struct Sub;
+
+    /// `<summary>`
+    #[cfg_attr(rust_js, rust_js::name = "summary")]
+    pub struct Summary;
+
+    /// `<sup>`
+    #[cfg_attr(rust_js, rust_js::name = "sup")]
+    pub struct Sup;
+
+    /// `<table>`
+    #[cfg_attr(rust_js, rust_js::name = "table")]
+    pub struct Table;
+
+    /// `<tbody>`
+    #[cfg_attr(rust_js, rust_js::name = "tbody")]
+    pub struct Tbody;
+
+    /// `<td>`
+    #[cfg_attr(rust_js, rust_js::name = "td")]
+    pub struct Td;
+
+    /// `<template>`
+    #[cfg_attr(rust_js, rust_js::name = "template")]
+    pub struct Template;
+
+    /// `<textarea>`
+    #[cfg_attr(rust_js, rust_js::name = "textarea")]
+    pub struct Textarea;
+
+    /// `<tfoot>`
+    #[cfg_attr(rust_js, rust_js::name = "tfoot")]
+    pub struct Tfoot;
+
+    /// `<th>`
+    #[cfg_attr(rust_js, rust_js::name = "th")]
+    pub struct Th;
+
+    /// `<thead>`
+    #[cfg_attr(rust_js, rust_js::name = "thead")]
+    pub struct Thead;
+
+    /// `<time>`
+    #[cfg_attr(rust_js, rust_js::name = "time")]
+    pub struct Time;
+
+    /// `<title>`
+    #[cfg_attr(rust_js, rust_js::name = "title")]
+    pub struct Title;
+
+    /// `<tr>`
+    #[cfg_attr(rust_js, rust_js::name = "tr")]
+    pub struct Tr;
+
+    /// `<track>`
+    #[cfg_attr(rust_js, rust_js::name = "track")]
+    pub struct Track;
+
+    /// `<u>`
+    #[cfg_attr(rust_js, rust_js::name = "u")]
+    pub struct U;
+
+    /// `<ul>`
+    #[cfg_attr(rust_js, rust_js::name = "ul")]
+    pub struct Ul;
+
+    /// `<usermedia>`
+    #[cfg_attr(rust_js, rust_js::name = "usermedia")]
+    pub struct Usermedia;
+
+    /// `<var>`
+    #[cfg_attr(rust_js, rust_js::name = "var")]
+    pub struct Var;
+
+    /// `<video>`
+    #[cfg_attr(rust_js, rust_js::name = "video")]
+    pub struct Video;
+
+    /// `<wbr>`
+    #[cfg_attr(rust_js, rust_js::name = "wbr")]
+    pub struct Wbr;
+}
+
+impl Listen<events::DOMActivate> for Node { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for Node { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for Node { type Event = FocusEvent; }
+impl Listen<events::Animationcancel> for Node { type Event = Event; }
+impl Listen<events::Animationend> for Node { type Event = Event; }
+impl Listen<events::Animationiteration> for Node { type Event = Event; }
+impl Listen<events::Animationstart> for Node { type Event = Event; }
+impl Listen<events::Auxclick> for Node { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for Node { type Event = InputEvent; }
+impl Listen<events::Beforematch> for Node { type Event = Event; }
+impl Listen<events::Beforexrselect> for Node { type Event = Event; }
+impl Listen<events::Cancel> for Node { type Event = Event; }
+impl Listen<events::Change> for Node { type Event = Event; }
+impl Listen<events::Click> for Node { type Event = PointerEvent; }
+impl Listen<events::Compositionend> for Node { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for Node { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for Node { type Event = UiEvent; }
+impl Listen<events::Contextmenu> for Node { type Event = PointerEvent; }
+impl Listen<events::Copy> for Node { type Event = Event; }
+impl Listen<events::Cut> for Node { type Event = Event; }
+impl Listen<events::Dblclick> for Node { type Event = MouseEvent; }
+impl Listen<events::Drag> for Node { type Event = MouseEvent; }
+impl Listen<events::Dragend> for Node { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for Node { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for Node { type Event = MouseEvent; }
+impl Listen<events::Dragover> for Node { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for Node { type Event = MouseEvent; }
+impl Listen<events::Drop> for Node { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for Node { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for Node { type Event = Event; }
+impl Listen<events::Focusin> for Node { type Event = FocusEvent; }
+impl Listen<events::Focusout> for Node { type Event = FocusEvent; }
+impl Listen<events::Formdata> for Node { type Event = Event; }
+impl Listen<events::Fullscreenchange> for Node { type Event = Event; }
+impl Listen<events::Fullscreenerror> for Node { type Event = Event; }
+impl Listen<events::Gotpointercapture> for Node { type Event = PointerEvent; }
+impl Listen<events::Input> for Node { type Event = InputEvent; }
+impl Listen<events::Installresult> for Node { type Event = Event; }
+impl Listen<events::Keydown> for Node { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for Node { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for Node { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for Node { type Event = Event; }
+impl Listen<events::Lostpointercapture> for Node { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for Node { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for Node { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for Node { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for Node { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for Node { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for Node { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for Node { type Event = UiEvent; }
+impl Listen<events::Paste> for Node { type Event = Event; }
+impl Listen<events::Pointercancel> for Node { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for Node { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for Node { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for Node { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for Node { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for Node { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for Node { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for Node { type Event = Event; }
+impl Listen<events::Promptdismiss> for Node { type Event = Event; }
+impl Listen<events::Reset> for Node { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for Node { type Event = Event; }
+impl Listen<events::Select> for Node { type Event = Event; }
+impl Listen<events::Selectionchange> for Node { type Event = Event; }
+impl Listen<events::Selectstart> for Node { type Event = Event; }
+impl Listen<events::Slotchange> for Node { type Event = Event; }
+impl Listen<events::Submit> for Node { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for Node { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for Node { type Event = UiEvent; }
+impl Listen<events::Touchend> for Node { type Event = UiEvent; }
+impl Listen<events::Touchmove> for Node { type Event = UiEvent; }
+impl Listen<events::Touchstart> for Node { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for Node { type Event = Event; }
+impl Listen<events::Transitionend> for Node { type Event = Event; }
+impl Listen<events::Transitionrun> for Node { type Event = Event; }
+impl Listen<events::Transitionstart> for Node { type Event = Event; }
+impl Listen<events::Validationstatuschange> for Node { type Event = Event; }
+impl Listen<events::Wheel> for Node { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for CharacterData { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for CharacterData { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for CharacterData { type Event = FocusEvent; }
+impl Listen<events::Animationcancel> for CharacterData { type Event = Event; }
+impl Listen<events::Animationend> for CharacterData { type Event = Event; }
+impl Listen<events::Animationiteration> for CharacterData { type Event = Event; }
+impl Listen<events::Animationstart> for CharacterData { type Event = Event; }
+impl Listen<events::Auxclick> for CharacterData { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for CharacterData { type Event = InputEvent; }
+impl Listen<events::Beforematch> for CharacterData { type Event = Event; }
+impl Listen<events::Beforexrselect> for CharacterData { type Event = Event; }
+impl Listen<events::Cancel> for CharacterData { type Event = Event; }
+impl Listen<events::Change> for CharacterData { type Event = Event; }
+impl Listen<events::Click> for CharacterData { type Event = PointerEvent; }
+impl Listen<events::Compositionend> for CharacterData { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for CharacterData { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for CharacterData { type Event = UiEvent; }
+impl Listen<events::Contextmenu> for CharacterData { type Event = PointerEvent; }
+impl Listen<events::Copy> for CharacterData { type Event = Event; }
+impl Listen<events::Cut> for CharacterData { type Event = Event; }
+impl Listen<events::Dblclick> for CharacterData { type Event = MouseEvent; }
+impl Listen<events::Drag> for CharacterData { type Event = MouseEvent; }
+impl Listen<events::Dragend> for CharacterData { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for CharacterData { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for CharacterData { type Event = MouseEvent; }
+impl Listen<events::Dragover> for CharacterData { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for CharacterData { type Event = MouseEvent; }
+impl Listen<events::Drop> for CharacterData { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for CharacterData { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for CharacterData { type Event = Event; }
+impl Listen<events::Focusin> for CharacterData { type Event = FocusEvent; }
+impl Listen<events::Focusout> for CharacterData { type Event = FocusEvent; }
+impl Listen<events::Formdata> for CharacterData { type Event = Event; }
+impl Listen<events::Fullscreenchange> for CharacterData { type Event = Event; }
+impl Listen<events::Fullscreenerror> for CharacterData { type Event = Event; }
+impl Listen<events::Gotpointercapture> for CharacterData { type Event = PointerEvent; }
+impl Listen<events::Input> for CharacterData { type Event = InputEvent; }
+impl Listen<events::Installresult> for CharacterData { type Event = Event; }
+impl Listen<events::Keydown> for CharacterData { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for CharacterData { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for CharacterData { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for CharacterData { type Event = Event; }
+impl Listen<events::Lostpointercapture> for CharacterData { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for CharacterData { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for CharacterData { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for CharacterData { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for CharacterData { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for CharacterData { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for CharacterData { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for CharacterData { type Event = UiEvent; }
+impl Listen<events::Paste> for CharacterData { type Event = Event; }
+impl Listen<events::Pointercancel> for CharacterData { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for CharacterData { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for CharacterData { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for CharacterData { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for CharacterData { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for CharacterData { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for CharacterData { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for CharacterData { type Event = Event; }
+impl Listen<events::Promptdismiss> for CharacterData { type Event = Event; }
+impl Listen<events::Reset> for CharacterData { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for CharacterData { type Event = Event; }
+impl Listen<events::Select> for CharacterData { type Event = Event; }
+impl Listen<events::Selectionchange> for CharacterData { type Event = Event; }
+impl Listen<events::Selectstart> for CharacterData { type Event = Event; }
+impl Listen<events::Slotchange> for CharacterData { type Event = Event; }
+impl Listen<events::Submit> for CharacterData { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for CharacterData { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for CharacterData { type Event = UiEvent; }
+impl Listen<events::Touchend> for CharacterData { type Event = UiEvent; }
+impl Listen<events::Touchmove> for CharacterData { type Event = UiEvent; }
+impl Listen<events::Touchstart> for CharacterData { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for CharacterData { type Event = Event; }
+impl Listen<events::Transitionend> for CharacterData { type Event = Event; }
+impl Listen<events::Transitionrun> for CharacterData { type Event = Event; }
+impl Listen<events::Transitionstart> for CharacterData { type Event = Event; }
+impl Listen<events::Validationstatuschange> for CharacterData { type Event = Event; }
+impl Listen<events::Wheel> for CharacterData { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for Text { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for Text { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for Text { type Event = FocusEvent; }
+impl Listen<events::Animationcancel> for Text { type Event = Event; }
+impl Listen<events::Animationend> for Text { type Event = Event; }
+impl Listen<events::Animationiteration> for Text { type Event = Event; }
+impl Listen<events::Animationstart> for Text { type Event = Event; }
+impl Listen<events::Auxclick> for Text { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for Text { type Event = InputEvent; }
+impl Listen<events::Beforematch> for Text { type Event = Event; }
+impl Listen<events::Beforexrselect> for Text { type Event = Event; }
+impl Listen<events::Cancel> for Text { type Event = Event; }
+impl Listen<events::Change> for Text { type Event = Event; }
+impl Listen<events::Click> for Text { type Event = PointerEvent; }
+impl Listen<events::Compositionend> for Text { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for Text { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for Text { type Event = UiEvent; }
+impl Listen<events::Contextmenu> for Text { type Event = PointerEvent; }
+impl Listen<events::Copy> for Text { type Event = Event; }
+impl Listen<events::Cut> for Text { type Event = Event; }
+impl Listen<events::Dblclick> for Text { type Event = MouseEvent; }
+impl Listen<events::Drag> for Text { type Event = MouseEvent; }
+impl Listen<events::Dragend> for Text { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for Text { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for Text { type Event = MouseEvent; }
+impl Listen<events::Dragover> for Text { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for Text { type Event = MouseEvent; }
+impl Listen<events::Drop> for Text { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for Text { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for Text { type Event = Event; }
+impl Listen<events::Focusin> for Text { type Event = FocusEvent; }
+impl Listen<events::Focusout> for Text { type Event = FocusEvent; }
+impl Listen<events::Formdata> for Text { type Event = Event; }
+impl Listen<events::Fullscreenchange> for Text { type Event = Event; }
+impl Listen<events::Fullscreenerror> for Text { type Event = Event; }
+impl Listen<events::Gotpointercapture> for Text { type Event = PointerEvent; }
+impl Listen<events::Input> for Text { type Event = InputEvent; }
+impl Listen<events::Installresult> for Text { type Event = Event; }
+impl Listen<events::Keydown> for Text { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for Text { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for Text { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for Text { type Event = Event; }
+impl Listen<events::Lostpointercapture> for Text { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for Text { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for Text { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for Text { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for Text { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for Text { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for Text { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for Text { type Event = UiEvent; }
+impl Listen<events::Paste> for Text { type Event = Event; }
+impl Listen<events::Pointercancel> for Text { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for Text { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for Text { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for Text { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for Text { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for Text { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for Text { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for Text { type Event = Event; }
+impl Listen<events::Promptdismiss> for Text { type Event = Event; }
+impl Listen<events::Reset> for Text { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for Text { type Event = Event; }
+impl Listen<events::Select> for Text { type Event = Event; }
+impl Listen<events::Selectionchange> for Text { type Event = Event; }
+impl Listen<events::Selectstart> for Text { type Event = Event; }
+impl Listen<events::Slotchange> for Text { type Event = Event; }
+impl Listen<events::Submit> for Text { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for Text { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for Text { type Event = UiEvent; }
+impl Listen<events::Touchend> for Text { type Event = UiEvent; }
+impl Listen<events::Touchmove> for Text { type Event = UiEvent; }
+impl Listen<events::Touchstart> for Text { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for Text { type Event = Event; }
+impl Listen<events::Transitionend> for Text { type Event = Event; }
+impl Listen<events::Transitionrun> for Text { type Event = Event; }
+impl Listen<events::Transitionstart> for Text { type Event = Event; }
+impl Listen<events::Validationstatuschange> for Text { type Event = Event; }
+impl Listen<events::Wheel> for Text { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for Comment { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for Comment { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for Comment { type Event = FocusEvent; }
+impl Listen<events::Animationcancel> for Comment { type Event = Event; }
+impl Listen<events::Animationend> for Comment { type Event = Event; }
+impl Listen<events::Animationiteration> for Comment { type Event = Event; }
+impl Listen<events::Animationstart> for Comment { type Event = Event; }
+impl Listen<events::Auxclick> for Comment { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for Comment { type Event = InputEvent; }
+impl Listen<events::Beforematch> for Comment { type Event = Event; }
+impl Listen<events::Beforexrselect> for Comment { type Event = Event; }
+impl Listen<events::Cancel> for Comment { type Event = Event; }
+impl Listen<events::Change> for Comment { type Event = Event; }
+impl Listen<events::Click> for Comment { type Event = PointerEvent; }
+impl Listen<events::Compositionend> for Comment { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for Comment { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for Comment { type Event = UiEvent; }
+impl Listen<events::Contextmenu> for Comment { type Event = PointerEvent; }
+impl Listen<events::Copy> for Comment { type Event = Event; }
+impl Listen<events::Cut> for Comment { type Event = Event; }
+impl Listen<events::Dblclick> for Comment { type Event = MouseEvent; }
+impl Listen<events::Drag> for Comment { type Event = MouseEvent; }
+impl Listen<events::Dragend> for Comment { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for Comment { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for Comment { type Event = MouseEvent; }
+impl Listen<events::Dragover> for Comment { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for Comment { type Event = MouseEvent; }
+impl Listen<events::Drop> for Comment { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for Comment { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for Comment { type Event = Event; }
+impl Listen<events::Focusin> for Comment { type Event = FocusEvent; }
+impl Listen<events::Focusout> for Comment { type Event = FocusEvent; }
+impl Listen<events::Formdata> for Comment { type Event = Event; }
+impl Listen<events::Fullscreenchange> for Comment { type Event = Event; }
+impl Listen<events::Fullscreenerror> for Comment { type Event = Event; }
+impl Listen<events::Gotpointercapture> for Comment { type Event = PointerEvent; }
+impl Listen<events::Input> for Comment { type Event = InputEvent; }
+impl Listen<events::Installresult> for Comment { type Event = Event; }
+impl Listen<events::Keydown> for Comment { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for Comment { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for Comment { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for Comment { type Event = Event; }
+impl Listen<events::Lostpointercapture> for Comment { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for Comment { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for Comment { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for Comment { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for Comment { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for Comment { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for Comment { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for Comment { type Event = UiEvent; }
+impl Listen<events::Paste> for Comment { type Event = Event; }
+impl Listen<events::Pointercancel> for Comment { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for Comment { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for Comment { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for Comment { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for Comment { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for Comment { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for Comment { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for Comment { type Event = Event; }
+impl Listen<events::Promptdismiss> for Comment { type Event = Event; }
+impl Listen<events::Reset> for Comment { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for Comment { type Event = Event; }
+impl Listen<events::Select> for Comment { type Event = Event; }
+impl Listen<events::Selectionchange> for Comment { type Event = Event; }
+impl Listen<events::Selectstart> for Comment { type Event = Event; }
+impl Listen<events::Slotchange> for Comment { type Event = Event; }
+impl Listen<events::Submit> for Comment { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for Comment { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for Comment { type Event = UiEvent; }
+impl Listen<events::Touchend> for Comment { type Event = UiEvent; }
+impl Listen<events::Touchmove> for Comment { type Event = UiEvent; }
+impl Listen<events::Touchstart> for Comment { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for Comment { type Event = Event; }
+impl Listen<events::Transitionend> for Comment { type Event = Event; }
+impl Listen<events::Transitionrun> for Comment { type Event = Event; }
+impl Listen<events::Transitionstart> for Comment { type Event = Event; }
+impl Listen<events::Validationstatuschange> for Comment { type Event = Event; }
+impl Listen<events::Wheel> for Comment { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for Element { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for Element { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for Element { type Event = FocusEvent; }
+impl Listen<events::Abort> for Element { type Event = Event; }
+impl Listen<events::Animationcancel> for Element { type Event = Event; }
+impl Listen<events::Animationend> for Element { type Event = Event; }
+impl Listen<events::Animationiteration> for Element { type Event = Event; }
+impl Listen<events::Animationstart> for Element { type Event = Event; }
+impl Listen<events::Auxclick> for Element { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for Element { type Event = InputEvent; }
+impl Listen<events::Beforematch> for Element { type Event = Event; }
+impl Listen<events::Beforexrselect> for Element { type Event = Event; }
+impl Listen<events::Blur> for Element { type Event = FocusEvent; }
+impl Listen<events::Cancel> for Element { type Event = Event; }
+impl Listen<events::Change> for Element { type Event = Event; }
+impl Listen<events::Click> for Element { type Event = PointerEvent; }
+impl Listen<events::Compositionend> for Element { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for Element { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for Element { type Event = UiEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for Element { type Event = Event; }
+impl Listen<events::Contextmenu> for Element { type Event = PointerEvent; }
+impl Listen<events::Copy> for Element { type Event = Event; }
+impl Listen<events::Cut> for Element { type Event = Event; }
+impl Listen<events::Dblclick> for Element { type Event = MouseEvent; }
+impl Listen<events::Drag> for Element { type Event = MouseEvent; }
+impl Listen<events::Dragend> for Element { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for Element { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for Element { type Event = MouseEvent; }
+impl Listen<events::Dragover> for Element { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for Element { type Event = MouseEvent; }
+impl Listen<events::Drop> for Element { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for Element { type Event = Event; }
+impl Listen<events::Error> for Element { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for Element { type Event = Event; }
+impl Listen<events::Focus> for Element { type Event = FocusEvent; }
+impl Listen<events::Focusin> for Element { type Event = FocusEvent; }
+impl Listen<events::Focusout> for Element { type Event = FocusEvent; }
+impl Listen<events::Formdata> for Element { type Event = Event; }
+impl Listen<events::Fullscreenchange> for Element { type Event = Event; }
+impl Listen<events::Fullscreenerror> for Element { type Event = Event; }
+impl Listen<events::Gotpointercapture> for Element { type Event = PointerEvent; }
+impl Listen<events::Input> for Element { type Event = InputEvent; }
+impl Listen<events::Installresult> for Element { type Event = Event; }
+impl Listen<events::Keydown> for Element { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for Element { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for Element { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for Element { type Event = Event; }
+impl Listen<events::Load> for Element { type Event = Event; }
+impl Listen<events::Lostpointercapture> for Element { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for Element { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for Element { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for Element { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for Element { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for Element { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for Element { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for Element { type Event = UiEvent; }
+impl Listen<events::Paste> for Element { type Event = Event; }
+impl Listen<events::Pointercancel> for Element { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for Element { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for Element { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for Element { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for Element { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for Element { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for Element { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for Element { type Event = Event; }
+impl Listen<events::Promptdismiss> for Element { type Event = Event; }
+impl Listen<events::Reset> for Element { type Event = Event; }
+impl Listen<events::Scroll> for Element { type Event = Event; }
+impl Listen<events::Scrollend> for Element { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for Element { type Event = Event; }
+impl Listen<events::Select> for Element { type Event = Event; }
+impl Listen<events::Selectionchange> for Element { type Event = Event; }
+impl Listen<events::Selectstart> for Element { type Event = Event; }
+impl Listen<events::Slotchange> for Element { type Event = Event; }
+impl Listen<events::Submit> for Element { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for Element { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for Element { type Event = UiEvent; }
+impl Listen<events::Touchend> for Element { type Event = UiEvent; }
+impl Listen<events::Touchmove> for Element { type Event = UiEvent; }
+impl Listen<events::Touchstart> for Element { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for Element { type Event = Event; }
+impl Listen<events::Transitionend> for Element { type Event = Event; }
+impl Listen<events::Transitionrun> for Element { type Event = Event; }
+impl Listen<events::Transitionstart> for Element { type Event = Event; }
+impl Listen<events::Unload> for Element { type Event = Event; }
+impl Listen<events::Validationstatuschange> for Element { type Event = Event; }
+impl Listen<events::Wheel> for Element { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for Document { type Event = UiEvent; }
+impl Listen<events::DOMContentLoaded> for Document { type Event = Event; }
+impl Listen<events::DOMFocusIn> for Document { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for Document { type Event = FocusEvent; }
+impl Listen<events::Animationcancel> for Document { type Event = Event; }
+impl Listen<events::Animationend> for Document { type Event = Event; }
+impl Listen<events::Animationiteration> for Document { type Event = Event; }
+impl Listen<events::Animationstart> for Document { type Event = Event; }
+impl Listen<events::Autofill> for Document { type Event = Event; }
+impl Listen<events::Auxclick> for Document { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for Document { type Event = InputEvent; }
+impl Listen<events::Beforematch> for Document { type Event = Event; }
+impl Listen<events::Beforexrselect> for Document { type Event = Event; }
+impl Listen<events::Cancel> for Document { type Event = Event; }
+impl Listen<events::Change> for Document { type Event = Event; }
+impl Listen<events::Click> for Document { type Event = PointerEvent; }
+impl Listen<events::Compositionend> for Document { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for Document { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for Document { type Event = UiEvent; }
+impl Listen<events::Contextmenu> for Document { type Event = PointerEvent; }
+impl Listen<events::Copy> for Document { type Event = Event; }
+impl Listen<events::Cut> for Document { type Event = Event; }
+impl Listen<events::Dblclick> for Document { type Event = MouseEvent; }
+impl Listen<events::Drag> for Document { type Event = MouseEvent; }
+impl Listen<events::Dragend> for Document { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for Document { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for Document { type Event = MouseEvent; }
+impl Listen<events::Dragover> for Document { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for Document { type Event = MouseEvent; }
+impl Listen<events::Drop> for Document { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for Document { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for Document { type Event = Event; }
+impl Listen<events::Focusin> for Document { type Event = FocusEvent; }
+impl Listen<events::Focusout> for Document { type Event = FocusEvent; }
+impl Listen<events::Formdata> for Document { type Event = Event; }
+impl Listen<events::Freeze> for Document { type Event = Event; }
+impl Listen<events::Fullscreenchange> for Document { type Event = Event; }
+impl Listen<events::Fullscreenerror> for Document { type Event = Event; }
+impl Listen<events::Gotpointercapture> for Document { type Event = PointerEvent; }
+impl Listen<events::Input> for Document { type Event = InputEvent; }
+impl Listen<events::Installresult> for Document { type Event = Event; }
+impl Listen<events::Keydown> for Document { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for Document { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for Document { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for Document { type Event = Event; }
+impl Listen<events::Load> for Document { type Event = Event; }
+impl Listen<events::Lostpointercapture> for Document { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for Document { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for Document { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for Document { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for Document { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for Document { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for Document { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for Document { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for Document { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for Document { type Event = UiEvent; }
+impl Listen<events::Paste> for Document { type Event = Event; }
+impl Listen<events::Pointercancel> for Document { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for Document { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for Document { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for Document { type Event = PointerEvent; }
+impl Listen<events::Pointerlockchange> for Document { type Event = Event; }
+impl Listen<events::Pointerlockerror> for Document { type Event = Event; }
+impl Listen<events::Pointermove> for Document { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for Document { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for Document { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for Document { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for Document { type Event = PointerEvent; }
+impl Listen<events::Prerenderingchange> for Document { type Event = Event; }
+impl Listen<events::Promptaction> for Document { type Event = Event; }
+impl Listen<events::Promptdismiss> for Document { type Event = Event; }
+impl Listen<events::Readystatechange> for Document { type Event = Event; }
+impl Listen<events::Reset> for Document { type Event = Event; }
+impl Listen<events::Resume> for Document { type Event = Event; }
+impl Listen<events::Scroll> for Document { type Event = Event; }
+impl Listen<events::Scrollend> for Document { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for Document { type Event = Event; }
+impl Listen<events::Select> for Document { type Event = Event; }
+impl Listen<events::Selectionchange> for Document { type Event = Event; }
+impl Listen<events::Selectstart> for Document { type Event = Event; }
+impl Listen<events::Slotchange> for Document { type Event = Event; }
+impl Listen<events::Submit> for Document { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for Document { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for Document { type Event = UiEvent; }
+impl Listen<events::Touchend> for Document { type Event = UiEvent; }
+impl Listen<events::Touchmove> for Document { type Event = UiEvent; }
+impl Listen<events::Touchstart> for Document { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for Document { type Event = Event; }
+impl Listen<events::Transitionend> for Document { type Event = Event; }
+impl Listen<events::Transitionrun> for Document { type Event = Event; }
+impl Listen<events::Transitionstart> for Document { type Event = Event; }
+impl Listen<events::Unload> for Document { type Event = Event; }
+impl Listen<events::Validationstatuschange> for Document { type Event = Event; }
+impl Listen<events::Visibilitychange> for Document { type Event = Event; }
+impl Listen<events::Wheel> for Document { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for DocumentFragment { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for DocumentFragment { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for DocumentFragment { type Event = FocusEvent; }
+impl Listen<events::Animationcancel> for DocumentFragment { type Event = Event; }
+impl Listen<events::Animationend> for DocumentFragment { type Event = Event; }
+impl Listen<events::Animationiteration> for DocumentFragment { type Event = Event; }
+impl Listen<events::Animationstart> for DocumentFragment { type Event = Event; }
+impl Listen<events::Auxclick> for DocumentFragment { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for DocumentFragment { type Event = InputEvent; }
+impl Listen<events::Beforematch> for DocumentFragment { type Event = Event; }
+impl Listen<events::Beforexrselect> for DocumentFragment { type Event = Event; }
+impl Listen<events::Cancel> for DocumentFragment { type Event = Event; }
+impl Listen<events::Change> for DocumentFragment { type Event = Event; }
+impl Listen<events::Click> for DocumentFragment { type Event = PointerEvent; }
+impl Listen<events::Compositionend> for DocumentFragment { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for DocumentFragment { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for DocumentFragment { type Event = UiEvent; }
+impl Listen<events::Contextmenu> for DocumentFragment { type Event = PointerEvent; }
+impl Listen<events::Copy> for DocumentFragment { type Event = Event; }
+impl Listen<events::Cut> for DocumentFragment { type Event = Event; }
+impl Listen<events::Dblclick> for DocumentFragment { type Event = MouseEvent; }
+impl Listen<events::Drag> for DocumentFragment { type Event = MouseEvent; }
+impl Listen<events::Dragend> for DocumentFragment { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for DocumentFragment { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for DocumentFragment { type Event = MouseEvent; }
+impl Listen<events::Dragover> for DocumentFragment { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for DocumentFragment { type Event = MouseEvent; }
+impl Listen<events::Drop> for DocumentFragment { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for DocumentFragment { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for DocumentFragment { type Event = Event; }
+impl Listen<events::Focusin> for DocumentFragment { type Event = FocusEvent; }
+impl Listen<events::Focusout> for DocumentFragment { type Event = FocusEvent; }
+impl Listen<events::Formdata> for DocumentFragment { type Event = Event; }
+impl Listen<events::Fullscreenchange> for DocumentFragment { type Event = Event; }
+impl Listen<events::Fullscreenerror> for DocumentFragment { type Event = Event; }
+impl Listen<events::Gotpointercapture> for DocumentFragment { type Event = PointerEvent; }
+impl Listen<events::Input> for DocumentFragment { type Event = InputEvent; }
+impl Listen<events::Installresult> for DocumentFragment { type Event = Event; }
+impl Listen<events::Keydown> for DocumentFragment { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for DocumentFragment { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for DocumentFragment { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for DocumentFragment { type Event = Event; }
+impl Listen<events::Lostpointercapture> for DocumentFragment { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for DocumentFragment { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for DocumentFragment { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for DocumentFragment { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for DocumentFragment { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for DocumentFragment { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for DocumentFragment { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for DocumentFragment { type Event = UiEvent; }
+impl Listen<events::Paste> for DocumentFragment { type Event = Event; }
+impl Listen<events::Pointercancel> for DocumentFragment { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for DocumentFragment { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for DocumentFragment { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for DocumentFragment { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for DocumentFragment { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for DocumentFragment { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for DocumentFragment { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for DocumentFragment { type Event = Event; }
+impl Listen<events::Promptdismiss> for DocumentFragment { type Event = Event; }
+impl Listen<events::Reset> for DocumentFragment { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for DocumentFragment { type Event = Event; }
+impl Listen<events::Select> for DocumentFragment { type Event = Event; }
+impl Listen<events::Selectionchange> for DocumentFragment { type Event = Event; }
+impl Listen<events::Selectstart> for DocumentFragment { type Event = Event; }
+impl Listen<events::Slotchange> for DocumentFragment { type Event = Event; }
+impl Listen<events::Submit> for DocumentFragment { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for DocumentFragment { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for DocumentFragment { type Event = UiEvent; }
+impl Listen<events::Touchend> for DocumentFragment { type Event = UiEvent; }
+impl Listen<events::Touchmove> for DocumentFragment { type Event = UiEvent; }
+impl Listen<events::Touchstart> for DocumentFragment { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for DocumentFragment { type Event = Event; }
+impl Listen<events::Transitionend> for DocumentFragment { type Event = Event; }
+impl Listen<events::Transitionrun> for DocumentFragment { type Event = Event; }
+impl Listen<events::Transitionstart> for DocumentFragment { type Event = Event; }
+impl Listen<events::Validationstatuschange> for DocumentFragment { type Event = Event; }
+impl Listen<events::Wheel> for DocumentFragment { type Event = MouseEvent; }
+
+impl Listen<events::Abort> for AbortSignal { type Event = Event; }
+
+impl Listen<events::DOMActivate> for HtmlElement { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for HtmlElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HtmlElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HtmlElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HtmlElement { type Event = Event; }
+impl Listen<events::Animationend> for HtmlElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HtmlElement { type Event = Event; }
+impl Listen<events::Animationstart> for HtmlElement { type Event = Event; }
+impl Listen<events::Auxclick> for HtmlElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HtmlElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HtmlElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HtmlElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HtmlElement { type Event = Event; }
+impl Listen<events::Blur> for HtmlElement { type Event = Event; }
+impl Listen<events::Cancel> for HtmlElement { type Event = Event; }
+impl Listen<events::Change> for HtmlElement { type Event = Event; }
+impl Listen<events::Click> for HtmlElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HtmlElement { type Event = Event; }
+impl Listen<events::Compositionend> for HtmlElement { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for HtmlElement { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for HtmlElement { type Event = UiEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HtmlElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HtmlElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HtmlElement { type Event = Event; }
+impl Listen<events::Cut> for HtmlElement { type Event = Event; }
+impl Listen<events::Dblclick> for HtmlElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HtmlElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HtmlElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HtmlElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HtmlElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HtmlElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HtmlElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HtmlElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HtmlElement { type Event = Event; }
+impl Listen<events::Error> for HtmlElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HtmlElement { type Event = Event; }
+impl Listen<events::Focus> for HtmlElement { type Event = Event; }
+impl Listen<events::Focusin> for HtmlElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HtmlElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HtmlElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HtmlElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HtmlElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HtmlElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HtmlElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HtmlElement { type Event = Event; }
+impl Listen<events::Keydown> for HtmlElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HtmlElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HtmlElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HtmlElement { type Event = Event; }
+impl Listen<events::Load> for HtmlElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HtmlElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HtmlElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HtmlElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HtmlElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HtmlElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HtmlElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HtmlElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HtmlElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HtmlElement { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for HtmlElement { type Event = UiEvent; }
+impl Listen<events::Paste> for HtmlElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HtmlElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HtmlElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HtmlElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HtmlElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HtmlElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HtmlElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HtmlElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HtmlElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HtmlElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HtmlElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HtmlElement { type Event = Event; }
+impl Listen<events::Reset> for HtmlElement { type Event = Event; }
+impl Listen<events::Scroll> for HtmlElement { type Event = Event; }
+impl Listen<events::Scrollend> for HtmlElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HtmlElement { type Event = Event; }
+impl Listen<events::Select> for HtmlElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HtmlElement { type Event = Event; }
+impl Listen<events::Selectstart> for HtmlElement { type Event = Event; }
+impl Listen<events::Slotchange> for HtmlElement { type Event = Event; }
+impl Listen<events::Submit> for HtmlElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HtmlElement { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for HtmlElement { type Event = UiEvent; }
+impl Listen<events::Touchend> for HtmlElement { type Event = UiEvent; }
+impl Listen<events::Touchmove> for HtmlElement { type Event = UiEvent; }
+impl Listen<events::Touchstart> for HtmlElement { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for HtmlElement { type Event = Event; }
+impl Listen<events::Transitionend> for HtmlElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HtmlElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HtmlElement { type Event = Event; }
+impl Listen<events::Unload> for HtmlElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HtmlElement { type Event = Event; }
+impl Listen<events::Wheel> for HtmlElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HtmlAnchorElement { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for HtmlAnchorElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HtmlAnchorElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Animationend> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Animationstart> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Auxclick> for HtmlAnchorElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HtmlAnchorElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HtmlAnchorElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Blur> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Cancel> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Change> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Click> for HtmlAnchorElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Compositionend> for HtmlAnchorElement { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for HtmlAnchorElement { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for HtmlAnchorElement { type Event = UiEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HtmlAnchorElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Cut> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Dblclick> for HtmlAnchorElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HtmlAnchorElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HtmlAnchorElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HtmlAnchorElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HtmlAnchorElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HtmlAnchorElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HtmlAnchorElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HtmlAnchorElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Error> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Focus> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Focusin> for HtmlAnchorElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HtmlAnchorElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HtmlAnchorElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HtmlAnchorElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Keydown> for HtmlAnchorElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HtmlAnchorElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HtmlAnchorElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Load> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HtmlAnchorElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HtmlAnchorElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HtmlAnchorElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HtmlAnchorElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HtmlAnchorElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HtmlAnchorElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HtmlAnchorElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HtmlAnchorElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HtmlAnchorElement { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for HtmlAnchorElement { type Event = UiEvent; }
+impl Listen<events::Paste> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HtmlAnchorElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HtmlAnchorElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HtmlAnchorElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HtmlAnchorElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HtmlAnchorElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HtmlAnchorElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HtmlAnchorElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HtmlAnchorElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HtmlAnchorElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Reset> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Scroll> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Scrollend> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Select> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Selectstart> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Slotchange> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Submit> for HtmlAnchorElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HtmlAnchorElement { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for HtmlAnchorElement { type Event = UiEvent; }
+impl Listen<events::Touchend> for HtmlAnchorElement { type Event = UiEvent; }
+impl Listen<events::Touchmove> for HtmlAnchorElement { type Event = UiEvent; }
+impl Listen<events::Touchstart> for HtmlAnchorElement { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Transitionend> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Unload> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HtmlAnchorElement { type Event = Event; }
+impl Listen<events::Wheel> for HtmlAnchorElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HtmlButtonElement { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for HtmlButtonElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HtmlButtonElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Animationend> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Animationstart> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Auxclick> for HtmlButtonElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HtmlButtonElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HtmlButtonElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Blur> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Cancel> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Change> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Click> for HtmlButtonElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Compositionend> for HtmlButtonElement { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for HtmlButtonElement { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for HtmlButtonElement { type Event = UiEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HtmlButtonElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Cut> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Dblclick> for HtmlButtonElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HtmlButtonElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HtmlButtonElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HtmlButtonElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HtmlButtonElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HtmlButtonElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HtmlButtonElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HtmlButtonElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Error> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Focus> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Focusin> for HtmlButtonElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HtmlButtonElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HtmlButtonElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HtmlButtonElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Invalid> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Keydown> for HtmlButtonElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HtmlButtonElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HtmlButtonElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Load> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HtmlButtonElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HtmlButtonElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HtmlButtonElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HtmlButtonElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HtmlButtonElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HtmlButtonElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HtmlButtonElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HtmlButtonElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HtmlButtonElement { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for HtmlButtonElement { type Event = UiEvent; }
+impl Listen<events::Paste> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HtmlButtonElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HtmlButtonElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HtmlButtonElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HtmlButtonElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HtmlButtonElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HtmlButtonElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HtmlButtonElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HtmlButtonElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HtmlButtonElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Reset> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Scroll> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Scrollend> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Select> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Selectstart> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Slotchange> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Submit> for HtmlButtonElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HtmlButtonElement { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for HtmlButtonElement { type Event = UiEvent; }
+impl Listen<events::Touchend> for HtmlButtonElement { type Event = UiEvent; }
+impl Listen<events::Touchmove> for HtmlButtonElement { type Event = UiEvent; }
+impl Listen<events::Touchstart> for HtmlButtonElement { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Transitionend> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Unload> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HtmlButtonElement { type Event = Event; }
+impl Listen<events::Wheel> for HtmlButtonElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HtmlDivElement { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for HtmlDivElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HtmlDivElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Animationend> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Animationstart> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Auxclick> for HtmlDivElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HtmlDivElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HtmlDivElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Blur> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Cancel> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Change> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Click> for HtmlDivElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Compositionend> for HtmlDivElement { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for HtmlDivElement { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for HtmlDivElement { type Event = UiEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HtmlDivElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Cut> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Dblclick> for HtmlDivElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HtmlDivElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HtmlDivElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HtmlDivElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HtmlDivElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HtmlDivElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HtmlDivElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HtmlDivElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Error> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Focus> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Focusin> for HtmlDivElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HtmlDivElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HtmlDivElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HtmlDivElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Keydown> for HtmlDivElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HtmlDivElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HtmlDivElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Load> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HtmlDivElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HtmlDivElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HtmlDivElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HtmlDivElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HtmlDivElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HtmlDivElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HtmlDivElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HtmlDivElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HtmlDivElement { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for HtmlDivElement { type Event = UiEvent; }
+impl Listen<events::Paste> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HtmlDivElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HtmlDivElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HtmlDivElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HtmlDivElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HtmlDivElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HtmlDivElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HtmlDivElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HtmlDivElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HtmlDivElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Reset> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Scroll> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Scrollend> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Select> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Selectstart> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Slotchange> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Submit> for HtmlDivElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HtmlDivElement { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for HtmlDivElement { type Event = UiEvent; }
+impl Listen<events::Touchend> for HtmlDivElement { type Event = UiEvent; }
+impl Listen<events::Touchmove> for HtmlDivElement { type Event = UiEvent; }
+impl Listen<events::Touchstart> for HtmlDivElement { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Transitionend> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Unload> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HtmlDivElement { type Event = Event; }
+impl Listen<events::Wheel> for HtmlDivElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HtmlFormElement { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for HtmlFormElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HtmlFormElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Animationend> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Animationstart> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Auxclick> for HtmlFormElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HtmlFormElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HtmlFormElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Blur> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Cancel> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Change> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Click> for HtmlFormElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Compositionend> for HtmlFormElement { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for HtmlFormElement { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for HtmlFormElement { type Event = UiEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HtmlFormElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Cut> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Dblclick> for HtmlFormElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HtmlFormElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HtmlFormElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HtmlFormElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HtmlFormElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HtmlFormElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HtmlFormElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HtmlFormElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Error> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Focus> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Focusin> for HtmlFormElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HtmlFormElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HtmlFormElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HtmlFormElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Keydown> for HtmlFormElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HtmlFormElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HtmlFormElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Load> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HtmlFormElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HtmlFormElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HtmlFormElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HtmlFormElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HtmlFormElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HtmlFormElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HtmlFormElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HtmlFormElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HtmlFormElement { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for HtmlFormElement { type Event = UiEvent; }
+impl Listen<events::Paste> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HtmlFormElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HtmlFormElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HtmlFormElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HtmlFormElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HtmlFormElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HtmlFormElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HtmlFormElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HtmlFormElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HtmlFormElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Reset> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Scroll> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Scrollend> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Select> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Selectstart> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Slotchange> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Submit> for HtmlFormElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HtmlFormElement { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for HtmlFormElement { type Event = UiEvent; }
+impl Listen<events::Touchend> for HtmlFormElement { type Event = UiEvent; }
+impl Listen<events::Touchmove> for HtmlFormElement { type Event = UiEvent; }
+impl Listen<events::Touchstart> for HtmlFormElement { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Transitionend> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Unload> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HtmlFormElement { type Event = Event; }
+impl Listen<events::Wheel> for HtmlFormElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HtmlHeadingElement { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for HtmlHeadingElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HtmlHeadingElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Animationend> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Animationstart> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Auxclick> for HtmlHeadingElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HtmlHeadingElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HtmlHeadingElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Blur> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Cancel> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Change> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Click> for HtmlHeadingElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Compositionend> for HtmlHeadingElement { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for HtmlHeadingElement { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for HtmlHeadingElement { type Event = UiEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HtmlHeadingElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Cut> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Dblclick> for HtmlHeadingElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HtmlHeadingElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HtmlHeadingElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HtmlHeadingElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HtmlHeadingElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HtmlHeadingElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HtmlHeadingElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HtmlHeadingElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Error> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Focus> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Focusin> for HtmlHeadingElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HtmlHeadingElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HtmlHeadingElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HtmlHeadingElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Keydown> for HtmlHeadingElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HtmlHeadingElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HtmlHeadingElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Load> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HtmlHeadingElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HtmlHeadingElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HtmlHeadingElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HtmlHeadingElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HtmlHeadingElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HtmlHeadingElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HtmlHeadingElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HtmlHeadingElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HtmlHeadingElement { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for HtmlHeadingElement { type Event = UiEvent; }
+impl Listen<events::Paste> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HtmlHeadingElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HtmlHeadingElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HtmlHeadingElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HtmlHeadingElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HtmlHeadingElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HtmlHeadingElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HtmlHeadingElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HtmlHeadingElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HtmlHeadingElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Reset> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Scroll> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Scrollend> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Select> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Selectstart> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Slotchange> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Submit> for HtmlHeadingElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HtmlHeadingElement { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for HtmlHeadingElement { type Event = UiEvent; }
+impl Listen<events::Touchend> for HtmlHeadingElement { type Event = UiEvent; }
+impl Listen<events::Touchmove> for HtmlHeadingElement { type Event = UiEvent; }
+impl Listen<events::Touchstart> for HtmlHeadingElement { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Transitionend> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Unload> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HtmlHeadingElement { type Event = Event; }
+impl Listen<events::Wheel> for HtmlHeadingElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HtmlImageElement { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for HtmlImageElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HtmlImageElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Animationend> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Animationstart> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Auxclick> for HtmlImageElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HtmlImageElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HtmlImageElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Blur> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Cancel> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Change> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Click> for HtmlImageElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Compositionend> for HtmlImageElement { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for HtmlImageElement { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for HtmlImageElement { type Event = UiEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HtmlImageElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Cut> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Dblclick> for HtmlImageElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HtmlImageElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HtmlImageElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HtmlImageElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HtmlImageElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HtmlImageElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HtmlImageElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HtmlImageElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Error> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Focus> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Focusin> for HtmlImageElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HtmlImageElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HtmlImageElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HtmlImageElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Keydown> for HtmlImageElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HtmlImageElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HtmlImageElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Load> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HtmlImageElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HtmlImageElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HtmlImageElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HtmlImageElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HtmlImageElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HtmlImageElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HtmlImageElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HtmlImageElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HtmlImageElement { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for HtmlImageElement { type Event = UiEvent; }
+impl Listen<events::Paste> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HtmlImageElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HtmlImageElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HtmlImageElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HtmlImageElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HtmlImageElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HtmlImageElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HtmlImageElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HtmlImageElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HtmlImageElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Reset> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Scroll> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Scrollend> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Select> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Selectstart> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Slotchange> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Submit> for HtmlImageElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HtmlImageElement { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for HtmlImageElement { type Event = UiEvent; }
+impl Listen<events::Touchend> for HtmlImageElement { type Event = UiEvent; }
+impl Listen<events::Touchmove> for HtmlImageElement { type Event = UiEvent; }
+impl Listen<events::Touchstart> for HtmlImageElement { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Transitionend> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Unload> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HtmlImageElement { type Event = Event; }
+impl Listen<events::Wheel> for HtmlImageElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HtmlInputElement { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for HtmlInputElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HtmlInputElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Animationend> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Animationstart> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Auxclick> for HtmlInputElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HtmlInputElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HtmlInputElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Blur> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Cancel> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Change> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Click> for HtmlInputElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Compositionend> for HtmlInputElement { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for HtmlInputElement { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for HtmlInputElement { type Event = UiEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HtmlInputElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Cut> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Dblclick> for HtmlInputElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HtmlInputElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HtmlInputElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HtmlInputElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HtmlInputElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HtmlInputElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HtmlInputElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HtmlInputElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Error> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Focus> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Focusin> for HtmlInputElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HtmlInputElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HtmlInputElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HtmlInputElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Invalid> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Keydown> for HtmlInputElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HtmlInputElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HtmlInputElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Load> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HtmlInputElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HtmlInputElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HtmlInputElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HtmlInputElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HtmlInputElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HtmlInputElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HtmlInputElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HtmlInputElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HtmlInputElement { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for HtmlInputElement { type Event = UiEvent; }
+impl Listen<events::Paste> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HtmlInputElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HtmlInputElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HtmlInputElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HtmlInputElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HtmlInputElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HtmlInputElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HtmlInputElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HtmlInputElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HtmlInputElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Reset> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Scroll> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Scrollend> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Select> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Selectstart> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Slotchange> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Submit> for HtmlInputElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HtmlInputElement { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for HtmlInputElement { type Event = UiEvent; }
+impl Listen<events::Touchend> for HtmlInputElement { type Event = UiEvent; }
+impl Listen<events::Touchmove> for HtmlInputElement { type Event = UiEvent; }
+impl Listen<events::Touchstart> for HtmlInputElement { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Transitionend> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Unload> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HtmlInputElement { type Event = Event; }
+impl Listen<events::Wheel> for HtmlInputElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HtmlLabelElement { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for HtmlLabelElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HtmlLabelElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Animationend> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Animationstart> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Auxclick> for HtmlLabelElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HtmlLabelElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HtmlLabelElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Blur> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Cancel> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Change> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Click> for HtmlLabelElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Compositionend> for HtmlLabelElement { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for HtmlLabelElement { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for HtmlLabelElement { type Event = UiEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HtmlLabelElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Cut> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Dblclick> for HtmlLabelElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HtmlLabelElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HtmlLabelElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HtmlLabelElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HtmlLabelElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HtmlLabelElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HtmlLabelElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HtmlLabelElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Error> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Focus> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Focusin> for HtmlLabelElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HtmlLabelElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HtmlLabelElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HtmlLabelElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Keydown> for HtmlLabelElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HtmlLabelElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HtmlLabelElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Load> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HtmlLabelElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HtmlLabelElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HtmlLabelElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HtmlLabelElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HtmlLabelElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HtmlLabelElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HtmlLabelElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HtmlLabelElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HtmlLabelElement { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for HtmlLabelElement { type Event = UiEvent; }
+impl Listen<events::Paste> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HtmlLabelElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HtmlLabelElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HtmlLabelElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HtmlLabelElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HtmlLabelElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HtmlLabelElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HtmlLabelElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HtmlLabelElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HtmlLabelElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Reset> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Scroll> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Scrollend> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Select> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Selectstart> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Slotchange> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Submit> for HtmlLabelElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HtmlLabelElement { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for HtmlLabelElement { type Event = UiEvent; }
+impl Listen<events::Touchend> for HtmlLabelElement { type Event = UiEvent; }
+impl Listen<events::Touchmove> for HtmlLabelElement { type Event = UiEvent; }
+impl Listen<events::Touchstart> for HtmlLabelElement { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Transitionend> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Unload> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HtmlLabelElement { type Event = Event; }
+impl Listen<events::Wheel> for HtmlLabelElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HtmlLiElement { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for HtmlLiElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HtmlLiElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Animationend> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Animationstart> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Auxclick> for HtmlLiElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HtmlLiElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HtmlLiElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Blur> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Cancel> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Change> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Click> for HtmlLiElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Compositionend> for HtmlLiElement { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for HtmlLiElement { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for HtmlLiElement { type Event = UiEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HtmlLiElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Cut> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Dblclick> for HtmlLiElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HtmlLiElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HtmlLiElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HtmlLiElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HtmlLiElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HtmlLiElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HtmlLiElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HtmlLiElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Error> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Focus> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Focusin> for HtmlLiElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HtmlLiElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HtmlLiElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HtmlLiElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Keydown> for HtmlLiElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HtmlLiElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HtmlLiElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Load> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HtmlLiElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HtmlLiElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HtmlLiElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HtmlLiElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HtmlLiElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HtmlLiElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HtmlLiElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HtmlLiElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HtmlLiElement { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for HtmlLiElement { type Event = UiEvent; }
+impl Listen<events::Paste> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HtmlLiElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HtmlLiElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HtmlLiElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HtmlLiElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HtmlLiElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HtmlLiElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HtmlLiElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HtmlLiElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HtmlLiElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Reset> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Scroll> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Scrollend> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Select> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Selectstart> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Slotchange> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Submit> for HtmlLiElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HtmlLiElement { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for HtmlLiElement { type Event = UiEvent; }
+impl Listen<events::Touchend> for HtmlLiElement { type Event = UiEvent; }
+impl Listen<events::Touchmove> for HtmlLiElement { type Event = UiEvent; }
+impl Listen<events::Touchstart> for HtmlLiElement { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Transitionend> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Unload> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HtmlLiElement { type Event = Event; }
+impl Listen<events::Wheel> for HtmlLiElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HtmlOListElement { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for HtmlOListElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HtmlOListElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Animationend> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Animationstart> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Auxclick> for HtmlOListElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HtmlOListElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HtmlOListElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Blur> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Cancel> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Change> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Click> for HtmlOListElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Compositionend> for HtmlOListElement { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for HtmlOListElement { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for HtmlOListElement { type Event = UiEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HtmlOListElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Cut> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Dblclick> for HtmlOListElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HtmlOListElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HtmlOListElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HtmlOListElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HtmlOListElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HtmlOListElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HtmlOListElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HtmlOListElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Error> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Focus> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Focusin> for HtmlOListElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HtmlOListElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HtmlOListElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HtmlOListElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Keydown> for HtmlOListElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HtmlOListElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HtmlOListElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Load> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HtmlOListElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HtmlOListElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HtmlOListElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HtmlOListElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HtmlOListElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HtmlOListElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HtmlOListElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HtmlOListElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HtmlOListElement { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for HtmlOListElement { type Event = UiEvent; }
+impl Listen<events::Paste> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HtmlOListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HtmlOListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HtmlOListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HtmlOListElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HtmlOListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HtmlOListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HtmlOListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HtmlOListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HtmlOListElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Reset> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Scroll> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Scrollend> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Select> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Selectstart> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Slotchange> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Submit> for HtmlOListElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HtmlOListElement { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for HtmlOListElement { type Event = UiEvent; }
+impl Listen<events::Touchend> for HtmlOListElement { type Event = UiEvent; }
+impl Listen<events::Touchmove> for HtmlOListElement { type Event = UiEvent; }
+impl Listen<events::Touchstart> for HtmlOListElement { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Transitionend> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Unload> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HtmlOListElement { type Event = Event; }
+impl Listen<events::Wheel> for HtmlOListElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HtmlOptionElement { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for HtmlOptionElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HtmlOptionElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Animationend> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Animationstart> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Auxclick> for HtmlOptionElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HtmlOptionElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HtmlOptionElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Blur> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Cancel> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Change> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Click> for HtmlOptionElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Compositionend> for HtmlOptionElement { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for HtmlOptionElement { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for HtmlOptionElement { type Event = UiEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HtmlOptionElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Cut> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Dblclick> for HtmlOptionElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HtmlOptionElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HtmlOptionElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HtmlOptionElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HtmlOptionElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HtmlOptionElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HtmlOptionElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HtmlOptionElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Error> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Focus> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Focusin> for HtmlOptionElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HtmlOptionElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HtmlOptionElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HtmlOptionElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Keydown> for HtmlOptionElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HtmlOptionElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HtmlOptionElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Load> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HtmlOptionElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HtmlOptionElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HtmlOptionElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HtmlOptionElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HtmlOptionElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HtmlOptionElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HtmlOptionElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HtmlOptionElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HtmlOptionElement { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for HtmlOptionElement { type Event = UiEvent; }
+impl Listen<events::Paste> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HtmlOptionElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HtmlOptionElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HtmlOptionElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HtmlOptionElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HtmlOptionElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HtmlOptionElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HtmlOptionElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HtmlOptionElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HtmlOptionElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Reset> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Scroll> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Scrollend> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Select> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Selectstart> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Slotchange> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Submit> for HtmlOptionElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HtmlOptionElement { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for HtmlOptionElement { type Event = UiEvent; }
+impl Listen<events::Touchend> for HtmlOptionElement { type Event = UiEvent; }
+impl Listen<events::Touchmove> for HtmlOptionElement { type Event = UiEvent; }
+impl Listen<events::Touchstart> for HtmlOptionElement { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Transitionend> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Unload> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HtmlOptionElement { type Event = Event; }
+impl Listen<events::Wheel> for HtmlOptionElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HtmlOutputElement { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for HtmlOutputElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HtmlOutputElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Animationend> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Animationstart> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Auxclick> for HtmlOutputElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HtmlOutputElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HtmlOutputElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Blur> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Cancel> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Change> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Click> for HtmlOutputElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Compositionend> for HtmlOutputElement { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for HtmlOutputElement { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for HtmlOutputElement { type Event = UiEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HtmlOutputElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Cut> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Dblclick> for HtmlOutputElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HtmlOutputElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HtmlOutputElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HtmlOutputElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HtmlOutputElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HtmlOutputElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HtmlOutputElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HtmlOutputElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Error> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Focus> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Focusin> for HtmlOutputElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HtmlOutputElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HtmlOutputElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HtmlOutputElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Keydown> for HtmlOutputElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HtmlOutputElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HtmlOutputElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Load> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HtmlOutputElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HtmlOutputElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HtmlOutputElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HtmlOutputElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HtmlOutputElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HtmlOutputElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HtmlOutputElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HtmlOutputElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HtmlOutputElement { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for HtmlOutputElement { type Event = UiEvent; }
+impl Listen<events::Paste> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HtmlOutputElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HtmlOutputElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HtmlOutputElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HtmlOutputElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HtmlOutputElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HtmlOutputElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HtmlOutputElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HtmlOutputElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HtmlOutputElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Reset> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Scroll> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Scrollend> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Select> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Selectstart> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Slotchange> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Submit> for HtmlOutputElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HtmlOutputElement { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for HtmlOutputElement { type Event = UiEvent; }
+impl Listen<events::Touchend> for HtmlOutputElement { type Event = UiEvent; }
+impl Listen<events::Touchmove> for HtmlOutputElement { type Event = UiEvent; }
+impl Listen<events::Touchstart> for HtmlOutputElement { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Transitionend> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Unload> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HtmlOutputElement { type Event = Event; }
+impl Listen<events::Wheel> for HtmlOutputElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HtmlParagraphElement { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for HtmlParagraphElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HtmlParagraphElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Animationend> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Animationstart> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Auxclick> for HtmlParagraphElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HtmlParagraphElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HtmlParagraphElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Blur> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Cancel> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Change> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Click> for HtmlParagraphElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Compositionend> for HtmlParagraphElement { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for HtmlParagraphElement { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for HtmlParagraphElement { type Event = UiEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HtmlParagraphElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Cut> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Dblclick> for HtmlParagraphElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HtmlParagraphElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HtmlParagraphElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HtmlParagraphElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HtmlParagraphElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HtmlParagraphElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HtmlParagraphElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HtmlParagraphElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Error> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Focus> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Focusin> for HtmlParagraphElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HtmlParagraphElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HtmlParagraphElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HtmlParagraphElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Keydown> for HtmlParagraphElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HtmlParagraphElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HtmlParagraphElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Load> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HtmlParagraphElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HtmlParagraphElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HtmlParagraphElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HtmlParagraphElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HtmlParagraphElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HtmlParagraphElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HtmlParagraphElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HtmlParagraphElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HtmlParagraphElement { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for HtmlParagraphElement { type Event = UiEvent; }
+impl Listen<events::Paste> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HtmlParagraphElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HtmlParagraphElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HtmlParagraphElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HtmlParagraphElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HtmlParagraphElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HtmlParagraphElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HtmlParagraphElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HtmlParagraphElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HtmlParagraphElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Reset> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Scroll> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Scrollend> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Select> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Selectstart> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Slotchange> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Submit> for HtmlParagraphElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HtmlParagraphElement { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for HtmlParagraphElement { type Event = UiEvent; }
+impl Listen<events::Touchend> for HtmlParagraphElement { type Event = UiEvent; }
+impl Listen<events::Touchmove> for HtmlParagraphElement { type Event = UiEvent; }
+impl Listen<events::Touchstart> for HtmlParagraphElement { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Transitionend> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Unload> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HtmlParagraphElement { type Event = Event; }
+impl Listen<events::Wheel> for HtmlParagraphElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HtmlSelectElement { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for HtmlSelectElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HtmlSelectElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Animationend> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Animationstart> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Auxclick> for HtmlSelectElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HtmlSelectElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HtmlSelectElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Blur> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Cancel> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Change> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Click> for HtmlSelectElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Compositionend> for HtmlSelectElement { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for HtmlSelectElement { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for HtmlSelectElement { type Event = UiEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HtmlSelectElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Cut> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Dblclick> for HtmlSelectElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HtmlSelectElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HtmlSelectElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HtmlSelectElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HtmlSelectElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HtmlSelectElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HtmlSelectElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HtmlSelectElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Error> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Focus> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Focusin> for HtmlSelectElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HtmlSelectElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HtmlSelectElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HtmlSelectElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Invalid> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Keydown> for HtmlSelectElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HtmlSelectElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HtmlSelectElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Load> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HtmlSelectElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HtmlSelectElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HtmlSelectElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HtmlSelectElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HtmlSelectElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HtmlSelectElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HtmlSelectElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HtmlSelectElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HtmlSelectElement { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for HtmlSelectElement { type Event = UiEvent; }
+impl Listen<events::Paste> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HtmlSelectElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HtmlSelectElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HtmlSelectElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HtmlSelectElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HtmlSelectElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HtmlSelectElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HtmlSelectElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HtmlSelectElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HtmlSelectElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Reset> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Scroll> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Scrollend> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Select> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Selectstart> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Slotchange> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Submit> for HtmlSelectElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HtmlSelectElement { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for HtmlSelectElement { type Event = UiEvent; }
+impl Listen<events::Touchend> for HtmlSelectElement { type Event = UiEvent; }
+impl Listen<events::Touchmove> for HtmlSelectElement { type Event = UiEvent; }
+impl Listen<events::Touchstart> for HtmlSelectElement { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Transitionend> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Unload> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HtmlSelectElement { type Event = Event; }
+impl Listen<events::Wheel> for HtmlSelectElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HtmlSpanElement { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for HtmlSpanElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HtmlSpanElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Animationend> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Animationstart> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Auxclick> for HtmlSpanElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HtmlSpanElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HtmlSpanElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Blur> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Cancel> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Change> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Click> for HtmlSpanElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Compositionend> for HtmlSpanElement { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for HtmlSpanElement { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for HtmlSpanElement { type Event = UiEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HtmlSpanElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Cut> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Dblclick> for HtmlSpanElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HtmlSpanElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HtmlSpanElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HtmlSpanElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HtmlSpanElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HtmlSpanElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HtmlSpanElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HtmlSpanElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Error> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Focus> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Focusin> for HtmlSpanElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HtmlSpanElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HtmlSpanElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HtmlSpanElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Keydown> for HtmlSpanElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HtmlSpanElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HtmlSpanElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Load> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HtmlSpanElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HtmlSpanElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HtmlSpanElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HtmlSpanElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HtmlSpanElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HtmlSpanElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HtmlSpanElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HtmlSpanElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HtmlSpanElement { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for HtmlSpanElement { type Event = UiEvent; }
+impl Listen<events::Paste> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HtmlSpanElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HtmlSpanElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HtmlSpanElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HtmlSpanElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HtmlSpanElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HtmlSpanElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HtmlSpanElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HtmlSpanElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HtmlSpanElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Reset> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Scroll> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Scrollend> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Select> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Selectstart> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Slotchange> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Submit> for HtmlSpanElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HtmlSpanElement { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for HtmlSpanElement { type Event = UiEvent; }
+impl Listen<events::Touchend> for HtmlSpanElement { type Event = UiEvent; }
+impl Listen<events::Touchmove> for HtmlSpanElement { type Event = UiEvent; }
+impl Listen<events::Touchstart> for HtmlSpanElement { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Transitionend> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Unload> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HtmlSpanElement { type Event = Event; }
+impl Listen<events::Wheel> for HtmlSpanElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HtmlTextAreaElement { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for HtmlTextAreaElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HtmlTextAreaElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Animationend> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Animationstart> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Auxclick> for HtmlTextAreaElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HtmlTextAreaElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HtmlTextAreaElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Blur> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Cancel> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Change> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Click> for HtmlTextAreaElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Compositionend> for HtmlTextAreaElement { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for HtmlTextAreaElement { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for HtmlTextAreaElement { type Event = UiEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HtmlTextAreaElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Cut> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Dblclick> for HtmlTextAreaElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HtmlTextAreaElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HtmlTextAreaElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HtmlTextAreaElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HtmlTextAreaElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HtmlTextAreaElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HtmlTextAreaElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HtmlTextAreaElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Error> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Focus> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Focusin> for HtmlTextAreaElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HtmlTextAreaElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HtmlTextAreaElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HtmlTextAreaElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Invalid> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Keydown> for HtmlTextAreaElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HtmlTextAreaElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HtmlTextAreaElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Load> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HtmlTextAreaElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HtmlTextAreaElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HtmlTextAreaElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HtmlTextAreaElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HtmlTextAreaElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HtmlTextAreaElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HtmlTextAreaElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HtmlTextAreaElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HtmlTextAreaElement { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for HtmlTextAreaElement { type Event = UiEvent; }
+impl Listen<events::Paste> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HtmlTextAreaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HtmlTextAreaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HtmlTextAreaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HtmlTextAreaElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HtmlTextAreaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HtmlTextAreaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HtmlTextAreaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HtmlTextAreaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HtmlTextAreaElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Reset> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Scroll> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Scrollend> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Select> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Selectstart> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Slotchange> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Submit> for HtmlTextAreaElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HtmlTextAreaElement { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for HtmlTextAreaElement { type Event = UiEvent; }
+impl Listen<events::Touchend> for HtmlTextAreaElement { type Event = UiEvent; }
+impl Listen<events::Touchmove> for HtmlTextAreaElement { type Event = UiEvent; }
+impl Listen<events::Touchstart> for HtmlTextAreaElement { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Transitionend> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Unload> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HtmlTextAreaElement { type Event = Event; }
+impl Listen<events::Wheel> for HtmlTextAreaElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HtmlUListElement { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for HtmlUListElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HtmlUListElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Animationend> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Animationstart> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Auxclick> for HtmlUListElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HtmlUListElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HtmlUListElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Blur> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Cancel> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Change> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Click> for HtmlUListElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Compositionend> for HtmlUListElement { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for HtmlUListElement { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for HtmlUListElement { type Event = UiEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HtmlUListElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Cut> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Dblclick> for HtmlUListElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HtmlUListElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HtmlUListElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HtmlUListElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HtmlUListElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HtmlUListElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HtmlUListElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HtmlUListElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Error> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Focus> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Focusin> for HtmlUListElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HtmlUListElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HtmlUListElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HtmlUListElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Keydown> for HtmlUListElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HtmlUListElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HtmlUListElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Load> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HtmlUListElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HtmlUListElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HtmlUListElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HtmlUListElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HtmlUListElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HtmlUListElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HtmlUListElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HtmlUListElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HtmlUListElement { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for HtmlUListElement { type Event = UiEvent; }
+impl Listen<events::Paste> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HtmlUListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HtmlUListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HtmlUListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HtmlUListElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HtmlUListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HtmlUListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HtmlUListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HtmlUListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HtmlUListElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Reset> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Scroll> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Scrollend> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Select> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Selectstart> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Slotchange> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Submit> for HtmlUListElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HtmlUListElement { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for HtmlUListElement { type Event = UiEvent; }
+impl Listen<events::Touchend> for HtmlUListElement { type Event = UiEvent; }
+impl Listen<events::Touchmove> for HtmlUListElement { type Event = UiEvent; }
+impl Listen<events::Touchstart> for HtmlUListElement { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Transitionend> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Unload> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HtmlUListElement { type Event = Event; }
+impl Listen<events::Wheel> for HtmlUListElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HtmlTableElement { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for HtmlTableElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HtmlTableElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Animationend> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Animationstart> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Auxclick> for HtmlTableElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HtmlTableElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HtmlTableElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Blur> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Cancel> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Change> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Click> for HtmlTableElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Compositionend> for HtmlTableElement { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for HtmlTableElement { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for HtmlTableElement { type Event = UiEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HtmlTableElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Cut> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Dblclick> for HtmlTableElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HtmlTableElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HtmlTableElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HtmlTableElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HtmlTableElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HtmlTableElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HtmlTableElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HtmlTableElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Error> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Focus> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Focusin> for HtmlTableElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HtmlTableElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HtmlTableElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HtmlTableElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Keydown> for HtmlTableElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HtmlTableElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HtmlTableElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Load> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HtmlTableElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HtmlTableElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HtmlTableElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HtmlTableElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HtmlTableElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HtmlTableElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HtmlTableElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HtmlTableElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HtmlTableElement { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for HtmlTableElement { type Event = UiEvent; }
+impl Listen<events::Paste> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HtmlTableElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HtmlTableElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HtmlTableElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HtmlTableElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HtmlTableElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HtmlTableElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HtmlTableElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HtmlTableElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HtmlTableElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Reset> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Scroll> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Scrollend> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Select> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Selectstart> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Slotchange> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Submit> for HtmlTableElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HtmlTableElement { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for HtmlTableElement { type Event = UiEvent; }
+impl Listen<events::Touchend> for HtmlTableElement { type Event = UiEvent; }
+impl Listen<events::Touchmove> for HtmlTableElement { type Event = UiEvent; }
+impl Listen<events::Touchstart> for HtmlTableElement { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Transitionend> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Unload> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HtmlTableElement { type Event = Event; }
+impl Listen<events::Wheel> for HtmlTableElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HtmlTableSectionElement { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for HtmlTableSectionElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HtmlTableSectionElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Animationend> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Animationstart> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Auxclick> for HtmlTableSectionElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HtmlTableSectionElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HtmlTableSectionElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Blur> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Cancel> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Change> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Click> for HtmlTableSectionElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Compositionend> for HtmlTableSectionElement { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for HtmlTableSectionElement { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for HtmlTableSectionElement { type Event = UiEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HtmlTableSectionElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Cut> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Dblclick> for HtmlTableSectionElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HtmlTableSectionElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HtmlTableSectionElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HtmlTableSectionElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HtmlTableSectionElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HtmlTableSectionElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HtmlTableSectionElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HtmlTableSectionElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Error> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Focus> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Focusin> for HtmlTableSectionElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HtmlTableSectionElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HtmlTableSectionElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HtmlTableSectionElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Keydown> for HtmlTableSectionElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HtmlTableSectionElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HtmlTableSectionElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Load> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HtmlTableSectionElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HtmlTableSectionElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HtmlTableSectionElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HtmlTableSectionElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HtmlTableSectionElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HtmlTableSectionElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HtmlTableSectionElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HtmlTableSectionElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HtmlTableSectionElement { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for HtmlTableSectionElement { type Event = UiEvent; }
+impl Listen<events::Paste> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HtmlTableSectionElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HtmlTableSectionElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HtmlTableSectionElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HtmlTableSectionElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HtmlTableSectionElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HtmlTableSectionElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HtmlTableSectionElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HtmlTableSectionElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HtmlTableSectionElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Reset> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Scroll> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Scrollend> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Select> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Selectstart> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Slotchange> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Submit> for HtmlTableSectionElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HtmlTableSectionElement { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for HtmlTableSectionElement { type Event = UiEvent; }
+impl Listen<events::Touchend> for HtmlTableSectionElement { type Event = UiEvent; }
+impl Listen<events::Touchmove> for HtmlTableSectionElement { type Event = UiEvent; }
+impl Listen<events::Touchstart> for HtmlTableSectionElement { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Transitionend> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Unload> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HtmlTableSectionElement { type Event = Event; }
+impl Listen<events::Wheel> for HtmlTableSectionElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HtmlTableRowElement { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for HtmlTableRowElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HtmlTableRowElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Animationend> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Animationstart> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Auxclick> for HtmlTableRowElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HtmlTableRowElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HtmlTableRowElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Blur> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Cancel> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Change> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Click> for HtmlTableRowElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Compositionend> for HtmlTableRowElement { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for HtmlTableRowElement { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for HtmlTableRowElement { type Event = UiEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HtmlTableRowElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Cut> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Dblclick> for HtmlTableRowElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HtmlTableRowElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HtmlTableRowElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HtmlTableRowElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HtmlTableRowElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HtmlTableRowElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HtmlTableRowElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HtmlTableRowElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Error> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Focus> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Focusin> for HtmlTableRowElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HtmlTableRowElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HtmlTableRowElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HtmlTableRowElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Keydown> for HtmlTableRowElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HtmlTableRowElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HtmlTableRowElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Load> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HtmlTableRowElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HtmlTableRowElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HtmlTableRowElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HtmlTableRowElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HtmlTableRowElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HtmlTableRowElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HtmlTableRowElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HtmlTableRowElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HtmlTableRowElement { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for HtmlTableRowElement { type Event = UiEvent; }
+impl Listen<events::Paste> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HtmlTableRowElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HtmlTableRowElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HtmlTableRowElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HtmlTableRowElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HtmlTableRowElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HtmlTableRowElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HtmlTableRowElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HtmlTableRowElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HtmlTableRowElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Reset> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Scroll> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Scrollend> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Select> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Selectstart> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Slotchange> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Submit> for HtmlTableRowElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HtmlTableRowElement { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for HtmlTableRowElement { type Event = UiEvent; }
+impl Listen<events::Touchend> for HtmlTableRowElement { type Event = UiEvent; }
+impl Listen<events::Touchmove> for HtmlTableRowElement { type Event = UiEvent; }
+impl Listen<events::Touchstart> for HtmlTableRowElement { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Transitionend> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Unload> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HtmlTableRowElement { type Event = Event; }
+impl Listen<events::Wheel> for HtmlTableRowElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HtmlTableCellElement { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for HtmlTableCellElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HtmlTableCellElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Animationend> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Animationstart> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Auxclick> for HtmlTableCellElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HtmlTableCellElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HtmlTableCellElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Blur> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Cancel> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Change> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Click> for HtmlTableCellElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Compositionend> for HtmlTableCellElement { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for HtmlTableCellElement { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for HtmlTableCellElement { type Event = UiEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HtmlTableCellElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Cut> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Dblclick> for HtmlTableCellElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HtmlTableCellElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HtmlTableCellElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HtmlTableCellElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HtmlTableCellElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HtmlTableCellElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HtmlTableCellElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HtmlTableCellElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Error> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Focus> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Focusin> for HtmlTableCellElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HtmlTableCellElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HtmlTableCellElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HtmlTableCellElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Keydown> for HtmlTableCellElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HtmlTableCellElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HtmlTableCellElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Load> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HtmlTableCellElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HtmlTableCellElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HtmlTableCellElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HtmlTableCellElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HtmlTableCellElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HtmlTableCellElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HtmlTableCellElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HtmlTableCellElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HtmlTableCellElement { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for HtmlTableCellElement { type Event = UiEvent; }
+impl Listen<events::Paste> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HtmlTableCellElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HtmlTableCellElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HtmlTableCellElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HtmlTableCellElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HtmlTableCellElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HtmlTableCellElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HtmlTableCellElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HtmlTableCellElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HtmlTableCellElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Reset> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Scroll> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Scrollend> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Select> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Selectstart> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Slotchange> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Submit> for HtmlTableCellElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HtmlTableCellElement { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for HtmlTableCellElement { type Event = UiEvent; }
+impl Listen<events::Touchend> for HtmlTableCellElement { type Event = UiEvent; }
+impl Listen<events::Touchmove> for HtmlTableCellElement { type Event = UiEvent; }
+impl Listen<events::Touchstart> for HtmlTableCellElement { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Transitionend> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Unload> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HtmlTableCellElement { type Event = Event; }
+impl Listen<events::Wheel> for HtmlTableCellElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HtmlIFrameElement { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for HtmlIFrameElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HtmlIFrameElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Animationend> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Animationstart> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Auxclick> for HtmlIFrameElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HtmlIFrameElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HtmlIFrameElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Blur> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Cancel> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Change> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Click> for HtmlIFrameElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Compositionend> for HtmlIFrameElement { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for HtmlIFrameElement { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for HtmlIFrameElement { type Event = UiEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HtmlIFrameElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Cut> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Dblclick> for HtmlIFrameElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HtmlIFrameElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HtmlIFrameElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HtmlIFrameElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HtmlIFrameElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HtmlIFrameElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HtmlIFrameElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HtmlIFrameElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Error> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Focus> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Focusin> for HtmlIFrameElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HtmlIFrameElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HtmlIFrameElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HtmlIFrameElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Keydown> for HtmlIFrameElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HtmlIFrameElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HtmlIFrameElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Load> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HtmlIFrameElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HtmlIFrameElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HtmlIFrameElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HtmlIFrameElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HtmlIFrameElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HtmlIFrameElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HtmlIFrameElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HtmlIFrameElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HtmlIFrameElement { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for HtmlIFrameElement { type Event = UiEvent; }
+impl Listen<events::Paste> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HtmlIFrameElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HtmlIFrameElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HtmlIFrameElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HtmlIFrameElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HtmlIFrameElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HtmlIFrameElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HtmlIFrameElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HtmlIFrameElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HtmlIFrameElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Reset> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Scroll> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Scrollend> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Select> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Selectstart> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Slotchange> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Submit> for HtmlIFrameElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HtmlIFrameElement { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for HtmlIFrameElement { type Event = UiEvent; }
+impl Listen<events::Touchend> for HtmlIFrameElement { type Event = UiEvent; }
+impl Listen<events::Touchmove> for HtmlIFrameElement { type Event = UiEvent; }
+impl Listen<events::Touchstart> for HtmlIFrameElement { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Transitionend> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Unload> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HtmlIFrameElement { type Event = Event; }
+impl Listen<events::Wheel> for HtmlIFrameElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HtmlCanvasElement { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for HtmlCanvasElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HtmlCanvasElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Animationend> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Animationstart> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Auxclick> for HtmlCanvasElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HtmlCanvasElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HtmlCanvasElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Blur> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Cancel> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Change> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Click> for HtmlCanvasElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Compositionend> for HtmlCanvasElement { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for HtmlCanvasElement { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for HtmlCanvasElement { type Event = UiEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Contextlost> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HtmlCanvasElement { type Event = PointerEvent; }
+impl Listen<events::Contextrestored> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Copy> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Cut> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Dblclick> for HtmlCanvasElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HtmlCanvasElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HtmlCanvasElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HtmlCanvasElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HtmlCanvasElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HtmlCanvasElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HtmlCanvasElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HtmlCanvasElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Error> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Focus> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Focusin> for HtmlCanvasElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HtmlCanvasElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HtmlCanvasElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HtmlCanvasElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Keydown> for HtmlCanvasElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HtmlCanvasElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HtmlCanvasElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Load> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HtmlCanvasElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HtmlCanvasElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HtmlCanvasElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HtmlCanvasElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HtmlCanvasElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HtmlCanvasElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HtmlCanvasElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HtmlCanvasElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HtmlCanvasElement { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for HtmlCanvasElement { type Event = UiEvent; }
+impl Listen<events::Paste> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HtmlCanvasElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HtmlCanvasElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HtmlCanvasElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HtmlCanvasElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HtmlCanvasElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HtmlCanvasElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HtmlCanvasElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HtmlCanvasElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HtmlCanvasElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Reset> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Scroll> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Scrollend> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Select> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Selectstart> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Slotchange> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Submit> for HtmlCanvasElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HtmlCanvasElement { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for HtmlCanvasElement { type Event = UiEvent; }
+impl Listen<events::Touchend> for HtmlCanvasElement { type Event = UiEvent; }
+impl Listen<events::Touchmove> for HtmlCanvasElement { type Event = UiEvent; }
+impl Listen<events::Touchstart> for HtmlCanvasElement { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Transitionend> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Unload> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Webglcontextcreationerror> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Webglcontextlost> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Webglcontextrestored> for HtmlCanvasElement { type Event = Event; }
+impl Listen<events::Wheel> for HtmlCanvasElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for Window { type Event = UiEvent; }
+impl Listen<events::DOMContentLoaded> for Window { type Event = Event; }
+impl Listen<events::DOMFocusIn> for Window { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for Window { type Event = FocusEvent; }
+impl Listen<events::Abort> for Window { type Event = Event; }
+impl Listen<events::Afterprint> for Window { type Event = Event; }
+impl Listen<events::Animationcancel> for Window { type Event = Event; }
+impl Listen<events::Animationend> for Window { type Event = Event; }
+impl Listen<events::Animationiteration> for Window { type Event = Event; }
+impl Listen<events::Animationstart> for Window { type Event = Event; }
+impl Listen<events::Appinstalled> for Window { type Event = Event; }
+impl Listen<events::Autofill> for Window { type Event = Event; }
+impl Listen<events::Auxclick> for Window { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for Window { type Event = InputEvent; }
+impl Listen<events::Beforeinstallprompt> for Window { type Event = Event; }
+impl Listen<events::Beforematch> for Window { type Event = Event; }
+impl Listen<events::Beforeprint> for Window { type Event = Event; }
+impl Listen<events::Beforeunload> for Window { type Event = Event; }
+impl Listen<events::Beforexrselect> for Window { type Event = Event; }
+impl Listen<events::Blur> for Window { type Event = Event; }
+impl Listen<events::Cancel> for Window { type Event = Event; }
+impl Listen<events::Change> for Window { type Event = Event; }
+impl Listen<events::Click> for Window { type Event = PointerEvent; }
+impl Listen<events::Clipboardchange> for Window { type Event = Event; }
+impl Listen<events::Compositionend> for Window { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for Window { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for Window { type Event = UiEvent; }
+impl Listen<events::Contextmenu> for Window { type Event = PointerEvent; }
+impl Listen<events::Copy> for Window { type Event = Event; }
+impl Listen<events::Cut> for Window { type Event = Event; }
+impl Listen<events::Dblclick> for Window { type Event = MouseEvent; }
+impl Listen<events::Devicemotion> for Window { type Event = Event; }
+impl Listen<events::Deviceorientation> for Window { type Event = Event; }
+impl Listen<events::Deviceorientationabsolute> for Window { type Event = Event; }
+impl Listen<events::Drag> for Window { type Event = MouseEvent; }
+impl Listen<events::Dragend> for Window { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for Window { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for Window { type Event = MouseEvent; }
+impl Listen<events::Dragover> for Window { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for Window { type Event = MouseEvent; }
+impl Listen<events::Drop> for Window { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for Window { type Event = Event; }
+impl Listen<events::Error> for Window { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for Window { type Event = Event; }
+impl Listen<events::Focus> for Window { type Event = Event; }
+impl Listen<events::Focusin> for Window { type Event = FocusEvent; }
+impl Listen<events::Focusout> for Window { type Event = FocusEvent; }
+impl Listen<events::Formdata> for Window { type Event = Event; }
+impl Listen<events::Fullscreenchange> for Window { type Event = Event; }
+impl Listen<events::Fullscreenerror> for Window { type Event = Event; }
+impl Listen<events::Gamepadconnected> for Window { type Event = Event; }
+impl Listen<events::Gamepaddisconnected> for Window { type Event = Event; }
+impl Listen<events::Gotpointercapture> for Window { type Event = PointerEvent; }
+impl Listen<events::Hashchange> for Window { type Event = Event; }
+impl Listen<events::Input> for Window { type Event = InputEvent; }
+impl Listen<events::Installresult> for Window { type Event = Event; }
+impl Listen<events::Keydown> for Window { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for Window { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for Window { type Event = KeyboardEvent; }
+impl Listen<events::Languagechange> for Window { type Event = Event; }
+impl Listen<events::Leavepictureinpicture> for Window { type Event = Event; }
+impl Listen<events::Load> for Window { type Event = Event; }
+impl Listen<events::Lostpointercapture> for Window { type Event = PointerEvent; }
+impl Listen<events::Message> for Window { type Event = MessageEvent; }
+impl Listen<events::Messageerror> for Window { type Event = MessageEvent; }
+impl Listen<events::Mousedown> for Window { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for Window { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for Window { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for Window { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for Window { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for Window { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for Window { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for Window { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for Window { type Event = UiEvent; }
+impl Listen<events::Offline> for Window { type Event = Event; }
+impl Listen<events::Online> for Window { type Event = Event; }
+impl Listen<events::Orientationchange> for Window { type Event = Event; }
+impl Listen<events::Pagehide> for Window { type Event = Event; }
+impl Listen<events::Pagereveal> for Window { type Event = Event; }
+impl Listen<events::Pageshow> for Window { type Event = Event; }
+impl Listen<events::Pageswap> for Window { type Event = Event; }
+impl Listen<events::Paste> for Window { type Event = Event; }
+impl Listen<events::Pointercancel> for Window { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for Window { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for Window { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for Window { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for Window { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for Window { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for Window { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for Window { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for Window { type Event = PointerEvent; }
+impl Listen<events::Popstate> for Window { type Event = Event; }
+impl Listen<events::Portalactivate> for Window { type Event = Event; }
+impl Listen<events::Promptaction> for Window { type Event = Event; }
+impl Listen<events::Promptdismiss> for Window { type Event = Event; }
+impl Listen<events::Rejectionhandled> for Window { type Event = Event; }
+impl Listen<events::Reset> for Window { type Event = Event; }
+impl Listen<events::Resize> for Window { type Event = Event; }
+impl Listen<events::Scroll> for Window { type Event = Event; }
+impl Listen<events::Scrollend> for Window { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for Window { type Event = Event; }
+impl Listen<events::Select> for Window { type Event = Event; }
+impl Listen<events::Selectionchange> for Window { type Event = Event; }
+impl Listen<events::Selectstart> for Window { type Event = Event; }
+impl Listen<events::Slotchange> for Window { type Event = Event; }
+impl Listen<events::Storage> for Window { type Event = Event; }
+impl Listen<events::Submit> for Window { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for Window { type Event = UiEvent; }
+impl Listen<events::Touchcancel> for Window { type Event = UiEvent; }
+impl Listen<events::Touchend> for Window { type Event = UiEvent; }
+impl Listen<events::Touchmove> for Window { type Event = UiEvent; }
+impl Listen<events::Touchstart> for Window { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for Window { type Event = Event; }
+impl Listen<events::Transitionend> for Window { type Event = Event; }
+impl Listen<events::Transitionrun> for Window { type Event = Event; }
+impl Listen<events::Transitionstart> for Window { type Event = Event; }
+impl Listen<events::Unhandledrejection> for Window { type Event = Event; }
+impl Listen<events::Unload> for Window { type Event = Event; }
+impl Listen<events::Validationstatuschange> for Window { type Event = Event; }
+impl Listen<events::Visibilitychange> for Window { type Event = Event; }
+impl Listen<events::Wheel> for Window { type Event = MouseEvent; }
+
+impl Listen<events::Resourcetimingbufferfull> for Performance { type Event = Event; }
+
+impl Listen<events::Change> for MediaQueryList { type Event = MediaQueryListEvent; }
+
+impl Tag for tags::A { type Element = HtmlAnchorElement; }
+impl Tag for tags::Abbr { type Element = HtmlElement; }
+impl Tag for tags::Address { type Element = HtmlElement; }
+impl Tag for tags::Area { type Element = HtmlElement; }
+impl Tag for tags::Article { type Element = HtmlElement; }
+impl Tag for tags::Aside { type Element = HtmlElement; }
+impl Tag for tags::Audio { type Element = HtmlElement; }
+impl Tag for tags::B { type Element = HtmlElement; }
+impl Tag for tags::Base { type Element = HtmlElement; }
+impl Tag for tags::Bdi { type Element = HtmlElement; }
+impl Tag for tags::Bdo { type Element = HtmlElement; }
+impl Tag for tags::Blockquote { type Element = HtmlElement; }
+impl Tag for tags::Body { type Element = HtmlElement; }
+impl Tag for tags::Br { type Element = HtmlElement; }
+impl Tag for tags::Button { type Element = HtmlButtonElement; }
+impl Tag for tags::Camera { type Element = HtmlElement; }
+impl Tag for tags::Canvas { type Element = HtmlCanvasElement; }
+impl Tag for tags::Caption { type Element = HtmlElement; }
+impl Tag for tags::Cite { type Element = HtmlElement; }
+impl Tag for tags::Code { type Element = HtmlElement; }
+impl Tag for tags::Col { type Element = HtmlElement; }
+impl Tag for tags::Colgroup { type Element = HtmlElement; }
+impl Tag for tags::Data { type Element = HtmlElement; }
+impl Tag for tags::Datalist { type Element = HtmlElement; }
+impl Tag for tags::Dd { type Element = HtmlElement; }
+impl Tag for tags::Del { type Element = HtmlElement; }
+impl Tag for tags::Details { type Element = HtmlElement; }
+impl Tag for tags::Dfn { type Element = HtmlElement; }
+impl Tag for tags::Dialog { type Element = HtmlElement; }
+impl Tag for tags::Div { type Element = HtmlDivElement; }
+impl Tag for tags::Dl { type Element = HtmlElement; }
+impl Tag for tags::Dt { type Element = HtmlElement; }
+impl Tag for tags::Em { type Element = HtmlElement; }
+impl Tag for tags::Embed { type Element = HtmlElement; }
+impl Tag for tags::Fencedframe { type Element = HtmlElement; }
+impl Tag for tags::Fieldset { type Element = HtmlElement; }
+impl Tag for tags::Figcaption { type Element = HtmlElement; }
+impl Tag for tags::Figure { type Element = HtmlElement; }
+impl Tag for tags::Footer { type Element = HtmlElement; }
+impl Tag for tags::Form { type Element = HtmlFormElement; }
+impl Tag for tags::Geolocation { type Element = HtmlElement; }
+impl Tag for tags::H1 { type Element = HtmlHeadingElement; }
+impl Tag for tags::H2 { type Element = HtmlHeadingElement; }
+impl Tag for tags::H3 { type Element = HtmlHeadingElement; }
+impl Tag for tags::H4 { type Element = HtmlHeadingElement; }
+impl Tag for tags::H5 { type Element = HtmlHeadingElement; }
+impl Tag for tags::H6 { type Element = HtmlHeadingElement; }
+impl Tag for tags::Head { type Element = HtmlElement; }
+impl Tag for tags::Header { type Element = HtmlElement; }
+impl Tag for tags::Hgroup { type Element = HtmlElement; }
+impl Tag for tags::Hr { type Element = HtmlElement; }
+impl Tag for tags::Html { type Element = HtmlElement; }
+impl Tag for tags::I { type Element = HtmlElement; }
+impl Tag for tags::Iframe { type Element = HtmlIFrameElement; }
+impl Tag for tags::Img { type Element = HtmlImageElement; }
+impl Tag for tags::Input { type Element = HtmlInputElement; }
+impl Tag for tags::Ins { type Element = HtmlElement; }
+impl Tag for tags::Install { type Element = HtmlElement; }
+impl Tag for tags::Kbd { type Element = HtmlElement; }
+impl Tag for tags::Label { type Element = HtmlLabelElement; }
+impl Tag for tags::Legend { type Element = HtmlElement; }
+impl Tag for tags::Li { type Element = HtmlLiElement; }
+impl Tag for tags::Link { type Element = HtmlElement; }
+impl Tag for tags::Main { type Element = HtmlElement; }
+impl Tag for tags::Map { type Element = HtmlElement; }
+impl Tag for tags::Mark { type Element = HtmlElement; }
+impl Tag for tags::Menu { type Element = HtmlElement; }
+impl Tag for tags::Meta { type Element = HtmlElement; }
+impl Tag for tags::Meter { type Element = HtmlElement; }
+impl Tag for tags::Microphone { type Element = HtmlElement; }
+impl Tag for tags::Model { type Element = HtmlElement; }
+impl Tag for tags::Nav { type Element = HtmlElement; }
+impl Tag for tags::Noscript { type Element = HtmlElement; }
+impl Tag for tags::Object { type Element = HtmlElement; }
+impl Tag for tags::Ol { type Element = HtmlOListElement; }
+impl Tag for tags::Optgroup { type Element = HtmlElement; }
+impl Tag for tags::Option { type Element = HtmlOptionElement; }
+impl Tag for tags::Output { type Element = HtmlOutputElement; }
+impl Tag for tags::P { type Element = HtmlParagraphElement; }
+impl Tag for tags::Picture { type Element = HtmlElement; }
+impl Tag for tags::Portal { type Element = HtmlElement; }
+impl Tag for tags::Pre { type Element = HtmlElement; }
+impl Tag for tags::Progress { type Element = HtmlElement; }
+impl Tag for tags::Q { type Element = HtmlElement; }
+impl Tag for tags::Rp { type Element = HtmlElement; }
+impl Tag for tags::Rt { type Element = HtmlElement; }
+impl Tag for tags::Ruby { type Element = HtmlElement; }
+impl Tag for tags::S { type Element = HtmlElement; }
+impl Tag for tags::Samp { type Element = HtmlElement; }
+impl Tag for tags::Script { type Element = HtmlElement; }
+impl Tag for tags::Search { type Element = HtmlElement; }
+impl Tag for tags::Section { type Element = HtmlElement; }
+impl Tag for tags::Select { type Element = HtmlSelectElement; }
+impl Tag for tags::Selectedcontent { type Element = HtmlElement; }
+impl Tag for tags::Slot { type Element = HtmlElement; }
+impl Tag for tags::Small { type Element = HtmlElement; }
+impl Tag for tags::Source { type Element = HtmlElement; }
+impl Tag for tags::Span { type Element = HtmlSpanElement; }
+impl Tag for tags::Strong { type Element = HtmlElement; }
+impl Tag for tags::Style { type Element = HtmlElement; }
+impl Tag for tags::Sub { type Element = HtmlElement; }
+impl Tag for tags::Summary { type Element = HtmlElement; }
+impl Tag for tags::Sup { type Element = HtmlElement; }
+impl Tag for tags::Table { type Element = HtmlTableElement; }
+impl Tag for tags::Tbody { type Element = HtmlTableSectionElement; }
+impl Tag for tags::Td { type Element = HtmlTableCellElement; }
+impl Tag for tags::Template { type Element = HtmlElement; }
+impl Tag for tags::Textarea { type Element = HtmlTextAreaElement; }
+impl Tag for tags::Tfoot { type Element = HtmlTableSectionElement; }
+impl Tag for tags::Th { type Element = HtmlTableCellElement; }
+impl Tag for tags::Thead { type Element = HtmlTableSectionElement; }
+impl Tag for tags::Time { type Element = HtmlElement; }
+impl Tag for tags::Title { type Element = HtmlElement; }
+impl Tag for tags::Tr { type Element = HtmlTableRowElement; }
+impl Tag for tags::Track { type Element = HtmlElement; }
+impl Tag for tags::U { type Element = HtmlElement; }
+impl Tag for tags::Ul { type Element = HtmlUListElement; }
+impl Tag for tags::Usermedia { type Element = HtmlElement; }
+impl Tag for tags::Var { type Element = HtmlElement; }
+impl Tag for tags::Video { type Element = HtmlElement; }
+impl Tag for tags::Wbr { type Element = HtmlElement; }
+
+unsafe impl IsA<EventTarget> for EventTarget {}
+unsafe impl IsA<Event> for Event {}
+unsafe impl IsA<Node> for Node {}
+unsafe impl IsA<EventTarget> for Node {}
+unsafe impl IsA<CharacterData> for CharacterData {}
+unsafe impl IsA<Node> for CharacterData {}
+unsafe impl IsA<EventTarget> for CharacterData {}
+unsafe impl IsA<Text> for Text {}
+unsafe impl IsA<CharacterData> for Text {}
+unsafe impl IsA<Node> for Text {}
+unsafe impl IsA<EventTarget> for Text {}
+unsafe impl IsA<Comment> for Comment {}
+unsafe impl IsA<CharacterData> for Comment {}
+unsafe impl IsA<Node> for Comment {}
+unsafe impl IsA<EventTarget> for Comment {}
+unsafe impl IsA<Element> for Element {}
+unsafe impl IsA<Node> for Element {}
+unsafe impl IsA<EventTarget> for Element {}
+unsafe impl IsA<Document> for Document {}
+unsafe impl IsA<Node> for Document {}
+unsafe impl IsA<EventTarget> for Document {}
+unsafe impl IsA<DocumentFragment> for DocumentFragment {}
+unsafe impl IsA<Node> for DocumentFragment {}
+unsafe impl IsA<EventTarget> for DocumentFragment {}
+unsafe impl IsA<DomTokenList> for DomTokenList {}
+unsafe impl IsA<NodeList> for NodeList {}
+unsafe impl IsA<HtmlCollection> for HtmlCollection {}
+unsafe impl IsA<AbortController> for AbortController {}
+unsafe impl IsA<AbortSignal> for AbortSignal {}
+unsafe impl IsA<EventTarget> for AbortSignal {}
+unsafe impl IsA<HtmlElement> for HtmlElement {}
+unsafe impl IsA<Element> for HtmlElement {}
+unsafe impl IsA<Node> for HtmlElement {}
+unsafe impl IsA<EventTarget> for HtmlElement {}
+unsafe impl IsA<HtmlAnchorElement> for HtmlAnchorElement {}
+unsafe impl IsA<HtmlElement> for HtmlAnchorElement {}
+unsafe impl IsA<Element> for HtmlAnchorElement {}
+unsafe impl IsA<Node> for HtmlAnchorElement {}
+unsafe impl IsA<EventTarget> for HtmlAnchorElement {}
+unsafe impl IsA<HtmlButtonElement> for HtmlButtonElement {}
+unsafe impl IsA<HtmlElement> for HtmlButtonElement {}
+unsafe impl IsA<Element> for HtmlButtonElement {}
+unsafe impl IsA<Node> for HtmlButtonElement {}
+unsafe impl IsA<EventTarget> for HtmlButtonElement {}
+unsafe impl IsA<HtmlDivElement> for HtmlDivElement {}
+unsafe impl IsA<HtmlElement> for HtmlDivElement {}
+unsafe impl IsA<Element> for HtmlDivElement {}
+unsafe impl IsA<Node> for HtmlDivElement {}
+unsafe impl IsA<EventTarget> for HtmlDivElement {}
+unsafe impl IsA<HtmlFormElement> for HtmlFormElement {}
+unsafe impl IsA<HtmlElement> for HtmlFormElement {}
+unsafe impl IsA<Element> for HtmlFormElement {}
+unsafe impl IsA<Node> for HtmlFormElement {}
+unsafe impl IsA<EventTarget> for HtmlFormElement {}
+unsafe impl IsA<HtmlHeadingElement> for HtmlHeadingElement {}
+unsafe impl IsA<HtmlElement> for HtmlHeadingElement {}
+unsafe impl IsA<Element> for HtmlHeadingElement {}
+unsafe impl IsA<Node> for HtmlHeadingElement {}
+unsafe impl IsA<EventTarget> for HtmlHeadingElement {}
+unsafe impl IsA<HtmlImageElement> for HtmlImageElement {}
+unsafe impl IsA<HtmlElement> for HtmlImageElement {}
+unsafe impl IsA<Element> for HtmlImageElement {}
+unsafe impl IsA<Node> for HtmlImageElement {}
+unsafe impl IsA<EventTarget> for HtmlImageElement {}
+unsafe impl IsA<HtmlInputElement> for HtmlInputElement {}
+unsafe impl IsA<HtmlElement> for HtmlInputElement {}
+unsafe impl IsA<Element> for HtmlInputElement {}
+unsafe impl IsA<Node> for HtmlInputElement {}
+unsafe impl IsA<EventTarget> for HtmlInputElement {}
+unsafe impl IsA<HtmlLabelElement> for HtmlLabelElement {}
+unsafe impl IsA<HtmlElement> for HtmlLabelElement {}
+unsafe impl IsA<Element> for HtmlLabelElement {}
+unsafe impl IsA<Node> for HtmlLabelElement {}
+unsafe impl IsA<EventTarget> for HtmlLabelElement {}
+unsafe impl IsA<HtmlLiElement> for HtmlLiElement {}
+unsafe impl IsA<HtmlElement> for HtmlLiElement {}
+unsafe impl IsA<Element> for HtmlLiElement {}
+unsafe impl IsA<Node> for HtmlLiElement {}
+unsafe impl IsA<EventTarget> for HtmlLiElement {}
+unsafe impl IsA<HtmlOListElement> for HtmlOListElement {}
+unsafe impl IsA<HtmlElement> for HtmlOListElement {}
+unsafe impl IsA<Element> for HtmlOListElement {}
+unsafe impl IsA<Node> for HtmlOListElement {}
+unsafe impl IsA<EventTarget> for HtmlOListElement {}
+unsafe impl IsA<HtmlOptionElement> for HtmlOptionElement {}
+unsafe impl IsA<HtmlElement> for HtmlOptionElement {}
+unsafe impl IsA<Element> for HtmlOptionElement {}
+unsafe impl IsA<Node> for HtmlOptionElement {}
+unsafe impl IsA<EventTarget> for HtmlOptionElement {}
+unsafe impl IsA<HtmlOutputElement> for HtmlOutputElement {}
+unsafe impl IsA<HtmlElement> for HtmlOutputElement {}
+unsafe impl IsA<Element> for HtmlOutputElement {}
+unsafe impl IsA<Node> for HtmlOutputElement {}
+unsafe impl IsA<EventTarget> for HtmlOutputElement {}
+unsafe impl IsA<HtmlParagraphElement> for HtmlParagraphElement {}
+unsafe impl IsA<HtmlElement> for HtmlParagraphElement {}
+unsafe impl IsA<Element> for HtmlParagraphElement {}
+unsafe impl IsA<Node> for HtmlParagraphElement {}
+unsafe impl IsA<EventTarget> for HtmlParagraphElement {}
+unsafe impl IsA<HtmlSelectElement> for HtmlSelectElement {}
+unsafe impl IsA<HtmlElement> for HtmlSelectElement {}
+unsafe impl IsA<Element> for HtmlSelectElement {}
+unsafe impl IsA<Node> for HtmlSelectElement {}
+unsafe impl IsA<EventTarget> for HtmlSelectElement {}
+unsafe impl IsA<HtmlSpanElement> for HtmlSpanElement {}
+unsafe impl IsA<HtmlElement> for HtmlSpanElement {}
+unsafe impl IsA<Element> for HtmlSpanElement {}
+unsafe impl IsA<Node> for HtmlSpanElement {}
+unsafe impl IsA<EventTarget> for HtmlSpanElement {}
+unsafe impl IsA<HtmlTextAreaElement> for HtmlTextAreaElement {}
+unsafe impl IsA<HtmlElement> for HtmlTextAreaElement {}
+unsafe impl IsA<Element> for HtmlTextAreaElement {}
+unsafe impl IsA<Node> for HtmlTextAreaElement {}
+unsafe impl IsA<EventTarget> for HtmlTextAreaElement {}
+unsafe impl IsA<HtmlUListElement> for HtmlUListElement {}
+unsafe impl IsA<HtmlElement> for HtmlUListElement {}
+unsafe impl IsA<Element> for HtmlUListElement {}
+unsafe impl IsA<Node> for HtmlUListElement {}
+unsafe impl IsA<EventTarget> for HtmlUListElement {}
+unsafe impl IsA<HtmlTableElement> for HtmlTableElement {}
+unsafe impl IsA<HtmlElement> for HtmlTableElement {}
+unsafe impl IsA<Element> for HtmlTableElement {}
+unsafe impl IsA<Node> for HtmlTableElement {}
+unsafe impl IsA<EventTarget> for HtmlTableElement {}
+unsafe impl IsA<HtmlTableSectionElement> for HtmlTableSectionElement {}
+unsafe impl IsA<HtmlElement> for HtmlTableSectionElement {}
+unsafe impl IsA<Element> for HtmlTableSectionElement {}
+unsafe impl IsA<Node> for HtmlTableSectionElement {}
+unsafe impl IsA<EventTarget> for HtmlTableSectionElement {}
+unsafe impl IsA<HtmlTableRowElement> for HtmlTableRowElement {}
+unsafe impl IsA<HtmlElement> for HtmlTableRowElement {}
+unsafe impl IsA<Element> for HtmlTableRowElement {}
+unsafe impl IsA<Node> for HtmlTableRowElement {}
+unsafe impl IsA<EventTarget> for HtmlTableRowElement {}
+unsafe impl IsA<HtmlTableCellElement> for HtmlTableCellElement {}
+unsafe impl IsA<HtmlElement> for HtmlTableCellElement {}
+unsafe impl IsA<Element> for HtmlTableCellElement {}
+unsafe impl IsA<Node> for HtmlTableCellElement {}
+unsafe impl IsA<EventTarget> for HtmlTableCellElement {}
+unsafe impl IsA<HtmlIFrameElement> for HtmlIFrameElement {}
+unsafe impl IsA<HtmlElement> for HtmlIFrameElement {}
+unsafe impl IsA<Element> for HtmlIFrameElement {}
+unsafe impl IsA<Node> for HtmlIFrameElement {}
+unsafe impl IsA<EventTarget> for HtmlIFrameElement {}
+unsafe impl IsA<HtmlCanvasElement> for HtmlCanvasElement {}
+unsafe impl IsA<HtmlElement> for HtmlCanvasElement {}
+unsafe impl IsA<Element> for HtmlCanvasElement {}
+unsafe impl IsA<Node> for HtmlCanvasElement {}
+unsafe impl IsA<EventTarget> for HtmlCanvasElement {}
+unsafe impl IsA<Window> for Window {}
+unsafe impl IsA<EventTarget> for Window {}
+unsafe impl IsA<Location> for Location {}
+unsafe impl IsA<History> for History {}
+unsafe impl IsA<Storage> for Storage {}
+unsafe impl IsA<DataTransfer> for DataTransfer {}
+unsafe impl IsA<ToggleEvent> for ToggleEvent {}
+unsafe impl IsA<Event> for ToggleEvent {}
+unsafe impl IsA<MessageEvent> for MessageEvent {}
+unsafe impl IsA<Event> for MessageEvent {}
+unsafe impl IsA<SubmitEvent> for SubmitEvent {}
+unsafe impl IsA<Event> for SubmitEvent {}
+unsafe impl IsA<Performance> for Performance {}
+unsafe impl IsA<EventTarget> for Performance {}
+unsafe impl IsA<UiEvent> for UiEvent {}
+unsafe impl IsA<Event> for UiEvent {}
+unsafe impl IsA<FocusEvent> for FocusEvent {}
+unsafe impl IsA<UiEvent> for FocusEvent {}
+unsafe impl IsA<Event> for FocusEvent {}
+unsafe impl IsA<MouseEvent> for MouseEvent {}
+unsafe impl IsA<UiEvent> for MouseEvent {}
+unsafe impl IsA<Event> for MouseEvent {}
+unsafe impl IsA<KeyboardEvent> for KeyboardEvent {}
+unsafe impl IsA<UiEvent> for KeyboardEvent {}
+unsafe impl IsA<Event> for KeyboardEvent {}
+unsafe impl IsA<InputEvent> for InputEvent {}
+unsafe impl IsA<UiEvent> for InputEvent {}
+unsafe impl IsA<Event> for InputEvent {}
+unsafe impl IsA<PointerEvent> for PointerEvent {}
+unsafe impl IsA<MouseEvent> for PointerEvent {}
+unsafe impl IsA<UiEvent> for PointerEvent {}
+unsafe impl IsA<Event> for PointerEvent {}
+unsafe impl IsA<CssStyleDeclaration> for CssStyleDeclaration {}
+unsafe impl IsA<CssStyleProperties> for CssStyleProperties {}
+unsafe impl IsA<CssStyleDeclaration> for CssStyleProperties {}
+unsafe impl IsA<DomRectReadOnly> for DomRectReadOnly {}
+unsafe impl IsA<DomRect> for DomRect {}
+unsafe impl IsA<DomRectReadOnly> for DomRect {}
+unsafe impl IsA<MediaQueryList> for MediaQueryList {}
+unsafe impl IsA<EventTarget> for MediaQueryList {}
+unsafe impl IsA<MediaQueryListEvent> for MediaQueryListEvent {}
+unsafe impl IsA<Event> for MediaQueryListEvent {}
+unsafe impl IsA<Headers> for Headers {}
+unsafe impl IsA<Request> for Request {}
+unsafe impl IsA<Response> for Response {}
+unsafe impl IsA<FormData> for FormData {}
+unsafe impl IsA<ReadableStream> for ReadableStream {}
+unsafe impl IsA<Touch> for Touch {}
+unsafe impl IsA<TouchList> for TouchList {}
+unsafe impl IsA<TextEncoder> for TextEncoder {}
+unsafe impl IsA<TextDecoder> for TextDecoder {}
+unsafe impl IsA<WebAssemblyModule> for WebAssemblyModule {}
+unsafe impl IsA<WebAssemblyInstance> for WebAssemblyInstance {}
+unsafe impl IsA<WebAssemblyMemory> for WebAssemblyMemory {}
+unsafe impl IsA<Blob> for Blob {}
+unsafe impl IsA<File> for File {}
+unsafe impl IsA<Blob> for File {}
+unsafe impl IsA<Navigator> for Navigator {}
+unsafe impl IsA<Clipboard> for Clipboard {}
+unsafe impl IsA<EventTarget> for Clipboard {}
+unsafe impl IsA<ClipboardItem> for ClipboardItem {}

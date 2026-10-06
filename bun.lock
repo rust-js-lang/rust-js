@@ -158,6 +158,8 @@
     "webapi": {
       "name": "@rust-js/webapi-generator",
       "devDependencies": {
+        "@webref/elements": "2.9.0",
+        "@webref/events": "1.27.0",
         "@webref/idl": "3.84.0",
         "webidl2": "24.5.0",
       },
@@ -645,6 +647,8 @@
     "@webref/css": ["@webref/css@8.7.5", "", { "peerDependencies": { "css-tree": "^3.2.1" } }, "sha512-VQygoDH6OptDhYib3Uxo2e1uftOv2Tx9yddzUyAXOmsLquyrV46w5VzXla2kPAIK70+Lo56NzzrltKMqiBrrLg=="],
 
     "@webref/elements": ["@webref/elements@2.9.0", "", {}, "sha512-L88NWGNPOkc0zLskdasdVU7Djn6MMkCxxL/XNEHWMIle1VhwaS1k/KstR9zp6aDbGxS6MHITRu4n08zm1nnVrQ=="],
+
+    "@webref/events": ["@webref/events@1.27.0", "", {}, "sha512-hM4AbUYioaRtfzGUMmqHeG/DhF8g3nr76PFJNqS2GqBndAp7sWewEcofq7MgqncQs+R7K9FbxVR7c4soOU9zaQ=="],
 
     "@webref/idl": ["@webref/idl@3.84.0", "", { "peerDependencies": { "webidl2": "^24.5.0" } }, "sha512-P0lA2Eyckt/z9Y6GBJyb67g0FEIauoICmFUxeRjBP5X66uvAvb3e19Y3N3uZtDz4wrGJvcfyNCftcgp8JiLbGQ=="],
 
