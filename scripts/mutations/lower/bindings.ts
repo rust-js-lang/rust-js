@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "assoc-this-not-method",
+    breaks: "a type's own function whose first parameter is `this`, `Mouse::widen(this)`, isn't a method: rust-js refuses it",
+    file: "src/lower/bindings.rs",
+    find: "        DefKind::AssocFn => tcx.associated_item(def_id).is_method() || named_this(),",
+    replace: "        DefKind::AssocFn => tcx.associated_item(def_id).is_method(),",
+    tests: ["test/jsx.test.ts", "-t", "tag's element"],
+  },
+  {
     name: "camel-case-unread",
     breaks: "`js::camel_case!();` names nothing the JS way",
     file: "src/lower/bindings.rs",

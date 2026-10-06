@@ -1,6 +1,9 @@
 # 0198. An optional handler passed on to an element is that handler
 
-Status: Accepted. Extends [0041](0041-react.md).
+Status: Accepted. Extends [0041](0041-react.md). Amended by
+[0224](0224-typed-intrinsic-elements.md): a tag's handler gets its
+element's event, which a handler of any element's takes `upcast`,
+`f(e.upcast())`, the event itself in JS: the handler is still `f`.
 
 ## Context
 

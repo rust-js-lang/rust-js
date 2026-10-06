@@ -50,6 +50,8 @@ export default Tag;
 - **A binding's type says what it is to TypeScript**, `#[rust_js::types =
   "react#NamedExoticComponent"]` of react's `Memo<P>`: `NamedExoticComponent<P>`,
   imported from `react`, or a global's, `"HTMLElement"`, without a module.
+  Arguments written are all of its own, `<>` none: react's `Element<T>` is
+  `react#ReactNode<>`, a `ReactNode` whatever its tag's element (ADR 0224).
 - **An `Option` takes JS's `null` too**, `T | null | undefined`, as rust-js
   reads `None` `!= null` (ADR 0030): a TypeScript caller's `null`, react.dev's
   Page giving its `LanguagesContext` `Languages | null`, is `None`.

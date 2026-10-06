@@ -83,8 +83,8 @@ pub fn Todos() -> Element {
                 <input
                     id={id.clone()}
                     value={draft.clone()}
-                    onChange={move |e: &Change| set_draft.set(e.value())}
-                    onKeyDown={move |e: &Keyboard| {
+                    onChange={move |e: &Change<_>| set_draft.set(e.value())}
+                    onKeyDown={move |e: &Keyboard<_>| {
                         if e.key() == "Enter" {
                             add();
                         }

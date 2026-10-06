@@ -9,3531 +9,3533 @@ use super::*;
 /// Attributes, as React names them: `class_name` is `className`. Any other,
 /// like `aria-*` and `data-*`, is [`attr`](Element::attr).
 #[doc(hidden)]
-impl Element {
+impl<T> Element<T> {
     /// `about`
     #[cfg_attr(rust_js, rust_js::link_name = "prop about")]
-    pub fn about(self, value: impl Value) -> Element {
+    pub fn about(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `accentHeight`
     #[cfg_attr(rust_js, rust_js::link_name = "prop accentHeight")]
-    pub fn accent_height(self, value: impl Value) -> Element {
+    pub fn accent_height(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `accept`
     #[cfg_attr(rust_js, rust_js::link_name = "prop accept")]
-    pub fn accept(self, value: impl Value) -> Element {
+    pub fn accept(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `acceptCharset`
     #[cfg_attr(rust_js, rust_js::link_name = "prop acceptCharset")]
-    pub fn accept_charset(self, value: impl Value) -> Element {
+    pub fn accept_charset(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `accessKey`
     #[cfg_attr(rust_js, rust_js::link_name = "prop accessKey")]
-    pub fn access_key(self, value: impl Value) -> Element {
+    pub fn access_key(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `accumulate`
     #[cfg_attr(rust_js, rust_js::link_name = "prop accumulate")]
-    pub fn accumulate(self, value: impl Value) -> Element {
+    pub fn accumulate(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `additive`
     #[cfg_attr(rust_js, rust_js::link_name = "prop additive")]
-    pub fn additive(self, value: impl Value) -> Element {
+    pub fn additive(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `alignmentBaseline`
     #[cfg_attr(rust_js, rust_js::link_name = "prop alignmentBaseline")]
-    pub fn alignment_baseline(self, value: impl Value) -> Element {
+    pub fn alignment_baseline(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `allowFullScreen`
     #[cfg_attr(rust_js, rust_js::link_name = "prop allowFullScreen")]
-    pub fn allow_full_screen(self, value: bool) -> Element {
+    pub fn allow_full_screen(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `allowReorder`
     #[cfg_attr(rust_js, rust_js::link_name = "prop allowReorder")]
-    pub fn allow_reorder(self, value: impl Value) -> Element {
+    pub fn allow_reorder(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `alphabetic`
     #[cfg_attr(rust_js, rust_js::link_name = "prop alphabetic")]
-    pub fn alphabetic(self, value: impl Value) -> Element {
+    pub fn alphabetic(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `alt`
     #[cfg_attr(rust_js, rust_js::link_name = "prop alt")]
-    pub fn alt(self, value: impl Value) -> Element {
+    pub fn alt(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `amplitude`
     #[cfg_attr(rust_js, rust_js::link_name = "prop amplitude")]
-    pub fn amplitude(self, value: impl Value) -> Element {
+    pub fn amplitude(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `arabicForm`
     #[cfg_attr(rust_js, rust_js::link_name = "prop arabicForm")]
-    pub fn arabic_form(self, value: impl Value) -> Element {
+    pub fn arabic_form(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `as`
     #[cfg_attr(rust_js, rust_js::link_name = "prop as")]
-    pub fn r#as(self, value: impl Value) -> Element {
+    pub fn r#as(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `ascent`
     #[cfg_attr(rust_js, rust_js::link_name = "prop ascent")]
-    pub fn ascent(self, value: impl Value) -> Element {
+    pub fn ascent(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `async`
     #[cfg_attr(rust_js, rust_js::link_name = "prop async")]
-    pub fn r#async(self, value: bool) -> Element {
+    pub fn r#async(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `attributeName`
     #[cfg_attr(rust_js, rust_js::link_name = "prop attributeName")]
-    pub fn attribute_name(self, value: impl Value) -> Element {
+    pub fn attribute_name(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `attributeType`
     #[cfg_attr(rust_js, rust_js::link_name = "prop attributeType")]
-    pub fn attribute_type(self, value: impl Value) -> Element {
+    pub fn attribute_type(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `autoCapitalize`
     #[cfg_attr(rust_js, rust_js::link_name = "prop autoCapitalize")]
-    pub fn auto_capitalize(self, value: impl Value) -> Element {
+    pub fn auto_capitalize(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `autoComplete`
     #[cfg_attr(rust_js, rust_js::link_name = "prop autoComplete")]
-    pub fn auto_complete(self, value: impl Value) -> Element {
+    pub fn auto_complete(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `autoCorrect`
     #[cfg_attr(rust_js, rust_js::link_name = "prop autoCorrect")]
-    pub fn auto_correct(self, value: impl Value) -> Element {
+    pub fn auto_correct(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `autoFocus`
     #[cfg_attr(rust_js, rust_js::link_name = "prop autoFocus")]
-    pub fn auto_focus(self, value: bool) -> Element {
+    pub fn auto_focus(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `autoPlay`
     #[cfg_attr(rust_js, rust_js::link_name = "prop autoPlay")]
-    pub fn auto_play(self, value: bool) -> Element {
+    pub fn auto_play(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `autoReverse`
     #[cfg_attr(rust_js, rust_js::link_name = "prop autoReverse")]
-    pub fn auto_reverse(self, value: impl Value) -> Element {
+    pub fn auto_reverse(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `autoSave`
     #[cfg_attr(rust_js, rust_js::link_name = "prop autoSave")]
-    pub fn auto_save(self, value: impl Value) -> Element {
+    pub fn auto_save(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `azimuth`
     #[cfg_attr(rust_js, rust_js::link_name = "prop azimuth")]
-    pub fn azimuth(self, value: impl Value) -> Element {
+    pub fn azimuth(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `baseFrequency`
     #[cfg_attr(rust_js, rust_js::link_name = "prop baseFrequency")]
-    pub fn base_frequency(self, value: impl Value) -> Element {
+    pub fn base_frequency(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `baseProfile`
     #[cfg_attr(rust_js, rust_js::link_name = "prop baseProfile")]
-    pub fn base_profile(self, value: impl Value) -> Element {
+    pub fn base_profile(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `baselineShift`
     #[cfg_attr(rust_js, rust_js::link_name = "prop baselineShift")]
-    pub fn baseline_shift(self, value: impl Value) -> Element {
+    pub fn baseline_shift(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `bbox`
     #[cfg_attr(rust_js, rust_js::link_name = "prop bbox")]
-    pub fn bbox(self, value: impl Value) -> Element {
+    pub fn bbox(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `begin`
     #[cfg_attr(rust_js, rust_js::link_name = "prop begin")]
-    pub fn begin(self, value: impl Value) -> Element {
+    pub fn begin(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `bias`
     #[cfg_attr(rust_js, rust_js::link_name = "prop bias")]
-    pub fn bias(self, value: impl Value) -> Element {
+    pub fn bias(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `by`
     #[cfg_attr(rust_js, rust_js::link_name = "prop by")]
-    pub fn by(self, value: impl Value) -> Element {
+    pub fn by(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `calcMode`
     #[cfg_attr(rust_js, rust_js::link_name = "prop calcMode")]
-    pub fn calc_mode(self, value: impl Value) -> Element {
+    pub fn calc_mode(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `capHeight`
     #[cfg_attr(rust_js, rust_js::link_name = "prop capHeight")]
-    pub fn cap_height(self, value: impl Value) -> Element {
+    pub fn cap_height(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `capture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop capture")]
-    pub fn capture(self, value: impl Value) -> Element {
+    pub fn capture(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `cellPadding`
     #[cfg_attr(rust_js, rust_js::link_name = "prop cellPadding")]
-    pub fn cell_padding(self, value: impl Value) -> Element {
+    pub fn cell_padding(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `cellSpacing`
     #[cfg_attr(rust_js, rust_js::link_name = "prop cellSpacing")]
-    pub fn cell_spacing(self, value: impl Value) -> Element {
+    pub fn cell_spacing(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `challenge`
     #[cfg_attr(rust_js, rust_js::link_name = "prop challenge")]
-    pub fn challenge(self, value: impl Value) -> Element {
+    pub fn challenge(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `charSet`
     #[cfg_attr(rust_js, rust_js::link_name = "prop charSet")]
-    pub fn char_set(self, value: impl Value) -> Element {
+    pub fn char_set(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `checked`
     #[cfg_attr(rust_js, rust_js::link_name = "prop checked")]
-    pub fn checked(self, value: bool) -> Element {
+    pub fn checked(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `cite`
     #[cfg_attr(rust_js, rust_js::link_name = "prop cite")]
-    pub fn cite(self, value: impl Value) -> Element {
+    pub fn cite(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `classID`
     #[cfg_attr(rust_js, rust_js::link_name = "prop classID")]
-    pub fn class_id(self, value: impl Value) -> Element {
+    pub fn class_id(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `className`
     #[cfg_attr(rust_js, rust_js::link_name = "prop className")]
-    pub fn class_name(self, value: impl Value) -> Element {
+    pub fn class_name(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `clip`
     #[cfg_attr(rust_js, rust_js::link_name = "prop clip")]
-    pub fn clip(self, value: impl Value) -> Element {
+    pub fn clip(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `clipPath`
     #[cfg_attr(rust_js, rust_js::link_name = "prop clipPath")]
-    pub fn clip_path(self, value: impl Value) -> Element {
+    pub fn clip_path(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `clipPathUnits`
     #[cfg_attr(rust_js, rust_js::link_name = "prop clipPathUnits")]
-    pub fn clip_path_units(self, value: impl Value) -> Element {
+    pub fn clip_path_units(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `clipRule`
     #[cfg_attr(rust_js, rust_js::link_name = "prop clipRule")]
-    pub fn clip_rule(self, value: impl Value) -> Element {
+    pub fn clip_rule(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `colSpan`
     #[cfg_attr(rust_js, rust_js::link_name = "prop colSpan")]
-    pub fn col_span(self, value: impl Value) -> Element {
+    pub fn col_span(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `color`
     #[cfg_attr(rust_js, rust_js::link_name = "prop color")]
-    pub fn color(self, value: impl Value) -> Element {
+    pub fn color(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `colorInterpolation`
     #[cfg_attr(rust_js, rust_js::link_name = "prop colorInterpolation")]
-    pub fn color_interpolation(self, value: impl Value) -> Element {
+    pub fn color_interpolation(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `colorInterpolationFilters`
     #[cfg_attr(rust_js, rust_js::link_name = "prop colorInterpolationFilters")]
-    pub fn color_interpolation_filters(self, value: impl Value) -> Element {
+    pub fn color_interpolation_filters(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `colorProfile`
     #[cfg_attr(rust_js, rust_js::link_name = "prop colorProfile")]
-    pub fn color_profile(self, value: impl Value) -> Element {
+    pub fn color_profile(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `colorRendering`
     #[cfg_attr(rust_js, rust_js::link_name = "prop colorRendering")]
-    pub fn color_rendering(self, value: impl Value) -> Element {
+    pub fn color_rendering(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `cols`
     #[cfg_attr(rust_js, rust_js::link_name = "prop cols")]
-    pub fn cols(self, value: impl Value) -> Element {
+    pub fn cols(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `content`
     #[cfg_attr(rust_js, rust_js::link_name = "prop content")]
-    pub fn content(self, value: impl Value) -> Element {
+    pub fn content(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `contentEditable`
     #[cfg_attr(rust_js, rust_js::link_name = "prop contentEditable")]
-    pub fn content_editable(self, value: impl Value) -> Element {
+    pub fn content_editable(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `contentScriptType`
     #[cfg_attr(rust_js, rust_js::link_name = "prop contentScriptType")]
-    pub fn content_script_type(self, value: impl Value) -> Element {
+    pub fn content_script_type(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `contentStyleType`
     #[cfg_attr(rust_js, rust_js::link_name = "prop contentStyleType")]
-    pub fn content_style_type(self, value: impl Value) -> Element {
+    pub fn content_style_type(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `contextMenu`
     #[cfg_attr(rust_js, rust_js::link_name = "prop contextMenu")]
-    pub fn context_menu(self, value: impl Value) -> Element {
+    pub fn context_menu(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `controls`
     #[cfg_attr(rust_js, rust_js::link_name = "prop controls")]
-    pub fn controls(self, value: bool) -> Element {
+    pub fn controls(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `controlsList`
     #[cfg_attr(rust_js, rust_js::link_name = "prop controlsList")]
-    pub fn controls_list(self, value: impl Value) -> Element {
+    pub fn controls_list(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `coords`
     #[cfg_attr(rust_js, rust_js::link_name = "prop coords")]
-    pub fn coords(self, value: impl Value) -> Element {
+    pub fn coords(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `credentialless`
     #[cfg(react = "19.3")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop credentialless")]
-    pub fn credentialless(self, value: bool) -> Element {
+    pub fn credentialless(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `crossOrigin`
     #[cfg_attr(rust_js, rust_js::link_name = "prop crossOrigin")]
-    pub fn cross_origin(self, value: impl Value) -> Element {
+    pub fn cross_origin(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `cursor`
     #[cfg_attr(rust_js, rust_js::link_name = "prop cursor")]
-    pub fn cursor(self, value: impl Value) -> Element {
+    pub fn cursor(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `cx`
     #[cfg_attr(rust_js, rust_js::link_name = "prop cx")]
-    pub fn cx(self, value: impl Value) -> Element {
+    pub fn cx(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `cy`
     #[cfg_attr(rust_js, rust_js::link_name = "prop cy")]
-    pub fn cy(self, value: impl Value) -> Element {
+    pub fn cy(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `d`
     #[cfg_attr(rust_js, rust_js::link_name = "prop d")]
-    pub fn d(self, value: impl Value) -> Element {
+    pub fn d(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `data`
     #[cfg_attr(rust_js, rust_js::link_name = "prop data")]
-    pub fn data(self, value: impl Value) -> Element {
+    pub fn data(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `datatype`
     #[cfg_attr(rust_js, rust_js::link_name = "prop datatype")]
-    pub fn datatype(self, value: impl Value) -> Element {
+    pub fn datatype(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `dateTime`
     #[cfg_attr(rust_js, rust_js::link_name = "prop dateTime")]
-    pub fn date_time(self, value: impl Value) -> Element {
+    pub fn date_time(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `decelerate`
     #[cfg_attr(rust_js, rust_js::link_name = "prop decelerate")]
-    pub fn decelerate(self, value: impl Value) -> Element {
+    pub fn decelerate(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `default`
     #[cfg_attr(rust_js, rust_js::link_name = "prop default")]
-    pub fn r#default(self, value: bool) -> Element {
+    pub fn r#default(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `defaultChecked`
     #[cfg_attr(rust_js, rust_js::link_name = "prop defaultChecked")]
-    pub fn default_checked(self, value: impl Value) -> Element {
+    pub fn default_checked(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `defaultValue`
     #[cfg_attr(rust_js, rust_js::link_name = "prop defaultValue")]
-    pub fn default_value(self, value: impl Value) -> Element {
+    pub fn default_value(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `defer`
     #[cfg_attr(rust_js, rust_js::link_name = "prop defer")]
-    pub fn defer(self, value: bool) -> Element {
+    pub fn defer(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `descent`
     #[cfg_attr(rust_js, rust_js::link_name = "prop descent")]
-    pub fn descent(self, value: impl Value) -> Element {
+    pub fn descent(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `diffuseConstant`
     #[cfg_attr(rust_js, rust_js::link_name = "prop diffuseConstant")]
-    pub fn diffuse_constant(self, value: impl Value) -> Element {
+    pub fn diffuse_constant(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `dir`
     #[cfg_attr(rust_js, rust_js::link_name = "prop dir")]
-    pub fn dir(self, value: impl Value) -> Element {
+    pub fn dir(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `direction`
     #[cfg_attr(rust_js, rust_js::link_name = "prop direction")]
-    pub fn direction(self, value: impl Value) -> Element {
+    pub fn direction(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `disablePictureInPicture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop disablePictureInPicture")]
-    pub fn disable_picture_in_picture(self, value: bool) -> Element {
+    pub fn disable_picture_in_picture(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `disableRemotePlayback`
     #[cfg_attr(rust_js, rust_js::link_name = "prop disableRemotePlayback")]
-    pub fn disable_remote_playback(self, value: bool) -> Element {
+    pub fn disable_remote_playback(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `disabled`
     #[cfg_attr(rust_js, rust_js::link_name = "prop disabled")]
-    pub fn disabled(self, value: bool) -> Element {
+    pub fn disabled(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `display`
     #[cfg_attr(rust_js, rust_js::link_name = "prop display")]
-    pub fn display(self, value: impl Value) -> Element {
+    pub fn display(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `divisor`
     #[cfg_attr(rust_js, rust_js::link_name = "prop divisor")]
-    pub fn divisor(self, value: impl Value) -> Element {
+    pub fn divisor(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `dominantBaseline`
     #[cfg_attr(rust_js, rust_js::link_name = "prop dominantBaseline")]
-    pub fn dominant_baseline(self, value: impl Value) -> Element {
+    pub fn dominant_baseline(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `download`
     #[cfg_attr(rust_js, rust_js::link_name = "prop download")]
-    pub fn download(self, value: impl Value) -> Element {
+    pub fn download(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `draggable`
     #[cfg_attr(rust_js, rust_js::link_name = "prop draggable")]
-    pub fn draggable(self, value: impl Value) -> Element {
+    pub fn draggable(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `dur`
     #[cfg_attr(rust_js, rust_js::link_name = "prop dur")]
-    pub fn dur(self, value: impl Value) -> Element {
+    pub fn dur(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `dx`
     #[cfg_attr(rust_js, rust_js::link_name = "prop dx")]
-    pub fn dx(self, value: impl Value) -> Element {
+    pub fn dx(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `dy`
     #[cfg_attr(rust_js, rust_js::link_name = "prop dy")]
-    pub fn dy(self, value: impl Value) -> Element {
+    pub fn dy(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `edgeMode`
     #[cfg_attr(rust_js, rust_js::link_name = "prop edgeMode")]
-    pub fn edge_mode(self, value: impl Value) -> Element {
+    pub fn edge_mode(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `elevation`
     #[cfg_attr(rust_js, rust_js::link_name = "prop elevation")]
-    pub fn elevation(self, value: impl Value) -> Element {
+    pub fn elevation(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `enableBackground`
     #[cfg_attr(rust_js, rust_js::link_name = "prop enableBackground")]
-    pub fn enable_background(self, value: impl Value) -> Element {
+    pub fn enable_background(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `encType`
     #[cfg_attr(rust_js, rust_js::link_name = "prop encType")]
-    pub fn enc_type(self, value: impl Value) -> Element {
+    pub fn enc_type(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `end`
     #[cfg_attr(rust_js, rust_js::link_name = "prop end")]
-    pub fn end(self, value: impl Value) -> Element {
+    pub fn end(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `enterKeyHint`
     #[cfg_attr(rust_js, rust_js::link_name = "prop enterKeyHint")]
-    pub fn enter_key_hint(self, value: impl Value) -> Element {
+    pub fn enter_key_hint(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `exponent`
     #[cfg_attr(rust_js, rust_js::link_name = "prop exponent")]
-    pub fn exponent(self, value: impl Value) -> Element {
+    pub fn exponent(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `externalResourcesRequired`
     #[cfg_attr(rust_js, rust_js::link_name = "prop externalResourcesRequired")]
-    pub fn external_resources_required(self, value: impl Value) -> Element {
+    pub fn external_resources_required(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `fetchPriority`
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop fetchPriority")]
-    pub fn fetch_priority(self, value: impl Value) -> Element {
+    pub fn fetch_priority(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `fill`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fill")]
-    pub fn fill(self, value: impl Value) -> Element {
+    pub fn fill(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `fillOpacity`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fillOpacity")]
-    pub fn fill_opacity(self, value: impl Value) -> Element {
+    pub fn fill_opacity(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `fillRule`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fillRule")]
-    pub fn fill_rule(self, value: impl Value) -> Element {
+    pub fn fill_rule(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `filter`
     #[cfg_attr(rust_js, rust_js::link_name = "prop filter")]
-    pub fn filter(self, value: impl Value) -> Element {
+    pub fn filter(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `filterRes`
     #[cfg_attr(rust_js, rust_js::link_name = "prop filterRes")]
-    pub fn filter_res(self, value: impl Value) -> Element {
+    pub fn filter_res(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `filterUnits`
     #[cfg_attr(rust_js, rust_js::link_name = "prop filterUnits")]
-    pub fn filter_units(self, value: impl Value) -> Element {
+    pub fn filter_units(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `floodColor`
     #[cfg_attr(rust_js, rust_js::link_name = "prop floodColor")]
-    pub fn flood_color(self, value: impl Value) -> Element {
+    pub fn flood_color(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `floodOpacity`
     #[cfg_attr(rust_js, rust_js::link_name = "prop floodOpacity")]
-    pub fn flood_opacity(self, value: impl Value) -> Element {
+    pub fn flood_opacity(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `focusable`
     #[cfg_attr(rust_js, rust_js::link_name = "prop focusable")]
-    pub fn focusable(self, value: impl Value) -> Element {
+    pub fn focusable(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `fontFamily`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontFamily")]
-    pub fn font_family(self, value: impl Value) -> Element {
+    pub fn font_family(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `fontSize`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontSize")]
-    pub fn font_size(self, value: impl Value) -> Element {
+    pub fn font_size(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `fontSizeAdjust`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontSizeAdjust")]
-    pub fn font_size_adjust(self, value: impl Value) -> Element {
+    pub fn font_size_adjust(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `fontStretch`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontStretch")]
-    pub fn font_stretch(self, value: impl Value) -> Element {
+    pub fn font_stretch(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `fontStyle`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontStyle")]
-    pub fn font_style(self, value: impl Value) -> Element {
+    pub fn font_style(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `fontVariant`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontVariant")]
-    pub fn font_variant(self, value: impl Value) -> Element {
+    pub fn font_variant(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `fontWeight`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontWeight")]
-    pub fn font_weight(self, value: impl Value) -> Element {
+    pub fn font_weight(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `form`
     #[cfg_attr(rust_js, rust_js::link_name = "prop form")]
-    pub fn form(self, value: impl Value) -> Element {
+    pub fn form(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `formEncType`
     #[cfg_attr(rust_js, rust_js::link_name = "prop formEncType")]
-    pub fn form_enc_type(self, value: impl Value) -> Element {
+    pub fn form_enc_type(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `formMethod`
     #[cfg_attr(rust_js, rust_js::link_name = "prop formMethod")]
-    pub fn form_method(self, value: impl Value) -> Element {
+    pub fn form_method(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `formNoValidate`
     #[cfg_attr(rust_js, rust_js::link_name = "prop formNoValidate")]
-    pub fn form_no_validate(self, value: bool) -> Element {
+    pub fn form_no_validate(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `formTarget`
     #[cfg_attr(rust_js, rust_js::link_name = "prop formTarget")]
-    pub fn form_target(self, value: impl Value) -> Element {
+    pub fn form_target(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `format`
     #[cfg_attr(rust_js, rust_js::link_name = "prop format")]
-    pub fn format(self, value: impl Value) -> Element {
+    pub fn format(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `frameBorder`
     #[cfg_attr(rust_js, rust_js::link_name = "prop frameBorder")]
-    pub fn frame_border(self, value: impl Value) -> Element {
+    pub fn frame_border(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `from`
     #[cfg_attr(rust_js, rust_js::link_name = "prop from")]
-    pub fn from(self, value: impl Value) -> Element {
+    pub fn from(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `fx`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fx")]
-    pub fn fx(self, value: impl Value) -> Element {
+    pub fn fx(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `fy`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fy")]
-    pub fn fy(self, value: impl Value) -> Element {
+    pub fn fy(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `g1`
     #[cfg_attr(rust_js, rust_js::link_name = "prop g1")]
-    pub fn g1(self, value: impl Value) -> Element {
+    pub fn g1(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `g2`
     #[cfg_attr(rust_js, rust_js::link_name = "prop g2")]
-    pub fn g2(self, value: impl Value) -> Element {
+    pub fn g2(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `glyphName`
     #[cfg_attr(rust_js, rust_js::link_name = "prop glyphName")]
-    pub fn glyph_name(self, value: impl Value) -> Element {
+    pub fn glyph_name(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `glyphOrientationHorizontal`
     #[cfg_attr(rust_js, rust_js::link_name = "prop glyphOrientationHorizontal")]
-    pub fn glyph_orientation_horizontal(self, value: impl Value) -> Element {
+    pub fn glyph_orientation_horizontal(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `glyphOrientationVertical`
     #[cfg_attr(rust_js, rust_js::link_name = "prop glyphOrientationVertical")]
-    pub fn glyph_orientation_vertical(self, value: impl Value) -> Element {
+    pub fn glyph_orientation_vertical(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `glyphRef`
     #[cfg_attr(rust_js, rust_js::link_name = "prop glyphRef")]
-    pub fn glyph_ref(self, value: impl Value) -> Element {
+    pub fn glyph_ref(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `gradientTransform`
     #[cfg_attr(rust_js, rust_js::link_name = "prop gradientTransform")]
-    pub fn gradient_transform(self, value: impl Value) -> Element {
+    pub fn gradient_transform(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `gradientUnits`
     #[cfg_attr(rust_js, rust_js::link_name = "prop gradientUnits")]
-    pub fn gradient_units(self, value: impl Value) -> Element {
+    pub fn gradient_units(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `hanging`
     #[cfg_attr(rust_js, rust_js::link_name = "prop hanging")]
-    pub fn hanging(self, value: impl Value) -> Element {
+    pub fn hanging(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `headers`
     #[cfg_attr(rust_js, rust_js::link_name = "prop headers")]
-    pub fn headers(self, value: impl Value) -> Element {
+    pub fn headers(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `height`
     #[cfg_attr(rust_js, rust_js::link_name = "prop height")]
-    pub fn height(self, value: impl Value) -> Element {
+    pub fn height(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `hidden`
     #[cfg_attr(rust_js, rust_js::link_name = "prop hidden")]
-    pub fn hidden(self, value: impl Value) -> Element {
+    pub fn hidden(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `high`
     #[cfg_attr(rust_js, rust_js::link_name = "prop high")]
-    pub fn high(self, value: impl Value) -> Element {
+    pub fn high(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `horizAdvX`
     #[cfg_attr(rust_js, rust_js::link_name = "prop horizAdvX")]
-    pub fn horiz_adv_x(self, value: impl Value) -> Element {
+    pub fn horiz_adv_x(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `horizOriginX`
     #[cfg_attr(rust_js, rust_js::link_name = "prop horizOriginX")]
-    pub fn horiz_origin_x(self, value: impl Value) -> Element {
+    pub fn horiz_origin_x(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `href`
     #[cfg_attr(rust_js, rust_js::link_name = "prop href")]
-    pub fn href(self, value: impl Value) -> Element {
+    pub fn href(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `hrefLang`
     #[cfg_attr(rust_js, rust_js::link_name = "prop hrefLang")]
-    pub fn href_lang(self, value: impl Value) -> Element {
+    pub fn href_lang(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `htmlFor`
     #[cfg_attr(rust_js, rust_js::link_name = "prop htmlFor")]
-    pub fn html_for(self, value: impl Value) -> Element {
+    pub fn html_for(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `httpEquiv`
     #[cfg_attr(rust_js, rust_js::link_name = "prop httpEquiv")]
-    pub fn http_equiv(self, value: impl Value) -> Element {
+    pub fn http_equiv(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `icon`
     #[cfg_attr(rust_js, rust_js::link_name = "prop icon")]
-    pub fn icon(self, value: impl Value) -> Element {
+    pub fn icon(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `id`
     #[cfg_attr(rust_js, rust_js::link_name = "prop id")]
-    pub fn id(self, value: impl Value) -> Element {
+    pub fn id(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `ideographic`
     #[cfg_attr(rust_js, rust_js::link_name = "prop ideographic")]
-    pub fn ideographic(self, value: impl Value) -> Element {
+    pub fn ideographic(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `imageRendering`
     #[cfg_attr(rust_js, rust_js::link_name = "prop imageRendering")]
-    pub fn image_rendering(self, value: impl Value) -> Element {
+    pub fn image_rendering(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `imageSizes`
     #[cfg_attr(rust_js, rust_js::link_name = "prop imageSizes")]
-    pub fn image_sizes(self, value: impl Value) -> Element {
+    pub fn image_sizes(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `imageSrcSet`
     #[cfg_attr(rust_js, rust_js::link_name = "prop imageSrcSet")]
-    pub fn image_src_set(self, value: impl Value) -> Element {
+    pub fn image_src_set(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `in`
     #[cfg_attr(rust_js, rust_js::link_name = "prop in")]
-    pub fn r#in(self, value: impl Value) -> Element {
+    pub fn r#in(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `in2`
     #[cfg_attr(rust_js, rust_js::link_name = "prop in2")]
-    pub fn in2(self, value: impl Value) -> Element {
+    pub fn in2(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `inert`
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop inert")]
-    pub fn inert(self, value: bool) -> Element {
+    pub fn inert(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `inlist`
     #[cfg_attr(rust_js, rust_js::link_name = "prop inlist")]
-    pub fn inlist(self, value: impl Value) -> Element {
+    pub fn inlist(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `inputMode`
     #[cfg_attr(rust_js, rust_js::link_name = "prop inputMode")]
-    pub fn input_mode(self, value: impl Value) -> Element {
+    pub fn input_mode(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `integrity`
     #[cfg_attr(rust_js, rust_js::link_name = "prop integrity")]
-    pub fn integrity(self, value: impl Value) -> Element {
+    pub fn integrity(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `intercept`
     #[cfg_attr(rust_js, rust_js::link_name = "prop intercept")]
-    pub fn intercept(self, value: impl Value) -> Element {
+    pub fn intercept(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `is`
     #[cfg_attr(rust_js, rust_js::link_name = "prop is")]
-    pub fn is(self, value: impl Value) -> Element {
+    pub fn is(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `itemID`
     #[cfg_attr(rust_js, rust_js::link_name = "prop itemID")]
-    pub fn item_id(self, value: impl Value) -> Element {
+    pub fn item_id(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `itemProp`
     #[cfg_attr(rust_js, rust_js::link_name = "prop itemProp")]
-    pub fn item_prop(self, value: impl Value) -> Element {
+    pub fn item_prop(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `itemRef`
     #[cfg_attr(rust_js, rust_js::link_name = "prop itemRef")]
-    pub fn item_ref(self, value: impl Value) -> Element {
+    pub fn item_ref(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `itemScope`
     #[cfg_attr(rust_js, rust_js::link_name = "prop itemScope")]
-    pub fn item_scope(self, value: bool) -> Element {
+    pub fn item_scope(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `itemType`
     #[cfg_attr(rust_js, rust_js::link_name = "prop itemType")]
-    pub fn item_type(self, value: impl Value) -> Element {
+    pub fn item_type(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `k`
     #[cfg_attr(rust_js, rust_js::link_name = "prop k")]
-    pub fn k(self, value: impl Value) -> Element {
+    pub fn k(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `k1`
     #[cfg_attr(rust_js, rust_js::link_name = "prop k1")]
-    pub fn k1(self, value: impl Value) -> Element {
+    pub fn k1(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `k2`
     #[cfg_attr(rust_js, rust_js::link_name = "prop k2")]
-    pub fn k2(self, value: impl Value) -> Element {
+    pub fn k2(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `k3`
     #[cfg_attr(rust_js, rust_js::link_name = "prop k3")]
-    pub fn k3(self, value: impl Value) -> Element {
+    pub fn k3(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `k4`
     #[cfg_attr(rust_js, rust_js::link_name = "prop k4")]
-    pub fn k4(self, value: impl Value) -> Element {
+    pub fn k4(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `kernelMatrix`
     #[cfg_attr(rust_js, rust_js::link_name = "prop kernelMatrix")]
-    pub fn kernel_matrix(self, value: impl Value) -> Element {
+    pub fn kernel_matrix(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `kernelUnitLength`
     #[cfg_attr(rust_js, rust_js::link_name = "prop kernelUnitLength")]
-    pub fn kernel_unit_length(self, value: impl Value) -> Element {
+    pub fn kernel_unit_length(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `kerning`
     #[cfg_attr(rust_js, rust_js::link_name = "prop kerning")]
-    pub fn kerning(self, value: impl Value) -> Element {
+    pub fn kerning(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `keyParams`
     #[cfg_attr(rust_js, rust_js::link_name = "prop keyParams")]
-    pub fn key_params(self, value: impl Value) -> Element {
+    pub fn key_params(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `keyPoints`
     #[cfg_attr(rust_js, rust_js::link_name = "prop keyPoints")]
-    pub fn key_points(self, value: impl Value) -> Element {
+    pub fn key_points(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `keySplines`
     #[cfg_attr(rust_js, rust_js::link_name = "prop keySplines")]
-    pub fn key_splines(self, value: impl Value) -> Element {
+    pub fn key_splines(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `keyTimes`
     #[cfg_attr(rust_js, rust_js::link_name = "prop keyTimes")]
-    pub fn key_times(self, value: impl Value) -> Element {
+    pub fn key_times(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `keyType`
     #[cfg_attr(rust_js, rust_js::link_name = "prop keyType")]
-    pub fn key_type(self, value: impl Value) -> Element {
+    pub fn key_type(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `kind`
     #[cfg_attr(rust_js, rust_js::link_name = "prop kind")]
-    pub fn kind(self, value: impl Value) -> Element {
+    pub fn kind(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `label`
     #[cfg_attr(rust_js, rust_js::link_name = "prop label")]
-    pub fn label(self, value: impl Value) -> Element {
+    pub fn label(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `lang`
     #[cfg_attr(rust_js, rust_js::link_name = "prop lang")]
-    pub fn lang(self, value: impl Value) -> Element {
+    pub fn lang(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `lengthAdjust`
     #[cfg_attr(rust_js, rust_js::link_name = "prop lengthAdjust")]
-    pub fn length_adjust(self, value: impl Value) -> Element {
+    pub fn length_adjust(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `letterSpacing`
     #[cfg_attr(rust_js, rust_js::link_name = "prop letterSpacing")]
-    pub fn letter_spacing(self, value: impl Value) -> Element {
+    pub fn letter_spacing(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `lightingColor`
     #[cfg_attr(rust_js, rust_js::link_name = "prop lightingColor")]
-    pub fn lighting_color(self, value: impl Value) -> Element {
+    pub fn lighting_color(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `limitingConeAngle`
     #[cfg_attr(rust_js, rust_js::link_name = "prop limitingConeAngle")]
-    pub fn limiting_cone_angle(self, value: impl Value) -> Element {
+    pub fn limiting_cone_angle(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `list`
     #[cfg_attr(rust_js, rust_js::link_name = "prop list")]
-    pub fn list(self, value: impl Value) -> Element {
+    pub fn list(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `local`
     #[cfg_attr(rust_js, rust_js::link_name = "prop local")]
-    pub fn local(self, value: impl Value) -> Element {
+    pub fn local(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `loop`
     #[cfg_attr(rust_js, rust_js::link_name = "prop loop")]
-    pub fn r#loop(self, value: bool) -> Element {
+    pub fn r#loop(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `low`
     #[cfg_attr(rust_js, rust_js::link_name = "prop low")]
-    pub fn low(self, value: impl Value) -> Element {
+    pub fn low(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `manifest`
     #[cfg_attr(rust_js, rust_js::link_name = "prop manifest")]
-    pub fn manifest(self, value: impl Value) -> Element {
+    pub fn manifest(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `marginHeight`
     #[cfg_attr(rust_js, rust_js::link_name = "prop marginHeight")]
-    pub fn margin_height(self, value: impl Value) -> Element {
+    pub fn margin_height(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `marginWidth`
     #[cfg_attr(rust_js, rust_js::link_name = "prop marginWidth")]
-    pub fn margin_width(self, value: impl Value) -> Element {
+    pub fn margin_width(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `markerEnd`
     #[cfg_attr(rust_js, rust_js::link_name = "prop markerEnd")]
-    pub fn marker_end(self, value: impl Value) -> Element {
+    pub fn marker_end(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `markerHeight`
     #[cfg_attr(rust_js, rust_js::link_name = "prop markerHeight")]
-    pub fn marker_height(self, value: impl Value) -> Element {
+    pub fn marker_height(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `markerMid`
     #[cfg_attr(rust_js, rust_js::link_name = "prop markerMid")]
-    pub fn marker_mid(self, value: impl Value) -> Element {
+    pub fn marker_mid(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `markerStart`
     #[cfg_attr(rust_js, rust_js::link_name = "prop markerStart")]
-    pub fn marker_start(self, value: impl Value) -> Element {
+    pub fn marker_start(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `markerUnits`
     #[cfg_attr(rust_js, rust_js::link_name = "prop markerUnits")]
-    pub fn marker_units(self, value: impl Value) -> Element {
+    pub fn marker_units(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `markerWidth`
     #[cfg_attr(rust_js, rust_js::link_name = "prop markerWidth")]
-    pub fn marker_width(self, value: impl Value) -> Element {
+    pub fn marker_width(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `mask`
     #[cfg_attr(rust_js, rust_js::link_name = "prop mask")]
-    pub fn mask(self, value: impl Value) -> Element {
+    pub fn mask(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `maskContentUnits`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maskContentUnits")]
-    pub fn mask_content_units(self, value: impl Value) -> Element {
+    pub fn mask_content_units(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `maskType`
     #[cfg(react = "19.3")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop maskType")]
-    pub fn mask_type(self, value: impl Value) -> Element {
+    pub fn mask_type(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `maskUnits`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maskUnits")]
-    pub fn mask_units(self, value: impl Value) -> Element {
+    pub fn mask_units(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `mathematical`
     #[cfg_attr(rust_js, rust_js::link_name = "prop mathematical")]
-    pub fn mathematical(self, value: impl Value) -> Element {
+    pub fn mathematical(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `max`
     #[cfg_attr(rust_js, rust_js::link_name = "prop max")]
-    pub fn max(self, value: impl Value) -> Element {
+    pub fn max(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `maxLength`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maxLength")]
-    pub fn max_length(self, value: impl Value) -> Element {
+    pub fn max_length(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `media`
     #[cfg_attr(rust_js, rust_js::link_name = "prop media")]
-    pub fn media(self, value: impl Value) -> Element {
+    pub fn media(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `mediaGroup`
     #[cfg_attr(rust_js, rust_js::link_name = "prop mediaGroup")]
-    pub fn media_group(self, value: impl Value) -> Element {
+    pub fn media_group(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `method`
     #[cfg_attr(rust_js, rust_js::link_name = "prop method")]
-    pub fn method(self, value: impl Value) -> Element {
+    pub fn method(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `min`
     #[cfg_attr(rust_js, rust_js::link_name = "prop min")]
-    pub fn min(self, value: impl Value) -> Element {
+    pub fn min(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `minLength`
     #[cfg_attr(rust_js, rust_js::link_name = "prop minLength")]
-    pub fn min_length(self, value: impl Value) -> Element {
+    pub fn min_length(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `mode`
     #[cfg_attr(rust_js, rust_js::link_name = "prop mode")]
-    pub fn mode(self, value: impl Value) -> Element {
+    pub fn mode(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `multiple`
     #[cfg_attr(rust_js, rust_js::link_name = "prop multiple")]
-    pub fn multiple(self, value: bool) -> Element {
+    pub fn multiple(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `muted`
     #[cfg_attr(rust_js, rust_js::link_name = "prop muted")]
-    pub fn muted(self, value: bool) -> Element {
+    pub fn muted(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `name`
     #[cfg_attr(rust_js, rust_js::link_name = "prop name")]
-    pub fn name(self, value: impl Value) -> Element {
+    pub fn name(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `noModule`
     #[cfg_attr(rust_js, rust_js::link_name = "prop noModule")]
-    pub fn no_module(self, value: bool) -> Element {
+    pub fn no_module(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `noValidate`
     #[cfg_attr(rust_js, rust_js::link_name = "prop noValidate")]
-    pub fn no_validate(self, value: bool) -> Element {
+    pub fn no_validate(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `nonce`
     #[cfg_attr(rust_js, rust_js::link_name = "prop nonce")]
-    pub fn nonce(self, value: impl Value) -> Element {
+    pub fn nonce(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `numOctaves`
     #[cfg_attr(rust_js, rust_js::link_name = "prop numOctaves")]
-    pub fn num_octaves(self, value: impl Value) -> Element {
+    pub fn num_octaves(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `offset`
     #[cfg_attr(rust_js, rust_js::link_name = "prop offset")]
-    pub fn offset(self, value: impl Value) -> Element {
+    pub fn offset(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `opacity`
     #[cfg_attr(rust_js, rust_js::link_name = "prop opacity")]
-    pub fn opacity(self, value: impl Value) -> Element {
+    pub fn opacity(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `open`
     #[cfg_attr(rust_js, rust_js::link_name = "prop open")]
-    pub fn open(self, value: bool) -> Element {
+    pub fn open(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `operator`
     #[cfg_attr(rust_js, rust_js::link_name = "prop operator")]
-    pub fn operator(self, value: impl Value) -> Element {
+    pub fn operator(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `optimum`
     #[cfg_attr(rust_js, rust_js::link_name = "prop optimum")]
-    pub fn optimum(self, value: impl Value) -> Element {
+    pub fn optimum(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `order`
     #[cfg_attr(rust_js, rust_js::link_name = "prop order")]
-    pub fn order(self, value: impl Value) -> Element {
+    pub fn order(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `orient`
     #[cfg_attr(rust_js, rust_js::link_name = "prop orient")]
-    pub fn orient(self, value: impl Value) -> Element {
+    pub fn orient(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `orientation`
     #[cfg_attr(rust_js, rust_js::link_name = "prop orientation")]
-    pub fn orientation(self, value: impl Value) -> Element {
+    pub fn orientation(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `origin`
     #[cfg_attr(rust_js, rust_js::link_name = "prop origin")]
-    pub fn origin(self, value: impl Value) -> Element {
+    pub fn origin(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `overflow`
     #[cfg_attr(rust_js, rust_js::link_name = "prop overflow")]
-    pub fn overflow(self, value: impl Value) -> Element {
+    pub fn overflow(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `overlinePosition`
     #[cfg_attr(rust_js, rust_js::link_name = "prop overlinePosition")]
-    pub fn overline_position(self, value: impl Value) -> Element {
+    pub fn overline_position(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `overlineThickness`
     #[cfg_attr(rust_js, rust_js::link_name = "prop overlineThickness")]
-    pub fn overline_thickness(self, value: impl Value) -> Element {
+    pub fn overline_thickness(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `paintOrder`
     #[cfg_attr(rust_js, rust_js::link_name = "prop paintOrder")]
-    pub fn paint_order(self, value: impl Value) -> Element {
+    pub fn paint_order(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `panose1`
     #[cfg_attr(rust_js, rust_js::link_name = "prop panose1")]
-    pub fn panose1(self, value: impl Value) -> Element {
+    pub fn panose1(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `pathLength`
     #[cfg_attr(rust_js, rust_js::link_name = "prop pathLength")]
-    pub fn path_length(self, value: impl Value) -> Element {
+    pub fn path_length(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `pattern`
     #[cfg_attr(rust_js, rust_js::link_name = "prop pattern")]
-    pub fn pattern(self, value: impl Value) -> Element {
+    pub fn pattern(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `patternContentUnits`
     #[cfg_attr(rust_js, rust_js::link_name = "prop patternContentUnits")]
-    pub fn pattern_content_units(self, value: impl Value) -> Element {
+    pub fn pattern_content_units(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `patternTransform`
     #[cfg_attr(rust_js, rust_js::link_name = "prop patternTransform")]
-    pub fn pattern_transform(self, value: impl Value) -> Element {
+    pub fn pattern_transform(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `patternUnits`
     #[cfg_attr(rust_js, rust_js::link_name = "prop patternUnits")]
-    pub fn pattern_units(self, value: impl Value) -> Element {
+    pub fn pattern_units(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `placeholder`
     #[cfg_attr(rust_js, rust_js::link_name = "prop placeholder")]
-    pub fn placeholder(self, value: impl Value) -> Element {
+    pub fn placeholder(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `playsInline`
     #[cfg_attr(rust_js, rust_js::link_name = "prop playsInline")]
-    pub fn plays_inline(self, value: bool) -> Element {
+    pub fn plays_inline(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `pointerEvents`
     #[cfg_attr(rust_js, rust_js::link_name = "prop pointerEvents")]
-    pub fn pointer_events(self, value: impl Value) -> Element {
+    pub fn pointer_events(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `points`
     #[cfg_attr(rust_js, rust_js::link_name = "prop points")]
-    pub fn points(self, value: impl Value) -> Element {
+    pub fn points(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `pointsAtX`
     #[cfg_attr(rust_js, rust_js::link_name = "prop pointsAtX")]
-    pub fn points_at_x(self, value: impl Value) -> Element {
+    pub fn points_at_x(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `pointsAtY`
     #[cfg_attr(rust_js, rust_js::link_name = "prop pointsAtY")]
-    pub fn points_at_y(self, value: impl Value) -> Element {
+    pub fn points_at_y(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `pointsAtZ`
     #[cfg_attr(rust_js, rust_js::link_name = "prop pointsAtZ")]
-    pub fn points_at_z(self, value: impl Value) -> Element {
+    pub fn points_at_z(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `popover`
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop popover")]
-    pub fn popover(self, value: impl Value) -> Element {
+    pub fn popover(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `popoverTarget`
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop popoverTarget")]
-    pub fn popover_target(self, value: impl Value) -> Element {
+    pub fn popover_target(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `popoverTargetAction`
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop popoverTargetAction")]
-    pub fn popover_target_action(self, value: impl Value) -> Element {
+    pub fn popover_target_action(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `poster`
     #[cfg_attr(rust_js, rust_js::link_name = "prop poster")]
-    pub fn poster(self, value: impl Value) -> Element {
+    pub fn poster(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `prefix`
     #[cfg_attr(rust_js, rust_js::link_name = "prop prefix")]
-    pub fn prefix(self, value: impl Value) -> Element {
+    pub fn prefix(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `preload`
     #[cfg_attr(rust_js, rust_js::link_name = "prop preload")]
-    pub fn preload(self, value: impl Value) -> Element {
+    pub fn preload(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `preserveAlpha`
     #[cfg_attr(rust_js, rust_js::link_name = "prop preserveAlpha")]
-    pub fn preserve_alpha(self, value: impl Value) -> Element {
+    pub fn preserve_alpha(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `preserveAspectRatio`
     #[cfg_attr(rust_js, rust_js::link_name = "prop preserveAspectRatio")]
-    pub fn preserve_aspect_ratio(self, value: impl Value) -> Element {
+    pub fn preserve_aspect_ratio(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `primitiveUnits`
     #[cfg_attr(rust_js, rust_js::link_name = "prop primitiveUnits")]
-    pub fn primitive_units(self, value: impl Value) -> Element {
+    pub fn primitive_units(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `profile`
     #[cfg_attr(rust_js, rust_js::link_name = "prop profile")]
-    pub fn profile(self, value: impl Value) -> Element {
+    pub fn profile(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `property`
     #[cfg_attr(rust_js, rust_js::link_name = "prop property")]
-    pub fn property(self, value: impl Value) -> Element {
+    pub fn property(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `r`
     #[cfg_attr(rust_js, rust_js::link_name = "prop r")]
-    pub fn r(self, value: impl Value) -> Element {
+    pub fn r(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `radioGroup`
     #[cfg_attr(rust_js, rust_js::link_name = "prop radioGroup")]
-    pub fn radio_group(self, value: impl Value) -> Element {
+    pub fn radio_group(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `radius`
     #[cfg_attr(rust_js, rust_js::link_name = "prop radius")]
-    pub fn radius(self, value: impl Value) -> Element {
+    pub fn radius(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `readOnly`
     #[cfg_attr(rust_js, rust_js::link_name = "prop readOnly")]
-    pub fn read_only(self, value: bool) -> Element {
+    pub fn read_only(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `refX`
     #[cfg_attr(rust_js, rust_js::link_name = "prop refX")]
-    pub fn ref_x(self, value: impl Value) -> Element {
+    pub fn ref_x(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `refY`
     #[cfg_attr(rust_js, rust_js::link_name = "prop refY")]
-    pub fn ref_y(self, value: impl Value) -> Element {
+    pub fn ref_y(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `referrerPolicy`
     #[cfg_attr(rust_js, rust_js::link_name = "prop referrerPolicy")]
-    pub fn referrer_policy(self, value: impl Value) -> Element {
+    pub fn referrer_policy(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `rel`
     #[cfg_attr(rust_js, rust_js::link_name = "prop rel")]
-    pub fn rel(self, value: impl Value) -> Element {
+    pub fn rel(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `renderingIntent`
     #[cfg_attr(rust_js, rust_js::link_name = "prop renderingIntent")]
-    pub fn rendering_intent(self, value: impl Value) -> Element {
+    pub fn rendering_intent(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `repeatCount`
     #[cfg_attr(rust_js, rust_js::link_name = "prop repeatCount")]
-    pub fn repeat_count(self, value: impl Value) -> Element {
+    pub fn repeat_count(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `repeatDur`
     #[cfg_attr(rust_js, rust_js::link_name = "prop repeatDur")]
-    pub fn repeat_dur(self, value: impl Value) -> Element {
+    pub fn repeat_dur(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `required`
     #[cfg_attr(rust_js, rust_js::link_name = "prop required")]
-    pub fn required(self, value: bool) -> Element {
+    pub fn required(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `requiredExtensions`
     #[cfg_attr(rust_js, rust_js::link_name = "prop requiredExtensions")]
-    pub fn required_extensions(self, value: impl Value) -> Element {
+    pub fn required_extensions(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `requiredFeatures`
     #[cfg_attr(rust_js, rust_js::link_name = "prop requiredFeatures")]
-    pub fn required_features(self, value: impl Value) -> Element {
+    pub fn required_features(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `resource`
     #[cfg_attr(rust_js, rust_js::link_name = "prop resource")]
-    pub fn resource(self, value: impl Value) -> Element {
+    pub fn resource(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `restart`
     #[cfg_attr(rust_js, rust_js::link_name = "prop restart")]
-    pub fn restart(self, value: impl Value) -> Element {
+    pub fn restart(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `result`
     #[cfg_attr(rust_js, rust_js::link_name = "prop result")]
-    pub fn result(self, value: impl Value) -> Element {
+    pub fn result(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `results`
     #[cfg_attr(rust_js, rust_js::link_name = "prop results")]
-    pub fn results(self, value: impl Value) -> Element {
+    pub fn results(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `reversed`
     #[cfg_attr(rust_js, rust_js::link_name = "prop reversed")]
-    pub fn reversed(self, value: bool) -> Element {
+    pub fn reversed(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `role`
     #[cfg_attr(rust_js, rust_js::link_name = "prop role")]
-    pub fn role(self, value: impl Value) -> Element {
+    pub fn role(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `rotate`
     #[cfg_attr(rust_js, rust_js::link_name = "prop rotate")]
-    pub fn rotate(self, value: impl Value) -> Element {
+    pub fn rotate(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `rowSpan`
     #[cfg_attr(rust_js, rust_js::link_name = "prop rowSpan")]
-    pub fn row_span(self, value: impl Value) -> Element {
+    pub fn row_span(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `rows`
     #[cfg_attr(rust_js, rust_js::link_name = "prop rows")]
-    pub fn rows(self, value: impl Value) -> Element {
+    pub fn rows(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `rx`
     #[cfg_attr(rust_js, rust_js::link_name = "prop rx")]
-    pub fn rx(self, value: impl Value) -> Element {
+    pub fn rx(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `ry`
     #[cfg_attr(rust_js, rust_js::link_name = "prop ry")]
-    pub fn ry(self, value: impl Value) -> Element {
+    pub fn ry(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `sandbox`
     #[cfg_attr(rust_js, rust_js::link_name = "prop sandbox")]
-    pub fn sandbox(self, value: impl Value) -> Element {
+    pub fn sandbox(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `scale`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scale")]
-    pub fn scale(self, value: impl Value) -> Element {
+    pub fn scale(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `scope`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scope")]
-    pub fn scope(self, value: impl Value) -> Element {
+    pub fn scope(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `scoped`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scoped")]
-    pub fn scoped(self, value: bool) -> Element {
+    pub fn scoped(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `scrolling`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrolling")]
-    pub fn scrolling(self, value: impl Value) -> Element {
+    pub fn scrolling(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `seamless`
     #[cfg_attr(rust_js, rust_js::link_name = "prop seamless")]
-    pub fn seamless(self, value: bool) -> Element {
+    pub fn seamless(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `security`
     #[cfg_attr(rust_js, rust_js::link_name = "prop security")]
-    pub fn security(self, value: impl Value) -> Element {
+    pub fn security(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `seed`
     #[cfg_attr(rust_js, rust_js::link_name = "prop seed")]
-    pub fn seed(self, value: impl Value) -> Element {
+    pub fn seed(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `selected`
     #[cfg_attr(rust_js, rust_js::link_name = "prop selected")]
-    pub fn selected(self, value: bool) -> Element {
+    pub fn selected(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `shape`
     #[cfg_attr(rust_js, rust_js::link_name = "prop shape")]
-    pub fn shape(self, value: impl Value) -> Element {
+    pub fn shape(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `shapeRendering`
     #[cfg_attr(rust_js, rust_js::link_name = "prop shapeRendering")]
-    pub fn shape_rendering(self, value: impl Value) -> Element {
+    pub fn shape_rendering(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `size`
     #[cfg_attr(rust_js, rust_js::link_name = "prop size")]
-    pub fn size(self, value: impl Value) -> Element {
+    pub fn size(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `sizes`
     #[cfg_attr(rust_js, rust_js::link_name = "prop sizes")]
-    pub fn sizes(self, value: impl Value) -> Element {
+    pub fn sizes(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `slope`
     #[cfg_attr(rust_js, rust_js::link_name = "prop slope")]
-    pub fn slope(self, value: impl Value) -> Element {
+    pub fn slope(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `spacing`
     #[cfg_attr(rust_js, rust_js::link_name = "prop spacing")]
-    pub fn spacing(self, value: impl Value) -> Element {
+    pub fn spacing(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `span`
     #[cfg_attr(rust_js, rust_js::link_name = "prop span")]
-    pub fn span(self, value: impl Value) -> Element {
+    pub fn span(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `specularConstant`
     #[cfg_attr(rust_js, rust_js::link_name = "prop specularConstant")]
-    pub fn specular_constant(self, value: impl Value) -> Element {
+    pub fn specular_constant(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `specularExponent`
     #[cfg_attr(rust_js, rust_js::link_name = "prop specularExponent")]
-    pub fn specular_exponent(self, value: impl Value) -> Element {
+    pub fn specular_exponent(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `speed`
     #[cfg_attr(rust_js, rust_js::link_name = "prop speed")]
-    pub fn speed(self, value: impl Value) -> Element {
+    pub fn speed(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `spellCheck`
     #[cfg_attr(rust_js, rust_js::link_name = "prop spellCheck")]
-    pub fn spell_check(self, value: impl Value) -> Element {
+    pub fn spell_check(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `spreadMethod`
     #[cfg_attr(rust_js, rust_js::link_name = "prop spreadMethod")]
-    pub fn spread_method(self, value: impl Value) -> Element {
+    pub fn spread_method(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `src`
     #[cfg_attr(rust_js, rust_js::link_name = "prop src")]
-    pub fn src(self, value: impl Value) -> Element {
+    pub fn src(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `srcDoc`
     #[cfg_attr(rust_js, rust_js::link_name = "prop srcDoc")]
-    pub fn src_doc(self, value: impl Value) -> Element {
+    pub fn src_doc(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `srcLang`
     #[cfg_attr(rust_js, rust_js::link_name = "prop srcLang")]
-    pub fn src_lang(self, value: impl Value) -> Element {
+    pub fn src_lang(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `srcSet`
     #[cfg_attr(rust_js, rust_js::link_name = "prop srcSet")]
-    pub fn src_set(self, value: impl Value) -> Element {
+    pub fn src_set(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `start`
     #[cfg_attr(rust_js, rust_js::link_name = "prop start")]
-    pub fn start(self, value: impl Value) -> Element {
+    pub fn start(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `startOffset`
     #[cfg_attr(rust_js, rust_js::link_name = "prop startOffset")]
-    pub fn start_offset(self, value: impl Value) -> Element {
+    pub fn start_offset(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `stdDeviation`
     #[cfg_attr(rust_js, rust_js::link_name = "prop stdDeviation")]
-    pub fn std_deviation(self, value: impl Value) -> Element {
+    pub fn std_deviation(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `stemh`
     #[cfg_attr(rust_js, rust_js::link_name = "prop stemh")]
-    pub fn stemh(self, value: impl Value) -> Element {
+    pub fn stemh(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `stemv`
     #[cfg_attr(rust_js, rust_js::link_name = "prop stemv")]
-    pub fn stemv(self, value: impl Value) -> Element {
+    pub fn stemv(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `step`
     #[cfg_attr(rust_js, rust_js::link_name = "prop step")]
-    pub fn step(self, value: impl Value) -> Element {
+    pub fn step(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `stitchTiles`
     #[cfg_attr(rust_js, rust_js::link_name = "prop stitchTiles")]
-    pub fn stitch_tiles(self, value: impl Value) -> Element {
+    pub fn stitch_tiles(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `stopColor`
     #[cfg_attr(rust_js, rust_js::link_name = "prop stopColor")]
-    pub fn stop_color(self, value: impl Value) -> Element {
+    pub fn stop_color(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `stopOpacity`
     #[cfg_attr(rust_js, rust_js::link_name = "prop stopOpacity")]
-    pub fn stop_opacity(self, value: impl Value) -> Element {
+    pub fn stop_opacity(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `strikethroughPosition`
     #[cfg_attr(rust_js, rust_js::link_name = "prop strikethroughPosition")]
-    pub fn strikethrough_position(self, value: impl Value) -> Element {
+    pub fn strikethrough_position(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `strikethroughThickness`
     #[cfg_attr(rust_js, rust_js::link_name = "prop strikethroughThickness")]
-    pub fn strikethrough_thickness(self, value: impl Value) -> Element {
+    pub fn strikethrough_thickness(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `string`
     #[cfg_attr(rust_js, rust_js::link_name = "prop string")]
-    pub fn string(self, value: impl Value) -> Element {
+    pub fn string(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `stroke`
     #[cfg_attr(rust_js, rust_js::link_name = "prop stroke")]
-    pub fn stroke(self, value: impl Value) -> Element {
+    pub fn stroke(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `strokeDasharray`
     #[cfg_attr(rust_js, rust_js::link_name = "prop strokeDasharray")]
-    pub fn stroke_dasharray(self, value: impl Value) -> Element {
+    pub fn stroke_dasharray(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `strokeDashoffset`
     #[cfg_attr(rust_js, rust_js::link_name = "prop strokeDashoffset")]
-    pub fn stroke_dashoffset(self, value: impl Value) -> Element {
+    pub fn stroke_dashoffset(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `strokeLinecap`
     #[cfg_attr(rust_js, rust_js::link_name = "prop strokeLinecap")]
-    pub fn stroke_linecap(self, value: impl Value) -> Element {
+    pub fn stroke_linecap(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `strokeLinejoin`
     #[cfg_attr(rust_js, rust_js::link_name = "prop strokeLinejoin")]
-    pub fn stroke_linejoin(self, value: impl Value) -> Element {
+    pub fn stroke_linejoin(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `strokeMiterlimit`
     #[cfg_attr(rust_js, rust_js::link_name = "prop strokeMiterlimit")]
-    pub fn stroke_miterlimit(self, value: impl Value) -> Element {
+    pub fn stroke_miterlimit(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `strokeOpacity`
     #[cfg_attr(rust_js, rust_js::link_name = "prop strokeOpacity")]
-    pub fn stroke_opacity(self, value: impl Value) -> Element {
+    pub fn stroke_opacity(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `strokeWidth`
     #[cfg_attr(rust_js, rust_js::link_name = "prop strokeWidth")]
-    pub fn stroke_width(self, value: impl Value) -> Element {
+    pub fn stroke_width(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `summary`
     #[cfg_attr(rust_js, rust_js::link_name = "prop summary")]
-    pub fn summary(self, value: impl Value) -> Element {
+    pub fn summary(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `suppressContentEditableWarning`
     #[cfg_attr(rust_js, rust_js::link_name = "prop suppressContentEditableWarning")]
-    pub fn suppress_content_editable_warning(self, value: impl Value) -> Element {
+    pub fn suppress_content_editable_warning(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `suppressHydrationWarning`
     #[cfg_attr(rust_js, rust_js::link_name = "prop suppressHydrationWarning")]
-    pub fn suppress_hydration_warning(self, value: impl Value) -> Element {
+    pub fn suppress_hydration_warning(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `surfaceScale`
     #[cfg_attr(rust_js, rust_js::link_name = "prop surfaceScale")]
-    pub fn surface_scale(self, value: impl Value) -> Element {
+    pub fn surface_scale(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `systemLanguage`
     #[cfg_attr(rust_js, rust_js::link_name = "prop systemLanguage")]
-    pub fn system_language(self, value: impl Value) -> Element {
+    pub fn system_language(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `tabIndex`
     #[cfg_attr(rust_js, rust_js::link_name = "prop tabIndex")]
-    pub fn tab_index(self, value: impl Value) -> Element {
+    pub fn tab_index(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `tableValues`
     #[cfg_attr(rust_js, rust_js::link_name = "prop tableValues")]
-    pub fn table_values(self, value: impl Value) -> Element {
+    pub fn table_values(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `target`
     #[cfg_attr(rust_js, rust_js::link_name = "prop target")]
-    pub fn target(self, value: impl Value) -> Element {
+    pub fn target(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `targetX`
     #[cfg_attr(rust_js, rust_js::link_name = "prop targetX")]
-    pub fn target_x(self, value: impl Value) -> Element {
+    pub fn target_x(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `targetY`
     #[cfg_attr(rust_js, rust_js::link_name = "prop targetY")]
-    pub fn target_y(self, value: impl Value) -> Element {
+    pub fn target_y(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `textAnchor`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textAnchor")]
-    pub fn text_anchor(self, value: impl Value) -> Element {
+    pub fn text_anchor(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `textDecoration`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textDecoration")]
-    pub fn text_decoration(self, value: impl Value) -> Element {
+    pub fn text_decoration(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `textLength`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textLength")]
-    pub fn text_length(self, value: impl Value) -> Element {
+    pub fn text_length(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `textRendering`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textRendering")]
-    pub fn text_rendering(self, value: impl Value) -> Element {
+    pub fn text_rendering(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `title`
     #[cfg_attr(rust_js, rust_js::link_name = "prop title")]
-    pub fn title(self, value: impl Value) -> Element {
+    pub fn title(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `to`
     #[cfg_attr(rust_js, rust_js::link_name = "prop to")]
-    pub fn to(self, value: impl Value) -> Element {
+    pub fn to(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `transform`
     #[cfg_attr(rust_js, rust_js::link_name = "prop transform")]
-    pub fn transform(self, value: impl Value) -> Element {
+    pub fn transform(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `transformOrigin`
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop transformOrigin")]
-    pub fn transform_origin(self, value: impl Value) -> Element {
+    pub fn transform_origin(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `type`
     #[cfg_attr(rust_js, rust_js::link_name = "prop type")]
-    pub fn r#type(self, value: impl Value) -> Element {
+    pub fn r#type(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `typeof`
     #[cfg_attr(rust_js, rust_js::link_name = "prop typeof")]
-    pub fn r#typeof(self, value: impl Value) -> Element {
+    pub fn r#typeof(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `u1`
     #[cfg_attr(rust_js, rust_js::link_name = "prop u1")]
-    pub fn u1(self, value: impl Value) -> Element {
+    pub fn u1(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `u2`
     #[cfg_attr(rust_js, rust_js::link_name = "prop u2")]
-    pub fn u2(self, value: impl Value) -> Element {
+    pub fn u2(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `underlinePosition`
     #[cfg_attr(rust_js, rust_js::link_name = "prop underlinePosition")]
-    pub fn underline_position(self, value: impl Value) -> Element {
+    pub fn underline_position(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `underlineThickness`
     #[cfg_attr(rust_js, rust_js::link_name = "prop underlineThickness")]
-    pub fn underline_thickness(self, value: impl Value) -> Element {
+    pub fn underline_thickness(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `unicode`
     #[cfg_attr(rust_js, rust_js::link_name = "prop unicode")]
-    pub fn unicode(self, value: impl Value) -> Element {
+    pub fn unicode(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `unicodeBidi`
     #[cfg_attr(rust_js, rust_js::link_name = "prop unicodeBidi")]
-    pub fn unicode_bidi(self, value: impl Value) -> Element {
+    pub fn unicode_bidi(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `unicodeRange`
     #[cfg_attr(rust_js, rust_js::link_name = "prop unicodeRange")]
-    pub fn unicode_range(self, value: impl Value) -> Element {
+    pub fn unicode_range(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `unitsPerEm`
     #[cfg_attr(rust_js, rust_js::link_name = "prop unitsPerEm")]
-    pub fn units_per_em(self, value: impl Value) -> Element {
+    pub fn units_per_em(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `unselectable`
     #[cfg_attr(rust_js, rust_js::link_name = "prop unselectable")]
-    pub fn unselectable(self, value: impl Value) -> Element {
+    pub fn unselectable(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `useMap`
     #[cfg_attr(rust_js, rust_js::link_name = "prop useMap")]
-    pub fn use_map(self, value: impl Value) -> Element {
+    pub fn use_map(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `vAlphabetic`
     #[cfg_attr(rust_js, rust_js::link_name = "prop vAlphabetic")]
-    pub fn v_alphabetic(self, value: impl Value) -> Element {
+    pub fn v_alphabetic(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `vHanging`
     #[cfg_attr(rust_js, rust_js::link_name = "prop vHanging")]
-    pub fn v_hanging(self, value: impl Value) -> Element {
+    pub fn v_hanging(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `vIdeographic`
     #[cfg_attr(rust_js, rust_js::link_name = "prop vIdeographic")]
-    pub fn v_ideographic(self, value: impl Value) -> Element {
+    pub fn v_ideographic(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `vMathematical`
     #[cfg_attr(rust_js, rust_js::link_name = "prop vMathematical")]
-    pub fn v_mathematical(self, value: impl Value) -> Element {
+    pub fn v_mathematical(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `value`
     #[cfg_attr(rust_js, rust_js::link_name = "prop value")]
-    pub fn value(self, value: impl Value) -> Element {
+    pub fn value(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `values`
     #[cfg_attr(rust_js, rust_js::link_name = "prop values")]
-    pub fn values(self, value: impl Value) -> Element {
+    pub fn values(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `vectorEffect`
     #[cfg_attr(rust_js, rust_js::link_name = "prop vectorEffect")]
-    pub fn vector_effect(self, value: impl Value) -> Element {
+    pub fn vector_effect(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `version`
     #[cfg_attr(rust_js, rust_js::link_name = "prop version")]
-    pub fn version(self, value: impl Value) -> Element {
+    pub fn version(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `vertAdvY`
     #[cfg_attr(rust_js, rust_js::link_name = "prop vertAdvY")]
-    pub fn vert_adv_y(self, value: impl Value) -> Element {
+    pub fn vert_adv_y(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `vertOriginX`
     #[cfg_attr(rust_js, rust_js::link_name = "prop vertOriginX")]
-    pub fn vert_origin_x(self, value: impl Value) -> Element {
+    pub fn vert_origin_x(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `vertOriginY`
     #[cfg_attr(rust_js, rust_js::link_name = "prop vertOriginY")]
-    pub fn vert_origin_y(self, value: impl Value) -> Element {
+    pub fn vert_origin_y(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `viewBox`
     #[cfg_attr(rust_js, rust_js::link_name = "prop viewBox")]
-    pub fn view_box(self, value: impl Value) -> Element {
+    pub fn view_box(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `viewTarget`
     #[cfg_attr(rust_js, rust_js::link_name = "prop viewTarget")]
-    pub fn view_target(self, value: impl Value) -> Element {
+    pub fn view_target(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `visibility`
     #[cfg_attr(rust_js, rust_js::link_name = "prop visibility")]
-    pub fn visibility(self, value: impl Value) -> Element {
+    pub fn visibility(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `vocab`
     #[cfg_attr(rust_js, rust_js::link_name = "prop vocab")]
-    pub fn vocab(self, value: impl Value) -> Element {
+    pub fn vocab(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `width`
     #[cfg_attr(rust_js, rust_js::link_name = "prop width")]
-    pub fn width(self, value: impl Value) -> Element {
+    pub fn width(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `widths`
     #[cfg_attr(rust_js, rust_js::link_name = "prop widths")]
-    pub fn widths(self, value: impl Value) -> Element {
+    pub fn widths(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `wmode`
     #[cfg_attr(rust_js, rust_js::link_name = "prop wmode")]
-    pub fn wmode(self, value: impl Value) -> Element {
+    pub fn wmode(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `wordSpacing`
     #[cfg_attr(rust_js, rust_js::link_name = "prop wordSpacing")]
-    pub fn word_spacing(self, value: impl Value) -> Element {
+    pub fn word_spacing(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `wrap`
     #[cfg_attr(rust_js, rust_js::link_name = "prop wrap")]
-    pub fn wrap(self, value: impl Value) -> Element {
+    pub fn wrap(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `writingMode`
     #[cfg_attr(rust_js, rust_js::link_name = "prop writingMode")]
-    pub fn writing_mode(self, value: impl Value) -> Element {
+    pub fn writing_mode(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `x`
     #[cfg_attr(rust_js, rust_js::link_name = "prop x")]
-    pub fn x(self, value: impl Value) -> Element {
+    pub fn x(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `x1`
     #[cfg_attr(rust_js, rust_js::link_name = "prop x1")]
-    pub fn x1(self, value: impl Value) -> Element {
+    pub fn x1(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `x2`
     #[cfg_attr(rust_js, rust_js::link_name = "prop x2")]
-    pub fn x2(self, value: impl Value) -> Element {
+    pub fn x2(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `xChannelSelector`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xChannelSelector")]
-    pub fn x_channel_selector(self, value: impl Value) -> Element {
+    pub fn x_channel_selector(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `xHeight`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xHeight")]
-    pub fn x_height(self, value: impl Value) -> Element {
+    pub fn x_height(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `xlinkActuate`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xlinkActuate")]
-    pub fn xlink_actuate(self, value: impl Value) -> Element {
+    pub fn xlink_actuate(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `xlinkArcrole`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xlinkArcrole")]
-    pub fn xlink_arcrole(self, value: impl Value) -> Element {
+    pub fn xlink_arcrole(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `xlinkHref`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xlinkHref")]
-    pub fn xlink_href(self, value: impl Value) -> Element {
+    pub fn xlink_href(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `xlinkRole`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xlinkRole")]
-    pub fn xlink_role(self, value: impl Value) -> Element {
+    pub fn xlink_role(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `xlinkShow`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xlinkShow")]
-    pub fn xlink_show(self, value: impl Value) -> Element {
+    pub fn xlink_show(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `xlinkTitle`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xlinkTitle")]
-    pub fn xlink_title(self, value: impl Value) -> Element {
+    pub fn xlink_title(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `xlinkType`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xlinkType")]
-    pub fn xlink_type(self, value: impl Value) -> Element {
+    pub fn xlink_type(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `xmlBase`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xmlBase")]
-    pub fn xml_base(self, value: impl Value) -> Element {
+    pub fn xml_base(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `xmlLang`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xmlLang")]
-    pub fn xml_lang(self, value: impl Value) -> Element {
+    pub fn xml_lang(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `xmlSpace`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xmlSpace")]
-    pub fn xml_space(self, value: impl Value) -> Element {
+    pub fn xml_space(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `xmlns`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xmlns")]
-    pub fn xmlns(self, value: impl Value) -> Element {
+    pub fn xmlns(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `xmlnsXlink`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xmlnsXlink")]
-    pub fn xmlns_xlink(self, value: impl Value) -> Element {
+    pub fn xmlns_xlink(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `y`
     #[cfg_attr(rust_js, rust_js::link_name = "prop y")]
-    pub fn y(self, value: impl Value) -> Element {
+    pub fn y(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `y1`
     #[cfg_attr(rust_js, rust_js::link_name = "prop y1")]
-    pub fn y1(self, value: impl Value) -> Element {
+    pub fn y1(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `y2`
     #[cfg_attr(rust_js, rust_js::link_name = "prop y2")]
-    pub fn y2(self, value: impl Value) -> Element {
+    pub fn y2(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `yChannelSelector`
     #[cfg_attr(rust_js, rust_js::link_name = "prop yChannelSelector")]
-    pub fn y_channel_selector(self, value: impl Value) -> Element {
+    pub fn y_channel_selector(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `z`
     #[cfg_attr(rust_js, rust_js::link_name = "prop z")]
-    pub fn z(self, value: impl Value) -> Element {
+    pub fn z(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `zoomAndPan`
     #[cfg_attr(rust_js, rust_js::link_name = "prop zoomAndPan")]
-    pub fn zoom_and_pan(self, value: impl Value) -> Element {
+    pub fn zoom_and_pan(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
 }
 
 /// Event handlers: `on_click` is `onClick`. A handler must not borrow
-/// anything, since it runs later: write it `move |e| ..`.
+/// anything, since it runs later: write it `move |e| ..`. Its event is of
+/// the element's, `event::Mouse<T>` (ADR 0224).
 #[doc(hidden)]
-impl Element {
+impl<T> Element<T> {
     /// `onAbort`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onAbort")]
-    pub fn on_abort(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_abort(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onAbortCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onAbortCapture")]
-    pub fn on_abort_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_abort_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onAnimationEnd`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onAnimationEnd")]
-    pub fn on_animation_end(self, handler: impl Fn(&event::Animation) + 'static) -> Element {
+    pub fn on_animation_end(self, handler: impl Fn(&event::Animation<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onAnimationEndCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onAnimationEndCapture")]
-    pub fn on_animation_end_capture(self, handler: impl Fn(&event::Animation) + 'static) -> Element {
+    pub fn on_animation_end_capture(self, handler: impl Fn(&event::Animation<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onAnimationIteration`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onAnimationIteration")]
-    pub fn on_animation_iteration(self, handler: impl Fn(&event::Animation) + 'static) -> Element {
+    pub fn on_animation_iteration(self, handler: impl Fn(&event::Animation<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onAnimationIterationCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onAnimationIterationCapture")]
-    pub fn on_animation_iteration_capture(self, handler: impl Fn(&event::Animation) + 'static) -> Element {
+    pub fn on_animation_iteration_capture(self, handler: impl Fn(&event::Animation<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onAnimationStart`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onAnimationStart")]
-    pub fn on_animation_start(self, handler: impl Fn(&event::Animation) + 'static) -> Element {
+    pub fn on_animation_start(self, handler: impl Fn(&event::Animation<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onAnimationStartCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onAnimationStartCapture")]
-    pub fn on_animation_start_capture(self, handler: impl Fn(&event::Animation) + 'static) -> Element {
+    pub fn on_animation_start_capture(self, handler: impl Fn(&event::Animation<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onAuxClick`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onAuxClick")]
-    pub fn on_aux_click(self, handler: impl Fn(&event::Mouse) + 'static) -> Element {
+    pub fn on_aux_click(self, handler: impl Fn(&event::Mouse<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onAuxClickCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onAuxClickCapture")]
-    pub fn on_aux_click_capture(self, handler: impl Fn(&event::Mouse) + 'static) -> Element {
+    pub fn on_aux_click_capture(self, handler: impl Fn(&event::Mouse<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onBeforeInput`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onBeforeInput")]
-    pub fn on_before_input(self, handler: impl Fn(&event::Input) + 'static) -> Element {
+    pub fn on_before_input(self, handler: impl Fn(&event::Input<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onBeforeInputCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onBeforeInputCapture")]
-    pub fn on_before_input_capture(self, handler: impl Fn(&event::Input) + 'static) -> Element {
+    pub fn on_before_input_capture(self, handler: impl Fn(&event::Input<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onBeforeToggle`
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop onBeforeToggle")]
-    pub fn on_before_toggle(self, handler: impl Fn(&event::Toggle) + 'static) -> Element {
+    pub fn on_before_toggle(self, handler: impl Fn(&event::Toggle<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onBeforeToggleCapture`
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop onBeforeToggleCapture")]
-    pub fn on_before_toggle_capture(self, handler: impl Fn(&event::Toggle) + 'static) -> Element {
+    pub fn on_before_toggle_capture(self, handler: impl Fn(&event::Toggle<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onBlur`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onBlur")]
-    pub fn on_blur(self, handler: impl Fn(&event::Focus) + 'static) -> Element {
+    pub fn on_blur(self, handler: impl Fn(&event::Focus<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onBlurCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onBlurCapture")]
-    pub fn on_blur_capture(self, handler: impl Fn(&event::Focus) + 'static) -> Element {
+    pub fn on_blur_capture(self, handler: impl Fn(&event::Focus<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onCanPlay`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onCanPlay")]
-    pub fn on_can_play(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_can_play(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onCanPlayCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onCanPlayCapture")]
-    pub fn on_can_play_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_can_play_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onCanPlayThrough`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onCanPlayThrough")]
-    pub fn on_can_play_through(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_can_play_through(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onCanPlayThroughCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onCanPlayThroughCapture")]
-    pub fn on_can_play_through_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_can_play_through_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onCancel`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onCancel")]
-    pub fn on_cancel(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_cancel(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onCancelCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onCancelCapture")]
-    pub fn on_cancel_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_cancel_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onChange`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onChange")]
-    pub fn on_change(self, handler: impl Fn(&event::Change) + 'static) -> Element {
+    pub fn on_change(self, handler: impl Fn(&event::Change<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onChangeCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onChangeCapture")]
-    pub fn on_change_capture(self, handler: impl Fn(&event::Change) + 'static) -> Element {
+    pub fn on_change_capture(self, handler: impl Fn(&event::Change<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onClick`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onClick")]
-    pub fn on_click(self, handler: impl Fn(&event::Mouse) + 'static) -> Element {
+    pub fn on_click(self, handler: impl Fn(&event::Mouse<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onClickCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onClickCapture")]
-    pub fn on_click_capture(self, handler: impl Fn(&event::Mouse) + 'static) -> Element {
+    pub fn on_click_capture(self, handler: impl Fn(&event::Mouse<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onClose`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onClose")]
-    pub fn on_close(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_close(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onCloseCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onCloseCapture")]
-    pub fn on_close_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_close_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onCompositionEnd`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onCompositionEnd")]
-    pub fn on_composition_end(self, handler: impl Fn(&event::Composition) + 'static) -> Element {
+    pub fn on_composition_end(self, handler: impl Fn(&event::Composition<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onCompositionEndCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onCompositionEndCapture")]
-    pub fn on_composition_end_capture(self, handler: impl Fn(&event::Composition) + 'static) -> Element {
+    pub fn on_composition_end_capture(self, handler: impl Fn(&event::Composition<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onCompositionStart`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onCompositionStart")]
-    pub fn on_composition_start(self, handler: impl Fn(&event::Composition) + 'static) -> Element {
+    pub fn on_composition_start(self, handler: impl Fn(&event::Composition<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onCompositionStartCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onCompositionStartCapture")]
-    pub fn on_composition_start_capture(self, handler: impl Fn(&event::Composition) + 'static) -> Element {
+    pub fn on_composition_start_capture(self, handler: impl Fn(&event::Composition<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onCompositionUpdate`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onCompositionUpdate")]
-    pub fn on_composition_update(self, handler: impl Fn(&event::Composition) + 'static) -> Element {
+    pub fn on_composition_update(self, handler: impl Fn(&event::Composition<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onCompositionUpdateCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onCompositionUpdateCapture")]
-    pub fn on_composition_update_capture(self, handler: impl Fn(&event::Composition) + 'static) -> Element {
+    pub fn on_composition_update_capture(self, handler: impl Fn(&event::Composition<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onContextMenu`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onContextMenu")]
-    pub fn on_context_menu(self, handler: impl Fn(&event::Mouse) + 'static) -> Element {
+    pub fn on_context_menu(self, handler: impl Fn(&event::Mouse<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onContextMenuCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onContextMenuCapture")]
-    pub fn on_context_menu_capture(self, handler: impl Fn(&event::Mouse) + 'static) -> Element {
+    pub fn on_context_menu_capture(self, handler: impl Fn(&event::Mouse<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onCopy`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onCopy")]
-    pub fn on_copy(self, handler: impl Fn(&event::Clipboard) + 'static) -> Element {
+    pub fn on_copy(self, handler: impl Fn(&event::Clipboard<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onCopyCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onCopyCapture")]
-    pub fn on_copy_capture(self, handler: impl Fn(&event::Clipboard) + 'static) -> Element {
+    pub fn on_copy_capture(self, handler: impl Fn(&event::Clipboard<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onCut`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onCut")]
-    pub fn on_cut(self, handler: impl Fn(&event::Clipboard) + 'static) -> Element {
+    pub fn on_cut(self, handler: impl Fn(&event::Clipboard<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onCutCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onCutCapture")]
-    pub fn on_cut_capture(self, handler: impl Fn(&event::Clipboard) + 'static) -> Element {
+    pub fn on_cut_capture(self, handler: impl Fn(&event::Clipboard<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onDoubleClick`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onDoubleClick")]
-    pub fn on_double_click(self, handler: impl Fn(&event::Mouse) + 'static) -> Element {
+    pub fn on_double_click(self, handler: impl Fn(&event::Mouse<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onDoubleClickCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onDoubleClickCapture")]
-    pub fn on_double_click_capture(self, handler: impl Fn(&event::Mouse) + 'static) -> Element {
+    pub fn on_double_click_capture(self, handler: impl Fn(&event::Mouse<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onDrag`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onDrag")]
-    pub fn on_drag(self, handler: impl Fn(&event::Drag) + 'static) -> Element {
+    pub fn on_drag(self, handler: impl Fn(&event::Drag<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onDragCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onDragCapture")]
-    pub fn on_drag_capture(self, handler: impl Fn(&event::Drag) + 'static) -> Element {
+    pub fn on_drag_capture(self, handler: impl Fn(&event::Drag<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onDragEnd`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onDragEnd")]
-    pub fn on_drag_end(self, handler: impl Fn(&event::Drag) + 'static) -> Element {
+    pub fn on_drag_end(self, handler: impl Fn(&event::Drag<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onDragEndCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onDragEndCapture")]
-    pub fn on_drag_end_capture(self, handler: impl Fn(&event::Drag) + 'static) -> Element {
+    pub fn on_drag_end_capture(self, handler: impl Fn(&event::Drag<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onDragEnter`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onDragEnter")]
-    pub fn on_drag_enter(self, handler: impl Fn(&event::Drag) + 'static) -> Element {
+    pub fn on_drag_enter(self, handler: impl Fn(&event::Drag<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onDragEnterCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onDragEnterCapture")]
-    pub fn on_drag_enter_capture(self, handler: impl Fn(&event::Drag) + 'static) -> Element {
+    pub fn on_drag_enter_capture(self, handler: impl Fn(&event::Drag<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onDragExit`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onDragExit")]
-    pub fn on_drag_exit(self, handler: impl Fn(&event::Drag) + 'static) -> Element {
+    pub fn on_drag_exit(self, handler: impl Fn(&event::Drag<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onDragExitCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onDragExitCapture")]
-    pub fn on_drag_exit_capture(self, handler: impl Fn(&event::Drag) + 'static) -> Element {
+    pub fn on_drag_exit_capture(self, handler: impl Fn(&event::Drag<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onDragLeave`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onDragLeave")]
-    pub fn on_drag_leave(self, handler: impl Fn(&event::Drag) + 'static) -> Element {
+    pub fn on_drag_leave(self, handler: impl Fn(&event::Drag<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onDragLeaveCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onDragLeaveCapture")]
-    pub fn on_drag_leave_capture(self, handler: impl Fn(&event::Drag) + 'static) -> Element {
+    pub fn on_drag_leave_capture(self, handler: impl Fn(&event::Drag<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onDragOver`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onDragOver")]
-    pub fn on_drag_over(self, handler: impl Fn(&event::Drag) + 'static) -> Element {
+    pub fn on_drag_over(self, handler: impl Fn(&event::Drag<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onDragOverCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onDragOverCapture")]
-    pub fn on_drag_over_capture(self, handler: impl Fn(&event::Drag) + 'static) -> Element {
+    pub fn on_drag_over_capture(self, handler: impl Fn(&event::Drag<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onDragStart`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onDragStart")]
-    pub fn on_drag_start(self, handler: impl Fn(&event::Drag) + 'static) -> Element {
+    pub fn on_drag_start(self, handler: impl Fn(&event::Drag<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onDragStartCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onDragStartCapture")]
-    pub fn on_drag_start_capture(self, handler: impl Fn(&event::Drag) + 'static) -> Element {
+    pub fn on_drag_start_capture(self, handler: impl Fn(&event::Drag<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onDrop`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onDrop")]
-    pub fn on_drop(self, handler: impl Fn(&event::Drag) + 'static) -> Element {
+    pub fn on_drop(self, handler: impl Fn(&event::Drag<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onDropCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onDropCapture")]
-    pub fn on_drop_capture(self, handler: impl Fn(&event::Drag) + 'static) -> Element {
+    pub fn on_drop_capture(self, handler: impl Fn(&event::Drag<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onDurationChange`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onDurationChange")]
-    pub fn on_duration_change(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_duration_change(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onDurationChangeCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onDurationChangeCapture")]
-    pub fn on_duration_change_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_duration_change_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onEmptied`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onEmptied")]
-    pub fn on_emptied(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_emptied(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onEmptiedCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onEmptiedCapture")]
-    pub fn on_emptied_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_emptied_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onEncrypted`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onEncrypted")]
-    pub fn on_encrypted(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_encrypted(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onEncryptedCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onEncryptedCapture")]
-    pub fn on_encrypted_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_encrypted_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onEnded`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onEnded")]
-    pub fn on_ended(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_ended(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onEndedCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onEndedCapture")]
-    pub fn on_ended_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_ended_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onError`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onError")]
-    pub fn on_error(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_error(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onErrorCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onErrorCapture")]
-    pub fn on_error_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_error_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onFocus`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onFocus")]
-    pub fn on_focus(self, handler: impl Fn(&event::Focus) + 'static) -> Element {
+    pub fn on_focus(self, handler: impl Fn(&event::Focus<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onFocusCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onFocusCapture")]
-    pub fn on_focus_capture(self, handler: impl Fn(&event::Focus) + 'static) -> Element {
+    pub fn on_focus_capture(self, handler: impl Fn(&event::Focus<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onFullscreenChange`
     #[cfg(react = "19.3")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop onFullscreenChange")]
-    pub fn on_fullscreen_change(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_fullscreen_change(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onFullscreenChangeCapture`
     #[cfg(react = "19.3")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop onFullscreenChangeCapture")]
-    pub fn on_fullscreen_change_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_fullscreen_change_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onFullscreenError`
     #[cfg(react = "19.3")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop onFullscreenError")]
-    pub fn on_fullscreen_error(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_fullscreen_error(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onFullscreenErrorCapture`
     #[cfg(react = "19.3")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop onFullscreenErrorCapture")]
-    pub fn on_fullscreen_error_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_fullscreen_error_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onGotPointerCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onGotPointerCapture")]
-    pub fn on_got_pointer_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_got_pointer_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onGotPointerCaptureCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onGotPointerCaptureCapture")]
-    pub fn on_got_pointer_capture_capture(self, handler: impl Fn(&event::Pointer) + 'static) -> Element {
+    pub fn on_got_pointer_capture_capture(self, handler: impl Fn(&event::Pointer<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onInput`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onInput")]
-    pub fn on_input(self, handler: impl Fn(&event::Change) + 'static) -> Element {
+    pub fn on_input(self, handler: impl Fn(&event::Change<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onInputCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onInputCapture")]
-    pub fn on_input_capture(self, handler: impl Fn(&event::Change) + 'static) -> Element {
+    pub fn on_input_capture(self, handler: impl Fn(&event::Change<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onInvalid`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onInvalid")]
-    pub fn on_invalid(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_invalid(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onInvalidCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onInvalidCapture")]
-    pub fn on_invalid_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_invalid_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onKeyDown`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onKeyDown")]
-    pub fn on_key_down(self, handler: impl Fn(&event::Keyboard) + 'static) -> Element {
+    pub fn on_key_down(self, handler: impl Fn(&event::Keyboard<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onKeyDownCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onKeyDownCapture")]
-    pub fn on_key_down_capture(self, handler: impl Fn(&event::Keyboard) + 'static) -> Element {
+    pub fn on_key_down_capture(self, handler: impl Fn(&event::Keyboard<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onKeyPress`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onKeyPress")]
-    pub fn on_key_press(self, handler: impl Fn(&event::Keyboard) + 'static) -> Element {
+    pub fn on_key_press(self, handler: impl Fn(&event::Keyboard<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onKeyPressCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onKeyPressCapture")]
-    pub fn on_key_press_capture(self, handler: impl Fn(&event::Keyboard) + 'static) -> Element {
+    pub fn on_key_press_capture(self, handler: impl Fn(&event::Keyboard<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onKeyUp`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onKeyUp")]
-    pub fn on_key_up(self, handler: impl Fn(&event::Keyboard) + 'static) -> Element {
+    pub fn on_key_up(self, handler: impl Fn(&event::Keyboard<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onKeyUpCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onKeyUpCapture")]
-    pub fn on_key_up_capture(self, handler: impl Fn(&event::Keyboard) + 'static) -> Element {
+    pub fn on_key_up_capture(self, handler: impl Fn(&event::Keyboard<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onLoad`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onLoad")]
-    pub fn on_load(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_load(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onLoadCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onLoadCapture")]
-    pub fn on_load_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_load_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onLoadStart`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onLoadStart")]
-    pub fn on_load_start(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_load_start(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onLoadStartCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onLoadStartCapture")]
-    pub fn on_load_start_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_load_start_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onLoadedData`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onLoadedData")]
-    pub fn on_loaded_data(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_loaded_data(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onLoadedDataCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onLoadedDataCapture")]
-    pub fn on_loaded_data_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_loaded_data_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onLoadedMetadata`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onLoadedMetadata")]
-    pub fn on_loaded_metadata(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_loaded_metadata(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onLoadedMetadataCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onLoadedMetadataCapture")]
-    pub fn on_loaded_metadata_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_loaded_metadata_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onLostPointerCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onLostPointerCapture")]
-    pub fn on_lost_pointer_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_lost_pointer_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onLostPointerCaptureCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onLostPointerCaptureCapture")]
-    pub fn on_lost_pointer_capture_capture(self, handler: impl Fn(&event::Pointer) + 'static) -> Element {
+    pub fn on_lost_pointer_capture_capture(self, handler: impl Fn(&event::Pointer<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onMouseDown`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onMouseDown")]
-    pub fn on_mouse_down(self, handler: impl Fn(&event::Mouse) + 'static) -> Element {
+    pub fn on_mouse_down(self, handler: impl Fn(&event::Mouse<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onMouseDownCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onMouseDownCapture")]
-    pub fn on_mouse_down_capture(self, handler: impl Fn(&event::Mouse) + 'static) -> Element {
+    pub fn on_mouse_down_capture(self, handler: impl Fn(&event::Mouse<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onMouseEnter`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onMouseEnter")]
-    pub fn on_mouse_enter(self, handler: impl Fn(&event::Mouse) + 'static) -> Element {
+    pub fn on_mouse_enter(self, handler: impl Fn(&event::Mouse<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onMouseLeave`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onMouseLeave")]
-    pub fn on_mouse_leave(self, handler: impl Fn(&event::Mouse) + 'static) -> Element {
+    pub fn on_mouse_leave(self, handler: impl Fn(&event::Mouse<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onMouseMove`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onMouseMove")]
-    pub fn on_mouse_move(self, handler: impl Fn(&event::Mouse) + 'static) -> Element {
+    pub fn on_mouse_move(self, handler: impl Fn(&event::Mouse<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onMouseMoveCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onMouseMoveCapture")]
-    pub fn on_mouse_move_capture(self, handler: impl Fn(&event::Mouse) + 'static) -> Element {
+    pub fn on_mouse_move_capture(self, handler: impl Fn(&event::Mouse<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onMouseOut`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onMouseOut")]
-    pub fn on_mouse_out(self, handler: impl Fn(&event::Mouse) + 'static) -> Element {
+    pub fn on_mouse_out(self, handler: impl Fn(&event::Mouse<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onMouseOutCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onMouseOutCapture")]
-    pub fn on_mouse_out_capture(self, handler: impl Fn(&event::Mouse) + 'static) -> Element {
+    pub fn on_mouse_out_capture(self, handler: impl Fn(&event::Mouse<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onMouseOver`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onMouseOver")]
-    pub fn on_mouse_over(self, handler: impl Fn(&event::Mouse) + 'static) -> Element {
+    pub fn on_mouse_over(self, handler: impl Fn(&event::Mouse<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onMouseOverCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onMouseOverCapture")]
-    pub fn on_mouse_over_capture(self, handler: impl Fn(&event::Mouse) + 'static) -> Element {
+    pub fn on_mouse_over_capture(self, handler: impl Fn(&event::Mouse<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onMouseUp`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onMouseUp")]
-    pub fn on_mouse_up(self, handler: impl Fn(&event::Mouse) + 'static) -> Element {
+    pub fn on_mouse_up(self, handler: impl Fn(&event::Mouse<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onMouseUpCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onMouseUpCapture")]
-    pub fn on_mouse_up_capture(self, handler: impl Fn(&event::Mouse) + 'static) -> Element {
+    pub fn on_mouse_up_capture(self, handler: impl Fn(&event::Mouse<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onPaste`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onPaste")]
-    pub fn on_paste(self, handler: impl Fn(&event::Clipboard) + 'static) -> Element {
+    pub fn on_paste(self, handler: impl Fn(&event::Clipboard<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onPasteCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onPasteCapture")]
-    pub fn on_paste_capture(self, handler: impl Fn(&event::Clipboard) + 'static) -> Element {
+    pub fn on_paste_capture(self, handler: impl Fn(&event::Clipboard<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onPause`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onPause")]
-    pub fn on_pause(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_pause(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onPauseCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onPauseCapture")]
-    pub fn on_pause_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_pause_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onPlay`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onPlay")]
-    pub fn on_play(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_play(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onPlayCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onPlayCapture")]
-    pub fn on_play_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_play_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onPlaying`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onPlaying")]
-    pub fn on_playing(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_playing(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onPlayingCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onPlayingCapture")]
-    pub fn on_playing_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_playing_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onPointerCancel`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onPointerCancel")]
-    pub fn on_pointer_cancel(self, handler: impl Fn(&event::Pointer) + 'static) -> Element {
+    pub fn on_pointer_cancel(self, handler: impl Fn(&event::Pointer<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onPointerCancelCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onPointerCancelCapture")]
-    pub fn on_pointer_cancel_capture(self, handler: impl Fn(&event::Pointer) + 'static) -> Element {
+    pub fn on_pointer_cancel_capture(self, handler: impl Fn(&event::Pointer<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onPointerDown`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onPointerDown")]
-    pub fn on_pointer_down(self, handler: impl Fn(&event::Pointer) + 'static) -> Element {
+    pub fn on_pointer_down(self, handler: impl Fn(&event::Pointer<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onPointerDownCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onPointerDownCapture")]
-    pub fn on_pointer_down_capture(self, handler: impl Fn(&event::Pointer) + 'static) -> Element {
+    pub fn on_pointer_down_capture(self, handler: impl Fn(&event::Pointer<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onPointerEnter`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onPointerEnter")]
-    pub fn on_pointer_enter(self, handler: impl Fn(&event::Pointer) + 'static) -> Element {
+    pub fn on_pointer_enter(self, handler: impl Fn(&event::Pointer<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onPointerLeave`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onPointerLeave")]
-    pub fn on_pointer_leave(self, handler: impl Fn(&event::Pointer) + 'static) -> Element {
+    pub fn on_pointer_leave(self, handler: impl Fn(&event::Pointer<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onPointerMove`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onPointerMove")]
-    pub fn on_pointer_move(self, handler: impl Fn(&event::Pointer) + 'static) -> Element {
+    pub fn on_pointer_move(self, handler: impl Fn(&event::Pointer<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onPointerMoveCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onPointerMoveCapture")]
-    pub fn on_pointer_move_capture(self, handler: impl Fn(&event::Pointer) + 'static) -> Element {
+    pub fn on_pointer_move_capture(self, handler: impl Fn(&event::Pointer<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onPointerOut`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onPointerOut")]
-    pub fn on_pointer_out(self, handler: impl Fn(&event::Pointer) + 'static) -> Element {
+    pub fn on_pointer_out(self, handler: impl Fn(&event::Pointer<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onPointerOutCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onPointerOutCapture")]
-    pub fn on_pointer_out_capture(self, handler: impl Fn(&event::Pointer) + 'static) -> Element {
+    pub fn on_pointer_out_capture(self, handler: impl Fn(&event::Pointer<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onPointerOver`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onPointerOver")]
-    pub fn on_pointer_over(self, handler: impl Fn(&event::Pointer) + 'static) -> Element {
+    pub fn on_pointer_over(self, handler: impl Fn(&event::Pointer<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onPointerOverCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onPointerOverCapture")]
-    pub fn on_pointer_over_capture(self, handler: impl Fn(&event::Pointer) + 'static) -> Element {
+    pub fn on_pointer_over_capture(self, handler: impl Fn(&event::Pointer<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onPointerUp`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onPointerUp")]
-    pub fn on_pointer_up(self, handler: impl Fn(&event::Pointer) + 'static) -> Element {
+    pub fn on_pointer_up(self, handler: impl Fn(&event::Pointer<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onPointerUpCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onPointerUpCapture")]
-    pub fn on_pointer_up_capture(self, handler: impl Fn(&event::Pointer) + 'static) -> Element {
+    pub fn on_pointer_up_capture(self, handler: impl Fn(&event::Pointer<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onProgress`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onProgress")]
-    pub fn on_progress(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_progress(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onProgressCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onProgressCapture")]
-    pub fn on_progress_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_progress_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onRateChange`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onRateChange")]
-    pub fn on_rate_change(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_rate_change(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onRateChangeCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onRateChangeCapture")]
-    pub fn on_rate_change_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_rate_change_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onReset`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onReset")]
-    pub fn on_reset(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_reset(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onResetCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onResetCapture")]
-    pub fn on_reset_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_reset_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onResize`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onResize")]
-    pub fn on_resize(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_resize(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onResizeCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onResizeCapture")]
-    pub fn on_resize_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_resize_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onScroll`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onScroll")]
-    pub fn on_scroll(self, handler: impl Fn(&event::Ui) + 'static) -> Element {
+    pub fn on_scroll(self, handler: impl Fn(&event::Ui<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onScrollCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onScrollCapture")]
-    pub fn on_scroll_capture(self, handler: impl Fn(&event::Ui) + 'static) -> Element {
+    pub fn on_scroll_capture(self, handler: impl Fn(&event::Ui<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onScrollEnd`
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop onScrollEnd")]
-    pub fn on_scroll_end(self, handler: impl Fn(&event::Ui) + 'static) -> Element {
+    pub fn on_scroll_end(self, handler: impl Fn(&event::Ui<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onScrollEndCapture`
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop onScrollEndCapture")]
-    pub fn on_scroll_end_capture(self, handler: impl Fn(&event::Ui) + 'static) -> Element {
+    pub fn on_scroll_end_capture(self, handler: impl Fn(&event::Ui<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onSeeked`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onSeeked")]
-    pub fn on_seeked(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_seeked(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onSeekedCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onSeekedCapture")]
-    pub fn on_seeked_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_seeked_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onSeeking`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onSeeking")]
-    pub fn on_seeking(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_seeking(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onSeekingCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onSeekingCapture")]
-    pub fn on_seeking_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_seeking_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onSelect`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onSelect")]
-    pub fn on_select(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_select(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onSelectCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onSelectCapture")]
-    pub fn on_select_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_select_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onStalled`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onStalled")]
-    pub fn on_stalled(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_stalled(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onStalledCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onStalledCapture")]
-    pub fn on_stalled_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_stalled_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onSubmit`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onSubmit")]
-    pub fn on_submit(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_submit(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onSubmitCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onSubmitCapture")]
-    pub fn on_submit_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_submit_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onSuspend`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onSuspend")]
-    pub fn on_suspend(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_suspend(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onSuspendCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onSuspendCapture")]
-    pub fn on_suspend_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_suspend_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onTimeUpdate`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onTimeUpdate")]
-    pub fn on_time_update(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_time_update(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onTimeUpdateCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onTimeUpdateCapture")]
-    pub fn on_time_update_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_time_update_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onToggle`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onToggle")]
-    pub fn on_toggle(self, handler: impl Fn(&event::Toggle) + 'static) -> Element {
+    pub fn on_toggle(self, handler: impl Fn(&event::Toggle<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onToggleCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onToggleCapture")]
-    pub fn on_toggle_capture(self, handler: impl Fn(&event::Toggle) + 'static) -> Element {
+    pub fn on_toggle_capture(self, handler: impl Fn(&event::Toggle<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onTouchCancel`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onTouchCancel")]
-    pub fn on_touch_cancel(self, handler: impl Fn(&event::Touch) + 'static) -> Element {
+    pub fn on_touch_cancel(self, handler: impl Fn(&event::Touch<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onTouchCancelCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onTouchCancelCapture")]
-    pub fn on_touch_cancel_capture(self, handler: impl Fn(&event::Touch) + 'static) -> Element {
+    pub fn on_touch_cancel_capture(self, handler: impl Fn(&event::Touch<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onTouchEnd`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onTouchEnd")]
-    pub fn on_touch_end(self, handler: impl Fn(&event::Touch) + 'static) -> Element {
+    pub fn on_touch_end(self, handler: impl Fn(&event::Touch<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onTouchEndCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onTouchEndCapture")]
-    pub fn on_touch_end_capture(self, handler: impl Fn(&event::Touch) + 'static) -> Element {
+    pub fn on_touch_end_capture(self, handler: impl Fn(&event::Touch<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onTouchMove`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onTouchMove")]
-    pub fn on_touch_move(self, handler: impl Fn(&event::Touch) + 'static) -> Element {
+    pub fn on_touch_move(self, handler: impl Fn(&event::Touch<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onTouchMoveCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onTouchMoveCapture")]
-    pub fn on_touch_move_capture(self, handler: impl Fn(&event::Touch) + 'static) -> Element {
+    pub fn on_touch_move_capture(self, handler: impl Fn(&event::Touch<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onTouchStart`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onTouchStart")]
-    pub fn on_touch_start(self, handler: impl Fn(&event::Touch) + 'static) -> Element {
+    pub fn on_touch_start(self, handler: impl Fn(&event::Touch<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onTouchStartCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onTouchStartCapture")]
-    pub fn on_touch_start_capture(self, handler: impl Fn(&event::Touch) + 'static) -> Element {
+    pub fn on_touch_start_capture(self, handler: impl Fn(&event::Touch<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onTransitionCancel`
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop onTransitionCancel")]
-    pub fn on_transition_cancel(self, handler: impl Fn(&event::Transition) + 'static) -> Element {
+    pub fn on_transition_cancel(self, handler: impl Fn(&event::Transition<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onTransitionCancelCapture`
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop onTransitionCancelCapture")]
-    pub fn on_transition_cancel_capture(self, handler: impl Fn(&event::Transition) + 'static) -> Element {
+    pub fn on_transition_cancel_capture(self, handler: impl Fn(&event::Transition<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onTransitionEnd`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onTransitionEnd")]
-    pub fn on_transition_end(self, handler: impl Fn(&event::Transition) + 'static) -> Element {
+    pub fn on_transition_end(self, handler: impl Fn(&event::Transition<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onTransitionEndCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onTransitionEndCapture")]
-    pub fn on_transition_end_capture(self, handler: impl Fn(&event::Transition) + 'static) -> Element {
+    pub fn on_transition_end_capture(self, handler: impl Fn(&event::Transition<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onTransitionRun`
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop onTransitionRun")]
-    pub fn on_transition_run(self, handler: impl Fn(&event::Transition) + 'static) -> Element {
+    pub fn on_transition_run(self, handler: impl Fn(&event::Transition<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onTransitionRunCapture`
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop onTransitionRunCapture")]
-    pub fn on_transition_run_capture(self, handler: impl Fn(&event::Transition) + 'static) -> Element {
+    pub fn on_transition_run_capture(self, handler: impl Fn(&event::Transition<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onTransitionStart`
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop onTransitionStart")]
-    pub fn on_transition_start(self, handler: impl Fn(&event::Transition) + 'static) -> Element {
+    pub fn on_transition_start(self, handler: impl Fn(&event::Transition<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onTransitionStartCapture`
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop onTransitionStartCapture")]
-    pub fn on_transition_start_capture(self, handler: impl Fn(&event::Transition) + 'static) -> Element {
+    pub fn on_transition_start_capture(self, handler: impl Fn(&event::Transition<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onVolumeChange`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onVolumeChange")]
-    pub fn on_volume_change(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_volume_change(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onVolumeChangeCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onVolumeChangeCapture")]
-    pub fn on_volume_change_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_volume_change_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onWaiting`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onWaiting")]
-    pub fn on_waiting(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_waiting(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onWaitingCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onWaitingCapture")]
-    pub fn on_waiting_capture(self, handler: impl Fn(&event::Event) + 'static) -> Element {
+    pub fn on_waiting_capture(self, handler: impl Fn(&event::Event<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onWheel`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onWheel")]
-    pub fn on_wheel(self, handler: impl Fn(&event::Wheel) + 'static) -> Element {
+    pub fn on_wheel(self, handler: impl Fn(&event::Wheel<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onWheelCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onWheelCapture")]
-    pub fn on_wheel_capture(self, handler: impl Fn(&event::Wheel) + 'static) -> Element {
+    pub fn on_wheel_capture(self, handler: impl Fn(&event::Wheel<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
 }
 
-/// The DOM's elements: `div()` is `<div>`, `linear_gradient()` `<linearGradient>`.
+/// The DOM's elements: `div()` is `<div>`, `linear_gradient()` `<linearGradient>`,
+/// each of its DOM element, `button()` a `HtmlButtonElement`'s.
 pub mod html {
-    use super::Element;
+    use super::{Element, webapi};
 
     unsafe extern "Rust" {
         /// `<a>`
         #[link_name = "<a>"]
-        pub safe fn a() -> Element;
+        pub safe fn a() -> Element<webapi::HtmlAnchorElement>;
         /// `<abbr>`
         #[link_name = "<abbr>"]
-        pub safe fn abbr() -> Element;
+        pub safe fn abbr() -> Element<webapi::HtmlElement>;
         /// `<address>`
         #[link_name = "<address>"]
-        pub safe fn address() -> Element;
+        pub safe fn address() -> Element<webapi::HtmlElement>;
         /// `<animate>`
         #[link_name = "<animate>"]
         pub safe fn animate() -> Element;
@@ -3545,109 +3547,109 @@ pub mod html {
         pub safe fn animate_transform() -> Element;
         /// `<area>`
         #[link_name = "<area>"]
-        pub safe fn area() -> Element;
+        pub safe fn area() -> Element<webapi::HtmlElement>;
         /// `<article>`
         #[link_name = "<article>"]
-        pub safe fn article() -> Element;
+        pub safe fn article() -> Element<webapi::HtmlElement>;
         /// `<aside>`
         #[link_name = "<aside>"]
-        pub safe fn aside() -> Element;
+        pub safe fn aside() -> Element<webapi::HtmlElement>;
         /// `<audio>`
         #[link_name = "<audio>"]
-        pub safe fn audio() -> Element;
+        pub safe fn audio() -> Element<webapi::HtmlElement>;
         /// `<b>`
         #[link_name = "<b>"]
-        pub safe fn b() -> Element;
+        pub safe fn b() -> Element<webapi::HtmlElement>;
         /// `<base>`
         #[link_name = "<base>"]
-        pub safe fn base() -> Element;
+        pub safe fn base() -> Element<webapi::HtmlElement>;
         /// `<bdi>`
         #[link_name = "<bdi>"]
-        pub safe fn bdi() -> Element;
+        pub safe fn bdi() -> Element<webapi::HtmlElement>;
         /// `<bdo>`
         #[link_name = "<bdo>"]
-        pub safe fn bdo() -> Element;
+        pub safe fn bdo() -> Element<webapi::HtmlElement>;
         /// `<blockquote>`
         #[link_name = "<blockquote>"]
-        pub safe fn blockquote() -> Element;
+        pub safe fn blockquote() -> Element<webapi::HtmlElement>;
         /// `<body>`
         #[link_name = "<body>"]
-        pub safe fn body() -> Element;
+        pub safe fn body() -> Element<webapi::HtmlElement>;
         /// `<br>`
         #[link_name = "<br>"]
-        pub safe fn br() -> Element;
+        pub safe fn br() -> Element<webapi::HtmlElement>;
         /// `<button>`
         #[link_name = "<button>"]
-        pub safe fn button() -> Element;
+        pub safe fn button() -> Element<webapi::HtmlButtonElement>;
         /// `<canvas>`
         #[link_name = "<canvas>"]
-        pub safe fn canvas() -> Element;
+        pub safe fn canvas() -> Element<webapi::HtmlCanvasElement>;
         /// `<caption>`
         #[link_name = "<caption>"]
-        pub safe fn caption() -> Element;
+        pub safe fn caption() -> Element<webapi::HtmlElement>;
         /// `<circle>`
         #[link_name = "<circle>"]
         pub safe fn circle() -> Element;
         /// `<cite>`
         #[link_name = "<cite>"]
-        pub safe fn cite() -> Element;
+        pub safe fn cite() -> Element<webapi::HtmlElement>;
         /// `<clipPath>`
         #[link_name = "<clipPath>"]
         pub safe fn clip_path() -> Element;
         /// `<code>`
         #[link_name = "<code>"]
-        pub safe fn code() -> Element;
+        pub safe fn code() -> Element<webapi::HtmlElement>;
         /// `<col>`
         #[link_name = "<col>"]
-        pub safe fn col() -> Element;
+        pub safe fn col() -> Element<webapi::HtmlElement>;
         /// `<colgroup>`
         #[link_name = "<colgroup>"]
-        pub safe fn colgroup() -> Element;
+        pub safe fn colgroup() -> Element<webapi::HtmlElement>;
         /// `<data>`
         #[link_name = "<data>"]
-        pub safe fn data() -> Element;
+        pub safe fn data() -> Element<webapi::HtmlElement>;
         /// `<datalist>`
         #[link_name = "<datalist>"]
-        pub safe fn datalist() -> Element;
+        pub safe fn datalist() -> Element<webapi::HtmlElement>;
         /// `<dd>`
         #[link_name = "<dd>"]
-        pub safe fn dd() -> Element;
+        pub safe fn dd() -> Element<webapi::HtmlElement>;
         /// `<defs>`
         #[link_name = "<defs>"]
         pub safe fn defs() -> Element;
         /// `<del>`
         #[link_name = "<del>"]
-        pub safe fn del() -> Element;
+        pub safe fn del() -> Element<webapi::HtmlElement>;
         /// `<desc>`
         #[link_name = "<desc>"]
         pub safe fn desc() -> Element;
         /// `<details>`
         #[link_name = "<details>"]
-        pub safe fn details() -> Element;
+        pub safe fn details() -> Element<webapi::HtmlElement>;
         /// `<dfn>`
         #[link_name = "<dfn>"]
-        pub safe fn dfn() -> Element;
+        pub safe fn dfn() -> Element<webapi::HtmlElement>;
         /// `<dialog>`
         #[link_name = "<dialog>"]
-        pub safe fn dialog() -> Element;
+        pub safe fn dialog() -> Element<webapi::HtmlElement>;
         /// `<div>`
         #[link_name = "<div>"]
-        pub safe fn div() -> Element;
+        pub safe fn div() -> Element<webapi::HtmlDivElement>;
         /// `<dl>`
         #[link_name = "<dl>"]
-        pub safe fn dl() -> Element;
+        pub safe fn dl() -> Element<webapi::HtmlElement>;
         /// `<dt>`
         #[link_name = "<dt>"]
-        pub safe fn dt() -> Element;
+        pub safe fn dt() -> Element<webapi::HtmlElement>;
         /// `<ellipse>`
         #[link_name = "<ellipse>"]
         pub safe fn ellipse() -> Element;
         /// `<em>`
         #[link_name = "<em>"]
-        pub safe fn em() -> Element;
+        pub safe fn em() -> Element<webapi::HtmlElement>;
         /// `<embed>`
         #[link_name = "<embed>"]
-        pub safe fn embed() -> Element;
+        pub safe fn embed() -> Element<webapi::HtmlElement>;
         /// `<feBlend>`
         #[link_name = "<feBlend>"]
         pub safe fn fe_blend() -> Element;
@@ -3725,91 +3727,91 @@ pub mod html {
         pub safe fn fe_turbulence() -> Element;
         /// `<fieldset>`
         #[link_name = "<fieldset>"]
-        pub safe fn fieldset() -> Element;
+        pub safe fn fieldset() -> Element<webapi::HtmlElement>;
         /// `<figcaption>`
         #[link_name = "<figcaption>"]
-        pub safe fn figcaption() -> Element;
+        pub safe fn figcaption() -> Element<webapi::HtmlElement>;
         /// `<figure>`
         #[link_name = "<figure>"]
-        pub safe fn figure() -> Element;
+        pub safe fn figure() -> Element<webapi::HtmlElement>;
         /// `<filter>`
         #[link_name = "<filter>"]
         pub safe fn filter() -> Element;
         /// `<footer>`
         #[link_name = "<footer>"]
-        pub safe fn footer() -> Element;
+        pub safe fn footer() -> Element<webapi::HtmlElement>;
         /// `<foreignObject>`
         #[link_name = "<foreignObject>"]
         pub safe fn foreign_object() -> Element;
         /// `<form>`
         #[link_name = "<form>"]
-        pub safe fn form() -> Element;
+        pub safe fn form() -> Element<webapi::HtmlFormElement>;
         /// `<g>`
         #[link_name = "<g>"]
         pub safe fn g() -> Element;
         /// `<h1>`
         #[link_name = "<h1>"]
-        pub safe fn h1() -> Element;
+        pub safe fn h1() -> Element<webapi::HtmlHeadingElement>;
         /// `<h2>`
         #[link_name = "<h2>"]
-        pub safe fn h2() -> Element;
+        pub safe fn h2() -> Element<webapi::HtmlHeadingElement>;
         /// `<h3>`
         #[link_name = "<h3>"]
-        pub safe fn h3() -> Element;
+        pub safe fn h3() -> Element<webapi::HtmlHeadingElement>;
         /// `<h4>`
         #[link_name = "<h4>"]
-        pub safe fn h4() -> Element;
+        pub safe fn h4() -> Element<webapi::HtmlHeadingElement>;
         /// `<h5>`
         #[link_name = "<h5>"]
-        pub safe fn h5() -> Element;
+        pub safe fn h5() -> Element<webapi::HtmlHeadingElement>;
         /// `<h6>`
         #[link_name = "<h6>"]
-        pub safe fn h6() -> Element;
+        pub safe fn h6() -> Element<webapi::HtmlHeadingElement>;
         /// `<head>`
         #[link_name = "<head>"]
-        pub safe fn head() -> Element;
+        pub safe fn head() -> Element<webapi::HtmlElement>;
         /// `<header>`
         #[link_name = "<header>"]
-        pub safe fn header() -> Element;
+        pub safe fn header() -> Element<webapi::HtmlElement>;
         /// `<hgroup>`
         #[link_name = "<hgroup>"]
-        pub safe fn hgroup() -> Element;
+        pub safe fn hgroup() -> Element<webapi::HtmlElement>;
         /// `<hr>`
         #[link_name = "<hr>"]
-        pub safe fn hr() -> Element;
+        pub safe fn hr() -> Element<webapi::HtmlElement>;
         /// `<html>`
         #[link_name = "<html>"]
-        pub safe fn html() -> Element;
+        pub safe fn html() -> Element<webapi::HtmlElement>;
         /// `<i>`
         #[link_name = "<i>"]
-        pub safe fn i() -> Element;
+        pub safe fn i() -> Element<webapi::HtmlElement>;
         /// `<iframe>`
         #[link_name = "<iframe>"]
-        pub safe fn iframe() -> Element;
+        pub safe fn iframe() -> Element<webapi::HtmlIFrameElement>;
         /// `<image>`
         #[link_name = "<image>"]
         pub safe fn image() -> Element;
         /// `<img>`
         #[link_name = "<img>"]
-        pub safe fn img() -> Element;
+        pub safe fn img() -> Element<webapi::HtmlImageElement>;
         /// `<input>`
         #[link_name = "<input>"]
-        pub safe fn input() -> Element;
+        pub safe fn input() -> Element<webapi::HtmlInputElement>;
         /// `<ins>`
         #[link_name = "<ins>"]
-        pub safe fn ins() -> Element;
+        pub safe fn ins() -> Element<webapi::HtmlElement>;
         /// `<kbd>`
         #[link_name = "<kbd>"]
-        pub safe fn kbd() -> Element;
+        pub safe fn kbd() -> Element<webapi::HtmlElement>;
         /// `<label>`
         #[link_name = "<label>"]
-        pub safe fn label() -> Element;
+        pub safe fn label() -> Element<webapi::HtmlLabelElement>;
         /// `<legend>`
         #[link_name = "<legend>"]
-        pub safe fn legend() -> Element;
+        pub safe fn legend() -> Element<webapi::HtmlElement>;
         /// `<li>`
         #[link_name = "<li>"]
-        pub safe fn li() -> Element;
+        pub safe fn li() -> Element<webapi::HtmlLiElement>;
         /// `<line>`
         #[link_name = "<line>"]
         pub safe fn line() -> Element;
@@ -3818,16 +3820,16 @@ pub mod html {
         pub safe fn linear_gradient() -> Element;
         /// `<link>`
         #[link_name = "<link>"]
-        pub safe fn link() -> Element;
+        pub safe fn link() -> Element<webapi::HtmlElement>;
         /// `<main>`
         #[link_name = "<main>"]
-        pub safe fn main() -> Element;
+        pub safe fn main() -> Element<webapi::HtmlElement>;
         /// `<map>`
         #[link_name = "<map>"]
-        pub safe fn map() -> Element;
+        pub safe fn map() -> Element<webapi::HtmlElement>;
         /// `<mark>`
         #[link_name = "<mark>"]
-        pub safe fn mark() -> Element;
+        pub safe fn mark() -> Element<webapi::HtmlElement>;
         /// `<marker>`
         #[link_name = "<marker>"]
         pub safe fn marker() -> Element;
@@ -3836,43 +3838,43 @@ pub mod html {
         pub safe fn mask() -> Element;
         /// `<menu>`
         #[link_name = "<menu>"]
-        pub safe fn menu() -> Element;
+        pub safe fn menu() -> Element<webapi::HtmlElement>;
         /// `<meta>`
         #[link_name = "<meta>"]
-        pub safe fn meta() -> Element;
+        pub safe fn meta() -> Element<webapi::HtmlElement>;
         /// `<metadata>`
         #[link_name = "<metadata>"]
         pub safe fn metadata() -> Element;
         /// `<meter>`
         #[link_name = "<meter>"]
-        pub safe fn meter() -> Element;
+        pub safe fn meter() -> Element<webapi::HtmlElement>;
         /// `<mpath>`
         #[link_name = "<mpath>"]
         pub safe fn mpath() -> Element;
         /// `<nav>`
         #[link_name = "<nav>"]
-        pub safe fn nav() -> Element;
+        pub safe fn nav() -> Element<webapi::HtmlElement>;
         /// `<noscript>`
         #[link_name = "<noscript>"]
-        pub safe fn noscript() -> Element;
+        pub safe fn noscript() -> Element<webapi::HtmlElement>;
         /// `<object>`
         #[link_name = "<object>"]
-        pub safe fn object() -> Element;
+        pub safe fn object() -> Element<webapi::HtmlElement>;
         /// `<ol>`
         #[link_name = "<ol>"]
-        pub safe fn ol() -> Element;
+        pub safe fn ol() -> Element<webapi::HtmlOListElement>;
         /// `<optgroup>`
         #[link_name = "<optgroup>"]
-        pub safe fn optgroup() -> Element;
+        pub safe fn optgroup() -> Element<webapi::HtmlElement>;
         /// `<option>`
         #[link_name = "<option>"]
-        pub safe fn option() -> Element;
+        pub safe fn option() -> Element<webapi::HtmlOptionElement>;
         /// `<output>`
         #[link_name = "<output>"]
-        pub safe fn output() -> Element;
+        pub safe fn output() -> Element<webapi::HtmlOutputElement>;
         /// `<p>`
         #[link_name = "<p>"]
-        pub safe fn p() -> Element;
+        pub safe fn p() -> Element<webapi::HtmlParagraphElement>;
         /// `<path>`
         #[link_name = "<path>"]
         pub safe fn path() -> Element;
@@ -3881,7 +3883,7 @@ pub mod html {
         pub safe fn pattern() -> Element;
         /// `<picture>`
         #[link_name = "<picture>"]
-        pub safe fn picture() -> Element;
+        pub safe fn picture() -> Element<webapi::HtmlElement>;
         /// `<polygon>`
         #[link_name = "<polygon>"]
         pub safe fn polygon() -> Element;
@@ -3890,13 +3892,13 @@ pub mod html {
         pub safe fn polyline() -> Element;
         /// `<pre>`
         #[link_name = "<pre>"]
-        pub safe fn pre() -> Element;
+        pub safe fn pre() -> Element<webapi::HtmlElement>;
         /// `<progress>`
         #[link_name = "<progress>"]
-        pub safe fn progress() -> Element;
+        pub safe fn progress() -> Element<webapi::HtmlElement>;
         /// `<q>`
         #[link_name = "<q>"]
-        pub safe fn q() -> Element;
+        pub safe fn q() -> Element<webapi::HtmlElement>;
         /// `<radialGradient>`
         #[link_name = "<radialGradient>"]
         pub safe fn radial_gradient() -> Element;
@@ -3905,67 +3907,67 @@ pub mod html {
         pub safe fn rect() -> Element;
         /// `<rp>`
         #[link_name = "<rp>"]
-        pub safe fn rp() -> Element;
+        pub safe fn rp() -> Element<webapi::HtmlElement>;
         /// `<rt>`
         #[link_name = "<rt>"]
-        pub safe fn rt() -> Element;
+        pub safe fn rt() -> Element<webapi::HtmlElement>;
         /// `<ruby>`
         #[link_name = "<ruby>"]
-        pub safe fn ruby() -> Element;
+        pub safe fn ruby() -> Element<webapi::HtmlElement>;
         /// `<s>`
         #[link_name = "<s>"]
-        pub safe fn s() -> Element;
+        pub safe fn s() -> Element<webapi::HtmlElement>;
         /// `<samp>`
         #[link_name = "<samp>"]
-        pub safe fn samp() -> Element;
+        pub safe fn samp() -> Element<webapi::HtmlElement>;
         /// `<script>`
         #[link_name = "<script>"]
-        pub safe fn script() -> Element;
+        pub safe fn script() -> Element<webapi::HtmlElement>;
         /// `<search>`
         #[link_name = "<search>"]
-        pub safe fn search() -> Element;
+        pub safe fn search() -> Element<webapi::HtmlElement>;
         /// `<section>`
         #[link_name = "<section>"]
-        pub safe fn section() -> Element;
+        pub safe fn section() -> Element<webapi::HtmlElement>;
         /// `<select>`
         #[link_name = "<select>"]
-        pub safe fn select() -> Element;
+        pub safe fn select() -> Element<webapi::HtmlSelectElement>;
         /// `<selectedcontent>`
         #[link_name = "<selectedcontent>"]
-        pub safe fn selectedcontent() -> Element;
+        pub safe fn selectedcontent() -> Element<webapi::HtmlElement>;
         /// `<set>`
         #[link_name = "<set>"]
         pub safe fn set() -> Element;
         /// `<slot>`
         #[link_name = "<slot>"]
-        pub safe fn slot() -> Element;
+        pub safe fn slot() -> Element<webapi::HtmlElement>;
         /// `<small>`
         #[link_name = "<small>"]
-        pub safe fn small() -> Element;
+        pub safe fn small() -> Element<webapi::HtmlElement>;
         /// `<source>`
         #[link_name = "<source>"]
-        pub safe fn source() -> Element;
+        pub safe fn source() -> Element<webapi::HtmlElement>;
         /// `<span>`
         #[link_name = "<span>"]
-        pub safe fn span() -> Element;
+        pub safe fn span() -> Element<webapi::HtmlSpanElement>;
         /// `<stop>`
         #[link_name = "<stop>"]
         pub safe fn stop() -> Element;
         /// `<strong>`
         #[link_name = "<strong>"]
-        pub safe fn strong() -> Element;
+        pub safe fn strong() -> Element<webapi::HtmlElement>;
         /// `<style>`
         #[link_name = "<style>"]
-        pub safe fn style() -> Element;
+        pub safe fn style() -> Element<webapi::HtmlElement>;
         /// `<sub>`
         #[link_name = "<sub>"]
-        pub safe fn sub() -> Element;
+        pub safe fn sub() -> Element<webapi::HtmlElement>;
         /// `<summary>`
         #[link_name = "<summary>"]
-        pub safe fn summary() -> Element;
+        pub safe fn summary() -> Element<webapi::HtmlElement>;
         /// `<sup>`
         #[link_name = "<sup>"]
-        pub safe fn sup() -> Element;
+        pub safe fn sup() -> Element<webapi::HtmlElement>;
         /// `<svg>`
         #[link_name = "<svg>"]
         pub safe fn svg() -> Element;
@@ -3977,16 +3979,16 @@ pub mod html {
         pub safe fn symbol() -> Element;
         /// `<table>`
         #[link_name = "<table>"]
-        pub safe fn table() -> Element;
+        pub safe fn table() -> Element<webapi::HtmlTableElement>;
         /// `<tbody>`
         #[link_name = "<tbody>"]
-        pub safe fn tbody() -> Element;
+        pub safe fn tbody() -> Element<webapi::HtmlTableSectionElement>;
         /// `<td>`
         #[link_name = "<td>"]
-        pub safe fn td() -> Element;
+        pub safe fn td() -> Element<webapi::HtmlTableCellElement>;
         /// `<template>`
         #[link_name = "<template>"]
-        pub safe fn template() -> Element;
+        pub safe fn template() -> Element<webapi::HtmlElement>;
         /// `<text>`
         #[link_name = "<text>"]
         pub safe fn text() -> Element;
@@ -3995,52 +3997,52 @@ pub mod html {
         pub safe fn text_path() -> Element;
         /// `<textarea>`
         #[link_name = "<textarea>"]
-        pub safe fn textarea() -> Element;
+        pub safe fn textarea() -> Element<webapi::HtmlTextAreaElement>;
         /// `<tfoot>`
         #[link_name = "<tfoot>"]
-        pub safe fn tfoot() -> Element;
+        pub safe fn tfoot() -> Element<webapi::HtmlTableSectionElement>;
         /// `<th>`
         #[link_name = "<th>"]
-        pub safe fn th() -> Element;
+        pub safe fn th() -> Element<webapi::HtmlTableCellElement>;
         /// `<thead>`
         #[link_name = "<thead>"]
-        pub safe fn thead() -> Element;
+        pub safe fn thead() -> Element<webapi::HtmlTableSectionElement>;
         /// `<time>`
         #[link_name = "<time>"]
-        pub safe fn time() -> Element;
+        pub safe fn time() -> Element<webapi::HtmlElement>;
         /// `<title>`
         #[link_name = "<title>"]
-        pub safe fn title() -> Element;
+        pub safe fn title() -> Element<webapi::HtmlElement>;
         /// `<tr>`
         #[link_name = "<tr>"]
-        pub safe fn tr() -> Element;
+        pub safe fn tr() -> Element<webapi::HtmlTableRowElement>;
         /// `<track>`
         #[link_name = "<track>"]
-        pub safe fn track() -> Element;
+        pub safe fn track() -> Element<webapi::HtmlElement>;
         /// `<tspan>`
         #[link_name = "<tspan>"]
         pub safe fn tspan() -> Element;
         /// `<u>`
         #[link_name = "<u>"]
-        pub safe fn u() -> Element;
+        pub safe fn u() -> Element<webapi::HtmlElement>;
         /// `<ul>`
         #[link_name = "<ul>"]
-        pub safe fn ul() -> Element;
+        pub safe fn ul() -> Element<webapi::HtmlUListElement>;
         /// `<use>`
         #[link_name = "<use>"]
         pub safe fn r#use() -> Element;
         /// `<var>`
         #[link_name = "<var>"]
-        pub safe fn var() -> Element;
+        pub safe fn var() -> Element<webapi::HtmlElement>;
         /// `<video>`
         #[link_name = "<video>"]
-        pub safe fn video() -> Element;
+        pub safe fn video() -> Element<webapi::HtmlElement>;
         /// `<view>`
         #[link_name = "<view>"]
         pub safe fn view() -> Element;
         /// `<wbr>`
         #[link_name = "<wbr>"]
-        pub safe fn wbr() -> Element;
+        pub safe fn wbr() -> Element<webapi::HtmlElement>;
     }
 }
 

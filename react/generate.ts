@@ -183,7 +183,7 @@ const lines: string[] = [
   "/// Attributes, as React names them: `class_name` is `className`. Any other,",
   '/// like `aria-*` and `data-*`, is [`attr`](Element::attr).',
   "#[doc(hidden)]",
-  "impl Element {",
+  "impl<T> Element<T> {",
 ];
 const methods = new Set(["children", "key", "r#ref", "attr"]);
 for (const [name, entry] of Object.entries<Since>(versions.attributes)) {
@@ -195,13 +195,13 @@ for (const [name, entry] of Object.entries<Since>(versions.attributes)) {
   lines.push(
     `    /// \`${name}\``,
     `${gate(entry)}    #[cfg_attr(rust_js, rust_js::link_name = "prop ${name}")]`,
-    `    pub fn ${method}(self, value: ${ty}) -> Element {`,
+    `    pub fn ${method}(self, value: ${ty}) -> Element<T> {`,
     "        unreachable!()",
     "    }",
     "",
   );
 }
-lines.push("}", "", "/// Event handlers: `on_click` is `onClick`. A handler must not borrow", "/// anything, since it runs later: write it `move |e| ..`.", "#[doc(hidden)]", "impl Element {");
+lines.push("}", "", "/// Event handlers: `on_click` is `onClick`. A handler must not borrow", "/// anything, since it runs later: write it `move |e| ..`. Its event is of", "/// the element's, `event::Mouse<T>` (ADR 0224).", "#[doc(hidden)]", "impl<T> Element<T> {");
 for (const [name, entry] of Object.entries<Since>(versions.events)) {
   if (entry.removed) continue;
   const base = name.replace(/Capture$/, "");
@@ -212,7 +212,7 @@ for (const [name, entry] of Object.entries<Since>(versions.events)) {
   lines.push(
     `    /// \`${name}\``,
     `${gate(entry)}    #[cfg_attr(rust_js, rust_js::link_name = "prop ${name}")]`,
-    `    pub fn ${method}(self, handler: impl Fn(&event::${type}) + 'static) -> Element {`,
+    `    pub fn ${method}(self, handler: impl Fn(&event::${type}<T>) + 'static) -> Element<T> {`,
     "        unreachable!()",
     "    }",
     "",
@@ -229,9 +229,18 @@ for (const spec of ["html", "SVG2", "svg-animations", "filter-effects-1", "css-m
     if (!element.obsolete && /^[a-zA-Z][a-zA-Z0-9]*$/.test(element.name)) tags.add(element.name);
   }
 }
-lines.push("/// The DOM's elements: `div()` is `<div>`, `linear_gradient()` `<linearGradient>`.", "pub mod html {", "    use super::Element;", "", "    unsafe extern \"Rust\" {");
+// Each HTML tag's element, as the webapi crate's `Tag` gives it (ADR 0224):
+// `<button>` is a `HtmlButtonElement`. Another, an SVG one's, is any `Element`.
+const webapiSource = readFileSync(join(root, "webapi", "src", "lib.rs"), "utf8");
+const tagTypes = new Map([...webapiSource.matchAll(/rust_js::name = "([^"]+)"\)\]\n    pub struct (\w+);/g)].map(([, name, type]) => [type, name]));
+const tagElements = new Map<string, string>();
+for (const [, type, element] of webapiSource.matchAll(/impl Tag for tags::(\w+) \{ type Element = (\w+); \}/g)) {
+  tagElements.set(tagTypes.get(type)!, element);
+}
+lines.push("/// The DOM's elements: `div()` is `<div>`, `linear_gradient()` `<linearGradient>`,", "/// each of its DOM element, `button()` a `HtmlButtonElement`'s.", "pub mod html {", "    use super::{Element, webapi};", "", "    unsafe extern \"Rust\" {");
 for (const tag of [...tags].sort()) {
-  lines.push(`        /// \`<${tag}>\``, `        #[link_name = "<${tag}>"]`, `        pub safe fn ${snake(tag)}() -> Element;`);
+  const element = tagElements.get(tag);
+  lines.push(`        /// \`<${tag}>\``, `        #[link_name = "<${tag}>"]`, `        pub safe fn ${snake(tag)}() -> Element${element ? `<webapi::${element}>` : ""};`);
 }
 lines.push("    }", "}", "");
 

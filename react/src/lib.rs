@@ -68,9 +68,21 @@ pub use webapi;
 
 /// A React element: what a component returns, and what goes in children.
 /// Construct it with `jsx! { <Tag ... /> }`.
+///
+/// While `jsx!` builds a tag's, it's of that tag's DOM element,
+/// `Element<webapi::HtmlButtonElement>`, which its handlers' events and its
+/// `ref` take, as @types/react's `IntrinsicElements` gives them (ADR 0224);
+/// what it makes is an `Element`, whatever its tag.
 #[cfg_attr(rust_js, rust_js::jsx_element)]
-#[cfg_attr(rust_js, rust_js::types = "react#ReactNode")]
-pub struct Element(PhantomData<JsObject>);
+#[cfg_attr(rust_js, rust_js::types = "react#ReactNode<>")]
+pub struct Element<T = webapi::Element>(PhantomData<JsObject>, PhantomData<T>);
+
+/// A tag's element, as what `jsx!` makes: an `Element`, the value itself.
+#[doc(hidden)]
+#[cfg_attr(rust_js, rust_js::link_name = "this")]
+pub fn element<T>(this: Element<T>) -> Element {
+    unreachable!()
+}
 
 /// The props a component's struct doesn't name, JS's `...rest`: a field of
 /// one, in props the component destructures, `LinkProps { href, rest }:
@@ -231,58 +243,66 @@ impl Element {
     pub fn __jsx() -> Element {
         unreachable!()
     }
+}
 
+#[doc(hidden)]
+impl<T> Element<T> {
     /// Spread a props struct into this element. Fields keep the JS names of
     /// their Rust struct (including the crate's camel_case setting).
     #[cfg_attr(rust_js, rust_js::link_name = "prop ...")]
-    pub fn props<P>(self, props: P) -> Element {
+    pub fn props<P>(self, props: P) -> Element<T> {
         unreachable!()
     }
 
     /// Its children: one [`Node`], or several as a tuple.
     #[cfg_attr(rust_js, rust_js::link_name = "prop children")]
-    pub fn children(self, children: impl Node) -> Element {
+    pub fn children(self, children: impl Node) -> Element<T> {
         unreachable!()
     }
 
     /// Tells React which item of a list this is, across renders.
     #[cfg_attr(rust_js, rust_js::link_name = "prop key")]
-    pub fn key(self, key: impl Key) -> Element {
+    pub fn key(self, key: impl Key) -> Element<T> {
         unreachable!()
     }
 
+    /// A ref to its element, or to one its element extends: a `<button>`'s
+    /// holds a `HtmlButtonElement`, or an `Element` (ADR 0224).
     #[cfg_attr(rust_js, rust_js::link_name = "prop ref")]
-    pub fn r#ref<H, M>(self, value: impl RefValue<H, M>) -> Element {
+    pub fn r#ref<U: 'static, M>(self, value: impl RefValue<&'static U, M>) -> Element<T>
+    where
+        T: webapi::IsA<U>,
+    {
         unreachable!()
     }
 
     /// Any attribute, by its name in JSX, which must be a string literal:
     /// `.attr("aria-hidden", "true")`, `.attr("data-id", id)`.
     #[cfg_attr(rust_js, rust_js::link_name = "prop")]
-    pub fn attr(self, name: &'static str, value: impl Value) -> Element {
+    pub fn attr(self, name: &'static str, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// [`style`](https://react.dev/reference/react-dom/components/common#applying-css-styles):
     /// `.style(Style::new().color("red"))` is `style={{ color: "red" }}`.
     #[cfg_attr(rust_js, rust_js::link_name = "prop style")]
-    pub fn style(self, style: Style) -> Element {
+    pub fn style(self, style: Style) -> Element<T> {
         unreachable!()
     }
 
     /// `dangerouslySetInnerHTML={{ __html }}`: HTML that React doesn't escape.
     #[cfg_attr(rust_js, rust_js::link_name = "prop dangerouslySetInnerHTML")]
-    pub fn dangerously_set_inner_html(self, html: InnerHtml) -> Element {
+    pub fn dangerously_set_inner_html(self, html: InnerHtml) -> Element<T> {
         unreachable!()
     }
 
     #[cfg_attr(rust_js, rust_js::link_name = "prop action")]
-    pub fn action<M>(self, value: impl FormAction<M>) -> Element {
+    pub fn action<M>(self, value: impl FormAction<M>) -> Element<T> {
         unreachable!()
     }
 
     #[cfg_attr(rust_js, rust_js::link_name = "prop formAction")]
-    pub fn form_action<M>(self, value: impl FormAction<M>) -> Element {
+    pub fn form_action<M>(self, value: impl FormAction<M>) -> Element<T> {
         unreachable!()
     }
 
@@ -290,7 +310,7 @@ impl Element {
     /// hoists into `<head>`.
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop precedence")]
-    pub fn precedence(self, value: impl Value) -> Element {
+    pub fn precedence(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 }

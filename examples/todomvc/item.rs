@@ -31,12 +31,12 @@ pub fn TodoItem(TodoItemProps { todo, dispatch }: TodoItemProps) -> Element {
         set_editing.set(false);
     };
     let title = todo.title.clone();
-    let edit = move |_: &react::event::Mouse| {
+    let edit = move |_: &react::event::Mouse<_>| {
         ended.set_current(false);
         set_draft.set(title.clone());
         set_editing.set(true);
     };
-    let keys = move |e: &Keyboard| {
+    let keys = move |e: &Keyboard<_>| {
         if e.key() == "Enter" {
             save();
         } else if e.key() == "Escape" {
@@ -57,7 +57,7 @@ pub fn TodoItem(TodoItemProps { todo, dispatch }: TodoItemProps) -> Element {
                     className="toggle"
                     type="checkbox"
                     checked={todo.completed}
-                    onChange={move |_: &Change| dispatch.dispatch(Action::Toggle(id))} />
+                    onChange={move |_: &Change<_>| dispatch.dispatch(Action::Toggle(id))} />
                 <label onDoubleClick={edit}>{todo.title.clone()}</label>
                 <button className="destroy" onClick={move |_| dispatch.dispatch(Action::Destroy(id))} />
             </div>
@@ -66,7 +66,7 @@ pub fn TodoItem(TodoItemProps { todo, dispatch }: TodoItemProps) -> Element {
                     className="edit"
                     autoFocus={true}
                     value={draft.clone()}
-                    onChange={move |e: &Change| set_draft.set(e.value())}
+                    onChange={move |e: &Change<_>| set_draft.set(e.value())}
                     onBlur={move |_| save()}
                     onKeyDown={keys} />
             }) } else { None }}
