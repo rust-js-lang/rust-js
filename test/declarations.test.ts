@@ -344,6 +344,41 @@ export const wrong: BadgeProps = { title: null };
   expect([shown(null), shown(undefined), shown("a")]).toEqual(["none", "none", "a"]);
 });
 
+// A type alias is TypeScript's, \`export type Toc = TocItem[];\`, which
+// TypeScript that imports it names, as react.dev's Toc imports \`Toc\`.
+test("declarations name a type alias", () => {
+  buildReact();
+  const dir = fixture("declarations-alias");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
+  writeFileSync(join(dir, "lib.rs"), `pub struct TocItem {
+    pub url: String,
+    pub depth: u32,
+}
+pub type Toc = Vec<TocItem>;
+pub type Pair<T> = (T, T);
+
+pub fn deepest(toc: &Toc) -> u32 {
+    toc.iter().map(|item| item.depth).max().unwrap_or(0)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("export type Toc = TocItem[];");
+  // TypeScript prints a tuple it's given across lines, as its printer does.
+  expect(declarations).toContain("export type Pair<T> = [\n    T,\n    T\n];");
+  writeFileSync(join(dir, "use.ts"), `import { deepest, type Pair, type Toc } from "./lib.js";
+const toc: Toc = [{ url: "#a", depth: 2 }];
+export const deep: number = deepest(toc);
+export const pair: Pair<number> = [1, 2];
+`);
+  writeFileSync(join(dir, "tsconfig.json"), JSON.stringify({
+    compilerOptions: { strict: true, noEmit: true, module: "esnext", moduleResolution: "bundler", allowJs: true, skipLibCheck: false },
+    files: ["use.ts"],
+  }));
+  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
+  expect(checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"))).toEqual([]);
+});
+
 // TypeScript prints them (ADR 0207), through @rust-js/typescript, which a
 // crate without it is told to add, its build failing.
 test("declarations where @rust-js/typescript isn't say to add it", () => {

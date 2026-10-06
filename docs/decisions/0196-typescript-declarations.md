@@ -41,6 +41,7 @@ export default Tag;
 | `Option<T>`, a field of one | `T \| null \| undefined`, an optional field `?: T` |
 | `Vec<T>`, a slice, an array, a tuple | `T[]`, `[A, B]` |
 | a struct with named fields, a unit-only enum | an `interface`, the union of its names |
+| a type alias, `pub type Toc = Vec<TocItem>` | `export type Toc = TocItem[]` |
 | react's `Element`, `Memo<P>`, `Context<T>` | `ReactNode`, `NamedExoticComponent<P>`, `Context<T>` |
 | a `Rest` of props (ADR 0195) | `[prop: string]: unknown` |
 | a closure, a function | `(...args: any[]) => any` |

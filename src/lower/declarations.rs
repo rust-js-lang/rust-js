@@ -46,6 +46,7 @@ pub(super) fn module(
             DefKind::Fn if !is_binding(tcx, def_id) => Some(out.function(def_id)),
             DefKind::Struct => out.structure(def_id),
             DefKind::Enum => Some(out.enumeration(def_id)),
+            DefKind::TyAlias => Some(out.alias(def_id)),
             DefKind::Const { .. } | DefKind::Static { .. } if tcx.item_name(def_id).as_str() != "_" => {
                 Some(out.constant(def_id))
             }
@@ -237,6 +238,19 @@ impl<'tcx> Declarations<'_, 'tcx> {
 
     /// `export type RouteTag = "foundation" | "intermediate";`, of an enum
     /// whose variants hold nothing: each is its name (ADR 0013).
+    /// `export type Toc = TocItem[];` of `pub type Toc = Vec<TocItem>;`.
+    fn alias(&mut self, def_id: DefId) -> Value {
+        let ty = self.tcx.type_of(def_id).instantiate_identity().skip_normalization();
+        json!({
+            "kind": "type",
+            "name": self.tcx.item_name(def_id).as_str(),
+            "exported": true,
+            "declare": false,
+            "typeParameters": self.generics(def_id),
+            "type": self.ts(ty),
+        })
+    }
+
     fn enumeration(&mut self, def_id: DefId) -> Value {
         let adt = self.tcx.adt_def(def_id);
         let untagged = is_untagged(self.tcx, def_id);

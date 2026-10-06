@@ -132,4 +132,12 @@ export const mutations: Mutation[] = [
     replace: "                Some(inner) if true || is_nullable(self.tcx, field) => (\n",
     tests: ["test/declarations.test.ts", "-t", "null for an Option"],
   },
+  {
+    name: "type-alias-undeclared",
+    breaks: "a `pub type` isn't declared, so TypeScript importing it, react.dev's Toc its `Toc`, finds no such export",
+    file: "src/lower/declarations.rs",
+    find: "            DefKind::TyAlias => Some(out.alias(def_id)),\n",
+    replace: "",
+    tests: ["test/declarations.test.ts", "-t", "type alias"],
+  },
 ];
