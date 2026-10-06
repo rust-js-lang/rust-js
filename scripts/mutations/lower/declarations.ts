@@ -5,6 +5,22 @@ const tests = ["test/declarations.test.ts"];
 
 export const mutations: Mutation[] = [
   {
+    name: "foreign-untagged-any",
+    breaks: "another crate's untagged enum, `js::Json`, is `any`, not the union of its payloads",
+    file: "src/lower/declarations.rs",
+    find: "if !did.is_local() && adt.is_enum() && is_untagged(tcx, did) {",
+    replace: "if false && !did.is_local() && adt.is_enum() && is_untagged(tcx, did) {",
+    tests: ["test/declarations.test.ts", "-t", "declarations type what a module exports"],
+  },
+  {
+    name: "index-object-named",
+    breaks: "`types = \"{ [key: string]: T }\"` is a type named so, not an object of `T`s by name: `Dict<f64>` isn't `{ [key: string]: number }`",
+    file: "src/lower/declarations.rs",
+    find: "declared.strip_prefix(\"{ [\")",
+    replace: "declared.strip_prefix(\"{ [never\")",
+    tests: ["test/declarations.test.ts", "-t", "declarations type what a module exports"],
+  },
+  {
     name: "types-args-appended",
     breaks: "a `types` written with its arguments, `react#ReactNode<>`, takes the Rust type's too: `ReactNode<any>`",
     file: "src/lower/declarations.rs",

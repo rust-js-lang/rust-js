@@ -6,7 +6,7 @@
 //! to less than Rust holds it to. They're the model of @rust-js/typescript
 //! (ADR 0206), which TypeScript prints (ADR 0207).
 
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
@@ -35,6 +35,7 @@ pub(super) fn module(
         files,
         imports: BTreeSet::new(),
         module_imports: BTreeSet::new(),
+        foreign: BTreeMap::new(),
     };
     let mut items = Vec::new();
     for item in tcx.hir_module_free_items(module) {
@@ -57,6 +58,9 @@ pub(super) fn module(
     if let Some(name) = default_export {
         items.push(json!({ "kind": "export-default", "name": name }));
     }
+    // Another crate's untagged enums it names, `js::Json`, each declared here,
+    // not exported: the union of its payloads, named, so it can be recursive.
+    items.extend(out.foreign.into_values().flatten());
     if items.is_empty() {
         return None;
     }
@@ -109,6 +113,9 @@ struct Declarations<'a, 'tcx> {
     imports: BTreeSet<(String, String)>,
     /// The types of the crate's other modules it names, by their path.
     module_imports: BTreeSet<(Vec<String>, String)>,
+    /// Another crate's untagged enums it names, by name: each one's
+    /// declaration, `None` while it's being made, as a payload names it.
+    foreign: BTreeMap<String, Option<Value>>,
 }
 
 impl<'tcx> Declarations<'_, 'tcx> {
@@ -366,6 +373,22 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     .and_then(|attr| attr.value_str())
                 {
                     let declared = declared.to_string();
+                    let params = &tcx.generics_of(did).own_params;
+                    // `{ [key: string]: T }`, an object of `T`s by name, as
+                    // `Dict<T>` is: TypeScript's own spelling of one, which a
+                    // recursive alias may hold, as `Record<string, T>` it may not.
+                    if let Some(index) = declared.strip_prefix("{ [").and_then(|d| d.strip_suffix(" }"))
+                        && let Some((key, value)) = index.split_once("]: ")
+                        && let Some((parameter, key)) = key.split_once(": ")
+                    {
+                        let value = match params.iter().find(|p| p.name.as_str() == value) {
+                            Some(param) => self.ts(args.type_at(param.index as usize)),
+                            None => reference(value, Vec::new()),
+                        };
+                        return json!({ "kind": "object", "members": [
+                            { "kind": "index", "parameter": parameter, "key": keyword(key), "type": value },
+                        ] });
+                    }
                     let (from, named) = match declared.rsplit_once('#') {
                         Some((from, named)) => (Some(from), named),
                         None => (None, declared.as_str()),
@@ -380,14 +403,33 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     if let Some(from) = from {
                         self.imports.insert((from.to_string(), name.to_string()));
                     }
+                    // A written argument that's one of the Rust type's own type
+                    // parameters is what it's given: `Map<string, T>` of a
+                    // `Dict<f64>` would be `Map<string, number>`.
                     let type_args: Vec<Value> = match given {
                         Some(given) => (given.split(',').map(str::trim))
                             .filter(|arg| !arg.is_empty())
-                            .map(|arg| reference(arg, Vec::new()))
+                            .map(|arg| match params.iter().find(|p| p.name.as_str() == arg) {
+                                Some(param) => self.ts(args.type_at(param.index as usize)),
+                                None => reference(arg, Vec::new()),
+                            })
                             .collect(),
                         None => args.types().map(|t| self.ts(t)).collect(),
                     };
                     return reference(name, type_args);
+                }
+                // Another crate's untagged enum, `js::Json`: declared here, as
+                // this crate's are, the union of its payloads (ADR 0225).
+                if !did.is_local() && adt.is_enum() && is_untagged(tcx, did) {
+                    let name = tcx.item_name(did).to_string();
+                    if !self.foreign.contains_key(&name) {
+                        self.foreign.insert(name.clone(), None);
+                        let mut declared = self.enumeration(did);
+                        declared["exported"] = json!(false);
+                        self.foreign.insert(name.clone(), Some(declared));
+                    }
+                    let type_args = args.types().map(|t| self.ts(t)).collect();
+                    return reference(&name, type_args);
                 }
                 // One of the crate's, declared: this module's by its name,
                 // another's imported from it (ADR 0210). Any other is `any`.
