@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
     name: "default-export-unwritten",
     breaks: "a Rust route's module has no default export, which Next.js takes as its page",
     file: "src/lower/pipeline.rs",
-    find: "                        default_export = Some(super::bindings::fn_name(tcx, function));",
+    find: "                        default_export = Some(function);",
     replace: "                        let _ = function;",
     tests: ["test/compiler.test.ts", "-t", "make a module a Next.js route"],
   },

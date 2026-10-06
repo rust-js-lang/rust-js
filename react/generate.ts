@@ -192,7 +192,7 @@ const lines: string[] = [
 // `translate`, `loading`. Every release has them.
 const typesFile = join(root, "node_modules", "@types", "react", "index.d.ts");
 const ts = await open([typesFile]);
-const { declarations } = await ts.read(typesFile);
+const { declarations }: { declarations: any[] } = await ts.read(typesFile);
 await ts.close();
 const typed: string[] = declarations
   .find((d: any) => d.kind === "namespace" && d.name === "React")
