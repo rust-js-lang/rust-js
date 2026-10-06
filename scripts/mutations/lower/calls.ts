@@ -33,6 +33,8 @@ export const mutations: Mutation[] = [
     find: "            && generic_args.types().next().is_some_and(|t| self.is_cell(t))",
     replace: "            && generic_args.types().next().is_some_and(|t| false && self.is_cell(t))",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_compare"],
+    // `$cmp` compares what they point at too: this is `p.value > c`.
+    snapshots: true,
   },
   {
     name: "option-as-mut-same",
@@ -56,7 +58,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/calls.rs",
     find: "            && !self.is_item_call(fun)\n",
     replace: "            && false\n",
-    tests: ["test/diagnostics.test.ts", "-t", "std &mut"],
+    tests: ["test/corpus.test.ts", "-t", "std_mut_items"],
   },
   {
     name: "cmp-max-unknown",
@@ -192,7 +194,9 @@ export const mutations: Mutation[] = [
     file: "src/lower/calls.rs",
     find: "            && self.recognition().converts_to_untagged(def_id, generic_args)\n",
     replace: "            && false\n",
-    tests: ["test/compiler.test.ts", "-t", "untagged enum"],
+    tests: ["test/corpus.test.ts", "-t", "untagged_enums"],
+    // Its `from` gives the same value: what's checked is that it's the value itself.
+    snapshots: true,
   },
   {
     name: "variadic-array-not-spread-out",
