@@ -118,8 +118,7 @@ export function heaps() {
     out += `${$debugStr(h.map((t) => t.name).join(""))}\n`;
   }
   const t = h[0];
-  const arg = t != null ? t.name : undefined;
-  out += `peek ${arg == null ? "None" : `Some(${$debugStr(arg, "'")})`} len ${h.length}\n`;
+  out += `peek ${t?.name == null ? "None" : `Some(${$debugStr(t?.name, "'")})`} len ${h.length}\n`;
   let popped = "";
   for (let i$1 = 0; i$1 < 4; i$1++) {
     popped += $unwrap($heapPop(h, taskOrd_cmp)).name;
@@ -132,12 +131,12 @@ export function heaps() {
     .join("");
   const from = $heapFrom([4, 8, 1, 9, 9, 2, 7, 3], $cmp);
   const collected = $heapFrom([5, 1, 5, 2, 8], $cmp);
-  const arg$1 = collected;
-  const arg$2 = $heapSorted(from, $cmp);
-  out += `${sorted} [${from.map((item) => String(item)).join(", ")}] [${arg$1.map((item) => String(item)).join(", ")}] [${arg$2.map((item) => String(item)).join(", ")}]\n`;
+  const arg = collected;
+  const arg$1 = $heapSorted(from, $cmp);
+  out += `${sorted} [${from.map((item) => String(item)).join(", ")}] [${arg.map((item) => String(item)).join(", ")}] [${arg$1.map((item) => String(item)).join(", ")}]\n`;
   let empty = [];
-  const arg$3 = $heapPop(empty, $cmp);
-  out += `${arg$3 == null ? "None" : `Some(${arg$3})`} ${empty[0] == null ? "None" : `Some(${empty[0]})`} ${empty.length === 0}\n`;
+  const arg$2 = $heapPop(empty, $cmp);
+  out += `${arg$2 == null ? "None" : `Some(${arg$2})`} ${empty[0] == null ? "None" : `Some(${empty[0]})`} ${empty.length === 0}\n`;
   return out;
 }
 

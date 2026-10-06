@@ -156,6 +156,18 @@ export function shifted(by, items) {
   return by != null ? map(by) : undefined;
 }
 
+export function name_of(named) {
+  return named?.name;
+}
+
+export function other_name(flag, named) {
+  return flag != null ? named.name : undefined;
+}
+
+export function label_of(named) {
+  return named != null ? named.label : "none";
+}
+
 export function report() {
   let out = "";
   for (const n of [0, 4, 5, 8]) {
@@ -179,6 +191,14 @@ export function report() {
     out += `${arg$6 == null ? "None" : `Some([${arg$6.map((item) => String(item)).join(", ")}])`}\n`;
     const arg$7 = shifted(n$1, [1, n$1]);
     out += `${arg$7 == null ? "None" : `Some([${arg$7.map((item) => String(item)).join(", ")}])`}\n`;
+    const named = { name: n$1 > 0 ? String(n$1) : undefined, label: `#${n$1}` };
+    const arg$8 = name_of(named);
+    const arg$9 = name_of(undefined);
+    out += `${arg$8 == null ? "None" : `Some(${$debugStr(arg$8)})`} ${arg$9 == null ? "None" : `Some(${$debugStr(arg$9)})`}\n`;
+    const arg$10 = other_name(undefined, named);
+    const arg$11 = other_name(n$1, named);
+    out += `${arg$10 == null ? "None" : `Some(${$debugStr(arg$10)})`} ${arg$11 == null ? "None" : `Some(${$debugStr(arg$11)})`}\n`;
+    out += `${$debugStr(label_of(named))} ${$debugStr(label_of(undefined))}\n`;
   }
   return out;
 }

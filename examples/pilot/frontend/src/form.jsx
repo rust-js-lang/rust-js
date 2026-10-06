@@ -10,7 +10,7 @@ import { go } from "./route.js";
 
 function message(errors, field) {
   const error = errors.find((error) => error.field === field);
-  return error != null ? error.message : undefined;
+  return error?.message;
 }
 
 export function NewContactForm() {

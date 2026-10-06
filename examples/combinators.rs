@@ -112,6 +112,21 @@ pub fn bumped(ok: bool, items: Vec<u32>) -> Option<Vec<u32>> {
 pub fn shifted(by: Option<u32>, items: Vec<u32>) -> Option<Vec<u32>> {
     by.map(|x| items.iter().map(|n| n + x).collect())
 }
+pub struct Named {
+    pub name: Option<String>,
+    pub label: String,
+}
+// A field of what's there, or nothing: `named?.name`, as a person writes it.
+pub fn name_of(named: Option<&Named>) -> Option<&str> {
+    named.and_then(|named| named.name.as_deref())
+}
+// Not of another's, nor where nothing isn't `undefined`.
+pub fn other_name<'a>(flag: Option<u32>, named: &'a Named) -> Option<&'a str> {
+    flag.and_then(|_| named.name.as_deref())
+}
+pub fn label_of(named: Option<&Named>) -> &str {
+    named.map_or("none", |named| named.label.as_str())
+}
 pub fn report() -> String {
     let mut out = String::new();
     for n in [0, 4, 5, 8] {
@@ -125,6 +140,10 @@ pub fn report() -> String {
         out.push_str(&format!("{:?}\n", joined(vec![1, n], n + 1)));
         out.push_str(&format!("{:?}\n", bumped(n > 0, vec![1, n])));
         out.push_str(&format!("{:?}\n", shifted(Some(n), vec![1, n])));
+        let named = Named { name: (n > 0).then(|| n.to_string()), label: format!("#{n}") };
+        out.push_str(&format!("{:?} {:?}\n", name_of(Some(&named)), name_of(None)));
+        out.push_str(&format!("{:?} {:?}\n", other_name(None, &named), other_name(Some(n), &named)));
+        out.push_str(&format!("{:?} {:?}\n", label_of(Some(&named)), label_of(None)));
     }
     out
 }

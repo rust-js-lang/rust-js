@@ -67,6 +67,15 @@ impl Module {
     }
 }
 
+/// Are `a` and `b` one path: a variable, or `a.b.c` of the same names?
+fn same_path(a: &Expr, b: &Expr) -> bool {
+    match (&a.kind, &b.kind) {
+        (ExprKind::Var(x), ExprKind::Var(y)) => x == y,
+        (ExprKind::Member(x, f), ExprKind::Member(y, g)) => f == g && same_path(x, y),
+        _ => false,
+    }
+}
+
 /// How many times `stmts` name the variable `name`, read or written.
 pub fn mentions_in(stmts: &[Stmt], name: &str) -> usize {
     let mut count = 0;
@@ -550,6 +559,20 @@ impl Expr {
     }
 
     pub fn cond(test: Expr, then: Expr, els: Expr) -> Expr {
+        // `a != null ? a.b : undefined` is `a?.b`, as a person writes it. One
+        // property only: `a?.b.c` would end the chain at `.c` too.
+        if let ExprKind::Binary(Op::LooseNe, tested, null) = &test.kind
+            && matches!(null.kind, ExprKind::Null)
+            && matches!(els.kind, ExprKind::Undefined)
+            && let ExprKind::Member(object, property) = &then.kind
+            && same_path(tested, object)
+        {
+            let chain = Expr::optional_member((**object).clone(), property.clone());
+            return Expr {
+                span: then.span,
+                ..chain
+            };
+        }
         Expr::new(ExprKind::Cond(Box::new(test), Box::new(then), Box::new(els)))
     }
 

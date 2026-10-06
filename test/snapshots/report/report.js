@@ -98,7 +98,7 @@ export function table(input) {
       const right = key(b);
       return $cmp(left[0], right[0]) || $cmp(right[1][0], left[1][0]);
     });
-    const best = (r$2 != null ? r$2.name : undefined) ?? "-";
+    const best = r$2?.name ?? "-";
     out += `${$pad(team, 6, ">")}: n=${members.length} avg=${$toFixed(avg, 1).padStart(6)} best=${best}\n`;
   }
   const ages = rows.map((r) => r.age);

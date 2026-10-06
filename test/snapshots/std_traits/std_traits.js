@@ -300,16 +300,9 @@ export function orderings() {
     { cmp: (a, b) => $cmp(a.major, b.major) || $cmp(a.minor, b.minor) },
     { copy: (value) => ({ ...value }) },
   );
-  const tmp$3 = (v != null ? v.minor : undefined) ?? 0;
+  const tmp$3 = v?.minor ?? 0;
   const v$1 = $minBy(all, (a, b) => $cmp(a.major, b.major) || $cmp(a.minor, b.minor));
-  return [
-    tmp,
-    tmp$1,
-    tmp$2,
-    tmp$3,
-    (v$1 != null ? v$1.minor : undefined) ?? 0,
-    all.map((v) => v.minor),
-  ];
+  return [tmp, tmp$1, tmp$2, tmp$3, v$1?.minor ?? 0, all.map((v) => v.minor)];
 }
 
 export function partial_orderings() {

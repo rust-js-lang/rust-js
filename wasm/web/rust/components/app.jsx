@@ -83,7 +83,7 @@ export function App() {
   }, []);
   const live = () => {
     const view = source.current;
-    return view != null ? view.state : undefined;
+    return view?.state;
   };
   const run = (files, loaded, rootJs, test) => {
     const n = (runs.current + 1) >>> 0;

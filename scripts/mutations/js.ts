@@ -43,4 +43,28 @@ export const mutations: Mutation[] = [
     replace: "                    replaced || !replaced\n                } =>\n",
     tests: ["test/compiler.test.ts", "-t", "combinators.report matches"],
   },
+  {
+    name: "optional-chain-not-made",
+    breaks: "a field of what's there, or nothing, is `named != null ? named.name : undefined`, not `named?.name`",
+    file: "src/js.rs",
+    find: "            && same_path(tested, object)\n",
+    replace: "            && same_path(tested, object)\n            && false\n",
+    tests: ["test/compiler.test.ts", "-t", "optional chain"],
+  },
+  {
+    name: "optional-chain-of-another",
+    breaks: "`flag != null ? named.name : undefined` is `named?.name`, a name where `flag` is nothing",
+    file: "src/js.rs",
+    find: "            && same_path(tested, object)\n",
+    replace: "            && (same_path(tested, object) || true)\n",
+    tests: ["test/compiler.test.ts", "-t", "combinators.report matches"],
+  },
+  {
+    name: "optional-chain-any-fallback",
+    breaks: "`named != null ? named.label : \"none\"` is `named?.label`, nothing where it should be \"none\"",
+    file: "src/js.rs",
+    find: "            && matches!(els.kind, ExprKind::Undefined)\n",
+    replace: "",
+    tests: ["test/compiler.test.ts", "-t", "combinators.report matches"],
+  },
 ];

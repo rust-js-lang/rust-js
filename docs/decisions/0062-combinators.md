@@ -40,6 +40,11 @@ value written in place,** as `Option::map` already was:
   wherever it's made. One that reads `x` of `by.map(|x| ..)` still names
   the outer closure, as before: whether it runs at once is the method's,
   not the closure's, to say.
+- **A field of what's there, or nothing, is an optional chain:**
+  `named.and_then(|named| named.name.as_deref())` is `named?.name`, where
+  it was `named != null ? named.name : undefined`. One property only, of
+  the very path tested, with nothing as `undefined`: `a?.b.c` would end the
+  chain at `.c` as well, and `map_or("none", ..)`'s fallback stays.
 - **Rust's order is kept:**
   - an argument Rust computes whatever happens, like `map_or`'s default,
     goes in a `const` first if it has effects;
