@@ -27,9 +27,11 @@ fn prints_on_lines(value: &Expr) -> bool {
             ] => prints_on_lines(value),
             _ => true,
         },
-        ExprKind::Member(a, _) | ExprKind::OptionalMember(a, _) | ExprKind::Unary(_, a) | ExprKind::Await(a) => {
-            prints_on_lines(a)
-        }
+        ExprKind::Member(a, _)
+        | ExprKind::OptionalMember(a, _)
+        | ExprKind::Unary(_, a)
+        | ExprKind::Await(a)
+        | ExprKind::Spread(a) => prints_on_lines(a),
         ExprKind::Index(a, b) | ExprKind::Binary(_, a, b) => prints_on_lines(a) || prints_on_lines(b),
         ExprKind::Cond(a, b, c) => prints_on_lines(a) || prints_on_lines(b) || prints_on_lines(c),
         ExprKind::Call(f, args) | ExprKind::OptionalCall(f, args) | ExprKind::New(f, args) => {
@@ -196,9 +198,11 @@ impl Context {
             ExprKind::Var(name) => {
                 self.names.insert(name.clone());
             }
-            ExprKind::Member(a, _) | ExprKind::OptionalMember(a, _) | ExprKind::Unary(_, a) | ExprKind::Await(a) => {
-                self.reserve(a)
-            }
+            ExprKind::Member(a, _)
+            | ExprKind::OptionalMember(a, _)
+            | ExprKind::Unary(_, a)
+            | ExprKind::Await(a)
+            | ExprKind::Spread(a) => self.reserve(a),
             ExprKind::Index(a, b) | ExprKind::Binary(_, a, b) => {
                 self.reserve(a);
                 self.reserve(b);
@@ -340,9 +344,11 @@ impl Context {
                     prior |= effects;
                 }
             }
-            ExprKind::Member(a, _) | ExprKind::OptionalMember(a, _) | ExprKind::Unary(_, a) | ExprKind::Await(a) => {
-                self.expr(a, out, blocked)
-            }
+            ExprKind::Member(a, _)
+            | ExprKind::OptionalMember(a, _)
+            | ExprKind::Unary(_, a)
+            | ExprKind::Await(a)
+            | ExprKind::Spread(a) => self.expr(a, out, blocked),
             ExprKind::Index(a, b) | ExprKind::Binary(_, a, b) => {
                 // Logical RHS is conditional; no expression may escape it.
                 self.expr(a, out, blocked);
@@ -435,7 +441,8 @@ fn may_run_code(e: &Expr) -> bool {
         | ExprKind::Index(..)
         | ExprKind::Call(..)
         | ExprKind::New(..)
-        | ExprKind::Await(..) => true,
+        | ExprKind::Await(..)
+        | ExprKind::Spread(..) => true,
         ExprKind::Array(items) => items.iter().any(may_run_code),
         ExprKind::Object(props) => props.iter().any(|p| match p {
             Prop::Spread(_) => true,

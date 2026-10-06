@@ -554,6 +554,14 @@ test("an untagged enum is its payload, told apart by its runtime kind", async ()
   expect(js).toContain("String(n)");
 });
 
+// A slice's `concat` of parts written out is an array of them, spread, as
+// JS writes it, and a part written out as an array its items in place.
+test("concat of parts written out is an array of them, spread", async () => {
+  const js = await Bun.file(join(target, "combinators.js")).text();
+  expect(js).toContain("export function joined(path, last) {\n  return [...path, last];\n}");
+  expect(js).toContain("[1, 2, 3]];");
+});
+
 // ADR 0034: strings are JS strings, and their methods JS's.
 test("string methods are JS's, and format! is a template literal", async () => {
   const js = await Bun.file(join(target, "strings.js")).text();

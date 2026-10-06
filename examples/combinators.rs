@@ -98,6 +98,11 @@ pub fn panics(i: usize) -> u32 {
     let mut v = vec![1u32, 2];
     v.remove(i)
 }
+// A slice's `concat` of parts written out is an array of them, spread, as
+// JS writes it: `[...path, last]`.
+pub fn joined(path: Vec<u32>, last: u32) -> Vec<u32> {
+    [path.as_slice(), &[last]].concat()
+}
 pub fn report() -> String {
     let mut out = String::new();
     for n in [0, 4, 5, 8] {
@@ -108,6 +113,7 @@ pub fn report() -> String {
     }
     for n in [0, 5] {
         out.push_str(&format!("{:?} {:?} {:?}\n", iters(n), consumers(n), vecs(n)));
+        out.push_str(&format!("{:?}\n", joined(vec![1, n], n + 1)));
     }
     out
 }

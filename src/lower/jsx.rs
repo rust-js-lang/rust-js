@@ -65,7 +65,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 true
             }
-            js::ExprKind::Array(items) if items.iter().any(jsx_tree) => {
+            // Item by item, but not of `...items`, which is no value alone.
+            js::ExprKind::Array(items)
+                if items.iter().any(jsx_tree) && !items.iter().any(|i| matches!(i.kind, js::ExprKind::Spread(_))) =>
+            {
                 for item in items {
                     self.capture_jsx_input("children", item, out);
                 }

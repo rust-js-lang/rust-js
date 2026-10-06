@@ -135,14 +135,16 @@ export function vecs(n) {
   $truncate(v, 6);
   const w = $windows(v, 2).map((w) => w.slice());
   const c = $chunks(v, 4).map((c) => c.slice());
-  const tmp = v;
-  const result = [[1, 2], [3]];
-  return [has, tmp, removed, w, c, result.flat()];
+  return [has, v, removed, w, c, [1, 2, 3]];
 }
 
 export function panics(i) {
   let v = [1, 2];
   return $removeAt(v, i);
+}
+
+export function joined(path, last) {
+  return [...path, last];
 }
 
 export function report() {
@@ -161,6 +163,9 @@ export function report() {
     const arg$4 = consumers(n$1);
     const arg$5 = vecs(n$1);
     out += `([${arg$3[0].map((item) => String(item)).join(", ")}], [${arg$3[1].map((item) => String(item)).join(", ")}], [${arg$3[2].map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}], [${arg$3[3].map((item) => String(item)).join(", ")}], [${arg$3[4].map((item) => String(item)).join(", ")}], [${arg$3[5].map((item) => String(item)).join(", ")}]) (${arg$4[0] == null ? "None" : `Some(${arg$4[0]})`}, ${arg$4[1] == null ? "None" : `Some(${arg$4[1]})`}, ${arg$4[2]}, ${arg$4[3] == null ? "None" : `Some(${arg$4[3]})`}, ${arg$4[4] == null ? "None" : `Some(${arg$4[4]})`}, ([${arg$4[5][0].map((item) => String(item)).join(", ")}], [${arg$4[5][1].map((item) => String(item)).join(", ")}])) (${arg$5[0]}, [${arg$5[1].map((item) => String(item)).join(", ")}], ${arg$5[2]}, [${arg$5[3].map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}], [${arg$5[4].map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}], [${arg$5[5].map((item) => String(item)).join(", ")}])\n`;
+    out += `[${joined([1, n$1], (n$1 + 1) >>> 0)
+      .map((item) => String(item))
+      .join(", ")}]\n`;
   }
   return out;
 }

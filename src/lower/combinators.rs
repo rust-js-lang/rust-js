@@ -487,6 +487,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(values.remove(0));
         }
         let subject = values.remove(0);
+        // A slice's `concat` of parts written out, `[path, &[last]].concat()`:
+        // an array of them, spread, `[...path, last]`, as JS writes it, and a
+        // part written out as an array its items in place.
+        if comb == Comb::Concat
+            && let js::ExprKind::Array(parts) = &subject.kind
+            && !self
+                .slice_item(subject_ty)
+                .is_some_and(|item| self.is_string_like(item))
+        {
+            let items = parts
+                .iter()
+                .flat_map(|part| match &part.kind {
+                    js::ExprKind::Array(items) => items.clone(),
+                    _ => vec![Expr::spread(part.clone())],
+                })
+                .collect();
+            return Ok(Expr::array(items));
+        }
         // The subject is read more than once.
         let subject = if subject.reads_same() {
             subject

@@ -154,4 +154,20 @@ export const mutations: Mutation[] = [
     replace: "                if false && self.is_text_ord(item) {",
     tests: ["test/corpus.test.ts", "-t", "code_point_order"],
   },
+  {
+    name: "concat-of-parts-flattened",
+    breaks: "`[path, &[last]].concat()` is `[path, [last]].flat()` of an array kept first, where JS writes `[...path, last]`",
+    file: "src/lower/combinators.rs",
+    find: "        if comb == Comb::Concat\n",
+    replace: "        if comb == Comb::Concat && false\n",
+    tests: ["test/compiler.test.ts", "-t", "concat of parts"],
+  },
+  {
+    name: "concat-literal-part-spread",
+    breaks: "a part written out as an array is spread, `[...[1, 2], ...[3]]`, where its items go in place",
+    file: "src/lower/combinators.rs",
+    find: "                    js::ExprKind::Array(items) => items.clone(),\n",
+    replace: "",
+    tests: ["test/compiler.test.ts", "-t", "concat of parts"],
+  },
 ];

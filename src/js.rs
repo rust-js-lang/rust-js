@@ -309,6 +309,8 @@ pub enum ExprKind {
     Index(Box<Expr>, Box<Expr>),
     /// `[a, b]`: a tuple or tuple struct (ADR 0020).
     Array(Vec<Expr>),
+    /// `...a`, an array's item only: `[...path, last]`, a slice's `concat`.
+    Spread(Box<Expr>),
     /// `{ x: a, y: b }`: a struct (ADR 0020).
     Object(Vec<Prop>),
     Unary(UnaryOp, Box<Expr>),
@@ -501,17 +503,23 @@ impl Expr {
     }
 
     pub fn index(object: Expr, index: Expr) -> Expr {
-        // `[x][0]` is `x`.
+        // `[x][0]` is `x`, where `x` is an item, not `...items`.
         if let (ExprKind::Array(items), Some(0)) = (&object.kind, index.as_int())
-            && items.len() == 1
+            && let [item] = &items[..]
+            && !matches!(item.kind, ExprKind::Spread(_))
         {
-            return items[0].clone();
+            return item.clone();
         }
         Expr::new(ExprKind::Index(Box::new(object), Box::new(index)))
     }
 
     pub fn array(items: Vec<Expr>) -> Expr {
         Expr::new(ExprKind::Array(items))
+    }
+
+    /// `...items`, as an array's item.
+    pub fn spread(items: Expr) -> Expr {
+        Expr::new(ExprKind::Spread(Box::new(items)))
     }
 
     pub fn object(props: Vec<Prop>) -> Expr {
@@ -624,6 +632,7 @@ impl Expr {
             | ExprKind::OptionalMember(a, _)
             | ExprKind::Unary(_, a)
             | ExprKind::Await(a)
+            | ExprKind::Spread(a)
             | ExprKind::Handle(a) => a.visit_vars(read),
             ExprKind::Index(a, b) | ExprKind::Binary(_, a, b) | ExprKind::Pair(a, b) => {
                 a.visit_vars(read);
@@ -672,9 +681,11 @@ impl Expr {
                 StmtKind::Return(Some(value)) | StmtKind::Expr(value) => value.contains_jsx(),
                 _ => false,
             }),
-            ExprKind::Member(a, _) | ExprKind::OptionalMember(a, _) | ExprKind::Unary(_, a) | ExprKind::Await(a) => {
-                a.contains_jsx()
-            }
+            ExprKind::Member(a, _)
+            | ExprKind::OptionalMember(a, _)
+            | ExprKind::Unary(_, a)
+            | ExprKind::Await(a)
+            | ExprKind::Spread(a) => a.contains_jsx(),
             ExprKind::Handle(_) | ExprKind::Pair(..) => false,
             ExprKind::Index(a, b) | ExprKind::Binary(_, a, b) => a.contains_jsx() || b.contains_jsx(),
             ExprKind::Cond(a, b, c) => a.contains_jsx() || b.contains_jsx() || c.contains_jsx(),
@@ -774,6 +785,7 @@ impl Expr {
             ExprKind::OptionalCall(f, args) => ExprKind::OptionalCall(one(f)?, all(args)?),
             ExprKind::New(f, args) => ExprKind::New(one(f)?, all(args)?),
             ExprKind::Await(a) => ExprKind::Await(one(a)?),
+            ExprKind::Spread(a) => ExprKind::Spread(one(a)?),
             ExprKind::Template(texts, values) => ExprKind::Template(texts.clone(), all(values)?),
             ExprKind::Jsx(jsx) => ExprKind::Jsx(Box::new(Jsx {
                 tag: match &jsx.tag {
@@ -804,6 +816,7 @@ impl Expr {
             | ExprKind::OptionalMember(a, _)
             | ExprKind::Unary(_, a)
             | ExprKind::Await(a)
+            | ExprKind::Spread(a)
             | ExprKind::Handle(a) => a.mentions_var(name),
             ExprKind::Index(a, b) | ExprKind::Binary(_, a, b) | ExprKind::Pair(a, b) => {
                 a.mentions_var(name) || b.mentions_var(name)
@@ -869,6 +882,7 @@ impl Expr {
             | ExprKind::AsyncArrow(..) => false,
             // It lets other code run meanwhile.
             ExprKind::Await(_) => true,
+            ExprKind::Spread(a) => a.has_effects(),
             ExprKind::Member(object, _) | ExprKind::OptionalMember(object, _) => object.has_effects(),
             // Making one reads nothing: its getter does, later.
             ExprKind::Handle(_) => false,

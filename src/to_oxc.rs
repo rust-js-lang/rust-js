@@ -734,7 +734,12 @@ impl<'a> Cx<'a> {
                 Expression::new_computed_member_expression(sp, self.expr(object), self.expr(index), false, b)
             }
             ExprKind::Array(items) => self.nested(items.len() > 2, || {
-                let items = items.iter().map(|item| ArrayExpressionElement::from(self.expr(item)));
+                let items = items.iter().map(|item| match &item.kind {
+                    ExprKind::Spread(all) => {
+                        ArrayExpressionElement::new_spread_element(span(item.span), self.expr(all), b)
+                    }
+                    _ => ArrayExpressionElement::from(self.expr(item)),
+                });
                 Expression::new_array_expression(sp, ArenaVec::from_iter_in(items, b), b)
             }),
             ExprKind::Object(props) => self.nested(props.len() > 1, || {
@@ -791,6 +796,7 @@ impl<'a> Cx<'a> {
                 Expression::new_arrow_function_expression(sp, is_async, None, params, None, body, b)
             }
             ExprKind::Await(promise) => Expression::new_await_expression(sp, self.expr(promise), b),
+            ExprKind::Spread(_) => unreachable!("`...items` is an array's item, which its array writes"),
             ExprKind::Call(callee, args) => {
                 let args = args.iter().map(|a| Argument::from(self.expr(a)));
                 Expression::new_call_expression(sp, self.expr(callee), None, ArenaVec::from_iter_in(args, b), false, b)

@@ -30,11 +30,7 @@ function main() {
   console.log(`${method([80, 79, 83, 84])} ${method([])}`);
   const raw = [97, 1, 255, 10, 92, 34];
   console.log(`[${raw.map((item) => String(item)).join(", ")}] ${checksum(raw)}`);
-  const result = [
-    [97, 98],
-    [99, 100],
-  ];
-  const joined = result.flat();
+  const joined = [97, 98, 99, 100];
   console.log(
     `[${joined.map((item) => String(item)).join(", ")}] ${$eq(joined, [97, 98, 99, 100])}`,
   );
