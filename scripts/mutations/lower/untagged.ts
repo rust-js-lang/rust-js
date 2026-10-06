@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "untagged-object-takes-arrays",
     breaks: "an untagged enum's struct variant takes an array, or a class's instance, as `typeof` says object of each",
     file: "src/lower/untagged.rs",
-    find: "                (Kind::Object, Kind::Array | Kind::Class(..)) => true,\n",
+    find: "                (Kind::Object, Kind::Array | Kind::Class(..) | Kind::Test(_)) => true,\n",
     replace: "",
     tests: ["test/compiler.test.ts", "-t", "untagged enum"],
   },

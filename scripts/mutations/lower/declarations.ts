@@ -24,8 +24,8 @@ export const mutations: Mutation[] = [
     name: "types-args-appended",
     breaks: "a `types` written with its arguments, `react#ReactNode<>`, takes the Rust type's too: `ReactNode<any>`",
     file: "src/lower/declarations.rs",
-    find: "                        Some((name, given)) => (name, Some(given.trim_end_matches('>'))),",
-    replace: "                        Some((name, _)) => (name, None::<&str>),",
+    find: "            Some((name, given)) => (name, Some(given.trim_end_matches('>'))),",
+    replace: "            Some((name, _)) => (name, None::<&str>),",
     tests: ["test/declarations.test.ts", "-t", "declarations type what a module exports"],
   },
   {
@@ -56,8 +56,8 @@ export const mutations: Mutation[] = [
     name: "declared-binding-type-any",
     breaks: "a binding's type, react's `Memo<P>`, is `any` to TypeScript, which checks none of a `memo`'s props",
     file: "src/lower/declarations.rs",
-    find: "                if let Some(declared) = tcx\n",
-    replace: "                if false\n                    && let Some(declared) = tcx\n",
+    find: "                if let Some(declared) = written_types(tcx, did) {\n",
+    replace: "                if false\n                    && let Some(declared) = written_types(tcx, did)\n                {\n",
     tests,
   },
   {
@@ -88,8 +88,8 @@ export const mutations: Mutation[] = [
     name: "generic-type-imported-whole",
     breaks: "`AnchorHTMLAttributes<HTMLAnchorElement>` is imported by that whole text",
     file: "src/lower/declarations.rs",
-    find: "                        self.imports.insert((from.to_string(), name.to_string()));",
-    replace: "                        self.imports.insert((from.to_string(), named.to_string()));",
+    find: "            self.imports.insert((from.to_string(), name.to_string()));",
+    replace: "            self.imports.insert((from.to_string(), named.to_string()));",
     tests: tests,
   },
   {

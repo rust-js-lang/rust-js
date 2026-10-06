@@ -77,7 +77,7 @@ test("read gives a file's declarations, by TypeScript's own parser", async () =>
         },
       ],
     });
-    expect(read[3].typeParameters).toEqual([{ name: "C", constraint: { kind: "reference", name: "ReactNode", args: [] } }]);
+    expect(read[3]).toMatchObject({ typeParameters: [{ name: "C", constraint: { kind: "reference", name: "ReactNode", args: [] } }] });
     expect(read[2]).toMatchObject({
       type: {
         kind: "union",
