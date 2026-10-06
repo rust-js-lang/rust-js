@@ -183,6 +183,8 @@ pub(super) enum Std {
     OptionTake,
     OptionReplace,
     MemTake,
+    /// `opt.flatten()`: the inner `Option`, `$someValue(opt)` (ADR 0051).
+    OptionFlatten,
     /// `s.to_ascii_lowercase()`: only ASCII's letters, `$asciiCase(s)`,
     /// unlike JS's `toLowerCase` (ADR 0136).
     AsciiCase {
@@ -1354,6 +1356,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "is_some" if option => Std::IsSome,
             "take" if option => Std::OptionTake,
             "replace" if option => Std::OptionReplace,
+            "flatten" if option => Std::OptionFlatten,
             "iter" if option => Std::OptionIter,
             "copied" | "cloned" if option => Std::OptionCloned,
             "is_none" if option => Std::IsNone,

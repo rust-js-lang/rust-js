@@ -61,6 +61,8 @@ function $some(x) {
     .find(..)` was `findIndex` of a JS iterator, which threw. (Amended.)
   - `bool::then` and `then_some` box their value, and `copied`, `cloned`,
     `as_ref`, `filter`, `or` and `or_else` keep the box they're given;
+  - an `Option` of an `Option`'s `flatten` is `$someValue` of it, the inner
+    one, a box one level shallower: `Some(None)` is `None` (amended);
   - an iterator's `last` is `$someAt(items, items.length - 1)`;
   - `Result::ok` wraps its value in `$some`.
 

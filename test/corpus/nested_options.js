@@ -132,6 +132,27 @@ function main() {
   console.log(
     `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(arg$10)} ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(arg$11)}`,
   );
+  const nested = [1, $some(undefined), undefined];
+  console.log(
+    `[${nested
+      .map((o) => $someValue(o))
+      .map((item) => (item == null ? "None" : `Some(${item})`))
+      .join(", ")}]`,
+  );
+  const arg$12 = $someValue($some($some(undefined)));
+  const arg$13 = $someValue($some($some($some(undefined))));
+  console.log(
+    `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(arg$12)} ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : "Some(())"))($someValue(value))})`))(arg$13)}`,
+  );
+  const arg$14 = flat($some($some(undefined)));
+  const arg$15 = flat($some(undefined));
+  console.log(
+    `${arg$14 == null ? "None" : `Some(${unitDebug_fmt($someValue(arg$14))})`} ${arg$15 == null ? "None" : `Some(${unitDebug_fmt($someValue(arg$15))})`}`,
+  );
+}
+
+function flat(o) {
+  return $someValue(o);
 }
 
 export function entry() {

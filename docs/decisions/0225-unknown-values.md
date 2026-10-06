@@ -96,8 +96,6 @@ value.name = "new";
   still skipped, as what Rust gives one is open.
 - **A typed JSON value**, ReScript's `JSON.t`: an object's fields would need
   a dictionary type, which the `js` crate doesn't have.
-- **`Option::flatten`**, which rust-js doesn't take yet, would make
-  `json::parse(text).ok().flatten()` one step.
 
 ## Costs
 
