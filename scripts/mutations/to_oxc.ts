@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "                    IdentifierName::new(SPAN, self.name(property), b),\n                    false,",
     tests: ["test/corpus.test.ts", "-t", "pretty_debug"],
   },
+  {
+    name: "spread-argument-unwritten",
+    breaks: "a call's `...values` argument isn't written, and printing it panics",
+    file: "src/to_oxc.rs",
+    find: "            ExprKind::Spread(all) => Argument::new_spread_element(span(a.span), self.expr(all), b),\n",
+    replace: "",
+    tests: ["test/compiler.test.ts", "-t", "variadic binding"],
+  },
 ];

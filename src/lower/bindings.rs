@@ -189,6 +189,13 @@ pub(super) fn is_untagged(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
 }
 
+/// Whether a binding's last parameter, a slice, is JS's rest arguments,
+/// `#[rust_js::variadic]` (ADR 0221).
+pub(super) fn is_variadic(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("variadic")];
+    tcx.get_attrs_by_path(def_id, &path).next().is_some()
+}
+
 /// Whether an untagged enum's variant is what its others aren't,
 /// `#[rust_js::otherwise]` (ADR 0214).
 pub(super) fn is_otherwise(tcx: TyCtxt<'_>, def_id: DefId) -> bool {

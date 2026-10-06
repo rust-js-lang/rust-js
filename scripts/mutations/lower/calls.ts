@@ -194,4 +194,28 @@ export const mutations: Mutation[] = [
     replace: "            && false\n",
     tests: ["test/compiler.test.ts", "-t", "untagged enum"],
   },
+  {
+    name: "variadic-array-not-spread-out",
+    breaks: "a variadic binding's slice written out is one array argument, `Math.max([a, b, 1])`",
+    file: "src/lower/calls.rs",
+    find: "                    }) => args.extend(items),\n",
+    replace: "                    }) => args.push(Expr::array(items)),\n",
+    tests: ["test/compiler.test.ts", "-t", "variadic binding"],
+  },
+  {
+    name: "variadic-slice-given-whole",
+    breaks: "a variadic binding's slice in a variable is one argument, `Math.max(values)`, not spread",
+    file: "src/lower/calls.rs",
+    find: "                    Some(last) => args.push(Expr::spread(last)),\n",
+    replace: "                    Some(last) => args.push(last),\n",
+    tests: ["test/compiler.test.ts", "-t", "variadic binding"],
+  },
+  {
+    name: "variadic-of-no-slice",
+    breaks: "a variadic binding whose last parameter isn't a slice spreads it anyway, `Math.max(1, ...2)`",
+    file: "src/lower/calls.rs",
+    find: "                if !inputs.last().is_some_and(|ty| ty.peel_refs().is_slice()) {\n",
+    replace: "                if false {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "variadic binding of no slice"],
+  },
 ];

@@ -1,6 +1,6 @@
 //! Calls to local functions, JavaScript bindings, closures and standard operations.
 
-use super::bindings::{JsForm, is_binding, is_method, is_omitted, js_form};
+use super::bindings::{JsForm, is_binding, is_method, is_omitted, is_variadic, js_form};
 use super::combinators::Comb;
 use super::combinators::StepOp;
 use super::display::append_written;
@@ -251,6 +251,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let mut args = values;
             let this = is_method(self.tcx, def_id).then(|| args.remove(0));
+            // Its last argument, a slice, is JS's rest arguments: what an
+            // array written out holds, or the slice spread (ADR 0221).
+            if is_variadic(self.tcx, def_id) {
+                let inputs = self.tcx.fn_sig(def_id).skip_binder().skip_binder().inputs();
+                if !inputs.last().is_some_and(|ty| ty.peel_refs().is_slice()) {
+                    return Err(self.unsupported(
+                        span,
+                        "a `#[rust_js::variadic]` binding whose last parameter isn't a slice",
+                    ));
+                }
+                match args.pop() {
+                    Some(Expr {
+                        kind: js::ExprKind::Array(items),
+                        ..
+                    }) => args.extend(items),
+                    Some(last) => args.push(Expr::spread(last)),
+                    None => {}
+                }
+            }
             let value = match (js_form(self.tcx, def_id), this) {
                 // A method or a property is on `this`: it can't be an import.
                 (JsForm::Call(name), Some(this)) if !name.contains('#') => {

@@ -1403,6 +1403,31 @@ pub fn owned(some: bool) -> u32 {
   expect(logs).toEqual(["drop 7", "after", "after"]);
 });
 
+// A binding's last parameter, a slice, can be JS's rest arguments,
+// `#[rust_js::variadic]`: a slice written out is the arguments, as
+// react.dev calls `cn("a", className)`, and another one spread (ADR 0221).
+test("a variadic binding takes a slice as its rest arguments", async () => {
+  const dir = fixture("variadic");
+  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
+    #[link_name = "Math.max"]
+    #[rust_js::variadic]
+    safe fn max(values: &[f64]) -> f64;
+}
+pub fn largest(a: f64, b: f64) -> f64 {
+    max(&[a, b, 1.0])
+}
+pub fn largest_of(values: Vec<f64>) -> f64 {
+    max(&values)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return Math.max(a, b, 1);");
+  expect(js).toContain("return Math.max(...values);");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.largest(-3, -2), lib.largest(4, 2), lib.largest_of([2, 9, 4])]).toEqual([1, 4, 9]);
+});
+
 // A two-arm `match` as a value, its arms plain and binding nothing, is a
 // conditional, as a person writes it (ADR 0209): its subject in place
 // where the test reads it once, else in a `const` of its own.

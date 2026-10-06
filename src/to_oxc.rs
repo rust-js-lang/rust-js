@@ -682,6 +682,11 @@ impl<'a> Cx<'a> {
     fn expr(&self, e: &js::Expr) -> Expression<'a> {
         let b = &self.b;
         let sp = span(e.span);
+        // A call's argument, `...items` among them (ADR 0221).
+        let argument = |a: &js::Expr| match &a.kind {
+            ExprKind::Spread(all) => Argument::new_spread_element(span(a.span), self.expr(all), b),
+            _ => Argument::from(self.expr(a)),
+        };
         match &e.kind {
             ExprKind::Handle(place) => self.handle(sp, place, None),
             ExprKind::Pair(place, dictionary) => self.handle(sp, place, Some(dictionary)),
@@ -796,18 +801,18 @@ impl<'a> Cx<'a> {
                 Expression::new_arrow_function_expression(sp, is_async, None, params, None, body, b)
             }
             ExprKind::Await(promise) => Expression::new_await_expression(sp, self.expr(promise), b),
-            ExprKind::Spread(_) => unreachable!("`...items` is an array's item, which its array writes"),
+            ExprKind::Spread(_) => unreachable!("`...items` is an array's item or a call's argument, which they write"),
             ExprKind::Call(callee, args) => {
-                let args = args.iter().map(|a| Argument::from(self.expr(a)));
+                let args = args.iter().map(argument);
                 Expression::new_call_expression(sp, self.expr(callee), None, ArenaVec::from_iter_in(args, b), false, b)
             }
             ExprKind::OptionalCall(callee, args) => {
-                let args = args.iter().map(|a| Argument::from(self.expr(a)));
+                let args = args.iter().map(argument);
                 let call = CallExpression::boxed(sp, self.expr(callee), None, ArenaVec::from_iter_in(args, b), true, b);
                 Expression::new_chain_expression(sp, ChainElement::CallExpression(call), b)
             }
             ExprKind::New(callee, args) => {
-                let args = args.iter().map(|a| Argument::from(self.expr(a)));
+                let args = args.iter().map(argument);
                 Expression::new_new_expression(sp, self.expr(callee), None, ArenaVec::from_iter_in(args, b), b)
             }
         }

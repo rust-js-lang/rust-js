@@ -526,7 +526,7 @@ impl Expr {
         Expr::new(ExprKind::Array(items))
     }
 
-    /// `...items`, as an array's item.
+    /// `...items`, as an array's item or a call's argument.
     pub fn spread(items: Expr) -> Expr {
         Expr::new(ExprKind::Spread(Box::new(items)))
     }
