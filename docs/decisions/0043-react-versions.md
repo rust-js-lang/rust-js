@@ -67,7 +67,14 @@ cleanups and `useDeferredValue`'s initial value. `provider(&THEME)`, the
    event and attribute, and the one that removed it;
 5. generates `react/src/elements.rs` from that and from W3C's specs: every
    attribute and event as a gated method, every HTML and SVG element, and
-   every CSS property as a `Style` method.
+   every CSS property as a `Style` method;
+6. and adds, ungated, each attribute @types/react types that React DOM's
+   table doesn't have. (Amended.) That table lists the names whose spelling
+   React warns about, so it leaves out 35 that React passes on as written:
+   `translate`, `slot`, `part`, `loading` and `decoding` among them, which
+   react.dev's terminal block and a lazy `<img>` use. Every release passes
+   them on, so none is gated. `precedence` stays hand-written, gated at
+   19.0, where React gives it meaning.
 
 The hooks, built-in components and React DOM's APIs are written by hand, in
 `react/src/lib.rs` and `dom.rs`, and gated by hand. The tests keep both
@@ -84,6 +91,8 @@ honest, against `versions.json`:
   `useFormState`, `useActionState`'s old name.
 - **Generated file:** `elements.rs` must be what the generator makes of
   `versions.json`.
+- **Typed attributes:** a JSX test writes `translate`, `slot`, `loading` and
+  `decoding`, and renders them.
 
 A new React release is then routine. Run the generator: `elements.rs` gains
 the new events and attributes, gated. The coverage test fails for each new
