@@ -1,19 +1,19 @@
 //! Indent JSX using the compiler's parser. Only leading whitespace before
 //! tokens changes: comments, literal contents and line breaks stay intact.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 
-use rustc_ast::mut_visit::{self, MutVisitor};
+use rustc_ast::mut_visit::{self, FnKind, MutVisitor};
 use rustc_ast::token::TokenKind;
 use rustc_ast::tokenstream::{DelimSpan, TokenStream, TokenTree};
 use rustc_ast::visit::AssocCtxt;
-use rustc_ast::{self as ast, ExprKind};
+use rustc_ast::{self as ast, AttrVec, ExprKind, NodeId};
 use rustc_driver::{Callbacks, Compilation};
 use rustc_interface::interface::Compiler;
 use rustc_session::Session;
 use rustc_span::{BytePos, ErrorGuaranteed, Span, Symbol};
 
-use super::parser;
+use super::{parser, tags_of};
 
 #[derive(Default)]
 pub struct Formatter {
@@ -34,6 +34,7 @@ impl Callbacks for Formatter {
                 source,
                 start: file.start_pos,
                 indents: BTreeMap::new(),
+                tags: HashSet::new(),
             },
         };
         visitor.visit_crate(krate);
@@ -88,6 +89,13 @@ impl MutVisitor for Format<'_> {
         mut_visit::walk_expr(self, expr);
     }
 
+    fn visit_fn(&mut self, kind: FnKind<'_>, _: &AttrVec, _: Span, _: NodeId) {
+        let old = self.layout.tags.clone();
+        self.layout.tags.extend(tags_of(&kind));
+        mut_visit::walk_fn(self, kind);
+        self.layout.tags = old;
+    }
+
     fn visit_assoc_item(&mut self, item: &mut ast::AssocItem, ctxt: AssocCtxt) {
         if !skip(&item.attrs) {
             mut_visit::walk_assoc_item(self, item, ctxt);
@@ -117,6 +125,8 @@ pub(super) struct Layout {
     start: BytePos,
     lines: Vec<usize>,
     indents: BTreeMap<usize, usize>,
+    /// The tags of the function laid out (ADR 0220).
+    pub(super) tags: HashSet<String>,
 }
 
 impl Layout {

@@ -34,6 +34,24 @@ test("JSX formatter aligns nested props and callbacks and is idempotent", () => 
   expect(format(expected).stdout.toString()).toBe(expected);
 });
 
+// A tag that's a value, `<Comp>`, may take attributes after its spread, as
+// a DOM element may (ADR 0220): laid out where they are.
+test("JSX formatter lays out attributes after a tag value's spread", () => {
+  const expected = `fn view(Props { r#as: Comp, id, rest }: Props) {
+    jsx! {
+        <Comp
+            id={id}
+            {...rest}
+            className="mdx-heading"
+        />
+    }
+}
+`;
+  const result = format(expected.replace(/^ +/gm, " ").replace(" jsx!", "    jsx!"));
+  expect(result.exitCode, result.stderr.toString()).toBe(0);
+  expect(result.stdout.toString()).toBe(expected);
+});
+
 test("JSX formatter preserves literal contents, comments, other macros and skipped items", () => {
   const preserved = [
     'r#"first\n  second\nlast"#',

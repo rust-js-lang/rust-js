@@ -178,4 +178,12 @@ export const mutations: Mutation[] = [
     replace: "            js::ExprKind::Unary(js::UnaryOp::Not, a) => false && self.reads_alike(a, out),\n",
     tests: ["test/jsx.test.ts", "-t", "comparison of what reads the same"],
   },
+  {
+    name: "tag-as-children",
+    breaks: "`react::tag(Comp)` is read as a DOM element taking `Comp` as children",
+    file: "src/lower/jsx.rs",
+    find: "            (\"$\", &[tag]) => match self.expr(tag, out)? {\n",
+    replace: "            (\"$$\", &[tag]) => match self.expr(tag, out)? {\n",
+    tests: ["test/jsx.test.ts", "-t", "tag that.s a value"],
+  },
 ];

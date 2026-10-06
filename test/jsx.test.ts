@@ -467,8 +467,9 @@ for (const [name, body, message] of [
   ["invalid spread", '<div {...123} />', 'non-struct'],
   ["mixed component spread", '<Card title="x" {...Props { title: "y" }} />', "not JSX's `{...base}`"],
   ["adjacent roots", '<div /><span />', 'wrap adjacent JSX elements'],
-  ["spread followed by attribute", '<div {...Props { title: "x" }} id="y" />', 'put the props spread last'],
-  ["multiple spreads", '<div {...Props { title: "x" }} {...Props { title: "y" }} />', 'put the props spread last'],
+  // A DOM element's attributes may follow its spread, as JSX's do, in order.
+  ["spread followed by attribute", '<Card {...Props { title: "x" }} title="y" />', 'put the props spread last'],
+  ["multiple spreads", '<div {...Props { title: "x" }} {...Props { title: "y" }} />', 'only one props spread is supported'],
   ["duplicate children", '<Card title="x" children={1}>{2}</Card>', 'children were provided twice'],
   ["intrinsic generic", '<div::<i32> />', 'generic arguments belong on a function component'],
   ["HTML entity", '<p>&amp;</p>', 'literal or a Rust expression'],
@@ -1218,6 +1219,59 @@ pub fn Badge(p: P) -> Element {
   expect(jsx).not.toContain("const className");
   const result = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(result.Badge({ class_name: "c", size: "S", title: "t" }))).toBe('<svg class="c" width="12px" height="12px" viewBox="0 0 20 20"><title>t</title><g fill="none"><path d="M0 0"></path></g></svg>');
+});
+
+// A DOM element's tag as a value, a `react::Tag`, is the tag JSX names by a
+// capitalized parameter or `let` of its function, as react.dev's Heading
+// renders `<Comp>` of `{ as: Comp = "div" }`.
+test("JSX renders a tag that's a value, named by a capitalized local", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{Element, Node, Rest, jsx};
+#[derive(Clone, Copy, Default)]
+pub enum As {
+    #[rust_js::name = "h1"]
+    H1,
+    #[rust_js::name = "h2"]
+    H2,
+    #[default]
+    #[rust_js::name = "div"]
+    Div,
+}
+impl react::Tag for As {}
+pub struct HeadingProps<C> {
+    #[rust_js::default]
+    pub r#as: As,
+    pub id: Option<&'static str>,
+    pub children: C,
+    pub rest: Rest,
+}
+pub fn Heading<C: Node>(HeadingProps { r#as: Comp, id, children, rest }: HeadingProps<C>) -> Element {
+    jsx! { <Comp id={id} {...rest} className="mdx-heading">{children}</Comp> }
+}
+pub fn Title() -> Element {
+    jsx! { <Heading r#as={As::H2} id={Some("intro")}>{"Intro"}</Heading> }
+}
+// A \`let\` too.
+pub fn Plain(level: u8) -> Element {
+    let Comp = if level == 1 { As::H1 } else { As::Div };
+    jsx! { <Comp>{"x"}</Comp> }
+}
+// Given its props whole, as a component is.
+pub fn Bare(HeadingProps { r#as: Comp, rest, .. }: HeadingProps<()>) -> Element {
+    jsx! { <Comp {...rest} /> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain('export function Heading({ as: Comp = "div", id, children, ...rest }) {');
+  expect(jsx).toContain("<Comp {...rest} />");
+  expect(jsx).toContain('<Comp id={id} {...rest} className="mdx-heading">');
+  expect(jsx).toContain('const Comp = level === 1 ? "h1" : "div";');
+  const result = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(result.Title())).toBe('<h2 id="intro" class="mdx-heading">Intro</h2>');
+  expect(renderToStaticMarkup(result.Heading({ children: "D", title: "t" }))).toBe('<div title="t" class="mdx-heading">D</div>');
+  expect([renderToStaticMarkup(result.Plain(1)), renderToStaticMarkup(result.Plain(2))]).toEqual(["<h1>x</h1>", "<div>x</div>"]);
+  expect(renderToStaticMarkup(result.Bare({ as: "h1", title: "t" }))).toBe('<h1 title="t"></h1>');
 });
 
 // A comparison of what reads the same reads the same after a later child's

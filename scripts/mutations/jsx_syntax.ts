@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/jsx.test.ts","-t","JSX supports components across modules"],
   },
+  {
+    name: "tag-local-unseen",
+    breaks: "a capitalized local of the function isn't a tag, and `<Comp>` asks for a component `Comp`'s macro",
+    file: "src/jsx_syntax.rs",
+    find: "                self.0.insert(ident.to_string());\n",
+    replace: "                let _ = ident;\n",
+    tests: ["test/jsx.test.ts", "-t", "tag that.s a value"],
+  },
 ];

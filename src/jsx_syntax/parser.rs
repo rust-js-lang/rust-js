@@ -14,12 +14,15 @@ use super::{rust_expression, template};
 
 type R<T> = Result<T, ErrorGuaranteed>;
 
-pub(super) fn jsx(sess: &Session, tokens: TokenStream, span: Span) -> R<TokenStream> {
-    parse(sess, tokens, span, 0, None)
+/// `tags`: the capitalized parameters and `let`s of the function the JSX is
+/// in, each a `react::Tag`, `<Comp>` of `let Comp = As::H1`.
+pub(super) fn jsx(sess: &Session, tokens: TokenStream, span: Span, tags: &HashSet<String>) -> R<TokenStream> {
+    parse(sess, tokens, span, 0, None, tags)
 }
 
 pub(super) fn formatted(sess: &Session, tokens: TokenStream, span: Span, indent: usize, layout: &mut Layout) -> R<()> {
-    parse(sess, tokens, span, indent, Some(layout)).map(|_| ())
+    let tags = layout.tags.clone();
+    parse(sess, tokens, span, indent, Some(layout), &tags).map(|_| ())
 }
 
 fn parse(
@@ -28,6 +31,7 @@ fn parse(
     span: Span,
     indent: usize,
     layout: Option<&mut Layout>,
+    tags: &HashSet<String>,
 ) -> R<TokenStream> {
     let mut p = Jsx {
         sess,
@@ -35,6 +39,7 @@ fn parse(
         at: 0,
         span,
         layout,
+        tags,
     };
     let element = p.element(0, indent)?;
     if p.at != p.tokens.len() {
@@ -49,6 +54,7 @@ struct Jsx<'a> {
     at: usize,
     span: Span,
     layout: Option<&'a mut Layout>,
+    tags: &'a HashSet<String>,
 }
 
 impl Jsx<'_> {
@@ -119,7 +125,7 @@ impl Jsx<'_> {
                 let parsed = parser.parse_block().map_err(|e| e.emit())?;
                 let expression =
                     matches!(parsed.stmts.as_slice(), [stmt] if matches!(stmt.kind, ast::StmtKind::Expr(_)));
-                rust_expression(self.sess, if expression { value } else { block })
+                rust_expression(self.sess, if expression { value } else { block }, self.tags)
             }
             Some(TokenTree::Token(ref token, _)) if matches!(token.kind, TokenKind::Literal(_)) => {
                 let value = self.tokens[self.at].clone();
@@ -194,6 +200,9 @@ impl Jsx<'_> {
             }
         }
         let intrinsic = !name.is_empty() && !name.contains("::") && name.starts_with(char::is_lowercase);
+        // A capitalized local of the function, `<Comp>`: a `react::Tag`'s
+        // element, or a component given its props whole, as before.
+        let local = self.tags.contains(&name);
         let builtin = match name.as_str() {
             "Fragment" => Some("keyed_fragment"),
             "StrictMode" => Some("strict_mode"),
@@ -203,11 +212,14 @@ impl Jsx<'_> {
             "ViewTransition" => Some("view_transition"),
             _ => None,
         };
-        if types.is_some() && (intrinsic || builtin.is_some() || provider) {
+        if types.is_some() && (intrinsic || local || builtin.is_some() || provider) {
             return Err(self.error("generic arguments belong on a function component"));
         }
         let mut attrs: Vec<(String, TokenStream, Span)> = Vec::new();
         let mut spread = None;
+        // How many attributes come before the spread: an element's may come
+        // after it too, as JSX writes them, in their order.
+        let mut spread_at = 0;
         // `{..base}`, Rust's struct update, where `{...base}` is JSX's spread.
         let mut struct_update = false;
         while !self.is(TokenKind::Gt) && !self.is(TokenKind::Slash) {
@@ -228,12 +240,14 @@ impl Jsx<'_> {
                 spread = Some(rust_expression(
                     self.sess,
                     TokenStream::new(tokens.iter().skip(1).cloned().collect()),
+                    self.tags,
                 )?);
                 self.at += 1;
-                if !self.is(TokenKind::Gt) && !self.is(TokenKind::Slash) {
+                spread_at = attrs.len();
+                if !(intrinsic || local) && !self.is(TokenKind::Gt) && !self.is(TokenKind::Slash) {
                     return Err(self.error("put the props spread last"));
                 }
-                break;
+                continue;
             }
             let mut attr = self.ident()?;
             while self.eat(TokenKind::Minus) {
@@ -290,6 +304,7 @@ impl Jsx<'_> {
             }
         }
         let has_children = !children.is_empty();
+        let tag = local && !(attrs.is_empty() && !has_children && spread.is_some());
         let children = tuple(children, span);
         if name.is_empty() {
             if !attrs.is_empty() || spread.is_some() || closed {
@@ -302,22 +317,31 @@ impl Jsx<'_> {
                 span,
             ));
         }
-        if intrinsic || builtin.is_some() {
-            let function = builtin.map_or_else(
-                || format!("::react::html::r#{}", snake(&name)),
-                |n| format!("::react::{n}"),
-            );
+        if intrinsic || tag || builtin.is_some() {
+            let function = match builtin {
+                Some(n) => format!("::react::{n}"),
+                None if tag => "::react::tag".to_string(),
+                None => format!("::react::html::r#{}", snake(&name)),
+            };
             let mut expr = call(
                 self.sess,
                 template(self.sess, function, span),
                 if name == "StrictMode" {
                     vec![arguments(vec![], span)]
+                } else if tag {
+                    vec![template(self.sess, name.clone(), span)]
                 } else {
                     vec![]
                 },
                 span,
             );
-            for (attr, value, at) in attrs {
+            let mut spread = spread;
+            for (i, (attr, value, at)) in attrs.into_iter().enumerate() {
+                if i == spread_at
+                    && let Some(props) = spread.take()
+                {
+                    expr = method_call(self.sess, expr, "props", vec![props], span);
+                }
                 let (method, args) = if attr.contains('-') {
                     ("attr".into(), vec![template(self.sess, format!("{attr:?}"), at), value])
                 } else {

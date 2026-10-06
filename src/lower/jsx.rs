@@ -154,6 +154,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (props, children) = self.jsx_props(props, out)?;
                 (js::JsxTag::Component(tag), props, children)
             }
+            // A `react::Tag` the function names, `<Comp>`, whose value is the
+            // tag, as JSX reads a capitalized variable's (ADR 0220).
+            ("$", &[tag]) => match self.expr(tag, out)? {
+                tag @ Expr {
+                    kind: js::ExprKind::Var(_),
+                    ..
+                } => (js::JsxTag::Component(tag), Vec::new(), Vec::new()),
+                _ => return Err(self.unsupported(self.thir[tag].span, "a JSX tag other than a variable")),
+            },
             (tag, [] | [_]) if tag != "*" => {
                 let children = match args {
                     &[children] => self.jsx_children(children, out)?,

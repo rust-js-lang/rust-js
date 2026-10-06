@@ -82,4 +82,20 @@ export const mutations: Mutation[] = [
     replace: "                    \"(@slots [$($s:tt)*] [$whole:expr] [$($rest:tt)+] @never) => {{ ::core::compile_error!(\\\"give `{field}` or the props of it, not both\\\") }}\"",
     tests: ["test/jsx.test.ts", "-t", "flattened props where they"],
   },
+  {
+    name: "tag-spread-moved-last",
+    breaks: "an element's spread goes after the attributes written after it, `<Comp id className {...rest}>`, overriding them",
+    file: "src/jsx_syntax/parser.rs",
+    find: "                if i == spread_at\n",
+    replace: "                if i == spread_at && false\n",
+    tests: ["test/jsx.test.ts", "-t", "tag that.s a value"],
+  },
+  {
+    name: "component-attrs-after-spread",
+    breaks: "a component's named props after a spread aren't refused as such",
+    file: "src/jsx_syntax/parser.rs",
+    find: "                if !(intrinsic || local) && !self.is(TokenKind::Gt) && !self.is(TokenKind::Slash) {\n",
+    replace: "                if false && !self.is(TokenKind::Gt) && !self.is(TokenKind::Slash) {\n",
+    tests: ["test/jsx.test.ts", "-t", "spread followed by attribute"],
+  },
 ];

@@ -728,6 +728,26 @@ pub struct WithProps;
 impl<F: Fn() -> Element> Component<(), NoProps> for F {}
 impl<P, F: Fn(P) -> Element> Component<P, WithProps> for F {}
 
+/// A DOM element's tag as a value, as JSX's `<Comp>` of `const Comp =
+/// "h1"`: a fieldless enum whose variants are named as tags are, `"h1"`,
+/// `"div"`. `jsx!` reads a tag that names a capitalized parameter or `let`
+/// of its function, `<Comp>`, as an element of it, which takes what a DOM
+/// element takes (ADR 0220).
+pub trait Tag: Copy {}
+
+pub struct Intrinsic;
+
+/// A tag given its props whole, `<Comp {...rest} />`, as a component is.
+impl<P, T: Tag> Component<P, Intrinsic> for T {}
+impl<T: Tag> Tag for &T {}
+
+/// `<Comp>` of a [`Tag`] `Comp`.
+#[cfg_attr(rust_js, rust_js::link_name = "<$>")]
+#[doc(hidden)]
+pub fn tag(tag: impl Tag) -> Element {
+    unreachable!()
+}
+
 /// Children with nothing around them: `<>..</>`.
 #[cfg_attr(rust_js, rust_js::link_name = "<>")]
 #[doc(hidden)]
