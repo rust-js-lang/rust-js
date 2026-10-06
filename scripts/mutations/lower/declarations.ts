@@ -8,8 +8,8 @@ export const mutations: Mutation[] = [
     name: "declared-option-required",
     breaks: "an `Option` field is a required prop to TypeScript, `text: string`, which a caller leaving it out is an error of",
     file: "src/lower/declarations.rs",
-    find: "                Some(inner) => (\n                    true,\n",
-    replace: "                Some(inner) => (\n                    false,\n",
+    find: "                Some(inner) => (true, self.ts(inner)),\n",
+    replace: "                Some(inner) => (false, self.ts(inner)),\n",
     tests,
   },
   {
@@ -118,10 +118,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "option-field-without-null",
-    breaks: "an `Option` field is declared `?: T`, so a TypeScript caller's `{ label: null }`, which rust-js reads as `None`, doesn't typecheck",
+    breaks: "a `#[rust_js::nullable]` field is declared `?: T`, so a TypeScript caller's `{ label: null }`, which rust-js reads as `None`, doesn't typecheck",
     file: "src/lower/declarations.rs",
     find: "                    json!({ \"kind\": \"union\", \"types\": [self.ts(inner), keyword(\"null\")] }),\n",
     replace: "                    self.ts(inner),\n",
+    tests: ["test/declarations.test.ts", "-t", "null for an Option"],
+  },
+  {
+    name: "every-option-field-nullable",
+    breaks: "every `Option` field is declared `?: T | null`, so a TypeScript caller reading one passes `null` where a default takes only `undefined`",
+    file: "src/lower/declarations.rs",
+    find: "                Some(inner) if is_nullable(self.tcx, field) => (\n",
+    replace: "                Some(inner) if true || is_nullable(self.tcx, field) => (\n",
     tests: ["test/declarations.test.ts", "-t", "null for an Option"],
   },
 ];
