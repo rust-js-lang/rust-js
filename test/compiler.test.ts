@@ -707,6 +707,8 @@ test("the webapi crate's bindings become plain JS", async () => {
   expect(js).toContain("const sender = e.source;\n  const windowOf = frame.contentWindow;\n  return [Object.is(sender, windowOf), window.performance.now()];");
   // A body of a `Blob` and a fetch of a URL, each the value itself.
   expect(js).toContain("const blob = new Blob();\n  const response = new Response(blob);\n  return [response, window.fetch(url)];");
+  // A sequence is a slice, its items as they are (ADR 0219).
+  expect(js).toContain('const blob = new Blob([text, "!"]);\n  return [blob, navigator.clipboard.write(items)];');
   // A canvas's size, its setters and getters (HTMLCanvasElement).
   expect(js).toContain('const canvas = document.createElement("canvas");\n  canvas.width = 320;\n  canvas.height = 200;\n  return [canvas.width, canvas.height];');
   const { round_trip } = await import(join(target, "web_forms.js"));

@@ -28,6 +28,11 @@ export function bodies(url) {
   return [response, window.fetch(url)];
 }
 
+export function copied(text, items) {
+  const blob = new Blob([text, "!"]);
+  return [blob, navigator.clipboard.write(items)];
+}
+
 export function from_frame(frame, e) {
   const sender = e.source;
   const windowOf = frame.contentWindow;

@@ -11,7 +11,7 @@ import idl from "@webref/idl";
 import webref from "@webref/idl/package.json" with { type: "json" };
 
 // The specs to read. Partial interfaces and mixins from these are merged in.
-const SPECS = ["dom", "html", "hr-time", "uievents", "pointerevents", "cssom", "cssom-view", "geometry", "fetch", "encoding", "wasm-js-api", "wasm-web-api", "xhr", "streams", "touch-events", "FileAPI"];
+const SPECS = ["dom", "html", "hr-time", "uievents", "pointerevents", "cssom", "cssom-view", "geometry", "fetch", "encoding", "wasm-js-api", "wasm-web-api", "xhr", "streams", "touch-events", "FileAPI", "clipboard-apis"];
 
 // The everyday DOM. Members that use any other interface are skipped.
 const INTERFACES = [
@@ -44,6 +44,8 @@ const INTERFACES = [
   "Module", "Instance", "Memory",
   // FileAPI: raw data, a fetch's body or a download's
   "Blob", "File",
+  // html, clipboard-apis: the browser, and what's copied
+  "Navigator", "Clipboard", "ClipboardItem",
 ];
 const known = new Set(INTERFACES);
 
@@ -95,7 +97,7 @@ const FIELD_TYPES: Record<string, string> = { "RequestInit.headers": "&'a Header
 
 // The globals at the crate root: `document`, `window`, and `performance`,
 // which a worker has too.
-const GLOBALS: [string, string][] = [["document", "Document"], ["window", "Window"], ["performance", "Performance"]];
+const GLOBALS: [string, string][] = [["document", "Document"], ["window", "Window"], ["performance", "Performance"], ["navigator", "Navigator"]];
 
 // ── Reading the IDL ─────────────────────────────────────────────────────
 
@@ -226,6 +228,12 @@ function rustType(t: IdlType, at: Position): string | { skip: string } {
     const inner = rustType((t.idlType as IdlType[])[0], "result");
     return typeof inner === "string" ? `Promise<${inner}>` : inner;
   }
+  // A sequence a function takes is a slice, a JS array of its items as
+  // they are (ADR 0219): `new Blob([text, "!"])` of `&[BlobPart]`.
+  if (t.generic === "sequence" && at === "param") {
+    const item = paramType((t.idlType as IdlType[])[0]);
+    return item ? `&[${item}]` : { skip: "sequence" };
+  }
   if (t.generic) return { skip: t.generic };
   const name = t.idlType as string;
   const aliased = typedefs.get(name);
@@ -294,7 +302,7 @@ function paramDictionary(d: Def): string | { skip: string } {
       const chosen = FIELD_TYPES[`${d.name}.${m.name}`] ?? paramType(m.idlType!);
       if (!chosen || chosen.includes("dyn core::any::Any")) continue;
       // A borrow in a field lives as long as the struct's: `&'a str`.
-      const type = chosen.replace(/^&(?!')/, "&'a ").replace(/^([A-Z]\w*)<'_>$/, "$1<'a>");
+      const type = chosen.replace(/&(?!')/g, "&'a ").replace(/<'_>/g, "<'a>");
       fields.push({ rust: snake(m.name!), js: m.name!, type, optional: !m.required });
     }
     if (fields.length === 0) return { skip: d.name };
@@ -339,6 +347,7 @@ function kindOf(rust: string): string | null {
   if (rust === "bool") return "boolean";
   if (Object.values(NUMBERS).includes(rust)) return "number";
   if (rust.startsWith("Box<dyn FnMut")) return "function";
+  if (rust.startsWith("&[")) return "array";
   if (rust.includes("dyn core::any::Any")) return null;
   if (isDictionary(rust)) return "object";
   return rust.replace(/^&/, "").replace(/<.*$/, "");
@@ -351,6 +360,7 @@ function variantName(rust: string): string {
   if (kind === "boolean") return "Bool";
   if (kind === "number") return "Number";
   if (kind === "function") return "Listener";
+  if (kind === "array") return "List";
   return rust.replace(/^&/, "").replace(/<.*$/, "");
 }
 
@@ -381,7 +391,7 @@ function unionOf(t: IdlType): Union | null {
     if (!kind || kinds.has(kind)) continue;
     kinds.add(kind);
     // What it borrows lives as long as the enum: `&'a str`.
-    const type = alt.replace(/^&(?!')/, "&'a ").replace(/<'_>$/, "<'a>");
+    const type = alt.replace(/&(?!')/g, "&'a ").replace(/<'_>/g, "<'a>");
     variants.push({ name: variantName(alt), type, ts: tsName(alt) });
   }
   if (variants.length < 2) return null;

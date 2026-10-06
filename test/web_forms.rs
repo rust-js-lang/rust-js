@@ -33,6 +33,14 @@ pub fn bodies(url: &str) -> (&'static webapi::Response, js::Promise<&'static web
     (response, window::fetch(window, url.into()))
 }
 
+/// A `sequence` is a slice (ADR 0219): a `Blob` of its parts, each a
+/// `BlobPart`, and the clipboard written a list of items, each `new
+/// Blob([text, "!"])` and `navigator.clipboard.write(items)`.
+pub fn copied(text: &str, items: &[&webapi::ClipboardItem]) -> (&'static webapi::Blob, js::Promise<()>) {
+    let blob = webapi::blob::new_with_blob_parts(&[text.into(), "!".into()]);
+    (blob, webapi::clipboard::write(webapi::navigator::clipboard(webapi::navigator), items))
+}
+
 /// A frame's window, a message's sender, and the page's clock:
 /// `frame.contentWindow`, `e.source` and `window.performance.now()`.
 pub fn from_frame(frame: &webapi::HtmlIFrameElement, e: &Event) -> (bool, f64) {
