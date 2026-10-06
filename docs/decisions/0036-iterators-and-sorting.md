@@ -46,6 +46,7 @@ Rust's `sort` is:
 | `v.sort_by(f)` | `v.sort(f)` |
 | `v.sort_by_key(k)` | `v.sort((a, b) => $cmp(key(a), key(b)))` |
 | `v.reverse()`, `v.to_vec()` | `v.reverse()`, `v.slice()` |
+| an array's `a.map(f)`, a new array (amended) | `a.map(f)`, of a copy of `a` where its items are changed in place (ADR 0020) |
 
 **`Ordering` is -1, 0 or 1**, its discriminant (`#[repr(i8)]`), not a string
 as other fieldless enums are (ADR 0013). That's what a JS comparator returns,

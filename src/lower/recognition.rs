@@ -1376,6 +1376,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "sort_by" | "sort_unstable_by" if owner.is_slice() => Std::SortBy,
             "sort_by_key" | "sort_unstable_by_key" if owner.is_slice() => Std::SortByKey,
             "reverse" if owner.is_slice() => Std::Method("reverse"),
+            // An array's `map` is JS's: a new array of what `f` makes of each.
+            "map" if owner.is_array() => Std::Method("map"),
             // `v[0]` and `v.at(-1)` are `undefined` when `v` is empty: `None`.
             // A `_mut` one's item, of numbers or strings, is a handle on it
             // (ADR 0152).
