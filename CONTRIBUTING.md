@@ -135,13 +135,13 @@ in [package.json](package.json).
 
 While working, run the checks that exercise the changed responsibility: its
 corpus cases, its module's mutations, the architecture test. **Before
-pushing, run everything [the check workflow](.github/workflows/check.yml)
-runs, and rustc's tests**: a change can break what it never meant to touch,
-and a reformatted line can break a mutation. [AGENTS.md](AGENTS.md) lists
-the exact commands. On macOS, run them in its Linux VM, where the checks
-that build native programs are many times faster; on Linux, run them
-directly. Commit any list a check rewrites, such as rustc's known failures,
-with the change that moves it. Documentation-only changes need content and
+merging, everything [the check workflow](.github/workflows/check.yml) runs,
+and rustc's tests, must pass**: a change can break what it never meant to
+touch, and a reformatted line can break a mutation. Run the focused checks
+locally and the whole check on CI, as [DEVELOPMENT.md](DEVELOPMENT.md)
+describes; [AGENTS.md](AGENTS.md) lists the exact commands. Commit any list
+a check rewrites, such as rustc's known failures, with the change that moves
+it. Documentation-only changes need content and
 link checks.
 
 Commit and pull request titles start with `feat(rust-js):`,

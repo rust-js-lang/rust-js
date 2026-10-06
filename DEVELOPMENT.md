@@ -1,9 +1,7 @@
 # Development workflow: short loop here, long checks on CI
 
-Status: being tried. Once a few changes have gone through it, it replaces
-the "run everything in the VM before pushing" rule in
-[AGENTS.md](AGENTS.md) and [CONTRIBUTING.md](CONTRIBUTING.md); see
-[Rollout](#rollout).
+Status: in use. [AGENTS.md](AGENTS.md) and [CONTRIBUTING.md](CONTRIBUTING.md)
+link here.
 
 ## The problem
 
@@ -18,10 +16,9 @@ test fails ─▶ fix ─▶ test passes ─▶ mutations ─▶ ADR ─▶ FULL
 
 The full check is the whole suite with its blessings, the WASM compiler
 rebuilt and checked against the native one, clippy, fmt, the typecheck,
-rustc's test suite, and the change's mutations. It runs in one Linux VM,
-one run at a time. While it runs, nothing else can use the VM, and no file
-the VM copies back may be edited, so the work stops and waits. Most of a
-change's wall time is this waiting.
+rustc's test suite, and the change's mutations. Run on one machine before
+every push, it stops the work while it runs. Most of a change's wall time
+is this waiting.
 
 ## The idea
 
@@ -70,7 +67,7 @@ more, as each sets itself up again.
 |---|---|---|---|
 | The new test, seen to fail, then pass | yes, on the Mac: it's the point | in the suite | in the suite |
 | Its module's focused tests, `bun test test/<file>.test.ts -t <name>` | yes, on the Mac | in the suite | in the suite |
-| The new mutations, `bun scripts/mutations.ts <name>` | yes, in the VM | the changed ones | all 919 |
+| The new mutations, `bun scripts/mutations.ts <name>` | yes, on the Mac | the changed ones | all 919 |
 | Reading the generated JS and snapshot diffs | yes | the bless patch, read before merging | |
 | `bun run typecheck`, `fmt:check`, clippy, `cargo test` | | **lint** job | |
 | `bun run test`, the whole suite | | **test** job, or shards | |
@@ -81,16 +78,15 @@ more, as each sets itself up again.
 | Release qualification | | | yes |
 | react.dev port: build and the 823 pages compared | yes: the port has no remote | | |
 
-The VM stays: for the inner loop's checks that build many native programs
-(the corpus, mutations, a folder of rustc's tests), which are still faster
-there, and for reproducing a CI failure. It's no longer where the whole
-suite must pass before every push.
+Every local run is five minutes at most
+([AGENTS.md](AGENTS.md#five-minutes-per-local-command)); what may take
+longer is CI's.
 
 ## The Mac, with the scan off
 
 macOS checks each newly built binary before its first run, one at a time,
-whatever the number of cores. That check, not the Mac, is what made the VM
-necessary. It can be turned off for the programs one app starts: add the app
+whatever the number of cores. That check, not the Mac, is what made the
+checks that build native programs slow there. It can be turned off for the programs one app starts: add the app
 under **System Settings → Privacy & Security → Developer Tools**, then quit
 and reopen it.
 
@@ -111,26 +107,18 @@ Ghostty or iTerm. The folder has Claude Code's version in its name, so
 after an update, measure again; if first runs are slow again, add the new
 one.
 
-Eighty small programs, built and run at once, on an M3 Max (14 cores) and
-in the VM (10):
+Eighty small programs, built and run at once, on an M3 Max (14 cores):
 
-| | Mac, scanned | Mac, scan off | VM |
-|---|---|---|---|
-| Their first runs | 15 000 ms | 26 ms | 11 ms |
-| Building them | 1 400 ms | 1 300 ms | 900 ms |
-| Forty of them, built and run | 7 550 ms | 720 ms | 440 ms |
-| Starting one process | 2.4 ms | 1.9 ms | 0.25 ms |
+| | Scanned | Scan off |
+|---|---|---|
+| Their first runs | 15 000 ms | 26 ms |
+| Building them | 1 400 ms | 1 300 ms |
+| Forty of them, built and run | 7 550 ms | 720 ms |
+| Starting one process | 2.4 ms | 1.9 ms |
 
-With the scan off, the Mac is about 1.6 times slower than the VM, not 17:
-what's left is macOS's own, heavier way of starting processes and writing
-files. So:
-
-- **The Mac** runs what we wait on while editing: the failing test, a
-  module's focused tests. No sync, no copy-back, and the files stay ours to
-  edit.
-- **The VM** runs what builds many programs, where 1.6 adds up: mutations,
-  the corpus, a folder of rustc's tests.
-- They run at the same time, so a busy VM no longer stops the work.
+So with the scan off, every local check runs on the Mac: the failing test,
+a module's tests, mutations, the corpus, a folder of rustc's tests. No
+other machine, no sync, and the files stay ours to edit.
 
 The trade: whatever these apps start isn't checked for malware, including
 what an agent runs. Turn it off in the same place.
@@ -243,24 +231,16 @@ gh workflow run "rustc tests" -f fuzz_seeds=600 -f fuzz_start=1000
 - `test/ci.test.ts`: the shards, the changed mutations, each branch's
   latest run.
 
-## Rollout
-
-1. Check a few changes both ways, here in the VM and with `bun run
-   ci:check`, and compare the verdicts. They must agree, as the VM and the
-   x86 workflow machines do today.
-2. Then update AGENTS.md's "Develop in a Linux VM" to say what the VM is
-   still for, and CONTRIBUTING.md's "Verification and review" to say the
-   inner loop is local and the rest is CI's, both linking here.
-
 ## Costs and limits
 
 - **Results come later.** A red run brings us back to a change we'd left.
   Small changes on their own branches keep that cheap.
 - **Minutes are counted**, so a check is started when a change is ready,
   not on each push.
-- **GitHub's machines are slower than the VM**, 4 cores against 10. It
+- **GitHub's machines are slower than the Mac**, 4 cores against 14. It
   doesn't matter, as nothing waits on them.
-- **x86 against Apple Silicon.** CI runs on x86, the VM on arm64. A test
-  either one ignores is already out of scope, so their verdicts agree.
+- **x86 against Apple Silicon, Linux against macOS.** CI runs on x86 Linux,
+  the Mac on arm64 macOS. A test either one ignores is out of scope, and
+  rustc's known failures are Linux's, so CI blesses their lists.
 - **The react.dev port stays local.** It has no remote, so its build and its
   823 pages compared stay in its own loop.

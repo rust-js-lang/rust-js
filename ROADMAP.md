@@ -30,8 +30,8 @@ production readiness has not yet been established.
 Baseline reviewed: `4dca3fe`, 2026-10-03. “Implemented” below means code and
 tests exist in this checkout, not that every combination is supported or that
 the tests were rerun for this assessment. Each change is checked before it's
-pushed, by the whole suite, the rustc suite and its mutations, in a Linux VM;
-CI confirms on x86 from time to time. The latest successful
+merged, by the whole suite, the rustc suite and its mutations, on CI
+([DEVELOPMENT.md](DEVELOPMENT.md)). The latest successful
 [Check run inspected](https://github.com/rust-js-lang/rust-js/actions/runs/36274665281)
 tested `48caf69`, an earlier commit. Release 0.0.3 was qualified on macOS
 arm64 from `9793b19` before it was published (M6.1).

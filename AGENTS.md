@@ -41,9 +41,9 @@ boundaries [its test](test/architecture.test.ts) holds it to.
 
 ## Five minutes per local command
 
-A hard rule: every command run on this machine, on the Mac or in the VM,
-is given a timeout of at most five minutes, the tool's own or `timeout
-300` in front of it. Nothing runs here without one.
+A hard rule: every command run on this Mac is given a timeout of at most
+five minutes, the tool's own or `timeout 300` in front of it. Nothing runs
+here without one.
 
 - **What may take longer goes to CI**, not here: push the branch and start
   `bun run ci:check`, or the [workflow](.github/workflows) that runs it.
@@ -55,74 +55,42 @@ is given a timeout of at most five minutes, the tool's own or `timeout
 - **This wins** where the rest of this file, or CONTRIBUTING.md, asks for a
   run here that takes longer.
 
-## Develop in a Linux VM
+## Develop on the Mac
 
-On macOS, the system scans each newly built binary before its first run, one
-at a time, so tests that build native programs, the corpus, rustc's tests,
-generated programs and mutations, take many times longer there than on
-Linux: rustc's `drop` tests took 23 seconds against 1. With the app that
-runs them added to Developer Tools, there's no scan, and the Mac is about
-1.6 times slower than Linux, not 17 ([DEVELOPMENT.md](DEVELOPMENT.md#the-mac-with-the-scan-off)).
-So run the failing test and a module's focused tests on the Mac, and every
-other check in a [Tart](https://tart.run) Linux VM on the same Mac, through
-[`scripts/linux-vm.sh`](scripts/linux-vm.sh):
+macOS checks each newly built binary before its first run, one at a time,
+which made the tests that build native programs, the corpus, rustc's tests,
+generated programs and mutations, many times slower: rustc's `drop` tests
+took 23 seconds against 1 on Linux. With the app that runs them added to
+Developer Tools, there's no check
+([DEVELOPMENT.md](DEVELOPMENT.md#the-mac-with-the-scan-off)), so every check
+runs here, on the Mac, within the five minutes above, and what takes longer
+runs on CI:
 
-```bash
-scripts/linux-vm.sh 'bun run test'
-```
+| To | On the Mac | On CI |
+|---|---|---|
+| Test | a module's, `bun test test/<file>.test.ts -t <name>` | the whole suite, `bun run test` |
+| Bless snapshots | a module's, `BLESS=1 bun test test/<file>.test.ts -t <name>` | its patch, applied with `bun run ci:bless` |
+| Put a known bug back, and see its tests catch it ([ADR 0093](docs/decisions/0093-mutations.md)) | `bun scripts/mutations.ts <name>` | the changed ones, and all of them before a release |
+| Check rustc's tests against the known failures ([ADR 0089](docs/decisions/0089-rustc-tests.md)) | some: `bun run test:rustc drop/ closures/` | all of them, and their lists' patch, applied with `bun run ci:bless` |
+| Run generated programs ([ADR 0092](docs/decisions/0092-generated-programs.md)) | | `gh workflow run "rustc tests" -f fuzz_start=1000 -f fuzz_seeds=600` |
+| Build the playground's compiler | | the check's `wasm` job |
 
-It starts the VM if it isn't running, syncs this checkout into the VM's own
-copy, uncommitted edits too, and runs the command there. What git ignores,
-`target/`, `node_modules/` and the WASM build's, is the VM's own. What the
-command writes that git doesn't ignore, a blessed snapshot or list, is
-copied back to this checkout, so a bless there is a bless here. Edit
-here, and run there:
+Before pushing a change ([CONTRIBUTING.md](CONTRIBUTING.md)), run
+`bun run typecheck`, `bun run fmt:check`, `cargo clippy --locked -- -D
+warnings`, the change's tests and its mutations here; then `bun run
+ci:check` runs everything [the check workflow](.github/workflows/check.yml)
+does ([DEVELOPMENT.md](DEVELOPMENT.md)). rustc's known failures are Linux's,
+as CI finds them, so their lists are blessed there and committed with the
+change that moves them. A test the Mac or CI's x86 machines ignore is out of
+scope.
 
-| To | Run in the VM |
-|---|---|
-| Test | `bun run test`; a module's, `bun test test/<file>.test.ts -t <name>`, runs on the Mac |
-| Bless snapshots | `bun run bless` |
-| Put a known bug back, and see its tests catch it ([ADR 0093](docs/decisions/0093-mutations.md)) | `bun scripts/mutations.ts <name>`, or all of them with no name |
-| Check rustc's tests against the known failures ([ADR 0089](docs/decisions/0089-rustc-tests.md)) | `bun run test:rustc`, or some: `bun run test:rustc drop/ closures/` |
-| Bless rustc's tests' lists | `bun run test:rustc:bless` |
-| Run generated programs ([ADR 0092](docs/decisions/0092-generated-programs.md)) | `cargo build && FUZZ_START=1000 FUZZ_SEEDS=600 bun test test/fuzz.test.ts`; the reduced programs stay in the VM's `target/fuzz/` |
-| Build the playground's compiler | `bun run wasm` |
+The [workflows](.github/workflows) are started by hand: `bun run
+ci:check`, and `gh workflow run "rustc tests"` with `-f bless=true`,
+`-f mutations=true`, or `-f fuzz_start=1000 -f fuzz_seeds=600`.
 
-Before pushing a change ([CONTRIBUTING.md](CONTRIBUTING.md)), run what the
-[check workflow](.github/workflows/check.yml) runs, `bun run typecheck`, `bun run fmt:check`,
-`cargo clippy --locked -- -D warnings`, `cargo test --locked`,
-`bun run test` and `bun run --cwd examples/vite-react build`; after
-`bun run wasm`, `RUST_JS_REQUIRE_WASM=1 bun test test/snapshots.test.ts test/playground.test.ts`;
-and rustc's tests, all of them, in about a minute. Bless their lists there
-when a change moves them, and commit the lists with the change. The VM
-gives the same verdicts as the workflow's x86 machines: a test either one
-ignores is out of scope.
-
-The [workflows](.github/workflows) run the same checks on GitHub's
-machines, when started by hand. Run them now and then, as before a
-release, to confirm an x86 machine agrees: `gh workflow run check.yml`, and
-`gh workflow run "rustc tests"` with `-f bless=true`, `-f mutations=true`,
-or `-f fuzz_start=1000 -f fuzz_seeds=600`.
-
-To set the VM up once, on Apple Silicon:
-
-```bash
-brew install openai/tools/tart
-tart clone ghcr.io/cirruslabs/ubuntu:latest rustjs
-tart set rustjs --cpu 10 --memory 24576 --disk-size 200
-scripts/linux-vm.sh true   # boots it, with this checkout shared
-```
-
-Then, in the VM (`tart exec rustjs bash -l`), install what the workflows
-use: `build-essential`, `pkg-config` and `rsync` from apt; rustup, with the
-toolchain and components [rust-toolchain.toml](rust-toolchain.toml) pins,
-and the `wasm32-wasip1` and `wasm32-unknown-unknown` targets; the Bun
-version the workflows set up, in `~/.bun`; Node 24; and, in the VM's copy,
-`bun install` and `bunx --bun playwright install --with-deps chromium`.
-For `bun run wasm`, check out rustc's source in the VM's `wasm/rustc` as
-the check workflow's `wasm-parity` job does. Mount the shared checkout at
-boot with an `/etc/fstab` line for `/mnt/shared` (`virtiofs`). Two things
-a managed network may need, or downloads fail or hang: a TLS-inspecting
-proxy's root certificate in the VM's `/usr/local/share/ca-certificates`,
-and a smaller MTU, such as 1280 in a netplan file, where a tunnel drops
-full-size packets.
+To set the Mac up once: rustup, with the toolchain and components
+[rust-toolchain.toml](rust-toolchain.toml) pins, and the `wasm32-wasip1`
+and `wasm32-unknown-unknown` targets; the Bun version the workflows set
+up; Node 24; then `bun install` and `bunx --bun playwright install
+chromium`. Add the app that runs the checks, and a terminal you run them
+from, under **System Settings → Privacy & Security → Developer Tools**.
