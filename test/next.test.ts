@@ -146,7 +146,9 @@ test("rust-js-next dev serves Rust routes, refreshes a save in place, and recove
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
     await page.goto(`http://localhost:${port}/`);
-    const button = page.getByRole("button");
+    // The counter, whose name ends in its count: Next.js's dev server
+    // shows a Dev Tools button too, sometimes before the first click.
+    const button = page.getByRole("button", { name: /\d$/ });
     await button.filter({ hasText: "Count 0" }).waitFor();
     await button.click();
     await button.filter({ hasText: "Count 1" }).waitFor();
