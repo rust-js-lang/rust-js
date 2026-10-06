@@ -1,5 +1,6 @@
 //! Decode the binding language independently of call lowering.
 
+use rustc_ast::LitKind;
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::{ExprKind, ItemKind, Stmt, StmtKind};
 use rustc_middle::ty::{self, FieldDef, Ty, TyCtxt, VariantDef};
@@ -273,12 +274,13 @@ pub(super) fn is_omitted(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 }
 
 /// A props field's default, `#[rust_js::default]` (ADR 0212): `Some(None)`
-/// of its type's `Default`, `Some(Some("_self"))` of the string it says.
-pub(super) fn field_default(tcx: TyCtxt<'_>, field: &FieldDef) -> Option<Option<Symbol>> {
+/// of its type's `Default`, `Some(Some(..))` of the literal it says,
+/// `"_self"` or `true`.
+pub(super) fn field_default(tcx: TyCtxt<'_>, field: &FieldDef) -> Option<Option<LitKind>> {
     let path = [Symbol::intern("rust_js"), Symbol::intern("default")];
     tcx.get_attrs_by_path(field.did, &path)
         .next()
-        .map(|attr| attr.value_str())
+        .map(|attr| attr.value_lit().map(|lit| lit.kind))
 }
 
 /// Whether field `i` of `ty`, a struct, is flattened (ADR 0204).

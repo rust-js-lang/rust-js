@@ -118,15 +118,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Field `i`'s default, of `ty`, a props struct, where JS takes it
     /// apart, `{ size = "md" }` (ADR 0212): its type's `Default`, which is
-    /// a literal, or the string its `#[rust_js::default]` says.
+    /// a literal, or the literal its `#[rust_js::default]` says, of its type.
     fn prop_default(&mut self, ty: Ty<'tcx>, i: usize, span: Span) -> Option<Expr> {
         let ty::Adt(adt, args) = ty.kind() else { return None };
         let field = adt.non_enum_variant().fields.iter().nth(i)?;
+        let field_ty = field.ty(self.tcx, args).skip_normalization();
         let default = match bindings::field_default(self.tcx, field)? {
-            Some(text) => Expr::str(text.as_str()),
-            None => self
-                .default_value(field.ty(self.tcx, args).skip_normalization(), span)
-                .ok()?,
+            Some(lit) => {
+                let of_type = match lit {
+                    LitKind::Str(..) => self.is_string_like(field_ty),
+                    LitKind::Bool(_) => field_ty.is_bool(),
+                    LitKind::Int(..) => Num::of(field_ty).is_some(),
+                    LitKind::Float(..) => Num::of(field_ty).is_some_and(Num::float),
+                    _ => false,
+                };
+                if !of_type {
+                    self.unsupported(span, "a props field's default that isn't of the field's type");
+                    return None;
+                }
+                self.literal(&lit, false, field_ty, span).ok()?
+            }
+            None => self.default_value(field_ty, span).ok()?,
         };
         if !is_literal(&default) {
             self.unsupported(

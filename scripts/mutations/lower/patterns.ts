@@ -300,10 +300,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "prop-default-string-ignored",
-    breaks: "`#[rust_js::default = \"_self\"]` is its type's default, `\"\"`, not the string it says",
+    breaks: "the literal `#[rust_js::default = ..]` says is its type's default instead: `\"_self\"` is `\"\"`, `true` is `false`",
     file: "src/lower/patterns.rs",
-    find: "            Some(text) => Expr::str(text.as_str()),",
-    replace: "            Some(text) => Expr::str(\"\"),",
+    find: "                self.literal(&lit, false, field_ty, span).ok()?\n",
+    replace: "                self.default_value(field_ty, span).ok()?\n",
     tests: ["test/jsx.test.ts", "-t", "a props field"],
   },
   {
@@ -353,5 +353,29 @@ export const mutations: Mutation[] = [
     find: "                    in_place &= place\n",
     replace: "                    in_place &= true\n",
     tests: ["test/snapshots.test.ts", "-t", "strings"],
+  },
+  {
+    name: "default-of-another-type",
+    breaks: "a props field's default that isn't of its type, `= \"3\"` of a `u32`, is written as it is",
+    file: "src/lower/patterns.rs",
+    find: "                if !of_type {\n",
+    replace: "                if false {\n",
+    tests: ["test/jsx.test.ts", "-t", "literal default it says"],
+  },
+  {
+    name: "default-bool-refused",
+    breaks: "`#[rust_js::default = true]` of a `bool` is refused, where JS takes `isPageAnchor = true`",
+    file: "src/lower/patterns.rs",
+    find: "                    LitKind::Bool(_) => field_ty.is_bool(),\n",
+    replace: "                    LitKind::Bool(_) => false,\n",
+    tests: ["test/jsx.test.ts", "-t", "literal default it says"],
+  },
+  {
+    name: "default-number-refused",
+    breaks: "`#[rust_js::default = 3]` of a `u32` is refused",
+    file: "src/lower/patterns.rs",
+    find: "                    LitKind::Int(..) => Num::of(field_ty).is_some(),\n",
+    replace: "                    LitKind::Int(..) => false,\n",
+    tests: ["test/jsx.test.ts", "-t", "literal default it says"],
   },
 ];

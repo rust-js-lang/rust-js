@@ -42,6 +42,11 @@ export interface ButtonLinkProps<C> {
   as `Default` gives a unit-only enum's, a number's, a string's or a
   `Vec`'s; one that's made, a `HashMap`'s `new Map()`, is an error that
   says to write it.
+- **The literal said is of the field's type**: a string of a string's, a
+  `bool` of a `bool`'s, `#[rust_js::default = true]`, as react.dev's
+  Heading takes `isPageAnchor = true`, and a number of a number's, written
+  as a literal of that type is. One of another type is an error; `= true`
+  was read as no literal at all, and the type's `Default`, `false`, taken.
 - **A component's props with one are taken apart where they're given**,
   `fn ButtonLink(ButtonLinkProps { size, .. }: ButtonLinkProps)`: taken
   whole, a JS caller's missing field would have none, so that's an error.

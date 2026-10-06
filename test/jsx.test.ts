@@ -981,6 +981,38 @@ pub fn Chip(ChipProps { label, size, target }: ChipProps) -> Element {
   expect([unmade.exitCode === 0, unmade.stderr.toString()]).toEqual([false, expect.stringContaining("isn't a literal")]);
 });
 
+// A default the field says, of its own type: `= true` of a `bool`, as
+// react.dev's Heading takes `isPageAnchor = true`, and `= 3` of a number.
+test("JSX gives a props field the literal default it says, of its type", async () => {
+  const anchor = `#![allow(non_snake_case)]
+#[rust_js::camel_case]
+const _: () = ();
+use react::{Element, jsx};
+pub struct AnchorProps {
+    pub label: &'static str,
+    #[cfg_attr(rust_js, rust_js::default = true)]
+    pub is_page_anchor: bool,
+    #[cfg_attr(rust_js, rust_js::default = 3)]
+    pub level: u32,
+}
+pub fn Anchor(AnchorProps { label, is_page_anchor, level }: AnchorProps) -> Element {
+    jsx! { <h2 title={label} data-level={level}>{is_page_anchor.then_some("#")}</h2> }
+}
+`;
+  const { dir, args } = compile(anchor);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("export function Anchor({ label, isPageAnchor = true, level = 3 }) {");
+  const { Anchor } = await import(join(dir, "lib.jsx"));
+  const { createElement } = await import("react");
+  expect(renderToStaticMarkup(createElement(Anchor, { label: "x" }))).toBe('<h2 title="x" data-level="3">#</h2>');
+  expect(renderToStaticMarkup(createElement(Anchor, { label: "y", isPageAnchor: false, level: 4 }))).toBe('<h2 title="y" data-level="4"></h2>');
+  // One that isn't of the field's type is said.
+  const wrong = compile(anchor.replace("rust_js::default = 3", 'rust_js::default = "3"'));
+  const failed = Bun.spawnSync(wrong.args, { cwd: wrong.dir });
+  expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("isn't of the field's type")]);
+});
+
 // A props struct's flattened field, `#[rust_js::flatten]`, holds a struct
 // whose fields are the component's own props, as TypeScript's
 // `AnchorProps & ButtonLinkProps` has them: `...anchor` where they're
