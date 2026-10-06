@@ -19,7 +19,7 @@ const typesFile = join(import.meta.dir, "..", "node_modules", "@types", "react",
 const typesVersion = JSON.parse(readFileSync(join(typesFile, "..", "package.json"), "utf8")).version;
 
 const ts = await open([typesFile]);
-const { declarations } = await ts.read(typesFile);
+const { declarations }: { declarations: Model[] } = await ts.read(typesFile);
 await ts.close();
 
 // What @types/react declares: its namespace `React`'s, the file's own
