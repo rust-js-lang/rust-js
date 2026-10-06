@@ -1,6 +1,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { buildReact, compiler, expectSnapshot, fixture, root, run, target } from "./support";
 import { decodeMappings, lookup } from "./sourcemap";
@@ -557,6 +558,40 @@ thread_local! {
     expect(lookup(decodeMappings(map.mappings), line, lines[line].indexOf(generated))?.srcLine)
       .toBe(source.split("\n").findIndex(l => l.includes(original)));
   }
+});
+
+// react.dev's Toc gives its `IsInTocContext.Provider` a list of headings: a
+// provider's children are any node, as a component's are.
+test("JSX context providers take any node as children", async () => {
+  const { dir, args } = compile(`#![deny(warnings)]
+#![allow(non_snake_case)]
+use react::{Context, Element, create_context, jsx, use_context};
+thread_local! { static THEME: Context<&'static str> = create_context("light"); }
+fn Label() -> Element {
+    let theme = use_context(&THEME);
+    jsx! { <b>{*theme}</b> }
+}
+pub fn App() -> Element {
+    let names = vec!["a", "b"];
+    jsx! {
+        <>
+            <THEME value="dark">
+                {names.iter().map(|name| jsx! { <i key={*name}>{*name}</i> }).collect::<Vec<_>>()}
+                <Label />
+            </THEME>
+            <THEME.Provider value="legacy">
+                {(!names.is_empty()).then(|| jsx! { <Label /> })}
+            </THEME.Provider>
+            <THEME.Provider value="text">{"plain"}</THEME.Provider>
+        </>
+    }
+}
+`);
+  run(args);
+  const code = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(code).toContain('<THEME.Provider value="text">plain</THEME.Provider>');
+  const result = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(createElement(result.App))).toBe("<i>a</i><i>b</i><b>dark</b><b>legacy</b>plain");
 });
 
 test("JSX built-ins finish as elements and use one spelling for ref and form actions", () => {

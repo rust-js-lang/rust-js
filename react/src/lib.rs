@@ -971,15 +971,16 @@ pub fn create_context<T>(default: T) -> Context<T> {
 
 /// Props of `<THEME value={value}>{children}</THEME>` on React 19+,
 /// or `<THEME.Provider value={value}>{children}</THEME.Provider>` on React 18+.
-pub struct Provider<T> {
+/// Its children are any node, as a component's are.
+pub struct Provider<T, C> {
     pub value: T,
-    pub children: Element,
+    pub children: C,
 }
 
 pub struct ProvidesContext;
 
 #[cfg(react = "19.0")]
-impl<T> Component<Provider<T>, ProvidesContext> for &'static LocalKey<Context<T>> {}
+impl<T, C: Node> Component<Provider<T, C>, ProvidesContext> for &'static LocalKey<Context<T>> {}
 
 /// `THEME.Provider`, a context's provider in every React version:
 /// Used by `<THEME.Provider value={value}>{children}</THEME.Provider>`.
@@ -991,7 +992,7 @@ pub fn provider<T>(this: &'static LocalKey<Context<T>>) -> ContextProvider<T> {
 
 pub struct ContextProvider<T>(PhantomData<JsObject>, PhantomData<T>);
 
-impl<T> Component<Provider<T>, ProvidesContext> for ContextProvider<T> {}
+impl<T, C: Node> Component<Provider<T, C>, ProvidesContext> for ContextProvider<T> {}
 
 /// A component that [`memo`] made: React skips rendering it again while its
 /// props are the same as last time.
