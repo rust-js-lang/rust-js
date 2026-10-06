@@ -13,6 +13,7 @@ on:
       tests:
         description: 'Tests or directories under tests/ui, separated by spaces, like "derives/ consts/std/iter.rs". Empty: all of them.'
         required: false
+        type: string
         default: ''
       bless:
         description: 'With all of them: write the known failures anew, as an artifact to commit.'
@@ -21,21 +22,68 @@ on:
       fuzz_seeds:
         description: 'Instead: how many generated programs to run, like "600". Empty: none.'
         required: false
+        type: string
         default: ''
       fuzz_start:
         description: 'The first generated program''s seed.'
         required: false
+        type: string
         default: '1'
       mutations:
         description: 'Instead: put back each known bug, and check its tests catch it.'
         type: boolean
         default: false
+      mutation_args:
+        description: 'With mutations: which, like "--changed=origin/main" for a change''s, or names. Empty: all of them.'
+        required: false
+        type: string
+        default: ''
+      mutation_shards:
+        description: 'With mutations: machines they''re split across, 1, 2, 4 or 8. Each sets itself up, so more is more minutes.'
+        required: false
+        type: string
+        default: '1'
+  workflow_call:
+    inputs:
+      tests:
+        description: 'Tests or directories under tests/ui, separated by spaces, like "derives/ consts/std/iter.rs". Empty: all of them.'
+        required: false
+        type: string
+        default: ''
+      bless:
+        description: 'With all of them: write the known failures anew, as an artifact to commit.'
+        type: boolean
+        default: false
+      fuzz_seeds:
+        description: 'Instead: how many generated programs to run, like "600". Empty: none.'
+        required: false
+        type: string
+        default: ''
+      fuzz_start:
+        description: 'The first generated program''s seed.'
+        required: false
+        type: string
+        default: '1'
+      mutations:
+        description: 'Instead: put back each known bug, and check its tests catch it.'
+        type: boolean
+        default: false
+      mutation_args:
+        description: 'With mutations: which, like "--changed=origin/main" for a change''s, or names. Empty: all of them.'
+        required: false
+        type: string
+        default: ''
+      mutation_shards:
+        description: 'With mutations: machines they''re split across, 1, 2, 4 or 8. Each sets itself up, so more is more minutes.'
+        required: false
+        type: string
+        default: '1'
 
 permissions:
   contents: read
 
 concurrency:
-  group: rustc-tests-${{ github.ref }}
+  group: rustc-tests-${{ github.workflow }}-${{ github.ref }}-${{ inputs.mutations }}
   cancel-in-progress: false
 
 jobs:
@@ -115,8 +163,22 @@ jobs:
           path: results
           merge-multiple: true
       - name: Check against the known failures
+        id: check
         if: ${{ !inputs.bless }}
         run: bun scripts/rustc-suite.ts --merge results/*.json
+      # What differs, blessed, as a patch to read and apply (DEVELOPMENT.md).
+      - name: Bless the lists, as a patch
+        if: failure() && steps.check.outcome == 'failure'
+        run: |
+          bun scripts/rustc-suite.ts --merge --bless results/*.json || true
+          git diff --binary -- test/ > rustc-lists.patch
+      - if: failure() && steps.check.outcome == 'failure'
+        uses: actions/upload-artifact@v7
+        with:
+          name: bless-rustc-lists
+          path: rustc-lists.patch
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Write the known failures anew
         if: ${{ inputs.bless }}
         run: bun scripts/rustc-suite.ts --merge --bless results/*.json
@@ -228,10 +290,19 @@ jobs:
   # named for each must fail against it, and pass as the compiler is.
   mutations:
     if: inputs.mutations
+    name: mutations (${{ matrix.shard }}/${{ inputs.mutation_shards }})
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(inputs.mutation_shards == '8' && '[1, 2, 3, 4, 5, 6, 7, 8]' || inputs.mutation_shards == '4' && '[1, 2, 3, 4]' || inputs.mutation_shards == '2' && '[1, 2]' || '[1]') }}
     steps:
+      # All of the history: a change's mutations are found from where it
+      # left main.
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: ./.github/actions/rustc-tests-setup
         with:
           build: 'false'
@@ -248,4 +319,9 @@ jobs:
       # The corpus ships each case through Vite too.
       - run: bun install --frozen-lockfile
       - name: Put back each known bug
-        run: bun scripts/mutations.ts
+        env:
+          ARGS: ${{ inputs.mutation_args }}
+        # Split on spaces, with no globbing: each word is a name or a flag.
+        run: |
+          set -f
+          bun scripts/mutations.ts $ARGS --shard=${{ matrix.shard }}/${{ inputs.mutation_shards }}

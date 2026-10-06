@@ -1,19 +1,64 @@
 name: Check
 
+# Every check but the inner loop's, of a pushed branch, so a change is made
+# here and proved there while the next one is made (DEVELOPMENT.md). Started
+# by hand, `bun run ci:check`, as GitHub's free minutes are counted: not
+# on each push. Its jobs run at once; `main` takes a branch when all of
+# them pass. A job whose snapshots or rustc's lists differ uploads what
+# blessing them writes, a `bless-*` artifact, which `bun run ci:bless`
+# applies to be read.
 on:
   workflow_dispatch:
+    inputs:
+      test_shards:
+        description: 'Machines the suite is split across: more is sooner, and more minutes, as each sets itself up.'
+        type: choice
+        options: ['1', '2', '4']
+        default: '1'
 
 permissions:
   contents: read
 
+# A new push to a branch is what's checked: the run of the last one stops.
 concurrency:
   group: check-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
-  test:
+  lint:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.4.2'
+      - name: Install pinned Rust toolchain
+        run: rustup show
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/debug
+          key: lint-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-${{ github.sha }}
+          restore-keys: lint-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run fmt:check
+      - run: cargo clippy --locked -- -D warnings
+      - run: cargo test --locked
+
+  # The suite, on one machine, or split across `test_shards`, by how long
+  # each file took (`bun test --shard`).
+  test:
+    name: test (${{ matrix.shard }}/${{ inputs.test_shards || '1' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(inputs.test_shards == '4' && '[1, 2, 3, 4]' || inputs.test_shards == '2' && '[1, 2]' || '[1]') }}
     steps:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
@@ -26,16 +71,57 @@ jobs:
           node-version: '24'
       - name: Install pinned Rust toolchain
         run: rustup show
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/debug
+          key: test-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-${{ github.sha }}
+          restore-keys: test-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
       - run: bun install --frozen-lockfile
       - run: bunx --bun playwright install --with-deps chromium
-      - run: bun run typecheck
-      - run: bun run fmt:check
-      - run: cargo clippy --locked -- -D warnings
-      - run: cargo test --locked
-      - run: bun run test
+      - id: test
+        run: bun run test --shard=${{ matrix.shard }}/${{ inputs.test_shards || '1' }}
+      # What differs, blessed, as a patch to read and apply: never pushed.
+      - name: Bless what differs
+        if: failure() && steps.test.outcome == 'failure'
+        run: |
+          BLESS=1 RUST_JS_COMPILER="$PWD/target/debug/rust-js" bun scripts/test.ts --shard=${{ matrix.shard }}/${{ inputs.test_shards || '1' }} || true
+          git add -A
+          git diff --cached --binary > bless.patch
+      - if: failure() && steps.test.outcome == 'failure'
+        uses: actions/upload-artifact@v7
+        with:
+          name: bless-test-${{ matrix.shard }}
+          path: bless.patch
+          if-no-files-found: ignore
+          retention-days: 7
+
+  examples:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.4.2'
+      - name: Install pinned Rust toolchain
+        run: rustup show
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/debug
+          key: examples-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-${{ github.sha }}
+          restore-keys: examples-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
+      - run: bun install --frozen-lockfile
+      # The compiler the example's Vite plugin finds, this checkout's.
+      - run: cargo build --locked
       - run: bun run --cwd examples/vite-react build
 
-  wasm-parity:
+  wasm:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -70,3 +156,15 @@ jobs:
         env:
           RUST_JS_REQUIRE_WASM: '1'
         run: bun test test/snapshots.test.ts test/playground.test.ts
+
+  # rustc's tests, all of them, against the known failures (ADR 0089).
+  rustc:
+    uses: ./.github/workflows/rustc-tests.yml
+
+  # The mutations the change touches (ADR 0093): those of the files it
+  # changes, and those it adds or edits. Nightly runs all of them.
+  mutations:
+    uses: ./.github/workflows/rustc-tests.yml
+    with:
+      mutations: true
+      mutation_args: --changed=origin/main
