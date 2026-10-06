@@ -1,6 +1,7 @@
 # 0020. Structs are objects, tuples are arrays
 
 Status: Accepted. Extends [0013](0013-fieldless-enums.md) to types with fields.
+(Amended: an array of what's changed in place contains it too.)
 
 ## Context
 
@@ -73,7 +74,12 @@ explicit, but only where they would be visible:
    forbids using `r` again, so sharing the object can't be observed.
 2. **A read of a `Copy` value copies it** (`{ ...a }`, `[t[0], t[1]]`, with
    nested structs copied in turn) **only if its type contains a type whose
-   objects are changed in place somewhere in the crate.** `a.b.c = ..`
+   objects are changed in place somewhere in the crate.** An array does
+   when its items' type does: `[P; 2]` of a `P` whose `x` something
+   changes is copied item by item, or a closure given its items by value,
+   `into_iter().map(|mut p| ..)`, would change the array they came from, as
+   JS gives a callback the items themselves. (Amended: an array counted
+   only when an index of it was assigned.) `a.b.c = ..`
    changes the object `a.b`, so it's `a.b`'s type that counts. Every other
    type's objects never change after they're built, so sharing them is
    the same as copying them. The type can be inside an `Option`, since

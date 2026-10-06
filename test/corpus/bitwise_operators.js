@@ -40,7 +40,10 @@ function main() {
   let user = [[READ[0]], "ann"];
   flagsBitOrAssign_bitor_assign(user[0], [WRITE[0]]);
   console.log(
-    `[${all.map((item) => flagsDebug_fmt(item)).join(", ")}] ${flagsDebug_fmt([user[0][0]])} ${user[1]}`,
+    `[${all
+      .map((item) => [item[0]])
+      .map((item) => flagsDebug_fmt(item))
+      .join(", ")}] ${flagsDebug_fmt([user[0][0]])} ${user[1]}`,
   );
 }
 

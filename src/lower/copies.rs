@@ -215,6 +215,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             .iter()
                             .any(|&(_, t)| self.contains_mutated(t))
                     }),
+                    // An array of what's changed in place holds what's changed:
+                    // a copy of it copies each item (ADR 0052).
+                    ty::Array(item, _) => self.contains_mutated(*item),
                     _ => false,
                 },
             }
