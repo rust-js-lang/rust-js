@@ -57,12 +57,12 @@ impl OutputPlan {
                 .collect();
             // A relative module in `#[link_name]` is relative to the root's
             // file (ADR 0028), so a file in a subdirectory climbs up to it.
-            let depth = module.path.len().saturating_sub(1);
+            let dir = &module.path[..module.path.len().saturating_sub(1)];
             let packages = module
                 .packages
                 .into_iter()
                 .map(|package| js::Package {
-                    from: relocate(&package.from, depth),
+                    from: relocate(&package.from, dir),
                     ..package
                 })
                 .collect();
@@ -302,14 +302,27 @@ function testResult(result) {
 }
 "#;
 
-/// A module specifier, as seen from `depth` directories below the root's
-/// file: `./greet.js` is `../greet.js` one down. Package names stay as they are.
-fn relocate(specifier: &str, depth: usize) -> String {
-    let up = "../".repeat(depth);
-    match specifier.strip_prefix("./") {
-        Some(rest) if depth > 0 => format!("{up}{rest}"),
-        _ if depth > 0 && specifier.starts_with("../") => format!("{up}{specifier}"),
-        _ => specifier.to_string(),
+/// A module specifier, as seen from directory `dir` below the root's file:
+/// `./greet.js` is `../greet.js` one down, and `./inner/wave.js` is
+/// `./wave.js` in `inner`, as a person writes it. Package names stay as they
+/// are.
+fn relocate(specifier: &str, dir: &[String]) -> String {
+    if !specifier.starts_with("./") && !specifier.starts_with("../") {
+        return specifier.to_string();
+    }
+    let parts: Vec<&str> = specifier.split('/').filter(|part| *part != ".").collect();
+    // The file's own name stays: `./inner` seen from `inner` is `../inner`.
+    let common = dir
+        .iter()
+        .zip(&parts[..parts.len() - 1])
+        .take_while(|(d, p)| d == p)
+        .count();
+    let up = "../".repeat(dir.len() - common);
+    let rest = parts[common..].join("/");
+    if up.is_empty() && !rest.starts_with("../") {
+        format!("./{rest}")
+    } else {
+        format!("{up}{rest}")
     }
 }
 

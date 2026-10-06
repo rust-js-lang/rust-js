@@ -58,4 +58,20 @@ export const mutations: Mutation[] = [
     replace: "                        import[\"from\"] = path.join(\"/\").into();",
     tests: ["test/declarations.test.ts"],
   },
+  {
+    name: "relocate-climbs-to-root",
+    breaks: "a module in a subdirectory climbs to the root's directory and back down: `../inner/wave.js`, not `./wave.js`",
+    file: "src/output.rs",
+    find: "        .take_while(|(d, p)| d == p)\n",
+    replace: "        .take_while(|(d, p)| d == p && false)\n",
+    tests: ["test/compiler.test.ts", "-t", "extern items from JS modules"],
+  },
+  {
+    name: "relocate-beside-bare",
+    breaks: "a file beside the module is named bare, `wave.js`, which JS reads as a package",
+    file: "src/output.rs",
+    find: "    if up.is_empty() && !rest.starts_with(\"../\") {\n",
+    replace: "    if dir.is_empty() && !rest.starts_with(\"../\") {\n",
+    tests: ["test/snapshots.test.ts", "-t", "imports"],
+  },
 ];

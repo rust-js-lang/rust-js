@@ -96,6 +96,9 @@ EditorState.create(config);
 - **A relative module (`./`, `../`) is relative to the crate root's JS
   file.** A file two directories down imports `./greet.js` as
   `../greet.js`, so every module that imports a file names it the same way.
+  The JS names it as a person does, from the importing file's directory:
+  `./inner/wave.js` is `./wave.js` in `inner/leaf.js`, not
+  `../inner/wave.js`.
 
 ## Why
 

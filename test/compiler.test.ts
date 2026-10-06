@@ -149,6 +149,7 @@ beforeAll(async () => {
   // Imports (ADR 0028): `./greet.js` is relative to the root's JS, so it goes beside it.
   run([compiler, "test/imports/lib.rs", "-o", join(target, "imports", "lib.js")]);
   copyFileSync(join(root, "test/imports/greet.js"), join(target, "imports", "greet.js"));
+  copyFileSync(join(root, "test/imports/inner/wave.js"), join(target, "imports", "inner", "wave.js"));
   imports = {
     lib: await import(join(target, "imports", "lib.js")),
     leaf: await import(join(target, "imports", "inner", "leaf.js")),
@@ -242,6 +243,7 @@ test("extern items from JS modules become import statements", async () => {
   expect(imports.lib.urls()).toEqual(["https://example.com/a", "https://example.com/b"]);
   expect(imports.lib.greetings()).toEqual(["Hello, world!", "Good day, world.", "!?"]);
   expect(imports.leaf.hello()).toBe("Hello, leaf!");
+  expect(imports.leaf.bye()).toBe("Bye, leaf!");
 
   const lib = await Bun.file(join(target, "imports", "lib.js")).text();
   // One statement per module and kind, as a person would write them. A
@@ -257,7 +259,7 @@ test("extern items from JS modules become import statements", async () => {
   expect(lib).toContain('greet$1.polite("world")');
   // Two directories down, only what the file uses, from the same file.
   const leaf = await Bun.file(join(target, "imports", "inner", "leaf.js")).text();
-  expect(leaf).toMatch(/\nimport greet from "\.\.\/greet\.js";\n\nfunction join/);
+  expect(leaf).toMatch(/\nimport greet from "\.\.\/greet\.js";\nimport wave from "\.\/wave\.js";\n\nfunction join/);
 });
 
 // ADR 0029: `async fn` is an `async function`, `.await` is `await`, and a
