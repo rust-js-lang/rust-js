@@ -523,6 +523,10 @@ pub trait Cleanup {}
 impl Cleanup for () {}
 impl<F: FnOnce() + 'static> Cleanup for F {}
 
+/// A cleanup an effect gives only sometimes: `undefined`, `None`, where it has
+/// none, as React takes it.
+impl<F: FnOnce() + 'static> Cleanup for Option<F> {}
+
 /// [`useEffect`](https://react.dev/reference/react/useEffect): run `effect`
 /// after a render in which `deps` changed.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useEffect")]

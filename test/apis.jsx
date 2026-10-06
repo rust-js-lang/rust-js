@@ -89,7 +89,9 @@ test("Activity keeps hidden state; a portal renders elsewhere; flushSync applies
   expect([$(".count").textContent, $(".count").style.display]).toEqual(["2", ""]);
   expect(globalThis.portalTarget.textContent).toBe("in the portal");
   await act(() => $(".flush").click());
-  expect(logged).toEqual(["flushed 1"]);
+  // The counter's effect cleans up from its second render, an `Option`'s
+  // cleanup: its first, of 0, has none. Hidden, it cleans up too.
+  expect(logged).toEqual(["cleanup 1", "cleanup 2", "flushed 1"]);
   await act(() => root.unmount());
 });
 

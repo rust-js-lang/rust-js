@@ -2523,12 +2523,12 @@ pub(super) fn implementable(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'
         || tcx.is_diagnostic_item(sym::Eq, id)
         || tcx.is_diagnostic_item(sym::Iterator, id)
         || is_operator(tcx, id)
-        // An auto trait, as `Send`, `Sync`, `Unpin` or `UnwindSafe`, has no
-        // items: its impl says what the type may be used for, and runs nothing.
-        || tcx.trait_is_auto(id)
-        // A promise that `next` stays `None`, with no items either: `fuse()`
-        // is what it is without it (ADR 0055).
-        || tcx.is_lang_item(id, LangItem::FusedIterator)
+        // A trait of no items: its impl says what the type may be used for,
+        // and runs nothing. An auto trait, as `Send`, `Sync`, `Unpin` or
+        // `UnwindSafe`; `FusedIterator`, a promise that `next` stays `None`,
+        // which `fuse()` is without (ADR 0055); a binding crate's marker of
+        // what its bindings take, react's `Key` of a list's key.
+        || tcx.associated_item_def_ids(id).is_empty()
         // Run where rustc drops a value (ADR 0098).
         || tcx.is_lang_item(id, LangItem::Drop)
 }

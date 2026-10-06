@@ -151,6 +151,16 @@ pub fn Refs() -> Element {
 /// Activity keeps hidden state; a portal renders elsewhere; flushSync applies now.
 pub fn Counter() -> Element {
     let (n, set_n) = use_state(0);
+    // An effect that cleans up only once it's counted: its cleanup an `Option`.
+    use_effect(
+        move || {
+            if *n == 0 {
+                return None;
+            }
+            Some(move || log(&format!("cleanup {n}")))
+        },
+        [n],
+    );
     jsx! {
         <button className="count" onClick={move |_| set_n.update(|n| n + 1)}>{n}</button>
     }

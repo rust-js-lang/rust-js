@@ -3,12 +3,12 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "auto-trait-impl",
-    breaks: "an impl of an auto trait, as `unsafe impl Sync`, is rejected",
+    name: "trait-of-no-items-impl",
+    breaks: "an impl of a trait of no items, `unsafe impl Sync`, `impl FusedIterator`, is rejected, though it runs nothing",
     file: "src/lower/recognition.rs",
-    find: "        || tcx.trait_is_auto(id)\n",
+    find: "        || tcx.associated_item_def_ids(id).is_empty()\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "marker_traits"],
+    tests: ["test/corpus.test.ts", "-t", "marker_traits|fused_iterator"],
   },
   {
     name: "user-deref-impl",
@@ -65,14 +65,6 @@ export const mutations: Mutation[] = [
     find: "        (LangItem::BitOr, Ok(BinOp::BitOr)),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "generic_bitwise_operators"],
-  },
-  {
-    name: "fused-iterator-impl",
-    breaks: "`impl FusedIterator for Countdown {}`, which runs nothing, is refused",
-    file: "src/lower/recognition.rs",
-    find: "        || tcx.is_lang_item(id, LangItem::FusedIterator)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "fused_iterator"],
   },
   {
     name: "fuse-unknown",

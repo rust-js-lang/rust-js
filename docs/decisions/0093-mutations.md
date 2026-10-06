@@ -47,7 +47,7 @@ written, and what it breaks, as Rust would see it:
 | `static-mut-reference` | a `&mut` to a `static mut` is allowed | `static_mut_reference.rs` |
 | `atomic-fetch-new-value` | an atomic's `fetch_add` gives the new value, not the old | `atomics.rs` |
 | `thread-local-storage-static` | std's storage for a `thread_local!` is taken as a static, and rejected | `thread_local_syntax.rs` |
-| `auto-trait-impl` | an impl of an auto trait, as `unsafe impl Sync`, is rejected | `marker_traits.rs` |
+| `trait-of-no-items-impl` | an impl of a trait of no items, `unsafe impl Sync`, `impl FusedIterator`, is rejected | `marker_traits.rs`, `fused_iterator.rs` |
 | `user-deref-impl` | a user `Deref` is rejected | `user_deref.rs` |
 | `returned-field-write` | a field of what a call's `&mut` points to can't be written | `user_deref.rs`, `returned_references.rs` |
 | `own-pointer-unsize` | a pointer of the crate's own, unsized to a `dyn`, is left as it was | `diagnostics.test.ts` |

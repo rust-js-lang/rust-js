@@ -138,6 +138,14 @@ export function Refs() {
 
 export function Counter() {
   const [n, setN] = useState(0);
+  useEffect(() => {
+    if (n === 0) {
+      return undefined;
+    }
+    return () => {
+      globalThis.log(`cleanup ${n}`);
+    };
+  }, [n]);
   return (
     <button className="count" onClick={() => setN((n) => (n + 1) | 0)}>
       {n}

@@ -60,8 +60,10 @@ generic bindings:
   `memo`, these are plain bindings: nothing in the compiler knows about them.
 - **`dom::create_root(..).render(..)`** is React DOM's client.
 - Traits say what goes where: `Node` for a child, `Text` for a text
-  attribute, `Key`, `Deps`, and `Cleanup`, meaning an effect returns nothing
-  or a function. None of them converts anything. Each value is already what
+  attribute, `Key`, `Deps`, and `Cleanup`, meaning an effect returns nothing,
+  a function, or an `Option` of one, `undefined` where it has none, as
+  react.dev's "Copy page" button cleans up only once it's copied. None of
+  them converts anything. Each value is already what
   React expects.
 
 A component is a public function with a capitalized name

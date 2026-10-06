@@ -278,6 +278,29 @@ pub fn list(crumbs: &[Crumb]) -> Element {
   expect(js).not.toContain("const onClick");
 });
 
+// A trait of no items, react's `Key`, is one a program may implement: its
+// impl runs nothing, as an auto trait's doesn't. A fieldless variant is its
+// name, which a list's `key` takes, as react.dev's `PageHeading` keys its tags.
+test("a program implements a trait of no items, react's Key of its enum", () => {
+  const source = `#![allow(non_snake_case)]
+use react::{Element, jsx};
+#[derive(Clone, Copy)]
+pub enum Tag {
+    #[rust_js::name = "new"]
+    New,
+    #[rust_js::name = "old"]
+    Old,
+}
+impl react::Key for Tag {}
+pub fn list(tags: &[Tag]) -> Vec<Element> {
+    tags.iter().map(|tag| jsx! { <li key={*tag}>{"tag"}</li> }).collect()
+}
+`;
+  const { dir, args } = compile(source);
+  run(args);
+  expect(readFileSync(join(dir, "lib.jsx"), "utf8")).toContain("return tags.map((tag) => <li key={tag}>tag</li>);");
+});
+
 test("nested component JSX stays readable, contextually typed and mapped to the original Rust", async () => {
   const source = `#![deny(warnings)]
 #![allow(non_snake_case)]

@@ -26,6 +26,10 @@ nothing.** `Send`, `Sync`, `Unpin`, `UnwindSafe` and the others have no
 items: an impl says what the type may be used for, and there's nothing to
 run. A negative impl, `impl !Send`, is nothing too. It's how a `Cell` goes
 in a static (ADR 0096).
+So is the impl of any other trait of no items, a binding crate's marker of
+what its bindings take: `impl react::Key for RouteTag {}`, a fieldless
+enum, its name, as a list's `key`, as react.dev's `PageHeading` keys its
+tags.
 
 **A user `Deref`, `DerefMut` or `IndexMut` is its method, called where
 rustc calls it**, as a user `Index` already is (ADR 0056): for `*w`, for a
