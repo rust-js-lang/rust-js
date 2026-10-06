@@ -400,6 +400,19 @@ pub fn View() -> Element {
   expect(renderToStaticMarkup(result.View())).toBe('<svg viewBox="0 0 10 10"><defs><linearGradient id="paint"></linearGradient></defs></svg>');
 });
 
+// React DOM's own table leaves these out, as their spelling needs no warning;
+// @types/react types them (ADR 0043).
+test("JSX takes every attribute @types/react types", async () => {
+  const { dir, args } = compile(`use react::{Element, jsx};
+pub fn View() -> Element {
+    jsx! { <pre translate="no" slot="code"><img loading="lazy" decoding="async" src="a.png" /></pre> }
+}
+`);
+  run(args);
+  const result = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(result.View())).toBe('<pre translate="no" slot="code"><img loading="lazy" decoding="async" src="a.png"/></pre>');
+});
+
 test("component props, keys and children evaluate in source order without capturing names", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{Element, jsx};
