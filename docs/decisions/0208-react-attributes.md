@@ -48,6 +48,9 @@ export interface ButtonLinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorEle
   `elements.rs` has it; `style` a `Style`. A type alias is followed in the
   file. What `lib.rs` writes by hand, `children`, `ref`, `key`,
   `dangerouslySetInnerHTML`, `action` and `formAction`, isn't one.
+- **`next/link`'s `LinkProps` flattens `AnchorHtmlAttributes`**, as
+  Next.js types it, where it held a `Rest` (ADR 0200), its own `className`,
+  `target`, `rel`, `id` and `aria-label` shadowing those.
 - **`bun run generate:attributes`** writes `react/src/attributes.rs`, and
   a test checks it's what the generator makes of the pinned @types/react.
 

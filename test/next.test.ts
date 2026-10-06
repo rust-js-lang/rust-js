@@ -11,7 +11,8 @@ const bin = join(root, "next-plugin/bin.js");
 const about = `#![allow(non_snake_case)]
 
 use next::link::Link;
-use react::{Element, Rest, jsx};
+use react::attributes::AnchorHtmlAttributes;
+use react::{Element, jsx};
 
 pub fn About() -> Element {
     jsx! {
@@ -23,15 +24,16 @@ pub fn About() -> Element {
 }
 
 #[derive(Default)]
-pub struct HomeLinkProps {
-    pub class_name: &'static str,
-    pub rest: Rest,
+pub struct HomeLinkProps<'a> {
+    pub class_name: &'a str,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub anchor: AnchorHtmlAttributes<'a>,
 }
 
-pub fn HomeLink(HomeLinkProps { class_name, rest }: HomeLinkProps) -> Element {
+pub fn HomeLink(HomeLinkProps { class_name, anchor }: HomeLinkProps) -> Element {
     let classes = [class_name, "link"].join(" ");
     jsx! {
-        <Link href="/" rest={rest} className={Some(classes.as_str())} aria-label={Some("Home page")} {..Default::default()}>
+        <Link href="/" anchor={anchor} className={Some(classes.as_str())} aria-label={Some("Home page")} {..Default::default()}>
             {"Home"}
         </Link>
     }
@@ -45,7 +47,7 @@ js::export_default!(About);
 // Server Component's route, app/page.rs, renders a client component of its
 // crate's, app/counter.rs, and a route below it, app/about/page.rs, links
 // back (ADR 0192), by a link of its own that gives next/link a class it
-// computes, an aria-label, and the props it isn't given by name (ADR 0200).
+// computes, an aria-label, and the anchor's other props (ADR 0200, 0208).
 function app(name: string): string {
   const dir = fixture(name);
   cpSync(example, dir, {
@@ -112,8 +114,9 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   expect(readFileSync(join(dir, ".next/server/app/index.html"), "utf8")).toContain("Count <!-- -->0");
   const aboutHtml = readFileSync(join(dir, ".next/server/app/about.html"), "utf8");
   expect([aboutHtml.includes('class="home link"'), aboutHtml.includes('aria-label="Home page"')]).toEqual([true, true]);
-  // Its props as written, its rest first, which the props it names replace (ADR 0203).
-  expect(readFileSync(join(dir, "app/about/page.jsx"), "utf8")).toContain('<Link href="/" {...rest} className={classes} aria-label="Home page">');
+  // Its props as written, an anchor's first, which the props it names
+  // replace (ADR 0203, 0208).
+  expect(readFileSync(join(dir, "app/about/page.jsx"), "utf8")).toContain('<Link href="/" {...anchor} className={classes} aria-label="Home page">');
 
   // A Rust error is the build's, rustc's message, and no Next.js build.
   writeFileSync(join(dir, "app/counter.rs"), counter("Count ") + "pub fn broken(");

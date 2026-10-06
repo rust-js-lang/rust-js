@@ -44,6 +44,9 @@ return (
 );
 ```
 
+- **Since ADR 0208, `next/link`'s rest is React's anchor attributes**,
+  `#[rust_js::flatten] anchor: AnchorHtmlAttributes<'a>`, as Next.js types
+  them, where a `Rest` was: a component passes its own on, `anchor={props}`.
 - **Its `rest` is where it's written**: before the props named after it,
   which take its place, as a JS component's `{...props}` before its own
   `aria-label` (ADR 0203).

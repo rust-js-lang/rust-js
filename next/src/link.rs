@@ -1,7 +1,8 @@
 //! [`next/link`](https://nextjs.org/docs/app/api-reference/components/link):
 //! an `<a>` that goes to another route without loading the page again.
 
-use react::{Element, Node, Rest};
+use react::attributes::AnchorHtmlAttributes;
+use react::{Element, Node};
 
 /// `<Link href="/about" {..Default::default()}>{"About"}</Link>`.
 #[cfg_attr(rust_js, rust_js::link_name = "next/link#default")]
@@ -18,9 +19,12 @@ pub struct LinkProps<'a, C> {
     pub href: &'a str,
     /// What it shows.
     pub children: C,
-    /// The `<a>`'s other props, a component's `...rest` passed on, where
-    /// it's written: the props named after it take its place.
-    pub rest: Rest,
+    /// The `<a>`'s other props, as Next.js types them, React's
+    /// `AnchorHTMLAttributes` (ADR 0208): a component's own, passed on,
+    /// `anchor={props}`, is `{...props}` where it's written. Those named
+    /// here are these.
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub anchor: AnchorHtmlAttributes<'a>,
     /// Replace the history's entry, not add one.
     pub replace: Option<bool>,
     /// Scroll to the top of the new page, or keep where it is: `true`.
