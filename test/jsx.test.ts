@@ -781,6 +781,15 @@ fn big() -> Size {
 pub fn Sized() -> Element {
     jsx! { <ButtonLink size={big()} href={note("h")}>{"S"}</ButtonLink> }
 }
+// Its flattened struct given whole, a component's own passed on.
+pub struct ForwardProps {
+    pub href: &'static str,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub props: Anchor,
+}
+pub fn Forward(ForwardProps { href, props }: ForwardProps) -> Element {
+    jsx! { <ButtonLink href={href} props={props}>{"F"}</ButtonLink> }
+}
 // A variable is read as it is, beside a prop that does something.
 pub fn Kept(h: &'static str) -> Element {
     jsx! { <ButtonLink target={Some(note("t"))} href={h}>{"K"}</ButtonLink> }
@@ -802,7 +811,10 @@ pub fn Linked() -> Element {
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain('<ButtonLink target="_blank" href="/a" id="x" size="lg">');
   expect(jsx).toContain('<ButtonLink href="/b" className="c">');
-  const { App, Noted, Linked, Sized } = await import(join(dir, "lib.jsx"));
+  const { App, Noted, Linked, Sized, Forward } = await import(join(dir, "lib.jsx"));
+  expect(jsx).toContain("<ButtonLink href={href} {...props}>");
+  const { createElement } = await import("react");
+  expect(renderToStaticMarkup(createElement(Forward, { href: "/f", target: "_t", id: "i" }))).toBe('<a href="/f" data-size="md" target="_t" id="i">F</a>');
   const logged: string[] = [];
   const log = console.log;
   console.log = (line: string) => logged.push(line);
@@ -831,6 +843,7 @@ pub fn Linked() -> Element {
   };
   // A required prop not given, and a name nothing has.
   refused(flat + `pub fn Missing() -> Element {\n    jsx! { <ButtonLink id={Some("x")}>{"A"}</ButtonLink> }\n}\n`, "missing prop \`href\`");
+  refused(flat + `pub fn Both(props: Anchor) -> Element {\n    jsx! { <ButtonLink href="/a" props={props} target={Some("_t")}>{"A"}</ButtonLink> }\n}\n`, "not both");
   refused(flat + `pub fn Unknown() -> Element {\n    jsx! { <ButtonLink href="/a" colour={Some("red")}>{"A"}</ButtonLink> }\n}\n`, "colour");
 });
 

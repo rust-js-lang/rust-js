@@ -42,6 +42,9 @@ error: missing prop `href` of `ButtonLinkProps`
 - **What's left out is `undefined`**, `react::__omitted()`, which JSX
   doesn't write, and the component's own default then is (ADR 0212);
   children not given are their type's `Default`.
+- **The flattened field itself may be given whole**, `props={props}`, a
+  component's own passed on, written `{...props}`; given whole and names
+  of it too is an error.
 - **A name nothing has is rustc's error**, at the name.
 - **With a base, `{..base}`, it's the struct literal with it**, as before.
 - **The props are as written**, by where each one's value is (ADR 0203),
@@ -63,7 +66,9 @@ error: missing prop `href` of `ButtonLinkProps`
 - **It's tested**: a JSX test gives a component of a flattened chain its
   props as one list, in an order of the caller's own, with a default and a
   required prop, and checks the JSX, what renders, and the order what does
-  something is made in, and refuses a missing prop and a wrong name.
+  something is made in; a component passes its own flattened props on
+  whole; and it refuses a missing prop, a wrong name, and both a
+  flattened struct and names of it.
 
 ## Costs
 

@@ -832,37 +832,53 @@ pub(super) fn props_companion(sess: &Session, item: &ast::Item, props: &HashSet<
                 .collect::<Vec<_>>()
                 .join(" ")
         };
+        // Each own field's slot; the flattened field's, given whole,
+        // `props={props}`, a component's own passed on; and the names its
+        // flattened struct has.
         let mut arms = vec![
             given,
             format!(
-                "(@given [$($name:ident: $value:expr,)*] []) => {{ NAME!(@slots [{}] [] $($name: $value,)*) }}",
+                "(@given [$($name:ident: $value:expr,)*] []) => {{ NAME!(@slots [{}] [] [] $($name: $value,)*) }}",
                 vec!["[]"; n].join(" ")
             ),
         ];
         for (i, (field, _, _)) in own.iter().enumerate() {
             arms.push(format!(
-                "(@slots [{patterns}] [$($rest:tt)*] r#{field}: $v:expr, $($tail:tt)*) => {{ NAME!(@slots [{}] [$($rest)*] $($tail)*) }}",
+                "(@slots [{patterns}] $flat:tt [$($rest:tt)*] r#{field}: $v:expr, $($tail:tt)*) => {{ NAME!(@slots [{}] $flat [$($rest)*] $($tail)*) }}",
                 filled(i)
             ));
         }
+        if let Some((field, _)) = &flatten {
+            arms.push(format!(
+                "(@slots [$($s:tt)*] [] [$($rest:tt)*] r#{field}: $v:expr, $($tail:tt)*) => {{ NAME!(@slots [$($s)*] [$v] [$($rest)*] $($tail)*) }}"
+            ));
+        }
         let other = match flatten {
-            Some(_) => "NAME!(@slots [$($s)*] [$($rest)* $name: $v,] $($tail)*)",
+            Some(_) => "NAME!(@slots [$($s)*] $flat [$($rest)* $name: $v,] $($tail)*)",
             // rustc's own error, at the name: `NAME` has no field `nope`.
             None => "NAME { $name: $v, ..::core::panic!() }",
         };
         arms.push(format!(
-            "(@slots [$($s:tt)*] [$($rest:tt)*] $name:ident: $v:expr, $($tail:tt)*) => {{ {other} }}"
+            "(@slots [$($s:tt)*] $flat:tt [$($rest:tt)*] $name:ident: $v:expr, $($tail:tt)*) => {{ {other} }}"
         ));
-        let mut values: Vec<String> = (own.iter().enumerate())
-            .map(|(i, (field, empty, _))| format!("r#{field}: NAME!(@slot {empty} \"{field}\" $s{i})"))
+        let values: Vec<String> = (own.iter().enumerate())
+            .map(|(i, (field, empty, _))| format!("r#{field}: NAME!(@slot {empty} \"{field}\" $s{i}), "))
             .collect();
-        if let Some((field, path)) = &flatten {
-            values.push(format!("r#{field}: {path}!(@given [$($rest)*] [])"));
+        let values = values.concat();
+        match &flatten {
+            Some((field, path)) => {
+                arms.push(format!(
+                    "(@slots [{patterns}] [$whole:expr] []) => {{ NAME {{ {values}r#{field}: $whole }} }}"
+                ));
+                arms.push(format!(
+                    "(@slots [{patterns}] [] [$($rest:tt)*]) => {{ NAME {{ {values}r#{field}: {path}!(@given [$($rest)*] []) }} }}"
+                ));
+                arms.push(format!(
+                    "(@slots [$($s:tt)*] [$whole:expr] [$($rest:tt)+]) => {{ ::core::compile_error!(\"give `{field}` or the props of it, not both\") }}"
+                ));
+            }
+            None => arms.push(format!("(@slots [{patterns}] [] []) => {{ NAME {{ {values} }} }}")),
         }
-        arms.push(format!(
-            "(@slots [{patterns}] [$($rest:tt)*]) => {{ NAME {{ {} }} }}",
-            values.join(", ")
-        ));
         arms.push("(@slot $empty:ident $name:literal [$v:expr]) => { $v }".to_string());
         arms.push(
             "(@slot required $name:literal []) => { ::core::compile_error!(concat!(\"missing prop `\", $name, \"` of `NAME`\")) }"
