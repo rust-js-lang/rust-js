@@ -653,7 +653,7 @@ for (const names of [eventNames, tagNames]) {
 // The typed forms of the `_named` operations: generic, so Rust functions
 // whose JS is the operation's, not extern ones.
 const typed = (doc: string[], js: string, signature: string) =>
-  [...doc.map((d) => `    /// ${d}`), `    #[cfg_attr(rust_js, rust_js::link_name = ${JSON.stringify(js)})]`, `    pub fn ${signature} {`, `        unreachable!()`, `    }`].join("\n");
+  [...doc.map((d) => `    /// ${d}`), `    #[cfg_attr(rust_js, rust_js::link_name = ${JSON.stringify(js)})]`, "    // rust-js writes its JS: the body never runs, nor reads a parameter.", "    #[allow(unused_variables)]", `    pub fn ${signature} {`, `        unreachable!()`, `    }`].join("\n");
 const listener = "Box<dyn FnMut(&<T as Listen<E>>::Event)>";
 const TYPED: Record<string, string[]> = {
   EventTarget: [
