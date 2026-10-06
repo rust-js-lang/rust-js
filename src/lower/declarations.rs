@@ -123,7 +123,7 @@ fn param_name(ty: &Value) -> String {
     let start = (name.char_indices())
         .filter(|&(i, c)| c.is_uppercase() && name[i + c.len_utf8()..].starts_with(|n: char| n.is_lowercase()))
         .map(|(i, _)| i)
-        .last()
+        .next_back()
         .unwrap_or(0);
     let word = &name[start..];
     let mut chars = word.chars();
