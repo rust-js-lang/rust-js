@@ -66,6 +66,54 @@ macro_rules! camel_case {
 #[cfg_attr(rust_js, rust_js::js_object)]
 pub struct JsObject(PhantomData<*mut ()>);
 
+/// A JS value of unknown shape (ADR 0225), as TypeScript's `unknown` and
+/// ReScript's are: what `JSON.parse` gives, or a binding's of `any`. Never
+/// `undefined` nor `null`, which an `Option<&Unknown>` is `None` of (ADR
+/// 0030). [`classify`] tells what it is, and [`get`] and [`set`] reach a
+/// property of it by name.
+#[cfg_attr(rust_js, rust_js::types = "unknown")]
+pub struct Unknown(PhantomData<JsObject>);
+
+/// What an [`Unknown`] is, as JS's `typeof` and `Array.isArray` tell it:
+/// each variant's value is the value itself (ADR 0214). An array's items
+/// may be `undefined` or `null`; anything else, an object, a function or a
+/// symbol, is an `Object`, whose properties [`get`] reads.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Kind<'a> {
+    String(&'a str),
+    Number(f64),
+    /// A `bigint`, as an `i64` is one (ADR 0086): one wider isn't wrapped.
+    BigInt(i64),
+    Bool(bool),
+    Array(&'a [Option<&'a Unknown>]),
+    #[cfg_attr(rust_js, rust_js::otherwise)]
+    Object(&'a Unknown),
+}
+
+/// What `value` is: `match classify(value) { Kind::String(s) => .., .. }`,
+/// a `typeof` of it in JS. The value itself.
+#[cfg_attr(rust_js, rust_js::link_name = "this")]
+#[allow(unused_variables)]
+pub fn classify(this: &Unknown) -> Kind<'_> {
+    unreachable!()
+}
+
+/// `value[key]`: a property of an object, by its name; `None` where it's
+/// `undefined` or `null`, as where there's none.
+#[cfg_attr(rust_js, rust_js::link_name = "get []")]
+#[allow(unused_variables)]
+pub fn get(this: &Unknown, key: &str) -> Option<&'static Unknown> {
+    unreachable!()
+}
+
+/// `value[key] = to`: `to` as JS has it, a string or a number, or an
+/// object.
+#[cfg_attr(rust_js, rust_js::link_name = "set []")]
+#[allow(unused_variables)]
+pub fn set<T>(this: &Unknown, key: &str, to: T) {
+    unreachable!()
+}
+
 /// A JS [`Promise`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)
 /// of a `T`. `.await` on one is JS's `await`; a rejected one throws, like a
 /// panic. See ADR 0029.
@@ -203,7 +251,15 @@ pub mod number {
 /// rust-js has it in JS, isn't, since `None` is `undefined` and an `i64` a
 /// `BigInt`, which it throws on. So it's typed for what it's exact for.
 pub mod json {
+    use super::*;
+
     unsafe extern "Rust" {
+        /// [`JSON.parse(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse):
+        /// the value `text` is, `None` of `null`, or what it threw for JSON
+        /// that isn't (ADR 0035).
+        #[link_name = "JSON.parse"]
+        pub safe fn parse(text: &str) -> Result<Option<&'static Unknown>, &'static JsError>;
+
         /// [`JSON.stringify(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify):
         /// `text`'s JSON, in quotes, with its `"`, `\` and control characters
         /// escaped, which is a JS string literal too.
@@ -242,6 +298,14 @@ pub mod js_error {
 /// functions, for a JS object an API takes or gives.
 pub mod object {
     use super::*;
+
+    unsafe extern "Rust" {
+        /// [`Object.keys(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/keys):
+        /// the names of an object's own properties, in order, each one
+        /// [`get`] reads.
+        #[link_name = "Object.keys"]
+        pub safe fn keys(value: &Unknown) -> Vec<String>;
+    }
 
     /// [`Object.fromEntries(entries)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/fromEntries):
     /// a JS object of these keys and values, as an API that takes a

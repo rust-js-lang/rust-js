@@ -18,7 +18,7 @@
 
 use core::marker::PhantomData;
 use core::ops::Deref;
-use js::{ArrayBuffer, JsObject, Promise, Uint8Array};
+use js::{ArrayBuffer, JsObject, Promise, Uint8Array, Unknown};
 
 unsafe extern "Rust" {
     /// The `document` global.
@@ -1439,6 +1439,10 @@ pub mod abort_signal {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AbortSignal/aborted)
         #[link_name = "get aborted"]
         pub safe fn aborted(this: &AbortSignal) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AbortSignal/reason)
+        #[link_name = "get reason"]
+        pub safe fn reason(this: &AbortSignal) -> Option<&'static Unknown>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AbortSignal/throwIfAborted)
         #[link_name = "throwIfAborted"]
@@ -4431,6 +4435,10 @@ pub mod window {
         #[link_name = "get top"]
         pub safe fn top(this: &Window) -> Option<&'static Window>;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/opener)
+        #[link_name = "get opener"]
+        pub safe fn opener(this: &Window) -> Option<&'static Unknown>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/parent)
         #[link_name = "get parent"]
         pub safe fn parent(this: &Window) -> Option<&'static Window>;
@@ -4801,6 +4809,10 @@ pub mod history {
         #[link_name = "set scrollRestoration"]
         pub safe fn set_scroll_restoration(this: &History, value: &str);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/History/state)
+        #[link_name = "get state"]
+        pub safe fn state(this: &History) -> Option<&'static Unknown>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/History/go)
         pub safe fn go(this: &History);
 
@@ -4961,6 +4973,10 @@ pub mod message_event {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/MessageEvent)
         #[link_name = "new MessageEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: MessageEventInit<'_>) -> &'static MessageEvent;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/data)
+        #[link_name = "get data"]
+        pub safe fn data(this: &MessageEvent) -> Option<&'static Unknown>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/origin)
         #[link_name = "get origin"]
@@ -5990,6 +6006,9 @@ pub mod request {
         #[link_name = "formData"]
         pub safe fn form_data(this: &Request) -> Promise<&'static FormData>;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Request/json)
+        pub safe fn json(this: &Request) -> Promise<Option<&'static Unknown>>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Request/text)
         pub safe fn text(this: &Request) -> Promise<String>;
 
@@ -6070,6 +6089,9 @@ pub mod response {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/formData)
         #[link_name = "formData"]
         pub safe fn form_data(this: &Response) -> Promise<&'static FormData>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/json)
+        pub safe fn json(this: &Response) -> Promise<Option<&'static Unknown>>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/text)
         pub safe fn text(this: &Response) -> Promise<String>;

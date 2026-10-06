@@ -195,6 +195,11 @@ pub fn words(n: u64, flags: Vec<bool>) -> String {
     format!("{n} {}", flags.len())
 }
 
+// A value of unknown shape is TypeScript's unknown (ADR 0225).
+pub fn first(values: Vec<&'static react::js::Unknown>) -> Option<&'static react::js::Unknown> {
+    values.first().copied()
+}
+
 // An untagged enum is TypeScript's union of its payloads (ADR 0214).
 #[rust_js::untagged]
 pub enum Size {
@@ -244,6 +249,7 @@ pub fn count(items: Items<u32>) -> usize {
     "export interface DownloadProps extends AnchorHTMLAttributes<HTMLAnchorElement> {\n    label: string;\n}",
     "export const Icon: NamedExoticComponent<IconProps>;",
     "export function words(n: bigint, flags: boolean[]): string;",
+    "export function first(values: unknown[]): unknown | null | undefined;",
     "export type Size = string | number;",
     "export function width(size: Size): string;",
     "export type Items<T> = T[] | string;",

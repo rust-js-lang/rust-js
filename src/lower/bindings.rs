@@ -115,6 +115,10 @@ pub(super) enum JsForm {
     Object(Vec<String>),
     /// `this instanceof Class`: a checked one, as a `bool`.
     InstanceOf(String),
+    /// `get []`: `this[key]`, a property by a name given (ADR 0225).
+    GetIndex,
+    /// `set []`: `this[key] = value`.
+    SetIndex,
 }
 
 pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
@@ -123,6 +127,8 @@ pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "this" => return JsForm::This,
         "this()" => return JsForm::CallThis,
         "prop" => return JsForm::Prop(None),
+        "get []" => return JsForm::GetIndex,
+        "set []" => return JsForm::SetIndex,
         _ => {}
     }
     if let Some(tag) = name.strip_prefix('<').and_then(|t| t.strip_suffix('>')) {

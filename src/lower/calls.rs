@@ -284,6 +284,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Expr::undefined()
                 }
                 (JsForm::This, Some(this)) if args.is_empty() => this,
+                (JsForm::GetIndex, Some(this)) if args.len() == 1 => keyed(this, args.remove(0)),
+                (JsForm::SetIndex, Some(this)) if args.len() == 2 => {
+                    let (key, value) = (args.remove(0), args.remove(0));
+                    out.push(StmtKind::Assign(keyed(this, key), value).at(self.js_span(span)));
+                    Expr::undefined()
+                }
                 (JsForm::CallThis, Some(this)) => Expr::call(this, args),
                 (JsForm::InstanceOf(class), Some(this)) if args.is_empty() => {
                     Expr::bin(Op::InstanceOf, this, self.js_ref(&class))
@@ -1049,4 +1055,18 @@ pub(super) fn apply(f: Expr, args: Vec<Expr>) -> Expr {
         }
     }
     Expr::call(f, args)
+}
+
+/// `this[key]`, or `this.name` of a key written that's a name, as a person
+/// writes it (ADR 0225): `js::get(value, "name")` is `value.name`.
+fn keyed(this: Expr, key: Expr) -> Expr {
+    match &key.kind {
+        js::ExprKind::Str(name)
+            if name.starts_with(|c: char| c.is_alphabetic() || c == '_' || c == '$')
+                && name.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '$') =>
+        {
+            Expr::member(this, name.clone())
+        }
+        _ => Expr::index(this, key),
+    }
 }

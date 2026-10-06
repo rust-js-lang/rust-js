@@ -435,6 +435,9 @@ Calling JavaScript:
 - **A binding is trusted as declared.** One returning
   `Result<T, &JsError>` makes what JS throws an `Err`; any other lets it
   propagate, as a panic. Declare `Option` where JS may give `null`.
+- **A value of unknown shape is a `js::Unknown`**, which `js::classify`
+  tells by `typeof` and `js::get` reads a property of by name, `value[key]`
+  ([0225](decisions/0225-unknown-values.md)).
 
 JSON through serde_json writes and reads as serde_json does, a 64-bit
 integer to the digit; `rename`, `tag`, `untagged`, `flatten`, `default`,

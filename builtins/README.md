@@ -30,8 +30,12 @@ spawn(Box::new(async move {                            // runs, unawaited
   and `reg_exp::replace(text, pattern, "$1")`. A replacer closure, and `matchAll`,
   are a program's own bindings, typed for its pattern's groups.
 - `json::stringify(text)` is a string's JSON, which is a JS string literal too.
-  A Rust value's JSON is serde's ([ADR 0077](../docs/decisions/0077-serde-json.md)),
-  and so is reading JSON: what `JSON.parse` gives is whatever the text holds.
+  A Rust value's JSON is serde's ([ADR 0077](../docs/decisions/0077-serde-json.md)).
+- `Unknown` is a JS value of any shape, as TypeScript's `unknown` is
+  ([ADR 0225](../docs/decisions/0225-unknown-values.md)): what `json::parse(text)`
+  gives, or `webapi`'s `response::json(r)`. `classify(value)` tells what it is,
+  a `Kind` to `match`, by `typeof`; `get(value, key)` and `set(value, key, to)`
+  are `value[key]`; `object::keys(value)` is `Object.keys`.
 - `object::from_entries(entries)` is a JS object of keys and values, as an API
   taking a dictionary wants, and `object::is(a, b)` is `Object.is`: whether two
   JS objects are one.
