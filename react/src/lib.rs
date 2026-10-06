@@ -202,6 +202,14 @@ impl Value for bool {}
 impl<T: Value + ?Sized> Value for &T {}
 impl<T: Value> Value for Option<T> {}
 
+/// What a [`style`](Element::style) can be: a [`Style`], or an `Option` of
+/// one, which leaves it out when `None`, as a component's optional `style`
+/// prop passed on.
+pub trait StyleValue {}
+
+impl StyleValue for Style {}
+impl StyleValue for Option<Style> {}
+
 /// What a [`key`](Element::key) can be: a string or a number.
 pub trait Key {}
 
@@ -214,6 +222,8 @@ impl<T: Key + ?Sized> Key for &T {}
 
 /// A [`style`](Element::style) object, `{ color: "red", fontSize: 12 }`:
 /// made by `Style::new()`, then CSS properties by name, `.color("red")`.
+/// To TypeScript, React's `CSSProperties`, as a tag's `style` is.
+#[cfg_attr(rust_js, rust_js::types = "react#CSSProperties")]
 pub struct Style(PhantomData<JsObject>);
 
 impl Style {
@@ -287,9 +297,10 @@ impl<T> Element<T> {
     }
 
     /// [`style`](https://react.dev/reference/react-dom/components/common#applying-css-styles):
-    /// `.style(Style::new().color("red"))` is `style={{ color: "red" }}`.
+    /// `.style(Style::new().color("red"))` is `style={{ color: "red" }}`,
+    /// and of an `Option<Style>`, none where it's `None`.
     #[cfg_attr(rust_js, rust_js::link_name = "prop style")]
-    pub fn style(self, style: Style) -> Element<T> {
+    pub fn style(self, style: impl StyleValue) -> Element<T> {
         unreachable!()
     }
 

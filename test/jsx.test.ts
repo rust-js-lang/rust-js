@@ -1551,6 +1551,21 @@ pub fn Button<C: Node>(ButtonProps { children, on_click }: ButtonProps<C>) -> El
   expect([Button({ children: "b", on_click: handler }).props.onClick === handler, Button({ children: "b" }).props.onClick]).toEqual([true, undefined]);
 });
 
+// As react.dev's Button's `style={style}` of an optional prop: `None` none.
+test("JSX passes an optional style on as it is", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{Element, Style, jsx};
+pub struct BoxProps { pub style: Option<Style> }
+pub fn Panel(BoxProps { style }: BoxProps) -> Element {
+    jsx! { <div style={style} /> }
+}
+`);
+  run(args);
+  expect(readFileSync(join(dir, "lib.jsx"), "utf8")).toContain("<div style={style} />");
+  const { Panel } = await import(join(dir, "lib.jsx"));
+  expect([renderToStaticMarkup(Panel({ style: { color: "red" } })), renderToStaticMarkup(Panel({}))]).toEqual(['<div style="color:red"></div>', "<div></div>"]);
+});
+
 // React calls a component with its props and a value of its own, never a
 // drop: a component's type parameters take no destructor, in a library too,
 // whose consumers' could (ADR 0199). One given a type with one is refused.
