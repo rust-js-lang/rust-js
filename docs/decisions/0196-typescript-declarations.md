@@ -55,10 +55,14 @@ export default Tag;
   One written `{ [key: string]: T }` is an object of `T`s by name, its `T`
   the Rust type's, as `js::Dict<T>`'s is: `Record<string, T>` couldn't be in
   a recursive alias. **A type parameter bound by a trait that says its type
-  extends it**: react's `Node` is `react#ReactNode<>`, so `C: Node` is
-  `C extends ReactNode`, and props of `children: C` can extend React's
-  attributes, whose `children` is one. (Amended: it was `<C>`, which they
-  couldn't, react.dev's `ButtonLinkProps` TypeScript's error.)
+  is that type**: react's `Node` is `react#ReactNode<>`, so of
+  `struct ButtonProps<C: Node> { children: C }` and `fn Button<C: Node>`,
+  it's `ButtonProps { children: ReactNode }` and `Button(props: ButtonProps)`,
+  as a person writes them. Rust's parameter is so a node isn't boxed, which
+  TypeScript has no need of. A struct's own parameter is one where the
+  struct says its bound. (Amended: it was `<C>`, which props extending
+  React's attributes, whose `children` is a `ReactNode`, couldn't be,
+  react.dev's `ButtonLinkProps` TypeScript's error.)
   **Another crate's untagged enum is declared in the
   module that names it**, not exported, the union of its payloads, as this
   crate's are (ADR 0225).
