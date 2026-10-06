@@ -459,7 +459,7 @@ pub fn lower_crate<'tcx>(
                     }
                 }
             }
-            let declarations = super::declarations::module(tcx, module, default_export.as_deref());
+            let declarations = super::declarations::module(tcx, module, default_export.as_deref(), &paths);
             let lowered = LoweredModule {
                 path: paths[&module].clone(),
                 file: module_file(tcx, module).name.clone().into_local_path(),

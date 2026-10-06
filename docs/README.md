@@ -300,6 +300,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0207 A crate's `.d.ts` is printed by TypeScript](decisions/0207-declarations-printed-by-typescript.md)
 - [0208 Each element's attributes, as @types/react types them](decisions/0208-react-attributes.md)
 - [0209 A two-arm `match` that's a value is a conditional](decisions/0209-match-conditional.md)
+- [0210 A module's declarations import another's types](decisions/0210-declarations-import-module-types.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

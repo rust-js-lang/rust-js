@@ -119,6 +119,38 @@ pub fn Download(DownloadProps { label, anchor }: DownloadProps) -> Element {
     jsx! { <a {...anchor}>{label}</a> }
 }
 
+// Another module's types, imported as types (ADR 0210).
+pub mod routes {
+    pub struct RouteItem {
+        pub title: String,
+        pub path: Option<String>,
+    }
+
+    pub enum Level {
+        #[rust_js::name = "basic"]
+        Basic,
+        #[rust_js::name = "advanced"]
+        Advanced,
+    }
+
+    pub fn root() -> RouteItem {
+        RouteItem { title: "Home".to_string(), path: None }
+    }
+}
+
+pub struct CrumbsProps {
+    pub items: Vec<routes::RouteItem>,
+    pub level: routes::Level,
+}
+
+pub fn Crumbs(CrumbsProps { items, level }: CrumbsProps) -> Element {
+    let label = match level {
+        routes::Level::Basic => "basic",
+        routes::Level::Advanced => "advanced",
+    };
+    jsx! { <nav title={label}>{items.len()}</nav> }
+}
+
 pub mod far {
     #[derive(Default)]
     pub struct Far {
@@ -164,7 +196,8 @@ pub fn words(n: u64, flags: Vec<bool>) -> String {
     "export function ExternalLink<C>(props: LinkProps<C>): ReactNode;",
     "export interface ButtonProps extends Anchor {\n    size?: string;\n}",
     "export interface CardProps {\n    [prop: string]: unknown;\n}",
-    'import type { AnchorHTMLAttributes, NamedExoticComponent, ReactNode } from "react";',
+    'import type { AnchorHTMLAttributes, NamedExoticComponent, ReactNode } from "react";\nimport type { Level, RouteItem } from "./routes.js";',
+    "export interface CrumbsProps {\n    items: RouteItem[];\n    level: Level;\n}",
     "export interface Linked extends Html {\n    href?: string;\n}",
     'export interface LinkButtonProps extends Omit<Linked, "href" | "className"> {\n    href: string;\n    className?: string;\n}',
     'export interface TitledProps extends Omit<Html, "title"> {\n    title: string;\n}',
@@ -176,7 +209,7 @@ pub fn words(n: u64, flags: Vec<bool>) -> String {
   }
   // TypeScript that uses them: optional props left out, a JS caller's own
   // passed on, a flattened struct's as its own, and wrong ones, the only errors.
-  writeFileSync(join(dir, "use.tsx"), `import { Button, Download, ExternalLink, Icon, LinkButton, Tag, words } from "./lib.jsx";
+  writeFileSync(join(dir, "use.tsx"), `import { Button, Crumbs, Download, ExternalLink, Icon, LinkButton, Tag, words } from "./lib.jsx";
 export const ok = [
   <Tag variant="advanced" count={2} />,
   <ExternalLink href="/a" aria-label="A">a</ExternalLink>,
@@ -185,9 +218,11 @@ export const ok = [
   <Button size="lg" href="/b" target="_blank" />,
   <LinkButton href="/c" title="t" />,
   <Download label="d" download="file" referrerPolicy="no-referrer" />,
+  <Crumbs items={[{ title: "Home" }, { title: "Learn", path: "/learn" }]} level="basic" />,
 ];
 export const wrong = <Tag variant="intermediate" count={2} />;
 export const wrongHref = <Button href={1} />;
+export const wrongLevel = <Crumbs items={[]} level="expert" />;
 `);
   writeFileSync(join(dir, "tsconfig.json"), JSON.stringify({
     // Its declarations checked too, as TypeScript reads them (ADR 0207).
@@ -196,11 +231,13 @@ export const wrongHref = <Button href={1} />;
   }));
   const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
   const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
-  expect(errors.length).toBe(2);
-  expect(errors[0]).toContain("use.tsx(11,");
+  expect(errors.length).toBe(3);
+  expect(errors[0]).toContain("use.tsx(12,");
   expect(errors[0]).toContain('"intermediate"');
   // A flattened struct's field is checked as the component's own.
-  expect(errors[1]).toContain("use.tsx(12,");
+  expect(errors[1]).toContain("use.tsx(13,");
+  // Another module's type, as it declares it.
+  expect(errors[2]).toContain("use.tsx(14,");
 });
 
 // TypeScript prints them (ADR 0207), through @rust-js/typescript, which a

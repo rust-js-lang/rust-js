@@ -76,4 +76,20 @@ export const mutations: Mutation[] = [
     replace: "            keys.push(field_key(tcx, field));",
     tests: tests,
   },
+  {
+    name: "module-type-not-imported",
+    breaks: "another module's type is named, `RouteItem[]`, but not imported",
+    file: "src/lower/declarations.rs",
+    find: "                    self.module_imports\n                        .insert((path.clone(), tcx.item_name(did).to_string()));\n",
+    replace: "",
+    tests,
+  },
+  {
+    name: "types-only-module-imported",
+    breaks: "a type of a module of types only, which has no file, is imported from one that isn't there",
+    file: "src/lower/declarations.rs",
+    find: "                    let Some(path) = self.files.get(&home) else {\n                        return keyword(\"any\");\n                    };",
+    replace: "                    let path = &super::module_path(tcx, home);",
+    tests,
+  },
 ];

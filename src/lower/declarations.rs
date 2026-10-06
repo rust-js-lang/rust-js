@@ -6,7 +6,7 @@
 //! to less than Rust holds it to. They're the model of @rust-js/typescript
 //! (ADR 0206), which TypeScript prints (ADR 0207).
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 
 use rustc_hir::LangItem;
 use rustc_hir::def::DefKind;
@@ -21,11 +21,18 @@ use super::representation::Num;
 
 /// What a module's `.d.ts` declares, but its header: `None` where it
 /// exports nothing.
-pub(super) fn module(tcx: TyCtxt<'_>, module: LocalModDefId, default_export: Option<&str>) -> Option<Value> {
+pub(super) fn module(
+    tcx: TyCtxt<'_>,
+    module: LocalModDefId,
+    default_export: Option<&str>,
+    files: &HashMap<LocalModDefId, Vec<String>>,
+) -> Option<Value> {
     let mut out = Declarations {
         tcx,
         module,
+        files,
         imports: BTreeSet::new(),
+        module_imports: BTreeSet::new(),
     };
     let mut items = Vec::new();
     for item in tcx.hir_module_free_items(module) {
@@ -61,6 +68,17 @@ pub(super) fn module(tcx: TyCtxt<'_>, module: LocalModDefId, default_export: Opt
             .collect();
         declarations.push(json!({ "kind": "import", "from": from, "names": names, "typeOnly": true }));
     }
+    // `import type { RouteItem } from "./routes.js";`, of the crate's other
+    // modules, by their path, which the output makes their file's (ADR 0210).
+    let mut paths: Vec<&Vec<String>> = out.module_imports.iter().map(|(path, _)| path).collect();
+    paths.dedup();
+    for path in paths {
+        let names: Vec<&str> = (out.module_imports.iter())
+            .filter(|(p, _)| p == path)
+            .map(|(_, n)| n.as_str())
+            .collect();
+        declarations.push(json!({ "kind": "import", "module": path, "names": names, "typeOnly": true }));
+    }
     declarations.extend(items);
     Some(json!({ "declarations": declarations }))
 }
@@ -78,14 +96,19 @@ fn is_any(ty: &Value) -> bool {
     ty["kind"] == "keyword" && ty["keyword"] == "any"
 }
 
-struct Declarations<'tcx> {
+struct Declarations<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
     module: LocalModDefId,
+    /// The crate's modules that have a file, by their path: those whose
+    /// types another's declarations import (ADR 0210).
+    files: &'a HashMap<LocalModDefId, Vec<String>>,
     /// The types of JS modules' it names, `("react", "ReactNode")`, imported from them.
     imports: BTreeSet<(String, String)>,
+    /// The types of the crate's other modules it names, by their path.
+    module_imports: BTreeSet<(Vec<String>, String)>,
 }
 
-impl<'tcx> Declarations<'tcx> {
+impl<'tcx> Declarations<'_, 'tcx> {
     /// `["C"]`: an item's type parameters, but those `impl Trait` stands for.
     fn generics(&self, def_id: DefId) -> Vec<String> {
         (self.tcx.generics_of(def_id).own_params.iter())
@@ -325,14 +348,28 @@ impl<'tcx> Declarations<'tcx> {
                     type_args.extend(args.types().map(|t| self.ts(t)));
                     return reference(name, type_args);
                 }
-                // One of this module's, by its name; another's is `any`, as
-                // its declarations aren't imported (ADR 0196).
-                let ours = did
-                    .as_local()
-                    .is_some_and(|local| tcx.parent_module_from_def_id(local) == self.module)
-                    && tcx.visibility(did).is_public();
-                if !ours {
+                // One of the crate's, declared: this module's by its name,
+                // another's imported from it (ADR 0210). Any other is `any`.
+                let Some(local) = did.as_local() else {
                     return keyword("any");
+                };
+                let declared = match tcx.def_kind(did) {
+                    DefKind::Struct => adt.non_enum_variant().ctor.is_none(),
+                    DefKind::Enum => true,
+                    _ => false,
+                };
+                if !declared || !tcx.visibility(did).is_public() {
+                    return keyword("any");
+                }
+                // Another module's is imported from its file; one of a module
+                // without one, of types only, has nowhere it's declared.
+                let home = tcx.parent_module_from_def_id(local);
+                if home != self.module {
+                    let Some(path) = self.files.get(&home) else {
+                        return keyword("any");
+                    };
+                    self.module_imports
+                        .insert((path.clone(), tcx.item_name(did).to_string()));
                 }
                 let type_args = args.types().map(|t| self.ts(t)).collect();
                 reference(tcx.item_name(did).as_str(), type_args)

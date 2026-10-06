@@ -113,6 +113,14 @@ impl OutputPlan {
                 && let Some(mut declarations) = module.declarations
             {
                 declarations["header"] = js_module.header.clone().into();
+                // Another module's types, from its file, as its JS imports it (ADR 0210).
+                for import in declarations["declarations"].as_array_mut().into_iter().flatten() {
+                    if let Some(path) = import.get("module").cloned() {
+                        let path: Vec<String> = serde_json::from_value(path).map_err(|e| e.to_string())?;
+                        import["from"] = self.specifier(&module.path, &path).into();
+                        import.as_object_mut().expect("an import").remove("module");
+                    }
+                }
                 typed.push((types_path(&js_path), declarations));
             }
         }

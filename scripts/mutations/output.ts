@@ -50,4 +50,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/declarations.test.ts"],
   },
+  {
+    name: "module-import-unresolved",
+    breaks: "an import of another module's types is given no file it's from",
+    file: "src/output.rs",
+    find: "                        import[\"from\"] = self.specifier(&module.path, &path).into();",
+    replace: "                        import[\"from\"] = path.join(\"/\").into();",
+    tests: ["test/declarations.test.ts"],
+  },
 ];
