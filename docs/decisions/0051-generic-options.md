@@ -1,6 +1,6 @@
 # 0051. `Option<T>` in generic code: boxed only when it looks like `None`
 
-Status: Accepted. Extends [0030](0030-option.md) and [0049](0049-traits-and-generics.md). Amended: concrete code boxes too.
+Status: Accepted. Extends [0030](0030-option.md) and [0049](0049-traits-and-generics.md). Amended: concrete code boxes too; a lazy iterator's `find` boxes its own.
 
 ## Context
 
@@ -54,7 +54,11 @@ function $some(x) {
 - **Std functions that make an `Option` of a generic element box it too:**
   - `Vec::pop` is `$pop(v)`;
   - a slice's `first`, `last` and `get`, and an iterator's `find`, are
-    `$someAt(v, i)`;
+    `$someAt(v, i)`; a lazy iterator's `find` (ADR 0139), which has no
+    index, is `$nextSome(items.filter(f))`, which stops at the first found,
+    as `find` does. Iterator lowering, which chose the array or the lazy
+    iterator, makes the whole result: `[None, Some(1)].into_iter().map(f)
+    .find(..)` was `findIndex` of a JS iterator, which threw. (Amended.)
   - `bool::then` and `then_some` box their value, and `copied`, `cloned`,
     `as_ref`, `filter`, `or` and `or_else` keep the box they're given;
   - an iterator's `last` is `$someAt(items, items.length - 1)`;

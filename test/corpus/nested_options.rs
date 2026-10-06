@@ -76,4 +76,6 @@ fn main() {
     while let Some(top) = stack.pop() {
         println!("{:?}", top);
     }
+    // A found `None` is `Some(None)`, and none found is `None`.
+    println!("{:?} {:?}", table.into_iter().find(|x| x.is_none()), table.into_iter().find(|x| *x == Some(2)));
 }
