@@ -4,7 +4,8 @@ Status: Accepted. (Amended: a copied default's own `where Self: PartialEq` is
 found as the impl's type's too, and `==` of a type of a type parameter
 whose `PartialEq` a bound gives is that dictionary's, as num-traits'
 `is_one` asks; a number's `<`, `-` and the like in a copied default, `self <
-Self::zero()`, are JS's.) Extends [0047](0047-methods.md),
+Self::zero()`, are JS's; what a copied default finds of a type is its own
+bounds', not a sibling's.) Extends [0047](0047-methods.md),
 [0023](0023-strings-references-shared-state.md), and
 [0039](0039-generic-bindings.md). Replaces 0047's rejection of trait methods
 for the supported subset below.
@@ -250,6 +251,13 @@ Floating-point sums start at negative zero, matching Rust's `Sum` identity.
   trait's `Self`. The default is given the impl's own dictionaries,
   `SClone` and `SAdd`, with its trait's: a call on the impl's types, as
   the body's resolve to, is given what the impl was.
+- **What a walk of a type finds is kept under the typing environment it
+  was found in:** whether a clone copies, what a type holds that changes in
+  place, whether it's representable. The same `Holder<T>` holds a number
+  in a default whose bound is `T: Iterator<Item = u32>`, which a clone
+  shares, and a `Vec` in its sibling's, `Item = Vec<u32>`, which a clone
+  copies. Kept by type alone, the first default lowered answered for both
+  (`test/corpus/default_method_clones.rs`). (Amended.)
 
 ## Why
 

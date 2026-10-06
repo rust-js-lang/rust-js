@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "walks-unkeyed",
+    breaks: "what walks of types found is kept for every typing environment, so a copied default's clone shares what its sibling's bounds make a `Vec`",
+    file: "src/lower.rs",
+    find: "        Rc::clone(self.walks.borrow_mut().entry(self.typing_env).or_default())",
+    replace: "        Rc::clone(self.walks.borrow_mut().entry(ty::TypingEnv::fully_monomorphized()).or_default())",
+    tests: ["test/corpus.test.ts", "-t", "default_method_clones"],
+  },
+  {
     name: "conditional-prerequisites",
     breaks: "unselected branches and failed match patterns still run their calls and copy-back",
     file: "src/lower.rs",
