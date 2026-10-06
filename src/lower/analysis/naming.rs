@@ -9,7 +9,7 @@ use rustc_hir::def::DefKind;
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty;
 use rustc_middle::ty::TyCtxt;
-use rustc_span::def_id::{DefId, LocalDefId, LocalModDefId};
+use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 /// What of JS the crate's bodies use (ADRs 0024, 0028).
@@ -18,7 +18,7 @@ pub(super) struct JsUses {
     /// module reserves them, so a local named `console` can't hide the real one.
     pub(super) globals: HashSet<String>,
     /// Exports of JS modules, with the modules that use each.
-    pub(super) imported: BTreeMap<Export, HashSet<LocalModDefId>>,
+    pub(super) imported: BTreeMap<Export, HashSet<LocalModId>>,
     /// What each import is bound to in Rust, to name a default import after.
     pub(super) bound_to: HashMap<Export, HashSet<DefId>>,
 }
@@ -69,7 +69,7 @@ pub(super) fn js_uses<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> Js
 pub(super) fn name_imports(
     tcx: TyCtxt<'_>,
     uses: &JsUses,
-    taken: &HashMap<LocalModDefId, HashSet<String>>,
+    taken: &HashMap<LocalModId, HashSet<String>>,
 ) -> HashMap<Export, String> {
     let mut chosen: HashSet<String> = HashSet::new();
     let (namespaces, others): (Vec<&Export>, Vec<&Export>) =
@@ -142,14 +142,14 @@ pub(super) fn item_js_name(tcx: TyCtxt<'_>, def_id: DefId, trait_impls: &[DefId]
 pub(super) fn name_items(
     tcx: TyCtxt<'_>,
     items: &[LocalDefId],
-    modules: &[LocalModDefId],
+    modules: &[LocalModId],
     globals: &HashSet<String>,
     trait_impls: &[DefId],
-) -> (HashMap<LocalModDefId, HashSet<String>>, HashMap<DefId, FnInfo>, bool) {
+) -> (HashMap<LocalModId, HashSet<String>>, HashMap<DefId, FnInfo>, bool) {
     let mut failed = false;
-    let mut taken: HashMap<LocalModDefId, HashSet<String>> = modules.iter().map(|&m| (m, globals.clone())).collect();
-    let mut owners: HashMap<(LocalModDefId, DefId), String> = HashMap::new();
-    let mut methods: HashMap<(LocalModDefId, DefId), HashSet<String>> = HashMap::new();
+    let mut taken: HashMap<LocalModId, HashSet<String>> = modules.iter().map(|&m| (m, globals.clone())).collect();
+    let mut owners: HashMap<(LocalModId, DefId), String> = HashMap::new();
+    let mut methods: HashMap<(LocalModId, DefId), HashSet<String>> = HashMap::new();
     let mut fns: HashMap<DefId, FnInfo> = HashMap::new();
     for &def_id in items {
         let module = tcx.parent_module_from_def_id(def_id);

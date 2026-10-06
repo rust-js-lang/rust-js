@@ -3,7 +3,7 @@
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::{ExprKind, ItemKind, Stmt, StmtKind};
 use rustc_middle::ty::{self, FieldDef, Ty, TyCtxt, VariantDef};
-use rustc_span::def_id::{DefId, LocalModDefId};
+use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalModId};
 use rustc_span::{Span, Symbol, sym};
 
 /// Validate tool bindings even if no function calls them. A malformed binding
@@ -184,7 +184,7 @@ pub(super) fn variant_name(tcx: TyCtxt<'_>, variant: &VariantDef) -> String {
 /// `js::camel_case!();` at the crate root: the crate's own functions and
 /// fields are camelCase in JS, as its variables are (ADRs 0046 and 0110).
 pub(super) fn camel_case_crate(tcx: TyCtxt<'_>) -> bool {
-    marks(tcx, LocalModDefId::CRATE_DEF_ID, "camel_case").next().is_some()
+    marks(tcx, CRATE_MOD_ID, "camel_case").next().is_some()
 }
 
 /// A module's `js::import!` and `js::camel_case!`: each a `const _` with
@@ -192,7 +192,7 @@ pub(super) fn camel_case_crate(tcx: TyCtxt<'_>) -> bool {
 /// as stable Rust has no inner one of a tool (ADR 0110).
 pub(super) fn marks<'tcx>(
     tcx: TyCtxt<'tcx>,
-    module: LocalModDefId,
+    module: LocalModId,
     name: &str,
 ) -> impl Iterator<Item = &'tcx rustc_hir::Attribute> {
     let path = [Symbol::intern("rust_js"), Symbol::intern(name)];
@@ -303,7 +303,7 @@ pub(super) fn is_jsx_node(tcx: TyCtxt<'_>, id: DefId) -> bool {
 
 /// A module's `js::export_default!(page)`: the function its `const _`
 /// names, `let _ = page;`, and where it's written (ADR 0192).
-pub(super) fn default_exports(tcx: TyCtxt<'_>, module: LocalModDefId) -> Vec<(Option<DefId>, Span)> {
+pub(super) fn default_exports(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<(Option<DefId>, Span)> {
     let path = [Symbol::intern("rust_js"), Symbol::intern("export_default")];
     tcx.hir_module_free_items(module)
         .filter(|item| tcx.get_attrs_by_path(item.owner_id.to_def_id(), &path).next().is_some())

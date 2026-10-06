@@ -7,7 +7,7 @@ use super::{FnCx, Shape};
 use crate::js;
 use crate::js::{Expr, Op, Prop};
 use rustc_ast::Mutability;
-use rustc_hir::LangItem;
+use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty;
 use rustc_middle::ty::{Ty, TyCtxt};
 

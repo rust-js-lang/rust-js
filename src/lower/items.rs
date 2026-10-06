@@ -3,6 +3,7 @@
 //! 0100).
 
 use super::bindings::{JsForm, is_binding, is_method, js_form, js_import};
+use super::fn_def;
 use super::numbers::NumOp;
 use super::recognition::Std;
 use super::representation::Num;
@@ -199,9 +200,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Which std function `fun` is, if rust-js knows what it means in JS.
     pub(super) fn std_fn(&self, fun: ExprId) -> Option<Std> {
-        let &ty::FnDef(def_id, args) = self.thir[self.strip(fun)].ty.kind() else {
-            return None;
-        };
+        let (def_id, args) = fn_def(self.thir[self.strip(fun)].ty)?;
         self.recognition().classify(def_id, args)
     }
 
@@ -209,7 +208,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// an arrow of one parameter, doing what a call does. `None` for one
     /// that isn't one of these.
     pub(super) fn std_fn_value(&mut self, known: Std, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
-        let ty::FnDef(def_id, args) = *ty.kind() else {
+        let Some((def_id, args)) = fn_def(ty) else {
             return Ok(None);
         };
         let js_span = self.js_span(span);

@@ -30,7 +30,7 @@ export function rustcShim(compiler) {
   return shim;
 }
 
-/** One exact toolchain: a release, `1.98.1`, or a dated nightly (ADR 0109). */
+/** One exact toolchain: a release, `1.99.0`, or a dated nightly (ADR 0109). */
 const exactToolchain = toolchain => /^(\d+\.\d+\.\d+|nightly-\d{4}-\d{2}-\d{2})$/.test(toolchain ?? "");
 
 /** @param {{ manifestPath: string, toolchain: string, target: string, packageName?: string, features?: string[], noDefaultFeatures?: boolean }} options */

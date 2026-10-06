@@ -222,7 +222,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // The crate's own function, or the impl's method a trait's resolves to.
             ExprKind::Call { fun, .. } => match *self.thir[self.strip(fun)].ty.kind() {
                 ty::FnDef(def_id, _) if self.tcx.trait_of_assoc(def_id).is_none() => self.is_rust_fn(def_id),
-                ty::FnDef(def_id, args) => self.impl_method(def_id, args).ok().flatten().is_some(),
+                ty::FnDef(def_id, args) => self
+                    .impl_method(def_id, args.no_bound_vars().expect("a body's function item, unbound"))
+                    .ok()
+                    .flatten()
+                    .is_some(),
                 _ => false,
             },
             _ => false,

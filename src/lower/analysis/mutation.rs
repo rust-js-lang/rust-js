@@ -4,7 +4,7 @@
 use crate::lower::recognition::replaces_whole;
 use crate::lower::{Body, strip};
 use rustc_ast::Mutability;
-use rustc_hir::LangItem;
+use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty;

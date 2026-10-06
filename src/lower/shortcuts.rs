@@ -5,7 +5,7 @@
 use super::FnCx;
 use super::ranges::RangeKind;
 use super::recognition::{Json, StdItem};
-use rustc_hir::LangItem;
+use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Symbol;
 use rustc_span::def_id::DefId;

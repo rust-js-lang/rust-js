@@ -8,23 +8,23 @@ use crate::program::{ImportRequest, LoweredModule, Unlinked, UnlinkedModule};
 use crate::runtime::Helper;
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, TyCtxt};
-use rustc_span::def_id::{DefId, LocalModDefId};
+use rustc_span::def_id::{DefId, LocalModId};
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 /// Retained functions and their dependencies, grouped for output.
 #[derive(Default)]
 struct Pass {
-    functions: HashMap<LocalModDefId, Vec<js::Function>>,
-    namespaces: HashMap<LocalModDefId, Vec<js::Namespace>>,
-    runtime: HashMap<LocalModDefId, HashSet<Helper>>,
-    jsx: HashSet<LocalModDefId>,
-    caches: HashMap<LocalModDefId, Vec<String>>,
+    functions: HashMap<LocalModId, Vec<js::Function>>,
+    namespaces: HashMap<LocalModId, Vec<js::Namespace>>,
+    runtime: HashMap<LocalModId, HashSet<Helper>>,
+    jsx: HashSet<LocalModId>,
+    caches: HashMap<LocalModId, Vec<String>>,
     /// `thread_local!`s' values, made from their lowered `init`s.
-    local_consts: HashMap<LocalModDefId, Vec<js::Const>>,
+    local_consts: HashMap<LocalModId, Vec<js::Const>>,
     /// Which items each module uses from another, and which JS imports.
-    references: HashSet<(LocalModDefId, DefId)>,
-    package_uses: HashSet<(LocalModDefId, Export)>,
+    references: HashSet<(LocalModId, DefId)>,
+    package_uses: HashSet<(LocalModId, Export)>,
 }
 
 /// Lower every function, grouped by module. Reports all unsupported
@@ -69,7 +69,7 @@ pub fn lower_crate<'tcx>(
         called_from_elsewhere.extend(fns.keys().copied().filter(|&id| super::library::reachable(tcx, id)));
     }
 
-    let mut const_items: HashMap<LocalModDefId, Vec<js::Const>> = HashMap::new();
+    let mut const_items: HashMap<LocalModId, Vec<js::Const>> = HashMap::new();
     // The statics and constants whose initializers are lowered as code.
     let mut initialized: Vec<&Body<'tcx>> = Vec::new();
     for &def_id in consts.iter().filter(|&&d| !is_thread_local(tcx, d)) {
@@ -376,7 +376,7 @@ pub fn lower_crate<'tcx>(
             f.export = true;
         }
     }
-    let mut targets: HashMap<LocalModDefId, HashSet<(LocalModDefId, String)>> = HashMap::new();
+    let mut targets: HashMap<LocalModId, HashSet<(LocalModId, String)>> = HashMap::new();
     for &(from, id) in &pass.references {
         let info = &fns[&id];
         targets

@@ -39,7 +39,7 @@ browser ──► Vite ── /api ──► server ── models::validate
 ```bash
 cd examples/pilot
 bun install
-cargo +1.98.1 run -p server    # http://127.0.0.1:3000
+cargo +1.99.0 run -p server    # http://127.0.0.1:3000
 bun run dev                    # in another terminal
 ```
 
@@ -47,7 +47,7 @@ Deployed, the server serves the built client beside its API, one process:
 
 ```bash
 bun run build                  # web/dist/
-DIST=web/dist cargo +1.98.1 run --release -p server    # http://127.0.0.1:3000
+DIST=web/dist cargo +1.99.0 run --release -p server    # http://127.0.0.1:3000
 ```
 
 The compiler is `@rust-js/native`'s, which is macOS on Apple silicon's for

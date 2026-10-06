@@ -195,4 +195,12 @@ export const mutations: Mutation[] = [
     replace: "                let fits = Expr::bool(true || len > 0);",
     tests: ["test/corpus.test.ts","-t","slice_to_array"],
   },
+  {
+    name: "non-zero-try-from-kind",
+    breaks: "`NonZeroU8::try_from(0u8)`'s error is its kind, `Zero`, which `{:?}` can't show, where each parse error is its message",
+    file: "src/lower/numbers.rs",
+    find: "                            vec![tried, Expr::str(\"number would be zero for non-zero type\")],\n",
+    replace: "                            vec![tried, Expr::str(\"Zero\")],\n",
+    tests: ["test/corpus.test.ts","-t","nonzero"],
+  },
 ];

@@ -5,6 +5,7 @@ use super::combinators::Comb;
 use super::combinators::StepOp;
 use super::display::append_written;
 use super::drops::Drops;
+use super::fn_def;
 use super::numbers::NumOp;
 use super::recognition::{
     Catching, FmtResultAnswer, Std, StdItem, StreamOp, TypeFact, fmt_result_answer, is_std_def, std_item, trait_method,
@@ -14,7 +15,8 @@ use crate::js;
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
 use crate::runtime::Helper;
 use rustc_ast::{LitKind, Mutability};
-use rustc_hir::{LangItem, find_attr};
+use rustc_hir::attrs::lang_items::LangItem;
+use rustc_hir::find_attr;
 use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -47,7 +49,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let fun_span = self.js_span(self.thir[fun].span);
         let f = &self.thir[self.strip(fun)];
-        let (ExprKind::ZstLiteral { .. }, &ty::FnDef(def_id, generic_args)) = (&f.kind, f.ty.kind()) else {
+        let (ExprKind::ZstLiteral { .. }, Some((def_id, generic_args))) = (&f.kind, fn_def(f.ty)) else {
             if matches!(f.ty.kind(), ty::FnDef(..) | ty::FnPtr(..)) {
                 let mut operands = vec![fun];
                 operands.extend_from_slice(args);
@@ -118,8 +120,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.tcx.trait_of_assoc(def_id) == Some(into_iterator) {
             return None;
         }
-        let predicates = self.tcx.predicates_of(def_id).instantiate(self.tcx, generic_args);
-        predicates.predicates.iter().find_map(|clause| {
+        let clauses = self.tcx.clauses_of(def_id).instantiate(self.tcx, generic_args);
+        clauses.clauses.iter().find_map(|clause| {
             // A bound of any lifetime, `for<'a> &'a T: IntoIterator`, is of an
             // erased one: a type rustc can select an impl for.
             let bound = self

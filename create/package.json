@@ -15,6 +15,6 @@
     "templates"
   ],
   "rustJs": {
-    "toolchain": "1.98.1"
+    "toolchain": "1.99.0"
   }
 }

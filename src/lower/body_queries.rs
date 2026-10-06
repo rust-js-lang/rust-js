@@ -1,8 +1,10 @@
 //! Read-only questions about a captured THIR body. No emission state, names,
 //! dependencies or JavaScript: these answers cannot change lowering as a side effect.
 
+use super::fn_def;
 use super::recognition::{StdItem, is_std_def, is_std_method};
-use rustc_hir::{HirId, LangItem};
+use rustc_hir::HirId;
+use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::middle::region;
 use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::{self, ExprId, ExprKind, LocalVarId, Pat, PatKind, Thir};
@@ -131,9 +133,7 @@ impl<'a, 'tcx> BodyQuery<'a, 'tcx> {
         let ExprKind::Call { fun, ref args, .. } = thir[strip(thir, scrutinee)].kind else {
             return None;
         };
-        let &ty::FnDef(into_future, _) = thir[strip(thir, fun)].ty.kind() else {
-            return None;
-        };
+        let (into_future, _) = fn_def(thir[strip(thir, fun)].ty)?;
         let [arm] = &arms[..] else { return None };
         let is_loop = matches!(thir[strip(thir, thir[*arm].body)].kind, ExprKind::Loop { .. })
             || matches!(thir[thir[*arm].body].kind, ExprKind::Scope { value, .. } if matches!(thir[value].kind, ExprKind::Loop { .. }));
@@ -153,9 +153,7 @@ impl<'a, 'tcx> BodyQuery<'a, 'tcx> {
         let ExprKind::Call { fun, ref args, .. } = thir[strip(thir, scrutinee)].kind else {
             return None;
         };
-        let &ty::FnDef(branch, _) = thir[strip(thir, fun)].ty.kind() else {
-            return None;
-        };
+        let (branch, _) = fn_def(thir[strip(thir, fun)].ty)?;
         self.tcx.is_lang_item(branch, LangItem::TryTraitBranch).then(|| args[0])
     }
 
@@ -263,7 +261,7 @@ pub(super) fn stepped_locals<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Hash
         let ExprKind::Call { fun, ref args, .. } = expr.kind else {
             continue;
         };
-        let &ty::FnDef(def_id, _) = thir[fun].ty.kind() else {
+        let Some((def_id, _)) = fn_def(thir[fun].ty) else {
             continue;
         };
         // `by_ref()` lends it to what steps through it, a loop or a chain.
@@ -327,7 +325,7 @@ fn stepped_local(thir: &Thir<'_>, e: ExprId) -> Option<LocalVarId> {
 fn lends_iterator<'tcx>(tcx: TyCtxt<'tcx>, callee: rustc_span::def_id::DefId, ty: ty::Ty<'tcx>) -> bool {
     matches!(ty.kind(), ty::Param(_))
         && tcx
-            .predicates_of(callee)
+            .clauses_of(callee)
             .instantiate_identity(tcx)
             .into_iter()
             .any(|(clause, _)| {

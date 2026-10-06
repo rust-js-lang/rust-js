@@ -52,7 +52,7 @@ pub(super) fn reject_unsupported(
             // `#[eii] static HELLO: u64;`, which the linker makes another
             // item: rust-js has none to link it to, and JS would read a name
             // nothing defines (ADR 0109).
-            _ if find_attr!(tcx, def_id, EiiImpls(..) | EiiDeclaration(..) | RustcEiiForeignItem) => {
+            _ if find_attr!(tcx, def_id, EiiImpl(..) | EiiDeclaration(..) | RustcEiiForeignItem) => {
                 "externally implementable items"
             }
             _ if markers.iter().any(|&(marker, _)| marker == def_id) => continue,

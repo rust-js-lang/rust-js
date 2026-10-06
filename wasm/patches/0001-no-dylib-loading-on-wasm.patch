@@ -61,13 +61,12 @@ index 9bd2a57fcd285aefed0663fd12e8d0578982e425..50172a1fd0518ab8915ad7b30c56039d
      path: &Path,
      stable_crate_id: StableCrateId,
 diff --git a/compiler/rustc_metadata/src/lib.rs b/compiler/rustc_metadata/src/lib.rs
-index 9ef9422a9e5a014253e2e9151451a0e1076e281f..f3af32e94c0c7547e4c0ef4eb1dee3f1d61df28c 100644
+index 306e344c23095bc6991964b805987cc9c836fbce..85fb27457b942c6e9272e180a76aff65a3e54db8 100644
 --- a/compiler/rustc_metadata/src/lib.rs
 +++ b/compiler/rustc_metadata/src/lib.rs
-@@ -2,7 +2,8 @@
+@@ -1,6 +1,7 @@
+ // tidy-alphabetical-start
  #![allow(internal_features)]
- #![cfg_attr(bootstrap, feature(result_option_map_or_default))]
- #![cfg_attr(bootstrap, feature(strip_circumfix))]
 -#![feature(error_iter)]
 +// For the dynamic libraries Wasm has none of. (Patched in by rust-js.)
 +#![cfg_attr(not(target_family = "wasm"), feature(error_iter))]

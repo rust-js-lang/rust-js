@@ -6,7 +6,7 @@ use super::{FnCx, R};
 use crate::js;
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
 use crate::runtime::Helper;
-use rustc_hir::LangItem;
+use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {

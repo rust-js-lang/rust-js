@@ -455,8 +455,8 @@ impl Helper {
             Helper::Range => include_str!("runtime/range.js"),
             // `u8::try_from(x)` between integers: `Ok` of it as the target's
             // representation, a number or a BigInt, or a `TryFromIntError`,
-            // which is its kind, `PosOverflow` or `NegOverflow`, as Rust's is:
-            // its message is one for both (ADRs 0063 and 0109).
+            // which is its message, as each parse error is: since 1.99 its
+            // message tells its kind, too large or too small (ADRs 0063, 0109).
             Helper::TryFromInt => include_str!("runtime/try_from_int.js"),
             // `a..b` of `i64`s or `u64`s, collected (ADR 0086).
             // `a..`, which never ends (ADR 0129): `++` steps a BigInt too.
@@ -670,7 +670,7 @@ impl Helper {
             // among equal items it finds the one Rust does.
             Helper::BinarySearch => include_str!("runtime/binary_search.js"),
             // `{:?}` of a parse error, which is its message: its kind, by the
-            // message. A `TryFromIntError` is its kind itself.
+            // message.
             Helper::DebugParseError => include_str!("runtime/debug_parse_error.js"),
             // An iterator that knows where it is (ADR 0071): a `Peekable`, or one
             // that `next()` steps through. It's a JS iterator too.

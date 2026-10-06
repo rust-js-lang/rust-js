@@ -89,7 +89,7 @@ pilot. No delivery dates are assigned yet.
   connect supported claims to tests.
   Started: the [first npm release](docs/decisions/0120-first-npm-release.md)
   names one host, macOS on Apple silicon; the Rust release is the pinned
-  stable 1.98.1 ([ADR 0109](docs/decisions/0109-stable-release.md));
+  stable 1.99.0 ([ADR 0109](docs/decisions/0109-stable-release.md));
   `@rust-js/react` supports React 18.0 on; the dependency model is
   [crates as npm packages](docs/decisions/0118-bindings-on-npm-only.md).
   A matrix in one place, with browsers and JS targets, remains.
@@ -348,7 +348,7 @@ tooling while preserving rust-js's own readable-output goals.
   cases found and fixed two miscompilations (nested element writes, repeated
   index effects in compound assignment). rustc's own `run-pass` UI tests run
   the same way (`bun run test:rustc`, [ADR 0089](docs/decisions/0089-rustc-tests.md)):
-  1,922 of 2,206 in scope pass at the pinned stable release, 1.98.1, every
+  1,924 of 2,214 in scope pass at the pinned stable release, 1.99.0, every
   other one is a clear rejection, none a crash or a wrong answer, and the
   [known failures](test/rustc-known-failures.txt) only shrink. A test of a
   feature stable Rust doesn't have is out of scope, as no program of

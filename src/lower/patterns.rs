@@ -1,12 +1,14 @@
 //! Bindings, destructuring and match/let-chain evaluation regions.
 
+use super::fn_def;
 use super::{
     Binding, Dest, Evaluation, FnCx, Num, R, Shape, Var, bindings, camel_case, const_js, drops, fresh_in, js_ident,
     ordering_value, recognition::is_non_zero, std_impls, variant_field, without_refs,
 };
 use crate::js::{self, Expr, Op, Stmt, StmtKind, UnaryOp};
 use rustc_ast::{LitKind, Mutability};
-use rustc_hir::{BindingMode, ByRef, LangItem, RangeEnd};
+use rustc_hir::attrs::lang_items::LangItem;
+use rustc_hir::{BindingMode, ByRef, RangeEnd};
 use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::{self, ArmId, ExprId, ExprKind, LogicalOp, Pat, PatKind, PatRangeBoundary};
 use rustc_middle::ty::{self, Ty};
@@ -1014,7 +1016,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         else {
             return Ok(None);
         };
-        let &ty::FnDef(get, generic_args) = self.thir[self.strip(fun)].ty.kind() else {
+        let Some((get, generic_args)) = fn_def(self.thir[self.strip(fun)].ty) else {
             return Ok(None);
         };
         let slot = self.recognition().is_mutable_map_get(get, generic_args)

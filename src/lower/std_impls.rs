@@ -9,7 +9,7 @@ use super::{FnCx, R, Shape, is_fieldless_enum, lower_first};
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
 use crate::runtime::Helper;
 use rustc_hir as hir;
-use rustc_hir::LangItem;
+use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::{DefKind, Res};
 use rustc_middle::traits::ImplSource;
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
@@ -482,8 +482,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return false;
         }
         let ty = ty.peel_refs();
-        // A parse error is a string of its kind: its message, or a
-        // `TryFromIntError`'s kind itself (ADR 0109), which its derived `==` compares.
+        // A parse error is its message, which tells its kind, as its derived
+        // `==` compares (ADR 0063).
         self.is_string_like(ty)
             || self.is_parse_error(ty)
             || Num::of(ty).is_some()

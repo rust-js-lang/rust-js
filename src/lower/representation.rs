@@ -6,7 +6,7 @@ use super::{FnCx, R, Shape};
 use crate::js;
 use crate::js::{Expr, Op, Prop};
 use rustc_ast::Mutability;
-use rustc_hir::LangItem;
+use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::{CtorKind, DefKind};
 use rustc_middle::mir::ConstValue;
 use rustc_middle::mir::interpret::{AllocId, ConstAllocation, GlobalAlloc, GlobalId, Pointer, Scalar, alloc_range};

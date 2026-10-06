@@ -2,7 +2,7 @@
 # Pin the exact stable release the code was written against, whose
 # `rustc-dev` has them (ADR 0109).
 [toolchain]
-channel = "1.98.1"
+channel = "1.99.0"
 components = ["rustc-dev", "llvm-tools", "rust-src", "rustfmt", "clippy"]
 # The target rustc checks programs for (ADR 0090): its `usize` is 32 bits,
 # as rust-js's is.

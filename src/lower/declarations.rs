@@ -8,11 +8,11 @@
 
 use std::collections::{BTreeSet, HashMap};
 
-use rustc_hir::LangItem;
+use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::Symbol;
-use rustc_span::def_id::{DefId, LocalModDefId};
+use rustc_span::def_id::{DefId, LocalModId};
 use serde_json::{Value, json};
 
 use super::bindings::{field_default, field_key, fn_name, is_binding, is_flatten, is_mark, is_rest, variant_name};
@@ -23,9 +23,9 @@ use super::representation::Num;
 /// exports nothing.
 pub(super) fn module(
     tcx: TyCtxt<'_>,
-    module: LocalModDefId,
+    module: LocalModId,
     default_export: Option<&str>,
-    files: &HashMap<LocalModDefId, Vec<String>>,
+    files: &HashMap<LocalModId, Vec<String>>,
 ) -> Option<Value> {
     let mut out = Declarations {
         tcx,
@@ -98,10 +98,10 @@ fn is_any(ty: &Value) -> bool {
 
 struct Declarations<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
-    module: LocalModDefId,
+    module: LocalModId,
     /// The crate's modules that have a file, by their path: those whose
     /// types another's declarations import (ADR 0210).
-    files: &'a HashMap<LocalModDefId, Vec<String>>,
+    files: &'a HashMap<LocalModId, Vec<String>>,
     /// The types of JS modules' it names, `("react", "ReactNode")`, imported from them.
     imports: BTreeSet<(String, String)>,
     /// The types of the crate's other modules it names, by their path.

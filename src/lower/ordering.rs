@@ -9,7 +9,7 @@ use super::representation::Num;
 use super::{FnCx, R, Shape};
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use crate::runtime::Helper;
-use rustc_hir::LangItem;
+use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::traits::ImplSource;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::def_id::DefId;

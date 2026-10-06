@@ -8,7 +8,8 @@ use std::collections::{HashMap, HashSet};
 
 use crate::lower::recognition::{Recognition, StdItem};
 use crate::lower::traits::{EvidenceQuery, may_have_destructors};
-use rustc_hir::{BindingMode, ByRef, LangItem};
+use rustc_hir::attrs::lang_items::LangItem;
+use rustc_hir::{BindingMode, ByRef};
 use rustc_middle::thir::{FieldPat, LocalVarId, Pat, PatKind};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::def_id::DefId;

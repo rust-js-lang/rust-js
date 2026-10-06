@@ -63,8 +63,8 @@ export const mutations: Mutation[] = [
     name: "nested-mut-object-bounds-unread",
     breaks: "`apply(c, |x| x.n += 1)` gives the closure a box of the object, and `x.n` is the box's",
     file: "src/lower/mut_refs.rs",
-    find: "        for (clause, _) in self.tcx.predicates_of(def_id).instantiate_identity(self.tcx) {\n",
-    replace: "        for (clause, _) in self.tcx.predicates_of(def_id).instantiate_identity(self.tcx).into_iter().filter(|_| false) {\n",
+    find: "        for (clause, _) in self.tcx.clauses_of(def_id).instantiate_identity(self.tcx) {\n",
+    replace: "        for (clause, _) in self.tcx.clauses_of(def_id).instantiate_identity(self.tcx).into_iter().filter(|_| false) {\n",
     tests: ["test/diagnostics.test.ts","-t","given to a closure"],
   },
   {

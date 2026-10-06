@@ -6,7 +6,7 @@ use crate::lower::recognition::{
     FormatterQuery, StdItem, formatter_query, is_arguments_new, is_debug_argument, is_formatter_pad, is_std_def,
     known_derive,
 };
-use crate::lower::{Body, strip};
+use crate::lower::{Body, fn_def, strip};
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, Thir};
 use rustc_middle::ty;
@@ -47,9 +47,7 @@ fn format_calls(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> Vec<(Vec<Piece>, Option<Vec
             let ExprKind::Call { fun, ref args, .. } = expr.kind else {
                 return None;
             };
-            let &ty::FnDef(id, _) = thir[fun].ty.kind() else {
-                return None;
-            };
+            let (id, _) = fn_def(thir[fun].ty)?;
             if !is_arguments_new(tcx, id) || args.len() != 2 {
                 return None;
             }
@@ -134,7 +132,7 @@ pub(super) fn uses_format_options(tcx: TyCtxt<'_>, all_bodies: &[&Body<'_>]) -> 
             || ty.is_char()
             || ty.is_str()
             || ty.is_unit()
-            || matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), rustc_hir::LangItem::String))
+            || matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::String))
     };
     all_bodies.iter().any(|body| {
         let thir = &body.thir;

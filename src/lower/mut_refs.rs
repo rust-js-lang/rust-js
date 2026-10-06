@@ -3,6 +3,7 @@
 //! items a std call holds (ADRs 0072, 0099).
 
 use super::bindings::{self};
+use super::fn_def;
 use super::maps::{MapOp, Part};
 use super::{FnCx, R, Std, camel_case};
 use crate::js::{Expr, Prop, Stmt, StmtKind};
@@ -209,7 +210,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ExprKind::Call { fun, ref args, .. } = self.thir[self.strip(e)].kind else {
             return false;
         };
-        let ty::FnDef(def_id, generic_args) = *self.thir[self.strip(fun)].ty.kind() else {
+        let Some((def_id, generic_args)) = fn_def(self.thir[self.strip(fun)].ty) else {
             return false;
         };
         let (def_id, generic_args) = self.callee(def_id, generic_args);
@@ -247,7 +248,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ExprKind::Call { fun, ref args, .. } = self.thir[self.strip(e)].kind else {
             return false;
         };
-        let ty::FnDef(def_id, generic_args) = *self.thir[self.strip(fun)].ty.kind() else {
+        let Some((def_id, generic_args)) = fn_def(self.thir[self.strip(fun)].ty) else {
             return false;
         };
         if self.is_rust_fn(def_id) || self.is_item_call(fun) {
@@ -311,7 +312,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .iter()
             .filter(|ty| !matches!(*ty.kind(), ty::Ref(_, pointee, Mutability::Mut) if self.is_generic_boxed(pointee, param_env)))
             .collect();
-        for (clause, _) in self.tcx.predicates_of(def_id).instantiate_identity(self.tcx) {
+        for (clause, _) in self.tcx.clauses_of(def_id).instantiate_identity(self.tcx) {
             let clause = clause.skip_normalization();
             if let Some(bound) = clause.as_trait_clause() {
                 todo.extend(bound.skip_binder().trait_ref.args.types());
@@ -578,7 +579,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// here, the caller's own `&mut` to one is the object, what's in it. One
     /// inside what it takes or returns, a `Vec<&mut T>`, isn't taken apart yet.
     pub(super) fn generic_result(&self, fun: ExprId, value: Expr, span: Span) -> R<Expr> {
-        let ty::FnDef(def_id, generic_args) = *self.thir[self.strip(fun)].ty.kind() else {
+        let Some((def_id, generic_args)) = fn_def(self.thir[self.strip(fun)].ty) else {
             return Ok(value);
         };
         let (def_id, generic_args) = self.callee(def_id, generic_args);

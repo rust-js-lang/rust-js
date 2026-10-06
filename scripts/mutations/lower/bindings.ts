@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "camel-case-unread",
     breaks: "`js::camel_case!();` names nothing the JS way",
     file: "src/lower/bindings.rs",
-    find: "    marks(tcx, LocalModDefId::CRATE_DEF_ID, \"camel_case\").next().is_some()\n",
-    replace: "    marks(tcx, LocalModDefId::CRATE_DEF_ID, \"none\").next().is_some()\n",
+    find: "    marks(tcx, CRATE_MOD_ID, \"camel_case\").next().is_some()\n",
+    replace: "    marks(tcx, CRATE_MOD_ID, \"none\").next().is_some()\n",
     tests: ["test/react.test.ts","-t","camel_case crate"],
   },
   {

@@ -25,7 +25,7 @@ use rustc_middle::thir::ExprKind;
 use rustc_middle::ty;
 use rustc_middle::ty::{Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::Symbol;
-use rustc_span::def_id::{DefId, LocalDefId, LocalModDefId};
+use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalDefId, LocalModId};
 use std::collections::{BTreeMap, HashMap, HashSet};
 use type_facts::type_fact_params;
 pub(super) use validation::is_thread_local;
@@ -121,18 +121,18 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub trait_impls: Vec<DefId>,
     pub dictionaries: Vec<DefId>,
     pub import_names: HashMap<Export, String>,
-    pub imported: BTreeMap<Export, HashSet<LocalModDefId>>,
+    pub imported: BTreeMap<Export, HashSet<LocalModId>>,
     pub thread_local_inits: HashMap<LocalDefId, LocalDefId>,
     pub consts: Vec<LocalDefId>,
     pub codecs: Vec<DefId>,
-    pub modules: Vec<LocalModDefId>,
-    pub taken: HashMap<LocalModDefId, HashSet<String>>,
+    pub modules: Vec<LocalModId>,
+    pub taken: HashMap<LocalModId, HashSet<String>>,
     pub fns: HashMap<DefId, FnInfo>,
     /// Keep collecting lowering diagnostics after item-name validation fails.
     pub failed: bool,
     pub called_from_elsewhere: HashSet<DefId>,
     pub tests: Vec<TestFn>,
-    pub paths: HashMap<LocalModDefId, Vec<String>>,
+    pub paths: HashMap<LocalModId, Vec<String>>,
     pub mutated: HashSet<Ty<'tcx>>,
     pub changed_vecs: HashSet<Ty<'tcx>>,
     /// Each generic function's type parameters it's given a drop function
@@ -283,8 +283,8 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         .collect();
     // The modules that get a JS file: the root, then every module with one of
     // those, in the order the first one appears.
-    let mut modules = vec![LocalModDefId::CRATE_DEF_ID];
-    let mut seen_modules = HashSet::from([LocalModDefId::CRATE_DEF_ID]);
+    let mut modules = vec![CRATE_MOD_ID];
+    let mut seen_modules = HashSet::from([CRATE_MOD_ID]);
     for &def_id in &items {
         let module = tcx.parent_module_from_def_id(def_id);
         if seen_modules.insert(module) {
@@ -303,7 +303,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let mut called_from_elsewhere = exported_across_modules(tcx, all_bodies, &fns);
     let tests = collect_tests(tcx, &markers, &bodies, &fns, &mut called_from_elsewhere);
 
-    let paths: HashMap<LocalModDefId, Vec<String>> = modules.iter().map(|&m| (m, module_path(tcx, m))).collect();
+    let paths: HashMap<LocalModId, Vec<String>> = modules.iter().map(|&m| (m, module_path(tcx, m))).collect();
 
     let mutated = mutated_types(tcx, all_bodies);
     let changed_vecs = changed_vecs(tcx, all_bodies);

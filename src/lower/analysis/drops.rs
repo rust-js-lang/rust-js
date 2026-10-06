@@ -2,8 +2,8 @@
 //! and the derives that drop nothing (ADR 0098).
 
 use crate::lower::recognition::{StdItem, is_std_def, known_derive, serde_impl};
-use crate::lower::{Body, FnInfo};
-use rustc_hir::LangItem;
+use crate::lower::{Body, FnInfo, fn_def};
+use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty;
@@ -120,7 +120,7 @@ pub(super) fn drop_params<'tcx>(
     for body in all_bodies {
         let caller = tcx.typeck_root_def_id(body.def_id.to_def_id());
         for expr in body.thir.exprs.iter() {
-            let (ExprKind::ZstLiteral { .. }, &ty::FnDef(callee, args)) = (&expr.kind, expr.ty.kind()) else {
+            let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
                 continue;
             };
             if !fns.contains_key(&callee) || tcx.trait_of_assoc(callee).is_some() {

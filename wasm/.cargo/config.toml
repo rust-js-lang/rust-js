@@ -18,14 +18,14 @@ rustflags = [
 [env]
 # Must match the official release byte for byte: rustc rejects metadata
 # (like the shipped `core` and `std`) written by a different version string.
-CFG_VERSION = "1.98.1 (48a229cea 2026-09-01)"
-CFG_RELEASE = "1.98.1"
+CFG_VERSION = "1.99.0 (b940084d7 2026-09-28)"
+CFG_RELEASE = "1.99.0"
 CFG_RELEASE_CHANNEL = "stable"
-CFG_VER_DATE = "2026-09-01"
-CFG_VER_HASH = "48a229ceaefd4985c50990b14116b6d856af0985"
+CFG_VER_DATE = "2026-09-28"
+CFG_VER_HASH = "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4"
 CFG_COMPILER_HOST_TRIPLE = "wasm32-wasip1"
 # Where the official build says std's sources live, so paths in metadata agree.
-CFG_VIRTUAL_RUST_SOURCE_BASE_DIR = "/rustc/48a229ceaefd4985c50990b14116b6d856af0985"
+CFG_VIRTUAL_RUST_SOURCE_BASE_DIR = "/rustc/b940084d7eb6a299eb4bfeb8e34901bc051e7ac4"
 RUSTC_INSTALL_BINDIR = "bin"
 # rustc_macros' build script refuses to build the compiler outside bootstrap
 # unless this is set: "if you know what you're doing, set RUSTC_BOOTSTRAP".

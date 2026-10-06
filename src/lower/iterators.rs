@@ -5,13 +5,14 @@
 use super::calls::Call;
 use super::combinators::IterComb;
 use super::combinators::{IterSource, StepOp};
+use super::fn_def;
 use super::recognition::{StdItem, is_std_def, std_item, trait_method};
 use super::representation::Num;
 use super::{FnCx, R, Std};
 use crate::js;
 use crate::js::{Expr, Op, Stmt, StmtKind};
 use crate::runtime::Helper;
-use rustc_hir::LangItem;
+use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::thir::{ExprId, ExprKind, LocalVarId};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -481,7 +482,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match self.thir[e].kind {
             ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => self.boxed_or_lent(arg),
             ExprKind::Call { fun, ref args, .. }
-                if let &ty::FnDef(id, _) = self.thir[fun].ty.kind()
+                if let Some((id, _)) = fn_def(self.thir[fun].ty)
                     && is_std_def(self.tcx, id, StdItem::BoxNew) =>
             {
                 self.boxed_or_lent(args[0])

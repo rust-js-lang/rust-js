@@ -3,7 +3,7 @@
 //! caller's type answers.
 
 use crate::lower::recognition::{TypeFact, type_fact};
-use crate::lower::{Body, FnInfo};
+use crate::lower::{Body, FnInfo, fn_def};
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty;
 use rustc_middle::ty::TyCtxt;
@@ -29,7 +29,7 @@ pub(super) fn type_fact_params<'tcx>(
         let caller = tcx.typeck_root_def_id(body.def_id.to_def_id());
         let typing_env = ty::TypingEnv::non_body_analysis(tcx, caller);
         for expr in body.thir.exprs.iter() {
-            let (ExprKind::ZstLiteral { .. }, &ty::FnDef(callee, args)) = (&expr.kind, expr.ty.kind()) else {
+            let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
                 continue;
             };
             if let Some(fact) = type_fact(tcx, callee) {

@@ -31,8 +31,8 @@ use rustc_middle::thir::{
     self as thir, AdtExprBase, BlockId, ExprId, ExprKind, LocalVarId, LogicalOp, Pat, PatKind, Thir,
 };
 use rustc_middle::ty::adjustment::PointerCoercion;
-use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
-use rustc_span::def_id::{DefId, LocalDefId, LocalModDefId};
+use rustc_middle::ty::{self, GenericArgsRef, Ty, TyCtxt, TypeVisitableExt};
+use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalDefId, LocalModId};
 use rustc_span::{ErrorGuaranteed, SourceFile, Span};
 
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
@@ -108,15 +108,15 @@ pub struct Body<'tcx> {
 /// Where a function or a `const` ends up in the JS: its module's file,
 /// under this name.
 struct FnInfo {
-    module: LocalModDefId,
+    module: LocalModId,
     name: String,
     /// A method's type's object of methods (ADR 0047): `Counter` for `Counter.tick`.
     owner: Option<String>,
 }
 
 /// A module's path below the crate root, e.g. `["math", "stats"]`.
-fn module_path(tcx: TyCtxt<'_>, module: LocalModDefId) -> Vec<String> {
-    if module == LocalModDefId::CRATE_DEF_ID {
+fn module_path(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<String> {
+    if module == CRATE_MOD_ID {
         return Vec::new();
     }
     let parent = tcx.parent_module_from_def_id(module.to_local_def_id());
@@ -125,14 +125,14 @@ fn module_path(tcx: TyCtxt<'_>, module: LocalModDefId) -> Vec<String> {
     // A module in a block, as bitflags' macro writes in a function, is one of
     // its own, though another of its parent's has its name: numbered in the
     // order they're written, after the one the parent declares, `names$1`.
-    let in_block = |m: LocalModDefId| tcx.def_kind(tcx.local_parent(m.to_local_def_id())) != DefKind::Mod;
-    let mut namesakes: Vec<LocalModDefId> = tcx
+    let in_block = |m: LocalModId| tcx.def_kind(tcx.local_parent(m.to_local_def_id())) != DefKind::Mod;
+    let mut namesakes: Vec<LocalModId> = tcx
         .hir_crate_items(())
         .definitions()
         .filter(|&id| tcx.def_kind(id) == DefKind::Mod)
-        .map(LocalModDefId::new_unchecked)
+        .map(LocalModId::new_unchecked)
         .filter(|&m| {
-            m != LocalModDefId::CRATE_DEF_ID
+            m != CRATE_MOD_ID
                 && tcx.item_name(m.to_def_id()) == name
                 && tcx.parent_module_from_def_id(m.to_local_def_id()) == parent
         })
@@ -147,9 +147,19 @@ fn module_path(tcx: TyCtxt<'_>, module: LocalModDefId) -> Vec<String> {
 
 /// The `.rs` file a module's code lives in: its own file for `mod foo;`,
 /// the parent's file for an inline `mod foo { .. }`.
-fn module_file(tcx: TyCtxt<'_>, module: LocalModDefId) -> Arc<SourceFile> {
+fn module_file(tcx: TyCtxt<'_>, module: LocalModId) -> Arc<SourceFile> {
     let inner = tcx.hir_get_module(module).0.spans.inner_span;
     tcx.sess.source_map().lookup_source_file(inner.lo())
+}
+
+/// A function item's type: the function, and its generic args. rustc 1.99
+/// binds the args; a body's never have bound vars, as rustc's own MIR
+/// building reads them.
+pub(crate) fn fn_def<'tcx>(ty: Ty<'tcx>) -> Option<(DefId, GenericArgsRef<'tcx>)> {
+    match *ty.kind() {
+        ty::FnDef(def_id, args) => Some((def_id, args.no_bound_vars().expect("a body's function item, unbound"))),
+        _ => None,
+    }
 }
 
 pub struct LoweredFn {
@@ -334,8 +344,8 @@ struct CrateFacts<'a, 'tcx> {
 /// closures), returned with its JS. They never mutate the crate's inputs.
 #[derive(Default)]
 struct Dependencies {
-    references: HashSet<(LocalModDefId, DefId)>,
-    package_uses: HashSet<(LocalModDefId, Export)>,
+    references: HashSet<(LocalModId, DefId)>,
+    package_uses: HashSet<(LocalModId, Export)>,
     uses: Vec<(DefId, DefId)>,
 }
 
@@ -354,7 +364,7 @@ struct FnCx<'a, 'tcx> {
     thir: &'a Thir<'tcx>,
     body_facts: &'a body_queries::BodyFacts,
     /// The module receiving this function and its recorded dependencies.
-    module: LocalModDefId,
+    module: LocalModId,
     /// What this body knows of its variables.
     locals: Locals,
     /// JS names already taken in this function.
@@ -942,7 +952,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ..
             } => self.expr(source, out),
             ExprKind::ZstLiteral { .. }
-                if let &ty::FnDef(id, _) = ty.kind()
+                if let Some((id, _)) = fn_def(ty)
                     && let Some(why) = self.krate.foreign.unlisted(id) =>
             {
                 Err(self.tcx.dcx().span_err(span, why))
@@ -950,7 +960,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A constructor as a value, `.map(Some)`: an arrow making what its
             // call makes (ADR 0125).
             ExprKind::ZstLiteral { .. }
-                if let &ty::FnDef(def_id, args) = ty.kind()
+                if let Some((def_id, args)) = fn_def(ty)
                     && matches!(self.tcx.def_kind(def_id), DefKind::Ctor(_, CtorKind::Fn)) =>
             {
                 self.constructor_value(def_id, args, span)
@@ -966,7 +976,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A function as a value, `component(Card, props)`: its JS name, or
             // a library's import of it (ADR 0100), given its dictionaries.
             ExprKind::ZstLiteral { .. }
-                if let &ty::FnDef(def_id, args) = ty.kind()
+                if let Some((def_id, args)) = fn_def(ty)
                     && (self.is_rust_fn(def_id) || self.is_rust_trait_fn(def_id, args)) =>
             {
                 if self.tcx.trait_of_assoc(def_id).is_some() {
@@ -1036,7 +1046,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(Expr::var(if max { "$f64Max" } else { "$f64Min" }))
             }
             ExprKind::ZstLiteral { .. }
-                if let &ty::FnDef(def_id, args) = ty.kind()
+                if let Some((def_id, args)) = fn_def(ty)
                     && is_binding(self.tcx, def_id) =>
             {
                 self.binding_value(def_id, args, span)
@@ -1293,7 +1303,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ) {
             return true;
         }
-        let &ty::FnDef(def_id, _) = self.thir[self.strip(fun)].ty.kind() else {
+        let Some((def_id, _)) = fn_def(self.thir[self.strip(fun)].ty) else {
             return false;
         };
         is_binding(self.tcx, def_id) && matches!(js_form(self.tcx, def_id), JsForm::Set(_))
@@ -1485,7 +1495,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The call is lowered in a copy of the body given its arguments, each a
     /// variable that's a parameter.
     pub(super) fn called_value(&mut self, fun: ExprId, span: Span) -> R<Expr> {
-        let ty::FnDef(def_id, args) = *self.thir[fun].ty.kind() else {
+        let Some((def_id, args)) = fn_def(self.thir[fun].ty) else {
             return Err(self.unsupported(span, "this expression"));
         };
         let sig = self.tcx.fn_sig(def_id).instantiate(self.tcx, args).skip_normalization();
@@ -1761,7 +1771,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 }
 
 /// Translate a frontend module identity into an owned link symbol.
-fn module_symbol(module: LocalModDefId, export: &str) -> crate::js::Symbol {
+fn module_symbol(module: LocalModId, export: &str) -> crate::js::Symbol {
     crate::js::Symbol {
         module: module.to_def_id().index.as_u32(),
         export: export.to_owned(),

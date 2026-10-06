@@ -94,7 +94,7 @@ test("the builder asks a replaced compiler what it is", async () => {
   writeFileSync(join(runtime, "package.json"), JSON.stringify({ name: "@rust-js/runtime", version: "1.0.0" }));
   const rustJs = join(root, "rust-js");
   const compiler = (version: string) => {
-    writeFileSync(rustJs, `#!/bin/sh\necho '{"version":"${version}","toolchain":"1.98.1","abi":1}'\n`);
+    writeFileSync(rustJs, `#!/bin/sh\necho '{"version":"${version}","toolchain":"1.99.0","abi":1}'\n`);
     chmodSync(rustJs, 0o755);
   };
   compiler("1.0.0");

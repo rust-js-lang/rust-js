@@ -10,8 +10,9 @@ use super::ranges::{RangeKind, RangeOp};
 use super::representation::Num;
 use super::text::{StringEdit, TextOp};
 use rustc_ast::Mutability;
+use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
-use rustc_hir::{self as hir, LangItem, intravisit};
+use rustc_hir::{self as hir, intravisit};
 use rustc_middle::mir::{BinOp, UnOp};
 use rustc_middle::traits::ImplSource;
 use rustc_middle::ty::{self, Ty, TyCtxt};
@@ -872,6 +873,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 || self.is_user_iterator(ty))
         {
             return Some(Std::Same);
+        }
+        // 1.99's of a `Box<[T; N]>`, which is its array: through a `&mut`, a
+        // handle on the box (ADR 0099).
+        if tcx.is_diagnostic_item(sym::IntoIterator, trait_)
+            && tcx.item_name(def_id).as_str() == "into_iter"
+            && ty.peel_refs().boxed_ty().is_some_and(|inner| inner.is_array())
+        {
+            return Some(Std::Pointee);
         }
         // A range is an iterator already, and its `len` and `next_back`
         // are its bounds' (ADR 0129).
@@ -2202,8 +2211,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(super) fn borrowed_by_user(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<Ty<'tcx>> {
         let borrow = std_item(self.tcx, StdItem::Borrow);
         let bounds = |id: DefId, args: ty::GenericArgsRef<'tcx>| {
-            let predicates = self.tcx.predicates_of(id).instantiate(self.tcx, args).predicates;
-            predicates
+            let clauses = self.tcx.clauses_of(id).instantiate(self.tcx, args).clauses;
+            clauses
                 .into_iter()
                 .filter_map(|clause| clause.skip_normalization().as_trait_clause())
                 .map(|clause| {
@@ -2732,7 +2741,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "parse" => "from_str",
             _ => return None,
         };
-        tcx.predicates_of(def_id).predicates.iter().find_map(|&(clause, _)| {
+        tcx.clauses_of(def_id).clauses.iter().find_map(|&(clause, _)| {
             let bound = tcx
                 .instantiate_bound_regions_with_erased(clause.as_trait_clause()?)
                 .trait_ref;

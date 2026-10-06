@@ -4,6 +4,7 @@
 
 use super::calls::Call;
 use super::display::{Pretty, append_written};
+use super::fn_def;
 use super::format_spec::Spec;
 use super::{FnCx, R, Std};
 use crate::js;
@@ -11,7 +12,7 @@ use crate::js::StmtKind;
 use crate::js::{Expr, Op, Stmt};
 use crate::runtime::Helper;
 use rustc_ast::LitKind;
-use rustc_hir::LangItem;
+use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::thir::{self, ExprId, ExprKind, PatKind};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -116,9 +117,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             | Std::FmtUsize
                     )
                 })?;
-                let &ty::FnDef(_, generic_args) = thir[self.strip(fun)].ty.kind() else {
-                    return None;
-                };
+                let (_, generic_args) = fn_def(thir[self.strip(fun)].ty)?;
                 let mut arg = self.strip(*args.first()?);
                 while let ExprKind::Borrow { arg: inner, .. } | ExprKind::Deref { arg: inner } = thir[arg].kind {
                     arg = self.strip(inner);

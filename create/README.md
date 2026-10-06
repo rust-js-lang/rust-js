@@ -24,7 +24,7 @@ Three things, each installed once:
 | --- | --- | --- |
 | [Bun](https://bun.sh) or [Node.js](https://nodejs.org) | makes the app, installs it, and runs Vite: either one | Bun: `curl -fsSL https://bun.sh/install \| bash`. Node.js, `^20.19.0` or `>=22.12.0`, and its npm: nodejs.org's installer, or a version manager's |
 | [rustup](https://rustup.rs) | installs and chooses Rust toolchains | `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \| sh` |
-| rust-js's Rust | the stable release rust-js is built with: rust-js runs with its rustc's own library, and checks the app for its `wasm32-unknown-unknown` target | `rustup toolchain install 1.98.1 --profile minimal --target wasm32-unknown-unknown` |
+| rust-js's Rust | the stable release rust-js is built with: rust-js runs with its rustc's own library, and checks the app for its `wasm32-unknown-unknown` target | `rustup toolchain install 1.99.0 --profile minimal --target wasm32-unknown-unknown` |
 
 - **The Rust is about 500 MB**: the minimal profile, rustc, Cargo and the
   standard library, for this machine and for `wasm32-unknown-unknown`. Not

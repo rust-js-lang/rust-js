@@ -3,6 +3,7 @@
 //! and an `Ok` `fmt::Result` is nothing at all; an `Err`, which chrono's
 //! formatting returns, is thrown, with what was written before it (ADR 0187).
 
+use super::fn_def;
 use super::format_spec::{Options, Radix};
 use super::recognition::{ChannelError, FormatterQuery, Std};
 use super::recognition::{StdItem, WriteCall, fmt_trait_called, opt_std_item, std_item, trait_method};
@@ -10,7 +11,7 @@ use super::representation::{self, Num};
 use super::{Dest, FnCx, R};
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use crate::runtime::Helper;
-use rustc_hir::LangItem;
+use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::thir::visit::{self, Visitor};
 use rustc_middle::thir::{self, ExprId, ExprKind, LocalVarId, PatKind};
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
@@ -590,7 +591,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let ExprKind::Call { fun, ref args, .. } = self.thir[e].kind else {
                 return Err(self.unsupported(span, "a `Debug` builder kept in a variable"));
             };
-            let &ty::FnDef(id, generic_args) = self.thir[self.strip(fun)].ty.kind() else {
+            let Some((id, generic_args)) = fn_def(self.thir[self.strip(fun)].ty) else {
                 return Err(self.unsupported(span, "this `Debug` builder"));
             };
             let name = self.tcx.item_name(id).to_string();
@@ -859,19 +860,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `Debug` do (ADR 0175).
         if let Some(inner) = self.recognition().wrapping_of(ty) {
             return self.display_string_with(Expr::index(value, Expr::int(0)), inner, span, pretty);
-        }
-        // A `TryFromIntError` is its kind, whose message is one for both
-        // (ADR 0109): `value && ..` of one whose value runs code, as a kind
-        // is never empty.
-        if let ty::Adt(adt, _) = ty.kind()
-            && self.is_parse_error(ty)
-            && self.tcx.item_name(adt.did()).as_str() == "TryFromIntError"
-        {
-            let message = Expr::str("out of range integral type conversion attempted");
-            return Ok(match value.has_effects() {
-                true => Expr::bin(Op::And, value, message),
-                false => message,
-            });
         }
         if self.is_string_like(ty) || self.is_parse_error(ty) {
             return Ok(value);
@@ -1628,7 +1616,7 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for Called<'a, 'tcx> {
     fn visit_expr(&mut self, expr: &'a thir::Expr<'tcx>) {
         match expr.kind {
             ExprKind::Call { fun, .. } => {
-                if let &ty::FnDef(id, args) = self.thir[fun].ty.kind() {
+                if let Some((id, args)) = fn_def(self.thir[fun].ty) {
                     self.calls.push((id, args));
                 }
             }

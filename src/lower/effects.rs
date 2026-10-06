@@ -4,10 +4,11 @@
 //! as `body_queries`' are: the destructors' analysis asks it (ADR 0098), and
 //! so do iterator chains, of their stages' closures (ADR 0139).
 
+use super::fn_def;
 use super::recognition::{PureStd, pure_std};
 use std::collections::HashMap;
 
-use rustc_hir::LangItem;
+use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_middle::mir::BinOp;
 use rustc_middle::thir::{AdtExprBase, ExprId, ExprKind, PatKind, StmtKind as ThirStmt, Thir};
@@ -53,7 +54,7 @@ pub(super) fn cannot_leave_in<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: Exp
         // numbers, `x * 2` of an `&i32`, is a call of its trait's method, which
         // is the operator's; and a comparison of numbers or strings.
         ExprKind::Call { fun, args, .. } => {
-            let ty::FnDef(id, generic_args) = *thir[*fun].ty.kind() else {
+            let Some((id, generic_args)) = fn_def(thir[*fun].ty) else {
                 return false;
             };
             let operator = tcx.trait_of_assoc(id).and_then(|tr| {

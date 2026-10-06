@@ -12,7 +12,7 @@ checks each one. What isn't built yet is at [the end](#not-yet), and the
 ### One pinned Rust toolchain per release
 
 Each rust-js release supports one exact Rust toolchain. The current pin is
-the stable release `1.98.1`; [rust-toolchain.toml](../rust-toolchain.toml) is the source of
+the stable release `1.99.0`; [rust-toolchain.toml](../rust-toolchain.toml) is the source of
 truth. This follows [ADR 0003](decisions/0003-pin-nightly-toolchain.md) and
 [ADR 0109](decisions/0109-stable-release.md).
 

@@ -4,9 +4,9 @@
 //! `fmt::Result` passes one on; a crate none of whose functions do is
 //! lowered as one whose writes never fail (ADR 0054).
 
-use crate::lower::Body;
 use crate::lower::library::Foreign;
 use crate::lower::recognition::{fmt_trait_called, is_err_variant, is_fmt_result_type};
+use crate::lower::{Body, fn_def};
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt};
 use rustc_span::def_id::DefId;
@@ -39,7 +39,7 @@ pub(super) fn failing_fns<'tcx>(
                     failing.insert(caller);
                 }
                 ExprKind::ZstLiteral { .. } => {
-                    let &ty::FnDef(callee, args) = expr.ty.kind() else {
+                    let Some((callee, args)) = fn_def(expr.ty) else {
                         continue;
                     };
                     // `{}` of a value, or its `to_string()`: its trait's `fmt`,

@@ -852,7 +852,7 @@ export function $bigMin(a, b) {
 // `$parseInt` reads a narrower integer, its value a BigInt.
 export function $parseBig(s, min, max, radix = 10) {
   if (radix < 2 || radix > 36) {
-    throw new Error("from_ascii_radix: radix must lie in the range `[2, 36]` - found " + radix);
+    throw new Error("from_ascii_bytes_radix: radix must lie in the range `[2, 36]` - found " + radix);
   }
   const error = (message) => ({ TAG: "Err", _0: message });
   if (s === "") return error("cannot parse integer from empty string");
@@ -911,14 +911,12 @@ export function $append(items, other) {
 }
 
 // One of std's parse errors, `name`, as a `dyn Error` (ADR 0141): its value
-// is its message (ADR 0063), or a `TryFromIntError`'s its kind, shown by
-// `{:?}` as Rust shows it, `ParseIntError { kind: InvalidDigit }`.
+// is its message (ADR 0063), shown by `{:?}` as Rust shows it,
+// `ParseIntError { kind: InvalidDigit }`.
 export function $parseErrorDyn(name) {
   return {
     Debug: () => ({ fmt: (value) => $debugParseError(value, name) }),
-    Display: () => ({
-      fmt: (value) => (name === "TryFromIntError" ? "out of range integral type conversion attempted" : value),
-    }),
+    Display: () => ({ fmt: (value) => value }),
     source: () => undefined,
   };
 }
@@ -1489,8 +1487,8 @@ export function $charRange(start, end, inclusive = false) {
 }
 
 export function $tryFromInt(x, lo, hi) {
-  if (x < lo) return { TAG: "Err", _0: "NegOverflow" };
-  if (x > hi) return { TAG: "Err", _0: "PosOverflow" };
+  if (x < lo) return { TAG: "Err", _0: "number too small to fit in target type" };
+  if (x > hi) return { TAG: "Err", _0: "number too large to fit in target type" };
   return { TAG: "Ok", _0: typeof hi === "bigint" ? BigInt(x) : Number(x) };
 }
 
@@ -3982,7 +3980,7 @@ export function $parseErrorKind(message) {
 }
 
 export function $debugParseError(message, name) {
-  if (name === "TryFromIntError") return `TryFromIntError(${message})`;
+  if (name === "TryFromIntError") return `TryFromIntError(${$parseErrorKind(message)})`;
   return name === "ParseBoolError" ? name : `${name} { kind: ${$parseErrorKind(message)} }`;
 }
 
@@ -4085,7 +4083,7 @@ export function $heapFrom(items, cmp) {
 // an invalid digit, though 260 is too large.
 export function $parseInt(s, min, max, radix = 10) {
   if (radix < 2 || radix > 36) {
-    throw new Error("from_ascii_radix: radix must lie in the range `[2, 36]` - found " + radix);
+    throw new Error("from_ascii_bytes_radix: radix must lie in the range `[2, 36]` - found " + radix);
   }
   const error = (message) => ({ TAG: "Err", _0: message });
   if (s === "") return error("cannot parse integer from empty string");

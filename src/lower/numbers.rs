@@ -12,7 +12,7 @@ use super::{FnCx, R};
 use crate::js::StmtKind;
 use crate::js::{self, Expr, Op, Prop, Stmt, UnaryOp};
 use crate::runtime::Helper;
-use rustc_hir::LangItem;
+use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::mir::{AssignOp, BinOp, UnOp};
 use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
@@ -1376,11 +1376,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Expr::var("$tryFromInt"),
                     vec![arg(), num.literal(lo), num.literal(hi as i128)],
                 );
-                // A `NonZero`'s, an error of `0` (ADR 0177).
+                // A `NonZero`'s, an error of `0` (ADR 0177), its message as the
+                // others' is.
                 match super::recognition::is_non_zero_ty(target) {
                     true => {
                         self.runtime.insert(Helper::NonZeroOk);
-                        Expr::call(Expr::var("$nonZeroOk"), vec![tried, Expr::str("Zero")])
+                        Expr::call(
+                            Expr::var("$nonZeroOk"),
+                            vec![tried, Expr::str("number would be zero for non-zero type")],
+                        )
                     }
                     false => tried,
                 }

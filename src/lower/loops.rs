@@ -11,7 +11,8 @@ use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use crate::runtime::Helper;
 use rustc_ast::Mutability;
 use rustc_hir as hir;
-use rustc_hir::{BindingMode, ByRef, HirId, LangItem};
+use rustc_hir::attrs::lang_items::LangItem;
+use rustc_hir::{BindingMode, ByRef, HirId};
 use rustc_middle::middle::region;
 use rustc_middle::thir::{self, ExprId, ExprKind, PatKind};
 use rustc_middle::ty::{self, TypeVisitableExt};
@@ -253,6 +254,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let sequence = option.is_some()
                 || kind.is_some()
                 || peeled.is_array()
+                // 1.99's `Box<[T; N]>`, which is its array.
+                || peeled.boxed_ty().is_some_and(|inner| inner.is_array())
                 || peeled.is_slice()
                 || self.is_vec_like(peeled)
                 || self.is_std_type(peeled, StdItem::SliceIter)
@@ -283,6 +286,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.expr(f.head, out)?
                 }
                 (None, None) => self.iter_value(f.head, out)?,
+            };
+            // A `&mut` to a `Box<[T; N]>` is a handle on the box (ADR 0099),
+            // whose items are its array's.
+            let head = match peeled.boxed_ty().is_some_and(|inner| inner.is_array()) {
+                true => self.through_refs(head, head_ty).0,
+                false => head,
             };
             let head = match option {
                 Some(item) => self.option_items(head, item, out),
@@ -512,6 +521,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         let items = self.thir[e].ty.peel_refs();
+        // 1.99's `Box<[T; N]>`, which is its array.
+        let items = items.boxed_ty().filter(|inner| inner.is_array()).unwrap_or(items);
         let sequence = items.is_array() || items.is_slice() || self.is_vec_like(items);
         // Its own items borrowed, not `&mut`s it holds: `for r in refs` of a
         // `Vec<&mut i32>` gives each cell (ADR 0099).

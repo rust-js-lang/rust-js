@@ -5,7 +5,7 @@
 // an invalid digit, though 260 is too large.
 function $parseInt(s, min, max, radix = 10) {
   if (radix < 2 || radix > 36) {
-    throw new Error("from_ascii_radix: radix must lie in the range `[2, 36]` - found " + radix);
+    throw new Error("from_ascii_bytes_radix: radix must lie in the range `[2, 36]` - found " + radix);
   }
   const error = (message) => ({ TAG: "Err", _0: message });
   if (s === "") return error("cannot parse integer from empty string");

@@ -146,4 +146,28 @@ export const mutations: Mutation[] = [
     replace: "            if !owned_source && self.drops(source) != Drops::Nothing {",
     tests: ["test/crates.test.ts", "-t", "no destructor by its consumers"],
   },
+  {
+    name: "boxed-array-loop-refused",
+    breaks: "`for x in` a `Box<[T; N]>`, which 1.99 iterates, is refused",
+    file: "src/lower/loops.rs",
+    find: "                || peeled.boxed_ty().is_some_and(|inner| inner.is_array())\n                || peeled.is_slice()\n",
+    replace: "                || peeled.is_slice()\n",
+    tests: ["test/corpus.test.ts", "-t", "boxed_array_iter"]
+  },
+  {
+    name: "boxed-array-mut-loop-handle",
+    breaks: "`for p in &mut b` of a `Box<[T; N]>` loops over the handle on the box, not its items",
+    file: "src/lower/loops.rs",
+    find: "                true => self.through_refs(head, head_ty).0,\n",
+    replace: "                true => head,\n",
+    tests: ["test/corpus.test.ts", "-t", "boxed_array_iter"]
+  },
+  {
+    name: "boxed-array-mut-items-unread",
+    breaks: "`for n in &mut b` of a `Box<[i32; N]>` isn't an index loop, and writes no item",
+    file: "src/lower/loops.rs",
+    find: "        let items = items.boxed_ty().filter(|inner| inner.is_array()).unwrap_or(items);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "boxed_array_iter"]
+  },
 ];

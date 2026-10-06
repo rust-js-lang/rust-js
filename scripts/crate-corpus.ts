@@ -41,7 +41,7 @@ const corpus: Crate[] = [
 
 const root = resolve(import.meta.dir, "..");
 const compiler = resolve(process.env.RUST_JS_COMPILER ?? join(root, "target/debug/rust-js"));
-const toolchain = "1.98.1";
+const toolchain = "1.99.0";
 const wanted = process.argv.slice(2);
 const chosen = wanted.length ? corpus.filter((c) => wanted.includes(c.name)) : corpus;
 

@@ -1,8 +1,8 @@
 diff --git a/compiler/rustc_data_structures/Cargo.toml b/compiler/rustc_data_structures/Cargo.toml
-index 6db3a624500a9c0f832078dcbec85ee676be8beb..807b13d04fad3798dd864737252045cd2c1c6e5a 100644
+index daae72a9b358a7d73f93f07b8889c8c77bccd76e..69face5583031c253475842b319646994f4c8b9c 100644
 --- a/compiler/rustc_data_structures/Cargo.toml
 +++ b/compiler/rustc_data_structures/Cargo.toml
-@@ -35,6 +35,11 @@ tracing = "0.1"
+@@ -34,6 +34,11 @@ tracing = "0.1"
  # tidy-alphabetical-end
  
  [dependencies.hashbrown]

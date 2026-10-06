@@ -1,8 +1,8 @@
 diff --git a/compiler/rustc_data_structures/src/jobserver.rs b/compiler/rustc_data_structures/src/jobserver.rs
-index 3ed1ea7543f4..581ac077513d 100644
+index 478fc0632658c074854e930bb045aea1558a0e4f..7fa7d5d89fdaeda5704347da0eeeb5f1f98908ca 100644
 --- a/compiler/rustc_data_structures/src/jobserver.rs
 +++ b/compiler/rustc_data_structures/src/jobserver.rs
-@@ -100,6 +100,13 @@ pub fn new() -> Arc<Self> {
+@@ -109,6 +109,13 @@ pub fn new() -> Arc<Self> {
              wake_pending: Condvar::new(),
              helper: OnceLock::new(),
          });

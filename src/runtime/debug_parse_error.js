@@ -16,6 +16,6 @@ function $parseErrorKind(message) {
 }
 
 function $debugParseError(message, name) {
-  if (name === "TryFromIntError") return `TryFromIntError(${message})`;
+  if (name === "TryFromIntError") return `TryFromIntError(${$parseErrorKind(message)})`;
   return name === "ParseBoolError" ? name : `${name} { kind: ${$parseErrorKind(message)} }`;
 }

@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
     name: "externally-implementable-accepted",
     breaks: "`#[eii] static HELLO: u64;` is accepted, and its JS reads a `HELLO` nothing defines",
     file: "src/lower/analysis/validation.rs",
-    find: "            _ if find_attr!(tcx, def_id, EiiImpls(..) | EiiDeclaration(..) | RustcEiiForeignItem) => {\n",
+    find: "            _ if find_attr!(tcx, def_id, EiiImpl(..) | EiiDeclaration(..) | RustcEiiForeignItem) => {\n",
     replace: "            _ if false => {\n",
     tests: ["test/diagnostics.test.ts","-t","externally implementable"],
   },

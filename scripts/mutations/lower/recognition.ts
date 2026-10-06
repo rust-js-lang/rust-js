@@ -619,4 +619,12 @@ export const mutations: Mutation[] = [
     replace: "            \"as_deref_never\"",
     tests: ["test/compiler.test.ts", "-t", "as_deref"],
   },
+  {
+    name: "boxed-array-into-iter-refused",
+    breaks: "`into_iter()` of 1.99's `Box<[T; N]>` is refused",
+    file: "src/lower/recognition.rs",
+    find: "            && ty.peel_refs().boxed_ty().is_some_and(|inner| inner.is_array())\n        {\n            return Some(Std::Pointee);\n",
+    replace: "            && false\n        {\n            return Some(Std::Pointee);\n",
+    tests: ["test/corpus.test.ts", "-t", "boxed_array_iter"]
+  },
 ];

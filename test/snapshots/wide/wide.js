@@ -121,7 +121,7 @@ export function report() {
   const low = $unwrapErr($tryFromInt(-1n, 0, 255));
   const arg$9 = $unwrapErr($tryFromInt(300n, 0, 255));
   const arg$10 = low === $unwrapErr($tryFromInt(300n, 0, 255));
-  out += `${$debugParseError(low, "TryFromIntError")} out of range integral type conversion attempted out of range integral type conversion attempted ${arg$10}\n`;
+  out += `${$debugParseError(low, "TryFromIntError")} ${low} ${arg$9} ${arg$10}\n`;
   let stamps = [1700000000000n, -5n, 0n, 9223372036854775807n, -9223372036854775808n];
   stamps.sort($cmp);
   const total = stamps

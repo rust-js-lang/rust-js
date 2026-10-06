@@ -114,7 +114,7 @@ function main() {
   console.log(
     `${describe($unwrapErr($tryFromInt(300, 0, 255)), {
       Debug: () => ({ fmt: (value) => $debugParseError(value, "TryFromIntError") }),
-      Display: () => ({ fmt: (value) => "out of range integral type conversion attempted" }),
+      Display: () => ({ fmt: (value) => value }),
       source: () => undefined,
     })}`,
   );

@@ -10,6 +10,9 @@
 // (`before`, `before_with_str`), and methods of the same name on different
 // interfaces. rustc warns because in native code they would be one symbol.
 #![allow(clashing_extern_declarations)]
+// And some are named as libc's functions are, `open`, `close` and `write`:
+// JS methods, which in native code rustc would take for those.
+#![allow(invalid_runtime_symbol_definitions)]
 
 use core::marker::PhantomData;
 use core::ops::Deref;

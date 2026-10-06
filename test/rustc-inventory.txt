@@ -1,6 +1,6 @@
 # rustc's run-pass UI tests, every one, at the commit below (ADR 0089).
 # Rewritten by `bun scripts/rustc-suite.ts --bless`.
-# commit: 48a229ceaefd4985c50990b14116b6d856af0985
+# commit: b940084d7eb6a299eb4bfeb8e34901bc051e7ac4
 abi/abi-sysv64-arg-passing.rs
 abi/abi-sysv64-register-usage.rs
 abi/anon-extern-mod.rs
@@ -256,6 +256,7 @@ associated-types/projection-as-type-alias.rs
 associated-types/recursive-enum-with-assoc-type-selfref.rs
 associated-types/ret-associated-type.rs
 associated-types/same-name-assoc-type-and-method.rs
+associated-types/self-type-projection-dyn-coerce.rs
 associated-types/sized-recursive-type-via-associated-type.rs
 async-await/async-await.rs
 async-await/async-closure.rs
@@ -271,6 +272,7 @@ async-await/async-closures/mutate.rs
 async-await/async-closures/overlapping-projs.rs
 async-await/async-closures/precise-captures.rs
 async-await/async-closures/type-name.rs
+async-await/async-drop/async-drop-array-step.rs
 async-await/async-drop/async-drop-box-allocator.rs
 async-await/async-drop/async-drop-box.rs
 async-await/async-drop/async-drop-future-from-future.rs
@@ -350,6 +352,7 @@ backtrace/apple-no-dsymutil.rs
 backtrace/backtrace.rs
 backtrace/dylib-dep.rs
 backtrace/line-tables-only.rs
+backtrace/sigbus-on-apple-missing-dwarf-backtrace.rs
 backtrace/std-backtrace.rs
 backtrace/synchronized-panic-handler.rs
 bench/issue-32062.rs
@@ -687,10 +690,13 @@ closures/semistatement-in-lambda.rs
 closures/simple-capture-and-call.rs
 closures/unused-closure-ice-16256.rs
 codegen/StackColoring-not-blowup-stack-issue-40883.rs
+codegen/adt-nested-match-misopt.rs
 codegen/alias-uninit-value.rs
 codegen/arm-collect-into-vec-codegen-regression.rs
 codegen/assign-expr-unit-type.rs
+codegen/bitvec-to-bools-opt-miscompile.rs
 codegen/bool-negation-with-debug-info.rs
+codegen/box-deref-segfault-misopt.rs
 codegen/box-str-drop-glue.rs
 codegen/cfguard-run.rs
 codegen/correctly-monomorphize-generic-drop-impl.rs
@@ -737,10 +743,12 @@ codegen/no-segfault-with-multiple-codegen-units.rs
 codegen/output-slot-init-vs-noninit.rs
 codegen/rvalue-mut-ref-box-drop.rs
 codegen/shift-right-operand-mutation.rs
+codegen/slice-iter-enumerate-opt.rs
 codegen/sret-aliasing-rules.rs
 codegen/static-array-comparison-7012.rs
 codegen/subtyping-impacts-selection-1.rs
 codegen/subtyping-impacts-selection-2.rs
+codegen/trait-objects-slice-coercion.rs
 codemap_tests/utf8-bom.rs
 coercion/any-trait-object-debug-12744.rs
 coercion/basic-ptr-coercions.rs
@@ -763,6 +771,7 @@ coercion/coerce-unify-return.rs
 coercion/coerce-unify.rs
 coercion/coerce-unsize-subtype.rs
 coercion/fn-item-to-dyn-any.rs
+coercion/generic-fn-items-in-array-literal.rs
 coercion/issue-14589.rs
 coercion/issue-26905-rpass.rs
 coercion/issue-3794.rs
@@ -783,10 +792,12 @@ coherence/coherence-negative-impls-safe-rpass.rs
 coherence/coherence-rfc447-constrained.rs
 coherence/coherence-where-clause.rs
 coherence/coherence_copy_like.rs
+coherence/cross-crate-specialization-check.rs
 coherence/pr-review-132289-2.rs
 coherence/pr-review-132289-3.rs
 coherence/re-rebalance-coherence-default-generic-associated-type.rs
 coherence/re-rebalance-coherence.rs
+collections/hashmap/hashmap-debug-format.rs
 collections/hashmap/hashmap-memory.rs
 collections/hashmap/hashmap-path-key.rs
 collections/hashmap/hashset-enum-variant.rs
@@ -963,6 +974,7 @@ consts/const-eval/nrvo.rs
 consts/const-eval/ptr_fragments.rs
 consts/const-eval/simd/insert_extract.rs
 consts/const-eval/strlen.rs
+consts/const-eval/variance-const-eval-cycle.rs
 consts/const-eval/write-to-uninhabited-enum-variant.rs
 consts/const-expr-in-fixed-length-vec.rs
 consts/const-expr-in-vec-repeat.rs
@@ -1024,6 +1036,7 @@ consts/const_fn_unsize.rs
 consts/const_in_pattern/accept_structural.rs
 consts/const_in_pattern/cross-crate-pass.rs
 consts/const_in_pattern/custom-eq-branch-pass.rs
+consts/const_in_pattern/cyclic-const-dag-pass.rs
 consts/const_in_pattern/issue-62614.rs
 consts/const_in_pattern/issue-73431.rs
 consts/const_in_pattern/null-raw-ptr-issue-119270.rs
@@ -1234,6 +1247,7 @@ custom_test_frameworks/full.rs
 darwin-objc/darwin-objc-class-selector.rs
 darwin-objc/darwin-objc-class.rs
 darwin-objc/darwin-objc-selector.rs
+debuginfo/cross-crate-multibyte-debuginfo.rs
 debuginfo/impl-copy-function-debuginfo-58463.rs
 debuginfo/issue-105386-debuginfo-ub.rs
 debuginfo/msvc-strip-debuginfo.rs
@@ -1264,6 +1278,8 @@ delegation/generics/trait-method-to-other-pass.rs
 delegation/method-call-priority.rs
 delegation/recursive-delegation-pass.rs
 delegation/self-coercion.rs
+delegation/self-mapping-arguments.rs
+delegation/self-mapping-output-from-wrap.rs
 delegation/target-expr-pass.rs
 delegation/target-expression-removal-pass.rs
 deprecation/deprecated-macro_escape-inner.rs
@@ -1340,6 +1356,7 @@ drop/drop-trait-enum.rs
 drop/drop-trait-generic.rs
 drop/drop-trait.rs
 drop/drop-uninhabited-enum.rs
+drop/drop-value-by-method.rs
 drop/drop-with-trait-bound-calls-method-on-self.rs
 drop/drop-with-type-ascription-1.rs
 drop/drop-with-type-ascription-2.rs
@@ -1374,12 +1391,14 @@ drop/issue-48962.rs
 drop/issue-90752-raw-ptr-shenanigans.rs
 drop/issue-90752.rs
 drop/issue-979.rs
+drop/move-closure-drop-on-unwind.rs
 drop/multiple-drop-safe-code-25549.rs
 drop/nested-return-drop-order.rs
 drop/no-drop-flag-size.rs
 drop/nondrop-cycle.rs
 drop/or-pattern-drop-order.rs
 drop/panic-during-drop-14875.rs
+drop/panic-during-slice-init.rs
 drop/rc-trait-object-double-drop.rs
 drop/repeat-drop.rs
 drop/same-alloca-reassigned-match-binding-16151.rs
@@ -1419,6 +1438,7 @@ dst/dst-struct.rs
 dst/dst-trait.rs
 dst/match-dst-struct.rs
 dst/reborrow-mut-dyn-trait-field.rs
+dst/trait-impl-on-tuple-with-unsized-tail.rs
 dst/unsized-str-mutability.rs
 duplicate/inherent-impls-overlap-check/no-overlap.rs
 dyn-compatibility/metasized.rs
@@ -1435,11 +1455,11 @@ eii/default/call_default_panics.rs
 eii/default/call_impl.rs
 eii/default/local_crate.rs
 eii/default/local_crate_explicit.rs
-eii/duplicate/multiple_impls.rs
 eii/eii_impl_with_contract.rs
 eii/linking/codegen_cross_crate.rs
 eii/linking/codegen_single_crate.rs
 eii/linking/same-symbol.rs
+eii/linking/track_caller_cross_crate.rs
 eii/privacy1.rs
 eii/static/cross_crate_decl.rs
 eii/static/cross_crate_def.rs
@@ -1449,6 +1469,7 @@ eii/static/default_cross_crate_explicit.rs
 eii/static/default_explicit.rs
 eii/static/same_address.rs
 eii/static/simple.rs
+eii/track_caller.rs
 entry-point/imported_main_from_extern_crate.rs
 entry-point/imported_main_from_inner_mod.rs
 entry-point/imported_main_local_codegen.rs
@@ -1471,6 +1492,7 @@ enum-discriminant/issue-90038.rs
 enum-discriminant/niche-prefer-zero.rs
 enum-discriminant/niche.rs
 enum-discriminant/ptr_niche.rs
+enum-discriminant/repr-u64-enum-discriminant-cast.rs
 enum-discriminant/repr128-get-discriminant-issue-43398.rs
 enum-discriminant/repr128.rs
 enum/enum-clike-ffi-as-int.rs
@@ -1501,6 +1523,7 @@ env-macro/env-env-overload.rs
 env-macro/env-env.rs
 env-macro/env-not-env.rs
 env-macro/option_env-not-defined.rs
+ergonomic-clones/closure/dotuse-no-extra-capture-clone.rs
 ergonomic-clones/closure/nested.rs
 ergonomic-clones/closure/once-move-out-on-heap.rs
 errors/pic-linker.rs
@@ -1580,6 +1603,7 @@ fmt/fmt_debug/none.rs
 fmt/fmt_debug/shallow.rs
 fmt/format-args-capture-macro-hygiene-pass.rs
 fmt/format-args-capture.rs
+fmt/format-enum-with-recursive-variant.rs
 fmt/format-macro-no-std.rs
 fmt/issue-23781.rs
 fmt/println-debug-different-types.rs
@@ -1593,6 +1617,7 @@ fn/mutable-function-parameters.rs
 fn/nested-function-names-issue-8587.rs
 fn_traits/call-unit-struct-impl-fn-once.rs
 fn_traits/fn-trait-explicit-call.rs
+fn_traits/overloaded-fnonce-resolution.rs
 for-loop-while/auto-loop.rs
 for-loop-while/break-value.rs
 for-loop-while/break.rs
@@ -1800,6 +1825,7 @@ impl-trait/issues/issue-51185.rs
 impl-trait/lifetimes.rs
 impl-trait/nesting.rs
 impl-trait/not_general_enough_regression_106630.rs
+impl-trait/reachable-private-fn-codegen.rs
 impl-trait/region-escape-via-bound-contravariant-closure.rs
 impl-trait/region-escape-via-bound-contravariant.rs
 impl-trait/type-alias-generic-param.rs
@@ -1848,6 +1874,7 @@ imports/issue-26873-multifile/mod.rs
 imports/issue-4865-1.rs
 imports/issue-4865-2.rs
 imports/issue-4865-3.rs
+imports/macro-use-as.rs
 imports/pub-use-link-errors-9968.rs
 imports/reexport-star.rs
 imports/simple-dylib-import.rs
@@ -1861,6 +1888,7 @@ include-macros/normalization.rs
 indexing/indexing-spans-caller-location.rs
 indexing/ref-array-indexing.rs
 inference/auto-instantiate.rs
+inference/bivariant-param.rs
 inference/collection-type-copy-behavior-12909.rs
 inference/fnonce-closure-call.rs
 inference/generic-type-inference-10436.rs
@@ -1875,6 +1903,7 @@ inference/lub-glb-with-unbound-infer-var.rs
 inference/matcher-lifetime-inference-14919.rs
 inference/newlambdas-ret-infer.rs
 inference/newlambdas-ret-infer2.rs
+inference/projection-cache-registers-obligations.rs
 inference/range-type-infer.rs
 inference/simple-infer.rs
 inline-const/const-expr-basic.rs
@@ -1896,70 +1925,10 @@ intrinsics/intrinsics-integer.rs
 intrinsics/intrinsics-math.rs
 intrinsics/panic-uninitialized-zeroed.rs
 intrinsics/volatile-composite-types.rs
+intrinsics/volatile-zst-intrinsics.rs
 io-checks/io-stdout-blocking-writes.rs
 io-checks/stdout-stderr-separation.rs
 io-checks/write-macro-error.rs
-issues/issue-24687-embed-debuginfo/main.rs
-issues/issue-29668.rs
-issues/issue-2989.rs
-issues/issue-29948.rs
-issues/issue-30018-panic.rs
-issues/issue-30081.rs
-issues/issue-30371.rs
-issues/issue-31776.rs
-issues/issue-3220.rs
-issues/issue-33461.rs
-issues/issue-33770.rs
-issues/issue-3447.rs
-issues/issue-34503.rs
-issues/issue-35423.rs
-issues/issue-3556.rs
-issues/issue-3559.rs
-issues/issue-3574.rs
-issues/issue-36474.rs
-issues/issue-36744-bitcast-args-if-needed.rs
-issues/issue-36816.rs
-issues/issue-3702.rs
-issues/issue-37291/main.rs
-issues/issue-3753.rs
-issues/issue-3847.rs
-issues/issue-38556.rs
-issues/issue-38942.rs
-issues/issue-3895.rs
-issues/issue-39709.rs
-issues/issue-3979.rs
-issues/issue-39808.rs
-issues/issue-39827.rs
-issues/issue-41479.rs
-issues/issue-41604.rs
-issues/issue-41677.rs
-issues/issue-41744.rs
-issues/issue-41849-variance-req.rs
-issues/issue-41888.rs
-issues/issue-42148.rs
-issues/issue-42210.rs
-issues/issue-4228.rs
-issues/issue-42552.rs
-issues/issue-43692.rs
-issues/issue-43853.rs
-issues/issue-43910.rs
-issues/issue-43923.rs
-issues/issue-4541.rs
-issues/issue-4542.rs
-issues/issue-45510.rs
-issues/issue-45731.rs
-issues/issue-4759-1.rs
-issues/issue-4759.rs
-issues/issue-48006.rs
-issues/issue-4875.rs
-issues/issue-49298.rs
-issues/issue-50415.rs
-issues/issue-50865-private-impl-trait/main.rs
-issues/issue-51907.rs
-issues/issue-52140/main.rs
-issues/issue-52141/main.rs
-issues/issue-52705/main.rs
-issues/issue-5315.rs
 iterators/bytes-iterator-clone-12677.rs
 iterators/for-loop-over-mut-iterator-21655.rs
 iterators/fromrangeiter.rs
@@ -1990,6 +1959,7 @@ iterators/rangefrom-overflow-debug.rs
 iterators/rangefrom-overflow-ndebug.rs
 iterators/rangefrom-overflow-overflow-checks.rs
 iterators/skip-count-overflow.rs
+iterators/steps-between-respects-pointer-width.rs
 keyword/raw-identifier-for-function-57198.rs
 label/label-in-closure-no-self-shadow.rs
 label/label_break_value_desugared_break.rs
@@ -2022,6 +1992,7 @@ lexer/crlf-in-byte-string-literal.rs
 lexer/floating-point-0e10-issue-40408.rs
 lexer/lex-bare-cr-nondoc-comment.rs
 lexer/lexer-crlf-line-endings-string-literal-doc-comment.rs
+lexer/underscores-in-unicode-escapes.rs
 lexer/unicode-pattern-white-space.rs
 lifetimes/any-lifetime-escape-higher-rank.rs
 lifetimes/enum-lifetime-container-10228.rs
@@ -2029,6 +2000,7 @@ lifetimes/for-loop-region-links.rs
 lifetimes/issue-84604.rs
 lifetimes/late-bound-lifetime-arguments-warning-72278.rs
 lifetimes/lifetime-inference-across-mods.rs
+lifetimes/lifetime-param-in-fn-coercion.rs
 lifetimes/matcher-trait-equality-13323.rs
 lifetimes/ref-pattern-lifetime-annotation-13665.rs
 lifetimes/rvalue-cleanup-shortcircuit.rs
@@ -2073,6 +2045,8 @@ lint/must_not_suspend/warn.rs
 lint/overflowing-literals-valid.rs
 lint/test-allow-dead-extern-static-no-warning.rs
 lint/unused-qualification-in-derive-expansion.rs
+lint/unused/for-loop-no-spurious-unused-variable-lint.rs
+lint/unused/ignored-allow-unused_variables.rs
 lint/unused/issue-70041.rs
 lint/unused/no-unused-parens-return-block.rs
 lint/unused/unused-trait-fn.rs
@@ -2146,6 +2120,7 @@ macros/macro-deep_expansion.rs
 macros/macro-doc-raw-str-hashes.rs
 macros/macro-export-inner-module.rs
 macros/macro-first-set.rs
+macros/macro-in-array-len-expr.rs
 macros/macro-in-or-pattern.rs
 macros/macro-include-items.rs
 macros/macro-invocation-with-variable-in-scope-9737.rs
@@ -2168,6 +2143,7 @@ macros/macro-path.rs
 macros/macro-quote-test.rs
 macros/macro-rules-attr-nested.rs
 macros/macro-rules-attr.rs
+macros/macro-rules-def-in-block-expr.rs
 macros/macro-rules-derive.rs
 macros/macro-self-mutability-7911.rs
 macros/macro-stability-rpass.rs
@@ -2208,6 +2184,7 @@ macros/typeck-macro-interaction-issue-8852.rs
 marker_trait_attr/overlap-doesnt-conflict-with-specialization.rs
 marker_trait_attr/overlap-permitted-for-annotated-marker-traits.rs
 match/closure-in-match-guard.rs
+match/guard-arm-and-or-arm.rs
 match/guard-pattern-ordering-14865.rs
 match/guards.rs
 match/issue-113012.rs
@@ -2224,6 +2201,8 @@ match/issue-42679.rs
 match/issue-46920-byte-array-patterns.rs
 match/issue-5530.rs
 match/issue-72680.rs
+match/match-borrowed-str.rs
+match/match-cloned-string.rs
 match/match-field-reassign.rs
 match/match-float.rs
 match/match-large-array.rs
@@ -2233,6 +2212,7 @@ match/match-range-char-const.rs
 match/match-ref-mut-stability.rs
 match/match-ref-option-pattern.rs
 match/match-str-proper-optimization.rs
+match/match-string-slice.rs
 match/match-tuple-slice.rs
 match/match-usize-min-max-pattern.rs
 match/multiple-refutable-patterns-13867.rs
@@ -2240,9 +2220,12 @@ match/overeager-sub-match-pruning-13027.rs
 match/pattern-deref-miscompile.rs
 match/postfix-match/pf-match-chain.rs
 match/postfix-match/postfix-match.rs
+match/range-arm-and-ref-arm.rs
 match/struct-reference-patterns-12285.rs
 match/tuple-usize-pattern-14393.rs
+methods/by-value-self-method-on-int.rs
 methods/call_method_unknown_referent2.rs
+methods/destructure-and-call-self-method.rs
 methods/inherent-method-resolution-on-deref-type-53843.rs
 methods/inherent-methods-same-name.rs
 methods/method-argument-inference-associated-type.rs
@@ -2284,6 +2267,7 @@ mir/enum/with_niche_int_ok.rs
 mir/enum/with_niche_ptr_ok.rs
 mir/enum/wrap_ok.rs
 mir/gvn-loop-miscompile.rs
+mir/hoist_deref_early_else.rs
 mir/issue-29227.rs
 mir/issue-46845.rs
 mir/issue-66851.rs
@@ -2573,7 +2557,6 @@ panics/panic-in-dtor-drops-fields.rs
 panics/panic-recover-propagate.rs
 panics/rvalue-cleanup-during-box-panic.rs
 panics/unwind-force-no-unwind-tables.rs
-parallel-rustc/hello_world.rs
 parallel-rustc/read-stolen-value-issue-111520.rs
 parser/as-precedence.rs
 parser/assoc/assoc-oddities-3.rs
@@ -2591,9 +2574,11 @@ parser/multiline-comments-basic.rs
 parser/nested-block-comments.rs
 parser/operator-associativity.rs
 parser/operator-precedence-braces-exprs.rs
+parser/other-module-struct-match.rs
 parser/parse-panic.rs
 parser/parser-unicode-whitespace.rs
 parser/pattern-matching-with-double-references-61475.rs
+parser/pub-method-after-attribute.rs
 parser/ranges-precedence.rs
 parser/raw/raw-string-literals.rs
 parser/reference-whitespace-parsing.rs
@@ -2647,6 +2632,7 @@ pattern/rfc-3637-guard-patterns/macro-rules.rs
 pattern/size-and-align.rs
 pattern/skipped-ref-pats-issue-125058.rs
 pattern/slice-pattern-recursion-15104.rs
+pattern/struct-pattern-in-fn-arg.rs
 pattern/struct-wildcard-pattern-14308.rs
 pattern/tuple-enum-match-15129.rs
 pattern/tuple-struct-cross-crate.rs
@@ -2663,6 +2649,7 @@ precondition-checks/cfg-ub-checks-no.rs
 precondition-checks/cfg-ub-checks-yes.rs
 precondition-checks/zero-size-null.rs
 privacy/deref-separate-compile-unit-6919.rs
+privacy/fn-returns-unnameable-type.rs
 privacy/impl-privacy-cross-crate-1.rs
 privacy/impl-privacy-cross-crate-2.rs
 privacy/priv-impl-prim-ty.rs
@@ -2677,6 +2664,7 @@ privacy/pub-restricted-path-usage-55376.rs
 privacy/pub-use-xcrate.rs
 privacy/pub_use_mods_xcrate_exe.rs
 privacy/reachable-unnameable-items.rs
+privacy/required-pub-in-blocks.rs
 proc-macro/add-impl.rs
 proc-macro/append-impl.rs
 proc-macro/attr-args.rs
@@ -2765,8 +2753,10 @@ ptr_ops/ptr-swap-basic.rs
 ptr_ops/ptr-swap-overlapping-regions.rs
 ptr_ops/ptr-write-bool-representation.rs
 ptr_ops/raw-pointer-type-basic.rs
+range/inclusive-range-in-closure.rs
 range/range-implement-clone.rs
 range/range_inclusive.rs
+range/step_overflowing.rs
 raw-ref-op/raw-ref-op.rs
 reachable/artificial-block.rs
 reachable/boolean-negation-in-unreachable-code-7344.rs
@@ -2778,13 +2768,14 @@ reachable/reachable-unnameable-type-alias.rs
 reachable/unreachable-code-diverging-expressions.rs
 reborrow/coerce-shared-extra-marker.rs
 reborrow/coerce_shared_consteval.rs
-reborrow/custom_marker.rs
 reborrow/custom_marker_assign_deref.rs
-reborrow/custom_marker_coerce_shared.rs
 reborrow/custom_marker_coerce_shared_copy.rs
 reborrow/custom_marker_deref.rs
 reborrow/custom_mut.rs
 reborrow/custom_mut_coerce_shared.rs
+reborrow/derive_coerce_shared.rs
+reborrow/derive_manual_equivalence.rs
+reborrow/derive_reborrow.rs
 reborrow/reborrow-mutable-reference.rs
 recursion/future-stream-buffer-unordered-40003.rs
 recursion/instantiable.rs
@@ -2986,7 +2977,10 @@ runtime/stdout-during-shutdown-unix.rs
 runtime/stdout-during-shutdown-windows.rs
 rust-2018/extern-crate-idiomatic.rs
 rust-2018/extern-crate-referenced-by-self-path.rs
+rust-2018/uniform-paths/direct-renamed-extern-crate.rs
+rust-2018/uniform-paths/glob-import-renamed-crate.rs
 rust-2018/uniform-paths/redundant.rs
+rust-2018/uniform-paths/reexport-crate.rs
 rust-2021/reserved-prefixes-via-macro.rs
 rust-2024/reserved-guarded-strings-via-macro.rs
 rustc-env/def-path-hash-ice-157238.rs
@@ -2995,6 +2989,7 @@ sanitizer/asan_odr_windows.rs
 sanitizer/cfi/async-closures.rs
 sanitizer/cfi/closures.rs
 sanitizer/cfi/complex-receiver.rs
+sanitizer/cfi/const-generics.rs
 sanitizer/cfi/coroutine.rs
 sanitizer/cfi/drop-in-place.rs
 sanitizer/cfi/fn-ptr.rs
@@ -3006,6 +3001,7 @@ sanitizer/cfi/virtual-auto.rs
 sanitizer/dataflow.rs
 sanitizer/issue-72154-address-lifetime-markers.rs
 sanitizer/kcfi-c-variadic.rs
+sanitizer/kcfi/const-generics.rs
 sanitizer/kcfi/fn-trait-objects.rs
 sanitizer/memory-passing.rs
 self/arbitrary-self-types-dyn-receiver.rs
@@ -3105,6 +3101,7 @@ sized/sized-box-unsized-content.rs
 sized/sized-reference-to-unsized.rs
 span/unused-warning-point-at-identifier.rs
 specialization/cross-crate-defaults.rs
+specialization/default-impl-partial-and-inherits.rs
 specialization/defaultimpl/allowed-cross-crate.rs
 specialization/defaultimpl/projection.rs
 specialization/defaultimpl/specialization-trait-item-not-implemented-rpass.rs
@@ -3131,6 +3128,9 @@ splat/splat-assoc-fn-tuple-simple.rs
 splat/splat-async-fn-tuple.rs
 splat/splat-const-fn-tuple-generic.rs
 splat/splat-const-fn-tuple.rs
+splat/splat-fn-ptr-generic.rs
+splat/splat-fn-ptr-ptr-tuple.rs
+splat/splat-fn-ptr-tuple.rs
 splat/splat-fn-tuple-generic.rs
 splat/splat-fn-tuple-simple.rs
 splat/splat-generics-complex-types.rs
@@ -3167,6 +3167,7 @@ statics/static-methods-in-traits2.rs
 statics/static-mut-xc.rs
 statics/static-promotion.rs
 statics/static-recursive.rs
+std/add-spawn-hook-reentrancy-159923.rs
 std/channel-stack-overflow-issue-102246.rs
 std/fs-nul-byte-paths.rs
 std/issue-3563-3.rs
@@ -3184,6 +3185,7 @@ str/str-static-literal.rs
 structs-enums/align-enum.rs
 structs-enums/align-struct.rs
 structs-enums/borrow-tuple-fields.rs
+structs-enums/call-tuple-struct-ctor-as-fn.rs
 structs-enums/class-impl-very-parameterized-trait.rs
 structs-enums/class-poly-methods-cross-crate.rs
 structs-enums/class-poly-methods.rs
@@ -3208,6 +3210,7 @@ structs-enums/enum-vec-initializer.rs
 structs-enums/expr-if-struct.rs
 structs-enums/expr-match-struct.rs
 structs-enums/functional-struct-upd.rs
+structs-enums/generic-recursive-list-struct.rs
 structs-enums/issue-1701.rs
 structs-enums/issue-38002.rs
 structs-enums/issue-50731.rs
@@ -3249,6 +3252,7 @@ structs/destructuring-struct-with-dtor-6344.rs
 structs/field-destruction-order.rs
 structs/large-records.rs
 structs/module-qualified-struct-destructure.rs
+structs/multiple-inherent-impl-blocks.rs
 structs/mutable-unit-struct-borrow-11267.rs
 structs/newtype-struct-drop-run.rs
 structs/newtype-struct-xc-2.rs
@@ -3325,6 +3329,7 @@ threads-sendsync/issue-4448.rs
 threads-sendsync/issue-8827.rs
 threads-sendsync/issue-9396.rs
 threads-sendsync/mpsc_stress.rs
+threads-sendsync/no-double-lock-same-thread.rs
 threads-sendsync/send-is-not-static-par-for.rs
 threads-sendsync/send-resource.rs
 threads-sendsync/send-type-inference.rs
@@ -3399,6 +3404,7 @@ traits/bug-7183-generics.rs
 traits/bug-7295.rs
 traits/cache-issue-18209.rs
 traits/clone-unwind-rc-cleanup.rs
+traits/coerce-diverging-through-from.rs
 traits/coercion-generic.rs
 traits/coercion.rs
 traits/conditional-dispatch.rs
@@ -3421,6 +3427,7 @@ traits/default-method/bound.rs
 traits/default-method/macro.rs
 traits/default-method/self.rs
 traits/default-method/skip-default-method-if-normalization-fails.rs
+traits/default-method/supertrait-method-in-default-body.rs
 traits/default-method/supervtable.rs
 traits/default-method/trait-object-lifetime-bound.rs
 traits/default-method/trivial.rs
@@ -3522,10 +3529,11 @@ traits/object/auto-dedup.rs
 traits/object/dyn-iter-box-and-ref-impl-iter.rs
 traits/object/dyn-iterator-with-non-ord-item.rs
 traits/object/exclusion.rs
+traits/object/extern-c-trait-object-methods.rs
 traits/object/generics.rs
 traits/object/iterator-methods-on-boxed-trait-object.rs
 traits/object/lifetime-first.rs
-traits/object/rerun-impossible-predicates-post-analysis.rs
+traits/object/nested-trait-method-call.rs
 traits/object/trait-object-lifetime-conversion.rs
 traits/object/with-lifetime-bound.rs
 traits/objects-owned-object-borrowed-method-headerless.rs
@@ -3588,6 +3596,7 @@ try-trait/try-operator-various-contexts.rs
 try-trait/yeet-for-option.rs
 try-trait/yeet-for-result.rs
 tuple/nested-index.rs
+tuple/nested-zst-tuple-fields.rs
 tuple/one-tuple.rs
 tuple/tup.rs
 tuple/tuple-index-fat-types.rs
@@ -3597,6 +3606,7 @@ type-alias-enum-variants/type-alias-enum-variants-pass.rs
 type-alias-impl-trait/type-alias-nested-impl-trait.rs
 type-alias/static-method-type-alias-11047.rs
 type-alias/type-param.rs
+type-inference/diverging-expr-unconstrained-type-param.rs
 type-inference/dropper_has_sigdrop.rs
 type-inference/float-type-inference-unification-14382.rs
 type-inference/issue-113283-alllocator-trait-eq.rs
@@ -3611,6 +3621,7 @@ typeck/infer-struct-with-trait-object.rs
 typeck/inference-method-chain-diverging-fallback.rs
 typeck/issue-18937-1.rs
 typeck/issue-2063.rs
+typeck/method-call-on-computed-array-index.rs
 typeck/nested-generic-traits-performance.rs
 typeck/osstring-str-equality.rs
 typeck/project-cache-issue-37154.rs
@@ -3680,6 +3691,7 @@ uniform-paths/macros-nested.rs
 uniform-paths/macros.rs
 uniform-paths/same-crate.rs
 uninhabited/uninhabited-transparent-return-abi.rs
+uninhabited/uninhabited-tuple-field-layout.rs
 uninhabited/uninhabited-type-layout-computation-88150.rs
 uninhabited/uninhabited-unreachable-warning-149571.rs
 union/union-align.rs
@@ -3724,7 +3736,12 @@ unstable-feature-bound/unstable_impl_codegen.rs
 use/use.rs
 variance/variance-intersection-of-ref-and-opt-ref.rs
 variance/variance-iterators-in-libcore.rs
+view-types/hygiene.rs
+view-types/must-restrict.rs
+view-types/regression-156016.rs
+view-types/tuple-structs.rs
 where-clauses/issue-50825.rs
+where-clauses/obligation-error-propagation.rs
 where-clauses/where-clause-early-bound-lifetimes.rs
 where-clauses/where-clause-method-substituion-rpass.rs
 where-clauses/where-clause-region-outlives.rs
@@ -3737,6 +3754,7 @@ whitespace/ascii_whitespace_excludes_vertical_tab.rs
 whitespace/vertical_tab_lexer.rs
 windows-subsystem/console.rs
 windows-subsystem/windows.rs
+zero-sized/write-volatile-zst.rs
 zero-sized/zero-size-type-destructors.rs
 zero-sized/zero-sized-binary-heap-push.rs
 zero-sized/zero-sized-btreemap-insert.rs

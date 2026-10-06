@@ -29,20 +29,13 @@ for patch in patches/*.patch; do
   fi
 done
 
-# 3. psm (under rustc's `stacker`) bundles a precompiled wasm32.o using `ar`.
-#    Apple's ar can't read Wasm objects and silently makes an empty archive,
-#    which leaves `rust_psm_on_stack` undefined. Use LLVM's ar from the toolchain.
-SYSROOT=$(rustc "+$TOOLCHAIN" --print sysroot)
-HOST=$(rustc "+$TOOLCHAIN" -vV | sed -n 's/^host: //p')
-export AR_wasm32_wasip1="$SYSROOT/lib/rustlib/$HOST/bin/llvm-ar"
-
 cargo "+$TOOLCHAIN" build --release --locked
 
-# 4. Record which committed inputs this build came from (`dirty` if there were
+# 3. Record which committed inputs this build came from (`dirty` if there were
 #    uncommitted changes), so `prebuilt.sh publish` can refuse a stale binary.
 ./prebuilt.sh stamp
 
-# 5. The sysroot rust-js type-checks against.
+# 4. The sysroot rust-js type-checks against.
 ./stage-sysroot.sh
 
 echo "built: $PWD/target/wasm32-wasip1/release/rust-js.wasm"

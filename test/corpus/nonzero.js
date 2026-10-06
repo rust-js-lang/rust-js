@@ -35,9 +35,9 @@ function main() {
   console.log(
     `${arg$2.TAG === "Ok" ? `Ok(${arg$2._0})` : `Err(${$debugParseError(arg$2._0, "ParseIntError")})`} ${arg$3.TAG === "Ok" ? `Ok(${arg$3._0})` : `Err(${$debugParseError(arg$3._0, "ParseIntError")})`}`,
   );
-  const result = $nonZeroOk($tryFromInt(3, 0, 255), "Zero");
+  const result = $nonZeroOk($tryFromInt(3, 0, 255), "number would be zero for non-zero type");
   const arg$4 = result.TAG === "Ok" ? result._0 : undefined;
-  const arg$5 = $nonZeroOk($tryFromInt(0, 0, 255), "Zero");
+  const arg$5 = $nonZeroOk($tryFromInt(0, 0, 255), "number would be zero for non-zero type");
   console.log(
     `${arg$4 == null ? "None" : `Some(${arg$4})`} ${arg$5.TAG === "Ok" ? `Ok(${arg$5._0})` : `Err(${$debugParseError(arg$5._0, "TryFromIntError")})`}`,
   );

@@ -2,12 +2,13 @@
 //! what JS compares by value: numbers, strings, `char`s, `bool`s and
 //! fieldless enums.
 
+use super::fn_def;
 use super::recognition::{Std, StdItem};
 use super::representation::{Num, is_fieldless_enum};
 use super::{FnCx, R};
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use crate::runtime::Helper;
-use rustc_hir::LangItem;
+use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -281,7 +282,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (map, key, checked) = match op {
             Some(Std::Map(op)) => {
                 let (map, key) = self.entry_parts(args[0], out)?;
-                let &ty::FnDef(_, generic_args) = self.thir[self.strip(fun)].ty.kind() else {
+                let Some((_, generic_args)) = fn_def(self.thir[self.strip(fun)].ty) else {
                     unreachable!("an entry method")
                 };
                 let checked = self.entry_value(op, &args, generic_args, (map.clone(), key.clone()), span, out)?;

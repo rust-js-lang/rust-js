@@ -158,7 +158,7 @@ test("a crate's own #![feature] is refused, as on a stable release", () => {
 });
 
 // rust-js's syntax is stable Rust's (ADR 0110): what it turns on for itself
-// isn't a program's to use. Each of these is refused as stable 1.98.1
+// isn't a program's to use. Each of these is refused as stable 1.99.0
 // refuses it, which its rustc confirms; `rust_js`'s attributes are rust-js's.
 test("a program can use no unstable feature rust-js's syntax once used", () => {
   const dir = fixture("stable-syntax");

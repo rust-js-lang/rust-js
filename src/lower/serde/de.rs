@@ -27,7 +27,7 @@ use crate::lower::recognition::{StdItem, std_item};
 use crate::lower::representation::Num;
 use crate::lower::{FnCx, R, Shape};
 use crate::runtime::Helper;
-use rustc_hir::LangItem;
+use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::CtorKind;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;

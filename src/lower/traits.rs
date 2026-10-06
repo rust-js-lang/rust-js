@@ -12,8 +12,9 @@ use super::representation::{Num, const_js, eval_const};
 use super::{FnCx, R, lower_first};
 use crate::js::{self, Expr, Op, Prop, StmtKind};
 use crate::runtime::Helper;
+use rustc_hir::Mutability;
+use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
-use rustc_hir::{LangItem, Mutability};
 use rustc_middle::mir::{BinOp, UnOp};
 use rustc_middle::traits::{BuiltinImplSource, ImplSource};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeFoldable, TypeVisitableExt};
@@ -132,7 +133,7 @@ pub(super) fn bounds<'tcx>(
     {
         result.push(ty::TraitRef::identity(tcx, trait_id));
     }
-    for (clause, _) in tcx.predicates_of(id).instantiate_identity(tcx) {
+    for (clause, _) in tcx.clauses_of(id).instantiate_identity(tcx) {
         let clause = clause.skip_normalization();
         if let Some(tr) = bound_of(tcx, foreign, clause, id)
             && !result.contains(&tr)
@@ -211,8 +212,8 @@ pub(super) fn own_bounds<'tcx>(
     id: DefId,
 ) -> Vec<ty::TraitRef<'tcx>> {
     let own: Vec<_> = tcx
-        .predicates_of(id)
-        .predicates
+        .clauses_of(id)
+        .clauses
         .iter()
         .filter_map(|&(clause, _)| bound_of(tcx, foreign, clause, id))
         .collect();
@@ -334,12 +335,12 @@ pub(super) fn supertraits<'tcx>(
     trait_id: DefId,
     args: ty::GenericArgsRef<'tcx>,
 ) -> Vec<(String, ty::TraitRef<'tcx>, Span)> {
-    let predicates = tcx.explicit_super_predicates_of(trait_id);
-    let found: Vec<_> = predicates
+    let clauses = tcx.explicit_super_clauses_of(trait_id);
+    let found: Vec<_> = clauses
         .iter_identity_copied()
         .map(|item| item.skip_normalization())
         .zip(
-            predicates
+            clauses
                 .iter_instantiated_copied(tcx, args)
                 .map(|item| item.skip_normalization()),
         )
@@ -1075,7 +1076,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let from = self.tcx.associated_item_def_ids(from)[0];
             let from_args = self.tcx.mk_args(&[target.into(), ty.into()]);
             let value = if let Some(known) = self.recognition().classify(into, tr.args)
-                && let Some(f) = self.std_fn_value(known, Ty::new_fn_def(self.tcx, into, tr.args), span)?
+                && let Some(f) =
+                    self.std_fn_value(known, Ty::new_fn_def(self.tcx, into, ty::Binder::dummy(tr.args)), span)?
             {
                 f
             } else if let Some(instance) = self.resolve_instance(from, from_args)?
@@ -2249,7 +2251,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
             && self
                 .tcx
-                .explicit_super_predicates_of(id)
+                .explicit_super_clauses_of(id)
                 .iter_identity_copied()
                 .map(|item| item.skip_normalization())
                 .all(|(clause, _)| match clause.kind().skip_binder() {

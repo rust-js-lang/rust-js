@@ -107,8 +107,8 @@ struct RustJs {
 /// writes `#[rust_js::link_name = ".."]` as stable Rust (ADR 0110).
 fn register_tool(config: &mut rustc_interface::interface::Config) {
     config.override_queries = Some(|_, providers| {
-        RUSTC_TOOLS.get_or_init(|| providers.queries.registered_tools);
-        providers.queries.registered_tools = |tcx, ()| {
+        RUSTC_TOOLS.get_or_init(|| providers.queries.registered_attr_tools);
+        providers.queries.registered_attr_tools = |tcx, ()| {
             let mut tools = RUSTC_TOOLS.get().expect("rustc's tools, kept first")(tcx, ());
             tools.insert(Ident::with_dummy_span(Symbol::intern("rust_js")));
             tools

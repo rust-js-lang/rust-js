@@ -3,6 +3,7 @@
 //! value (ADR 0125).
 
 use super::bindings;
+use super::fn_def;
 use super::recognition::{StdItem, is_std_def, std_item};
 use super::representation::ordering_value;
 use super::{Dest, FnCx, R, Shape, assembled};
@@ -218,9 +219,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return None;
         };
         let default = std_item(self.tcx, StdItem::Default);
-        let ty::FnDef(id, _) = *self.thir[*fun].ty.kind() else {
-            return None;
-        };
+        let (id, _) = fn_def(self.thir[*fun].ty)?;
         let ty::Adt(adt, _) = ty.kind() else { return None };
         if !args.is_empty()
             || self.tcx.trait_of_assoc(id) != Some(default)
