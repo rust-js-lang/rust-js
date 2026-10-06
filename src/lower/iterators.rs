@@ -720,11 +720,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// An iterator's method (ADR 0036). The iterator is a JS array: a range
     /// becomes one, `$range(a, b)`, and the rest already are.
+    /// `find(f)` of what its `Option` boxes: `items.find(f)` can't tell a
+    /// found `None` from none found. Over an array, `$someAt` of its index;
+    /// over a lazy iterator, which has no index, `$nextSome` of its lazy
+    /// `filter`, which stops at the first found as `find` does.
+    fn find_boxed(&mut self, items: Expr, test: Expr, lazy: bool, out: &mut Vec<Stmt>) -> Expr {
+        if lazy {
+            self.runtime.insert(Helper::NextSome);
+            let found = Expr::call(Expr::member(items, "filter"), vec![test]);
+            return Expr::call(Expr::var("$nextSome"), vec![found]);
+        }
+        let items = if items.has_effects() {
+            self.spill("items", items, out)
+        } else {
+            items
+        };
+        let index = Expr::call(Expr::member(items.clone(), "findIndex"), vec![test]);
+        self.some_at(items, index)
+    }
+
+    /// `boxed`: the call's `Option` boxes a `Some` that looks like `None`
+    /// (ADR 0051), so a search gives its own.
     pub(super) fn iterator_call(
         &mut self,
         known: Std,
         args: &[ExprId],
         generic_args: ty::GenericArgsRef<'tcx>,
+        boxed: bool,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
@@ -866,17 +888,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let method = |items: Expr, name: &str, list: Vec<Expr>| Expr::call(Expr::member(items, name), list);
         let (a, b) = (Expr::var("a"), Expr::var("b"));
         Ok(match known {
-            Std::ArrayMethod(name) => match discarded {
-                Some(item) => {
-                    let test = next();
-                    let keep = self.dropping_discarded(test, item, false, span, out)?;
-                    method(items, name, vec![keep])
+            Std::ArrayMethod(name) => {
+                let (items, test) = match discarded {
+                    Some(item) => {
+                        let test = next();
+                        (items, self.dropping_discarded(test, item, false, span, out)?)
+                    }
+                    None => match indexed_callback(&items, name, next()) {
+                        Ok((source, f)) => (source, f),
+                        Err(f) => (items, f),
+                    },
+                };
+                if boxed && name == "find" {
+                    return Ok(self.find_boxed(items, test, lazy, out));
                 }
-                None => match indexed_callback(&items, name, next()) {
-                    Ok((source, f)) => method(source, name, vec![f]),
-                    Err(f) => method(items, name, vec![f]),
-                },
-            },
+                method(items, name, vec![test])
+            }
             Std::Enumerate => {
                 let pair = Expr::array(vec![Expr::var("i"), Expr::var("x")]);
                 let js_span = self.js_span(span);

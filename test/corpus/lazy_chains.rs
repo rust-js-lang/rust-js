@@ -25,6 +25,9 @@ fn main() {
     println!("{}", v.iter().map(|&x| noisy("any", x)).any(|x| x == 2));
     println!("{:?}", v.iter().map(|&x| noisy("position", x)).position(|x| x == 3));
     println!("{:?}", v.iter().find_map(|&x| if noisy("find_map", x) > 1 { Some(x * 10) } else { None }));
+    // A found `None` is `Some(None)`, from a lazy chain as from an array.
+    println!("{:?}", [None, Some(1)].into_iter().map(|x| x.map(|x| noisy("find none", x))).find(|x| x.is_none()));
+    println!("{:?}", [Some(1), None].into_iter().map(|x| x.map(|x| noisy("find some", x))).find(|x| x.is_none()));
 
     for x in v.iter().map(|&x| noisy("loop", x)).take_while(|&x| x < 3) {
         println!("body {}", x);

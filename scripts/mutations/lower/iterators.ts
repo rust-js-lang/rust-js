@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "boxed-find-unboxed",
+    breaks: "`find` of an `Option` that boxes its `Some` is `items.find(f)`, which gives a found `None` as none found",
+    file: "src/lower/iterators.rs",
+    find: "                if boxed && name == \"find\" {",
+    replace: "                if false && boxed && name == \"find\" {",
+    tests: ["test/corpus.test.ts", "-t", "nested_options"],
+  },
+  {
+    name: "lazy-find-indexed",
+    breaks: "a boxed `find` over a lazy iterator calls its `findIndex`, which a JS iterator doesn't have",
+    file: "src/lower/iterators.rs",
+    find: "        if lazy {\n            self.runtime.insert(Helper::NextSome);",
+    replace: "        if false && lazy {\n            self.runtime.insert(Helper::NextSome);",
+    tests: ["test/corpus.test.ts", "-t", "lazy_chains"],
+  },
+  {
     name: "range-search-unborrowed",
     breaks: "a search on a range, `(0..n).all(f)`, is called on the range's `{ start, end }`, not its items",
     file: "src/lower/iterators.rs",

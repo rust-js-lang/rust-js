@@ -680,22 +680,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.expr(inner[1], out);
         }
         if known.takes_iterator() || matches!(known, Std::Sort | Std::SortByKey) {
-            let value = self.iterator_call(known, args, generic_args, span, out)?;
-            // `items.find(f)` can't tell a found `None` from none found.
-            if boxed
-                && let js::ExprKind::Call(callee, found) = &value.kind
-                && let js::ExprKind::Member(items, name) = &callee.kind
-                && name == "find"
-            {
-                let items = if items.has_effects() {
-                    self.spill("items", (**items).clone(), out)
-                } else {
-                    (**items).clone()
-                };
-                let index = Expr::call(Expr::member(items.clone(), "findIndex"), found.clone());
-                return Ok(self.some_at(items, index));
-            }
-            return Ok(value);
+            return self.iterator_call(known, args, generic_args, boxed, span, out);
         }
         if let Std::StringEdit(edit) = known {
             return self.string_edit(edit, args, span, out);

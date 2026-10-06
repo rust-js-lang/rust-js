@@ -121,6 +121,17 @@ function main() {
       break;
     }
   }
+  const arg$10 = $someAt(
+    table,
+    table.findIndex((x) => x == null),
+  );
+  const arg$11 = $someAt(
+    table,
+    table.findIndex((x) => x === 2),
+  );
+  console.log(
+    `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(arg$10)} ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(arg$11)}`,
+  );
 }
 
 export function entry() {
