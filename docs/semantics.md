@@ -197,7 +197,7 @@ a reference; `LowerHex::fmt(&n, f)` of a number.
 |---|---|
 | struct | object, `{ x, y }` ([0020](decisions/0020-structs-and-tuples.md)) |
 | tuple, tuple struct | array, `[a, b]` |
-| unit struct, `()` | `undefined` |
+| unit struct, `()` | `undefined`; a unit struct named `#[rust_js::name = "click"]`, that string ([0223](decisions/0223-webapi-event-and-tag-maps.md)) |
 | fieldless enum variant | its name, `"Green"` ([0013](decisions/0013-fieldless-enums.md)) |
 | enum variant with fields | `{ TAG: "Circle", r }`, `{ TAG: "Some", _0: x }` ([0033](decisions/0033-enums-with-fields.md)) |
 | `Result` | `{ TAG: "Ok", _0: v }`, `{ TAG: "Err", _0: e }` ([0035](decisions/0035-results-and-throwing-js.md)) |

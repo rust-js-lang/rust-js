@@ -3,6 +3,8 @@
 // needs no server; any URL the page may fetch works the same way.
 
 use js::spawn;
+use webapi::events::Click;
+use webapi::tags::{Button, Output};
 use webapi::{Element, document, element, event_target, node, response, window};
 
 const URL: &str = "data:text/plain,Hello from a fetch!";
@@ -17,10 +19,10 @@ async fn load(url: &str, output: &'static Element) {
 
 pub fn main() {
     let app = document::get_element_by_id(document, "app").expect("the page has an #app");
-    let button = document::create_element(document, "button");
+    let button = document::create_element(document, Button);
     node::set_text_content(button, "Fetch");
-    let output = document::create_element(document, "output");
-    event_target::add_event_listener(button, "click", Box::new(move |_| {
+    let output = document::create_element(document, Output);
+    event_target::add_event_listener(button, Click, Box::new(move |_| {
         spawn(Box::new(load(URL, output)));
     }));
     element::append(app, button.into());

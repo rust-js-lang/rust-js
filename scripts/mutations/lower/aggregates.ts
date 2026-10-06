@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "named-unit-struct-undefined",
+    breaks: "a unit struct named `#[rust_js::name]`, `webapi`'s `Click`, is `undefined`, not its string",
+    file: "src/lower/aggregates.rs",
+    find: "            return Ok(bindings::unit_name(self.tcx, adt.adt_def.did()).map_or_else(Expr::undefined, Expr::str));",
+    replace: "            return Ok(Expr::undefined());",
+    tests: ["test/compiler.test.ts", "-t", "named unit struct"],
+  },
+  {
     name: "failing-user-writer-allowed",
     breaks: "a `fmt::Write` of the crate's that fails is compiled, given each `write!`'s text whole where Rust fails at a piece",
     file: "src/lower/aggregates.rs",

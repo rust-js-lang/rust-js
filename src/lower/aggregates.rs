@@ -79,9 +79,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if adt.adt_def.is_union() {
             return Err(self.unsupported(span, "unions"));
         }
-        // `struct Marker;` holds nothing, like `()`.
+        // `struct Marker;` holds nothing, like `()`, or is its name.
         if variant.ctor_kind() == Some(CtorKind::Const) {
-            return Ok(Expr::undefined());
+            return Ok(bindings::unit_name(self.tcx, adt.adt_def.did()).map_or_else(Expr::undefined, Expr::str));
         }
         // `P { x, ..base }`: the fields not written come from `base`.
         // Keep the saved fields local: lowering the base can itself lower

@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "named-unit-const-undefined",
+    breaks: "a constant of a unit struct named `#[rust_js::name]` is `undefined`, not its string",
+    file: "src/lower/representation.rs",
+    find: "                Some(CtorKind::Const) => Some(unit_name(tcx, adt.did()).map_or_else(Expr::undefined, Expr::str)),",
+    replace: "                Some(CtorKind::Const) => Some(Expr::undefined()),",
+    tests: ["test/compiler.test.ts", "-t", "named unit struct"],
+  },
+  {
     name: "i32-wrap",
     breaks: "`i32` arithmetic doesn't wrap at 32 bits",
     file: "src/lower/representation.rs",

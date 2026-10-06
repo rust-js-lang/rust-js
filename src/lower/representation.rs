@@ -1,6 +1,6 @@
 //! Rust value representations, copying, and supported-type validation.
 
-use super::bindings::field_key;
+use super::bindings::{field_key, unit_name};
 use super::recognition::{StdItem, is_std_def};
 use super::{FnCx, R, Shape};
 use crate::js;
@@ -718,7 +718,7 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
             let variant = adt.non_enum_variant();
             let values = all(&children()?)?;
             match variant.ctor_kind() {
-                Some(CtorKind::Const) => Some(Expr::undefined()),
+                Some(CtorKind::Const) => Some(unit_name(tcx, adt.did()).map_or_else(Expr::undefined, Expr::str)),
                 Some(CtorKind::Fn) => Some(Expr::array(values)),
                 None => Some(Expr::object(
                     variant

@@ -7,12 +7,16 @@ so it's never compiled to JS: a program calls what it declares, and the
 calls become plain JS. See [ADR 0024](../docs/decisions/0024-web-crate.md).
 
 ```rust
-use webapi::{document, element, event_target, node};
+use webapi::events::Click;
+use webapi::tags::Button;
+use webapi::{document, element, event_target, mouse_event, node};
 
-let b = document::create_element(document, "button");   // document.createElement("button")
+let b = document::create_element(document, Button);     // document.createElement("button"), a HtmlButtonElement
 node::set_text_content(b, "+");                          // b.textContent = "+"
-event_target::add_event_listener(b, "click", Box::new(move |_| { .. }));
-element::append(app, b);                                  // app.append(b)
+event_target::add_event_listener(b, Click, Box::new(move |e| {
+    mouse_event::client_x(e);                            // e is the PointerEvent a button's click is
+}));
+element::append(app, b.into());                          // app.append(b)
 ```
 
 - Each interface is a type (`Element`, `HtmlInputElement`) and a module of
@@ -21,8 +25,14 @@ element::append(app, b);                                  // app.append(b)
   `html_input_element::value(i)`, `html_input_element::set_value(i, "x")`.
 - Inheritance is `Deref`: an `&HtmlButtonElement` goes wherever an
   `&Element` or `&Node` is expected.
+- Each event's name and each tag is a type whose value is its string
+  ([ADR 0223](../docs/decisions/0223-webapi-event-and-tag-maps.md)), from
+  `@webref/events` and `@webref/elements`: a listener gets the event its
+  target and name give it, and `create_element` the element its tag is. A
+  name they don't know is `add_event_listener_named`'s, or
+  `create_element_named`'s.
 - `unchecked_from` is a cast:
-  `html_input_element::unchecked_from(document::create_element(document, "input"))`.
+  `html_input_element::unchecked_from(document::create_element_named(document, "input"))`.
 - A result that may be `null` is an `Option`:
   `document::get_element_by_id(document, "app").expect("the page has an #app")`.
 - A promise is a `Promise<T>`, the js crate's, to `.await`: `window::fetch(window, url.into()).await`

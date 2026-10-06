@@ -5,6 +5,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use webapi::events::Keydown;
 use webapi::{
     Element, document, element, event_target, html_element, html_input_element, keyboard_event, node,
     css_style_declaration,
@@ -38,8 +39,10 @@ struct View {
     left: &'static Element,
 }
 
+/// An element by its tag's name: `create_element(document, Button)` is one by
+/// its tag's type, `HtmlButtonElement` (ADR 0223).
 fn create(tag: &str) -> &'static Element {
-    document::create_element(document, tag)
+    document::create_element_named(document, tag)
 }
 
 fn text(tag: &str, s: &str) -> &'static Element {
@@ -51,7 +54,7 @@ fn text(tag: &str, s: &str) -> &'static Element {
 /// When `event` fires on `target`, apply `change` to the state and draw it again.
 fn on(target: &'static Element, event: &str, state: &Shared, view: View, change: Box<dyn Fn(&mut State)>) {
     let state = state.clone();
-    event_target::add_event_listener(target, event, Box::new(move |_| {
+    event_target::add_event_listener_named(target, event, Box::new(move |_| {
         change(&mut state.borrow_mut());
         render(&state, view);
     }));
@@ -127,10 +130,10 @@ pub fn main() {
     let input = html_input_element::unchecked_from(create("input"));
     html_input_element::set_placeholder(input, "What needs to be done?");
     let adding = state.clone();
-    event_target::add_event_listener(input, "keydown", Box::new(move |e| {
+    event_target::add_event_listener(input, Keydown, Box::new(move |e| {
         let title = html_input_element::value(input);
         let title = title.trim();
-        if keyboard_event::key(keyboard_event::unchecked_from(e)) == "Enter" && !title.is_empty() {
+        if keyboard_event::key(e) == "Enter" && !title.is_empty() {
             add(&mut adding.borrow_mut(), title);
             html_input_element::set_value(input, "");
             render(&adding, view);

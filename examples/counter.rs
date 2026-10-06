@@ -5,21 +5,25 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
-// Each DOM interface is a type and a module of its members:
-// `document::create_element(document, "p")` is `document.createElement("p")`.
-use webapi::{Element, document, element, event_target, node};
+// Each DOM interface is a type and a module of its members, and each tag
+// and event's name a type whose value is its string (ADR 0223):
+// `document::create_element(document, Button)` is `document.createElement("button")`,
+// a `HtmlButtonElement`.
+use webapi::events::Click;
+use webapi::tags::{Button, Div, Output};
+use webapi::{Element, HtmlButtonElement, HtmlOutputElement, document, element, event_target, node};
 
-fn button(label: &str) -> &'static Element {
-    let b = document::create_element(document, "button");
+fn button(label: &str) -> &'static HtmlButtonElement {
+    let b = document::create_element(document, Button);
     node::set_text_content(b, label);
     b
 }
 
 /// A button that adds `by` to the shared count, and shows the new count.
-fn stepper(label: &str, by: i32, count: &Rc<Cell<i32>>, output: &'static Element) -> &'static Element {
+fn stepper(label: &str, by: i32, count: &Rc<Cell<i32>>, output: &'static HtmlOutputElement) -> &'static HtmlButtonElement {
     let b = button(label);
     let count = count.clone();
-    event_target::add_event_listener(b, "click", Box::new(move |_| {
+    event_target::add_event_listener(b, Click, Box::new(move |_| {
         count.set(count.get() + by);
         node::set_text_content(output, &count.get().to_string());
     }));
@@ -31,7 +35,7 @@ pub fn main() {
     // Both buttons change one count, so they share it: `Rc` to share, `Cell`
     // to change it through a shared reference.
     let count = Rc::new(Cell::new(0));
-    let output = document::create_element(document, "output");
+    let output = document::create_element(document, Output);
     node::set_text_content(output, "0");
     // An `Element` is a `Node` (`Deref`), so it goes where `append` wants a `Node`.
     element::append(app, stepper("-", -1, &count, output).into());
@@ -50,7 +54,7 @@ mod tests {
     fn page() -> &'static Element {
         let body = document::body(document).unwrap();
         node::set_text_content(body, "");
-        let app = document::create_element(document, "div");
+        let app = document::create_element(document, Div);
         element::set_id(app, "app");
         element::append(body, app.into());
         app
