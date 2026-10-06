@@ -19,9 +19,10 @@ on:
 permissions:
   contents: read
 
-# A new push to a branch is what's checked: the run of the last one stops.
+# One run at a time, of any branch: a new one cancels the one running.
+# rustc-tests.yml, started by hand, is one of them too.
 concurrency:
-  group: check-${{ github.ref }}
+  group: ci
   cancel-in-progress: true
 
 jobs:
