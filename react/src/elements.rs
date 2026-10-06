@@ -3835,7 +3835,7 @@ pub mod html {
         pub safe fn desc() -> Element;
         /// `<details>`
         #[link_name = "<details>"]
-        pub safe fn details() -> Element<webapi::HtmlElement>;
+        pub safe fn details() -> Element<webapi::HtmlDetailsElement>;
         /// `<dfn>`
         #[link_name = "<dfn>"]
         pub safe fn dfn() -> Element<webapi::HtmlElement>;

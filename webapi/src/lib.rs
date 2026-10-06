@@ -4409,6 +4409,46 @@ pub mod html_canvas_element {
     }
 }
 
+/// [`HTMLDetailsElement`](https://developer.mozilla.org/docs/Web/API/HTMLDetailsElement)
+#[cfg_attr(rust_js, rust_js::name = "HTMLDetailsElement")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLDetailsElement")]
+pub struct HtmlDetailsElement(PhantomData<JsObject>);
+
+impl Deref for HtmlDetailsElement {
+    type Target = HtmlElement;
+
+    fn deref(&self) -> &HtmlElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HtmlElement) }
+    }
+}
+
+pub mod html_details_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLDetailsElement/name)
+        #[link_name = "get name"]
+        pub safe fn name(this: &HtmlDetailsElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLDetailsElement/name)
+        #[link_name = "set name"]
+        pub safe fn set_name(this: &HtmlDetailsElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLDetailsElement/open)
+        #[link_name = "get open"]
+        pub safe fn open(this: &HtmlDetailsElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLDetailsElement/open)
+        #[link_name = "set open"]
+        pub safe fn set_open(this: &HtmlDetailsElement, value: bool);
+
+        /// Treats `this` as `HtmlDetailsElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HtmlDetailsElement;
+    }
+}
+
 /// [`Window`](https://developer.mozilla.org/docs/Web/API/Window)
 #[cfg_attr(rust_js, rust_js::types = "Window")]
 pub struct Window(PhantomData<JsObject>);
@@ -7849,6 +7889,12 @@ impl<'a> From<&'a HtmlCanvasElement> for GeometryNode<'a> {
     }
 }
 
+impl<'a> From<&'a HtmlDetailsElement> for GeometryNode<'a> {
+    fn from(value: &'a HtmlDetailsElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
 impl<'a> From<&'a Document> for GeometryNode<'a> {
     fn from(value: &'a Document) -> Self {
         GeometryNode::Document(value)
@@ -8002,6 +8048,12 @@ impl<'a> From<&'a HtmlIFrameElement> for HtmlElementOrNumber<'a> {
 
 impl<'a> From<&'a HtmlCanvasElement> for HtmlElementOrNumber<'a> {
     fn from(value: &'a HtmlCanvasElement) -> Self {
+        HtmlElementOrNumber::HtmlElement(value)
+    }
+}
+
+impl<'a> From<&'a HtmlDetailsElement> for HtmlElementOrNumber<'a> {
+    fn from(value: &'a HtmlDetailsElement) -> Self {
         HtmlElementOrNumber::HtmlElement(value)
     }
 }
@@ -8233,6 +8285,12 @@ impl<'a> From<&'a HtmlIFrameElement> for NodeOrStr<'a> {
 
 impl<'a> From<&'a HtmlCanvasElement> for NodeOrStr<'a> {
     fn from(value: &'a HtmlCanvasElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HtmlDetailsElement> for NodeOrStr<'a> {
+    fn from(value: &'a HtmlDetailsElement) -> Self {
         NodeOrStr::Node(value)
     }
 }
@@ -8895,6 +8953,10 @@ pub mod events {
     /// `"textInput"`
     #[cfg_attr(rust_js, rust_js::name = "textInput")]
     pub struct TextInput;
+
+    /// `"toggle"`
+    #[cfg_attr(rust_js, rust_js::name = "toggle")]
+    pub struct Toggle;
 
     /// `"touchcancel"`
     #[cfg_attr(rust_js, rust_js::name = "touchcancel")]
@@ -12294,6 +12356,101 @@ impl Listen<events::Webglcontextlost> for HtmlCanvasElement { type Event = Event
 impl Listen<events::Webglcontextrestored> for HtmlCanvasElement { type Event = Event; }
 impl Listen<events::Wheel> for HtmlCanvasElement { type Event = MouseEvent; }
 
+impl Listen<events::DOMActivate> for HtmlDetailsElement { type Event = UiEvent; }
+impl Listen<events::DOMFocusIn> for HtmlDetailsElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HtmlDetailsElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Animationend> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Animationstart> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Auxclick> for HtmlDetailsElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HtmlDetailsElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HtmlDetailsElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Blur> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Cancel> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Change> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Click> for HtmlDetailsElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Compositionend> for HtmlDetailsElement { type Event = UiEvent; }
+impl Listen<events::Compositionstart> for HtmlDetailsElement { type Event = UiEvent; }
+impl Listen<events::Compositionupdate> for HtmlDetailsElement { type Event = UiEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HtmlDetailsElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Cut> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Dblclick> for HtmlDetailsElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HtmlDetailsElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HtmlDetailsElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HtmlDetailsElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HtmlDetailsElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HtmlDetailsElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HtmlDetailsElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HtmlDetailsElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Error> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Focus> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Focusin> for HtmlDetailsElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HtmlDetailsElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HtmlDetailsElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HtmlDetailsElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Keydown> for HtmlDetailsElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HtmlDetailsElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HtmlDetailsElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Load> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HtmlDetailsElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HtmlDetailsElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HtmlDetailsElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HtmlDetailsElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HtmlDetailsElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HtmlDetailsElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HtmlDetailsElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HtmlDetailsElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HtmlDetailsElement { type Event = UiEvent; }
+impl Listen<events::Navnotarget> for HtmlDetailsElement { type Event = UiEvent; }
+impl Listen<events::Paste> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HtmlDetailsElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HtmlDetailsElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HtmlDetailsElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HtmlDetailsElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HtmlDetailsElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HtmlDetailsElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HtmlDetailsElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HtmlDetailsElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HtmlDetailsElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Reset> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Scroll> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Scrollend> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Select> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Selectstart> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Slotchange> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Submit> for HtmlDetailsElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HtmlDetailsElement { type Event = UiEvent; }
+impl Listen<events::Toggle> for HtmlDetailsElement { type Event = ToggleEvent; }
+impl Listen<events::Touchcancel> for HtmlDetailsElement { type Event = UiEvent; }
+impl Listen<events::Touchend> for HtmlDetailsElement { type Event = UiEvent; }
+impl Listen<events::Touchmove> for HtmlDetailsElement { type Event = UiEvent; }
+impl Listen<events::Touchstart> for HtmlDetailsElement { type Event = UiEvent; }
+impl Listen<events::Transitioncancel> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Transitionend> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Unload> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HtmlDetailsElement { type Event = Event; }
+impl Listen<events::Wheel> for HtmlDetailsElement { type Event = MouseEvent; }
+
 impl Listen<events::DOMActivate> for Window { type Event = UiEvent; }
 impl Listen<events::DOMContentLoaded> for Window { type Event = Event; }
 impl Listen<events::DOMFocusIn> for Window { type Event = FocusEvent; }
@@ -12446,7 +12603,7 @@ impl Tag for tags::Data { type Element = HtmlElement; }
 impl Tag for tags::Datalist { type Element = HtmlElement; }
 impl Tag for tags::Dd { type Element = HtmlElement; }
 impl Tag for tags::Del { type Element = HtmlElement; }
-impl Tag for tags::Details { type Element = HtmlElement; }
+impl Tag for tags::Details { type Element = HtmlDetailsElement; }
 impl Tag for tags::Dfn { type Element = HtmlElement; }
 impl Tag for tags::Dialog { type Element = HtmlElement; }
 impl Tag for tags::Div { type Element = HtmlDivElement; }
@@ -12691,6 +12848,11 @@ unsafe impl IsA<HtmlElement> for HtmlCanvasElement {}
 unsafe impl IsA<Element> for HtmlCanvasElement {}
 unsafe impl IsA<Node> for HtmlCanvasElement {}
 unsafe impl IsA<EventTarget> for HtmlCanvasElement {}
+unsafe impl IsA<HtmlDetailsElement> for HtmlDetailsElement {}
+unsafe impl IsA<HtmlElement> for HtmlDetailsElement {}
+unsafe impl IsA<Element> for HtmlDetailsElement {}
+unsafe impl IsA<Node> for HtmlDetailsElement {}
+unsafe impl IsA<EventTarget> for HtmlDetailsElement {}
 unsafe impl IsA<Window> for Window {}
 unsafe impl IsA<EventTarget> for Window {}
 unsafe impl IsA<Location> for Location {}
@@ -12791,6 +12953,7 @@ unsafe impl Defined for HtmlTableRowElement {}
 unsafe impl Defined for HtmlTableCellElement {}
 unsafe impl Defined for HtmlIFrameElement {}
 unsafe impl Defined for HtmlCanvasElement {}
+unsafe impl Defined for HtmlDetailsElement {}
 unsafe impl Defined for Window {}
 unsafe impl Defined for Location {}
 unsafe impl Defined for History {}
