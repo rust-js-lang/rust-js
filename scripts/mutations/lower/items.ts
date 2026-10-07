@@ -28,10 +28,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "size-of-value-unknown",
-    breaks: "`size_of::<u16>` as a value is refused",
+    breaks: "`size_of::<u16>` as a value, and `size_of::<T>` of a type parameter, is refused, where it's a call's arrow",
     file: "src/lower/items.rs",
-    find: "            Std::SizeOf | Std::AlignOf => {\n                let bytes = self.layout_bytes(known, args.type_at(0), span)?;",
-    replace: "            Std::SizeOf | Std::AlignOf if false => {\n                let bytes = self.layout_bytes(known, args.type_at(0), span)?;",
+    find: "        match known {\n            Std::Drop | Std::Forget => {",
+    replace: "        match known {\n            Std::SizeOf | Std::AlignOf => return Err(self.unsupported(span, \"`size_of` as a value\")),\n            Std::Drop | Std::Forget => {",
     tests: ["test/corpus.test.ts","-t","expression_values"],
   },
   {

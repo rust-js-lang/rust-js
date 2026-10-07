@@ -329,3 +329,11 @@ jobs:
         run: |
           set -f
           bun scripts/mutations.ts $ARGS --shard=${{ matrix.shard }}/${{ inputs.mutation_shards }}
+      # What each mutation's tests said, where one wasn't caught: an
+      # inconclusive one's log is the only account of why.
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: mutation-logs-${{ matrix.shard }}
+          path: target/mutants/logs
+          if-no-files-found: ignore

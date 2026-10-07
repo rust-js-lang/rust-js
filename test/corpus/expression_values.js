@@ -30,6 +30,12 @@ function give(f, loud) {
   console.log("given");
 }
 
+function sizes(TSize, TAlign) {
+  const size = () => TSize;
+  const align = () => TAlign;
+  return [size(), align()];
+}
+
 function main() {
   const maybe = 3;
   console.log(`${twice(maybe != null ? maybe : 0)}`);
@@ -76,6 +82,9 @@ function main() {
   );
   give((value) => {}, [3]);
   console.log(`${Marker.is_marker(Marker.new())}`);
+  const arg = sizes(4, 4);
+  const arg$1 = sizes(4, 2);
+  console.log(`(${arg[0]}, ${arg[1]}) (${arg$1[0]}, ${arg$1[1]})`);
 }
 
 export function entry() {

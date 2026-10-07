@@ -212,16 +212,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         };
         let js_span = self.js_span(span);
-        // `size_of::<u16>`: `() => 2`. `drop`: what dropping its value runs,
-        // and `forget`: nothing (ADR 0098).
+        // `drop`: what dropping its value runs, and `forget`: nothing (ADR
+        // 0098). `size_of::<T>` is a call's arrow, `() => 2`, or of a type
+        // parameter, what its caller gives, `() => TSize` (ADR 0145).
         match known {
-            Std::SizeOf | Std::AlignOf => {
-                let bytes = self.layout_bytes(known, args.type_at(0), span)?;
-                return Ok(Some(Expr::arrow(
-                    Vec::new(),
-                    vec![StmtKind::Return(Some(Expr::int(bytes))).at(js_span)],
-                )));
-            }
             Std::Drop | Std::Forget => {
                 let mut body = Vec::new();
                 if known == Std::Drop {

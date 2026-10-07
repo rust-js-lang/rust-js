@@ -44,6 +44,9 @@ describe(1n, 8, "u64");
   drop function.
 - **A caller's concrete type answers it,** as rustc computes it for
   wasm32; a caller's own type parameter passes on what it was given.
+- **`size_of::<T>` as a value is a call's arrow**, `let size =
+  size_of::<T>` `const size = () => TSize`, and of a concrete type, `() =>
+  2`. (Amended: a value of it was its own case, of a concrete type only.)
 - **Still errors:**
   - through a trait's dictionary, a trait method's or an impl's, whose
     callers can't see what it asks, and a `Drop` impl's;
