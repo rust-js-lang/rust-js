@@ -70,7 +70,17 @@ cloneElement(element, { isLink: true })
 - **What an element holds is a `js::Unknown`** (ADR 0225), its `type` and
   `props`, as @types/react's `ReactElement` has them `any`: a component's
   own properties, react.dev's `mdxName`, and a child's props are the
-  site's, read with `js::get` or a binding of its own.
+  site's, read with `js::get` or a binding of its own. Its props are of a
+  type, `ReactElement<P = Unknown>`, as @types/react's `ReactElement<P =
+  unknown>`: a child's, as a component's,
+  `ReactElement::<ItemProps>::unchecked_from(e).props().title`, which is
+  `child.props.title`, unchecked, as `isValidElement<P>` is; and
+  `clone_element` keeps them. (Amended: they were an `Unknown` only.)
+- **A `bigint` and a promise of a node are nodes too**, from React 19, as
+  its `ReactNode` has them: an `i64`, `u64`, `i128` or `u128`, rust-js's
+  `BigInt`s (ADR 0086), shown as their digits, and a `js::Promise<T>` of a
+  node, which suspends until it settles. Gated `#[cfg(react = "19.0")]`
+  (ADR 0043). (Amended.)
 - **`clone_element(element, props)` takes a struct of the props it sets**,
   as `cloneElement`'s object, and makes a `ReactElement`, as @types/react
   types it: a child as any other, `Child::Element(clone_element(..))`, as
