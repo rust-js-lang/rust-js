@@ -234,8 +234,8 @@ export const mutations: Mutation[] = [
     name: "regex-literal-unwritten",
     breaks: "`reg_exp::new(\"%s\", \"g\")` is `new RegExp(\"%s\", \"g\")`, not the literal JS writes, `/%s/g`",
     file: "src/lower/calls.rs",
-    find: "(JsForm::New(name), None) if name == \"RegExp\" && let Some(literal)",
-    replace: "(JsForm::New(name), None) if name == \"none\" && let Some(literal)",
+    find: "                    if name == \"RegExp\"\n",
+    replace: "                    if name == \"none\"\n",
     tests: ["test/compiler.test.ts","-t","RegExp of a pattern"],
   },
   {
@@ -266,8 +266,8 @@ export const mutations: Mutation[] = [
     name: "regex-unparsed-literal",
     breaks: "a pattern JS can't parse is a literal, and the module doesn't load, not throwing as it runs",
     file: "src/lower/calls.rs",
-    find: "    LiteralParser::new(&allocator, &body, Some(flags), Options::default()).parse().ok()?;",
-    replace: "    let _ = LiteralParser::new(&allocator, &body, Some(flags), Options::default()).parse();",
+    find: "        .parse()\n        .ok()?;\n    Some(Expr::regex(",
+    replace: "        .parse()\n        .ok();\n    Some(Expr::regex(",
     tests: ["test/compiler.test.ts","-t","RegExp of a pattern"],
   },
   {
