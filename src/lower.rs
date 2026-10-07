@@ -206,6 +206,9 @@ struct Locals {
     /// What the `&mut`s to values JS can't change in place are (ADRs 0059,
     /// 0072, 0099).
     mut_refs: mut_refs::MutRefs,
+    /// A props pattern's rest, JS's `...props`, by its name: the keys the
+    /// pattern names, which it never holds (ADRs 0195, 0205).
+    rests: HashMap<String, Vec<String>>,
 }
 
 /// A variable bound by a pattern, and the place in the subject it matched.

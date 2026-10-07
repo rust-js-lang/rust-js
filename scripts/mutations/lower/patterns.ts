@@ -410,4 +410,16 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "let chain as a person"],
   },
+  {
+    name: "rest-keys-unknown",
+    breaks: "a props pattern's rest isn't known as one, so an update of it, `..props`, gives each of its fields, the props' own `href` among them, and is refused",
+    file: "src/lower/patterns.rs",
+    find: "                    self.locals.rests.insert(rest.clone(), taken);\n",
+    replace: "                    self.locals.rests.insert(String::new(), taken);\n",
+    tests: [
+      "test/jsx.test.ts",
+      "-t",
+      "flattened props with a field of them set"
+    ]
+  },
 ];

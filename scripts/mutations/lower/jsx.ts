@@ -94,8 +94,8 @@ export const mutations: Mutation[] = [
     name: "flattened-chain-not-inlined",
     breaks: "a flattened struct's own flattened field is a prop, `html={..}`, not its fields",
     file: "src/lower/jsx.rs",
-    find: "                    attrs.extend(self.flattened_attrs(types[i].1, value, &shadowing, span)?);",
-    replace: "                    attrs.push(Prop::Field(types[i].0.clone(), value));",
+    find: "                    for attr in self.flattened_attrs(types[i].1, value, &shadowing, span)? {",
+    replace: "                    attrs.push(Prop::Field(types[i].0.clone(), value));\n                    for attr in Vec::<Prop>::new() {",
     tests: ["test/jsx.test.ts", "-t", "chain of flattened"],
   },
   {
@@ -260,6 +260,42 @@ export const mutations: Mutation[] = [
       "test/jsx.test.ts",
       "-t",
       "field of what never changes in place"
+    ]
+  },
+  {
+    name: "rest-base-each-field",
+    breaks: "an update of a props pattern's rest, `..props`, gives each of its fields, the props' own `href` among them, where it's `{...props}`",
+    file: "src/lower/jsx.rs",
+    find: "                    rest = Some(*object);\n",
+    replace: "                    attrs.push(Prop::Field(name, Expr::member(*object, \"_\")));\n",
+    tests: [
+      "test/jsx.test.ts",
+      "-t",
+      "flattened props with a field of them set"
+    ]
+  },
+  {
+    name: "rest-spread-after-update",
+    breaks: "a rest spread is after what the update gives, `className=\"link\" {...props}`, so the caller's `className` holds where the update's should",
+    file: "src/lower/jsx.rs",
+    find: "                            Prop::Spread(_) => written.get(&name).copied().or(first),\n",
+    replace: "                            Prop::Spread(_) => written.get(&name).copied(),\n",
+    tests: [
+      "test/jsx.test.ts",
+      "-t",
+      "flattened props with a field of them set"
+    ]
+  },
+  {
+    name: "rest-spread-twice",
+    breaks: "a rest a nested flattened struct's base gives too, `..props.html`, is spread again, `{...props} {...props}`",
+    file: "src/lower/jsx.rs",
+    find: "                                rest = Some(value)\n",
+    replace: "                                attrs.push(Prop::Spread(value))\n",
+    tests: [
+      "test/jsx.test.ts",
+      "-t",
+      "flattened props with a field of them set"
     ]
   },
 ];

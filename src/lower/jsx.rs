@@ -297,10 +297,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .map(|(n, _)| n.clone())
                         .collect();
                     let span = self.thir[props].span;
-                    for prop in self.flattened_attrs(field_ty, value, &own, span)? {
-                        // A spread is where its struct is written.
+                    let flattened = self.flattened_attrs(field_ty, value, &own, span)?;
+                    // Where its fields are written, the first: a struct made
+                    // there, `AnchorHTMLAttributes { .., ..props }`, is.
+                    let first = (flattened.iter())
+                        .filter_map(|prop| match prop {
+                            Prop::Field(key, _) | Prop::Getter(key, _) => written.get(key).copied(),
+                            Prop::Spread(_) => None,
+                        })
+                        .min();
+                    for prop in flattened {
+                        // A spread is where its struct is written, before what
+                        // it's updated with.
                         let at = match &prop {
-                            Prop::Spread(_) => written.get(&name).copied(),
+                            Prop::Spread(_) => written.get(&name).copied().or(first),
                             Prop::Field(key, _) | Prop::Getter(key, _) => written.get(key).copied(),
                         };
                         attrs.push((at, prop));
@@ -418,10 +428,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .map(|(_, (n, _))| n.clone()),
         );
         let mut attrs = Vec::new();
+        // What an update's base gives, `..props`, where it's a props pattern's
+        // rest: that rest spread, `{...props}`, before what the update gives,
+        // as it holds no key its pattern named, which the props' own may be.
+        let mut rest = None;
         for (i, prop) in props.into_iter().enumerate() {
             match prop {
                 Prop::Field(_, value) if super::bindings::is_flatten_field(self.tcx, ty, i) => {
-                    attrs.extend(self.flattened_attrs(types[i].1, value, &shadowing, span)?);
+                    for attr in self.flattened_attrs(types[i].1, value, &shadowing, span)? {
+                        match attr {
+                            Prop::Spread(value) if matches!(&value.kind, js::ExprKind::Var(v) if self.locals.rests.contains_key(v)) => {
+                                rest = Some(value)
+                            }
+                            attr => attrs.push(attr),
+                        }
+                    }
+                }
+                Prop::Field(name, value)
+                    if matches!(&value.kind, js::ExprKind::Member(object, key)
+                        if key == &name && matches!(&object.kind, js::ExprKind::Var(v) if self.locals.rests.contains_key(v))) =>
+                {
+                    let js::ExprKind::Member(object, _) = value.kind else {
+                        unreachable!("matched above")
+                    };
+                    rest = Some(*object);
                 }
                 Prop::Field(name, value) if own.contains(&name) => {
                     if !matches!(value.kind, js::ExprKind::Undefined) {
@@ -433,6 +463,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 prop => attrs.push(prop),
             }
+        }
+        if let Some(rest) = rest {
+            attrs.insert(0, Prop::Spread(rest));
         }
         Ok(attrs)
     }

@@ -1177,6 +1177,55 @@ pub fn App() -> Element {
   expect([jsx.includes('<Frame title="t">'), jsx.includes("<Frame />"), jsx.includes("match")]).toEqual([true, true, false]);
 });
 
+// A component's own flattened props passed on with a field of them set, as
+// react.dev's Link gives `ExternalLink` its classes beside `{...props}`:
+// `props={AnchorHTMLAttributes { html: HTMLAttributes { class_name, ..props.html
+// }, ..props }}`. A flattened field read whole as a base is the object its
+// parent is, `{...props}` (ADR 0213).
+test("JSX passes on flattened props with a field of them set", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::attributes::{AnchorHTMLAttributes, HTMLAttributes};
+use react::{Element, ReactNode, jsx};
+pub struct ExternalProps<'a, C: ReactNode> {
+    pub href: Option<&'a str>,
+    pub children: C,
+    #[rust_js::flatten]
+    pub props: AnchorHTMLAttributes<'a>,
+}
+pub fn External<C: ReactNode>(ExternalProps { href, children, props }: ExternalProps<C>) -> Element {
+    jsx! { <a href={href} rel="noopener" {...props}>{children}</a> }
+}
+pub struct LinkProps<'a, C: ReactNode> {
+    pub href: &'a str,
+    pub children: C,
+    #[rust_js::flatten]
+    pub props: AnchorHTMLAttributes<'a>,
+}
+pub fn Link<C: ReactNode>(LinkProps { href, children, props }: LinkProps<C>) -> Element {
+    jsx! {
+        <External
+            href={Some(href)}
+            props={AnchorHTMLAttributes {
+                html: HTMLAttributes { class_name: Some("link"), ..props.html },
+                ..props
+            }}>
+            {children}
+        </External>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain('<External href={href} {...props} className="link">');
+  const { Link } = await import(join(dir, "lib.jsx"));
+  const { createElement } = await import("react");
+  expect(renderToStaticMarkup(createElement(Link, { href: "/a", id: "x", target: "_self" }, "go")))
+    .toBe('<a href="/a" rel="noopener" id="x" target="_self" class="link">go</a>');
+  // What the update gives is after the rest, so it's what holds, as Rust's is.
+  expect(renderToStaticMarkup(createElement(Link, { href: "/a", className: "theirs" }, "go")))
+    .toBe('<a href="/a" rel="noopener" class="link">go</a>');
+});
+
 // A component's props are given as one flat list, `<ButtonLink href="/a"
 // target={..} id={..}>`, its own fields and its flattened structs' alike,
 // as JSX's caller writes them: what isn't given is left out, a field with a
