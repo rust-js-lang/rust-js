@@ -60,7 +60,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-fn-value-bare",
-    breaks: "a library's generic function as a value isn't given its dictionaries",
+    breaks: "a library's function as a value is an arrow calling it, as one rust-js doesn't know is, so `dep::add_to::<u8>`, taking a `&mut`, is refused",
     file: "src/lower.rs",
     find: "                    && (self.is_rust_fn(def_id) || self.is_rust_trait_fn(def_id, args)) =>\n",
     replace: "                    && (self.krate.fns.contains_key(&def_id) || self.is_rust_trait_fn(def_id, args)) =>\n",
