@@ -138,4 +138,16 @@ export const mutations: Mutation[] = [
     replace: "        self.through_mut(e).filter(|_| false)",
     tests: ["test/corpus.test.ts", "-t", "replace_through_mut"],
   },
+  {
+    name: "through-mut-stable",
+    breaks: "a place through a `&mut`, `e.n`, is taken as stable, so it's read after a later statement writes it, `<p>51</p>`",
+    file: "src/lower/places.rs",
+    find: "            if matches!(self.thir[root].kind, ExprKind::Deref { .. })\n",
+    replace: "            if false && matches!(self.thir[root].kind, ExprKind::Deref { .. })\n",
+    tests: [
+      "test/jsx.test.ts",
+      "-t",
+      "field of what never changes in place"
+    ]
+  },
 ];

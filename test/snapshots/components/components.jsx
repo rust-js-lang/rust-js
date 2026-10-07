@@ -59,7 +59,6 @@ export function Todos() {
       {t.text}
     </li>
   ));
-  const condition = todos.length === 0;
   const t = todos.at(-1);
   return (
     <Card title="Todos">
@@ -78,7 +77,7 @@ export function Todos() {
           Add
         </button>
         <ul>{items}</ul>
-        {condition ? <p className="empty">Nothing to do</p> : undefined}
+        {todos.length === 0 ? <p className="empty">Nothing to do</p> : undefined}
         {t != null ? <p className="latest">{t.text}</p> : undefined}
         <span className="left">{left} left</span>
       </>

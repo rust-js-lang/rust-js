@@ -31,18 +31,18 @@ function tail(n) {
 function early(stop) {
   const noisy = make(9);
   let noisy$live = true;
-  let tmp$1;
+  let a;
   let tmp;
   let value;
   try {
-    tmp$1 = noisy;
+    a = noisy;
     if (stop) {
       return undefined;
     } else {
       tmp = 1;
     }
     noisy$live = false;
-    value = { a: tmp$1, b: tmp };
+    value = { a, b: tmp };
   } finally {
     if (noisy$live) {
       noisyDrop_drop(noisy);
@@ -56,18 +56,18 @@ function kept_early(stop) {
   try {
     const noisy = make(31);
     let noisy$live = true;
-    let tmp$1;
+    let a;
     let tmp;
     let value;
     try {
-      tmp$1 = noisy;
+      a = noisy;
       if (stop) {
         return undefined;
       } else {
         tmp = 3;
       }
       noisy$live = false;
-      value = { a: tmp$1, b: tmp };
+      value = { a, b: tmp };
     } finally {
       if (noisy$live) {
         noisyDrop_drop(noisy);
@@ -191,18 +191,18 @@ function main() {
   const pair$1 = (stop) => {
     const noisy = make(11);
     let noisy$live = true;
-    let tmp$1;
+    let a;
     let tmp;
     let value;
     try {
-      tmp$1 = noisy;
+      a = noisy;
       if (stop) {
         return undefined;
       } else {
         tmp = 2;
       }
       noisy$live = false;
-      value = { a: tmp$1, b: tmp };
+      value = { a, b: tmp };
     } finally {
       if (noisy$live) {
         noisyDrop_drop(noisy);

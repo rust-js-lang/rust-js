@@ -224,7 +224,8 @@ test("a prop before children that need no statements stays where it's written", 
   const source = `#![allow(non_snake_case)]
 use react::attributes::AnchorHTMLAttributes;
 use react::{Element, Fragment, ReactNode, jsx};
-pub struct Crumb { pub title: String }
+// A \`Cell\` in it: its fields may change, so only what's needed is read first.
+pub struct Crumb { pub title: String, pub seen: std::cell::Cell<bool> }
 #[rust_js::link_name = "next/link#default"]
 pub fn Link<C: ReactNode>(props: LinkProps<'_, C>) -> Element { unreachable!() }
 #[derive(Default)]
@@ -1311,7 +1312,8 @@ pub fn Linked() -> Element {
   expect(jsx).toMatch(/<ButtonLink size=\{\w+\} href=\{\w+\}>/);
   expect(jsx).toContain("<Linky label={label} target={target} />");
   expect(jsx).toContain("<ButtonLink target={target} label={label} href={h}>");
-  expect(jsx).toMatch(/<ButtonLink label=\{[\w$]+\} target=\{[\w$]+\} id=\{id\} href=\{[\w$]+\}>/);
+  // Each made first is named as its field is, as a person names it.
+  expect(jsx).toContain("<ButtonLink label={label} target={target} id={id} href={href}>");
   expect(jsx).toContain('<ButtonLink href="/t" target={t}>');
   expect(jsx).toMatch(/<ButtonLink target=\{\w+\} href=\{\w+\}>/);
   expect(renderToStaticMarkup(App())).toBe('<a href="/a" data-size="lg" target="_blank" id="x">A</a><a href="/b" data-size="md" class="c">B</a>');
@@ -1622,6 +1624,12 @@ test("JSX reads an attribute before a child once, not copied again", async () =>
 use react::{Element, jsx};
 pub enum Size { S, Md }
 pub struct P { pub class_name: Option<&'static str>, pub size: Option<Size>, pub title: Option<&'static str> }
+// Of a value whose fields may change, \`seen\` a \`Cell\`: what's before a child
+// whose statement only reads, \`const t = q.title\`, stays where it is.
+pub struct Q { pub class_name: Option<&'static str>, pub title: Option<&'static str>, pub seen: std::cell::Cell<bool> }
+pub fn Labeled(q: Q) -> Element {
+    jsx! { <svg className={q.class_name}>{q.title.map(|t| jsx! { <title>{t}</title> })}</svg> }
+}
 pub fn Badge(p: P) -> Element {
     let class_name = p.class_name.unwrap_or("badge");
     jsx! {
@@ -1651,6 +1659,7 @@ pub fn Badge(p: P) -> Element {
   // them, but a `const` already isn't copied.
   expect(jsx.match(/const (\w+)\$\d+ = \1;/)).toBe(null);
   expect(jsx).toContain("className={className}");
+  expect(jsx).toContain("<svg className={q.class_name}>");
   const result = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(result.Badge({ class_name: "c", size: "S", title: "t" }))).toBe('<svg class="c" id="c" width="12px" height="12px" viewBox="0 0 20 20"><title>t</title><g fill="none"><path d="M0 0"></path></g>1</svg>');
 });
@@ -1957,6 +1966,57 @@ pub fn Bare(HeadingProps { r#as: Comp, rest, .. }: HeadingProps<()>) -> Element 
   expect(renderToStaticMarkup(result.Bare({ as: "h1", title: "t" }))).toBe('<h1 title="t"></h1>');
 });
 
+// A field of a Rust value nothing writes again reads the same after a later
+// child's statement too, and a conditional of it, so they stay in place, as
+// a person writes them: `width={p.size === "S" ? "12px" : "20px"}`. A JS
+// object's getter, `n.textContent`, and a field through a `&mut` or a
+// `Cell` may change, so each is read before what writes it (ADR 0218).
+test("JSX keeps a field of what never changes in place", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use std::cell::Cell;
+use react::webapi::{Node, node};
+use react::{Element, jsx};
+pub enum Size { S, Md }
+pub struct P { pub size: Option<Size>, pub title: Option<&'static str> }
+pub fn Badge(p: P) -> Element {
+    jsx! {
+        <svg width={if matches!(p.size, Some(Size::S)) { "12px" } else { "20px" }}>
+            {p.title.map(|t| jsx! { <title>{t}</title> })}
+            {{
+                let mut n = 0;
+                for _ in "ab".chars() {
+                    n += 1;
+                }
+                n
+            }}
+        </svg>
+    }
+}
+pub fn Live(n: &'static Node) -> Element {
+    jsx! { <div><p>{node::text_content(n)}</p>{{ node::set_text_content(n, "x"); 1 }}</div> }
+}
+pub struct N { pub n: i32 }
+pub fn Edited(e: &mut N) -> Element {
+    jsx! { <p>{e.n}{{ e.n = 5; 1 }}</p> }
+}
+pub fn Counter() -> Element {
+    let count = Cell::new(0);
+    jsx! { <div><p>{count.get()}</p>{{ count.set(5); 1 }}</div> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const badge = jsx.slice(jsx.indexOf("export function Badge"), jsx.indexOf("export function Live"));
+  expect([badge.includes("const width"), badge.includes("= p.title")]).toEqual([false, false]);
+  expect(badge).toContain('<svg width={p.size === "S" ? "12px" : "20px"}>');
+  expect(jsx).toMatch(/= n\.textContent;\n  n\.textContent = "x";/);
+  expect(jsx).toMatch(/= count\.value;\n  count\.value = 5;/);
+  const { Badge, Counter, Edited } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(Badge({ size: "S", title: "t" }))).toBe('<svg width="12px"><title>t</title>2</svg>');
+  expect(renderToStaticMarkup(Counter())).toBe("<div><p>0</p>1</div>");
+  expect(renderToStaticMarkup(Edited({ n: 0 }))).toBe("<p>01</p>");
+});
+
 // A comparison of what reads the same reads the same after a later child's
 // statement too, so it stays in place, as react.dev's PageHeading tests its
 // version (ADR 0218): before the statements of a later child, a loop.
@@ -1991,7 +2051,7 @@ pub fn Count() -> Element {
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   const heading = jsx.slice(0, jsx.indexOf("export function Count"));
-  expect([heading.includes("= version"), heading.includes("= !done")]).toEqual([false, false]);
+  expect(heading).not.toContain("const condition");
   expect(jsx).toContain("const condition = n === 0;\n  n = (n + 1) | 0;");
   expect(jsx).toContain('{version === "Canary" ? <i>canary</i> : undefined}');
   expect(jsx).toContain('{version !== "Rc" ? <b>stable</b> : undefined}');

@@ -60,4 +60,16 @@ export const mutations: Mutation[] = [
     replace: "                } else if let Some((kept, value)) = None::<(Expr, Expr)> {\n",
     tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
   },
+  {
+    name: "map-field-spilled",
+    breaks: "`p.title.map(|t| ..)` reads `p.title` into a `const t` first, where a field of a plain value is read as it is",
+    file: "src/lower/options.rs",
+    find: "                            js::ExprKind::Member(object, _) if matches!(&object.kind, js::ExprKind::Var(name) if self.plain_value(name)) => {",
+    replace: "                            js::ExprKind::Member(object, _) if false && matches!(&object.kind, js::ExprKind::Var(name) if self.plain_value(name)) => {",
+    tests: [
+      "test/jsx.test.ts",
+      "-t",
+      "field of what never changes in place"
+    ]
+  },
 ];

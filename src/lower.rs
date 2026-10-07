@@ -1259,22 +1259,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Sequence actual lowering results, not a prediction of their effects.
     /// Earlier operands are captured before a later operand's prerequisites.
     fn operands(&mut self, list: &[ExprId], out: &mut Vec<Stmt>) -> R<Vec<Expr>> {
+        self.operands_named(list, &[], out)
+    }
+
+    /// `operands`, one read first named as `names` says, a struct's field
+    /// as the field is, `href`, where another is `tmp`.
+    fn operands_named(&mut self, list: &[ExprId], names: &[String], out: &mut Vec<Stmt>) -> R<Vec<Expr>> {
         let moves = self.defer_moves(list)?;
-        let mut values = self.operands_in_order(list, out)?;
+        let mut values = self.operands_in_order(list, names, out)?;
         self.end_moves(&moves, &mut values, out);
         Ok(values)
     }
 
-    fn operands_in_order(&mut self, list: &[ExprId], out: &mut Vec<Stmt>) -> R<Vec<Expr>> {
+    fn operands_in_order(&mut self, list: &[ExprId], names: &[String], out: &mut Vec<Stmt>) -> R<Vec<Expr>> {
         let mut values: Vec<(Expr, bool)> = Vec::new();
         for &e in list {
             let evaluated = self.evaluated(e)?;
             if !evaluated.statements.is_empty() {
-                for (value, settled) in &mut values {
+                for (i, (value, settled)) in values.iter_mut().enumerate() {
                     if !*settled {
                         if !self.capture_jsx(value, out) {
                             let original = std::mem::replace(value, Expr::undefined());
-                            *value = self.spill("tmp", original, out);
+                            let name = names.get(i).map_or("tmp", String::as_str);
+                            *value = self.spill(name, original, out);
                         }
                         *settled = true;
                     }

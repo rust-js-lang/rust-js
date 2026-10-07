@@ -318,4 +318,16 @@ export const mutations: Mutation[] = [
     replace: "            } if false && self.is_conditional_match(scrutinee, arms) => {\n",
     tests: ["test/compiler.test.ts", "-t", "two-arm match"],
   },
+  {
+    name: "operand-named-tmp",
+    breaks: "a struct's field read first is named `tmp`, `href={tmp}`, where it's named as its field, `href={href}`",
+    file: "src/lower.rs",
+    find: "                            let name = names.get(i).map_or(\"tmp\", String::as_str);",
+    replace: "                            let name = names.get(i).map_or(\"tmp\", |_| \"tmp\");",
+    tests: [
+      "test/jsx.test.ts",
+      "-t",
+      "flattened props where they"
+    ]
+  },
 ];

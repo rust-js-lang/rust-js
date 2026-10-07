@@ -80,15 +80,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether `value` reads the same wherever it's read: a constant, a
     /// function, or a variable nothing writes again, a `const` of `out`'s,
-    /// and a comparison of them, which runs no code of its own:
-    /// `version === "canary"`, `!done`, `status != null`.
+    /// a field of a plain Rust value of one, and a comparison or a
+    /// conditional of them, which runs no code of its own: `version ===
+    /// "canary"`, `!done`, `status != null`, `p.size === "S" ? 12 : 20`.
     fn reads_alike(&self, value: &Expr, out: &[Stmt]) -> bool {
         match &value.kind {
             js::ExprKind::Symbol(_) | js::ExprKind::Arrow(..) | js::ExprKind::AsyncArrow(..) => true,
-            js::ExprKind::Binary(js::Op::Eq | js::Op::Ne | js::Op::LooseEq | js::Op::LooseNe, a, b) => {
-                self.reads_alike(a, out) && self.reads_alike(b, out)
-            }
+            js::ExprKind::Binary(
+                js::Op::Eq | js::Op::Ne | js::Op::LooseEq | js::Op::LooseNe | js::Op::And | js::Op::Or,
+                a,
+                b,
+            ) => self.reads_alike(a, out) && self.reads_alike(b, out),
             js::ExprKind::Unary(js::UnaryOp::Not, a) => self.reads_alike(a, out),
+            js::ExprKind::Cond(test, yes, no) => {
+                self.reads_alike(test, out) && self.reads_alike(yes, out) && self.reads_alike(no, out)
+            }
+            // `p.size`: a field can't change while its value doesn't, where the
+            // value is plain Rust data. A JS object's getter, `n.textContent`,
+            // can, and so can what's reached through a `Cell` or a `&mut`.
+            js::ExprKind::Member(object, _) => {
+                matches!(&object.kind, js::ExprKind::Var(name) if self.plain_value(name))
+                    && self.reads_alike(object, out)
+            }
             js::ExprKind::Var(name) => {
                 self.locals
                     .vars
@@ -105,6 +118,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => value.is_constant(),
         }
+    }
+
+    /// Whether `name` is a variable nothing writes again of plain Rust data,
+    /// whose fields can't change while it doesn't: no `&mut`, raw pointer or
+    /// interior mutability anywhere in its type, nor a JS object, whose
+    /// properties are getters.
+    pub(super) fn plain_value(&self, name: &str) -> bool {
+        self.locals.vars.iter().any(|(id, var)| {
+            !var.mutable
+                && matches!(&var.place.kind, js::ExprKind::Var(n) if n == name)
+                && (self.tcx.typeck(id.0.owner.def_id).node_type(id.0).walk()).all(|arg| match arg.kind() {
+                    ty::GenericArgKind::Type(t) => {
+                        !matches!(t.kind(), ty::Ref(_, _, ty::Mutability::Mut) | ty::RawPtr(..))
+                            && t.is_freeze(self.tcx, self.typing_env)
+                            && !self.is_js_object(t)
+                    }
+                    _ => true,
+                })
+        })
     }
 
     /// Whether `value` reads only variables that never change, so it's the
