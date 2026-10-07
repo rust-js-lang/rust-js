@@ -170,508 +170,508 @@ pub struct HTMLAttributes<'a> {
     pub aria_valuetext: Option<&'a str>,
     /// `onCopy`
     #[cfg_attr(rust_js, rust_js::name = "onCopy")]
-    pub on_copy: Option<Box<dyn Fn(&event::ClipboardEvent)>>,
+    pub on_copy: Option<event::ClipboardEventHandler>,
     /// `onCopyCapture`
     #[cfg_attr(rust_js, rust_js::name = "onCopyCapture")]
-    pub on_copy_capture: Option<Box<dyn Fn(&event::ClipboardEvent)>>,
+    pub on_copy_capture: Option<event::ClipboardEventHandler>,
     /// `onCut`
     #[cfg_attr(rust_js, rust_js::name = "onCut")]
-    pub on_cut: Option<Box<dyn Fn(&event::ClipboardEvent)>>,
+    pub on_cut: Option<event::ClipboardEventHandler>,
     /// `onCutCapture`
     #[cfg_attr(rust_js, rust_js::name = "onCutCapture")]
-    pub on_cut_capture: Option<Box<dyn Fn(&event::ClipboardEvent)>>,
+    pub on_cut_capture: Option<event::ClipboardEventHandler>,
     /// `onPaste`
     #[cfg_attr(rust_js, rust_js::name = "onPaste")]
-    pub on_paste: Option<Box<dyn Fn(&event::ClipboardEvent)>>,
+    pub on_paste: Option<event::ClipboardEventHandler>,
     /// `onPasteCapture`
     #[cfg_attr(rust_js, rust_js::name = "onPasteCapture")]
-    pub on_paste_capture: Option<Box<dyn Fn(&event::ClipboardEvent)>>,
+    pub on_paste_capture: Option<event::ClipboardEventHandler>,
     /// `onCompositionEnd`
     #[cfg_attr(rust_js, rust_js::name = "onCompositionEnd")]
-    pub on_composition_end: Option<Box<dyn Fn(&event::CompositionEvent)>>,
+    pub on_composition_end: Option<event::CompositionEventHandler>,
     /// `onCompositionEndCapture`
     #[cfg_attr(rust_js, rust_js::name = "onCompositionEndCapture")]
-    pub on_composition_end_capture: Option<Box<dyn Fn(&event::CompositionEvent)>>,
+    pub on_composition_end_capture: Option<event::CompositionEventHandler>,
     /// `onCompositionStart`
     #[cfg_attr(rust_js, rust_js::name = "onCompositionStart")]
-    pub on_composition_start: Option<Box<dyn Fn(&event::CompositionEvent)>>,
+    pub on_composition_start: Option<event::CompositionEventHandler>,
     /// `onCompositionStartCapture`
     #[cfg_attr(rust_js, rust_js::name = "onCompositionStartCapture")]
-    pub on_composition_start_capture: Option<Box<dyn Fn(&event::CompositionEvent)>>,
+    pub on_composition_start_capture: Option<event::CompositionEventHandler>,
     /// `onCompositionUpdate`
     #[cfg_attr(rust_js, rust_js::name = "onCompositionUpdate")]
-    pub on_composition_update: Option<Box<dyn Fn(&event::CompositionEvent)>>,
+    pub on_composition_update: Option<event::CompositionEventHandler>,
     /// `onCompositionUpdateCapture`
     #[cfg_attr(rust_js, rust_js::name = "onCompositionUpdateCapture")]
-    pub on_composition_update_capture: Option<Box<dyn Fn(&event::CompositionEvent)>>,
+    pub on_composition_update_capture: Option<event::CompositionEventHandler>,
     /// `onFocus`
     #[cfg_attr(rust_js, rust_js::name = "onFocus")]
-    pub on_focus: Option<Box<dyn Fn(&event::FocusEvent)>>,
+    pub on_focus: Option<event::FocusEventHandler>,
     /// `onFocusCapture`
     #[cfg_attr(rust_js, rust_js::name = "onFocusCapture")]
-    pub on_focus_capture: Option<Box<dyn Fn(&event::FocusEvent)>>,
+    pub on_focus_capture: Option<event::FocusEventHandler>,
     /// `onBlur`
     #[cfg_attr(rust_js, rust_js::name = "onBlur")]
-    pub on_blur: Option<Box<dyn Fn(&event::FocusEvent)>>,
+    pub on_blur: Option<event::FocusEventHandler>,
     /// `onBlurCapture`
     #[cfg_attr(rust_js, rust_js::name = "onBlurCapture")]
-    pub on_blur_capture: Option<Box<dyn Fn(&event::FocusEvent)>>,
+    pub on_blur_capture: Option<event::FocusEventHandler>,
     /// `onChange`
     #[cfg_attr(rust_js, rust_js::name = "onChange")]
-    pub on_change: Option<Box<dyn Fn(&event::ChangeEvent)>>,
+    pub on_change: Option<event::ChangeEventHandler>,
     /// `onChangeCapture`
     #[cfg_attr(rust_js, rust_js::name = "onChangeCapture")]
-    pub on_change_capture: Option<Box<dyn Fn(&event::ChangeEvent)>>,
+    pub on_change_capture: Option<event::ChangeEventHandler>,
     /// `onBeforeInput`
     #[cfg_attr(rust_js, rust_js::name = "onBeforeInput")]
-    pub on_before_input: Option<Box<dyn Fn(&event::InputEvent)>>,
+    pub on_before_input: Option<event::InputEventHandler>,
     /// `onBeforeInputCapture`
     #[cfg_attr(rust_js, rust_js::name = "onBeforeInputCapture")]
-    pub on_before_input_capture: Option<Box<dyn Fn(&event::InputEvent)>>,
+    pub on_before_input_capture: Option<event::InputEventHandler>,
     /// `onInput`
     #[cfg_attr(rust_js, rust_js::name = "onInput")]
-    pub on_input: Option<Box<dyn Fn(&event::ChangeEvent)>>,
+    pub on_input: Option<event::ChangeEventHandler>,
     /// `onInputCapture`
     #[cfg_attr(rust_js, rust_js::name = "onInputCapture")]
-    pub on_input_capture: Option<Box<dyn Fn(&event::ChangeEvent)>>,
+    pub on_input_capture: Option<event::ChangeEventHandler>,
     /// `onReset`
     #[cfg_attr(rust_js, rust_js::name = "onReset")]
-    pub on_reset: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_reset: Option<event::ReactEventHandler>,
     /// `onResetCapture`
     #[cfg_attr(rust_js, rust_js::name = "onResetCapture")]
-    pub on_reset_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_reset_capture: Option<event::ReactEventHandler>,
     /// `onSubmit`
     #[cfg_attr(rust_js, rust_js::name = "onSubmit")]
-    pub on_submit: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_submit: Option<event::ReactEventHandler>,
     /// `onSubmitCapture`
     #[cfg_attr(rust_js, rust_js::name = "onSubmitCapture")]
-    pub on_submit_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_submit_capture: Option<event::ReactEventHandler>,
     /// `onInvalid`
     #[cfg_attr(rust_js, rust_js::name = "onInvalid")]
-    pub on_invalid: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_invalid: Option<event::ReactEventHandler>,
     /// `onInvalidCapture`
     #[cfg_attr(rust_js, rust_js::name = "onInvalidCapture")]
-    pub on_invalid_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_invalid_capture: Option<event::ReactEventHandler>,
     /// `onLoad`
     #[cfg_attr(rust_js, rust_js::name = "onLoad")]
-    pub on_load: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_load: Option<event::ReactEventHandler>,
     /// `onLoadCapture`
     #[cfg_attr(rust_js, rust_js::name = "onLoadCapture")]
-    pub on_load_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_load_capture: Option<event::ReactEventHandler>,
     /// `onError`
     #[cfg_attr(rust_js, rust_js::name = "onError")]
-    pub on_error: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_error: Option<event::ReactEventHandler>,
     /// `onErrorCapture`
     #[cfg_attr(rust_js, rust_js::name = "onErrorCapture")]
-    pub on_error_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_error_capture: Option<event::ReactEventHandler>,
     /// `onKeyDown`
     #[cfg_attr(rust_js, rust_js::name = "onKeyDown")]
-    pub on_key_down: Option<Box<dyn Fn(&event::KeyboardEvent)>>,
+    pub on_key_down: Option<event::KeyboardEventHandler>,
     /// `onKeyDownCapture`
     #[cfg_attr(rust_js, rust_js::name = "onKeyDownCapture")]
-    pub on_key_down_capture: Option<Box<dyn Fn(&event::KeyboardEvent)>>,
+    pub on_key_down_capture: Option<event::KeyboardEventHandler>,
     /// `onKeyPress`
     #[cfg_attr(rust_js, rust_js::name = "onKeyPress")]
-    pub on_key_press: Option<Box<dyn Fn(&event::KeyboardEvent)>>,
+    pub on_key_press: Option<event::KeyboardEventHandler>,
     /// `onKeyPressCapture`
     #[cfg_attr(rust_js, rust_js::name = "onKeyPressCapture")]
-    pub on_key_press_capture: Option<Box<dyn Fn(&event::KeyboardEvent)>>,
+    pub on_key_press_capture: Option<event::KeyboardEventHandler>,
     /// `onKeyUp`
     #[cfg_attr(rust_js, rust_js::name = "onKeyUp")]
-    pub on_key_up: Option<Box<dyn Fn(&event::KeyboardEvent)>>,
+    pub on_key_up: Option<event::KeyboardEventHandler>,
     /// `onKeyUpCapture`
     #[cfg_attr(rust_js, rust_js::name = "onKeyUpCapture")]
-    pub on_key_up_capture: Option<Box<dyn Fn(&event::KeyboardEvent)>>,
+    pub on_key_up_capture: Option<event::KeyboardEventHandler>,
     /// `onAbort`
     #[cfg_attr(rust_js, rust_js::name = "onAbort")]
-    pub on_abort: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_abort: Option<event::ReactEventHandler>,
     /// `onAbortCapture`
     #[cfg_attr(rust_js, rust_js::name = "onAbortCapture")]
-    pub on_abort_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_abort_capture: Option<event::ReactEventHandler>,
     /// `onCanPlay`
     #[cfg_attr(rust_js, rust_js::name = "onCanPlay")]
-    pub on_can_play: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_can_play: Option<event::ReactEventHandler>,
     /// `onCanPlayCapture`
     #[cfg_attr(rust_js, rust_js::name = "onCanPlayCapture")]
-    pub on_can_play_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_can_play_capture: Option<event::ReactEventHandler>,
     /// `onCanPlayThrough`
     #[cfg_attr(rust_js, rust_js::name = "onCanPlayThrough")]
-    pub on_can_play_through: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_can_play_through: Option<event::ReactEventHandler>,
     /// `onCanPlayThroughCapture`
     #[cfg_attr(rust_js, rust_js::name = "onCanPlayThroughCapture")]
-    pub on_can_play_through_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_can_play_through_capture: Option<event::ReactEventHandler>,
     /// `onDurationChange`
     #[cfg_attr(rust_js, rust_js::name = "onDurationChange")]
-    pub on_duration_change: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_duration_change: Option<event::ReactEventHandler>,
     /// `onDurationChangeCapture`
     #[cfg_attr(rust_js, rust_js::name = "onDurationChangeCapture")]
-    pub on_duration_change_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_duration_change_capture: Option<event::ReactEventHandler>,
     /// `onEmptied`
     #[cfg_attr(rust_js, rust_js::name = "onEmptied")]
-    pub on_emptied: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_emptied: Option<event::ReactEventHandler>,
     /// `onEmptiedCapture`
     #[cfg_attr(rust_js, rust_js::name = "onEmptiedCapture")]
-    pub on_emptied_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_emptied_capture: Option<event::ReactEventHandler>,
     /// `onEncrypted`
     #[cfg_attr(rust_js, rust_js::name = "onEncrypted")]
-    pub on_encrypted: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_encrypted: Option<event::ReactEventHandler>,
     /// `onEncryptedCapture`
     #[cfg_attr(rust_js, rust_js::name = "onEncryptedCapture")]
-    pub on_encrypted_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_encrypted_capture: Option<event::ReactEventHandler>,
     /// `onEnded`
     #[cfg_attr(rust_js, rust_js::name = "onEnded")]
-    pub on_ended: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_ended: Option<event::ReactEventHandler>,
     /// `onEndedCapture`
     #[cfg_attr(rust_js, rust_js::name = "onEndedCapture")]
-    pub on_ended_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_ended_capture: Option<event::ReactEventHandler>,
     /// `onLoadedData`
     #[cfg_attr(rust_js, rust_js::name = "onLoadedData")]
-    pub on_loaded_data: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_loaded_data: Option<event::ReactEventHandler>,
     /// `onLoadedDataCapture`
     #[cfg_attr(rust_js, rust_js::name = "onLoadedDataCapture")]
-    pub on_loaded_data_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_loaded_data_capture: Option<event::ReactEventHandler>,
     /// `onLoadedMetadata`
     #[cfg_attr(rust_js, rust_js::name = "onLoadedMetadata")]
-    pub on_loaded_metadata: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_loaded_metadata: Option<event::ReactEventHandler>,
     /// `onLoadedMetadataCapture`
     #[cfg_attr(rust_js, rust_js::name = "onLoadedMetadataCapture")]
-    pub on_loaded_metadata_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_loaded_metadata_capture: Option<event::ReactEventHandler>,
     /// `onLoadStart`
     #[cfg_attr(rust_js, rust_js::name = "onLoadStart")]
-    pub on_load_start: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_load_start: Option<event::ReactEventHandler>,
     /// `onLoadStartCapture`
     #[cfg_attr(rust_js, rust_js::name = "onLoadStartCapture")]
-    pub on_load_start_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_load_start_capture: Option<event::ReactEventHandler>,
     /// `onPause`
     #[cfg_attr(rust_js, rust_js::name = "onPause")]
-    pub on_pause: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_pause: Option<event::ReactEventHandler>,
     /// `onPauseCapture`
     #[cfg_attr(rust_js, rust_js::name = "onPauseCapture")]
-    pub on_pause_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_pause_capture: Option<event::ReactEventHandler>,
     /// `onPlay`
     #[cfg_attr(rust_js, rust_js::name = "onPlay")]
-    pub on_play: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_play: Option<event::ReactEventHandler>,
     /// `onPlayCapture`
     #[cfg_attr(rust_js, rust_js::name = "onPlayCapture")]
-    pub on_play_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_play_capture: Option<event::ReactEventHandler>,
     /// `onPlaying`
     #[cfg_attr(rust_js, rust_js::name = "onPlaying")]
-    pub on_playing: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_playing: Option<event::ReactEventHandler>,
     /// `onPlayingCapture`
     #[cfg_attr(rust_js, rust_js::name = "onPlayingCapture")]
-    pub on_playing_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_playing_capture: Option<event::ReactEventHandler>,
     /// `onProgress`
     #[cfg_attr(rust_js, rust_js::name = "onProgress")]
-    pub on_progress: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_progress: Option<event::ReactEventHandler>,
     /// `onProgressCapture`
     #[cfg_attr(rust_js, rust_js::name = "onProgressCapture")]
-    pub on_progress_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_progress_capture: Option<event::ReactEventHandler>,
     /// `onRateChange`
     #[cfg_attr(rust_js, rust_js::name = "onRateChange")]
-    pub on_rate_change: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_rate_change: Option<event::ReactEventHandler>,
     /// `onRateChangeCapture`
     #[cfg_attr(rust_js, rust_js::name = "onRateChangeCapture")]
-    pub on_rate_change_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_rate_change_capture: Option<event::ReactEventHandler>,
     /// `onSeeked`
     #[cfg_attr(rust_js, rust_js::name = "onSeeked")]
-    pub on_seeked: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_seeked: Option<event::ReactEventHandler>,
     /// `onSeekedCapture`
     #[cfg_attr(rust_js, rust_js::name = "onSeekedCapture")]
-    pub on_seeked_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_seeked_capture: Option<event::ReactEventHandler>,
     /// `onSeeking`
     #[cfg_attr(rust_js, rust_js::name = "onSeeking")]
-    pub on_seeking: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_seeking: Option<event::ReactEventHandler>,
     /// `onSeekingCapture`
     #[cfg_attr(rust_js, rust_js::name = "onSeekingCapture")]
-    pub on_seeking_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_seeking_capture: Option<event::ReactEventHandler>,
     /// `onStalled`
     #[cfg_attr(rust_js, rust_js::name = "onStalled")]
-    pub on_stalled: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_stalled: Option<event::ReactEventHandler>,
     /// `onStalledCapture`
     #[cfg_attr(rust_js, rust_js::name = "onStalledCapture")]
-    pub on_stalled_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_stalled_capture: Option<event::ReactEventHandler>,
     /// `onSuspend`
     #[cfg_attr(rust_js, rust_js::name = "onSuspend")]
-    pub on_suspend: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_suspend: Option<event::ReactEventHandler>,
     /// `onSuspendCapture`
     #[cfg_attr(rust_js, rust_js::name = "onSuspendCapture")]
-    pub on_suspend_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_suspend_capture: Option<event::ReactEventHandler>,
     /// `onTimeUpdate`
     #[cfg_attr(rust_js, rust_js::name = "onTimeUpdate")]
-    pub on_time_update: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_time_update: Option<event::ReactEventHandler>,
     /// `onTimeUpdateCapture`
     #[cfg_attr(rust_js, rust_js::name = "onTimeUpdateCapture")]
-    pub on_time_update_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_time_update_capture: Option<event::ReactEventHandler>,
     /// `onVolumeChange`
     #[cfg_attr(rust_js, rust_js::name = "onVolumeChange")]
-    pub on_volume_change: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_volume_change: Option<event::ReactEventHandler>,
     /// `onVolumeChangeCapture`
     #[cfg_attr(rust_js, rust_js::name = "onVolumeChangeCapture")]
-    pub on_volume_change_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_volume_change_capture: Option<event::ReactEventHandler>,
     /// `onWaiting`
     #[cfg_attr(rust_js, rust_js::name = "onWaiting")]
-    pub on_waiting: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_waiting: Option<event::ReactEventHandler>,
     /// `onWaitingCapture`
     #[cfg_attr(rust_js, rust_js::name = "onWaitingCapture")]
-    pub on_waiting_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_waiting_capture: Option<event::ReactEventHandler>,
     /// `onAuxClick`
     #[cfg_attr(rust_js, rust_js::name = "onAuxClick")]
-    pub on_aux_click: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_aux_click: Option<event::MouseEventHandler>,
     /// `onAuxClickCapture`
     #[cfg_attr(rust_js, rust_js::name = "onAuxClickCapture")]
-    pub on_aux_click_capture: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_aux_click_capture: Option<event::MouseEventHandler>,
     /// `onClick`
     #[cfg_attr(rust_js, rust_js::name = "onClick")]
-    pub on_click: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_click: Option<event::MouseEventHandler>,
     /// `onClickCapture`
     #[cfg_attr(rust_js, rust_js::name = "onClickCapture")]
-    pub on_click_capture: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_click_capture: Option<event::MouseEventHandler>,
     /// `onContextMenu`
     #[cfg_attr(rust_js, rust_js::name = "onContextMenu")]
-    pub on_context_menu: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_context_menu: Option<event::MouseEventHandler>,
     /// `onContextMenuCapture`
     #[cfg_attr(rust_js, rust_js::name = "onContextMenuCapture")]
-    pub on_context_menu_capture: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_context_menu_capture: Option<event::MouseEventHandler>,
     /// `onDoubleClick`
     #[cfg_attr(rust_js, rust_js::name = "onDoubleClick")]
-    pub on_double_click: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_double_click: Option<event::MouseEventHandler>,
     /// `onDoubleClickCapture`
     #[cfg_attr(rust_js, rust_js::name = "onDoubleClickCapture")]
-    pub on_double_click_capture: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_double_click_capture: Option<event::MouseEventHandler>,
     /// `onDrag`
     #[cfg_attr(rust_js, rust_js::name = "onDrag")]
-    pub on_drag: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag: Option<event::DragEventHandler>,
     /// `onDragCapture`
     #[cfg_attr(rust_js, rust_js::name = "onDragCapture")]
-    pub on_drag_capture: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag_capture: Option<event::DragEventHandler>,
     /// `onDragEnd`
     #[cfg_attr(rust_js, rust_js::name = "onDragEnd")]
-    pub on_drag_end: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag_end: Option<event::DragEventHandler>,
     /// `onDragEndCapture`
     #[cfg_attr(rust_js, rust_js::name = "onDragEndCapture")]
-    pub on_drag_end_capture: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag_end_capture: Option<event::DragEventHandler>,
     /// `onDragEnter`
     #[cfg_attr(rust_js, rust_js::name = "onDragEnter")]
-    pub on_drag_enter: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag_enter: Option<event::DragEventHandler>,
     /// `onDragEnterCapture`
     #[cfg_attr(rust_js, rust_js::name = "onDragEnterCapture")]
-    pub on_drag_enter_capture: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag_enter_capture: Option<event::DragEventHandler>,
     /// `onDragExit`
     #[cfg_attr(rust_js, rust_js::name = "onDragExit")]
-    pub on_drag_exit: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag_exit: Option<event::DragEventHandler>,
     /// `onDragExitCapture`
     #[cfg_attr(rust_js, rust_js::name = "onDragExitCapture")]
-    pub on_drag_exit_capture: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag_exit_capture: Option<event::DragEventHandler>,
     /// `onDragLeave`
     #[cfg_attr(rust_js, rust_js::name = "onDragLeave")]
-    pub on_drag_leave: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag_leave: Option<event::DragEventHandler>,
     /// `onDragLeaveCapture`
     #[cfg_attr(rust_js, rust_js::name = "onDragLeaveCapture")]
-    pub on_drag_leave_capture: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag_leave_capture: Option<event::DragEventHandler>,
     /// `onDragOver`
     #[cfg_attr(rust_js, rust_js::name = "onDragOver")]
-    pub on_drag_over: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag_over: Option<event::DragEventHandler>,
     /// `onDragOverCapture`
     #[cfg_attr(rust_js, rust_js::name = "onDragOverCapture")]
-    pub on_drag_over_capture: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag_over_capture: Option<event::DragEventHandler>,
     /// `onDragStart`
     #[cfg_attr(rust_js, rust_js::name = "onDragStart")]
-    pub on_drag_start: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag_start: Option<event::DragEventHandler>,
     /// `onDragStartCapture`
     #[cfg_attr(rust_js, rust_js::name = "onDragStartCapture")]
-    pub on_drag_start_capture: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag_start_capture: Option<event::DragEventHandler>,
     /// `onDrop`
     #[cfg_attr(rust_js, rust_js::name = "onDrop")]
-    pub on_drop: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drop: Option<event::DragEventHandler>,
     /// `onDropCapture`
     #[cfg_attr(rust_js, rust_js::name = "onDropCapture")]
-    pub on_drop_capture: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drop_capture: Option<event::DragEventHandler>,
     /// `onMouseDown`
     #[cfg_attr(rust_js, rust_js::name = "onMouseDown")]
-    pub on_mouse_down: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_mouse_down: Option<event::MouseEventHandler>,
     /// `onMouseDownCapture`
     #[cfg_attr(rust_js, rust_js::name = "onMouseDownCapture")]
-    pub on_mouse_down_capture: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_mouse_down_capture: Option<event::MouseEventHandler>,
     /// `onMouseEnter`
     #[cfg_attr(rust_js, rust_js::name = "onMouseEnter")]
-    pub on_mouse_enter: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_mouse_enter: Option<event::MouseEventHandler>,
     /// `onMouseLeave`
     #[cfg_attr(rust_js, rust_js::name = "onMouseLeave")]
-    pub on_mouse_leave: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_mouse_leave: Option<event::MouseEventHandler>,
     /// `onMouseMove`
     #[cfg_attr(rust_js, rust_js::name = "onMouseMove")]
-    pub on_mouse_move: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_mouse_move: Option<event::MouseEventHandler>,
     /// `onMouseMoveCapture`
     #[cfg_attr(rust_js, rust_js::name = "onMouseMoveCapture")]
-    pub on_mouse_move_capture: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_mouse_move_capture: Option<event::MouseEventHandler>,
     /// `onMouseOut`
     #[cfg_attr(rust_js, rust_js::name = "onMouseOut")]
-    pub on_mouse_out: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_mouse_out: Option<event::MouseEventHandler>,
     /// `onMouseOutCapture`
     #[cfg_attr(rust_js, rust_js::name = "onMouseOutCapture")]
-    pub on_mouse_out_capture: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_mouse_out_capture: Option<event::MouseEventHandler>,
     /// `onMouseOver`
     #[cfg_attr(rust_js, rust_js::name = "onMouseOver")]
-    pub on_mouse_over: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_mouse_over: Option<event::MouseEventHandler>,
     /// `onMouseOverCapture`
     #[cfg_attr(rust_js, rust_js::name = "onMouseOverCapture")]
-    pub on_mouse_over_capture: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_mouse_over_capture: Option<event::MouseEventHandler>,
     /// `onMouseUp`
     #[cfg_attr(rust_js, rust_js::name = "onMouseUp")]
-    pub on_mouse_up: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_mouse_up: Option<event::MouseEventHandler>,
     /// `onMouseUpCapture`
     #[cfg_attr(rust_js, rust_js::name = "onMouseUpCapture")]
-    pub on_mouse_up_capture: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_mouse_up_capture: Option<event::MouseEventHandler>,
     /// `onSelect`
     #[cfg_attr(rust_js, rust_js::name = "onSelect")]
-    pub on_select: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_select: Option<event::ReactEventHandler>,
     /// `onSelectCapture`
     #[cfg_attr(rust_js, rust_js::name = "onSelectCapture")]
-    pub on_select_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_select_capture: Option<event::ReactEventHandler>,
     /// `onTouchCancel`
     #[cfg_attr(rust_js, rust_js::name = "onTouchCancel")]
-    pub on_touch_cancel: Option<Box<dyn Fn(&event::TouchEvent)>>,
+    pub on_touch_cancel: Option<event::TouchEventHandler>,
     /// `onTouchCancelCapture`
     #[cfg_attr(rust_js, rust_js::name = "onTouchCancelCapture")]
-    pub on_touch_cancel_capture: Option<Box<dyn Fn(&event::TouchEvent)>>,
+    pub on_touch_cancel_capture: Option<event::TouchEventHandler>,
     /// `onTouchEnd`
     #[cfg_attr(rust_js, rust_js::name = "onTouchEnd")]
-    pub on_touch_end: Option<Box<dyn Fn(&event::TouchEvent)>>,
+    pub on_touch_end: Option<event::TouchEventHandler>,
     /// `onTouchEndCapture`
     #[cfg_attr(rust_js, rust_js::name = "onTouchEndCapture")]
-    pub on_touch_end_capture: Option<Box<dyn Fn(&event::TouchEvent)>>,
+    pub on_touch_end_capture: Option<event::TouchEventHandler>,
     /// `onTouchMove`
     #[cfg_attr(rust_js, rust_js::name = "onTouchMove")]
-    pub on_touch_move: Option<Box<dyn Fn(&event::TouchEvent)>>,
+    pub on_touch_move: Option<event::TouchEventHandler>,
     /// `onTouchMoveCapture`
     #[cfg_attr(rust_js, rust_js::name = "onTouchMoveCapture")]
-    pub on_touch_move_capture: Option<Box<dyn Fn(&event::TouchEvent)>>,
+    pub on_touch_move_capture: Option<event::TouchEventHandler>,
     /// `onTouchStart`
     #[cfg_attr(rust_js, rust_js::name = "onTouchStart")]
-    pub on_touch_start: Option<Box<dyn Fn(&event::TouchEvent)>>,
+    pub on_touch_start: Option<event::TouchEventHandler>,
     /// `onTouchStartCapture`
     #[cfg_attr(rust_js, rust_js::name = "onTouchStartCapture")]
-    pub on_touch_start_capture: Option<Box<dyn Fn(&event::TouchEvent)>>,
+    pub on_touch_start_capture: Option<event::TouchEventHandler>,
     /// `onPointerDown`
     #[cfg_attr(rust_js, rust_js::name = "onPointerDown")]
-    pub on_pointer_down: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_down: Option<event::PointerEventHandler>,
     /// `onPointerDownCapture`
     #[cfg_attr(rust_js, rust_js::name = "onPointerDownCapture")]
-    pub on_pointer_down_capture: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_down_capture: Option<event::PointerEventHandler>,
     /// `onPointerMove`
     #[cfg_attr(rust_js, rust_js::name = "onPointerMove")]
-    pub on_pointer_move: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_move: Option<event::PointerEventHandler>,
     /// `onPointerMoveCapture`
     #[cfg_attr(rust_js, rust_js::name = "onPointerMoveCapture")]
-    pub on_pointer_move_capture: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_move_capture: Option<event::PointerEventHandler>,
     /// `onPointerUp`
     #[cfg_attr(rust_js, rust_js::name = "onPointerUp")]
-    pub on_pointer_up: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_up: Option<event::PointerEventHandler>,
     /// `onPointerUpCapture`
     #[cfg_attr(rust_js, rust_js::name = "onPointerUpCapture")]
-    pub on_pointer_up_capture: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_up_capture: Option<event::PointerEventHandler>,
     /// `onPointerCancel`
     #[cfg_attr(rust_js, rust_js::name = "onPointerCancel")]
-    pub on_pointer_cancel: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_cancel: Option<event::PointerEventHandler>,
     /// `onPointerCancelCapture`
     #[cfg_attr(rust_js, rust_js::name = "onPointerCancelCapture")]
-    pub on_pointer_cancel_capture: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_cancel_capture: Option<event::PointerEventHandler>,
     /// `onPointerEnter`
     #[cfg_attr(rust_js, rust_js::name = "onPointerEnter")]
-    pub on_pointer_enter: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_enter: Option<event::PointerEventHandler>,
     /// `onPointerLeave`
     #[cfg_attr(rust_js, rust_js::name = "onPointerLeave")]
-    pub on_pointer_leave: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_leave: Option<event::PointerEventHandler>,
     /// `onPointerOver`
     #[cfg_attr(rust_js, rust_js::name = "onPointerOver")]
-    pub on_pointer_over: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_over: Option<event::PointerEventHandler>,
     /// `onPointerOverCapture`
     #[cfg_attr(rust_js, rust_js::name = "onPointerOverCapture")]
-    pub on_pointer_over_capture: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_over_capture: Option<event::PointerEventHandler>,
     /// `onPointerOut`
     #[cfg_attr(rust_js, rust_js::name = "onPointerOut")]
-    pub on_pointer_out: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_out: Option<event::PointerEventHandler>,
     /// `onPointerOutCapture`
     #[cfg_attr(rust_js, rust_js::name = "onPointerOutCapture")]
-    pub on_pointer_out_capture: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_out_capture: Option<event::PointerEventHandler>,
     /// `onGotPointerCapture`
     #[cfg_attr(rust_js, rust_js::name = "onGotPointerCapture")]
-    pub on_got_pointer_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_got_pointer_capture: Option<event::ReactEventHandler>,
     /// `onGotPointerCaptureCapture`
     #[cfg_attr(rust_js, rust_js::name = "onGotPointerCaptureCapture")]
-    pub on_got_pointer_capture_capture: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_got_pointer_capture_capture: Option<event::PointerEventHandler>,
     /// `onLostPointerCapture`
     #[cfg_attr(rust_js, rust_js::name = "onLostPointerCapture")]
-    pub on_lost_pointer_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_lost_pointer_capture: Option<event::ReactEventHandler>,
     /// `onLostPointerCaptureCapture`
     #[cfg_attr(rust_js, rust_js::name = "onLostPointerCaptureCapture")]
-    pub on_lost_pointer_capture_capture: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_lost_pointer_capture_capture: Option<event::PointerEventHandler>,
     /// `onScroll`
     #[cfg_attr(rust_js, rust_js::name = "onScroll")]
-    pub on_scroll: Option<Box<dyn Fn(&event::UIEvent)>>,
+    pub on_scroll: Option<event::UIEventHandler>,
     /// `onScrollCapture`
     #[cfg_attr(rust_js, rust_js::name = "onScrollCapture")]
-    pub on_scroll_capture: Option<Box<dyn Fn(&event::UIEvent)>>,
+    pub on_scroll_capture: Option<event::UIEventHandler>,
     /// `onScrollEnd`
     #[cfg_attr(rust_js, rust_js::name = "onScrollEnd")]
-    pub on_scroll_end: Option<Box<dyn Fn(&event::UIEvent)>>,
+    pub on_scroll_end: Option<event::UIEventHandler>,
     /// `onScrollEndCapture`
     #[cfg_attr(rust_js, rust_js::name = "onScrollEndCapture")]
-    pub on_scroll_end_capture: Option<Box<dyn Fn(&event::UIEvent)>>,
+    pub on_scroll_end_capture: Option<event::UIEventHandler>,
     /// `onWheel`
     #[cfg_attr(rust_js, rust_js::name = "onWheel")]
-    pub on_wheel: Option<Box<dyn Fn(&event::WheelEvent)>>,
+    pub on_wheel: Option<event::WheelEventHandler>,
     /// `onWheelCapture`
     #[cfg_attr(rust_js, rust_js::name = "onWheelCapture")]
-    pub on_wheel_capture: Option<Box<dyn Fn(&event::WheelEvent)>>,
+    pub on_wheel_capture: Option<event::WheelEventHandler>,
     /// `onAnimationStart`
     #[cfg_attr(rust_js, rust_js::name = "onAnimationStart")]
-    pub on_animation_start: Option<Box<dyn Fn(&event::AnimationEvent)>>,
+    pub on_animation_start: Option<event::AnimationEventHandler>,
     /// `onAnimationStartCapture`
     #[cfg_attr(rust_js, rust_js::name = "onAnimationStartCapture")]
-    pub on_animation_start_capture: Option<Box<dyn Fn(&event::AnimationEvent)>>,
+    pub on_animation_start_capture: Option<event::AnimationEventHandler>,
     /// `onAnimationEnd`
     #[cfg_attr(rust_js, rust_js::name = "onAnimationEnd")]
-    pub on_animation_end: Option<Box<dyn Fn(&event::AnimationEvent)>>,
+    pub on_animation_end: Option<event::AnimationEventHandler>,
     /// `onAnimationEndCapture`
     #[cfg_attr(rust_js, rust_js::name = "onAnimationEndCapture")]
-    pub on_animation_end_capture: Option<Box<dyn Fn(&event::AnimationEvent)>>,
+    pub on_animation_end_capture: Option<event::AnimationEventHandler>,
     /// `onAnimationIteration`
     #[cfg_attr(rust_js, rust_js::name = "onAnimationIteration")]
-    pub on_animation_iteration: Option<Box<dyn Fn(&event::AnimationEvent)>>,
+    pub on_animation_iteration: Option<event::AnimationEventHandler>,
     /// `onAnimationIterationCapture`
     #[cfg_attr(rust_js, rust_js::name = "onAnimationIterationCapture")]
-    pub on_animation_iteration_capture: Option<Box<dyn Fn(&event::AnimationEvent)>>,
+    pub on_animation_iteration_capture: Option<event::AnimationEventHandler>,
     /// `onToggle`
     #[cfg_attr(rust_js, rust_js::name = "onToggle")]
-    pub on_toggle: Option<Box<dyn Fn(&event::ToggleEvent)>>,
+    pub on_toggle: Option<event::ToggleEventHandler>,
     /// `onBeforeToggle`
     #[cfg_attr(rust_js, rust_js::name = "onBeforeToggle")]
-    pub on_before_toggle: Option<Box<dyn Fn(&event::ToggleEvent)>>,
+    pub on_before_toggle: Option<event::ToggleEventHandler>,
     /// `onTransitionCancel`
     #[cfg_attr(rust_js, rust_js::name = "onTransitionCancel")]
-    pub on_transition_cancel: Option<Box<dyn Fn(&event::TransitionEvent)>>,
+    pub on_transition_cancel: Option<event::TransitionEventHandler>,
     /// `onTransitionCancelCapture`
     #[cfg_attr(rust_js, rust_js::name = "onTransitionCancelCapture")]
-    pub on_transition_cancel_capture: Option<Box<dyn Fn(&event::TransitionEvent)>>,
+    pub on_transition_cancel_capture: Option<event::TransitionEventHandler>,
     /// `onTransitionEnd`
     #[cfg_attr(rust_js, rust_js::name = "onTransitionEnd")]
-    pub on_transition_end: Option<Box<dyn Fn(&event::TransitionEvent)>>,
+    pub on_transition_end: Option<event::TransitionEventHandler>,
     /// `onTransitionEndCapture`
     #[cfg_attr(rust_js, rust_js::name = "onTransitionEndCapture")]
-    pub on_transition_end_capture: Option<Box<dyn Fn(&event::TransitionEvent)>>,
+    pub on_transition_end_capture: Option<event::TransitionEventHandler>,
     /// `onTransitionRun`
     #[cfg_attr(rust_js, rust_js::name = "onTransitionRun")]
-    pub on_transition_run: Option<Box<dyn Fn(&event::TransitionEvent)>>,
+    pub on_transition_run: Option<event::TransitionEventHandler>,
     /// `onTransitionRunCapture`
     #[cfg_attr(rust_js, rust_js::name = "onTransitionRunCapture")]
-    pub on_transition_run_capture: Option<Box<dyn Fn(&event::TransitionEvent)>>,
+    pub on_transition_run_capture: Option<event::TransitionEventHandler>,
     /// `onTransitionStart`
     #[cfg_attr(rust_js, rust_js::name = "onTransitionStart")]
-    pub on_transition_start: Option<Box<dyn Fn(&event::TransitionEvent)>>,
+    pub on_transition_start: Option<event::TransitionEventHandler>,
     /// `onTransitionStartCapture`
     #[cfg_attr(rust_js, rust_js::name = "onTransitionStartCapture")]
-    pub on_transition_start_capture: Option<Box<dyn Fn(&event::TransitionEvent)>>,
+    pub on_transition_start_capture: Option<event::TransitionEventHandler>,
     /// `defaultChecked`
     #[cfg_attr(rust_js, rust_js::name = "defaultChecked")]
     pub default_checked: Option<bool>,
@@ -973,508 +973,508 @@ pub struct SVGAttributes<'a> {
     pub aria_valuetext: Option<&'a str>,
     /// `onCopy`
     #[cfg_attr(rust_js, rust_js::name = "onCopy")]
-    pub on_copy: Option<Box<dyn Fn(&event::ClipboardEvent)>>,
+    pub on_copy: Option<event::ClipboardEventHandler>,
     /// `onCopyCapture`
     #[cfg_attr(rust_js, rust_js::name = "onCopyCapture")]
-    pub on_copy_capture: Option<Box<dyn Fn(&event::ClipboardEvent)>>,
+    pub on_copy_capture: Option<event::ClipboardEventHandler>,
     /// `onCut`
     #[cfg_attr(rust_js, rust_js::name = "onCut")]
-    pub on_cut: Option<Box<dyn Fn(&event::ClipboardEvent)>>,
+    pub on_cut: Option<event::ClipboardEventHandler>,
     /// `onCutCapture`
     #[cfg_attr(rust_js, rust_js::name = "onCutCapture")]
-    pub on_cut_capture: Option<Box<dyn Fn(&event::ClipboardEvent)>>,
+    pub on_cut_capture: Option<event::ClipboardEventHandler>,
     /// `onPaste`
     #[cfg_attr(rust_js, rust_js::name = "onPaste")]
-    pub on_paste: Option<Box<dyn Fn(&event::ClipboardEvent)>>,
+    pub on_paste: Option<event::ClipboardEventHandler>,
     /// `onPasteCapture`
     #[cfg_attr(rust_js, rust_js::name = "onPasteCapture")]
-    pub on_paste_capture: Option<Box<dyn Fn(&event::ClipboardEvent)>>,
+    pub on_paste_capture: Option<event::ClipboardEventHandler>,
     /// `onCompositionEnd`
     #[cfg_attr(rust_js, rust_js::name = "onCompositionEnd")]
-    pub on_composition_end: Option<Box<dyn Fn(&event::CompositionEvent)>>,
+    pub on_composition_end: Option<event::CompositionEventHandler>,
     /// `onCompositionEndCapture`
     #[cfg_attr(rust_js, rust_js::name = "onCompositionEndCapture")]
-    pub on_composition_end_capture: Option<Box<dyn Fn(&event::CompositionEvent)>>,
+    pub on_composition_end_capture: Option<event::CompositionEventHandler>,
     /// `onCompositionStart`
     #[cfg_attr(rust_js, rust_js::name = "onCompositionStart")]
-    pub on_composition_start: Option<Box<dyn Fn(&event::CompositionEvent)>>,
+    pub on_composition_start: Option<event::CompositionEventHandler>,
     /// `onCompositionStartCapture`
     #[cfg_attr(rust_js, rust_js::name = "onCompositionStartCapture")]
-    pub on_composition_start_capture: Option<Box<dyn Fn(&event::CompositionEvent)>>,
+    pub on_composition_start_capture: Option<event::CompositionEventHandler>,
     /// `onCompositionUpdate`
     #[cfg_attr(rust_js, rust_js::name = "onCompositionUpdate")]
-    pub on_composition_update: Option<Box<dyn Fn(&event::CompositionEvent)>>,
+    pub on_composition_update: Option<event::CompositionEventHandler>,
     /// `onCompositionUpdateCapture`
     #[cfg_attr(rust_js, rust_js::name = "onCompositionUpdateCapture")]
-    pub on_composition_update_capture: Option<Box<dyn Fn(&event::CompositionEvent)>>,
+    pub on_composition_update_capture: Option<event::CompositionEventHandler>,
     /// `onFocus`
     #[cfg_attr(rust_js, rust_js::name = "onFocus")]
-    pub on_focus: Option<Box<dyn Fn(&event::FocusEvent)>>,
+    pub on_focus: Option<event::FocusEventHandler>,
     /// `onFocusCapture`
     #[cfg_attr(rust_js, rust_js::name = "onFocusCapture")]
-    pub on_focus_capture: Option<Box<dyn Fn(&event::FocusEvent)>>,
+    pub on_focus_capture: Option<event::FocusEventHandler>,
     /// `onBlur`
     #[cfg_attr(rust_js, rust_js::name = "onBlur")]
-    pub on_blur: Option<Box<dyn Fn(&event::FocusEvent)>>,
+    pub on_blur: Option<event::FocusEventHandler>,
     /// `onBlurCapture`
     #[cfg_attr(rust_js, rust_js::name = "onBlurCapture")]
-    pub on_blur_capture: Option<Box<dyn Fn(&event::FocusEvent)>>,
+    pub on_blur_capture: Option<event::FocusEventHandler>,
     /// `onChange`
     #[cfg_attr(rust_js, rust_js::name = "onChange")]
-    pub on_change: Option<Box<dyn Fn(&event::ChangeEvent)>>,
+    pub on_change: Option<event::ChangeEventHandler>,
     /// `onChangeCapture`
     #[cfg_attr(rust_js, rust_js::name = "onChangeCapture")]
-    pub on_change_capture: Option<Box<dyn Fn(&event::ChangeEvent)>>,
+    pub on_change_capture: Option<event::ChangeEventHandler>,
     /// `onBeforeInput`
     #[cfg_attr(rust_js, rust_js::name = "onBeforeInput")]
-    pub on_before_input: Option<Box<dyn Fn(&event::InputEvent)>>,
+    pub on_before_input: Option<event::InputEventHandler>,
     /// `onBeforeInputCapture`
     #[cfg_attr(rust_js, rust_js::name = "onBeforeInputCapture")]
-    pub on_before_input_capture: Option<Box<dyn Fn(&event::InputEvent)>>,
+    pub on_before_input_capture: Option<event::InputEventHandler>,
     /// `onInput`
     #[cfg_attr(rust_js, rust_js::name = "onInput")]
-    pub on_input: Option<Box<dyn Fn(&event::ChangeEvent)>>,
+    pub on_input: Option<event::ChangeEventHandler>,
     /// `onInputCapture`
     #[cfg_attr(rust_js, rust_js::name = "onInputCapture")]
-    pub on_input_capture: Option<Box<dyn Fn(&event::ChangeEvent)>>,
+    pub on_input_capture: Option<event::ChangeEventHandler>,
     /// `onReset`
     #[cfg_attr(rust_js, rust_js::name = "onReset")]
-    pub on_reset: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_reset: Option<event::ReactEventHandler>,
     /// `onResetCapture`
     #[cfg_attr(rust_js, rust_js::name = "onResetCapture")]
-    pub on_reset_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_reset_capture: Option<event::ReactEventHandler>,
     /// `onSubmit`
     #[cfg_attr(rust_js, rust_js::name = "onSubmit")]
-    pub on_submit: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_submit: Option<event::ReactEventHandler>,
     /// `onSubmitCapture`
     #[cfg_attr(rust_js, rust_js::name = "onSubmitCapture")]
-    pub on_submit_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_submit_capture: Option<event::ReactEventHandler>,
     /// `onInvalid`
     #[cfg_attr(rust_js, rust_js::name = "onInvalid")]
-    pub on_invalid: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_invalid: Option<event::ReactEventHandler>,
     /// `onInvalidCapture`
     #[cfg_attr(rust_js, rust_js::name = "onInvalidCapture")]
-    pub on_invalid_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_invalid_capture: Option<event::ReactEventHandler>,
     /// `onLoad`
     #[cfg_attr(rust_js, rust_js::name = "onLoad")]
-    pub on_load: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_load: Option<event::ReactEventHandler>,
     /// `onLoadCapture`
     #[cfg_attr(rust_js, rust_js::name = "onLoadCapture")]
-    pub on_load_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_load_capture: Option<event::ReactEventHandler>,
     /// `onError`
     #[cfg_attr(rust_js, rust_js::name = "onError")]
-    pub on_error: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_error: Option<event::ReactEventHandler>,
     /// `onErrorCapture`
     #[cfg_attr(rust_js, rust_js::name = "onErrorCapture")]
-    pub on_error_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_error_capture: Option<event::ReactEventHandler>,
     /// `onKeyDown`
     #[cfg_attr(rust_js, rust_js::name = "onKeyDown")]
-    pub on_key_down: Option<Box<dyn Fn(&event::KeyboardEvent)>>,
+    pub on_key_down: Option<event::KeyboardEventHandler>,
     /// `onKeyDownCapture`
     #[cfg_attr(rust_js, rust_js::name = "onKeyDownCapture")]
-    pub on_key_down_capture: Option<Box<dyn Fn(&event::KeyboardEvent)>>,
+    pub on_key_down_capture: Option<event::KeyboardEventHandler>,
     /// `onKeyPress`
     #[cfg_attr(rust_js, rust_js::name = "onKeyPress")]
-    pub on_key_press: Option<Box<dyn Fn(&event::KeyboardEvent)>>,
+    pub on_key_press: Option<event::KeyboardEventHandler>,
     /// `onKeyPressCapture`
     #[cfg_attr(rust_js, rust_js::name = "onKeyPressCapture")]
-    pub on_key_press_capture: Option<Box<dyn Fn(&event::KeyboardEvent)>>,
+    pub on_key_press_capture: Option<event::KeyboardEventHandler>,
     /// `onKeyUp`
     #[cfg_attr(rust_js, rust_js::name = "onKeyUp")]
-    pub on_key_up: Option<Box<dyn Fn(&event::KeyboardEvent)>>,
+    pub on_key_up: Option<event::KeyboardEventHandler>,
     /// `onKeyUpCapture`
     #[cfg_attr(rust_js, rust_js::name = "onKeyUpCapture")]
-    pub on_key_up_capture: Option<Box<dyn Fn(&event::KeyboardEvent)>>,
+    pub on_key_up_capture: Option<event::KeyboardEventHandler>,
     /// `onAbort`
     #[cfg_attr(rust_js, rust_js::name = "onAbort")]
-    pub on_abort: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_abort: Option<event::ReactEventHandler>,
     /// `onAbortCapture`
     #[cfg_attr(rust_js, rust_js::name = "onAbortCapture")]
-    pub on_abort_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_abort_capture: Option<event::ReactEventHandler>,
     /// `onCanPlay`
     #[cfg_attr(rust_js, rust_js::name = "onCanPlay")]
-    pub on_can_play: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_can_play: Option<event::ReactEventHandler>,
     /// `onCanPlayCapture`
     #[cfg_attr(rust_js, rust_js::name = "onCanPlayCapture")]
-    pub on_can_play_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_can_play_capture: Option<event::ReactEventHandler>,
     /// `onCanPlayThrough`
     #[cfg_attr(rust_js, rust_js::name = "onCanPlayThrough")]
-    pub on_can_play_through: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_can_play_through: Option<event::ReactEventHandler>,
     /// `onCanPlayThroughCapture`
     #[cfg_attr(rust_js, rust_js::name = "onCanPlayThroughCapture")]
-    pub on_can_play_through_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_can_play_through_capture: Option<event::ReactEventHandler>,
     /// `onDurationChange`
     #[cfg_attr(rust_js, rust_js::name = "onDurationChange")]
-    pub on_duration_change: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_duration_change: Option<event::ReactEventHandler>,
     /// `onDurationChangeCapture`
     #[cfg_attr(rust_js, rust_js::name = "onDurationChangeCapture")]
-    pub on_duration_change_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_duration_change_capture: Option<event::ReactEventHandler>,
     /// `onEmptied`
     #[cfg_attr(rust_js, rust_js::name = "onEmptied")]
-    pub on_emptied: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_emptied: Option<event::ReactEventHandler>,
     /// `onEmptiedCapture`
     #[cfg_attr(rust_js, rust_js::name = "onEmptiedCapture")]
-    pub on_emptied_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_emptied_capture: Option<event::ReactEventHandler>,
     /// `onEncrypted`
     #[cfg_attr(rust_js, rust_js::name = "onEncrypted")]
-    pub on_encrypted: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_encrypted: Option<event::ReactEventHandler>,
     /// `onEncryptedCapture`
     #[cfg_attr(rust_js, rust_js::name = "onEncryptedCapture")]
-    pub on_encrypted_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_encrypted_capture: Option<event::ReactEventHandler>,
     /// `onEnded`
     #[cfg_attr(rust_js, rust_js::name = "onEnded")]
-    pub on_ended: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_ended: Option<event::ReactEventHandler>,
     /// `onEndedCapture`
     #[cfg_attr(rust_js, rust_js::name = "onEndedCapture")]
-    pub on_ended_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_ended_capture: Option<event::ReactEventHandler>,
     /// `onLoadedData`
     #[cfg_attr(rust_js, rust_js::name = "onLoadedData")]
-    pub on_loaded_data: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_loaded_data: Option<event::ReactEventHandler>,
     /// `onLoadedDataCapture`
     #[cfg_attr(rust_js, rust_js::name = "onLoadedDataCapture")]
-    pub on_loaded_data_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_loaded_data_capture: Option<event::ReactEventHandler>,
     /// `onLoadedMetadata`
     #[cfg_attr(rust_js, rust_js::name = "onLoadedMetadata")]
-    pub on_loaded_metadata: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_loaded_metadata: Option<event::ReactEventHandler>,
     /// `onLoadedMetadataCapture`
     #[cfg_attr(rust_js, rust_js::name = "onLoadedMetadataCapture")]
-    pub on_loaded_metadata_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_loaded_metadata_capture: Option<event::ReactEventHandler>,
     /// `onLoadStart`
     #[cfg_attr(rust_js, rust_js::name = "onLoadStart")]
-    pub on_load_start: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_load_start: Option<event::ReactEventHandler>,
     /// `onLoadStartCapture`
     #[cfg_attr(rust_js, rust_js::name = "onLoadStartCapture")]
-    pub on_load_start_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_load_start_capture: Option<event::ReactEventHandler>,
     /// `onPause`
     #[cfg_attr(rust_js, rust_js::name = "onPause")]
-    pub on_pause: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_pause: Option<event::ReactEventHandler>,
     /// `onPauseCapture`
     #[cfg_attr(rust_js, rust_js::name = "onPauseCapture")]
-    pub on_pause_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_pause_capture: Option<event::ReactEventHandler>,
     /// `onPlay`
     #[cfg_attr(rust_js, rust_js::name = "onPlay")]
-    pub on_play: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_play: Option<event::ReactEventHandler>,
     /// `onPlayCapture`
     #[cfg_attr(rust_js, rust_js::name = "onPlayCapture")]
-    pub on_play_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_play_capture: Option<event::ReactEventHandler>,
     /// `onPlaying`
     #[cfg_attr(rust_js, rust_js::name = "onPlaying")]
-    pub on_playing: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_playing: Option<event::ReactEventHandler>,
     /// `onPlayingCapture`
     #[cfg_attr(rust_js, rust_js::name = "onPlayingCapture")]
-    pub on_playing_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_playing_capture: Option<event::ReactEventHandler>,
     /// `onProgress`
     #[cfg_attr(rust_js, rust_js::name = "onProgress")]
-    pub on_progress: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_progress: Option<event::ReactEventHandler>,
     /// `onProgressCapture`
     #[cfg_attr(rust_js, rust_js::name = "onProgressCapture")]
-    pub on_progress_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_progress_capture: Option<event::ReactEventHandler>,
     /// `onRateChange`
     #[cfg_attr(rust_js, rust_js::name = "onRateChange")]
-    pub on_rate_change: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_rate_change: Option<event::ReactEventHandler>,
     /// `onRateChangeCapture`
     #[cfg_attr(rust_js, rust_js::name = "onRateChangeCapture")]
-    pub on_rate_change_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_rate_change_capture: Option<event::ReactEventHandler>,
     /// `onSeeked`
     #[cfg_attr(rust_js, rust_js::name = "onSeeked")]
-    pub on_seeked: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_seeked: Option<event::ReactEventHandler>,
     /// `onSeekedCapture`
     #[cfg_attr(rust_js, rust_js::name = "onSeekedCapture")]
-    pub on_seeked_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_seeked_capture: Option<event::ReactEventHandler>,
     /// `onSeeking`
     #[cfg_attr(rust_js, rust_js::name = "onSeeking")]
-    pub on_seeking: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_seeking: Option<event::ReactEventHandler>,
     /// `onSeekingCapture`
     #[cfg_attr(rust_js, rust_js::name = "onSeekingCapture")]
-    pub on_seeking_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_seeking_capture: Option<event::ReactEventHandler>,
     /// `onStalled`
     #[cfg_attr(rust_js, rust_js::name = "onStalled")]
-    pub on_stalled: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_stalled: Option<event::ReactEventHandler>,
     /// `onStalledCapture`
     #[cfg_attr(rust_js, rust_js::name = "onStalledCapture")]
-    pub on_stalled_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_stalled_capture: Option<event::ReactEventHandler>,
     /// `onSuspend`
     #[cfg_attr(rust_js, rust_js::name = "onSuspend")]
-    pub on_suspend: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_suspend: Option<event::ReactEventHandler>,
     /// `onSuspendCapture`
     #[cfg_attr(rust_js, rust_js::name = "onSuspendCapture")]
-    pub on_suspend_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_suspend_capture: Option<event::ReactEventHandler>,
     /// `onTimeUpdate`
     #[cfg_attr(rust_js, rust_js::name = "onTimeUpdate")]
-    pub on_time_update: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_time_update: Option<event::ReactEventHandler>,
     /// `onTimeUpdateCapture`
     #[cfg_attr(rust_js, rust_js::name = "onTimeUpdateCapture")]
-    pub on_time_update_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_time_update_capture: Option<event::ReactEventHandler>,
     /// `onVolumeChange`
     #[cfg_attr(rust_js, rust_js::name = "onVolumeChange")]
-    pub on_volume_change: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_volume_change: Option<event::ReactEventHandler>,
     /// `onVolumeChangeCapture`
     #[cfg_attr(rust_js, rust_js::name = "onVolumeChangeCapture")]
-    pub on_volume_change_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_volume_change_capture: Option<event::ReactEventHandler>,
     /// `onWaiting`
     #[cfg_attr(rust_js, rust_js::name = "onWaiting")]
-    pub on_waiting: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_waiting: Option<event::ReactEventHandler>,
     /// `onWaitingCapture`
     #[cfg_attr(rust_js, rust_js::name = "onWaitingCapture")]
-    pub on_waiting_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_waiting_capture: Option<event::ReactEventHandler>,
     /// `onAuxClick`
     #[cfg_attr(rust_js, rust_js::name = "onAuxClick")]
-    pub on_aux_click: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_aux_click: Option<event::MouseEventHandler>,
     /// `onAuxClickCapture`
     #[cfg_attr(rust_js, rust_js::name = "onAuxClickCapture")]
-    pub on_aux_click_capture: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_aux_click_capture: Option<event::MouseEventHandler>,
     /// `onClick`
     #[cfg_attr(rust_js, rust_js::name = "onClick")]
-    pub on_click: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_click: Option<event::MouseEventHandler>,
     /// `onClickCapture`
     #[cfg_attr(rust_js, rust_js::name = "onClickCapture")]
-    pub on_click_capture: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_click_capture: Option<event::MouseEventHandler>,
     /// `onContextMenu`
     #[cfg_attr(rust_js, rust_js::name = "onContextMenu")]
-    pub on_context_menu: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_context_menu: Option<event::MouseEventHandler>,
     /// `onContextMenuCapture`
     #[cfg_attr(rust_js, rust_js::name = "onContextMenuCapture")]
-    pub on_context_menu_capture: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_context_menu_capture: Option<event::MouseEventHandler>,
     /// `onDoubleClick`
     #[cfg_attr(rust_js, rust_js::name = "onDoubleClick")]
-    pub on_double_click: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_double_click: Option<event::MouseEventHandler>,
     /// `onDoubleClickCapture`
     #[cfg_attr(rust_js, rust_js::name = "onDoubleClickCapture")]
-    pub on_double_click_capture: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_double_click_capture: Option<event::MouseEventHandler>,
     /// `onDrag`
     #[cfg_attr(rust_js, rust_js::name = "onDrag")]
-    pub on_drag: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag: Option<event::DragEventHandler>,
     /// `onDragCapture`
     #[cfg_attr(rust_js, rust_js::name = "onDragCapture")]
-    pub on_drag_capture: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag_capture: Option<event::DragEventHandler>,
     /// `onDragEnd`
     #[cfg_attr(rust_js, rust_js::name = "onDragEnd")]
-    pub on_drag_end: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag_end: Option<event::DragEventHandler>,
     /// `onDragEndCapture`
     #[cfg_attr(rust_js, rust_js::name = "onDragEndCapture")]
-    pub on_drag_end_capture: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag_end_capture: Option<event::DragEventHandler>,
     /// `onDragEnter`
     #[cfg_attr(rust_js, rust_js::name = "onDragEnter")]
-    pub on_drag_enter: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag_enter: Option<event::DragEventHandler>,
     /// `onDragEnterCapture`
     #[cfg_attr(rust_js, rust_js::name = "onDragEnterCapture")]
-    pub on_drag_enter_capture: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag_enter_capture: Option<event::DragEventHandler>,
     /// `onDragExit`
     #[cfg_attr(rust_js, rust_js::name = "onDragExit")]
-    pub on_drag_exit: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag_exit: Option<event::DragEventHandler>,
     /// `onDragExitCapture`
     #[cfg_attr(rust_js, rust_js::name = "onDragExitCapture")]
-    pub on_drag_exit_capture: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag_exit_capture: Option<event::DragEventHandler>,
     /// `onDragLeave`
     #[cfg_attr(rust_js, rust_js::name = "onDragLeave")]
-    pub on_drag_leave: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag_leave: Option<event::DragEventHandler>,
     /// `onDragLeaveCapture`
     #[cfg_attr(rust_js, rust_js::name = "onDragLeaveCapture")]
-    pub on_drag_leave_capture: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag_leave_capture: Option<event::DragEventHandler>,
     /// `onDragOver`
     #[cfg_attr(rust_js, rust_js::name = "onDragOver")]
-    pub on_drag_over: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag_over: Option<event::DragEventHandler>,
     /// `onDragOverCapture`
     #[cfg_attr(rust_js, rust_js::name = "onDragOverCapture")]
-    pub on_drag_over_capture: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag_over_capture: Option<event::DragEventHandler>,
     /// `onDragStart`
     #[cfg_attr(rust_js, rust_js::name = "onDragStart")]
-    pub on_drag_start: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag_start: Option<event::DragEventHandler>,
     /// `onDragStartCapture`
     #[cfg_attr(rust_js, rust_js::name = "onDragStartCapture")]
-    pub on_drag_start_capture: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drag_start_capture: Option<event::DragEventHandler>,
     /// `onDrop`
     #[cfg_attr(rust_js, rust_js::name = "onDrop")]
-    pub on_drop: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drop: Option<event::DragEventHandler>,
     /// `onDropCapture`
     #[cfg_attr(rust_js, rust_js::name = "onDropCapture")]
-    pub on_drop_capture: Option<Box<dyn Fn(&event::DragEvent)>>,
+    pub on_drop_capture: Option<event::DragEventHandler>,
     /// `onMouseDown`
     #[cfg_attr(rust_js, rust_js::name = "onMouseDown")]
-    pub on_mouse_down: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_mouse_down: Option<event::MouseEventHandler>,
     /// `onMouseDownCapture`
     #[cfg_attr(rust_js, rust_js::name = "onMouseDownCapture")]
-    pub on_mouse_down_capture: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_mouse_down_capture: Option<event::MouseEventHandler>,
     /// `onMouseEnter`
     #[cfg_attr(rust_js, rust_js::name = "onMouseEnter")]
-    pub on_mouse_enter: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_mouse_enter: Option<event::MouseEventHandler>,
     /// `onMouseLeave`
     #[cfg_attr(rust_js, rust_js::name = "onMouseLeave")]
-    pub on_mouse_leave: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_mouse_leave: Option<event::MouseEventHandler>,
     /// `onMouseMove`
     #[cfg_attr(rust_js, rust_js::name = "onMouseMove")]
-    pub on_mouse_move: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_mouse_move: Option<event::MouseEventHandler>,
     /// `onMouseMoveCapture`
     #[cfg_attr(rust_js, rust_js::name = "onMouseMoveCapture")]
-    pub on_mouse_move_capture: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_mouse_move_capture: Option<event::MouseEventHandler>,
     /// `onMouseOut`
     #[cfg_attr(rust_js, rust_js::name = "onMouseOut")]
-    pub on_mouse_out: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_mouse_out: Option<event::MouseEventHandler>,
     /// `onMouseOutCapture`
     #[cfg_attr(rust_js, rust_js::name = "onMouseOutCapture")]
-    pub on_mouse_out_capture: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_mouse_out_capture: Option<event::MouseEventHandler>,
     /// `onMouseOver`
     #[cfg_attr(rust_js, rust_js::name = "onMouseOver")]
-    pub on_mouse_over: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_mouse_over: Option<event::MouseEventHandler>,
     /// `onMouseOverCapture`
     #[cfg_attr(rust_js, rust_js::name = "onMouseOverCapture")]
-    pub on_mouse_over_capture: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_mouse_over_capture: Option<event::MouseEventHandler>,
     /// `onMouseUp`
     #[cfg_attr(rust_js, rust_js::name = "onMouseUp")]
-    pub on_mouse_up: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_mouse_up: Option<event::MouseEventHandler>,
     /// `onMouseUpCapture`
     #[cfg_attr(rust_js, rust_js::name = "onMouseUpCapture")]
-    pub on_mouse_up_capture: Option<Box<dyn Fn(&event::MouseEvent)>>,
+    pub on_mouse_up_capture: Option<event::MouseEventHandler>,
     /// `onSelect`
     #[cfg_attr(rust_js, rust_js::name = "onSelect")]
-    pub on_select: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_select: Option<event::ReactEventHandler>,
     /// `onSelectCapture`
     #[cfg_attr(rust_js, rust_js::name = "onSelectCapture")]
-    pub on_select_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_select_capture: Option<event::ReactEventHandler>,
     /// `onTouchCancel`
     #[cfg_attr(rust_js, rust_js::name = "onTouchCancel")]
-    pub on_touch_cancel: Option<Box<dyn Fn(&event::TouchEvent)>>,
+    pub on_touch_cancel: Option<event::TouchEventHandler>,
     /// `onTouchCancelCapture`
     #[cfg_attr(rust_js, rust_js::name = "onTouchCancelCapture")]
-    pub on_touch_cancel_capture: Option<Box<dyn Fn(&event::TouchEvent)>>,
+    pub on_touch_cancel_capture: Option<event::TouchEventHandler>,
     /// `onTouchEnd`
     #[cfg_attr(rust_js, rust_js::name = "onTouchEnd")]
-    pub on_touch_end: Option<Box<dyn Fn(&event::TouchEvent)>>,
+    pub on_touch_end: Option<event::TouchEventHandler>,
     /// `onTouchEndCapture`
     #[cfg_attr(rust_js, rust_js::name = "onTouchEndCapture")]
-    pub on_touch_end_capture: Option<Box<dyn Fn(&event::TouchEvent)>>,
+    pub on_touch_end_capture: Option<event::TouchEventHandler>,
     /// `onTouchMove`
     #[cfg_attr(rust_js, rust_js::name = "onTouchMove")]
-    pub on_touch_move: Option<Box<dyn Fn(&event::TouchEvent)>>,
+    pub on_touch_move: Option<event::TouchEventHandler>,
     /// `onTouchMoveCapture`
     #[cfg_attr(rust_js, rust_js::name = "onTouchMoveCapture")]
-    pub on_touch_move_capture: Option<Box<dyn Fn(&event::TouchEvent)>>,
+    pub on_touch_move_capture: Option<event::TouchEventHandler>,
     /// `onTouchStart`
     #[cfg_attr(rust_js, rust_js::name = "onTouchStart")]
-    pub on_touch_start: Option<Box<dyn Fn(&event::TouchEvent)>>,
+    pub on_touch_start: Option<event::TouchEventHandler>,
     /// `onTouchStartCapture`
     #[cfg_attr(rust_js, rust_js::name = "onTouchStartCapture")]
-    pub on_touch_start_capture: Option<Box<dyn Fn(&event::TouchEvent)>>,
+    pub on_touch_start_capture: Option<event::TouchEventHandler>,
     /// `onPointerDown`
     #[cfg_attr(rust_js, rust_js::name = "onPointerDown")]
-    pub on_pointer_down: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_down: Option<event::PointerEventHandler>,
     /// `onPointerDownCapture`
     #[cfg_attr(rust_js, rust_js::name = "onPointerDownCapture")]
-    pub on_pointer_down_capture: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_down_capture: Option<event::PointerEventHandler>,
     /// `onPointerMove`
     #[cfg_attr(rust_js, rust_js::name = "onPointerMove")]
-    pub on_pointer_move: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_move: Option<event::PointerEventHandler>,
     /// `onPointerMoveCapture`
     #[cfg_attr(rust_js, rust_js::name = "onPointerMoveCapture")]
-    pub on_pointer_move_capture: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_move_capture: Option<event::PointerEventHandler>,
     /// `onPointerUp`
     #[cfg_attr(rust_js, rust_js::name = "onPointerUp")]
-    pub on_pointer_up: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_up: Option<event::PointerEventHandler>,
     /// `onPointerUpCapture`
     #[cfg_attr(rust_js, rust_js::name = "onPointerUpCapture")]
-    pub on_pointer_up_capture: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_up_capture: Option<event::PointerEventHandler>,
     /// `onPointerCancel`
     #[cfg_attr(rust_js, rust_js::name = "onPointerCancel")]
-    pub on_pointer_cancel: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_cancel: Option<event::PointerEventHandler>,
     /// `onPointerCancelCapture`
     #[cfg_attr(rust_js, rust_js::name = "onPointerCancelCapture")]
-    pub on_pointer_cancel_capture: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_cancel_capture: Option<event::PointerEventHandler>,
     /// `onPointerEnter`
     #[cfg_attr(rust_js, rust_js::name = "onPointerEnter")]
-    pub on_pointer_enter: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_enter: Option<event::PointerEventHandler>,
     /// `onPointerLeave`
     #[cfg_attr(rust_js, rust_js::name = "onPointerLeave")]
-    pub on_pointer_leave: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_leave: Option<event::PointerEventHandler>,
     /// `onPointerOver`
     #[cfg_attr(rust_js, rust_js::name = "onPointerOver")]
-    pub on_pointer_over: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_over: Option<event::PointerEventHandler>,
     /// `onPointerOverCapture`
     #[cfg_attr(rust_js, rust_js::name = "onPointerOverCapture")]
-    pub on_pointer_over_capture: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_over_capture: Option<event::PointerEventHandler>,
     /// `onPointerOut`
     #[cfg_attr(rust_js, rust_js::name = "onPointerOut")]
-    pub on_pointer_out: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_out: Option<event::PointerEventHandler>,
     /// `onPointerOutCapture`
     #[cfg_attr(rust_js, rust_js::name = "onPointerOutCapture")]
-    pub on_pointer_out_capture: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_pointer_out_capture: Option<event::PointerEventHandler>,
     /// `onGotPointerCapture`
     #[cfg_attr(rust_js, rust_js::name = "onGotPointerCapture")]
-    pub on_got_pointer_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_got_pointer_capture: Option<event::ReactEventHandler>,
     /// `onGotPointerCaptureCapture`
     #[cfg_attr(rust_js, rust_js::name = "onGotPointerCaptureCapture")]
-    pub on_got_pointer_capture_capture: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_got_pointer_capture_capture: Option<event::PointerEventHandler>,
     /// `onLostPointerCapture`
     #[cfg_attr(rust_js, rust_js::name = "onLostPointerCapture")]
-    pub on_lost_pointer_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_lost_pointer_capture: Option<event::ReactEventHandler>,
     /// `onLostPointerCaptureCapture`
     #[cfg_attr(rust_js, rust_js::name = "onLostPointerCaptureCapture")]
-    pub on_lost_pointer_capture_capture: Option<Box<dyn Fn(&event::PointerEvent)>>,
+    pub on_lost_pointer_capture_capture: Option<event::PointerEventHandler>,
     /// `onScroll`
     #[cfg_attr(rust_js, rust_js::name = "onScroll")]
-    pub on_scroll: Option<Box<dyn Fn(&event::UIEvent)>>,
+    pub on_scroll: Option<event::UIEventHandler>,
     /// `onScrollCapture`
     #[cfg_attr(rust_js, rust_js::name = "onScrollCapture")]
-    pub on_scroll_capture: Option<Box<dyn Fn(&event::UIEvent)>>,
+    pub on_scroll_capture: Option<event::UIEventHandler>,
     /// `onScrollEnd`
     #[cfg_attr(rust_js, rust_js::name = "onScrollEnd")]
-    pub on_scroll_end: Option<Box<dyn Fn(&event::UIEvent)>>,
+    pub on_scroll_end: Option<event::UIEventHandler>,
     /// `onScrollEndCapture`
     #[cfg_attr(rust_js, rust_js::name = "onScrollEndCapture")]
-    pub on_scroll_end_capture: Option<Box<dyn Fn(&event::UIEvent)>>,
+    pub on_scroll_end_capture: Option<event::UIEventHandler>,
     /// `onWheel`
     #[cfg_attr(rust_js, rust_js::name = "onWheel")]
-    pub on_wheel: Option<Box<dyn Fn(&event::WheelEvent)>>,
+    pub on_wheel: Option<event::WheelEventHandler>,
     /// `onWheelCapture`
     #[cfg_attr(rust_js, rust_js::name = "onWheelCapture")]
-    pub on_wheel_capture: Option<Box<dyn Fn(&event::WheelEvent)>>,
+    pub on_wheel_capture: Option<event::WheelEventHandler>,
     /// `onAnimationStart`
     #[cfg_attr(rust_js, rust_js::name = "onAnimationStart")]
-    pub on_animation_start: Option<Box<dyn Fn(&event::AnimationEvent)>>,
+    pub on_animation_start: Option<event::AnimationEventHandler>,
     /// `onAnimationStartCapture`
     #[cfg_attr(rust_js, rust_js::name = "onAnimationStartCapture")]
-    pub on_animation_start_capture: Option<Box<dyn Fn(&event::AnimationEvent)>>,
+    pub on_animation_start_capture: Option<event::AnimationEventHandler>,
     /// `onAnimationEnd`
     #[cfg_attr(rust_js, rust_js::name = "onAnimationEnd")]
-    pub on_animation_end: Option<Box<dyn Fn(&event::AnimationEvent)>>,
+    pub on_animation_end: Option<event::AnimationEventHandler>,
     /// `onAnimationEndCapture`
     #[cfg_attr(rust_js, rust_js::name = "onAnimationEndCapture")]
-    pub on_animation_end_capture: Option<Box<dyn Fn(&event::AnimationEvent)>>,
+    pub on_animation_end_capture: Option<event::AnimationEventHandler>,
     /// `onAnimationIteration`
     #[cfg_attr(rust_js, rust_js::name = "onAnimationIteration")]
-    pub on_animation_iteration: Option<Box<dyn Fn(&event::AnimationEvent)>>,
+    pub on_animation_iteration: Option<event::AnimationEventHandler>,
     /// `onAnimationIterationCapture`
     #[cfg_attr(rust_js, rust_js::name = "onAnimationIterationCapture")]
-    pub on_animation_iteration_capture: Option<Box<dyn Fn(&event::AnimationEvent)>>,
+    pub on_animation_iteration_capture: Option<event::AnimationEventHandler>,
     /// `onToggle`
     #[cfg_attr(rust_js, rust_js::name = "onToggle")]
-    pub on_toggle: Option<Box<dyn Fn(&event::ToggleEvent)>>,
+    pub on_toggle: Option<event::ToggleEventHandler>,
     /// `onBeforeToggle`
     #[cfg_attr(rust_js, rust_js::name = "onBeforeToggle")]
-    pub on_before_toggle: Option<Box<dyn Fn(&event::ToggleEvent)>>,
+    pub on_before_toggle: Option<event::ToggleEventHandler>,
     /// `onTransitionCancel`
     #[cfg_attr(rust_js, rust_js::name = "onTransitionCancel")]
-    pub on_transition_cancel: Option<Box<dyn Fn(&event::TransitionEvent)>>,
+    pub on_transition_cancel: Option<event::TransitionEventHandler>,
     /// `onTransitionCancelCapture`
     #[cfg_attr(rust_js, rust_js::name = "onTransitionCancelCapture")]
-    pub on_transition_cancel_capture: Option<Box<dyn Fn(&event::TransitionEvent)>>,
+    pub on_transition_cancel_capture: Option<event::TransitionEventHandler>,
     /// `onTransitionEnd`
     #[cfg_attr(rust_js, rust_js::name = "onTransitionEnd")]
-    pub on_transition_end: Option<Box<dyn Fn(&event::TransitionEvent)>>,
+    pub on_transition_end: Option<event::TransitionEventHandler>,
     /// `onTransitionEndCapture`
     #[cfg_attr(rust_js, rust_js::name = "onTransitionEndCapture")]
-    pub on_transition_end_capture: Option<Box<dyn Fn(&event::TransitionEvent)>>,
+    pub on_transition_end_capture: Option<event::TransitionEventHandler>,
     /// `onTransitionRun`
     #[cfg_attr(rust_js, rust_js::name = "onTransitionRun")]
-    pub on_transition_run: Option<Box<dyn Fn(&event::TransitionEvent)>>,
+    pub on_transition_run: Option<event::TransitionEventHandler>,
     /// `onTransitionRunCapture`
     #[cfg_attr(rust_js, rust_js::name = "onTransitionRunCapture")]
-    pub on_transition_run_capture: Option<Box<dyn Fn(&event::TransitionEvent)>>,
+    pub on_transition_run_capture: Option<event::TransitionEventHandler>,
     /// `onTransitionStart`
     #[cfg_attr(rust_js, rust_js::name = "onTransitionStart")]
-    pub on_transition_start: Option<Box<dyn Fn(&event::TransitionEvent)>>,
+    pub on_transition_start: Option<event::TransitionEventHandler>,
     /// `onTransitionStartCapture`
     #[cfg_attr(rust_js, rust_js::name = "onTransitionStartCapture")]
-    pub on_transition_start_capture: Option<Box<dyn Fn(&event::TransitionEvent)>>,
+    pub on_transition_start_capture: Option<event::TransitionEventHandler>,
     /// `suppressHydrationWarning`
     #[cfg_attr(rust_js, rust_js::name = "suppressHydrationWarning")]
     pub suppress_hydration_warning: Option<bool>,
@@ -2356,10 +2356,10 @@ pub struct DialogHTMLAttributes<'a> {
     pub closedby: Option<&'a str>,
     /// `onCancel`
     #[cfg_attr(rust_js, rust_js::name = "onCancel")]
-    pub on_cancel: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_cancel: Option<event::ReactEventHandler>,
     /// `onClose`
     #[cfg_attr(rust_js, rust_js::name = "onClose")]
-    pub on_close: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_close: Option<event::ReactEventHandler>,
     /// `open`
     pub open: Option<bool>,
     /// What `DialogHTMLAttributes` extends.
@@ -2609,7 +2609,7 @@ pub struct InputHTMLAttributes<'a> {
     pub width: Option<&'a str>,
     /// `onChange`
     #[cfg_attr(rust_js, rust_js::name = "onChange")]
-    pub on_change: Option<Box<dyn Fn(&event::ChangeEvent)>>,
+    pub on_change: Option<event::ChangeEventHandler>,
     /// What `InputHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub html: HTMLAttributes<'a>,
@@ -3006,7 +3006,7 @@ pub struct SelectHTMLAttributes<'a> {
     pub value: Option<&'a str>,
     /// `onChange`
     #[cfg_attr(rust_js, rust_js::name = "onChange")]
-    pub on_change: Option<Box<dyn Fn(&event::ChangeEvent)>>,
+    pub on_change: Option<event::ChangeEventHandler>,
     /// What `SelectHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub html: HTMLAttributes<'a>,
@@ -3125,7 +3125,7 @@ pub struct TextareaHTMLAttributes<'a> {
     pub wrap: Option<&'a str>,
     /// `onChange`
     #[cfg_attr(rust_js, rust_js::name = "onChange")]
-    pub on_change: Option<Box<dyn Fn(&event::ChangeEvent)>>,
+    pub on_change: Option<event::ChangeEventHandler>,
     /// What `TextareaHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub html: HTMLAttributes<'a>,
@@ -3236,10 +3236,10 @@ pub struct VideoHTMLAttributes<'a> {
     pub disable_remote_playback: Option<bool>,
     /// `onResize`
     #[cfg_attr(rust_js, rust_js::name = "onResize")]
-    pub on_resize: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_resize: Option<event::ReactEventHandler>,
     /// `onResizeCapture`
     #[cfg_attr(rust_js, rust_js::name = "onResizeCapture")]
-    pub on_resize_capture: Option<Box<dyn Fn(&event::SyntheticEvent)>>,
+    pub on_resize_capture: Option<event::ReactEventHandler>,
     /// What `VideoHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub media: MediaHTMLAttributes<'a>,

@@ -85,7 +85,7 @@ function rustType(name: string, type: Model): string | null {
   );
   if (name.startsWith("on") && types.length === 1 && types[0].kind === "reference" && /EventHandler$/.test(types[0].name)) {
     const event = EVENT_TYPES[name.replace(/Capture$/, "")] ?? "SyntheticEvent";
-    return `Box<dyn Fn(&event::${event})>`;
+    return `event::${event === "SyntheticEvent" ? "ReactEvent" : event}Handler`;
   }
   if (types.length === 1 && types[0].kind === "reference" && types[0].name === "CSSProperties") return "CSSProperties";
   const kinds = new Set(types.flatMap((t: Model) => kinds_of(t)));
