@@ -36,8 +36,19 @@ error[E0277]: `react::webapi::HTMLDivElement` takes no `href`
   in the DOM, `<b>`, `<section>`, still are, and take what the tags of an
   `HTMLElement` take.
 - **Any `Element` takes every attribute**: a tag of no element of webapi's,
-  an SVG one's, and a tag value, `<Comp href=..>` of a `react::Tag` that may
-  be an `<a>` (ADR 0220), as TypeScript's are any intrinsic's.
+  and a tag value, `<Comp href=..>` of a `react::Tag` that may be an `<a>`
+  (ADR 0220), as TypeScript's are any intrinsic's.
+- **An SVG tag is its SVG element**, as webapi's `SVGTag` gives it (ADR
+  0223): `<circle>` an `SVGCircleElement`, its ref's and its events'
+  `currentTarget`; a name HTML has too, `<a>`, is HTML's, as
+  `JSX.IntrinsicElements` has it. It takes `SVGAttributes`, which
+  @types/react's `SVGProps` gives every SVG tag: an attribute only it has,
+  `cx`, is SVG's elements' (`has::Svg`), so `<div cx>` is an error, as one
+  only `HTMLAttributes` has, `hidden`, is HTML's elements' (`has::Html`),
+  so `<circle hidden>` is; one both have, `className`, every element's.
+  Each family is implemented through its marker, which any `Element` has.
+  (Amended: an SVG tag was an `Element`, of every attribute, and SVG's
+  attributes every element's.)
 - **Each attribute takes what @types/react types it as**, in every
   interface that has it: `className={..}` text (`value::Text`),
   `tabIndex` a number (`value::Number`), `width` either

@@ -245,28 +245,39 @@ const valueType = (name: string): string => {
 };
 
 // Each HTML tag's element, as the webapi crate's `Tag` gives it (ADR 0224):
-// `<button>` is an `HTMLButtonElement`. Another, an SVG one's, is any `Element`.
+// `<button>` is an `HTMLButtonElement`; and each SVG tag's, as its `SVGTag`
+// gives it, `<circle>` an `SVGCircleElement`, but a name HTML has too, `<a>`,
+// which is HTML's, as @types/react's `JSX.IntrinsicElements` has it.
 const webapiSource = readFileSync(join(root, "webapi", "src", "lib.rs"), "utf8");
 const tagTypes = new Map([...webapiSource.matchAll(/rust_js::name = "([^"]+)"\)\]\n    pub struct (\w+);/g)].map(([, name, type]) => [type, name]));
 const tagElements = new Map<string, string>();
 for (const [, type, element] of webapiSource.matchAll(/impl Tag for tags::(\w+) \{ type Element = (\w+); \}/g)) {
   tagElements.set(tagTypes.get(type)!, element);
 }
+const htmlElements = new Set(["HTMLElement", ...tagElements.values()]);
+const svgElements = new Set<string>(["SVGElement"]);
+for (const [, type, element] of webapiSource.matchAll(/impl SVGTag for svg_tags::(\w+) \{ type Element = (\w+); \}/g)) {
+  svgElements.add(element);
+  if (!tagElements.has(tagTypes.get(type)!)) tagElements.set(tagTypes.get(type)!, element);
+}
 
 // What each tag takes, as @types/react's `JSX.IntrinsicElements` says:
-// `button` a `ButtonHTMLAttributes`, with what it extends. An attribute
-// `HTMLAttributes` has is every element's; another is only its tags'
-// elements', and any `Element`'s, a tag's of no element of its own, an
-// SVG one's say, or a tag value's (ADR 0228).
+// `button` a `ButtonHTMLAttributes`, with what it extends, `circle` an
+// `SVGProps`, all of `SVGAttributes`, as each SVG tag. An attribute both
+// `HTMLAttributes` and `SVGAttributes` have is every element's; one of
+// `HTMLAttributes` only, HTML's elements' (`has::Html`); one of
+// `SVGAttributes`, SVG's (`has::Svg`); another, only its tags' elements'.
+// Any `Element` takes each, a tag value's say (ADR 0228).
 const reactTypes = declarations.find((d: any) => d.kind === "namespace" && d.name === "React").declarations;
 const interfaces = new Map<string, any>(reactTypes.filter((d: any) => d.kind === "interface").map((d: any) => [d.name, d]));
 const propsOf = (name: string): Set<string> => {
   const i = interfaces.get(name.replace(/^React\./, ""));
   if (!i) return new Set();
-  const own = i.members.filter((m: any) => m.kind === "property" && /^[a-zA-Z]+$/.test(m.name)).map((m: any) => m.name);
+  const own = i.members.filter((m: any) => m.kind === "property" && /^[a-zA-Z][a-zA-Z0-9]*$/.test(m.name)).map((m: any) => m.name);
   return new Set([...own, ...i.extends.flatMap((e: any) => [...propsOf(e.name)])]);
 };
 const everyElements = propsOf("HTMLAttributes");
+const svgAttributes = propsOf("SVGAttributes");
 const intrinsic = reactTypes
   .find((d: any) => d.kind === "namespace" && d.name === "JSX")
   .declarations.find((d: any) => d.kind === "interface" && d.name === "IntrinsicElements");
@@ -296,7 +307,8 @@ for (const [name, entry] of Object.entries(attributes).sort(([a], [b]) => (a < b
   if (methods.has(method)) throw new Error(`two attributes are \`${method}\``);
   methods.add(method);
   const ty = valueType(name);
-  const bound = accepts.has(name) ? `\n    where\n        T: has::${pascal(name)},` : "";
+  const bounded = accepts.has(name) || everyElements.has(name) !== svgAttributes.has(name);
+  const bound = bounded ? `\n    where\n        T: has::${pascal(name)},` : "";
   lines.push(
     `    /// \`${name}\``,
     `${gate(entry)}    #[cfg_attr(rust_js, rust_js::link_name = "prop ${name}")]`,
@@ -311,20 +323,41 @@ lines.push(
   "",
   "/// What takes each attribute that isn't every element's, as @types/react's",
   "/// `JSX.IntrinsicElements` says (ADR 0228): `has::Href` an `<a>`'s",
-  "/// `HTMLAnchorElement`, and any `Element`, a tag value's say.",
+  "/// `HTMLAnchorElement`, `has::Cx` each SVG element, and any `Element`, a",
+  "/// tag value's say.",
   "pub mod has {",
   "    use super::webapi;",
+  "",
+  "    /// HTML's elements, which take what `HTMLAttributes` has, and any `Element`.",
+  "    pub trait Html {}",
+  ...[...htmlElements].sort().map((e) => `    impl Html for webapi::${e} {}`),
+  "    impl Html for webapi::Element {}",
+  "",
+  "    /// SVG's elements, which take what `SVGAttributes` has, and any `Element`.",
+  "    pub trait Svg {}",
+  ...[...svgElements].sort().map((e) => `    impl Svg for webapi::${e} {}`),
+  "    impl Svg for webapi::Element {}",
 );
-for (const [name, { elements, tags }] of [...accepts].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
+const bounded = new Set([...accepts.keys(), ...[...everyElements, ...svgAttributes].filter((n) => everyElements.has(n) !== svgAttributes.has(n))]);
+for (const name of [...bounded].sort()) {
   if (!(name in attributes) || HAND_WRITTEN.has(name) || name.startsWith("on")) continue;
-  const list = [...tags].sort().map((t) => `<${t}>`).join(", ");
+  const html = accepts.get(name);
+  const svg = svgAttributes.has(name);
+  const list = [
+    ...(everyElements.has(name) ? ["HTML's elements"] : html ? [...html.tags].sort().map((t) => `<${t}>`) : []),
+    ...(svg ? ["SVG's elements"] : []),
+  ].join(", ");
   lines.push(
     "",
-    `    /// An element that takes \`${name}\`: ${list}'s.`,
+    `    /// An element that takes \`${name}\`: ${list}.`,
     `    #[diagnostic::on_unimplemented(message = "\`{Self}\` takes no \`${name}\`", label = "not an attribute of this tag", note = "@types/react gives \`${name}\` to ${list}")]`,
     `    pub trait ${pascal(name)} {}`,
-    ...[...elements].sort().map((e) => `    impl ${pascal(name)} for webapi::${e} {}`),
-    `    impl ${pascal(name)} for webapi::Element {}`,
+    // HTML's tags' elements one by one, and the rest of a family by its
+    // marker, which any `Element` has.
+    ...(html ? [...html.elements].sort().map((e) => `    impl ${pascal(name)} for webapi::${e} {}`) : []),
+    ...(everyElements.has(name) ? [`    impl<T: Html> ${pascal(name)} for T {}`] : []),
+    ...(svg ? [`    impl<T: Svg> ${pascal(name)} for T {}`] : []),
+    ...(!svg && !everyElements.has(name) ? [`    impl ${pascal(name)} for webapi::Element {}`] : []),
   );
 }
 lines.push("}", "", "/// Event handlers: `on_click` is `onClick`. A handler must not borrow", "/// anything, since it runs later: write it `move |e| ..`. Its event is of", "/// the element's, `event::Mouse<T>` (ADR 0224).", "#[doc(hidden)]", "impl<T> Element<T> {");

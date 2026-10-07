@@ -526,6 +526,43 @@ pub fn View() -> Element {
   }
 });
 
+// An SVG tag is its SVG element, `<circle>` an `SVGCircleElement`, its ref's
+// and its events' `currentTarget`; it takes `SVGAttributes`, as
+// @types/react's `SVGProps` gives every SVG tag, and an HTML tag doesn't:
+// `<div cx>` is an error, as an HTML-only global, `<circle hidden>`, is.
+test("JSX SVG tags are their SVG elements, of SVG's attributes", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::webapi::SVGCircleElement;
+use react::{Element, RefObject, jsx};
+pub fn Dot(dot: RefObject<Option<&'static SVGCircleElement>>) -> Element {
+    jsx! {
+        <svg viewBox="0 0 10 10" width="10">
+            <circle
+                ref={dot}
+                cx="5"
+                cy={5}
+                r="4"
+                className="dot"
+                onClick={|e| {
+                    let _: &SVGCircleElement = e.current_target();
+                }} />
+        </svg>
+    }
+}
+`);
+  run(args);
+  const { Dot } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(Dot({ current: null }))).toBe('<svg viewBox="0 0 10 10" width="10"><circle cx="5" cy="5" r="4" class="dot"></circle></svg>');
+  for (const [wrong, says] of [
+    ['<div cx="5" />', "`react::webapi::HTMLDivElement` takes no `cx`"],
+    ["<circle hidden={true} />", "`react::webapi::SVGCircleElement` takes no `hidden`"],
+  ]) {
+    const refused = compile(`use react::{Element, jsx};\npub fn View() -> Element {\n    jsx! { ${wrong} }\n}\n`);
+    const failed = Bun.spawnSync(refused.args, { cwd: refused.dir });
+    expect([failed.exitCode === 0, failed.stderr.toString().includes(says)], failed.stderr.toString()).toEqual([false, true]);
+  }
+});
+
 // React DOM's own table leaves these out, as their spelling needs no warning;
 // @types/react types them (ADR 0043).
 test("JSX takes every attribute @types/react types", async () => {
