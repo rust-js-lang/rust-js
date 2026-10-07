@@ -122,6 +122,60 @@ test("an empty trait implementation needs no function body", async () => {
   expect(m.u32Marker()).toBe(m.u32Marker());
 });
 
+// A bound of a trait with nothing in it, and supertraits with nothing,
+// passes no dictionary: nothing would read it. So an exported function
+// takes what its Rust takes, `named(value)`, as its `.d.ts` says, where it
+// took `named(value, TMarker)`. A `dyn` of one still carries its impl's,
+// whose `$drop` drops it (ADR 0098), and `Copy`'s, which copies, isn't one.
+test("a bound of a trait with nothing in it passes no dictionary", async () => {
+  const dir = fixture("marker-bounds");
+  writeFileSync(join(dir, "lib.rs"), `pub trait Marker {}
+impl Marker for u32 {}
+impl Marker for String {}
+pub trait Sub: Marker {}
+impl Sub for u32 {}
+pub trait Copied: Copy {}
+impl Copied for u32 {}
+pub fn local(value: impl Marker) -> u32 { let _ = value; 1 }
+pub fn named<T: Marker>(value: T) -> u32 { let _ = value; 3 }
+pub fn sub<T: Sub>(value: T) -> u32 { named(value) + 1 }
+pub fn twice<T: Copied + Into<u32>>(value: T) -> u32 { let copy = value; copy.into() + value.into() }
+pub fn calls() -> u32 { local(1u32) + named(String::from("a")) + sub(2u32) + twice(5u32) }
+pub fn boxed<T: Marker + 'static>(value: T) -> Box<dyn Marker> { Box::new(value) }
+pub fn count() -> usize { let items: Vec<Box<dyn Marker>> = vec![Box::new(1u32), boxed(String::from("x"))]; items.len() }
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function local(value) {");
+  expect(js).toContain("export function named(value) {");
+  expect(js).toContain("export function sub(value) {");
+  expect(js).toMatch(/export function twice\(value, TCopied/);
+  const m = await import(join(dir, "lib.js"));
+  expect([m.calls(), m.count()]).toEqual([1 + 3 + 4 + 10, 2]);
+  // A `dyn` of a `T: Marker` drops it: its dictionary, made where it's
+  // boxed, has the drop the caller gave for `T`.
+  const drops = fixture("marker-drops");
+  writeFileSync(join(drops, "lib.rs"), `use std::cell::Cell;
+use std::rc::Rc;
+pub trait Marker {}
+pub struct Noisy(pub Rc<Cell<u32>>);
+impl Drop for Noisy { fn drop(&mut self) { self.0.set(self.0.get() + 1); } }
+impl Marker for Noisy {}
+pub fn boxed<T: Marker + 'static>(value: T) -> Box<dyn Marker> { Box::new(value) }
+pub fn dropped() -> u32 {
+    let count = Rc::new(Cell::new(0));
+    {
+        let _a = boxed(Noisy(count.clone()));
+        let _b: Box<dyn Marker> = Box::new(Noisy(count.clone()));
+    }
+    count.get()
+}
+`);
+  run([compiler, join(drops, "lib.rs"), "-o", join(drops, "lib.js")]);
+  expect(readFileSync(join(drops, "lib.js"), "utf8")).toContain("export function boxed(value, dropT) {\n  return { value, impl: { $drop: dropT } };");
+  expect((await import(join(drops, "lib.js"))).dropped()).toBe(2);
+});
+
 test("trait method expressions keep their Rust source locations", async () => {
   const { decodeMappings, lookup } = await import("./sourcemap");
   const map = JSON.parse(readFileSync(join(directory, "lib.js.map"), "utf8"));

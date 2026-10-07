@@ -320,6 +320,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0227 The react crate's types have @types/react's names](decisions/0227-react-type-names.md)
 - [0228 A tag takes the attributes @types/react gives it](decisions/0228-per-tag-attributes.md)
 - [0229 A union parameter takes each member as it is](decisions/0229-union-parameters.md)
+- [0230 A bound of a trait with nothing in it passes no dictionary](decisions/0230-marker-bounds.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)
