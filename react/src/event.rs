@@ -273,6 +273,29 @@ events! {
     }
 }
 
+/// A handler of an event, as @types/react's `EventHandler<E>`:
+/// `on_click: MouseEventHandler<HTMLButtonElement>` is TypeScript's
+/// `onClick: MouseEventHandler<HTMLButtonElement>`.
+pub type EventHandler<E> = Box<dyn Fn(&E)>;
+pub type ReactEventHandler<T = webapi::Element> = EventHandler<SyntheticEvent<T>>;
+pub type ClipboardEventHandler<T = webapi::Element> = EventHandler<ClipboardEvent<T>>;
+pub type CompositionEventHandler<T = webapi::Element> = EventHandler<CompositionEvent<T>>;
+pub type DragEventHandler<T = webapi::Element> = EventHandler<DragEvent<T>>;
+pub type FocusEventHandler<T = webapi::Element> = EventHandler<FocusEvent<T>>;
+/// Of one element: @types/react's takes the target's too, which this
+/// `ChangeEvent`'s `value` reads without.
+pub type ChangeEventHandler<T = webapi::Element> = EventHandler<ChangeEvent<T>>;
+pub type InputEventHandler<T = webapi::Element> = EventHandler<InputEvent<T>>;
+pub type KeyboardEventHandler<T = webapi::Element> = EventHandler<KeyboardEvent<T>>;
+pub type MouseEventHandler<T = webapi::Element> = EventHandler<MouseEvent<T>>;
+pub type TouchEventHandler<T = webapi::Element> = EventHandler<TouchEvent<T>>;
+pub type PointerEventHandler<T = webapi::Element> = EventHandler<PointerEvent<T>>;
+pub type UIEventHandler<T = webapi::Element> = EventHandler<UIEvent<T>>;
+pub type WheelEventHandler<T = webapi::Element> = EventHandler<WheelEvent<T>>;
+pub type AnimationEventHandler<T = webapi::Element> = EventHandler<AnimationEvent<T>>;
+pub type ToggleEventHandler<T = webapi::Element> = EventHandler<ToggleEvent<T>>;
+pub type TransitionEventHandler<T = webapi::Element> = EventHandler<TransitionEvent<T>>;
+
 impl<T> MouseEvent<T> {
     /// Whether a modifier key, like `"Shift"` or `"CapsLock"`, is down.
     #[cfg_attr(rust_js, rust_js::link_name = "getModifierState")]

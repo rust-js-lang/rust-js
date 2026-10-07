@@ -1861,6 +1861,36 @@ pub fn Button<C: ReactNode>(ButtonProps { children, on_click }: ButtonProps<C>) 
   expect([Button({ children: "b", on_click: handler }).props.onClick === handler, Button({ children: "b" }).props.onClick]).toEqual([true, undefined]);
 });
 
+// A handler prop is named as @types/react names it, `MouseEventHandler<T>`:
+// `onClick?: MouseEventHandler<HTMLButtonElement>`, an `EventHandler` of
+// its event, the element's, or any's by default.
+test("JSX handler props are @types/react's EventHandler aliases", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::event::{ChangeEventHandler, EventHandler, MouseEvent, MouseEventHandler};
+use react::webapi::{HTMLButtonElement, HTMLInputElement};
+use react::{Element, jsx};
+pub struct FieldProps {
+    pub on_click: Option<MouseEventHandler<HTMLButtonElement>>,
+    pub on_change: ChangeEventHandler<HTMLInputElement>,
+    pub on_any: MouseEventHandler,
+    pub on_same: EventHandler<MouseEvent<HTMLButtonElement>>,
+}
+pub fn Field(FieldProps { on_click, on_change, on_any, on_same }: FieldProps) -> Element {
+    let _ = (on_any, on_same);
+    jsx! {
+        <>
+            <button onClick={move |e| if let Some(f) = &on_click { f(e) }}>{"Go"}</button>
+            <input onChange={on_change} />
+        </>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("<button onClick={onClick}>Go</button>");
+  expect(jsx).toContain("<input onChange={onChange} />");
+});
+
 // As react.dev's Button's `style={style}` of an optional prop: `None` none.
 test("JSX passes an optional style on as it is", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]

@@ -38,6 +38,14 @@ for the same things, and the `.d.ts` rust-js writes already used React's.
   it: `SetStateAction<T>` is what it takes, a value, `set`, or a function of
   the previous one, `update`; the reducer's `Dispatch<A>` is the same type
   of another action.
+- **A handler is its alias**, as @types/react's: `event::EventHandler<E>`
+  is `Box<dyn Fn(&E)>`, and `MouseEventHandler<T = Element>` an
+  `EventHandler<MouseEvent<T>>`, one per event, `ReactEventHandler`
+  `SyntheticEvent`'s; the generated attributes use them, `on_click:
+  Option<event::MouseEventHandler>`. `ChangeEventHandler<T>` takes one
+  element, as this `ChangeEvent` does. An alias is Rust's only, so the
+  `.d.ts` still writes `(event: MouseEvent<HTMLButtonElement>) => void`.
+  (Amended.)
 - **Names React has no type for stay the crate's own**: `Element`, what
   JSX makes, `JSX.Element`; `Rest`, `...props`; `children::Child`;
   `InnerHtml`, `{ __html }`; `Cleanup`, what an effect gives back, which
