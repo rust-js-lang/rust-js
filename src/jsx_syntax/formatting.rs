@@ -1,7 +1,7 @@
 //! Indent JSX using the compiler's parser. Only leading whitespace before
 //! tokens changes: comments, literal contents and line breaks stay intact.
 
-use std::collections::{BTreeMap, HashSet};
+use std::collections::BTreeMap;
 
 use rustc_ast::mut_visit::{self, FnKind, MutVisitor};
 use rustc_ast::token::TokenKind;
@@ -34,7 +34,7 @@ impl Callbacks for Formatter {
                 source,
                 start: file.start_pos,
                 indents: BTreeMap::new(),
-                tags: HashSet::new(),
+                tags: super::TagNames::new(),
             },
         };
         visitor.visit_crate(krate);
@@ -126,7 +126,7 @@ pub(super) struct Layout {
     lines: Vec<usize>,
     indents: BTreeMap<usize, usize>,
     /// The tags of the function laid out (ADR 0220).
-    pub(super) tags: HashSet<String>,
+    pub(super) tags: super::TagNames,
 }
 
 impl Layout {

@@ -24,8 +24,8 @@ export const mutations: Mutation[] = [
     name: "tag-local-unseen",
     breaks: "a capitalized local of the function isn't a tag, and `<Comp>` asks for a component `Comp`'s macro",
     file: "src/jsx_syntax.rs",
-    find: "                self.0.insert(ident.to_string());\n",
-    replace: "                let _ = ident;\n",
+    find: "                self.0.insert(ident.to_string(), props.clone().filter(|_| typed));\n",
+    replace: "                let _ = (ident, typed);\n",
     tests: ["test/jsx.test.ts", "-t", "tag that.s a value"],
   },
   {
@@ -43,5 +43,13 @@ export const mutations: Mutation[] = [
     find: "if let ExprKind::Closure(_) = &expr.kind {",
     replace: "if let ExprKind::Closure(_) = &expr.kind\n                && false\n            {",
     tests: ["test/jsx.test.ts", "-t", "ElementType, rendered as a tag"],
+  },
+  {
+    name: "local-component-type-unread",
+    breaks: "`let Heading: fn(HProps<..>) -> JSX::Element` is read as a DOM element's tag, which a function isn't",
+    file: "src/jsx_syntax.rs",
+    find: "[only] => parser::props_path(&only.ty).filter(|path| !path.is_empty()),",
+    replace: "[_] => None,",
+    tests: ["test/jsx.test.ts", "-t", "function type is a tag"],
   },
 ];

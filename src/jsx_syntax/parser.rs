@@ -11,13 +11,13 @@ use std::collections::HashSet;
 
 use super::formatting::Layout;
 use super::literals;
-use super::{rust_expression, template};
+use super::{TagNames, rust_expression, template};
 
 type R<T> = Result<T, ErrorGuaranteed>;
 
 /// `tags`: the capitalized parameters and `let`s of the function the JSX is
 /// in, each a `react::Tag`, `<Comp>` of `let Comp = As::H1`.
-pub(super) fn jsx(sess: &Session, tokens: TokenStream, span: Span, tags: &HashSet<String>) -> R<TokenStream> {
+pub(super) fn jsx(sess: &Session, tokens: TokenStream, span: Span, tags: &TagNames) -> R<TokenStream> {
     parse(sess, tokens, span, 0, None, tags)
 }
 
@@ -32,7 +32,7 @@ fn parse(
     span: Span,
     indent: usize,
     layout: Option<&mut Layout>,
-    tags: &HashSet<String>,
+    tags: &TagNames,
 ) -> R<TokenStream> {
     let mut p = Jsx {
         sess,
@@ -55,7 +55,7 @@ struct Jsx<'a> {
     at: usize,
     span: Span,
     layout: Option<&'a mut Layout>,
-    tags: &'a HashSet<String>,
+    tags: &'a TagNames,
 }
 
 impl Jsx<'_> {
@@ -206,7 +206,10 @@ impl Jsx<'_> {
         let intrinsic = !name.is_empty() && !name.contains("::") && name.starts_with(char::is_lowercase);
         // A capitalized local of the function, `<Comp>`: a `react::Tag`'s
         // element, or a component given its props whole, as before.
-        let local = self.tags.contains(&name);
+        let local = self.tags.contains_key(&name);
+        // A local of a component's function type, `fn(HProps<..>) -> ..`: that
+        // component, its props built by their type's companion (ADR 0239).
+        let local_props = self.tags.get(&name).cloned().flatten();
         let builtin = match name.as_str() {
             "Fragment" => Some("keyed_fragment"),
             "StrictMode" => Some("strict_mode"),
@@ -326,7 +329,7 @@ impl Jsx<'_> {
             }
         }
         let has_children = !children.is_empty();
-        let tag = local && !(attrs.is_empty() && !has_children && spread.is_some());
+        let tag = local && local_props.is_none() && !(attrs.is_empty() && !has_children && spread.is_some());
         let children = tuple(children, span);
         if name.is_empty() {
             if !attrs.is_empty() || spread.is_some() || closed {
@@ -484,41 +487,69 @@ impl Jsx<'_> {
                 }
                 attrs.push(("children".into(), children, span));
             }
-            let mut fields = Vec::new();
-            for (attr, value, at) in attrs {
-                // `aria-label` is a field a Rust struct can have, `aria_label`,
-                // which `rust_js::name` gives JS's name again (ADR 0200).
-                let field = snake(&attr).replace('-', "_");
-                fields.extend(template(self.sess, format!("r#{field}:"), at).iter().cloned());
-                fields.extend(value.iter().cloned());
-                fields.extend(template(self.sess, ",".into(), at).iter().cloned());
+            // A local component's props, by their type's companion, given
+            // what's written and the base, `{..base}` (ADR 0239).
+            if let Some(props) = &local_props {
+                if reference_prop.is_some() || types.is_some() {
+                    return Err(self.error("a local component takes no `ref` nor type arguments"));
+                }
+                let mut given = Vec::new();
+                for (attr, value, at) in attrs {
+                    let field = snake(&attr).replace('-', "_");
+                    given.extend(template(self.sess, format!("r#{field}:"), at).iter().cloned());
+                    given.extend(value.iter().cloned());
+                    given.extend(template(self.sess, ",".into(), at).iter().cloned());
+                }
+                let mut slots: Vec<_> = template(self.sess, "@given".into(), span).iter().cloned().collect();
+                slots.push(group(Delimiter::Bracket, TokenStream::new(given), span));
+                slots.push(group(Delimiter::Bracket, spread.unwrap_or_default(), span));
+                let mut companion: Vec<_> = template(self.sess, format!("{props}!"), span).iter().cloned().collect();
+                companion.push(group(Delimiter::Parenthesis, TokenStream::new(slots), span));
+                let mut arguments: Vec<_> = template(self.sess, format!("{name},"), span).iter().cloned().collect();
+                arguments.extend(companion);
+                let mut tokens: Vec<_> = template(self.sess, "#[rust_js::jsx] ::react::component".into(), span)
+                    .iter()
+                    .cloned()
+                    .collect();
+                tokens.push(group(Delimiter::Parenthesis, TokenStream::new(arguments), span));
+                TokenStream::new(tokens)
+            } else {
+                let mut fields = Vec::new();
+                for (attr, value, at) in attrs {
+                    // `aria-label` is a field a Rust struct can have, `aria_label`,
+                    // which `rust_js::name` gives JS's name again (ADR 0200).
+                    let field = snake(&attr).replace('-', "_");
+                    fields.extend(template(self.sess, format!("r#{field}:"), at).iter().cloned());
+                    fields.extend(value.iter().cloned());
+                    fields.extend(template(self.sess, ",".into(), at).iter().cloned());
+                }
+                if let Some(base) = spread {
+                    fields.extend(template(self.sess, "..".into(), span).iter().cloned());
+                    fields.extend(base.iter().cloned());
+                }
+                if let Some(reference) = reference_prop {
+                    let mut prefix: Vec<_> = template(self.sess, "@ref".into(), span).iter().cloned().collect();
+                    prefix.push(group(Delimiter::Parenthesis, reference, span));
+                    fields.splice(0..0, prefix);
+                }
+                if let Some(types) = types {
+                    let mut prefix: Vec<_> = template(self.sess, "@types".into(), span).iter().cloned().collect();
+                    prefix.push(group(Delimiter::Parenthesis, types, span));
+                    fields.splice(0..0, prefix);
+                }
+                if provider {
+                    fields.splice(0..0, template(self.sess, "@provider ".into(), span).iter().cloned());
+                }
+                if consumer {
+                    fields.splice(0..0, template(self.sess, "@consumer ".into(), span).iter().cloned());
+                }
+                let mut tokens: Vec<_> = template(self.sess, format!("{component}!"), span)
+                    .iter()
+                    .cloned()
+                    .collect();
+                tokens.push(group(Delimiter::Brace, TokenStream::new(fields), span));
+                TokenStream::new(tokens)
             }
-            if let Some(base) = spread {
-                fields.extend(template(self.sess, "..".into(), span).iter().cloned());
-                fields.extend(base.iter().cloned());
-            }
-            if let Some(reference) = reference_prop {
-                let mut prefix: Vec<_> = template(self.sess, "@ref".into(), span).iter().cloned().collect();
-                prefix.push(group(Delimiter::Parenthesis, reference, span));
-                fields.splice(0..0, prefix);
-            }
-            if let Some(types) = types {
-                let mut prefix: Vec<_> = template(self.sess, "@types".into(), span).iter().cloned().collect();
-                prefix.push(group(Delimiter::Parenthesis, types, span));
-                fields.splice(0..0, prefix);
-            }
-            if provider {
-                fields.splice(0..0, template(self.sess, "@provider ".into(), span).iter().cloned());
-            }
-            if consumer {
-                fields.splice(0..0, template(self.sess, "@consumer ".into(), span).iter().cloned());
-            }
-            let mut tokens: Vec<_> = template(self.sess, format!("{component}!"), span)
-                .iter()
-                .cloned()
-                .collect();
-            tokens.push(group(Delimiter::Brace, TokenStream::new(fields), span));
-            TokenStream::new(tokens)
         };
         if let Some((key, at)) = key {
             expr = method_call(self.sess, expr, "key", vec![key], at);
@@ -756,7 +787,7 @@ pub(super) fn component(sess: &Session, item: &ast::Item, built: &HashSet<String
     }
 }
 
-fn props_path(ty: &ast::Ty) -> Option<String> {
+pub(super) fn props_path(ty: &ast::Ty) -> Option<String> {
     match &ty.kind {
         TyKind::Tup(parts) if parts.is_empty() => Some(String::new()),
         // Rust infers generic arguments from the fields and component call.

@@ -146,4 +146,12 @@ export const mutations: Mutation[] = [
     replace: "let (before, after) = (values.concat(), String::new());",
     tests: ["test/jsx.test.ts", "-t", "flattened props come before a field"],
   },
+  {
+    name: "local-component-as-tag",
+    breaks: "a local of a component's function type is built as a DOM element's tag, `react::tag(Heading)`",
+    file: "src/jsx_syntax/parser.rs",
+    find: "let tag = local && local_props.is_none() &&",
+    replace: "let tag = local &&",
+    tests: ["test/jsx.test.ts", "-t", "function type is a tag"],
+  },
 ];

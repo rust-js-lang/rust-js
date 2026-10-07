@@ -434,6 +434,38 @@ static PINNED: Option<ElementType> = Some(element_type(&IconBadge));
   expect([refused.exitCode === 0, refused.stderr.toString().includes("statics of type")], refused.stderr.toString()).toEqual([false, true]);
 });
 
+// A component chosen as the page runs, `const Heading = isRecipes ? H4 : H2`,
+// is a local of a function's type, `fn(HProps<..>) -> JSX::Element`, whose
+// props `jsx!` builds by that type: `<Heading id=.. className=..>`, as
+// react.dev's Challenges has it (ADR 0239).
+test("a local of a component's function type is a tag given its props", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, ReactNode, jsx};
+pub struct HProps<'a, C: ReactNode> {
+    pub id: Option<&'a str>,
+    #[rust_js::name = "className"]
+    pub class_name: Option<&'a str>,
+    pub children: C,
+}
+pub fn H2<C: ReactNode>(HProps { id, class_name, children }: HProps<C>) -> JSX::Element {
+    jsx! { <h2 id={id} className={class_name}>{children}</h2> }
+}
+pub fn H4<C: ReactNode>(HProps { id, class_name, children }: HProps<C>) -> JSX::Element {
+    jsx! { <h4 id={id} className={class_name}>{children}</h4> }
+}
+pub fn Title(small: bool) -> JSX::Element {
+    let Heading: fn(HProps<'static, &'static str>) -> JSX::Element = if small { H4 } else { H2 };
+    jsx! { <Heading key="h" id={Some("t")} className={Some("title")}>{"Hi"}</Heading> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("const Heading = small ? H4 : H2;");
+  expect(jsx).toContain('<Heading id="t" className="title" key="h">');
+  const { Title } = await import(join(dir, "lib.jsx"));
+  expect([true, false].map((small) => renderToStaticMarkup(Title(small)))).toEqual(['<h4 id="t" class="title">Hi</h4>', '<h2 id="t" class="title">Hi</h2>']);
+});
+
 // A component's children, each kept as `Children.forEach` gives it, for
 // good, as react.dev's Challenges keeps them, each given a ref of its own,
 // `useRef(kept.map(() => createRef()))`, as its Navigation gives each of its

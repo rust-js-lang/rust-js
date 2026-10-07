@@ -6,7 +6,7 @@ pub mod formatting;
 mod literals;
 mod parser;
 
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
@@ -36,14 +36,10 @@ use rustc_span::{BytePos, ErrorGuaranteed, FileName, Span, Symbol, sym};
 /// tokens inside `stringify!`, macro definitions, etc. remain untouched.
 /// Replace only those calls in the original token tree: no pretty-printing
 /// round trip, and no loss of the surrounding Rust tokens' source spans.
-fn rust_expression(
-    sess: &Session,
-    tokens: TokenStream,
-    tags: &HashSet<String>,
-) -> Result<TokenStream, ErrorGuaranteed> {
+fn rust_expression(sess: &Session, tokens: TokenStream, tags: &TagNames) -> Result<TokenStream, ErrorGuaranteed> {
     struct Calls<'a> {
         sess: &'a Session,
-        tags: HashSet<String>,
+        tags: TagNames,
         replacements: BTreeMap<BytePos, (Span, TokenStream)>,
         error: Option<ErrorGuaranteed>,
     }
@@ -163,7 +159,7 @@ pub fn expand(sess: &Session, krate: &mut ast::Crate, crate_id: StableCrateId) {
         dir: path.parent().unwrap_or(Path::new("")).to_path_buf(),
         ownership: DirOwnership::Owned { relative: None },
         files: vec![path.to_path_buf()],
-        tags: HashSet::new(),
+        tags: TagNames::new(),
     };
     visitor.visit_crate(krate);
 }
@@ -174,13 +170,20 @@ struct Expand<'a> {
     ownership: DirOwnership,
     files: Vec<PathBuf>,
     /// The tags of the function the visit is in (`visit_fn`).
-    tags: HashSet<String>,
+    tags: TagNames,
 }
+
+/// The capitalized names a function's binds, each a tag its JSX reads,
+/// `<Comp>`, by the props type of a component it's written to be, `fn(P) ->
+/// ..`'s `P` (ADR 0239): `None` of an element's tag (ADR 0220).
+pub(super) type TagNames = HashMap<String, Option<String>>;
 
 /// The capitalized names a function's parameters and `let`s bind, which
 /// its JSX reads as tags, `<Comp>`: `Comp` of `let Comp = As::H1` or of
-/// `HeadingProps { r#as: Comp, .. }` (ADR 0220). A function inside is its own.
-fn tags_of(kind: &FnKind<'_>) -> HashSet<String> {
+/// `HeadingProps { r#as: Comp, .. }` (ADR 0220), and of `let Heading:
+/// fn(HProps<..>) -> JSX::Element` a component of `HProps` (ADR 0239). A
+/// function inside is its own.
+fn tags_of(kind: &FnKind<'_>) -> TagNames {
     let mut names = Tags::default();
     if let FnKind::Fn(_, _, function) = kind {
         visit::walk_fn_decl(&mut names, &function.sig.decl);
@@ -192,15 +195,25 @@ fn tags_of(kind: &FnKind<'_>) -> HashSet<String> {
 }
 
 #[derive(Default)]
-struct Tags(HashSet<String>);
+struct Tags(TagNames);
 
 impl Tags {
-    fn bound(&mut self, pat: &ast::Pat) {
+    /// What `pat` binds, of the type `ty` written: a component's props of
+    /// `fn(P) -> ..`.
+    fn bound(&mut self, pat: &ast::Pat, ty: Option<&ast::Ty>) {
+        let props = ty.and_then(|ty| match &ty.kind {
+            ast::TyKind::FnPtr(f) => match f.decl.inputs.as_slice() {
+                [only] => parser::props_path(&only.ty).filter(|path| !path.is_empty()),
+                _ => None,
+            },
+            _ => None,
+        });
         pat.walk(&mut |p| {
             if let ast::PatKind::Ident(_, ident, _) = p.kind
                 && ident.as_str().starts_with(char::is_uppercase)
             {
-                self.0.insert(ident.to_string());
+                let typed = matches!(&pat.kind, ast::PatKind::Ident(..));
+                self.0.insert(ident.to_string(), props.clone().filter(|_| typed));
             }
             true
         });
@@ -209,11 +222,11 @@ impl Tags {
 
 impl<'a> visit::Visitor<'a> for Tags {
     fn visit_param(&mut self, param: &'a ast::Param) {
-        self.bound(&param.pat);
+        self.bound(&param.pat, Some(&param.ty));
         visit::walk_param(self, param);
     }
     fn visit_local(&mut self, local: &'a ast::Local) {
-        self.bound(&local.pat);
+        self.bound(&local.pat, local.ty.as_deref());
         visit::walk_local(self, local);
     }
     fn visit_item(&mut self, _: &'a ast::Item) {}
