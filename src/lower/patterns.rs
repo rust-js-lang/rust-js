@@ -1024,12 +1024,73 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let items = self.item_subject(scrutinee);
         let (subject, stable) = self.subject(scrutinee, &base, out)?;
+        // `let Some(href) = href.filter(..)`: the filter's test, and `href`,
+        // what it kept, in place of a `const` of the `Option` (ADR 0232).
+        if let Some((test, kept, field)) = self.filter_kept(&subject, pat, out) {
+            let mut bindings = Vec::new();
+            let inner = self.pattern_test(field, &kept, &mut bindings)?;
+            let stable = matches!(&kept.kind, js::ExprKind::Var(name) if self.plain_value(name));
+            self.clear_parts(scrutinee, pat, then_out);
+            self.bind_all(bindings, stable, items, self.js_span(pat.span), then_out)?;
+            return Ok(match inner {
+                Some(inner) => Expr::bin(Op::And, test, inner),
+                None => test,
+            });
+        }
         let mut bindings = Vec::new();
         let test = self.pattern_test(pat, &subject, &mut bindings)?;
         // What it binds by value is moved out of the scrutinee (ADR 0098).
         self.clear_parts(scrutinee, pat, then_out);
         self.bind_all(bindings, stable, items, self.js_span(pat.span), then_out)?;
         Ok(test.unwrap_or_else(|| Expr::bool(true)))
+    }
+
+    /// `Some(p)` of a `filter`'s `Option`, which `subject` names, the last
+    /// `const` in `out`: that `const` taken back, the filter's test, what it
+    /// kept, and `p`. Of text, falsy only empty, `x != null && x.length !==
+    /// 0` is `x`, as a test.
+    fn filter_kept<'p>(
+        &self,
+        subject: &Expr,
+        pat: &'p Pat<'tcx>,
+        out: &mut Vec<Stmt>,
+    ) -> Option<(Expr, Expr, &'p Pat<'tcx>)> {
+        let PatKind::Variant {
+            adt_def,
+            variant_index,
+            subpatterns,
+            ..
+        } = &pat.kind
+        else {
+            return None;
+        };
+        let [field] = subpatterns.as_slice() else { return None };
+        let some = self
+            .tcx
+            .is_lang_item(adt_def.variant(*variant_index).def_id, LangItem::OptionSome);
+        if !some || self.option_of(pat.ty).is_none_or(|inner| self.boxed_payload(inner)) {
+            return None;
+        }
+        let js::ExprKind::Var(name) = &subject.kind else {
+            return None;
+        };
+        let Some(Stmt {
+            kind: StmtKind::Const(held, value),
+            ..
+        }) = out.last()
+        else {
+            return None;
+        };
+        if held != name {
+            return None;
+        }
+        let (test, kept) = super::options::filtered(value)?;
+        out.pop();
+        let test = match self.is_string_like(field.pattern.ty) && non_empty(&test, &kept) {
+            true => kept.clone(),
+            false => test,
+        };
+        Some((test, kept, &field.pattern))
     }
 
     /// `if let Some(n) = m.get_mut(&k)` of a map whose values are primitives:
@@ -1786,6 +1847,18 @@ fn fold_head(e: Expr) -> Expr {
         kind => kind,
     };
     Expr { kind: folded, span }
+}
+
+/// Is `test` `x != null && x.length !== 0` of `x`?
+fn non_empty(test: &Expr, x: &Expr) -> bool {
+    use js::ExprKind as K;
+    let K::Binary(Op::And, present, length) = &test.kind else {
+        return false;
+    };
+    matches!(&present.kind, K::Binary(Op::LooseNe, v, null) if same_place(v, x) && matches!(null.kind, K::Null))
+        && matches!(&length.kind, K::Binary(Op::Ne, len, zero)
+            if matches!(&len.kind, K::Member(v, field) if field == "length" && same_place(v, x))
+                && zero.as_int() == Some(0))
 }
 
 /// `a && b`, but `b` alone where it's `typeof x === "string"` after `x !=
