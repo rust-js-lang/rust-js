@@ -25,6 +25,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// variables, and says whether one is `mut`. `None`, binding nothing, if a
     /// part is anything else, or needs a copy of its own (ADR 0020).
     pub(super) fn js_pattern(&mut self, pat: &Pat<'tcx>) -> Option<(js::Pattern, bool)> {
+        // Of a reference, `let Params { message, code } = params();`: a
+        // reference is the value (ADR 0023), taken apart as it is.
+        let pat = without_refs(pat);
         // A struct's or a tuple's fields, or an array's first items, `[a, b,
         // ..]`, which are `const [a, b] = xs` (ADR 0123): each by where it is.
         let fields: Vec<(usize, &Pat<'tcx>)> = match &pat.kind {
@@ -53,6 +56,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } if self.unsupported_part(ty).is_none() && !(self.contains_mutated(ty) && self.is_copy(ty)) => {
                     Some((i, Some((name, var, mutability == Mutability::Mut))))
                 }
+                // Bound by a shared reference, each part is read once: what's
+                // borrowed can't change while it is, and a `Cell`, which can,
+                // is the one JS object either way (ADR 0244).
+                PatKind::Binding {
+                    name,
+                    var,
+                    mode: BindingMode(ByRef::Yes(_, Mutability::Not), _),
+                    subpattern: None,
+                    ty,
+                    ..
+                } if self.unsupported_part(ty).is_none() => Some((i, Some((name, var, false)))),
                 _ => None,
             })
             .collect::<Option<_>>()?;

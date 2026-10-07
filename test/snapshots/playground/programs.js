@@ -69,8 +69,8 @@ export function prepare(files, modules, styles, rootFile, test, run) {
   }
   const hasMain = /^export (async )?function main\(\)/m;
   const runnable = test
-    ? sources.some((param) => param[0] === tests)
-    : sources.some((param) => param[0] === rootFile && hasMain.test(param[1]));
+    ? sources.some(([path]) => path === tests)
+    : sources.some(([path, code]) => path === rootFile && hasMain.test(code));
   if (!runnable) {
     return "Nothing";
   }
@@ -78,12 +78,12 @@ export function prepare(files, modules, styles, rootFile, test, run) {
   let css = [];
   for (const item of sources) {
     for (const [, specifier] of Array.from(item[1].matchAll(cssImports))) {
-      const value = styles.find((param) => param[0] === specifier);
+      const value = styles.find(([name]) => name === specifier);
       if (value != null && !css.includes(value[1])) {
         css.push(value[1]);
       }
     }
-    const known = styles.map((param) => param[0]);
+    const known = styles.map(([name]) => name);
     item[1] = item[1].replace(cssImports, (whole, specifier) => {
       if (known.includes(specifier)) {
         return "";
@@ -94,10 +94,10 @@ export function prepare(files, modules, styles, rootFile, test, run) {
   const look = css.length === 0 ? FRAME_STYLE : `<style>\n${css.join("")}</style>`;
   const imports = /^import (?:[^;]+? from )?"([^"]+)";/gm;
   let external = [];
-  for (const item$1 of sources) {
-    for (const [, specifier$1] of Array.from(item$1[1].matchAll(imports))) {
-      const target = resolve(item$1[0], specifier$1);
-      if (!sources.some((param) => param[0] === target) && !external.includes(specifier$1)) {
+  for (const [path, code] of sources) {
+    for (const [, specifier$1] of Array.from(code.matchAll(imports))) {
+      const target = resolve(path, specifier$1);
+      if (!sources.some(([p]) => p === target) && !external.includes(specifier$1)) {
         external.push(specifier$1);
       }
     }

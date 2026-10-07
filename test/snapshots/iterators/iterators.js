@@ -30,9 +30,7 @@ export function indexed(words) {
 
 export function placed(words) {
   const fits = words.some((w, i) => $byteLen(w) === i);
-  const option = words
-    .map((x, i) => [i, x])
-    .find((param) => $byteLen(param[1]) > (2 + param[0]) >>> 0);
+  const option = words.map((x, i) => [i, x]).find(([i, w]) => $byteLen(w) > (2 + i) >>> 0);
   const long = option != null ? option[0] : undefined;
   return [fits, long];
 }

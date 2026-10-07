@@ -21,7 +21,7 @@ function say(text, tone) {
 }
 
 function appended(rows, label, value) {
-  let next = rows.map((param) => [param[0], param[1]]);
+  let next = rows.map(([l, v]) => [l, v]);
   next.push([label, value]);
   return next;
 }
@@ -126,8 +126,8 @@ export function App() {
           const files = Array.from(r.files).map(([path, text]) => [path, text]);
           const count = files.length;
           const rootJsx = `${rootJs}x`;
-          const rootJs$1 = files.some((param) => param[0] === rootJsx) ? rootJsx : rootJs;
-          const shown$1 = files.some((param) => param[0] === shown) ? shown : rootJs$1;
+          const rootJs$1 = files.some(([path]) => path === rootJsx) ? rootJsx : rootJs;
+          const shown$1 = files.some(([path]) => path === shown) ? shown : rootJs$1;
           setOutput({ TAG: "Files", files, shown: shown$1 });
           setStatus(say(`Compiled: ${count} JS file${count === 1 ? "" : "s"}.`, "Good"));
           run(r.files, loaded$1, rootJs$1, test);
@@ -215,7 +215,7 @@ export function App() {
   };
   const openOutput = (path) => {
     if (output.TAG === "Files") {
-      const files = output.files.map((param) => [param[0], param[1]]);
+      const files = output.files.map(([p, t]) => [p, t]);
       setOutput({ TAG: "Files", files, shown: path });
     }
   };
@@ -233,7 +233,7 @@ export function App() {
     }
     if (output.TAG === "Files") {
       let text;
-      const match = output.files.find((param) => param[0] === output.shown);
+      const match = output.files.find(([path]) => path === output.shown);
       if (match != null) {
         text = match[1];
       } else {
@@ -245,7 +245,7 @@ export function App() {
   }, [output]);
   const sourceTree = useMemo(() => buildTree(Project.paths(project)), [project]);
   const tmp =
-    output.TAG === "Files" ? [output.files.map((param) => param[0]), output.shown] : [[], ""];
+    output.TAG === "Files" ? [output.files.map(([path]) => path), output.shown] : [[], ""];
   const outputTree = useMemo(() => buildTree(tmp[0]), [output]);
   const examples = loaded != null ? loaded.examples : [];
   const submit = onCompile;

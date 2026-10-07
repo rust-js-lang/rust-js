@@ -1051,15 +1051,31 @@ pub(super) fn apply(f: Expr, args: Vec<Expr>) -> Expr {
         && params.len() <= args.len()
         && args.iter().all(Expr::reads_same)
     {
-        let names: Option<Vec<&str>> = params
+        // Each variable a parameter binds, and the part of its argument it
+        // is: a destructured one's, `[, age]`'s `age` of `item`, `item[1]`.
+        let parts: Option<Vec<(&str, Expr)>> = params
             .iter()
-            .map(|p| match p {
-                js::Pattern::Name(name) => Some(name.as_str()),
+            .zip(&args)
+            .map(|(p, arg)| match p {
+                js::Pattern::Name(name) => Some(vec![(name.as_str(), arg.clone())]),
+                js::Pattern::Array(items) => Some(
+                    (items.iter().enumerate())
+                        .filter_map(|(i, name)| {
+                            Some((name.as_deref()?, Expr::index(arg.clone(), Expr::int(i as i128))))
+                        })
+                        .collect(),
+                ),
+                js::Pattern::Object(fields, None) if fields.iter().all(|(_, _, default)| default.is_none()) => Some(
+                    (fields.iter())
+                        .map(|(key, name, _)| (name.as_str(), keyed(arg.clone(), Expr::str(key.clone()))))
+                        .collect(),
+                ),
                 _ => None,
             })
-            .collect();
-        let inlined = names.and_then(|names| {
-            value.substitute(&|name: &str| names.iter().position(|n| *n == name).map(|i| args[i].clone()))
+            .collect::<Option<Vec<_>>>()
+            .map(|parts| parts.into_iter().flatten().collect());
+        let inlined = parts.and_then(|parts| {
+            value.substitute(&|name: &str| parts.iter().find(|(n, _)| *n == name).map(|(_, part)| part.clone()))
         });
         if let Some(inlined) = inlined {
             return inlined;

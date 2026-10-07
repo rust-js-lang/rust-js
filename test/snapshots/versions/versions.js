@@ -125,7 +125,7 @@ export function edges() {
     [10, 10],
     [15, 16],
     [35, 36],
-  ].map((param) => $fromDigit(param[0], param[1]));
+  ].map(([n, r]) => $fromDigit(n, r));
   const points = [65, 233, 55296, 128512, 1114112].map((n) => $fromU32(n));
   return `${versionDebug_fmt(v)} ${order.value} [${upto.map((item) => String(item)).join(", ")}]\n[${fs.map((item) => $debugF64(item)).join(", ")}]\n[${digits.map((item) => (item == null ? "None" : `Some(${$debugStr(item, "'")})`)).join(", ")}] [${points.map((item) => (item == null ? "None" : `Some(${$debugStr(item, "'")})`)).join(", ")}]\n${$lowerExp(1234)} ${$lowerExp(0)} ${$lowerExp(-0.00025)} ${$lowerExp(6.02e23).replace("e", "E")} ${$lowerExp(NaN)} ${$lowerExp(100)}`;
 }

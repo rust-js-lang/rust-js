@@ -534,4 +534,20 @@ export const mutations: Mutation[] = [
     replace: "                                let _ = (scrutinee, arms);\n                                None\n",
     tests: ["test/compiler.test.ts", "-t", "reads the table by it"],
   },
+  {
+    name: "ref-pattern-kept",
+    breaks: "a struct taken apart through a reference, `let Params { message, code } = params();`, is `const tmp = params();` and `tmp.message`, not destructured",
+    file: "src/lower/patterns.rs",
+    find: "        let pat = without_refs(pat);\n",
+    replace: "\n",
+    tests: ["test/compiler.test.ts","-t","taken apart through a reference"],
+  },
+  {
+    name: "ref-binding-aliased",
+    breaks: "a part bound by a shared reference is read where it is, `tmp.message`, not destructured",
+    file: "src/lower/patterns.rs",
+    find: "                } if self.unsupported_part(ty).is_none() => Some((i, Some((name, var, false)))),",
+    replace: "                } if false => Some((i, Some((name, var, false)))),",
+    tests: ["test/compiler.test.ts","-t","taken apart through a reference"],
+  },
 ];

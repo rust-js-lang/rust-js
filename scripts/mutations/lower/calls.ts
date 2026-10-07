@@ -278,4 +278,12 @@ export const mutations: Mutation[] = [
     replace: "    if pattern.contains(['\\u{2028}', '\\u{2029}']) {",
     tests: ["test/compiler.test.ts","-t","RegExp of a pattern"],
   },
+  {
+    name: "apply-pattern-called",
+    breaks: "a closure taking a pair apart, `|&(_, age)| age`, is called where it's inlined, `(([, age]) => age)(item)`, not `item[1]`",
+    file: "src/lower/calls.rs",
+    find: "                js::Pattern::Array(items) => Some(",
+    replace: "                js::Pattern::Array(items) if false => Some(",
+    tests: ["test/compiler.test.ts", "-t", "taken apart through a reference"],
+  },
 ];

@@ -16,10 +16,10 @@ function main() {
     ].map(([name, cents]) => [name, { cents }]),
   );
   cartExtend_std__string__String__Money__extend(cart, [["jam", { cents: 300n }]]);
-  for (const item of refCartIntoIterator_into_iter(cart)) {
-    console.log(`${item[0]}: ${item[1].cents}`);
+  for (const [name, price] of refCartIntoIterator_into_iter(cart)) {
+    console.log(`${name}: ${price.cents}`);
   }
-  const total = moneySum_sum(cart.lines.map((param) => param[1]));
+  const total = moneySum_sum(cart.lines.map(([, m]) => m));
   console.log(`${moneyDebug_fmt(total)} ${refCartIntoIterator_into_iter(cart).length}`);
   const names = cartIntoIterator_into_iter(cart).map(([name]) => name);
   console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);

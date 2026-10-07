@@ -227,12 +227,9 @@ const Calculator = {
       if (result$4.TAG === "Err") {
         return result$4;
       }
-      const tmp$2 = result$4._0;
-      if (expr._1.length !== tmp$2[0]) {
-        return {
-          TAG: "Err",
-          _0: { TAG: "Arity", name: expr._0, wanted: tmp$2[0], got: expr._1.length },
-        };
+      const [wanted, f] = result$4._0;
+      if (expr._1.length !== wanted) {
+        return { TAG: "Err", _0: { TAG: "Arity", name: expr._0, wanted, got: expr._1.length } };
       }
       const result$5 = $collectResults(
         expr._1.values().map((a$1) => Calculator.eval(calculator, a$1)),
@@ -241,7 +238,7 @@ const Calculator = {
         return result$5;
       }
       const values = result$5._0;
-      tmp = tmp$2[1](values);
+      tmp = f(values);
     }
     return { TAG: "Ok", _0: tmp };
   },

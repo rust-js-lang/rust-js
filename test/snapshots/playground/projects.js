@@ -9,7 +9,7 @@ export const Project = {
     return { root: "lib.rs", files: [], current: "" };
   },
   of(root, texts) {
-    const files = texts.map((param) => ({ path: param[0], state: sourceState(param[1]) }));
+    const files = texts.map(([path, text]) => ({ path, state: sourceState(text) }));
     return { root, files, current: root };
   },
   has(project, path) {

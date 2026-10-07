@@ -169,7 +169,7 @@ function main() {
         console.log(`bad order: ${match._0}`);
         continue;
       }
-      const order = parsed.map((param) => [param[0], param[1]]);
+      const order = parsed.map(([sku, n]) => [sku, n]);
       const match$1 = Inventory.place(inventory, order);
       if (match$1.TAG === "Ok") {
         const total = match$1._0

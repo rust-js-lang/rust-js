@@ -4,10 +4,10 @@ import { $pad } from "@rust-js/runtime";
 
 function render(items) {
   let out = "";
-  for (const item of items) {
-    out += `${$pad(item[0], 6, "<")}${String(item[1]).padStart(3)}\n`;
+  for (const [name, n] of items) {
+    out += `${$pad(name, 6, "<")}${String(n).padStart(3)}\n`;
   }
-  out += `total ${items.map((param) => param[1]).reduce((a, b) => (a + b) >>> 0, 0)}`;
+  out += `total ${items.map(([, n]) => n).reduce((a, b) => (a + b) >>> 0, 0)}`;
   return out;
 }
 

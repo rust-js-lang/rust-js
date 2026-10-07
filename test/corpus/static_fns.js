@@ -25,13 +25,13 @@ function triple(x) {
 
 function main() {
   console.log(`${F(2)} ${G(2)}`);
-  for (const item of TABLE) {
-    const arg = item[1](5);
-    console.log(`${item[0]} ${arg}`);
+  for (const [name, f] of TABLE) {
+    const arg = f(5);
+    console.log(`${name} ${arg}`);
   }
-  const f = MAYBE;
-  if (f != null) {
-    console.log(`${f(1)}`);
+  const f$1 = MAYBE;
+  if (f$1 != null) {
+    console.log(`${f$1(1)}`);
   }
   console.log(`${GREETER.impl.hi(GREETER.value)} ${SHOWN.impl.fmt(SHOWN.value)} ${ADD(1)}`);
 }

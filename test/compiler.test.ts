@@ -1751,6 +1751,57 @@ test("a pub use of another module's function is re-exported from it", async () =
   expect([lib.helper(), lib.renamed(), lib.own()]).toEqual([1, 2, 3]);
 });
 
+// A struct taken apart through a shared reference is JS's destructuring,
+// `const { errorMessage, errorCode } = useErrorDecoderParams();`, as
+// react.dev's ErrorDecoder has it: what's borrowed can't change while it
+// is (ADR 0244). A `Cell`, which can, is the one JS object either way.
+test("a struct taken apart through a reference is destructured", async () => {
+  const dir = fixture("ref-destructure");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+pub struct Params {
+    pub message: Option<String>,
+    pub code: Option<String>,
+}
+
+pub struct Counter {
+    pub count: Cell<u32>,
+    pub label: String,
+}
+
+fn params() -> &'static Params {
+    Box::leak(Box::new(Params { message: Some("m".to_string()), code: None }))
+}
+
+fn first(counter: &Counter) -> &Counter {
+    counter
+}
+
+pub fn described() -> String {
+    let Params { message, code } = params();
+    format!("{message:?} {code:?}")
+}
+
+pub fn counted() -> u32 {
+    let counter = Counter { count: Cell::new(1), label: "ab".to_string() };
+    let Counter { count, label } = first(&counter);
+    count.set(count.get() + label.len() as u32);
+    counter.count.get()
+}
+
+// A closure taking a pair apart, inlined where it's called, is its part.
+pub fn found(people: Vec<(String, u32)>) -> Option<usize> {
+    people.binary_search_by_key(&57, |&(_, age)| age).ok()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const { message, code } = params();");
+  const lib = await import(join(dir, "lib.js"));
+  expect(js).toContain("$cmp(item[1], 57)");
+  expect([lib.described(), lib.counted(), lib.found([["a", 50], ["b", 57]])]).toEqual(['Some("m") None', 3, 1]);
+});
+
 // An `if` whose branch leaves has no `else`: what follows it runs only when
 // the branch doesn't, as JS writes it and react.dev's Link has it, `if (..)
 // { return cloneElement(..); } return child;` (ADR 0237). A branch that

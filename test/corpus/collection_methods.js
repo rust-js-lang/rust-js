@@ -54,7 +54,7 @@ function main() {
     ["bo", 42],
     ["cy", 57],
   ];
-  const found = $binarySearchBy(people, (param) => $cmp(param[1], 42));
+  const found = $binarySearchBy(people, ([, age]) => $cmp(age, 42));
   const byKey = $binarySearchBy(people, (item) => $cmp(item[1], 57));
   const result = [9, 7, 5];
   const reversed = $binarySearchBy(result, (p) => {
