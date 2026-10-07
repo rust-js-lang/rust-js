@@ -30,3 +30,11 @@ oxc_syntax = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.
 # playground has none.
 [target.'cfg(not(target_os = "wasi"))'.dependencies]
 toml = "1"
+
+# No debug info in a dev build. On macOS it stays in each build's object
+# files, which incremental compilation names anew each time and nothing
+# removes: target/debug/deps held 381 000 of them, 61 GB, by 2026-10-07,
+# and the mutations' builds 55 GB more. Packed into a .dSYM instead, each
+# link takes some 20 s more; without it, a change builds in about 2 s.
+[profile.dev]
+debug = false

@@ -3,9 +3,10 @@
 // for a run, with no one left waiting on no one.
 
 import { expect, test } from "bun:test";
-import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
+import { pruneNativeCache } from "./native-cache";
 import { runNative } from "./programs";
 import { fixture, nativeBinary, once, run } from "./support";
 
@@ -129,4 +130,27 @@ test("a native program's source is replaced whole, not rewritten in place", () =
 // builds nothing.
 test("every test file is given the compiler before its tests run", () => {
   expect(process.env.RUST_JS_COMPILER).toBeTruthy();
+});
+
+// The kept native programs are pruned when a run starts, where none is
+// running: what no test has used for a week, and a build a crash left half
+// made. Each use marks one used, so a program in use stays however old it is.
+test("the native cache keeps what was used this week, and drops the rest", () => {
+  const cache = fixture("native-cache");
+  const now = Date.now() / 1000;
+  const day = 24 * 60 * 60;
+  const entry = (name: string, kept: string, age: number) => {
+    const dir = join(cache, name, kept);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "native"), "");
+    utimesSync(dir, now - age * day, now - age * day);
+    utimesSync(join(cache, name), now - age * day, now - age * day);
+  };
+  entry("fresh", "a", 1);
+  entry("stale", "a", 8);
+  entry("mixed", "old", 9);
+  entry("mixed", "new", 2);
+  entry("crashed", ".building-1-2", 2);
+  pruneNativeCache(cache, now, 7);
+  expect(["fresh/a", "stale", "mixed/old", "mixed/new", "crashed"].map((p) => existsSync(join(cache, p)))).toEqual([true, false, false, true, false]);
 });

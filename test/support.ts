@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSy
 import { dirname, join, resolve } from "node:path";
 
 import { runSync, stopped } from "./child";
+import { markUsed } from "./native-cache";
 
 export const root = join(import.meta.dir, "..");
 export const target = join(root, "target");
@@ -61,7 +62,9 @@ export function contentDirectory(...contents: string[]): string {
  * says the build read, each file an `include!`, a `mod` or an
  * `include_str!` reached, however deep, and each variable an `env!` read,
  * which are checked each time it's used. A new build of it is kept beside
- * the ones before, which stay: another test file may be running one.
+ * the ones before, which stay: another test file may be running one. Each
+ * use marks it used, and a run drops what no test used for a week when it
+ * starts (`pruneNativeCache`).
  * A binary is built once, then, and so run once for the first time: macOS
  * checks each new one as it first runs, which takes longer than building
  * it, and one check at a time, however many test files run side by side.
@@ -79,7 +82,10 @@ export function nativeBinary(source: string, dir: string, flags: string[], timeo
   const program = join(target, "native-cache", hash.digest("hex").slice(0, 32));
   mkdirSync(program, { recursive: true });
   for (const kept of readdirSync(program).filter((name) => !name.startsWith("."))) {
-    if (unchanged(join(program, kept, "inputs.json"))) return { binary: join(program, kept, "native"), built: false };
+    if (unchanged(join(program, kept, "inputs.json"))) {
+      markUsed(join(program, kept));
+      return { binary: join(program, kept, "native"), built: false };
+    }
   }
   // Built beside the others, then moved in whole, as the build of what it
   // read: a test file running beside this one never runs half of one.
