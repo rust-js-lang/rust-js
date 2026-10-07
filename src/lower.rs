@@ -328,7 +328,7 @@ struct CrateFacts<'a, 'tcx> {
     closures: &'a HashMap<LocalDefId, &'a Body<'tcx>>,
     bodies: &'a HashMap<DefId, &'a Body<'tcx>>,
     fns: &'a HashMap<DefId, FnInfo>,
-    imports: &'a HashMap<Export, String>,
+    imports: &'a HashMap<LocalModId, HashMap<Export, String>>,
     /// What the crate's libraries export (ADR 0100).
     foreign: &'a library::Foreign<'a, 'tcx>,
     /// Is this crate compiled as a library, for others to use (ADR 0100)?

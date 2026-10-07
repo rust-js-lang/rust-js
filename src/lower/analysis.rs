@@ -121,7 +121,7 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub closures: HashMap<LocalDefId, &'a Body<'tcx>>,
     pub trait_impls: Vec<DefId>,
     pub dictionaries: Vec<DefId>,
-    pub import_names: HashMap<Export, String>,
+    pub import_names: HashMap<LocalModId, HashMap<Export, String>>,
     pub imported: BTreeMap<Export, HashSet<LocalModId>>,
     pub thread_local_inits: HashMap<LocalDefId, LocalDefId>,
     pub consts: Vec<LocalDefId>,
@@ -298,8 +298,8 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // call it by. An import is named around every one of them.
     let (mut taken, fns, failed) = name_items(tcx, &items, &modules, &uses.globals, &trait_impls);
     let import_names = name_imports(tcx, &uses, &taken);
-    for names in taken.values_mut() {
-        names.extend(import_names.values().cloned());
+    for (module, names) in taken.iter_mut() {
+        names.extend(import_names[module].values().cloned());
     }
     let imported = uses.imported;
     let mut called_from_elsewhere = exported_across_modules(tcx, all_bodies, &fns);
