@@ -242,10 +242,10 @@ pub struct HTMLAttributes<'a> {
     pub on_reset_capture: Option<event::ReactEventHandler>,
     /// `onSubmit`
     #[cfg_attr(rust_js, rust_js::name = "onSubmit")]
-    pub on_submit: Option<event::ReactEventHandler>,
+    pub on_submit: Option<event::SubmitEventHandler>,
     /// `onSubmitCapture`
     #[cfg_attr(rust_js, rust_js::name = "onSubmitCapture")]
-    pub on_submit_capture: Option<event::ReactEventHandler>,
+    pub on_submit_capture: Option<event::SubmitEventHandler>,
     /// `onInvalid`
     #[cfg_attr(rust_js, rust_js::name = "onInvalid")]
     pub on_invalid: Option<event::ReactEventHandler>,
@@ -1045,10 +1045,10 @@ pub struct SVGAttributes<'a> {
     pub on_reset_capture: Option<event::ReactEventHandler>,
     /// `onSubmit`
     #[cfg_attr(rust_js, rust_js::name = "onSubmit")]
-    pub on_submit: Option<event::ReactEventHandler>,
+    pub on_submit: Option<event::SubmitEventHandler>,
     /// `onSubmitCapture`
     #[cfg_attr(rust_js, rust_js::name = "onSubmitCapture")]
-    pub on_submit_capture: Option<event::ReactEventHandler>,
+    pub on_submit_capture: Option<event::SubmitEventHandler>,
     /// `onInvalid`
     #[cfg_attr(rust_js, rust_js::name = "onInvalid")]
     pub on_invalid: Option<event::ReactEventHandler>,

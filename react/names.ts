@@ -20,6 +20,7 @@ const groups: Record<string, string> = {
   TransitionEvent: "TransitionCancel TransitionEnd TransitionRun TransitionStart",
   WheelEvent: "Wheel",
   ToggleEvent: "BeforeToggle Toggle",
+  SubmitEvent: "Submit",
   ChangeEvent: "Change Input",
   UIEvent: "Scroll ScrollEnd",
 };

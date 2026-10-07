@@ -1928,6 +1928,45 @@ pub fn Field(FieldProps { on_click, on_change, on_any, on_same }: FieldProps) ->
   expect(jsx).toContain("<input onChange={onChange} />");
 });
 
+// A form's submit is @types/react's `SubmitEvent`, whose `submitter` is the
+// button that sent it, and its native event the DOM's `SubmitEvent`; a
+// `FormEvent` and an `InvalidEvent` are its names of a `SyntheticEvent`.
+test("JSX onSubmit gets a SubmitEvent, of its submitter", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::event::{FormEvent, FormEventHandler, InvalidEvent, SubmitEventHandler};
+use react::webapi::{HTMLFormElement, html_element, submit_event};
+use react::{Element, jsx};
+pub struct FormProps {
+    pub on_send: fn(String),
+    pub on_reset: FormEventHandler<HTMLFormElement>,
+    pub on_submitted: Option<SubmitEventHandler<HTMLFormElement>>,
+}
+pub fn checked(e: &InvalidEvent, f: &FormEvent) -> bool {
+    e.is_default_prevented() || f.is_default_prevented()
+}
+pub fn Form(FormProps { on_send, on_reset, on_submitted }: FormProps) -> Element {
+    let _ = on_submitted;
+    jsx! {
+        <form
+            onSubmit={move |e| {
+                e.prevent_default();
+                let by = e.submitter().map(|b| html_element::title(b)).unwrap_or_default();
+                on_send(format!("{by} {}", submit_event::submitter(e.native_event()).is_some()));
+            }}
+            onReset={on_reset} />
+    }
+}
+`);
+  run(args);
+  const { Form } = await import(join(dir, "lib.jsx"));
+  const sent: string[] = [];
+  const { props } = Form({ on_send: (s: string) => sent.push(s), on_reset: () => {} });
+  const button = { title: "Send" };
+  props.onSubmit({ preventDefault() {}, submitter: button, nativeEvent: { submitter: button } });
+  props.onSubmit({ preventDefault() {}, submitter: null, nativeEvent: { submitter: null } });
+  expect(sent).toEqual(["Send true", " false"]);
+});
+
 // An event's `native_event` is the DOM's event it wraps, typed as
 // @types/react types `nativeEvent`: a click's a `MouseEvent`, a pointer's a
 // `PointerEvent`, a wheel's a `WheelEvent`, so its own fields are read.

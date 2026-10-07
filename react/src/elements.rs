@@ -4764,13 +4764,13 @@ impl<T> Element<T> {
 
     /// `onSubmit`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onSubmit")]
-    pub fn on_submit(self, handler: impl Fn(&event::SyntheticEvent<T>) + 'static) -> Element<T> {
+    pub fn on_submit(self, handler: impl Fn(&event::SubmitEvent<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onSubmitCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onSubmitCapture")]
-    pub fn on_submit_capture(self, handler: impl Fn(&event::SyntheticEvent<T>) + 'static) -> Element<T> {
+    pub fn on_submit_capture(self, handler: impl Fn(&event::SubmitEvent<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
