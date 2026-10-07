@@ -15,7 +15,7 @@ import webrefElements from "@webref/elements";
 import elementsPackage from "@webref/elements/package.json" with { type: "json" };
 
 // The specs to read. Partial interfaces and mixins from these are merged in.
-const SPECS = ["dom", "html", "hr-time", "uievents", "pointerevents", "cssom", "cssom-view", "geometry", "fetch", "encoding", "wasm-js-api", "wasm-web-api", "xhr", "streams", "touch-events", "FileAPI", "clipboard-apis"];
+const SPECS = ["dom", "html", "hr-time", "uievents", "pointerevents", "cssom", "cssom-view", "geometry", "fetch", "encoding", "wasm-js-api", "wasm-web-api", "xhr", "streams", "touch-events", "FileAPI", "clipboard-apis", "css-animations", "css-transitions"];
 
 // The everyday DOM. Members that use any other interface are skipped.
 const INTERFACES = [
@@ -39,11 +39,13 @@ const INTERFACES = [
   "HTMLMapElement", "HTMLAreaElement", "HTMLTableCaptionElement", "HTMLTableColElement", "HTMLDataListElement",
   "HTMLOptGroupElement", "HTMLProgressElement", "HTMLMeterElement", "HTMLFieldSetElement", "HTMLLegendElement",
   "HTMLSelectedContentElement", "HTMLDialogElement", "HTMLScriptElement", "HTMLTemplateElement", "HTMLSlotElement",
-  "Window", "Location", "History", "Storage", "DataTransfer", "ToggleEvent", "MessageEvent", "SubmitEvent",
+  "Window", "Location", "History", "Storage", "DataTransfer", "DragEvent", "ToggleEvent", "MessageEvent", "SubmitEvent",
   // hr-time: `window.performance`, the page's clock
   "Performance",
   // uievents
-  "UIEvent", "FocusEvent", "MouseEvent", "KeyboardEvent", "InputEvent",
+  "UIEvent", "FocusEvent", "MouseEvent", "KeyboardEvent", "InputEvent", "WheelEvent", "CompositionEvent",
+  // What React's events wrap, @types/react's `nativeEvent` (ADR 0227)
+  "TouchEvent", "AnimationEvent", "TransitionEvent", "ClipboardEvent",
   // pointerevents: a click is a `PointerEvent`
   "PointerEvent",
   // cssom

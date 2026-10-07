@@ -155,7 +155,10 @@ Web API (`compile_streaming`), and tables (`HTMLTableElement` and its rows
 and cells) for the playground (ADR 0032), and for its Result frame
 `MessageEvent`, whose `source`, a union of a window, a `MessagePort` and a
 `ServiceWorker`, is written by hand as an object, and High Resolution Time's
-`Performance`. It isn't
+`Performance`, and the events React's events wrap, `nativeEvent`
+(`WheelEvent`, `DragEvent`, `TouchEvent`, `AnimationEvent`,
+`TransitionEvent`, `ClipboardEvent`, `CompositionEvent`; ADR 0227), which
+also type what a listener of those events gets. It isn't
 the whole platform (334 specs).
 
 **Building:** `rustc --emit=metadata` produces `libwebapi.rmeta`, once per

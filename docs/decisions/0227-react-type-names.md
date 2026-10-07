@@ -46,6 +46,15 @@ for the same things, and the `.d.ts` rust-js writes already used React's.
   element, as this `ChangeEvent` does. An alias is Rust's only, so the
   `.d.ts` still writes `(event: MouseEvent<HTMLButtonElement>) => void`.
   (Amended.)
+- **An event's native event is its type**, as @types/react's: a
+  `SyntheticEvent<T, E = Event>`'s `native_event()` is an `&E`, and a
+  `MouseEvent<T, E = MouseEvent>` a `UIEvent<T, E>`, where a `PointerEvent<T>`
+  is a `MouseEvent<T, PointerEvent>`, so a click's `native_event()` is a
+  `webapi::MouseEvent` and a pointer's a `webapi::PointerEvent`, where each
+  was a `webapi::Event`. Only `SyntheticEvent`, `UIEvent` and `MouseEvent`
+  take `E`, as React's. `#[rust_js::types]` names `T` alone, so the `.d.ts`
+  writes `MouseEvent<HTMLButtonElement>`, its `E` the default. webapi binds
+  the native events React's wrap (ADR 0024). (Amended.)
 - **Names React has no type for stay the crate's own**: `Element`, what
   JSX makes, `JSX.Element`; `Rest`, `...props`; `children::Child`;
   `InnerHtml`, `{ __html }`; `Cleanup`, what an effect gives back, which
