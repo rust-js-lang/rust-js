@@ -73,6 +73,13 @@ for the same things, and the `.d.ts` rust-js writes already used React's.
   `Ref` of `&Element` ``; and `RefCallback<T, C = ()>`, a callback a prop
   holds, `Box<dyn Fn(Option<T>) -> C>`, its `C` the cleanup React 19 runs.
   (Amended.)
+- **A context has its `Consumer`**, `<THEME.Consumer>{|theme| ..}</THEME.Consumer>`,
+  as `<THEME.Provider>` is its member, of `ConsumerProps`, whose children
+  are a function of its value, as `use_context` gives it. **A portal is a
+  `ReactPortal`**, `create_portal`'s, where it was an `Element`: an
+  element, `Deref` to a `ReactElement`, as `ReactPortal extends
+  ReactElement`, a child as it is, a component's result by `.element()`.
+  (Amended.)
 - **Names React has no type for stay the crate's own**: `Element`, what
   JSX makes, `JSX.Element`; `Rest`, `...props`; `children::Child`;
   `InnerHtml`, `{ __html }`; `Cleanup`, what an effect gives back, which

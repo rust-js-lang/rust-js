@@ -182,6 +182,8 @@ impl Jsx<'_> {
         let mut name = String::new();
         let mut types = None;
         let mut provider = false;
+        // `THEME.Consumer`, as `THEME.Provider` is a context's member.
+        let mut consumer = false;
         if !self.is(TokenKind::Gt) {
             name = self.ident()?;
             while self.is(TokenKind::PathSep) || self.is(TokenKind::Dot) {
@@ -196,6 +198,7 @@ impl Jsx<'_> {
                 name.push_str("::");
                 let segment = self.ident()?;
                 provider = member && segment == "Provider";
+                consumer = member && segment == "Consumer";
                 name.push_str(&segment);
             }
         }
@@ -212,7 +215,7 @@ impl Jsx<'_> {
             "ViewTransition" => Some("view_transition"),
             _ => None,
         };
-        if types.is_some() && (intrinsic || local || builtin.is_some() || provider) {
+        if types.is_some() && (intrinsic || local || builtin.is_some() || provider || consumer) {
             return Err(self.error("generic arguments belong on a function component"));
         }
         let mut attrs: Vec<(String, TokenStream, Span)> = Vec::new();
@@ -421,11 +424,15 @@ impl Jsx<'_> {
         });
         let component = if provider {
             name.strip_suffix("::Provider").unwrap()
+        } else if consumer {
+            name.strip_suffix("::Consumer").unwrap()
         } else {
             &name
         };
         let target = if provider {
             format!("::react::provider(&{component})")
+        } else if consumer {
+            format!("::react::consumer(&{component})")
         } else {
             format!("&{name}")
         };
@@ -483,6 +490,9 @@ impl Jsx<'_> {
             }
             if provider {
                 fields.splice(0..0, template(self.sess, "@provider ".into(), span).iter().cloned());
+            }
+            if consumer {
+                fields.splice(0..0, template(self.sess, "@consumer ".into(), span).iter().cloned());
             }
             let mut tokens: Vec<_> = template(self.sess, format!("{component}!"), span)
                 .iter()
@@ -690,6 +700,12 @@ pub(super) fn component(sess: &Session, item: &ast::Item, built: &HashSet<String
     }
     if props == "::react::ProviderProps" {
         arms.push(arm("@provider", &call(&format!("::react::provider({target})"), &value)));
+        // Its `Consumer`'s props are its children, a function of its value.
+        let consumed = "::react::ConsumerProps { $($field: $value,)* $(..$base)? }";
+        arms.push(arm(
+            "@consumer",
+            &call(&format!("::react::consumer({target})"), consumed),
+        ));
     } else if matches!(&item.kind, ItemKind::Fn(f) if !f.generics.params.is_empty()) {
         let target = format!("{target}::<$($types)*>");
         arms.push(arm("@types ($($types:tt)*)", &call(&target, &value)));

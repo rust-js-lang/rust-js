@@ -244,6 +244,33 @@ impl<P> ReactElement<P> {
 impl<P> ReactNode for ReactElement<P> {}
 impl<P> sealed::Sealed for ReactElement<P> {}
 
+/// A [portal](https://react.dev/reference/react-dom/createPortal), what
+/// [`dom::create_portal`] makes, as @types/react's `ReactPortal`: an
+/// element, `ReactPortal extends ReactElement`, so a component gives it as
+/// its result by `.element()`, and a child as it is.
+#[cfg_attr(rust_js, rust_js::types = "react#ReactPortal")]
+pub struct ReactPortal(PhantomData<JsObject>);
+
+impl Deref for ReactPortal {
+    type Target = ReactElement;
+
+    fn deref(&self) -> &ReactElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const ReactElement) }
+    }
+}
+
+impl ReactPortal {
+    /// What it renders elsewhere.
+    #[cfg_attr(rust_js, rust_js::link_name = "get children")]
+    pub fn children(&self) -> &'static Unknown {
+        unreachable!()
+    }
+}
+
+impl ReactNode for ReactPortal {}
+impl sealed::Sealed for ReactPortal {}
+
 /// [`cloneElement`](https://react.dev/reference/react/cloneElement):
 /// `element` again, `props`' fields over its own,
 /// `clone_element(child, Linked { is_link: true })`: an element, as
@@ -1223,6 +1250,28 @@ pub fn provider<T>(this: &'static LocalKey<Context<T>>) -> Provider<T> {
 pub struct Provider<T>(PhantomData<JsObject>, PhantomData<T>);
 
 impl<T, C: ReactNode> ComponentType<ProviderProps<T, C>, ProvidesContext> for Provider<T> {}
+
+/// Props of `<THEME.Consumer>{|theme| ..}</THEME.Consumer>`, as @types/react's
+/// `ConsumerProps<T>`: its children, a function of the context's value, as
+/// [`use_context`] gives it, which renders a node.
+pub struct ConsumerProps<F> {
+    pub children: F,
+}
+
+pub struct ConsumesContext;
+
+/// `THEME.Consumer`, a context's consumer, the way to read one before
+/// `useContext`: used by `<THEME.Consumer>{|theme| ..}</THEME.Consumer>`.
+#[cfg_attr(rust_js, rust_js::link_name = "get Consumer")]
+#[doc(hidden)]
+pub fn consumer<T>(this: &'static LocalKey<Context<T>>) -> Consumer<T> {
+    unreachable!()
+}
+
+/// A context's consumer, as @types/react's `Consumer<T>`.
+pub struct Consumer<T>(PhantomData<JsObject>, PhantomData<T>);
+
+impl<T: 'static, R: ReactNode, F: Fn(&'static T) -> R + 'static> ComponentType<ConsumerProps<F>, ConsumesContext> for Consumer<T> {}
 
 /// A component that [`memo`] made: React skips rendering it again while its
 /// props are the same as last time.

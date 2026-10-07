@@ -106,4 +106,20 @@ export const mutations: Mutation[] = [
     replace: "                if false && !self.is(TokenKind::Gt) && !self.is(TokenKind::Slash) {\n",
     tests: ["test/jsx.test.ts", "-t", "spread followed by attribute"],
   },
+  {
+    name: "consumer-not-member",
+    breaks: "`<THEME.Consumer>` is a component named `THEME::Consumer`, which isn't one, where it's the context's member",
+    file: "src/jsx_syntax/parser.rs",
+    find: "                consumer = member && segment == \"Consumer\";\n",
+    replace: "",
+    tests: ["test/jsx.test.ts", "-t", "by its Consumer, and a portal"],
+  },
+  {
+    name: "consumer-arm-missing",
+    breaks: "a context's macro has no `@consumer` arm, so `<THEME.Consumer>` matches none",
+    file: "src/jsx_syntax/parser.rs",
+    find: "        arms.push(arm(\"@consumer\", &call(&format!(\"::react::consumer({target})\"), consumed)));\n",
+    replace: "",
+    tests: ["test/jsx.test.ts", "-t", "by its Consumer, and a portal"],
+  },
 ];

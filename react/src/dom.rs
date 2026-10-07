@@ -6,15 +6,16 @@ use super::*;
 
 /// [`createPortal`](https://react.dev/reference/react-dom/createPortal):
 /// `children`, rendered into `container`, somewhere else in the DOM. Events
-/// still bubble through the React tree.
+/// still bubble through the React tree. A [`ReactPortal`], as @types/react
+/// types it: a child as it is, a component's result by `.element()`.
 #[cfg_attr(rust_js, rust_js::link_name = "react-dom#createPortal")]
-pub fn create_portal(children: impl ReactNode, container: &webapi::Element) -> Element {
+pub fn create_portal(children: impl ReactNode, container: &webapi::Element) -> &'static ReactPortal {
     unreachable!()
 }
 
 /// `createPortal(children, container, key)`.
 #[cfg_attr(rust_js, rust_js::link_name = "react-dom#createPortal")]
-pub fn create_portal_with_key(children: impl ReactNode, container: &webapi::Element, key: impl Key) -> Element {
+pub fn create_portal_with_key(children: impl ReactNode, container: &webapi::Element, key: impl Key) -> &'static ReactPortal {
     unreachable!()
 }
 
