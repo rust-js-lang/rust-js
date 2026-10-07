@@ -15,14 +15,25 @@ on:
         type: choice
         options: ['1', '2', '4']
         default: '1'
+  # By nightly.yml, of `main`: every mutation, where a branch's check runs
+  # only its own.
+  workflow_call:
+    inputs:
+      test_shards:
+        type: string
+        default: '1'
+      nightly:
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 # One run at a time, of any branch: a new one cancels the one running.
-# rustc-tests.yml, started by hand, is one of them too.
+# rustc-tests.yml, started by hand, is one of them too. Called by
+# nightly.yml, a group of its own, so neither cancels the other.
 concurrency:
-  group: ci
+  group: ${{ github.workflow == 'Check' && 'ci' || format('ci-{0}', github.workflow) }}
   cancel-in-progress: true
 
 jobs:
@@ -163,9 +174,11 @@ jobs:
     uses: ./.github/workflows/rustc-tests.yml
 
   # The mutations the change touches (ADR 0093): those of the files it
-  # changes, and those it adds or edits. Nightly runs all of them.
+  # changes, and those it adds or edits. Nightly runs all of them, on 8
+  # machines.
   mutations:
     uses: ./.github/workflows/rustc-tests.yml
     with:
       mutations: true
-      mutation_args: --changed=origin/main
+      mutation_args: ${{ !inputs.nightly && '--changed=origin/main' || '' }}
+      mutation_shards: ${{ inputs.nightly && '8' || '1' }}

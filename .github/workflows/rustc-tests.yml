@@ -84,9 +84,10 @@ permissions:
 
 # Started by hand, one run at a time with check.yml's, a new one cancelling
 # the one running. Called by check.yml, which is that run, a group of its
-# own: in the caller's, it would wait for the caller, or cancel it.
+# own: in the caller's, it would wait for the caller, or cancel it. Of
+# nightly.yml, its rustc tests, mutations and generated programs each one.
 concurrency:
-  group: ${{ github.workflow == 'rustc tests' && 'ci' || format('ci-{0}-{1}', github.workflow, inputs.mutations) }}
+  group: ${{ github.workflow == 'rustc tests' && 'ci' || format('ci-{0}-{1}-{2}', github.workflow, inputs.mutations, inputs.fuzz_seeds) }}
   cancel-in-progress: true
 
 jobs:
