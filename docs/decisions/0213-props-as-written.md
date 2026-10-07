@@ -54,6 +54,12 @@ error: missing prop `href` of `ButtonLinkProps`
   has too, `href`, isn't given twice; a flattened field read whole as a
   base, `..props.html`, is the object its parent is. The spread is before
   the update, which holds, as Rust's does. (Amended.)
+- **The companion writes the fields in the order they're declared**, the
+  flattened one where it is: a literal in order needs no `const`s, so an
+  `if` of next/link's `Link`, whose `className` comes after its anchor's
+  props, is a conditional in its JSX, as react.dev's Link chooses its
+  link. Rust makes a flattened struct declared first first. (Amended:
+  it was last.)
 - **A name nothing has is rustc's error**, at the name.
 - **With a base, `{..base}`, it's the struct literal with it**, as before.
 - **The props are as written**, by where each one's value is (ADR 0203),

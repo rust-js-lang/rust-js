@@ -252,6 +252,44 @@ pub fn crumbs(crumbs: &[Crumb]) -> Vec<Element> {
   expect(js).not.toContain("const key");
 });
 
+// A props struct's companion writes its fields in the order they're
+// declared, the flattened one where it is, `anchor` before `class_name`:
+// a literal in order needs no `const`s, so an `if` of such a component is
+// a conditional in its JSX, as react.dev's Link chooses its link (ADR 0213).
+test("a component whose flattened props come before a field is a conditional in JSX", async () => {
+  const source = `#![allow(non_snake_case)]
+use react::attributes::AnchorHTMLAttributes;
+use react::{Element, ReactNode, jsx};
+#[rust_js::link_name = "next/link#default"]
+pub fn NextLink<C: ReactNode>(_props: LinkProps<'_, C>) -> Element { unreachable!() }
+pub struct LinkProps<'a, C> {
+    pub href: &'a str,
+    pub children: C,
+    #[rust_js::flatten]
+    pub anchor: AnchorHTMLAttributes<'a>,
+    #[rust_js::name = "className"]
+    pub class_name: Option<&'a str>,
+}
+pub fn Pick(href: &str) -> Element {
+    jsx! {
+        <>
+            {if href.starts_with('#') {
+                jsx! { <a href={href}>{"here"}</a> }
+            } else {
+                jsx! { <NextLink href={href} className={Some("link")} id={Some("x")}>{"there"}</NextLink> }
+            }}
+        </>
+    }
+}
+`;
+  const { dir, args } = compile(source);
+  run(args);
+  const js = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(js).toContain('{href.startsWith("#") ? (');
+  expect(js).toContain('<NextLink href={href} className="link" id="x">');
+  expect(js).not.toContain("let tmp");
+});
+
 // A default import is named as the module's `use` renames it, `use
 // next::link::Link as NextLink` is `import NextLink from "next/link"`, as
 // react.dev's MDX `Link` has it, beside its own `Link`; a module that
@@ -1410,7 +1448,7 @@ pub fn Linked() -> Element {
   } finally {
     console.log = log;
   }
-  expect(logged).toEqual(["h", "t", "l", "t", "h", "big"]);
+  expect(logged).toEqual(["h", "t", "t", "l", "h", "big"]);
   expect(jsx).toMatch(/<ButtonLink size=\{\w+\} href=\{\w+\}>/);
   expect(jsx).toContain("<Linky label={label} target={target} />");
   expect(jsx).toContain("<ButtonLink target={target} label={label} href={h}>");
