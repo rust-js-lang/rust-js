@@ -72,7 +72,11 @@ cloneElement(element, { isLink: true })
   own properties, react.dev's `mdxName`, and a child's props are the
   site's, read with `js::get` or a binding of its own.
 - **`clone_element(element, props)` takes a struct of the props it sets**,
-  as `cloneElement`'s object, and makes an `Element`.
+  as `cloneElement`'s object, and makes a `ReactElement`, as @types/react
+  types it: a child as any other, `Child::Element(clone_element(..))`, as
+  react.dev's Link maps its children to a clone or the child itself.
+  `element.element()` is it as what JSX makes, a component's result.
+  (Amended: it made an `Element`, which no `Child` holds.)
 - **Its `.d.ts` is @types/react's `ReactElement`.**
 
 ## Why

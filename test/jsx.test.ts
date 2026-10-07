@@ -1460,7 +1460,7 @@ pub struct Linked<'a> {
 }
 pub fn Only<C: Node>(ListProps { children }: ListProps<C>) -> Element {
     match kind_of(&children) {
-        NodeKind::Element(element) => clone_element(element, Linked { linked: "yes" }),
+        NodeKind::Element(element) => clone_element(element, Linked { linked: "yes" }).element(),
         NodeKind::Text(text) => jsx! { <i>{text}</i> },
         NodeKind::List(_) | NodeKind::Other(_) => jsx! { <b>{"other"}</b> },
     }
@@ -1537,6 +1537,39 @@ pub fn Block<C: Node>(BlockProps { children }: BlockProps<C>) -> Element {
   expect(renderToStaticMarkup(createElement(Block, null, createElement("code", null, "npm i")))).toBe("<pre>npm i</pre>");
   expect(() => renderToStaticMarkup(createElement(Block, null, createElement("code", null, createElement("b"))))).toThrow("Expected plain text.");
   expect(() => renderToStaticMarkup(createElement(Block, null, "a", "b"))).toThrow("Expected plain text.");
+});
+
+// `cloneElement` makes an element, a child as any other, as react.dev's Link
+// clones each `inlineCode` among its children and keeps the rest.
+test("JSX components clone some of their children and keep the rest", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::children::{self, Child};
+use react::{Element, Node, clone_element, jsx};
+pub struct ListProps<C: Node> {
+    pub children: C,
+}
+pub struct Marked {
+    #[rust_js::name = "data-marked"]
+    pub marked: &'static str,
+}
+pub fn Marks<C: Node>(ListProps { children }: ListProps<C>) -> Element {
+    let marked: Vec<Child> = children::to_array(&children)
+        .into_iter()
+        .map(|child| match child {
+            Child::Element(element) => Child::Element(clone_element(element, Marked { marked: "yes" })),
+            child => child,
+        })
+        .collect();
+    jsx! { <p>{marked}</p> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain('cloneElement(child, { "data-marked": "yes" })');
+  const { Marks } = await import(join(dir, "lib.jsx"));
+  const { createElement } = await import("react");
+  expect(renderToStaticMarkup(createElement(Marks, null, "a", createElement("b", null, "b"), 1)))
+    .toBe('<p>a<b data-marked="yes">b</b>1</p>');
 });
 
 // Children that are a list, as JSX gives several, are that list, which a
@@ -1728,7 +1761,7 @@ pub fn A(p: P) -> Element {
 }
 `);
   const refused = Bun.spawnSync(later.args, { cwd: later.dir });
-  expect([refused.exitCode === 0, refused.stderr.toString().includes("take them apart where they're given")]).toEqual([false, true]);
+  expect([refused.exitCode === 0, refused.stderr.toString().includes("a `Rest` of props taken apart here")]).toEqual([false, true]);
 });
 
 // An async handler is the async function itself, as react.dev's
