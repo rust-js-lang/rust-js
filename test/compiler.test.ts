@@ -1702,6 +1702,7 @@ test("a match giving a table's field named as each variant reads the table by it
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("function variant(kind) {\n  return VARIANTS[kind];\n}");
   expect(js).toContain("function picked(i) {\n  return VARIANTS[pick(i)];\n}");
+  expect(js).toContain("const chosen = VARIANTS[kind];\n  return chosen.title;");
   expect(js).toContain('if (kind === "note") {\n    tmp = VARIANTS.pitfall;');
   expect(js).toContain('tmp = OTHER.pitfall;');
 });

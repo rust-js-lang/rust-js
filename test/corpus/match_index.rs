@@ -36,6 +36,16 @@ fn variant(kind: Kind) -> &'static Variant {
     }
 }
 
+// A `let` of it, as ExpandableCallout has `const variant = variantMap[type]`.
+fn titled(kind: Kind) -> &'static str {
+    let chosen = match kind {
+        Kind::Note => &VARIANTS.note,
+        Kind::Pitfall => &VARIANTS.pitfall,
+        Kind::Rsc => &VARIANTS.rsc,
+    };
+    chosen.title
+}
+
 // What's matched, a call, is read once, as the key.
 fn pick(i: usize) -> Kind {
     println!("pick {i}");
@@ -79,5 +89,5 @@ fn main() {
         let v = variant(kind);
         println!("{} {} {} {}", v.title, v.depth, crossed(kind).title, mixed(kind).title);
     }
-    println!("{}", picked(4).title);
+    println!("{} {}", picked(4).title, titled(Kind::Rsc));
 }

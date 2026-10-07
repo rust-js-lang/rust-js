@@ -401,9 +401,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         name
                     }
                     Some(init) => {
+                        // A table read by what's matched has a value (ADR 0233):
+                        // `const variant = variantMap[type]`.
+                        let indexed = match self.thir[self.strip(init)].kind {
+                            ExprKind::Match {
+                                scrutinee, ref arms, ..
+                            } => {
+                                let arms = arms.clone();
+                                self.match_index(scrutinee, &arms, out)?
+                            }
+                            _ => None,
+                        };
                         let name = self.bind(*var, name.as_str(), mutable);
-                        out.push(StmtKind::Let(name.clone(), None).at(span));
-                        self.stmt(init, &Dest::Assign(name.clone()), out)?;
+                        match indexed {
+                            Some(value) if mutable => out.push(StmtKind::Let(name.clone(), Some(value)).at(span)),
+                            Some(value) => out.push(StmtKind::Const(name.clone(), value).at(span)),
+                            None => {
+                                out.push(StmtKind::Let(name.clone(), None).at(span));
+                                self.stmt(init, &Dest::Assign(name.clone()), out)?;
+                            }
+                        }
                         name
                     }
                     None => {

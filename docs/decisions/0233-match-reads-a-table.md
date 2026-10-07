@@ -40,6 +40,9 @@ return VARIANTS[kind];
 - **Each arm is a place that stays put, read alone**: an arm of another
   field, `Kind::Note => &MAP.pitfall`, or of another table, is a
   conditional as before.
+- **A `let` of it has its value**, `const variant = VARIANTS[kind]`, as
+  ExpandableCallout's `variant` is, where a `match` is otherwise `let`, then
+  each arm's assignment. (Amended.)
 - **What isn't a place, `match pick(i)`, is read once, as the key**:
   `VARIANTS[pick(i)]`. The table is a place, so reading it first changes
   nothing.

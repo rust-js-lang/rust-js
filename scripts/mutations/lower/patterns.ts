@@ -526,4 +526,12 @@ export const mutations: Mutation[] = [
     replace: "false",
     tests: ["test/compiler.test.ts", "-t", "reads the table by it"],
   },
+  {
+    name: "let-match-index-unmade",
+    breaks: "`let variant = match kind { .. }` of a table is `let variant; if (kind === ..)`, not `const variant = MAP[kind]`",
+    file: "src/lower/patterns.rs",
+    find: "                                self.match_index(scrutinee, &arms, out)?\n",
+    replace: "                                let _ = (scrutinee, arms);\n                                None\n",
+    tests: ["test/compiler.test.ts", "-t", "reads the table by it"],
+  },
 ];

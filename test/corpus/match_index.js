@@ -18,6 +18,11 @@ function variant(kind) {
   return VARIANTS[kind];
 }
 
+function titled(kind) {
+  const chosen = VARIANTS[kind];
+  return chosen.title;
+}
+
 function pick(i) {
   console.log(`pick ${i}`);
   return $index(["note", "pitfall", "rsc"], i % 3);
@@ -56,7 +61,7 @@ function main() {
     const v = variant(kind);
     console.log(`${v.title} ${v.depth} ${crossed(kind).title} ${mixed(kind).title}`);
   }
-  console.log(`${picked(4).title}`);
+  console.log(`${picked(4).title} ${titled("rsc")}`);
 }
 
 export function entry() {
