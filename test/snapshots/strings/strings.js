@@ -105,15 +105,17 @@ export function repeated(s, n) {
 export function kind(s) {
   if (s === "") {
     return 0;
-  } else if (s === "abc" || s === "stats.rs") {
-    return 1;
-  } else if (s === "äbc/Ö") {
-    return 2;
-  } else if (s === "ab/c") {
-    return 3;
-  } else {
-    return 4;
   }
+  if (s === "abc" || s === "stats.rs") {
+    return 1;
+  }
+  if (s === "äbc/Ö") {
+    return 2;
+  }
+  if (s === "ab/c") {
+    return 3;
+  }
+  return 4;
 }
 
 export function tagged(s) {

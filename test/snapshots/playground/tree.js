@@ -35,20 +35,19 @@ export function inOrder(tree, first) {
   const key = (param) => {
     if (param[1].TAG === "Folder") {
       return `${param[0]}/`;
-    } else {
-      return param[0];
     }
+    return param[0];
   };
   const isFirst = (entry) => entry.TAG === "File" && entry._0 === first;
   let entries = tree.slice();
   entries.sort((a, b) => {
     if (isFirst(a[1])) {
       return -1;
-    } else if (isFirst(b[1])) {
-      return 1;
-    } else {
-      return $cmp(key(a), key(b));
     }
+    if (isFirst(b[1])) {
+      return 1;
+    }
+    return $cmp(key(a), key(b));
   });
   return entries;
 }

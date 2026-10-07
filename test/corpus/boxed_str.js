@@ -6,9 +6,8 @@ const Item = {
   to_owned(item) {
     if (item.TAG === "Literal") {
       return { TAG: "OwnedLiteral", _0: item._0 };
-    } else {
-      return { TAG: "OwnedLiteral", _0: item._0 };
     }
+    return { TAG: "OwnedLiteral", _0: item._0 };
   },
   text(item) {
     return item.TAG === "Literal" ? item._0 : item._0;
@@ -37,8 +36,7 @@ export function entry() {
 function itemDebug_fmt(item) {
   if (item.TAG === "Literal") {
     return `Literal(${$debugStr(item._0)})`;
-  } else {
-    return `OwnedLiteral(${$debugStr(item._0)})`;
   }
+  return `OwnedLiteral(${$debugStr(item._0)})`;
 }
 //# sourceMappingURL=case.js.map

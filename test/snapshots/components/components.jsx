@@ -30,13 +30,12 @@ function reduce(todos, action) {
     let next = todos.map((t) => ({ id: t.id, text: t.text, done: t.done }));
     next.push({ id: (todos.length + 1) >>> 0, text: action._0, done: false });
     return next;
-  } else {
-    return todos.map((t) => ({
-      id: t.id,
-      text: t.text,
-      done: t.id === action._0 ? !t.done : t.done,
-    }));
   }
+  return todos.map((t) => ({
+    id: t.id,
+    text: t.text,
+    done: t.id === action._0 ? !t.done : t.done,
+  }));
 }
 
 export function Todos() {

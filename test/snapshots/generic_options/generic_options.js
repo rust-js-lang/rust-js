@@ -16,9 +16,8 @@ export function count_some(xs) {
 export function pick(x, keep) {
   if (keep) {
     return $some(x);
-  } else {
-    return undefined;
   }
+  return undefined;
 }
 
 export function kept(xs) {

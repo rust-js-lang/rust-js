@@ -6,7 +6,8 @@ const Mapped = {
   and_then(mapped, f, dropU) {
     if (mapped === "None") {
       return "None";
-    } else if (mapped.TAG === "Single") {
+    }
+    if (mapped.TAG === "Single") {
       const option = f(mapped._0);
       let option$Some$0$live = true;
       try {
@@ -14,9 +15,8 @@ const Mapped = {
           option$Some$0$live = false;
           const new$ = $someValue(option);
           return { TAG: "Single", _0: new$ };
-        } else {
-          return "None";
         }
+        return "None";
       } finally {
         if (option != null) {
           if (option$Some$0$live) {
@@ -53,9 +53,8 @@ const Mapped = {
           const min = $someValue(value[0]);
           const max = $someValue(value[1]);
           return { TAG: "Ambiguous", _0: min, _1: max };
-        } else {
-          return "None";
         }
+        return "None";
       } finally {
         if (temporary[0] != null) {
           if (temporary$0$Some$0$live) {
@@ -73,11 +72,11 @@ const Mapped = {
   count(mapped, dropT) {
     if (mapped === "None") {
       return 0;
-    } else if (mapped.TAG === "Single") {
-      return 1;
-    } else {
-      return 2;
     }
+    if (mapped.TAG === "Single") {
+      return 1;
+    }
+    return 2;
   },
 };
 
@@ -85,9 +84,8 @@ function make(name, give) {
   console.log(`make ${name}`);
   if (give) {
     return [name];
-  } else {
-    return undefined;
   }
+  return undefined;
 }
 
 function first(k) {

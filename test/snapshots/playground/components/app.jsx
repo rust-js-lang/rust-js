@@ -31,10 +31,9 @@ function testsSummary(passed, failed, ignored) {
   const ignoredText = ignored > 0 ? `, ${ignored} ignored` : "";
   if (total === 0) {
     return say("No tests.", "Good");
-  } else {
-    const tone = failed > 0 ? "Bad" : "Good";
-    return say(`Tests: ${passed} passed, ${failed} failed${ignoredText}.`, tone);
   }
+  const tone = failed > 0 ? "Bad" : "Good";
+  return say(`Tests: ${passed} passed, ${failed} failed${ignoredText}.`, tone);
 }
 
 export function App() {
@@ -231,7 +230,8 @@ export function App() {
   const shownState = useMemo(() => {
     if (output === "Nothing") {
       return outputState("", true);
-    } else if (output.TAG === "Files") {
+    }
+    if (output.TAG === "Files") {
       let text;
       const match = output.files.find((param) => param[0] === output.shown);
       if (match != null) {
@@ -240,9 +240,8 @@ export function App() {
         text = "";
       }
       return outputState(text, true);
-    } else {
-      return outputState(output._0, false);
     }
+    return outputState(output._0, false);
   }, [output]);
   const sourceTree = useMemo(() => buildTree(Project.paths(project)), [project]);
   const tmp =

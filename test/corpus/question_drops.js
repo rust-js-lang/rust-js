@@ -7,9 +7,8 @@ var $dCheckedDouble;
 function step(d) {
   if (d[0] < 3) {
     return [(d[0] + 1) >>> 0];
-  } else {
-    return undefined;
   }
+  return undefined;
 }
 
 function climb(d) {
@@ -71,9 +70,8 @@ function discarded(d) {
 function fallible(d) {
   if (d[0] % 2 === 0) {
     return { TAG: "Ok", _0: [(d[0] + 100) >>> 0] };
-  } else {
-    return { TAG: "Err", _0: [(d[0] + 200) >>> 0] };
   }
+  return { TAG: "Err", _0: [(d[0] + 200) >>> 0] };
 }
 
 function go(d) {
@@ -220,9 +218,8 @@ function dDrop_drop(d) {
 function dCheckedDouble_checked_double(d) {
   if (d[0] < 10) {
     return [Math.imul(d[0], 2) >>> 0];
-  } else {
-    return undefined;
   }
+  return undefined;
 }
 
 function dCheckedDouble() {

@@ -43,17 +43,15 @@ import {
 function f64_bits(x) {
   if (Number.isNaN(x)) {
     return "NaN";
-  } else {
-    return $zeroPad($floatToBits(x, 8).toString(16), 16);
   }
+  return $zeroPad($floatToBits(x, 8).toString(16), 16);
 }
 
 function f32_bits(x) {
   if (Number.isNaN(x)) {
     return "NaN";
-  } else {
-    return $floatToBits(x, 4).toString(16).padStart(8, "0");
   }
+  return $floatToBits(x, 4).toString(16).padStart(8, "0");
 }
 
 function main() {

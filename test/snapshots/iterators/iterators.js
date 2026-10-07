@@ -45,9 +45,8 @@ export function non_empty(words) {
   return words.reduce((count, w) => {
     if (w.length === 0) {
       return count;
-    } else {
-      return (count + 1) >>> 0;
     }
+    return (count + 1) >>> 0;
   }, 0);
 }
 
@@ -101,11 +100,11 @@ export function compare(a, b) {
   const match = $cmp(a, b);
   if (match === -1) {
     return -1;
-  } else if (match === 0) {
-    return 0;
-  } else {
-    return 1;
   }
+  if (match === 0) {
+    return 0;
+  }
+  return 1;
 }
 
 export function bigger(a, b) {

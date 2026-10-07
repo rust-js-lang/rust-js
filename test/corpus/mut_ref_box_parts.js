@@ -37,9 +37,8 @@ function pair(o, p) {
   const match$1 = p.value;
   if (match < match$1) {
     return (match$1 - match) | 0;
-  } else {
-    return (match - match$1) | 0;
   }
+  return (match - match$1) | 0;
 }
 
 function main() {

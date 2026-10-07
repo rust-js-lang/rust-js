@@ -123,27 +123,30 @@ export function divmod_sum(a, b) {
 export function classify([a, b]) {
   if (a === 0 && b === 0) {
     return 0;
-  } else if (a === 0 || b === 0) {
-    return 1;
-  } else if (a === b) {
-    return 2;
-  } else if (a < 0) {
-    return 3;
-  } else {
-    return 4;
   }
+  if (a === 0 || b === 0) {
+    return 1;
+  }
+  if (a === b) {
+    return 2;
+  }
+  if (a < 0) {
+    return 3;
+  }
+  return 4;
 }
 
 export function quadrant(x, y) {
   const match = point(x, y);
   if (match.x === 0 || match.y === 0) {
     return 0;
-  } else if (match.x > 0 && match.y > 0) {
-    return 1;
-  } else if (match.x < 0) {
-    return (2 + (y < 0 ? 1 : 0)) | 0;
-  } else {
-    return Math.imul(match.y, 4);
   }
+  if (match.x > 0 && match.y > 0) {
+    return 1;
+  }
+  if (match.x < 0) {
+    return (2 + (y < 0 ? 1 : 0)) | 0;
+  }
+  return Math.imul(match.y, 4);
 }
 //# sourceMappingURL=structs.js.map

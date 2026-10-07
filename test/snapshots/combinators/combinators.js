@@ -23,19 +23,18 @@ import {
 function half(n) {
   if (n % 2 === 0) {
     return (n / 2) >>> 0;
-  } else {
-    return undefined;
   }
+  return undefined;
 }
 
 function parse(c) {
   if (c === "1") {
     return { TAG: "Ok", _0: 1 };
-  } else if (c === "2") {
-    return { TAG: "Ok", _0: 2 };
-  } else {
-    return { TAG: "Err", _0: `bad ${c}` };
   }
+  if (c === "2") {
+    return { TAG: "Ok", _0: 2 };
+  }
+  return { TAG: "Err", _0: `bad ${c}` };
 }
 
 export function options(n) {
@@ -72,9 +71,8 @@ export function results(c) {
   const then = (x) => {
     if (x > 1) {
       return { TAG: "Ok", _0: x };
-    } else {
-      return { TAG: "Err", _0: "small" };
     }
+    return { TAG: "Err", _0: "small" };
   };
   const result = r.TAG === "Ok" ? then(r._0) : r;
   return [
@@ -115,9 +113,8 @@ export function consumers(n) {
       .map((x) => {
         if (x > 2) {
           return Math.imul(x, 100) >>> 0;
-        } else {
-          return undefined;
         }
+        return undefined;
       })
       .find((item) => item != null),
     $partition(v, (x) => x % 2 === 0),

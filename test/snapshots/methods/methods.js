@@ -26,9 +26,8 @@ export const Light = {
   next(light) {
     if (light === "Red") {
       return "Green";
-    } else {
-      return "Red";
     }
+    return "Red";
   },
   is_go(light) {
     return light === "Green";

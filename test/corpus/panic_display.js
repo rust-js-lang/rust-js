@@ -3,9 +3,8 @@
 function pick(v, msg) {
   if (v != null) {
     return v;
-  } else {
-    throw new Error(msg);
   }
+  throw new Error(msg);
 }
 
 function main() {

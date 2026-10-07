@@ -5,9 +5,8 @@ import { $some, $someValue } from "@rust-js/runtime";
 function make(n) {
   if (n > 0) {
     return [n];
-  } else {
-    return undefined;
   }
+  return undefined;
 }
 
 function wrapped(value, dropT) {
@@ -20,9 +19,8 @@ function keep_if(value, keep, dropT) {
     if (keep) {
       value$live = false;
       return value;
-    } else {
-      return undefined;
     }
+    return undefined;
   } finally {
     if (value$live) {
       if (value != null) {
@@ -35,9 +33,8 @@ function keep_if(value, keep, dropT) {
 function checked(n) {
   if (n < 9) {
     return { TAG: "Ok", _0: [(n + 20) >>> 0] };
-  } else {
-    return { TAG: "Err", _0: `${n} is too big` };
   }
+  return { TAG: "Err", _0: `${n} is too big` };
 }
 
 function wrapped_result(value, dropT) {
@@ -53,9 +50,8 @@ function discard_result(value, keep, dropT) {
         dropT?.(value._0);
       }
       return true;
-    } else {
-      return false;
     }
+    return false;
   } finally {
     if (value$live) {
       if (value.TAG === "Ok") {

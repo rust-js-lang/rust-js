@@ -27,20 +27,19 @@ export function FileTree({ tree, depth, first, selected, onOpen, onDelete }) {
           </div>
         </li>
       );
-    } else {
-      return (
-        <FileItem
-          name={param[0]}
-          path={param[1]._0}
-          depth={depth}
-          open={param[1]._0 === selected}
-          root={param[1]._0 === first}
-          onOpen={onOpen}
-          onDelete={onDelete}
-          key={param[1]._0}
-        />
-      );
     }
+    return (
+      <FileItem
+        name={param[0]}
+        path={param[1]._0}
+        depth={depth}
+        open={param[1]._0 === selected}
+        root={param[1]._0 === first}
+        onOpen={onOpen}
+        onDelete={onDelete}
+        key={param[1]._0}
+      />
+    );
   });
   return <>{rows}</>;
 }

@@ -29,9 +29,8 @@ function classify(input) {
   }
   if (match != null) {
     return `${match[0]} is something else`;
-  } else {
-    return "not a setting";
   }
+  return "not a setting";
 }
 
 function first_even(items) {

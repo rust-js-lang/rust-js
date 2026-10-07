@@ -5,30 +5,29 @@ import { $eq, $unwrap } from "@rust-js/runtime";
 export function half(n) {
   if (n % 2 === 0) {
     return (n / 2) | 0;
-  } else {
-    return undefined;
   }
+  return undefined;
 }
 
 export function describe(o) {
   if (o === 0) {
     return 100;
-  } else if (o != null && o < 0) {
-    return -1;
-  } else if (o != null) {
-    return Math.imul(o, 2);
-  } else {
-    return 0;
   }
+  if (o != null && o < 0) {
+    return -1;
+  }
+  if (o != null) {
+    return Math.imul(o, 2);
+  }
+  return 0;
 }
 
 export function half_or_zero(n) {
   const h = half(n);
   if (h != null) {
     return h;
-  } else {
-    return 0;
   }
+  return 0;
 }
 
 export function halvings(n) {
@@ -89,9 +88,8 @@ export function label(n) {
   const name = n > 0 ? String(n) : undefined;
   if (name != null) {
     return name + "!";
-  } else {
-    return "none";
   }
+  return "none";
 }
 
 function double(n) {
@@ -101,9 +99,8 @@ function double(n) {
 function pair(n) {
   if (n > 0) {
     return [n, (n + 1) | 0];
-  } else {
-    return undefined;
   }
+  return undefined;
 }
 
 export function mapped(n) {
@@ -136,9 +133,8 @@ export function chained(n) {
   const h = half(n);
   if (h != null && h > 2) {
     return h;
-  } else {
-    return -1;
   }
+  return -1;
 }
 
 export function chained_twice(n) {

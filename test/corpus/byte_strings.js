@@ -5,19 +5,14 @@ import { $cmp, $cmpItems, $eq, $slice } from "@rust-js/runtime";
 function method(line) {
   if (line.length === 3 && line[0] === 71 && line[1] === 69 && line[2] === 84) {
     return "get";
-  } else if (
-    line.length === 4 &&
-    line[0] === 80 &&
-    line[1] === 79 &&
-    line[2] === 83 &&
-    line[3] === 84
-  ) {
-    return "post";
-  } else if (line.length === 0) {
-    return "empty";
-  } else {
-    return "other";
   }
+  if (line.length === 4 && line[0] === 80 && line[1] === 79 && line[2] === 83 && line[3] === 84) {
+    return "post";
+  }
+  if (line.length === 0) {
+    return "empty";
+  }
+  return "other";
 }
 
 function checksum(bytes) {

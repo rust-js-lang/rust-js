@@ -34,17 +34,20 @@ import {
 export function describe(v) {
   if (v === "Null") {
     return "null";
-  } else if (v.TAG === "Bool") {
-    return `bool ${v._0}`;
-  } else if (v.TAG === "Number") {
-    return `number ${$jsonNumberText(v._0)}`;
-  } else if (v.TAG === "String") {
-    return `string ${v._0}`;
-  } else if (v.TAG === "Array") {
-    return `array of ${v._0.length}`;
-  } else {
-    return `object with ${v._0.size}`;
   }
+  if (v.TAG === "Bool") {
+    return `bool ${v._0}`;
+  }
+  if (v.TAG === "Number") {
+    return `number ${$jsonNumberText(v._0)}`;
+  }
+  if (v.TAG === "String") {
+    return `string ${v._0}`;
+  }
+  if (v.TAG === "Array") {
+    return `array of ${v._0.length}`;
+  }
+  return `object with ${v._0.size}`;
 }
 
 export function report() {
@@ -712,29 +715,28 @@ function userDebug_fmt(user) {
 function shapeDebug_fmt(shape) {
   if (shape === "Dot") {
     return "Dot";
-  } else if (shape.TAG === "Circle") {
-    return `Circle(${$debugF64(shape._0)})`;
-  } else if (shape.TAG === "Rect") {
-    return `Rect(${$debugF64(shape._0)}, ${$debugF64(shape._1)})`;
-  } else {
-    return `Poly { sides: ${shape.sides} }`;
   }
+  if (shape.TAG === "Circle") {
+    return `Circle(${$debugF64(shape._0)})`;
+  }
+  if (shape.TAG === "Rect") {
+    return `Rect(${$debugF64(shape._0)}, ${$debugF64(shape._1)})`;
+  }
+  return `Poly { sides: ${shape.sides} }`;
 }
 
 function taggedDebug_fmt(tagged) {
   if (tagged.TAG === "Moved") {
     return `Moved { dx: ${tagged.dx} }`;
-  } else {
-    return `Named(${userDebug_fmt(tagged._0)})`;
   }
+  return `Named(${userDebug_fmt(tagged._0)})`;
 }
 
 function messageDebug_fmt(message) {
   if (message.TAG === "Data") {
     return `Data { payload: ${$debugJsonValue(message.payload)} }`;
-  } else {
-    return "Empty";
   }
+  return "Empty";
 }
 
 function openDebug_fmt(open) {
@@ -814,20 +816,21 @@ function shapeDeserialize_deserialize(json) {
     if (variant === "Dot") {
       content.unit();
       return "Dot";
-    } else if (variant === "Circle") {
+    }
+    if (variant === "Circle") {
       return { TAG: "Circle", _0: content.newtype($json.f64) };
-    } else if (variant === "Rect") {
+    }
+    if (variant === "Rect") {
       return content.tuple("tuple variant Shape::Rect", [$json.f64, $json.f64], ([_0, _1]) => ({
         TAG: "Rect",
         _0,
         _1,
       }));
-    } else {
-      return content.struct("struct variant Shape::Poly", [["sides", $json.u32]], ([sides]) => ({
-        TAG: "Poly",
-        sides,
-      }));
     }
+    return content.struct("struct variant Shape::Poly", [["sides", $json.u32]], ([sides]) => ({
+      TAG: "Poly",
+      sides,
+    }));
   });
 }
 
@@ -842,9 +845,8 @@ function taggedDeserialize_deserialize(json) {
           TAG: "Moved",
           dx,
         }));
-      } else {
-        return { TAG: "Named", _0: userDeserialize_deserialize(content) };
       }
+      return { TAG: "Named", _0: userDeserialize_deserialize(content) };
     },
   );
 }
@@ -877,10 +879,9 @@ function messageDeserialize_deserialize(json) {
           [["payload", $json.value]],
           ([payload]) => ({ TAG: "Data", payload }),
         );
-      } else {
-        content.taggedUnit("unit variant Message::Empty");
-        return "Empty";
       }
+      content.taggedUnit("unit variant Message::Empty");
+      return "Empty";
     },
   );
 }

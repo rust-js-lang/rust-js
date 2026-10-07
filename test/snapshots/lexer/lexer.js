@@ -108,9 +108,8 @@ export function capitalize(s) {
   const match = $next(chars);
   if (match != null) {
     return match.toUpperCase() + $restStr(chars);
-  } else {
-    return "";
   }
+  return "";
 }
 
 export function report() {
@@ -133,12 +132,13 @@ export function report() {
 function tokDebug_fmt(tok) {
   if (tok.TAG === "Num") {
     return `Num(${tok._0})`;
-  } else if (tok.TAG === "Ident") {
-    return `Ident(${$debugStr(tok._0)})`;
-  } else if (tok.TAG === "Sym") {
-    return `Sym(${$debugStr(tok._0, "'")})`;
-  } else {
-    return `Str(${$debugStr(tok._0)})`;
   }
+  if (tok.TAG === "Ident") {
+    return `Ident(${$debugStr(tok._0)})`;
+  }
+  if (tok.TAG === "Sym") {
+    return `Sym(${$debugStr(tok._0, "'")})`;
+  }
+  return `Str(${$debugStr(tok._0)})`;
 }
 //# sourceMappingURL=lexer.js.map

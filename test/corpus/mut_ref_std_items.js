@@ -10,10 +10,9 @@ function process_or_insert_default(map, key) {
   const match = map.get(key);
   if (match != null) {
     return process(match);
-  } else {
-    map.set(key, "");
-    return 0;
   }
+  map.set(key, "");
+  return 0;
 }
 
 function main() {

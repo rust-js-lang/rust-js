@@ -195,16 +195,14 @@ function qDebug_fmt(q) {
 function lightDebug_fmt(light) {
   if (light === "Off") {
     return "Off";
-  } else {
-    return `On { level: ${light.level} }`;
   }
+  return `On { level: ${light.level} }`;
 }
 
 function shapeDebug_fmt(shape) {
   if (shape.TAG === "Circle") {
     return `Circle { r: ${$debugF64(shape.r)} }`;
-  } else {
-    return `Square { side: ${$debugF64(shape.side)} }`;
   }
+  return `Square { side: ${$debugF64(shape.side)} }`;
 }
 //# sourceMappingURL=case.js.map

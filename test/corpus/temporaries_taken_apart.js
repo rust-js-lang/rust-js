@@ -8,41 +8,41 @@ function make(n) {
 function pick(n) {
   if (n === 0) {
     return "Zero";
-  } else if (n === 1) {
+  }
+  if (n === 1) {
     return { TAG: "One", _0: make(10) };
-  } else {
-    const loud = make(20);
-    let loud$live = true;
-    let arg;
-    let temporary;
-    let a;
-    let a$live;
-    let b;
-    let b$live;
-    try {
-      arg = make(21);
-      loud$live = false;
-      temporary = [loud, arg];
-      a = temporary[0];
-      a$live = true;
-      b = temporary[1];
-      b$live = true;
-    } finally {
-      if (loud$live) {
-        loudDrop_drop(loud);
-      }
+  }
+  const loud = make(20);
+  let loud$live = true;
+  let arg;
+  let temporary;
+  let a;
+  let a$live;
+  let b;
+  let b$live;
+  try {
+    arg = make(21);
+    loud$live = false;
+    temporary = [loud, arg];
+    a = temporary[0];
+    a$live = true;
+    b = temporary[1];
+    b$live = true;
+  } finally {
+    if (loud$live) {
+      loudDrop_drop(loud);
     }
-    try {
-      a$live = false;
-      b$live = false;
-      return { TAG: "Both", _0: a, _1: b };
-    } finally {
-      if (b$live) {
-        loudDrop_drop(b);
-      }
-      if (a$live) {
-        loudDrop_drop(a);
-      }
+  }
+  try {
+    a$live = false;
+    b$live = false;
+    return { TAG: "Both", _0: a, _1: b };
+  } finally {
+    if (b$live) {
+      loudDrop_drop(b);
+    }
+    if (a$live) {
+      loudDrop_drop(a);
     }
   }
 }

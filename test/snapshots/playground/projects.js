@@ -22,9 +22,8 @@ export const Project = {
     const match = project.files.find((f) => f.path === project.current);
     if (match != null) {
       return match.state;
-    } else {
-      return undefined;
     }
+    return undefined;
   },
   keeping(project, live) {
     let files = copy(project.files);
@@ -66,8 +65,7 @@ export function jsName(path) {
   const match = $stripSuffix(path, ".rs");
   if (match != null) {
     return `${match}.js`;
-  } else {
-    return path;
   }
+  return path;
 }
 //# sourceMappingURL=projects.js.map

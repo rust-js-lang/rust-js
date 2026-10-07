@@ -13,14 +13,15 @@ function lookup(table, i) {
 function depth(o) {
   if (o == null) {
     return 0;
-  } else if (o != null && $someValue(o) == null) {
-    return 1;
-  } else if (o != null && $someValue(o) != null && $someValue($someValue(o)) == null) {
-    return 2;
-  } else {
-    const n = $someValue($someValue(o));
-    return (3 + n) & 255;
   }
+  if (o != null && $someValue(o) == null) {
+    return 1;
+  }
+  if (o != null && $someValue(o) != null && $someValue($someValue(o)) == null) {
+    return 2;
+  }
+  const n = $someValue($someValue(o));
+  return (3 + n) & 255;
 }
 
 function describe(o) {

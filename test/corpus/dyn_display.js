@@ -7,9 +7,8 @@ var $pointDisplay, $counterDisplay, $missingDebug, $missingDisplay, $missingErro
 function find(name) {
   if (name === "one") {
     return { TAG: "Ok", _0: 1 };
-  } else {
-    return { TAG: "Err", _0: [name] };
   }
+  return { TAG: "Err", _0: [name] };
 }
 
 function lookup(name) {

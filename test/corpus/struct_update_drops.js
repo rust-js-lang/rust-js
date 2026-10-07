@@ -35,9 +35,8 @@ function rebuild(p, stop) {
     let tmp;
     if (stop) {
       return undefined;
-    } else {
-      tmp = [9];
     }
+    tmp = [9];
     p$x$live = false;
     return { x: p.x, y: tmp, n: p.n };
   } finally {

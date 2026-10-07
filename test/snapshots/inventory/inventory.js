@@ -42,15 +42,17 @@ function discount(pct) {
 function classify(n) {
   if (n <= -1) {
     return "negative";
-  } else if (n === 0) {
-    return "zero";
-  } else if (n >= 1 && n <= 9 && n % 2 === 0) {
-    return "small even";
-  } else if (n >= 1 && n <= 9) {
-    return "small odd";
-  } else {
-    return "large";
   }
+  if (n === 0) {
+    return "zero";
+  }
+  if (n >= 1 && n <= 9 && n % 2 === 0) {
+    return "small even";
+  }
+  if (n >= 1 && n <= 9) {
+    return "small odd";
+  }
+  return "large";
 }
 
 export function report() {
@@ -142,13 +144,14 @@ export function bands(xs) {
   return xs.map((x) => {
     if (x === 0) {
       return "none";
-    } else if (x >= 1 && x < 10) {
-      return `few ${x}`;
-    } else if ((x >= 10 && x <= 99) || x >= 200) {
-      return `many ${x}`;
-    } else {
-      return "odd";
     }
+    if (x >= 1 && x < 10) {
+      return `few ${x}`;
+    }
+    if ((x >= 10 && x <= 99) || x >= 200) {
+      return `many ${x}`;
+    }
+    return "odd";
   });
 }
 
@@ -160,9 +163,8 @@ function minStockRule_check(minStock, store) {
   const have = store.stock.get(minStock.item) ?? 0;
   if (have < minStock.min) {
     return `${minStock.item} low: ${have} < ${minStock.min}`;
-  } else {
-    return undefined;
   }
+  return undefined;
 }
 
 function revenueRule_name(revenue) {

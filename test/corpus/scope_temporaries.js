@@ -38,9 +38,8 @@ function early(stop) {
     a = noisy;
     if (stop) {
       return undefined;
-    } else {
-      tmp = 1;
     }
+    tmp = 1;
     noisy$live = false;
     value = { a, b: tmp };
   } finally {
@@ -63,9 +62,8 @@ function kept_early(stop) {
       a = noisy;
       if (stop) {
         return undefined;
-      } else {
-        tmp = 3;
       }
+      tmp = 3;
       noisy$live = false;
       value = { a, b: tmp };
     } finally {
@@ -198,9 +196,8 @@ function main() {
       a = noisy;
       if (stop) {
         return undefined;
-      } else {
-        tmp = 2;
       }
+      tmp = 2;
       noisy$live = false;
       value = { a, b: tmp };
     } finally {

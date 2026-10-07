@@ -28,25 +28,25 @@ export function ContactPage({ id }) {
   }, [id]);
   if (loaded === "Loading") {
     return <p className="status">Loading…</p>;
-  } else if (loaded.TAG === "Failed") {
+  }
+  if (loaded.TAG === "Failed") {
     return (
       <p className="error" role="alert">
         {loaded._0}
       </p>
     );
-  } else {
-    return (
-      <article className="contact">
-        <h1>{loaded._0.name}</h1>
-        <dl>
-          <dt>Email</dt>
-          <dd>{loaded._0.email}</dd>
-          <dt>Age</dt>
-          <dd>{loaded._0.age}</dd>
-        </dl>
-        <a href="#/">All contacts</a>
-      </article>
-    );
   }
+  return (
+    <article className="contact">
+      <h1>{loaded._0.name}</h1>
+      <dl>
+        <dt>Email</dt>
+        <dd>{loaded._0.email}</dd>
+        <dt>Age</dt>
+        <dd>{loaded._0.age}</dd>
+      </dl>
+      <a href="#/">All contacts</a>
+    </article>
+  );
 }
 //# sourceMappingURL=detail.jsx.map

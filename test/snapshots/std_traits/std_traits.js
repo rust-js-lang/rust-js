@@ -88,9 +88,8 @@ export function hand_written() {
 function points(s) {
   if (s === "Dot") {
     return 0;
-  } else {
-    return s._0.length;
   }
+  return s._0.length;
 }
 
 export function enum_clones() {
@@ -432,9 +431,8 @@ function trackedClone_clone(tracked) {
 function figureClone_clone(figure) {
   if (figure === "Dot") {
     return "Dot";
-  } else {
-    return { TAG: "Poly", _0: figure._0.slice() };
   }
+  return { TAG: "Poly", _0: figure._0.slice() };
 }
 
 function metersFromF64_from(m) {
@@ -448,9 +446,8 @@ function metersFromU32_from(km) {
 function evenTryFromU32_try_from(n) {
   if (n % 2 === 0) {
     return { TAG: "Ok", _0: [n] };
-  } else {
-    return { TAG: "Err", _0: `${n} is odd` };
   }
+  return { TAG: "Err", _0: `${n} is odd` };
 }
 
 function versionPartialEq_eq(version$1, other) {
@@ -486,9 +483,8 @@ function routeDisplay_fmt(route) {
 function figureDisplay_fmt(figure) {
   if (figure === "Dot") {
     return "a dot";
-  } else {
-    return `a polygon of ${figure._0.length}`;
   }
+  return `a polygon of ${figure._0.length}`;
 }
 
 function labeledDisplay_fmt(labeled, TDisplay) {
@@ -498,10 +494,9 @@ function labeledDisplay_fmt(labeled, TDisplay) {
 function countdownIterator_next(countdown$1) {
   if (countdown$1.n === 0) {
     return undefined;
-  } else {
-    countdown$1.n = (countdown$1.n - 1) >>> 0;
-    return (countdown$1.n + 1) >>> 0;
   }
+  countdown$1.n = (countdown$1.n - 1) >>> 0;
+  return (countdown$1.n + 1) >>> 0;
 }
 
 function fibonacciIterator_next(fibonacci$1) {
@@ -527,9 +522,8 @@ function wordOrd_cmp(word, other) {
   const byLength = $cmp(Array.from(word[0]).length, Array.from(other[0]).length);
   if (byLength !== 0) {
     return byLength;
-  } else {
-    return $cmp(word[0], other[0]);
   }
+  return $cmp(word[0], other[0]);
 }
 
 function posDebug_fmt(pos) {
@@ -547,11 +541,11 @@ function nothingDebug_fmt(nothing) {
 function glyphDebug_fmt(glyph) {
   if (glyph === "Dot") {
     return "Dot";
-  } else if (glyph.TAG === "Ring") {
-    return `Ring(${$debugF64(glyph._0)})`;
-  } else {
-    return `Box { w: ${glyph.w}, h: ${glyph.h} }`;
   }
+  if (glyph.TAG === "Ring") {
+    return `Ring(${$debugF64(glyph._0)})`;
+  }
+  return `Box { w: ${glyph.w}, h: ${glyph.h} }`;
 }
 
 function sixDebug_fmt(six) {

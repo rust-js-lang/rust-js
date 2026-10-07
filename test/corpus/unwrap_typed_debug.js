@@ -5,9 +5,8 @@ import { $debugStr, $unwrapOk } from "@rust-js/runtime";
 function find(name) {
   if (name === "pen") {
     return { TAG: "Ok", _0: 3 };
-  } else {
-    return { TAG: "Err", _0: { TAG: "Missing", name, shelf: 2 } };
   }
+  return { TAG: "Err", _0: { TAG: "Missing", name, shelf: 2 } };
 }
 
 function main() {

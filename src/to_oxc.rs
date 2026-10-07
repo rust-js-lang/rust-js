@@ -459,8 +459,32 @@ impl<'a> Cx<'a> {
 
     fn stmts(&self, stmts: &[js::Stmt]) -> ArenaVec<'a, Statement<'a>> {
         self.nested(true, || {
-            ArenaVec::from_iter_in(stmts.iter().map(|s| self.stmt(s)), &self.b)
+            let mut out = ArenaVec::new_in(&self.b);
+            self.push_stmts(stmts, &mut out);
+            out
         })
+    }
+
+    /// `stmts`, each pushed to `out`. An `if` whose branch leaves has no
+    /// `else`: what was in it follows, as JS writes it, `if (c) { return a; }
+    /// return b;` (ADR 0237). Its locals stay apart, as every local of a
+    /// function has a name of its own.
+    fn push_stmts(&self, stmts: &[js::Stmt], out: &mut ArenaVec<'a, Statement<'a>>) {
+        for s in stmts {
+            match &s.kind {
+                StmtKind::If(cond, then, Some(els)) if leaves(then) => {
+                    out.push(Statement::new_if_statement(
+                        span(s.span),
+                        self.expr(cond),
+                        self.block(then),
+                        None,
+                        &self.b,
+                    ));
+                    self.push_stmts(els, out);
+                }
+                _ => out.push(self.stmt(s)),
+            }
+        }
     }
 
     /// Run `f` one level deeper, if `deeper`.
@@ -1223,4 +1247,14 @@ fn restore_sources<'a>(
         );
     }
     out.into_sourcemap()
+}
+
+/// Does running `stmts` always leave, by a `return` or a `throw` last, or an
+/// `if` both of whose branches do?
+fn leaves(stmts: &[js::Stmt]) -> bool {
+    match stmts.last().map(|s| &s.kind) {
+        Some(StmtKind::Return(_) | StmtKind::Throw(_)) => true,
+        Some(StmtKind::If(_, then, Some(els))) => leaves(then) && leaves(els),
+        _ => false,
+    }
 }

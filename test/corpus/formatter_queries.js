@@ -61,9 +61,8 @@ function moneyDisplay_fmt(money, options) {
   const match = options?.width;
   if (match != null) {
     return $pad(s, match, ">");
-  } else {
-    return s;
   }
+  return s;
 }
 
 export function tagDisplay() {

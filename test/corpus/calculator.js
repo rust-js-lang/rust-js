@@ -34,9 +34,8 @@ const Parser = {
     const match = Parser.next(parser);
     if (match != null && $eq(match, token)) {
       return { TAG: "Ok", _0: undefined };
-    } else {
-      return { TAG: "Err", _0: { TAG: "Expected", _0: what } };
     }
+    return { TAG: "Err", _0: { TAG: "Expected", _0: what } };
   },
   expr(parser) {
     const result = Parser.term(parser);
@@ -108,9 +107,11 @@ const Parser = {
         return result;
       }
       return { TAG: "Ok", _0: { TAG: "Neg", _0: result._0 } };
-    } else if (match != null && match.TAG === "Num") {
+    }
+    if (match != null && match.TAG === "Num") {
       return { TAG: "Ok", _0: { TAG: "Num", _0: match._0 } };
-    } else if (match != null && match.TAG === "Ident") {
+    }
+    if (match != null && match.TAG === "Ident") {
       const value = Parser.peek(parser);
       if (value === "LParen") {
         Parser.next(parser);
@@ -140,10 +141,10 @@ const Parser = {
           return result$3;
         }
         return { TAG: "Ok", _0: { TAG: "Call", _0: match._0, _1: args } };
-      } else {
-        return { TAG: "Ok", _0: { TAG: "Var", _0: match._0 } };
       }
-    } else if (match === "LParen") {
+      return { TAG: "Ok", _0: { TAG: "Var", _0: match._0 } };
+    }
+    if (match === "LParen") {
       const result$4 = Parser.expr(parser);
       if (result$4.TAG === "Err") {
         return result$4;
@@ -154,11 +155,11 @@ const Parser = {
         return result$5;
       }
       return { TAG: "Ok", _0: inner };
-    } else if (match != null) {
-      return { TAG: "Err", _0: { TAG: "Expected", _0: `a value, not ${tokenDebug_fmt(match)}` } };
-    } else {
-      return { TAG: "Err", _0: "UnexpectedEnd" };
     }
+    if (match != null) {
+      return { TAG: "Err", _0: { TAG: "Expected", _0: `a value, not ${tokenDebug_fmt(match)}` } };
+    }
+    return { TAG: "Err", _0: "UnexpectedEnd" };
   },
 };
 
@@ -395,35 +396,42 @@ export function entry() {
 function tokenDebug_fmt(token) {
   if (token.TAG === "Num") {
     return `Num(${$debugF64(token._0)})`;
-  } else if (token.TAG === "Ident") {
-    return `Ident(${$debugStr(token._0)})`;
-  } else if (token.TAG === "Op") {
-    return `Op(${$debugStr(token._0, "'")})`;
-  } else if (token === "LParen") {
-    return "LParen";
-  } else if (token === "RParen") {
-    return "RParen";
-  } else if (token === "Comma") {
-    return "Comma";
-  } else {
-    return "Assign";
   }
+  if (token.TAG === "Ident") {
+    return `Ident(${$debugStr(token._0)})`;
+  }
+  if (token.TAG === "Op") {
+    return `Op(${$debugStr(token._0, "'")})`;
+  }
+  if (token === "LParen") {
+    return "LParen";
+  }
+  if (token === "RParen") {
+    return "RParen";
+  }
+  if (token === "Comma") {
+    return "Comma";
+  }
+  return "Assign";
 }
 
 function calcErrorDisplay_fmt(calcError) {
   if (calcError.TAG === "Unexpected") {
     return `unexpected '${calcError._0}'`;
-  } else if (calcError === "UnexpectedEnd") {
-    return "unexpected end of input";
-  } else if (calcError.TAG === "Expected") {
-    return `expected ${calcError._0}`;
-  } else if (calcError.TAG === "Unknown") {
-    return `unknown name \`${calcError._0}\``;
-  } else if (calcError === "DivideByZero") {
-    return "division by zero";
-  } else {
-    return `${calcError.name} takes ${calcError.wanted} argument${calcError.wanted === 1 ? "" : "s"}, got ${calcError.got}`;
   }
+  if (calcError === "UnexpectedEnd") {
+    return "unexpected end of input";
+  }
+  if (calcError.TAG === "Expected") {
+    return `expected ${calcError._0}`;
+  }
+  if (calcError.TAG === "Unknown") {
+    return `unknown name \`${calcError._0}\``;
+  }
+  if (calcError === "DivideByZero") {
+    return "division by zero";
+  }
+  return `${calcError.name} takes ${calcError.wanted} argument${calcError.wanted === 1 ? "" : "s"}, got ${calcError.got}`;
 }
 
 export function calcErrorDisplay() {

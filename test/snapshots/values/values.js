@@ -18,30 +18,26 @@ export const Value = {
   get(value, key) {
     if (value.TAG === "Obj") {
       return value._0.get(key);
-    } else {
-      return undefined;
     }
+    return undefined;
   },
   at(value, i) {
     if (value.TAG === "List") {
       return value._0[i];
-    } else {
-      return undefined;
     }
+    return undefined;
   },
   as_num(value) {
     if (value.TAG === "Num") {
       return value._0;
-    } else {
-      return undefined;
     }
+    return undefined;
   },
   as_str(value) {
     if (value.TAG === "Str") {
       return value._0;
-    } else {
-      return undefined;
     }
+    return undefined;
   },
   is_null(value) {
     return value === "Null";
@@ -49,7 +45,8 @@ export const Value = {
   depth(value) {
     if (value.TAG === "List") {
       return (1 + ($max(value._0.map((x) => Value.depth(x))) ?? 0)) >>> 0;
-    } else if (value.TAG === "Obj") {
+    }
+    if (value.TAG === "Obj") {
       return (
         (1 +
           ($max(
@@ -59,9 +56,8 @@ export const Value = {
           ) ?? 0)) >>>
         0
       );
-    } else {
-      return 0;
     }
+    return 0;
   },
   pretty(value, indent, out) {
     const pad = " ".repeat(indent);

@@ -281,11 +281,11 @@ function stockErrorDebug_fmt(stockError, options) {
 function stockErrorDisplay_fmt(stockError, options) {
   if (stockError.TAG === "UnknownSku") {
     return `no item ${stockError._0}`;
-  } else if (stockError.TAG === "OutOfStock") {
-    return `${stockError.sku}: wanted ${stockError.wanted}, have ${stockError.have}`;
-  } else {
-    return "an order needs a line";
   }
+  if (stockError.TAG === "OutOfStock") {
+    return `${stockError.sku}: wanted ${stockError.wanted}, have ${stockError.have}`;
+  }
+  return "an order needs a line";
 }
 
 function linePriced_unit_cents(line) {

@@ -606,7 +606,7 @@ test("string methods are JS's, and format! is a template literal", async () => {
   // A `char` is a one-character string.
   expect(js).toContain('  const c = windows ? "\\\\" : "/";');
   // A string literal pattern is `===` on the JS string, without `!= null` in `Some`.
-  expect(js).toContain('  } else if (s === "abc" || s === "stats.rs") {');
+  expect(js).toContain('  }\n  if (s === "abc" || s === "stats.rs") {');
   expect(js).toContain('  if (top === "ab") {');
 });
 
@@ -618,10 +618,10 @@ test("enums with fields are tagged objects, as in ReScript", async () => {
   expect(js).toContain("  return { TAG: \"Circle\", _0: r };");
   expect(js).toContain("  return { TAG: \"Rect\", w, h };");
   // Matching tests the name, or the `TAG`, then the fields, in place.
-  expect(js).toContain('  if (s === "Empty") {\n    return 0;\n  } else if (s.TAG === "Circle") {');
-  expect(js).toContain("  } else if ((s.TAG === \"Rect\" && s.w === 0) || s === \"Empty\") {");
+  expect(js).toContain('  if (s === "Empty") {\n    return 0;\n  }\n  if (s.TAG === "Circle") {');
+  expect(js).toContain("  }\n  if ((s.TAG === \"Rect\" && s.w === 0) || s === \"Empty\") {");
   // Through a reference, with no copy: the reference is the value.
-  expect(js).toContain("  if (t.TAG === \"Leaf\") {\n    return t._0;\n  } else {\n    return (sum(t._0) + sum(t._1)) | 0;");
+  expect(js).toContain("  if (t.TAG === \"Leaf\") {\n    return t._0;\n  }\n  return (sum(t._0) + sum(t._1)) | 0;");
   // `Result` is ReScript's `result`.
   expect(js).toContain('  if (match.TAG === "Ok") {\n    return match._0;');
 });
@@ -646,9 +646,9 @@ test("constants are the values rustc computed, by name", async () => {
 // ADR 0030: `Some(x)` is `x`, `None` is `undefined`, and `null` counts as `None`.
 test("options are the value or undefined", async () => {
   const js = await Bun.file(join(target, "options.js")).text();
-  expect(js).toContain("    return (n / 2) | 0;\n  } else {\n    return undefined;");
+  expect(js).toContain("    return (n / 2) | 0;\n  }\n  return undefined;");
   // `Some(0)` needs no `!= null`; `Some(n)` does.
-  expect(js).toContain("  if (o === 0) {\n    return 100;\n  } else if (o != null && o < 0) {");
+  expect(js).toContain("  if (o === 0) {\n    return 100;\n  }\n  if (o != null && o < 0) {");
   // `if let Some(h) = ..` keeps the value in a `const h`.
   expect(js).toContain("  const h = half(n);\n  if (h != null) {\n    return h;");
   expect(js).toContain("h != null, h == null, h ?? -1");
@@ -662,7 +662,7 @@ test("options are the value or undefined", async () => {
   expect(js).toContain("h != null ? h > 2 : undefined");
   expect(js).toContain("option != null ? Math.imul(option[0], option[1]) : undefined");
   // Let chains (ADR 0048): one test when the parts need nothing else,
-  expect(js).toContain("  const h = half(n);\n  if (h != null && h > 2) {\n    return h;\n  } else {\n    return -1;");
+  expect(js).toContain("  const h = half(n);\n  if (h != null && h > 2) {\n    return h;\n  }\n  return -1;");
   // an `if` inside for a `let` of a call, only made once the rest held, and
   // an `else` of one statement at each level a test fails at, as a person
   // writes it;
@@ -968,8 +968,8 @@ pub fn body(response: &webapi::Response) -> Promise<Option<&'static Unknown>> {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   // `classify` is the value, each variant told by `typeof`; a key that's a
   // variable is `[key]`, one written that's a name `.name`.
-  expect(js).toContain('} else if (typeof value === "string") {');
-  expect(js).toContain("} else if (Array.isArray(value)) {");
+  expect(js).toContain('}\n  if (typeof value === "string") {');
+  expect(js).toContain("}\n  if (Array.isArray(value)) {");
   expect(js).toContain("Object.keys(value)");
   expect(js).toContain("show(value[key])");
   expect(js).toContain('match._0.name = "new";');
@@ -1436,7 +1436,7 @@ test("a Display impl's fmt returns the string it writes", async () => {
   const js = await Bun.file(join(target, "std_traits.js")).text();
   // One write: its string. One per way through: a `return` each.
   expect(js).toContain("function pointDisplay_fmt(point) {\n  return `(${point.x}, ${point.y})`;\n}");
-  expect(js).toContain("  if (figure === \"Dot\") {\n    return \"a dot\";\n  } else {\n    return `a polygon of ${figure._0.length}`;");
+  expect(js).toContain("  if (figure === \"Dot\") {\n    return \"a dot\";\n  }\n  return `a polygon of ${figure._0.length}`;");
   // More: a string built up, with nested `fmt`s and a helper that writes.
   expect(js).toContain('    f += pointDisplay_fmt(stop);');
   expect(js).toContain('    f += write_loop(route.stops.length);');
@@ -1514,7 +1514,7 @@ test("HashMap and HashSet are a JS Map and Set", async () => {
 test("a derived Debug is a function, left out unless something shows the type", async () => {
   const js = await Bun.file(join(target, "std_traits.js")).text();
   expect(js).toContain("function posDebug_fmt(pos) {\n  return `Pos { x: ${$debugF64(pos.x)}, y: ${$debugF64(pos.y)} }`;\n}");
-  expect(js).toContain("  if (glyph === \"Dot\") {\n    return \"Dot\";\n  } else if (glyph.TAG === \"Ring\") {\n    return `Ring(${$debugF64(glyph._0)})`;");
+  expect(js).toContain("  if (glyph === \"Dot\") {\n    return \"Dot\";\n  }\n  if (glyph.TAG === \"Ring\") {\n    return `Ring(${$debugF64(glyph._0)})`;");
   // Generic: `T`'s `fmt`, from a dictionary.
   expect(js).toContain("export function debugged(x, TDebug) {\n  return TDebug.fmt(x);");
   // Derived, and never shown: not in the JS at all.
@@ -1589,7 +1589,7 @@ test("the store's JS: let-else, ranges, and writes through a map's value", async
   const js = await Bun.file(join(target, "inventory.js")).text();
   expect(js).toContain("let have = store.stock.get(e.item);\n      if (have == null) {\n        return { TAG: \"Err\", _0: `unknown item ${e.item}` };\n      }");
   expect(js).toContain("have = (have - e.qty) >>> 0;\n      store.stock.set(e.item, have);");
-  expect(js).toContain("} else if (x >= 1 && x < 10) {\n      return `few ${x}`;\n    } else if ((x >= 10 && x <= 99) || x >= 200) {");
+  expect(js).toContain("}\n    if (x >= 1 && x < 10) {\n      return `few ${x}`;\n    }\n    if ((x >= 10 && x <= 99) || x >= 200) {");
   // A bound at the type's own end always holds, so it isn't tested.
   expect(js).toContain("if (n <= -1) {");
   expect(js).toContain("? `revenue ${$toFixed(store.revenue, 2)} under ${$toFixed(revenue[0], 2)}`\n    : undefined;");
@@ -1689,6 +1689,65 @@ test("js::directive! and js::export_default! make a module a Next.js route", asy
   // A generic function's too, which Rust can't name as a value unless it's
   // given its types.
   expect((await import(join(dir, "generic.js"))).default([7, 8])).toBe(7);
+});
+
+// An `if` whose branch leaves has no `else`: what follows it runs only when
+// the branch doesn't, as JS writes it and react.dev's Link has it, `if (..)
+// { return cloneElement(..); } return child;` (ADR 0237). A branch that
+// doesn't leave keeps its `else`.
+test("an if whose branch returns has no else", async () => {
+  const dir = fixture("no-else-return");
+  writeFileSync(join(dir, "lib.rs"), `pub fn classify(n: i32) -> &'static str {
+    if n < 0 {
+        println!("neg");
+        "neg"
+    } else if n == 0 {
+        println!("zero");
+        "zero"
+    } else {
+        println!("pos");
+        "pos"
+    }
+}
+// A branch that leaves by an inner \`if\` both of whose branches do.
+pub fn nested(a: bool, b: bool) -> u32 {
+    if a {
+        if b {
+            println!("ab");
+            1
+        } else {
+            println!("a");
+            2
+        }
+    } else {
+        println!("none");
+        3
+    }
+}
+pub fn counted(n: i32) -> i32 {
+    let mut total = 0;
+    if n > 0 {
+        total += n;
+    } else {
+        total -= n;
+    }
+    total
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('  if (n < 0) {\n    console.log("neg");\n    return "neg";\n  }\n  if (n === 0) {\n    console.log("zero");\n    return "zero";\n  }\n  console.log("pos");\n  return "pos";\n}');
+  expect(js).toContain("} else {\n    total = (total - n) | 0;");
+  expect(js).toContain('    console.log("a");\n    return 2;\n  }\n  console.log("none");\n  return 3;\n}');
+  const lib = await import(join(dir, "lib.js"));
+  const log = console.log;
+  console.log = () => {};
+  try {
+    expect([lib.classify(-1), lib.classify(0), lib.classify(3), lib.counted(2), lib.counted(-2)]).toEqual(["neg", "zero", "pos", 2, 2]);
+    expect([lib.nested(true, true), lib.nested(true, false), lib.nested(false, true)]).toEqual([1, 2, 3]);
+  } finally {
+    console.log = log;
+  }
 });
 
 // A `match` of a fieldless enum whose arms each give one table's field named

@@ -44,9 +44,8 @@ function squareShape_area(square) {
 function blobShape_area(blob) {
   if (blob === "Dot") {
     return 0;
-  } else {
-    return 0;
   }
+  return 0;
 }
 
 function f64Shape_area(self) {

@@ -36,11 +36,11 @@ function toggle(s, id) {
 function shown(filter, todo) {
   if (filter === "All") {
     return true;
-  } else if (filter === "Active") {
-    return !todo.done;
-  } else {
-    return todo.done;
   }
+  if (filter === "Active") {
+    return !todo.done;
+  }
+  return todo.done;
 }
 
 function item(state, view, todo) {

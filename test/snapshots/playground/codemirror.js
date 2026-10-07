@@ -32,9 +32,8 @@ function output(language) {
 function themeFor(dark) {
   if (dark) {
     return oneDark;
-  } else {
-    return [];
   }
+  return [];
 }
 
 export function sourceState(text) {

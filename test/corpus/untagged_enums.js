@@ -9,22 +9,27 @@ const START = 3;
 function describe(value) {
   if (typeof value === "number" && value < 0) {
     return `negative ${value}`;
-  } else if (typeof value === "number") {
+  }
+  if (typeof value === "number") {
     return `count ${value}`;
-  } else if (typeof value === "string") {
+  }
+  if (typeof value === "string") {
     const arg = $byteLen(value);
     return `text ${value} of ${arg}`;
-  } else if (typeof value === "bigint") {
-    return `big ${BigInt.asIntN(64, value * 2n)}`;
-  } else if (typeof value === "boolean" && value) {
-    return "yes";
-  } else if (typeof value === "boolean" && !value) {
-    return "no";
-  } else if (Array.isArray(value)) {
-    return `list of ${value.length}`;
-  } else {
-    return `at ${value.x},${value.y}`;
   }
+  if (typeof value === "bigint") {
+    return `big ${BigInt.asIntN(64, value * 2n)}`;
+  }
+  if (typeof value === "boolean" && value) {
+    return "yes";
+  }
+  if (typeof value === "boolean" && !value) {
+    return "no";
+  }
+  if (Array.isArray(value)) {
+    return `list of ${value.length}`;
+  }
+  return `at ${value.x},${value.y}`;
 }
 
 function main() {
@@ -182,17 +187,20 @@ function pointDebug_fmt(point) {
 function valueDebug_fmt(value) {
   if (typeof value === "string") {
     return `Text(${$debugStr(value)})`;
-  } else if (typeof value === "number") {
-    return `Count(${value})`;
-  } else if (typeof value === "bigint") {
-    return `Big(${value})`;
-  } else if (typeof value === "boolean") {
-    return `Flag(${value})`;
-  } else if (Array.isArray(value)) {
-    return `List([${value.map((item) => String(item)).join(", ")}])`;
-  } else {
-    return `At(${pointDebug_fmt(value)})`;
   }
+  if (typeof value === "number") {
+    return `Count(${value})`;
+  }
+  if (typeof value === "bigint") {
+    return `Big(${value})`;
+  }
+  if (typeof value === "boolean") {
+    return `Flag(${value})`;
+  }
+  if (Array.isArray(value)) {
+    return `List([${value.map((item) => String(item)).join(", ")}])`;
+  }
+  return `At(${pointDebug_fmt(value)})`;
 }
 
 function valueFromString_from(text) {
@@ -210,9 +218,8 @@ function posDebug_fmt(pos) {
 function spotDebug_fmt(spot) {
   if (typeof spot === "object") {
     return `At(${posDebug_fmt(spot)})`;
-  } else {
-    return `Code(${spot})`;
   }
+  return `Code(${spot})`;
 }
 
 function noisyDrop_drop(noisy) {

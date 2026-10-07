@@ -114,9 +114,8 @@ export function edges() {
     acc.value = Math.imul(acc.value, x) >>> 0;
     if (acc.value > 100) {
       return undefined;
-    } else {
-      return acc.value;
     }
+    return acc.value;
   });
   let fs = [NaN, 1, -0, 0, -Infinity, -1, Infinity];
   fs.sort((a, b) => $totalCmp(a, b));
@@ -135,11 +134,11 @@ export function panics(i) {
   let v = [1, 2, 3];
   if (i === 0) {
     return $splitOff(v, 4);
-  } else if (i === 1) {
-    return $drain(v, 2, 1);
-  } else {
-    return $drain(v, 1, 5);
   }
+  if (i === 1) {
+    return $drain(v, 2, 1);
+  }
+  return $drain(v, 1, 5);
 }
 
 export function report() {

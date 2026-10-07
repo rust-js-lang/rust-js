@@ -11,11 +11,11 @@ function get(node, KKey, VClone) {
 function fill(slot) {
   if (slot.TAG === "Full" && slot._0 != null) {
     return slot._0;
-  } else if (slot.TAG === "Full" && slot._0 == null) {
-    return 1;
-  } else {
-    return 0;
   }
+  if (slot.TAG === "Full" && slot._0 == null) {
+    return 1;
+  }
+  return 0;
 }
 
 function main() {

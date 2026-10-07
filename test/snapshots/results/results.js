@@ -5,15 +5,17 @@ import { $unwrapOk } from "@rust-js/runtime";
 export function parse_digit(c) {
   if (c === "0") {
     return { TAG: "Ok", _0: 0 };
-  } else if (c === "1") {
-    return { TAG: "Ok", _0: 1 };
-  } else if (c === "2") {
-    return { TAG: "Ok", _0: 2 };
-  } else if (c === "3") {
-    return { TAG: "Ok", _0: 3 };
-  } else {
-    return { TAG: "Err", _0: c + " isn't a digit I know" };
   }
+  if (c === "1") {
+    return { TAG: "Ok", _0: 1 };
+  }
+  if (c === "2") {
+    return { TAG: "Ok", _0: 2 };
+  }
+  if (c === "3") {
+    return { TAG: "Ok", _0: 3 };
+  }
+  return { TAG: "Err", _0: c + " isn't a digit I know" };
 }
 
 export function sum_digits(a, b) {
@@ -45,9 +47,8 @@ export function halves(n) {
 function half(n) {
   if (n % 2 === 0) {
     return (n / 2) >>> 0;
-  } else {
-    return undefined;
   }
+  return undefined;
 }
 
 export function methods(c) {
@@ -89,11 +90,11 @@ export function converted(a, b) {
   const match = small_sum(a, b);
   if (match.TAG === "Ok") {
     return `ok ${match._0}`;
-  } else if (match.TAG === "Err" && match._0.TAG === "Parse") {
-    return `parse: ${match._0._0}`;
-  } else {
-    return `too big: ${match._0._0}`;
   }
+  if (match.TAG === "Err" && match._0.TAG === "Parse") {
+    return `parse: ${match._0._0}`;
+  }
+  return `too big: ${match._0._0}`;
 }
 
 function appErrorFromString_from(message) {

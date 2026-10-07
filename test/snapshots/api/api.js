@@ -1100,35 +1100,32 @@ function pairDebug_fmt(pair, ADebug, BDebug) {
 function replyDebug_fmt(reply, TDebug) {
   if (reply.TAG === "Ok") {
     return `Ok(${TDebug.fmt(reply._0)})`;
-  } else if (reply.TAG === "Err") {
-    return `Err { message: ${$debugStr(reply.message)} }`;
-  } else {
-    return "Empty";
   }
+  if (reply.TAG === "Err") {
+    return `Err { message: ${$debugStr(reply.message)} }`;
+  }
+  return "Empty";
 }
 
 function statusDebug_fmt(status, TDebug) {
   if (status.TAG === "Done") {
     return `Done { data: ${TDebug.fmt(status.data)} }`;
-  } else {
-    return `Failed { reason: ${$debugStr(status.reason)} }`;
   }
+  return `Failed { reason: ${$debugStr(status.reason)} }`;
 }
 
 function taggedDebug_fmt(tagged, TDebug) {
   if (tagged.TAG === "One") {
     return `One(${TDebug.fmt(tagged._0)})`;
-  } else {
-    return `Many([${tagged._0.map((item) => TDebug.fmt(item)).join(", ")}])`;
   }
+  return `Many([${tagged._0.map((item) => TDebug.fmt(item)).join(", ")}])`;
 }
 
 function eitherDebug_fmt(either, LDebug, RDebug) {
   if (either.TAG === "Left") {
     return `Left(${LDebug.fmt(either._0)})`;
-  } else {
-    return `Right(${RDebug.fmt(either._0)})`;
   }
+  return `Right(${RDebug.fmt(either._0)})`;
 }
 
 function wrapDebug_fmt(wrap, TDebug) {
@@ -1162,9 +1159,8 @@ function emailDebug_fmt(email) {
 function emailTryFromString_try_from(s) {
   if (s.includes("@")) {
     return { TAG: "Ok", _0: [s] };
-  } else {
-    return { TAG: "Err", _0: `\`${s}\` is not an email` };
   }
+  return { TAG: "Err", _0: `\`${s}\` is not an email` };
 }
 
 function oddErrorDisplay_fmt(oddError) {
@@ -1178,9 +1174,8 @@ function evenDebug_fmt(even) {
 function evenTryFromU32_try_from(n) {
   if (n % 2 === 0) {
     return { TAG: "Ok", _0: [n] };
-  } else {
-    return { TAG: "Err", _0: [n] };
   }
+  return { TAG: "Err", _0: [n] };
 }
 
 function contactDebug_fmt(contact) {
@@ -1214,13 +1209,14 @@ function withOptionDebug_fmt(withOption) {
 function kindDebug_fmt(kind) {
   if (kind.TAG === "Book") {
     return `Book { pages: ${kind.pages} }`;
-  } else if (kind.TAG === "Film") {
-    return `Film(${kind._0})`;
-  } else if (kind.TAG === "Pair") {
-    return `Pair(${kind._0}, ${kind._1})`;
-  } else {
-    return "Other";
   }
+  if (kind.TAG === "Film") {
+    return `Film(${kind._0})`;
+  }
+  if (kind.TAG === "Pair") {
+    return `Pair(${kind._0}, ${kind._1})`;
+  }
+  return "Other";
 }
 
 function itemDebug_fmt(item) {
@@ -1230,9 +1226,8 @@ function itemDebug_fmt(item) {
 function shapeDebug_fmt(shape) {
   if (shape.TAG === "Circle") {
     return `Circle { r: ${$debugF64(shape.r)} }`;
-  } else {
-    return `Square { side: ${$debugF64(shape.side)} }`;
   }
+  return `Square { side: ${$debugF64(shape.side)} }`;
 }
 
 function drawingDebug_fmt(drawing) {
@@ -1254,17 +1249,15 @@ function reqDebug_fmt(req) {
 function cmdDebug_fmt(cmd) {
   if (cmd.TAG === "Say") {
     return `Say { text: ${$debugStr(cmd.text)} }`;
-  } else {
-    return "Quit";
   }
+  return "Quit";
 }
 
 function wordDebug_fmt(word) {
   if (word.TAG === "Borrowed") {
     return `Borrowed(${$debugStr(word._0)})`;
-  } else {
-    return `Owned(${$debugStr(word._0)})`;
   }
+  return `Owned(${$debugStr(word._0)})`;
 }
 
 function innerDebug_fmt(inner) {
@@ -1397,16 +1390,16 @@ function replyDeserialize_deserialize(json, readT) {
   return json.enum("Reply", ["Ok", "Err", "Empty"], (variant, content) => {
     if (variant === "Ok") {
       return { TAG: "Ok", _0: content.newtype(readT) };
-    } else if (variant === "Err") {
+    }
+    if (variant === "Err") {
       return content.struct(
         "struct variant Reply::Err",
         [["message", $json.string]],
         ([message]) => ({ TAG: "Err", message }),
       );
-    } else {
-      content.unit();
-      return "Empty";
     }
+    content.unit();
+    return "Empty";
   });
 }
 
@@ -1439,13 +1432,12 @@ function statusDeserialize_deserialize(json, readT) {
           TAG: "Done",
           data,
         }));
-      } else {
-        return content.struct(
-          "struct variant Status::Failed",
-          [["reason", $json.string]],
-          ([reason]) => ({ TAG: "Failed", reason }),
-        );
       }
+      return content.struct(
+        "struct variant Status::Failed",
+        [["reason", $json.string]],
+        ([reason]) => ({ TAG: "Failed", reason }),
+      );
     },
   );
 }
@@ -1482,9 +1474,8 @@ function taggedDeserialize_deserialize(json, readT) {
     (variant, content) => {
       if (variant === "One") {
         return { TAG: "One", _0: readT(content) };
-      } else {
-        return { TAG: "Many", _0: $json.vec(readT)(content) };
       }
+      return { TAG: "Many", _0: $json.vec(readT)(content) };
     },
   );
 }
@@ -1800,10 +1791,9 @@ function cmdDeserialize_deserialize(json) {
           TAG: "Say",
           text,
         }));
-      } else {
-        content.taggedUnit("unit variant Cmd::Quit");
-        return "Quit";
       }
+      content.taggedUnit("unit variant Cmd::Quit");
+      return "Quit";
     },
   );
 }
@@ -1894,18 +1884,19 @@ function kindDeserialize_deserialize(json) {
         TAG: "Book",
         pages,
       }));
-    } else if (variant === "Film") {
+    }
+    if (variant === "Film") {
       return { TAG: "Film", _0: content.newtype($json.u32) };
-    } else if (variant === "Pair") {
+    }
+    if (variant === "Pair") {
       return content.tuple("tuple variant Kind::Pair", [$json.u8, $json.u8], ([_0, _1]) => ({
         TAG: "Pair",
         _0,
         _1,
       }));
-    } else {
-      content.unit();
-      return "Other";
     }
+    content.unit();
+    return "Other";
   });
 }
 
@@ -1938,12 +1929,11 @@ function shapeDeserialize_deserialize(json) {
           TAG: "Circle",
           r,
         }));
-      } else {
-        return content.struct("struct variant Shape::Square", [["side", $json.f64]], ([side]) => ({
-          TAG: "Square",
-          side,
-        }));
       }
+      return content.struct("struct variant Shape::Square", [["side", $json.f64]], ([side]) => ({
+        TAG: "Square",
+        side,
+      }));
     },
   );
 }

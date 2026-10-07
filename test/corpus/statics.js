@@ -61,8 +61,7 @@ function pointDebug_fmt(point) {
 function levelDebug_fmt(level) {
   if (level === "Low") {
     return "Low";
-  } else {
-    return `High(${level._0})`;
   }
+  return `High(${level._0})`;
 }
 //# sourceMappingURL=case.js.map

@@ -61,11 +61,11 @@ function main() {
     const match = $cmp(p, 7);
     if (match === -1) {
       return 1;
-    } else if (match === 1) {
-      return -1;
-    } else {
-      return 0;
     }
+    if (match === 1) {
+      return -1;
+    }
+    return 0;
   });
   const weights = [0.5, 1, 2.5];
   const heavy = $binarySearchBy(weights, (w) => $totalCmp(w, 2));

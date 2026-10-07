@@ -156,31 +156,31 @@ function orderDebug_fmt(order) {
 function eventDebug_fmt(event) {
   if (event === "Started") {
     return "Started";
-  } else if (event.TAG === "Moved") {
-    return `Moved { dx: ${event.dx}, dy: ${event.dy} }`;
-  } else {
-    return `Placed(${orderDebug_fmt(event._0)})`;
   }
+  if (event.TAG === "Moved") {
+    return `Moved { dx: ${event.dx}, dy: ${event.dy} }`;
+  }
+  return `Placed(${orderDebug_fmt(event._0)})`;
 }
 
 function msgDebug_fmt(msg) {
   if (msg === "Ping") {
     return "Ping";
-  } else if (msg.TAG === "Text") {
-    return `Text(${$debugStr(msg._0)})`;
-  } else {
-    return `Pair(${msg._0}, ${msg._1})`;
   }
+  if (msg.TAG === "Text") {
+    return `Text(${$debugStr(msg._0)})`;
+  }
+  return `Pair(${msg._0}, ${msg._1})`;
 }
 
 function looseDebug_fmt(loose) {
   if (loose.TAG === "Num") {
     return `Num(${$debugF64(loose._0)})`;
-  } else if (loose.TAG === "Word") {
-    return `Word(${$debugStr(loose._0)})`;
-  } else {
-    return "Nothing";
   }
+  if (loose.TAG === "Word") {
+    return `Word(${$debugStr(loose._0)})`;
+  }
+  return "Nothing";
 }
 
 function orderSerialize_serialize(order, json) {
@@ -262,7 +262,8 @@ function eventDeserialize_deserialize(json) {
       if (variant === "started") {
         content.taggedUnit("unit variant Event::Started");
         return "Started";
-      } else if (variant === "moved") {
+      }
+      if (variant === "moved") {
         return content.struct(
           "struct variant Event::Moved",
           [
@@ -271,9 +272,8 @@ function eventDeserialize_deserialize(json) {
           ],
           ([dx, dy]) => ({ TAG: "Moved", dx, dy }),
         );
-      } else {
-        return { TAG: "Placed", _0: orderDeserialize_deserialize(content) };
       }
+      return { TAG: "Placed", _0: orderDeserialize_deserialize(content) };
     },
   );
 }
@@ -316,15 +316,15 @@ function msgDeserialize_deserialize(json) {
       if (variant === "Ping") {
         content.untaggedUnit("unit variant Msg::Ping");
         return "Ping";
-      } else if (variant === "Text") {
-        return { TAG: "Text", _0: $json.string(content) };
-      } else {
-        return content.tupleStruct(
-          "tuple variant Msg::Pair",
-          [$json.u32, $json.u32],
-          ([_0, _1]) => ({ TAG: "Pair", _0, _1 }),
-        );
       }
+      if (variant === "Text") {
+        return { TAG: "Text", _0: $json.string(content) };
+      }
+      return content.tupleStruct("tuple variant Msg::Pair", [$json.u32, $json.u32], ([_0, _1]) => ({
+        TAG: "Pair",
+        _0,
+        _1,
+      }));
     },
   );
 }

@@ -12,9 +12,8 @@ function total(items) {
   const match = items.length === 0 ? undefined : [items[0], items.slice(1)];
   if (match != null) {
     return (match[0] + total(match[1])) >>> 0;
-  } else {
-    return 0;
   }
+  return 0;
 }
 
 function main() {

@@ -55,9 +55,8 @@ export function prepare(files, modules, styles, rootFile, test, run) {
         const options = { transforms: ["jsx"], jsxRuntime: "automatic", production: true };
         const code$1 = transform(code, options).code;
         return [path, code$1];
-      } else {
-        return [path, code];
       }
+      return [path, code];
     });
   $extend(sources, Array.from(modules));
   let tests;
@@ -88,9 +87,8 @@ export function prepare(files, modules, styles, rootFile, test, run) {
     item[1] = item[1].replace(cssImports, (whole, specifier) => {
       if (known.includes(specifier)) {
         return "";
-      } else {
-        return whole;
       }
+      return whole;
     });
   }
   const look = css.length === 0 ? FRAME_STYLE : `<style>\n${css.join("")}</style>`;
@@ -129,12 +127,13 @@ export function prepare(files, modules, styles, rootFile, test, run) {
 export function outcome(report) {
   if (report.error != null) {
     return { TAG: "Failed", _0: report.error };
-  } else if (report.ran === true) {
-    return "Ran";
-  } else if (report.tested != null) {
-    return { TAG: "Tested", _0: report.tested };
-  } else {
-    return undefined;
   }
+  if (report.ran === true) {
+    return "Ran";
+  }
+  if (report.tested != null) {
+    return { TAG: "Tested", _0: report.tested };
+  }
+  return undefined;
 }
 //# sourceMappingURL=programs.js.map

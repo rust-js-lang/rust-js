@@ -45,9 +45,8 @@ function filled(x, N) {
 function flag(ON, C) {
   if (ON) {
     return C;
-  } else {
-    return "-";
   }
+  return "-";
 }
 
 function scaled(values, K) {

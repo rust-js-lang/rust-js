@@ -20,11 +20,11 @@ export const Failure = {
   message(failure) {
     if (failure === "Aborted") {
       return "cancelled";
-    } else if (failure === "Network") {
-      return "the server can't be reached";
-    } else {
-      return failure._1.message;
     }
+    if (failure === "Network") {
+      return "the server can't be reached";
+    }
+    return failure._1.message;
   },
 };
 

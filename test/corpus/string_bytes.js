@@ -6,9 +6,8 @@ function first_word(s) {
   const match = $find(s, " ");
   if (match != null) {
     return $strSlice(s, 0, match);
-  } else {
-    return s;
   }
+  return s;
 }
 
 function main() {

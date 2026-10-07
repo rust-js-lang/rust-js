@@ -1738,13 +1738,14 @@ function orderDebug_fmt(order) {
 function shapeDebug_fmt(shape) {
   if (shape === "Dot") {
     return "Dot";
-  } else if (shape.TAG === "Circle") {
-    return `Circle(${$debugF64(shape._0)})`;
-  } else if (shape.TAG === "Rect") {
-    return `Rect(${$debugF64(shape._0)}, ${$debugF64(shape._1)})`;
-  } else {
-    return `Poly { sides: ${shape.sides}, name: ${$debugStr(shape.name)} }`;
   }
+  if (shape.TAG === "Circle") {
+    return `Circle(${$debugF64(shape._0)})`;
+  }
+  if (shape.TAG === "Rect") {
+    return `Rect(${$debugF64(shape._0)}, ${$debugF64(shape._1)})`;
+  }
+  return `Poly { sides: ${shape.sides}, name: ${$debugStr(shape.name)} }`;
 }
 
 function idDebug_fmt(id) {
@@ -1778,13 +1779,14 @@ function looseDebug_fmt(loose) {
 function eventDebug_fmt(event) {
   if (event === "Started") {
     return "Started";
-  } else if (event.TAG === "Moved") {
-    return `Moved { delta_x: ${event.delta_x}, delta_y: ${event.delta_y} }`;
-  } else if (event.TAG === "Renamed") {
-    return `Renamed { old_name: ${$debugStr(event.old_name)} }`;
-  } else {
-    return "Hidden";
   }
+  if (event.TAG === "Moved") {
+    return `Moved { delta_x: ${event.delta_x}, delta_y: ${event.delta_y} }`;
+  }
+  if (event.TAG === "Renamed") {
+    return `Renamed { old_name: ${$debugStr(event.old_name)} }`;
+  }
+  return "Hidden";
 }
 
 function ptDebug_fmt(pt) {
@@ -1836,79 +1838,87 @@ function markerDebug_fmt(marker) {
 function updateDebug_fmt(update) {
   if (update === "Started") {
     return "Started";
-  } else if (update.TAG === "Moved") {
+  }
+  if (update.TAG === "Moved") {
     return `Moved { dx: ${update.dx}, dy: ${update.dy} }`;
-  } else if (update.TAG === "Placed") {
+  }
+  if (update.TAG === "Placed") {
     return `Placed(${detailsDebug_fmt(update._0)})`;
-  } else if (update.TAG === "Marked") {
+  }
+  if (update.TAG === "Marked") {
     return `Marked(${markerDebug_fmt(update._0)})`;
-  } else if (update.TAG === "Count") {
+  }
+  if (update.TAG === "Count") {
     return `Count(${update._0 == null ? "None" : `Some(${update._0})`})`;
-  } else if (update.TAG === "Keys") {
+  }
+  if (update.TAG === "Keys") {
     return `Keys { map: {${Array.from($sortedEntries(update.map, $cmp))
       .map(([key, value]) => `${key}: ${value}`)
       .join(", ")}} }`;
-  } else {
-    return "Unknown";
   }
+  return "Unknown";
 }
 
 function chatDebug_fmt(chat) {
   if (chat === "Ping") {
     return "Ping";
-  } else if (chat.TAG === "Text") {
-    return `Text(${$debugStr(chat._0)})`;
-  } else if (chat.TAG === "Pair") {
-    return `Pair(${chat._0}, ${chat._1})`;
-  } else if (chat.TAG === "Move") {
-    return `Move { x: ${chat.x} }`;
-  } else {
-    return `Maybe(${chat._0 == null ? "None" : `Some(${chat._0})`})`;
   }
+  if (chat.TAG === "Text") {
+    return `Text(${$debugStr(chat._0)})`;
+  }
+  if (chat.TAG === "Pair") {
+    return `Pair(${chat._0}, ${chat._1})`;
+  }
+  if (chat.TAG === "Move") {
+    return `Move { x: ${chat.x} }`;
+  }
+  return `Maybe(${chat._0 == null ? "None" : `Some(${chat._0})`})`;
 }
 
 function strictChatDebug_fmt(strictChat) {
   if (strictChat.TAG === "A") {
     return `A(${strictChat._0})`;
-  } else {
-    return "B";
   }
+  return "B";
 }
 
 function anythingDebug_fmt(anything) {
   if (anything.TAG === "Num") {
     return `Num(${$debugF64(anything._0)})`;
-  } else if (anything.TAG === "Word") {
-    return `Word(${$debugStr(anything._0)})`;
-  } else if (anything.TAG === "Pair") {
-    return `Pair(${anything._0}, ${anything._1})`;
-  } else if (anything.TAG === "Point") {
-    return `Point { x: ${anything.x}, y: ${anything.y} }`;
-  } else if (anything === "Nothing") {
-    return "Nothing";
-  } else {
-    return `Many([${anything._0.map((item) => String(item)).join(", ")}])`;
   }
+  if (anything.TAG === "Word") {
+    return `Word(${$debugStr(anything._0)})`;
+  }
+  if (anything.TAG === "Pair") {
+    return `Pair(${anything._0}, ${anything._1})`;
+  }
+  if (anything.TAG === "Point") {
+    return `Point { x: ${anything.x}, y: ${anything.y} }`;
+  }
+  if (anything === "Nothing") {
+    return "Nothing";
+  }
+  return `Many([${anything._0.map((item) => String(item)).join(", ")}])`;
 }
 
 function eitherDebug_fmt(either) {
   if (either.TAG === "A") {
     return `A(${either._0})`;
-  } else if (either.TAG === "B") {
-    return `B { x: ${either.x} }`;
-  } else if (either.TAG === "Raw") {
-    return `Raw(${$debugStr(either._0)})`;
-  } else {
-    return `Other(${either._0})`;
   }
+  if (either.TAG === "B") {
+    return `B { x: ${either.x} }`;
+  }
+  if (either.TAG === "Raw") {
+    return `Raw(${$debugStr(either._0)})`;
+  }
+  return `Other(${either._0})`;
 }
 
 function wrapperDebug_fmt(wrapper) {
   if (wrapper.TAG === "Tagged") {
     return `Tagged(${updateDebug_fmt(wrapper._0)})`;
-  } else {
-    return `Plain(${chatDebug_fmt(wrapper._0)})`;
   }
+  return `Plain(${chatDebug_fmt(wrapper._0)})`;
 }
 
 function batchDebug_fmt(batch) {
@@ -1953,24 +1963,25 @@ function shapeDeserialize_deserialize(json) {
     if (variant === "Dot") {
       content.unit();
       return "Dot";
-    } else if (variant === "Circle") {
+    }
+    if (variant === "Circle") {
       return { TAG: "Circle", _0: content.newtype($json.f64) };
-    } else if (variant === "Rect") {
+    }
+    if (variant === "Rect") {
       return content.tuple("tuple variant Shape::Rect", [$json.f64, $json.f64], ([_0, _1]) => ({
         TAG: "Rect",
         _0,
         _1,
       }));
-    } else {
-      return content.struct(
-        "struct variant Shape::Poly",
-        [
-          ["sides", $json.u32],
-          ["name", $json.string],
-        ],
-        ([sides, name]) => ({ TAG: "Poly", sides, name }),
-      );
     }
+    return content.struct(
+      "struct variant Shape::Poly",
+      [
+        ["sides", $json.u32],
+        ["name", $json.string],
+      ],
+      ([sides, name]) => ({ TAG: "Poly", sides, name }),
+    );
   });
 }
 
@@ -2010,13 +2021,13 @@ function levelDeserialize_deserialize(json) {
       if (variant === "lo") {
         content.unit();
         return "Low";
-      } else if (variant === "High") {
+      }
+      if (variant === "High") {
         content.unit();
         return "High";
-      } else {
-        content.unit();
-        return "Unknown";
       }
+      content.unit();
+      return "Unknown";
     },
     "Unknown",
   );
@@ -2056,7 +2067,8 @@ function eventDeserialize_deserialize(json) {
       if (variant === "started") {
         content.unit();
         return "Started";
-      } else if (variant === "moved") {
+      }
+      if (variant === "moved") {
         return content.struct(
           "struct variant Event::Moved",
           [
@@ -2066,14 +2078,13 @@ function eventDeserialize_deserialize(json) {
           ([delta_x, delta_y]) => ({ TAG: "Moved", delta_x, delta_y }),
           { deny: true },
         );
-      } else {
-        return content.struct(
-          "struct variant Event::Renamed",
-          [["OLD_NAME", $json.string]],
-          ([old_name]) => ({ TAG: "Renamed", old_name }),
-          { deny: true },
-        );
       }
+      return content.struct(
+        "struct variant Event::Renamed",
+        [["OLD_NAME", $json.string]],
+        ([old_name]) => ({ TAG: "Renamed", old_name }),
+        { deny: true },
+      );
     },
   );
 }
@@ -2147,7 +2158,8 @@ function updateDeserialize_deserialize(json) {
       if (variant === "started") {
         content.taggedUnit("unit variant Update::Started");
         return "Started";
-      } else if (variant === "moved") {
+      }
+      if (variant === "moved") {
         return content.struct(
           "struct variant Update::Moved",
           [
@@ -2156,22 +2168,25 @@ function updateDeserialize_deserialize(json) {
           ],
           ([dx, dy]) => ({ TAG: "Moved", dx, dy }),
         );
-      } else if (variant === "placed") {
+      }
+      if (variant === "placed") {
         return { TAG: "Placed", _0: detailsDeserialize_deserialize(content) };
-      } else if (variant === "marked") {
+      }
+      if (variant === "marked") {
         return { TAG: "Marked", _0: markerDeserialize_deserialize(content) };
-      } else if (variant === "count") {
+      }
+      if (variant === "count") {
         return { TAG: "Count", _0: $json.option($json.u32)(content) };
-      } else if (variant === "keys") {
+      }
+      if (variant === "keys") {
         return content.struct(
           "struct variant Update::Keys",
           [["map", $json.map($json.key.number($json.u32), $json.u8)]],
           ([map]) => ({ TAG: "Keys", map }),
         );
-      } else {
-        content.taggedUnit("unit variant Update::Unknown");
-        return "Unknown";
       }
+      content.taggedUnit("unit variant Update::Unknown");
+      return "Unknown";
     },
     "unknown",
   );
@@ -2187,22 +2202,24 @@ function chatDeserialize_deserialize(json) {
       if (variant === "Ping") {
         content.untaggedUnit("unit variant Chat::Ping");
         return "Ping";
-      } else if (variant === "Text") {
+      }
+      if (variant === "Text") {
         return { TAG: "Text", _0: $json.string(content) };
-      } else if (variant === "Pair") {
+      }
+      if (variant === "Pair") {
         return content.tupleStruct(
           "tuple variant Chat::Pair",
           [$json.u8, $json.u8],
           ([_0, _1]) => ({ TAG: "Pair", _0, _1 }),
         );
-      } else if (variant === "Move") {
+      }
+      if (variant === "Move") {
         return content.untaggedStruct("struct variant Chat::Move", [["x", $json.i32]], ([x]) => ({
           TAG: "Move",
           x,
         }));
-      } else {
-        return { TAG: "Maybe", _0: $json.option($json.u8)(content) };
       }
+      return { TAG: "Maybe", _0: $json.option($json.u8)(content) };
     },
   );
 }
@@ -2216,10 +2233,9 @@ function strictChatDeserialize_deserialize(json) {
     (variant, content) => {
       if (variant === "A") {
         return { TAG: "A", _0: $json.u8(content) };
-      } else {
-        content.untaggedUnit("unit variant StrictChat::B");
-        return "B";
       }
+      content.untaggedUnit("unit variant StrictChat::B");
+      return "B";
     },
     { deny: true },
   );
@@ -2258,12 +2274,11 @@ function eitherDeserialize_deserialize(json) {
       content.enum("Either", ["A", "B"], (variant, content$1) => {
         if (variant === "A") {
           return { TAG: "A", _0: content$1.newtype($json.u8) };
-        } else {
-          return content$1.struct("struct variant Either::B", [["x", $json.u8]], ([x]) => ({
-            TAG: "B",
-            x,
-          }));
         }
+        return content$1.struct("struct variant Either::B", [["x", $json.u8]], ([x]) => ({
+          TAG: "B",
+          x,
+        }));
       }),
     (content) => ({ TAG: "Raw", _0: $json.string(content) }),
     (content) => ({ TAG: "Other", _0: $json.u32(content) }),

@@ -13,9 +13,8 @@ export function summary(a, b) {
 export function clamp(x) {
   if (x > 1000) {
     return 1000;
-  } else {
-    return x;
   }
+  return x;
 }
 
 export function doubled_mean(a, b) {

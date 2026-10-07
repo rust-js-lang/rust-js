@@ -12,9 +12,8 @@ const Mapped = {
         mapped$Ambiguous$0$live = false;
         const t = mapped._0;
         return $some(t);
-      } else {
-        return undefined;
       }
+      return undefined;
     } finally {
       if (mapped.TAG === "Single") {
         if (mapped$Single$0$live) {
@@ -38,9 +37,8 @@ const Mapped = {
         mapped$Ambiguous$1$live = false;
         const t = mapped.TAG === "Single" ? mapped._0 : mapped._1;
         return $some(t);
-      } else {
-        return undefined;
       }
+      return undefined;
     } finally {
       if (mapped.TAG === "Single") {
         if (mapped$Single$0$live) {

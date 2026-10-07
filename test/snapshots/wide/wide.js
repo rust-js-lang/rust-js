@@ -167,15 +167,16 @@ export function panics(i) {
   const zero = BigInt.asIntN(64, BigInt(i) - BigInt(i));
   if (i === 0) {
     return $bigDiv(7n, zero, -9223372036854775808n);
-  } else if (i === 1) {
-    return $bigDiv(-9223372036854775808n, BigInt.asIntN(64, zero - 1n), -9223372036854775808n);
-  } else if (i === 2) {
-    return $bigRem(7n, zero, -9223372036854775808n);
-  } else {
-    return $unwrapOk($parseBig("x", -9223372036854775808n, 9223372036854775807n), undefined, (e) =>
-      $debugParseError(e, "ParseIntError"),
-    );
   }
+  if (i === 1) {
+    return $bigDiv(-9223372036854775808n, BigInt.asIntN(64, zero - 1n), -9223372036854775808n);
+  }
+  if (i === 2) {
+    return $bigRem(7n, zero, -9223372036854775808n);
+  }
+  return $unwrapOk($parseBig("x", -9223372036854775808n, 9223372036854775807n), undefined, (e) =>
+    $debugParseError(e, "ParseIntError"),
+  );
 }
 
 function idDebug_fmt(id) {

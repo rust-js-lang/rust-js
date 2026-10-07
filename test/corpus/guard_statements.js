@@ -3,37 +3,36 @@
 function size(s) {
   if (s === "Dot") {
     return 0;
-  } else if (s.TAG === "Square") {
-    return Math.imul(s._0, s._0);
-  } else {
-    return Math.imul(s.w, s.h);
   }
+  if (s.TAG === "Square") {
+    return Math.imul(s._0, s._0);
+  }
+  return Math.imul(s.w, s.h);
 }
 
 function describe(s, seen) {
   if (s.TAG === "Square" && (s.TAG === "Square" ? s._0 > 2 : false)) {
     return "big square";
-  } else {
-    if (s.TAG === "Square") {
-      seen.value = (seen.value + 1) | 0;
-      if (seen.value > 2) {
-        return "square, seen often";
-      }
-    }
-    if (s.TAG === "Square") {
-      return "square";
-    } else if (size(s) > 10) {
-      return "big";
-    } else {
-      if (s.TAG === "Rect") {
-        const half = (s.w / 2) | 0;
-        if (half > 0) {
-          return "wide rect";
-        }
-      }
-      return "other";
+  }
+  if (s.TAG === "Square") {
+    seen.value = (seen.value + 1) | 0;
+    if (seen.value > 2) {
+      return "square, seen often";
     }
   }
+  if (s.TAG === "Square") {
+    return "square";
+  }
+  if (size(s) > 10) {
+    return "big";
+  }
+  if (s.TAG === "Rect") {
+    const half = (s.w / 2) | 0;
+    if (half > 0) {
+      return "wide rect";
+    }
+  }
+  return "other";
 }
 
 function main() {

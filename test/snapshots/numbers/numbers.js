@@ -66,9 +66,8 @@ export function floats(x) {
 export function gcd(a, b) {
   if (b === 0) {
     return a;
-  } else {
-    return gcd(b, $rem(a, b) >>> 0);
   }
+  return gcd(b, $rem(a, b) >>> 0);
 }
 
 export function grids(n) {

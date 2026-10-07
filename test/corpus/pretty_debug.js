@@ -251,17 +251,15 @@ function rawDebug_fmt(raw, options) {
 function asksDebug_fmt(asks, options) {
   if (options?.alternate === true) {
     return "pretty";
-  } else {
-    return "plain";
   }
+  return "plain";
 }
 
 function shownDisplay_fmt(shown, options) {
   if (options?.alternate === true) {
     return `#${shown[0]}`;
-  } else {
-    return String(shown[0]);
   }
+  return String(shown[0]);
 }
 
 function delegateDebug_fmt(delegate, options) {

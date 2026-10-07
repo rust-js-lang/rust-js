@@ -34,4 +34,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/compiler.test.ts", "-t", "variadic binding"],
   },
+  {
+    name: "else-after-return-kept",
+    breaks: "`if (c) { return a; } else { return b; }` keeps its `else`, which JS writes as `return b;` after it",
+    file: "src/to_oxc.rs",
+    find: "StmtKind::If(cond, then, Some(els)) if leaves(then) =>",
+    replace: "StmtKind::If(cond, then, Some(els)) if false && leaves(then) =>",
+    tests: ["test/compiler.test.ts", "-t", "branch returns has no else"],
+  },
+  {
+    name: "else-dropped-of-any-branch",
+    breaks: "an `else` of a branch that doesn't leave is run after it too: `total += n; total -= n`",
+    file: "src/to_oxc.rs",
+    find: "StmtKind::If(cond, then, Some(els)) if leaves(then) =>",
+    replace: "StmtKind::If(cond, then, Some(els)) if true || leaves(then) =>",
+    tests: ["test/compiler.test.ts", "-t", "branch returns has no else"],
+  },
+  {
+    name: "inner-if-leaving-unseen",
+    breaks: "a branch that leaves by an inner `if` both of whose branches return keeps its `else`",
+    file: "src/to_oxc.rs",
+    find: "Some(StmtKind::If(_, then, Some(els))) => leaves(then) && leaves(els),",
+    replace: "Some(StmtKind::If(_, _, Some(_))) => false,",
+    tests: ["test/compiler.test.ts", "-t", "branch returns has no else"],
+  },
 ];

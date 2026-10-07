@@ -7,33 +7,36 @@ const ORIGIN = [0, 0];
 function describe(xs) {
   if (xs.length === 0) {
     return "empty";
-  } else if (xs.length === 1) {
+  }
+  if (xs.length === 1) {
     return `one: ${xs[0]}`;
-  } else if (xs.length === 2) {
+  }
+  if (xs.length === 2) {
     return `two: ${xs[0]} ${xs[1]}`;
-  } else if (xs.length >= 3 && xs[0] === 1 && xs[2] === 3) {
+  }
+  if (xs.length >= 3 && xs[0] === 1 && xs[2] === 3) {
     const n = xs[1];
     const rest = xs.slice(3);
     return `one, ${n}, three, then [${rest.map((item) => String(item)).join(", ")}]`;
-  } else {
-    const first = xs[0];
-    const last = xs[xs.length - 1];
-    const middle = xs.slice(1, xs.length - 1);
-    return `${first} .. ${last} around [${middle.map((item) => String(item)).join(", ")}]`;
   }
+  const first = xs[0];
+  const last = xs[xs.length - 1];
+  const middle = xs.slice(1, xs.length - 1);
+  return `${first} .. ${last} around [${middle.map((item) => String(item)).join(", ")}]`;
 }
 
 function greet(words) {
   if (words.length === 2 && words[0] === "hello") {
     return `hi ${words[1]}`;
-  } else if (words.length >= 1 && words[0] === "hello") {
+  }
+  if (words.length >= 1 && words[0] === "hello") {
     const names = words.slice(1);
     return `hi all ${names.length}`;
-  } else if (words.length >= 1 && words[words.length - 1] === "bye") {
-    return "goodbye";
-  } else {
-    return "?";
   }
+  if (words.length >= 1 && words[words.length - 1] === "bye") {
+    return "goodbye";
+  }
+  return "?";
 }
 
 function sum3([x, y, z]) {

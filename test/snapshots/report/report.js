@@ -58,13 +58,14 @@ function capitalize(s) {
 function grade(score, age) {
   if (score >= 90) {
     return "A";
-  } else if (score >= 70 && score <= 89 && age < 30) {
-    return "B+";
-  } else if (score >= 70 && score <= 89) {
-    return "B";
-  } else {
-    return "C";
   }
+  if (score >= 70 && score <= 89 && age < 30) {
+    return "B+";
+  }
+  if (score >= 70 && score <= 89) {
+    return "B";
+  }
+  return "C";
 }
 
 export function table(input) {
@@ -142,11 +143,11 @@ function rowErrorFromParseIntError_from(e) {
 function rowErrorDisplay_fmt(rowError) {
   if (rowError.TAG === "Fields") {
     return `expected 4 fields, got ${rowError._0}`;
-  } else if (rowError.TAG === "Number") {
-    return `bad number: ${rowError._0}`;
-  } else {
-    return `empty ${rowError._0}`;
   }
+  if (rowError.TAG === "Number") {
+    return `bad number: ${rowError._0}`;
+  }
+  return `empty ${rowError._0}`;
 }
 
 export function rowErrorDisplay() {

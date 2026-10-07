@@ -36,10 +36,9 @@ function countdown(from) {
   return $fromFn(() => {
     if (n === 0) {
       return undefined;
-    } else {
-      n = (n - 1) >>> 0;
-      return (n + 1) >>> 0;
     }
+    n = (n - 1) >>> 0;
+    return (n + 1) >>> 0;
   }).toArray();
 }
 
@@ -158,8 +157,7 @@ function counterIterator_next(counter) {
   if (counter[0] < 3) {
     counter[0] = (counter[0] + 1) >>> 0;
     return counter[0];
-  } else {
-    return undefined;
   }
+  return undefined;
 }
 //# sourceMappingURL=case.js.map

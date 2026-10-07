@@ -31,18 +31,16 @@ export function entry() {
 function countdownIterator_next(countdown) {
   if (countdown[0] === 0) {
     return undefined;
-  } else {
-    countdown[0] = (countdown[0] - 1) >>> 0;
-    return countdown[0];
   }
+  countdown[0] = (countdown[0] - 1) >>> 0;
+  return countdown[0];
 }
 
 function blinkerIterator_next(blinker) {
   blinker[0] = (blinker[0] + 1) >>> 0;
   if (blinker[0] % 3 === 0) {
     return undefined;
-  } else {
-    return blinker[0];
   }
+  return blinker[0];
 }
 //# sourceMappingURL=case.js.map

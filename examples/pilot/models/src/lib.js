@@ -42,9 +42,8 @@ export function is_email(text) {
       !match[1].startsWith(".") &&
       !match[1].endsWith(".")
     );
-  } else {
-    return false;
   }
+  return false;
 }
 
 export function matches(contact, query) {

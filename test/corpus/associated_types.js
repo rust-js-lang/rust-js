@@ -68,10 +68,9 @@ export function entry() {
 function countSource_next_item(count) {
   if (count.n === 0) {
     return undefined;
-  } else {
-    count.n = (count.n - 1) >>> 0;
-    return count.n;
   }
+  count.n = (count.n - 1) >>> 0;
+  return count.n;
 }
 
 function wordsSource_next_item(words) {

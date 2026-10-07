@@ -18,9 +18,8 @@ function halves(v) {
     v.map((n) => {
       if (n % 2 === 0) {
         return (n / 2) >>> 0;
-      } else {
-        return undefined;
       }
+      return undefined;
     }),
   );
 }
@@ -42,9 +41,8 @@ function main() {
       seen.push(n);
       if (n < 0) {
         return { TAG: "Err", _0: `negative ${n}` };
-      } else {
-        return { TAG: "Ok", _0: Math.imul(n, 10) };
       }
+      return { TAG: "Ok", _0: Math.imul(n, 10) };
     }),
   );
   console.log(

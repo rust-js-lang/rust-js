@@ -94,21 +94,21 @@ export function entry() {
 function shapeDebug_fmt(shape) {
   if (shape.TAG === "Circle") {
     return `Circle(${$debugF64(shape._0)})`;
-  } else if (shape.TAG === "Square") {
-    return `Square { side: ${$debugF64(shape.side)} }`;
-  } else {
-    return "Dot";
   }
+  if (shape.TAG === "Square") {
+    return `Square { side: ${$debugF64(shape.side)} }`;
+  }
+  return "Dot";
 }
 
 function shapeArea_area(shape) {
   if (shape.TAG === "Circle") {
     return 3 * shape._0 * shape._0;
-  } else if (shape.TAG === "Square") {
-    return shape.side * shape.side;
-  } else {
-    return 0;
   }
+  if (shape.TAG === "Square") {
+    return shape.side * shape.side;
+  }
+  return 0;
 }
 
 function shapeArea_unit() {

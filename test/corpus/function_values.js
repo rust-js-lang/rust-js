@@ -55,8 +55,7 @@ function pairDebug_fmt(pair) {
 function shapeDebug_fmt(shape) {
   if (shape.TAG === "Circle") {
     return `Circle(${$debugF64(shape._0)})`;
-  } else {
-    return `Rect(${$debugF64(shape._0)}, ${$debugF64(shape._1)})`;
   }
+  return `Rect(${$debugF64(shape._0)}, ${$debugF64(shape._1)})`;
 }
 //# sourceMappingURL=case.js.map

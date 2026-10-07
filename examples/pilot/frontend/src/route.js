@@ -7,21 +7,20 @@ export function parse(hash$1) {
   const match = $stripPrefix(hash$1, "#") ?? hash$1;
   if (match === "" || match === "/") {
     return "List";
-  } else if (match === "/new") {
-    return "New";
-  } else {
-    const option = $stripPrefix(match, "/contacts/");
-    const then = (id) => {
-      const result = $parseInt(id, 0, 4294967295);
-      return result.TAG === "Ok" ? result._0 : undefined;
-    };
-    const match$1 = option != null ? then(option) : undefined;
-    if (match$1 != null) {
-      return { TAG: "Contact", _0: match$1 };
-    } else {
-      return "NotFound";
-    }
   }
+  if (match === "/new") {
+    return "New";
+  }
+  const option = $stripPrefix(match, "/contacts/");
+  const then = (id) => {
+    const result = $parseInt(id, 0, 4294967295);
+    return result.TAG === "Ok" ? result._0 : undefined;
+  };
+  const match$1 = option != null ? then(option) : undefined;
+  if (match$1 != null) {
+    return { TAG: "Contact", _0: match$1 };
+  }
+  return "NotFound";
 }
 
 function hash() {

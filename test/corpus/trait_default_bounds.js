@@ -56,9 +56,8 @@ function f64Signed() {
       distance: (self, other) => {
         if (self < other) {
           return other - self;
-        } else {
-          return -(other - self);
         }
+        return -(other - self);
       },
     };
   }
@@ -85,9 +84,8 @@ function i32Signed() {
       distance: (self, other) => {
         if (self < other) {
           return (other - self) | 0;
-        } else {
-          return -((other - self) | 0) | 0;
         }
+        return -((other - self) | 0) | 0;
       },
     };
   }

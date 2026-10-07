@@ -67,10 +67,10 @@ export function entry() {
 function shapeDebug_fmt(shape) {
   if (shape === "Dot") {
     return "Dot";
-  } else if (shape.TAG === "Line") {
-    return `Line(${shape._0})`;
-  } else {
-    return `Rect { w: ${shape.w}, h: ${shape.h} }`;
   }
+  if (shape.TAG === "Line") {
+    return `Line(${shape._0})`;
+  }
+  return `Rect { w: ${shape.w}, h: ${shape.h} }`;
 }
 //# sourceMappingURL=case.js.map

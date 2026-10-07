@@ -7,9 +7,8 @@ var $dNamed;
 function make(n) {
   if (n > 0) {
     return [n];
-  } else {
-    return undefined;
   }
+  return undefined;
 }
 
 function even(d) {

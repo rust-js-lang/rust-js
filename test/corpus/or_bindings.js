@@ -5,35 +5,32 @@ import { $debugF64, $displayF64, $index } from "@rust-js/runtime";
 function size(s) {
   if (s.TAG === "Circle" || s.TAG === "Sphere") {
     return s._0 * 2;
-  } else if (s.TAG === "Rect" || s.TAG === "Line") {
-    return s.w;
-  } else {
-    return s._0;
   }
+  if (s.TAG === "Rect" || s.TAG === "Line") {
+    return s.w;
+  }
+  return s._0;
 }
 
 function pick(p) {
   if (p[0] === 0 || p[1] === 0) {
     return p[0] === 0 ? p[1] : p[0];
-  } else {
-    return Math.imul(p[0], p[1]);
   }
+  return Math.imul(p[0], p[1]);
 }
 
 function first_some(o) {
   if (o[0] != null || (o[0] == null && o[1] != null)) {
     return o[0] != null ? o[0] : o[1];
-  } else {
-    return undefined;
   }
+  return undefined;
 }
 
 function text(t) {
   if (t.TAG === "Word" || t.TAG === "Quoted") {
     return t._0;
-  } else {
-    return String(t._0);
   }
+  return String(t._0);
 }
 
 function main() {
@@ -107,14 +104,16 @@ export function entry() {
 function shapeDebug_fmt(shape) {
   if (shape.TAG === "Circle") {
     return `Circle(${$debugF64(shape._0)})`;
-  } else if (shape.TAG === "Sphere") {
-    return `Sphere(${$debugF64(shape._0)})`;
-  } else if (shape.TAG === "Square") {
-    return `Square(${$debugF64(shape._0)})`;
-  } else if (shape.TAG === "Rect") {
-    return `Rect { w: ${$debugF64(shape.w)}, h: ${$debugF64(shape.h)} }`;
-  } else {
-    return `Line { w: ${$debugF64(shape.w)} }`;
   }
+  if (shape.TAG === "Sphere") {
+    return `Sphere(${$debugF64(shape._0)})`;
+  }
+  if (shape.TAG === "Square") {
+    return `Square(${$debugF64(shape._0)})`;
+  }
+  if (shape.TAG === "Rect") {
+    return `Rect { w: ${$debugF64(shape.w)}, h: ${$debugF64(shape.h)} }`;
+  }
+  return `Line { w: ${$debugF64(shape.w)} }`;
 }
 //# sourceMappingURL=case.js.map

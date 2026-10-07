@@ -69,11 +69,11 @@ function roleFromStr_from_str(s) {
   const match = $trim(s).toLowerCase();
   if (match === "admin") {
     return { TAG: "Ok", _0: "Admin" };
-  } else if (match === "member") {
-    return { TAG: "Ok", _0: "Member" };
-  } else {
-    return { TAG: "Err", _0: `no role ${$debugStr(match)}` };
   }
+  if (match === "member") {
+    return { TAG: "Ok", _0: "Member" };
+  }
+  return { TAG: "Err", _0: `no role ${$debugStr(match)}` };
 }
 
 function pointDebug_fmt(point) {
@@ -83,17 +83,15 @@ function pointDebug_fmt(point) {
 function pointErrorDebug_fmt(pointError) {
   if (pointError === "Shape") {
     return "Shape";
-  } else {
-    return `Number(${$debugParseError(pointError._0, "ParseIntError")})`;
   }
+  return `Number(${$debugParseError(pointError._0, "ParseIntError")})`;
 }
 
 function pointErrorDisplay_fmt(pointError) {
   if (pointError === "Shape") {
     return "expected x,y";
-  } else {
-    return `bad number: ${pointError._0}`;
   }
+  return `bad number: ${pointError._0}`;
 }
 
 function pointFromStr_from_str(s) {

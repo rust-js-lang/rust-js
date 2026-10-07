@@ -54,9 +54,8 @@ export function tokenize(src) {
 function prec(op) {
   if (op === "+" || op === "-") {
     return 1;
-  } else {
-    return 2;
   }
+  return 2;
 }
 
 export function to_rpn(tokens) {
@@ -172,13 +171,13 @@ export function caesar(s, k) {
         return String.fromCharCode(
           (((((((c.codePointAt(0) & 255) - 97) & 255) + k) & 255) % 26) + 97) & 255,
         );
-      } else if (/^[A-Z]$/.test(c)) {
+      }
+      if (/^[A-Z]$/.test(c)) {
         return String.fromCharCode(
           (((((((c.codePointAt(0) & 255) - 65) & 255) + k) & 255) % 26) + 65) & 255,
         );
-      } else {
-        return c;
       }
+      return c;
     })
     .join("");
 }

@@ -17,23 +17,24 @@ export function empty() {
 export function area(s) {
   if (s === "Empty") {
     return 0;
-  } else if (s.TAG === "Circle") {
-    return Math.imul(Math.imul(3, s._0), s._0);
-  } else {
-    return Math.imul(s.w, s.h);
   }
+  if (s.TAG === "Circle") {
+    return Math.imul(Math.imul(3, s._0), s._0);
+  }
+  return Math.imul(s.w, s.h);
 }
 
 export function classify(s) {
   if (s.TAG === "Circle" && s._0 > 10) {
     return 3;
-  } else if (s.TAG === "Circle") {
-    return 2;
-  } else if ((s.TAG === "Rect" && s.w === 0) || s === "Empty") {
-    return 0;
-  } else {
-    return 1;
   }
+  if (s.TAG === "Circle") {
+    return 2;
+  }
+  if ((s.TAG === "Rect" && s.w === 0) || s === "Empty") {
+    return 0;
+  }
+  return 1;
 }
 
 export function is_round(s) {
@@ -43,9 +44,8 @@ export function is_round(s) {
 export function width(s) {
   if (s.TAG === "Rect") {
     return s.w;
-  } else {
-    return -1;
   }
+  return -1;
 }
 
 export function same(a, b) {
@@ -55,17 +55,15 @@ export function same(a, b) {
 function build(depth) {
   if (depth === 0) {
     return { TAG: "Leaf", _0: 1 };
-  } else {
-    return { TAG: "Node", _0: build((depth - 1) >>> 0), _1: { TAG: "Leaf", _0: depth | 0 } };
   }
+  return { TAG: "Node", _0: build((depth - 1) >>> 0), _1: { TAG: "Leaf", _0: depth | 0 } };
 }
 
 function sum(t) {
   if (t.TAG === "Leaf") {
     return t._0;
-  } else {
-    return (sum(t._0) + sum(t._1)) | 0;
   }
+  return (sum(t._0) + sum(t._1)) | 0;
 }
 
 export function tree_sum(depth) {
@@ -75,18 +73,16 @@ export function tree_sum(depth) {
 export function checked_div(a, b) {
   if (b === 0) {
     return { TAG: "Err", _0: "divide by zero" };
-  } else {
-    return { TAG: "Ok", _0: $div(a, b, -2147483648) | 0 };
   }
+  return { TAG: "Ok", _0: $div(a, b, -2147483648) | 0 };
 }
 
 export function div_or(a, b, fallback) {
   const match = checked_div(a, b);
   if (match.TAG === "Ok") {
     return match._0;
-  } else {
-    return fallback;
   }
+  return fallback;
 }
 
 export function discriminants(i) {
@@ -128,9 +124,8 @@ function grow(f) {
 function points(f) {
   if (f.TAG === "Poly") {
     return f._0.length;
-  } else {
-    return 0;
   }
+  return 0;
 }
 
 export function changed_in_place(r) {

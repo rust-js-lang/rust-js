@@ -10,9 +10,8 @@ export function sum_json(json) {
       sum = (sum + n) >>> 0;
     }
     return { TAG: "Ok", _0: sum };
-  } else {
-    return { TAG: "Err", _0: String(match._0) };
   }
+  return { TAG: "Err", _0: String(match._0) };
 }
 
 export function first_twice(json) {
@@ -33,9 +32,8 @@ export async function settled(fail) {
   const result = fail ? await $settle(Promise.reject("no")) : await $settle(Promise.resolve(7));
   if (result.TAG === "Ok") {
     return String(result._0);
-  } else {
-    return "rejected: " + String(result._0);
   }
+  return "rejected: " + String(result._0);
 }
 
 export function uri(text) {
@@ -45,9 +43,8 @@ export function uri(text) {
   const match = $try(() => decodeURIComponent("%E0%A4%A"));
   if (match.TAG === "Ok") {
     return [encoded, decoded];
-  } else {
-    return [encoded + " " + String(match._0), decoded];
   }
+  return [encoded + " " + String(match._0), decoded];
 }
 
 export async function settle_either(fail) {
@@ -55,8 +52,7 @@ export async function settle_either(fail) {
   const match = await $settle(promise);
   if (match.TAG === "Ok") {
     return String(match._0);
-  } else {
-    return "rejected: " + String(match._0);
   }
+  return "rejected: " + String(match._0);
 }
 //# sourceMappingURL=throws.js.map

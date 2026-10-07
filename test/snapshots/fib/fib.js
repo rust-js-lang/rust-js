@@ -5,19 +5,18 @@ import { $div } from "@rust-js/runtime";
 export function fib(n) {
   if (n < 2) {
     return n;
-  } else {
-    return (fib((n - 1) >>> 0) + fib((n - 2) >>> 0)) >>> 0;
   }
+  return (fib((n - 1) >>> 0) + fib((n - 2) >>> 0)) >>> 0;
 }
 
 export function fib_match(n) {
   if (n === 0) {
     return 0;
-  } else if (n === 1) {
-    return 1;
-  } else {
-    return (fib_match((n - 1) >>> 0) + fib_match((n - 2) >>> 0)) >>> 0;
   }
+  if (n === 1) {
+    return 1;
+  }
+  return (fib_match((n - 1) >>> 0) + fib_match((n - 2) >>> 0)) >>> 0;
 }
 
 export function fib_iter(n) {
@@ -51,9 +50,8 @@ export function fib_loop(n) {
 export function nth(order, n) {
   if (order === "Ascending") {
     return fib_iter(n);
-  } else {
-    return fib_iter((20 - n) >>> 0);
   }
+  return fib_iter((20 - n) >>> 0);
 }
 
 export function wrap_demo(x) {

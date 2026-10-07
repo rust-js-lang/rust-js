@@ -34,9 +34,8 @@ function explain(s, TFromStr, TDebug, TErrDebug) {
   const match = TFromStr.from_str(s);
   if (match.TAG === "Ok") {
     return TDebug.fmt(match._0);
-  } else {
-    return `error ${TErrDebug.fmt(match._0)}`;
   }
+  return `error ${TErrDebug.fmt(match._0)}`;
 }
 
 function main() {
@@ -82,11 +81,11 @@ function unitDebug_fmt(unit) {
 function unitFromStr_from_str(s) {
   if (s === "kg") {
     return { TAG: "Ok", _0: "Kg" };
-  } else if (s === "lb") {
-    return { TAG: "Ok", _0: "Lb" };
-  } else {
-    return { TAG: "Err", _0: `unit ${s}` };
   }
+  if (s === "lb") {
+    return { TAG: "Ok", _0: "Lb" };
+  }
+  return { TAG: "Err", _0: `unit ${s}` };
 }
 
 export function unitDebug() {

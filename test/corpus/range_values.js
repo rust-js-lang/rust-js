@@ -36,9 +36,8 @@ function evens(r) {
 function clamp_to(r, x) {
   if (r.start <= x && x < r.end) {
     return x;
-  } else {
-    return r.start;
   }
+  return r.start;
 }
 
 function first_square_over(limit) {
