@@ -228,4 +228,12 @@ export const mutations: Mutation[] = [
     replace: "                let name = if true || taken == 0 {\n",
     tests: ["test/declarations.test.ts", "-t", "by what it takes"],
   },
+  {
+    name: "impl-trait-param-named",
+    breaks: "an `impl Trait` parameter is declared by rustc's name for it, `impl js::Defined + 'a`, which isn't TypeScript",
+    file: "src/lower/declarations.rs",
+    find: "                None if param.name.as_str().starts_with(\"impl \") => keyword(\"unknown\"),\n",
+    replace: "",
+    tests: ["test/declarations.test.ts", "-t", "impl Trait parameter of no TypeScript type"],
+  },
 ];

@@ -437,6 +437,22 @@ export const wrong = <Button format={format} onClick={(event: number) => event} 
   expect(errors[0]).toContain("use.tsx(4,");
 });
 
+// An `impl Trait` parameter of a trait TypeScript has no type for is
+// `unknown`, as a person declares a value of any type, where it was rustc's
+// name for it, `impl js::Defined + 'a`, which isn't TypeScript.
+test("declarations give an impl Trait parameter of no TypeScript type unknown", () => {
+  const dir = fixture("declarations-impl-trait");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
+  writeFileSync(join(dir, "lib.rs"), `pub fn size<'a>(value: &'a (impl js::Defined + 'a)) -> u32 {
+    let _ = value;
+    2
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("export function size(value: unknown): number;");
+});
+
 // A component only `js::export_default!` exports is declared, not exported
 // by its name, as react.dev's `function Recap() {..} export default Recap;`.
 test("declarations declare a private default export", () => {

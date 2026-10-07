@@ -493,6 +493,10 @@ impl<'tcx> Declarations<'_, 'tcx> {
             }
             ty::Param(param) => match self.erased.get(&param.index) {
                 Some(erased) => erased.clone(),
+                // An `impl Trait` parameter has no name but rustc's, `impl
+                // js::Defined + 'a`, which isn't TypeScript, and `generics`
+                // leaves it out: a value of any type, as a person declares one.
+                None if param.name.as_str().starts_with("impl ") => keyword("unknown"),
                 None => reference(param.name.as_str(), Vec::new()),
             },
             // A function of what Rust says it takes and gives:
