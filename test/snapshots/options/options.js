@@ -148,18 +148,37 @@ export function chained_twice(n) {
     return half(m);
   };
   let v;
-  chain: {
-    const h = half(n);
-    if (h != null && h !== 0) {
-      const q = counted(h);
-      if (q != null && q > 1) {
-        v = q;
-        break chain;
-      }
+  const h = half(n);
+  if (h != null && h !== 0) {
+    const q = counted(h);
+    if (q != null && q > 1) {
+      v = q;
+    } else {
+      v = 0;
     }
+  } else {
     v = 0;
   }
   return [v, calls.value];
+}
+
+export function chained_long_else(n) {
+  const calls = { value: 0 };
+  const counted = (m) => {
+    calls.value = (calls.value + 1) | 0;
+    return half(m);
+  };
+  chain: {
+    const h = half(n);
+    if (h != null) {
+      const q = counted(h);
+      if (q != null && q > 1) {
+        return q;
+      }
+    }
+    calls.value = (calls.value + 10) | 0;
+    return -calls.value | 0;
+  }
 }
 
 export function chained_statement(n) {

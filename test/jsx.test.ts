@@ -1421,7 +1421,7 @@ pub fn Labeled<C: Node>(LabeledProps { children }: LabeledProps<C>) -> Element {
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(jsx).toContain('if (typeof text === "string") {');
+  expect(jsx).toContain('if (typeof children === "string") {');
   const { Labeled } = await import(join(dir, "lib.jsx"));
   const { createElement } = await import("react");
   expect(renderToStaticMarkup(createElement(Labeled, { children: "Recap" }))).toBe('<h2 title="Link for Recap">Recap</h2>');
@@ -1489,6 +1489,54 @@ pub fn Id<C: Node>(ListProps { children }: ListProps<C>) -> Element {
   expect(renderToStaticMarkup(createElement(Only, null, "t", "u"))).toBe("<b>other</b>");
   expect(renderToStaticMarkup(createElement(Id, null, createElement("h4", { id: "deep" })))).toBe("<p>deep</p>");
   expect(renderToStaticMarkup(createElement(Id, null, "t"))).toBe("<p>none</p>");
+});
+
+// As react.dev's TerminalBlock reads its message, text or an element's text:
+// a let chain of what's told apart by a node's kind is the `if`s a person
+// writes, the node itself tested, no label to reach its `else`.
+test("JSX components read their children's text in a let chain as a person writes it", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use js::{Kind, classify};
+use react::{Element, Node, NodeKind, jsx, kind_of};
+pub struct BlockProps<C: Node> {
+    pub children: C,
+}
+pub fn Block<C: Node>(BlockProps { children }: BlockProps<C>) -> Element {
+    let message: String;
+    if let NodeKind::Text(text) = kind_of(&children) {
+        message = text.to_string();
+    } else if let NodeKind::Element(element) = kind_of(&children)
+        && let Some(inner) = js::get(element.props(), "children")
+        && let Kind::String(text) = classify(inner)
+    {
+        message = text.to_string();
+    } else {
+        panic!("Expected plain text.");
+    }
+    jsx! { <pre>{message}</pre> }
+}
+`);
+  args.push("--extern", `js=${join(target, "libjs.rmeta")}`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain(`  if (typeof children === "string") {
+    message = children;
+  } else if (isValidElement(children)) {
+    const inner = children.props.children;
+    if (typeof inner === "string") {
+      message = inner;
+    } else {
+      throw new Error("Expected plain text.");
+    }
+  } else {
+    throw new Error("Expected plain text.");
+  }`);
+  const { Block } = await import(join(dir, "lib.jsx"));
+  const { createElement } = await import("react");
+  expect(renderToStaticMarkup(createElement(Block, null, "npm i"))).toBe("<pre>npm i</pre>");
+  expect(renderToStaticMarkup(createElement(Block, null, createElement("code", null, "npm i")))).toBe("<pre>npm i</pre>");
+  expect(() => renderToStaticMarkup(createElement(Block, null, createElement("code", null, createElement("b"))))).toThrow("Expected plain text.");
+  expect(() => renderToStaticMarkup(createElement(Block, null, "a", "b"))).toThrow("Expected plain text.");
 });
 
 // Children that are a list, as JSX gives several, are that list, which a

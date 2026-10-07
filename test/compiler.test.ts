@@ -659,8 +659,12 @@ test("options are the value or undefined", async () => {
   // Let chains (ADR 0048): one test when the parts need nothing else,
   expect(js).toContain("  const h = half(n);\n  if (h != null && h > 2) {\n    return h;\n  } else {\n    return -1;");
   // an `if` inside for a `let` of a call, only made once the rest held, and
-  // then the `else` after both, in a block the `then` leaves.
-  expect(js).toContain("  chain: {\n    const h = half(n);\n    if (h != null && h !== 0) {\n      const q = counted(h);\n      if (q != null && q > 1) {\n        v = q;\n        break chain;\n      }\n    }\n    v = 0;\n  }");
+  // an `else` of one statement at each level a test fails at, as a person
+  // writes it;
+  expect(js).toContain("  const h = half(n);\n  if (h != null && h !== 0) {\n    const q = counted(h);\n    if (q != null && q > 1) {\n      v = q;\n    } else {\n      v = 0;\n    }\n  } else {\n    v = 0;\n  }");
+  // a longer one after both, in a block the `then` leaves.
+  expect(js).toContain("  chain: {\n    const h = half(n);\n    if (h != null) {\n      const q = counted(h);\n      if (q != null && q > 1) {\n        return q;\n      }\n    }\n    calls.value = (calls.value + 10) | 0;\n    return -calls.value | 0;\n  }");
+  expect([options.chained_long_else(8), options.chained_long_else(4), options.chained_long_else(3)]).toEqual([2, -11, -10]);
   // A closure of statements is called, by a name.
   expect(js).toContain("  const counted = h != null ? map(h) : undefined;");
   expect(options.same(null, undefined)).toBe(true);
@@ -825,10 +829,10 @@ pub fn body(response: &webapi::Response) -> Promise<Option<&'static Unknown>> {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   // `classify` is the value, each variant told by `typeof`; a key that's a
   // variable is `[key]`, one written that's a name `.name`.
-  expect(js).toContain('if (typeof match === "string") {');
-  expect(js).toContain("} else if (Array.isArray(match)) {");
-  expect(js).toContain("Object.keys(match)");
-  expect(js).toContain("show(match[key])");
+  expect(js).toContain('} else if (typeof value === "string") {');
+  expect(js).toContain("} else if (Array.isArray(value)) {");
+  expect(js).toContain("Object.keys(value)");
+  expect(js).toContain("show(value[key])");
   expect(js).toContain('match._0.name = "new";');
   expect(js).toContain("const match = $try(() => JSON.parse(text));");
   expect(js).toContain("return response.json();");

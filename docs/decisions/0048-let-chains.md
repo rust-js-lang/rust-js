@@ -37,21 +37,38 @@ if (h != null && h > 2) {
 ```
 
 **A part that needs statements opens an `if` inside**: a later `let` of a
-call, whose `const` must come after the tests before it. With an `else`,
-the `if`s are in a labeled block, the `else` after them, and the `then`
-leaves the block when it's done:
+call, whose `const` must come after the tests before it. With an `else` of
+one statement, a `throw` or an assignment, each `if` has it, as a person
+writes it. (Amended: it was a labeled block's, as a longer one is.)
+
+```js
+const h = half(n);
+if (h != null && h !== 0) {
+  const q = counted(h);
+  if (q != null && q > 1) {
+    v = q;
+  } else {
+    v = 0;
+  }
+} else {
+  v = 0;
+}
+```
+
+With a longer `else`, the `if`s are in a labeled block, the `else` after
+them, and the `then` leaves the block when it's done:
 
 ```js
 chain: {
   const h = half(n);
-  if (h != null && h !== 0) {
+  if (h != null) {
     const q = counted(h);
     if (q != null && q > 1) {
-      v = q;
-      break chain;
+      return q;
     }
   }
-  v = 0;
+  calls.value = (calls.value + 10) | 0;
+  return -calls.value | 0;
 }
 ```
 
@@ -61,15 +78,21 @@ chain: {
 - **`&x` is tested where `x` is**, in any `if let` or `match`: a reference
   is the value (ADR 0023), and `x` can't change while it's borrowed. So
   `if let Some(submit) = &on_submit` is `if (onSubmit != null ..)`, with no
-  `const`.
+  `const`. So is what a binding gives back as it is, `kind_of(&children)`
+  or `classify(value)`: `if (isValidElement(children))`, where it was `const
+  element = children`, whose `const` opened a level of its own. (Amended.)
+- **A `typeof` of a primitive after `!= null` of the same variable is the
+  `typeof` alone**, which holds of no `null`: `Some(inner)` then
+  `Kind::String(text)` of it is `typeof inner === "string"`. (Amended.)
 
 ## Why
 
 - **The common chain is one `if`,** as hand-written JS has it. Nesting only
   appears where Rust's order needs it, when a later part has to wait.
-- **A labeled block keeps the `else` once.** Copying it into each level
+- **A labeled block keeps a long `else` once.** Copying it into each level
   would repeat code, and a flag (`let matched = false`) is more lines for
-  the same thing.
+  the same thing. One statement, a `throw`, is what a person repeats
+  rather than label, as react.dev's TerminalBlock's JS now reads.
 
 ## Alternatives
 
@@ -81,6 +104,7 @@ chain: {
 
 ## Consequences
 
-- A chain with more than one level uses a labeled block, which JS code
-  rarely has. It's only there when a later `let` has to wait for what
-  comes before it.
+- A chain with more than one level and an `else` of several statements
+  uses a labeled block, which JS code rarely has. It's only there when a
+  later `let` has to wait for what comes before it.
+- An `else` of one statement is written once for each level.
