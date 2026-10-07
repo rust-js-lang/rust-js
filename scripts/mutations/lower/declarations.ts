@@ -32,8 +32,8 @@ export const mutations: Mutation[] = [
     name: "declared-option-required",
     breaks: "an `Option` field is a required prop to TypeScript, `text: string`, which a caller leaving it out is an error of",
     file: "src/lower/declarations.rs",
-    find: "                Some(inner) => (true, self.ts(inner)),\n",
-    replace: "                Some(inner) => (false, self.ts(inner)),\n",
+    find: "                    (true, alias.unwrap_or_else(|| self.ts(inner)))\n",
+    replace: "                    (false, alias.unwrap_or_else(|| self.ts(inner)))\n",
     tests,
   },
   {
@@ -88,8 +88,8 @@ export const mutations: Mutation[] = [
     name: "generic-type-imported-whole",
     breaks: "`AnchorHTMLAttributes<HTMLAnchorElement>` is imported by that whole text",
     file: "src/lower/declarations.rs",
-    find: "            self.imports.insert((from.to_string(), name.to_string()));",
-    replace: "            self.imports.insert((from.to_string(), named.to_string()));",
+    find: "        if let Some(from) = from {\n            self.imports.insert((from.to_string(), name.to_string()));",
+    replace: "        if let Some(from) = from {\n            self.imports.insert((from.to_string(), named.to_string()));",
     tests: tests,
   },
   {
@@ -120,8 +120,8 @@ export const mutations: Mutation[] = [
     name: "defaulted-field-required",
     breaks: "a field with a default is declared required, `count: number`, where a caller may leave it out",
     file: "src/lower/declarations.rs",
-    find: "                None => (field_default(self.tcx, field).is_some(), self.ts(ty)),",
-    replace: "                None => (false, self.ts(ty)),",
+    find: "                        field_default(self.tcx, field).is_some(),\n                        alias.unwrap_or_else(|| self.ts(ty)),",
+    replace: "                        false,\n                        alias.unwrap_or_else(|| self.ts(ty)),",
     tests,
   },
   {
