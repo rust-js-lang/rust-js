@@ -36,4 +36,12 @@ export const mutations: Mutation[] = [
     replace: "                drop(allow);\n",
     tests: ["test/editor-check.test.ts", "-t", "reads inside JSX"],
   },
+  {
+    name: "closure-tags-unseen",
+    breaks: "`|Icon| jsx! { <Icon className=.. /> }` inside JSX takes `Icon` for a component's name: `cannot find macro \`Icon\``",
+    file: "src/jsx_syntax.rs",
+    find: "if let ExprKind::Closure(_) = &expr.kind {",
+    replace: "if let ExprKind::Closure(_) = &expr.kind\n                && false\n            {",
+    tests: ["test/jsx.test.ts", "-t", "ElementType, rendered as a tag"],
+  },
 ];

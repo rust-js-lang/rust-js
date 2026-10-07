@@ -1029,6 +1029,35 @@ pub struct Intrinsic;
 impl<P, T: Tag> ComponentType<P, Intrinsic> for T {}
 impl<T: Tag> Tag for &T {}
 
+/// Props that take what a DOM element takes, as `SVGAttributes` do, or
+/// a component's that flatten them and have nothing else it must be given:
+/// a [`memo`] component of them is a [`Tag`], which `jsx!` gives an
+/// element's attributes (ADR 0234). Said by hand, as a [`Tag`] is.
+pub trait ElementProps {}
+
+impl ElementProps for attributes::SVGAttributes<'_> {}
+
+/// A [`memo`] component that takes what a DOM element takes, rendered as
+/// a tag is: `<Icon className=.. />`.
+impl<P: ElementProps> Tag for &'static LocalKey<MemoExoticComponent<P>> {}
+
+/// What JSX renders, as @types/react's `ElementType`: a DOM element's tag,
+/// or a component that takes what a DOM element takes, whatever else its
+/// props have, so one field holds any of them, as react.dev's
+/// ExpandableCallout's `variantMap` holds its icons. A [`Tag`] itself.
+#[cfg_attr(rust_js, rust_js::types = "react#ElementType")]
+#[derive(Clone, Copy)]
+pub struct ElementType(PhantomData<JsObject>);
+
+impl Tag for ElementType {}
+
+/// A tag as an [`ElementType`]: the same value.
+#[cfg_attr(rust_js, rust_js::link_name = "this")]
+#[allow(unused_variables)]
+pub fn element_type(this: impl Tag) -> ElementType {
+    unreachable!()
+}
+
 /// `<Comp>` of a [`Tag`] `Comp`.
 #[cfg_attr(rust_js, rust_js::link_name = "<$>")]
 #[doc(hidden)]

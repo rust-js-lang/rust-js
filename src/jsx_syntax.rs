@@ -43,7 +43,7 @@ fn rust_expression(
 ) -> Result<TokenStream, ErrorGuaranteed> {
     struct Calls<'a> {
         sess: &'a Session,
-        tags: &'a HashSet<String>,
+        tags: HashSet<String>,
         replacements: BTreeMap<BytePos, (Span, TokenStream)>,
         error: Option<ErrorGuaranteed>,
     }
@@ -53,7 +53,7 @@ fn rust_expression(
                 && mac.path.segments[0].ident.as_str() == "jsx"
                 && !expanded_already(&mac.args.tokens)
             {
-                match parser::jsx(self.sess, mac.args.tokens.clone(), mac.span(), self.tags) {
+                match parser::jsx(self.sess, mac.args.tokens.clone(), mac.span(), &self.tags) {
                     Ok(rust) => {
                         // The call itself, `jsx! { @rust_js .. }` (ADR 0113).
                         let path = mac.path.segments[0].ident;
@@ -103,6 +103,17 @@ fn rust_expression(
             if let ExprKind::MacCall(mac) = &expr.kind {
                 self.mac(mac, false);
             }
+            // A closure's capitalized parameters and `let`s are tags in it,
+            // as a function's are: `|Icon| jsx! { <Icon .. /> }` (ADR 0234).
+            if let ExprKind::Closure(_) = &expr.kind {
+                let mut names = Tags::default();
+                visit::walk_expr(&mut names, expr);
+                let old = self.tags.clone();
+                self.tags.extend(names.0);
+                mut_visit::walk_expr(self, expr);
+                self.tags = old;
+                return;
+            }
             mut_visit::walk_expr(self, expr);
         }
         fn visit_block(&mut self, block: &mut ast::Block) {
@@ -124,7 +135,7 @@ fn rust_expression(
     p.expect(exp!(Eof)).map_err(|e| e.emit())?;
     let mut calls = Calls {
         sess,
-        tags,
+        tags: tags.clone(),
         replacements: Default::default(),
         error: None,
     };

@@ -290,6 +290,63 @@ pub fn Pick(href: &str) -> Element {
   expect(js).not.toContain("let tmp");
 });
 
+// A component whose props take what a DOM element takes is an `ElementType`,
+// as @types/react's, whatever else its props have, so one field holds any of
+// them, and a capitalized local of it is a tag: react.dev's ExpandableCallout
+// keeps its icons in `variantMap` and renders `<variant.Icon className=.. />`
+// (ADR 0234).
+test("components of an element's props are an ElementType, rendered as a tag", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::attributes::SVGAttributes;
+use react::{Element, ElementProps, ElementType, MemoExoticComponent, element_type, jsx, memo};
+pub struct BadgeProps {
+    #[rust_js::flatten]
+    pub svg: SVGAttributes<'static>,
+    pub size: Option<&'static str>,
+}
+impl ElementProps for BadgeProps {}
+thread_local! {
+    pub static IconNote: MemoExoticComponent<SVGAttributes<'static>> = memo(Note);
+    pub static IconBadge: MemoExoticComponent<BadgeProps> = memo(Badge);
+}
+fn Note(props: SVGAttributes<'static>) -> Element {
+    jsx! { <svg className={props.class_name} /> }
+}
+fn Badge(props: BadgeProps) -> Element {
+    jsx! { <svg className={props.svg.class_name} width={props.size.unwrap_or("1em")} /> }
+}
+pub struct Variant {
+    pub title: &'static str,
+    #[rust_js::name = "Icon"]
+    pub icon: Option<ElementType>,
+}
+pub fn Callout(which: u32) -> Element {
+    let icon = match which {
+        0 => Some(element_type(&IconNote)),
+        1 => Some(element_type(&IconBadge)),
+        _ => None,
+    };
+    let variant = Variant { title: "t", icon };
+    jsx! {
+        <h3>
+            {variant.icon.map(|Icon| jsx! { <Icon className={Some("inline")} /> })}
+            {variant.title}
+        </h3>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("icon = IconNote;");
+  expect(jsx).toContain('<variant.Icon className="inline" />');
+  const { Callout } = await import(join(dir, "lib.jsx"));
+  expect([0, 1, 2].map((which) => renderToStaticMarkup(Callout(which)))).toEqual([
+    '<h3><svg class="inline"></svg>t</h3>',
+    '<h3><svg class="inline" width="1em"></svg>t</h3>',
+    "<h3>t</h3>",
+  ]);
+});
+
 // A default import is named as the module's `use` renames it, `use
 // next::link::Link as NextLink` is `import NextLink from "next/link"`, as
 // react.dev's MDX `Link` has it, beside its own `Link`; a module that
