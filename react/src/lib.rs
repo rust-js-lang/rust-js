@@ -649,6 +649,16 @@ impl<T> Dispatch<SetStateAction<T>> {
     }
 }
 
+/// @types/react's names of what a hook takes and gives, a prop's say: a
+/// reducer, [`use_reducer`]'s, which turns the state and an action into the
+/// next state; what sends it actions, which `use_reducer` gives; an effect,
+/// [`use_effect`]'s, returning nothing or its [`Cleanup`], `C`; and a
+/// transition, [`start_transition`]'s, returning nothing or a future, `R`.
+pub type Reducer<S, A> = Box<dyn Fn(&S, A) -> S>;
+pub type ActionDispatch<A> = Dispatch<A>;
+pub type EffectCallback<C = ()> = Box<dyn Fn() -> C>;
+pub type TransitionFunction<R = ()> = Box<dyn FnOnce() -> R>;
+
 /// [`useReducer`](https://react.dev/reference/react/useReducer): the state,
 /// and what sends it actions, which `reducer` turns into the next state.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useReducer")]
