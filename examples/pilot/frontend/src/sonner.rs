@@ -4,7 +4,7 @@
 // A binding's parameters are its JS function's: its body never runs.
 #![allow(unused_variables)]
 
-use react::Element;
+use react::JSX;
 
 pub struct ToasterProps {
     pub position: &'static str,
@@ -12,7 +12,7 @@ pub struct ToasterProps {
 
 /// Where the toasts show; one per app.
 #[cfg_attr(rust_js, rust_js::link_name = "sonner#Toaster")]
-pub fn Toaster(props: ToasterProps) -> Element {
+pub fn Toaster(props: ToasterProps) -> JSX::Element {
     unreachable!()
 }
 

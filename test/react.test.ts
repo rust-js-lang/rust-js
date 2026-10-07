@@ -30,7 +30,7 @@ test("React components are hand-written JSX, and React runs them", () => {
   expect(js).toContain("<li\n      key={t.id}\n      className={t.done ? \"done\" : \"\"}\n      onClick={() => dispatch({ TAG: \"Toggle\", _0: t.id })}\n    >\n      {t.text}\n    </li>");
   expect(js).toContain("<ul>{items}</ul>");
   // `Option::map` to an element: the element, or nothing.
-  expect(js).toContain('{t != null ? <p className="latest">{t.text}</p> : undefined}');
+  expect(js).toContain('{t != null && <p className="latest">{t.text}</p>}');
   // `()` as an effect's dependencies is `[]`, and its cleanup is a function it returns.
   expect(js).toContain("useEffect(() => {\n    setTicks((t) => (t + 10) | 0);\n    return () => {\n      setTicks(-1);\n    };\n  }, []);");
   // Components by name, as JSX tags.
@@ -54,33 +54,33 @@ test("JSX preparation preserves evaluation order, conditional execution and text
   const dir = fixture("jsx-semantics");
   const input = join(dir, "lib.rs");
   await Bun.write(input, `#![allow(non_snake_case)]
-use react::{Element, jsx};
+use react::{JSX, jsx};
 unsafe extern "Rust" {
     #[link_name = "globalThis.record"]
     safe fn record(n: i32) -> i32;
 }
-pub fn Order() -> Element {
+pub fn Order() -> JSX::Element {
     jsx! {
         <div data-first={record(1).to_string()}>{vec![record(2), record(3), record(4)]}</div>
     }
 }
-pub fn ChildrenFirst() -> Element {
+pub fn ChildrenFirst() -> JSX::Element {
     let children = vec![record(1), record(2), record(3)];
     jsx! {
         <div title={record(4).to_string()}>{children}</div>
     }
 }
-pub fn StatementValue() -> Element {
+pub fn StatementValue() -> JSX::Element {
     jsx! {
         <div title={record(1).to_string()}>{{ let n = record(2); vec![n, record(3), record(4)] }}</div>
     }
 }
-pub fn Conditional(flag: bool) -> Element {
+pub fn Conditional(flag: bool) -> JSX::Element {
     jsx! {
         <div>{if flag { vec![record(5), record(6), record(7)] } else { vec![record(8)] }}</div>
     }
 }
-pub fn Text() -> Element {
+pub fn Text() -> JSX::Element {
     jsx! {
         <div
             title="\\\"<&>\\n">
@@ -88,13 +88,13 @@ pub fn Text() -> Element {
         </div>
     }
 }
-pub fn Capture() -> Element {
+pub fn Capture() -> JSX::Element {
     let count = 4;
     jsx! {
         <div onClick={move |_| { record(count); record(count + 1); }} />
     }
 }
-pub fn Siblings(flag: bool, inner: bool) -> Element {
+pub fn Siblings(flag: bool, inner: bool) -> JSX::Element {
     let mut n = 1;
     jsx! {
         <div>
@@ -111,14 +111,14 @@ unsafe extern "Rust" {
     #[link_name = "globalThis.attributes"]
     safe fn attributes() -> Attrs;
 }
-pub fn SpreadOrder() -> Element {
+pub fn SpreadOrder() -> JSX::Element {
     let attrs = attributes();
     jsx! { <div><span {...attrs} />{{ let n = record(9); n }}</div> }
 }
-pub fn First() -> Element { jsx! { <b>{"first"}</b> } }
-pub fn Second() -> Element { jsx! { <i>{"second"}</i> } }
-pub fn ComponentOrder() -> Element {
-    let mut Selected: fn() -> Element = First;
+pub fn First() -> JSX::Element { jsx! { <b>{"first"}</b> } }
+pub fn Second() -> JSX::Element { jsx! { <i>{"second"}</i> } }
+pub fn ComponentOrder() -> JSX::Element {
+    let mut Selected: fn() -> JSX::Element = First;
     jsx! { <div><Selected {...()} />{{ Selected = Second; record(9) }}<Selected {...()} /></div> }
 }
 `);
@@ -212,7 +212,7 @@ const _: () = ();
 
 mod people;
 
-use react::{Element, jsx, use_state};
+use react::{JSX, jsx, use_state};
 
 pub fn greet(first_name: &str) -> String {
     people::full_name(&people::make_person(first_name))
@@ -245,13 +245,13 @@ pub struct FancyButtonProps {
     pub on_press: Box<dyn Fn()>,
 }
 
-pub fn FancyButton(FancyButtonProps { label_text, on_press }: FancyButtonProps) -> Element {
+pub fn FancyButton(FancyButtonProps { label_text, on_press }: FancyButtonProps) -> JSX::Element {
     jsx! {
         <button onClick={move |_| on_press()}>{label_text}</button>
     }
 }
 
-pub fn App() -> Element {
+pub fn App() -> JSX::Element {
     let clicks = use_clicks();
     jsx! {
         <FancyButton labelText={format!("{clicks} clicks")} onPress={Box::new(|| ())} />

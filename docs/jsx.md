@@ -8,9 +8,9 @@ rest of the crate type-checks there too (ADR 0113). The native compiler and
 the browser playground use the same parser.
 
 ```rust
-use react::{Element, jsx, use_state};
+use react::{JSX, jsx, use_state};
 
-pub fn Counter() -> Element {
+pub fn Counter() -> JSX::Element {
     let (count, set_count) = use_state(0);
     jsx! {
         <button className="counter" onClick={move |_| set_count.update(|n| n + 1)}>
@@ -47,18 +47,18 @@ Bare prose and HTML entities are not parsed: write `{"A & B"}`, not `A &amp; B`.
 ## Components and props
 
 ```rust
-use react::Element;
+use react::JSX;
 
 pub struct Props {
     pub title: &'static str,
-    pub children: Element,
+    pub children: JSX::Element,
 }
 
-pub fn Card(props: Props) -> Element {
+pub fn Card(props: Props) -> JSX::Element {
     jsx! { <section><h1>{props.title}</h1>{props.children}</section> }
 }
 
-pub fn App() -> Element {
+pub fn App() -> JSX::Element {
     jsx! { <Card title="Welcome"><p>{"Hello"}</p></Card> }
 }
 ```
@@ -102,7 +102,7 @@ thread_local! {
     static THEME: Context<&'static str> = create_context("light");
 }
 
-pub fn App() -> Element {
+pub fn App() -> JSX::Element {
     jsx! {
         <THEME value="dark">
             <FAST_CARD title="Welcome" />

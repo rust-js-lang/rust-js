@@ -6,7 +6,7 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 use js::{object, set_timeout};
-use react::{Element, jsx, use_effect, use_ref};
+use react::{JSX, jsx, use_effect, use_ref};
 use webapi::{
     Event, HTMLIFrameElement, abort_controller, abort_signal, element, html_i_frame_element, message_event, window,
 };
@@ -27,7 +27,7 @@ pub struct ResultFrameProps {
     pub on_outcome: Rc<dyn Fn(Outcome)>,
 }
 
-pub fn ResultFrame(ResultFrameProps { program, on_outcome }: ResultFrameProps) -> Element {
+pub fn ResultFrame(ResultFrameProps { program, on_outcome }: ResultFrameProps) -> JSX::Element {
     let frame = use_ref(None::<&'static HTMLIFrameElement>);
     let (run, page) = match program {
         Some(program) => (program.run, program.page.clone()),

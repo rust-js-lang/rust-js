@@ -218,10 +218,10 @@ test("copied JSX defaults select the implementation module's JSX extension", () 
   const dir = fixture("trait-jsx");
   writeFileSync(join(dir, "lib.rs"), `pub mod contracts {
     use react::jsx;
-    pub trait View { fn render(&self) -> react::Element { jsx! { <div /> } } }
+    pub trait View { fn render(&self) -> react::JSX::Element { jsx! { <div /> } } }
   }
   pub mod implementations { pub struct Page; impl super::contracts::View for Page {} }
-  pub fn render() -> react::Element { contracts::View::render(&implementations::Page) }`);
+  pub fn render() -> react::JSX::Element { contracts::View::render(&implementations::Page) }`);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
   expect(readFileSync(join(dir, "implementations.jsx"), "utf8")).toContain("<div");
   expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain('./implementations.jsx');

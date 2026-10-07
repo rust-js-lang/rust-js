@@ -6,9 +6,9 @@
 #![allow(non_snake_case)]
 
 use next::image::Image;
-use react::{Element, jsx};
+use react::{JSX, jsx};
 
-pub fn Home() -> Element {
+pub fn Home() -> JSX::Element {
     jsx! {
         <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
             <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">

@@ -11,7 +11,7 @@ use react::dom::{create_portal, flush_sync, use_form_status};
 use react::{js, jsx};
 use react::webapi;
 use react::{
-    Activity, ActivityMode, Element, LazyExoticComponent, Module, Phase, RefObject, CSSProperties, import_module, inner_html, lazy, use_,
+    Activity, ActivityMode, JSX, LazyExoticComponent, Module, Phase, RefObject, CSSProperties, import_module, inner_html, lazy, use_,
     use_action_state, use_deferred_value, use_effect, use_effect_event, use_id, use_imperative_handle,
     use_layout_effect, use_optimistic, use_reducer_with, use_ref, use_state, use_sync_external_store, use_transition,
 };
@@ -35,14 +35,14 @@ unsafe extern "Rust" {
 }
 
 /// `use` a promise: Suspense shows the fallback until it resolves.
-pub fn Greeting() -> Element {
+pub fn Greeting() -> JSX::Element {
     let text = use_(greeting);
     jsx! {
         <p className="greeting">{text}</p>
     }
 }
 
-pub fn Suspended() -> Element {
+pub fn Suspended() -> JSX::Element {
     jsx! {
         <Suspense
             fallback={jsx! {
@@ -54,7 +54,7 @@ pub fn Suspended() -> Element {
 }
 
 /// A store outside React, and a Transition.
-pub fn Store() -> Element {
+pub fn Store() -> JSX::Element {
     let value = use_sync_external_store(|notify| store_subscribe(notify), || store_get());
     let (pending, start) = use_transition();
     let (filter, set_filter) = use_state(0);
@@ -75,14 +75,14 @@ fn submit(previous: &String, data: &'static FormData) -> String {
     format!("{previous}{name};")
 }
 
-pub fn SubmitStatus() -> Element {
+pub fn SubmitStatus() -> JSX::Element {
     let status = use_form_status();
     jsx! {
         <span className="status">{if status.pending() { "sending" } else { "ready" }}</span>
     }
 }
 
-pub fn Signup() -> Element {
+pub fn Signup() -> JSX::Element {
     let (names, action, pending) = use_action_state(submit, String::new());
     let (optimistic, _set_optimistic) = use_optimistic(names.clone());
     jsx! {
@@ -101,14 +101,14 @@ pub struct FancyInputProps {
     pub handle: RefObject<Option<&'static str>>,
 }
 
-pub fn FancyInput(FancyInputProps { handle }: FancyInputProps) -> Element {
+pub fn FancyInput(FancyInputProps { handle }: FancyInputProps) -> JSX::Element {
     use_imperative_handle(handle, || "handle from FancyInput", ());
     jsx! {
         <input className="fancy" />
     }
 }
 
-pub fn Refs() -> Element {
+pub fn Refs() -> JSX::Element {
     let handle: RefObject<Option<&'static str>> = use_ref(None);
     let element: RefObject<Option<&'static webapi::Element>> = use_ref(None);
     let (shown, set_shown) = use_state(true);
@@ -149,7 +149,7 @@ pub fn Refs() -> Element {
 }
 
 /// Activity keeps hidden state; a portal renders elsewhere; flushSync applies now.
-pub fn Counter() -> Element {
+pub fn Counter() -> JSX::Element {
     let (n, set_n) = use_state(0);
     // An effect that cleans up only once it's counted: its cleanup an `Option`.
     use_effect(
@@ -166,7 +166,7 @@ pub fn Counter() -> Element {
     }
 }
 
-pub fn Places() -> Element {
+pub fn Places() -> JSX::Element {
     let (hidden, set_hidden) = use_state(false);
     let (flushed, set_flushed) = use_state(0);
     jsx! {
@@ -197,7 +197,7 @@ thread_local! {
     static LAZY_CARD: LazyExoticComponent<()> = lazy(|| import_module::<()>("./lazy-card.jsx"));
 }
 
-pub fn Misc() -> Element {
+pub fn Misc() -> JSX::Element {
     let id = use_id();
     let (total, _dispatch) = use_reducer_with(|s: &i32, a: i32| s + a, 20, |start| start * 2 + 2);
     jsx! {
@@ -226,7 +226,7 @@ pub fn Misc() -> Element {
 fn unused(_: Activity, _: Module<()>) {}
 
 /// Putting React on a page, and rendering it on a server, with options.
-pub fn Page() -> Element {
+pub fn Page() -> JSX::Element {
     jsx! {
         <p className="page">
             {"id "}

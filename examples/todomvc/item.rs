@@ -3,14 +3,14 @@
 
 use crate::model::{Action, Todo};
 use react::event::{ChangeEvent, KeyboardEvent};
-use react::{Dispatch, Element, jsx, use_ref, use_state};
+use react::{Dispatch, JSX, jsx, use_ref, use_state};
 
 pub struct TodoItemProps {
     pub todo: Todo,
     pub dispatch: Dispatch<Action>,
 }
 
-pub fn TodoItem(TodoItemProps { todo, dispatch }: TodoItemProps) -> Element {
+pub fn TodoItem(TodoItemProps { todo, dispatch }: TodoItemProps) -> JSX::Element {
     let (editing, set_editing) = use_state(false);
     let (draft, set_draft) = use_state(todo.title.clone());
     // An edit that's ended, saved or cancelled: the blur of the field that

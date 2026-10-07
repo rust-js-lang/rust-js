@@ -5,10 +5,10 @@
 #![allow(non_snake_case)]
 
 use react::dom::client::create_root;
-use react::{Element, jsx, use_state};
+use react::{JSX, jsx, use_state};
 use webapi::document;
 
-pub fn Counter() -> Element {
+pub fn Counter() -> JSX::Element {
     let (count, set_count) = use_state(0);
     jsx! {
         <div className="counter">

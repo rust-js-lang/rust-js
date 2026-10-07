@@ -141,6 +141,12 @@ fn written_types(tcx: TyCtxt<'_>, did: DefId) -> Option<String> {
     Some(declared.to_string())
 }
 
+/// What a type's name imports: the name, or a namespace's, `JSX` of
+/// `JSX.Element` (ADR 0236).
+fn imported(name: &str) -> String {
+    name.split('.').next().unwrap_or(name).to_string()
+}
+
 /// A type the model names, with its arguments: `ReactNode`, `Omit<A, "b">`.
 fn reference(name: &str, args: Vec<Value>) -> Value {
     json!({ "kind": "reference", "name": name, "args": args })
@@ -234,14 +240,15 @@ impl<'tcx> Declarations<'_, 'tcx> {
             None => (None, declared),
         };
         // Arguments written are all of TypeScript's type's, `<>` none:
-        // react's `Element<T>` is a `ReactNode` whatever its tag's
+        // react's `JSX::Element<T>` is a `JSX.Element` whatever its tag's
         // element (ADR 0224). Else they're the Rust type's.
         let (name, given) = match named.split_once('<') {
             Some((name, given)) => (name, Some(given.trim_end_matches('>'))),
             None => (named, None),
         };
+        // A namespace's member, `JSX.Element`, imports the namespace.
         if let Some(from) = from {
-            self.imports.insert((from.to_string(), name.to_string()));
+            self.imports.insert((from.to_string(), imported(name)));
         }
         // A written argument that's one of the Rust type's own type
         // parameters is what it's given: `Map<string, T>` of a
@@ -298,7 +305,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
             args.push(self.ts(ty));
         }
         if !from.is_empty() {
-            self.imports.insert((from.to_string(), name.to_string()));
+            self.imports.insert((from.to_string(), imported(name)));
         }
         Some(reference(name, args))
     }

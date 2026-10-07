@@ -15,7 +15,7 @@ use item::TodoItem;
 use model::{Action, Filter, load, reduce, save};
 use react::dom::client::create_root;
 use react::event::{ChangeEvent, KeyboardEvent};
-use react::{Element, jsx, use_effect, use_reducer_with, use_state};
+use react::{JSX, jsx, use_effect, use_reducer_with, use_state};
 use webapi::events::Hashchange;
 use webapi::{AddEventListenerOptions, abort_controller, document, event_target, location, window};
 
@@ -43,7 +43,7 @@ fn use_filter() -> Filter {
     Filter::from_hash(current)
 }
 
-pub fn App() -> Element {
+pub fn App() -> JSX::Element {
     let (todos, dispatch) = use_reducer_with(reduce, (), |_| load());
     let filter = use_filter();
     let (draft, set_draft) = use_state(String::new());

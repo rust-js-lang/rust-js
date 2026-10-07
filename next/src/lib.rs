@@ -4,9 +4,9 @@
 //!
 //! ```rust,ignore
 //! use next::image::{Image, ImageProps};
-//! use react::{Element, jsx};
+//! use react::{JSX, jsx};
 //!
-//! pub fn Home() -> Element {
+//! pub fn Home() -> JSX::Element {
 //!     jsx! { <Image src="/next.svg" alt="Next.js logo" width={Some(100)} {..Default::default()} /> }
 //! }
 //! js::export_default!(Home);

@@ -9,9 +9,9 @@ whichever React from 18.0 on your project has installed
 ```rust
 #![allow(non_snake_case)]
 
-use react::{Element, jsx, use_state};
+use react::{JSX, jsx, use_state};
 
-pub fn App() -> Element {
+pub fn App() -> JSX::Element {
     let (count, set_count) = use_state(0);
     jsx! {
         <button className="counter" onClick={move |_| set_count.update(|count| count + 1)}>
@@ -83,12 +83,12 @@ thread_local! {
     static FAST_CARD: MemoExoticComponent<CardProps> = memo(Card);
 }
 
-pub fn Toolbar() -> Element {
+pub fn Toolbar() -> JSX::Element {
     let theme = use_context(&THEME);
     jsx! { <FAST_CARD title={theme} /> }
 }
 
-pub fn App() -> Element {
+pub fn App() -> JSX::Element {
     jsx! { <THEME value="dark"><Toolbar /></THEME> }
 }
 ```

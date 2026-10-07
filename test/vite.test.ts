@@ -24,11 +24,11 @@ test("Vite builds and refreshes affected crates, recovers from errors and module
   writeFileSync(join(dir, "index.html"), '<div id="root"></div><script type="module" src="/src/main.jsx"></script>');
   writeFileSync(join(dir, "src/main.jsx"), 'import {createRoot} from "react-dom/client"; import {App} from "./App.jsx"; createRoot(document.getElementById("root")).render(<App/>);');
   const source = `#![allow(non_snake_case)]
-use react::{Element, jsx, use_state};
+use react::{JSX, jsx, use_state};
 mod text;
 #[derive(serde::Deserialize)]
 pub struct Saved { pub count: i32 }
-pub fn App() -> Element {
+pub fn App() -> JSX::Element {
     let saved: Saved = serde_json::from_str(r#"{"count":0}"#).unwrap();
     let (count, set_count) = use_state(saved.count);
     jsx! { <button onClick={move |_| set_count.update(|n| n + 1)}>{text::label()}{count}</button> }
@@ -101,12 +101,12 @@ process.exit(code);
     // The entry still imports App.jsx: the manifest redirects it when the
     // Rust module stops containing JSX, then restores it on the next edit.
     writeFileSync(app, `#![allow(non_snake_case)]
-use react::Element;
+use react::JSX;
 #[rust_js::link_name = "react#createElement"]
-fn make(tag: &str, props: (), child: &str) -> Element {
+fn make(tag: &str, props: (), child: &str) -> JSX::Element {
     unreachable!()
 }
-pub fn App() -> Element {
+pub fn App() -> JSX::Element {
     make("button", (), "Plain")
 }
 `);
@@ -137,8 +137,8 @@ test("Tailwind and React Compiler keep Fast Refresh's state", async () => {
   writeFileSync(join(dir, "src/index.css"), '@import "tailwindcss";\n@source "./App.rs";\n');
   writeFileSync(join(dir, "src/main.jsx"), 'import "./index.css"; import {createRoot} from "react-dom/client"; import {App} from "./App.jsx"; createRoot(document.getElementById("root")).render(<App/>);');
   const app = (classes: string) => `#![allow(non_snake_case)]
-use react::{Element, jsx, use_state};
-pub fn App() -> Element {
+use react::{JSX, jsx, use_state};
+pub fn App() -> JSX::Element {
     let (count, set_count) = use_state(0);
     jsx! {
         <button className="${classes}" onClick={move |_| set_count.update(|n| n + 1)}>
@@ -190,8 +190,8 @@ test("Without rust-js, a build uses the committed JSX", async () => {
   writeFileSync(join(dir, "index.html"), '<div id="root"></div><script type="module" src="/src/main.jsx"></script>');
   writeFileSync(join(dir, "src/main.jsx"), 'import {createRoot} from "react-dom/client"; import {App} from "./App.jsx"; createRoot(document.getElementById("root")).render(<App/>);');
   writeFileSync(join(dir, "src/App.rs"), `#![allow(non_snake_case)]
-use react::{Element, jsx};
-pub fn App() -> Element {
+use react::{JSX, jsx};
+pub fn App() -> JSX::Element {
     jsx! {
         <p>{"Committed"}</p>
     }
@@ -240,8 +240,8 @@ test("Vite writes the app's patch as it starts, and stops at a crate installed t
   writeFileSync(join(dir, "index.html"), '<div id="root"></div><script type="module" src="/src/main.jsx"></script>');
   writeFileSync(join(dir, "src/main.jsx"), 'import {createRoot} from "react-dom/client"; import {App} from "./App.jsx"; createRoot(document.getElementById("root")).render(<App/>);');
   writeFileSync(join(dir, "src/App.rs"), `#![allow(non_snake_case)]
-use react::{Element, jsx};
-pub fn App() -> Element {
+use react::{JSX, jsx};
+pub fn App() -> JSX::Element {
     jsx! {
         <p>{"Patched"}</p>
     }
@@ -277,8 +277,8 @@ test("Vite runs a crate's checks, a build's all, the server's those for a save",
   writeFileSync(join(dir, "index.html"), '<div id="root"></div><script type="module" src="/src/main.jsx"></script>');
   writeFileSync(join(dir, "src/main.jsx"), 'import {createRoot} from "react-dom/client"; import {App} from "./App.jsx"; createRoot(document.getElementById("root")).render(<App/>);');
   writeFileSync(join(dir, "src/App.rs"), `#![allow(non_snake_case)]
-use react::{Element, jsx};
-pub fn App() -> Element {
+use react::{JSX, jsx};
+pub fn App() -> JSX::Element {
     jsx! {
         <p>{"Checked"}</p>
     }
@@ -332,7 +332,7 @@ thread_local! {
 }
 `);
   const app = (label: string) => `#![allow(non_snake_case)]
-use react::{Element, MemoExoticComponent, jsx, memo, use_context, use_state};
+use react::{JSX, MemoExoticComponent, jsx, memo, use_context, use_state};
 mod theme;
 use theme::THEME;
 thread_local! {
@@ -341,7 +341,7 @@ thread_local! {
 pub struct LabelProps {
     pub text: &'static str,
 }
-pub fn Label(LabelProps { text }: LabelProps) -> Element {
+pub fn Label(LabelProps { text }: LabelProps) -> JSX::Element {
     let theme = use_context(&THEME);
     let (n, set_n) = use_state(0);
     jsx! {
@@ -352,7 +352,7 @@ pub fn Label(LabelProps { text }: LabelProps) -> Element {
         </button>
     }
 }
-pub fn App() -> Element {
+pub fn App() -> JSX::Element {
     jsx! {
         <THEME value="dark">
             <FAST_LABEL text="${label}" />
@@ -410,14 +410,14 @@ test("Vite builds a Cargo workspace's package and refreshes it when a crate it u
   writeFileSync(join(dir, "ui/Cargo.toml"), `[package]\nname = "ui"\nversion = "0.1.0"\nedition = "2024"\n\n[dependencies]\nmodels = { path = "../models" }\nreact = { package = "rust-js-react", path = ${JSON.stringify(join(root, "react"))} }\n`);
   const ui = join(dir, "ui/src/lib.rs");
   const source = `#![allow(non_snake_case)]
-use react::{Element, jsx, use_state};
+use react::{JSX, jsx, use_state};
 
 #[rust_js::link_name = "widget#greeting"]
 fn greeting() -> &'static str {
     unreachable!()
 }
 
-pub fn App() -> Element {
+pub fn App() -> JSX::Element {
     let (count, set_count) = use_state(0);
     jsx! { <button title={greeting()} onClick={move |_| set_count.update(|n| n + 1)}>{models::label()}{count}</button> }
 }

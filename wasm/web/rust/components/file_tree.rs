@@ -3,7 +3,7 @@
 
 use std::rc::Rc;
 
-use react::{CSSProperties, Element, jsx};
+use react::{CSSProperties, JSX, jsx};
 
 use super::file_item::FileItem;
 use crate::styles::ROW;
@@ -30,8 +30,8 @@ pub fn FileTree(
         on_open,
         on_delete,
     }: FileTreeProps,
-) -> Element {
-    let rows: Vec<Element> = in_order(tree, &first)
+) -> JSX::Element {
+    let rows: Vec<JSX::Element> = in_order(tree, &first)
         .into_iter()
         .map(|(name, entry)| match entry {
             Entry::Folder(children) => jsx! {

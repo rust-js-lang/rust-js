@@ -1,6 +1,6 @@
 // One side of the page: a heading, and a file explorer beside an editor.
 
-use react::{Element, jsx};
+use react::{JSX, jsx};
 
 use crate::styles::HEADING;
 
@@ -8,8 +8,8 @@ pub struct PaneProps {
     pub title: &'static str,
     /// What the explorer is, for a screen reader: "Rust files".
     pub label: &'static str,
-    pub explorer: Element,
-    pub editor: Element,
+    pub explorer: JSX::Element,
+    pub editor: JSX::Element,
 }
 
 pub fn Pane(
@@ -19,7 +19,7 @@ pub fn Pane(
         explorer,
         editor,
     }: PaneProps,
-) -> Element {
+) -> JSX::Element {
     jsx! {
         <section>
             <h2 className={HEADING}>{title}</h2>

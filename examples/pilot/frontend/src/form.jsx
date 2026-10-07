@@ -63,7 +63,7 @@ export function NewContactForm() {
           aria-invalid={error != null}
           onChange={(e) => set(e.target.value)}
         />
-        {error != null ? <span className="field-error">{error}</span> : undefined}
+        {error != null && <span className="field-error">{error}</span>}
       </label>
     );
   };

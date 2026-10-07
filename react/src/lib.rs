@@ -67,16 +67,26 @@ pub use elements::{has, html};
 pub use js;
 pub use webapi;
 
-/// A React element: what a component returns, and what goes in children.
-/// Construct it with `jsx! { <Tag ... /> }`.
-///
-/// While `jsx!` builds a tag's, it's of that tag's DOM element,
-/// `Element<webapi::HTMLButtonElement>`, which its handlers' events and its
-/// `ref` take, as @types/react's `IntrinsicElements` gives them (ADR 0224);
-/// what it makes is an `Element`, whatever its tag.
-#[cfg_attr(rust_js, rust_js::jsx_element)]
-#[cfg_attr(rust_js, rust_js::types = "react#ReactNode<>")]
-pub struct Element<T = webapi::Element>(PhantomData<JsObject>, PhantomData<T>);
+/// What JSX makes, as @types/react's `JSX` namespace names it:
+/// `JSX::Element`, as TypeScript's `JSX.Element` (ADR 0236).
+#[allow(non_snake_case)]
+pub mod JSX {
+    use core::marker::PhantomData;
+    use js::JsObject;
+
+    /// A React element: what JSX makes, `jsx! { <Tag ... /> }`, what a
+    /// component returns, and what goes in children.
+    ///
+    /// While `jsx!` builds a tag's, it's of that tag's DOM element,
+    /// `JSX::Element<webapi::HTMLButtonElement>`, which its handlers' events
+    /// and its `ref` take, as @types/react's `IntrinsicElements` gives them
+    /// (ADR 0224); what it makes is a `JSX::Element`, whatever its tag.
+    #[cfg_attr(rust_js, rust_js::jsx_element)]
+    #[cfg_attr(rust_js, rust_js::types = "react#JSX.Element<>")]
+    pub struct Element<T = webapi::Element>(pub(crate) PhantomData<JsObject>, pub(crate) PhantomData<T>);
+}
+
+use JSX::Element;
 
 /// A tag's element, as what `jsx!` makes: an `Element`, the value itself.
 #[doc(hidden)]
@@ -114,7 +124,7 @@ impl Default for Element {
 #[macro_export]
 macro_rules! jsx {
     (@rust_js $($rust:tt)*) => { $($rust)* };
-    ($($jsx:tt)*) => { $crate::Element::__jsx() };
+    ($($jsx:tt)*) => { $crate::JSX::Element::__jsx() };
 }
 
 /// What React renders as a child: elements, text and numbers, and tuples,

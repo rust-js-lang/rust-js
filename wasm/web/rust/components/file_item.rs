@@ -3,7 +3,7 @@
 
 use std::rc::Rc;
 
-use react::{CSSProperties, Element, jsx};
+use react::{CSSProperties, JSX, jsx};
 
 use crate::styles::ROW;
 
@@ -27,7 +27,7 @@ pub fn FileItem(
         on_open,
         on_delete,
     }: FileItemProps,
-) -> Element {
+) -> JSX::Element {
     let opened = path.clone();
     let end = match on_delete {
         Some(_) if root => Some(jsx! { <span className="text-[11px] text-muted">{"root "}</span> }),

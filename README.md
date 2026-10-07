@@ -45,7 +45,7 @@ with serde_json's behavior, including its deserialization errors.
 A React component written in Rust:
 
 ```rust
-pub fn App() -> Element {
+pub fn App() -> JSX::Element {
     let (count, set_count) = use_state(0);
     jsx! {
         <button onClick={move |_| set_count.update(|count| count + 1)}>

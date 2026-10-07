@@ -50,13 +50,13 @@ function check(dir: string) {
 // A variable and an import only JSX uses, and a component only
 // `js::export_default!` exports, are used: nothing to warn of.
 const greeting = `#![allow(non_snake_case)]
-use react::{Element, jsx};
+use react::{JSX, jsx};
 
 pub struct GreetingProps<'a> {
     pub name: &'a str,
 }
 
-fn Greeting(GreetingProps { name }: GreetingProps) -> Element {
+fn Greeting(GreetingProps { name }: GreetingProps) -> JSX::Element {
     let label = format!("Hello, {name}");
     jsx! { <p title={label.as_str()}>{"Hi"}</p> }
 }

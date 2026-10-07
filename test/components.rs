@@ -6,17 +6,17 @@
 use react::event::{ChangeEvent, KeyboardEvent};
 use react::jsx;
 use react::{
-    Context, Element, MemoExoticComponent, create_context, memo, memo_with, use_context, use_effect, use_id, use_memo,
+    Context, JSX, MemoExoticComponent, create_context, memo, memo_with, use_context, use_effect, use_id, use_memo,
     use_reducer, use_ref, use_state,
 };
 
 /// Props are a struct; `children` is the element's children.
 pub struct CardProps {
     pub title: String,
-    pub children: Element,
+    pub children: JSX::Element,
 }
 
-pub fn Card(CardProps { title, children }: CardProps) -> Element {
+pub fn Card(CardProps { title, children }: CardProps) -> JSX::Element {
     jsx! {
         <div className="card">
             <h2>{title}</h2>
@@ -66,7 +66,7 @@ fn reduce(todos: &Vec<Todo>, action: Action) -> Vec<Todo> {
 }
 
 /// A list with keys, a reducer, an input, and a conditional child.
-pub fn Todos() -> Element {
+pub fn Todos() -> JSX::Element {
     let (todos, dispatch) = use_reducer(reduce, Vec::new());
     let (draft, set_draft) = use_state(String::new());
     let id = use_id();
@@ -121,7 +121,7 @@ pub fn Todos() -> Element {
 }
 
 /// State, an effect that runs once and cleans up, and a ref.
-pub fn Clock() -> Element {
+pub fn Clock() -> JSX::Element {
     let (ticks, set_ticks) = use_state(0);
     let renders = use_ref(0);
     renders.set_current(renders.current() + 1);
@@ -158,7 +158,7 @@ pub struct BadgeProps {
     pub label: &'static str,
 }
 
-pub fn Badge(BadgeProps { label }: BadgeProps) -> Element {
+pub fn Badge(BadgeProps { label }: BadgeProps) -> JSX::Element {
     rendered(label);
     let theme = use_context(&THEME);
     jsx! {
@@ -167,7 +167,7 @@ pub fn Badge(BadgeProps { label }: BadgeProps) -> Element {
 }
 
 /// Context from a provider, or its default outside one; `memo` skipping renders.
-pub fn Themed() -> Element {
+pub fn Themed() -> JSX::Element {
     let (dark, set_dark) = use_state(false);
     let (clicks, set_clicks) = use_state(0);
     jsx! {
@@ -185,7 +185,7 @@ pub fn Themed() -> Element {
     }
 }
 
-pub fn App() -> Element {
+pub fn App() -> JSX::Element {
     jsx! {
         <div id="app">
             <Todos />

@@ -14,11 +14,11 @@ mod sonner;
 use detail::ContactPage;
 use form::NewContactForm;
 use list::ContactList;
-use react::{Element, jsx};
+use react::{JSX, jsx};
 use route::{Route, use_route};
 use sonner::Toaster;
 
-pub fn App() -> Element {
+pub fn App() -> JSX::Element {
     let page = match use_route() {
         Route::List => jsx! { <ContactList /> },
         Route::Contact(id) => jsx! { <ContactPage key={id} id={id} /> },

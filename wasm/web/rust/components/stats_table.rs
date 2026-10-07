@@ -1,13 +1,13 @@
 // Under the editors: how long loading took, and each compile.
 
-use react::{Element, jsx};
+use react::{JSX, jsx};
 
 pub struct StatsTableProps {
     /// What was measured, and how it went.
     pub rows: &'static Vec<(String, String)>,
 }
 
-pub fn StatsTable(StatsTableProps { rows }: StatsTableProps) -> Element {
+pub fn StatsTable(StatsTableProps { rows }: StatsTableProps) -> JSX::Element {
     jsx! {
         <table id="stats" className="mt-3">
             <tbody>

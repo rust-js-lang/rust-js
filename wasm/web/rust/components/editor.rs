@@ -4,7 +4,7 @@
 use std::rc::Rc;
 
 use react::event::KeyboardEvent;
-use react::{Element, RefObject, jsx, use_effect, use_ref};
+use react::{JSX, RefObject, jsx, use_effect, use_ref};
 
 use crate::codemirror::{EditorState, EditorView, destroy, open_view, set_theme, show};
 use crate::dark_mode::use_dark_mode;
@@ -18,7 +18,7 @@ pub struct EditorProps {
     pub on_submit: Option<Rc<dyn Fn()>>,
 }
 
-pub fn Editor(EditorProps { state, view, on_submit }: EditorProps) -> Element {
+pub fn Editor(EditorProps { state, view, on_submit }: EditorProps) -> JSX::Element {
     let parent = use_ref(None::<&'static webapi::Element>);
     let made = use_ref(None::<&'static EditorView>);
     let dark = use_dark_mode();

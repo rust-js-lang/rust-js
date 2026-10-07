@@ -326,6 +326,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0233 A `match` giving a table's field named as each variant reads the table by it](decisions/0233-match-reads-a-table.md)
 - [0234 A component of an element's props is an `ElementType`, rendered as a tag](decisions/0234-element-type.md)
 - [0235 A child shown only if a test holds is `test && child`, where the test can't render](decisions/0235-children-shown-if.md)
+- [0236 What JSX makes is `JSX::Element`, TypeScript's `JSX.Element`](decisions/0236-jsx-element.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

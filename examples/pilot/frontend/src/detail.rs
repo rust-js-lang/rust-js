@@ -3,7 +3,7 @@
 use crate::api::{self, Failure};
 use js::spawn;
 use models::Contact;
-use react::{Element, jsx, use_effect, use_state};
+use react::{JSX, jsx, use_effect, use_state};
 use webapi::abort_controller;
 
 #[derive(Clone)]
@@ -17,7 +17,7 @@ pub struct ContactPageProps {
     pub id: u32,
 }
 
-pub fn ContactPage(ContactPageProps { id }: ContactPageProps) -> Element {
+pub fn ContactPage(ContactPageProps { id }: ContactPageProps) -> JSX::Element {
     let (loaded, set_loaded) = use_state(Loaded::Loading);
     use_effect(
         move || {

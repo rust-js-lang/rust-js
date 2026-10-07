@@ -88,8 +88,8 @@ export const mutations: Mutation[] = [
     name: "generic-type-imported-whole",
     breaks: "`AnchorHTMLAttributes<HTMLAnchorElement>` is imported by that whole text",
     file: "src/lower/declarations.rs",
-    find: "        if let Some(from) = from {\n            self.imports.insert((from.to_string(), name.to_string()));",
-    replace: "        if let Some(from) = from {\n            self.imports.insert((from.to_string(), named.to_string()));",
+    find: "        if let Some(from) = from {\n            self.imports.insert((from.to_string(), imported(name)));",
+    replace: "        if let Some(from) = from {\n            self.imports.insert((from.to_string(), imported(named)));",
     tests: tests,
   },
   {
@@ -267,5 +267,13 @@ export const mutations: Mutation[] = [
     find: "                    .and_then(|t| self.written_alias(t));\n",
     replace: "                    .and_then(|_| None::<Value>);\n",
     tests: ["test/declarations.test.ts", "-t", "aliases as the Rust names them"],
+  },
+  {
+    name: "namespace-member-imported-whole",
+    breaks: "`JSX.Element` is imported as `import type { JSX.Element } from \"react\"`, which isn't TypeScript",
+    file: "src/lower/declarations.rs",
+    find: "name.split('.').next().unwrap_or(name).to_string()",
+    replace: "name.to_string()",
+    tests: ["test/declarations.test.ts", "-t", "declarations declare a private default export"],
   },
 ];

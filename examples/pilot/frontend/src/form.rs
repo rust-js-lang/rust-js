@@ -7,7 +7,7 @@ use crate::sonner::toast;
 use js::spawn;
 use models::{FieldError, NewContact, validate};
 use react::event::{ChangeEvent, SubmitEvent};
-use react::{Element, jsx, use_state};
+use react::{JSX, jsx, use_state};
 
 /// The message for `field`, if one of `errors` is about it.
 fn message(errors: &[FieldError], field: &str) -> Option<String> {
@@ -17,7 +17,7 @@ fn message(errors: &[FieldError], field: &str) -> Option<String> {
         .map(|error| error.message.clone())
 }
 
-pub fn NewContactForm() -> Element {
+pub fn NewContactForm() -> JSX::Element {
     let (name, set_name) = use_state(String::new());
     let (email, set_email) = use_state(String::new());
     let (age, set_age) = use_state(String::new());

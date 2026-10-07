@@ -1,6 +1,6 @@
 // The line beside the buttons: what the page is doing, or how it went.
 
-use react::{Element, jsx};
+use react::{JSX, jsx};
 
 pub enum Tone {
     Plain,
@@ -17,7 +17,7 @@ pub struct StatusLineProps {
     pub status: &'static Status,
 }
 
-pub fn StatusLine(StatusLineProps { status }: StatusLineProps) -> Element {
+pub fn StatusLine(StatusLineProps { status }: StatusLineProps) -> JSX::Element {
     let color = match status.tone {
         Tone::Plain => "",
         Tone::Good => "text-good",

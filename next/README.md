@@ -9,9 +9,9 @@ before `next build` ([ADR 0192](../docs/decisions/0192-next.md)):
 #![allow(non_snake_case)]
 
 use next::link::Link;
-use react::{Element, jsx};
+use react::{JSX, jsx};
 
-pub fn Home() -> Element {
+pub fn Home() -> JSX::Element {
     jsx! {
         <main>
             <h1>{"Hello, Next.js"}</h1>

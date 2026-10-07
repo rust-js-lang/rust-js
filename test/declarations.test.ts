@@ -13,7 +13,7 @@ test("declarations type what a module exports, for TypeScript that imports it", 
   const dir = fixture("declarations");
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
   writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
-use react::{Element, MemoExoticComponent, ReactNode, Rest, jsx, memo};
+use react::{JSX, MemoExoticComponent, ReactNode, Rest, jsx, memo};
 
 pub enum RouteTag {
     #[rust_js::name = "foundation"]
@@ -28,7 +28,7 @@ pub struct TagProps {
     pub count: u32,
 }
 
-pub fn Tag(TagProps { variant, text, count }: TagProps) -> Element {
+pub fn Tag(TagProps { variant, text, count }: TagProps) -> JSX::Element {
     let name = match variant {
         RouteTag::Foundation => "Foundation",
         RouteTag::Advanced => "Advanced",
@@ -43,7 +43,7 @@ pub struct LinkProps<C> {
     pub rest: Rest,
 }
 
-pub fn ExternalLink<C: ReactNode>(LinkProps { href, children, rest }: LinkProps<C>) -> Element {
+pub fn ExternalLink<C: ReactNode>(LinkProps { href, children, rest }: LinkProps<C>) -> JSX::Element {
     jsx! { <a href={href} {...rest}>{children}</a> }
 }
 
@@ -60,7 +60,7 @@ pub struct ButtonProps {
     pub anchor: Anchor,
 }
 
-pub fn Button(ButtonProps { size, anchor }: ButtonProps) -> Element {
+pub fn Button(ButtonProps { size, anchor }: ButtonProps) -> JSX::Element {
     jsx! { <a className={size} {...anchor} /> }
 }
 
@@ -87,7 +87,7 @@ pub struct LinkButtonProps {
     pub linked: Linked,
 }
 
-pub fn LinkButton(LinkButtonProps { href, class_name, linked }: LinkButtonProps) -> Element {
+pub fn LinkButton(LinkButtonProps { href, class_name, linked }: LinkButtonProps) -> JSX::Element {
     jsx! { <a href={href} className={class_name} {...linked} /> }
 }
 
@@ -98,7 +98,7 @@ pub struct TitledProps {
     pub html: Html,
 }
 
-pub fn Titled(TitledProps { title, html }: TitledProps) -> Element {
+pub fn Titled(TitledProps { title, html }: TitledProps) -> JSX::Element {
     jsx! { <h1 title={title} {...html} /> }
 }
 
@@ -115,7 +115,7 @@ pub struct DownloadProps {
     pub anchor: ReactAnchor,
 }
 
-pub fn Download(DownloadProps { label, anchor }: DownloadProps) -> Element {
+pub fn Download(DownloadProps { label, anchor }: DownloadProps) -> JSX::Element {
     jsx! { <a {...anchor}>{label}</a> }
 }
 
@@ -143,7 +143,7 @@ pub struct CrumbsProps {
     pub level: routes::Level,
 }
 
-pub fn Crumbs(CrumbsProps { items, level }: CrumbsProps) -> Element {
+pub fn Crumbs(CrumbsProps { items, level }: CrumbsProps) -> JSX::Element {
     let label = match level {
         routes::Level::Basic => "basic",
         routes::Level::Advanced => "advanced",
@@ -158,7 +158,7 @@ pub struct ChipProps {
     pub count: u32,
 }
 
-pub fn Chip(ChipProps { label, count }: ChipProps) -> Element {
+pub fn Chip(ChipProps { label, count }: ChipProps) -> JSX::Element {
     jsx! { <b title={label}>{count}</b> }
 }
 
@@ -175,7 +175,7 @@ pub struct CardProps {
     pub far: far::Far,
 }
 
-pub fn Card(CardProps { far }: CardProps) -> Element {
+pub fn Card(CardProps { far }: CardProps) -> JSX::Element {
     jsx! { <b {...far} /> }
 }
 
@@ -183,7 +183,7 @@ pub struct IconProps {
     pub class_name: Option<&'static str>,
 }
 
-fn Svg(props: IconProps) -> Element {
+fn Svg(props: IconProps) -> JSX::Element {
     jsx! { <svg className={props.class_name} /> }
 }
 
@@ -245,12 +245,12 @@ pub fn count(items: Items<u32>) -> usize {
   for (const line of [
     'export type RouteTag = "foundation" | "advanced";',
     "export interface TagProps {\n    variant: RouteTag;\n    text?: string;\n    count: number;\n}",
-    "export function Tag(props: TagProps): ReactNode;",
+    "export function Tag(props: TagProps): JSX.Element;",
     "export interface LinkProps<C> {\n    href?: string;\n    children: C;\n    [prop: string]: unknown;\n}",
-    "export function ExternalLink(props: LinkProps<ReactNode>): ReactNode;",
+    "export function ExternalLink(props: LinkProps<ReactNode>): JSX.Element;",
     "export interface ButtonProps extends Anchor {\n    size?: string;\n}",
     "export interface CardProps {\n    [prop: string]: unknown;\n}",
-    'import type { AnchorHTMLAttributes, NamedExoticComponent, ReactNode } from "react";\nimport type { Level, RouteItem } from "./routes.js";',
+    'import type { AnchorHTMLAttributes, JSX, NamedExoticComponent, ReactNode } from "react";\nimport type { Level, RouteItem } from "./routes.js";',
     "export interface CrumbsProps {\n    items: RouteItem[];\n    level: Level;\n}",
     "export interface ChipProps {\n    label: string;\n    count?: number;\n}",
     "export interface Linked extends Html {\n    href?: string;\n}",
@@ -370,19 +370,19 @@ test("declarations type a style as React does", () => {
   const dir = fixture("declarations-style");
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
   writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
-use react::{Element, CSSProperties, jsx};
+use react::{JSX, CSSProperties, jsx};
 
 pub struct BoxProps {
     pub style: Option<CSSProperties>,
 }
 
-pub fn Panel(BoxProps { style }: BoxProps) -> Element {
+pub fn Panel(BoxProps { style }: BoxProps) -> JSX::Element {
     jsx! { <div style={style.unwrap_or(CSSProperties::new())} /> }
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
-  expect(declarations).toContain('import type { CSSProperties, ReactNode } from "react";');
+  expect(declarations).toContain('import type { CSSProperties, JSX } from "react";');
   expect(declarations).toContain("style?: CSSProperties;");
   writeFileSync(join(dir, "use.tsx"), `import { Panel } from "./lib.jsx";
 export const ok = <Panel style={{ color: "red", fontSize: 12 }} />;
@@ -405,7 +405,7 @@ test("declarations type a function by what it takes and gives", () => {
   const dir = fixture("declarations-functions");
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
   writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
-use react::{Element, event, jsx};
+use react::{JSX, event, jsx};
 
 pub struct ButtonProps {
     #[rust_js::name = "onClick"]
@@ -413,13 +413,13 @@ pub struct ButtonProps {
     pub format: fn(u32, u32) -> String,
 }
 
-pub fn Button(ButtonProps { on_click, format }: ButtonProps) -> Element {
+pub fn Button(ButtonProps { on_click, format }: ButtonProps) -> JSX::Element {
     jsx! { <button onClick={move |e| if let Some(f) = &on_click { f(e.upcast()) }}>{format(1, 2)}</button> }
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
-  expect(declarations).toContain('import type { MouseEvent, ReactNode } from "react";');
+  expect(declarations).toContain('import type { JSX, MouseEvent } from "react";');
   expect(declarations).toContain("onClick?: (event: MouseEvent<Element>) => void;");
   expect(declarations).toContain("format: (value: number, value2: number) => string;");
   writeFileSync(join(dir, "use.tsx"), `import { Button } from "./lib.jsx";
@@ -464,13 +464,13 @@ test("declarations name @types/react's aliases as the Rust names them", () => {
   writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
 use react::event::{ChangeEventHandler, MouseEventHandler};
 use react::webapi::{HTMLButtonElement, HTMLElement, HTMLInputElement};
-use react::{EffectCallback, Element, Reducer, RefCallback, jsx};
+use react::{EffectCallback, JSX, Reducer, RefCallback, jsx};
 pub struct ButtonProps {
     pub on_click: Option<MouseEventHandler<HTMLButtonElement>>,
     pub on_change: ChangeEventHandler<HTMLInputElement>,
     pub on_any: MouseEventHandler,
 }
-pub fn Button(ButtonProps { on_click, on_change, on_any }: ButtonProps) -> Element {
+pub fn Button(ButtonProps { on_click, on_change, on_any }: ButtonProps) -> JSX::Element {
     let _ = (on_click, on_change, on_any);
     jsx! { <button /> }
 }
@@ -490,7 +490,7 @@ pub fn hooks(reducer: Reducer<i32, i32>, effect: EffectCallback) -> u32 {
   expect(declarations).toContain("on_any: MouseEventHandler;");
   expect(declarations).toContain("export function attach(target: RefCallback<HTMLElement>): number;");
   expect(declarations).toContain("export function hooks(reducer: Reducer<number, number>, effect: EffectCallback): number;");
-  expect(declarations).toContain('import type { ChangeEventHandler, EffectCallback, MouseEventHandler, ReactNode, Reducer, RefCallback } from "react";');
+  expect(declarations).toContain('import type { ChangeEventHandler, EffectCallback, JSX, MouseEventHandler, Reducer, RefCallback } from "react";');
 });
 
 // A component only `js::export_default!` exports is declared, not exported
@@ -500,13 +500,13 @@ test("declarations declare a private default export", () => {
   const dir = fixture("declarations-default");
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
   writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
-use react::{Element, jsx};
+use react::{JSX, jsx};
 
 pub struct CalloutProps<'a> {
     pub title: &'a str,
 }
 
-fn Callout(CalloutProps { title }: CalloutProps) -> Element {
+fn Callout(CalloutProps { title }: CalloutProps) -> JSX::Element {
     jsx! { <b>{title}</b> }
 }
 
@@ -514,7 +514,7 @@ js::export_default!(Callout);
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
-  expect(declarations).toContain("declare function Callout(props: CalloutProps): ReactNode;\n\nexport default Callout;");
+  expect(declarations).toContain("declare function Callout(props: CalloutProps): JSX.Element;\n\nexport default Callout;");
   writeFileSync(join(dir, "use.tsx"), `import Callout from "./lib.jsx";
 export const ok = <Callout title="a" />;
 export const wrong = <Callout title={1} />;
@@ -587,7 +587,7 @@ test("props that flatten React's attributes are typed as React types them", asyn
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
   writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
 use react::attributes::AnchorHTMLAttributes;
-use react::{Element, ReactNode, jsx};
+use react::{JSX, ReactNode, jsx};
 
 pub struct ButtonLinkProps<'a, C: ReactNode> {
     pub href: &'a str,
@@ -598,13 +598,13 @@ pub struct ButtonLinkProps<'a, C: ReactNode> {
     pub props: AnchorHTMLAttributes<'a>,
 }
 
-pub fn ButtonLink<C: ReactNode>(ButtonLinkProps { href, class_name, children, props }: ButtonLinkProps<C>) -> Element {
+pub fn ButtonLink<C: ReactNode>(ButtonLinkProps { href, class_name, children, props }: ButtonLinkProps<C>) -> JSX::Element {
     jsx! { <a href={href} className={class_name.unwrap_or("button")} {...props}>{children}</a> }
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
-  expect(declarations).toContain('import type { AnchorHTMLAttributes, ReactNode } from "react";');
+  expect(declarations).toContain('import type { AnchorHTMLAttributes, JSX, ReactNode } from "react";');
   expect(declarations).toContain('export interface ButtonLinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href" | "className"> {\n    href: string;\n    className?: string;\n    children: ReactNode;\n}');
   writeFileSync(join(dir, "use.tsx"), `import { ButtonLink } from "./lib.jsx";
 export const ok = <ButtonLink href="/a" className="c" download="file" aria-label="A" onClick={(event) => event.currentTarget.href}>Go</ButtonLink>;
@@ -616,7 +616,7 @@ export const wrong = <ButtonLink href="/a" hrefLang={1}>Go</ButtonLink>;
   }));
   const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
   const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
-  expect(declarations).toContain("export function ButtonLink(props: ButtonLinkProps): ReactNode;");
+  expect(declarations).toContain("export function ButtonLink(props: ButtonLinkProps): JSX.Element;");
   expect(errors.length).toBe(1);
   expect(errors[0]).toContain("use.tsx(3,");
   const { ButtonLink } = await import(join(dir, "lib.jsx"));

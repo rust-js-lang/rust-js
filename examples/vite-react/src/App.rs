@@ -6,7 +6,7 @@
 
 js::import!("./App.css");
 
-use react::{Element, jsx, use_state};
+use react::{JSX, jsx, use_state};
 
 unsafe extern "Rust" {
     #[link_name = "./assets/hero.png#default"]
@@ -17,7 +17,7 @@ unsafe extern "Rust" {
     safe static vite_logo: &'static str;
 }
 
-pub fn App() -> Element {
+pub fn App() -> JSX::Element {
     let (count, set_count) = use_state(0);
 
     jsx! {

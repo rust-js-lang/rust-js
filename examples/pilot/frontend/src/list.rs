@@ -5,7 +5,7 @@ use crate::api::{self, Failure};
 use js::spawn;
 use models::Contact;
 use react::event::ChangeEvent;
-use react::{Element, jsx, use_effect, use_state};
+use react::{JSX, jsx, use_effect, use_state};
 use webapi::abort_controller;
 
 #[derive(Clone)]
@@ -15,7 +15,7 @@ enum Loaded {
     Failed(String),
 }
 
-pub fn ContactList() -> Element {
+pub fn ContactList() -> JSX::Element {
     let (query, set_query) = use_state(String::new());
     let (loaded, set_loaded) = use_state(Loaded::Loading);
     let (attempt, set_attempt) = use_state(0);

@@ -158,8 +158,8 @@ test("literals.rs is what react/literals.ts makes of @types/react", () => {
 // A program for React 18.2 can't use what React 19.2 added: it's a compile
 // error, which names the release it needs, not a crash in the browser.
 const usesUseEffectEvent = `#![allow(non_snake_case)]
-use react::{Element, jsx, use_effect_event, use_state};
-pub fn App() -> Element {
+use react::{JSX, jsx, use_effect_event, use_state};
+pub fn App() -> JSX::Element {
     let (count, set_count) = use_state(0);
     let log = use_effect_event(move || set_count.set(*count));
     jsx! {

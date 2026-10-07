@@ -12,9 +12,9 @@ const about = `#![allow(non_snake_case)]
 
 use next::link::Link;
 use react::attributes::AnchorHTMLAttributes;
-use react::{Element, jsx};
+use react::{JSX, jsx};
 
-pub fn About() -> Element {
+pub fn About() -> JSX::Element {
     jsx! {
         <main>
             <h1>{"About, in Rust"}</h1>
@@ -30,7 +30,7 @@ pub struct HomeLinkProps<'a> {
     pub anchor: AnchorHTMLAttributes<'a>,
 }
 
-pub fn HomeLink(HomeLinkProps { class_name, anchor }: HomeLinkProps) -> Element {
+pub fn HomeLink(HomeLinkProps { class_name, anchor }: HomeLinkProps) -> JSX::Element {
     let classes = [class_name, "link"].join(" ");
     jsx! {
         <Link href="/" anchor={anchor} className={Some(classes.as_str())} aria-label={Some("Home page")} {..Default::default()}>
@@ -79,9 +79,9 @@ function counter(label: string): string {
   return `#![allow(non_snake_case)]
 js::directive!("use client");
 
-use react::{Element, jsx, use_state};
+use react::{JSX, jsx, use_state};
 
-pub fn Counter() -> Element {
+pub fn Counter() -> JSX::Element {
     let (count, set_count) = use_state(0);
     jsx! { <button onClick={move |_| set_count.update(|n| n + 1)}>{"${label}"}{count}</button> }
 }

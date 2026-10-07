@@ -1,11 +1,11 @@
 //! [`next/image`](https://nextjs.org/docs/app/api-reference/components/image):
 //! an `<img>` Next.js sizes, optimizes and lazy-loads.
 
-use react::Element;
+use react::JSX;
 
 /// `<Image src="/next.svg" alt="Next.js logo" width={Some(100)} height={Some(20)} {..Default::default()} />`.
 #[cfg_attr(rust_js, rust_js::link_name = "next/image#default")]
-pub fn Image(props: ImageProps<'_>) -> Element {
+pub fn Image(props: ImageProps<'_>) -> JSX::Element {
     unreachable!()
 }
 

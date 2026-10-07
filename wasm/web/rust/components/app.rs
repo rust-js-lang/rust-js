@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use js::{Promise, reg_exp, spawn};
-use react::{Element, jsx, use_effect, use_memo, use_ref, use_state, use_transition};
+use react::{JSX, jsx, use_effect, use_memo, use_ref, use_state, use_transition};
 use webapi::window;
 
 use super::editor::Editor;
@@ -69,7 +69,7 @@ fn tests_summary(passed: u32, failed: u32, ignored: u32) -> Status {
     }
 }
 
-pub fn App() -> Element {
+pub fn App() -> JSX::Element {
     let (loaded, set_loaded) = use_state(None::<Loaded>);
     let (stats, set_stats) = use_state(Vec::<(String, String)>::new());
     let (status, set_status) = use_state(say("Loading…".to_string(), Tone::Plain));

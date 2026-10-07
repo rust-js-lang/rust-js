@@ -3,7 +3,7 @@
 use std::rc::Rc;
 
 use react::event::ChangeEvent;
-use react::{Element, jsx};
+use react::{JSX, jsx};
 
 use crate::compiler::Example;
 use crate::styles::CONTROL;
@@ -20,7 +20,7 @@ pub fn ExamplePicker(
         chosen,
         on_choose,
     }: ExamplePickerProps,
-) -> Element {
+) -> JSX::Element {
     jsx! {
         <select
             id="example"

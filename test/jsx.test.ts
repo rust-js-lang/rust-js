@@ -33,13 +33,13 @@ test("JSX supports components across modules, fragments, lists, conditions and s
 #![allow(non_snake_case)]
 #[rust_js::camel_case]
 const _: () = ();
-use react::{Element, jsx};
+use react::{JSX, jsx};
 #[cfg(any())] mod missing;
 #[cfg_attr(all(), path = "ui/card.rs")] mod card;
 use card::Card as Panel;
 pub struct Attrs { pub class_name: &'static str }
-pub fn App() -> Element {
-    let items: Vec<Element> = (0..3).map(|n| jsx! { <li key={n}>{n}</li> }).collect();
+pub fn App() -> JSX::Element {
+    let items: Vec<JSX::Element> = (0..3).map(|n| jsx! { <li key={n}>{n}</li> }).collect();
     let attrs = Attrs { class_name: "list" };
     jsx! {
         <>
@@ -50,18 +50,18 @@ pub fn App() -> Element {
         </>
     }
 }
-pub fn Spread() -> Element {
+pub fn Spread() -> JSX::Element {
     let props = card::Props { title: "Spread", children: jsx! { <span>{"child"}</span> } };
     jsx! { <Panel {...props} /> }
 }
-pub fn Override() -> Element {
+pub fn Override() -> JSX::Element {
     let props = card::Props { title: "old", children: jsx! { <span /> } };
     jsx! { <Panel {...card::Props { title: "new", ..props }} /> }
 }
 `;
-  const card = `use react::{Element, jsx};
-pub struct Props { pub title: &'static str, pub children: Element }
-pub(crate) fn Card(p: Props) -> Element {
+  const card = `use react::{JSX, jsx};
+pub struct Props { pub title: &'static str, pub children: JSX::Element }
+pub(crate) fn Card(p: Props) -> JSX::Element {
     jsx! { <section><h1>{p.title}</h1>{p.children}</section> }
 }
 `;
@@ -85,7 +85,7 @@ pub(crate) fn Card(p: Props) -> Element {
 // a value, called with just its arguments. Found by the pilot.
 test("a component a JS module exports is a JSX tag, and a binding is a value", async () => {
   const source = `#![allow(non_snake_case)]
-use react::{Element, jsx};
+use react::{JSX, jsx};
 use react::webapi::{abort_controller, abort_signal};
 
 pub struct BadgeProps {
@@ -93,7 +93,7 @@ pub struct BadgeProps {
 }
 
 #[rust_js::link_name = "./badge.js#Badge"]
-pub fn Badge(props: BadgeProps) -> Element {
+pub fn Badge(props: BadgeProps) -> JSX::Element {
     unreachable!()
 }
 
@@ -104,7 +104,7 @@ unsafe extern "Rust" {
     safe fn parse_int(text: &str) -> f64;
 }
 
-pub fn App() -> Element {
+pub fn App() -> JSX::Element {
     jsx! { <Badge label="new" /> }
 }
 
@@ -131,11 +131,11 @@ pub fn values() -> (Vec<String>, Vec<f64>, Vec<bool>) {
 
 test("named component imports avoid local functions, nested parameters and duplicate exports", async () => {
   const source = `#![allow(non_snake_case)]
-use react::{Element, jsx};
+use react::{JSX, jsx};
 mod first;
 mod second;
-pub fn Card() -> Element { jsx! { <b>{"local"}</b> } }
-pub fn View() -> Element {
+pub fn Card() -> JSX::Element { jsx! { <b>{"local"}</b> } }
+pub fn View() -> JSX::Element {
     let render = |Card: i32| jsx! {
         <>
             <first::Card />
@@ -147,8 +147,8 @@ pub fn View() -> Element {
 }
 `;
   const { dir, args } = compile(source, {
-    "first.rs": 'use react::{Element, jsx}; pub fn Card() -> Element { jsx! { <b>{"first"}</b> } }',
-    "second.rs": 'use react::{Element, jsx}; pub fn Card() -> Element { jsx! { <b>{"second"}</b> } }',
+    "first.rs": 'use react::{JSX, jsx}; pub fn Card() -> JSX::Element { jsx! { <b>{"first"}</b> } }',
+    "second.rs": 'use react::{JSX, jsx}; pub fn Card() -> JSX::Element { jsx! { <b>{"second"}</b> } }',
   });
   run(args);
   snapshot(dir, "import-collisions");
@@ -173,11 +173,11 @@ pub fn View() -> Element {
 
 test("JSX preserves evaluation order and maps tags and handler statements to their original lines", async () => {
   const source = `#![allow(non_snake_case)]
-use react::{Element, jsx};
+use react::{JSX, jsx};
 unsafe extern "Rust" {
     #[link_name = "globalThis.record"] safe fn record(n: i32) -> i32;
 }
-pub fn App() -> Element {
+pub fn App() -> JSX::Element {
     jsx! {
         <button
             title={record(1).to_string()}
@@ -223,11 +223,11 @@ pub fn App() -> Element {
 test("a prop before children that need no statements stays where it's written", () => {
   const source = `#![allow(non_snake_case)]
 use react::attributes::AnchorHTMLAttributes;
-use react::{Element, Fragment, ReactNode, jsx};
+use react::{JSX, Fragment, ReactNode, jsx};
 // A \`Cell\` in it: its fields may change, so only what's needed is read first.
 pub struct Crumb { pub title: String, pub seen: std::cell::Cell<bool> }
 #[rust_js::link_name = "next/link#default"]
-pub fn Link<C: ReactNode>(props: LinkProps<'_, C>) -> Element { unreachable!() }
+pub fn Link<C: ReactNode>(props: LinkProps<'_, C>) -> JSX::Element { unreachable!() }
 #[derive(Default)]
 pub struct LinkProps<'a, C> {
     pub href: &'a str,
@@ -237,7 +237,7 @@ pub struct LinkProps<'a, C> {
     #[rust_js::name = "className"]
     pub class_name: Option<&'a str>,
 }
-pub fn crumbs(crumbs: &[Crumb]) -> Vec<Element> {
+pub fn crumbs(crumbs: &[Crumb]) -> Vec<JSX::Element> {
     crumbs.iter().map(|crumb| jsx! {
         <Fragment key={crumb.title.as_str()}>
             <Link href={crumb.title.as_str()} className={Some("crumb")}>{crumb.title.as_str()}</Link>
@@ -259,9 +259,9 @@ pub fn crumbs(crumbs: &[Crumb]) -> Vec<Element> {
 test("a component whose flattened props come before a field is a conditional in JSX", async () => {
   const source = `#![allow(non_snake_case)]
 use react::attributes::AnchorHTMLAttributes;
-use react::{Element, ReactNode, jsx};
+use react::{JSX, ReactNode, jsx};
 #[rust_js::link_name = "next/link#default"]
-pub fn NextLink<C: ReactNode>(_props: LinkProps<'_, C>) -> Element { unreachable!() }
+pub fn NextLink<C: ReactNode>(_props: LinkProps<'_, C>) -> JSX::Element { unreachable!() }
 pub struct LinkProps<'a, C> {
     pub href: &'a str,
     pub children: C,
@@ -270,7 +270,7 @@ pub struct LinkProps<'a, C> {
     #[rust_js::name = "className"]
     pub class_name: Option<&'a str>,
 }
-pub fn Pick(href: &str) -> Element {
+pub fn Pick(href: &str) -> JSX::Element {
     jsx! {
         <>
             {if href.starts_with('#') {
@@ -295,13 +295,13 @@ pub fn Pick(href: &str) -> Element {
 // does. react.dev's ConsoleBlock has `{level === 'warning' && <IconWarning />}`.
 test("a child shown only if a test holds is the test && the child", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, jsx};
-pub fn Level(level: u32) -> Element {
+use react::{JSX, jsx};
+pub fn Level(level: u32) -> JSX::Element {
     jsx! { <p>{(level == 1).then(|| jsx! { <b>{"warn"}</b> })}{"x"}</p> }
 }
 // Text and a number keep their != null, as "" and 0 would render;
 // a test of text by its truthiness keeps its conditional.
-pub fn Named(name: Option<&'static str>, count: Option<u32>, href: Option<&'static str>) -> Element {
+pub fn Named(name: Option<&'static str>, count: Option<u32>, href: Option<&'static str>) -> JSX::Element {
     jsx! {
         <p>
             {name.map(|n| jsx! { <b>{n}</b> })}
@@ -332,7 +332,7 @@ pub fn Named(name: Option<&'static str>, count: Option<u32>, href: Option<&'stat
 // (ADR 0234).
 test("components of an element's props are an ElementType, rendered as a tag", async () => {
   const icons = `use react::attributes::SVGAttributes;
-use react::{Element, ElementProps, MemoExoticComponent, jsx, memo};
+use react::{JSX, ElementProps, MemoExoticComponent, jsx, memo};
 pub struct BadgeProps {
     #[rust_js::flatten]
     pub svg: SVGAttributes<'static>,
@@ -343,23 +343,23 @@ thread_local! {
     pub static IconNote: MemoExoticComponent<SVGAttributes<'static>> = memo(Note);
     pub static IconBadge: MemoExoticComponent<BadgeProps> = memo(Badge);
 }
-fn Note(props: SVGAttributes<'static>) -> Element {
+fn Note(props: SVGAttributes<'static>) -> JSX::Element {
     jsx! { <svg className={props.class_name} /> }
 }
-fn Badge(props: BadgeProps) -> Element {
+fn Badge(props: BadgeProps) -> JSX::Element {
     jsx! { <svg className={props.svg.class_name} width={props.size.unwrap_or("1em")} /> }
 }
 `;
   const { dir, args } = compile(`#![allow(non_snake_case)]
 mod icons;
 use icons::{IconBadge, IconNote};
-use react::{Element, ElementType, element_type, jsx};
+use react::{JSX, ElementType, element_type, jsx};
 pub struct Variant {
     pub title: &'static str,
     #[rust_js::name = "Icon"]
     pub icon: Option<ElementType>,
 }
-pub fn Callout(which: u32) -> Element {
+pub fn Callout(which: u32) -> JSX::Element {
     let icon = match which {
         0 => Some(element_type(&IconNote)),
         1 => Some(element_type(&IconBadge)),
@@ -375,11 +375,11 @@ pub fn Callout(which: u32) -> Element {
 }
 // A \`static\`'s table holds one, as react.dev's \`variantMap\` does.
 static PINNED: Variant = Variant { title: "p", icon: Some(element_type(&IconBadge)) };
-pub fn Pinned() -> Element {
+pub fn Pinned() -> JSX::Element {
     jsx! { <h3>{PINNED.icon.map(|Icon| jsx! { <Icon className={Some("pin")} /> })}{PINNED.title}</h3> }
 }
 // Its own props given by name, as a component's are: still one component.
-pub fn Badged() -> Element {
+pub fn Badged() -> JSX::Element {
     jsx! { <IconBadge className={Some("b")} size={Some("2em")} /> }
 }
 `, { "icons.rs": icons });
@@ -404,7 +404,7 @@ pub fn Badged() -> Element {
   const own = compile(`use react::{ElementType, MemoExoticComponent, element_type, jsx, memo};
 ${icons.replace(/^use .*\n/gm, "")}
 static PINNED: Option<ElementType> = Some(element_type(&IconBadge));
-`.replace("use react::{ElementType", "use react::attributes::SVGAttributes;\nuse react::{Element, ElementProps, ElementType"));
+`.replace("use react::{ElementType", "use react::attributes::SVGAttributes;\nuse react::{ElementProps, ElementType, JSX"));
   const refused = Bun.spawnSync(own.args, { cwd: own.dir });
   expect([refused.exitCode === 0, refused.stderr.toString().includes("statics of type")], refused.stderr.toString()).toEqual([false, true]);
 });
@@ -417,9 +417,9 @@ static PINNED: Option<ElementType> = Some(element_type(&IconBadge));
 test("a default import is named as the module's use renames it", () => {
   const source = `#![allow(non_snake_case, non_upper_case_globals)]
 pub mod next {
-    use react::{Element, ReactNode};
+    use react::{JSX, ReactNode};
     #[rust_js::link_name = "next/link#default"]
-    pub fn Link<C: ReactNode>(props: LinkProps<'_, C>) -> Element { unreachable!() }
+    pub fn Link<C: ReactNode>(props: LinkProps<'_, C>) -> JSX::Element { unreachable!() }
     pub struct LinkProps<'a, C> {
         pub href: &'a str,
         pub children: C,
@@ -427,15 +427,15 @@ pub mod next {
 }
 pub mod crumbs {
     use crate::next::Link;
-    use react::{Element, jsx};
-    pub fn Crumb() -> Element {
+    use react::{JSX, jsx};
+    pub fn Crumb() -> JSX::Element {
         jsx! { <Link href="/a">{"a"}</Link> }
     }
 }
 pub mod mdx {
     use crate::next::Link as NextLink;
-    use react::{Element, jsx};
-    pub fn Link() -> Element {
+    use react::{JSX, jsx};
+    pub fn Link() -> JSX::Element {
         jsx! { <NextLink href="/b">{"b"}</NextLink> }
     }
 }
@@ -467,9 +467,9 @@ pub mod banner {
 // (ADR 0218), as react.dev's `Breadcrumbs` maps its crumbs.
 test("a callback of several statements stays in its JSX", () => {
   const source = `#![allow(non_snake_case)]
-use react::{Element, jsx, use_state};
+use react::{JSX, jsx, use_state};
 pub struct Crumb { pub title: String }
-pub fn list(crumbs: &[Crumb]) -> Element {
+pub fn list(crumbs: &[Crumb]) -> JSX::Element {
     let (count, set_count) = use_state(0);
     jsx! {
         <div onClick={move |_| { set_count.set(count + 1); set_count.set(count + 2); }}>
@@ -495,7 +495,7 @@ pub fn list(crumbs: &[Crumb]) -> Element {
 // name, which a list's `key` takes, as react.dev's `PageHeading` keys its tags.
 test("a program implements a trait of no items, react's Key of its enum", () => {
   const source = `#![allow(non_snake_case)]
-use react::{Element, jsx};
+use react::{JSX, jsx};
 #[derive(Clone, Copy)]
 pub enum Tag {
     #[rust_js::name = "new"]
@@ -504,7 +504,7 @@ pub enum Tag {
     Old,
 }
 impl react::Key for Tag {}
-pub fn list(tags: &[Tag]) -> Vec<Element> {
+pub fn list(tags: &[Tag]) -> Vec<JSX::Element> {
     tags.iter().map(|tag| jsx! { <li key={*tag}>{"tag"}</li> }).collect()
 }
 `;
@@ -518,12 +518,12 @@ test("nested component JSX stays readable, contextually typed and mapped to the 
 #![allow(non_snake_case)]
 #[rust_js::camel_case]
 const _: () = ();
-use react::{Element, jsx};
+use react::{JSX, jsx};
 use std::rc::Rc;
 unsafe extern "Rust" { #[link_name = "globalThis.record"] safe fn record(n: i32); }
-pub struct Props { pub title: &'static str, pub content: Element, pub on_submit: Option<Rc<dyn Fn()>> }
-pub fn Card(p: Props) -> Element { jsx! { <section title={p.title}>{p.content}</section> } }
-pub fn App(active: bool) -> Element {
+pub struct Props { pub title: &'static str, pub content: JSX::Element, pub on_submit: Option<Rc<dyn Fn()>> }
+pub fn Card(p: Props) -> JSX::Element { jsx! { <section title={p.title}>{p.content}</section> } }
+pub fn App(active: bool) -> JSX::Element {
     jsx! {
         <main>
             <Card
@@ -538,7 +538,7 @@ pub fn App(active: bool) -> Element {
         </main>
     }
 }
-pub fn Tokens() -> Element {
+pub fn Tokens() -> JSX::Element {
     jsx! { <Card
         title={stringify!(jsx! { untouched })}
         content={
@@ -592,7 +592,7 @@ pub fn Tokens() -> Element {
 });
 
 test("JSX children have no twelve-sibling tuple limit", async () => {
-  const {dir, args} = compile('use react::{Element, jsx}; pub fn View() -> Element { jsx! { <div>' + Array.from({length: 40}, (_, i) => `<span>{${i}}</span>`).join('') + '</div> } }');
+  const {dir, args} = compile('use react::{JSX, jsx}; pub fn View() -> JSX::Element { jsx! { <div>' + Array.from({length: 40}, (_, i) => `<span>{${i}}</span>`).join('') + '</div> } }');
   run(args);
   snapshot(dir, "many-children");
   const result = await import(join(dir, "lib.jsx"));
@@ -600,8 +600,8 @@ test("JSX children have no twelve-sibling tuple limit", async () => {
 });
 
 test("JSX uses SVG's tag and attribute spelling", async () => {
-  const { dir, args } = compile(`use react::{Element, jsx};
-pub fn View() -> Element {
+  const { dir, args } = compile(`use react::{JSX, jsx};
+pub fn View() -> JSX::Element {
     jsx! { <svg viewBox="0 0 10 10"><defs><linearGradient id="paint" /></defs></svg> }
 }
 `);
@@ -617,7 +617,7 @@ pub fn View() -> Element {
 // empty is one expression, `excerpt && <div>..</div>`, as a person writes it.
 test("JSX keeps children that read what never changes, and a filtered child, in place", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, ReactNode, event, jsx, use_state};
+use react::{JSX, ReactNode, event, jsx, use_state};
 unsafe extern "Rust" {
     #[link_name = "String"]
     safe fn cn(a: &str) -> String;
@@ -627,11 +627,11 @@ pub struct ButtonProps<'a, C: ReactNode> {
     pub class_name: Option<&'a str>,
     pub on_click: Option<Box<dyn Fn(&event::MouseEvent)>>,
 }
-pub fn Button<C: ReactNode>(ButtonProps { children, class_name, on_click }: ButtonProps<C>) -> Element {
+pub fn Button<C: ReactNode>(ButtonProps { children, class_name, on_click }: ButtonProps<C>) -> JSX::Element {
     let _ = on_click;
     jsx! { <button className={class_name}>{children}</button> }
 }
-pub fn Example(excerpt: Option<&str>) -> Element {
+pub fn Example(excerpt: Option<&str>) -> JSX::Element {
     let (expanded, set_expanded) = use_state(false);
     jsx! {
         <div>
@@ -669,14 +669,14 @@ pub fn title(name: Option<&str>) -> String {
 // says so (ADR 0228).
 test("JSX tags take the attributes @types/react gives each", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, Tag, jsx};
+use react::{JSX, Tag, jsx};
 #[derive(Clone, Copy)]
 pub enum As {
     #[rust_js::name = "a"]
     A,
 }
 impl Tag for As {}
-pub fn View(Comp: As) -> Element {
+pub fn View(Comp: As) -> JSX::Element {
     jsx! {
         <div title="t">
             <a href="/a" target="_blank">{"a"}</a>
@@ -694,7 +694,7 @@ pub fn View(Comp: As) -> Element {
     ['<div href="/a" />', "`react::webapi::HTMLDivElement` takes no `href`"],
     ["<span disabled={true} />", "`react::webapi::HTMLSpanElement` takes no `disabled`"],
   ]) {
-    const refused = compile(`use react::{Element, jsx};\npub fn View() -> Element {\n    jsx! { ${wrong} }\n}\n`);
+    const refused = compile(`use react::{JSX, jsx};\npub fn View() -> JSX::Element {\n    jsx! { ${wrong} }\n}\n`);
     const failed = Bun.spawnSync(refused.args, { cwd: refused.dir });
     expect([failed.exitCode === 0, failed.stderr.toString().includes(says)]).toEqual([false, true]);
   }
@@ -705,8 +705,8 @@ pub fn View(Comp: As) -> Element {
 // literal of them only, as TypeScript checks it: another is an error that
 // says which it takes. One of any string, an `<input>`'s `type`, takes any.
 test("JSX checks a literal of an attribute of a few strings", async () => {
-  const { dir, args } = compile(`use react::{Element, jsx};
-pub fn View() -> Element {
+  const { dir, args } = compile(`use react::{JSX, jsx};
+pub fn View() -> JSX::Element {
     jsx! {
         <div aria-live="polite" draggable="true">
             <img referrerPolicy="no-referrer" crossOrigin="anonymous" src="a.png" />
@@ -724,7 +724,7 @@ pub fn View() -> Element {
     ['<button type="sumbit" />', '`"sumbit"` isn\'t a `type`, which is one of "button", "reset", "submit"'],
     ['<div aria-live="loud" />', '`"loud"` isn\'t a `aria-live`, which is one of "assertive", "off", "polite"'],
   ]) {
-    const refused = compile(`use react::{Element, jsx};\npub fn View() -> Element {\n    jsx! { ${wrong} }\n}\n`);
+    const refused = compile(`use react::{JSX, jsx};\npub fn View() -> JSX::Element {\n    jsx! { ${wrong} }\n}\n`);
     const failed = Bun.spawnSync(refused.args, { cwd: refused.dir });
     expect([failed.exitCode === 0, failed.stderr.toString().includes(says)], failed.stderr.toString()).toEqual([false, true]);
   }
@@ -737,15 +737,15 @@ pub fn View() -> Element {
 test("JSX attributes take the values @types/react types them as", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::attributes::ImgHTMLAttributes;
-use react::{Element, jsx};
+use react::{JSX, jsx};
 pub struct PictureProps<'a> {
     #[rust_js::flatten]
     pub img: ImgHTMLAttributes<'a>,
 }
-pub fn Picture(PictureProps { img }: PictureProps) -> Element {
+pub fn Picture(PictureProps { img }: PictureProps) -> JSX::Element {
     jsx! { <img width={img.width} draggable={img.html.draggable} /> }
 }
-pub fn View() -> Element {
+pub fn View() -> JSX::Element {
     jsx! {
         <div tabIndex={-1} className="c" draggable={true}>
             <img width={300} height="2em" draggable="false" />
@@ -761,7 +761,7 @@ pub fn View() -> Element {
     ['<div tabIndex={"x"} />', "is not a number"],
     ["<div className={3} />", "is not text"],
   ]) {
-    const refused = compile(`use react::{Element, jsx};\npub fn View() -> Element {\n    jsx! { ${wrong} }\n}\n`);
+    const refused = compile(`use react::{JSX, jsx};\npub fn View() -> JSX::Element {\n    jsx! { ${wrong} }\n}\n`);
     const failed = Bun.spawnSync(refused.args, { cwd: refused.dir });
     expect([failed.exitCode === 0, failed.stderr.toString().includes(says)], failed.stderr.toString()).toEqual([false, true]);
   }
@@ -774,8 +774,8 @@ pub fn View() -> Element {
 test("JSX SVG tags are their SVG elements, of SVG's attributes", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::webapi::SVGCircleElement;
-use react::{Element, RefObject, jsx};
-pub fn Dot(dot: RefObject<Option<&'static SVGCircleElement>>) -> Element {
+use react::{JSX, RefObject, jsx};
+pub fn Dot(dot: RefObject<Option<&'static SVGCircleElement>>) -> JSX::Element {
     jsx! {
         <svg viewBox="0 0 10 10" width="10">
             <circle
@@ -798,7 +798,7 @@ pub fn Dot(dot: RefObject<Option<&'static SVGCircleElement>>) -> Element {
     ['<div cx="5" />', "`react::webapi::HTMLDivElement` takes no `cx`"],
     ["<circle hidden={true} />", "`react::webapi::SVGCircleElement` takes no `hidden`"],
   ]) {
-    const refused = compile(`use react::{Element, jsx};\npub fn View() -> Element {\n    jsx! { ${wrong} }\n}\n`);
+    const refused = compile(`use react::{JSX, jsx};\npub fn View() -> JSX::Element {\n    jsx! { ${wrong} }\n}\n`);
     const failed = Bun.spawnSync(refused.args, { cwd: refused.dir });
     expect([failed.exitCode === 0, failed.stderr.toString().includes(says)], failed.stderr.toString()).toEqual([false, true]);
   }
@@ -807,8 +807,8 @@ pub fn Dot(dot: RefObject<Option<&'static SVGCircleElement>>) -> Element {
 // React DOM's own table leaves these out, as their spelling needs no warning;
 // @types/react types them (ADR 0043).
 test("JSX takes every attribute @types/react types", async () => {
-  const { dir, args } = compile(`use react::{Element, jsx};
-pub fn View() -> Element {
+  const { dir, args } = compile(`use react::{JSX, jsx};
+pub fn View() -> JSX::Element {
     jsx! { <pre translate="no" slot="code"><img loading="lazy" decoding="async" src="a.png" /></pre> }
 }
 `);
@@ -819,11 +819,11 @@ pub fn View() -> Element {
 
 test("component props, keys and children evaluate in source order without capturing names", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, jsx};
+use react::{JSX, jsx};
 unsafe extern "Rust" { #[link_name = "globalThis.record"] safe fn record(n: i32) -> i32; }
 pub struct Props { pub title: i32, pub children: i32 }
-pub(crate) fn Card(p: Props) -> Element { jsx! { <div>{p.title}{p.children}</div> } }
-pub fn App() -> Element {
+pub(crate) fn Card(p: Props) -> JSX::Element { jsx! { <div>{p.title}{p.children}</div> } }
+pub fn App() -> JSX::Element {
     let __jsx0 = 3;
     jsx! { <Card title={record(1)} key={record(2)}>{record(__jsx0)}</Card> }
 }
@@ -843,19 +843,19 @@ pub fn App() -> Element {
 });
 
 test("JSX loads nested modules using Rust's directory and cfg rules", async () => {
-  const { dir, args } = compile(`use react::Element;
+  const { dir, args } = compile(`use react::JSX;
 mod outer;
-pub fn App() -> Element { outer::view() }
+pub fn App() -> JSX::Element { outer::view() }
 `, {
-    "outer.rs": `use react::{Element, jsx};
+    "outer.rs": `use react::{JSX, jsx};
 mod inner;
 mod inline { pub mod leaf; }
 #[cfg_attr(all(), path = "alternate.rs")] mod alternate;
-pub fn view() -> Element { jsx! { <>{inner::view()}{inline::leaf::view()}{alternate::view()}</> } }
+pub fn view() -> JSX::Element { jsx! { <>{inner::view()}{inline::leaf::view()}{alternate::view()}</> } }
 `,
-    "outer/inner.rs": 'use react::{Element, jsx}; pub fn view() -> Element { jsx! { <b>{"one"}</b> } }',
-    "outer/inline/leaf.rs": 'use react::{Element, jsx}; pub fn view() -> Element { jsx! { <i>{"two"}</i> } }',
-    "alternate.rs": 'use react::{Element, jsx}; pub fn view() -> Element { jsx! { <p>{"three"}</p> } }',
+    "outer/inner.rs": 'use react::{JSX, jsx}; pub fn view() -> JSX::Element { jsx! { <b>{"one"}</b> } }',
+    "outer/inline/leaf.rs": 'use react::{JSX, jsx}; pub fn view() -> JSX::Element { jsx! { <i>{"two"}</i> } }',
+    "alternate.rs": 'use react::{JSX, jsx}; pub fn view() -> JSX::Element { jsx! { <p>{"three"}</p> } }',
   });
   run(args);
   snapshot(dir, "module-resolution");
@@ -895,7 +895,7 @@ for (const [name, body, message] of [
   ["bare text", '<p>Hello world</p>', 'literal or a Rust expression'],
 ] as const) {
   test(`JSX ${name} reports the original source and preserves existing output`, () => {
-    const {dir, args} = compile(`#![allow(non_snake_case)]\nuse react::{Element, jsx};\npub struct Props { pub title: &'static str }\npub fn Card(p: Props) -> Element { jsx! { <div>{p.title}</div> } }\npub fn App() -> Element {\n    jsx! { ${body} }\n}`);
+    const {dir, args} = compile(`#![allow(non_snake_case)]\nuse react::{JSX, jsx};\npub struct Props { pub title: &'static str }\npub fn Card(p: Props) -> JSX::Element { jsx! { <div>{p.title}</div> } }\npub fn App() -> JSX::Element {\n    jsx! { ${body} }\n}`);
     const output = join(dir, "lib.jsx");
     writeFileSync(output, "previous output");
     const result = Bun.spawnSync(args, { cwd: dir });
@@ -912,16 +912,16 @@ for (const [name, body, message] of [
 test("JSX covers generic functions, memo/lazy/forward-ref values and context providers", async () => {
   const { dir, args } = compile(`#![deny(warnings)]
 #![allow(non_snake_case)]
-use react::{Element, ReactNode, jsx};
+use react::{JSX, ReactNode, jsx};
 mod wrapped;
 use wrapped::{MEMO as Cached, THEME as Theme};
 pub struct Props<T> { pub value: T }
 #[cfg_attr(all(), inline)]
-pub fn Generic<T: ReactNode>(p: Props<T>) -> Element { jsx! { <span>{p.value}</span> } }
+pub fn Generic<T: ReactNode>(p: Props<T>) -> JSX::Element { jsx! { <span>{p.value}</span> } }
 pub struct Children<T> { pub children: T }
-pub fn Group<T: ReactNode>(p: Children<T>) -> Element { jsx! { <div>{p.children}</div> } }
-pub fn Empty<T>() -> Element { jsx! { <i /> } }
-pub fn App() -> Element {
+pub fn Group<T: ReactNode>(p: Children<T>) -> JSX::Element { jsx! { <div>{p.children}</div> } }
+pub fn Empty<T>() -> JSX::Element { jsx! { <i /> } }
+pub fn App() -> JSX::Element {
     let Selected = Generic::<i32>;
     jsx! {
         <>
@@ -942,11 +942,11 @@ pub fn App() -> Element {
     }
 }
 `, {
-    "wrapped.rs": `use react::{Context, Element, ForwardRefExoticComponent, LazyExoticComponent, MemoExoticComponent, RefObject, create_context, forward_ref, import_module, jsx, lazy, memo};
+    "wrapped.rs": `use react::{Context, JSX, ForwardRefExoticComponent, LazyExoticComponent, MemoExoticComponent, RefObject, create_context, forward_ref, import_module, jsx, lazy, memo};
 pub struct Props { pub label: &'static str }
-pub fn Card(p: Props) -> Element { jsx! { <b>{p.label}</b> } }
-pub fn Provider() -> Element { jsx! { <i /> } }
-pub fn Input(p: Props, _: RefObject<Option<i32>>) -> Element { jsx! { <b>{p.label}</b> } }
+pub fn Card(p: Props) -> JSX::Element { jsx! { <b>{p.label}</b> } }
+pub fn Provider() -> JSX::Element { jsx! { <i /> } }
+pub fn Input(p: Props, _: RefObject<Option<i32>>) -> JSX::Element { jsx! { <b>{p.label}</b> } }
 thread_local! {
     pub static MEMO: MemoExoticComponent<Props> = memo(Card);
     pub static LAZY: LazyExoticComponent<()> = lazy(|| import_module::<()>("./lazy.jsx"));
@@ -985,14 +985,14 @@ test("JSX reads a context by its Consumer, and a portal is a ReactPortal", async
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::dom::create_portal;
 use react::webapi::HTMLElement;
-use react::{Context, Element, ReactPortal, create_context, jsx};
+use react::{Context, JSX, ReactPortal, create_context, jsx};
 thread_local! {
     pub static THEME: Context<&'static str> = create_context("light");
 }
-pub fn Label() -> Element {
+pub fn Label() -> JSX::Element {
     jsx! { <THEME.Consumer>{|theme: &&str| jsx! { <b>{*theme}</b> }}</THEME.Consumer> }
 }
-pub fn Away(container: &'static HTMLElement) -> Element {
+pub fn Away(container: &'static HTMLElement) -> JSX::Element {
     let portal: &ReactPortal = create_portal(jsx! { <i>{"away"}</i> }, container);
     portal.element()
 }
@@ -1014,13 +1014,13 @@ pub fn Away(container: &'static HTMLElement) -> Element {
 test("JSX context providers take any node as children", async () => {
   const { dir, args } = compile(`#![deny(warnings)]
 #![allow(non_snake_case)]
-use react::{Context, Element, create_context, jsx, use_context};
+use react::{Context, JSX, create_context, jsx, use_context};
 thread_local! { static THEME: Context<&'static str> = create_context("light"); }
-fn Label() -> Element {
+fn Label() -> JSX::Element {
     let theme = use_context(&THEME);
     jsx! { <b>{*theme}</b> }
 }
-pub fn App() -> Element {
+pub fn App() -> JSX::Element {
     let names = vec!["a", "b"];
     jsx! {
         <>
@@ -1045,18 +1045,18 @@ pub fn App() -> Element {
 
 // ADR 0224: a tag's element reaches its handlers' events and its `ref`, as
 // @types/react's `IntrinsicElements` gives them, while what JSX makes is an
-// `Element` whatever its tag. A handler of any element's event is widened.
+// `JSX::Element` whatever its tag. A handler of any element's event is widened.
 test("JSX gives a tag's element to its handlers and its ref", () => {
   const source = `#![deny(warnings)]
 #![allow(non_snake_case)]
-use react::{Element, event, jsx, use_ref, webapi};
+use react::{JSX, event, jsx, use_ref, webapi};
 pub struct ButtonProps {
     pub on_click: Box<dyn Fn(&event::MouseEvent)>,
 }
-pub fn Button(ButtonProps { on_click }: ButtonProps) -> Element {
+pub fn Button(ButtonProps { on_click }: ButtonProps) -> JSX::Element {
     jsx! { <button onClick={event::MouseEvent::widen(on_click)}>{"Go"}</button> }
 }
-pub fn App(busy: bool) -> Element {
+pub fn App(busy: bool) -> JSX::Element {
     let input = use_ref(None::<&'static webapi::HTMLInputElement>);
     let label = if busy { jsx! { <span>{"…"}</span> } } else { jsx! { <b>{"Save"}</b> } };
     jsx! {
@@ -1092,8 +1092,8 @@ pub fn App(busy: bool) -> Element {
 
 test("JSX built-ins finish as elements and use one spelling for ref and form actions", () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, CSSProperties, jsx, use_ref, webapi};
-pub fn App() -> Element {
+use react::{JSX, CSSProperties, jsx, use_ref, webapi};
+pub fn App() -> JSX::Element {
     let object = use_ref(None::<&'static webapi::Element>);
     jsx! {
         <Profiler id="test" onRender={|_, _, _, _, _, _| ()}>
@@ -1122,12 +1122,12 @@ pub fn App() -> Element {
 
 for (const [name, body] of [
   // A tag's builder is of its element (ADR 0224): `react::element` makes
-  // it an `Element`, so what's refused is the builder, not its type.
+  // it a `JSX::Element`, so what's refused is the builder, not its type.
   ["constructor", "react::element(react::html::div())"],
   ["import alias", "{ use react::html::div as make; react::element(make()) }"],
   ["function value", "{ let make = react::html::div; react::element(make()) }"],
   ["method", "jsx! { <div /> }.children(\"no\")"],
-  ["UFCS", "react::Element::children(jsx! { <div /> }, \"no\")"],
+  ["UFCS", "react::JSX::Element::children(jsx! { <div /> }, \"no\")"],
   ["component", "react::component(Card, ())"],
   ["fragment", "react::fragment(())"],
   ["inside JSX expression", "jsx! { <div>{react::element(react::html::span())}</div> }"],
@@ -1137,11 +1137,11 @@ for (const [name, body] of [
 ] as const) {
   test(`direct element builder ${name} is rejected without replacing output`, () => {
     const { dir, args } = compile(`#![allow(non_snake_case, dead_code)]
-use react::{Element, jsx};
-pub fn Card() -> Element { jsx! { <div /> } }
-pub struct Props { pub content: Element }
-pub fn Wrapper(p: Props) -> Element { p.content }
-fn unused() -> Element { ${body} }
+use react::{JSX, jsx};
+pub fn Card() -> JSX::Element { jsx! { <div /> } }
+pub struct Props { pub content: JSX::Element }
+pub fn Wrapper(p: Props) -> JSX::Element { p.content }
+fn unused() -> JSX::Element { ${body} }
 `);
     const file = join(dir, "lib.jsx");
     writeFileSync(file, "previous output");
@@ -1155,9 +1155,9 @@ fn unused() -> Element { ${body} }
 test("JSX context providers and refs work on React 18 while newer APIs stay gated", () => {
   const { dir, args } = compile(`#![deny(warnings)]
 #![allow(non_snake_case)]
-use react::{Context, Element, create_context, jsx, webapi};
+use react::{Context, JSX, create_context, jsx, webapi};
 thread_local! { static THEME: Context<&'static str> = create_context("light"); }
-pub fn App() -> Element {
+pub fn App() -> JSX::Element {
     jsx! {
         <THEME.Provider value="dark">
             <Suspense key="body" fallback="loading">
@@ -1189,22 +1189,22 @@ pub fn App() -> Element {
 
 test("forwarded refs keep their handle type, evaluation order and handwritten JSX", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, ForwardRefExoticComponent, RefObject, forward_ref, jsx, webapi};
+use react::{JSX, ForwardRefExoticComponent, RefObject, forward_ref, jsx, webapi};
 unsafe extern "Rust" { #[link_name = "globalThis.record"] safe fn record(n: i32) -> i32; }
 pub struct Props { pub label: i32 }
-pub fn Input(p: Props, reference: RefObject<Option<&'static webapi::Element>>) -> Element {
+pub fn Input(p: Props, reference: RefObject<Option<&'static webapi::Element>>) -> JSX::Element {
     jsx! { <input ref={reference} tabIndex={p.label} /> }
 }
 thread_local! { static INPUT: ForwardRefExoticComponent<Props, &'static webapi::Element> = forward_ref(Input); }
-pub fn Plain(reference: RefObject<Option<&'static webapi::Element>>) -> Element {
+pub fn Plain(reference: RefObject<Option<&'static webapi::Element>>) -> JSX::Element {
     jsx! { <INPUT ref={reference} label={1} /> }
 }
-pub fn App(reference: RefObject<Option<&'static webapi::Element>>) -> Element {
+pub fn App(reference: RefObject<Option<&'static webapi::Element>>) -> JSX::Element {
     jsx! { <INPUT ref={record(1); reference} label={record(2)} /> }
 }
 pub struct NormalProps { pub r#ref: RefObject<Option<&'static webapi::Element>>, pub title: i32 }
-pub fn Normal(p: NormalProps) -> Element { jsx! { <input ref={p.r#ref} tabIndex={p.title} /> } }
-pub fn Ordinary(reference: RefObject<Option<&'static webapi::Element>>) -> Element {
+pub fn Normal(p: NormalProps) -> JSX::Element { jsx! { <input ref={p.r#ref} tabIndex={p.title} /> } }
+pub fn Ordinary(reference: RefObject<Option<&'static webapi::Element>>) -> JSX::Element {
     jsx! { <Normal title={record(3)} ref={record(4); reference} /> }
 }
 `);
@@ -1241,13 +1241,13 @@ pub fn Ordinary(reference: RefObject<Option<&'static webapi::Element>>) -> Eleme
 // hook as it is, and `use_reducer` gives an `ActionDispatch`.
 test("JSX hooks take @types/react's Reducer, EffectCallback and TransitionFunction", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{ActionDispatch, EffectCallback, Element, Reducer, TransitionFunction, jsx, start_transition, use_effect, use_reducer};
+use react::{ActionDispatch, EffectCallback, JSX, Reducer, TransitionFunction, jsx, start_transition, use_effect, use_reducer};
 pub struct CounterProps {
     pub reducer: Reducer<i32, i32>,
     pub effect: EffectCallback,
     pub later: Option<TransitionFunction>,
 }
-pub fn Counter(CounterProps { reducer, effect, later }: CounterProps) -> Element {
+pub fn Counter(CounterProps { reducer, effect, later }: CounterProps) -> JSX::Element {
     let (count, _dispatch): (&i32, ActionDispatch<i32>) = use_reducer(reducer, 1);
     use_effect(effect, ());
     if let Some(later) = later {
@@ -1272,14 +1272,14 @@ pub fn Counter(CounterProps { reducer, effect, later }: CounterProps) -> Element
 test("JSX refs are @types/react's Ref and RefCallback", async () => {
   const source = `#![allow(non_snake_case)]
 use react::webapi::{HTMLDivElement, HTMLElement};
-use react::{Element, Ref, RefCallback, RefObject, jsx};
-pub fn Panel<M>(target: impl Ref<&'static HTMLDivElement, M>) -> Element {
+use react::{JSX, Ref, RefCallback, RefObject, jsx};
+pub fn Panel<M>(target: impl Ref<&'static HTMLDivElement, M>) -> JSX::Element {
     jsx! { <div ref={target} /> }
 }
-pub fn ByObject(target: RefObject<Option<&'static HTMLDivElement>>) -> Element {
+pub fn ByObject(target: RefObject<Option<&'static HTMLDivElement>>) -> JSX::Element {
     Panel(target)
 }
-pub fn ByCallback(target: RefCallback<&'static HTMLElement>) -> Element {
+pub fn ByCallback(target: RefCallback<&'static HTMLElement>) -> JSX::Element {
     jsx! { <section ref={target} /> }
 }
 `;
@@ -1297,9 +1297,9 @@ pub fn ByCallback(target: RefCallback<&'static HTMLElement>) -> Element {
 // API-specific behavior (hooks, mounting, async actions) stays in react.test.ts.
 test("JSX grammar: literals, empty forms, Rust children and attribute expressions", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, CSSProperties, inner_html, jsx};
-pub fn Empty() -> Element { jsx! { <></> } }
-pub fn Literals() -> Element {
+use react::{JSX, CSSProperties, inner_html, jsx};
+pub fn Empty() -> JSX::Element { jsx! { <></> } }
+pub fn Literals() -> JSX::Element {
     jsx! {
         <div>
             " leading "
@@ -1311,7 +1311,7 @@ pub fn Literals() -> Element {
         </div>
     }
 }
-pub fn Expressions(show: bool) -> Element {
+pub fn Expressions(show: bool) -> JSX::Element {
     let pair = (1, 2);
     let list = vec![3, 4];
     jsx! {
@@ -1323,7 +1323,7 @@ pub fn Expressions(show: bool) -> Element {
         </section>
     }
 }
-pub fn Attributes() -> Element {
+pub fn Attributes() -> JSX::Element {
     jsx! {
         <>
             <button disabled title={let n = 2; n.to_string()} aria-label="Save" data-state="ready" tabIndex=3 />
@@ -1358,16 +1358,16 @@ pub fn Attributes() -> Element {
 // named props stays an error, as JSX's spread would override them.
 test("JSX gives a component its named props and the rest from a base", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, jsx};
+use react::{JSX, jsx};
 #[derive(Default)]
 pub struct Opts { pub title: Option<&'static str>, pub width: Option<u32> }
-pub fn Card(o: Opts) -> Element { jsx! { <section title={o.title.unwrap_or("none")}>{o.width.unwrap_or(0)}</section> } }
-// An Element's default is React's empty node, undefined, as next/link's
+pub fn Card(o: Opts) -> JSX::Element { jsx! { <section title={o.title.unwrap_or("none")}>{o.width.unwrap_or(0)}</section> } }
+// A JSX::Element's default is React's empty node, undefined, as next/link's
 // children are given, or not.
 #[derive(Default)]
-pub struct Framed { pub title: Option<&'static str>, pub children: Element }
-pub fn Frame(f: Framed) -> Element { jsx! { <div title={f.title.unwrap_or("bare")}>{f.children}</div> } }
-pub fn App() -> Element {
+pub struct Framed { pub title: Option<&'static str>, pub children: JSX::Element }
+pub fn Frame(f: Framed) -> JSX::Element { jsx! { <div title={f.title.unwrap_or("bare")}>{f.children}</div> } }
+pub fn App() -> JSX::Element {
     jsx! {
         <>
             <Card title={Some("named")} {..Default::default()} />
@@ -1395,14 +1395,14 @@ pub fn App() -> Element {
 test("JSX passes on flattened props with a field of them set", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::attributes::{AnchorHTMLAttributes, HTMLAttributes};
-use react::{Element, ReactNode, jsx};
+use react::{JSX, ReactNode, jsx};
 pub struct ExternalProps<'a, C: ReactNode> {
     pub href: Option<&'a str>,
     pub children: C,
     #[rust_js::flatten]
     pub props: AnchorHTMLAttributes<'a>,
 }
-pub fn External<C: ReactNode>(ExternalProps { href, children, props }: ExternalProps<C>) -> Element {
+pub fn External<C: ReactNode>(ExternalProps { href, children, props }: ExternalProps<C>) -> JSX::Element {
     jsx! { <a href={href} rel="noopener" {...props}>{children}</a> }
 }
 pub struct LinkProps<'a, C: ReactNode> {
@@ -1411,7 +1411,7 @@ pub struct LinkProps<'a, C: ReactNode> {
     #[rust_js::flatten]
     pub props: AnchorHTMLAttributes<'a>,
 }
-pub fn Link<C: ReactNode>(LinkProps { href, children, props }: LinkProps<C>) -> Element {
+pub fn Link<C: ReactNode>(LinkProps { href, children, props }: LinkProps<C>) -> JSX::Element {
     jsx! {
         <External
             href={Some(href)}
@@ -1442,7 +1442,7 @@ pub fn Link<C: ReactNode>(LinkProps { href, children, props }: LinkProps<C>) -> 
 // default or an `Option`, and one that's required is said (ADR 0213).
 test("JSX takes a component's flattened props where they're written, none given left out", async () => {
   const flat = `#![allow(non_snake_case)]
-use react::{Element, ReactNode, jsx};
+use react::{JSX, ReactNode, jsx};
 #[derive(Default)]
 pub struct Html {
     pub id: Option<&'static str>,
@@ -1473,7 +1473,7 @@ pub struct ButtonLinkProps<C> {
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub props: Anchor,
 }
-pub fn ButtonLink<C: ReactNode + Default>(ButtonLinkProps { href, size, label, children, props }: ButtonLinkProps<C>) -> Element {
+pub fn ButtonLink<C: ReactNode + Default>(ButtonLinkProps { href, size, label, children, props }: ButtonLinkProps<C>) -> JSX::Element {
     let class = match size {
         Size::Md => "md",
         Size::Lg => "lg",
@@ -1482,7 +1482,7 @@ pub fn ButtonLink<C: ReactNode + Default>(ButtonLinkProps { href, size, label, c
 }
 `;
   const { dir, args } = compile(flat + `
-pub fn App() -> Element {
+pub fn App() -> JSX::Element {
     jsx! {
         <>
             <ButtonLink target={Some("_blank")} href="/a" id={Some("x")} size={Size::Lg}>{"A"}</ButtonLink>
@@ -1496,7 +1496,7 @@ fn note(text: &'static str) -> &'static str {
     println!("{text}");
     text
 }
-pub fn Noted() -> Element {
+pub fn Noted() -> JSX::Element {
     jsx! { <ButtonLink target={Some(note("t"))} href={note("h")}>{"N"}</ButtonLink> }
 }
 // Its own fields written out of its order: Rust makes \`href\` first.
@@ -1504,7 +1504,7 @@ fn big() -> Size {
     println!("big");
     Size::Lg
 }
-pub fn Sized() -> Element {
+pub fn Sized() -> JSX::Element {
     jsx! { <ButtonLink size={big()} href={note("h")}>{"S"}</ButtonLink> }
 }
 // Its flattened struct given whole, a component's own passed on.
@@ -1513,22 +1513,22 @@ pub struct ForwardProps {
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub props: Anchor,
 }
-pub fn Forward(ForwardProps { href, props }: ForwardProps) -> Element {
+pub fn Forward(ForwardProps { href, props }: ForwardProps) -> JSX::Element {
     jsx! { <ButtonLink href={href} props={props}>{"F"}</ButtonLink> }
 }
 // A variable is read as it is, beside props that do something, each read
 // first, as they're written out of the struct's order.
-pub fn Kept(h: &'static str) -> Element {
+pub fn Kept(h: &'static str) -> JSX::Element {
     jsx! { <ButtonLink target={Some(note("t"))} label={Some(note("l"))} href={h}>{"K"}</ButtonLink> }
 }
 // Its flattened struct made here, given whole, beside props that do
 // something: each of its fields is read in its place.
-pub fn Made() -> Element {
+pub fn Made() -> JSX::Element {
     jsx! { <ButtonLink label={Some(note("l"))} props={Anchor { target: Some(note("t")), html: Html { id: Some(note("i")), ..Default::default() }, ..Default::default() }} href={note("h")}>{"M"}</ButtonLink> }
 }
 // Children that do something, before its flattened struct in its fields'
 // order: what's after them is read first, the struct's fields each in place.
-pub fn Told(t: Option<&'static str>) -> Element {
+pub fn Told(t: Option<&'static str>) -> JSX::Element {
     jsx! { <ButtonLink href="/t" target={t}>{note("c")}</ButtonLink> }
 }
 // Its flattened struct first, no children: Rust makes \`target\` first.
@@ -1537,10 +1537,10 @@ pub struct LinkyProps {
     pub anchor: Anchor,
     pub label: &'static str,
 }
-pub fn Linky(LinkyProps { anchor, label }: LinkyProps) -> Element {
+pub fn Linky(LinkyProps { anchor, label }: LinkyProps) -> JSX::Element {
     jsx! { <a title={label} {...anchor} /> }
 }
-pub fn Linked() -> Element {
+pub fn Linked() -> JSX::Element {
     jsx! { <Linky label={note("l")} target={Some(note("t"))} /> }
 }
 `);
@@ -1582,9 +1582,9 @@ pub fn Linked() -> Element {
     expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining(says)]);
   };
   // A required prop not given, and a name nothing has.
-  refused(flat + `pub fn Missing() -> Element {\n    jsx! { <ButtonLink id={Some("x")}>{"A"}</ButtonLink> }\n}\n`, "missing prop \`href\`");
-  refused(flat + `pub fn Both(props: Anchor) -> Element {\n    jsx! { <ButtonLink href="/a" props={props} target={Some("_t")}>{"A"}</ButtonLink> }\n}\n`, "not both");
-  refused(flat + `pub fn Unknown() -> Element {\n    jsx! { <ButtonLink href="/a" colour={Some("red")}>{"A"}</ButtonLink> }\n}\n`, "colour");
+  refused(flat + `pub fn Missing() -> JSX::Element {\n    jsx! { <ButtonLink id={Some("x")}>{"A"}</ButtonLink> }\n}\n`, "missing prop \`href\`");
+  refused(flat + `pub fn Both(props: Anchor) -> JSX::Element {\n    jsx! { <ButtonLink href="/a" props={props} target={Some("_t")}>{"A"}</ButtonLink> }\n}\n`, "not both");
+  refused(flat + `pub fn Unknown() -> JSX::Element {\n    jsx! { <ButtonLink href="/a" colour={Some("red")}>{"A"}</ButtonLink> }\n}\n`, "colour");
 });
 
 // A props field's default, `#[rust_js::default]`, its type's, or
@@ -1592,7 +1592,7 @@ pub fn Linked() -> Element {
 // `{ size = "md" }`, as React's `type = "primary"` is (ADR 0212).
 test("JSX gives a props field's default where the props are taken apart", async () => {
   const chip = `#![allow(non_snake_case)]
-use react::{Element, jsx};
+use react::{JSX, jsx};
 #[derive(Default)]
 pub enum Size {
     #[default]
@@ -1608,7 +1608,7 @@ pub struct ChipProps {
     #[cfg_attr(rust_js, rust_js::default = "_self")]
     pub target: &'static str,
 }
-pub fn Chip(ChipProps { label, size, target }: ChipProps) -> Element {
+pub fn Chip(ChipProps { label, size, target }: ChipProps) -> JSX::Element {
     let class = match size {
         Size::Md => "md",
         Size::Lg => "lg",
@@ -1625,11 +1625,11 @@ pub fn Chip(ChipProps { label, size, target }: ChipProps) -> Element {
   expect(renderToStaticMarkup(createElement(Chip, { label: "x" }))).toBe('<a class="md" target="_self">x</a>');
   expect(renderToStaticMarkup(createElement(Chip, { label: "y", size: "lg", target: "_blank" }))).toBe('<a class="lg" target="_blank">y</a>');
   // Props not taken apart where they're given would have no default.
-  const whole = compile(chip + "pub fn Whole(props: ChipProps) -> Element {\n    jsx! { <b>{props.label}</b> }\n}\n");
+  const whole = compile(chip + "pub fn Whole(props: ChipProps) -> JSX::Element {\n    jsx! { <b>{props.label}</b> }\n}\n");
   const failed = Bun.spawnSync(whole.args, { cwd: whole.dir });
   expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("taken apart where they're given")]);
   // A default that's made, not written, is said: a literal is JS's.
-  const made = compile(chip + "pub struct MapProps {\n    #[cfg_attr(rust_js, rust_js::default)]\n    pub seen: std::collections::HashMap<u32, u32>,\n}\npub fn Seen(MapProps { seen }: MapProps) -> Element {\n    jsx! { <b>{seen.len()}</b> }\n}\n");
+  const made = compile(chip + "pub struct MapProps {\n    #[cfg_attr(rust_js, rust_js::default)]\n    pub seen: std::collections::HashMap<u32, u32>,\n}\npub fn Seen(MapProps { seen }: MapProps) -> JSX::Element {\n    jsx! { <b>{seen.len()}</b> }\n}\n");
   const unmade = Bun.spawnSync(made.args, { cwd: made.dir });
   expect([unmade.exitCode === 0, unmade.stderr.toString()]).toEqual([false, expect.stringContaining("isn't a literal")]);
 });
@@ -1640,7 +1640,7 @@ test("JSX gives a props field the literal default it says, of its type", async (
   const anchor = `#![allow(non_snake_case)]
 #[rust_js::camel_case]
 const _: () = ();
-use react::{Element, jsx};
+use react::{JSX, jsx};
 pub struct AnchorProps {
     pub label: &'static str,
     #[cfg_attr(rust_js, rust_js::default = true)]
@@ -1648,7 +1648,7 @@ pub struct AnchorProps {
     #[cfg_attr(rust_js, rust_js::default = 3)]
     pub level: u32,
 }
-pub fn Anchor(AnchorProps { label, is_page_anchor, level }: AnchorProps) -> Element {
+pub fn Anchor(AnchorProps { label, is_page_anchor, level }: AnchorProps) -> JSX::Element {
     jsx! { <h2 title={label} data-level={level}>{is_page_anchor.then_some("#")}</h2> }
 }
 `;
@@ -1672,7 +1672,7 @@ pub fn Anchor(AnchorProps { label, is_page_anchor, level }: AnchorProps) -> Elem
 // taken apart, and in JSX each one given, an attribute (ADR 0204).
 test("JSX gives a flattened struct's fields as a component's own props", async () => {
   const flattened = `#![allow(non_snake_case)]
-use react::{Element, ReactNode, jsx};
+use react::{JSX, ReactNode, jsx};
 #[derive(Default)]
 pub struct Anchor {
     pub href: Option<&'static str>,
@@ -1687,14 +1687,14 @@ pub struct ButtonLinkProps<C> {
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub anchor: Anchor,
 }
-pub fn ButtonLink<C: ReactNode>(ButtonLinkProps { size, children, anchor }: ButtonLinkProps<C>) -> Element {
+pub fn ButtonLink<C: ReactNode>(ButtonLinkProps { size, children, anchor }: ButtonLinkProps<C>) -> JSX::Element {
     let class = if size == Some("lg") { "big" } else { "small" };
     let target = anchor.target.unwrap_or("_self");
     jsx! { <a className={class} target={target} {...anchor}>{children}</a> }
 }
 `;
   const { dir, args } = compile(flattened + `
-pub fn App() -> Element {
+pub fn App() -> JSX::Element {
     jsx! {
         <ButtonLink
             size={Some("lg")}
@@ -1722,7 +1722,7 @@ pub fn App() -> Element {
     expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining(says)]);
   };
   refused(flattened + "pub fn read(p: ButtonLinkProps<()>) -> Option<&'static str> { let a = p.anchor; a.href }\n", "flattened props");
-  refused(flattened + "pub fn made() -> Element { ButtonLink(ButtonLinkProps { size: None, children: (), anchor: Anchor::default() }) }\n", "made only as JSX");
+  refused(flattened + "pub fn made() -> JSX::Element { ButtonLink(ButtonLinkProps { size: None, children: (), anchor: Anchor::default() }) }\n", "made only as JSX");
   refused(flattened + "pub fn defaulted() -> ButtonLinkProps<()> { ButtonLinkProps::default() }\n", "made only as JSX");
   refused(flattened + "pub fn matched(p: ButtonLinkProps<()>) -> Option<&'static str> { match p { ButtonLinkProps { anchor, .. } => anchor.href } }\n", "flattened props taken apart here");
   refused(flattened.replace("pub children: C,", "pub children: C,\n    pub rest: react::Rest,").replace("{ size, children, anchor }", "{ size, children, anchor, .. }"), "one rest");
@@ -1734,7 +1734,7 @@ pub fn App() -> Element {
 // through, `props.html.title` is `props.title`, never whole (ADR 0205).
 test("JSX gives a chain of flattened structs as props, a name the props have their own", async () => {
   const chained = `#![allow(non_snake_case)]
-use react::{Element, ReactNode, jsx};
+use react::{JSX, ReactNode, jsx};
 #[derive(Default)]
 pub struct Html {
     pub id: Option<&'static str>,
@@ -1758,17 +1758,17 @@ pub struct ButtonLinkProps<C> {
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub props: Anchor,
 }
-pub fn ButtonLink<C: ReactNode>(ButtonLinkProps { href, class_name, children, props }: ButtonLinkProps<C>) -> Element {
+pub fn ButtonLink<C: ReactNode>(ButtonLinkProps { href, class_name, children, props }: ButtonLinkProps<C>) -> JSX::Element {
     let title = props.html.title.unwrap_or("none");
     jsx! { <a href={href} className={class_name.unwrap_or("x")} data-title={title} {...props}>{children}</a> }
 }
 // What it leaves, .., the rest does not hold.
-pub fn Plain<C: ReactNode>(ButtonLinkProps { href, props, .. }: ButtonLinkProps<C>) -> Element {
+pub fn Plain<C: ReactNode>(ButtonLinkProps { href, props, .. }: ButtonLinkProps<C>) -> JSX::Element {
     jsx! { <a href={href} {...props} /> }
 }
 `;
   const { dir, args } = compile(chained + `
-pub fn App() -> Element {
+pub fn App() -> JSX::Element {
     jsx! {
         <ButtonLink
             href="/a"
@@ -1797,7 +1797,7 @@ pub fn App() -> Element {
     expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining(says)]);
   };
   // A Rust caller giving a name the props have, which would be lost.
-  refused(chained + `pub fn Both() -> Element {
+  refused(chained + `pub fn Both() -> JSX::Element {
     jsx! { <ButtonLink href="/a" props={Anchor { href: Some("/b"), ..Default::default() }} {..Default::default()}>{"A"}</ButtonLink> }
 }
 `, "`href`, which the props have too");
@@ -1810,17 +1810,17 @@ pub fn App() -> Element {
 // so children that change it, `bump(&mut base)`, are made first in JS too.
 test("JSX gives a component its props as written, and children that change the base first", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, jsx};
+use react::{JSX, jsx};
 #[derive(Clone, Copy)]
 pub struct TallyProps { pub n: u32, pub label: &'static str, pub children: u32 }
-pub fn Tally(TallyProps { n, label, children }: TallyProps) -> Element {
+pub fn Tally(TallyProps { n, label, children }: TallyProps) -> JSX::Element {
     jsx! { <i title={label}>{n}{"/"}{children}</i> }
 }
 fn bump(t: &mut TallyProps) -> u32 {
     t.n += 1;
     5
 }
-pub fn App() -> Element {
+pub fn App() -> JSX::Element {
     let mut base = TallyProps { n: 1, label: "b", children: 0 };
     jsx! { <Tally label="first" {..base}>{bump(&mut base)}</Tally> }
 }
@@ -1840,17 +1840,17 @@ pub fn App() -> Element {
 // nothing, isn't made: no `base` is kept (ADR 0201).
 test("JSX gives a generic component's children on with a base, and the component no dictionary", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, ReactNode, jsx};
+use react::{JSX, ReactNode, jsx};
 #[derive(Default)]
 pub struct FrameProps<C> { pub title: Option<&'static str>, pub children: C, pub tags: Vec<&'static str>, pub id: Option<&'static str> }
-pub fn Frame<C: ReactNode>(FrameProps { title, children, tags, id }: FrameProps<C>) -> Element {
+pub fn Frame<C: ReactNode>(FrameProps { title, children, tags, id }: FrameProps<C>) -> JSX::Element {
     jsx! { <section title={title.unwrap_or("bare")} id={id} data-tags={tags.join(" ")}>{children}</section> }
 }
 pub struct CardProps<C> { pub title: &'static str, pub children: C }
-pub fn Card<C: ReactNode + Default>(CardProps { title, children }: CardProps<C>) -> Element {
+pub fn Card<C: ReactNode + Default>(CardProps { title, children }: CardProps<C>) -> JSX::Element {
     jsx! { <Frame tags={vec!["card"]} title={Some(title)} {..Default::default()}>{children}</Frame> }
 }
-pub fn App() -> Element {
+pub fn App() -> JSX::Element {
     jsx! { <Card title="t">{"kid"}<b>{"!"}</b></Card> }
 }
 `);
@@ -1864,9 +1864,9 @@ pub fn App() -> Element {
   expect(renderToStaticMarkup(createElement(Card, { title: "js" }, "child"))).toBe('<section title="js" data-tags="card">child</section>');
   // One that would use a dictionary, React's not giving it one, is an error.
   const uses = compile(`#![allow(non_snake_case)]
-use react::{Element, ReactNode, jsx};
+use react::{JSX, ReactNode, jsx};
 pub struct P<C> { pub children: C }
-pub fn Echo<C: ReactNode + Default>(P { children }: P<C>) -> Element {
+pub fn Echo<C: ReactNode + Default>(P { children }: P<C>) -> JSX::Element {
     let empty = C::default();
     jsx! { <p>{children}{empty}</p> }
 }
@@ -1880,16 +1880,16 @@ pub fn Echo<C: ReactNode + Default>(P { children }: P<C>) -> Element {
 // to another, `const className$1 = className`, as react.dev's IconCanary was.
 test("JSX reads an attribute before a child once, not copied again", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, jsx};
+use react::{JSX, jsx};
 pub enum Size { S, Md }
 pub struct P { pub class_name: Option<&'static str>, pub size: Option<Size>, pub title: Option<&'static str> }
 // Of a value whose fields may change, \`seen\` a \`Cell\`: what's before a child
 // whose statement only reads, \`const t = q.title\`, stays where it is.
 pub struct Q { pub class_name: Option<&'static str>, pub title: Option<&'static str>, pub seen: std::cell::Cell<bool> }
-pub fn Labeled(q: Q) -> Element {
+pub fn Labeled(q: Q) -> JSX::Element {
     jsx! { <svg className={q.class_name}>{q.title.map(|t| jsx! { <title>{t}</title> })}</svg> }
 }
-pub fn Badge(p: P) -> Element {
+pub fn Badge(p: P) -> JSX::Element {
     let class_name = p.class_name.unwrap_or("badge");
     jsx! {
         <svg
@@ -1928,11 +1928,11 @@ pub fn Badge(p: P) -> Element {
 // "string"` (ADR 0214).
 test("JSX tells text children from any other node", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, ReactNode, ReactNodeKind, jsx, kind_of};
+use react::{JSX, ReactNode, ReactNodeKind, jsx, kind_of};
 pub struct LabeledProps<C> {
     pub children: C,
 }
-pub fn Labeled<C: ReactNode>(LabeledProps { children }: LabeledProps<C>) -> Element {
+pub fn Labeled<C: ReactNode>(LabeledProps { children }: LabeledProps<C>) -> JSX::Element {
     let mut label = "Link for this heading".to_string();
     if let ReactNodeKind::Text(text) = kind_of(&children) {
         label = format!("Link for {text}");
@@ -1956,11 +1956,11 @@ test("JSX components look inside their children with React's Children", async ()
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use js::Kind;
 use react::children::{self, Child};
-use react::{Element, ReactNode, ReactNodeKind, clone_element, jsx, kind_of};
+use react::{JSX, ReactNode, ReactNodeKind, clone_element, jsx, kind_of};
 pub struct ListProps<C: ReactNode> {
     pub children: C,
 }
-pub fn Kinds<C: ReactNode>(ListProps { children }: ListProps<C>) -> Element {
+pub fn Kinds<C: ReactNode>(ListProps { children }: ListProps<C>) -> JSX::Element {
     let mut kinds = Vec::new();
     for child in children::to_array(&children) {
         kinds.push(match child {
@@ -1979,14 +1979,14 @@ pub struct Linked<'a> {
     #[rust_js::name = "data-linked"]
     pub linked: &'a str,
 }
-pub fn Only<C: ReactNode>(ListProps { children }: ListProps<C>) -> Element {
+pub fn Only<C: ReactNode>(ListProps { children }: ListProps<C>) -> JSX::Element {
     match kind_of(&children) {
         ReactNodeKind::Element(element) => clone_element(element, Linked { linked: "yes" }).element(),
         ReactNodeKind::Text(text) => jsx! { <i>{text}</i> },
         ReactNodeKind::List(_) | ReactNodeKind::Other(_) => jsx! { <b>{"other"}</b> },
     }
 }
-pub fn Id<C: ReactNode>(ListProps { children }: ListProps<C>) -> Element {
+pub fn Id<C: ReactNode>(ListProps { children }: ListProps<C>) -> JSX::Element {
     let id = match kind_of(&children) {
         ReactNodeKind::Element(element) => js::get(element.props(), "id").map(js::classify),
         _ => None,
@@ -2018,11 +2018,11 @@ pub fn Id<C: ReactNode>(ListProps { children }: ListProps<C>) -> Element {
 test("JSX components read their children's text in a let chain as a person writes it", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use js::{Kind, classify};
-use react::{Element, ReactNode, ReactNodeKind, jsx, kind_of};
+use react::{JSX, ReactNode, ReactNodeKind, jsx, kind_of};
 pub struct BlockProps<C: ReactNode> {
     pub children: C,
 }
-pub fn Block<C: ReactNode>(BlockProps { children }: BlockProps<C>) -> Element {
+pub fn Block<C: ReactNode>(BlockProps { children }: BlockProps<C>) -> JSX::Element {
     let message: String;
     if let ReactNodeKind::Text(text) = kind_of(&children) {
         message = text.to_string();
@@ -2068,17 +2068,17 @@ pub fn Block<C: ReactNode>(BlockProps { children }: BlockProps<C>) -> Element {
 test("JSX elements have props of a type, and bigint and promise children", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::children::{self, Child};
-use react::{Element, ReactElement, ReactNode, jsx};
+use react::{JSX, ReactElement, ReactNode, jsx};
 pub struct ItemProps<'a> {
     pub title: &'a str,
 }
-pub fn Item(ItemProps { title }: ItemProps) -> Element {
+pub fn Item(ItemProps { title }: ItemProps) -> JSX::Element {
     jsx! { <li>{title}</li> }
 }
 pub struct ListProps<C: ReactNode> {
     pub children: C,
 }
-pub fn Titles<C: ReactNode>(ListProps { children }: ListProps<C>) -> Element {
+pub fn Titles<C: ReactNode>(ListProps { children }: ListProps<C>) -> JSX::Element {
     let titles: Vec<&str> = children::to_array(&children)
         .into_iter()
         .filter_map(|child| match child {
@@ -2089,7 +2089,7 @@ pub fn Titles<C: ReactNode>(ListProps { children }: ListProps<C>) -> Element {
     let big: i64 = 1 << 40;
     jsx! { <p>{titles.join(", ")}<b>{big}</b></p> }
 }
-pub fn Later(text: js::Promise<String>) -> Element {
+pub fn Later(text: js::Promise<String>) -> JSX::Element {
     jsx! { <p>{text}</p> }
 }
 `);
@@ -2109,7 +2109,7 @@ pub fn Later(text: js::Promise<String>) -> Element {
 test("JSX components clone some of their children and keep the rest", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::children::{self, Child};
-use react::{Element, ReactNode, clone_element, jsx};
+use react::{JSX, ReactNode, clone_element, jsx};
 pub struct ListProps<C: ReactNode> {
     pub children: C,
 }
@@ -2117,7 +2117,7 @@ pub struct Marked {
     #[rust_js::name = "data-marked"]
     pub marked: &'static str,
 }
-pub fn Marks<C: ReactNode>(ListProps { children }: ListProps<C>) -> Element {
+pub fn Marks<C: ReactNode>(ListProps { children }: ListProps<C>) -> JSX::Element {
     let marked: Vec<Child> = children::to_array(&children)
         .into_iter()
         .map(|child| match child {
@@ -2142,11 +2142,11 @@ pub fn Marks<C: ReactNode>(ListProps { children }: ListProps<C>) -> Element {
 // child's `children` as its title and the rest as its body.
 test("JSX components take apart a list of children", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, ReactNode, ReactNodeKind, jsx, kind_of};
+use react::{JSX, ReactNode, ReactNodeKind, jsx, kind_of};
 pub struct ListProps<C: ReactNode> {
     pub children: C,
 }
-pub fn Titled<C: ReactNode>(ListProps { children }: ListProps<C>) -> Element {
+pub fn Titled<C: ReactNode>(ListProps { children }: ListProps<C>) -> JSX::Element {
     let ReactNodeKind::List(items) = kind_of(&children) else {
         panic!("expected a title and a body");
     };
@@ -2177,7 +2177,7 @@ pub fn Titled<C: ReactNode>(ListProps { children }: ListProps<C>) -> Element {
 // renders `<Comp>` of `{ as: Comp = "div" }`.
 test("JSX renders a tag that's a value, named by a capitalized local", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, ReactNode, Rest, jsx};
+use react::{JSX, ReactNode, Rest, jsx};
 #[derive(Clone, Copy, Default)]
 pub enum As {
     #[rust_js::name = "h1"]
@@ -2196,19 +2196,19 @@ pub struct HeadingProps<C> {
     pub children: C,
     pub rest: Rest,
 }
-pub fn Heading<C: ReactNode>(HeadingProps { r#as: Comp, id, children, rest }: HeadingProps<C>) -> Element {
+pub fn Heading<C: ReactNode>(HeadingProps { r#as: Comp, id, children, rest }: HeadingProps<C>) -> JSX::Element {
     jsx! { <Comp id={id} {...rest} className="mdx-heading">{children}</Comp> }
 }
-pub fn Title() -> Element {
+pub fn Title() -> JSX::Element {
     jsx! { <Heading r#as={As::H2} id={Some("intro")}>{"Intro"}</Heading> }
 }
 // A \`let\` too.
-pub fn Plain(level: u8) -> Element {
+pub fn Plain(level: u8) -> JSX::Element {
     let Comp = if level == 1 { As::H1 } else { As::Div };
     jsx! { <Comp>{"x"}</Comp> }
 }
 // Given its props whole, as a component is.
-pub fn Bare(HeadingProps { r#as: Comp, rest, .. }: HeadingProps<()>) -> Element {
+pub fn Bare(HeadingProps { r#as: Comp, rest, .. }: HeadingProps<()>) -> JSX::Element {
     jsx! { <Comp {...rest} /> }
 }
 `);
@@ -2234,10 +2234,10 @@ test("JSX keeps a field of what never changes in place", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use std::cell::Cell;
 use react::webapi::{Node, node};
-use react::{Element, jsx};
+use react::{JSX, jsx};
 pub enum Size { S, Md }
 pub struct P { pub size: Option<Size>, pub title: Option<&'static str> }
-pub fn Badge(p: P) -> Element {
+pub fn Badge(p: P) -> JSX::Element {
     jsx! {
         <svg width={if matches!(p.size, Some(Size::S)) { "12px" } else { "20px" }}>
             {p.title.map(|t| jsx! { <title>{t}</title> })}
@@ -2251,14 +2251,14 @@ pub fn Badge(p: P) -> Element {
         </svg>
     }
 }
-pub fn Live(n: &'static Node) -> Element {
+pub fn Live(n: &'static Node) -> JSX::Element {
     jsx! { <div><p>{node::text_content(n)}</p>{{ node::set_text_content(n, "x"); 1 }}</div> }
 }
 pub struct N { pub n: i32 }
-pub fn Edited(e: &mut N) -> Element {
+pub fn Edited(e: &mut N) -> JSX::Element {
     jsx! { <p>{e.n}{{ e.n = 5; 1 }}</p> }
 }
-pub fn Counter() -> Element {
+pub fn Counter() -> JSX::Element {
     let count = Cell::new(0);
     jsx! { <div><p>{count.get()}</p>{{ count.set(5); 1 }}</div> }
 }
@@ -2281,9 +2281,9 @@ pub fn Counter() -> Element {
 // version (ADR 0218): before the statements of a later child, a loop.
 test("JSX keeps a comparison of what reads the same in place", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, jsx};
+use react::{JSX, jsx};
 pub enum Version { Canary, Rc }
-pub fn Heading(title: &'static str, version: Option<Version>, done: bool, status: Option<&'static str>) -> Element {
+pub fn Heading(title: &'static str, version: Option<Version>, done: bool, status: Option<&'static str>) -> JSX::Element {
     jsx! {
         <h1>
             {title}
@@ -2302,7 +2302,7 @@ pub fn Heading(title: &'static str, version: Option<Version>, done: bool, status
     }
 }
 // One of a variable a later child writes is read before the write.
-pub fn Count() -> Element {
+pub fn Count() -> JSX::Element {
     let mut n = 0;
     jsx! { <p>{(n == 0).then(|| jsx! { <i>{"zero"}</i> })}{{ n += 1; n }}</p> }
 }
@@ -2327,18 +2327,18 @@ pub fn Count() -> Element {
 // default gives none, and no `rest` prop.
 test("JSX takes the props a component's struct doesn't name as ...rest", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, ReactNode, Rest, jsx};
+use react::{JSX, ReactNode, Rest, jsx};
 #[derive(Default)]
 pub struct LinkProps<C> { pub href: &'static str, pub rest: Rest, pub target: Option<&'static str>, pub children: C }
-pub fn ExternalLink<C: ReactNode>(LinkProps { href, target, children, rest }: LinkProps<C>) -> Element {
+pub fn ExternalLink<C: ReactNode>(LinkProps { href, target, children, rest }: LinkProps<C>) -> JSX::Element {
     jsx! { <a href={href} target={target.unwrap_or("_blank")} rel="noopener" {...rest}>{children}</a> }
 }
-pub fn Home() -> Element {
+pub fn Home() -> JSX::Element {
     jsx! { <ExternalLink href="/home" {..Default::default()}>{"Home"}</ExternalLink> }
 }
 #[derive(Default)]
 pub struct SocialProps { pub name: &'static str, pub rest: Rest }
-pub fn Social(SocialProps { name, rest }: SocialProps) -> Element {
+pub fn Social(SocialProps { name, rest }: SocialProps) -> JSX::Element {
     jsx! { <ExternalLink href="/social" rest={rest} {..Default::default()}>{name}</ExternalLink> }
 }
 // Props holding what has a destructor are taken apart where they're given
@@ -2348,7 +2348,7 @@ impl Drop for Loud {
     fn drop(&mut self) {}
 }
 pub struct BadgeProps { pub label: Loud, pub rest: Rest }
-pub fn Badge(BadgeProps { label, rest }: BadgeProps) -> Element {
+pub fn Badge(BadgeProps { label, rest }: BadgeProps) -> JSX::Element {
     jsx! { <b {...rest}>{label.0}</b> }
 }
 `);
@@ -2367,9 +2367,9 @@ pub fn Badge(BadgeProps { label, rest }: BadgeProps) -> Element {
   // JS's props have no `rest`: one read as a field is an error, which says
   // to take it apart.
   const read = compile(`#![allow(non_snake_case)]
-use react::{Element, Rest, jsx};
+use react::{JSX, Rest, jsx};
 pub struct P { pub href: &'static str, pub rest: Rest }
-pub fn A(p: P) -> Element {
+pub fn A(p: P) -> JSX::Element {
     jsx! { <a href={p.href} {...p.rest} /> }
 }
 `);
@@ -2377,9 +2377,9 @@ pub fn A(p: P) -> Element {
   expect([failed.exitCode === 0, failed.stderr.toString().includes("take it apart from them")]).toEqual([false, true]);
   // Nor is one taken apart anywhere but where the props are given.
   const later = compile(`#![allow(non_snake_case)]
-use react::{Element, Rest, jsx};
+use react::{JSX, Rest, jsx};
 pub struct P { pub href: &'static str, pub rest: Rest }
-pub fn A(p: P) -> Element {
+pub fn A(p: P) -> JSX::Element {
     let P { href, rest } = p;
     jsx! { <a href={href} {...rest} /> }
 }
@@ -2395,7 +2395,7 @@ test("JSX takes an async event handler as the async function it is", async () =>
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use js::Promise;
 use react::webapi::HTMLButtonElement;
-use react::{Element, event, jsx, use_state};
+use react::{JSX, event, jsx, use_state};
 unsafe extern "Rust" {
     #[link_name = "Promise.resolve"]
     safe fn resolved() -> Promise<()>;
@@ -2403,10 +2403,10 @@ unsafe extern "Rust" {
 pub struct ButtonProps {
     pub on_click: Box<dyn Fn(&event::MouseEvent<HTMLButtonElement>)>,
 }
-pub fn Button(ButtonProps { on_click }: ButtonProps) -> Element {
+pub fn Button(ButtonProps { on_click }: ButtonProps) -> JSX::Element {
     jsx! { <button onClick={on_click}>{"Copy"}</button> }
 }
-pub fn Copy() -> Element {
+pub fn Copy() -> JSX::Element {
     let (copied, set_copied) = use_state(false);
     let handle_copy = event::MouseEvent::spawn(async move |_| {
         resolved().await;
@@ -2434,9 +2434,9 @@ pub fn Copy() -> Element {
 // nothing does.
 test("JSX passes an optional event handler on as it is", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, ReactNode, event, jsx};
+use react::{JSX, ReactNode, event, jsx};
 pub struct ButtonProps<C> { pub children: C, pub on_click: Option<Box<dyn Fn(&event::MouseEvent)>> }
-pub fn Button<C: ReactNode>(ButtonProps { children, on_click }: ButtonProps<C>) -> Element {
+pub fn Button<C: ReactNode>(ButtonProps { children, on_click }: ButtonProps<C>) -> JSX::Element {
     jsx! { <button onClick={move |e| if let Some(f) = &on_click { f(e.upcast()) }}>{children}</button> }
 }
 `);
@@ -2455,14 +2455,14 @@ test("JSX handler props are @types/react's EventHandler aliases", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::event::{ChangeEventHandler, EventHandler, MouseEvent, MouseEventHandler};
 use react::webapi::{HTMLButtonElement, HTMLInputElement};
-use react::{Element, jsx};
+use react::{JSX, jsx};
 pub struct FieldProps {
     pub on_click: Option<MouseEventHandler<HTMLButtonElement>>,
     pub on_change: ChangeEventHandler<HTMLInputElement>,
     pub on_any: MouseEventHandler,
     pub on_same: EventHandler<MouseEvent<HTMLButtonElement>>,
 }
-pub fn Field(FieldProps { on_click, on_change, on_any, on_same }: FieldProps) -> Element {
+pub fn Field(FieldProps { on_click, on_change, on_any, on_same }: FieldProps) -> JSX::Element {
     let _ = (on_any, on_same);
     jsx! {
         <>
@@ -2485,7 +2485,7 @@ test("JSX onSubmit gets a SubmitEvent, of its submitter", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::event::{FormEvent, FormEventHandler, InvalidEvent, SubmitEventHandler};
 use react::webapi::{HTMLFormElement, html_element, submit_event};
-use react::{Element, jsx};
+use react::{JSX, jsx};
 pub struct FormProps {
     pub on_send: fn(String),
     pub on_reset: FormEventHandler<HTMLFormElement>,
@@ -2494,7 +2494,7 @@ pub struct FormProps {
 pub fn checked(e: &InvalidEvent, f: &FormEvent) -> bool {
     e.is_default_prevented() || f.is_default_prevented()
 }
-pub fn Form(FormProps { on_send, on_reset, on_submitted }: FormProps) -> Element {
+pub fn Form(FormProps { on_send, on_reset, on_submitted }: FormProps) -> JSX::Element {
     let _ = on_submitted;
     jsx! {
         <form
@@ -2523,12 +2523,12 @@ test("JSX onInput gets an InputEvent, as @types/react types it", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::event::InputEventHandler;
 use react::webapi::{HTMLInputElement, html_input_element, input_event};
-use react::{Element, jsx};
+use react::{JSX, jsx};
 pub struct FieldProps {
     pub on_read: fn(String),
     pub on_typed: Option<InputEventHandler<HTMLInputElement>>,
 }
-pub fn Field(FieldProps { on_read, on_typed }: FieldProps) -> Element {
+pub fn Field(FieldProps { on_read, on_typed }: FieldProps) -> JSX::Element {
     let _ = on_typed;
     jsx! {
         <input
@@ -2557,9 +2557,9 @@ pub fn Field(FieldProps { on_read, on_typed }: FieldProps) -> Element {
 test("JSX native_event is the DOM event of its kind", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::webapi::{mouse_event, pointer_event, wheel_event};
-use react::{Element, jsx};
+use react::{JSX, jsx};
 pub struct PadProps { pub on_read: fn(String) }
-pub fn Pad(PadProps { on_read }: PadProps) -> Element {
+pub fn Pad(PadProps { on_read }: PadProps) -> JSX::Element {
     jsx! {
         <div
             onClick={move |e| on_read(mouse_event::client_x(e.native_event()).to_string())}
@@ -2583,9 +2583,9 @@ pub fn Pad(PadProps { on_read }: PadProps) -> Element {
 // As react.dev's Button's `style={style}` of an optional prop: `None` none.
 test("JSX passes an optional style on as it is", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, CSSProperties, jsx};
+use react::{JSX, CSSProperties, jsx};
 pub struct BoxProps { pub style: Option<CSSProperties> }
-pub fn Panel(BoxProps { style }: BoxProps) -> Element {
+pub fn Panel(BoxProps { style }: BoxProps) -> JSX::Element {
     jsx! { <div style={style} /> }
 }
 `);
@@ -2599,15 +2599,15 @@ pub fn Panel(BoxProps { style }: BoxProps) -> Element {
 // `Properties<string | number>`, types it as: `width` a length, a number in
 // pixels or text, `opacity` and `z_index` a number, `color` text only.
 test("JSX styles take the values csstype types them as", async () => {
-  const { dir, args } = compile(`use react::{CSSProperties, Element, jsx};
-pub fn Panel() -> Element {
+  const { dir, args } = compile(`use react::{CSSProperties, JSX, jsx};
+pub fn Panel() -> JSX::Element {
     jsx! { <div style={CSSProperties::new().width(300).opacity(0.5).z_index(2).color("red").margin_top("1em")} /> }
 }
 `);
   run(args);
   const { Panel } = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(Panel())).toBe('<div style="width:300px;opacity:0.5;z-index:2;color:red;margin-top:1em"></div>');
-  const refused = compile(`use react::{CSSProperties, Element, jsx};\npub fn Panel() -> Element {\n    jsx! { <div style={CSSProperties::new().color(3)} /> }\n}\n`);
+  const refused = compile(`use react::{CSSProperties, JSX, jsx};\npub fn Panel() -> JSX::Element {\n    jsx! { <div style={CSSProperties::new().color(3)} /> }\n}\n`);
   const failed = Bun.spawnSync(refused.args, { cwd: refused.dir });
   expect([failed.exitCode === 0, failed.stderr.toString().includes("is not text")], failed.stderr.toString()).toEqual([false, true]);
 });
@@ -2616,9 +2616,9 @@ pub fn Panel() -> Element {
 // `style={{width, height, ...customStyles}}`; `None` spreads nothing.
 test("JSX styles spread another style over their own", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, CSSProperties, jsx};
+use react::{JSX, CSSProperties, jsx};
 pub struct BoxProps<'a> { pub width: &'a str, pub custom_styles: Option<CSSProperties> }
-pub fn Panel(BoxProps { width, custom_styles }: BoxProps) -> Element {
+pub fn Panel(BoxProps { width, custom_styles }: BoxProps) -> JSX::Element {
     jsx! { <div style={CSSProperties::new().width(width).spread(custom_styles)} /> }
 }
 `);
@@ -2639,9 +2639,9 @@ test("JSX components take no drop of their type parameters", async () => {
     return { dir, args: [...args.slice(0, at), "--library", ...args.slice(at)] };
   };
   const card = `#![allow(non_snake_case)]
-use react::{Element, ReactNode, jsx};
+use react::{JSX, ReactNode, jsx};
 pub struct CardProps<C> { pub title: &'static str, pub children: C }
-pub fn Card<C: ReactNode>(CardProps { title, children }: CardProps<C>) -> Element {
+pub fn Card<C: ReactNode>(CardProps { title, children }: CardProps<C>) -> JSX::Element {
     let heading = format!("{title}!");
     jsx! { <section title={heading}>{children}</section> }
 }
@@ -2651,9 +2651,9 @@ pub fn Card<C: ReactNode>(CardProps { title, children }: CardProps<C>) -> Elemen
   const jsx = readFileSync(join(built.dir, "lib.jsx"), "utf8");
   expect([jsx.includes("export function Card({ title, children }) {"), jsx.includes("drop")]).toEqual([true, false]);
   const given = compile(`#![allow(non_snake_case)]
-use react::{Element, jsx};
+use react::{JSX, jsx};
 pub struct HolderProps<T> { pub value: T }
-pub fn Holder<T>(HolderProps { value }: HolderProps<T>) -> Element {
+pub fn Holder<T>(HolderProps { value }: HolderProps<T>) -> JSX::Element {
     let _kept = value;
     jsx! { <i /> }
 }
@@ -2661,7 +2661,7 @@ pub struct Loud;
 impl Drop for Loud {
     fn drop(&mut self) {}
 }
-pub fn App() -> Element {
+pub fn App() -> JSX::Element {
     jsx! { <Holder value={Loud} /> }
 }
 `);
@@ -2673,11 +2673,11 @@ test("JSX grammar: spread precedence, children overrides, component paths and ke
   const { dir, args } = compile(`#![allow(non_snake_case)]
 #[rust_js::camel_case]
 const _: () = ();
-use react::{Element, jsx};
+use react::{JSX, jsx};
 mod ui;
 use ui::Card as Panel;
 pub struct Attrs { pub title: &'static str, pub class_name: &'static str }
-pub fn App() -> Element {
+pub fn App() -> JSX::Element {
     let attrs = Attrs { title: "spread", class_name: "card" };
     let props = ui::Props { title: "panel", children: jsx! { <i>{"old"}</i> } };
     let Selected = ui::Empty;
@@ -2692,10 +2692,10 @@ pub fn App() -> Element {
     }
 }
 `, {
-    "ui.rs": `use react::{Element, jsx};
-pub struct Props { pub title: &'static str, pub children: Element }
-pub fn Card(p: Props) -> Element { jsx! { <section title={p.title}>{p.children}</section> } }
-pub fn Empty() -> Element { jsx! { <hr /> } }
+    "ui.rs": `use react::{JSX, jsx};
+pub struct Props { pub title: &'static str, pub children: JSX::Element }
+pub fn Card(p: Props) -> JSX::Element { jsx! { <section title={p.title}>{p.children}</section> } }
+pub fn Empty() -> JSX::Element { jsx! { <hr /> } }
 `,
   });
   run(args);

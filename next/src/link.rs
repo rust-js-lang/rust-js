@@ -2,11 +2,11 @@
 //! an `<a>` that goes to another route without loading the page again.
 
 use react::attributes::AnchorHTMLAttributes;
-use react::{Element, ReactNode};
+use react::{JSX, ReactNode};
 
 /// `<Link href="/about" {..Default::default()}>{"About"}</Link>`.
 #[cfg_attr(rust_js, rust_js::link_name = "next/link#default")]
-pub fn Link<C: ReactNode>(props: LinkProps<'_, C>) -> Element {
+pub fn Link<C: ReactNode>(props: LinkProps<'_, C>) -> JSX::Element {
     unreachable!()
 }
 
