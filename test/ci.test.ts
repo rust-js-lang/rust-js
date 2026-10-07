@@ -2,7 +2,7 @@
 // shards, the mutations a change touches, and each branch's latest run.
 
 import { expect, test } from "bun:test";
-import { latestRuns } from "../scripts/ci";
+import { checkedSince, latestRuns } from "../scripts/ci";
 import { changedMutations } from "../scripts/mutations";
 import { shard } from "../scripts/shard";
 
@@ -27,10 +27,19 @@ test("the changed mutations are a changed file's, and the new or edited", () => 
   expect(changedMutations(now, now, [])).toEqual([]);
 });
 
-const run = (headBranch: string, databaseId: number, status: string, conclusion: string) =>
-  ({ headBranch, databaseId, status, conclusion, createdAt: new Date(databaseId * 1000).toISOString(), displayTitle: headBranch });
+const run = (headBranch: string, databaseId: number, status: string, conclusion: string, headSha = `sha${databaseId}`) =>
+  ({ headBranch, databaseId, status, conclusion, createdAt: new Date(databaseId * 1000).toISOString(), displayTitle: headBranch, headSha });
 
 test("each branch's latest run, newest first", () => {
   const runs = [run("a", 1, "completed", "failure"), run("b", 2, "completed", "success"), run("a", 3, "in_progress", "")];
   expect(latestRuns(runs).map((r) => [r.headBranch, r.databaseId])).toEqual([["a", 3], ["b", 2]]);
+});
+
+// A check of `main`, which changes are pushed to, runs the mutations of
+// what changed since the commit its last finished check was of: one that
+// was cancelled, or is running, checked nothing.
+test("main's mutations are of what changed since its last finished check", () => {
+  const runs = [run("main", 1, "completed", "success"), run("main", 2, "completed", "failure"), run("main", 3, "completed", "cancelled"), run("main", 4, "in_progress", ""), run("b", 5, "completed", "success")];
+  expect(checkedSince(runs, "main")).toBe("sha2");
+  expect(checkedSince(runs, "c")).toBeUndefined();
 });

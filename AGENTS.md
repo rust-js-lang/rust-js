@@ -39,7 +39,7 @@ proved and recorded, and what to run before pushing. The
 [architecture](docs/architecture.md) says where a change goes, and which
 boundaries [its test](test/architecture.test.ts) holds it to.
 
-A PR is often merged right after it's opened, and sometimes not: expect either, and check its state before building on its branch. A merged PR's branch is deleted, so don't push to it again; sync `main` instead.
+Work on `main` and push to it directly: no branches, no pull requests. If a push fails, keep committing on `main` locally and push when it works again ([DEVELOPMENT.md](DEVELOPMENT.md#working-on-main)).
 
 ## Five minutes per local command
 
@@ -47,7 +47,7 @@ A hard rule: every command run on this Mac is given a timeout of at most
 five minutes, the tool's own or `timeout 300` in front of it. Nothing runs
 here without one.
 
-- **What may take longer goes to CI**, not here: push the branch and start
+- **What may take longer goes to CI**, not here: push `main` and start
   `bun run ci:check`, or the [workflow](.github/workflows) that runs it.
   The whole suite, all mutations, rustc's whole suite and the WASM build
   are CI's ([DEVELOPMENT.md](DEVELOPMENT.md)).

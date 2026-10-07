@@ -1,10 +1,10 @@
 name: Check
 
-# Every check but the inner loop's, of a pushed branch, so a change is made
-# here and proved there while the next one is made (DEVELOPMENT.md). Started
-# by hand, `bun run ci:check`, as GitHub's free minutes are counted: not
-# on each push. Its jobs run at once; `main` takes a branch when all of
-# them pass. A job whose snapshots or rustc's lists differ uploads what
+# Every check but the inner loop's, of what's pushed to `main`, so a change
+# is made here and proved there while the next one is made (DEVELOPMENT.md).
+# Started by hand, `bun run ci:check`, as GitHub's free minutes are
+# counted: not on each push. Its jobs run at once; a red one is fixed at
+# once, on `main`. A job whose snapshots or rustc's lists differ uploads what
 # blessing them writes, a `bless-*` artifact, which `bun run ci:bless`
 # applies to be read.
 on:
@@ -15,6 +15,10 @@ on:
         type: choice
         options: ['1', '2', '4']
         default: '1'
+      since:
+        description: 'The commit whose changes since are the mutations run: of main, its last checked one.'
+        type: string
+        default: 'origin/main'
   # By nightly.yml, of `main`: every mutation, where a branch's check runs
   # only its own.
   workflow_call:
@@ -180,5 +184,5 @@ jobs:
     uses: ./.github/workflows/rustc-tests.yml
     with:
       mutations: true
-      mutation_args: ${{ !inputs.nightly && '--changed=origin/main' || '' }}
+      mutation_args: ${{ !inputs.nightly && format('--changed={0}', inputs.since || 'origin/main') || '' }}
       mutation_shards: ${{ inputs.nightly && '8' || '1' }}
