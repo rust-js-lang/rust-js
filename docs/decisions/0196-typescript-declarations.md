@@ -67,7 +67,10 @@ export default Tag;
   TypeScript has no need of. A struct's own parameter is one where the
   struct says its bound. (Amended: it was `<C>`, which props extending
   React's attributes, whose `children` is a `ReactNode`, couldn't be,
-  react.dev's `ButtonLinkProps` TypeScript's error.)
+  react.dev's `ButtonLinkProps` TypeScript's error.) An `impl Trait`
+  parameter of a trait that says no type, `value: &impl js::Defined`, is
+  `unknown`, a value of any type, as a person declares one. (Amended: it
+  was rustc's name for it, `impl js::Defined + 'a`, which isn't TypeScript.)
   **Another crate's untagged enum is declared in the
   module that names it**, not exported, the union of its payloads, as this
   crate's are (ADR 0225).
