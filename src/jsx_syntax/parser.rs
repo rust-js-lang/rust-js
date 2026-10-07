@@ -1,7 +1,7 @@
 //! Parse only JSX tokens. Rust inside braces stays a Rust token stream,
 //! with its original spans, for rustc to parse and type-check.
 
-use rustc_ast::token::{Delimiter, TokenKind};
+use rustc_ast::token::{Delimiter, LitKind, TokenKind};
 use rustc_ast::tokenstream::{DelimSpacing, DelimSpan, Spacing, TokenStream, TokenTree};
 use rustc_ast::{self as ast, FnRetTy, ItemKind, TyKind};
 use rustc_parse::parser::{AllowConstBlockItems, ForceCollect, Parser};
@@ -10,6 +10,7 @@ use rustc_span::{ErrorGuaranteed, Ident, Span};
 use std::collections::HashSet;
 
 use super::formatting::Layout;
+use super::literals;
 use super::{rust_expression, template};
 
 type R<T> = Result<T, ErrorGuaranteed>;
@@ -265,6 +266,24 @@ impl Jsx<'_> {
             } else {
                 template(self.sess, "true".into(), attr_span)
             };
+            // A literal of an attribute @types/react types as a few strings
+            // is one of them, as TypeScript checks it (ADR 0228).
+            if intrinsic
+                && let [TokenTree::Token(token, _)] = value.iter().collect::<Vec<_>>().as_slice()
+                && let TokenKind::Literal(literal) = token.kind
+                && literal.kind == LitKind::Str
+                && let Some(allowed) = literals::one_of(&name, &attr)
+                && !allowed.contains(&literal.symbol.as_str())
+            {
+                let which = allowed.iter().map(|s| format!("{s:?}")).collect::<Vec<_>>().join(", ");
+                return Err(self.sess.dcx().span_err(
+                    token.span,
+                    format!(
+                        "jsx: `\"{}\"` isn't a `{attr}`, which is one of {which}",
+                        literal.symbol
+                    ),
+                ));
+            }
             attrs.push((attr, value, attr_span));
         }
         self.mark(indent);

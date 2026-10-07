@@ -122,4 +122,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "by its Consumer, and a portal"],
   },
+  {
+    name: "literal-unchecked",
+    breaks: "a literal of an attribute of a few strings isn't checked: `<img referrerPolicy=\"no-referer\">` compiles, as TypeScript's doesn't",
+    file: "src/jsx_syntax/parser.rs",
+    find: "                && !allowed.contains(&literal.symbol.as_str())\n",
+    replace: "                && false\n",
+    tests: ["test/jsx.test.ts", "-t", "literal of an attribute of a few strings"],
+  },
+  {
+    name: "literal-of-any-tag",
+    breaks: "a tag's own strings aren't told from another's: `<button type=\"sumbit\">`, of a `type` some tags take any string of, compiles",
+    file: "src/jsx_syntax/parser.rs",
+    find: "                && let Some(allowed) = literals::one_of(&name, &attr)\n",
+    replace: "                && let Some(allowed) = literals::one_of(\"\", &attr)\n",
+    tests: ["test/jsx.test.ts", "-t", "literal of an attribute of a few strings"],
+  },
 ];

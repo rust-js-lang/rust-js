@@ -148,6 +148,13 @@ test("attributes.rs is what react/attributes.ts makes of @types/react", () => {
   expect(readFileSync(out, "utf8")).toBe(readFileSync(join(root, "react/src/attributes.rs"), "utf8"));
 }, 60_000);
 
+// The strings an attribute of a few takes, which JSX checks a literal against (ADR 0228).
+test("literals.rs is what react/literals.ts makes of @types/react", () => {
+  const out = join(fixture("react-literals"), "literals.rs");
+  run(["bun", "react/literals.ts", out]);
+  expect(readFileSync(out, "utf8")).toBe(readFileSync(join(root, "src/jsx_syntax/literals.rs"), "utf8"));
+}, 60_000);
+
 // A program for React 18.2 can't use what React 19.2 added: it's a compile
 // error, which names the release it needs, not a crash in the browser.
 const usesUseEffectEvent = `#![allow(non_snake_case)]

@@ -489,6 +489,36 @@ pub fn View(Comp: As) -> Element {
   }
 });
 
+// An attribute @types/react types as a few strings, `referrerPolicy`'s
+// `"no-referrer" | "origin" | ..`, a button's `type`, `aria-live`, takes a
+// literal of them only, as TypeScript checks it: another is an error that
+// says which it takes. One of any string, an `<input>`'s `type`, takes any.
+test("JSX checks a literal of an attribute of a few strings", async () => {
+  const { dir, args } = compile(`use react::{Element, jsx};
+pub fn View() -> Element {
+    jsx! {
+        <div aria-live="polite" draggable="true">
+            <img referrerPolicy="no-referrer" crossOrigin="anonymous" src="a.png" />
+            <button type="submit">{"Go"}</button>
+            <input type="email" />
+        </div>
+    }
+}
+`);
+  run(args);
+  const { View } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(View())).toContain('<div aria-live="polite" draggable="true"><img referrerPolicy="no-referrer" crossorigin="anonymous" src="a.png"/><button type="submit">Go</button><input type="email"/></div>');
+  for (const [wrong, says] of [
+    ['<img referrerPolicy="no-referer" />', '`"no-referer"` isn\'t a `referrerPolicy`, which is one of "", "no-referrer"'],
+    ['<button type="sumbit" />', '`"sumbit"` isn\'t a `type`, which is one of "button", "reset", "submit"'],
+    ['<div aria-live="loud" />', '`"loud"` isn\'t a `aria-live`, which is one of "assertive", "off", "polite"'],
+  ]) {
+    const refused = compile(`use react::{Element, jsx};\npub fn View() -> Element {\n    jsx! { ${wrong} }\n}\n`);
+    const failed = Bun.spawnSync(refused.args, { cwd: refused.dir });
+    expect([failed.exitCode === 0, failed.stderr.toString().includes(says)], failed.stderr.toString()).toEqual([false, true]);
+  }
+});
+
 // Each attribute takes what @types/react types it as: `tabIndex` a number,
 // `className` text, `width` either, `draggable` a `Booleanish`, a bool or
 // its text; a component's flattened ones the same, of `NumberOrString` and

@@ -3,6 +3,7 @@
 //! keep their spans; there are no intermediate source files to map through.
 
 pub mod formatting;
+mod literals;
 mod parser;
 
 use std::collections::{BTreeMap, HashSet};
