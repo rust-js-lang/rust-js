@@ -72,6 +72,13 @@ button.addEventListener("click", (e) => {
 - **A tag gives its element**: `create_element(document, Button)` is a
   `&'static HtmlButtonElement`, for the 121 HTML tags; a string is
   `create_element_named`'s, an `Element`.
+- **An SVG tag gives its SVG element**, as TypeScript's
+  `SVGElementTagNameMap`: `create_element_ns(document, namespaces::Svg,
+  svg_tags::Circle)` is `document.createElementNS("http://www.w3.org/2000/svg",
+  "circle")`, a `&'static SVGCircleElement`, for SVG's 63 tags, by `SVGTag`.
+  Not `Tag`'s: `createElement("circle")` makes an `HTMLUnknownElement`. A
+  name SVG and HTML share, `a` or `script`, is in each, its own element. A
+  string is `create_element_ns_named`'s, an `Element`. (Amended.)
 - **What `webapi` doesn't bind is the nearest it does**: a click is a
   `PointerEvent`, bound for it, as a form's submit is a `SubmitEvent`; a
   `hashchange`, whose `HashChangeEvent` isn't bound, is an `Event`, and a

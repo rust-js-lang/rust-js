@@ -15,7 +15,7 @@ import webrefElements from "@webref/elements";
 import elementsPackage from "@webref/elements/package.json" with { type: "json" };
 
 // The specs to read. Partial interfaces and mixins from these are merged in.
-const SPECS = ["dom", "html", "hr-time", "uievents", "pointerevents", "cssom", "cssom-view", "geometry", "fetch", "encoding", "wasm-js-api", "wasm-web-api", "xhr", "streams", "touch-events", "FileAPI", "clipboard-apis", "css-animations", "css-transitions"];
+const SPECS = ["dom", "html", "hr-time", "uievents", "pointerevents", "cssom", "cssom-view", "geometry", "fetch", "encoding", "wasm-js-api", "wasm-web-api", "xhr", "streams", "touch-events", "FileAPI", "clipboard-apis", "css-animations", "css-transitions", "SVG", "svg-paths", "svg-animations", "filter-effects", "css-masking"];
 
 // The everyday DOM. Members that use any other interface are skipped.
 const INTERFACES = [
@@ -64,6 +64,22 @@ const INTERFACES = [
   "Blob", "File",
   // html, clipboard-apis: the browser, and what's copied
   "Navigator", "Clipboard", "ClipboardItem",
+  // SVG, svg-animations, filter-effects, css-masking: each SVG element, and
+  // what they extend, so each SVG tag is of its own (`svg_tags`).
+  "SVGElement", "SVGGraphicsElement", "SVGGeometryElement", "SVGSVGElement", "SVGGElement", "SVGDefsElement",
+  "SVGSymbolElement", "SVGUseElement", "SVGSwitchElement", "SVGTitleElement", "SVGDescElement", "SVGMetadataElement",
+  "SVGStyleElement", "SVGScriptElement", "SVGPathElement", "SVGRectElement", "SVGCircleElement", "SVGEllipseElement",
+  "SVGLineElement", "SVGPolylineElement", "SVGPolygonElement", "SVGTextContentElement", "SVGTextPositioningElement",
+  "SVGTextElement", "SVGTSpanElement", "SVGTextPathElement", "SVGImageElement", "SVGForeignObjectElement",
+  "SVGMarkerElement", "SVGGradientElement", "SVGLinearGradientElement", "SVGRadialGradientElement", "SVGStopElement",
+  "SVGPatternElement", "SVGAElement", "SVGViewElement", "SVGAnimationElement", "SVGAnimateElement", "SVGSetElement",
+  "SVGAnimateMotionElement", "SVGMPathElement", "SVGAnimateTransformElement", "SVGFilterElement", "SVGFEBlendElement",
+  "SVGFEColorMatrixElement", "SVGFEComponentTransferElement", "SVGComponentTransferFunctionElement", "SVGFEFuncRElement",
+  "SVGFEFuncGElement", "SVGFEFuncBElement", "SVGFEFuncAElement", "SVGFECompositeElement", "SVGFEConvolveMatrixElement",
+  "SVGFEDiffuseLightingElement", "SVGFEDisplacementMapElement", "SVGFEDropShadowElement", "SVGFEFloodElement",
+  "SVGFEGaussianBlurElement", "SVGFEImageElement", "SVGFEMergeElement", "SVGFEMergeNodeElement", "SVGFEMorphologyElement",
+  "SVGFEOffsetElement", "SVGFESpecularLightingElement", "SVGFETileElement", "SVGFETurbulenceElement",
+  "SVGFEDistantLightElement", "SVGFEPointLightElement", "SVGFESpotLightElement", "SVGClipPathElement", "SVGMaskElement",
 ];
 const known = new Set(INTERFACES);
 
@@ -456,6 +472,7 @@ const NAMED: Record<string, string> = {
   "EventTarget.addEventListener": "add_event_listener_named",
   "EventTarget.removeEventListener": "remove_event_listener_named",
   "Document.createElement": "create_element_named",
+  "Document.createElementNS": "create_element_ns_named",
 };
 
 /** The root of `name`'s inheritance chain within INTERFACES. */
@@ -670,7 +687,20 @@ for (const spec of Object.values(await webrefElements.listAll()) as WebrefElemen
   }
 }
 const tagNames = [...tagElements.keys()].sort();
-for (const names of [eventNames, tagNames]) {
+// And each SVG element by its tag, as TypeScript's `SVGElementTagNameMap`:
+// made by `createElementNS` of SVG's namespace, where `createElement`
+// would make an `HTMLUnknownElement`, so not `Tag`'s.
+const svgTagElements = new Map<string, string>();
+for (const spec of Object.values(await webrefElements.listAll()) as WebrefElements[]) {
+  for (const el of spec.elements) {
+    if (!el.interface || el.obsolete || svgTagElements.has(el.name)) continue;
+    const lineage: string[] = [];
+    for (let n: string | undefined = el.interface; n; n = parents.get(n)) lineage.push(n);
+    if (lineage.includes("SVGElement") && known.has(el.interface)) svgTagElements.set(el.name, el.interface);
+  }
+}
+const svgTagNames = [...svgTagElements.keys()].sort();
+for (const names of [eventNames, tagNames, svgTagNames]) {
   const types = names.map(nameType);
   const clash = types.find((t, k) => types.indexOf(t) !== k);
   if (clash) throw new Error(`two names are ${clash}`);
@@ -690,6 +720,7 @@ const TYPED: Record<string, string[]> = {
   ],
   Document: [
     typed([`[MDN](${mdn("Document", "createElement")}): the element a tag is (ADR 0223),`, "`create_element(document, Button)` an `HTMLButtonElement`. Another name is", "`create_element_named`'s, an `Element`."], "createElement", `create_element<T: Tag>(this: &Document, tag: T) -> &'static <T as Tag>::Element`),
+    typed([`[MDN](${mdn("Document", "createElementNS")}): the SVG element a tag is,`, "`create_element_ns(document, namespaces::Svg, svg_tags::Circle)` an `SVGCircleElement`.", "Another is `create_element_ns_named`'s, an `Element`."], "createElementNS", `create_element_ns<T: SVGTag>(this: &Document, namespace: namespaces::Svg, tag: T) -> &'static <T as SVGTag>::Element`),
   ],
 };
 
@@ -923,6 +954,18 @@ line(`pub trait Tag {`);
 line(`    type Element;`);
 line(`}`);
 line();
+line(`/// The SVG element a tag makes, as TypeScript's \`SVGElementTagNameMap\`: \`Circle\`'s is an \`SVGCircleElement\`.`);
+line(`pub trait SVGTag {`);
+line(`    type Element;`);
+line(`}`);
+line();
+line(`/// The namespaces \`create_element_ns\` makes an element of a tag in, each a type whose value is its URI.`);
+line(`pub mod namespaces {`);
+line(`    /// SVG's, \`"http://www.w3.org/2000/svg"\`.`);
+line(`    #[cfg_attr(rust_js, rust_js::name = "http://www.w3.org/2000/svg")]`);
+line(`    pub struct Svg;`);
+line(`}`);
+line();
 line(`/// \`Self\` is a \`T\`, or extends one, as WebIDL says: an \`HTMLButtonElement\` is an \`Element\` (ADR 0223).`);
 line(`/// Unsafe to implement: something that takes a \`T\` is given a \`Self\` unchecked.`);
 line(`pub unsafe trait IsA<T> {}`);
@@ -946,6 +989,16 @@ tagNames.forEach((name, k) => {
   line(`    pub struct ${nameType(name)};`);
 });
 line(`}`);
+line();
+line(`/// Each SVG element's tag, a type whose value is its name: \`Circle\` is \`"circle"\`.`);
+line(`pub mod svg_tags {`);
+svgTagNames.forEach((name, k) => {
+  if (k > 0) line();
+  line(`    /// \`<${name}>\``);
+  line(`    #[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(name)})]`);
+  line(`    pub struct ${nameType(name)};`);
+});
+line(`}`);
 let impls = 0;
 for (const [target, map] of listens) {
   line();
@@ -956,6 +1009,8 @@ for (const [target, map] of listens) {
 }
 line();
 for (const tag of tagNames) line(`impl Tag for tags::${nameType(tag)} { type Element = ${typeName(tagElements.get(tag)!)}; }`);
+line();
+for (const tag of svgTagNames) line(`impl SVGTag for svg_tags::${nameType(tag)} { type Element = ${typeName(svgTagElements.get(tag)!)}; }`);
 line();
 for (const name of INTERFACES) {
   for (const a of [name, ...chain(name)]) line(`unsafe impl IsA<${typeName(a)}> for ${typeName(name)} {}`);

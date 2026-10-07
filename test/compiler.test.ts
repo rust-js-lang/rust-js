@@ -783,6 +783,36 @@ pub fn wire() -> &'static webapi::HTMLButtonElement {
   }
 });
 
+// SVG's elements are bound, and each SVG tag is a type of its own, as
+// TypeScript's `SVGElementTagNameMap` has them: `createElementNS` of SVG's
+// namespace and a tag makes its element, `svg_tags::Circle` an
+// `SVGCircleElement`, which is an `SVGGeometryElement`, an
+// `SVGGraphicsElement`, an `SVGElement` and an `Element`.
+test("webapi's SVG elements are made by their tags", () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-svg");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::namespaces::Svg;
+use webapi::svg_tags::{Circle, Svg as SvgTag};
+use webapi::{SVGCircleElement, SVGSVGElement, document, element, svg_geometry_element};
+pub fn draw() -> (&'static SVGSVGElement, &'static SVGCircleElement, bool) {
+    let svg = document::create_element_ns(document, Svg, SvgTag);
+    let circle = document::create_element_ns(document, Svg, Circle);
+    element::set_attribute(circle, "r", "4");
+    element::append(svg, circle);
+    (svg, circle, svg_geometry_element::is_point_in_fill(circle))
+}
+pub fn named() -> &'static webapi::Element {
+    document::create_element_ns_named(document, "http://www.w3.org/2000/svg", "g")
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");');
+  expect(js).toContain('const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");');
+  expect(js).toContain("return [svg, circle, circle.isPointInFill()];");
+  expect(js).toContain('return document.createElementNS("http://www.w3.org/2000/svg", "g");');
+});
+
 // ADR 0229: a binding's union parameter is `impl` a sealed trait of its
 // members, so each member is passed as it is, `upload("hello")`, with no
 // `.into()` and nothing in the JS; another type is an error that names the

@@ -158,7 +158,9 @@ and cells) for the playground (ADR 0032), and for its Result frame
 `Performance`, and the events React's events wrap, `nativeEvent`
 (`WheelEvent`, `DragEvent`, `TouchEvent`, `AnimationEvent`,
 `TransitionEvent`, `ClipboardEvent`, `CompositionEvent`; ADR 0227), which
-also type what a listener of those events gets. It isn't
+also type what a listener of those events gets, and SVG's elements, the 71
+interfaces of SVG, its animations, filter effects and masking, each SVG tag
+of its own (ADR 0223). It isn't
 the whole platform (334 specs).
 
 **Building:** `rustc --emit=metadata` produces `libwebapi.rmeta`, once per
