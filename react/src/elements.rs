@@ -3732,20 +3732,20 @@ impl<T> Element<T> {
 }
 
 /// The DOM's elements: `div()` is `<div>`, `linear_gradient()` `<linearGradient>`,
-/// each of its DOM element, `button()` a `HtmlButtonElement`'s.
+/// each of its DOM element, `button()` an `HTMLButtonElement`'s.
 pub mod html {
     use super::{Element, webapi};
 
     unsafe extern "Rust" {
         /// `<a>`
         #[link_name = "<a>"]
-        pub safe fn a() -> Element<webapi::HtmlAnchorElement>;
+        pub safe fn a() -> Element<webapi::HTMLAnchorElement>;
         /// `<abbr>`
         #[link_name = "<abbr>"]
-        pub safe fn abbr() -> Element<webapi::HtmlElement>;
+        pub safe fn abbr() -> Element<webapi::HTMLElement>;
         /// `<address>`
         #[link_name = "<address>"]
-        pub safe fn address() -> Element<webapi::HtmlElement>;
+        pub safe fn address() -> Element<webapi::HTMLElement>;
         /// `<animate>`
         #[link_name = "<animate>"]
         pub safe fn animate() -> Element;
@@ -3757,109 +3757,109 @@ pub mod html {
         pub safe fn animate_transform() -> Element;
         /// `<area>`
         #[link_name = "<area>"]
-        pub safe fn area() -> Element<webapi::HtmlElement>;
+        pub safe fn area() -> Element<webapi::HTMLElement>;
         /// `<article>`
         #[link_name = "<article>"]
-        pub safe fn article() -> Element<webapi::HtmlElement>;
+        pub safe fn article() -> Element<webapi::HTMLElement>;
         /// `<aside>`
         #[link_name = "<aside>"]
-        pub safe fn aside() -> Element<webapi::HtmlElement>;
+        pub safe fn aside() -> Element<webapi::HTMLElement>;
         /// `<audio>`
         #[link_name = "<audio>"]
-        pub safe fn audio() -> Element<webapi::HtmlElement>;
+        pub safe fn audio() -> Element<webapi::HTMLElement>;
         /// `<b>`
         #[link_name = "<b>"]
-        pub safe fn b() -> Element<webapi::HtmlElement>;
+        pub safe fn b() -> Element<webapi::HTMLElement>;
         /// `<base>`
         #[link_name = "<base>"]
-        pub safe fn base() -> Element<webapi::HtmlElement>;
+        pub safe fn base() -> Element<webapi::HTMLElement>;
         /// `<bdi>`
         #[link_name = "<bdi>"]
-        pub safe fn bdi() -> Element<webapi::HtmlElement>;
+        pub safe fn bdi() -> Element<webapi::HTMLElement>;
         /// `<bdo>`
         #[link_name = "<bdo>"]
-        pub safe fn bdo() -> Element<webapi::HtmlElement>;
+        pub safe fn bdo() -> Element<webapi::HTMLElement>;
         /// `<blockquote>`
         #[link_name = "<blockquote>"]
-        pub safe fn blockquote() -> Element<webapi::HtmlElement>;
+        pub safe fn blockquote() -> Element<webapi::HTMLElement>;
         /// `<body>`
         #[link_name = "<body>"]
-        pub safe fn body() -> Element<webapi::HtmlElement>;
+        pub safe fn body() -> Element<webapi::HTMLElement>;
         /// `<br>`
         #[link_name = "<br>"]
-        pub safe fn br() -> Element<webapi::HtmlElement>;
+        pub safe fn br() -> Element<webapi::HTMLElement>;
         /// `<button>`
         #[link_name = "<button>"]
-        pub safe fn button() -> Element<webapi::HtmlButtonElement>;
+        pub safe fn button() -> Element<webapi::HTMLButtonElement>;
         /// `<canvas>`
         #[link_name = "<canvas>"]
-        pub safe fn canvas() -> Element<webapi::HtmlCanvasElement>;
+        pub safe fn canvas() -> Element<webapi::HTMLCanvasElement>;
         /// `<caption>`
         #[link_name = "<caption>"]
-        pub safe fn caption() -> Element<webapi::HtmlElement>;
+        pub safe fn caption() -> Element<webapi::HTMLElement>;
         /// `<circle>`
         #[link_name = "<circle>"]
         pub safe fn circle() -> Element;
         /// `<cite>`
         #[link_name = "<cite>"]
-        pub safe fn cite() -> Element<webapi::HtmlElement>;
+        pub safe fn cite() -> Element<webapi::HTMLElement>;
         /// `<clipPath>`
         #[link_name = "<clipPath>"]
         pub safe fn clip_path() -> Element;
         /// `<code>`
         #[link_name = "<code>"]
-        pub safe fn code() -> Element<webapi::HtmlElement>;
+        pub safe fn code() -> Element<webapi::HTMLElement>;
         /// `<col>`
         #[link_name = "<col>"]
-        pub safe fn col() -> Element<webapi::HtmlElement>;
+        pub safe fn col() -> Element<webapi::HTMLElement>;
         /// `<colgroup>`
         #[link_name = "<colgroup>"]
-        pub safe fn colgroup() -> Element<webapi::HtmlElement>;
+        pub safe fn colgroup() -> Element<webapi::HTMLElement>;
         /// `<data>`
         #[link_name = "<data>"]
-        pub safe fn data() -> Element<webapi::HtmlElement>;
+        pub safe fn data() -> Element<webapi::HTMLElement>;
         /// `<datalist>`
         #[link_name = "<datalist>"]
-        pub safe fn datalist() -> Element<webapi::HtmlElement>;
+        pub safe fn datalist() -> Element<webapi::HTMLElement>;
         /// `<dd>`
         #[link_name = "<dd>"]
-        pub safe fn dd() -> Element<webapi::HtmlElement>;
+        pub safe fn dd() -> Element<webapi::HTMLElement>;
         /// `<defs>`
         #[link_name = "<defs>"]
         pub safe fn defs() -> Element;
         /// `<del>`
         #[link_name = "<del>"]
-        pub safe fn del() -> Element<webapi::HtmlElement>;
+        pub safe fn del() -> Element<webapi::HTMLElement>;
         /// `<desc>`
         #[link_name = "<desc>"]
         pub safe fn desc() -> Element;
         /// `<details>`
         #[link_name = "<details>"]
-        pub safe fn details() -> Element<webapi::HtmlDetailsElement>;
+        pub safe fn details() -> Element<webapi::HTMLDetailsElement>;
         /// `<dfn>`
         #[link_name = "<dfn>"]
-        pub safe fn dfn() -> Element<webapi::HtmlElement>;
+        pub safe fn dfn() -> Element<webapi::HTMLElement>;
         /// `<dialog>`
         #[link_name = "<dialog>"]
-        pub safe fn dialog() -> Element<webapi::HtmlElement>;
+        pub safe fn dialog() -> Element<webapi::HTMLElement>;
         /// `<div>`
         #[link_name = "<div>"]
-        pub safe fn div() -> Element<webapi::HtmlDivElement>;
+        pub safe fn div() -> Element<webapi::HTMLDivElement>;
         /// `<dl>`
         #[link_name = "<dl>"]
-        pub safe fn dl() -> Element<webapi::HtmlElement>;
+        pub safe fn dl() -> Element<webapi::HTMLElement>;
         /// `<dt>`
         #[link_name = "<dt>"]
-        pub safe fn dt() -> Element<webapi::HtmlElement>;
+        pub safe fn dt() -> Element<webapi::HTMLElement>;
         /// `<ellipse>`
         #[link_name = "<ellipse>"]
         pub safe fn ellipse() -> Element;
         /// `<em>`
         #[link_name = "<em>"]
-        pub safe fn em() -> Element<webapi::HtmlElement>;
+        pub safe fn em() -> Element<webapi::HTMLElement>;
         /// `<embed>`
         #[link_name = "<embed>"]
-        pub safe fn embed() -> Element<webapi::HtmlElement>;
+        pub safe fn embed() -> Element<webapi::HTMLElement>;
         /// `<feBlend>`
         #[link_name = "<feBlend>"]
         pub safe fn fe_blend() -> Element;
@@ -3937,91 +3937,91 @@ pub mod html {
         pub safe fn fe_turbulence() -> Element;
         /// `<fieldset>`
         #[link_name = "<fieldset>"]
-        pub safe fn fieldset() -> Element<webapi::HtmlElement>;
+        pub safe fn fieldset() -> Element<webapi::HTMLElement>;
         /// `<figcaption>`
         #[link_name = "<figcaption>"]
-        pub safe fn figcaption() -> Element<webapi::HtmlElement>;
+        pub safe fn figcaption() -> Element<webapi::HTMLElement>;
         /// `<figure>`
         #[link_name = "<figure>"]
-        pub safe fn figure() -> Element<webapi::HtmlElement>;
+        pub safe fn figure() -> Element<webapi::HTMLElement>;
         /// `<filter>`
         #[link_name = "<filter>"]
         pub safe fn filter() -> Element;
         /// `<footer>`
         #[link_name = "<footer>"]
-        pub safe fn footer() -> Element<webapi::HtmlElement>;
+        pub safe fn footer() -> Element<webapi::HTMLElement>;
         /// `<foreignObject>`
         #[link_name = "<foreignObject>"]
         pub safe fn foreign_object() -> Element;
         /// `<form>`
         #[link_name = "<form>"]
-        pub safe fn form() -> Element<webapi::HtmlFormElement>;
+        pub safe fn form() -> Element<webapi::HTMLFormElement>;
         /// `<g>`
         #[link_name = "<g>"]
         pub safe fn g() -> Element;
         /// `<h1>`
         #[link_name = "<h1>"]
-        pub safe fn h1() -> Element<webapi::HtmlHeadingElement>;
+        pub safe fn h1() -> Element<webapi::HTMLHeadingElement>;
         /// `<h2>`
         #[link_name = "<h2>"]
-        pub safe fn h2() -> Element<webapi::HtmlHeadingElement>;
+        pub safe fn h2() -> Element<webapi::HTMLHeadingElement>;
         /// `<h3>`
         #[link_name = "<h3>"]
-        pub safe fn h3() -> Element<webapi::HtmlHeadingElement>;
+        pub safe fn h3() -> Element<webapi::HTMLHeadingElement>;
         /// `<h4>`
         #[link_name = "<h4>"]
-        pub safe fn h4() -> Element<webapi::HtmlHeadingElement>;
+        pub safe fn h4() -> Element<webapi::HTMLHeadingElement>;
         /// `<h5>`
         #[link_name = "<h5>"]
-        pub safe fn h5() -> Element<webapi::HtmlHeadingElement>;
+        pub safe fn h5() -> Element<webapi::HTMLHeadingElement>;
         /// `<h6>`
         #[link_name = "<h6>"]
-        pub safe fn h6() -> Element<webapi::HtmlHeadingElement>;
+        pub safe fn h6() -> Element<webapi::HTMLHeadingElement>;
         /// `<head>`
         #[link_name = "<head>"]
-        pub safe fn head() -> Element<webapi::HtmlElement>;
+        pub safe fn head() -> Element<webapi::HTMLElement>;
         /// `<header>`
         #[link_name = "<header>"]
-        pub safe fn header() -> Element<webapi::HtmlElement>;
+        pub safe fn header() -> Element<webapi::HTMLElement>;
         /// `<hgroup>`
         #[link_name = "<hgroup>"]
-        pub safe fn hgroup() -> Element<webapi::HtmlElement>;
+        pub safe fn hgroup() -> Element<webapi::HTMLElement>;
         /// `<hr>`
         #[link_name = "<hr>"]
-        pub safe fn hr() -> Element<webapi::HtmlElement>;
+        pub safe fn hr() -> Element<webapi::HTMLElement>;
         /// `<html>`
         #[link_name = "<html>"]
-        pub safe fn html() -> Element<webapi::HtmlElement>;
+        pub safe fn html() -> Element<webapi::HTMLElement>;
         /// `<i>`
         #[link_name = "<i>"]
-        pub safe fn i() -> Element<webapi::HtmlElement>;
+        pub safe fn i() -> Element<webapi::HTMLElement>;
         /// `<iframe>`
         #[link_name = "<iframe>"]
-        pub safe fn iframe() -> Element<webapi::HtmlIFrameElement>;
+        pub safe fn iframe() -> Element<webapi::HTMLIFrameElement>;
         /// `<image>`
         #[link_name = "<image>"]
         pub safe fn image() -> Element;
         /// `<img>`
         #[link_name = "<img>"]
-        pub safe fn img() -> Element<webapi::HtmlImageElement>;
+        pub safe fn img() -> Element<webapi::HTMLImageElement>;
         /// `<input>`
         #[link_name = "<input>"]
-        pub safe fn input() -> Element<webapi::HtmlInputElement>;
+        pub safe fn input() -> Element<webapi::HTMLInputElement>;
         /// `<ins>`
         #[link_name = "<ins>"]
-        pub safe fn ins() -> Element<webapi::HtmlElement>;
+        pub safe fn ins() -> Element<webapi::HTMLElement>;
         /// `<kbd>`
         #[link_name = "<kbd>"]
-        pub safe fn kbd() -> Element<webapi::HtmlElement>;
+        pub safe fn kbd() -> Element<webapi::HTMLElement>;
         /// `<label>`
         #[link_name = "<label>"]
-        pub safe fn label() -> Element<webapi::HtmlLabelElement>;
+        pub safe fn label() -> Element<webapi::HTMLLabelElement>;
         /// `<legend>`
         #[link_name = "<legend>"]
-        pub safe fn legend() -> Element<webapi::HtmlElement>;
+        pub safe fn legend() -> Element<webapi::HTMLElement>;
         /// `<li>`
         #[link_name = "<li>"]
-        pub safe fn li() -> Element<webapi::HtmlLiElement>;
+        pub safe fn li() -> Element<webapi::HTMLLIElement>;
         /// `<line>`
         #[link_name = "<line>"]
         pub safe fn line() -> Element;
@@ -4030,16 +4030,16 @@ pub mod html {
         pub safe fn linear_gradient() -> Element;
         /// `<link>`
         #[link_name = "<link>"]
-        pub safe fn link() -> Element<webapi::HtmlElement>;
+        pub safe fn link() -> Element<webapi::HTMLElement>;
         /// `<main>`
         #[link_name = "<main>"]
-        pub safe fn main() -> Element<webapi::HtmlElement>;
+        pub safe fn main() -> Element<webapi::HTMLElement>;
         /// `<map>`
         #[link_name = "<map>"]
-        pub safe fn map() -> Element<webapi::HtmlElement>;
+        pub safe fn map() -> Element<webapi::HTMLElement>;
         /// `<mark>`
         #[link_name = "<mark>"]
-        pub safe fn mark() -> Element<webapi::HtmlElement>;
+        pub safe fn mark() -> Element<webapi::HTMLElement>;
         /// `<marker>`
         #[link_name = "<marker>"]
         pub safe fn marker() -> Element;
@@ -4048,43 +4048,43 @@ pub mod html {
         pub safe fn mask() -> Element;
         /// `<menu>`
         #[link_name = "<menu>"]
-        pub safe fn menu() -> Element<webapi::HtmlElement>;
+        pub safe fn menu() -> Element<webapi::HTMLElement>;
         /// `<meta>`
         #[link_name = "<meta>"]
-        pub safe fn meta() -> Element<webapi::HtmlElement>;
+        pub safe fn meta() -> Element<webapi::HTMLElement>;
         /// `<metadata>`
         #[link_name = "<metadata>"]
         pub safe fn metadata() -> Element;
         /// `<meter>`
         #[link_name = "<meter>"]
-        pub safe fn meter() -> Element<webapi::HtmlElement>;
+        pub safe fn meter() -> Element<webapi::HTMLElement>;
         /// `<mpath>`
         #[link_name = "<mpath>"]
         pub safe fn mpath() -> Element;
         /// `<nav>`
         #[link_name = "<nav>"]
-        pub safe fn nav() -> Element<webapi::HtmlElement>;
+        pub safe fn nav() -> Element<webapi::HTMLElement>;
         /// `<noscript>`
         #[link_name = "<noscript>"]
-        pub safe fn noscript() -> Element<webapi::HtmlElement>;
+        pub safe fn noscript() -> Element<webapi::HTMLElement>;
         /// `<object>`
         #[link_name = "<object>"]
-        pub safe fn object() -> Element<webapi::HtmlElement>;
+        pub safe fn object() -> Element<webapi::HTMLElement>;
         /// `<ol>`
         #[link_name = "<ol>"]
-        pub safe fn ol() -> Element<webapi::HtmlOListElement>;
+        pub safe fn ol() -> Element<webapi::HTMLOListElement>;
         /// `<optgroup>`
         #[link_name = "<optgroup>"]
-        pub safe fn optgroup() -> Element<webapi::HtmlElement>;
+        pub safe fn optgroup() -> Element<webapi::HTMLElement>;
         /// `<option>`
         #[link_name = "<option>"]
-        pub safe fn option() -> Element<webapi::HtmlOptionElement>;
+        pub safe fn option() -> Element<webapi::HTMLOptionElement>;
         /// `<output>`
         #[link_name = "<output>"]
-        pub safe fn output() -> Element<webapi::HtmlOutputElement>;
+        pub safe fn output() -> Element<webapi::HTMLOutputElement>;
         /// `<p>`
         #[link_name = "<p>"]
-        pub safe fn p() -> Element<webapi::HtmlParagraphElement>;
+        pub safe fn p() -> Element<webapi::HTMLParagraphElement>;
         /// `<path>`
         #[link_name = "<path>"]
         pub safe fn path() -> Element;
@@ -4093,7 +4093,7 @@ pub mod html {
         pub safe fn pattern() -> Element;
         /// `<picture>`
         #[link_name = "<picture>"]
-        pub safe fn picture() -> Element<webapi::HtmlElement>;
+        pub safe fn picture() -> Element<webapi::HTMLElement>;
         /// `<polygon>`
         #[link_name = "<polygon>"]
         pub safe fn polygon() -> Element;
@@ -4102,13 +4102,13 @@ pub mod html {
         pub safe fn polyline() -> Element;
         /// `<pre>`
         #[link_name = "<pre>"]
-        pub safe fn pre() -> Element<webapi::HtmlElement>;
+        pub safe fn pre() -> Element<webapi::HTMLElement>;
         /// `<progress>`
         #[link_name = "<progress>"]
-        pub safe fn progress() -> Element<webapi::HtmlElement>;
+        pub safe fn progress() -> Element<webapi::HTMLElement>;
         /// `<q>`
         #[link_name = "<q>"]
-        pub safe fn q() -> Element<webapi::HtmlElement>;
+        pub safe fn q() -> Element<webapi::HTMLElement>;
         /// `<radialGradient>`
         #[link_name = "<radialGradient>"]
         pub safe fn radial_gradient() -> Element;
@@ -4117,67 +4117,67 @@ pub mod html {
         pub safe fn rect() -> Element;
         /// `<rp>`
         #[link_name = "<rp>"]
-        pub safe fn rp() -> Element<webapi::HtmlElement>;
+        pub safe fn rp() -> Element<webapi::HTMLElement>;
         /// `<rt>`
         #[link_name = "<rt>"]
-        pub safe fn rt() -> Element<webapi::HtmlElement>;
+        pub safe fn rt() -> Element<webapi::HTMLElement>;
         /// `<ruby>`
         #[link_name = "<ruby>"]
-        pub safe fn ruby() -> Element<webapi::HtmlElement>;
+        pub safe fn ruby() -> Element<webapi::HTMLElement>;
         /// `<s>`
         #[link_name = "<s>"]
-        pub safe fn s() -> Element<webapi::HtmlElement>;
+        pub safe fn s() -> Element<webapi::HTMLElement>;
         /// `<samp>`
         #[link_name = "<samp>"]
-        pub safe fn samp() -> Element<webapi::HtmlElement>;
+        pub safe fn samp() -> Element<webapi::HTMLElement>;
         /// `<script>`
         #[link_name = "<script>"]
-        pub safe fn script() -> Element<webapi::HtmlElement>;
+        pub safe fn script() -> Element<webapi::HTMLElement>;
         /// `<search>`
         #[link_name = "<search>"]
-        pub safe fn search() -> Element<webapi::HtmlElement>;
+        pub safe fn search() -> Element<webapi::HTMLElement>;
         /// `<section>`
         #[link_name = "<section>"]
-        pub safe fn section() -> Element<webapi::HtmlElement>;
+        pub safe fn section() -> Element<webapi::HTMLElement>;
         /// `<select>`
         #[link_name = "<select>"]
-        pub safe fn select() -> Element<webapi::HtmlSelectElement>;
+        pub safe fn select() -> Element<webapi::HTMLSelectElement>;
         /// `<selectedcontent>`
         #[link_name = "<selectedcontent>"]
-        pub safe fn selectedcontent() -> Element<webapi::HtmlElement>;
+        pub safe fn selectedcontent() -> Element<webapi::HTMLElement>;
         /// `<set>`
         #[link_name = "<set>"]
         pub safe fn set() -> Element;
         /// `<slot>`
         #[link_name = "<slot>"]
-        pub safe fn slot() -> Element<webapi::HtmlElement>;
+        pub safe fn slot() -> Element<webapi::HTMLElement>;
         /// `<small>`
         #[link_name = "<small>"]
-        pub safe fn small() -> Element<webapi::HtmlElement>;
+        pub safe fn small() -> Element<webapi::HTMLElement>;
         /// `<source>`
         #[link_name = "<source>"]
-        pub safe fn source() -> Element<webapi::HtmlElement>;
+        pub safe fn source() -> Element<webapi::HTMLElement>;
         /// `<span>`
         #[link_name = "<span>"]
-        pub safe fn span() -> Element<webapi::HtmlSpanElement>;
+        pub safe fn span() -> Element<webapi::HTMLSpanElement>;
         /// `<stop>`
         #[link_name = "<stop>"]
         pub safe fn stop() -> Element;
         /// `<strong>`
         #[link_name = "<strong>"]
-        pub safe fn strong() -> Element<webapi::HtmlElement>;
+        pub safe fn strong() -> Element<webapi::HTMLElement>;
         /// `<style>`
         #[link_name = "<style>"]
-        pub safe fn style() -> Element<webapi::HtmlElement>;
+        pub safe fn style() -> Element<webapi::HTMLElement>;
         /// `<sub>`
         #[link_name = "<sub>"]
-        pub safe fn sub() -> Element<webapi::HtmlElement>;
+        pub safe fn sub() -> Element<webapi::HTMLElement>;
         /// `<summary>`
         #[link_name = "<summary>"]
-        pub safe fn summary() -> Element<webapi::HtmlElement>;
+        pub safe fn summary() -> Element<webapi::HTMLElement>;
         /// `<sup>`
         #[link_name = "<sup>"]
-        pub safe fn sup() -> Element<webapi::HtmlElement>;
+        pub safe fn sup() -> Element<webapi::HTMLElement>;
         /// `<svg>`
         #[link_name = "<svg>"]
         pub safe fn svg() -> Element;
@@ -4189,16 +4189,16 @@ pub mod html {
         pub safe fn symbol() -> Element;
         /// `<table>`
         #[link_name = "<table>"]
-        pub safe fn table() -> Element<webapi::HtmlTableElement>;
+        pub safe fn table() -> Element<webapi::HTMLTableElement>;
         /// `<tbody>`
         #[link_name = "<tbody>"]
-        pub safe fn tbody() -> Element<webapi::HtmlTableSectionElement>;
+        pub safe fn tbody() -> Element<webapi::HTMLTableSectionElement>;
         /// `<td>`
         #[link_name = "<td>"]
-        pub safe fn td() -> Element<webapi::HtmlTableCellElement>;
+        pub safe fn td() -> Element<webapi::HTMLTableCellElement>;
         /// `<template>`
         #[link_name = "<template>"]
-        pub safe fn template() -> Element<webapi::HtmlElement>;
+        pub safe fn template() -> Element<webapi::HTMLElement>;
         /// `<text>`
         #[link_name = "<text>"]
         pub safe fn text() -> Element;
@@ -4207,52 +4207,52 @@ pub mod html {
         pub safe fn text_path() -> Element;
         /// `<textarea>`
         #[link_name = "<textarea>"]
-        pub safe fn textarea() -> Element<webapi::HtmlTextAreaElement>;
+        pub safe fn textarea() -> Element<webapi::HTMLTextAreaElement>;
         /// `<tfoot>`
         #[link_name = "<tfoot>"]
-        pub safe fn tfoot() -> Element<webapi::HtmlTableSectionElement>;
+        pub safe fn tfoot() -> Element<webapi::HTMLTableSectionElement>;
         /// `<th>`
         #[link_name = "<th>"]
-        pub safe fn th() -> Element<webapi::HtmlTableCellElement>;
+        pub safe fn th() -> Element<webapi::HTMLTableCellElement>;
         /// `<thead>`
         #[link_name = "<thead>"]
-        pub safe fn thead() -> Element<webapi::HtmlTableSectionElement>;
+        pub safe fn thead() -> Element<webapi::HTMLTableSectionElement>;
         /// `<time>`
         #[link_name = "<time>"]
-        pub safe fn time() -> Element<webapi::HtmlElement>;
+        pub safe fn time() -> Element<webapi::HTMLElement>;
         /// `<title>`
         #[link_name = "<title>"]
-        pub safe fn title() -> Element<webapi::HtmlElement>;
+        pub safe fn title() -> Element<webapi::HTMLElement>;
         /// `<tr>`
         #[link_name = "<tr>"]
-        pub safe fn tr() -> Element<webapi::HtmlTableRowElement>;
+        pub safe fn tr() -> Element<webapi::HTMLTableRowElement>;
         /// `<track>`
         #[link_name = "<track>"]
-        pub safe fn track() -> Element<webapi::HtmlElement>;
+        pub safe fn track() -> Element<webapi::HTMLElement>;
         /// `<tspan>`
         #[link_name = "<tspan>"]
         pub safe fn tspan() -> Element;
         /// `<u>`
         #[link_name = "<u>"]
-        pub safe fn u() -> Element<webapi::HtmlElement>;
+        pub safe fn u() -> Element<webapi::HTMLElement>;
         /// `<ul>`
         #[link_name = "<ul>"]
-        pub safe fn ul() -> Element<webapi::HtmlUListElement>;
+        pub safe fn ul() -> Element<webapi::HTMLUListElement>;
         /// `<use>`
         #[link_name = "<use>"]
         pub safe fn r#use() -> Element;
         /// `<var>`
         #[link_name = "<var>"]
-        pub safe fn var() -> Element<webapi::HtmlElement>;
+        pub safe fn var() -> Element<webapi::HTMLElement>;
         /// `<video>`
         #[link_name = "<video>"]
-        pub safe fn video() -> Element<webapi::HtmlElement>;
+        pub safe fn video() -> Element<webapi::HTMLElement>;
         /// `<view>`
         #[link_name = "<view>"]
         pub safe fn view() -> Element;
         /// `<wbr>`
         #[link_name = "<wbr>"]
-        pub safe fn wbr() -> Element<webapi::HtmlElement>;
+        pub safe fn wbr() -> Element<webapi::HTMLElement>;
     }
 }
 

@@ -55,7 +55,7 @@ impl Deref for Element { type Target = Node; .. }  // an Element is a Node
 
 rust-js treats a struct whose only field is `PhantomData` of an extern type
 as a **JS object**, and `Deref` on one as the object itself. Rust's deref
-coercion does the rest: a `&HtmlButtonElement` goes wherever a `&Node` is
+coercion does the rest: an `&HTMLButtonElement` goes wherever a `&Node` is
 expected, with nothing written at the call site and nothing in the JS.
 
 **Members.** One module per interface (`element`, `html_input_element`),
@@ -137,9 +137,11 @@ with the few members programs need so far: `uint8_array::new(buffer)`,
   plain objects (ADR 0020), so their fields are read as they are:
   `source.instance`. Only those whose fields are all required, supported,
   and named the same in Rust; for now that's `WebAssemblyInstantiatedSource`.
-- **Names:** snake_case of the IDL names, and web-sys-style type names
-  (`HTMLInputElement` is `HtmlInputElement`, `HTMLIFrameElement` is
-  `HtmlIFrameElement`). A Rust keyword gets a `_`.
+- **Names:** snake_case of the IDL names for functions and modules,
+  `html_input_element`, and the IDL's own type names, as TypeScript's DOM
+  lib has them: `HTMLInputElement`, `DOMRect`, `UIEvent`; one of a
+  namespace with it, `WebAssemblyModule`. A Rust keyword gets a `_`.
+  (Amended: types were web-sys's, `HtmlInputElement`; ADR 0227.)
 - **An attribute whose getter's type isn't supported** (a union, like
   `hidden` or `srcdoc`) still gets its setter, taking the first supported
   member: `html_element::set_hidden(e, true)`.

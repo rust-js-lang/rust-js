@@ -40,7 +40,7 @@ struct View {
 }
 
 /// An element by its tag's name: `create_element(document, Button)` is one by
-/// its tag's type, `HtmlButtonElement` (ADR 0223).
+/// its tag's type, `HTMLButtonElement` (ADR 0223).
 fn create(tag: &str) -> &'static Element {
     document::create_element_named(document, tag)
 }
@@ -163,7 +163,7 @@ pub fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use webapi::{Event, HtmlInputElement, node_list};
+    use webapi::{Event, HTMLInputElement, node_list};
 
     /// `new KeyboardEvent(type, { key })`. The webapi crate can't take
     /// dictionaries yet, but a struct is a JS object with the same fields
@@ -189,7 +189,7 @@ mod tests {
         app
     }
 
-    fn input(app: &Element) -> &'static HtmlInputElement {
+    fn input(app: &Element) -> &'static HTMLInputElement {
         html_input_element::unchecked_from(element::query_selector(app, "input").unwrap())
     }
 
@@ -214,7 +214,7 @@ mod tests {
     }
 
     /// The `n`th element matching `selector`, to click.
-    fn nth(app: &Element, selector: &str, n: u32) -> &'static webapi::HtmlElement {
+    fn nth(app: &Element, selector: &str, n: u32) -> &'static webapi::HTMLElement {
         html_element::unchecked_from(node_list::item(element::query_selector_all(app, selector), n).unwrap())
     }
 

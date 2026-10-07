@@ -44,6 +44,9 @@ for the same things, and the `.d.ts` rust-js writes already used React's.
   React calls a `Destructor`, a word Rust already has for `Drop`.
 - **Generators keep them**: `react/generate.ts` and `react/attributes.ts`
   write the events' and the attributes' names as @types/react has them.
+- **webapi's types have the DOM's names too**, as WebIDL and TypeScript's
+  DOM lib spell them: `HTMLButtonElement`, `DOMRect`, `UIEvent`, where
+  they were web-sys's, `HtmlButtonElement` (ADR 0024). (Amended.)
 
 ## Why
 
@@ -57,5 +60,3 @@ for the same things, and the `.d.ts` rust-js writes already used React's.
 
 - **A breaking change** to every crate that names one of these types; the
   JS doesn't change.
-- **webapi's names, `HtmlButtonElement`, are not the DOM's `HTMLButtonElement`
-  yet**: a later change of their own.

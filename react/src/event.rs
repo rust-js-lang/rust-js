@@ -4,7 +4,7 @@
 //!
 //! Each is of an element, `MouseEvent<T = webapi::Element>`, as React's
 //! `MouseEvent<T = Element>` is: a `<button>`'s handler gets a
-//! `MouseEvent<webapi::HtmlButtonElement>`, whose `current_target` is the button
+//! `MouseEvent<webapi::HTMLButtonElement>`, whose `current_target` is the button
 //! (ADR 0224). A handler of any element's event is `MouseEvent::widen`ed, and an
 //! event `upcast` to any element's.
 
@@ -61,7 +61,7 @@ macro_rules! fields {
 fields!(SyntheticEvent {
     bubbles: bool = "bubbles";
     cancelable: bool = "cancelable";
-    /// The element whose handler this is: a `<button>`'s is a `HtmlButtonElement`.
+    /// The element whose handler this is: a `<button>`'s is an `HTMLButtonElement`.
     current_target: &'static T = "currentTarget";
     default_prevented: bool = "defaultPrevented";
     event_phase: u32 = "eventPhase";

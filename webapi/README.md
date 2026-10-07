@@ -11,7 +11,7 @@ use webapi::events::Click;
 use webapi::tags::Button;
 use webapi::{document, element, event_target, mouse_event, node};
 
-let b = document::create_element(document, Button);     // document.createElement("button"), a HtmlButtonElement
+let b = document::create_element(document, Button);     // document.createElement("button"), a HTMLButtonElement
 node::set_text_content(b, "+");                          // b.textContent = "+"
 event_target::add_event_listener(b, Click, Box::new(move |e| {
     mouse_event::client_x(e);                            // e is the PointerEvent a button's click is
@@ -19,11 +19,11 @@ event_target::add_event_listener(b, Click, Box::new(move |e| {
 element::append(app, b.into());                          // app.append(b)
 ```
 
-- Each interface is a type (`Element`, `HtmlInputElement`) and a module of
+- Each interface is a type (`Element`, `HTMLInputElement`) and a module of
   its members (`element`, `html_input_element`).
 - Attributes are a getter and, if writable, a setter:
   `html_input_element::value(i)`, `html_input_element::set_value(i, "x")`.
-- Inheritance is `Deref`: an `&HtmlButtonElement` goes wherever an
+- Inheritance is `Deref`: an `&HTMLButtonElement` goes wherever an
   `&Element` or `&Node` is expected.
 - Each event's name and each tag is a type whose value is its string
   ([ADR 0223](../docs/decisions/0223-webapi-event-and-tag-maps.md)), from

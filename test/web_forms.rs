@@ -43,7 +43,7 @@ pub fn copied(text: &str, items: &[&webapi::ClipboardItem]) -> (&'static webapi:
 
 /// A frame's window, a message's sender, and the page's clock:
 /// `frame.contentWindow`, `e.source` and `window.performance.now()`.
-pub fn from_frame(frame: &webapi::HtmlIFrameElement, e: &Event) -> (bool, f64) {
+pub fn from_frame(frame: &webapi::HTMLIFrameElement, e: &Event) -> (bool, f64) {
     let sender = webapi::message_event::source(webapi::message_event::unchecked_from(e));
     let window_of = webapi::html_i_frame_element::content_window(frame);
     (js::object::is(&sender, &window_of), webapi::performance::now(window::performance(window)))

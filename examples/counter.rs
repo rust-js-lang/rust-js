@@ -8,19 +8,19 @@ use std::rc::Rc;
 // Each DOM interface is a type and a module of its members, and each tag
 // and event's name a type whose value is its string (ADR 0223):
 // `document::create_element(document, Button)` is `document.createElement("button")`,
-// a `HtmlButtonElement`.
+// an `HTMLButtonElement`.
 use webapi::events::Click;
 use webapi::tags::{Button, Div, Output};
-use webapi::{Element, HtmlButtonElement, HtmlOutputElement, document, element, event_target, node};
+use webapi::{Element, HTMLButtonElement, HTMLOutputElement, document, element, event_target, node};
 
-fn button(label: &str) -> &'static HtmlButtonElement {
+fn button(label: &str) -> &'static HTMLButtonElement {
     let b = document::create_element(document, Button);
     node::set_text_content(b, label);
     b
 }
 
 /// A button that adds `by` to the shared count, and shows the new count.
-fn stepper(label: &str, by: i32, count: &Rc<Cell<i32>>, output: &'static HtmlOutputElement) -> &'static HtmlButtonElement {
+fn stepper(label: &str, by: i32, count: &Rc<Cell<i32>>, output: &'static HTMLOutputElement) -> &'static HTMLButtonElement {
     let b = button(label);
     let count = count.clone();
     event_target::add_event_listener(b, Click, Box::new(move |_| {
@@ -48,7 +48,7 @@ pub fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use webapi::{HtmlElement, dom_rect_read_only, html_element, node_list};
+    use webapi::{HTMLElement, dom_rect_read_only, html_element, node_list};
 
     /// An empty page with the `<div id="app">` that `main` looks for.
     fn page() -> &'static Element {
@@ -60,7 +60,7 @@ mod tests {
         app
     }
 
-    fn nth_button(app: &Element, n: u32) -> &'static HtmlElement {
+    fn nth_button(app: &Element, n: u32) -> &'static HTMLElement {
         html_element::unchecked_from(node_list::item(element::query_selector_all(app, "button"), n).unwrap())
     }
 

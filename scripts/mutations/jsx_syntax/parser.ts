@@ -4,7 +4,7 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "tag-element-unfinished",
-    breaks: "a tag's JSX is of its DOM element, `Element<HtmlSpanElement>`, where an `Element` is wanted: a `<span>` or a `<b>` isn't a value of one type",
+    breaks: "a tag's JSX is of its DOM element, `Element<HTMLSpanElement>`, where an `Element` is wanted: a `<span>` or a `<b>` isn't a value of one type",
     file: "src/jsx_syntax/parser.rs",
     find: "            if intrinsic {\n                expr = call(\n",
     replace: "            if false && intrinsic {\n                expr = call(\n",
