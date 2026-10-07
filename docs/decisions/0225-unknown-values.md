@@ -110,6 +110,12 @@ value.name = "new";
   untagged enum is, named, so it can be recursive:
   `type Json = string | number | boolean | (Json | null | undefined)[] | { [key: string]: Json | null | undefined }`.
   (Amended: they were `any`.)
+- **What's never nullish is an `Unknown` too**, `js::unknown(text)`, as any
+  value is TypeScript's `unknown`: a `Defined` value, the value itself.
+  react.dev's ConsoleBlock's message is its text or an element's
+  `props.children`, either an `Unknown`. **And `js::string(value)` is
+  `String(value)`**, any value as text as JS makes it, `"undefined"` of
+  `None`, as `result += child.props.children` does. (Amended.)
 - **Every step out of the types is written**: `classify`, `get`, a `match`.
   There's no `any` that a value becomes silently, as TypeScript's is, and
   no raw JS, ReScript's `%raw`, which rust-js couldn't read.

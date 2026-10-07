@@ -47,7 +47,10 @@ export interface ButtonLinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorEle
   `bool`; an event handler `Box<dyn Fn(&event::Mouse)>`, its event as
   `elements.rs` has it; `style` a `Style`, which a tag's `style` takes as it
   is, `None` none, as react.dev's Button's `style={style}` passes its own
-  on. (Amended: it took only a `Style`.) A type alias is followed in the
+  on. (Amended: it took only a `Style`.) A `Style` spreads another over
+  its own, `Style::new().width(w).spread(custom)`, `{ width: w,
+  ...custom }`, as react.dev's console box does; an object a binding
+  builds takes `prop ...` as a spread. (Amended.) A type alias is followed in the
   file. What `lib.rs` writes by hand, `children`, `ref`, `key`,
   `dangerouslySetInnerHTML`, `action` and `formAction`, isn't one.
 - **`next/link`'s `LinkProps` flattens `AnchorHtmlAttributes`**, as

@@ -98,6 +98,24 @@ pub fn classify(this: &Unknown) -> Kind<'_> {
     unreachable!()
 }
 
+/// `value` as a JS value of any shape, which it is: what's never `undefined`
+/// nor `null` (`Defined`), text or a number, say, as any value is
+/// TypeScript's `unknown`. The value itself.
+#[cfg_attr(rust_js, rust_js::link_name = "this")]
+#[allow(unused_variables)]
+pub fn unknown<T: Defined + ?Sized>(this: &T) -> &Unknown {
+    unreachable!()
+}
+
+/// [`String(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/String):
+/// any value as text, as JS makes it, `result += value` say: `"undefined"`
+/// of `None`, `"[object Object]"` of an object.
+#[cfg_attr(rust_js, rust_js::link_name = "String")]
+#[allow(unused_variables)]
+pub fn string(value: Option<&Unknown>) -> String {
+    unreachable!()
+}
+
 /// `value[key]`: a property of an object, by its name; `None` where it's
 /// `undefined` or `null`, as where there's none.
 #[cfg_attr(rust_js, rust_js::link_name = "get []")]

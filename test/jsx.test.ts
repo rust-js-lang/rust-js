@@ -1806,6 +1806,23 @@ pub fn Panel(BoxProps { style }: BoxProps) -> Element {
   expect([renderToStaticMarkup(Panel({ style: { color: "red" } })), renderToStaticMarkup(Panel({}))]).toEqual(['<div style="color:red"></div>', "<div></div>"]);
 });
 
+// A style spreads another over its own, as react.dev's console box writes
+// `style={{width, height, ...customStyles}}`; `None` spreads nothing.
+test("JSX styles spread another style over their own", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{Element, Style, jsx};
+pub struct BoxProps<'a> { pub width: &'a str, pub custom_styles: Option<Style> }
+pub fn Panel(BoxProps { width, custom_styles }: BoxProps) -> Element {
+    jsx! { <div style={Style::new().width(width).spread(custom_styles)} /> }
+}
+`);
+  run(args);
+  expect(readFileSync(join(dir, "lib.jsx"), "utf8")).toContain("<div style={{ width, ...customStyles }} />");
+  const { Panel } = await import(join(dir, "lib.jsx"));
+  expect([renderToStaticMarkup(Panel({ width: "6px", custom_styles: { width: "7px", color: "red" } })), renderToStaticMarkup(Panel({ width: "6px" }))])
+    .toEqual(['<div style="width:7px;color:red"></div>', '<div style="width:6px"></div>']);
+});
+
 // React calls a component with its props and a value of its own, never a
 // drop: a component's type parameters take no destructor, in a library too,
 // whose consumers' could (ADR 0199). One given a type with one is refused.
