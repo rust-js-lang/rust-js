@@ -1,7 +1,7 @@
 // Native build preparation. Hosts provide scheduling and consume manifests.
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, utimesSync } from "node:fs";
 import { createRequire } from "node:module";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
@@ -9,6 +9,31 @@ import { fileURLToPath } from "node:url";
 import { cargoWorkspace, checkCargo, editorCheck } from "./cargo.js";
 import { resourceInputs } from "./resources.js";
 import { parseCompilerIdentity } from "./manifest.js";
+
+/**
+ * Drop what `parent` caches under other keys than `keep`, `depth` folders
+ * down, that no build used for `days`: a compiler or React upgraded leaves
+ * the last key's behind. A folder left empty goes too. `now` is in seconds.
+ */
+export function pruneUnused(parent, keep, depth = 1, now = Date.now() / 1000, days = 7) {
+  if (!existsSync(parent)) return;
+  for (const name of readdirSync(parent)) {
+    const path = join(parent, name);
+    if (path === keep) continue;
+    if (depth > 1) {
+      pruneUnused(path, keep, depth - 1, now, days);
+      if (readdirSync(path).length === 0) rmSync(path, { recursive: true, force: true });
+    } else if (now - statSync(path).mtimeMs / 1000 > days * 24 * 60 * 60) {
+      rmSync(path, { recursive: true, force: true });
+    }
+  }
+}
+
+/** Mark `path` used now, so `pruneUnused` keeps it. */
+function markUsed(path) {
+  const now = new Date();
+  utimesSync(path, now, now);
+}
 
 export const defaultResources = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export const defaultCompiler = join(defaultResources, "target/debug/rust-js");
@@ -139,6 +164,8 @@ export function createNativeBuilder({ root, rustJs = findCompiler(root), resourc
         await run(join(repo, "react/build.sh"), ["-o", join(metadata, "libreact.rmeta"), ...(react ? ["--react", react] : [])], repo, { RUST_JS_COMPILER: compilerPath });
         await writeFile(stamp, key);
       }
+      markUsed(metadata);
+      pruneUnused(join(cacheDir, "react"), metadata, 2);
       // React's crates, each a program's to name (ADR 0102): `use js::spawn`.
       for (const name of ["react", "webapi", "js"]) flags.push("--extern", `${name}=${join(metadata, `lib${name}.rmeta`)}`);
       flags.push("-L", metadata);
@@ -152,6 +179,8 @@ export function createNativeBuilder({ root, rustJs = findCompiler(root), resourc
       const output = await run("cargo", [`+${toolchain}`, "build", "--locked", "--message-format=json",
         "--target", "wasm32-unknown-unknown",
         "--manifest-path", join(repo, "serde/Cargo.toml"), "--target-dir", join(cacheDir, "serde", key)], repo);
+      markUsed(join(cacheDir, "serde", key));
+      pruneUnused(join(cacheDir, "serde"), join(cacheDir, "serde", key));
       const artifacts = output.split("\n").filter(Boolean).map(line => JSON.parse(line))
         .filter(message => message.reason === "compiler-artifact");
       // Where the target's libraries are, and where the host's macro is.

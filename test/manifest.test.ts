@@ -1,10 +1,10 @@
 import { expect, test } from "bun:test";
-import { mkdtempSync, realpathSync, writeFileSync, rmSync, readFileSync, mkdirSync, copyFileSync, appendFileSync } from "node:fs";
+import { mkdtempSync, realpathSync, writeFileSync, rmSync, readFileSync, mkdirSync, copyFileSync, appendFileSync, existsSync, utimesSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseManifest, mapManifestPaths, parseCompilerIdentity } from "../tooling/manifest.js";
-import { createNativeBuilder } from "../tooling/build.js";
-import { buildCompiler, compiler, installRuntime, root as repository } from "./support";
+import { createNativeBuilder, pruneUnused } from "../tooling/build.js";
+import { buildCompiler, compiler, fixture, installRuntime, root as repository } from "./support";
 
 const manifest = {
   version: 1, input: "/virtual/lib.rs", output: "/virtual/lib.js",
@@ -183,3 +183,23 @@ test("the build adapter's Cargo builds run the compiler's Rust, without resource
     expect(readFileSync(built.js, "utf8")).toContain("export function answer() {\n  return 42;\n}");
   } finally { rmSync(root, { recursive: true, force: true }); }
 }, 600_000);
+
+// A build's cache of React's crates and Serde's is keyed by what made it, the
+// compiler among them: an upgrade leaves the last key's behind. What no build
+// used for a week goes, a React version's folder too once it's empty; what's
+// in use, and the key the build uses, stay.
+test("the build adapter drops what other keys cached that no build used for a week", () => {
+  const cache = fixture("keyed-cache");
+  const now = Date.now() / 1000;
+  const day = 24 * 60 * 60;
+  const kept = (path: string, age: number) => {
+    mkdirSync(join(cache, path), { recursive: true });
+    utimesSync(join(cache, path), now - age * day, now - age * day);
+  };
+  kept("react/19.3.0/current", 30);
+  kept("react/19.3.0/recent", 2);
+  kept("react/19.3.0/old", 8);
+  kept("react/18.2.0/old", 9);
+  pruneUnused(join(cache, "react"), join(cache, "react/19.3.0/current"), 2, now);
+  expect(["react/19.3.0/current", "react/19.3.0/recent", "react/19.3.0/old", "react/18.2.0"].map((p) => existsSync(join(cache, p)))).toEqual([true, true, false, false]);
+});
