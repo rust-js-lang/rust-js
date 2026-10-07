@@ -40,6 +40,11 @@ value written in place,** as `Option::map` already was:
   variable what they take, with no `const` of the `Option` between. A
   conditional of another `Option`, `c ? maybe() : undefined`, isn't one,
   as its `maybe()` may be `None`. (Amended.)
+- **`flatten` of `Option`s is their `Some`s**, `.filter((item) => item !=
+  null)`, through a reference too: `parts.iter().flatten()` of
+  `&[Option<&str>]` was `parts.flat()`, which keeps `undefined`, so
+  `["a", undefined].flat().join(" ")` was `"a "`. The corpus's
+  `iter_flatten` runs it beside native Rust. (Amended.)
 - **A closure made of statements gets a name first:** `const then = (x) =>
   { .. }; r.TAG === "Ok" ? then(r._0) : r`.
 - **Closures inside the body don't stop it going in place,** unless they
