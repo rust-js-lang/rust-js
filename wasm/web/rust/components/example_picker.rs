@@ -2,7 +2,7 @@
 
 use std::rc::Rc;
 
-use react::event::Change;
+use react::event::ChangeEvent;
 use react::{Element, jsx};
 
 use crate::compiler::Example;
@@ -27,7 +27,7 @@ pub fn ExamplePicker(
             className={CONTROL}
             aria-label="Example"
             value={chosen}
-            onChange={move |e: &Change<_>| on_choose(e.value())}
+            onChange={move |e: &ChangeEvent<_>| on_choose(e.value())}
         >
             {examples.iter().map(|example| jsx! {
                 <option key={example.name.clone()} value={example.name.clone()}>{example.title.clone()}</option>

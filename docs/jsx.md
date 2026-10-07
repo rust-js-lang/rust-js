@@ -93,12 +93,12 @@ styles, context creation and React DOM operations are ordinary Rust APIs.
 Generic components infer type arguments from their props. When necessary, use
 Rust's turbofish: `<Card::<i32> value={42} />`. Close it with `</Card>`.
 
-Named `thread_local!` declarations of `Memo<Props>`, `Lazy<Props>`,
-`ForwardRef<Props, Handle>` and `Context<T>` get the same props syntax as functions:
+Named `thread_local!` declarations of `MemoExoticComponent<Props>`, `LazyExoticComponent<Props>`,
+`ForwardRefExoticComponent<Props, Handle>` and `Context<T>` get the same props syntax as functions:
 
 ```rust
 thread_local! {
-    static FAST_CARD: Memo<CardProps> = memo(Card);
+    static FAST_CARD: MemoExoticComponent<CardProps> = memo(Card);
     static THEME: Context<&'static str> = create_context("light");
 }
 
@@ -118,20 +118,20 @@ available to the syntax pass (for example, an imported value or a local alias),
 use `<Selected {...props} />`, with `{...()}` for no props.
 
 A tag's handlers and `ref` are of its DOM element (ADR 0224): a `<button>`'s
-`onClick` gets an `event::Mouse<webapi::HtmlButtonElement>`, whose
+`onClick` gets an `event::MouseEvent<webapi::HtmlButtonElement>`, whose
 `current_target()` is the button. A closure written outside the JSX can name
-its event `&event::Mouse<_>`, the tag filling in its element. A handler of
-any element's event, `Box<dyn Fn(&event::Mouse)>`, is passed as
-`event::Mouse::widen(handler)`, and an event given to one is `e.upcast()`;
+its event `&event::MouseEvent<_>`, the tag filling in its element. A handler of
+any element's event, `Box<dyn Fn(&event::MouseEvent)>`, is passed as
+`event::MouseEvent::widen(handler)`, and an event given to one is `e.upcast()`;
 each is the value itself in JS. Whatever its tag, what JSX makes is an
 `Element`.
 
 DOM `ref` accepts a ref object or callback, of the tag's element or one it
 extends: an `<input>`'s ref on a `<button>` is rustc's error. `action` and `formAction` accept
 URLs, or on React 19+, functions and action dispatches. Write
-`style={Style::new().color("red")}` for a typed style object.
+`style={CSSProperties::new().color("red")}` for a typed style object.
 
-A `ForwardRef<Props, Handle>` tag accepts `ref={reference}` alongside its
+A `ForwardRefExoticComponent<Props, Handle>` tag accepts `ref={reference}` alongside its
 named props; rustc checks the reference against `Handle`. For ordinary function
 components, `ref` is a field named `r#ref` in the props struct, as in React 19.
 

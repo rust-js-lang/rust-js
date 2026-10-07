@@ -332,11 +332,11 @@ thread_local! {
 }
 `);
   const app = (label: string) => `#![allow(non_snake_case)]
-use react::{Element, Memo, jsx, memo, use_context, use_state};
+use react::{Element, MemoExoticComponent, jsx, memo, use_context, use_state};
 mod theme;
 use theme::THEME;
 thread_local! {
-    static FAST_LABEL: Memo<LabelProps> = memo(Label);
+    static FAST_LABEL: MemoExoticComponent<LabelProps> = memo(Label);
 }
 pub struct LabelProps {
     pub text: &'static str,

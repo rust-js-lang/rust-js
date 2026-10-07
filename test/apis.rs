@@ -5,13 +5,13 @@
 
 use react::dom::client::{Root, RootOptions, create_root_with};
 use react::dom::server::{
-    RenderStream, StreamOptions, StringOptions, render_to_readable_stream, render_to_string_with,
+    ReactDOMServerReadableStream, StreamOptions, StringOptions, render_to_readable_stream, render_to_string_with,
 };
 use react::dom::{create_portal, flush_sync, use_form_status};
 use react::{js, jsx};
 use react::webapi;
 use react::{
-    Activity, ActivityMode, Element, Lazy, Module, Phase, Ref, Style, import_module, inner_html, lazy, use_,
+    Activity, ActivityMode, Element, LazyExoticComponent, Module, Phase, RefObject, CSSProperties, import_module, inner_html, lazy, use_,
     use_action_state, use_deferred_value, use_effect, use_effect_event, use_id, use_imperative_handle,
     use_layout_effect, use_optimistic, use_reducer_with, use_ref, use_state, use_sync_external_store, use_transition,
 };
@@ -98,7 +98,7 @@ pub fn Signup() -> Element {
 
 /// Refs: a DOM element, an imperative handle, and a ref callback's cleanup.
 pub struct FancyInputProps {
-    pub handle: Ref<Option<&'static str>>,
+    pub handle: RefObject<Option<&'static str>>,
 }
 
 pub fn FancyInput(FancyInputProps { handle }: FancyInputProps) -> Element {
@@ -109,8 +109,8 @@ pub fn FancyInput(FancyInputProps { handle }: FancyInputProps) -> Element {
 }
 
 pub fn Refs() -> Element {
-    let handle: Ref<Option<&'static str>> = use_ref(None);
-    let element: Ref<Option<&'static webapi::Element>> = use_ref(None);
+    let handle: RefObject<Option<&'static str>> = use_ref(None);
+    let element: RefObject<Option<&'static webapi::Element>> = use_ref(None);
     let (shown, set_shown) = use_state(true);
     use_layout_effect(move || log("layout"), ());
     use_effect(
@@ -194,7 +194,7 @@ pub fn Places() -> Element {
 // Keyed fragments, styles, raw HTML, any attribute, a lazy and
 // a reducer with an initializer, under a Profiler.
 thread_local! {
-    static LAZY_CARD: Lazy<()> = lazy(|| import_module::<()>("./lazy-card.jsx"));
+    static LAZY_CARD: LazyExoticComponent<()> = lazy(|| import_module::<()>("./lazy-card.jsx"));
 }
 
 pub fn Misc() -> Element {
@@ -212,7 +212,7 @@ pub fn Misc() -> Element {
                     </Fragment>
                 }).collect::<Vec<_>>()}
             </ul>
-            <div className="styled" style={Style::new().color("red").font_size(12).set("--gap", "4px")} />
+            <div className="styled" style={CSSProperties::new().color("red").font_size(12).set("--gap", "4px")} />
             <div className="raw" dangerouslySetInnerHtml={inner_html("<i>raw</i>")} />
             <span className="id" data-id={id}>{total}</span>
             <Suspense fallback="loading card">
@@ -244,7 +244,7 @@ pub fn page_html() -> String {
     )
 }
 
-pub async fn page_stream() -> &'static RenderStream {
+pub async fn page_stream() -> &'static ReactDOMServerReadableStream {
     let stream = render_to_readable_stream(
         jsx! {
             <Page />

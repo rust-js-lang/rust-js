@@ -615,12 +615,12 @@ fn signature(sess: &Session, item: &ast::Item) -> Option<(Ident, String, String,
                 return None;
             };
             let props = match segment.ident.as_str() {
-                "Context" => "::react::Provider".to_string(),
-                "Memo" | "Lazy" | "ForwardRef" => props_path(ty)?,
+                "Context" => "::react::ProviderProps".to_string(),
+                "MemoExoticComponent" | "LazyExoticComponent" | "ForwardRefExoticComponent" => props_path(ty)?,
                 _ => return None,
             };
             {
-                let handle = if segment.ident.as_str() == "ForwardRef" {
+                let handle = if segment.ident.as_str() == "ForwardRefExoticComponent" {
                     let Some(ast::AngleBracketedArg::Arg(ast::GenericArg::Type(handle))) = args.args.get(1) else {
                         return None;
                     };
@@ -688,7 +688,7 @@ pub(super) fn component(sess: &Session, item: &ast::Item, built: &HashSet<String
     } else if !props.is_empty() {
         arms.push(arm("@ref ($reference:expr)", &call(&target, &ref_value)));
     }
-    if props == "::react::Provider" {
+    if props == "::react::ProviderProps" {
         arms.push(arm("@provider", &call(&format!("::react::provider({target})"), &value)));
     } else if matches!(&item.kind, ItemKind::Fn(f) if !f.generics.params.is_empty()) {
         let target = format!("{target}::<$($types)*>");

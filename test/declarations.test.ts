@@ -13,7 +13,7 @@ test("declarations type what a module exports, for TypeScript that imports it", 
   const dir = fixture("declarations");
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
   writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
-use react::{Element, Memo, Node, Rest, jsx, memo};
+use react::{Element, MemoExoticComponent, ReactNode, Rest, jsx, memo};
 
 pub enum RouteTag {
     #[rust_js::name = "foundation"]
@@ -43,7 +43,7 @@ pub struct LinkProps<C> {
     pub rest: Rest,
 }
 
-pub fn ExternalLink<C: Node>(LinkProps { href, children, rest }: LinkProps<C>) -> Element {
+pub fn ExternalLink<C: ReactNode>(LinkProps { href, children, rest }: LinkProps<C>) -> Element {
     jsx! { <a href={href} {...rest}>{children}</a> }
 }
 
@@ -188,7 +188,7 @@ fn Svg(props: IconProps) -> Element {
 }
 
 thread_local! {
-    pub static Icon: Memo<IconProps> = memo(Svg);
+    pub static Icon: MemoExoticComponent<IconProps> = memo(Svg);
 }
 
 pub fn words(n: u64, flags: Vec<bool>) -> String {
@@ -370,14 +370,14 @@ test("declarations type a style as React does", () => {
   const dir = fixture("declarations-style");
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
   writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
-use react::{Element, Style, jsx};
+use react::{Element, CSSProperties, jsx};
 
 pub struct BoxProps {
-    pub style: Option<Style>,
+    pub style: Option<CSSProperties>,
 }
 
 pub fn Panel(BoxProps { style }: BoxProps) -> Element {
-    jsx! { <div style={style.unwrap_or(Style::new())} /> }
+    jsx! { <div style={style.unwrap_or(CSSProperties::new())} /> }
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
@@ -409,7 +409,7 @@ use react::{Element, event, jsx};
 
 pub struct ButtonProps {
     #[rust_js::name = "onClick"]
-    pub on_click: Option<Box<dyn Fn(&event::Mouse)>>,
+    pub on_click: Option<Box<dyn Fn(&event::MouseEvent)>>,
     pub format: fn(u32, u32) -> String,
 }
 
@@ -530,19 +530,19 @@ test("props that flatten React's attributes are typed as React types them", asyn
   const dir = fixture("declarations-attributes");
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
   writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
-use react::attributes::AnchorHtmlAttributes;
-use react::{Element, Node, jsx};
+use react::attributes::AnchorHTMLAttributes;
+use react::{Element, ReactNode, jsx};
 
-pub struct ButtonLinkProps<'a, C: Node> {
+pub struct ButtonLinkProps<'a, C: ReactNode> {
     pub href: &'a str,
     #[rust_js::name = "className"]
     pub class_name: Option<&'a str>,
     pub children: C,
     #[rust_js::flatten]
-    pub props: AnchorHtmlAttributes<'a>,
+    pub props: AnchorHTMLAttributes<'a>,
 }
 
-pub fn ButtonLink<C: Node>(ButtonLinkProps { href, class_name, children, props }: ButtonLinkProps<C>) -> Element {
+pub fn ButtonLink<C: ReactNode>(ButtonLinkProps { href, class_name, children, props }: ButtonLinkProps<C>) -> Element {
     jsx! { <a href={href} className={class_name.unwrap_or("button")} {...props}>{children}</a> }
 }
 `);

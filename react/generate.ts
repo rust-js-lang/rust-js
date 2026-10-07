@@ -225,7 +225,7 @@ lines.push("}", "", "/// Event handlers: `on_click` is `onClick`. A handler must
 for (const [name, entry] of Object.entries<Since>(versions.events)) {
   if (entry.removed) continue;
   const base = name.replace(/Capture$/, "");
-  const type = EVENT_TYPES[base] ?? "Event";
+  const type = EVENT_TYPES[base] ?? "SyntheticEvent";
   const method = snake(name);
   if (methods.has(method)) throw new Error(`two methods are \`${method}\``);
   methods.add(method);
@@ -264,13 +264,13 @@ for (const tag of [...tags].sort()) {
 }
 lines.push("    }", "}", "");
 
-// Style: CSS's properties, as React names them, `backgroundColor`.
+// CSSProperties: CSS's properties, as React names them, `backgroundColor`.
 const webrefCss = await import("@webref/css");
 const css = await (webrefCss.default ?? webrefCss).listAll();
 const properties = [...new Set(css.properties.map((p: { name: string }) => p.name))]
   .filter((name) => !name.startsWith("-"))
   .sort() as string[];
-lines.push("/// CSS properties: `background_color` is `backgroundColor`. A number is in", "/// pixels where CSS needs a unit, as React makes it.", "impl Style {");
+lines.push("/// CSS properties: `background_color` is `backgroundColor`. A number is in", "/// pixels where CSS needs a unit, as React makes it.", "impl CSSProperties {");
 const styleMethods = new Set(["new", "set"]);
 for (const property of properties) {
   const camel = property.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
@@ -280,7 +280,7 @@ for (const property of properties) {
   lines.push(
     `    /// \`${property}\``,
     `    #[cfg_attr(rust_js, rust_js::link_name = "prop ${camel}")]`,
-    `    pub fn ${method}(self, value: impl Value) -> Style {`,
+    `    pub fn ${method}(self, value: impl Value) -> CSSProperties {`,
     "        unreachable!()",
     "    }",
     "",

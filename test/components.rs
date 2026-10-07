@@ -3,10 +3,10 @@
 
 #![allow(non_snake_case)]
 
-use react::event::{Change, Keyboard};
+use react::event::{ChangeEvent, KeyboardEvent};
 use react::jsx;
 use react::{
-    Context, Element, Memo, create_context, memo, memo_with, use_context, use_effect, use_id, use_memo,
+    Context, Element, MemoExoticComponent, create_context, memo, memo_with, use_context, use_effect, use_id, use_memo,
     use_reducer, use_ref, use_state,
 };
 
@@ -83,8 +83,8 @@ pub fn Todos() -> Element {
                 <input
                     id={id.clone()}
                     value={draft.clone()}
-                    onChange={move |e: &Change<_>| set_draft.set(e.value())}
-                    onKeyDown={move |e: &Keyboard<_>| {
+                    onChange={move |e: &ChangeEvent<_>| set_draft.set(e.value())}
+                    onKeyDown={move |e: &KeyboardEvent<_>| {
                         if e.key() == "Enter" {
                             add();
                         }
@@ -143,9 +143,9 @@ pub fn Clock() -> Element {
 thread_local! {
     /// A context and memoized components: each a `const` of the module.
     static THEME: Context<&'static str> = create_context("light");
-    static BADGE: Memo<BadgeProps> = memo(Badge);
+    static BADGE: MemoExoticComponent<BadgeProps> = memo(Badge);
     /// Any two labels that aren't empty count as the same props.
-    static LOOSE_BADGE: Memo<BadgeProps> = memo_with(Badge, |a, b| a.label.is_empty() == b.label.is_empty());
+    static LOOSE_BADGE: MemoExoticComponent<BadgeProps> = memo_with(Badge, |a, b| a.label.is_empty() == b.label.is_empty());
 }
 
 unsafe extern "Rust" {

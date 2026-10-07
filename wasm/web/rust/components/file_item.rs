@@ -3,7 +3,7 @@
 
 use std::rc::Rc;
 
-use react::{Element, Style, jsx};
+use react::{CSSProperties, Element, jsx};
 
 use crate::styles::ROW;
 
@@ -47,7 +47,7 @@ pub fn FileItem(
         <li className="group flex items-center">
             <button
                 className={format!("min-w-0 flex-1 cursor-pointer truncate {ROW} text-left aria-[current=true]:bg-selected")}
-                style={Style::new().padding_left(8 + depth * 12)}
+                style={CSSProperties::new().padding_left(8 + depth * 12)}
                 aria-current={open}
                 onClick={move |_| on_open(opened.clone())}
             >

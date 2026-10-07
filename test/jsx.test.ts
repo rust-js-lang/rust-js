@@ -222,17 +222,17 @@ pub fn App() -> Element {
 // react.dev's `Breadcrumbs` has it.
 test("a prop before children that need no statements stays where it's written", () => {
   const source = `#![allow(non_snake_case)]
-use react::attributes::AnchorHtmlAttributes;
-use react::{Element, Fragment, Node, jsx};
+use react::attributes::AnchorHTMLAttributes;
+use react::{Element, Fragment, ReactNode, jsx};
 pub struct Crumb { pub title: String }
 #[rust_js::link_name = "next/link#default"]
-pub fn Link<C: Node>(props: LinkProps<'_, C>) -> Element { unreachable!() }
+pub fn Link<C: ReactNode>(props: LinkProps<'_, C>) -> Element { unreachable!() }
 #[derive(Default)]
 pub struct LinkProps<'a, C> {
     pub href: &'a str,
     pub children: C,
     #[rust_js::flatten]
-    pub anchor: AnchorHtmlAttributes<'a>,
+    pub anchor: AnchorHTMLAttributes<'a>,
     #[rust_js::name = "className"]
     pub class_name: Option<&'a str>,
 }
@@ -406,17 +406,17 @@ pub fn View() -> Element {
 // empty is one expression, `excerpt && <div>..</div>`, as a person writes it.
 test("JSX keeps children that read what never changes, and a filtered child, in place", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, Node, event, jsx, use_state};
+use react::{Element, ReactNode, event, jsx, use_state};
 unsafe extern "Rust" {
     #[link_name = "String"]
     safe fn cn(a: &str) -> String;
 }
-pub struct ButtonProps<'a, C: Node> {
+pub struct ButtonProps<'a, C: ReactNode> {
     pub children: C,
     pub class_name: Option<&'a str>,
-    pub on_click: Option<Box<dyn Fn(&event::Mouse)>>,
+    pub on_click: Option<Box<dyn Fn(&event::MouseEvent)>>,
 }
-pub fn Button<C: Node>(ButtonProps { children, class_name, on_click }: ButtonProps<C>) -> Element {
+pub fn Button<C: ReactNode>(ButtonProps { children, class_name, on_click }: ButtonProps<C>) -> Element {
     let _ = on_click;
     jsx! { <button className={class_name}>{children}</button> }
 }
@@ -560,14 +560,14 @@ for (const [name, body, message] of [
 test("JSX covers generic functions, memo/lazy/forward-ref values and context providers", async () => {
   const { dir, args } = compile(`#![deny(warnings)]
 #![allow(non_snake_case)]
-use react::{Element, Node, jsx};
+use react::{Element, ReactNode, jsx};
 mod wrapped;
 use wrapped::{MEMO as Cached, THEME as Theme};
 pub struct Props<T> { pub value: T }
 #[cfg_attr(all(), inline)]
-pub fn Generic<T: Node>(p: Props<T>) -> Element { jsx! { <span>{p.value}</span> } }
+pub fn Generic<T: ReactNode>(p: Props<T>) -> Element { jsx! { <span>{p.value}</span> } }
 pub struct Children<T> { pub children: T }
-pub fn Group<T: Node>(p: Children<T>) -> Element { jsx! { <div>{p.children}</div> } }
+pub fn Group<T: ReactNode>(p: Children<T>) -> Element { jsx! { <div>{p.children}</div> } }
 pub fn Empty<T>() -> Element { jsx! { <i /> } }
 pub fn App() -> Element {
     let Selected = Generic::<i32>;
@@ -590,17 +590,17 @@ pub fn App() -> Element {
     }
 }
 `, {
-    "wrapped.rs": `use react::{Context, Element, ForwardRef, Lazy, Memo, Ref, create_context, forward_ref, import_module, jsx, lazy, memo};
+    "wrapped.rs": `use react::{Context, Element, ForwardRefExoticComponent, LazyExoticComponent, MemoExoticComponent, RefObject, create_context, forward_ref, import_module, jsx, lazy, memo};
 pub struct Props { pub label: &'static str }
 pub fn Card(p: Props) -> Element { jsx! { <b>{p.label}</b> } }
 pub fn Provider() -> Element { jsx! { <i /> } }
-pub fn Input(p: Props, _: Ref<Option<i32>>) -> Element { jsx! { <b>{p.label}</b> } }
+pub fn Input(p: Props, _: RefObject<Option<i32>>) -> Element { jsx! { <b>{p.label}</b> } }
 thread_local! {
-    pub static MEMO: Memo<Props> = memo(Card);
-    pub static LAZY: Lazy<()> = lazy(|| import_module::<()>("./lazy.jsx"));
-    pub static FORWARD: ForwardRef<Props, i32> = forward_ref(Input);
+    pub static MEMO: MemoExoticComponent<Props> = memo(Card);
+    pub static LAZY: LazyExoticComponent<()> = lazy(|| import_module::<()>("./lazy.jsx"));
+    pub static FORWARD: ForwardRefExoticComponent<Props, i32> = forward_ref(Input);
     pub static THEME: Context<&'static str> = create_context("light");
-    #[cfg(any())] pub static DISABLED: Memo<Missing> = missing();
+    #[cfg(any())] pub static DISABLED: MemoExoticComponent<Missing> = missing();
 }
 `,
   });
@@ -667,10 +667,10 @@ test("JSX gives a tag's element to its handlers and its ref", () => {
 #![allow(non_snake_case)]
 use react::{Element, event, jsx, use_ref, webapi};
 pub struct ButtonProps {
-    pub on_click: Box<dyn Fn(&event::Mouse)>,
+    pub on_click: Box<dyn Fn(&event::MouseEvent)>,
 }
 pub fn Button(ButtonProps { on_click }: ButtonProps) -> Element {
-    jsx! { <button onClick={event::Mouse::widen(on_click)}>{"Go"}</button> }
+    jsx! { <button onClick={event::MouseEvent::widen(on_click)}>{"Go"}</button> }
 }
 pub fn App(busy: bool) -> Element {
     let input = use_ref(None::<&'static webapi::HtmlInputElement>);
@@ -696,8 +696,8 @@ pub fn App(busy: bool) -> Element {
   // handler of any element's event not widened, are each rustc's error.
   for (const [wrong, written, error] of [
     ["<input ref={input} />", "<button ref={input} />", "the trait `react::webapi::IsA<react::webapi::HtmlInputElement>` is not implemented for `react::webapi::HtmlButtonElement`"],
-    ["onClick={|e| webapi::html_button_element::set_disabled(e.current_target(), true)}", "onClick={|e: &event::Mouse<webapi::HtmlInputElement>| { let _ = e; }}", "expected closure signature `for<'a> fn(&'a Mouse<react::webapi::HtmlButtonElement>) -> _`"],
-    ["onClick={event::Mouse::widen(on_click)}", "onClick={on_click}", "found `dyn for<'a> std::ops::Fn(&'a react::event::Mouse)`"],
+    ["onClick={|e| webapi::html_button_element::set_disabled(e.current_target(), true)}", "onClick={|e: &event::MouseEvent<webapi::HtmlInputElement>| { let _ = e; }}", "expected closure signature `for<'a> fn(&'a MouseEvent<react::webapi::HtmlButtonElement>) -> _`"],
+    ["onClick={event::MouseEvent::widen(on_click)}", "onClick={on_click}", "found `dyn for<'a> std::ops::Fn(&'a react::event::MouseEvent)`"],
   ]) {
     writeFileSync(join(dir, "lib.rs"), source.replace(wrong, written));
     const result = Bun.spawnSync(args, { cwd: dir });
@@ -708,7 +708,7 @@ pub fn App(busy: bool) -> Element {
 
 test("JSX built-ins finish as elements and use one spelling for ref and form actions", () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, Style, jsx, use_ref, webapi};
+use react::{Element, CSSProperties, jsx, use_ref, webapi};
 pub fn App() -> Element {
     let object = use_ref(None::<&'static webapi::Element>);
     jsx! {
@@ -717,7 +717,7 @@ pub fn App() -> Element {
                 <form action={|_: &'static webapi::FormData| ()}>
                     <input ref={object} />
                     <input ref={|_: Option<&'static webapi::Element>| ()} />
-                    <button formAction="/save" style={Style::new().color("red")}>{"Save"}</button>
+                    <button formAction="/save" style={CSSProperties::new().color("red")}>{"Save"}</button>
                 </form>
             </ViewTransition>
             <Suspense />
@@ -805,22 +805,22 @@ pub fn App() -> Element {
 
 test("forwarded refs keep their handle type, evaluation order and handwritten JSX", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, ForwardRef, Ref, forward_ref, jsx, webapi};
+use react::{Element, ForwardRefExoticComponent, RefObject, forward_ref, jsx, webapi};
 unsafe extern "Rust" { #[link_name = "globalThis.record"] safe fn record(n: i32) -> i32; }
 pub struct Props { pub label: i32 }
-pub fn Input(p: Props, reference: Ref<Option<&'static webapi::Element>>) -> Element {
+pub fn Input(p: Props, reference: RefObject<Option<&'static webapi::Element>>) -> Element {
     jsx! { <input ref={reference} title={p.label} /> }
 }
-thread_local! { static INPUT: ForwardRef<Props, &'static webapi::Element> = forward_ref(Input); }
-pub fn Plain(reference: Ref<Option<&'static webapi::Element>>) -> Element {
+thread_local! { static INPUT: ForwardRefExoticComponent<Props, &'static webapi::Element> = forward_ref(Input); }
+pub fn Plain(reference: RefObject<Option<&'static webapi::Element>>) -> Element {
     jsx! { <INPUT ref={reference} label={1} /> }
 }
-pub fn App(reference: Ref<Option<&'static webapi::Element>>) -> Element {
+pub fn App(reference: RefObject<Option<&'static webapi::Element>>) -> Element {
     jsx! { <INPUT ref={record(1); reference} label={record(2)} /> }
 }
-pub struct NormalProps { pub r#ref: Ref<Option<&'static webapi::Element>>, pub title: i32 }
+pub struct NormalProps { pub r#ref: RefObject<Option<&'static webapi::Element>>, pub title: i32 }
 pub fn Normal(p: NormalProps) -> Element { jsx! { <input ref={p.r#ref} title={p.title} /> } }
-pub fn Ordinary(reference: Ref<Option<&'static webapi::Element>>) -> Element {
+pub fn Ordinary(reference: RefObject<Option<&'static webapi::Element>>) -> Element {
     jsx! { <Normal title={record(3)} ref={record(4); reference} /> }
 }
 `);
@@ -845,7 +845,7 @@ pub fn Ordinary(reference: Ref<Option<&'static webapi::Element>>) -> Element {
   } finally { globalThis.record = previous; }
   const file = join(dir, "lib.rs");
   const source = readFileSync(file, "utf8");
-  writeFileSync(file, source.replace('pub fn App(reference: Ref<Option<&\'static webapi::Element>>)', 'pub fn App(reference: Ref<Option<i32>>)'));
+  writeFileSync(file, source.replace('pub fn App(reference: RefObject<Option<&\'static webapi::Element>>)', 'pub fn App(reference: RefObject<Option<i32>>)'));
   const invalid = Bun.spawnSync(args, { cwd: dir });
   expect(invalid.exitCode).not.toBe(0);
   expect(invalid.stderr.toString()).toContain('RefValue');
@@ -856,7 +856,7 @@ pub fn Ordinary(reference: Ref<Option<&'static webapi::Element>>) -> Element {
 // API-specific behavior (hooks, mounting, async actions) stays in react.test.ts.
 test("JSX grammar: literals, empty forms, Rust children and attribute expressions", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, Style, inner_html, jsx};
+use react::{Element, CSSProperties, inner_html, jsx};
 pub fn Empty() -> Element { jsx! { <></> } }
 pub fn Literals() -> Element {
     jsx! {
@@ -887,7 +887,7 @@ pub fn Attributes() -> Element {
         <>
             <button disabled title={let n = 2; n.to_string()} aria-label="Save" data-state="ready" tabIndex=3 />
             <input disabled={false} defaultValue="a" />
-            <div style={Style::new().color("red")} dangerouslySetInnerHTML={inner_html("<b>raw</b>")} />
+            <div style={CSSProperties::new().color("red")} dangerouslySetInnerHTML={inner_html("<b>raw</b>")} />
         </>
     }
 }
@@ -952,7 +952,7 @@ pub fn App() -> Element {
 // default or an `Option`, and one that's required is said (ADR 0213).
 test("JSX takes a component's flattened props where they're written, none given left out", async () => {
   const flat = `#![allow(non_snake_case)]
-use react::{Element, Node, jsx};
+use react::{Element, ReactNode, jsx};
 #[derive(Default)]
 pub struct Html {
     pub id: Option<&'static str>,
@@ -983,7 +983,7 @@ pub struct ButtonLinkProps<C> {
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub props: Anchor,
 }
-pub fn ButtonLink<C: Node + Default>(ButtonLinkProps { href, size, label, children, props }: ButtonLinkProps<C>) -> Element {
+pub fn ButtonLink<C: ReactNode + Default>(ButtonLinkProps { href, size, label, children, props }: ButtonLinkProps<C>) -> Element {
     let class = match size {
         Size::Md => "md",
         Size::Lg => "lg",
@@ -1168,7 +1168,7 @@ pub fn Anchor(AnchorProps { label, is_page_anchor, level }: AnchorProps) -> Elem
 // taken apart, and in JSX each one given, an attribute (ADR 0204).
 test("JSX gives a flattened struct's fields as a component's own props", async () => {
   const flattened = `#![allow(non_snake_case)]
-use react::{Element, Node, jsx};
+use react::{Element, ReactNode, jsx};
 #[derive(Default)]
 pub struct Anchor {
     pub href: Option<&'static str>,
@@ -1183,7 +1183,7 @@ pub struct ButtonLinkProps<C> {
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub anchor: Anchor,
 }
-pub fn ButtonLink<C: Node>(ButtonLinkProps { size, children, anchor }: ButtonLinkProps<C>) -> Element {
+pub fn ButtonLink<C: ReactNode>(ButtonLinkProps { size, children, anchor }: ButtonLinkProps<C>) -> Element {
     let class = if size == Some("lg") { "big" } else { "small" };
     let target = anchor.target.unwrap_or("_self");
     jsx! { <a className={class} target={target} {...anchor}>{children}</a> }
@@ -1230,7 +1230,7 @@ pub fn App() -> Element {
 // through, `props.html.title` is `props.title`, never whole (ADR 0205).
 test("JSX gives a chain of flattened structs as props, a name the props have their own", async () => {
   const chained = `#![allow(non_snake_case)]
-use react::{Element, Node, jsx};
+use react::{Element, ReactNode, jsx};
 #[derive(Default)]
 pub struct Html {
     pub id: Option<&'static str>,
@@ -1254,12 +1254,12 @@ pub struct ButtonLinkProps<C> {
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub props: Anchor,
 }
-pub fn ButtonLink<C: Node>(ButtonLinkProps { href, class_name, children, props }: ButtonLinkProps<C>) -> Element {
+pub fn ButtonLink<C: ReactNode>(ButtonLinkProps { href, class_name, children, props }: ButtonLinkProps<C>) -> Element {
     let title = props.html.title.unwrap_or("none");
     jsx! { <a href={href} className={class_name.unwrap_or("x")} data-title={title} {...props}>{children}</a> }
 }
 // What it leaves, .., the rest does not hold.
-pub fn Plain<C: Node>(ButtonLinkProps { href, props, .. }: ButtonLinkProps<C>) -> Element {
+pub fn Plain<C: ReactNode>(ButtonLinkProps { href, props, .. }: ButtonLinkProps<C>) -> Element {
     jsx! { <a href={href} {...props} /> }
 }
 `;
@@ -1336,14 +1336,14 @@ pub fn App() -> Element {
 // nothing, isn't made: no `base` is kept (ADR 0201).
 test("JSX gives a generic component's children on with a base, and the component no dictionary", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, Node, jsx};
+use react::{Element, ReactNode, jsx};
 #[derive(Default)]
 pub struct FrameProps<C> { pub title: Option<&'static str>, pub children: C, pub tags: Vec<&'static str>, pub id: Option<&'static str> }
-pub fn Frame<C: Node>(FrameProps { title, children, tags, id }: FrameProps<C>) -> Element {
+pub fn Frame<C: ReactNode>(FrameProps { title, children, tags, id }: FrameProps<C>) -> Element {
     jsx! { <section title={title.unwrap_or("bare")} id={id} data-tags={tags.join(" ")}>{children}</section> }
 }
 pub struct CardProps<C> { pub title: &'static str, pub children: C }
-pub fn Card<C: Node + Default>(CardProps { title, children }: CardProps<C>) -> Element {
+pub fn Card<C: ReactNode + Default>(CardProps { title, children }: CardProps<C>) -> Element {
     jsx! { <Frame tags={vec!["card"]} title={Some(title)} {..Default::default()}>{children}</Frame> }
 }
 pub fn App() -> Element {
@@ -1360,9 +1360,9 @@ pub fn App() -> Element {
   expect(renderToStaticMarkup(createElement(Card, { title: "js" }, "child"))).toBe('<section title="js" data-tags="card">child</section>');
   // One that would use a dictionary, React's not giving it one, is an error.
   const uses = compile(`#![allow(non_snake_case)]
-use react::{Element, Node, jsx};
+use react::{Element, ReactNode, jsx};
 pub struct P<C> { pub children: C }
-pub fn Echo<C: Node + Default>(P { children }: P<C>) -> Element {
+pub fn Echo<C: ReactNode + Default>(P { children }: P<C>) -> Element {
     let empty = C::default();
     jsx! { <p>{children}{empty}</p> }
 }
@@ -1407,13 +1407,13 @@ pub fn Badge(p: P) -> Element {
 // "string"` (ADR 0214).
 test("JSX tells text children from any other node", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, Node, NodeKind, jsx, kind_of};
+use react::{Element, ReactNode, ReactNodeKind, jsx, kind_of};
 pub struct LabeledProps<C> {
     pub children: C,
 }
-pub fn Labeled<C: Node>(LabeledProps { children }: LabeledProps<C>) -> Element {
+pub fn Labeled<C: ReactNode>(LabeledProps { children }: LabeledProps<C>) -> Element {
     let mut label = "Link for this heading".to_string();
-    if let NodeKind::Text(text) = kind_of(&children) {
+    if let ReactNodeKind::Text(text) = kind_of(&children) {
         label = format!("Link for {text}");
     }
     jsx! { <h2 title={label.as_str()}>{children}</h2> }
@@ -1435,11 +1435,11 @@ test("JSX components look inside their children with React's Children", async ()
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use js::Kind;
 use react::children::{self, Child};
-use react::{Element, Node, NodeKind, clone_element, jsx, kind_of};
-pub struct ListProps<C: Node> {
+use react::{Element, ReactNode, ReactNodeKind, clone_element, jsx, kind_of};
+pub struct ListProps<C: ReactNode> {
     pub children: C,
 }
-pub fn Kinds<C: Node>(ListProps { children }: ListProps<C>) -> Element {
+pub fn Kinds<C: ReactNode>(ListProps { children }: ListProps<C>) -> Element {
     let mut kinds = Vec::new();
     for child in children::to_array(&children) {
         kinds.push(match child {
@@ -1458,16 +1458,16 @@ pub struct Linked<'a> {
     #[rust_js::name = "data-linked"]
     pub linked: &'a str,
 }
-pub fn Only<C: Node>(ListProps { children }: ListProps<C>) -> Element {
+pub fn Only<C: ReactNode>(ListProps { children }: ListProps<C>) -> Element {
     match kind_of(&children) {
-        NodeKind::Element(element) => clone_element(element, Linked { linked: "yes" }).element(),
-        NodeKind::Text(text) => jsx! { <i>{text}</i> },
-        NodeKind::List(_) | NodeKind::Other(_) => jsx! { <b>{"other"}</b> },
+        ReactNodeKind::Element(element) => clone_element(element, Linked { linked: "yes" }).element(),
+        ReactNodeKind::Text(text) => jsx! { <i>{text}</i> },
+        ReactNodeKind::List(_) | ReactNodeKind::Other(_) => jsx! { <b>{"other"}</b> },
     }
 }
-pub fn Id<C: Node>(ListProps { children }: ListProps<C>) -> Element {
+pub fn Id<C: ReactNode>(ListProps { children }: ListProps<C>) -> Element {
     let id = match kind_of(&children) {
-        NodeKind::Element(element) => js::get(element.props(), "id").map(js::classify),
+        ReactNodeKind::Element(element) => js::get(element.props(), "id").map(js::classify),
         _ => None,
     };
     jsx! { <p>{if let Some(Kind::String(id)) = id { id } else { "none" }}</p> }
@@ -1497,15 +1497,15 @@ pub fn Id<C: Node>(ListProps { children }: ListProps<C>) -> Element {
 test("JSX components read their children's text in a let chain as a person writes it", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use js::{Kind, classify};
-use react::{Element, Node, NodeKind, jsx, kind_of};
-pub struct BlockProps<C: Node> {
+use react::{Element, ReactNode, ReactNodeKind, jsx, kind_of};
+pub struct BlockProps<C: ReactNode> {
     pub children: C,
 }
-pub fn Block<C: Node>(BlockProps { children }: BlockProps<C>) -> Element {
+pub fn Block<C: ReactNode>(BlockProps { children }: BlockProps<C>) -> Element {
     let message: String;
-    if let NodeKind::Text(text) = kind_of(&children) {
+    if let ReactNodeKind::Text(text) = kind_of(&children) {
         message = text.to_string();
-    } else if let NodeKind::Element(element) = kind_of(&children)
+    } else if let ReactNodeKind::Element(element) = kind_of(&children)
         && let Some(inner) = js::get(element.props(), "children")
         && let Kind::String(text) = classify(inner)
     {
@@ -1544,15 +1544,15 @@ pub fn Block<C: Node>(BlockProps { children }: BlockProps<C>) -> Element {
 test("JSX components clone some of their children and keep the rest", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::children::{self, Child};
-use react::{Element, Node, clone_element, jsx};
-pub struct ListProps<C: Node> {
+use react::{Element, ReactNode, clone_element, jsx};
+pub struct ListProps<C: ReactNode> {
     pub children: C,
 }
 pub struct Marked {
     #[rust_js::name = "data-marked"]
     pub marked: &'static str,
 }
-pub fn Marks<C: Node>(ListProps { children }: ListProps<C>) -> Element {
+pub fn Marks<C: ReactNode>(ListProps { children }: ListProps<C>) -> Element {
     let marked: Vec<Child> = children::to_array(&children)
         .into_iter()
         .map(|child| match child {
@@ -1577,15 +1577,15 @@ pub fn Marks<C: Node>(ListProps { children }: ListProps<C>) -> Element {
 // child's `children` as its title and the rest as its body.
 test("JSX components take apart a list of children", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, Node, NodeKind, jsx, kind_of};
-pub struct ListProps<C: Node> {
+use react::{Element, ReactNode, ReactNodeKind, jsx, kind_of};
+pub struct ListProps<C: ReactNode> {
     pub children: C,
 }
-pub fn Titled<C: Node>(ListProps { children }: ListProps<C>) -> Element {
-    let NodeKind::List(items) = kind_of(&children) else {
+pub fn Titled<C: ReactNode>(ListProps { children }: ListProps<C>) -> Element {
+    let ReactNodeKind::List(items) = kind_of(&children) else {
         panic!("expected a title and a body");
     };
-    let Some(NodeKind::Element(first)) = items.first() else {
+    let Some(ReactNodeKind::Element(first)) = items.first() else {
         panic!("expected a title first");
     };
     jsx! {
@@ -1612,7 +1612,7 @@ pub fn Titled<C: Node>(ListProps { children }: ListProps<C>) -> Element {
 // renders `<Comp>` of `{ as: Comp = "div" }`.
 test("JSX renders a tag that's a value, named by a capitalized local", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, Node, Rest, jsx};
+use react::{Element, ReactNode, Rest, jsx};
 #[derive(Clone, Copy, Default)]
 pub enum As {
     #[rust_js::name = "h1"]
@@ -1631,7 +1631,7 @@ pub struct HeadingProps<C> {
     pub children: C,
     pub rest: Rest,
 }
-pub fn Heading<C: Node>(HeadingProps { r#as: Comp, id, children, rest }: HeadingProps<C>) -> Element {
+pub fn Heading<C: ReactNode>(HeadingProps { r#as: Comp, id, children, rest }: HeadingProps<C>) -> Element {
     jsx! { <Comp id={id} {...rest} className="mdx-heading">{children}</Comp> }
 }
 pub fn Title() -> Element {
@@ -1703,10 +1703,10 @@ pub fn Count() -> Element {
 // default gives none, and no `rest` prop.
 test("JSX takes the props a component's struct doesn't name as ...rest", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, Node, Rest, jsx};
+use react::{Element, ReactNode, Rest, jsx};
 #[derive(Default)]
 pub struct LinkProps<C> { pub href: &'static str, pub rest: Rest, pub target: Option<&'static str>, pub children: C }
-pub fn ExternalLink<C: Node>(LinkProps { href, target, children, rest }: LinkProps<C>) -> Element {
+pub fn ExternalLink<C: ReactNode>(LinkProps { href, target, children, rest }: LinkProps<C>) -> Element {
     jsx! { <a href={href} target={target.unwrap_or("_blank")} rel="noopener" {...rest}>{children}</a> }
 }
 pub fn Home() -> Element {
@@ -1777,14 +1777,14 @@ unsafe extern "Rust" {
     safe fn resolved() -> Promise<()>;
 }
 pub struct ButtonProps {
-    pub on_click: Box<dyn Fn(&event::Mouse<HtmlButtonElement>)>,
+    pub on_click: Box<dyn Fn(&event::MouseEvent<HtmlButtonElement>)>,
 }
 pub fn Button(ButtonProps { on_click }: ButtonProps) -> Element {
     jsx! { <button onClick={on_click}>{"Copy"}</button> }
 }
 pub fn Copy() -> Element {
     let (copied, set_copied) = use_state(false);
-    let handle_copy = event::Mouse::spawn(async move |_| {
+    let handle_copy = event::MouseEvent::spawn(async move |_| {
         resolved().await;
         set_copied.set(true);
     });
@@ -1810,9 +1810,9 @@ pub fn Copy() -> Element {
 // nothing does.
 test("JSX passes an optional event handler on as it is", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, Node, event, jsx};
-pub struct ButtonProps<C> { pub children: C, pub on_click: Option<Box<dyn Fn(&event::Mouse)>> }
-pub fn Button<C: Node>(ButtonProps { children, on_click }: ButtonProps<C>) -> Element {
+use react::{Element, ReactNode, event, jsx};
+pub struct ButtonProps<C> { pub children: C, pub on_click: Option<Box<dyn Fn(&event::MouseEvent)>> }
+pub fn Button<C: ReactNode>(ButtonProps { children, on_click }: ButtonProps<C>) -> Element {
     jsx! { <button onClick={move |e| if let Some(f) = &on_click { f(e.upcast()) }}>{children}</button> }
 }
 `);
@@ -1827,8 +1827,8 @@ pub fn Button<C: Node>(ButtonProps { children, on_click }: ButtonProps<C>) -> El
 // As react.dev's Button's `style={style}` of an optional prop: `None` none.
 test("JSX passes an optional style on as it is", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, Style, jsx};
-pub struct BoxProps { pub style: Option<Style> }
+use react::{Element, CSSProperties, jsx};
+pub struct BoxProps { pub style: Option<CSSProperties> }
 pub fn Panel(BoxProps { style }: BoxProps) -> Element {
     jsx! { <div style={style} /> }
 }
@@ -1843,10 +1843,10 @@ pub fn Panel(BoxProps { style }: BoxProps) -> Element {
 // `style={{width, height, ...customStyles}}`; `None` spreads nothing.
 test("JSX styles spread another style over their own", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{Element, Style, jsx};
-pub struct BoxProps<'a> { pub width: &'a str, pub custom_styles: Option<Style> }
+use react::{Element, CSSProperties, jsx};
+pub struct BoxProps<'a> { pub width: &'a str, pub custom_styles: Option<CSSProperties> }
 pub fn Panel(BoxProps { width, custom_styles }: BoxProps) -> Element {
-    jsx! { <div style={Style::new().width(width).spread(custom_styles)} /> }
+    jsx! { <div style={CSSProperties::new().width(width).spread(custom_styles)} /> }
 }
 `);
   run(args);
@@ -1866,9 +1866,9 @@ test("JSX components take no drop of their type parameters", async () => {
     return { dir, args: [...args.slice(0, at), "--library", ...args.slice(at)] };
   };
   const card = `#![allow(non_snake_case)]
-use react::{Element, Node, jsx};
+use react::{Element, ReactNode, jsx};
 pub struct CardProps<C> { pub title: &'static str, pub children: C }
-pub fn Card<C: Node>(CardProps { title, children }: CardProps<C>) -> Element {
+pub fn Card<C: ReactNode>(CardProps { title, children }: CardProps<C>) -> Element {
     let heading = format!("{title}!");
     jsx! { <section title={heading}>{children}</section> }
 }

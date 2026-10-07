@@ -317,6 +317,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0224 A tag's element reaches its handlers and its `ref`](decisions/0224-typed-intrinsic-elements.md)
 - [0225 A JS value of unknown shape is a `js::Unknown`](decisions/0225-unknown-values.md)
 - [0226 A component looks inside its children as React's `Children` does](decisions/0226-react-children.md)
+- [0227 The react crate's types have @types/react's names](decisions/0227-react-type-names.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)
