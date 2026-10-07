@@ -138,4 +138,12 @@ export const mutations: Mutation[] = [
     replace: "                && let Some(allowed) = literals::one_of(\"\", &attr)\n",
     tests: ["test/jsx.test.ts", "-t", "literal of an attribute of a few strings"],
   },
+  {
+    name: "companion-flattened-last",
+    breaks: "a companion writes its flattened field last, out of the struct's order, so an `if` of next/link's `Link` is `let tmp; if ..`",
+    file: "src/jsx_syntax/parser.rs",
+    find: "let (before, after) = (values[..*at].concat(), values[*at..].concat());",
+    replace: "let (before, after) = (values.concat(), String::new());",
+    tests: ["test/jsx.test.ts", "-t", "flattened props come before a field"],
+  },
 ];

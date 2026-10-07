@@ -857,7 +857,7 @@ pub(super) fn props_companion(sess: &Session, item: &ast::Item, props: &HashSet<
         let field_name = field.ident?.as_str().to_string();
         let attrs = super::configured_attrs(sess, &field.attrs)?;
         if tool(&attrs, "flatten") {
-            flatten = Some((field_name, props_path(&field.ty)?));
+            flatten = Some((field_name, props_path(&field.ty)?, own.len()));
             continue;
         }
         let last = match &field.ty.kind {
@@ -917,7 +917,7 @@ pub(super) fn props_companion(sess: &Session, item: &ast::Item, props: &HashSet<
                 filled(i)
             ));
         }
-        if let Some((field, _)) = &flatten {
+        if let Some((field, _, _)) = &flatten {
             arms.push(format!(
                 "(@slots [$($s:tt)*] [] [$($rest:tt)*] r#{field}: $v:expr, $($tail:tt)*) => {{ NAME!(@slots [$($s)*] [$v] [$($rest)*] $($tail)*) }}"
             ));
@@ -933,20 +933,25 @@ pub(super) fn props_companion(sess: &Session, item: &ast::Item, props: &HashSet<
         let values: Vec<String> = (own.iter().enumerate())
             .map(|(i, (field, empty, _))| format!("r#{field}: NAME!(@slot {empty} \"{field}\" $s{i}), "))
             .collect();
-        let values = values.concat();
         match &flatten {
-            Some((field, path)) => {
+            // The fields in the order they're declared, the flattened one
+            // where it is: a literal in order needs no `const`s.
+            Some((field, path, at)) => {
+                let (before, after) = (values[..*at].concat(), values[*at..].concat());
                 arms.push(format!(
-                    "(@slots [{patterns}] [$whole:expr] []) => {{ NAME {{ {values}r#{field}: $whole }} }}"
+                    "(@slots [{patterns}] [$whole:expr] []) => {{ NAME {{ {before}r#{field}: $whole, {after} }} }}"
                 ));
                 arms.push(format!(
-                    "(@slots [{patterns}] [] [$($rest:tt)*]) => {{ NAME {{ {values}r#{field}: {path}!(@given [$($rest)*] []) }} }}"
+                    "(@slots [{patterns}] [] [$($rest:tt)*]) => {{ NAME {{ {before}r#{field}: {path}!(@given [$($rest)*] []), {after} }} }}"
                 ));
                 arms.push(format!(
                     "(@slots [$($s:tt)*] [$whole:expr] [$($rest:tt)+]) => {{ ::core::compile_error!(\"give `{field}` or the props of it, not both\") }}"
                 ));
             }
-            None => arms.push(format!("(@slots [{patterns}] [] []) => {{ NAME {{ {values} }} }}")),
+            None => arms.push(format!(
+                "(@slots [{patterns}] [] []) => {{ NAME {{ {} }} }}",
+                values.concat()
+            )),
         }
         arms.push("(@slot $empty:ident $name:literal [$v:expr]) => { $v }".to_string());
         arms.push(
