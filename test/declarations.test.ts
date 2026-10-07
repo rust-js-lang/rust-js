@@ -453,6 +453,46 @@ test("declarations give an impl Trait parameter of no TypeScript type unknown", 
   expect(declarations).toContain("export function size(value: unknown): number;");
 });
 
+// A type written as one of @types/react's aliases is declared by it, as a
+// person writes it, `on_click?: MouseEventHandler<HTMLButtonElement>`, an
+// argument left to its default left out, `MouseEventHandler`, where
+// Rust's expanded type was spelled out, `(event: MouseEvent<..>) => void`.
+test("declarations name @types/react's aliases as the Rust names them", () => {
+  buildReact();
+  const dir = fixture("declarations-aliases");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
+  writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
+use react::event::{ChangeEventHandler, MouseEventHandler};
+use react::webapi::{HTMLButtonElement, HTMLElement, HTMLInputElement};
+use react::{EffectCallback, Element, Reducer, RefCallback, jsx};
+pub struct ButtonProps {
+    pub on_click: Option<MouseEventHandler<HTMLButtonElement>>,
+    pub on_change: ChangeEventHandler<HTMLInputElement>,
+    pub on_any: MouseEventHandler,
+}
+pub fn Button(ButtonProps { on_click, on_change, on_any }: ButtonProps) -> Element {
+    let _ = (on_click, on_change, on_any);
+    jsx! { <button /> }
+}
+pub fn attach(target: RefCallback<&'static HTMLElement>) -> u32 {
+    let _ = target;
+    1
+}
+pub fn hooks(reducer: Reducer<i32, i32>, effect: EffectCallback) -> u32 {
+    let _ = (reducer, effect);
+    2
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("on_click?: MouseEventHandler<HTMLButtonElement>;");
+  expect(declarations).toContain("on_change: ChangeEventHandler<HTMLInputElement>;");
+  expect(declarations).toContain("on_any: MouseEventHandler;");
+  expect(declarations).toContain("export function attach(target: RefCallback<HTMLElement>): number;");
+  expect(declarations).toContain("export function hooks(reducer: Reducer<number, number>, effect: EffectCallback): number;");
+  expect(declarations).toContain('import type { ChangeEventHandler, EffectCallback, MouseEventHandler, ReactNode, Reducer, RefCallback } from "react";');
+});
+
 // A component only `js::export_default!` exports is declared, not exported
 // by its name, as react.dev's `function Recap() {..} export default Recap;`.
 test("declarations declare a private default export", () => {

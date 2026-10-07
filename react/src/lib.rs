@@ -572,6 +572,7 @@ impl<H: 'static, C: Cleanup, F: Fn(Option<H>) -> C + 'static> Ref<H, CallbackRef
 /// @types/react's `RefCallback<T>`, a callback [`Ref`] a prop holds: given
 /// the element, or `None` when it's gone, and returning nothing, or a
 /// cleanup, `C`, which React 19 runs when it's gone.
+#[cfg_attr(rust_js, rust_js::types = "react#RefCallback<T>")]
 pub type RefCallback<T, C = ()> = Box<dyn Fn(Option<T>) -> C>;
 
 /// A JSX form action is a URL or, on React 19+, a function or action dispatch.
@@ -654,9 +655,12 @@ impl<T> Dispatch<SetStateAction<T>> {
 /// next state; what sends it actions, which `use_reducer` gives; an effect,
 /// [`use_effect`]'s, returning nothing or its [`Cleanup`], `C`; and a
 /// transition, [`start_transition`]'s, returning nothing or a future, `R`.
+#[cfg_attr(rust_js, rust_js::types = "react#Reducer<S, A>")]
 pub type Reducer<S, A> = Box<dyn Fn(&S, A) -> S>;
 pub type ActionDispatch<A> = Dispatch<A>;
+#[cfg_attr(rust_js, rust_js::types = "react#EffectCallback")]
 pub type EffectCallback<C = ()> = Box<dyn Fn() -> C>;
+#[cfg_attr(rust_js, rust_js::types = "react#TransitionFunction")]
 pub type TransitionFunction<R = ()> = Box<dyn FnOnce() -> R>;
 
 /// [`useReducer`](https://react.dev/reference/react/useReducer): the state,

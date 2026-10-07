@@ -8,8 +8,9 @@
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
+use rustc_hir as hir;
 use rustc_hir::attrs::lang_items::LangItem;
-use rustc_hir::def::DefKind;
+use rustc_hir::def::{DefKind, Res};
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::Symbol;
 use rustc_span::def_id::{DefId, LocalModId};
@@ -258,6 +259,67 @@ impl<'tcx> Declarations<'_, 'tcx> {
         reference(name, type_args)
     }
 
+    /// A type written as an alias that says what it is to TypeScript,
+    /// `#[rust_js::types = "react#MouseEventHandler<T>"]`: that, as a person
+    /// writes it, `MouseEventHandler<HTMLButtonElement>`, where rustc's
+    /// type is the alias expanded. Its arguments are those written, one
+    /// left to its default left out, as TypeScript's has the same.
+    fn written_alias(&mut self, written: &hir::Ty<'tcx>) -> Option<Value> {
+        let hir::TyKind::Path(hir::QPath::Resolved(None, path)) = &written.kind else {
+            return None;
+        };
+        let Res::Def(DefKind::TyAlias, did) = path.res else {
+            return None;
+        };
+        let declared = written_types(self.tcx, did)?;
+        let (from, named) = declared.rsplit_once('#').unwrap_or(("", declared.as_str()));
+        let (name, wanted) = match named.split_once('<') {
+            Some((name, wanted)) => (name, wanted.trim_end_matches('>')),
+            None => (named, ""),
+        };
+        let given: Vec<&hir::Ty<'tcx>> = (path.segments.last()?.args)
+            .map(|args| args.args.iter())
+            .into_iter()
+            .flatten()
+            .filter_map(|arg| match arg {
+                hir::GenericArg::Type(ty) => Some(ty.as_unambig_ty()),
+                _ => None,
+            })
+            .collect();
+        let params: Vec<Symbol> = (self.tcx.generics_of(did).own_params.iter())
+            .filter(|param| matches!(param.kind, ty::GenericParamDefKind::Type { .. }))
+            .map(|param| param.name)
+            .collect();
+        let mut args = Vec::new();
+        for wanted in wanted.split(',').map(str::trim).filter(|w| !w.is_empty()) {
+            let at = params.iter().position(|param| param.as_str() == wanted)?;
+            let Some(given) = given.get(at) else { break };
+            let ty = rustc_hir_analysis::lower_ty(self.tcx, given);
+            args.push(self.ts(ty));
+        }
+        if !from.is_empty() {
+            self.imports.insert((from.to_string(), name.to_string()));
+        }
+        Some(reference(name, args))
+    }
+
+    /// `Option<T>`'s `T` as written, where `written` is one.
+    fn written_option<'h>(&self, written: &'h hir::Ty<'tcx>) -> Option<&'h hir::Ty<'tcx>> {
+        let hir::TyKind::Path(hir::QPath::Resolved(None, path)) = &written.kind else {
+            return None;
+        };
+        let Res::Def(DefKind::Enum, did) = path.res else {
+            return None;
+        };
+        if !self.tcx.is_lang_item(did, LangItem::Option) {
+            return None;
+        }
+        match path.segments.last()?.args?.args {
+            [hir::GenericArg::Type(inner)] => Some(inner.as_unambig_ty()),
+            _ => None,
+        }
+    }
+
     /// `export function Tag(props: TagProps): ReactNode;`
     fn function(&mut self, def_id: DefId) -> Value {
         let sig = self
@@ -267,6 +329,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
             .skip_normalization()
             .skip_binder();
         let idents = self.tcx.fn_arg_idents(def_id);
+        let decl = (def_id.as_local()).and_then(|local| self.tcx.hir_node_by_def_id(local).fn_decl());
         let params: Vec<Value> = (sig.inputs().iter().enumerate())
             .map(|(i, &ty)| {
                 let name = match idents.get(i).copied().flatten() {
@@ -274,7 +337,11 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     // A pattern, `TagProps { variant, .. }`: its props'.
                     None => "props".to_string(),
                 };
-                json!({ "name": name, "optional": false, "rest": false, "type": self.ts(ty) })
+                let written = decl
+                    .and_then(|decl| decl.inputs.get(i))
+                    .and_then(|t| self.written_alias(t));
+                let ty = written.unwrap_or_else(|| self.ts(ty));
+                json!({ "name": name, "optional": false, "rest": false, "type": ty })
             })
             .collect();
         let output = sig.output();
@@ -347,13 +414,29 @@ impl<'tcx> Declarations<'_, 'tcx> {
             // may leave out (ADR 0212); one of an `Option` too, and one marked
             // `#[rust_js::nullable]` may be `null`, which rust-js reads as
             // `None` (ADR 0030), where TypeScript's data has it.
+            // As written, where it's an alias of one of TypeScript's.
+            let written = (field.did.as_local()).and_then(|local| match self.tcx.hir_node_by_def_id(local) {
+                hir::Node::Field(field) => Some(field.ty),
+                _ => None,
+            });
             let (optional, ty) = match self.option(ty) {
                 Some(inner) if is_nullable(self.tcx, field) => (
                     true,
                     json!({ "kind": "union", "types": [self.ts(inner), keyword("null")] }),
                 ),
-                Some(inner) => (true, self.ts(inner)),
-                None => (field_default(self.tcx, field).is_some(), self.ts(ty)),
+                Some(inner) => {
+                    let alias = written
+                        .and_then(|w| self.written_option(w))
+                        .and_then(|w| self.written_alias(w));
+                    (true, alias.unwrap_or_else(|| self.ts(inner)))
+                }
+                None => {
+                    let alias = written.and_then(|w| self.written_alias(w));
+                    (
+                        field_default(self.tcx, field).is_some(),
+                        alias.unwrap_or_else(|| self.ts(ty)),
+                    )
+                }
             };
             members.push(json!({
                 "kind": "property",
