@@ -4318,13 +4318,13 @@ impl<T> Element<T> {
 
     /// `onInput`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onInput")]
-    pub fn on_input(self, handler: impl Fn(&event::ChangeEvent<T>) + 'static) -> Element<T> {
+    pub fn on_input(self, handler: impl Fn(&event::InputEvent<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 
     /// `onInputCapture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop onInputCapture")]
-    pub fn on_input_capture(self, handler: impl Fn(&event::ChangeEvent<T>) + 'static) -> Element<T> {
+    pub fn on_input_capture(self, handler: impl Fn(&event::InputEvent<T>) + 'static) -> Element<T> {
         unreachable!()
     }
 

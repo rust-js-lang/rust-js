@@ -230,10 +230,10 @@ pub struct HTMLAttributes<'a> {
     pub on_before_input_capture: Option<event::InputEventHandler>,
     /// `onInput`
     #[cfg_attr(rust_js, rust_js::name = "onInput")]
-    pub on_input: Option<event::ChangeEventHandler>,
+    pub on_input: Option<event::InputEventHandler>,
     /// `onInputCapture`
     #[cfg_attr(rust_js, rust_js::name = "onInputCapture")]
-    pub on_input_capture: Option<event::ChangeEventHandler>,
+    pub on_input_capture: Option<event::InputEventHandler>,
     /// `onReset`
     #[cfg_attr(rust_js, rust_js::name = "onReset")]
     pub on_reset: Option<event::ReactEventHandler>,
@@ -1033,10 +1033,10 @@ pub struct SVGAttributes<'a> {
     pub on_before_input_capture: Option<event::InputEventHandler>,
     /// `onInput`
     #[cfg_attr(rust_js, rust_js::name = "onInput")]
-    pub on_input: Option<event::ChangeEventHandler>,
+    pub on_input: Option<event::InputEventHandler>,
     /// `onInputCapture`
     #[cfg_attr(rust_js, rust_js::name = "onInputCapture")]
-    pub on_input_capture: Option<event::ChangeEventHandler>,
+    pub on_input_capture: Option<event::InputEventHandler>,
     /// `onReset`
     #[cfg_attr(rust_js, rust_js::name = "onReset")]
     pub on_reset: Option<event::ReactEventHandler>,

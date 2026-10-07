@@ -1967,6 +1967,40 @@ pub fn Form(FormProps { on_send, on_reset, on_submitted }: FormProps) -> Element
   expect(sent).toEqual(["Send true", " false"]);
 });
 
+// `onInput` is @types/react's `InputEventHandler`, of an `InputEvent`, as
+// `onBeforeInput` is; `onChange` alone is a `ChangeEvent`, of `value()`.
+test("JSX onInput gets an InputEvent, as @types/react types it", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::event::InputEventHandler;
+use react::webapi::{HTMLInputElement, html_input_element, input_event};
+use react::{Element, jsx};
+pub struct FieldProps {
+    pub on_read: fn(String),
+    pub on_typed: Option<InputEventHandler<HTMLInputElement>>,
+}
+pub fn Field(FieldProps { on_read, on_typed }: FieldProps) -> Element {
+    let _ = on_typed;
+    jsx! {
+        <input
+            onInput={move |e| on_read(format!(
+                "{} {} {}",
+                e.data().unwrap_or_default(),
+                input_event::input_type(e.native_event()),
+                html_input_element::value(e.current_target()),
+            ))}
+            onChange={move |e| on_read(e.value())} />
+    }
+}
+`);
+  run(args);
+  const { Field } = await import(join(dir, "lib.jsx"));
+  const read: string[] = [];
+  const { props } = Field({ on_read: (s: string) => read.push(s) });
+  props.onInput({ data: "a", nativeEvent: { inputType: "insertText" }, currentTarget: { value: "ba" } });
+  props.onChange({ target: { value: "ba" } });
+  expect(read).toEqual(["a insertText ba", "ba"]);
+});
+
 // An event's `native_event` is the DOM's event it wraps, typed as
 // @types/react types `nativeEvent`: a click's a `MouseEvent`, a pointer's a
 // `PointerEvent`, a wheel's a `WheelEvent`, so its own fields are read.

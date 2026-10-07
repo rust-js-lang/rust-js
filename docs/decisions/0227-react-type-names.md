@@ -61,6 +61,11 @@ for the same things, and the `.d.ts` rust-js writes already used React's.
   `SubmitEventHandler`. `FormEvent` and `InvalidEvent`, which add nothing
   to a `SyntheticEvent` in @types/react, are its names, with
   `FormEventHandler`. (Amended.)
+- **`onInput` is an `InputEvent`**, as @types/react's `InputEventHandler`
+  types it, of `data()` and a native `InputEvent`, as `onBeforeInput` is,
+  where it was a `ChangeEvent`, of `value()`: @types/react's types are the
+  rule, over a convenience of the crate's own. Its value is its element's,
+  `html_input_element::value(e.current_target())`. (Amended.)
 - **Names React has no type for stay the crate's own**: `Element`, what
   JSX makes, `JSX.Element`; `Rest`, `...props`; `children::Child`;
   `InnerHtml`, `{ __html }`; `Cleanup`, what an effect gives back, which

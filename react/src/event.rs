@@ -270,7 +270,7 @@ events! {
         old_state: String = "oldState";
     }
 
-    /// An `<input>`, `<select>` or `<textarea>` changing: `on_change`, `on_input`.
+    /// An `<input>`, `<select>` or `<textarea>` changing: `on_change`.
     ChangeEvent as "react#ChangeEvent<T>": SyntheticEvent<T> {
         /// What's in it now: `e.target.value`.
         value: String = "target.value";
