@@ -69,7 +69,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "item-subject-refused",
-    breaks: "`match map.get_mut(&key) { Some(value) => .. }` is refused, as `get_mut` kept is",
+    snapshots: true,
+    breaks: "`match map.get_mut(&key) { Some(value) => .. }` boxes the item, `$mutGet(map, key)`, where it reads `map.get(key)`",
     file: "src/lower/mut_refs.rs",
     find: "        self.mark_item_call(fun);\n        true\n",
     replace: "        false\n",

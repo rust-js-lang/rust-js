@@ -1196,9 +1196,20 @@ pub struct ForwardProps {
 pub fn Forward(ForwardProps { href, props }: ForwardProps) -> Element {
     jsx! { <ButtonLink href={href} props={props}>{"F"}</ButtonLink> }
 }
-// A variable is read as it is, beside a prop that does something.
+// A variable is read as it is, beside props that do something, each read
+// first, as they're written out of the struct's order.
 pub fn Kept(h: &'static str) -> Element {
-    jsx! { <ButtonLink target={Some(note("t"))} href={h}>{"K"}</ButtonLink> }
+    jsx! { <ButtonLink target={Some(note("t"))} label={Some(note("l"))} href={h}>{"K"}</ButtonLink> }
+}
+// Its flattened struct made here, given whole, beside props that do
+// something: each of its fields is read in its place.
+pub fn Made() -> Element {
+    jsx! { <ButtonLink label={Some(note("l"))} props={Anchor { target: Some(note("t")), html: Html { id: Some(note("i")), ..Default::default() }, ..Default::default() }} href={note("h")}>{"M"}</ButtonLink> }
+}
+// Children that do something, before its flattened struct in its fields'
+// order: what's after them is read first, the struct's fields each in place.
+pub fn Told(t: Option<&'static str>) -> Element {
+    jsx! { <ButtonLink href="/t" target={t}>{note("c")}</ButtonLink> }
 }
 // Its flattened struct first, no children: Rust makes \`target\` first.
 pub struct LinkyProps {
@@ -1239,7 +1250,9 @@ pub fn Linked() -> Element {
   expect(logged).toEqual(["h", "t", "l", "t", "h", "big"]);
   expect(jsx).toMatch(/<ButtonLink size=\{\w+\} href=\{\w+\}>/);
   expect(jsx).toContain("<Linky label={label} target={target} />");
-  expect(jsx).toContain('<ButtonLink target={note("t")} href={h}>');
+  expect(jsx).toContain("<ButtonLink target={target} label={label} href={h}>");
+  expect(jsx).toMatch(/<ButtonLink label=\{[\w$]+\} target=\{[\w$]+\} id=\{id\} href=\{[\w$]+\}>/);
+  expect(jsx).toContain('<ButtonLink href="/t" target={t}>');
   expect(jsx).toMatch(/<ButtonLink target=\{\w+\} href=\{\w+\}>/);
   expect(renderToStaticMarkup(App())).toBe('<a href="/a" data-size="lg" target="_blank" id="x">A</a><a href="/b" data-size="md" class="c">B</a>');
   const refused = (source: string, says: string) => {
@@ -1550,26 +1563,36 @@ use react::{Element, jsx};
 pub enum Size { S, Md }
 pub struct P { pub class_name: Option<&'static str>, pub size: Option<Size>, pub title: Option<&'static str> }
 pub fn Badge(p: P) -> Element {
+    let class_name = p.class_name.unwrap_or("badge");
     jsx! {
         <svg
-            className={p.class_name}
+            className={class_name}
+            id={class_name}
             width={if matches!(p.size, Some(Size::S)) { "12px" } else { "20px" }}
             height={if matches!(p.size, Some(Size::S)) { "12px" } else { "20px" }}
             viewBox="0 0 20 20"
         >
             {p.title.map(|title| jsx! { <title>{title}</title> })}
             <g fill="none"><path d="M0 0" /></g>
+            {{
+                let mut letters = 0;
+                for _ in class_name.chars() {
+                    letters += 1;
+                }
+                letters
+            }}
         </svg>
     }
 }
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  // Its last child's statements come first, so what's before is read before
+  // them, but a `const` already isn't copied.
   expect(jsx.match(/const (\w+)\$\d+ = \1;/)).toBe(null);
-  // Its child's statement only reads, so the attributes before it stay in place.
-  expect(jsx).not.toContain("const className");
+  expect(jsx).toContain("className={className}");
   const result = await import(join(dir, "lib.jsx"));
-  expect(renderToStaticMarkup(result.Badge({ class_name: "c", size: "S", title: "t" }))).toBe('<svg class="c" width="12px" height="12px" viewBox="0 0 20 20"><title>t</title><g fill="none"><path d="M0 0"></path></g></svg>');
+  expect(renderToStaticMarkup(result.Badge({ class_name: "c", size: "S", title: "t" }))).toBe('<svg class="c" id="c" width="12px" height="12px" viewBox="0 0 20 20"><title>t</title><g fill="none"><path d="M0 0"></path></g>1</svg>');
 });
 
 // A node told apart by what it is, `react::kind_of`: text, or anything else
@@ -1876,7 +1899,7 @@ pub fn Bare(HeadingProps { r#as: Comp, rest, .. }: HeadingProps<()>) -> Element 
 
 // A comparison of what reads the same reads the same after a later child's
 // statement too, so it stays in place, as react.dev's PageHeading tests its
-// version (ADR 0218).
+// version (ADR 0218): before the statements of a later child, a loop.
 test("JSX keeps a comparison of what reads the same in place", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{Element, jsx};
@@ -1889,6 +1912,13 @@ pub fn Heading(title: &'static str, version: Option<Version>, done: bool, status
             {(!matches!(version, Some(Version::Rc))).then(|| jsx! { <b>{"stable"}</b> })}
             {(!done).then(|| jsx! { <s>{"todo"}</s> })}
             {status.filter(|s| !s.is_empty()).map(|s| jsx! { <em>{s}</em> })}
+            {{
+                let mut letters = 0;
+                for _ in title.chars() {
+                    letters += 1;
+                }
+                letters
+            }}
         </h1>
     }
 }
@@ -1900,14 +1930,15 @@ pub fn Count() -> Element {
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(jsx.slice(0, jsx.indexOf("export function Count"))).not.toContain("const condition");
+  const heading = jsx.slice(0, jsx.indexOf("export function Count"));
+  expect([heading.includes("= version"), heading.includes("= !done")]).toEqual([false, false]);
   expect(jsx).toContain("const condition = n === 0;\n  n = (n + 1) | 0;");
   expect(jsx).toContain('{version === "Canary" ? <i>canary</i> : undefined}');
   expect(jsx).toContain('{version !== "Rc" ? <b>stable</b> : undefined}');
   expect(jsx).toContain("{!done ? <s>todo</s> : undefined}");
   const result = await import(join(dir, "lib.jsx"));
-  expect(renderToStaticMarkup(result.Heading("T", "Canary", false, ""))).toBe("<h1>T<i>canary</i><b>stable</b><s>todo</s></h1>");
-  expect(renderToStaticMarkup(result.Heading("T", "Rc", true, "new"))).toBe("<h1>T<em>new</em></h1>");
+  expect(renderToStaticMarkup(result.Heading("T", "Canary", false, ""))).toBe("<h1>T<i>canary</i><b>stable</b><s>todo</s>1</h1>");
+  expect(renderToStaticMarkup(result.Heading("T", "Rc", true, "new"))).toBe("<h1>T<em>new</em>1</h1>");
   expect(renderToStaticMarkup(result.Count())).toBe("<p><i>zero</i>1</p>");
 });
 

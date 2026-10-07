@@ -205,7 +205,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "trait-fn-value-unknown",
-    breaks: "`.map(Area::area)`, a trait's function as a value, is refused",
+    snapshots: true,
+    breaks: "`.map(Area::area)`, a trait's function as a value, is an arrow calling it, `(x) => shapeArea_area(x)`, where it's the function itself",
     file: "src/lower.rs",
     find: "                    && (self.is_rust_fn(def_id) || self.is_rust_trait_fn(def_id, args)) =>\n",
     replace: "                    && self.is_rust_fn(def_id) =>\n",

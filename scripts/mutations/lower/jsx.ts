@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/jsx.rs",
     find: "            && adt.adt_def.is_struct()\n            && fields.len() == adt.adt_def.non_enum_variant().fields.len()",
     replace: "            && false\n            && fields.len() == adt.adt_def.non_enum_variant().fields.len()",
-    tests: ["test/jsx.test.ts", "-t", "no dictionary"],
+    tests: ["test/jsx.test.ts", "-t", "its props as written, and children that change the base first"],
   },
   {
     name: "props-read-before-constant-base",
