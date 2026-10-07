@@ -77,8 +77,8 @@ export function Todos() {
           Add
         </button>
         <ul>{items}</ul>
-        {todos.length === 0 ? <p className="empty">Nothing to do</p> : undefined}
-        {t != null ? <p className="latest">{t.text}</p> : undefined}
+        {todos.length === 0 && <p className="empty">Nothing to do</p>}
+        {t != null && <p className="latest">{t.text}</p>}
         <span className="left">{left} left</span>
       </>
     </Card>

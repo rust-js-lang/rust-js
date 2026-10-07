@@ -298,4 +298,44 @@ export const mutations: Mutation[] = [
       "flattened props with a field of them set"
     ]
   },
+  {
+    name: "children-and-unmade",
+    breaks: "`(level == 1).then(|| jsx! { <b /> })` is `level === 1 ? <b /> : undefined`, not `level === 1 && <b />`",
+    file: "src/lower/jsx.rs",
+    find: "if !matches!(none.kind, js::ExprKind::Undefined) || !is_boolean(test) {",
+    replace: "if true {",
+    tests: ["test/jsx.test.ts", "-t", "the test && the child"],
+  },
+  {
+    name: "children-and-any-test",
+    breaks: "a test of text by its truthiness is `href && <a />`, which renders \"\" as text",
+    file: "src/lower/jsx.rs",
+    find: "if !matches!(none.kind, js::ExprKind::Undefined) || !is_boolean(test) {",
+    replace: "if !matches!(none.kind, js::ExprKind::Undefined) {",
+    tests: ["test/jsx.test.ts", "-t", "the test && the child"],
+  },
+  {
+    name: "option-object-not-narrowed",
+    breaks: "`variant.icon.map(|Icon| ..)` is `variant.Icon != null && ..`, not `variant.Icon && ..`",
+    file: "src/lower/jsx.rs",
+    find: "if matches!(null.kind, js::ExprKind::Null) && self.maps_js_object(child) =>",
+    replace: "if matches!(null.kind, js::ExprKind::Null) && false =>",
+    tests: ["test/jsx.test.ts", "-t", "ElementType, rendered as a tag"],
+  },
+  {
+    name: "option-any-narrowed",
+    breaks: "`count.map(..)` of an `Option<u32>` is `count && ..`, which renders 0 as text",
+    file: "src/lower/jsx.rs",
+    find: "if matches!(null.kind, js::ExprKind::Null) && self.maps_js_object(child) =>",
+    replace: "if matches!(null.kind, js::ExprKind::Null) =>",
+    tests: ["test/jsx.test.ts", "-t", "the test && the child"],
+  },
+  {
+    name: "children-tuple-not-recursed",
+    breaks: "only a first child, of the tuple of tuples `jsx!` makes, is `test && ..`: the next keep `? .. : undefined`",
+    file: "src/lower/jsx.rs",
+    find: ".map(|(item, &field)| self.shown_if(field, item))",
+    replace: ".map(|(item, _)| item)",
+    tests: ["test/jsx.test.ts", "-t", "the test && the child"],
+  },
 ];

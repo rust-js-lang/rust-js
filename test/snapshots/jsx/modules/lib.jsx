@@ -12,7 +12,7 @@ export function App() {
       <Card title="Numbers">
         <ul {...attrs}>{items}</ul>
       </Card>
-      {true ? <p data-state="ready">done</p> : undefined}
+      {true && <p data-state="ready">done</p>}
     </>
   );
 }

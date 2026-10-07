@@ -472,7 +472,57 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     pub(super) fn jsx_children(&mut self, e: ExprId, out: &mut Vec<Stmt>) -> R<Vec<Expr>> {
         let value = self.expr(e, out)?;
+        let value = self.shown_if(e, value);
         Ok(self.spread_children(value, self.thir[e].ty, out))
+    }
+
+    /// A child shown only if a test holds, `test ? <b /> : undefined`, as JSX
+    /// writes it, `test && <b />` (ADR 0235): only where the test is `false`,
+    /// `null` or `undefined` when it fails, which render nothing, as
+    /// `undefined` does; never `0` nor `""`, which render as text. A boolean,
+    /// `level === 1`, or an `Option` of a JS object mapped, which is one
+    /// when there, so it's its own test: `variant.Icon && <variant.Icon />`.
+    fn shown_if(&self, child: ExprId, value: Expr) -> Expr {
+        // Children are a tuple, of tuples too: each its own.
+        if let ExprKind::Tuple { fields } = &self.thir[self.strip(child)].kind
+            && let js::ExprKind::Array(items) = &value.kind
+            && fields.len() == items.len()
+        {
+            let items = (items.iter().cloned())
+                .zip(fields.iter())
+                .map(|(item, &field)| self.shown_if(field, item))
+                .collect();
+            return Expr {
+                kind: js::ExprKind::Array(items),
+                span: value.span,
+            };
+        }
+        let js::ExprKind::Cond(test, shown, none) = &value.kind else {
+            return value;
+        };
+        if !matches!(none.kind, js::ExprKind::Undefined) || !is_boolean(test) {
+            return value;
+        }
+        let test = match &test.kind {
+            js::ExprKind::Binary(js::Op::LooseNe, x, null)
+                if matches!(null.kind, js::ExprKind::Null) && self.maps_js_object(child) =>
+            {
+                (**x).clone()
+            }
+            _ => (**test).clone(),
+        };
+        Expr {
+            kind: js::ExprKind::Binary(js::Op::And, Box::new(test), shown.clone()),
+            span: value.span,
+        }
+    }
+
+    /// Is `child` a call of an `Option` of a JS object, `variant.icon.map(..)`?
+    fn maps_js_object(&self, child: ExprId) -> bool {
+        matches!(self.thir[self.strip(child)].kind, ExprKind::Call { ref args, .. }
+            if args.first().is_some_and(|&receiver| self
+                .option_of(self.thir[receiver].ty)
+                .is_some_and(|inner| self.is_js_object(inner.peel_refs()))))
     }
 
     /// A tuple of children is several, `("Count is ", count)`: `Count is {count}`.
@@ -703,4 +753,21 @@ fn passed_handler(value: &Expr) -> Option<Expr> {
     let given = matches!(args.as_slice(), [arg] if matches!(&arg.kind, js::ExprKind::Var(a) if a == param));
     let called = matches!(&callee.kind, js::ExprKind::Var(c) if c == handler);
     (given && called && handler != param).then(|| (**tested).clone())
+}
+
+/// Is `test` a boolean by its shape: a comparison, `!`, a `bool`, or `&&`
+/// and `||` of them? What it is when it fails is `false`.
+fn is_boolean(test: &Expr) -> bool {
+    use js::ExprKind as K;
+    use js::Op;
+    match &test.kind {
+        K::Bool(_) | K::Unary(js::UnaryOp::Not, _) => true,
+        K::Binary(
+            Op::Eq | Op::Ne | Op::LooseEq | Op::LooseNe | Op::Lt | Op::Le | Op::Gt | Op::Ge | Op::InstanceOf,
+            _,
+            _,
+        ) => true,
+        K::Binary(Op::And | Op::Or, a, b) => is_boolean(a) && is_boolean(b),
+        _ => false,
+    }
 }

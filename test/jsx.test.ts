@@ -290,6 +290,41 @@ pub fn Pick(href: &str) -> Element {
   expect(js).not.toContain("let tmp");
 });
 
+// A child shown only if a test holds is `test && <b />`, as JSX writes it:
+// a false test, and `null` or `undefined`, render nothing, as `undefined`
+// does. react.dev's ConsoleBlock has `{level === 'warning' && <IconWarning />}`.
+test("a child shown only if a test holds is the test && the child", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{Element, jsx};
+pub fn Level(level: u32) -> Element {
+    jsx! { <p>{(level == 1).then(|| jsx! { <b>{"warn"}</b> })}{"x"}</p> }
+}
+// Text and a number keep their != null, as "" and 0 would render;
+// a test of text by its truthiness keeps its conditional.
+pub fn Named(name: Option<&'static str>, count: Option<u32>, href: Option<&'static str>) -> Element {
+    jsx! {
+        <p>
+            {name.map(|n| jsx! { <b>{n}</b> })}
+            {count.map(|c| jsx! { <i>{c}</i> })}
+            {if let Some(h) = href.filter(|h| !h.is_empty()) { Some(jsx! { <a href={h} /> }) } else { None }}
+        </p>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain('{level === 1 && <b>warn</b>}');
+  expect(jsx).toContain("{name != null && <b>{name}</b>}");
+  expect(jsx).toContain("{count != null && <i>{count}</i>}");
+  expect(jsx).not.toContain("{count &&");
+  expect(jsx).not.toContain("{name &&");
+  expect(jsx).toContain("{href ? <a href={href} /> : undefined}");
+  const { Level } = await import(join(dir, "lib.jsx"));
+  expect([1, 2].map((level) => renderToStaticMarkup(Level(level)))).toEqual(["<p><b>warn</b>x</p>", "<p>x</p>"]);
+  const { Named } = await import(join(dir, "lib.jsx"));
+  expect([renderToStaticMarkup(Named("", 0, "")), renderToStaticMarkup(Named(undefined, undefined, undefined))]).toEqual(["<p><b></b><i>0</i></p>", "<p></p>"]);
+});
+
 // A component whose props take what a DOM element takes is an `ElementType`,
 // as @types/react's, whatever else its props have, so one field holds any of
 // them, and a capitalized local of it is a tag: react.dev's ExpandableCallout
@@ -351,7 +386,7 @@ pub fn Badged() -> Element {
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain("icon = IconNote;");
-  expect(jsx).toContain('<variant.Icon className="inline" />');
+  expect(jsx).toContain('{variant.Icon && <variant.Icon className="inline" />}');
   const { Callout } = await import(join(dir, "lib.jsx"));
   expect([0, 1, 2].map((which) => renderToStaticMarkup(Callout(which)))).toEqual([
     '<h3><svg class="inline"></svg>t</h3>',
@@ -614,7 +649,7 @@ pub fn title(name: Option<&str>) -> String {
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(jsx).toContain('{excerpt != null && excerpt.length !== 0 ? <p>{excerpt}</p> : undefined}');
+  expect(jsx).toContain('{excerpt != null && excerpt.length !== 0 && <p>{excerpt}</p>}');
   expect(jsx).toContain('<span>{expanded ? "Hide" : "Show"}</span>');
   expect(jsx).not.toContain("const children");
   expect(jsx).not.toContain("const className");
@@ -2277,9 +2312,9 @@ pub fn Count() -> Element {
   const heading = jsx.slice(0, jsx.indexOf("export function Count"));
   expect(heading).not.toContain("const condition");
   expect(jsx).toContain("const condition = n === 0;\n  n = (n + 1) | 0;");
-  expect(jsx).toContain('{version === "Canary" ? <i>canary</i> : undefined}');
-  expect(jsx).toContain('{version !== "Rc" ? <b>stable</b> : undefined}');
-  expect(jsx).toContain("{!done ? <s>todo</s> : undefined}");
+  expect(jsx).toContain('{version === "Canary" && <i>canary</i>}');
+  expect(jsx).toContain('{version !== "Rc" && <b>stable</b>}');
+  expect(jsx).toContain("{!done && <s>todo</s>}");
   const result = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(result.Heading("T", "Canary", false, ""))).toBe("<h1>T<i>canary</i><b>stable</b><s>todo</s>1</h1>");
   expect(renderToStaticMarkup(result.Heading("T", "Rc", true, "new"))).toBe("<h1>T<em>new</em>1</h1>");
