@@ -244,11 +244,36 @@ pub fn crumbs(crumbs: &[Crumb]) -> Vec<JSX::Element> {
         </Fragment>
     }).collect()
 }
+// Children that aren't simple, but need no statements: a table read by
+// its variant, \`TITLES[kind]\` (ADR 0233).
+#[derive(Clone, Copy)]
+pub enum Kind {
+    #[rust_js::name = "note"]
+    Note,
+    #[rust_js::name = "tip"]
+    Tip,
+    #[rust_js::name = "rsc"]
+    Rsc,
+}
+pub struct Titles {
+    pub note: &'static str,
+    pub tip: &'static str,
+    pub rsc: &'static str,
+}
+static TITLES: Titles = Titles { note: "Note", tip: "Tip", rsc: "RSC" };
+pub fn titled(kind: Kind, crumb: &Crumb) -> JSX::Element {
+    jsx! {
+        <Fragment key={crumb.title.as_str()}>
+            <b>{match kind { Kind::Note => TITLES.note, Kind::Tip => TITLES.tip, Kind::Rsc => TITLES.rsc }}</b>
+        </Fragment>
+    }
+}
 `;
   const { dir, args } = compile(source);
   run(args);
   const js = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(js).toContain("<Fragment key={crumb.title}>");
+  expect(js).toContain("<b>{TITLES[kind]}</b>");
   expect(js).not.toContain("const key");
 });
 
