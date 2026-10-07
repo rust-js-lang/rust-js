@@ -5,10 +5,14 @@ unsafe extern "Rust" {
     // A file beside this one, named from the root's: `./wave.js` here.
     #[link_name = "./inner/wave.js#default"]
     safe fn wave(name: &str) -> String;
+    // The root's import too, beside this file's own `join`: renamed here,
+    // and only here.
+    #[link_name = "node:path#join"]
+    safe fn path_join(a: &str, b: &str) -> String;
 }
 
 // Named as the root's import of `node:path`'s `join`, which this file
-// doesn't import: the root's keeps its name.
+// imports too: the root's keeps its name.
 fn join(greeting: String) -> String {
     greeting
 }
@@ -19,4 +23,8 @@ pub fn hello() -> String {
 
 pub fn bye() -> String {
     wave("leaf")
+}
+
+pub fn joined() -> String {
+    join(path_join("a", "leaf"))
 }

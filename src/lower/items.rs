@@ -25,7 +25,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .borrow_mut()
                 .package_uses
                 .insert((self.module, export.clone()));
-            let reference = Expr::var(&self.krate.imports[&export]);
+            let reference = Expr::var(&self.krate.imports[&self.module][&export]);
             return match &item.member {
                 Some(method) => Expr::member(reference, method.clone()),
                 None => reference,
@@ -61,7 +61,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .borrow_mut()
                     .package_uses
                     .insert((self.module, export.clone()));
-                global(&format!("{}{rest}", self.krate.imports[&export]))
+                global(&format!("{}{rest}", self.krate.imports[&self.module][&export]))
             }
             None => global(path),
         }

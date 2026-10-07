@@ -403,7 +403,7 @@ pub fn lower_crate<'tcx>(
                     named: Vec::new(),
                     namespace: None,
                 });
-                let local = import_names[export].clone();
+                let local = import_names[&module][export].clone();
                 match name.as_str() {
                     "default" => package.default = Some(local),
                     "*" => package.namespace = Some(local),

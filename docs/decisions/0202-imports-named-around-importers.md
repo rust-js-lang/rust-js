@@ -1,4 +1,4 @@
-# 0202. An import is named around the modules that import it
+# 0202. An import is named in each file that imports it
 
 Status: Accepted. Amends [0028](0028-js-module-imports.md).
 
@@ -10,26 +10,40 @@ crate's imports, and was named around every module's items. react.dev's
 module has a function of its own, `fn Link`, which ButtonLink's file
 never sees: every file's import was `import Link$1 from "next/link"`.
 
+Named around only the modules that import it, it still was, once one of
+them had its own: react.dev's `MDX/Link` imports next/link beside its
+`fn Link`, and `Breadcrumbs`, `ButtonLink`, `DocsFooter` and `BlogCard`
+each had `import Link$1 from "next/link"`. (Amended.)
+
 ## Decision
 
-**An import is named around the globals, the crate's other imports, and
-the items of each module that imports it, or every module's for a
-library's export, whose importers are known only once they're lowered:
-another module's item of its name is no reason to rename it.**
+**An import is named in each file, around the globals, that file's items
+and its other imports: another module's item of its name is no reason to
+rename it, and one of the file's own renames it there only.**
 
 ```js
-// components/ButtonLink.jsx, beside components/Icon/IconLink.jsx's `function Link`
+// components/ButtonLink.jsx, beside components/MDX/Link.jsx's `function Link`
 import Link from "next/link";
 ```
 
-- **Still one name in every file that has it**, so a module's locals
-  avoid it, as they did.
+```js
+// components/MDX/Link.jsx
+import Link$1 from "next/link";
+
+function Link({ href, className, children, ...props }) {
+```
+
+- **Every module names every import**, so a module's locals avoid it, as
+  they did: a library's export (ADR 0100), or one a trait's default
+  copied into an impl uses (ADR 0049), is used by modules known only once
+  they're lowered.
 
 ## Why
 
 - **A name is the file's**: one in a file that doesn't import it is no
-  name of that file's import. A module of the crate's own, imported by
-  the importing one, is the linker's to alias, as it was.
+  name of that file's import, nor is one another file renames. A module
+  of the crate's own, imported by the importing one, is the linker's to
+  alias, as it was.
 - **It's tested by the `imports` snapshot**: `inner/leaf.rs` has a `fn
-  join` of its own, and the root's `import { join } from "node:path"`
-  keeps its name.
+  join` of its own and imports `node:path`'s `join` too, `join$1` there,
+  and the root's `import { join } from "node:path"` keeps its name.

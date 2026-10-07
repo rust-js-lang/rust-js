@@ -2,6 +2,7 @@
 
 import greet from "../greet.js";
 import wave from "./wave.js";
+import { join as join$1 } from "node:path";
 
 function join(greeting) {
   return greeting;
@@ -13,5 +14,9 @@ export function hello() {
 
 export function bye() {
   return wave("leaf");
+}
+
+export function joined() {
+  return join(join$1("a", "leaf"));
 }
 //# sourceMappingURL=leaf.js.map

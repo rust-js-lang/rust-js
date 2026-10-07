@@ -244,6 +244,7 @@ test("extern items from JS modules become import statements", async () => {
   expect(imports.lib.greetings()).toEqual(["Hello, world!", "Good day, world.", "!?"]);
   expect(imports.leaf.hello()).toBe("Hello, leaf!");
   expect(imports.leaf.bye()).toBe("Bye, leaf!");
+  expect(imports.leaf.joined()).toBe("a/leaf");
 
   const lib = await Bun.file(join(target, "imports", "lib.js")).text();
   // One statement per module and kind, as a person would write them. A
@@ -259,7 +260,11 @@ test("extern items from JS modules become import statements", async () => {
   expect(lib).toContain('greet$1.polite("world")');
   // Two directories down, only what the file uses, from the same file.
   const leaf = await Bun.file(join(target, "imports", "inner", "leaf.js")).text();
-  expect(leaf).toMatch(/\nimport greet from "\.\.\/greet\.js";\nimport wave from "\.\/wave\.js";\n\nfunction join/);
+  expect(leaf).toMatch(
+    /\nimport greet from "\.\.\/greet\.js";\nimport wave from "\.\/wave\.js";\nimport \{ join as join\$1 \} from "node:path";\n\nfunction join/,
+  );
+  // Its own `join` renames its import of node:path's, not the root's.
+  expect(leaf).toContain('return join(join$1("a", "leaf"));');
 });
 
 // ADR 0029: `async fn` is an `async function`, `.await` is `await`, and a
