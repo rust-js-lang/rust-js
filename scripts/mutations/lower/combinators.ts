@@ -170,4 +170,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/compiler.test.ts", "-t", "concat of parts"],
   },
+  {
+    name: "flatten-of-option-refs-flat",
+    breaks: "`parts.iter().flatten()` of `&[Option<&str>]` is `parts.flat()`, which keeps the `None`s: `\"a  b \"`",
+    file: "src/lower/combinators.rs",
+    find: "Some(item) if self.option_of(item.peel_refs()).is_some() =>",
+    replace: "Some(item) if self.option_of(item).is_some() =>",
+    tests: ["test/corpus.test.ts", "-t", "iter_flatten"],
+  },
 ];

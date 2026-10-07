@@ -891,8 +891,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     method(items, "flatMap", vec![next()])
                 }
             }
+            // Of `Option`s, through a reference too, `iter()`'s `&Some(x)`,
+            // which is `x`: the `Some`s.
             IterComb::Flatten => match item_ty() {
-                Some(item) if self.option_of(item).is_some() => method(items, "filter", vec![present()]),
+                Some(item) if self.option_of(item.peel_refs()).is_some() => method(items, "filter", vec![present()]),
                 _ if lazy => {
                     let each = Expr::arrow(
                         vec!["item".into()],
