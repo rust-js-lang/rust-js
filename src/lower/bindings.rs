@@ -227,7 +227,7 @@ pub(super) fn test_of(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
 }
 
 /// A JS object type's class, as `instanceof` names it: its
-/// `#[rust_js::name = ".."]`, `HTMLElement` of `HtmlElement`, or its name.
+/// `#[rust_js::name = ".."]`, `WebAssembly.Module` of `WebAssemblyModule`, or its name.
 pub(super) fn class_name(tcx: TyCtxt<'_>, def_id: DefId) -> String {
     given_name(tcx, def_id).unwrap_or_else(|| tcx.item_name(def_id).to_string())
 }

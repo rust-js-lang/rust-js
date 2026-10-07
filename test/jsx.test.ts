@@ -673,7 +673,7 @@ pub fn Button(ButtonProps { on_click }: ButtonProps) -> Element {
     jsx! { <button onClick={event::MouseEvent::widen(on_click)}>{"Go"}</button> }
 }
 pub fn App(busy: bool) -> Element {
-    let input = use_ref(None::<&'static webapi::HtmlInputElement>);
+    let input = use_ref(None::<&'static webapi::HTMLInputElement>);
     let label = if busy { jsx! { <span>{"…"}</span> } } else { jsx! { <b>{"Save"}</b> } };
     jsx! {
         <form>
@@ -695,8 +695,8 @@ pub fn App(busy: bool) -> Element {
   // An input's ref on a button, a handler of an input's event on it, and a
   // handler of any element's event not widened, are each rustc's error.
   for (const [wrong, written, error] of [
-    ["<input ref={input} />", "<button ref={input} />", "the trait `react::webapi::IsA<react::webapi::HtmlInputElement>` is not implemented for `react::webapi::HtmlButtonElement`"],
-    ["onClick={|e| webapi::html_button_element::set_disabled(e.current_target(), true)}", "onClick={|e: &event::MouseEvent<webapi::HtmlInputElement>| { let _ = e; }}", "expected closure signature `for<'a> fn(&'a MouseEvent<react::webapi::HtmlButtonElement>) -> _`"],
+    ["<input ref={input} />", "<button ref={input} />", "the trait `react::webapi::IsA<react::webapi::HTMLInputElement>` is not implemented for `react::webapi::HTMLButtonElement`"],
+    ["onClick={|e| webapi::html_button_element::set_disabled(e.current_target(), true)}", "onClick={|e: &event::MouseEvent<webapi::HTMLInputElement>| { let _ = e; }}", "expected closure signature `for<'a> fn(&'a MouseEvent<react::webapi::HTMLButtonElement>) -> _`"],
     ["onClick={event::MouseEvent::widen(on_click)}", "onClick={on_click}", "found `dyn for<'a> std::ops::Fn(&'a react::event::MouseEvent)`"],
   ]) {
     writeFileSync(join(dir, "lib.rs"), source.replace(wrong, written));
@@ -1770,14 +1770,14 @@ pub fn A(p: P) -> Element {
 test("JSX takes an async event handler as the async function it is", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use js::Promise;
-use react::webapi::HtmlButtonElement;
+use react::webapi::HTMLButtonElement;
 use react::{Element, event, jsx, use_state};
 unsafe extern "Rust" {
     #[link_name = "Promise.resolve"]
     safe fn resolved() -> Promise<()>;
 }
 pub struct ButtonProps {
-    pub on_click: Box<dyn Fn(&event::MouseEvent<HtmlButtonElement>)>,
+    pub on_click: Box<dyn Fn(&event::MouseEvent<HTMLButtonElement>)>,
 }
 pub fn Button(ButtonProps { on_click }: ButtonProps) -> Element {
     jsx! { <button onClick={on_click}>{"Copy"}</button> }

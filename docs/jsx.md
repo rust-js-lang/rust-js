@@ -118,7 +118,7 @@ available to the syntax pass (for example, an imported value or a local alias),
 use `<Selected {...props} />`, with `{...()}` for no props.
 
 A tag's handlers and `ref` are of its DOM element (ADR 0224): a `<button>`'s
-`onClick` gets an `event::MouseEvent<webapi::HtmlButtonElement>`, whose
+`onClick` gets an `event::MouseEvent<webapi::HTMLButtonElement>`, whose
 `current_target()` is the button. A closure written outside the JSX can name
 its event `&event::MouseEvent<_>`, the tag filling in its element. A handler of
 any element's event, `Box<dyn Fn(&event::MouseEvent)>`, is passed as

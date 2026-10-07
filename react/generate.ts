@@ -250,14 +250,14 @@ for (const spec of ["html", "SVG2", "svg-animations", "filter-effects-1", "css-m
   }
 }
 // Each HTML tag's element, as the webapi crate's `Tag` gives it (ADR 0224):
-// `<button>` is a `HtmlButtonElement`. Another, an SVG one's, is any `Element`.
+// `<button>` is an `HTMLButtonElement`. Another, an SVG one's, is any `Element`.
 const webapiSource = readFileSync(join(root, "webapi", "src", "lib.rs"), "utf8");
 const tagTypes = new Map([...webapiSource.matchAll(/rust_js::name = "([^"]+)"\)\]\n    pub struct (\w+);/g)].map(([, name, type]) => [type, name]));
 const tagElements = new Map<string, string>();
 for (const [, type, element] of webapiSource.matchAll(/impl Tag for tags::(\w+) \{ type Element = (\w+); \}/g)) {
   tagElements.set(tagTypes.get(type)!, element);
 }
-lines.push("/// The DOM's elements: `div()` is `<div>`, `linear_gradient()` `<linearGradient>`,", "/// each of its DOM element, `button()` a `HtmlButtonElement`'s.", "pub mod html {", "    use super::{Element, webapi};", "", "    unsafe extern \"Rust\" {");
+lines.push("/// The DOM's elements: `div()` is `<div>`, `linear_gradient()` `<linearGradient>`,", "/// each of its DOM element, `button()` an `HTMLButtonElement`'s.", "pub mod html {", "    use super::{Element, webapi};", "", "    unsafe extern \"Rust\" {");
 for (const tag of [...tags].sort()) {
   const element = tagElements.get(tag);
   lines.push(`        /// \`<${tag}>\``, `        #[link_name = "<${tag}>"]`, `        pub safe fn ${snake(tag)}() -> Element${element ? `<webapi::${element}>` : ""};`);

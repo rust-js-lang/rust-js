@@ -228,7 +228,7 @@ impl FormStatus {
 /// reset `form` once the current Transition is done.
 #[cfg(react = "19.0")]
 #[cfg_attr(rust_js, rust_js::link_name = "react-dom#requestFormReset")]
-pub fn request_form_reset(form: &webapi::HtmlFormElement) {
+pub fn request_form_reset(form: &webapi::HTMLFormElement) {
     unreachable!()
 }
 

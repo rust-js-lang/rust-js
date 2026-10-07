@@ -71,7 +71,7 @@ pub use webapi;
 /// Construct it with `jsx! { <Tag ... /> }`.
 ///
 /// While `jsx!` builds a tag's, it's of that tag's DOM element,
-/// `Element<webapi::HtmlButtonElement>`, which its handlers' events and its
+/// `Element<webapi::HTMLButtonElement>`, which its handlers' events and its
 /// `ref` take, as @types/react's `IntrinsicElements` gives them (ADR 0224);
 /// what it makes is an `Element`, whatever its tag.
 #[cfg_attr(rust_js, rust_js::jsx_element)]
@@ -347,7 +347,7 @@ impl<T> Element<T> {
     }
 
     /// A ref to its element, or to one its element extends: a `<button>`'s
-    /// holds a `HtmlButtonElement`, or an `Element` (ADR 0224).
+    /// holds an `HTMLButtonElement`, or an `Element` (ADR 0224).
     #[cfg_attr(rust_js, rust_js::link_name = "prop ref")]
     pub fn r#ref<U: 'static, M>(self, value: impl RefValue<&'static U, M>) -> Element<T>
     where

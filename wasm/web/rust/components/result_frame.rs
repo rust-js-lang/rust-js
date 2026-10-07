@@ -8,7 +8,7 @@ use std::rc::Rc;
 use js::{object, set_timeout};
 use react::{Element, jsx, use_effect, use_ref};
 use webapi::{
-    Event, HtmlIFrameElement, abort_controller, abort_signal, element, html_i_frame_element, message_event, window,
+    Event, HTMLIFrameElement, abort_controller, abort_signal, element, html_i_frame_element, message_event, window,
 };
 
 use crate::listen::listen;
@@ -28,7 +28,7 @@ pub struct ResultFrameProps {
 }
 
 pub fn ResultFrame(ResultFrameProps { program, on_outcome }: ResultFrameProps) -> Element {
-    let frame = use_ref(None::<&'static HtmlIFrameElement>);
+    let frame = use_ref(None::<&'static HTMLIFrameElement>);
     let (run, page) = match program {
         Some(program) => (program.run, program.page.clone()),
         None => (0, String::new()),
