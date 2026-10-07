@@ -70,7 +70,7 @@ test("the editor's check reads inside JSX, and an export_default! component is u
 }, 600_000);
 
 test("the editor's check says what's wrong inside JSX, where it is", () => {
-  const broken = greeting.replace(`<p title={label.as_str()}>`, `<p title={label.as_str()} disabled={"yes"}>`);
+  const broken = greeting.replace(`<p title={label.as_str()}>`, `<p title={label.as_str()} autoFocus={"yes"}>`);
   const { code, messages } = check(app("editor-check-error", broken));
   expect(code).not.toBe(0);
   const error = messages.find((m) => m.level === "error");

@@ -94,8 +94,9 @@ const label = busy ? <span>…</span> : <b>Save</b>;
 - **Its `.d.ts` is a `ReactNode`**, whatever its element:
   `#[rust_js::types = "react#ReactNode<>"]`, and arguments written in
   `types` are all of TypeScript's type's, `<>` none (ADR 0196).
-- **Attributes stay one set for every tag.** Restricting them by `T`, as
-  `ButtonHTMLAttributes<T>` does, is a later decision this makes possible.
+- **Attributes are restricted by `T`, as `ButtonHTMLAttributes<T>` does**:
+  a tag takes the attributes @types/react gives it (ADR 0228). (Amended:
+  they were one set for every tag.)
 
 ## Why
 

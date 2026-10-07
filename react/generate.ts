@@ -200,6 +200,46 @@ const typed: string[] = declarations
   .flatMap((d: any) => d.members)
   .filter((m: any) => m.kind === "property" && /^[a-zA-Z]+$/.test(m.name))
   .map((m: any) => m.name);
+// Each HTML tag's element, as the webapi crate's `Tag` gives it (ADR 0224):
+// `<button>` is an `HTMLButtonElement`. Another, an SVG one's, is any `Element`.
+const webapiSource = readFileSync(join(root, "webapi", "src", "lib.rs"), "utf8");
+const tagTypes = new Map([...webapiSource.matchAll(/rust_js::name = "([^"]+)"\)\]\n    pub struct (\w+);/g)].map(([, name, type]) => [type, name]));
+const tagElements = new Map<string, string>();
+for (const [, type, element] of webapiSource.matchAll(/impl Tag for tags::(\w+) \{ type Element = (\w+); \}/g)) {
+  tagElements.set(tagTypes.get(type)!, element);
+}
+
+// What each tag takes, as @types/react's `JSX.IntrinsicElements` says:
+// `button` a `ButtonHTMLAttributes`, with what it extends. An attribute
+// `HTMLAttributes` has is every element's; another is only its tags'
+// elements', and any `Element`'s, a tag's of no element of its own, an
+// SVG one's say, or a tag value's (ADR 0228).
+const reactTypes = declarations.find((d: any) => d.kind === "namespace" && d.name === "React").declarations;
+const interfaces = new Map<string, any>(reactTypes.filter((d: any) => d.kind === "interface").map((d: any) => [d.name, d]));
+const propsOf = (name: string): Set<string> => {
+  const i = interfaces.get(name.replace(/^React\./, ""));
+  if (!i) return new Set();
+  const own = i.members.filter((m: any) => m.kind === "property" && /^[a-zA-Z]+$/.test(m.name)).map((m: any) => m.name);
+  return new Set([...own, ...i.extends.flatMap((e: any) => [...propsOf(e.name)])]);
+};
+const everyElements = propsOf("HTMLAttributes");
+const intrinsic = reactTypes
+  .find((d: any) => d.kind === "namespace" && d.name === "JSX")
+  .declarations.find((d: any) => d.kind === "interface" && d.name === "IntrinsicElements");
+const accepts = new Map<string, { elements: Set<string>; tags: Set<string> }>();
+for (const member of intrinsic.members) {
+  const [props] = member.type.name === "React.DetailedHTMLProps" ? member.type.args : [];
+  const element = tagElements.get(member.name);
+  if (!props || !element) continue;
+  for (const prop of propsOf(props.name)) {
+    if (everyElements.has(prop)) continue;
+    if (!accepts.has(prop)) accepts.set(prop, { elements: new Set(), tags: new Set() });
+    accepts.get(prop)!.elements.add(element);
+    accepts.get(prop)!.tags.add(member.name);
+  }
+}
+const pascal = (name: string) => name[0].toUpperCase() + name.slice(1);
+
 const attributes: Record<string, Since> = {
   ...Object.fromEntries(typed.map((name) => [name, { since: minors[0] }])),
   ...versions.attributes,
@@ -212,13 +252,35 @@ for (const [name, entry] of Object.entries(attributes).sort(([a], [b]) => (a < b
   if (methods.has(method)) throw new Error(`two attributes are \`${method}\``);
   methods.add(method);
   const ty = BOOLEAN.has(name) ? "bool" : "impl Value";
+  const bound = accepts.has(name) ? `\n    where\n        T: has::${pascal(name)},` : "";
   lines.push(
     `    /// \`${name}\``,
     `${gate(entry)}    #[cfg_attr(rust_js, rust_js::link_name = "prop ${name}")]`,
-    `    pub fn ${method}(self, value: ${ty}) -> Element<T> {`,
+    `    pub fn ${method}(self, value: ${ty}) -> Element<T>${bound}${bound ? "\n    {" : " {"}`,
     "        unreachable!()",
     "    }",
     "",
+  );
+}
+lines.push(
+  "}",
+  "",
+  "/// What takes each attribute that isn't every element's, as @types/react's",
+  "/// `JSX.IntrinsicElements` says (ADR 0228): `has::Href` an `<a>`'s",
+  "/// `HTMLAnchorElement`, and any `Element`, a tag value's say.",
+  "pub mod has {",
+  "    use super::webapi;",
+);
+for (const [name, { elements, tags }] of [...accepts].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
+  if (!(name in attributes) || HAND_WRITTEN.has(name) || name.startsWith("on")) continue;
+  const list = [...tags].sort().map((t) => `<${t}>`).join(", ");
+  lines.push(
+    "",
+    `    /// An element that takes \`${name}\`: ${list}'s.`,
+    `    #[diagnostic::on_unimplemented(message = "\`{Self}\` takes no \`${name}\`", label = "not an attribute of this tag", note = "@types/react gives \`${name}\` to ${list}")]`,
+    `    pub trait ${pascal(name)} {}`,
+    ...[...elements].sort().map((e) => `    impl ${pascal(name)} for webapi::${e} {}`),
+    `    impl ${pascal(name)} for webapi::Element {}`,
   );
 }
 lines.push("}", "", "/// Event handlers: `on_click` is `onClick`. A handler must not borrow", "/// anything, since it runs later: write it `move |e| ..`. Its event is of", "/// the element's, `event::Mouse<T>` (ADR 0224).", "#[doc(hidden)]", "impl<T> Element<T> {");
@@ -248,14 +310,6 @@ for (const spec of ["html", "SVG2", "svg-animations", "filter-effects-1", "css-m
   for (const element of specs[spec]?.elements ?? []) {
     if (!element.obsolete && /^[a-zA-Z][a-zA-Z0-9]*$/.test(element.name)) tags.add(element.name);
   }
-}
-// Each HTML tag's element, as the webapi crate's `Tag` gives it (ADR 0224):
-// `<button>` is an `HTMLButtonElement`. Another, an SVG one's, is any `Element`.
-const webapiSource = readFileSync(join(root, "webapi", "src", "lib.rs"), "utf8");
-const tagTypes = new Map([...webapiSource.matchAll(/rust_js::name = "([^"]+)"\)\]\n    pub struct (\w+);/g)].map(([, name, type]) => [type, name]));
-const tagElements = new Map<string, string>();
-for (const [, type, element] of webapiSource.matchAll(/impl Tag for tags::(\w+) \{ type Element = (\w+); \}/g)) {
-  tagElements.set(tagTypes.get(type)!, element);
 }
 lines.push("/// The DOM's elements: `div()` is `<div>`, `linear_gradient()` `<linearGradient>`,", "/// each of its DOM element, `button()` an `HTMLButtonElement`'s.", "pub mod html {", "    use super::{Element, webapi};", "", "    unsafe extern \"Rust\" {");
 for (const tag of [...tags].sort()) {
