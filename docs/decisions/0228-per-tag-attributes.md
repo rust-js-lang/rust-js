@@ -67,6 +67,14 @@ error[E0277]: `react::webapi::HTMLDivElement` takes no `href`
   an `<input>`'s `type` takes any string. A value that isn't a literal, a
   `&str` variable, isn't checked, where TypeScript refuses a `string` there.
   (Amended: each took any text.)
+- **A CSS property takes what csstype types it as**, as @types/react's
+  `CSSProperties` extends csstype's `Properties<string | number>`: one of a
+  length, `width`, a number in pixels or text (`value::NumberOrString`), one
+  of a number, `opacity`, `z_index`, the same, and another text only,
+  `color(3)` an error (`value::Text`); 492 of webapi's 753, the rest, newer
+  than csstype, any `Value`. A set of strings csstype closes, `position`'s,
+  isn't checked: a style is a method's call, not JSX's literal. (Amended:
+  each took any `Value`.)
 - **Event handlers stay every element's**, as `DOMAttributes` has them.
 - **An attribute no interface types**, one React DOM's table alone has,
   stays every element's.

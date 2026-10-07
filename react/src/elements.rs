@@ -7893,71 +7893,72 @@ pub mod html {
 }
 
 /// CSS properties: `background_color` is `backgroundColor`. A number is in
-/// pixels where CSS needs a unit, as React makes it.
+/// pixels where CSS needs a unit, as React makes it. Each takes what
+/// csstype types it as (ADR 0228).
 impl CSSProperties {
     /// `accent-color`
     #[cfg_attr(rust_js, rust_js::link_name = "prop accentColor")]
-    pub fn accent_color(self, value: impl Value) -> CSSProperties {
+    pub fn accent_color(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `align-content`
     #[cfg_attr(rust_js, rust_js::link_name = "prop alignContent")]
-    pub fn align_content(self, value: impl Value) -> CSSProperties {
+    pub fn align_content(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `align-items`
     #[cfg_attr(rust_js, rust_js::link_name = "prop alignItems")]
-    pub fn align_items(self, value: impl Value) -> CSSProperties {
+    pub fn align_items(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `align-self`
     #[cfg_attr(rust_js, rust_js::link_name = "prop alignSelf")]
-    pub fn align_self(self, value: impl Value) -> CSSProperties {
+    pub fn align_self(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `alignment-baseline`
     #[cfg_attr(rust_js, rust_js::link_name = "prop alignmentBaseline")]
-    pub fn alignment_baseline(self, value: impl Value) -> CSSProperties {
+    pub fn alignment_baseline(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `all`
     #[cfg_attr(rust_js, rust_js::link_name = "prop all")]
-    pub fn all(self, value: impl Value) -> CSSProperties {
+    pub fn all(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `anchor-name`
     #[cfg_attr(rust_js, rust_js::link_name = "prop anchorName")]
-    pub fn anchor_name(self, value: impl Value) -> CSSProperties {
+    pub fn anchor_name(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `anchor-scope`
     #[cfg_attr(rust_js, rust_js::link_name = "prop anchorScope")]
-    pub fn anchor_scope(self, value: impl Value) -> CSSProperties {
+    pub fn anchor_scope(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `animation`
     #[cfg_attr(rust_js, rust_js::link_name = "prop animation")]
-    pub fn animation(self, value: impl Value) -> CSSProperties {
+    pub fn animation(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `animation-composition`
     #[cfg_attr(rust_js, rust_js::link_name = "prop animationComposition")]
-    pub fn animation_composition(self, value: impl Value) -> CSSProperties {
+    pub fn animation_composition(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `animation-delay`
     #[cfg_attr(rust_js, rust_js::link_name = "prop animationDelay")]
-    pub fn animation_delay(self, value: impl Value) -> CSSProperties {
+    pub fn animation_delay(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -7975,43 +7976,43 @@ impl CSSProperties {
 
     /// `animation-direction`
     #[cfg_attr(rust_js, rust_js::link_name = "prop animationDirection")]
-    pub fn animation_direction(self, value: impl Value) -> CSSProperties {
+    pub fn animation_direction(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `animation-duration`
     #[cfg_attr(rust_js, rust_js::link_name = "prop animationDuration")]
-    pub fn animation_duration(self, value: impl Value) -> CSSProperties {
+    pub fn animation_duration(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `animation-fill-mode`
     #[cfg_attr(rust_js, rust_js::link_name = "prop animationFillMode")]
-    pub fn animation_fill_mode(self, value: impl Value) -> CSSProperties {
+    pub fn animation_fill_mode(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `animation-iteration-count`
     #[cfg_attr(rust_js, rust_js::link_name = "prop animationIterationCount")]
-    pub fn animation_iteration_count(self, value: impl Value) -> CSSProperties {
+    pub fn animation_iteration_count(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `animation-name`
     #[cfg_attr(rust_js, rust_js::link_name = "prop animationName")]
-    pub fn animation_name(self, value: impl Value) -> CSSProperties {
+    pub fn animation_name(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `animation-play-state`
     #[cfg_attr(rust_js, rust_js::link_name = "prop animationPlayState")]
-    pub fn animation_play_state(self, value: impl Value) -> CSSProperties {
+    pub fn animation_play_state(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `animation-range`
     #[cfg_attr(rust_js, rust_js::link_name = "prop animationRange")]
-    pub fn animation_range(self, value: impl Value) -> CSSProperties {
+    pub fn animation_range(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -8023,25 +8024,25 @@ impl CSSProperties {
 
     /// `animation-range-end`
     #[cfg_attr(rust_js, rust_js::link_name = "prop animationRangeEnd")]
-    pub fn animation_range_end(self, value: impl Value) -> CSSProperties {
+    pub fn animation_range_end(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `animation-range-start`
     #[cfg_attr(rust_js, rust_js::link_name = "prop animationRangeStart")]
-    pub fn animation_range_start(self, value: impl Value) -> CSSProperties {
+    pub fn animation_range_start(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `animation-timeline`
     #[cfg_attr(rust_js, rust_js::link_name = "prop animationTimeline")]
-    pub fn animation_timeline(self, value: impl Value) -> CSSProperties {
+    pub fn animation_timeline(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `animation-timing-function`
     #[cfg_attr(rust_js, rust_js::link_name = "prop animationTimingFunction")]
-    pub fn animation_timing_function(self, value: impl Value) -> CSSProperties {
+    pub fn animation_timing_function(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -8053,73 +8054,73 @@ impl CSSProperties {
 
     /// `appearance`
     #[cfg_attr(rust_js, rust_js::link_name = "prop appearance")]
-    pub fn appearance(self, value: impl Value) -> CSSProperties {
+    pub fn appearance(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `aspect-ratio`
     #[cfg_attr(rust_js, rust_js::link_name = "prop aspectRatio")]
-    pub fn aspect_ratio(self, value: impl Value) -> CSSProperties {
+    pub fn aspect_ratio(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `backdrop-filter`
     #[cfg_attr(rust_js, rust_js::link_name = "prop backdropFilter")]
-    pub fn backdrop_filter(self, value: impl Value) -> CSSProperties {
+    pub fn backdrop_filter(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `backface-visibility`
     #[cfg_attr(rust_js, rust_js::link_name = "prop backfaceVisibility")]
-    pub fn backface_visibility(self, value: impl Value) -> CSSProperties {
+    pub fn backface_visibility(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `background`
     #[cfg_attr(rust_js, rust_js::link_name = "prop background")]
-    pub fn background(self, value: impl Value) -> CSSProperties {
+    pub fn background(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `background-attachment`
     #[cfg_attr(rust_js, rust_js::link_name = "prop backgroundAttachment")]
-    pub fn background_attachment(self, value: impl Value) -> CSSProperties {
+    pub fn background_attachment(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `background-blend-mode`
     #[cfg_attr(rust_js, rust_js::link_name = "prop backgroundBlendMode")]
-    pub fn background_blend_mode(self, value: impl Value) -> CSSProperties {
+    pub fn background_blend_mode(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `background-clip`
     #[cfg_attr(rust_js, rust_js::link_name = "prop backgroundClip")]
-    pub fn background_clip(self, value: impl Value) -> CSSProperties {
+    pub fn background_clip(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `background-color`
     #[cfg_attr(rust_js, rust_js::link_name = "prop backgroundColor")]
-    pub fn background_color(self, value: impl Value) -> CSSProperties {
+    pub fn background_color(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `background-image`
     #[cfg_attr(rust_js, rust_js::link_name = "prop backgroundImage")]
-    pub fn background_image(self, value: impl Value) -> CSSProperties {
+    pub fn background_image(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `background-origin`
     #[cfg_attr(rust_js, rust_js::link_name = "prop backgroundOrigin")]
-    pub fn background_origin(self, value: impl Value) -> CSSProperties {
+    pub fn background_origin(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `background-position`
     #[cfg_attr(rust_js, rust_js::link_name = "prop backgroundPosition")]
-    pub fn background_position(self, value: impl Value) -> CSSProperties {
+    pub fn background_position(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -8137,19 +8138,19 @@ impl CSSProperties {
 
     /// `background-position-x`
     #[cfg_attr(rust_js, rust_js::link_name = "prop backgroundPositionX")]
-    pub fn background_position_x(self, value: impl Value) -> CSSProperties {
+    pub fn background_position_x(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `background-position-y`
     #[cfg_attr(rust_js, rust_js::link_name = "prop backgroundPositionY")]
-    pub fn background_position_y(self, value: impl Value) -> CSSProperties {
+    pub fn background_position_y(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `background-repeat`
     #[cfg_attr(rust_js, rust_js::link_name = "prop backgroundRepeat")]
-    pub fn background_repeat(self, value: impl Value) -> CSSProperties {
+    pub fn background_repeat(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -8179,7 +8180,7 @@ impl CSSProperties {
 
     /// `background-size`
     #[cfg_attr(rust_js, rust_js::link_name = "prop backgroundSize")]
-    pub fn background_size(self, value: impl Value) -> CSSProperties {
+    pub fn background_size(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -8191,7 +8192,7 @@ impl CSSProperties {
 
     /// `baseline-shift`
     #[cfg_attr(rust_js, rust_js::link_name = "prop baselineShift")]
-    pub fn baseline_shift(self, value: impl Value) -> CSSProperties {
+    pub fn baseline_shift(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -8209,7 +8210,7 @@ impl CSSProperties {
 
     /// `block-size`
     #[cfg_attr(rust_js, rust_js::link_name = "prop blockSize")]
-    pub fn block_size(self, value: impl Value) -> CSSProperties {
+    pub fn block_size(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -8263,13 +8264,13 @@ impl CSSProperties {
 
     /// `border`
     #[cfg_attr(rust_js, rust_js::link_name = "prop border")]
-    pub fn border(self, value: impl Value) -> CSSProperties {
+    pub fn border(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-block`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderBlock")]
-    pub fn border_block(self, value: impl Value) -> CSSProperties {
+    pub fn border_block(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -8281,13 +8282,13 @@ impl CSSProperties {
 
     /// `border-block-color`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderBlockColor")]
-    pub fn border_block_color(self, value: impl Value) -> CSSProperties {
+    pub fn border_block_color(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-block-end`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderBlockEnd")]
-    pub fn border_block_end(self, value: impl Value) -> CSSProperties {
+    pub fn border_block_end(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -8299,7 +8300,7 @@ impl CSSProperties {
 
     /// `border-block-end-color`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderBlockEndColor")]
-    pub fn border_block_end_color(self, value: impl Value) -> CSSProperties {
+    pub fn border_block_end_color(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -8311,19 +8312,19 @@ impl CSSProperties {
 
     /// `border-block-end-style`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderBlockEndStyle")]
-    pub fn border_block_end_style(self, value: impl Value) -> CSSProperties {
+    pub fn border_block_end_style(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-block-end-width`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderBlockEndWidth")]
-    pub fn border_block_end_width(self, value: impl Value) -> CSSProperties {
+    pub fn border_block_end_width(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-block-start`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderBlockStart")]
-    pub fn border_block_start(self, value: impl Value) -> CSSProperties {
+    pub fn border_block_start(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -8335,7 +8336,7 @@ impl CSSProperties {
 
     /// `border-block-start-color`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderBlockStartColor")]
-    pub fn border_block_start_color(self, value: impl Value) -> CSSProperties {
+    pub fn border_block_start_color(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -8347,31 +8348,31 @@ impl CSSProperties {
 
     /// `border-block-start-style`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderBlockStartStyle")]
-    pub fn border_block_start_style(self, value: impl Value) -> CSSProperties {
+    pub fn border_block_start_style(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-block-start-width`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderBlockStartWidth")]
-    pub fn border_block_start_width(self, value: impl Value) -> CSSProperties {
+    pub fn border_block_start_width(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-block-style`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderBlockStyle")]
-    pub fn border_block_style(self, value: impl Value) -> CSSProperties {
+    pub fn border_block_style(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-block-width`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderBlockWidth")]
-    pub fn border_block_width(self, value: impl Value) -> CSSProperties {
+    pub fn border_block_width(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-bottom`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderBottom")]
-    pub fn border_bottom(self, value: impl Value) -> CSSProperties {
+    pub fn border_bottom(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -8383,13 +8384,13 @@ impl CSSProperties {
 
     /// `border-bottom-color`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderBottomColor")]
-    pub fn border_bottom_color(self, value: impl Value) -> CSSProperties {
+    pub fn border_bottom_color(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-bottom-left-radius`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderBottomLeftRadius")]
-    pub fn border_bottom_left_radius(self, value: impl Value) -> CSSProperties {
+    pub fn border_bottom_left_radius(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -8401,19 +8402,19 @@ impl CSSProperties {
 
     /// `border-bottom-right-radius`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderBottomRightRadius")]
-    pub fn border_bottom_right_radius(self, value: impl Value) -> CSSProperties {
+    pub fn border_bottom_right_radius(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-bottom-style`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderBottomStyle")]
-    pub fn border_bottom_style(self, value: impl Value) -> CSSProperties {
+    pub fn border_bottom_style(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-bottom-width`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderBottomWidth")]
-    pub fn border_bottom_width(self, value: impl Value) -> CSSProperties {
+    pub fn border_bottom_width(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -8431,67 +8432,67 @@ impl CSSProperties {
 
     /// `border-collapse`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderCollapse")]
-    pub fn border_collapse(self, value: impl Value) -> CSSProperties {
+    pub fn border_collapse(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-color`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderColor")]
-    pub fn border_color(self, value: impl Value) -> CSSProperties {
+    pub fn border_color(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-end-end-radius`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderEndEndRadius")]
-    pub fn border_end_end_radius(self, value: impl Value) -> CSSProperties {
+    pub fn border_end_end_radius(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-end-start-radius`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderEndStartRadius")]
-    pub fn border_end_start_radius(self, value: impl Value) -> CSSProperties {
+    pub fn border_end_start_radius(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-image`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderImage")]
-    pub fn border_image(self, value: impl Value) -> CSSProperties {
+    pub fn border_image(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-image-outset`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderImageOutset")]
-    pub fn border_image_outset(self, value: impl Value) -> CSSProperties {
+    pub fn border_image_outset(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-image-repeat`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderImageRepeat")]
-    pub fn border_image_repeat(self, value: impl Value) -> CSSProperties {
+    pub fn border_image_repeat(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-image-slice`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderImageSlice")]
-    pub fn border_image_slice(self, value: impl Value) -> CSSProperties {
+    pub fn border_image_slice(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-image-source`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderImageSource")]
-    pub fn border_image_source(self, value: impl Value) -> CSSProperties {
+    pub fn border_image_source(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-image-width`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderImageWidth")]
-    pub fn border_image_width(self, value: impl Value) -> CSSProperties {
+    pub fn border_image_width(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-inline`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderInline")]
-    pub fn border_inline(self, value: impl Value) -> CSSProperties {
+    pub fn border_inline(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -8503,13 +8504,13 @@ impl CSSProperties {
 
     /// `border-inline-color`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderInlineColor")]
-    pub fn border_inline_color(self, value: impl Value) -> CSSProperties {
+    pub fn border_inline_color(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-inline-end`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderInlineEnd")]
-    pub fn border_inline_end(self, value: impl Value) -> CSSProperties {
+    pub fn border_inline_end(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -8521,7 +8522,7 @@ impl CSSProperties {
 
     /// `border-inline-end-color`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderInlineEndColor")]
-    pub fn border_inline_end_color(self, value: impl Value) -> CSSProperties {
+    pub fn border_inline_end_color(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -8533,19 +8534,19 @@ impl CSSProperties {
 
     /// `border-inline-end-style`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderInlineEndStyle")]
-    pub fn border_inline_end_style(self, value: impl Value) -> CSSProperties {
+    pub fn border_inline_end_style(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-inline-end-width`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderInlineEndWidth")]
-    pub fn border_inline_end_width(self, value: impl Value) -> CSSProperties {
+    pub fn border_inline_end_width(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-inline-start`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderInlineStart")]
-    pub fn border_inline_start(self, value: impl Value) -> CSSProperties {
+    pub fn border_inline_start(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -8557,7 +8558,7 @@ impl CSSProperties {
 
     /// `border-inline-start-color`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderInlineStartColor")]
-    pub fn border_inline_start_color(self, value: impl Value) -> CSSProperties {
+    pub fn border_inline_start_color(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -8569,31 +8570,31 @@ impl CSSProperties {
 
     /// `border-inline-start-style`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderInlineStartStyle")]
-    pub fn border_inline_start_style(self, value: impl Value) -> CSSProperties {
+    pub fn border_inline_start_style(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-inline-start-width`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderInlineStartWidth")]
-    pub fn border_inline_start_width(self, value: impl Value) -> CSSProperties {
+    pub fn border_inline_start_width(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-inline-style`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderInlineStyle")]
-    pub fn border_inline_style(self, value: impl Value) -> CSSProperties {
+    pub fn border_inline_style(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-inline-width`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderInlineWidth")]
-    pub fn border_inline_width(self, value: impl Value) -> CSSProperties {
+    pub fn border_inline_width(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-left`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderLeft")]
-    pub fn border_left(self, value: impl Value) -> CSSProperties {
+    pub fn border_left(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -8605,7 +8606,7 @@ impl CSSProperties {
 
     /// `border-left-color`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderLeftColor")]
-    pub fn border_left_color(self, value: impl Value) -> CSSProperties {
+    pub fn border_left_color(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -8617,13 +8618,13 @@ impl CSSProperties {
 
     /// `border-left-style`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderLeftStyle")]
-    pub fn border_left_style(self, value: impl Value) -> CSSProperties {
+    pub fn border_left_style(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-left-width`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderLeftWidth")]
-    pub fn border_left_width(self, value: impl Value) -> CSSProperties {
+    pub fn border_left_width(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -8635,13 +8636,13 @@ impl CSSProperties {
 
     /// `border-radius`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderRadius")]
-    pub fn border_radius(self, value: impl Value) -> CSSProperties {
+    pub fn border_radius(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-right`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderRight")]
-    pub fn border_right(self, value: impl Value) -> CSSProperties {
+    pub fn border_right(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -8653,7 +8654,7 @@ impl CSSProperties {
 
     /// `border-right-color`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderRightColor")]
-    pub fn border_right_color(self, value: impl Value) -> CSSProperties {
+    pub fn border_right_color(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -8665,13 +8666,13 @@ impl CSSProperties {
 
     /// `border-right-style`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderRightStyle")]
-    pub fn border_right_style(self, value: impl Value) -> CSSProperties {
+    pub fn border_right_style(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-right-width`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderRightWidth")]
-    pub fn border_right_width(self, value: impl Value) -> CSSProperties {
+    pub fn border_right_width(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -8683,31 +8684,31 @@ impl CSSProperties {
 
     /// `border-spacing`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderSpacing")]
-    pub fn border_spacing(self, value: impl Value) -> CSSProperties {
+    pub fn border_spacing(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-start-end-radius`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderStartEndRadius")]
-    pub fn border_start_end_radius(self, value: impl Value) -> CSSProperties {
+    pub fn border_start_end_radius(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-start-start-radius`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderStartStartRadius")]
-    pub fn border_start_start_radius(self, value: impl Value) -> CSSProperties {
+    pub fn border_start_start_radius(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-style`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderStyle")]
-    pub fn border_style(self, value: impl Value) -> CSSProperties {
+    pub fn border_style(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-top`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderTop")]
-    pub fn border_top(self, value: impl Value) -> CSSProperties {
+    pub fn border_top(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -8719,13 +8720,13 @@ impl CSSProperties {
 
     /// `border-top-color`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderTopColor")]
-    pub fn border_top_color(self, value: impl Value) -> CSSProperties {
+    pub fn border_top_color(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-top-left-radius`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderTopLeftRadius")]
-    pub fn border_top_left_radius(self, value: impl Value) -> CSSProperties {
+    pub fn border_top_left_radius(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -8737,43 +8738,43 @@ impl CSSProperties {
 
     /// `border-top-right-radius`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderTopRightRadius")]
-    pub fn border_top_right_radius(self, value: impl Value) -> CSSProperties {
+    pub fn border_top_right_radius(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-top-style`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderTopStyle")]
-    pub fn border_top_style(self, value: impl Value) -> CSSProperties {
+    pub fn border_top_style(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-top-width`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderTopWidth")]
-    pub fn border_top_width(self, value: impl Value) -> CSSProperties {
+    pub fn border_top_width(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `border-width`
     #[cfg_attr(rust_js, rust_js::link_name = "prop borderWidth")]
-    pub fn border_width(self, value: impl Value) -> CSSProperties {
+    pub fn border_width(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `bottom`
     #[cfg_attr(rust_js, rust_js::link_name = "prop bottom")]
-    pub fn bottom(self, value: impl Value) -> CSSProperties {
+    pub fn bottom(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `box-decoration-break`
     #[cfg_attr(rust_js, rust_js::link_name = "prop boxDecorationBreak")]
-    pub fn box_decoration_break(self, value: impl Value) -> CSSProperties {
+    pub fn box_decoration_break(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `box-shadow`
     #[cfg_attr(rust_js, rust_js::link_name = "prop boxShadow")]
-    pub fn box_shadow(self, value: impl Value) -> CSSProperties {
+    pub fn box_shadow(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -8809,7 +8810,7 @@ impl CSSProperties {
 
     /// `box-sizing`
     #[cfg_attr(rust_js, rust_js::link_name = "prop boxSizing")]
-    pub fn box_sizing(self, value: impl Value) -> CSSProperties {
+    pub fn box_sizing(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -8821,31 +8822,31 @@ impl CSSProperties {
 
     /// `break-after`
     #[cfg_attr(rust_js, rust_js::link_name = "prop breakAfter")]
-    pub fn break_after(self, value: impl Value) -> CSSProperties {
+    pub fn break_after(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `break-before`
     #[cfg_attr(rust_js, rust_js::link_name = "prop breakBefore")]
-    pub fn break_before(self, value: impl Value) -> CSSProperties {
+    pub fn break_before(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `break-inside`
     #[cfg_attr(rust_js, rust_js::link_name = "prop breakInside")]
-    pub fn break_inside(self, value: impl Value) -> CSSProperties {
+    pub fn break_inside(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `caption-side`
     #[cfg_attr(rust_js, rust_js::link_name = "prop captionSide")]
-    pub fn caption_side(self, value: impl Value) -> CSSProperties {
+    pub fn caption_side(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `caret`
     #[cfg_attr(rust_js, rust_js::link_name = "prop caret")]
-    pub fn caret(self, value: impl Value) -> CSSProperties {
+    pub fn caret(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -8857,85 +8858,85 @@ impl CSSProperties {
 
     /// `caret-color`
     #[cfg_attr(rust_js, rust_js::link_name = "prop caretColor")]
-    pub fn caret_color(self, value: impl Value) -> CSSProperties {
+    pub fn caret_color(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `caret-shape`
     #[cfg_attr(rust_js, rust_js::link_name = "prop caretShape")]
-    pub fn caret_shape(self, value: impl Value) -> CSSProperties {
+    pub fn caret_shape(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `clear`
     #[cfg_attr(rust_js, rust_js::link_name = "prop clear")]
-    pub fn clear(self, value: impl Value) -> CSSProperties {
+    pub fn clear(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `clip`
     #[cfg_attr(rust_js, rust_js::link_name = "prop clip")]
-    pub fn clip(self, value: impl Value) -> CSSProperties {
+    pub fn clip(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `clip-path`
     #[cfg_attr(rust_js, rust_js::link_name = "prop clipPath")]
-    pub fn clip_path(self, value: impl Value) -> CSSProperties {
+    pub fn clip_path(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `clip-rule`
     #[cfg_attr(rust_js, rust_js::link_name = "prop clipRule")]
-    pub fn clip_rule(self, value: impl Value) -> CSSProperties {
+    pub fn clip_rule(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `color`
     #[cfg_attr(rust_js, rust_js::link_name = "prop color")]
-    pub fn color(self, value: impl Value) -> CSSProperties {
+    pub fn color(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `color-adjust`
     #[cfg_attr(rust_js, rust_js::link_name = "prop colorAdjust")]
-    pub fn color_adjust(self, value: impl Value) -> CSSProperties {
+    pub fn color_adjust(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `color-interpolation`
     #[cfg_attr(rust_js, rust_js::link_name = "prop colorInterpolation")]
-    pub fn color_interpolation(self, value: impl Value) -> CSSProperties {
+    pub fn color_interpolation(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `color-interpolation-filters`
     #[cfg_attr(rust_js, rust_js::link_name = "prop colorInterpolationFilters")]
-    pub fn color_interpolation_filters(self, value: impl Value) -> CSSProperties {
+    pub fn color_interpolation_filters(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `color-scheme`
     #[cfg_attr(rust_js, rust_js::link_name = "prop colorScheme")]
-    pub fn color_scheme(self, value: impl Value) -> CSSProperties {
+    pub fn color_scheme(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `column-count`
     #[cfg_attr(rust_js, rust_js::link_name = "prop columnCount")]
-    pub fn column_count(self, value: impl Value) -> CSSProperties {
+    pub fn column_count(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `column-fill`
     #[cfg_attr(rust_js, rust_js::link_name = "prop columnFill")]
-    pub fn column_fill(self, value: impl Value) -> CSSProperties {
+    pub fn column_fill(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `column-gap`
     #[cfg_attr(rust_js, rust_js::link_name = "prop columnGap")]
-    pub fn column_gap(self, value: impl Value) -> CSSProperties {
+    pub fn column_gap(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -8947,7 +8948,7 @@ impl CSSProperties {
 
     /// `column-rule`
     #[cfg_attr(rust_js, rust_js::link_name = "prop columnRule")]
-    pub fn column_rule(self, value: impl Value) -> CSSProperties {
+    pub fn column_rule(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -8959,7 +8960,7 @@ impl CSSProperties {
 
     /// `column-rule-color`
     #[cfg_attr(rust_js, rust_js::link_name = "prop columnRuleColor")]
-    pub fn column_rule_color(self, value: impl Value) -> CSSProperties {
+    pub fn column_rule_color(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -9019,7 +9020,7 @@ impl CSSProperties {
 
     /// `column-rule-style`
     #[cfg_attr(rust_js, rust_js::link_name = "prop columnRuleStyle")]
-    pub fn column_rule_style(self, value: impl Value) -> CSSProperties {
+    pub fn column_rule_style(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -9031,19 +9032,19 @@ impl CSSProperties {
 
     /// `column-rule-width`
     #[cfg_attr(rust_js, rust_js::link_name = "prop columnRuleWidth")]
-    pub fn column_rule_width(self, value: impl Value) -> CSSProperties {
+    pub fn column_rule_width(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `column-span`
     #[cfg_attr(rust_js, rust_js::link_name = "prop columnSpan")]
-    pub fn column_span(self, value: impl Value) -> CSSProperties {
+    pub fn column_span(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `column-width`
     #[cfg_attr(rust_js, rust_js::link_name = "prop columnWidth")]
-    pub fn column_width(self, value: impl Value) -> CSSProperties {
+    pub fn column_width(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -9055,73 +9056,73 @@ impl CSSProperties {
 
     /// `columns`
     #[cfg_attr(rust_js, rust_js::link_name = "prop columns")]
-    pub fn columns(self, value: impl Value) -> CSSProperties {
+    pub fn columns(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `contain`
     #[cfg_attr(rust_js, rust_js::link_name = "prop contain")]
-    pub fn contain(self, value: impl Value) -> CSSProperties {
+    pub fn contain(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `contain-intrinsic-block-size`
     #[cfg_attr(rust_js, rust_js::link_name = "prop containIntrinsicBlockSize")]
-    pub fn contain_intrinsic_block_size(self, value: impl Value) -> CSSProperties {
+    pub fn contain_intrinsic_block_size(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `contain-intrinsic-height`
     #[cfg_attr(rust_js, rust_js::link_name = "prop containIntrinsicHeight")]
-    pub fn contain_intrinsic_height(self, value: impl Value) -> CSSProperties {
+    pub fn contain_intrinsic_height(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `contain-intrinsic-inline-size`
     #[cfg_attr(rust_js, rust_js::link_name = "prop containIntrinsicInlineSize")]
-    pub fn contain_intrinsic_inline_size(self, value: impl Value) -> CSSProperties {
+    pub fn contain_intrinsic_inline_size(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `contain-intrinsic-size`
     #[cfg_attr(rust_js, rust_js::link_name = "prop containIntrinsicSize")]
-    pub fn contain_intrinsic_size(self, value: impl Value) -> CSSProperties {
+    pub fn contain_intrinsic_size(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `contain-intrinsic-width`
     #[cfg_attr(rust_js, rust_js::link_name = "prop containIntrinsicWidth")]
-    pub fn contain_intrinsic_width(self, value: impl Value) -> CSSProperties {
+    pub fn contain_intrinsic_width(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `container`
     #[cfg_attr(rust_js, rust_js::link_name = "prop container")]
-    pub fn container(self, value: impl Value) -> CSSProperties {
+    pub fn container(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `container-name`
     #[cfg_attr(rust_js, rust_js::link_name = "prop containerName")]
-    pub fn container_name(self, value: impl Value) -> CSSProperties {
+    pub fn container_name(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `container-type`
     #[cfg_attr(rust_js, rust_js::link_name = "prop containerType")]
-    pub fn container_type(self, value: impl Value) -> CSSProperties {
+    pub fn container_type(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `content`
     #[cfg_attr(rust_js, rust_js::link_name = "prop content")]
-    pub fn content(self, value: impl Value) -> CSSProperties {
+    pub fn content(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `content-visibility`
     #[cfg_attr(rust_js, rust_js::link_name = "prop contentVisibility")]
-    pub fn content_visibility(self, value: impl Value) -> CSSProperties {
+    pub fn content_visibility(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -9343,19 +9344,19 @@ impl CSSProperties {
 
     /// `counter-increment`
     #[cfg_attr(rust_js, rust_js::link_name = "prop counterIncrement")]
-    pub fn counter_increment(self, value: impl Value) -> CSSProperties {
+    pub fn counter_increment(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `counter-reset`
     #[cfg_attr(rust_js, rust_js::link_name = "prop counterReset")]
-    pub fn counter_reset(self, value: impl Value) -> CSSProperties {
+    pub fn counter_reset(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `counter-set`
     #[cfg_attr(rust_js, rust_js::link_name = "prop counterSet")]
-    pub fn counter_set(self, value: impl Value) -> CSSProperties {
+    pub fn counter_set(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -9379,43 +9380,43 @@ impl CSSProperties {
 
     /// `cursor`
     #[cfg_attr(rust_js, rust_js::link_name = "prop cursor")]
-    pub fn cursor(self, value: impl Value) -> CSSProperties {
+    pub fn cursor(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `cx`
     #[cfg_attr(rust_js, rust_js::link_name = "prop cx")]
-    pub fn cx(self, value: impl Value) -> CSSProperties {
+    pub fn cx(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `cy`
     #[cfg_attr(rust_js, rust_js::link_name = "prop cy")]
-    pub fn cy(self, value: impl Value) -> CSSProperties {
+    pub fn cy(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `d`
     #[cfg_attr(rust_js, rust_js::link_name = "prop d")]
-    pub fn d(self, value: impl Value) -> CSSProperties {
+    pub fn d(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `direction`
     #[cfg_attr(rust_js, rust_js::link_name = "prop direction")]
-    pub fn direction(self, value: impl Value) -> CSSProperties {
+    pub fn direction(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `display`
     #[cfg_attr(rust_js, rust_js::link_name = "prop display")]
-    pub fn display(self, value: impl Value) -> CSSProperties {
+    pub fn display(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `dominant-baseline`
     #[cfg_attr(rust_js, rust_js::link_name = "prop dominantBaseline")]
-    pub fn dominant_baseline(self, value: impl Value) -> CSSProperties {
+    pub fn dominant_baseline(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -9427,7 +9428,7 @@ impl CSSProperties {
 
     /// `empty-cells`
     #[cfg_attr(rust_js, rust_js::link_name = "prop emptyCells")]
-    pub fn empty_cells(self, value: impl Value) -> CSSProperties {
+    pub fn empty_cells(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -9451,13 +9452,13 @@ impl CSSProperties {
 
     /// `field-sizing`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fieldSizing")]
-    pub fn field_sizing(self, value: impl Value) -> CSSProperties {
+    pub fn field_sizing(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `fill`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fill")]
-    pub fn fill(self, value: impl Value) -> CSSProperties {
+    pub fn fill(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -9481,7 +9482,7 @@ impl CSSProperties {
 
     /// `fill-opacity`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fillOpacity")]
-    pub fn fill_opacity(self, value: impl Value) -> CSSProperties {
+    pub fn fill_opacity(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -9505,7 +9506,7 @@ impl CSSProperties {
 
     /// `fill-rule`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fillRule")]
-    pub fn fill_rule(self, value: impl Value) -> CSSProperties {
+    pub fn fill_rule(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -9517,37 +9518,37 @@ impl CSSProperties {
 
     /// `filter`
     #[cfg_attr(rust_js, rust_js::link_name = "prop filter")]
-    pub fn filter(self, value: impl Value) -> CSSProperties {
+    pub fn filter(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `flex`
     #[cfg_attr(rust_js, rust_js::link_name = "prop flex")]
-    pub fn flex(self, value: impl Value) -> CSSProperties {
+    pub fn flex(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `flex-basis`
     #[cfg_attr(rust_js, rust_js::link_name = "prop flexBasis")]
-    pub fn flex_basis(self, value: impl Value) -> CSSProperties {
+    pub fn flex_basis(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `flex-direction`
     #[cfg_attr(rust_js, rust_js::link_name = "prop flexDirection")]
-    pub fn flex_direction(self, value: impl Value) -> CSSProperties {
+    pub fn flex_direction(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `flex-flow`
     #[cfg_attr(rust_js, rust_js::link_name = "prop flexFlow")]
-    pub fn flex_flow(self, value: impl Value) -> CSSProperties {
+    pub fn flex_flow(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `flex-grow`
     #[cfg_attr(rust_js, rust_js::link_name = "prop flexGrow")]
-    pub fn flex_grow(self, value: impl Value) -> CSSProperties {
+    pub fn flex_grow(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -9559,19 +9560,19 @@ impl CSSProperties {
 
     /// `flex-shrink`
     #[cfg_attr(rust_js, rust_js::link_name = "prop flexShrink")]
-    pub fn flex_shrink(self, value: impl Value) -> CSSProperties {
+    pub fn flex_shrink(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `flex-wrap`
     #[cfg_attr(rust_js, rust_js::link_name = "prop flexWrap")]
-    pub fn flex_wrap(self, value: impl Value) -> CSSProperties {
+    pub fn flex_wrap(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `float`
     #[cfg_attr(rust_js, rust_js::link_name = "prop float")]
-    pub fn float(self, value: impl Value) -> CSSProperties {
+    pub fn float(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -9595,13 +9596,13 @@ impl CSSProperties {
 
     /// `flood-color`
     #[cfg_attr(rust_js, rust_js::link_name = "prop floodColor")]
-    pub fn flood_color(self, value: impl Value) -> CSSProperties {
+    pub fn flood_color(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `flood-opacity`
     #[cfg_attr(rust_js, rust_js::link_name = "prop floodOpacity")]
-    pub fn flood_opacity(self, value: impl Value) -> CSSProperties {
+    pub fn flood_opacity(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -9625,163 +9626,163 @@ impl CSSProperties {
 
     /// `font`
     #[cfg_attr(rust_js, rust_js::link_name = "prop font")]
-    pub fn font(self, value: impl Value) -> CSSProperties {
+    pub fn font(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `font-family`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontFamily")]
-    pub fn font_family(self, value: impl Value) -> CSSProperties {
+    pub fn font_family(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `font-feature-settings`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontFeatureSettings")]
-    pub fn font_feature_settings(self, value: impl Value) -> CSSProperties {
+    pub fn font_feature_settings(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `font-kerning`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontKerning")]
-    pub fn font_kerning(self, value: impl Value) -> CSSProperties {
+    pub fn font_kerning(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `font-language-override`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontLanguageOverride")]
-    pub fn font_language_override(self, value: impl Value) -> CSSProperties {
+    pub fn font_language_override(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `font-optical-sizing`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontOpticalSizing")]
-    pub fn font_optical_sizing(self, value: impl Value) -> CSSProperties {
+    pub fn font_optical_sizing(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `font-palette`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontPalette")]
-    pub fn font_palette(self, value: impl Value) -> CSSProperties {
+    pub fn font_palette(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `font-size`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontSize")]
-    pub fn font_size(self, value: impl Value) -> CSSProperties {
+    pub fn font_size(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `font-size-adjust`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontSizeAdjust")]
-    pub fn font_size_adjust(self, value: impl Value) -> CSSProperties {
+    pub fn font_size_adjust(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `font-stretch`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontStretch")]
-    pub fn font_stretch(self, value: impl Value) -> CSSProperties {
+    pub fn font_stretch(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `font-style`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontStyle")]
-    pub fn font_style(self, value: impl Value) -> CSSProperties {
+    pub fn font_style(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `font-synthesis`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontSynthesis")]
-    pub fn font_synthesis(self, value: impl Value) -> CSSProperties {
+    pub fn font_synthesis(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `font-synthesis-position`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontSynthesisPosition")]
-    pub fn font_synthesis_position(self, value: impl Value) -> CSSProperties {
+    pub fn font_synthesis_position(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `font-synthesis-small-caps`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontSynthesisSmallCaps")]
-    pub fn font_synthesis_small_caps(self, value: impl Value) -> CSSProperties {
+    pub fn font_synthesis_small_caps(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `font-synthesis-style`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontSynthesisStyle")]
-    pub fn font_synthesis_style(self, value: impl Value) -> CSSProperties {
+    pub fn font_synthesis_style(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `font-synthesis-weight`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontSynthesisWeight")]
-    pub fn font_synthesis_weight(self, value: impl Value) -> CSSProperties {
+    pub fn font_synthesis_weight(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `font-variant`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontVariant")]
-    pub fn font_variant(self, value: impl Value) -> CSSProperties {
+    pub fn font_variant(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `font-variant-alternates`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontVariantAlternates")]
-    pub fn font_variant_alternates(self, value: impl Value) -> CSSProperties {
+    pub fn font_variant_alternates(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `font-variant-caps`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontVariantCaps")]
-    pub fn font_variant_caps(self, value: impl Value) -> CSSProperties {
+    pub fn font_variant_caps(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `font-variant-east-asian`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontVariantEastAsian")]
-    pub fn font_variant_east_asian(self, value: impl Value) -> CSSProperties {
+    pub fn font_variant_east_asian(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `font-variant-emoji`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontVariantEmoji")]
-    pub fn font_variant_emoji(self, value: impl Value) -> CSSProperties {
+    pub fn font_variant_emoji(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `font-variant-ligatures`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontVariantLigatures")]
-    pub fn font_variant_ligatures(self, value: impl Value) -> CSSProperties {
+    pub fn font_variant_ligatures(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `font-variant-numeric`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontVariantNumeric")]
-    pub fn font_variant_numeric(self, value: impl Value) -> CSSProperties {
+    pub fn font_variant_numeric(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `font-variant-position`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontVariantPosition")]
-    pub fn font_variant_position(self, value: impl Value) -> CSSProperties {
+    pub fn font_variant_position(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `font-variation-settings`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontVariationSettings")]
-    pub fn font_variation_settings(self, value: impl Value) -> CSSProperties {
+    pub fn font_variation_settings(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `font-weight`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontWeight")]
-    pub fn font_weight(self, value: impl Value) -> CSSProperties {
+    pub fn font_weight(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `font-width`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontWidth")]
-    pub fn font_width(self, value: impl Value) -> CSSProperties {
+    pub fn font_width(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -9799,7 +9800,7 @@ impl CSSProperties {
 
     /// `forced-color-adjust`
     #[cfg_attr(rust_js, rust_js::link_name = "prop forcedColorAdjust")]
-    pub fn forced_color_adjust(self, value: impl Value) -> CSSProperties {
+    pub fn forced_color_adjust(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -9811,145 +9812,145 @@ impl CSSProperties {
 
     /// `gap`
     #[cfg_attr(rust_js, rust_js::link_name = "prop gap")]
-    pub fn gap(self, value: impl Value) -> CSSProperties {
+    pub fn gap(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `glyph-orientation-vertical`
     #[cfg_attr(rust_js, rust_js::link_name = "prop glyphOrientationVertical")]
-    pub fn glyph_orientation_vertical(self, value: impl Value) -> CSSProperties {
+    pub fn glyph_orientation_vertical(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `grid`
     #[cfg_attr(rust_js, rust_js::link_name = "prop grid")]
-    pub fn grid(self, value: impl Value) -> CSSProperties {
+    pub fn grid(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `grid-area`
     #[cfg_attr(rust_js, rust_js::link_name = "prop gridArea")]
-    pub fn grid_area(self, value: impl Value) -> CSSProperties {
+    pub fn grid_area(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `grid-auto-columns`
     #[cfg_attr(rust_js, rust_js::link_name = "prop gridAutoColumns")]
-    pub fn grid_auto_columns(self, value: impl Value) -> CSSProperties {
+    pub fn grid_auto_columns(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `grid-auto-flow`
     #[cfg_attr(rust_js, rust_js::link_name = "prop gridAutoFlow")]
-    pub fn grid_auto_flow(self, value: impl Value) -> CSSProperties {
+    pub fn grid_auto_flow(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `grid-auto-rows`
     #[cfg_attr(rust_js, rust_js::link_name = "prop gridAutoRows")]
-    pub fn grid_auto_rows(self, value: impl Value) -> CSSProperties {
+    pub fn grid_auto_rows(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `grid-column`
     #[cfg_attr(rust_js, rust_js::link_name = "prop gridColumn")]
-    pub fn grid_column(self, value: impl Value) -> CSSProperties {
+    pub fn grid_column(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `grid-column-end`
     #[cfg_attr(rust_js, rust_js::link_name = "prop gridColumnEnd")]
-    pub fn grid_column_end(self, value: impl Value) -> CSSProperties {
+    pub fn grid_column_end(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `grid-column-gap`
     #[cfg_attr(rust_js, rust_js::link_name = "prop gridColumnGap")]
-    pub fn grid_column_gap(self, value: impl Value) -> CSSProperties {
+    pub fn grid_column_gap(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `grid-column-start`
     #[cfg_attr(rust_js, rust_js::link_name = "prop gridColumnStart")]
-    pub fn grid_column_start(self, value: impl Value) -> CSSProperties {
+    pub fn grid_column_start(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `grid-gap`
     #[cfg_attr(rust_js, rust_js::link_name = "prop gridGap")]
-    pub fn grid_gap(self, value: impl Value) -> CSSProperties {
+    pub fn grid_gap(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `grid-row`
     #[cfg_attr(rust_js, rust_js::link_name = "prop gridRow")]
-    pub fn grid_row(self, value: impl Value) -> CSSProperties {
+    pub fn grid_row(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `grid-row-end`
     #[cfg_attr(rust_js, rust_js::link_name = "prop gridRowEnd")]
-    pub fn grid_row_end(self, value: impl Value) -> CSSProperties {
+    pub fn grid_row_end(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `grid-row-gap`
     #[cfg_attr(rust_js, rust_js::link_name = "prop gridRowGap")]
-    pub fn grid_row_gap(self, value: impl Value) -> CSSProperties {
+    pub fn grid_row_gap(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `grid-row-start`
     #[cfg_attr(rust_js, rust_js::link_name = "prop gridRowStart")]
-    pub fn grid_row_start(self, value: impl Value) -> CSSProperties {
+    pub fn grid_row_start(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `grid-template`
     #[cfg_attr(rust_js, rust_js::link_name = "prop gridTemplate")]
-    pub fn grid_template(self, value: impl Value) -> CSSProperties {
+    pub fn grid_template(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `grid-template-areas`
     #[cfg_attr(rust_js, rust_js::link_name = "prop gridTemplateAreas")]
-    pub fn grid_template_areas(self, value: impl Value) -> CSSProperties {
+    pub fn grid_template_areas(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `grid-template-columns`
     #[cfg_attr(rust_js, rust_js::link_name = "prop gridTemplateColumns")]
-    pub fn grid_template_columns(self, value: impl Value) -> CSSProperties {
+    pub fn grid_template_columns(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `grid-template-rows`
     #[cfg_attr(rust_js, rust_js::link_name = "prop gridTemplateRows")]
-    pub fn grid_template_rows(self, value: impl Value) -> CSSProperties {
+    pub fn grid_template_rows(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `hanging-punctuation`
     #[cfg_attr(rust_js, rust_js::link_name = "prop hangingPunctuation")]
-    pub fn hanging_punctuation(self, value: impl Value) -> CSSProperties {
+    pub fn hanging_punctuation(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `height`
     #[cfg_attr(rust_js, rust_js::link_name = "prop height")]
-    pub fn height(self, value: impl Value) -> CSSProperties {
+    pub fn height(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `hyphenate-character`
     #[cfg_attr(rust_js, rust_js::link_name = "prop hyphenateCharacter")]
-    pub fn hyphenate_character(self, value: impl Value) -> CSSProperties {
+    pub fn hyphenate_character(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `hyphenate-limit-chars`
     #[cfg_attr(rust_js, rust_js::link_name = "prop hyphenateLimitChars")]
-    pub fn hyphenate_limit_chars(self, value: impl Value) -> CSSProperties {
+    pub fn hyphenate_limit_chars(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -9973,7 +9974,7 @@ impl CSSProperties {
 
     /// `hyphens`
     #[cfg_attr(rust_js, rust_js::link_name = "prop hyphens")]
-    pub fn hyphens(self, value: impl Value) -> CSSProperties {
+    pub fn hyphens(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -9985,31 +9986,31 @@ impl CSSProperties {
 
     /// `image-orientation`
     #[cfg_attr(rust_js, rust_js::link_name = "prop imageOrientation")]
-    pub fn image_orientation(self, value: impl Value) -> CSSProperties {
+    pub fn image_orientation(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `image-rendering`
     #[cfg_attr(rust_js, rust_js::link_name = "prop imageRendering")]
-    pub fn image_rendering(self, value: impl Value) -> CSSProperties {
+    pub fn image_rendering(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `image-resolution`
     #[cfg_attr(rust_js, rust_js::link_name = "prop imageResolution")]
-    pub fn image_resolution(self, value: impl Value) -> CSSProperties {
+    pub fn image_resolution(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `initial-letter`
     #[cfg_attr(rust_js, rust_js::link_name = "prop initialLetter")]
-    pub fn initial_letter(self, value: impl Value) -> CSSProperties {
+    pub fn initial_letter(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `initial-letter-align`
     #[cfg_attr(rust_js, rust_js::link_name = "prop initialLetterAlign")]
-    pub fn initial_letter_align(self, value: impl Value) -> CSSProperties {
+    pub fn initial_letter_align(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -10021,7 +10022,7 @@ impl CSSProperties {
 
     /// `inline-size`
     #[cfg_attr(rust_js, rust_js::link_name = "prop inlineSize")]
-    pub fn inline_size(self, value: impl Value) -> CSSProperties {
+    pub fn inline_size(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -10039,43 +10040,43 @@ impl CSSProperties {
 
     /// `inset`
     #[cfg_attr(rust_js, rust_js::link_name = "prop inset")]
-    pub fn inset(self, value: impl Value) -> CSSProperties {
+    pub fn inset(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `inset-block`
     #[cfg_attr(rust_js, rust_js::link_name = "prop insetBlock")]
-    pub fn inset_block(self, value: impl Value) -> CSSProperties {
+    pub fn inset_block(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `inset-block-end`
     #[cfg_attr(rust_js, rust_js::link_name = "prop insetBlockEnd")]
-    pub fn inset_block_end(self, value: impl Value) -> CSSProperties {
+    pub fn inset_block_end(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `inset-block-start`
     #[cfg_attr(rust_js, rust_js::link_name = "prop insetBlockStart")]
-    pub fn inset_block_start(self, value: impl Value) -> CSSProperties {
+    pub fn inset_block_start(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `inset-inline`
     #[cfg_attr(rust_js, rust_js::link_name = "prop insetInline")]
-    pub fn inset_inline(self, value: impl Value) -> CSSProperties {
+    pub fn inset_inline(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `inset-inline-end`
     #[cfg_attr(rust_js, rust_js::link_name = "prop insetInlineEnd")]
-    pub fn inset_inline_end(self, value: impl Value) -> CSSProperties {
+    pub fn inset_inline_end(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `inset-inline-start`
     #[cfg_attr(rust_js, rust_js::link_name = "prop insetInlineStart")]
-    pub fn inset_inline_start(self, value: impl Value) -> CSSProperties {
+    pub fn inset_inline_start(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -10105,61 +10106,61 @@ impl CSSProperties {
 
     /// `interpolate-size`
     #[cfg_attr(rust_js, rust_js::link_name = "prop interpolateSize")]
-    pub fn interpolate_size(self, value: impl Value) -> CSSProperties {
+    pub fn interpolate_size(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `isolation`
     #[cfg_attr(rust_js, rust_js::link_name = "prop isolation")]
-    pub fn isolation(self, value: impl Value) -> CSSProperties {
+    pub fn isolation(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `justify-content`
     #[cfg_attr(rust_js, rust_js::link_name = "prop justifyContent")]
-    pub fn justify_content(self, value: impl Value) -> CSSProperties {
+    pub fn justify_content(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `justify-items`
     #[cfg_attr(rust_js, rust_js::link_name = "prop justifyItems")]
-    pub fn justify_items(self, value: impl Value) -> CSSProperties {
+    pub fn justify_items(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `justify-self`
     #[cfg_attr(rust_js, rust_js::link_name = "prop justifySelf")]
-    pub fn justify_self(self, value: impl Value) -> CSSProperties {
+    pub fn justify_self(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `left`
     #[cfg_attr(rust_js, rust_js::link_name = "prop left")]
-    pub fn left(self, value: impl Value) -> CSSProperties {
+    pub fn left(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `letter-spacing`
     #[cfg_attr(rust_js, rust_js::link_name = "prop letterSpacing")]
-    pub fn letter_spacing(self, value: impl Value) -> CSSProperties {
+    pub fn letter_spacing(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `lighting-color`
     #[cfg_attr(rust_js, rust_js::link_name = "prop lightingColor")]
-    pub fn lighting_color(self, value: impl Value) -> CSSProperties {
+    pub fn lighting_color(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `line-break`
     #[cfg_attr(rust_js, rust_js::link_name = "prop lineBreak")]
-    pub fn line_break(self, value: impl Value) -> CSSProperties {
+    pub fn line_break(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `line-clamp`
     #[cfg_attr(rust_js, rust_js::link_name = "prop lineClamp")]
-    pub fn line_clamp(self, value: impl Value) -> CSSProperties {
+    pub fn line_clamp(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -10177,13 +10178,13 @@ impl CSSProperties {
 
     /// `line-height`
     #[cfg_attr(rust_js, rust_js::link_name = "prop lineHeight")]
-    pub fn line_height(self, value: impl Value) -> CSSProperties {
+    pub fn line_height(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `line-height-step`
     #[cfg_attr(rust_js, rust_js::link_name = "prop lineHeightStep")]
-    pub fn line_height_step(self, value: impl Value) -> CSSProperties {
+    pub fn line_height_step(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -10207,55 +10208,55 @@ impl CSSProperties {
 
     /// `list-style`
     #[cfg_attr(rust_js, rust_js::link_name = "prop listStyle")]
-    pub fn list_style(self, value: impl Value) -> CSSProperties {
+    pub fn list_style(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `list-style-image`
     #[cfg_attr(rust_js, rust_js::link_name = "prop listStyleImage")]
-    pub fn list_style_image(self, value: impl Value) -> CSSProperties {
+    pub fn list_style_image(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `list-style-position`
     #[cfg_attr(rust_js, rust_js::link_name = "prop listStylePosition")]
-    pub fn list_style_position(self, value: impl Value) -> CSSProperties {
+    pub fn list_style_position(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `list-style-type`
     #[cfg_attr(rust_js, rust_js::link_name = "prop listStyleType")]
-    pub fn list_style_type(self, value: impl Value) -> CSSProperties {
+    pub fn list_style_type(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `margin`
     #[cfg_attr(rust_js, rust_js::link_name = "prop margin")]
-    pub fn margin(self, value: impl Value) -> CSSProperties {
+    pub fn margin(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `margin-block`
     #[cfg_attr(rust_js, rust_js::link_name = "prop marginBlock")]
-    pub fn margin_block(self, value: impl Value) -> CSSProperties {
+    pub fn margin_block(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `margin-block-end`
     #[cfg_attr(rust_js, rust_js::link_name = "prop marginBlockEnd")]
-    pub fn margin_block_end(self, value: impl Value) -> CSSProperties {
+    pub fn margin_block_end(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `margin-block-start`
     #[cfg_attr(rust_js, rust_js::link_name = "prop marginBlockStart")]
-    pub fn margin_block_start(self, value: impl Value) -> CSSProperties {
+    pub fn margin_block_start(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `margin-bottom`
     #[cfg_attr(rust_js, rust_js::link_name = "prop marginBottom")]
-    pub fn margin_bottom(self, value: impl Value) -> CSSProperties {
+    pub fn margin_bottom(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -10267,61 +10268,61 @@ impl CSSProperties {
 
     /// `margin-inline`
     #[cfg_attr(rust_js, rust_js::link_name = "prop marginInline")]
-    pub fn margin_inline(self, value: impl Value) -> CSSProperties {
+    pub fn margin_inline(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `margin-inline-end`
     #[cfg_attr(rust_js, rust_js::link_name = "prop marginInlineEnd")]
-    pub fn margin_inline_end(self, value: impl Value) -> CSSProperties {
+    pub fn margin_inline_end(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `margin-inline-start`
     #[cfg_attr(rust_js, rust_js::link_name = "prop marginInlineStart")]
-    pub fn margin_inline_start(self, value: impl Value) -> CSSProperties {
+    pub fn margin_inline_start(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `margin-left`
     #[cfg_attr(rust_js, rust_js::link_name = "prop marginLeft")]
-    pub fn margin_left(self, value: impl Value) -> CSSProperties {
+    pub fn margin_left(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `margin-right`
     #[cfg_attr(rust_js, rust_js::link_name = "prop marginRight")]
-    pub fn margin_right(self, value: impl Value) -> CSSProperties {
+    pub fn margin_right(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `margin-top`
     #[cfg_attr(rust_js, rust_js::link_name = "prop marginTop")]
-    pub fn margin_top(self, value: impl Value) -> CSSProperties {
+    pub fn margin_top(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `margin-trim`
     #[cfg_attr(rust_js, rust_js::link_name = "prop marginTrim")]
-    pub fn margin_trim(self, value: impl Value) -> CSSProperties {
+    pub fn margin_trim(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `marker`
     #[cfg_attr(rust_js, rust_js::link_name = "prop marker")]
-    pub fn marker(self, value: impl Value) -> CSSProperties {
+    pub fn marker(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `marker-end`
     #[cfg_attr(rust_js, rust_js::link_name = "prop markerEnd")]
-    pub fn marker_end(self, value: impl Value) -> CSSProperties {
+    pub fn marker_end(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `marker-mid`
     #[cfg_attr(rust_js, rust_js::link_name = "prop markerMid")]
-    pub fn marker_mid(self, value: impl Value) -> CSSProperties {
+    pub fn marker_mid(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -10333,151 +10334,151 @@ impl CSSProperties {
 
     /// `marker-start`
     #[cfg_attr(rust_js, rust_js::link_name = "prop markerStart")]
-    pub fn marker_start(self, value: impl Value) -> CSSProperties {
+    pub fn marker_start(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `mask`
     #[cfg_attr(rust_js, rust_js::link_name = "prop mask")]
-    pub fn mask(self, value: impl Value) -> CSSProperties {
+    pub fn mask(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `mask-border`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maskBorder")]
-    pub fn mask_border(self, value: impl Value) -> CSSProperties {
+    pub fn mask_border(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `mask-border-mode`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maskBorderMode")]
-    pub fn mask_border_mode(self, value: impl Value) -> CSSProperties {
+    pub fn mask_border_mode(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `mask-border-outset`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maskBorderOutset")]
-    pub fn mask_border_outset(self, value: impl Value) -> CSSProperties {
+    pub fn mask_border_outset(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `mask-border-repeat`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maskBorderRepeat")]
-    pub fn mask_border_repeat(self, value: impl Value) -> CSSProperties {
+    pub fn mask_border_repeat(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `mask-border-slice`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maskBorderSlice")]
-    pub fn mask_border_slice(self, value: impl Value) -> CSSProperties {
+    pub fn mask_border_slice(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `mask-border-source`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maskBorderSource")]
-    pub fn mask_border_source(self, value: impl Value) -> CSSProperties {
+    pub fn mask_border_source(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `mask-border-width`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maskBorderWidth")]
-    pub fn mask_border_width(self, value: impl Value) -> CSSProperties {
+    pub fn mask_border_width(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `mask-clip`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maskClip")]
-    pub fn mask_clip(self, value: impl Value) -> CSSProperties {
+    pub fn mask_clip(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `mask-composite`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maskComposite")]
-    pub fn mask_composite(self, value: impl Value) -> CSSProperties {
+    pub fn mask_composite(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `mask-image`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maskImage")]
-    pub fn mask_image(self, value: impl Value) -> CSSProperties {
+    pub fn mask_image(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `mask-mode`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maskMode")]
-    pub fn mask_mode(self, value: impl Value) -> CSSProperties {
+    pub fn mask_mode(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `mask-origin`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maskOrigin")]
-    pub fn mask_origin(self, value: impl Value) -> CSSProperties {
+    pub fn mask_origin(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `mask-position`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maskPosition")]
-    pub fn mask_position(self, value: impl Value) -> CSSProperties {
+    pub fn mask_position(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `mask-repeat`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maskRepeat")]
-    pub fn mask_repeat(self, value: impl Value) -> CSSProperties {
+    pub fn mask_repeat(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `mask-size`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maskSize")]
-    pub fn mask_size(self, value: impl Value) -> CSSProperties {
+    pub fn mask_size(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `mask-type`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maskType")]
-    pub fn mask_type(self, value: impl Value) -> CSSProperties {
+    pub fn mask_type(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `math-depth`
     #[cfg_attr(rust_js, rust_js::link_name = "prop mathDepth")]
-    pub fn math_depth(self, value: impl Value) -> CSSProperties {
+    pub fn math_depth(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `math-shift`
     #[cfg_attr(rust_js, rust_js::link_name = "prop mathShift")]
-    pub fn math_shift(self, value: impl Value) -> CSSProperties {
+    pub fn math_shift(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `math-style`
     #[cfg_attr(rust_js, rust_js::link_name = "prop mathStyle")]
-    pub fn math_style(self, value: impl Value) -> CSSProperties {
+    pub fn math_style(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `max-block-size`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maxBlockSize")]
-    pub fn max_block_size(self, value: impl Value) -> CSSProperties {
+    pub fn max_block_size(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `max-height`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maxHeight")]
-    pub fn max_height(self, value: impl Value) -> CSSProperties {
+    pub fn max_height(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `max-inline-size`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maxInlineSize")]
-    pub fn max_inline_size(self, value: impl Value) -> CSSProperties {
+    pub fn max_inline_size(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `max-lines`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maxLines")]
-    pub fn max_lines(self, value: impl Value) -> CSSProperties {
+    pub fn max_lines(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -10489,25 +10490,25 @@ impl CSSProperties {
 
     /// `max-width`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maxWidth")]
-    pub fn max_width(self, value: impl Value) -> CSSProperties {
+    pub fn max_width(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `min-block-size`
     #[cfg_attr(rust_js, rust_js::link_name = "prop minBlockSize")]
-    pub fn min_block_size(self, value: impl Value) -> CSSProperties {
+    pub fn min_block_size(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `min-height`
     #[cfg_attr(rust_js, rust_js::link_name = "prop minHeight")]
-    pub fn min_height(self, value: impl Value) -> CSSProperties {
+    pub fn min_height(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `min-inline-size`
     #[cfg_attr(rust_js, rust_js::link_name = "prop minInlineSize")]
-    pub fn min_inline_size(self, value: impl Value) -> CSSProperties {
+    pub fn min_inline_size(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -10525,13 +10526,13 @@ impl CSSProperties {
 
     /// `min-width`
     #[cfg_attr(rust_js, rust_js::link_name = "prop minWidth")]
-    pub fn min_width(self, value: impl Value) -> CSSProperties {
+    pub fn min_width(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `mix-blend-mode`
     #[cfg_attr(rust_js, rust_js::link_name = "prop mixBlendMode")]
-    pub fn mix_blend_mode(self, value: impl Value) -> CSSProperties {
+    pub fn mix_blend_mode(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -10561,127 +10562,127 @@ impl CSSProperties {
 
     /// `object-fit`
     #[cfg_attr(rust_js, rust_js::link_name = "prop objectFit")]
-    pub fn object_fit(self, value: impl Value) -> CSSProperties {
+    pub fn object_fit(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `object-position`
     #[cfg_attr(rust_js, rust_js::link_name = "prop objectPosition")]
-    pub fn object_position(self, value: impl Value) -> CSSProperties {
+    pub fn object_position(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `object-view-box`
     #[cfg_attr(rust_js, rust_js::link_name = "prop objectViewBox")]
-    pub fn object_view_box(self, value: impl Value) -> CSSProperties {
+    pub fn object_view_box(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `offset`
     #[cfg_attr(rust_js, rust_js::link_name = "prop offset")]
-    pub fn offset(self, value: impl Value) -> CSSProperties {
+    pub fn offset(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `offset-anchor`
     #[cfg_attr(rust_js, rust_js::link_name = "prop offsetAnchor")]
-    pub fn offset_anchor(self, value: impl Value) -> CSSProperties {
+    pub fn offset_anchor(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `offset-distance`
     #[cfg_attr(rust_js, rust_js::link_name = "prop offsetDistance")]
-    pub fn offset_distance(self, value: impl Value) -> CSSProperties {
+    pub fn offset_distance(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `offset-path`
     #[cfg_attr(rust_js, rust_js::link_name = "prop offsetPath")]
-    pub fn offset_path(self, value: impl Value) -> CSSProperties {
+    pub fn offset_path(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `offset-position`
     #[cfg_attr(rust_js, rust_js::link_name = "prop offsetPosition")]
-    pub fn offset_position(self, value: impl Value) -> CSSProperties {
+    pub fn offset_position(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `offset-rotate`
     #[cfg_attr(rust_js, rust_js::link_name = "prop offsetRotate")]
-    pub fn offset_rotate(self, value: impl Value) -> CSSProperties {
+    pub fn offset_rotate(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `opacity`
     #[cfg_attr(rust_js, rust_js::link_name = "prop opacity")]
-    pub fn opacity(self, value: impl Value) -> CSSProperties {
+    pub fn opacity(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `order`
     #[cfg_attr(rust_js, rust_js::link_name = "prop order")]
-    pub fn order(self, value: impl Value) -> CSSProperties {
+    pub fn order(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `orphans`
     #[cfg_attr(rust_js, rust_js::link_name = "prop orphans")]
-    pub fn orphans(self, value: impl Value) -> CSSProperties {
+    pub fn orphans(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `outline`
     #[cfg_attr(rust_js, rust_js::link_name = "prop outline")]
-    pub fn outline(self, value: impl Value) -> CSSProperties {
+    pub fn outline(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `outline-color`
     #[cfg_attr(rust_js, rust_js::link_name = "prop outlineColor")]
-    pub fn outline_color(self, value: impl Value) -> CSSProperties {
+    pub fn outline_color(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `outline-offset`
     #[cfg_attr(rust_js, rust_js::link_name = "prop outlineOffset")]
-    pub fn outline_offset(self, value: impl Value) -> CSSProperties {
+    pub fn outline_offset(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `outline-style`
     #[cfg_attr(rust_js, rust_js::link_name = "prop outlineStyle")]
-    pub fn outline_style(self, value: impl Value) -> CSSProperties {
+    pub fn outline_style(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `outline-width`
     #[cfg_attr(rust_js, rust_js::link_name = "prop outlineWidth")]
-    pub fn outline_width(self, value: impl Value) -> CSSProperties {
+    pub fn outline_width(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `overflow`
     #[cfg_attr(rust_js, rust_js::link_name = "prop overflow")]
-    pub fn overflow(self, value: impl Value) -> CSSProperties {
+    pub fn overflow(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `overflow-anchor`
     #[cfg_attr(rust_js, rust_js::link_name = "prop overflowAnchor")]
-    pub fn overflow_anchor(self, value: impl Value) -> CSSProperties {
+    pub fn overflow_anchor(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `overflow-block`
     #[cfg_attr(rust_js, rust_js::link_name = "prop overflowBlock")]
-    pub fn overflow_block(self, value: impl Value) -> CSSProperties {
+    pub fn overflow_block(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `overflow-clip-margin`
     #[cfg_attr(rust_js, rust_js::link_name = "prop overflowClipMargin")]
-    pub fn overflow_clip_margin(self, value: impl Value) -> CSSProperties {
+    pub fn overflow_clip_margin(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -10747,157 +10748,157 @@ impl CSSProperties {
 
     /// `overflow-inline`
     #[cfg_attr(rust_js, rust_js::link_name = "prop overflowInline")]
-    pub fn overflow_inline(self, value: impl Value) -> CSSProperties {
+    pub fn overflow_inline(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `overflow-wrap`
     #[cfg_attr(rust_js, rust_js::link_name = "prop overflowWrap")]
-    pub fn overflow_wrap(self, value: impl Value) -> CSSProperties {
+    pub fn overflow_wrap(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `overflow-x`
     #[cfg_attr(rust_js, rust_js::link_name = "prop overflowX")]
-    pub fn overflow_x(self, value: impl Value) -> CSSProperties {
+    pub fn overflow_x(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `overflow-y`
     #[cfg_attr(rust_js, rust_js::link_name = "prop overflowY")]
-    pub fn overflow_y(self, value: impl Value) -> CSSProperties {
+    pub fn overflow_y(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `overlay`
     #[cfg_attr(rust_js, rust_js::link_name = "prop overlay")]
-    pub fn overlay(self, value: impl Value) -> CSSProperties {
+    pub fn overlay(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `overscroll-behavior`
     #[cfg_attr(rust_js, rust_js::link_name = "prop overscrollBehavior")]
-    pub fn overscroll_behavior(self, value: impl Value) -> CSSProperties {
+    pub fn overscroll_behavior(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `overscroll-behavior-block`
     #[cfg_attr(rust_js, rust_js::link_name = "prop overscrollBehaviorBlock")]
-    pub fn overscroll_behavior_block(self, value: impl Value) -> CSSProperties {
+    pub fn overscroll_behavior_block(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `overscroll-behavior-inline`
     #[cfg_attr(rust_js, rust_js::link_name = "prop overscrollBehaviorInline")]
-    pub fn overscroll_behavior_inline(self, value: impl Value) -> CSSProperties {
+    pub fn overscroll_behavior_inline(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `overscroll-behavior-x`
     #[cfg_attr(rust_js, rust_js::link_name = "prop overscrollBehaviorX")]
-    pub fn overscroll_behavior_x(self, value: impl Value) -> CSSProperties {
+    pub fn overscroll_behavior_x(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `overscroll-behavior-y`
     #[cfg_attr(rust_js, rust_js::link_name = "prop overscrollBehaviorY")]
-    pub fn overscroll_behavior_y(self, value: impl Value) -> CSSProperties {
+    pub fn overscroll_behavior_y(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `padding`
     #[cfg_attr(rust_js, rust_js::link_name = "prop padding")]
-    pub fn padding(self, value: impl Value) -> CSSProperties {
+    pub fn padding(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `padding-block`
     #[cfg_attr(rust_js, rust_js::link_name = "prop paddingBlock")]
-    pub fn padding_block(self, value: impl Value) -> CSSProperties {
+    pub fn padding_block(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `padding-block-end`
     #[cfg_attr(rust_js, rust_js::link_name = "prop paddingBlockEnd")]
-    pub fn padding_block_end(self, value: impl Value) -> CSSProperties {
+    pub fn padding_block_end(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `padding-block-start`
     #[cfg_attr(rust_js, rust_js::link_name = "prop paddingBlockStart")]
-    pub fn padding_block_start(self, value: impl Value) -> CSSProperties {
+    pub fn padding_block_start(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `padding-bottom`
     #[cfg_attr(rust_js, rust_js::link_name = "prop paddingBottom")]
-    pub fn padding_bottom(self, value: impl Value) -> CSSProperties {
+    pub fn padding_bottom(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `padding-inline`
     #[cfg_attr(rust_js, rust_js::link_name = "prop paddingInline")]
-    pub fn padding_inline(self, value: impl Value) -> CSSProperties {
+    pub fn padding_inline(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `padding-inline-end`
     #[cfg_attr(rust_js, rust_js::link_name = "prop paddingInlineEnd")]
-    pub fn padding_inline_end(self, value: impl Value) -> CSSProperties {
+    pub fn padding_inline_end(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `padding-inline-start`
     #[cfg_attr(rust_js, rust_js::link_name = "prop paddingInlineStart")]
-    pub fn padding_inline_start(self, value: impl Value) -> CSSProperties {
+    pub fn padding_inline_start(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `padding-left`
     #[cfg_attr(rust_js, rust_js::link_name = "prop paddingLeft")]
-    pub fn padding_left(self, value: impl Value) -> CSSProperties {
+    pub fn padding_left(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `padding-right`
     #[cfg_attr(rust_js, rust_js::link_name = "prop paddingRight")]
-    pub fn padding_right(self, value: impl Value) -> CSSProperties {
+    pub fn padding_right(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `padding-top`
     #[cfg_attr(rust_js, rust_js::link_name = "prop paddingTop")]
-    pub fn padding_top(self, value: impl Value) -> CSSProperties {
+    pub fn padding_top(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `page`
     #[cfg_attr(rust_js, rust_js::link_name = "prop page")]
-    pub fn page(self, value: impl Value) -> CSSProperties {
+    pub fn page(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `page-break-after`
     #[cfg_attr(rust_js, rust_js::link_name = "prop pageBreakAfter")]
-    pub fn page_break_after(self, value: impl Value) -> CSSProperties {
+    pub fn page_break_after(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `page-break-before`
     #[cfg_attr(rust_js, rust_js::link_name = "prop pageBreakBefore")]
-    pub fn page_break_before(self, value: impl Value) -> CSSProperties {
+    pub fn page_break_before(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `page-break-inside`
     #[cfg_attr(rust_js, rust_js::link_name = "prop pageBreakInside")]
-    pub fn page_break_inside(self, value: impl Value) -> CSSProperties {
+    pub fn page_break_inside(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `paint-order`
     #[cfg_attr(rust_js, rust_js::link_name = "prop paintOrder")]
-    pub fn paint_order(self, value: impl Value) -> CSSProperties {
+    pub fn paint_order(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -10927,37 +10928,37 @@ impl CSSProperties {
 
     /// `perspective`
     #[cfg_attr(rust_js, rust_js::link_name = "prop perspective")]
-    pub fn perspective(self, value: impl Value) -> CSSProperties {
+    pub fn perspective(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `perspective-origin`
     #[cfg_attr(rust_js, rust_js::link_name = "prop perspectiveOrigin")]
-    pub fn perspective_origin(self, value: impl Value) -> CSSProperties {
+    pub fn perspective_origin(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `place-content`
     #[cfg_attr(rust_js, rust_js::link_name = "prop placeContent")]
-    pub fn place_content(self, value: impl Value) -> CSSProperties {
+    pub fn place_content(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `place-items`
     #[cfg_attr(rust_js, rust_js::link_name = "prop placeItems")]
-    pub fn place_items(self, value: impl Value) -> CSSProperties {
+    pub fn place_items(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `place-self`
     #[cfg_attr(rust_js, rust_js::link_name = "prop placeSelf")]
-    pub fn place_self(self, value: impl Value) -> CSSProperties {
+    pub fn place_self(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `pointer-events`
     #[cfg_attr(rust_js, rust_js::link_name = "prop pointerEvents")]
-    pub fn pointer_events(self, value: impl Value) -> CSSProperties {
+    pub fn pointer_events(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -10981,61 +10982,61 @@ impl CSSProperties {
 
     /// `position`
     #[cfg_attr(rust_js, rust_js::link_name = "prop position")]
-    pub fn position(self, value: impl Value) -> CSSProperties {
+    pub fn position(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `position-anchor`
     #[cfg_attr(rust_js, rust_js::link_name = "prop positionAnchor")]
-    pub fn position_anchor(self, value: impl Value) -> CSSProperties {
+    pub fn position_anchor(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `position-area`
     #[cfg_attr(rust_js, rust_js::link_name = "prop positionArea")]
-    pub fn position_area(self, value: impl Value) -> CSSProperties {
+    pub fn position_area(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `position-try`
     #[cfg_attr(rust_js, rust_js::link_name = "prop positionTry")]
-    pub fn position_try(self, value: impl Value) -> CSSProperties {
+    pub fn position_try(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `position-try-fallbacks`
     #[cfg_attr(rust_js, rust_js::link_name = "prop positionTryFallbacks")]
-    pub fn position_try_fallbacks(self, value: impl Value) -> CSSProperties {
+    pub fn position_try_fallbacks(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `position-try-order`
     #[cfg_attr(rust_js, rust_js::link_name = "prop positionTryOrder")]
-    pub fn position_try_order(self, value: impl Value) -> CSSProperties {
+    pub fn position_try_order(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `position-visibility`
     #[cfg_attr(rust_js, rust_js::link_name = "prop positionVisibility")]
-    pub fn position_visibility(self, value: impl Value) -> CSSProperties {
+    pub fn position_visibility(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `print-color-adjust`
     #[cfg_attr(rust_js, rust_js::link_name = "prop printColorAdjust")]
-    pub fn print_color_adjust(self, value: impl Value) -> CSSProperties {
+    pub fn print_color_adjust(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `quotes`
     #[cfg_attr(rust_js, rust_js::link_name = "prop quotes")]
-    pub fn quotes(self, value: impl Value) -> CSSProperties {
+    pub fn quotes(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `r`
     #[cfg_attr(rust_js, rust_js::link_name = "prop r")]
-    pub fn r(self, value: impl Value) -> CSSProperties {
+    pub fn r(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -11059,7 +11060,7 @@ impl CSSProperties {
 
     /// `resize`
     #[cfg_attr(rust_js, rust_js::link_name = "prop resize")]
-    pub fn resize(self, value: impl Value) -> CSSProperties {
+    pub fn resize(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -11083,19 +11084,19 @@ impl CSSProperties {
 
     /// `right`
     #[cfg_attr(rust_js, rust_js::link_name = "prop right")]
-    pub fn right(self, value: impl Value) -> CSSProperties {
+    pub fn right(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `rotate`
     #[cfg_attr(rust_js, rust_js::link_name = "prop rotate")]
-    pub fn rotate(self, value: impl Value) -> CSSProperties {
+    pub fn rotate(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `row-gap`
     #[cfg_attr(rust_js, rust_js::link_name = "prop rowGap")]
-    pub fn row_gap(self, value: impl Value) -> CSSProperties {
+    pub fn row_gap(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -11191,25 +11192,25 @@ impl CSSProperties {
 
     /// `ruby-align`
     #[cfg_attr(rust_js, rust_js::link_name = "prop rubyAlign")]
-    pub fn ruby_align(self, value: impl Value) -> CSSProperties {
+    pub fn ruby_align(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `ruby-merge`
     #[cfg_attr(rust_js, rust_js::link_name = "prop rubyMerge")]
-    pub fn ruby_merge(self, value: impl Value) -> CSSProperties {
+    pub fn ruby_merge(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `ruby-overhang`
     #[cfg_attr(rust_js, rust_js::link_name = "prop rubyOverhang")]
-    pub fn ruby_overhang(self, value: impl Value) -> CSSProperties {
+    pub fn ruby_overhang(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `ruby-position`
     #[cfg_attr(rust_js, rust_js::link_name = "prop rubyPosition")]
-    pub fn ruby_position(self, value: impl Value) -> CSSProperties {
+    pub fn ruby_position(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -11287,19 +11288,19 @@ impl CSSProperties {
 
     /// `rx`
     #[cfg_attr(rust_js, rust_js::link_name = "prop rx")]
-    pub fn rx(self, value: impl Value) -> CSSProperties {
+    pub fn rx(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `ry`
     #[cfg_attr(rust_js, rust_js::link_name = "prop ry")]
-    pub fn ry(self, value: impl Value) -> CSSProperties {
+    pub fn ry(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `scale`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scale")]
-    pub fn scale(self, value: impl Value) -> CSSProperties {
+    pub fn scale(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -11311,79 +11312,79 @@ impl CSSProperties {
 
     /// `scroll-behavior`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollBehavior")]
-    pub fn scroll_behavior(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_behavior(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `scroll-initial-target`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollInitialTarget")]
-    pub fn scroll_initial_target(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_initial_target(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `scroll-margin`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollMargin")]
-    pub fn scroll_margin(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_margin(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `scroll-margin-block`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollMarginBlock")]
-    pub fn scroll_margin_block(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_margin_block(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `scroll-margin-block-end`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollMarginBlockEnd")]
-    pub fn scroll_margin_block_end(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_margin_block_end(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `scroll-margin-block-start`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollMarginBlockStart")]
-    pub fn scroll_margin_block_start(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_margin_block_start(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `scroll-margin-bottom`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollMarginBottom")]
-    pub fn scroll_margin_bottom(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_margin_bottom(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `scroll-margin-inline`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollMarginInline")]
-    pub fn scroll_margin_inline(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_margin_inline(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `scroll-margin-inline-end`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollMarginInlineEnd")]
-    pub fn scroll_margin_inline_end(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_margin_inline_end(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `scroll-margin-inline-start`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollMarginInlineStart")]
-    pub fn scroll_margin_inline_start(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_margin_inline_start(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `scroll-margin-left`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollMarginLeft")]
-    pub fn scroll_margin_left(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_margin_left(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `scroll-margin-right`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollMarginRight")]
-    pub fn scroll_margin_right(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_margin_right(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `scroll-margin-top`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollMarginTop")]
-    pub fn scroll_margin_top(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_margin_top(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -11395,85 +11396,85 @@ impl CSSProperties {
 
     /// `scroll-padding`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollPadding")]
-    pub fn scroll_padding(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_padding(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `scroll-padding-block`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollPaddingBlock")]
-    pub fn scroll_padding_block(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_padding_block(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `scroll-padding-block-end`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollPaddingBlockEnd")]
-    pub fn scroll_padding_block_end(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_padding_block_end(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `scroll-padding-block-start`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollPaddingBlockStart")]
-    pub fn scroll_padding_block_start(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_padding_block_start(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `scroll-padding-bottom`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollPaddingBottom")]
-    pub fn scroll_padding_bottom(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_padding_bottom(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `scroll-padding-inline`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollPaddingInline")]
-    pub fn scroll_padding_inline(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_padding_inline(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `scroll-padding-inline-end`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollPaddingInlineEnd")]
-    pub fn scroll_padding_inline_end(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_padding_inline_end(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `scroll-padding-inline-start`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollPaddingInlineStart")]
-    pub fn scroll_padding_inline_start(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_padding_inline_start(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `scroll-padding-left`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollPaddingLeft")]
-    pub fn scroll_padding_left(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_padding_left(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `scroll-padding-right`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollPaddingRight")]
-    pub fn scroll_padding_right(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_padding_right(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `scroll-padding-top`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollPaddingTop")]
-    pub fn scroll_padding_top(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_padding_top(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `scroll-snap-align`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollSnapAlign")]
-    pub fn scroll_snap_align(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_snap_align(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `scroll-snap-stop`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollSnapStop")]
-    pub fn scroll_snap_stop(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_snap_stop(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `scroll-snap-type`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollSnapType")]
-    pub fn scroll_snap_type(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_snap_type(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -11485,43 +11486,43 @@ impl CSSProperties {
 
     /// `scroll-timeline`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollTimeline")]
-    pub fn scroll_timeline(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_timeline(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `scroll-timeline-axis`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollTimelineAxis")]
-    pub fn scroll_timeline_axis(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_timeline_axis(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `scroll-timeline-name`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollTimelineName")]
-    pub fn scroll_timeline_name(self, value: impl Value) -> CSSProperties {
+    pub fn scroll_timeline_name(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `scrollbar-color`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollbarColor")]
-    pub fn scrollbar_color(self, value: impl Value) -> CSSProperties {
+    pub fn scrollbar_color(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `scrollbar-gutter`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollbarGutter")]
-    pub fn scrollbar_gutter(self, value: impl Value) -> CSSProperties {
+    pub fn scrollbar_gutter(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `scrollbar-width`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrollbarWidth")]
-    pub fn scrollbar_width(self, value: impl Value) -> CSSProperties {
+    pub fn scrollbar_width(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `shape-image-threshold`
     #[cfg_attr(rust_js, rust_js::link_name = "prop shapeImageThreshold")]
-    pub fn shape_image_threshold(self, value: impl Value) -> CSSProperties {
+    pub fn shape_image_threshold(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -11533,13 +11534,13 @@ impl CSSProperties {
 
     /// `shape-margin`
     #[cfg_attr(rust_js, rust_js::link_name = "prop shapeMargin")]
-    pub fn shape_margin(self, value: impl Value) -> CSSProperties {
+    pub fn shape_margin(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `shape-outside`
     #[cfg_attr(rust_js, rust_js::link_name = "prop shapeOutside")]
-    pub fn shape_outside(self, value: impl Value) -> CSSProperties {
+    pub fn shape_outside(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -11551,7 +11552,7 @@ impl CSSProperties {
 
     /// `shape-rendering`
     #[cfg_attr(rust_js, rust_js::link_name = "prop shapeRendering")]
-    pub fn shape_rendering(self, value: impl Value) -> CSSProperties {
+    pub fn shape_rendering(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -11593,19 +11594,19 @@ impl CSSProperties {
 
     /// `speak-as`
     #[cfg_attr(rust_js, rust_js::link_name = "prop speakAs")]
-    pub fn speak_as(self, value: impl Value) -> CSSProperties {
+    pub fn speak_as(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `stop-color`
     #[cfg_attr(rust_js, rust_js::link_name = "prop stopColor")]
-    pub fn stop_color(self, value: impl Value) -> CSSProperties {
+    pub fn stop_color(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `stop-opacity`
     #[cfg_attr(rust_js, rust_js::link_name = "prop stopOpacity")]
-    pub fn stop_opacity(self, value: impl Value) -> CSSProperties {
+    pub fn stop_opacity(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -11617,7 +11618,7 @@ impl CSSProperties {
 
     /// `stroke`
     #[cfg_attr(rust_js, rust_js::link_name = "prop stroke")]
-    pub fn stroke(self, value: impl Value) -> CSSProperties {
+    pub fn stroke(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -11641,7 +11642,7 @@ impl CSSProperties {
 
     /// `stroke-color`
     #[cfg_attr(rust_js, rust_js::link_name = "prop strokeColor")]
-    pub fn stroke_color(self, value: impl Value) -> CSSProperties {
+    pub fn stroke_color(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -11665,7 +11666,7 @@ impl CSSProperties {
 
     /// `stroke-dasharray`
     #[cfg_attr(rust_js, rust_js::link_name = "prop strokeDasharray")]
-    pub fn stroke_dasharray(self, value: impl Value) -> CSSProperties {
+    pub fn stroke_dasharray(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -11677,7 +11678,7 @@ impl CSSProperties {
 
     /// `stroke-dashoffset`
     #[cfg_attr(rust_js, rust_js::link_name = "prop strokeDashoffset")]
-    pub fn stroke_dashoffset(self, value: impl Value) -> CSSProperties {
+    pub fn stroke_dashoffset(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -11689,25 +11690,25 @@ impl CSSProperties {
 
     /// `stroke-linecap`
     #[cfg_attr(rust_js, rust_js::link_name = "prop strokeLinecap")]
-    pub fn stroke_linecap(self, value: impl Value) -> CSSProperties {
+    pub fn stroke_linecap(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `stroke-linejoin`
     #[cfg_attr(rust_js, rust_js::link_name = "prop strokeLinejoin")]
-    pub fn stroke_linejoin(self, value: impl Value) -> CSSProperties {
+    pub fn stroke_linejoin(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `stroke-miterlimit`
     #[cfg_attr(rust_js, rust_js::link_name = "prop strokeMiterlimit")]
-    pub fn stroke_miterlimit(self, value: impl Value) -> CSSProperties {
+    pub fn stroke_miterlimit(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `stroke-opacity`
     #[cfg_attr(rust_js, rust_js::link_name = "prop strokeOpacity")]
-    pub fn stroke_opacity(self, value: impl Value) -> CSSProperties {
+    pub fn stroke_opacity(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -11737,25 +11738,25 @@ impl CSSProperties {
 
     /// `stroke-width`
     #[cfg_attr(rust_js, rust_js::link_name = "prop strokeWidth")]
-    pub fn stroke_width(self, value: impl Value) -> CSSProperties {
+    pub fn stroke_width(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `tab-size`
     #[cfg_attr(rust_js, rust_js::link_name = "prop tabSize")]
-    pub fn tab_size(self, value: impl Value) -> CSSProperties {
+    pub fn tab_size(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `table-layout`
     #[cfg_attr(rust_js, rust_js::link_name = "prop tableLayout")]
-    pub fn table_layout(self, value: impl Value) -> CSSProperties {
+    pub fn table_layout(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `text-align`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textAlign")]
-    pub fn text_align(self, value: impl Value) -> CSSProperties {
+    pub fn text_align(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -11767,55 +11768,55 @@ impl CSSProperties {
 
     /// `text-align-last`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textAlignLast")]
-    pub fn text_align_last(self, value: impl Value) -> CSSProperties {
+    pub fn text_align_last(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `text-anchor`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textAnchor")]
-    pub fn text_anchor(self, value: impl Value) -> CSSProperties {
+    pub fn text_anchor(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `text-autospace`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textAutospace")]
-    pub fn text_autospace(self, value: impl Value) -> CSSProperties {
+    pub fn text_autospace(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `text-box`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textBox")]
-    pub fn text_box(self, value: impl Value) -> CSSProperties {
+    pub fn text_box(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `text-box-edge`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textBoxEdge")]
-    pub fn text_box_edge(self, value: impl Value) -> CSSProperties {
+    pub fn text_box_edge(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `text-box-trim`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textBoxTrim")]
-    pub fn text_box_trim(self, value: impl Value) -> CSSProperties {
+    pub fn text_box_trim(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `text-combine-upright`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textCombineUpright")]
-    pub fn text_combine_upright(self, value: impl Value) -> CSSProperties {
+    pub fn text_combine_upright(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `text-decoration`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textDecoration")]
-    pub fn text_decoration(self, value: impl Value) -> CSSProperties {
+    pub fn text_decoration(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `text-decoration-color`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textDecorationColor")]
-    pub fn text_decoration_color(self, value: impl Value) -> CSSProperties {
+    pub fn text_decoration_color(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -11827,13 +11828,13 @@ impl CSSProperties {
 
     /// `text-decoration-line`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textDecorationLine")]
-    pub fn text_decoration_line(self, value: impl Value) -> CSSProperties {
+    pub fn text_decoration_line(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `text-decoration-skip`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textDecorationSkip")]
-    pub fn text_decoration_skip(self, value: impl Value) -> CSSProperties {
+    pub fn text_decoration_skip(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -11845,7 +11846,7 @@ impl CSSProperties {
 
     /// `text-decoration-skip-ink`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textDecorationSkipInk")]
-    pub fn text_decoration_skip_ink(self, value: impl Value) -> CSSProperties {
+    pub fn text_decoration_skip_ink(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -11863,31 +11864,31 @@ impl CSSProperties {
 
     /// `text-decoration-style`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textDecorationStyle")]
-    pub fn text_decoration_style(self, value: impl Value) -> CSSProperties {
+    pub fn text_decoration_style(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `text-decoration-thickness`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textDecorationThickness")]
-    pub fn text_decoration_thickness(self, value: impl Value) -> CSSProperties {
+    pub fn text_decoration_thickness(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `text-emphasis`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textEmphasis")]
-    pub fn text_emphasis(self, value: impl Value) -> CSSProperties {
+    pub fn text_emphasis(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `text-emphasis-color`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textEmphasisColor")]
-    pub fn text_emphasis_color(self, value: impl Value) -> CSSProperties {
+    pub fn text_emphasis_color(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `text-emphasis-position`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textEmphasisPosition")]
-    pub fn text_emphasis_position(self, value: impl Value) -> CSSProperties {
+    pub fn text_emphasis_position(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -11899,7 +11900,7 @@ impl CSSProperties {
 
     /// `text-emphasis-style`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textEmphasisStyle")]
-    pub fn text_emphasis_style(self, value: impl Value) -> CSSProperties {
+    pub fn text_emphasis_style(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -11917,43 +11918,43 @@ impl CSSProperties {
 
     /// `text-indent`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textIndent")]
-    pub fn text_indent(self, value: impl Value) -> CSSProperties {
+    pub fn text_indent(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `text-justify`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textJustify")]
-    pub fn text_justify(self, value: impl Value) -> CSSProperties {
+    pub fn text_justify(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `text-orientation`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textOrientation")]
-    pub fn text_orientation(self, value: impl Value) -> CSSProperties {
+    pub fn text_orientation(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `text-overflow`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textOverflow")]
-    pub fn text_overflow(self, value: impl Value) -> CSSProperties {
+    pub fn text_overflow(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `text-rendering`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textRendering")]
-    pub fn text_rendering(self, value: impl Value) -> CSSProperties {
+    pub fn text_rendering(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `text-shadow`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textShadow")]
-    pub fn text_shadow(self, value: impl Value) -> CSSProperties {
+    pub fn text_shadow(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `text-size-adjust`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textSizeAdjust")]
-    pub fn text_size_adjust(self, value: impl Value) -> CSSProperties {
+    pub fn text_size_adjust(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -11965,49 +11966,49 @@ impl CSSProperties {
 
     /// `text-spacing-trim`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textSpacingTrim")]
-    pub fn text_spacing_trim(self, value: impl Value) -> CSSProperties {
+    pub fn text_spacing_trim(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `text-transform`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textTransform")]
-    pub fn text_transform(self, value: impl Value) -> CSSProperties {
+    pub fn text_transform(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `text-underline-offset`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textUnderlineOffset")]
-    pub fn text_underline_offset(self, value: impl Value) -> CSSProperties {
+    pub fn text_underline_offset(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `text-underline-position`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textUnderlinePosition")]
-    pub fn text_underline_position(self, value: impl Value) -> CSSProperties {
+    pub fn text_underline_position(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `text-wrap`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textWrap")]
-    pub fn text_wrap(self, value: impl Value) -> CSSProperties {
+    pub fn text_wrap(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `text-wrap-mode`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textWrapMode")]
-    pub fn text_wrap_mode(self, value: impl Value) -> CSSProperties {
+    pub fn text_wrap_mode(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `text-wrap-style`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textWrapStyle")]
-    pub fn text_wrap_style(self, value: impl Value) -> CSSProperties {
+    pub fn text_wrap_style(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `timeline-scope`
     #[cfg_attr(rust_js, rust_js::link_name = "prop timelineScope")]
-    pub fn timeline_scope(self, value: impl Value) -> CSSProperties {
+    pub fn timeline_scope(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -12067,79 +12068,79 @@ impl CSSProperties {
 
     /// `top`
     #[cfg_attr(rust_js, rust_js::link_name = "prop top")]
-    pub fn top(self, value: impl Value) -> CSSProperties {
+    pub fn top(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `touch-action`
     #[cfg_attr(rust_js, rust_js::link_name = "prop touchAction")]
-    pub fn touch_action(self, value: impl Value) -> CSSProperties {
+    pub fn touch_action(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `transform`
     #[cfg_attr(rust_js, rust_js::link_name = "prop transform")]
-    pub fn transform(self, value: impl Value) -> CSSProperties {
+    pub fn transform(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `transform-box`
     #[cfg_attr(rust_js, rust_js::link_name = "prop transformBox")]
-    pub fn transform_box(self, value: impl Value) -> CSSProperties {
+    pub fn transform_box(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `transform-origin`
     #[cfg_attr(rust_js, rust_js::link_name = "prop transformOrigin")]
-    pub fn transform_origin(self, value: impl Value) -> CSSProperties {
+    pub fn transform_origin(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `transform-style`
     #[cfg_attr(rust_js, rust_js::link_name = "prop transformStyle")]
-    pub fn transform_style(self, value: impl Value) -> CSSProperties {
+    pub fn transform_style(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `transition`
     #[cfg_attr(rust_js, rust_js::link_name = "prop transition")]
-    pub fn transition(self, value: impl Value) -> CSSProperties {
+    pub fn transition(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `transition-behavior`
     #[cfg_attr(rust_js, rust_js::link_name = "prop transitionBehavior")]
-    pub fn transition_behavior(self, value: impl Value) -> CSSProperties {
+    pub fn transition_behavior(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `transition-delay`
     #[cfg_attr(rust_js, rust_js::link_name = "prop transitionDelay")]
-    pub fn transition_delay(self, value: impl Value) -> CSSProperties {
+    pub fn transition_delay(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `transition-duration`
     #[cfg_attr(rust_js, rust_js::link_name = "prop transitionDuration")]
-    pub fn transition_duration(self, value: impl Value) -> CSSProperties {
+    pub fn transition_duration(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `transition-property`
     #[cfg_attr(rust_js, rust_js::link_name = "prop transitionProperty")]
-    pub fn transition_property(self, value: impl Value) -> CSSProperties {
+    pub fn transition_property(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `transition-timing-function`
     #[cfg_attr(rust_js, rust_js::link_name = "prop transitionTimingFunction")]
-    pub fn transition_timing_function(self, value: impl Value) -> CSSProperties {
+    pub fn transition_timing_function(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `translate`
     #[cfg_attr(rust_js, rust_js::link_name = "prop translate")]
-    pub fn translate(self, value: impl Value) -> CSSProperties {
+    pub fn translate(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
@@ -12151,55 +12152,55 @@ impl CSSProperties {
 
     /// `unicode-bidi`
     #[cfg_attr(rust_js, rust_js::link_name = "prop unicodeBidi")]
-    pub fn unicode_bidi(self, value: impl Value) -> CSSProperties {
+    pub fn unicode_bidi(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `user-select`
     #[cfg_attr(rust_js, rust_js::link_name = "prop userSelect")]
-    pub fn user_select(self, value: impl Value) -> CSSProperties {
+    pub fn user_select(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `vector-effect`
     #[cfg_attr(rust_js, rust_js::link_name = "prop vectorEffect")]
-    pub fn vector_effect(self, value: impl Value) -> CSSProperties {
+    pub fn vector_effect(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `vertical-align`
     #[cfg_attr(rust_js, rust_js::link_name = "prop verticalAlign")]
-    pub fn vertical_align(self, value: impl Value) -> CSSProperties {
+    pub fn vertical_align(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `view-timeline`
     #[cfg_attr(rust_js, rust_js::link_name = "prop viewTimeline")]
-    pub fn view_timeline(self, value: impl Value) -> CSSProperties {
+    pub fn view_timeline(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `view-timeline-axis`
     #[cfg_attr(rust_js, rust_js::link_name = "prop viewTimelineAxis")]
-    pub fn view_timeline_axis(self, value: impl Value) -> CSSProperties {
+    pub fn view_timeline_axis(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `view-timeline-inset`
     #[cfg_attr(rust_js, rust_js::link_name = "prop viewTimelineInset")]
-    pub fn view_timeline_inset(self, value: impl Value) -> CSSProperties {
+    pub fn view_timeline_inset(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `view-timeline-name`
     #[cfg_attr(rust_js, rust_js::link_name = "prop viewTimelineName")]
-    pub fn view_timeline_name(self, value: impl Value) -> CSSProperties {
+    pub fn view_timeline_name(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `view-transition-class`
     #[cfg_attr(rust_js, rust_js::link_name = "prop viewTransitionClass")]
-    pub fn view_transition_class(self, value: impl Value) -> CSSProperties {
+    pub fn view_transition_class(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -12211,7 +12212,7 @@ impl CSSProperties {
 
     /// `view-transition-name`
     #[cfg_attr(rust_js, rust_js::link_name = "prop viewTransitionName")]
-    pub fn view_transition_name(self, value: impl Value) -> CSSProperties {
+    pub fn view_transition_name(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -12223,7 +12224,7 @@ impl CSSProperties {
 
     /// `visibility`
     #[cfg_attr(rust_js, rust_js::link_name = "prop visibility")]
-    pub fn visibility(self, value: impl Value) -> CSSProperties {
+    pub fn visibility(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -12277,13 +12278,13 @@ impl CSSProperties {
 
     /// `white-space`
     #[cfg_attr(rust_js, rust_js::link_name = "prop whiteSpace")]
-    pub fn white_space(self, value: impl Value) -> CSSProperties {
+    pub fn white_space(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `white-space-collapse`
     #[cfg_attr(rust_js, rust_js::link_name = "prop whiteSpaceCollapse")]
-    pub fn white_space_collapse(self, value: impl Value) -> CSSProperties {
+    pub fn white_space_collapse(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -12295,19 +12296,19 @@ impl CSSProperties {
 
     /// `widows`
     #[cfg_attr(rust_js, rust_js::link_name = "prop widows")]
-    pub fn widows(self, value: impl Value) -> CSSProperties {
+    pub fn widows(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `width`
     #[cfg_attr(rust_js, rust_js::link_name = "prop width")]
-    pub fn width(self, value: impl Value) -> CSSProperties {
+    pub fn width(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `will-change`
     #[cfg_attr(rust_js, rust_js::link_name = "prop willChange")]
-    pub fn will_change(self, value: impl Value) -> CSSProperties {
+    pub fn will_change(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -12319,7 +12320,7 @@ impl CSSProperties {
 
     /// `word-break`
     #[cfg_attr(rust_js, rust_js::link_name = "prop wordBreak")]
-    pub fn word_break(self, value: impl Value) -> CSSProperties {
+    pub fn word_break(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -12331,13 +12332,13 @@ impl CSSProperties {
 
     /// `word-spacing`
     #[cfg_attr(rust_js, rust_js::link_name = "prop wordSpacing")]
-    pub fn word_spacing(self, value: impl Value) -> CSSProperties {
+    pub fn word_spacing(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `word-wrap`
     #[cfg_attr(rust_js, rust_js::link_name = "prop wordWrap")]
-    pub fn word_wrap(self, value: impl Value) -> CSSProperties {
+    pub fn word_wrap(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
@@ -12373,31 +12374,31 @@ impl CSSProperties {
 
     /// `writing-mode`
     #[cfg_attr(rust_js, rust_js::link_name = "prop writingMode")]
-    pub fn writing_mode(self, value: impl Value) -> CSSProperties {
+    pub fn writing_mode(self, value: impl value::Text) -> CSSProperties {
         unreachable!()
     }
 
     /// `x`
     #[cfg_attr(rust_js, rust_js::link_name = "prop x")]
-    pub fn x(self, value: impl Value) -> CSSProperties {
+    pub fn x(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `y`
     #[cfg_attr(rust_js, rust_js::link_name = "prop y")]
-    pub fn y(self, value: impl Value) -> CSSProperties {
+    pub fn y(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `z-index`
     #[cfg_attr(rust_js, rust_js::link_name = "prop zIndex")]
-    pub fn z_index(self, value: impl Value) -> CSSProperties {
+    pub fn z_index(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 
     /// `zoom`
     #[cfg_attr(rust_js, rust_js::link_name = "prop zoom")]
-    pub fn zoom(self, value: impl Value) -> CSSProperties {
+    pub fn zoom(self, value: impl value::NumberOrString) -> CSSProperties {
         unreachable!()
     }
 

@@ -2276,6 +2276,23 @@ pub fn Panel(BoxProps { style }: BoxProps) -> Element {
   expect([renderToStaticMarkup(Panel({ style: { color: "red" } })), renderToStaticMarkup(Panel({}))]).toEqual(['<div style="color:red"></div>', "<div></div>"]);
 });
 
+// A CSS property takes what @types/react's `CSSProperties`, csstype's
+// `Properties<string | number>`, types it as: `width` a length, a number in
+// pixels or text, `opacity` and `z_index` a number, `color` text only.
+test("JSX styles take the values csstype types them as", async () => {
+  const { dir, args } = compile(`use react::{CSSProperties, Element, jsx};
+pub fn Panel() -> Element {
+    jsx! { <div style={CSSProperties::new().width(300).opacity(0.5).z_index(2).color("red").margin_top("1em")} /> }
+}
+`);
+  run(args);
+  const { Panel } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(Panel())).toBe('<div style="width:300px;opacity:0.5;z-index:2;color:red;margin-top:1em"></div>');
+  const refused = compile(`use react::{CSSProperties, Element, jsx};\npub fn Panel() -> Element {\n    jsx! { <div style={CSSProperties::new().color(3)} /> }\n}\n`);
+  const failed = Bun.spawnSync(refused.args, { cwd: refused.dir });
+  expect([failed.exitCode === 0, failed.stderr.toString().includes("is not text")], failed.stderr.toString()).toEqual([false, true]);
+});
+
 // A style spreads another over its own, as react.dev's console box writes
 // `style={{width, height, ...customStyles}}`; `None` spreads nothing.
 test("JSX styles spread another style over their own", async () => {
