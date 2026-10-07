@@ -29,7 +29,7 @@ impl Failure {
 /// not. A rejection, a network error or an abort, is an `Err` (`settle`).
 async fn call(url: &str, init: RequestInit<'_>, ok: u16) -> Result<String, Failure> {
     let signal = init.signal;
-    let response = match settle(window::fetch_with_init(window, url.into(), init)).await {
+    let response = match settle(window::fetch_with_init(window, url, init)).await {
         Ok(response) => response,
         Err(_) if signal.is_some_and(abort_signal::aborted) => return Err(Failure::Aborted),
         Err(_) => return Err(Failure::Network),

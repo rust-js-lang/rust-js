@@ -99,9 +99,9 @@ fn item(state: &Shared, view: View, todo: &Todo) -> &'static Element {
     let delete = text("button", "×");
     on(delete, "click", state, view, Box::new(move |s| s.todos.retain(|t| t.id != id)));
 
-    element::append(li, check.into());
-    element::append(li, title.into());
-    element::append(li, delete.into());
+    element::append(li, check);
+    element::append(li, title);
+    element::append(li, delete);
     li
 }
 
@@ -114,7 +114,7 @@ fn render(state: &Shared, view: View) {
             left += 1;
         }
         if shown(s.filter, todo) {
-            element::append(view.list, item(state, view, todo).into());
+            element::append(view.list, item(state, view, todo));
         }
     }
     let noun = if left == 1 { " item left" } else { " items left" };
@@ -142,19 +142,19 @@ pub fn main() {
 
     // Which todos to show, and clearing the completed ones.
     let footer = create("p");
-    element::append(footer, view.left.into());
+    element::append(footer, view.left);
     for (label, filter) in [("All", Filter::All), ("Active", Filter::Active), ("Completed", Filter::Completed)] {
         let b = text("button", label);
         on(b, "click", &state, view, Box::new(move |s| s.filter = filter));
-        element::append(footer, b.into());
+        element::append(footer, b);
     }
     let clear = text("button", "Clear completed");
     on(clear, "click", &state, view, Box::new(|s| s.todos.retain(|t| !t.done)));
-    element::append(footer, clear.into());
+    element::append(footer, clear);
 
-    element::append(app, input.into());
-    element::append(app, view.list.into());
-    element::append(app, footer.into());
+    element::append(app, input);
+    element::append(app, view.list);
+    element::append(app, footer);
     render(&state, view);
 }
 
@@ -184,7 +184,7 @@ mod tests {
         node::set_text_content(body, "");
         let app = create("div");
         element::set_id(app, "app");
-        element::append(body, app.into());
+        element::append(body, app);
         main();
         app
     }

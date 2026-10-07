@@ -728,14 +728,21 @@ line(`}`);
 
 let count = 0;
 
+/** A parameter's union, `nodes: NodeOrStr<'_>`'s, if it's one. */
+const unionParam = (p: string): Union | undefined => unions.get(p.slice(p.indexOf(": ") + 2).replace(/<'_>$/, ""));
+
 /**
- * A function with a parameter typed `any`, as a generic Rust one, which an
- * extern one can't be: each such parameter of a type parameter of its own,
- * named after it, `message: M` (ADR 0225).
+ * A function with a parameter typed `any`, or of a union, as a generic Rust
+ * one, which an extern one can't be: each `any` of a type parameter of its
+ * own, named after it, `message: M` (ADR 0225), and each union `impl` its
+ * trait, `nodes: impl IntoNodeOrStr`, which passes a member on as it is
+ * (ADR 0229).
  */
 function generic(f: Fn): string {
   const names: string[] = [];
   const params = f.params.map((p) => {
+    const union = unionParam(p);
+    if (union) return `${p.slice(0, p.indexOf(": "))}: impl Into${union.name}`;
     if (!p.endsWith(`: ${ANY}`)) return p;
     const param = p.slice(0, -`: ${ANY}`.length);
     let type = param[0].toUpperCase();
@@ -749,7 +756,7 @@ function generic(f: Fn): string {
     `    #[cfg_attr(rust_js, rust_js::link_name = ${JSON.stringify(f.jsName)})]`,
     "    // rust-js writes its JS: the body never runs, nor reads a parameter.",
     "    #[allow(unused_variables)]",
-    `    pub fn ${f.name}<${names.join(", ")}>(${params.join(", ")})${result} {`,
+    `    pub fn ${f.name}${names.length > 0 ? `<${names.join(", ")}>` : ""}(${params.join(", ")})${result} {`,
     "        unreachable!()",
     "    }",
   ].join("\n");
@@ -759,7 +766,7 @@ function generic(f: Fn): string {
 function module(name: string, all: Fn[], typed: string[] = []) {
   if (all.length === 0) return;
   count += all.length;
-  const fns = all.filter((f) => !f.params.some((p) => p.endsWith(`: ${ANY}`)));
+  const fns = all.filter((f) => !f.params.some((p) => p.endsWith(`: ${ANY}`) || unionParam(p)));
   typed = [...all.filter((f) => !fns.includes(f)).map(generic), ...typed];
   line();
   line(`pub mod ${name} {`);
@@ -844,8 +851,14 @@ const ancestors = (name: string): string[] => {
   const parent = interfaces.get(name)?.parent;
   return parent && known.has(parent) ? [parent, ...ancestors(parent)] : [];
 };
+// And each union's trait, `IntoNodeOrStr`, of what converts into it and
+// the enum, which a function's parameter of it takes (ADR 0229): each the
+// value itself. Sealed, by a trait each of them has once.
+const sealed = new Set<string>();
 for (const union of [...unions.values()].sort((a, b) => a.name.localeCompare(b.name))) {
   const lifetime = union.borrows ? "<'a>" : "";
+  const elided = (type: string) => type.replace(/&'a /g, "&").replace(/'a\b/g, "'_");
+  const members: string[] = [];
   line();
   line(`/// \`${union.variants.map((v) => v.ts).join(" | ")}\`: each variant's value is the member itself (ADR 0215).`);
   line(`#[cfg_attr(rust_js, rust_js::untagged)]`);
@@ -857,6 +870,7 @@ for (const union of [...unions.values()].sort((a, b) => a.name.localeCompare(b.n
     const own = INTERFACES.find((n) => typeName(n) === v.name);
     const extending = own ? INTERFACES.filter((n) => n !== own && ancestors(n).find((a) => classes.has(a)) === own) : [];
     for (const from of [v.type, ...extending.map((n) => `&'a ${typeName(n)}`)]) {
+      members.push(elided(from));
       line();
       line(`impl${lifetime} From<${from}> for ${union.name}${lifetime} {`);
       line(`    fn from(value: ${from}) -> Self {`);
@@ -865,7 +879,34 @@ for (const union of [...unions.values()].sort((a, b) => a.name.localeCompare(b.n
       line(`}`);
     }
   }
+  const ts = union.variants.map((v) => v.ts).join(" | ");
+  const own = `${union.name}${union.borrows ? "<'_>" : ""}`;
+  line();
+  line(`/// What a \`${ts}\` parameter takes: each member as it is, and the enum (ADR 0229).`);
+  line(`#[diagnostic::on_unimplemented(message = "\`{Self}\` is not a \`${ts}\`")]`);
+  line(`#[cfg_attr(rust_js, rust_js::types = "${ts}")]`);
+  line(`pub trait Into${union.name}: sealed::Sealed {}`);
+  for (const member of [...members, own]) {
+    line(`impl Into${union.name} for ${member} {}`);
+    sealed.add(member);
+  }
+  line();
+  line(`impl${lifetime} ${union.name}${lifetime} {`);
+  line(`    /// The member a parameter was given, as its enum, to \`match\`: the value itself.`);
+  line(`    #[cfg_attr(rust_js, rust_js::link_name = "this")]`);
+  line(`    #[allow(unused_variables)]`);
+  line(`    pub fn of(this: impl Into${union.name}${union.borrows ? " + 'a" : ""}) -> ${union.name}${lifetime} {`);
+  line(`        unreachable!()`);
+  line(`    }`);
+  line(`}`);
 }
+line();
+line(`mod sealed {`);
+line(`    use super::*;`);
+line();
+line(`    pub trait Sealed {}`);
+for (const member of [...sealed].sort()) line(`    impl Sealed for ${member} {}`);
+line(`}`);
 
 
 // Each event's name and each tag, as a type whose value is its string, and

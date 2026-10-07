@@ -783,6 +783,110 @@ pub fn wire() -> &'static webapi::HTMLButtonElement {
   }
 });
 
+// ADR 0229: a binding's union parameter is `impl` a sealed trait of its
+// members, so each member is passed as it is, `upload("hello")`, with no
+// `.into()` and nothing in the JS; another type is an error that names the
+// union, and the enum of one, `BodyInit::of`, is matched.
+test("a union parameter takes each member as it is", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("union-parameters");
+  const source = `use webapi::{Blob, BodyInit, Element, IntoBodyInit, Response, element, response, window};
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum UploadBody<'a> {
+    Text(&'a str),
+    Blob(&'a Blob),
+}
+
+impl<'a> From<&'a str> for UploadBody<'a> {
+    fn from(value: &'a str) -> Self {
+        UploadBody::Text(value)
+    }
+}
+
+impl<'a> From<&'a Blob> for UploadBody<'a> {
+    fn from(value: &'a Blob) -> Self {
+        UploadBody::Blob(value)
+    }
+}
+
+mod sealed {
+    pub trait Sealed {}
+    impl Sealed for &str {}
+    impl Sealed for &webapi::Blob {}
+    impl Sealed for super::UploadBody<'_> {}
+    impl<T: Sealed> Sealed for Option<T> {}
+}
+
+#[diagnostic::on_unimplemented(message = "\`{Self}\` is not a \`string | Blob\`")]
+pub trait IntoUploadBody: sealed::Sealed {}
+impl IntoUploadBody for &str {}
+impl IntoUploadBody for &Blob {}
+impl IntoUploadBody for UploadBody<'_> {}
+impl<T: IntoUploadBody> IntoUploadBody for Option<T> {}
+
+impl<'a> UploadBody<'a> {
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoUploadBody + 'a) -> UploadBody<'a> {
+        unreachable!()
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.upload")]
+#[allow(unused_variables)]
+pub fn upload(body: impl IntoUploadBody) {
+    unreachable!()
+}
+
+pub fn send(blob: &Blob, body: UploadBody, maybe: Option<&str>) {
+    upload("hello");
+    upload(blob);
+    upload(body);
+    upload(maybe);
+}
+
+pub fn kind<'a>(body: impl IntoBodyInit + 'a) -> String {
+    match BodyInit::of(body) {
+        BodyInit::Str(text) => text.to_string(),
+        BodyInit::Blob(_) => "blob".to_string(),
+        _ => "other".to_string(),
+    }
+}
+
+pub fn page(el: &Element, blob: &Blob, url: &str) -> (&'static Response, js::Promise<&'static Response>) {
+    element::before(el, "text");
+    (response::new_with_body(blob), window::fetch(window, url))
+}
+`;
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
+  writeFileSync(join(dir, "lib.rs"), source);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  // To TypeScript, the trait is the union.
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export function kind(body: ReadableStream | Blob | Uint8Array | ArrayBuffer | FormData | string): string;");
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('globalThis.upload("hello");\n  globalThis.upload(blob);\n  globalThis.upload(body);\n  globalThis.upload(maybe);');
+  // Of webapi's union, a binding crate's trait, no dictionary: `kind(body)`.
+  expect(js).toContain("export function kind(body) {\n  const match = body;\n  if (typeof match === \"string\") {");
+  expect(js).toContain('el.before("text");');
+  expect(js).toContain("return [new Response(blob), window.fetch(url)];");
+  const { send, kind } = await import(join(dir, "lib.js"));
+  const sent: unknown[] = [];
+  const previous = (globalThis as any).upload;
+  (globalThis as any).upload = (body: unknown) => sent.push(body);
+  try {
+    const blob = new Blob(["b"]);
+    send(blob, "body", undefined);
+    expect(sent).toEqual(["hello", blob, "body", undefined]);
+  } finally {
+    (globalThis as any).upload = previous;
+  }
+  expect([kind("text"), kind(new Blob())]).toEqual(["text", "blob"]);
+  writeFileSync(join(dir, "lib.rs"), source.replace('upload("hello");', "upload(1.5);"));
+  const wrong = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "wrong.js"), ...withWeb], { cwd: dir });
+  expect([wrong.exitCode === 0, wrong.stderr.toString().includes("is not a `string | Blob`")], wrong.stderr.toString()).toEqual([false, true]);
+});
+
 // ADR 0225: a JS value of unknown shape is a `js::Unknown`, as TypeScript's
 // `unknown` and ReScript's are, which `classify` tells by `typeof`, and
 // whose properties are read and set by name, as `obj[key]` is.

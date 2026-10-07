@@ -50,21 +50,29 @@ pub mod event_target {
         #[link_name = "addEventListener"]
         pub safe fn add_event_listener_named(this: &EventTarget, type_: &str, callback: Box<dyn FnMut(&Event)>);
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener)
-        #[link_name = "addEventListener"]
-        pub safe fn add_event_listener_named_with_options(this: &EventTarget, type_: &str, callback: Box<dyn FnMut(&Event)>, options: AddEventListenerOptionsOrBool<'_>);
-
         /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/removeEventListener)
         #[link_name = "removeEventListener"]
         pub safe fn remove_event_listener_named(this: &EventTarget, type_: &str, callback: Box<dyn FnMut(&Event)>);
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/removeEventListener)
-        #[link_name = "removeEventListener"]
-        pub safe fn remove_event_listener_named_with_options(this: &EventTarget, type_: &str, callback: Box<dyn FnMut(&Event)>, options: EventListenerOptionsOrBool);
-
         /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/dispatchEvent)
         #[link_name = "dispatchEvent"]
         pub safe fn dispatch_event(this: &EventTarget, event: &Event) -> bool;
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener)
+    #[cfg_attr(rust_js, rust_js::link_name = "addEventListener")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn add_event_listener_named_with_options(this: &EventTarget, type_: &str, callback: Box<dyn FnMut(&Event)>, options: impl IntoAddEventListenerOptionsOrBool) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/removeEventListener)
+    #[cfg_attr(rust_js, rust_js::link_name = "removeEventListener")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn remove_event_listener_named_with_options(this: &EventTarget, type_: &str, callback: Box<dyn FnMut(&Event)>, options: impl IntoEventListenerOptionsOrBool) {
+        unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener): `listener` for each event of a name here,
@@ -414,22 +422,36 @@ pub mod character_data {
         #[link_name = "get nextElementSibling"]
         pub safe fn next_element_sibling(this: &CharacterData) -> Option<&'static Element>;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/before)
-        pub safe fn before(this: &CharacterData, nodes: NodeOrStr<'_>);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/after)
-        pub safe fn after(this: &CharacterData, nodes: NodeOrStr<'_>);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/replaceWith)
-        #[link_name = "replaceWith"]
-        pub safe fn replace_with(this: &CharacterData, nodes: NodeOrStr<'_>);
-
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/remove)
         pub safe fn remove(this: &CharacterData);
 
         /// Treats `this` as `CharacterData` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static CharacterData;
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/before)
+    #[cfg_attr(rust_js, rust_js::link_name = "before")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn before(this: &CharacterData, nodes: impl IntoNodeOrStr) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/after)
+    #[cfg_attr(rust_js, rust_js::link_name = "after")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn after(this: &CharacterData, nodes: impl IntoNodeOrStr) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/replaceWith)
+    #[cfg_attr(rust_js, rust_js::link_name = "replaceWith")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn replace_with(this: &CharacterData, nodes: impl IntoNodeOrStr) {
+        unreachable!()
     }
 }
 
@@ -706,10 +728,6 @@ pub mod element {
         #[link_name = "scrollIntoView"]
         pub safe fn scroll_into_view(this: &Element) -> Promise<()>;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollIntoView)
-        #[link_name = "scrollIntoView"]
-        pub safe fn scroll_into_view_with_arg(this: &Element, arg: BoolOrScrollIntoViewOptions<'_>) -> Promise<()>;
-
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scroll)
         pub safe fn scroll(this: &Element) -> Promise<()>;
 
@@ -805,16 +823,6 @@ pub mod element {
         #[link_name = "get childElementCount"]
         pub safe fn child_element_count(this: &Element) -> u32;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/prepend)
-        pub safe fn prepend(this: &Element, nodes: NodeOrStr<'_>);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/append)
-        pub safe fn append(this: &Element, nodes: NodeOrStr<'_>);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/replaceChildren)
-        #[link_name = "replaceChildren"]
-        pub safe fn replace_children(this: &Element, nodes: NodeOrStr<'_>);
-
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/moveBefore)
         #[link_name = "moveBefore"]
         pub safe fn move_before(this: &Element, node: &Node, child: &Node);
@@ -835,16 +843,6 @@ pub mod element {
         #[link_name = "get nextElementSibling"]
         pub safe fn next_element_sibling(this: &Element) -> Option<&'static Element>;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/before)
-        pub safe fn before(this: &Element, nodes: NodeOrStr<'_>);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/after)
-        pub safe fn after(this: &Element, nodes: NodeOrStr<'_>);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/replaceWith)
-        #[link_name = "replaceWith"]
-        pub safe fn replace_with(this: &Element, nodes: NodeOrStr<'_>);
-
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/remove)
         pub safe fn remove(this: &Element);
 
@@ -855,6 +853,62 @@ pub mod element {
         /// Treats `this` as `Element` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static Element;
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollIntoView)
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollIntoView")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_into_view_with_arg(this: &Element, arg: impl IntoBoolOrScrollIntoViewOptions) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/prepend)
+    #[cfg_attr(rust_js, rust_js::link_name = "prepend")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn prepend(this: &Element, nodes: impl IntoNodeOrStr) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/append)
+    #[cfg_attr(rust_js, rust_js::link_name = "append")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn append(this: &Element, nodes: impl IntoNodeOrStr) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/replaceChildren)
+    #[cfg_attr(rust_js, rust_js::link_name = "replaceChildren")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn replace_children(this: &Element, nodes: impl IntoNodeOrStr) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/before)
+    #[cfg_attr(rust_js, rust_js::link_name = "before")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn before(this: &Element, nodes: impl IntoNodeOrStr) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/after)
+    #[cfg_attr(rust_js, rust_js::link_name = "after")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn after(this: &Element, nodes: impl IntoNodeOrStr) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/replaceWith)
+    #[cfg_attr(rust_js, rust_js::link_name = "replaceWith")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn replace_with(this: &Element, nodes: impl IntoNodeOrStr) {
+        unreachable!()
     }
 }
 
@@ -927,17 +981,9 @@ pub mod document {
         #[link_name = "createElement"]
         pub safe fn create_element_named(this: &Document, local_name: &str) -> &'static Element;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/createElement)
-        #[link_name = "createElement"]
-        pub safe fn create_element_named_with_options(this: &Document, local_name: &str, options: StrOrElementCreationOptions<'_>) -> &'static Element;
-
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/createElementNS)
         #[link_name = "createElementNS"]
         pub safe fn create_element_ns(this: &Document, namespace: &str, qualified_name: &str) -> &'static Element;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/createElementNS)
-        #[link_name = "createElementNS"]
-        pub safe fn create_element_ns_with_options(this: &Document, namespace: &str, qualified_name: &str, options: StrOrElementCreationOptions<'_>) -> &'static Element;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/createDocumentFragment)
         #[link_name = "createDocumentFragment"]
@@ -954,10 +1000,6 @@ pub mod document {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/importNode)
         #[link_name = "importNode"]
         pub safe fn import_node(this: &Document, node: &Node) -> &'static Node;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/importNode)
-        #[link_name = "importNode"]
-        pub safe fn import_node_with_options(this: &Document, node: &Node, options: BoolOrImportNodeOptions) -> &'static Node;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/adoptNode)
         #[link_name = "adoptNode"]
@@ -1226,16 +1268,6 @@ pub mod document {
         #[link_name = "get childElementCount"]
         pub safe fn child_element_count(this: &Document) -> u32;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/prepend)
-        pub safe fn prepend(this: &Document, nodes: NodeOrStr<'_>);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/append)
-        pub safe fn append(this: &Document, nodes: NodeOrStr<'_>);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/replaceChildren)
-        #[link_name = "replaceChildren"]
-        pub safe fn replace_children(this: &Document, nodes: NodeOrStr<'_>);
-
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/moveBefore)
         #[link_name = "moveBefore"]
         pub safe fn move_before(this: &Document, node: &Node, child: &Node);
@@ -1255,6 +1287,54 @@ pub mod document {
         /// Treats `this` as `Document` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static Document;
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/createElement)
+    #[cfg_attr(rust_js, rust_js::link_name = "createElement")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn create_element_named_with_options(this: &Document, local_name: &str, options: impl IntoStrOrElementCreationOptions) -> &'static Element {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/createElementNS)
+    #[cfg_attr(rust_js, rust_js::link_name = "createElementNS")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn create_element_ns_with_options(this: &Document, namespace: &str, qualified_name: &str, options: impl IntoStrOrElementCreationOptions) -> &'static Element {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/importNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "importNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn import_node_with_options(this: &Document, node: &Node, options: impl IntoBoolOrImportNodeOptions) -> &'static Node {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/prepend)
+    #[cfg_attr(rust_js, rust_js::link_name = "prepend")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn prepend(this: &Document, nodes: impl IntoNodeOrStr) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/append)
+    #[cfg_attr(rust_js, rust_js::link_name = "append")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn append(this: &Document, nodes: impl IntoNodeOrStr) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/replaceChildren)
+    #[cfg_attr(rust_js, rust_js::link_name = "replaceChildren")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn replace_children(this: &Document, nodes: impl IntoNodeOrStr) {
+        unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/createElement): the element a tag is (ADR 0223),
@@ -1309,16 +1389,6 @@ pub mod document_fragment {
         #[link_name = "get childElementCount"]
         pub safe fn child_element_count(this: &DocumentFragment) -> u32;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentFragment/prepend)
-        pub safe fn prepend(this: &DocumentFragment, nodes: NodeOrStr<'_>);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentFragment/append)
-        pub safe fn append(this: &DocumentFragment, nodes: NodeOrStr<'_>);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentFragment/replaceChildren)
-        #[link_name = "replaceChildren"]
-        pub safe fn replace_children(this: &DocumentFragment, nodes: NodeOrStr<'_>);
-
         /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentFragment/moveBefore)
         #[link_name = "moveBefore"]
         pub safe fn move_before(this: &DocumentFragment, node: &Node, child: &Node);
@@ -1334,6 +1404,30 @@ pub mod document_fragment {
         /// Treats `this` as `DocumentFragment` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static DocumentFragment;
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentFragment/prepend)
+    #[cfg_attr(rust_js, rust_js::link_name = "prepend")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn prepend(this: &DocumentFragment, nodes: impl IntoNodeOrStr) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentFragment/append)
+    #[cfg_attr(rust_js, rust_js::link_name = "append")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn append(this: &DocumentFragment, nodes: impl IntoNodeOrStr) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentFragment/replaceChildren)
+    #[cfg_attr(rust_js, rust_js::link_name = "replaceChildren")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn replace_children(this: &DocumentFragment, nodes: impl IntoNodeOrStr) {
+        unreachable!()
     }
 }
 
@@ -1535,10 +1629,6 @@ pub mod html_element {
         #[link_name = "set dir"]
         pub safe fn set_dir(this: &HTMLElement, value: &str);
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/hidden)
-        #[link_name = "set hidden"]
-        pub safe fn set_hidden(this: &HTMLElement, value: BoolOrNumberOrStr<'_>);
-
         /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/inert)
         #[link_name = "get inert"]
         pub safe fn inert(this: &HTMLElement) -> bool;
@@ -1633,10 +1723,6 @@ pub mod html_element {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/togglePopover)
         #[link_name = "togglePopover"]
         pub safe fn toggle_popover(this: &HTMLElement) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/togglePopover)
-        #[link_name = "togglePopover"]
-        pub safe fn toggle_popover_with_options(this: &HTMLElement, options: TogglePopoverOptionsOrBool<'_>) -> bool;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/popover)
         #[link_name = "get popover"]
@@ -1755,6 +1841,22 @@ pub mod html_element {
         /// Treats `this` as `HTMLElement` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLElement;
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/hidden)
+    #[cfg_attr(rust_js, rust_js::link_name = "set hidden")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_hidden(this: &HTMLElement, value: impl IntoBoolOrNumberOrStr) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/togglePopover)
+    #[cfg_attr(rust_js, rust_js::link_name = "togglePopover")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn toggle_popover_with_options(this: &HTMLElement, options: impl IntoTogglePopoverOptionsOrBool) -> bool {
+        unreachable!()
     }
 }
 
@@ -3389,13 +3491,6 @@ pub mod html_select_element {
         #[link_name = "namedItem"]
         pub safe fn named_item(this: &HTMLSelectElement, name: &str) -> Option<&'static HTMLOptionElement>;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement/add)
-        pub safe fn add(this: &HTMLSelectElement, element: HTMLOptionElementOrHTMLOptGroupElement<'_>);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement/add)
-        #[link_name = "add"]
-        pub safe fn add_with_before(this: &HTMLSelectElement, element: HTMLOptionElementOrHTMLOptGroupElement<'_>, before: HTMLElementOrNumber<'_>);
-
         /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement/remove)
         pub safe fn remove(this: &HTMLSelectElement);
 
@@ -3454,6 +3549,22 @@ pub mod html_select_element {
         /// Treats `this` as `HTMLSelectElement` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLSelectElement;
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement/add)
+    #[cfg_attr(rust_js, rust_js::link_name = "add")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn add(this: &HTMLSelectElement, element: impl IntoHTMLOptionElementOrHTMLOptGroupElement) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement/add)
+    #[cfg_attr(rust_js, rust_js::link_name = "add")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn add_with_before(this: &HTMLSelectElement, element: impl IntoHTMLOptionElementOrHTMLOptGroupElement, before: impl IntoHTMLElementOrNumber) {
+        unreachable!()
     }
 }
 
@@ -6907,12 +7018,17 @@ pub mod html_slot_element {
         #[link_name = "set name"]
         pub safe fn set_name(this: &HTMLSlotElement, value: &str);
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSlotElement/assign)
-        pub safe fn assign(this: &HTMLSlotElement, nodes: ElementOrText<'_>);
-
         /// Treats `this` as `HTMLSlotElement` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLSlotElement;
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSlotElement/assign)
+    #[cfg_attr(rust_js, rust_js::link_name = "assign")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn assign(this: &HTMLSlotElement, nodes: impl IntoElementOrText) {
+        unreachable!()
     }
 }
 
@@ -7241,13 +7357,6 @@ pub mod window {
         #[link_name = "get performance"]
         pub safe fn performance(this: &Window) -> &'static Performance;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/fetch)
-        pub safe fn fetch(this: &Window, input: RequestInfo<'_>) -> Promise<&'static Response>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/fetch)
-        #[link_name = "fetch"]
-        pub safe fn fetch_with_init(this: &Window, input: RequestInfo<'_>, init: RequestInit<'_>) -> Promise<&'static Response>;
-
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/cancelAnimationFrame)
         #[link_name = "cancelAnimationFrame"]
         pub safe fn cancel_animation_frame(this: &Window, handle: u32);
@@ -7310,6 +7419,22 @@ pub mod window {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn structured_clone<V: StructuredClone>(this: &Window, value: V) -> Option<&'static Unknown> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/fetch)
+    #[cfg_attr(rust_js, rust_js::link_name = "fetch")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn fetch(this: &Window, input: impl IntoRequestInfo) -> Promise<&'static Response> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/fetch)
+    #[cfg_attr(rust_js, rust_js::link_name = "fetch")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn fetch_with_init(this: &Window, input: impl IntoRequestInfo, init: RequestInit<'_>) -> Promise<&'static Response> {
         unreachable!()
     }
 }
@@ -8925,14 +9050,6 @@ pub mod request {
     use super::*;
 
     unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Request/Request)
-        #[link_name = "new Request"]
-        pub safe fn new(input: RequestInfo<'_>) -> &'static Request;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Request/Request)
-        #[link_name = "new Request"]
-        pub safe fn new_with_init(input: RequestInfo<'_>, init: RequestInit<'_>) -> &'static Request;
-
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Request/method)
         #[link_name = "get method"]
         pub safe fn method(this: &Request) -> String;
@@ -9032,6 +9149,22 @@ pub mod request {
         #[link_name = "textStream"]
         pub safe fn text_stream(this: &Request) -> &'static ReadableStream;
     }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Request/Request)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Request")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(input: impl IntoRequestInfo) -> &'static Request {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Request/Request)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Request")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_init(input: impl IntoRequestInfo, init: RequestInit<'_>) -> &'static Request {
+        unreachable!()
+    }
 }
 
 /// [`Response`](https://developer.mozilla.org/docs/Web/API/Response)
@@ -9045,14 +9178,6 @@ pub mod response {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/Response)
         #[link_name = "new Response"]
         pub safe fn new() -> &'static Response;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/Response)
-        #[link_name = "new Response"]
-        pub safe fn new_with_body(body: BodyInit<'_>) -> &'static Response;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/Response)
-        #[link_name = "new Response"]
-        pub safe fn new_with_body_and_init(body: BodyInit<'_>, init: ResponseInit<'_>) -> &'static Response;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/type)
         #[link_name = "get type"]
@@ -9116,6 +9241,22 @@ pub mod response {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/textStream)
         #[link_name = "textStream"]
         pub safe fn text_stream(this: &Response) -> &'static ReadableStream;
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/Response)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Response")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_body(body: impl IntoBodyInit) -> &'static Response {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/Response)
+    #[cfg_attr(rust_js, rust_js::link_name = "new Response")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_body_and_init(body: impl IntoBodyInit, init: ResponseInit<'_>) -> &'static Response {
+        unreachable!()
     }
 }
 
@@ -9337,14 +9478,6 @@ pub mod text_decoder {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/TextDecoder/decode)
         pub safe fn decode(this: &TextDecoder) -> String;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextDecoder/decode)
-        #[link_name = "decode"]
-        pub safe fn decode_with_input(this: &TextDecoder, input: AllowSharedBufferSource<'_>) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextDecoder/decode)
-        #[link_name = "decode"]
-        pub safe fn decode_with_input_and_options(this: &TextDecoder, input: AllowSharedBufferSource<'_>, options: TextDecodeOptions) -> String;
-
         /// [MDN](https://developer.mozilla.org/docs/Web/API/TextDecoder/encoding)
         #[link_name = "get encoding"]
         pub safe fn encoding(this: &TextDecoder) -> String;
@@ -9357,6 +9490,22 @@ pub mod text_decoder {
         #[link_name = "get ignoreBOM"]
         pub safe fn ignore_bom(this: &TextDecoder) -> bool;
     }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TextDecoder/decode)
+    #[cfg_attr(rust_js, rust_js::link_name = "decode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn decode_with_input(this: &TextDecoder, input: impl IntoAllowSharedBufferSource) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TextDecoder/decode)
+    #[cfg_attr(rust_js, rust_js::link_name = "decode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn decode_with_input_and_options(this: &TextDecoder, input: impl IntoAllowSharedBufferSource, options: TextDecodeOptions) -> String {
+        unreachable!()
+    }
 }
 
 /// [`WebAssembly.Module`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Module)
@@ -9367,14 +9516,20 @@ pub struct WebAssemblyModule(PhantomData<JsObject>);
 pub mod web_assembly_module {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Module/Module)
-        #[link_name = "new WebAssembly.Module"]
-        pub safe fn new(bytes: AllowSharedBufferSource<'_>) -> &'static WebAssemblyModule;
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Module/Module)
+    #[cfg_attr(rust_js, rust_js::link_name = "new WebAssembly.Module")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(bytes: impl IntoAllowSharedBufferSource) -> &'static WebAssemblyModule {
+        unreachable!()
+    }
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Module/Module)
-        #[link_name = "new WebAssembly.Module"]
-        pub safe fn new_with_options(bytes: AllowSharedBufferSource<'_>, options: WebAssemblyCompileOptions<'_>) -> &'static WebAssemblyModule;
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Module/Module)
+    #[cfg_attr(rust_js, rust_js::link_name = "new WebAssembly.Module")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(bytes: impl IntoAllowSharedBufferSource, options: WebAssemblyCompileOptions<'_>) -> &'static WebAssemblyModule {
+        unreachable!()
     }
 }
 
@@ -9665,34 +9820,6 @@ pub mod web_assembly {
     use super::*;
 
     unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/validate)
-        #[link_name = "WebAssembly.validate"]
-        pub safe fn validate(bytes: AllowSharedBufferSource<'_>) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/validate)
-        #[link_name = "WebAssembly.validate"]
-        pub safe fn validate_with_options(bytes: AllowSharedBufferSource<'_>, options: WebAssemblyCompileOptions<'_>) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/compile)
-        #[link_name = "WebAssembly.compile"]
-        pub safe fn compile(bytes: AllowSharedBufferSource<'_>) -> Promise<&'static WebAssemblyModule>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/compile)
-        #[link_name = "WebAssembly.compile"]
-        pub safe fn compile_with_options(bytes: AllowSharedBufferSource<'_>, options: WebAssemblyCompileOptions<'_>) -> Promise<&'static WebAssemblyModule>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiate)
-        #[link_name = "WebAssembly.instantiate"]
-        pub safe fn instantiate(bytes: AllowSharedBufferSource<'_>) -> Promise<WebAssemblyInstantiatedSource>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiate)
-        #[link_name = "WebAssembly.instantiate"]
-        pub safe fn instantiate_with_import_object(bytes: AllowSharedBufferSource<'_>, import_object: &dyn core::any::Any) -> Promise<WebAssemblyInstantiatedSource>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiate)
-        #[link_name = "WebAssembly.instantiate"]
-        pub safe fn instantiate_with_import_object_and_options(bytes: AllowSharedBufferSource<'_>, import_object: &dyn core::any::Any, options: WebAssemblyCompileOptions<'_>) -> Promise<WebAssemblyInstantiatedSource>;
-
         /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiate)
         #[link_name = "WebAssembly.instantiate"]
         pub safe fn instantiate_with_web_assembly_module(module_object: &WebAssemblyModule) -> Promise<&'static WebAssemblyInstance>;
@@ -9720,6 +9847,62 @@ pub mod web_assembly {
         /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiateStreaming)
         #[link_name = "WebAssembly.instantiateStreaming"]
         pub safe fn instantiate_streaming_with_import_object_and_options(source: Promise<&'static Response>, import_object: &dyn core::any::Any, options: WebAssemblyCompileOptions<'_>) -> Promise<WebAssemblyInstantiatedSource>;
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/validate)
+    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.validate")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn validate(bytes: impl IntoAllowSharedBufferSource) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/validate)
+    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.validate")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn validate_with_options(bytes: impl IntoAllowSharedBufferSource, options: WebAssemblyCompileOptions<'_>) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/compile)
+    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.compile")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn compile(bytes: impl IntoAllowSharedBufferSource) -> Promise<&'static WebAssemblyModule> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/compile)
+    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.compile")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn compile_with_options(bytes: impl IntoAllowSharedBufferSource, options: WebAssemblyCompileOptions<'_>) -> Promise<&'static WebAssemblyModule> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiate)
+    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.instantiate")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn instantiate(bytes: impl IntoAllowSharedBufferSource) -> Promise<WebAssemblyInstantiatedSource> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiate)
+    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.instantiate")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn instantiate_with_import_object(bytes: impl IntoAllowSharedBufferSource, import_object: &dyn core::any::Any) -> Promise<WebAssemblyInstantiatedSource> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiate)
+    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.instantiate")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn instantiate_with_import_object_and_options(bytes: impl IntoAllowSharedBufferSource, import_object: &dyn core::any::Any, options: WebAssemblyCompileOptions<'_>) -> Promise<WebAssemblyInstantiatedSource> {
+        unreachable!()
     }
 }
 
@@ -10521,6 +10704,23 @@ impl<'a> From<bool> for AddEventListenerOptionsOrBool<'a> {
     }
 }
 
+/// What a `AddEventListenerOptions | boolean` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `AddEventListenerOptions | boolean`")]
+#[cfg_attr(rust_js, rust_js::types = "AddEventListenerOptions | boolean")]
+pub trait IntoAddEventListenerOptionsOrBool: sealed::Sealed {}
+impl IntoAddEventListenerOptionsOrBool for AddEventListenerOptions<'_> {}
+impl IntoAddEventListenerOptionsOrBool for bool {}
+impl IntoAddEventListenerOptionsOrBool for AddEventListenerOptionsOrBool<'_> {}
+
+impl<'a> AddEventListenerOptionsOrBool<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoAddEventListenerOptionsOrBool + 'a) -> AddEventListenerOptionsOrBool<'a> {
+        unreachable!()
+    }
+}
+
 /// `ArrayBuffer | Uint8Array`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum AllowSharedBufferSource<'a> {
@@ -10537,6 +10737,23 @@ impl<'a> From<&'a ArrayBuffer> for AllowSharedBufferSource<'a> {
 impl<'a> From<&'a Uint8Array> for AllowSharedBufferSource<'a> {
     fn from(value: &'a Uint8Array) -> Self {
         AllowSharedBufferSource::Uint8Array(value)
+    }
+}
+
+/// What a `ArrayBuffer | Uint8Array` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `ArrayBuffer | Uint8Array`")]
+#[cfg_attr(rust_js, rust_js::types = "ArrayBuffer | Uint8Array")]
+pub trait IntoAllowSharedBufferSource: sealed::Sealed {}
+impl IntoAllowSharedBufferSource for &ArrayBuffer {}
+impl IntoAllowSharedBufferSource for &Uint8Array {}
+impl IntoAllowSharedBufferSource for AllowSharedBufferSource<'_> {}
+
+impl<'a> AllowSharedBufferSource<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoAllowSharedBufferSource + 'a) -> AllowSharedBufferSource<'a> {
+        unreachable!()
     }
 }
 
@@ -10576,6 +10793,26 @@ impl<'a> From<&'a File> for BlobPart<'a> {
 impl<'a> From<&'a str> for BlobPart<'a> {
     fn from(value: &'a str) -> Self {
         BlobPart::Str(value)
+    }
+}
+
+/// What a `Uint8Array | ArrayBuffer | Blob | string` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Uint8Array | ArrayBuffer | Blob | string`")]
+#[cfg_attr(rust_js, rust_js::types = "Uint8Array | ArrayBuffer | Blob | string")]
+pub trait IntoBlobPart: sealed::Sealed {}
+impl IntoBlobPart for &Uint8Array {}
+impl IntoBlobPart for &ArrayBuffer {}
+impl IntoBlobPart for &Blob {}
+impl IntoBlobPart for &File {}
+impl IntoBlobPart for &str {}
+impl IntoBlobPart for BlobPart<'_> {}
+
+impl<'a> BlobPart<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoBlobPart + 'a) -> BlobPart<'a> {
+        unreachable!()
     }
 }
 
@@ -10632,6 +10869,28 @@ impl<'a> From<&'a str> for BodyInit<'a> {
     }
 }
 
+/// What a `ReadableStream | Blob | Uint8Array | ArrayBuffer | FormData | string` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `ReadableStream | Blob | Uint8Array | ArrayBuffer | FormData | string`")]
+#[cfg_attr(rust_js, rust_js::types = "ReadableStream | Blob | Uint8Array | ArrayBuffer | FormData | string")]
+pub trait IntoBodyInit: sealed::Sealed {}
+impl IntoBodyInit for &ReadableStream {}
+impl IntoBodyInit for &Blob {}
+impl IntoBodyInit for &File {}
+impl IntoBodyInit for &Uint8Array {}
+impl IntoBodyInit for &ArrayBuffer {}
+impl IntoBodyInit for &FormData {}
+impl IntoBodyInit for &str {}
+impl IntoBodyInit for BodyInit<'_> {}
+
+impl<'a> BodyInit<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoBodyInit + 'a) -> BodyInit<'a> {
+        unreachable!()
+    }
+}
+
 /// `boolean | ImportNodeOptions`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum BoolOrImportNodeOptions {
@@ -10648,6 +10907,23 @@ impl From<bool> for BoolOrImportNodeOptions {
 impl From<ImportNodeOptions> for BoolOrImportNodeOptions {
     fn from(value: ImportNodeOptions) -> Self {
         BoolOrImportNodeOptions::ImportNodeOptions(value)
+    }
+}
+
+/// What a `boolean | ImportNodeOptions` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `boolean | ImportNodeOptions`")]
+#[cfg_attr(rust_js, rust_js::types = "boolean | ImportNodeOptions")]
+pub trait IntoBoolOrImportNodeOptions: sealed::Sealed {}
+impl IntoBoolOrImportNodeOptions for bool {}
+impl IntoBoolOrImportNodeOptions for ImportNodeOptions {}
+impl IntoBoolOrImportNodeOptions for BoolOrImportNodeOptions {}
+
+impl BoolOrImportNodeOptions {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoBoolOrImportNodeOptions) -> BoolOrImportNodeOptions {
+        unreachable!()
     }
 }
 
@@ -10677,6 +10953,24 @@ impl<'a> From<&'a str> for BoolOrNumberOrStr<'a> {
     }
 }
 
+/// What a `boolean | number | string` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `boolean | number | string`")]
+#[cfg_attr(rust_js, rust_js::types = "boolean | number | string")]
+pub trait IntoBoolOrNumberOrStr: sealed::Sealed {}
+impl IntoBoolOrNumberOrStr for bool {}
+impl IntoBoolOrNumberOrStr for f64 {}
+impl IntoBoolOrNumberOrStr for &str {}
+impl IntoBoolOrNumberOrStr for BoolOrNumberOrStr<'_> {}
+
+impl<'a> BoolOrNumberOrStr<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoBoolOrNumberOrStr + 'a) -> BoolOrNumberOrStr<'a> {
+        unreachable!()
+    }
+}
+
 /// `boolean | ScrollIntoViewOptions`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum BoolOrScrollIntoViewOptions<'a> {
@@ -10693,6 +10987,23 @@ impl<'a> From<bool> for BoolOrScrollIntoViewOptions<'a> {
 impl<'a> From<ScrollIntoViewOptions<'a>> for BoolOrScrollIntoViewOptions<'a> {
     fn from(value: ScrollIntoViewOptions<'a>) -> Self {
         BoolOrScrollIntoViewOptions::ScrollIntoViewOptions(value)
+    }
+}
+
+/// What a `boolean | ScrollIntoViewOptions` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `boolean | ScrollIntoViewOptions`")]
+#[cfg_attr(rust_js, rust_js::types = "boolean | ScrollIntoViewOptions")]
+pub trait IntoBoolOrScrollIntoViewOptions: sealed::Sealed {}
+impl IntoBoolOrScrollIntoViewOptions for bool {}
+impl IntoBoolOrScrollIntoViewOptions for ScrollIntoViewOptions<'_> {}
+impl IntoBoolOrScrollIntoViewOptions for BoolOrScrollIntoViewOptions<'_> {}
+
+impl<'a> BoolOrScrollIntoViewOptions<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoBoolOrScrollIntoViewOptions + 'a) -> BoolOrScrollIntoViewOptions<'a> {
+        unreachable!()
     }
 }
 
@@ -11105,6 +11416,88 @@ impl<'a> From<&'a Text> for ElementOrText<'a> {
     }
 }
 
+/// What a `Element | Text` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Element | Text`")]
+#[cfg_attr(rust_js, rust_js::types = "Element | Text")]
+pub trait IntoElementOrText: sealed::Sealed {}
+impl IntoElementOrText for &Element {}
+impl IntoElementOrText for &HTMLElement {}
+impl IntoElementOrText for &HTMLAnchorElement {}
+impl IntoElementOrText for &HTMLButtonElement {}
+impl IntoElementOrText for &HTMLDivElement {}
+impl IntoElementOrText for &HTMLFormElement {}
+impl IntoElementOrText for &HTMLHeadingElement {}
+impl IntoElementOrText for &HTMLImageElement {}
+impl IntoElementOrText for &HTMLInputElement {}
+impl IntoElementOrText for &HTMLLabelElement {}
+impl IntoElementOrText for &HTMLLIElement {}
+impl IntoElementOrText for &HTMLOListElement {}
+impl IntoElementOrText for &HTMLOptionElement {}
+impl IntoElementOrText for &HTMLOutputElement {}
+impl IntoElementOrText for &HTMLParagraphElement {}
+impl IntoElementOrText for &HTMLSelectElement {}
+impl IntoElementOrText for &HTMLSpanElement {}
+impl IntoElementOrText for &HTMLTextAreaElement {}
+impl IntoElementOrText for &HTMLUListElement {}
+impl IntoElementOrText for &HTMLTableElement {}
+impl IntoElementOrText for &HTMLTableSectionElement {}
+impl IntoElementOrText for &HTMLTableRowElement {}
+impl IntoElementOrText for &HTMLTableCellElement {}
+impl IntoElementOrText for &HTMLIFrameElement {}
+impl IntoElementOrText for &HTMLCanvasElement {}
+impl IntoElementOrText for &HTMLDetailsElement {}
+impl IntoElementOrText for &HTMLHtmlElement {}
+impl IntoElementOrText for &HTMLHeadElement {}
+impl IntoElementOrText for &HTMLTitleElement {}
+impl IntoElementOrText for &HTMLBaseElement {}
+impl IntoElementOrText for &HTMLLinkElement {}
+impl IntoElementOrText for &HTMLMetaElement {}
+impl IntoElementOrText for &HTMLStyleElement {}
+impl IntoElementOrText for &HTMLBodyElement {}
+impl IntoElementOrText for &HTMLHRElement {}
+impl IntoElementOrText for &HTMLPreElement {}
+impl IntoElementOrText for &HTMLQuoteElement {}
+impl IntoElementOrText for &HTMLMenuElement {}
+impl IntoElementOrText for &HTMLDListElement {}
+impl IntoElementOrText for &HTMLDataElement {}
+impl IntoElementOrText for &HTMLTimeElement {}
+impl IntoElementOrText for &HTMLBRElement {}
+impl IntoElementOrText for &HTMLModElement {}
+impl IntoElementOrText for &HTMLPictureElement {}
+impl IntoElementOrText for &HTMLSourceElement {}
+impl IntoElementOrText for &HTMLEmbedElement {}
+impl IntoElementOrText for &HTMLObjectElement {}
+impl IntoElementOrText for &HTMLVideoElement {}
+impl IntoElementOrText for &HTMLAudioElement {}
+impl IntoElementOrText for &HTMLTrackElement {}
+impl IntoElementOrText for &HTMLMediaElement {}
+impl IntoElementOrText for &HTMLMapElement {}
+impl IntoElementOrText for &HTMLAreaElement {}
+impl IntoElementOrText for &HTMLTableCaptionElement {}
+impl IntoElementOrText for &HTMLTableColElement {}
+impl IntoElementOrText for &HTMLDataListElement {}
+impl IntoElementOrText for &HTMLOptGroupElement {}
+impl IntoElementOrText for &HTMLProgressElement {}
+impl IntoElementOrText for &HTMLMeterElement {}
+impl IntoElementOrText for &HTMLFieldSetElement {}
+impl IntoElementOrText for &HTMLLegendElement {}
+impl IntoElementOrText for &HTMLSelectedContentElement {}
+impl IntoElementOrText for &HTMLDialogElement {}
+impl IntoElementOrText for &HTMLScriptElement {}
+impl IntoElementOrText for &HTMLTemplateElement {}
+impl IntoElementOrText for &HTMLSlotElement {}
+impl IntoElementOrText for &Text {}
+impl IntoElementOrText for ElementOrText<'_> {}
+
+impl<'a> ElementOrText<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoElementOrText + 'a) -> ElementOrText<'a> {
+        unreachable!()
+    }
+}
+
 /// `EventListenerOptions | boolean`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum EventListenerOptionsOrBool {
@@ -11121,6 +11514,23 @@ impl From<EventListenerOptions> for EventListenerOptionsOrBool {
 impl From<bool> for EventListenerOptionsOrBool {
     fn from(value: bool) -> Self {
         EventListenerOptionsOrBool::Bool(value)
+    }
+}
+
+/// What a `EventListenerOptions | boolean` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `EventListenerOptions | boolean`")]
+#[cfg_attr(rust_js, rust_js::types = "EventListenerOptions | boolean")]
+pub trait IntoEventListenerOptionsOrBool: sealed::Sealed {}
+impl IntoEventListenerOptionsOrBool for EventListenerOptions {}
+impl IntoEventListenerOptionsOrBool for bool {}
+impl IntoEventListenerOptionsOrBool for EventListenerOptionsOrBool {}
+
+impl EventListenerOptionsOrBool {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoEventListenerOptionsOrBool) -> EventListenerOptionsOrBool {
+        unreachable!()
     }
 }
 
@@ -11540,6 +11950,89 @@ impl<'a> From<&'a Document> for GeometryNode<'a> {
     }
 }
 
+/// What a `Text | Element | Document` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Text | Element | Document`")]
+#[cfg_attr(rust_js, rust_js::types = "Text | Element | Document")]
+pub trait IntoGeometryNode: sealed::Sealed {}
+impl IntoGeometryNode for &Text {}
+impl IntoGeometryNode for &Element {}
+impl IntoGeometryNode for &HTMLElement {}
+impl IntoGeometryNode for &HTMLAnchorElement {}
+impl IntoGeometryNode for &HTMLButtonElement {}
+impl IntoGeometryNode for &HTMLDivElement {}
+impl IntoGeometryNode for &HTMLFormElement {}
+impl IntoGeometryNode for &HTMLHeadingElement {}
+impl IntoGeometryNode for &HTMLImageElement {}
+impl IntoGeometryNode for &HTMLInputElement {}
+impl IntoGeometryNode for &HTMLLabelElement {}
+impl IntoGeometryNode for &HTMLLIElement {}
+impl IntoGeometryNode for &HTMLOListElement {}
+impl IntoGeometryNode for &HTMLOptionElement {}
+impl IntoGeometryNode for &HTMLOutputElement {}
+impl IntoGeometryNode for &HTMLParagraphElement {}
+impl IntoGeometryNode for &HTMLSelectElement {}
+impl IntoGeometryNode for &HTMLSpanElement {}
+impl IntoGeometryNode for &HTMLTextAreaElement {}
+impl IntoGeometryNode for &HTMLUListElement {}
+impl IntoGeometryNode for &HTMLTableElement {}
+impl IntoGeometryNode for &HTMLTableSectionElement {}
+impl IntoGeometryNode for &HTMLTableRowElement {}
+impl IntoGeometryNode for &HTMLTableCellElement {}
+impl IntoGeometryNode for &HTMLIFrameElement {}
+impl IntoGeometryNode for &HTMLCanvasElement {}
+impl IntoGeometryNode for &HTMLDetailsElement {}
+impl IntoGeometryNode for &HTMLHtmlElement {}
+impl IntoGeometryNode for &HTMLHeadElement {}
+impl IntoGeometryNode for &HTMLTitleElement {}
+impl IntoGeometryNode for &HTMLBaseElement {}
+impl IntoGeometryNode for &HTMLLinkElement {}
+impl IntoGeometryNode for &HTMLMetaElement {}
+impl IntoGeometryNode for &HTMLStyleElement {}
+impl IntoGeometryNode for &HTMLBodyElement {}
+impl IntoGeometryNode for &HTMLHRElement {}
+impl IntoGeometryNode for &HTMLPreElement {}
+impl IntoGeometryNode for &HTMLQuoteElement {}
+impl IntoGeometryNode for &HTMLMenuElement {}
+impl IntoGeometryNode for &HTMLDListElement {}
+impl IntoGeometryNode for &HTMLDataElement {}
+impl IntoGeometryNode for &HTMLTimeElement {}
+impl IntoGeometryNode for &HTMLBRElement {}
+impl IntoGeometryNode for &HTMLModElement {}
+impl IntoGeometryNode for &HTMLPictureElement {}
+impl IntoGeometryNode for &HTMLSourceElement {}
+impl IntoGeometryNode for &HTMLEmbedElement {}
+impl IntoGeometryNode for &HTMLObjectElement {}
+impl IntoGeometryNode for &HTMLVideoElement {}
+impl IntoGeometryNode for &HTMLAudioElement {}
+impl IntoGeometryNode for &HTMLTrackElement {}
+impl IntoGeometryNode for &HTMLMediaElement {}
+impl IntoGeometryNode for &HTMLMapElement {}
+impl IntoGeometryNode for &HTMLAreaElement {}
+impl IntoGeometryNode for &HTMLTableCaptionElement {}
+impl IntoGeometryNode for &HTMLTableColElement {}
+impl IntoGeometryNode for &HTMLDataListElement {}
+impl IntoGeometryNode for &HTMLOptGroupElement {}
+impl IntoGeometryNode for &HTMLProgressElement {}
+impl IntoGeometryNode for &HTMLMeterElement {}
+impl IntoGeometryNode for &HTMLFieldSetElement {}
+impl IntoGeometryNode for &HTMLLegendElement {}
+impl IntoGeometryNode for &HTMLSelectedContentElement {}
+impl IntoGeometryNode for &HTMLDialogElement {}
+impl IntoGeometryNode for &HTMLScriptElement {}
+impl IntoGeometryNode for &HTMLTemplateElement {}
+impl IntoGeometryNode for &HTMLSlotElement {}
+impl IntoGeometryNode for &Document {}
+impl IntoGeometryNode for GeometryNode<'_> {}
+
+impl<'a> GeometryNode<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoGeometryNode + 'a) -> GeometryNode<'a> {
+        unreachable!()
+    }
+}
+
 /// `HTMLElement | number`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum HTMLElementOrNumber<'a> {
@@ -11943,6 +12436,87 @@ impl<'a> From<i32> for HTMLElementOrNumber<'a> {
     }
 }
 
+/// What a `HTMLElement | number` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `HTMLElement | number`")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLElement | number")]
+pub trait IntoHTMLElementOrNumber: sealed::Sealed {}
+impl IntoHTMLElementOrNumber for &HTMLElement {}
+impl IntoHTMLElementOrNumber for &HTMLAnchorElement {}
+impl IntoHTMLElementOrNumber for &HTMLButtonElement {}
+impl IntoHTMLElementOrNumber for &HTMLDivElement {}
+impl IntoHTMLElementOrNumber for &HTMLFormElement {}
+impl IntoHTMLElementOrNumber for &HTMLHeadingElement {}
+impl IntoHTMLElementOrNumber for &HTMLImageElement {}
+impl IntoHTMLElementOrNumber for &HTMLInputElement {}
+impl IntoHTMLElementOrNumber for &HTMLLabelElement {}
+impl IntoHTMLElementOrNumber for &HTMLLIElement {}
+impl IntoHTMLElementOrNumber for &HTMLOListElement {}
+impl IntoHTMLElementOrNumber for &HTMLOptionElement {}
+impl IntoHTMLElementOrNumber for &HTMLOutputElement {}
+impl IntoHTMLElementOrNumber for &HTMLParagraphElement {}
+impl IntoHTMLElementOrNumber for &HTMLSelectElement {}
+impl IntoHTMLElementOrNumber for &HTMLSpanElement {}
+impl IntoHTMLElementOrNumber for &HTMLTextAreaElement {}
+impl IntoHTMLElementOrNumber for &HTMLUListElement {}
+impl IntoHTMLElementOrNumber for &HTMLTableElement {}
+impl IntoHTMLElementOrNumber for &HTMLTableSectionElement {}
+impl IntoHTMLElementOrNumber for &HTMLTableRowElement {}
+impl IntoHTMLElementOrNumber for &HTMLTableCellElement {}
+impl IntoHTMLElementOrNumber for &HTMLIFrameElement {}
+impl IntoHTMLElementOrNumber for &HTMLCanvasElement {}
+impl IntoHTMLElementOrNumber for &HTMLDetailsElement {}
+impl IntoHTMLElementOrNumber for &HTMLHtmlElement {}
+impl IntoHTMLElementOrNumber for &HTMLHeadElement {}
+impl IntoHTMLElementOrNumber for &HTMLTitleElement {}
+impl IntoHTMLElementOrNumber for &HTMLBaseElement {}
+impl IntoHTMLElementOrNumber for &HTMLLinkElement {}
+impl IntoHTMLElementOrNumber for &HTMLMetaElement {}
+impl IntoHTMLElementOrNumber for &HTMLStyleElement {}
+impl IntoHTMLElementOrNumber for &HTMLBodyElement {}
+impl IntoHTMLElementOrNumber for &HTMLHRElement {}
+impl IntoHTMLElementOrNumber for &HTMLPreElement {}
+impl IntoHTMLElementOrNumber for &HTMLQuoteElement {}
+impl IntoHTMLElementOrNumber for &HTMLMenuElement {}
+impl IntoHTMLElementOrNumber for &HTMLDListElement {}
+impl IntoHTMLElementOrNumber for &HTMLDataElement {}
+impl IntoHTMLElementOrNumber for &HTMLTimeElement {}
+impl IntoHTMLElementOrNumber for &HTMLBRElement {}
+impl IntoHTMLElementOrNumber for &HTMLModElement {}
+impl IntoHTMLElementOrNumber for &HTMLPictureElement {}
+impl IntoHTMLElementOrNumber for &HTMLSourceElement {}
+impl IntoHTMLElementOrNumber for &HTMLEmbedElement {}
+impl IntoHTMLElementOrNumber for &HTMLObjectElement {}
+impl IntoHTMLElementOrNumber for &HTMLVideoElement {}
+impl IntoHTMLElementOrNumber for &HTMLAudioElement {}
+impl IntoHTMLElementOrNumber for &HTMLTrackElement {}
+impl IntoHTMLElementOrNumber for &HTMLMediaElement {}
+impl IntoHTMLElementOrNumber for &HTMLMapElement {}
+impl IntoHTMLElementOrNumber for &HTMLAreaElement {}
+impl IntoHTMLElementOrNumber for &HTMLTableCaptionElement {}
+impl IntoHTMLElementOrNumber for &HTMLTableColElement {}
+impl IntoHTMLElementOrNumber for &HTMLDataListElement {}
+impl IntoHTMLElementOrNumber for &HTMLOptGroupElement {}
+impl IntoHTMLElementOrNumber for &HTMLProgressElement {}
+impl IntoHTMLElementOrNumber for &HTMLMeterElement {}
+impl IntoHTMLElementOrNumber for &HTMLFieldSetElement {}
+impl IntoHTMLElementOrNumber for &HTMLLegendElement {}
+impl IntoHTMLElementOrNumber for &HTMLSelectedContentElement {}
+impl IntoHTMLElementOrNumber for &HTMLDialogElement {}
+impl IntoHTMLElementOrNumber for &HTMLScriptElement {}
+impl IntoHTMLElementOrNumber for &HTMLTemplateElement {}
+impl IntoHTMLElementOrNumber for &HTMLSlotElement {}
+impl IntoHTMLElementOrNumber for i32 {}
+impl IntoHTMLElementOrNumber for HTMLElementOrNumber<'_> {}
+
+impl<'a> HTMLElementOrNumber<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoHTMLElementOrNumber + 'a) -> HTMLElementOrNumber<'a> {
+        unreachable!()
+    }
+}
+
 /// `HTMLOptionElement | HTMLOptGroupElement`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum HTMLOptionElementOrHTMLOptGroupElement<'a> {
@@ -11959,6 +12533,23 @@ impl<'a> From<&'a HTMLOptionElement> for HTMLOptionElementOrHTMLOptGroupElement<
 impl<'a> From<&'a HTMLOptGroupElement> for HTMLOptionElementOrHTMLOptGroupElement<'a> {
     fn from(value: &'a HTMLOptGroupElement) -> Self {
         HTMLOptionElementOrHTMLOptGroupElement::HTMLOptGroupElement(value)
+    }
+}
+
+/// What a `HTMLOptionElement | HTMLOptGroupElement` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `HTMLOptionElement | HTMLOptGroupElement`")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLOptionElement | HTMLOptGroupElement")]
+pub trait IntoHTMLOptionElementOrHTMLOptGroupElement: sealed::Sealed {}
+impl IntoHTMLOptionElementOrHTMLOptGroupElement for &HTMLOptionElement {}
+impl IntoHTMLOptionElementOrHTMLOptGroupElement for &HTMLOptGroupElement {}
+impl IntoHTMLOptionElementOrHTMLOptGroupElement for HTMLOptionElementOrHTMLOptGroupElement<'_> {}
+
+impl<'a> HTMLOptionElementOrHTMLOptGroupElement<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoHTMLOptionElementOrHTMLOptGroupElement + 'a) -> HTMLOptionElementOrHTMLOptGroupElement<'a> {
+        unreachable!()
     }
 }
 
@@ -11998,6 +12589,26 @@ impl<'a> From<&'a Blob> for ImageBitmapSource<'a> {
 impl<'a> From<&'a File> for ImageBitmapSource<'a> {
     fn from(value: &'a File) -> Self {
         ImageBitmapSource::Blob(value)
+    }
+}
+
+/// What a `HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | Blob` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | Blob`")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | Blob")]
+pub trait IntoImageBitmapSource: sealed::Sealed {}
+impl IntoImageBitmapSource for &HTMLImageElement {}
+impl IntoImageBitmapSource for &HTMLVideoElement {}
+impl IntoImageBitmapSource for &HTMLCanvasElement {}
+impl IntoImageBitmapSource for &Blob {}
+impl IntoImageBitmapSource for &File {}
+impl IntoImageBitmapSource for ImageBitmapSource<'_> {}
+
+impl<'a> ImageBitmapSource<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoImageBitmapSource + 'a) -> ImageBitmapSource<'a> {
+        unreachable!()
     }
 }
 
@@ -12446,6 +13057,94 @@ impl<'a> From<&'a str> for NodeOrStr<'a> {
     }
 }
 
+/// What a `Node | string` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Node | string`")]
+#[cfg_attr(rust_js, rust_js::types = "Node | string")]
+pub trait IntoNodeOrStr: sealed::Sealed {}
+impl IntoNodeOrStr for &Node {}
+impl IntoNodeOrStr for &CharacterData {}
+impl IntoNodeOrStr for &Text {}
+impl IntoNodeOrStr for &Comment {}
+impl IntoNodeOrStr for &Element {}
+impl IntoNodeOrStr for &Document {}
+impl IntoNodeOrStr for &DocumentFragment {}
+impl IntoNodeOrStr for &HTMLElement {}
+impl IntoNodeOrStr for &HTMLAnchorElement {}
+impl IntoNodeOrStr for &HTMLButtonElement {}
+impl IntoNodeOrStr for &HTMLDivElement {}
+impl IntoNodeOrStr for &HTMLFormElement {}
+impl IntoNodeOrStr for &HTMLHeadingElement {}
+impl IntoNodeOrStr for &HTMLImageElement {}
+impl IntoNodeOrStr for &HTMLInputElement {}
+impl IntoNodeOrStr for &HTMLLabelElement {}
+impl IntoNodeOrStr for &HTMLLIElement {}
+impl IntoNodeOrStr for &HTMLOListElement {}
+impl IntoNodeOrStr for &HTMLOptionElement {}
+impl IntoNodeOrStr for &HTMLOutputElement {}
+impl IntoNodeOrStr for &HTMLParagraphElement {}
+impl IntoNodeOrStr for &HTMLSelectElement {}
+impl IntoNodeOrStr for &HTMLSpanElement {}
+impl IntoNodeOrStr for &HTMLTextAreaElement {}
+impl IntoNodeOrStr for &HTMLUListElement {}
+impl IntoNodeOrStr for &HTMLTableElement {}
+impl IntoNodeOrStr for &HTMLTableSectionElement {}
+impl IntoNodeOrStr for &HTMLTableRowElement {}
+impl IntoNodeOrStr for &HTMLTableCellElement {}
+impl IntoNodeOrStr for &HTMLIFrameElement {}
+impl IntoNodeOrStr for &HTMLCanvasElement {}
+impl IntoNodeOrStr for &HTMLDetailsElement {}
+impl IntoNodeOrStr for &HTMLHtmlElement {}
+impl IntoNodeOrStr for &HTMLHeadElement {}
+impl IntoNodeOrStr for &HTMLTitleElement {}
+impl IntoNodeOrStr for &HTMLBaseElement {}
+impl IntoNodeOrStr for &HTMLLinkElement {}
+impl IntoNodeOrStr for &HTMLMetaElement {}
+impl IntoNodeOrStr for &HTMLStyleElement {}
+impl IntoNodeOrStr for &HTMLBodyElement {}
+impl IntoNodeOrStr for &HTMLHRElement {}
+impl IntoNodeOrStr for &HTMLPreElement {}
+impl IntoNodeOrStr for &HTMLQuoteElement {}
+impl IntoNodeOrStr for &HTMLMenuElement {}
+impl IntoNodeOrStr for &HTMLDListElement {}
+impl IntoNodeOrStr for &HTMLDataElement {}
+impl IntoNodeOrStr for &HTMLTimeElement {}
+impl IntoNodeOrStr for &HTMLBRElement {}
+impl IntoNodeOrStr for &HTMLModElement {}
+impl IntoNodeOrStr for &HTMLPictureElement {}
+impl IntoNodeOrStr for &HTMLSourceElement {}
+impl IntoNodeOrStr for &HTMLEmbedElement {}
+impl IntoNodeOrStr for &HTMLObjectElement {}
+impl IntoNodeOrStr for &HTMLVideoElement {}
+impl IntoNodeOrStr for &HTMLAudioElement {}
+impl IntoNodeOrStr for &HTMLTrackElement {}
+impl IntoNodeOrStr for &HTMLMediaElement {}
+impl IntoNodeOrStr for &HTMLMapElement {}
+impl IntoNodeOrStr for &HTMLAreaElement {}
+impl IntoNodeOrStr for &HTMLTableCaptionElement {}
+impl IntoNodeOrStr for &HTMLTableColElement {}
+impl IntoNodeOrStr for &HTMLDataListElement {}
+impl IntoNodeOrStr for &HTMLOptGroupElement {}
+impl IntoNodeOrStr for &HTMLProgressElement {}
+impl IntoNodeOrStr for &HTMLMeterElement {}
+impl IntoNodeOrStr for &HTMLFieldSetElement {}
+impl IntoNodeOrStr for &HTMLLegendElement {}
+impl IntoNodeOrStr for &HTMLSelectedContentElement {}
+impl IntoNodeOrStr for &HTMLDialogElement {}
+impl IntoNodeOrStr for &HTMLScriptElement {}
+impl IntoNodeOrStr for &HTMLTemplateElement {}
+impl IntoNodeOrStr for &HTMLSlotElement {}
+impl IntoNodeOrStr for &str {}
+impl IntoNodeOrStr for NodeOrStr<'_> {}
+
+impl<'a> NodeOrStr<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoNodeOrStr + 'a) -> NodeOrStr<'a> {
+        unreachable!()
+    }
+}
+
 /// `Request | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum RequestInfo<'a> {
@@ -12462,6 +13161,23 @@ impl<'a> From<&'a Request> for RequestInfo<'a> {
 impl<'a> From<&'a str> for RequestInfo<'a> {
     fn from(value: &'a str) -> Self {
         RequestInfo::Str(value)
+    }
+}
+
+/// What a `Request | string` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Request | string`")]
+#[cfg_attr(rust_js, rust_js::types = "Request | string")]
+pub trait IntoRequestInfo: sealed::Sealed {}
+impl IntoRequestInfo for &Request {}
+impl IntoRequestInfo for &str {}
+impl IntoRequestInfo for RequestInfo<'_> {}
+
+impl<'a> RequestInfo<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoRequestInfo + 'a) -> RequestInfo<'a> {
+        unreachable!()
     }
 }
 
@@ -12484,6 +13200,23 @@ impl<'a> From<SanitizerAttributeNamespace<'a>> for SanitizerAttribute<'a> {
     }
 }
 
+/// What a `string | SanitizerAttributeNamespace` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | SanitizerAttributeNamespace`")]
+#[cfg_attr(rust_js, rust_js::types = "string | SanitizerAttributeNamespace")]
+pub trait IntoSanitizerAttribute: sealed::Sealed {}
+impl IntoSanitizerAttribute for &str {}
+impl IntoSanitizerAttribute for SanitizerAttributeNamespace<'_> {}
+impl IntoSanitizerAttribute for SanitizerAttribute<'_> {}
+
+impl<'a> SanitizerAttribute<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoSanitizerAttribute + 'a) -> SanitizerAttribute<'a> {
+        unreachable!()
+    }
+}
+
 /// `SanitizerConfig | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum SanitizerConfigOrStr<'a> {
@@ -12500,6 +13233,23 @@ impl<'a> From<SanitizerConfig<'a>> for SanitizerConfigOrStr<'a> {
 impl<'a> From<&'a str> for SanitizerConfigOrStr<'a> {
     fn from(value: &'a str) -> Self {
         SanitizerConfigOrStr::Str(value)
+    }
+}
+
+/// What a `SanitizerConfig | string` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `SanitizerConfig | string`")]
+#[cfg_attr(rust_js, rust_js::types = "SanitizerConfig | string")]
+pub trait IntoSanitizerConfigOrStr: sealed::Sealed {}
+impl IntoSanitizerConfigOrStr for SanitizerConfig<'_> {}
+impl IntoSanitizerConfigOrStr for &str {}
+impl IntoSanitizerConfigOrStr for SanitizerConfigOrStr<'_> {}
+
+impl<'a> SanitizerConfigOrStr<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoSanitizerConfigOrStr + 'a) -> SanitizerConfigOrStr<'a> {
+        unreachable!()
     }
 }
 
@@ -12522,6 +13272,23 @@ impl<'a> From<SanitizerElementNamespace<'a>> for SanitizerElement<'a> {
     }
 }
 
+/// What a `string | SanitizerElementNamespace` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | SanitizerElementNamespace`")]
+#[cfg_attr(rust_js, rust_js::types = "string | SanitizerElementNamespace")]
+pub trait IntoSanitizerElement: sealed::Sealed {}
+impl IntoSanitizerElement for &str {}
+impl IntoSanitizerElement for SanitizerElementNamespace<'_> {}
+impl IntoSanitizerElement for SanitizerElement<'_> {}
+
+impl<'a> SanitizerElement<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoSanitizerElement + 'a) -> SanitizerElement<'a> {
+        unreachable!()
+    }
+}
+
 /// `string | SanitizerElementNamespaceWithAttributes`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum SanitizerElementWithAttributes<'a> {
@@ -12538,6 +13305,23 @@ impl<'a> From<&'a str> for SanitizerElementWithAttributes<'a> {
 impl<'a> From<SanitizerElementNamespaceWithAttributes<'a>> for SanitizerElementWithAttributes<'a> {
     fn from(value: SanitizerElementNamespaceWithAttributes<'a>) -> Self {
         SanitizerElementWithAttributes::SanitizerElementNamespaceWithAttributes(value)
+    }
+}
+
+/// What a `string | SanitizerElementNamespaceWithAttributes` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | SanitizerElementNamespaceWithAttributes`")]
+#[cfg_attr(rust_js, rust_js::types = "string | SanitizerElementNamespaceWithAttributes")]
+pub trait IntoSanitizerElementWithAttributes: sealed::Sealed {}
+impl IntoSanitizerElementWithAttributes for &str {}
+impl IntoSanitizerElementWithAttributes for SanitizerElementNamespaceWithAttributes<'_> {}
+impl IntoSanitizerElementWithAttributes for SanitizerElementWithAttributes<'_> {}
+
+impl<'a> SanitizerElementWithAttributes<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoSanitizerElementWithAttributes + 'a) -> SanitizerElementWithAttributes<'a> {
+        unreachable!()
     }
 }
 
@@ -12560,6 +13344,23 @@ impl<'a> From<SanitizerProcessingInstruction<'a>> for SanitizerPI<'a> {
     }
 }
 
+/// What a `string | SanitizerProcessingInstruction` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | SanitizerProcessingInstruction`")]
+#[cfg_attr(rust_js, rust_js::types = "string | SanitizerProcessingInstruction")]
+pub trait IntoSanitizerPI: sealed::Sealed {}
+impl IntoSanitizerPI for &str {}
+impl IntoSanitizerPI for SanitizerProcessingInstruction<'_> {}
+impl IntoSanitizerPI for SanitizerPI<'_> {}
+
+impl<'a> SanitizerPI<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoSanitizerPI + 'a) -> SanitizerPI<'a> {
+        unreachable!()
+    }
+}
+
 /// `string | ElementCreationOptions`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum StrOrElementCreationOptions<'a> {
@@ -12576,6 +13377,23 @@ impl<'a> From<&'a str> for StrOrElementCreationOptions<'a> {
 impl<'a> From<ElementCreationOptions<'a>> for StrOrElementCreationOptions<'a> {
     fn from(value: ElementCreationOptions<'a>) -> Self {
         StrOrElementCreationOptions::ElementCreationOptions(value)
+    }
+}
+
+/// What a `string | ElementCreationOptions` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | ElementCreationOptions`")]
+#[cfg_attr(rust_js, rust_js::types = "string | ElementCreationOptions")]
+pub trait IntoStrOrElementCreationOptions: sealed::Sealed {}
+impl IntoStrOrElementCreationOptions for &str {}
+impl IntoStrOrElementCreationOptions for ElementCreationOptions<'_> {}
+impl IntoStrOrElementCreationOptions for StrOrElementCreationOptions<'_> {}
+
+impl<'a> StrOrElementCreationOptions<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoStrOrElementCreationOptions + 'a) -> StrOrElementCreationOptions<'a> {
+        unreachable!()
     }
 }
 
@@ -12596,6 +13414,145 @@ impl<'a> From<bool> for TogglePopoverOptionsOrBool<'a> {
     fn from(value: bool) -> Self {
         TogglePopoverOptionsOrBool::Bool(value)
     }
+}
+
+/// What a `TogglePopoverOptions | boolean` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `TogglePopoverOptions | boolean`")]
+#[cfg_attr(rust_js, rust_js::types = "TogglePopoverOptions | boolean")]
+pub trait IntoTogglePopoverOptionsOrBool: sealed::Sealed {}
+impl IntoTogglePopoverOptionsOrBool for TogglePopoverOptions<'_> {}
+impl IntoTogglePopoverOptionsOrBool for bool {}
+impl IntoTogglePopoverOptionsOrBool for TogglePopoverOptionsOrBool<'_> {}
+
+impl<'a> TogglePopoverOptionsOrBool<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoTogglePopoverOptionsOrBool + 'a) -> TogglePopoverOptionsOrBool<'a> {
+        unreachable!()
+    }
+}
+
+mod sealed {
+    use super::*;
+
+    pub trait Sealed {}
+    impl Sealed for &ArrayBuffer {}
+    impl Sealed for &Blob {}
+    impl Sealed for &CharacterData {}
+    impl Sealed for &Comment {}
+    impl Sealed for &Document {}
+    impl Sealed for &DocumentFragment {}
+    impl Sealed for &Element {}
+    impl Sealed for &File {}
+    impl Sealed for &FormData {}
+    impl Sealed for &HTMLAnchorElement {}
+    impl Sealed for &HTMLAreaElement {}
+    impl Sealed for &HTMLAudioElement {}
+    impl Sealed for &HTMLBRElement {}
+    impl Sealed for &HTMLBaseElement {}
+    impl Sealed for &HTMLBodyElement {}
+    impl Sealed for &HTMLButtonElement {}
+    impl Sealed for &HTMLCanvasElement {}
+    impl Sealed for &HTMLDListElement {}
+    impl Sealed for &HTMLDataElement {}
+    impl Sealed for &HTMLDataListElement {}
+    impl Sealed for &HTMLDetailsElement {}
+    impl Sealed for &HTMLDialogElement {}
+    impl Sealed for &HTMLDivElement {}
+    impl Sealed for &HTMLElement {}
+    impl Sealed for &HTMLEmbedElement {}
+    impl Sealed for &HTMLFieldSetElement {}
+    impl Sealed for &HTMLFormElement {}
+    impl Sealed for &HTMLHRElement {}
+    impl Sealed for &HTMLHeadElement {}
+    impl Sealed for &HTMLHeadingElement {}
+    impl Sealed for &HTMLHtmlElement {}
+    impl Sealed for &HTMLIFrameElement {}
+    impl Sealed for &HTMLImageElement {}
+    impl Sealed for &HTMLInputElement {}
+    impl Sealed for &HTMLLIElement {}
+    impl Sealed for &HTMLLabelElement {}
+    impl Sealed for &HTMLLegendElement {}
+    impl Sealed for &HTMLLinkElement {}
+    impl Sealed for &HTMLMapElement {}
+    impl Sealed for &HTMLMediaElement {}
+    impl Sealed for &HTMLMenuElement {}
+    impl Sealed for &HTMLMetaElement {}
+    impl Sealed for &HTMLMeterElement {}
+    impl Sealed for &HTMLModElement {}
+    impl Sealed for &HTMLOListElement {}
+    impl Sealed for &HTMLObjectElement {}
+    impl Sealed for &HTMLOptGroupElement {}
+    impl Sealed for &HTMLOptionElement {}
+    impl Sealed for &HTMLOutputElement {}
+    impl Sealed for &HTMLParagraphElement {}
+    impl Sealed for &HTMLPictureElement {}
+    impl Sealed for &HTMLPreElement {}
+    impl Sealed for &HTMLProgressElement {}
+    impl Sealed for &HTMLQuoteElement {}
+    impl Sealed for &HTMLScriptElement {}
+    impl Sealed for &HTMLSelectElement {}
+    impl Sealed for &HTMLSelectedContentElement {}
+    impl Sealed for &HTMLSlotElement {}
+    impl Sealed for &HTMLSourceElement {}
+    impl Sealed for &HTMLSpanElement {}
+    impl Sealed for &HTMLStyleElement {}
+    impl Sealed for &HTMLTableCaptionElement {}
+    impl Sealed for &HTMLTableCellElement {}
+    impl Sealed for &HTMLTableColElement {}
+    impl Sealed for &HTMLTableElement {}
+    impl Sealed for &HTMLTableRowElement {}
+    impl Sealed for &HTMLTableSectionElement {}
+    impl Sealed for &HTMLTemplateElement {}
+    impl Sealed for &HTMLTextAreaElement {}
+    impl Sealed for &HTMLTimeElement {}
+    impl Sealed for &HTMLTitleElement {}
+    impl Sealed for &HTMLTrackElement {}
+    impl Sealed for &HTMLUListElement {}
+    impl Sealed for &HTMLVideoElement {}
+    impl Sealed for &Node {}
+    impl Sealed for &ReadableStream {}
+    impl Sealed for &Request {}
+    impl Sealed for &Text {}
+    impl Sealed for &Uint8Array {}
+    impl Sealed for &str {}
+    impl Sealed for AddEventListenerOptions<'_> {}
+    impl Sealed for AddEventListenerOptionsOrBool<'_> {}
+    impl Sealed for AllowSharedBufferSource<'_> {}
+    impl Sealed for BlobPart<'_> {}
+    impl Sealed for BodyInit<'_> {}
+    impl Sealed for BoolOrImportNodeOptions {}
+    impl Sealed for BoolOrNumberOrStr<'_> {}
+    impl Sealed for BoolOrScrollIntoViewOptions<'_> {}
+    impl Sealed for ElementCreationOptions<'_> {}
+    impl Sealed for ElementOrText<'_> {}
+    impl Sealed for EventListenerOptions {}
+    impl Sealed for EventListenerOptionsOrBool {}
+    impl Sealed for GeometryNode<'_> {}
+    impl Sealed for HTMLElementOrNumber<'_> {}
+    impl Sealed for HTMLOptionElementOrHTMLOptGroupElement<'_> {}
+    impl Sealed for ImageBitmapSource<'_> {}
+    impl Sealed for ImportNodeOptions {}
+    impl Sealed for NodeOrStr<'_> {}
+    impl Sealed for RequestInfo<'_> {}
+    impl Sealed for SanitizerAttribute<'_> {}
+    impl Sealed for SanitizerAttributeNamespace<'_> {}
+    impl Sealed for SanitizerConfig<'_> {}
+    impl Sealed for SanitizerConfigOrStr<'_> {}
+    impl Sealed for SanitizerElement<'_> {}
+    impl Sealed for SanitizerElementNamespace<'_> {}
+    impl Sealed for SanitizerElementNamespaceWithAttributes<'_> {}
+    impl Sealed for SanitizerElementWithAttributes<'_> {}
+    impl Sealed for SanitizerPI<'_> {}
+    impl Sealed for SanitizerProcessingInstruction<'_> {}
+    impl Sealed for ScrollIntoViewOptions<'_> {}
+    impl Sealed for StrOrElementCreationOptions<'_> {}
+    impl Sealed for TogglePopoverOptions<'_> {}
+    impl Sealed for TogglePopoverOptionsOrBool<'_> {}
+    impl Sealed for bool {}
+    impl Sealed for f64 {}
+    impl Sealed for i32 {}
 }
 
 /// What an event of a name is on a target, from `@webref/events` (ADR 0223):

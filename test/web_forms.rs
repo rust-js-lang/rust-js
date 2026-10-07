@@ -8,8 +8,8 @@ pub fn forms() -> String {
     let input = html_input_element::unchecked_from(document::create_element_named(document, "input"));
     html_input_element::set_value(input, "typed");
     let app = document::get_element_by_id(document, "app").expect("the page has an #app");
-    element::append(app, input.into());
-    element::append(app, "!".into());
+    element::append(app, input);
+    element::append(app, "!");
     let ping: &Event = event::new("ping");
     event_target::add_event_listener_named(app, "ping", Box::new(|e| event::prevent_default(e)));
     let _ = event_target::dispatch_event(window, ping);
@@ -17,11 +17,11 @@ pub fn forms() -> String {
 }
 
 /// Optional arguments give more forms: `encode_with_input(e, text)` is
-/// `e.encode(text)`, and a union is its untagged enum (ADR 0215):
-/// `decode_with_input(d, bytes.into())` is `d.decode(bytes)`.
+/// `e.encode(text)`, and a union takes its member as it is (ADR 0229):
+/// `decode_with_input(d, bytes)` is `d.decode(bytes)`.
 pub fn round_trip(text: &str) -> (u32, String) {
     let bytes = text_encoder::encode_with_input(text_encoder::new(), text);
-    let back = text_decoder::decode_with_input(text_decoder::new_with_label("utf-8"), bytes.into());
+    let back = text_decoder::decode_with_input(text_decoder::new_with_label("utf-8"), bytes);
     (uint8_array::length(bytes), back)
 }
 
@@ -29,8 +29,8 @@ pub fn round_trip(text: &str) -> (u32, String) {
 /// itself, as TypeScript's union takes it.
 pub fn bodies(url: &str) -> (&'static webapi::Response, js::Promise<&'static webapi::Response>) {
     let blob = webapi::blob::new();
-    let response = webapi::response::new_with_body(blob.into());
-    (response, window::fetch(window, url.into()))
+    let response = webapi::response::new_with_body(blob);
+    (response, window::fetch(window, url))
 }
 
 /// A `sequence` is a slice (ADR 0219): a `Blob` of its parts, each a
