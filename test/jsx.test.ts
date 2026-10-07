@@ -334,6 +334,10 @@ pub fn Callout(which: u32) -> Element {
         </h3>
     }
 }
+// Its own props given by name, as a component's are: still one component.
+pub fn Badged() -> Element {
+    jsx! { <IconBadge className={Some("b")} size={Some("2em")} /> }
+}
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
@@ -345,6 +349,8 @@ pub fn Callout(which: u32) -> Element {
     '<h3><svg class="inline" width="1em"></svg>t</h3>',
     "<h3>t</h3>",
   ]);
+  const { Badged } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(Badged())).toBe('<svg class="b" width="2em"></svg>');
 });
 
 // A default import is named as the module's `use` renames it, `use

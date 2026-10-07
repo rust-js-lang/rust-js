@@ -19,10 +19,10 @@ component's name, `Icon!`, which there's none of.
 
 ## Decision
 
-**Props that take what a DOM element takes are `react::ElementProps`; a
-`memo` component of them is a `Tag`; and `react::ElementType`, as
-@types/react's, is a `Tag` that holds any of them, made by
-`element_type`, which is the value itself. A closure's capitalized
+**Props that take what a DOM element takes are `react::ElementProps`;
+`react::ElementType`, as @types/react's, is a `Tag` that holds a `Tag`
+or a `memo` component of them, made by `element_type`, which is the
+value itself. A closure's capitalized
 bindings are tags in it, as a function's are.**
 
 ```rust
@@ -53,9 +53,12 @@ variant.Icon != null ? <variant.Icon className={..} /> : undefined
   `<variant.Icon .. />` where it's rendered.
 - **It's checked as far as Rust can**: only a `Tag` is an `ElementType`,
   and a `memo` component only when its props take an element's.
+- **The component itself isn't a `Tag`**: it would be a component two
+  ways, and `<IconCanary title=.. />` of its own props ambiguous.
 - **It's tested**: a JSX test holds two `memo` icons of different props,
   one flattening `SVGAttributes` beside a `size`, in one
-  `Option<ElementType>` field, and renders each, and none.
+  `Option<ElementType>` field, and renders each, and none, and one
+  given its own props by name.
 
 ## Costs
 
