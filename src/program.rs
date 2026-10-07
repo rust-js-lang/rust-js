@@ -25,6 +25,9 @@ pub struct LoweredModule {
     /// as written in `#[link_name]`.
     pub packages: Vec<js::Package>,
     pub imports: Vec<LoweredImport>,
+    /// What it exports of the crate's other modules, by their path: its
+    /// `pub use` of their functions (ADR 0240).
+    pub reexports: Vec<LoweredImport>,
     pub namespaces: Vec<js::Namespace>,
     pub consts: Vec<js::Const>,
     pub functions: Vec<js::Function>,

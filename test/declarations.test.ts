@@ -564,6 +564,41 @@ export const pair: Pair<number> = [1, 2];
   expect(checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"))).toEqual([]);
 });
 
+// A `pub use` of a module's function is TypeScript's `export .. from`,
+// as react.dev's Challenges/index re-exports its Challenges.
+test("declarations re-export what a module's pub use names", () => {
+  buildReact();
+  const dir = fixture("declarations-reexport");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
+  writeFileSync(join(dir, "lib.rs"), `mod inner;
+pub use inner::helper;
+pub use inner::other as renamed;
+`);
+  writeFileSync(join(dir, "inner.rs"), `pub fn helper() -> u32 {
+    1
+}
+
+pub fn other() -> u32 {
+    2
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain('export { helper, other as renamed } from "./inner.js";');
+  writeFileSync(join(dir, "use.ts"), `import { helper, renamed } from "./lib.js";
+export const sum: number = helper() + renamed();
+export const wrong: string = helper();
+`);
+  writeFileSync(join(dir, "tsconfig.json"), JSON.stringify({
+    compilerOptions: { strict: true, noEmit: true, module: "esnext", moduleResolution: "bundler", allowJs: true, skipLibCheck: false },
+    files: ["use.ts"],
+  }));
+  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
+  const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
+  expect(errors.length).toBe(1);
+  expect(errors[0]).toContain("use.ts(3,");
+});
+
 // TypeScript prints them (ADR 0207), through @rust-js/typescript, which a
 // crate without it is told to add, its build failing.
 test("declarations where @rust-js/typescript isn't say to add it", () => {

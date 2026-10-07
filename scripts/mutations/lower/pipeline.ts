@@ -66,4 +66,20 @@ export const mutations: Mutation[] = [
     replace: "                        let _ = function;",
     tests: ["test/compiler.test.ts", "-t", "make a module a Next.js route"],
   },
+  {
+    name: "reexport-private-use",
+    breaks: "a private `use` of another module's function is re-exported, though Rust exports it nowhere",
+    file: "src/lower/pipeline.rs",
+    find: "        if !tcx.visibility(item.owner_id).is_public() || info.module == module || info.owner.is_some() {",
+    replace: "        if info.module == module || info.owner.is_some() {",
+    tests: ["test/compiler.test.ts","-t","re-exported from it"],
+  },
+  {
+    name: "reexport-alias-unread",
+    breaks: "`pub use inner::other as renamed;` re-exports `other`, not `renamed`",
+    file: "src/lower/pipeline.rs",
+    find: "            false => ident.to_string(),",
+    replace: "            false => info.name.clone(),",
+    tests: ["test/compiler.test.ts","-t","re-exported from it"],
+  },
 ];

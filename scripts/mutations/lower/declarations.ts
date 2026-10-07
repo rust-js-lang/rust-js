@@ -276,4 +276,12 @@ export const mutations: Mutation[] = [
     replace: "name.to_string()",
     tests: ["test/declarations.test.ts", "-t", "declarations declare a private default export"],
   },
+  {
+    name: "reexport-undeclared",
+    breaks: "a module's `pub use` isn't in its `.d.ts`, and TypeScript that imports it finds nothing",
+    file: "src/lower/declarations.rs",
+    find: "    for reexport in reexports {",
+    replace: "    for reexport in reexports.iter().take(0) {",
+    tests: ["test/declarations.test.ts", "-t", "re-export what a module"],
+  },
 ];

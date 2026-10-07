@@ -1691,6 +1691,20 @@ test("js::directive! and js::export_default! make a module a Next.js route", asy
   expect((await import(join(dir, "generic.js"))).default([7, 8])).toBe(7);
 });
 
+// A module's `pub use` of another module's function is a JS re-export,
+// `export { helper } from "./inner.js"`, as react.dev's Challenges/index
+// re-exports `Challenges` (ADR 0240).
+test("a pub use of another module's function is re-exported from it", async () => {
+  const dir = fixture("reexports");
+  writeFileSync(join(dir, "lib.rs"), "mod inner;\npub use inner::helper;\npub use inner::other as renamed;\nuse inner::other;\n\npub fn own() -> u32 {\n    other() + 1\n}\n");
+  writeFileSync(join(dir, "inner.rs"), "pub fn helper() -> u32 {\n    1\n}\n\npub fn other() -> u32 {\n    2\n}\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('export { helper, other as renamed } from "./inner.js";');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.helper(), lib.renamed(), lib.own()]).toEqual([1, 2, 3]);
+});
+
 // An `if` whose branch leaves has no `else`: what follows it runs only when
 // the branch doesn't, as JS writes it and react.dev's Link has it, `if (..)
 // { return cloneElement(..); } return child;` (ADR 0237). A branch that

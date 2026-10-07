@@ -47,14 +47,17 @@ impl OutputPlan {
         for module in modules {
             let js_path = self.js_path(&module.path);
             let rust_path = module.file.clone().unwrap_or_else(|| self.input.clone());
-            let imports = module
-                .imports
-                .iter()
-                .map(|import| js::Import {
-                    named: import.named.clone(),
-                    from: self.specifier(&module.path, &import.path),
-                })
-                .collect();
+            let specified = |imports: &[program::LoweredImport]| {
+                imports
+                    .iter()
+                    .map(|import| js::Import {
+                        named: import.named.clone(),
+                        from: self.specifier(&module.path, &import.path),
+                    })
+                    .collect::<Vec<_>>()
+            };
+            let imports = specified(&module.imports);
+            let reexports = specified(&module.reexports);
             // A relative module in `#[link_name]` is relative to the root's
             // file (ADR 0028), so a file in a subdirectory climbs up to it.
             let dir = &module.path[..module.path.len().saturating_sub(1)];
@@ -71,6 +74,7 @@ impl OutputPlan {
                 directives: module.directives,
                 packages,
                 imports,
+                reexports,
                 helpers: Vec::new(),
                 namespaces: module.namespaces,
                 consts: module.consts,

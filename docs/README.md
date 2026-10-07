@@ -330,6 +330,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0237 An `if` whose branch leaves has no `else`](decisions/0237-no-else-after-leaving.md)
 - [0238 A value kept for good is the value; children are kept as JS values](decisions/0238-kept-values-and-children.md)
 - [0239 A local of a component's function type is that component as a tag](decisions/0239-local-components.md)
+- [0240 A `pub use` of another module's function is re-exported from it](decisions/0240-reexports.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

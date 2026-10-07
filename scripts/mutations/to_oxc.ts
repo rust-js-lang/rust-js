@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "Some(StmtKind::If(_, _, Some(_))) => false,",
     tests: ["test/compiler.test.ts", "-t", "branch returns has no else"],
   },
+  {
+    name: "reexport-unprinted",
+    breaks: "a module's `pub use` writes no `export { .. } from`, and what imports it finds nothing",
+    file: "src/to_oxc.rs",
+    find: "        for reexport in &module.reexports {",
+    replace: "        for reexport in module.reexports.iter().take(0) {",
+    tests: ["test/compiler.test.ts","-t","re-exported from it"],
+  },
 ];

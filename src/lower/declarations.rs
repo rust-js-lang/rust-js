@@ -8,6 +8,7 @@
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
+use crate::program::LoweredImport;
 use rustc_hir as hir;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::{DefKind, Res};
@@ -29,6 +30,7 @@ pub(super) fn module(
     module: LocalModId,
     default_export: Option<DefId>,
     files: &HashMap<LocalModId, Vec<String>>,
+    reexports: &[LoweredImport],
 ) -> Option<Value> {
     let mut out = Declarations {
         tcx,
@@ -73,7 +75,7 @@ pub(super) fn module(
     // Another crate's untagged enums it names, `js::Json`, each declared here,
     // not exported: the union of its payloads, named, so it can be recursive.
     items.extend(out.foreign.into_values().flatten());
-    if items.is_empty() {
+    if items.is_empty() && reexports.is_empty() {
         return None;
     }
     // `import type { NamedExoticComponent, ReactNode } from "react";`, each module's.
@@ -97,6 +99,11 @@ pub(super) fn module(
             .map(|(_, n)| n.as_str())
             .collect();
         declarations.push(json!({ "kind": "import", "module": path, "names": names, "typeOnly": true }));
+    }
+    // `export { Challenges } from "./Challenges.js";`, its `pub use` of another
+    // module's function, as its JS has it (ADR 0240).
+    for reexport in reexports {
+        declarations.push(json!({ "kind": "export-from", "module": reexport.path, "names": reexport.named }));
     }
     declarations.extend(items);
     Some(json!({ "declarations": declarations }))

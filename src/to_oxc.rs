@@ -179,6 +179,23 @@ pub fn emit(
             code.push_str(&format!("import {{ {} }} from {:?};\n", named.join(", "), import.from));
         }
     }
+    // What it re-exports, its `pub use` (ADR 0240), after what it imports.
+    if !module.reexports.is_empty() {
+        code.push('\n');
+        for reexport in &module.reexports {
+            let named: Vec<_> = (reexport.named.iter())
+                .map(|(export, alias)| match export == alias {
+                    true => export.clone(),
+                    false => format!("{export} as {alias}"),
+                })
+                .collect();
+            code.push_str(&format!(
+                "export {{ {} }} from {:?};\n",
+                named.join(", "),
+                reexport.from
+            ));
+        }
+    }
     if !module.caches.is_empty() {
         code.push_str(&format!("\nvar {};\n", module.caches.join(", ")));
     }

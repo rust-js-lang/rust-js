@@ -20,6 +20,7 @@ import * as f from "typescript/unstable/ast/factory";
  *   | { kind: "function", name: string, exported: boolean, declare: boolean, typeParameters: TypeParameter[], params: Param[], returns: Type }
  *   | { kind: "const", name: string, exported: boolean, declare: boolean, type: Type }
  *   | { kind: "export-default", name: string }
+ *   | { kind: "export-from", from: string, names: [string, string][] }
  *   | { kind: "namespace", name: string, exported: boolean, declare: boolean, declarations: Declaration[] }
  *   | { kind: "other", text: string }} Declaration
  *
@@ -175,6 +176,19 @@ function readStatements(statements, text) {
           from: node.moduleSpecifier.text,
           names: named.elements.map((e) => e.name.text),
           typeOnly: clause.phaseModifier === SyntaxKind.TypeKeyword || !!clause.isTypeOnly,
+        });
+        break;
+      }
+      case SyntaxKind.ExportDeclaration: {
+        const named = node.exportClause;
+        if (!node.moduleSpecifier || named?.kind !== SyntaxKind.NamedExports || node.isTypeOnly) {
+          out.push({ kind: "other", text: sourceOf(node, text) });
+          break;
+        }
+        out.push({
+          kind: "export-from",
+          from: node.moduleSpecifier.text,
+          names: named.elements.map((e) => [(e.propertyName ?? e.name).text, e.name.text]),
         });
         break;
       }
@@ -443,6 +457,17 @@ function statement(declaration) {
       );
     case "export-default":
       return f.createExportAssignment(undefined, false, undefined, id(declaration.name));
+    case "export-from":
+      return f.createExportDeclaration(
+        undefined,
+        false,
+        f.createNamedExports(
+          declaration.names.map(([name, alias]) =>
+            f.createExportSpecifier(false, name === alias ? undefined : id(name), id(alias)),
+          ),
+        ),
+        string(declaration.from),
+      );
     case "namespace":
       // What it prints is erasable syntax only, TypeScript's
       // `erasableSyntaxOnly`: a namespace that holds values is JS, but a

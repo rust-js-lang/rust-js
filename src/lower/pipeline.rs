@@ -2,11 +2,12 @@
 
 use super::analysis::{AnalyzedCrate, analyze_crate, is_thread_local};
 use super::bindings::Export;
-use super::{Body, CrateFacts, FnCx, Locals, const_js, eval_const, module_file, module_symbol, static_value};
+use super::{Body, CrateFacts, FnCx, FnInfo, Locals, const_js, eval_const, module_file, module_symbol, static_value};
 use crate::js::{self, Expr, Prop, StmtKind};
-use crate::program::{ImportRequest, LoweredModule, Unlinked, UnlinkedModule};
+use crate::program::{ImportRequest, LoweredImport, LoweredModule, Unlinked, UnlinkedModule};
 use crate::runtime::Helper;
-use rustc_hir::def::DefKind;
+use rustc_hir as hir;
+use rustc_hir::def::{DefKind, Res};
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::{DefId, LocalModId};
 use std::cell::RefCell;
@@ -459,13 +460,15 @@ pub fn lower_crate<'tcx>(
                     }
                 }
             }
-            let declarations = super::declarations::module(tcx, module, default_export, &paths);
+            let reexports = reexports(tcx, module, &fns, &paths);
+            let declarations = super::declarations::module(tcx, module, default_export, &paths, &reexports);
             let lowered = LoweredModule {
                 path: paths[&module].clone(),
                 file: module_file(tcx, module).name.clone().into_local_path(),
                 directives,
                 packages,
                 imports: Vec::new(),
+                reexports,
                 namespaces: pass.namespaces.remove(&module).unwrap_or_default(),
                 consts: const_items.remove(&module).unwrap_or_default(),
                 functions: pass.functions.remove(&module).unwrap_or_default(),
@@ -509,4 +512,42 @@ pub fn lower_crate<'tcx>(
         modules: lowered,
         tests,
     })
+}
+
+/// What `module` re-exports, its public `pub use` of another module's
+/// function, by that module's path: each `(export, alias)`, the function's
+/// JS name and the name the `use` gives it (ADR 0240).
+fn reexports(
+    tcx: TyCtxt<'_>,
+    module: LocalModId,
+    fns: &HashMap<DefId, FnInfo>,
+    paths: &HashMap<LocalModId, Vec<String>>,
+) -> Vec<LoweredImport> {
+    let mut grouped: BTreeMap<Vec<String>, Vec<(String, String)>> = BTreeMap::new();
+    for id in tcx.hir_module_items(module).free_items() {
+        let item = tcx.hir_item(id);
+        let hir::ItemKind::Use(path, hir::UseKind::Single(ident)) = item.kind else {
+            continue;
+        };
+        let Some(Res::Def(_, def_id)) = path.res.value_ns else {
+            continue;
+        };
+        let Some(info) = fns.get(&def_id) else { continue };
+        if !tcx.visibility(item.owner_id).is_public() || info.module == module || info.owner.is_some() {
+            continue;
+        }
+        let Some(from) = paths.get(&info.module) else { continue };
+        let alias = match ident.name == tcx.item_name(def_id) {
+            true => info.name.clone(),
+            false => ident.to_string(),
+        };
+        grouped
+            .entry(from.clone())
+            .or_default()
+            .push((info.name.clone(), alias));
+    }
+    grouped
+        .into_iter()
+        .map(|(path, named)| LoweredImport { path, named })
+        .collect()
 }

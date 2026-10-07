@@ -34,6 +34,9 @@ pub struct Module {
     pub packages: Vec<Package>,
     /// Named imports, one declaration per Rust module this one uses.
     pub imports: Vec<Import>,
+    /// What it exports of another module of the crate's, `export { a } from
+    /// "./b.js"`, its `pub use` (ADR 0240).
+    pub reexports: Vec<Import>,
     /// What it imports of `@rust-js/runtime`, sorted: the helpers its
     /// prepared tree reads (ADR 0103), chosen before it's printed.
     pub helpers: Vec<&'static str>,
