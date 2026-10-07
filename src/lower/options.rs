@@ -129,6 +129,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if self.boxed_payload(generic_args.type_at(0)) {
                     let default = self.some(default);
                     self.some_value(Expr::bin(Op::Coalesce, option, default))
+                } else if let Some((kept, value)) = filtered(&option) {
+                    Expr::cond(kept, value, default)
                 } else {
                     Expr::bin(Op::Coalesce, option, default)
                 }
@@ -160,12 +162,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Some(Some(js::Pattern::Name(name))) => name.clone(),
                     _ => "option".to_string(),
                 };
-                let option = match option.kind {
-                    js::ExprKind::Var(_) => option,
-                    _ => self.spill(&base, option, out),
+                // What a `filter` kept is its variable, where its test holds.
+                let fused = match self.boxed_payload(generic_args.type_at(0)) {
+                    false => filtered(&option),
+                    true => None,
+                };
+                let (option, present) = match fused {
+                    Some((kept, value)) => (value, kept),
+                    None => {
+                        let option = match option.kind {
+                            js::ExprKind::Var(_) => option,
+                            _ => self.spill(&base, option, out),
+                        };
+                        let present = Expr::bin(Op::LooseNe, option.clone(), Expr::null());
+                        (option, present)
+                    }
                 };
                 // Of a generic `T`, the closure gets what's inside (ADR 0051).
-                let present = Expr::bin(Op::LooseNe, option.clone(), Expr::null());
                 let option = if self.boxed_payload(generic_args.type_at(0)) {
                     self.some_value(option)
                 } else {
@@ -331,4 +344,28 @@ pub(super) fn some_literal(inner: Expr) -> Expr {
 /// what's in one: `value.$someNone !== undefined`.
 pub(super) fn is_some_box(value: Expr) -> Expr {
     Expr::bin(Op::Ne, Expr::member(value, "$someNone"), Expr::undefined())
+}
+
+/// A `filter`'s `Option`, `x != null && keep ? x : undefined` of a
+/// variable `x`: its test, which holds only where `x` isn't `None`, and
+/// `x`. What takes the `Option` next takes them in place of a `const` of
+/// it: `filter(..).unwrap_or(d)` is `x != null && keep ? x : d`. A
+/// conditional of another `Option`, `c ? maybe() : undefined`, isn't one:
+/// its `maybe()` may be `None`.
+fn filtered(option: &Expr) -> Option<(Expr, Expr)> {
+    let js::ExprKind::Cond(test, value, none) = &option.kind else {
+        return None;
+    };
+    let (js::ExprKind::Var(name), js::ExprKind::Undefined) = (&value.kind, &none.kind) else {
+        return None;
+    };
+    let present = match &test.kind {
+        js::ExprKind::Binary(Op::And, first, _) => first,
+        _ => test,
+    };
+    let js::ExprKind::Binary(Op::LooseNe, tested, null) = &present.kind else {
+        return None;
+    };
+    let tests_it = matches!(&tested.kind, js::ExprKind::Var(v) if v == name);
+    (tests_it && matches!(null.kind, js::ExprKind::Null)).then(|| ((**test).clone(), (**value).clone()))
 }

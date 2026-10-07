@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
     name: "props-read-before-constant-base",
     breaks: "a component's props are read into `const`s before its children where only a base's constant comes after them",
     file: "src/lower/jsx.rs",
-    find: "                value.has_effects() || (children.has_effects() && !value.is_constant())",
+    find: "                (value.has_effects() && !self.reads_unchanging(children, out))\n                    || (children.has_effects() && !value.is_constant())",
     replace: "                true",
     tests: ["test/jsx.test.ts", "-t", "no dictionary"],
   },
@@ -78,8 +78,8 @@ export const mutations: Mutation[] = [
     name: "base-read-before-children-that-change-it",
     breaks: "`<Tally {..base}>{bump(&mut base)}</Tally>` reads `base.n` before `bump` changes it",
     file: "src/lower/jsx.rs",
-    find: "                value.has_effects() || (children.has_effects() && !value.is_constant())",
-    replace: "                value.has_effects()",
+    find: "\n                    || (children.has_effects() && !value.is_constant())",
+    replace: "",
     tests: ["test/jsx.test.ts", "-t", "children that change the base"],
   },
   {
@@ -185,5 +185,13 @@ export const mutations: Mutation[] = [
     find: "            (\"$\", &[tag]) => match self.expr(tag, out)? {\n",
     replace: "            (\"$$\", &[tag]) => match self.expr(tag, out)? {\n",
     tests: ["test/jsx.test.ts", "-t", "tag that.s a value"],
+  },
+  {
+    name: "unchanging-children-read-first",
+    breaks: "a component's children that read only a state's value, declared first, make every prop a `const` before the JSX, beside a computed `className`",
+    file: "src/lower/jsx.rs",
+    find: "                (value.has_effects() && !self.reads_unchanging(children, out))\n",
+    replace: "                value.has_effects()\n",
+    tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
   },
 ];

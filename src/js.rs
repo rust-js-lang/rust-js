@@ -899,6 +899,33 @@ impl Expr {
         }
     }
 
+    /// Whether this reads nothing but variables, and does nothing: no
+    /// call, and no property, which something done meanwhile could change
+    /// through a `&mut`. Elements, conditions and literals of variables.
+    pub fn reads_only_vars(&self) -> bool {
+        let props = |props: &[Prop]| {
+            props.iter().all(|p| match p {
+                Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Spread(value) => value.reads_only_vars(),
+            })
+        };
+        match &self.kind {
+            ExprKind::Var(_) | ExprKind::Symbol(_) | ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) => true,
+            ExprKind::Unary(_, a) | ExprKind::Spread(a) => a.reads_only_vars(),
+            ExprKind::Binary(_, a, b) => a.reads_only_vars() && b.reads_only_vars(),
+            ExprKind::Cond(a, b, c) => a.reads_only_vars() && b.reads_only_vars() && c.reads_only_vars(),
+            ExprKind::Array(items) | ExprKind::Template(_, items) => items.iter().all(Expr::reads_only_vars),
+            ExprKind::Object(items) => props(items),
+            ExprKind::Jsx(jsx) => {
+                let tag = match &jsx.tag {
+                    JsxTag::Component(c) => c.reads_only_vars(),
+                    _ => true,
+                };
+                tag && props(&jsx.props) && jsx.children.iter().all(Expr::reads_only_vars)
+            }
+            _ => self.is_constant(),
+        }
+    }
+
     /// Could evaluating this do something observable (call a function, throw)?
     pub fn has_effects(&self) -> bool {
         match &self.kind {

@@ -400,6 +400,58 @@ pub fn View() -> Element {
   expect(renderToStaticMarkup(result.View())).toBe('<svg viewBox="0 0 10 10"><defs><linearGradient id="paint"></linearGradient></defs></svg>');
 });
 
+// As react.dev's ExpandableExample has them: a Button's children, which its
+// props declare first, read only a state's value, so a computed className
+// after them needn't be read first; and an excerpt shown where it isn't
+// empty is one expression, `excerpt && <div>..</div>`, as a person writes it.
+test("JSX keeps children that read what never changes, and a filtered child, in place", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{Element, Node, event, jsx, use_state};
+unsafe extern "Rust" {
+    #[link_name = "String"]
+    safe fn cn(a: &str) -> String;
+}
+pub struct ButtonProps<'a, C: Node> {
+    pub children: C,
+    pub class_name: Option<&'a str>,
+    pub on_click: Option<Box<dyn Fn(&event::Mouse)>>,
+}
+pub fn Button<C: Node>(ButtonProps { children, class_name, on_click }: ButtonProps<C>) -> Element {
+    let _ = on_click;
+    jsx! { <button className={class_name}>{children}</button> }
+}
+pub fn Example(excerpt: Option<&str>) -> Element {
+    let (expanded, set_expanded) = use_state(false);
+    jsx! {
+        <div>
+            <h5 className={cn("title")}>{"Example"}</h5>
+            {excerpt.filter(|excerpt| !excerpt.is_empty()).map(|excerpt| jsx! { <p>{excerpt}</p> })}
+            <Button className={Some(cn("button").as_str())} onClick={Some(Box::new(move |_| set_expanded.update(|e| !e)))}>
+                <span>{if *expanded { "Hide" } else { "Show" }}</span>
+            </Button>
+        </div>
+    }
+}
+pub fn title(name: Option<&str>) -> String {
+    name.filter(|name| !name.is_empty()).unwrap_or("Error").to_string()
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain('{excerpt != null && excerpt.length !== 0 ? <p>{excerpt}</p> : undefined}');
+  expect(jsx).toContain('<span>{expanded ? "Hide" : "Show"}</span>');
+  expect(jsx).not.toContain("const children");
+  expect(jsx).not.toContain("const className");
+  expect(jsx).toContain('return name != null && name.length !== 0 ? name : "Error";');
+  const { Example, title } = await import(join(dir, "lib.jsx"));
+  expect(["e", "", undefined].map((e) => renderToStaticMarkup(createElement(() => Example(e))))).toEqual([
+    '<div><h5 class="title">Example</h5><p>e</p><button class="button"><span>Show</span></button></div>',
+    '<div><h5 class="title">Example</h5><button class="button"><span>Show</span></button></div>',
+    '<div><h5 class="title">Example</h5><button class="button"><span>Show</span></button></div>',
+  ]);
+  expect([title("Oops"), title(""), title(undefined)]).toEqual(["Oops", "Error", "Error"]);
+});
+
 // React DOM's own table leaves these out, as their spelling needs no warning;
 // @types/react types them (ADR 0043).
 test("JSX takes every attribute @types/react types", async () => {
@@ -1017,7 +1069,7 @@ pub fn Linked() -> Element {
   expect(logged).toEqual(["h", "t", "l", "t", "h", "big"]);
   expect(jsx).toMatch(/<ButtonLink size=\{\w+\} href=\{\w+\}>/);
   expect(jsx).toContain("<Linky label={label} target={target} />");
-  expect(jsx).toMatch(/<ButtonLink target=\{\w+\} href=\{h\}>/);
+  expect(jsx).toContain('<ButtonLink target={note("t")} href={h}>');
   expect(jsx).toMatch(/<ButtonLink target=\{\w+\} href=\{\w+\}>/);
   expect(renderToStaticMarkup(App())).toBe('<a href="/a" data-size="lg" target="_blank" id="x">A</a><a href="/b" data-size="md" class="c">B</a>');
   const refused = (source: string, says: string) => {

@@ -44,4 +44,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "unwrap_typed_debug"],
     snapshots: true,
   },
+  {
+    name: "filter-map-unfused",
+    breaks: "`excerpt.filter(..).map(..)` keeps the filter's `Option` in a `const`, which pulls what JSX reads before it out of the JSX",
+    file: "src/lower/options.rs",
+    find: "                    false => filtered(&option),\n",
+    replace: "                    false => None,\n",
+    tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
+  },
+  {
+    name: "filter-unwrap-or-unfused",
+    breaks: "`title.filter(..).unwrap_or(\"Error\")` is `(title != null && .. ? title : undefined) ?? \"Error\"`, not `title || 'Error'`'s shape",
+    file: "src/lower/options.rs",
+    find: "                } else if let Some((kept, value)) = filtered(&option) {\n",
+    replace: "                } else if let Some((kept, value)) = None::<(Expr, Expr)> {\n",
+    tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
+  },
 ];
