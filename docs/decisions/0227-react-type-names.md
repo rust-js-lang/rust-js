@@ -80,6 +80,12 @@ for the same things, and the `.d.ts` rust-js writes already used React's.
   element, `Deref` to a `ReactElement`, as `ReactPortal extends
   ReactElement`, a child as it is, a component's result by `.element()`.
   (Amended.)
+- **What a hook takes and gives has @types/react's names**: `Reducer<S, A>`,
+  `Box<dyn Fn(&S, A) -> S>`, `use_reducer`'s; `ActionDispatch<A>`, the
+  `Dispatch<A>` it gives; `EffectCallback<C = ()>`, `use_effect`'s; and
+  `TransitionFunction<R = ()>`, `start_transition`'s, each of a prop given to
+  its hook as it is. Not `ReducerWithoutAction` nor `DispatchWithoutAction`:
+  `use_reducer` takes an action, and `()` given to JS is `[]`. (Amended.)
 - **Names React has no type for stay the crate's own**: `Element`, what
   JSX makes, `JSX.Element`; `Rest`, `...props`; `children::Child`;
   `InnerHtml`, `{ __html }`; `Cleanup`, what an effect gives back, which

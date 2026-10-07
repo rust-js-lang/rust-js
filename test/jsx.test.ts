@@ -995,6 +995,36 @@ pub fn Ordinary(reference: RefObject<Option<&'static webapi::Element>>) -> Eleme
   expect(readFileSync(join(dir, "lib.jsx"), "utf8")).toBe(output);
 });
 
+// What a hook takes and gives, by @types/react's names: a prop that's a
+// `Reducer`, an `EffectCallback` or a `TransitionFunction` is given to its
+// hook as it is, and `use_reducer` gives an `ActionDispatch`.
+test("JSX hooks take @types/react's Reducer, EffectCallback and TransitionFunction", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{ActionDispatch, EffectCallback, Element, Reducer, TransitionFunction, jsx, start_transition, use_effect, use_reducer};
+pub struct CounterProps {
+    pub reducer: Reducer<i32, i32>,
+    pub effect: EffectCallback,
+    pub later: Option<TransitionFunction>,
+}
+pub fn Counter(CounterProps { reducer, effect, later }: CounterProps) -> Element {
+    let (count, _dispatch): (&i32, ActionDispatch<i32>) = use_reducer(reducer, 1);
+    use_effect(effect, ());
+    if let Some(later) = later {
+        start_transition(later);
+    }
+    jsx! { <p>{*count}</p> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("useReducer(reducer, 1)");
+  expect(jsx).toContain("useEffect(effect, []);");
+  expect(jsx).toContain("startTransition(later);");
+  const { Counter } = await import(join(dir, "lib.jsx"));
+  const { createElement } = await import("react");
+  expect(renderToStaticMarkup(createElement(Counter, { reducer: (s: number, a: number) => s + a, effect: () => {} }))).toBe("<p>1</p>");
+});
+
 // A ref is @types/react's `Ref<T>`, a `RefObject` or a `RefCallback`, which a
 // component's own prop takes, `impl Ref<&HTMLDivElement, M>`, and passes to
 // its element as it is; one of another element is an error that says so.
