@@ -1640,6 +1640,50 @@ pub fn Block<C: ReactNode>(BlockProps { children }: BlockProps<C>) -> Element {
   expect(() => renderToStaticMarkup(createElement(Block, null, "a", "b"))).toThrow("Expected plain text.");
 });
 
+// An element is @types/react's `ReactElement<P>`: of props of a type, read
+// by their fields, where a child's are taken as a component's,
+// `ReactElement::<ItemProps>::unchecked_from(e)`, as TypeScript's
+// `isValidElement<P>` takes them, unchecked. A `bigint`, an `i64`, and a
+// promise of a node are children too, as React 19's `ReactNode` has them.
+test("JSX elements have props of a type, and bigint and promise children", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::children::{self, Child};
+use react::{Element, ReactElement, ReactNode, jsx};
+pub struct ItemProps<'a> {
+    pub title: &'a str,
+}
+pub fn Item(ItemProps { title }: ItemProps) -> Element {
+    jsx! { <li>{title}</li> }
+}
+pub struct ListProps<C: ReactNode> {
+    pub children: C,
+}
+pub fn Titles<C: ReactNode>(ListProps { children }: ListProps<C>) -> Element {
+    let titles: Vec<&str> = children::to_array(&children)
+        .into_iter()
+        .filter_map(|child| match child {
+            Child::Element(element) => Some(ReactElement::<ItemProps>::unchecked_from(element).props().title),
+            _ => None,
+        })
+        .collect();
+    let big: i64 = 1 << 40;
+    jsx! { <p>{titles.join(", ")}<b>{big}</b></p> }
+}
+pub fn Later(text: js::Promise<String>) -> Element {
+    jsx! { <p>{text}</p> }
+}
+`);
+  args.push("--extern", `js=${join(target, "libjs.rmeta")}`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("return child.props.title;");
+  expect(jsx).toContain("return <p>{text}</p>;");
+  const { Titles, Item } = await import(join(dir, "lib.jsx"));
+  const { createElement } = await import("react");
+  expect(renderToStaticMarkup(createElement(Titles, null, createElement(Item, { title: "a" }), "x", createElement(Item, { title: "b" }))))
+    .toBe("<p>a, b<b>1099511627776</b></p>");
+});
+
 // `cloneElement` makes an element, a child as any other, as react.dev's Link
 // clones each `inlineCode` among its children and keeps the rest.
 test("JSX components clone some of their children and keep the rest", async () => {

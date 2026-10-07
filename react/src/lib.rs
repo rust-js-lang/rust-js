@@ -154,6 +154,20 @@ impl<T: ReactNode> sealed::Sealed for Option<T> {}
 impl<T: ReactNode> sealed::Sealed for Vec<T> {}
 impl<T: ReactNode> sealed::Sealed for [T] {}
 impl sealed::Sealed for Unknown {}
+/// A `bigint`, which rust-js's 64- and 128-bit integers are (ADR 0086), as
+/// React 19's `ReactNode` has it: shown as its digits.
+#[cfg(react = "19.0")]
+macro_rules! bigints {
+    ($($t:ty),*) => { $(impl ReactNode for $t {} impl sealed::Sealed for $t {})* };
+}
+#[cfg(react = "19.0")]
+bigints!(i64, u64, i128, u128);
+/// A promise of a node, as React 19's `ReactNode` has it: a component
+/// suspends until it settles, as `use` does.
+#[cfg(react = "19.0")]
+impl<T: ReactNode> ReactNode for Promise<T> {}
+#[cfg(react = "19.0")]
+impl<T: ReactNode> sealed::Sealed for Promise<T> {}
 
 /// A node, told apart by what it is, as JSX's `typeof children ===
 /// "string"`, `isValidElement(children)` and `Array.isArray(children)`:
@@ -182,11 +196,24 @@ pub fn kind_of<C: ReactNode>(this: &C) -> ReactNodeKind<'_> {
 /// A React element, what JSX makes, `{ type, props, key }`, as
 /// [`isValidElement`](https://react.dev/reference/react/isValidElement)
 /// tells one: a node that's one, of [`kind_of`] or [`children::to_array`].
+/// Its props are of a type, `P`, as @types/react's `ReactElement<P>`'s:
+/// of a child, `Unknown`, which [`unchecked_from`](Self::unchecked_from)
+/// takes as a component's.
 #[cfg_attr(rust_js, rust_js::test = "react#isValidElement")]
 #[cfg_attr(rust_js, rust_js::types = "react#ReactElement")]
-pub struct ReactElement(PhantomData<JsObject>);
+pub struct ReactElement<P = Unknown>(PhantomData<JsObject>, PhantomData<P>);
 
-impl ReactElement {
+impl<P> ReactElement<P> {
+    /// An element, as one of props of `P`: a child, as a component's,
+    /// `ReactElement::<ItemProps>::unchecked_from(e).props().title`. It
+    /// doesn't check they're `P`'s, as TypeScript's `isValidElement<P>`
+    /// doesn't. The element itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &ReactElement) -> &ReactElement<P> {
+        unreachable!()
+    }
+
     /// Its `type`: a DOM element's tag, `"img"`, or a component, whose own
     /// properties `js::get` reads.
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
@@ -194,9 +221,10 @@ impl ReactElement {
         unreachable!()
     }
 
-    /// Its `props`, `children` among them, which `js::get` reads.
+    /// Its `props`, `children` among them: of a child, what `js::get`
+    /// reads.
     #[cfg_attr(rust_js, rust_js::link_name = "get props")]
-    pub fn props(&self) -> &'static Unknown {
+    pub fn props(&self) -> &'static P {
         unreachable!()
     }
 
@@ -213,8 +241,8 @@ impl ReactElement {
     }
 }
 
-impl ReactNode for ReactElement {}
-impl sealed::Sealed for ReactElement {}
+impl<P> ReactNode for ReactElement<P> {}
+impl<P> sealed::Sealed for ReactElement<P> {}
 
 /// [`cloneElement`](https://react.dev/reference/react/cloneElement):
 /// `element` again, `props`' fields over its own,
@@ -222,7 +250,7 @@ impl sealed::Sealed for ReactElement {}
 /// @types/react's `ReactElement`, so a child as any other, `Child::Element`.
 #[cfg_attr(rust_js, rust_js::link_name = "react#cloneElement")]
 #[allow(unused_variables)]
-pub fn clone_element<P>(element: &ReactElement, props: P) -> &'static ReactElement {
+pub fn clone_element<P, Q>(element: &ReactElement<P>, props: Q) -> &'static ReactElement<P> {
     unreachable!()
 }
 
