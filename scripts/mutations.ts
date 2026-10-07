@@ -174,6 +174,11 @@ function test(tests: string[], compiler: string, snapshots = false): { passed: b
       // would say nothing: a corpus case compiles in a second or two.
       RUST_JS_COMPILE_TIMEOUT: "60000",
       ...(snapshots ? {} : { RUST_JS_SNAPSHOTS: "ignore" }),
+      // On GitHub's machines bun test writes a failure as an annotation, one
+      // line of its whole diff, which a run cut short as it exited, leaving no
+      // `(fail)` to judge by: "inconclusive" of what was caught. Its plain
+      // output is the same everywhere.
+      GITHUB_ACTIONS: undefined,
     }),
   );
   const output = p.stdout + p.stderr;
