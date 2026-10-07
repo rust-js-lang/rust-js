@@ -53,6 +53,17 @@ fn through_ref_mut() -> i32 {
     a.x + a.y
 }
 
+// The same, its `&mut` in a `let mut`: still `a`, replaced whole.
+#[allow(unused_mut)]
+fn through_ref_mut_variable() -> i32 {
+    let mut a = P { x: 1, y: 0 };
+    let mut cur = &mut a;
+    match *cur {
+        ref mut n => *n = P { x: 4, y: 5 },
+    }
+    a.x + a.y
+}
+
 #[derive(Debug, Clone, Copy)]
 struct Q {
     x: i32,
@@ -136,6 +147,7 @@ fn main() {
     origin(&mut b);
     println!("{a:?} {b:?}");
     println!("{}", through_ref_mut());
+    println!("{}", through_ref_mut_variable());
     let first = Q { x: 3 };
     let mut second = first;
     let mut third = Q { x: 5 };

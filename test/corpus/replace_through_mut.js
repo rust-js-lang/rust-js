@@ -50,6 +50,13 @@ function through_ref_mut() {
   return (a.x + a.y) | 0;
 }
 
+function through_ref_mut_variable() {
+  let a = { x: 1, y: 0 };
+  let cur = a;
+  $assign(cur, { x: 4, y: 5 });
+  return (a.x + a.y) | 0;
+}
+
 function swap_points(a, b) {
   $exchange(a, b);
 }
@@ -115,6 +122,7 @@ function main() {
   origin(b);
   console.log(`${pDebug_fmt(a)} ${pDebug_fmt(b)}`);
   console.log(`${through_ref_mut()}`);
+  console.log(`${through_ref_mut_variable()}`);
   const first = { x: 3 };
   let second = { ...first };
   let third = { x: 5 };

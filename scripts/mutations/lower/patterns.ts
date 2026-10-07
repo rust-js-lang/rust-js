@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "matches!(*b.ty.kind(), ty::Ref(_, inner, _) if !self.is_object(inner))",
     replace: "matches!(*b.ty.kind(), ty::Ref(..))",
-    tests: ["test/diagnostics.test.ts", "-t", "ref mut through a reference variable"],
+    tests: ["test/corpus.test.ts", "-t", "replace_through_mut"],
   },
   {
     name: "slice-pattern-length-at-least",
