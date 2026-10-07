@@ -227,7 +227,7 @@ pub fn clone_element<P>(element: &ReactElement, props: P) -> &'static ReactEleme
 }
 
 macro_rules! numbers {
-    ($($t:ty),*) => { $(impl ReactNode for $t {} impl sealed::Sealed for $t {} impl Value for $t {})* };
+    ($($t:ty),*) => { $(impl ReactNode for $t {} impl sealed::Sealed for $t {} impl Value for $t {} impl value::Number for $t {} impl value::NumberOrString for $t {})* };
 }
 numbers!(i8, i16, i32, u8, u16, u32, usize, f64);
 
@@ -269,6 +269,97 @@ pub trait StyleValue {}
 
 impl StyleValue for CSSProperties {}
 impl StyleValue for Option<CSSProperties> {}
+
+/// What an attribute takes, as @types/react types it (ADR 0228): `className`
+/// text, `tabIndex` a number, `width` either, `draggable` a [`Booleanish`];
+/// each an `Option` of one too, which leaves it out when `None`. One
+/// @types/react doesn't type takes any [`Value`].
+pub mod value {
+    use super::{Booleanish as BooleanishValue, NumberOrString as NumberOrStringValue};
+
+    /// `string`: `&str` or `String`.
+    #[diagnostic::on_unimplemented(message = "`{Self}` is not text", label = "this attribute takes text", note = "@types/react types it as a `string`")]
+    pub trait Text {}
+
+    impl Text for &str {}
+    impl Text for String {}
+    impl<T: Text + ?Sized> Text for &T {}
+    impl<T: Text> Text for Option<T> {}
+
+    /// `number`: any of Rust's numbers.
+    #[diagnostic::on_unimplemented(message = "`{Self}` is not a number", label = "this attribute takes a number", note = "@types/react types it as a `number`")]
+    pub trait Number {}
+
+    impl<T: Number + ?Sized> Number for &T {}
+    impl<T: Number> Number for Option<T> {}
+
+    /// `number | string`: a number or text, or a [`NumberOrString`](super::NumberOrString).
+    #[diagnostic::on_unimplemented(message = "`{Self}` is not a number or text", label = "this attribute takes a number or text", note = "@types/react types it as a `number | string`")]
+    pub trait NumberOrString {}
+
+    impl NumberOrString for &str {}
+    impl NumberOrString for String {}
+    impl NumberOrString for NumberOrStringValue<'_> {}
+    impl<T: NumberOrString + ?Sized> NumberOrString for &T {}
+    impl<T: NumberOrString> NumberOrString for Option<T> {}
+
+    /// `Booleanish`, `boolean | "true" | "false"`, and `aria-checked`'s
+    /// `"mixed"` and the like: a `bool` or text, or a [`Booleanish`](super::Booleanish).
+    #[diagnostic::on_unimplemented(message = "`{Self}` is not a `bool` or text", label = "this attribute takes a `bool` or text", note = "@types/react types it as a `Booleanish`")]
+    pub trait Booleanish {}
+
+    impl Booleanish for bool {}
+    impl Booleanish for &str {}
+    impl Booleanish for String {}
+    impl Booleanish for BooleanishValue<'_> {}
+    impl<T: Booleanish + ?Sized> Booleanish for &T {}
+    impl<T: Booleanish> Booleanish for Option<T> {}
+}
+
+/// `number | string`, as @types/react types `width`: a number or text, a
+/// prop's of a component that flattens an element's attributes,
+/// `width: Some(64.0.into())`. Each is the value itself in JS (ADR 0214).
+#[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
+pub enum NumberOrString<'a> {
+    Number(f64),
+    Text(&'a str),
+}
+
+impl From<f64> for NumberOrString<'_> {
+    fn from(value: f64) -> Self {
+        NumberOrString::Number(value)
+    }
+}
+
+impl<'a> From<&'a str> for NumberOrString<'a> {
+    fn from(value: &'a str) -> Self {
+        NumberOrString::Text(value)
+    }
+}
+
+/// @types/react's `Booleanish`, `boolean | "true" | "false"`, as it types
+/// `draggable`: a `bool` or its text, a prop's of a component that
+/// flattens an element's attributes, `draggable: Some(true.into())`. Each
+/// is the value itself in JS (ADR 0214).
+#[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
+pub enum Booleanish<'a> {
+    Bool(bool),
+    Text(&'a str),
+}
+
+impl From<bool> for Booleanish<'_> {
+    fn from(value: bool) -> Self {
+        Booleanish::Bool(value)
+    }
+}
+
+impl<'a> From<&'a str> for Booleanish<'a> {
+    fn from(value: &'a str) -> Self {
+        Booleanish::Text(value)
+    }
+}
 
 /// What a [`key`](Element::key) can be: a string or a number.
 pub trait Key {}

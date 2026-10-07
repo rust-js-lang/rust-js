@@ -14,7 +14,7 @@ pub struct HTMLAttributes<'a> {
     pub aria_activedescendant: Option<&'a str>,
     /// `aria-atomic`
     #[cfg_attr(rust_js, rust_js::name = "aria-atomic")]
-    pub aria_atomic: Option<&'a str>,
+    pub aria_atomic: Option<Booleanish<'a>>,
     /// `aria-autocomplete`
     #[cfg_attr(rust_js, rust_js::name = "aria-autocomplete")]
     pub aria_autocomplete: Option<&'a str>,
@@ -26,10 +26,10 @@ pub struct HTMLAttributes<'a> {
     pub aria_brailleroledescription: Option<&'a str>,
     /// `aria-busy`
     #[cfg_attr(rust_js, rust_js::name = "aria-busy")]
-    pub aria_busy: Option<&'a str>,
+    pub aria_busy: Option<Booleanish<'a>>,
     /// `aria-checked`
     #[cfg_attr(rust_js, rust_js::name = "aria-checked")]
-    pub aria_checked: Option<&'a str>,
+    pub aria_checked: Option<Booleanish<'a>>,
     /// `aria-colcount`
     #[cfg_attr(rust_js, rust_js::name = "aria-colcount")]
     pub aria_colcount: Option<f64>,
@@ -47,7 +47,7 @@ pub struct HTMLAttributes<'a> {
     pub aria_controls: Option<&'a str>,
     /// `aria-current`
     #[cfg_attr(rust_js, rust_js::name = "aria-current")]
-    pub aria_current: Option<&'a str>,
+    pub aria_current: Option<Booleanish<'a>>,
     /// `aria-describedby`
     #[cfg_attr(rust_js, rust_js::name = "aria-describedby")]
     pub aria_describedby: Option<&'a str>,
@@ -59,7 +59,7 @@ pub struct HTMLAttributes<'a> {
     pub aria_details: Option<&'a str>,
     /// `aria-disabled`
     #[cfg_attr(rust_js, rust_js::name = "aria-disabled")]
-    pub aria_disabled: Option<&'a str>,
+    pub aria_disabled: Option<Booleanish<'a>>,
     /// `aria-dropeffect`
     #[cfg_attr(rust_js, rust_js::name = "aria-dropeffect")]
     pub aria_dropeffect: Option<&'a str>,
@@ -68,22 +68,22 @@ pub struct HTMLAttributes<'a> {
     pub aria_errormessage: Option<&'a str>,
     /// `aria-expanded`
     #[cfg_attr(rust_js, rust_js::name = "aria-expanded")]
-    pub aria_expanded: Option<&'a str>,
+    pub aria_expanded: Option<Booleanish<'a>>,
     /// `aria-flowto`
     #[cfg_attr(rust_js, rust_js::name = "aria-flowto")]
     pub aria_flowto: Option<&'a str>,
     /// `aria-grabbed`
     #[cfg_attr(rust_js, rust_js::name = "aria-grabbed")]
-    pub aria_grabbed: Option<&'a str>,
+    pub aria_grabbed: Option<Booleanish<'a>>,
     /// `aria-haspopup`
     #[cfg_attr(rust_js, rust_js::name = "aria-haspopup")]
-    pub aria_haspopup: Option<&'a str>,
+    pub aria_haspopup: Option<Booleanish<'a>>,
     /// `aria-hidden`
     #[cfg_attr(rust_js, rust_js::name = "aria-hidden")]
-    pub aria_hidden: Option<&'a str>,
+    pub aria_hidden: Option<Booleanish<'a>>,
     /// `aria-invalid`
     #[cfg_attr(rust_js, rust_js::name = "aria-invalid")]
-    pub aria_invalid: Option<&'a str>,
+    pub aria_invalid: Option<Booleanish<'a>>,
     /// `aria-keyshortcuts`
     #[cfg_attr(rust_js, rust_js::name = "aria-keyshortcuts")]
     pub aria_keyshortcuts: Option<&'a str>,
@@ -101,13 +101,13 @@ pub struct HTMLAttributes<'a> {
     pub aria_live: Option<&'a str>,
     /// `aria-modal`
     #[cfg_attr(rust_js, rust_js::name = "aria-modal")]
-    pub aria_modal: Option<&'a str>,
+    pub aria_modal: Option<Booleanish<'a>>,
     /// `aria-multiline`
     #[cfg_attr(rust_js, rust_js::name = "aria-multiline")]
-    pub aria_multiline: Option<&'a str>,
+    pub aria_multiline: Option<Booleanish<'a>>,
     /// `aria-multiselectable`
     #[cfg_attr(rust_js, rust_js::name = "aria-multiselectable")]
-    pub aria_multiselectable: Option<&'a str>,
+    pub aria_multiselectable: Option<Booleanish<'a>>,
     /// `aria-orientation`
     #[cfg_attr(rust_js, rust_js::name = "aria-orientation")]
     pub aria_orientation: Option<&'a str>,
@@ -122,16 +122,16 @@ pub struct HTMLAttributes<'a> {
     pub aria_posinset: Option<f64>,
     /// `aria-pressed`
     #[cfg_attr(rust_js, rust_js::name = "aria-pressed")]
-    pub aria_pressed: Option<&'a str>,
+    pub aria_pressed: Option<Booleanish<'a>>,
     /// `aria-readonly`
     #[cfg_attr(rust_js, rust_js::name = "aria-readonly")]
-    pub aria_readonly: Option<&'a str>,
+    pub aria_readonly: Option<Booleanish<'a>>,
     /// `aria-relevant`
     #[cfg_attr(rust_js, rust_js::name = "aria-relevant")]
     pub aria_relevant: Option<&'a str>,
     /// `aria-required`
     #[cfg_attr(rust_js, rust_js::name = "aria-required")]
-    pub aria_required: Option<&'a str>,
+    pub aria_required: Option<Booleanish<'a>>,
     /// `aria-roledescription`
     #[cfg_attr(rust_js, rust_js::name = "aria-roledescription")]
     pub aria_roledescription: Option<&'a str>,
@@ -149,7 +149,7 @@ pub struct HTMLAttributes<'a> {
     pub aria_rowspan: Option<f64>,
     /// `aria-selected`
     #[cfg_attr(rust_js, rust_js::name = "aria-selected")]
-    pub aria_selected: Option<&'a str>,
+    pub aria_selected: Option<Booleanish<'a>>,
     /// `aria-setsize`
     #[cfg_attr(rust_js, rust_js::name = "aria-setsize")]
     pub aria_setsize: Option<f64>,
@@ -677,7 +677,7 @@ pub struct HTMLAttributes<'a> {
     pub default_checked: Option<bool>,
     /// `defaultValue`
     #[cfg_attr(rust_js, rust_js::name = "defaultValue")]
-    pub default_value: Option<&'a str>,
+    pub default_value: Option<NumberOrString<'a>>,
     /// `suppressContentEditableWarning`
     #[cfg_attr(rust_js, rust_js::name = "suppressContentEditableWarning")]
     pub suppress_content_editable_warning: Option<bool>,
@@ -698,14 +698,14 @@ pub struct HTMLAttributes<'a> {
     pub class_name: Option<&'a str>,
     /// `contentEditable`
     #[cfg_attr(rust_js, rust_js::name = "contentEditable")]
-    pub content_editable: Option<&'a str>,
+    pub content_editable: Option<Booleanish<'a>>,
     /// `contextMenu`
     #[cfg_attr(rust_js, rust_js::name = "contextMenu")]
     pub context_menu: Option<&'a str>,
     /// `dir`
     pub dir: Option<&'a str>,
     /// `draggable`
-    pub draggable: Option<&'a str>,
+    pub draggable: Option<Booleanish<'a>>,
     /// `enterKeyHint`
     #[cfg_attr(rust_js, rust_js::name = "enterKeyHint")]
     pub enter_key_hint: Option<&'a str>,
@@ -721,7 +721,7 @@ pub struct HTMLAttributes<'a> {
     pub slot: Option<&'a str>,
     /// `spellCheck`
     #[cfg_attr(rust_js, rust_js::name = "spellCheck")]
-    pub spell_check: Option<&'a str>,
+    pub spell_check: Option<Booleanish<'a>>,
     /// `style`
     pub style: Option<CSSProperties>,
     /// `tabIndex`
@@ -817,7 +817,7 @@ pub struct SVGAttributes<'a> {
     pub aria_activedescendant: Option<&'a str>,
     /// `aria-atomic`
     #[cfg_attr(rust_js, rust_js::name = "aria-atomic")]
-    pub aria_atomic: Option<&'a str>,
+    pub aria_atomic: Option<Booleanish<'a>>,
     /// `aria-autocomplete`
     #[cfg_attr(rust_js, rust_js::name = "aria-autocomplete")]
     pub aria_autocomplete: Option<&'a str>,
@@ -829,10 +829,10 @@ pub struct SVGAttributes<'a> {
     pub aria_brailleroledescription: Option<&'a str>,
     /// `aria-busy`
     #[cfg_attr(rust_js, rust_js::name = "aria-busy")]
-    pub aria_busy: Option<&'a str>,
+    pub aria_busy: Option<Booleanish<'a>>,
     /// `aria-checked`
     #[cfg_attr(rust_js, rust_js::name = "aria-checked")]
-    pub aria_checked: Option<&'a str>,
+    pub aria_checked: Option<Booleanish<'a>>,
     /// `aria-colcount`
     #[cfg_attr(rust_js, rust_js::name = "aria-colcount")]
     pub aria_colcount: Option<f64>,
@@ -850,7 +850,7 @@ pub struct SVGAttributes<'a> {
     pub aria_controls: Option<&'a str>,
     /// `aria-current`
     #[cfg_attr(rust_js, rust_js::name = "aria-current")]
-    pub aria_current: Option<&'a str>,
+    pub aria_current: Option<Booleanish<'a>>,
     /// `aria-describedby`
     #[cfg_attr(rust_js, rust_js::name = "aria-describedby")]
     pub aria_describedby: Option<&'a str>,
@@ -862,7 +862,7 @@ pub struct SVGAttributes<'a> {
     pub aria_details: Option<&'a str>,
     /// `aria-disabled`
     #[cfg_attr(rust_js, rust_js::name = "aria-disabled")]
-    pub aria_disabled: Option<&'a str>,
+    pub aria_disabled: Option<Booleanish<'a>>,
     /// `aria-dropeffect`
     #[cfg_attr(rust_js, rust_js::name = "aria-dropeffect")]
     pub aria_dropeffect: Option<&'a str>,
@@ -871,22 +871,22 @@ pub struct SVGAttributes<'a> {
     pub aria_errormessage: Option<&'a str>,
     /// `aria-expanded`
     #[cfg_attr(rust_js, rust_js::name = "aria-expanded")]
-    pub aria_expanded: Option<&'a str>,
+    pub aria_expanded: Option<Booleanish<'a>>,
     /// `aria-flowto`
     #[cfg_attr(rust_js, rust_js::name = "aria-flowto")]
     pub aria_flowto: Option<&'a str>,
     /// `aria-grabbed`
     #[cfg_attr(rust_js, rust_js::name = "aria-grabbed")]
-    pub aria_grabbed: Option<&'a str>,
+    pub aria_grabbed: Option<Booleanish<'a>>,
     /// `aria-haspopup`
     #[cfg_attr(rust_js, rust_js::name = "aria-haspopup")]
-    pub aria_haspopup: Option<&'a str>,
+    pub aria_haspopup: Option<Booleanish<'a>>,
     /// `aria-hidden`
     #[cfg_attr(rust_js, rust_js::name = "aria-hidden")]
-    pub aria_hidden: Option<&'a str>,
+    pub aria_hidden: Option<Booleanish<'a>>,
     /// `aria-invalid`
     #[cfg_attr(rust_js, rust_js::name = "aria-invalid")]
-    pub aria_invalid: Option<&'a str>,
+    pub aria_invalid: Option<Booleanish<'a>>,
     /// `aria-keyshortcuts`
     #[cfg_attr(rust_js, rust_js::name = "aria-keyshortcuts")]
     pub aria_keyshortcuts: Option<&'a str>,
@@ -904,13 +904,13 @@ pub struct SVGAttributes<'a> {
     pub aria_live: Option<&'a str>,
     /// `aria-modal`
     #[cfg_attr(rust_js, rust_js::name = "aria-modal")]
-    pub aria_modal: Option<&'a str>,
+    pub aria_modal: Option<Booleanish<'a>>,
     /// `aria-multiline`
     #[cfg_attr(rust_js, rust_js::name = "aria-multiline")]
-    pub aria_multiline: Option<&'a str>,
+    pub aria_multiline: Option<Booleanish<'a>>,
     /// `aria-multiselectable`
     #[cfg_attr(rust_js, rust_js::name = "aria-multiselectable")]
-    pub aria_multiselectable: Option<&'a str>,
+    pub aria_multiselectable: Option<Booleanish<'a>>,
     /// `aria-orientation`
     #[cfg_attr(rust_js, rust_js::name = "aria-orientation")]
     pub aria_orientation: Option<&'a str>,
@@ -925,16 +925,16 @@ pub struct SVGAttributes<'a> {
     pub aria_posinset: Option<f64>,
     /// `aria-pressed`
     #[cfg_attr(rust_js, rust_js::name = "aria-pressed")]
-    pub aria_pressed: Option<&'a str>,
+    pub aria_pressed: Option<Booleanish<'a>>,
     /// `aria-readonly`
     #[cfg_attr(rust_js, rust_js::name = "aria-readonly")]
-    pub aria_readonly: Option<&'a str>,
+    pub aria_readonly: Option<Booleanish<'a>>,
     /// `aria-relevant`
     #[cfg_attr(rust_js, rust_js::name = "aria-relevant")]
     pub aria_relevant: Option<&'a str>,
     /// `aria-required`
     #[cfg_attr(rust_js, rust_js::name = "aria-required")]
-    pub aria_required: Option<&'a str>,
+    pub aria_required: Option<Booleanish<'a>>,
     /// `aria-roledescription`
     #[cfg_attr(rust_js, rust_js::name = "aria-roledescription")]
     pub aria_roledescription: Option<&'a str>,
@@ -952,7 +952,7 @@ pub struct SVGAttributes<'a> {
     pub aria_rowspan: Option<f64>,
     /// `aria-selected`
     #[cfg_attr(rust_js, rust_js::name = "aria-selected")]
-    pub aria_selected: Option<&'a str>,
+    pub aria_selected: Option<Booleanish<'a>>,
     /// `aria-setsize`
     #[cfg_attr(rust_js, rust_js::name = "aria-setsize")]
     pub aria_setsize: Option<f64>,
@@ -1484,19 +1484,19 @@ pub struct SVGAttributes<'a> {
     /// `color`
     pub color: Option<&'a str>,
     /// `height`
-    pub height: Option<&'a str>,
+    pub height: Option<NumberOrString<'a>>,
     /// `id`
     pub id: Option<&'a str>,
     /// `lang`
     pub lang: Option<&'a str>,
     /// `max`
-    pub max: Option<&'a str>,
+    pub max: Option<NumberOrString<'a>>,
     /// `media`
     pub media: Option<&'a str>,
     /// `method`
     pub method: Option<&'a str>,
     /// `min`
-    pub min: Option<&'a str>,
+    pub min: Option<NumberOrString<'a>>,
     /// `name`
     pub name: Option<&'a str>,
     /// `nonce`
@@ -1512,7 +1512,7 @@ pub struct SVGAttributes<'a> {
     /// `type`
     pub r#type: Option<&'a str>,
     /// `width`
-    pub width: Option<&'a str>,
+    pub width: Option<NumberOrString<'a>>,
     /// `role`
     pub role: Option<&'a str>,
     /// `tabIndex`
@@ -1523,7 +1523,7 @@ pub struct SVGAttributes<'a> {
     pub cross_origin: Option<&'a str>,
     /// `accentHeight`
     #[cfg_attr(rust_js, rust_js::name = "accentHeight")]
-    pub accent_height: Option<&'a str>,
+    pub accent_height: Option<NumberOrString<'a>>,
     /// `accumulate`
     pub accumulate: Option<&'a str>,
     /// `additive`
@@ -1535,14 +1535,14 @@ pub struct SVGAttributes<'a> {
     #[cfg_attr(rust_js, rust_js::name = "allowReorder")]
     pub allow_reorder: Option<&'a str>,
     /// `alphabetic`
-    pub alphabetic: Option<&'a str>,
+    pub alphabetic: Option<NumberOrString<'a>>,
     /// `amplitude`
-    pub amplitude: Option<&'a str>,
+    pub amplitude: Option<NumberOrString<'a>>,
     /// `arabicForm`
     #[cfg_attr(rust_js, rust_js::name = "arabicForm")]
     pub arabic_form: Option<&'a str>,
     /// `ascent`
-    pub ascent: Option<&'a str>,
+    pub ascent: Option<NumberOrString<'a>>,
     /// `attributeName`
     #[cfg_attr(rust_js, rust_js::name = "attributeName")]
     pub attribute_name: Option<&'a str>,
@@ -1551,111 +1551,111 @@ pub struct SVGAttributes<'a> {
     pub attribute_type: Option<&'a str>,
     /// `autoReverse`
     #[cfg_attr(rust_js, rust_js::name = "autoReverse")]
-    pub auto_reverse: Option<&'a str>,
+    pub auto_reverse: Option<Booleanish<'a>>,
     /// `azimuth`
-    pub azimuth: Option<&'a str>,
+    pub azimuth: Option<NumberOrString<'a>>,
     /// `baseFrequency`
     #[cfg_attr(rust_js, rust_js::name = "baseFrequency")]
-    pub base_frequency: Option<&'a str>,
+    pub base_frequency: Option<NumberOrString<'a>>,
     /// `baselineShift`
     #[cfg_attr(rust_js, rust_js::name = "baselineShift")]
-    pub baseline_shift: Option<&'a str>,
+    pub baseline_shift: Option<NumberOrString<'a>>,
     /// `baseProfile`
     #[cfg_attr(rust_js, rust_js::name = "baseProfile")]
-    pub base_profile: Option<&'a str>,
+    pub base_profile: Option<NumberOrString<'a>>,
     /// `bbox`
-    pub bbox: Option<&'a str>,
+    pub bbox: Option<NumberOrString<'a>>,
     /// `begin`
-    pub begin: Option<&'a str>,
+    pub begin: Option<NumberOrString<'a>>,
     /// `bias`
-    pub bias: Option<&'a str>,
+    pub bias: Option<NumberOrString<'a>>,
     /// `by`
-    pub by: Option<&'a str>,
+    pub by: Option<NumberOrString<'a>>,
     /// `calcMode`
     #[cfg_attr(rust_js, rust_js::name = "calcMode")]
-    pub calc_mode: Option<&'a str>,
+    pub calc_mode: Option<NumberOrString<'a>>,
     /// `capHeight`
     #[cfg_attr(rust_js, rust_js::name = "capHeight")]
-    pub cap_height: Option<&'a str>,
+    pub cap_height: Option<NumberOrString<'a>>,
     /// `clip`
-    pub clip: Option<&'a str>,
+    pub clip: Option<NumberOrString<'a>>,
     /// `clipPath`
     #[cfg_attr(rust_js, rust_js::name = "clipPath")]
     pub clip_path: Option<&'a str>,
     /// `clipPathUnits`
     #[cfg_attr(rust_js, rust_js::name = "clipPathUnits")]
-    pub clip_path_units: Option<&'a str>,
+    pub clip_path_units: Option<NumberOrString<'a>>,
     /// `clipRule`
     #[cfg_attr(rust_js, rust_js::name = "clipRule")]
-    pub clip_rule: Option<&'a str>,
+    pub clip_rule: Option<NumberOrString<'a>>,
     /// `colorInterpolation`
     #[cfg_attr(rust_js, rust_js::name = "colorInterpolation")]
-    pub color_interpolation: Option<&'a str>,
+    pub color_interpolation: Option<NumberOrString<'a>>,
     /// `colorInterpolationFilters`
     #[cfg_attr(rust_js, rust_js::name = "colorInterpolationFilters")]
     pub color_interpolation_filters: Option<&'a str>,
     /// `colorProfile`
     #[cfg_attr(rust_js, rust_js::name = "colorProfile")]
-    pub color_profile: Option<&'a str>,
+    pub color_profile: Option<NumberOrString<'a>>,
     /// `colorRendering`
     #[cfg_attr(rust_js, rust_js::name = "colorRendering")]
-    pub color_rendering: Option<&'a str>,
+    pub color_rendering: Option<NumberOrString<'a>>,
     /// `contentScriptType`
     #[cfg_attr(rust_js, rust_js::name = "contentScriptType")]
-    pub content_script_type: Option<&'a str>,
+    pub content_script_type: Option<NumberOrString<'a>>,
     /// `contentStyleType`
     #[cfg_attr(rust_js, rust_js::name = "contentStyleType")]
-    pub content_style_type: Option<&'a str>,
+    pub content_style_type: Option<NumberOrString<'a>>,
     /// `cursor`
-    pub cursor: Option<&'a str>,
+    pub cursor: Option<NumberOrString<'a>>,
     /// `cx`
-    pub cx: Option<&'a str>,
+    pub cx: Option<NumberOrString<'a>>,
     /// `cy`
-    pub cy: Option<&'a str>,
+    pub cy: Option<NumberOrString<'a>>,
     /// `d`
     pub d: Option<&'a str>,
     /// `decelerate`
-    pub decelerate: Option<&'a str>,
+    pub decelerate: Option<NumberOrString<'a>>,
     /// `descent`
-    pub descent: Option<&'a str>,
+    pub descent: Option<NumberOrString<'a>>,
     /// `diffuseConstant`
     #[cfg_attr(rust_js, rust_js::name = "diffuseConstant")]
-    pub diffuse_constant: Option<&'a str>,
+    pub diffuse_constant: Option<NumberOrString<'a>>,
     /// `direction`
-    pub direction: Option<&'a str>,
+    pub direction: Option<NumberOrString<'a>>,
     /// `display`
-    pub display: Option<&'a str>,
+    pub display: Option<NumberOrString<'a>>,
     /// `divisor`
-    pub divisor: Option<&'a str>,
+    pub divisor: Option<NumberOrString<'a>>,
     /// `dominantBaseline`
     #[cfg_attr(rust_js, rust_js::name = "dominantBaseline")]
     pub dominant_baseline: Option<&'a str>,
     /// `dur`
-    pub dur: Option<&'a str>,
+    pub dur: Option<NumberOrString<'a>>,
     /// `dx`
-    pub dx: Option<&'a str>,
+    pub dx: Option<NumberOrString<'a>>,
     /// `dy`
-    pub dy: Option<&'a str>,
+    pub dy: Option<NumberOrString<'a>>,
     /// `edgeMode`
     #[cfg_attr(rust_js, rust_js::name = "edgeMode")]
-    pub edge_mode: Option<&'a str>,
+    pub edge_mode: Option<NumberOrString<'a>>,
     /// `elevation`
-    pub elevation: Option<&'a str>,
+    pub elevation: Option<NumberOrString<'a>>,
     /// `enableBackground`
     #[cfg_attr(rust_js, rust_js::name = "enableBackground")]
-    pub enable_background: Option<&'a str>,
+    pub enable_background: Option<NumberOrString<'a>>,
     /// `end`
-    pub end: Option<&'a str>,
+    pub end: Option<NumberOrString<'a>>,
     /// `exponent`
-    pub exponent: Option<&'a str>,
+    pub exponent: Option<NumberOrString<'a>>,
     /// `externalResourcesRequired`
     #[cfg_attr(rust_js, rust_js::name = "externalResourcesRequired")]
-    pub external_resources_required: Option<&'a str>,
+    pub external_resources_required: Option<Booleanish<'a>>,
     /// `fill`
     pub fill: Option<&'a str>,
     /// `fillOpacity`
     #[cfg_attr(rust_js, rust_js::name = "fillOpacity")]
-    pub fill_opacity: Option<&'a str>,
+    pub fill_opacity: Option<NumberOrString<'a>>,
     /// `fillRule`
     #[cfg_attr(rust_js, rust_js::name = "fillRule")]
     pub fill_rule: Option<&'a str>,
@@ -1663,65 +1663,65 @@ pub struct SVGAttributes<'a> {
     pub filter: Option<&'a str>,
     /// `filterRes`
     #[cfg_attr(rust_js, rust_js::name = "filterRes")]
-    pub filter_res: Option<&'a str>,
+    pub filter_res: Option<NumberOrString<'a>>,
     /// `filterUnits`
     #[cfg_attr(rust_js, rust_js::name = "filterUnits")]
-    pub filter_units: Option<&'a str>,
+    pub filter_units: Option<NumberOrString<'a>>,
     /// `floodColor`
     #[cfg_attr(rust_js, rust_js::name = "floodColor")]
-    pub flood_color: Option<&'a str>,
+    pub flood_color: Option<NumberOrString<'a>>,
     /// `floodOpacity`
     #[cfg_attr(rust_js, rust_js::name = "floodOpacity")]
-    pub flood_opacity: Option<&'a str>,
+    pub flood_opacity: Option<NumberOrString<'a>>,
     /// `focusable`
-    pub focusable: Option<&'a str>,
+    pub focusable: Option<Booleanish<'a>>,
     /// `fontFamily`
     #[cfg_attr(rust_js, rust_js::name = "fontFamily")]
     pub font_family: Option<&'a str>,
     /// `fontSize`
     #[cfg_attr(rust_js, rust_js::name = "fontSize")]
-    pub font_size: Option<&'a str>,
+    pub font_size: Option<NumberOrString<'a>>,
     /// `fontSizeAdjust`
     #[cfg_attr(rust_js, rust_js::name = "fontSizeAdjust")]
-    pub font_size_adjust: Option<&'a str>,
+    pub font_size_adjust: Option<NumberOrString<'a>>,
     /// `fontStretch`
     #[cfg_attr(rust_js, rust_js::name = "fontStretch")]
-    pub font_stretch: Option<&'a str>,
+    pub font_stretch: Option<NumberOrString<'a>>,
     /// `fontStyle`
     #[cfg_attr(rust_js, rust_js::name = "fontStyle")]
-    pub font_style: Option<&'a str>,
+    pub font_style: Option<NumberOrString<'a>>,
     /// `fontVariant`
     #[cfg_attr(rust_js, rust_js::name = "fontVariant")]
-    pub font_variant: Option<&'a str>,
+    pub font_variant: Option<NumberOrString<'a>>,
     /// `fontWeight`
     #[cfg_attr(rust_js, rust_js::name = "fontWeight")]
-    pub font_weight: Option<&'a str>,
+    pub font_weight: Option<NumberOrString<'a>>,
     /// `format`
-    pub format: Option<&'a str>,
+    pub format: Option<NumberOrString<'a>>,
     /// `fr`
-    pub fr: Option<&'a str>,
+    pub fr: Option<NumberOrString<'a>>,
     /// `from`
-    pub from: Option<&'a str>,
+    pub from: Option<NumberOrString<'a>>,
     /// `fx`
-    pub fx: Option<&'a str>,
+    pub fx: Option<NumberOrString<'a>>,
     /// `fy`
-    pub fy: Option<&'a str>,
+    pub fy: Option<NumberOrString<'a>>,
     /// `g1`
-    pub g1: Option<&'a str>,
+    pub g1: Option<NumberOrString<'a>>,
     /// `g2`
-    pub g2: Option<&'a str>,
+    pub g2: Option<NumberOrString<'a>>,
     /// `glyphName`
     #[cfg_attr(rust_js, rust_js::name = "glyphName")]
-    pub glyph_name: Option<&'a str>,
+    pub glyph_name: Option<NumberOrString<'a>>,
     /// `glyphOrientationHorizontal`
     #[cfg_attr(rust_js, rust_js::name = "glyphOrientationHorizontal")]
-    pub glyph_orientation_horizontal: Option<&'a str>,
+    pub glyph_orientation_horizontal: Option<NumberOrString<'a>>,
     /// `glyphOrientationVertical`
     #[cfg_attr(rust_js, rust_js::name = "glyphOrientationVertical")]
-    pub glyph_orientation_vertical: Option<&'a str>,
+    pub glyph_orientation_vertical: Option<NumberOrString<'a>>,
     /// `glyphRef`
     #[cfg_attr(rust_js, rust_js::name = "glyphRef")]
-    pub glyph_ref: Option<&'a str>,
+    pub glyph_ref: Option<NumberOrString<'a>>,
     /// `gradientTransform`
     #[cfg_attr(rust_js, rust_js::name = "gradientTransform")]
     pub gradient_transform: Option<&'a str>,
@@ -1729,73 +1729,73 @@ pub struct SVGAttributes<'a> {
     #[cfg_attr(rust_js, rust_js::name = "gradientUnits")]
     pub gradient_units: Option<&'a str>,
     /// `hanging`
-    pub hanging: Option<&'a str>,
+    pub hanging: Option<NumberOrString<'a>>,
     /// `horizAdvX`
     #[cfg_attr(rust_js, rust_js::name = "horizAdvX")]
-    pub horiz_adv_x: Option<&'a str>,
+    pub horiz_adv_x: Option<NumberOrString<'a>>,
     /// `horizOriginX`
     #[cfg_attr(rust_js, rust_js::name = "horizOriginX")]
-    pub horiz_origin_x: Option<&'a str>,
+    pub horiz_origin_x: Option<NumberOrString<'a>>,
     /// `href`
     pub href: Option<&'a str>,
     /// `ideographic`
-    pub ideographic: Option<&'a str>,
+    pub ideographic: Option<NumberOrString<'a>>,
     /// `imageRendering`
     #[cfg_attr(rust_js, rust_js::name = "imageRendering")]
-    pub image_rendering: Option<&'a str>,
+    pub image_rendering: Option<NumberOrString<'a>>,
     /// `in2`
-    pub in2: Option<&'a str>,
+    pub in2: Option<NumberOrString<'a>>,
     /// `in`
     pub r#in: Option<&'a str>,
     /// `intercept`
-    pub intercept: Option<&'a str>,
+    pub intercept: Option<NumberOrString<'a>>,
     /// `k1`
-    pub k1: Option<&'a str>,
+    pub k1: Option<NumberOrString<'a>>,
     /// `k2`
-    pub k2: Option<&'a str>,
+    pub k2: Option<NumberOrString<'a>>,
     /// `k3`
-    pub k3: Option<&'a str>,
+    pub k3: Option<NumberOrString<'a>>,
     /// `k4`
-    pub k4: Option<&'a str>,
+    pub k4: Option<NumberOrString<'a>>,
     /// `k`
-    pub k: Option<&'a str>,
+    pub k: Option<NumberOrString<'a>>,
     /// `kernelMatrix`
     #[cfg_attr(rust_js, rust_js::name = "kernelMatrix")]
-    pub kernel_matrix: Option<&'a str>,
+    pub kernel_matrix: Option<NumberOrString<'a>>,
     /// `kernelUnitLength`
     #[cfg_attr(rust_js, rust_js::name = "kernelUnitLength")]
-    pub kernel_unit_length: Option<&'a str>,
+    pub kernel_unit_length: Option<NumberOrString<'a>>,
     /// `kerning`
-    pub kerning: Option<&'a str>,
+    pub kerning: Option<NumberOrString<'a>>,
     /// `keyPoints`
     #[cfg_attr(rust_js, rust_js::name = "keyPoints")]
-    pub key_points: Option<&'a str>,
+    pub key_points: Option<NumberOrString<'a>>,
     /// `keySplines`
     #[cfg_attr(rust_js, rust_js::name = "keySplines")]
-    pub key_splines: Option<&'a str>,
+    pub key_splines: Option<NumberOrString<'a>>,
     /// `keyTimes`
     #[cfg_attr(rust_js, rust_js::name = "keyTimes")]
-    pub key_times: Option<&'a str>,
+    pub key_times: Option<NumberOrString<'a>>,
     /// `lengthAdjust`
     #[cfg_attr(rust_js, rust_js::name = "lengthAdjust")]
-    pub length_adjust: Option<&'a str>,
+    pub length_adjust: Option<NumberOrString<'a>>,
     /// `letterSpacing`
     #[cfg_attr(rust_js, rust_js::name = "letterSpacing")]
-    pub letter_spacing: Option<&'a str>,
+    pub letter_spacing: Option<NumberOrString<'a>>,
     /// `lightingColor`
     #[cfg_attr(rust_js, rust_js::name = "lightingColor")]
-    pub lighting_color: Option<&'a str>,
+    pub lighting_color: Option<NumberOrString<'a>>,
     /// `limitingConeAngle`
     #[cfg_attr(rust_js, rust_js::name = "limitingConeAngle")]
-    pub limiting_cone_angle: Option<&'a str>,
+    pub limiting_cone_angle: Option<NumberOrString<'a>>,
     /// `local`
-    pub local: Option<&'a str>,
+    pub local: Option<NumberOrString<'a>>,
     /// `markerEnd`
     #[cfg_attr(rust_js, rust_js::name = "markerEnd")]
     pub marker_end: Option<&'a str>,
     /// `markerHeight`
     #[cfg_attr(rust_js, rust_js::name = "markerHeight")]
-    pub marker_height: Option<&'a str>,
+    pub marker_height: Option<NumberOrString<'a>>,
     /// `markerMid`
     #[cfg_attr(rust_js, rust_js::name = "markerMid")]
     pub marker_mid: Option<&'a str>,
@@ -1804,181 +1804,181 @@ pub struct SVGAttributes<'a> {
     pub marker_start: Option<&'a str>,
     /// `markerUnits`
     #[cfg_attr(rust_js, rust_js::name = "markerUnits")]
-    pub marker_units: Option<&'a str>,
+    pub marker_units: Option<NumberOrString<'a>>,
     /// `markerWidth`
     #[cfg_attr(rust_js, rust_js::name = "markerWidth")]
-    pub marker_width: Option<&'a str>,
+    pub marker_width: Option<NumberOrString<'a>>,
     /// `mask`
     pub mask: Option<&'a str>,
     /// `maskContentUnits`
     #[cfg_attr(rust_js, rust_js::name = "maskContentUnits")]
-    pub mask_content_units: Option<&'a str>,
+    pub mask_content_units: Option<NumberOrString<'a>>,
     /// `maskUnits`
     #[cfg_attr(rust_js, rust_js::name = "maskUnits")]
-    pub mask_units: Option<&'a str>,
+    pub mask_units: Option<NumberOrString<'a>>,
     /// `mathematical`
-    pub mathematical: Option<&'a str>,
+    pub mathematical: Option<NumberOrString<'a>>,
     /// `mode`
-    pub mode: Option<&'a str>,
+    pub mode: Option<NumberOrString<'a>>,
     /// `numOctaves`
     #[cfg_attr(rust_js, rust_js::name = "numOctaves")]
-    pub num_octaves: Option<&'a str>,
+    pub num_octaves: Option<NumberOrString<'a>>,
     /// `offset`
-    pub offset: Option<&'a str>,
+    pub offset: Option<NumberOrString<'a>>,
     /// `opacity`
-    pub opacity: Option<&'a str>,
+    pub opacity: Option<NumberOrString<'a>>,
     /// `operator`
-    pub operator: Option<&'a str>,
+    pub operator: Option<NumberOrString<'a>>,
     /// `order`
-    pub order: Option<&'a str>,
+    pub order: Option<NumberOrString<'a>>,
     /// `orient`
-    pub orient: Option<&'a str>,
+    pub orient: Option<NumberOrString<'a>>,
     /// `orientation`
-    pub orientation: Option<&'a str>,
+    pub orientation: Option<NumberOrString<'a>>,
     /// `origin`
-    pub origin: Option<&'a str>,
+    pub origin: Option<NumberOrString<'a>>,
     /// `overflow`
-    pub overflow: Option<&'a str>,
+    pub overflow: Option<NumberOrString<'a>>,
     /// `overlinePosition`
     #[cfg_attr(rust_js, rust_js::name = "overlinePosition")]
-    pub overline_position: Option<&'a str>,
+    pub overline_position: Option<NumberOrString<'a>>,
     /// `overlineThickness`
     #[cfg_attr(rust_js, rust_js::name = "overlineThickness")]
-    pub overline_thickness: Option<&'a str>,
+    pub overline_thickness: Option<NumberOrString<'a>>,
     /// `paintOrder`
     #[cfg_attr(rust_js, rust_js::name = "paintOrder")]
-    pub paint_order: Option<&'a str>,
+    pub paint_order: Option<NumberOrString<'a>>,
     /// `panose1`
-    pub panose1: Option<&'a str>,
+    pub panose1: Option<NumberOrString<'a>>,
     /// `path`
     pub path: Option<&'a str>,
     /// `pathLength`
     #[cfg_attr(rust_js, rust_js::name = "pathLength")]
-    pub path_length: Option<&'a str>,
+    pub path_length: Option<NumberOrString<'a>>,
     /// `patternContentUnits`
     #[cfg_attr(rust_js, rust_js::name = "patternContentUnits")]
     pub pattern_content_units: Option<&'a str>,
     /// `patternTransform`
     #[cfg_attr(rust_js, rust_js::name = "patternTransform")]
-    pub pattern_transform: Option<&'a str>,
+    pub pattern_transform: Option<NumberOrString<'a>>,
     /// `patternUnits`
     #[cfg_attr(rust_js, rust_js::name = "patternUnits")]
     pub pattern_units: Option<&'a str>,
     /// `pointerEvents`
     #[cfg_attr(rust_js, rust_js::name = "pointerEvents")]
-    pub pointer_events: Option<&'a str>,
+    pub pointer_events: Option<NumberOrString<'a>>,
     /// `points`
     pub points: Option<&'a str>,
     /// `pointsAtX`
     #[cfg_attr(rust_js, rust_js::name = "pointsAtX")]
-    pub points_at_x: Option<&'a str>,
+    pub points_at_x: Option<NumberOrString<'a>>,
     /// `pointsAtY`
     #[cfg_attr(rust_js, rust_js::name = "pointsAtY")]
-    pub points_at_y: Option<&'a str>,
+    pub points_at_y: Option<NumberOrString<'a>>,
     /// `pointsAtZ`
     #[cfg_attr(rust_js, rust_js::name = "pointsAtZ")]
-    pub points_at_z: Option<&'a str>,
+    pub points_at_z: Option<NumberOrString<'a>>,
     /// `preserveAlpha`
     #[cfg_attr(rust_js, rust_js::name = "preserveAlpha")]
-    pub preserve_alpha: Option<&'a str>,
+    pub preserve_alpha: Option<Booleanish<'a>>,
     /// `preserveAspectRatio`
     #[cfg_attr(rust_js, rust_js::name = "preserveAspectRatio")]
     pub preserve_aspect_ratio: Option<&'a str>,
     /// `primitiveUnits`
     #[cfg_attr(rust_js, rust_js::name = "primitiveUnits")]
-    pub primitive_units: Option<&'a str>,
+    pub primitive_units: Option<NumberOrString<'a>>,
     /// `r`
-    pub r: Option<&'a str>,
+    pub r: Option<NumberOrString<'a>>,
     /// `radius`
-    pub radius: Option<&'a str>,
+    pub radius: Option<NumberOrString<'a>>,
     /// `refX`
     #[cfg_attr(rust_js, rust_js::name = "refX")]
-    pub ref_x: Option<&'a str>,
+    pub ref_x: Option<NumberOrString<'a>>,
     /// `refY`
     #[cfg_attr(rust_js, rust_js::name = "refY")]
-    pub ref_y: Option<&'a str>,
+    pub ref_y: Option<NumberOrString<'a>>,
     /// `renderingIntent`
     #[cfg_attr(rust_js, rust_js::name = "renderingIntent")]
-    pub rendering_intent: Option<&'a str>,
+    pub rendering_intent: Option<NumberOrString<'a>>,
     /// `repeatCount`
     #[cfg_attr(rust_js, rust_js::name = "repeatCount")]
-    pub repeat_count: Option<&'a str>,
+    pub repeat_count: Option<NumberOrString<'a>>,
     /// `repeatDur`
     #[cfg_attr(rust_js, rust_js::name = "repeatDur")]
-    pub repeat_dur: Option<&'a str>,
+    pub repeat_dur: Option<NumberOrString<'a>>,
     /// `requiredExtensions`
     #[cfg_attr(rust_js, rust_js::name = "requiredExtensions")]
-    pub required_extensions: Option<&'a str>,
+    pub required_extensions: Option<NumberOrString<'a>>,
     /// `requiredFeatures`
     #[cfg_attr(rust_js, rust_js::name = "requiredFeatures")]
-    pub required_features: Option<&'a str>,
+    pub required_features: Option<NumberOrString<'a>>,
     /// `restart`
-    pub restart: Option<&'a str>,
+    pub restart: Option<NumberOrString<'a>>,
     /// `result`
     pub result: Option<&'a str>,
     /// `rotate`
-    pub rotate: Option<&'a str>,
+    pub rotate: Option<NumberOrString<'a>>,
     /// `rx`
-    pub rx: Option<&'a str>,
+    pub rx: Option<NumberOrString<'a>>,
     /// `ry`
-    pub ry: Option<&'a str>,
+    pub ry: Option<NumberOrString<'a>>,
     /// `scale`
-    pub scale: Option<&'a str>,
+    pub scale: Option<NumberOrString<'a>>,
     /// `seed`
-    pub seed: Option<&'a str>,
+    pub seed: Option<NumberOrString<'a>>,
     /// `shapeRendering`
     #[cfg_attr(rust_js, rust_js::name = "shapeRendering")]
-    pub shape_rendering: Option<&'a str>,
+    pub shape_rendering: Option<NumberOrString<'a>>,
     /// `slope`
-    pub slope: Option<&'a str>,
+    pub slope: Option<NumberOrString<'a>>,
     /// `spacing`
-    pub spacing: Option<&'a str>,
+    pub spacing: Option<NumberOrString<'a>>,
     /// `specularConstant`
     #[cfg_attr(rust_js, rust_js::name = "specularConstant")]
-    pub specular_constant: Option<&'a str>,
+    pub specular_constant: Option<NumberOrString<'a>>,
     /// `specularExponent`
     #[cfg_attr(rust_js, rust_js::name = "specularExponent")]
-    pub specular_exponent: Option<&'a str>,
+    pub specular_exponent: Option<NumberOrString<'a>>,
     /// `speed`
-    pub speed: Option<&'a str>,
+    pub speed: Option<NumberOrString<'a>>,
     /// `spreadMethod`
     #[cfg_attr(rust_js, rust_js::name = "spreadMethod")]
     pub spread_method: Option<&'a str>,
     /// `startOffset`
     #[cfg_attr(rust_js, rust_js::name = "startOffset")]
-    pub start_offset: Option<&'a str>,
+    pub start_offset: Option<NumberOrString<'a>>,
     /// `stdDeviation`
     #[cfg_attr(rust_js, rust_js::name = "stdDeviation")]
-    pub std_deviation: Option<&'a str>,
+    pub std_deviation: Option<NumberOrString<'a>>,
     /// `stemh`
-    pub stemh: Option<&'a str>,
+    pub stemh: Option<NumberOrString<'a>>,
     /// `stemv`
-    pub stemv: Option<&'a str>,
+    pub stemv: Option<NumberOrString<'a>>,
     /// `stitchTiles`
     #[cfg_attr(rust_js, rust_js::name = "stitchTiles")]
-    pub stitch_tiles: Option<&'a str>,
+    pub stitch_tiles: Option<NumberOrString<'a>>,
     /// `stopColor`
     #[cfg_attr(rust_js, rust_js::name = "stopColor")]
     pub stop_color: Option<&'a str>,
     /// `stopOpacity`
     #[cfg_attr(rust_js, rust_js::name = "stopOpacity")]
-    pub stop_opacity: Option<&'a str>,
+    pub stop_opacity: Option<NumberOrString<'a>>,
     /// `strikethroughPosition`
     #[cfg_attr(rust_js, rust_js::name = "strikethroughPosition")]
-    pub strikethrough_position: Option<&'a str>,
+    pub strikethrough_position: Option<NumberOrString<'a>>,
     /// `strikethroughThickness`
     #[cfg_attr(rust_js, rust_js::name = "strikethroughThickness")]
-    pub strikethrough_thickness: Option<&'a str>,
+    pub strikethrough_thickness: Option<NumberOrString<'a>>,
     /// `string`
-    pub string: Option<&'a str>,
+    pub string: Option<NumberOrString<'a>>,
     /// `stroke`
     pub stroke: Option<&'a str>,
     /// `strokeDasharray`
     #[cfg_attr(rust_js, rust_js::name = "strokeDasharray")]
-    pub stroke_dasharray: Option<&'a str>,
+    pub stroke_dasharray: Option<NumberOrString<'a>>,
     /// `strokeDashoffset`
     #[cfg_attr(rust_js, rust_js::name = "strokeDashoffset")]
-    pub stroke_dashoffset: Option<&'a str>,
+    pub stroke_dashoffset: Option<NumberOrString<'a>>,
     /// `strokeLinecap`
     #[cfg_attr(rust_js, rust_js::name = "strokeLinecap")]
     pub stroke_linecap: Option<&'a str>,
@@ -1987,121 +1987,121 @@ pub struct SVGAttributes<'a> {
     pub stroke_linejoin: Option<&'a str>,
     /// `strokeMiterlimit`
     #[cfg_attr(rust_js, rust_js::name = "strokeMiterlimit")]
-    pub stroke_miterlimit: Option<&'a str>,
+    pub stroke_miterlimit: Option<NumberOrString<'a>>,
     /// `strokeOpacity`
     #[cfg_attr(rust_js, rust_js::name = "strokeOpacity")]
-    pub stroke_opacity: Option<&'a str>,
+    pub stroke_opacity: Option<NumberOrString<'a>>,
     /// `strokeWidth`
     #[cfg_attr(rust_js, rust_js::name = "strokeWidth")]
-    pub stroke_width: Option<&'a str>,
+    pub stroke_width: Option<NumberOrString<'a>>,
     /// `surfaceScale`
     #[cfg_attr(rust_js, rust_js::name = "surfaceScale")]
-    pub surface_scale: Option<&'a str>,
+    pub surface_scale: Option<NumberOrString<'a>>,
     /// `systemLanguage`
     #[cfg_attr(rust_js, rust_js::name = "systemLanguage")]
-    pub system_language: Option<&'a str>,
+    pub system_language: Option<NumberOrString<'a>>,
     /// `tableValues`
     #[cfg_attr(rust_js, rust_js::name = "tableValues")]
-    pub table_values: Option<&'a str>,
+    pub table_values: Option<NumberOrString<'a>>,
     /// `targetX`
     #[cfg_attr(rust_js, rust_js::name = "targetX")]
-    pub target_x: Option<&'a str>,
+    pub target_x: Option<NumberOrString<'a>>,
     /// `targetY`
     #[cfg_attr(rust_js, rust_js::name = "targetY")]
-    pub target_y: Option<&'a str>,
+    pub target_y: Option<NumberOrString<'a>>,
     /// `textAnchor`
     #[cfg_attr(rust_js, rust_js::name = "textAnchor")]
     pub text_anchor: Option<&'a str>,
     /// `textDecoration`
     #[cfg_attr(rust_js, rust_js::name = "textDecoration")]
-    pub text_decoration: Option<&'a str>,
+    pub text_decoration: Option<NumberOrString<'a>>,
     /// `textLength`
     #[cfg_attr(rust_js, rust_js::name = "textLength")]
-    pub text_length: Option<&'a str>,
+    pub text_length: Option<NumberOrString<'a>>,
     /// `textRendering`
     #[cfg_attr(rust_js, rust_js::name = "textRendering")]
-    pub text_rendering: Option<&'a str>,
+    pub text_rendering: Option<NumberOrString<'a>>,
     /// `to`
-    pub to: Option<&'a str>,
+    pub to: Option<NumberOrString<'a>>,
     /// `transform`
     pub transform: Option<&'a str>,
     /// `u1`
-    pub u1: Option<&'a str>,
+    pub u1: Option<NumberOrString<'a>>,
     /// `u2`
-    pub u2: Option<&'a str>,
+    pub u2: Option<NumberOrString<'a>>,
     /// `underlinePosition`
     #[cfg_attr(rust_js, rust_js::name = "underlinePosition")]
-    pub underline_position: Option<&'a str>,
+    pub underline_position: Option<NumberOrString<'a>>,
     /// `underlineThickness`
     #[cfg_attr(rust_js, rust_js::name = "underlineThickness")]
-    pub underline_thickness: Option<&'a str>,
+    pub underline_thickness: Option<NumberOrString<'a>>,
     /// `unicode`
-    pub unicode: Option<&'a str>,
+    pub unicode: Option<NumberOrString<'a>>,
     /// `unicodeBidi`
     #[cfg_attr(rust_js, rust_js::name = "unicodeBidi")]
-    pub unicode_bidi: Option<&'a str>,
+    pub unicode_bidi: Option<NumberOrString<'a>>,
     /// `unicodeRange`
     #[cfg_attr(rust_js, rust_js::name = "unicodeRange")]
-    pub unicode_range: Option<&'a str>,
+    pub unicode_range: Option<NumberOrString<'a>>,
     /// `unitsPerEm`
     #[cfg_attr(rust_js, rust_js::name = "unitsPerEm")]
-    pub units_per_em: Option<&'a str>,
+    pub units_per_em: Option<NumberOrString<'a>>,
     /// `vAlphabetic`
     #[cfg_attr(rust_js, rust_js::name = "vAlphabetic")]
-    pub v_alphabetic: Option<&'a str>,
+    pub v_alphabetic: Option<NumberOrString<'a>>,
     /// `values`
     pub values: Option<&'a str>,
     /// `vectorEffect`
     #[cfg_attr(rust_js, rust_js::name = "vectorEffect")]
-    pub vector_effect: Option<&'a str>,
+    pub vector_effect: Option<NumberOrString<'a>>,
     /// `version`
     pub version: Option<&'a str>,
     /// `vertAdvY`
     #[cfg_attr(rust_js, rust_js::name = "vertAdvY")]
-    pub vert_adv_y: Option<&'a str>,
+    pub vert_adv_y: Option<NumberOrString<'a>>,
     /// `vertOriginX`
     #[cfg_attr(rust_js, rust_js::name = "vertOriginX")]
-    pub vert_origin_x: Option<&'a str>,
+    pub vert_origin_x: Option<NumberOrString<'a>>,
     /// `vertOriginY`
     #[cfg_attr(rust_js, rust_js::name = "vertOriginY")]
-    pub vert_origin_y: Option<&'a str>,
+    pub vert_origin_y: Option<NumberOrString<'a>>,
     /// `vHanging`
     #[cfg_attr(rust_js, rust_js::name = "vHanging")]
-    pub v_hanging: Option<&'a str>,
+    pub v_hanging: Option<NumberOrString<'a>>,
     /// `vIdeographic`
     #[cfg_attr(rust_js, rust_js::name = "vIdeographic")]
-    pub v_ideographic: Option<&'a str>,
+    pub v_ideographic: Option<NumberOrString<'a>>,
     /// `viewBox`
     #[cfg_attr(rust_js, rust_js::name = "viewBox")]
     pub view_box: Option<&'a str>,
     /// `viewTarget`
     #[cfg_attr(rust_js, rust_js::name = "viewTarget")]
-    pub view_target: Option<&'a str>,
+    pub view_target: Option<NumberOrString<'a>>,
     /// `visibility`
-    pub visibility: Option<&'a str>,
+    pub visibility: Option<NumberOrString<'a>>,
     /// `vMathematical`
     #[cfg_attr(rust_js, rust_js::name = "vMathematical")]
-    pub v_mathematical: Option<&'a str>,
+    pub v_mathematical: Option<NumberOrString<'a>>,
     /// `widths`
-    pub widths: Option<&'a str>,
+    pub widths: Option<NumberOrString<'a>>,
     /// `wordSpacing`
     #[cfg_attr(rust_js, rust_js::name = "wordSpacing")]
-    pub word_spacing: Option<&'a str>,
+    pub word_spacing: Option<NumberOrString<'a>>,
     /// `writingMode`
     #[cfg_attr(rust_js, rust_js::name = "writingMode")]
-    pub writing_mode: Option<&'a str>,
+    pub writing_mode: Option<NumberOrString<'a>>,
     /// `x1`
-    pub x1: Option<&'a str>,
+    pub x1: Option<NumberOrString<'a>>,
     /// `x2`
-    pub x2: Option<&'a str>,
+    pub x2: Option<NumberOrString<'a>>,
     /// `x`
-    pub x: Option<&'a str>,
+    pub x: Option<NumberOrString<'a>>,
     /// `xChannelSelector`
     #[cfg_attr(rust_js, rust_js::name = "xChannelSelector")]
     pub x_channel_selector: Option<&'a str>,
     /// `xHeight`
     #[cfg_attr(rust_js, rust_js::name = "xHeight")]
-    pub x_height: Option<&'a str>,
+    pub x_height: Option<NumberOrString<'a>>,
     /// `xlinkActuate`
     #[cfg_attr(rust_js, rust_js::name = "xlinkActuate")]
     pub xlink_actuate: Option<&'a str>,
@@ -2138,16 +2138,16 @@ pub struct SVGAttributes<'a> {
     #[cfg_attr(rust_js, rust_js::name = "xmlSpace")]
     pub xml_space: Option<&'a str>,
     /// `y1`
-    pub y1: Option<&'a str>,
+    pub y1: Option<NumberOrString<'a>>,
     /// `y2`
-    pub y2: Option<&'a str>,
+    pub y2: Option<NumberOrString<'a>>,
     /// `y`
-    pub y: Option<&'a str>,
+    pub y: Option<NumberOrString<'a>>,
     /// `yChannelSelector`
     #[cfg_attr(rust_js, rust_js::name = "yChannelSelector")]
     pub y_channel_selector: Option<&'a str>,
     /// `z`
-    pub z: Option<&'a str>,
+    pub z: Option<NumberOrString<'a>>,
     /// `zoomAndPan`
     #[cfg_attr(rust_js, rust_js::name = "zoomAndPan")]
     pub zoom_and_pan: Option<&'a str>,
@@ -2267,7 +2267,7 @@ pub struct ButtonHTMLAttributes<'a> {
     /// `type`
     pub r#type: Option<&'a str>,
     /// `value`
-    pub value: Option<&'a str>,
+    pub value: Option<NumberOrString<'a>>,
     /// What `ButtonHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub html: HTMLAttributes<'a>,
@@ -2278,9 +2278,9 @@ pub struct ButtonHTMLAttributes<'a> {
 #[derive(Default)]
 pub struct CanvasHTMLAttributes<'a> {
     /// `height`
-    pub height: Option<&'a str>,
+    pub height: Option<NumberOrString<'a>>,
     /// `width`
-    pub width: Option<&'a str>,
+    pub width: Option<NumberOrString<'a>>,
     /// What `CanvasHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub html: HTMLAttributes<'a>,
@@ -2293,7 +2293,7 @@ pub struct ColHTMLAttributes<'a> {
     /// `span`
     pub span: Option<f64>,
     /// `width`
-    pub width: Option<&'a str>,
+    pub width: Option<NumberOrString<'a>>,
     /// What `ColHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub html: HTMLAttributes<'a>,
@@ -2315,7 +2315,7 @@ pub struct ColgroupHTMLAttributes<'a> {
 #[derive(Default)]
 pub struct DataHTMLAttributes<'a> {
     /// `value`
-    pub value: Option<&'a str>,
+    pub value: Option<NumberOrString<'a>>,
     /// What `DataHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub html: HTMLAttributes<'a>,
@@ -2372,13 +2372,13 @@ pub struct DialogHTMLAttributes<'a> {
 #[derive(Default)]
 pub struct EmbedHTMLAttributes<'a> {
     /// `height`
-    pub height: Option<&'a str>,
+    pub height: Option<NumberOrString<'a>>,
     /// `src`
     pub src: Option<&'a str>,
     /// `type`
     pub r#type: Option<&'a str>,
     /// `width`
-    pub width: Option<&'a str>,
+    pub width: Option<NumberOrString<'a>>,
     /// What `EmbedHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub html: HTMLAttributes<'a>,
@@ -2451,9 +2451,9 @@ pub struct IframeHTMLAttributes<'a> {
     pub allow_transparency: Option<bool>,
     /// `frameBorder`
     #[cfg_attr(rust_js, rust_js::name = "frameBorder")]
-    pub frame_border: Option<&'a str>,
+    pub frame_border: Option<NumberOrString<'a>>,
     /// `height`
-    pub height: Option<&'a str>,
+    pub height: Option<NumberOrString<'a>>,
     /// `loading`
     pub loading: Option<&'a str>,
     /// `marginHeight`
@@ -2479,7 +2479,7 @@ pub struct IframeHTMLAttributes<'a> {
     #[cfg_attr(rust_js, rust_js::name = "srcDoc")]
     pub src_doc: Option<&'a str>,
     /// `width`
-    pub width: Option<&'a str>,
+    pub width: Option<NumberOrString<'a>>,
     /// What `IframeHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub html: HTMLAttributes<'a>,
@@ -2500,7 +2500,7 @@ pub struct ImgHTMLAttributes<'a> {
     #[cfg_attr(rust_js, rust_js::name = "fetchPriority")]
     pub fetch_priority: Option<&'a str>,
     /// `height`
-    pub height: Option<&'a str>,
+    pub height: Option<NumberOrString<'a>>,
     /// `loading`
     pub loading: Option<&'a str>,
     /// `referrerPolicy`
@@ -2517,7 +2517,7 @@ pub struct ImgHTMLAttributes<'a> {
     #[cfg_attr(rust_js, rust_js::name = "useMap")]
     pub use_map: Option<&'a str>,
     /// `width`
-    pub width: Option<&'a str>,
+    pub width: Option<NumberOrString<'a>>,
     /// What `ImgHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub html: HTMLAttributes<'a>,
@@ -2549,7 +2549,7 @@ pub struct InputHTMLAttributes<'a> {
     #[cfg_attr(rust_js, rust_js::name = "autoComplete")]
     pub auto_complete: Option<&'a str>,
     /// `capture`
-    pub capture: Option<&'a str>,
+    pub capture: Option<Booleanish<'a>>,
     /// `checked`
     pub checked: Option<bool>,
     /// `disabled`
@@ -2569,16 +2569,16 @@ pub struct InputHTMLAttributes<'a> {
     #[cfg_attr(rust_js, rust_js::name = "formTarget")]
     pub form_target: Option<&'a str>,
     /// `height`
-    pub height: Option<&'a str>,
+    pub height: Option<NumberOrString<'a>>,
     /// `list`
     pub list: Option<&'a str>,
     /// `max`
-    pub max: Option<&'a str>,
+    pub max: Option<NumberOrString<'a>>,
     /// `maxLength`
     #[cfg_attr(rust_js, rust_js::name = "maxLength")]
     pub max_length: Option<f64>,
     /// `min`
-    pub min: Option<&'a str>,
+    pub min: Option<NumberOrString<'a>>,
     /// `minLength`
     #[cfg_attr(rust_js, rust_js::name = "minLength")]
     pub min_length: Option<f64>,
@@ -2600,13 +2600,13 @@ pub struct InputHTMLAttributes<'a> {
     /// `src`
     pub src: Option<&'a str>,
     /// `step`
-    pub step: Option<&'a str>,
+    pub step: Option<NumberOrString<'a>>,
     /// `type`
     pub r#type: Option<&'a str>,
     /// `value`
-    pub value: Option<&'a str>,
+    pub value: Option<NumberOrString<'a>>,
     /// `width`
-    pub width: Option<&'a str>,
+    pub width: Option<NumberOrString<'a>>,
     /// `onChange`
     #[cfg_attr(rust_js, rust_js::name = "onChange")]
     pub on_change: Option<event::ChangeEventHandler>,
@@ -2657,7 +2657,7 @@ pub struct LabelHTMLAttributes<'a> {
 #[derive(Default)]
 pub struct LiHTMLAttributes<'a> {
     /// `value`
-    pub value: Option<&'a str>,
+    pub value: Option<NumberOrString<'a>>,
     /// What `LiHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub html: HTMLAttributes<'a>,
@@ -2797,13 +2797,13 @@ pub struct MeterHTMLAttributes<'a> {
     /// `low`
     pub low: Option<f64>,
     /// `max`
-    pub max: Option<&'a str>,
+    pub max: Option<NumberOrString<'a>>,
     /// `min`
-    pub min: Option<&'a str>,
+    pub min: Option<NumberOrString<'a>>,
     /// `optimum`
     pub optimum: Option<f64>,
     /// `value`
-    pub value: Option<&'a str>,
+    pub value: Option<NumberOrString<'a>>,
     /// What `MeterHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub html: HTMLAttributes<'a>,
@@ -2832,7 +2832,7 @@ pub struct ObjectHTMLAttributes<'a> {
     /// `form`
     pub form: Option<&'a str>,
     /// `height`
-    pub height: Option<&'a str>,
+    pub height: Option<NumberOrString<'a>>,
     /// `name`
     pub name: Option<&'a str>,
     /// `type`
@@ -2841,7 +2841,7 @@ pub struct ObjectHTMLAttributes<'a> {
     #[cfg_attr(rust_js, rust_js::name = "useMap")]
     pub use_map: Option<&'a str>,
     /// `width`
-    pub width: Option<&'a str>,
+    pub width: Option<NumberOrString<'a>>,
     /// `wmode`
     pub wmode: Option<&'a str>,
     /// What `ObjectHTMLAttributes` extends.
@@ -2888,7 +2888,7 @@ pub struct OptionHTMLAttributes<'a> {
     /// `selected`
     pub selected: Option<bool>,
     /// `value`
-    pub value: Option<&'a str>,
+    pub value: Option<NumberOrString<'a>>,
     /// What `OptionHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub html: HTMLAttributes<'a>,
@@ -2917,7 +2917,7 @@ pub struct ParamHTMLAttributes<'a> {
     /// `name`
     pub name: Option<&'a str>,
     /// `value`
-    pub value: Option<&'a str>,
+    pub value: Option<NumberOrString<'a>>,
     /// What `ParamHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub html: HTMLAttributes<'a>,
@@ -2928,9 +2928,9 @@ pub struct ParamHTMLAttributes<'a> {
 #[derive(Default)]
 pub struct ProgressHTMLAttributes<'a> {
     /// `max`
-    pub max: Option<&'a str>,
+    pub max: Option<NumberOrString<'a>>,
     /// `value`
-    pub value: Option<&'a str>,
+    pub value: Option<NumberOrString<'a>>,
     /// What `ProgressHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub html: HTMLAttributes<'a>,
@@ -3003,7 +3003,7 @@ pub struct SelectHTMLAttributes<'a> {
     /// `size`
     pub size: Option<f64>,
     /// `value`
-    pub value: Option<&'a str>,
+    pub value: Option<NumberOrString<'a>>,
     /// `onChange`
     #[cfg_attr(rust_js, rust_js::name = "onChange")]
     pub on_change: Option<event::ChangeEventHandler>,
@@ -3017,7 +3017,7 @@ pub struct SelectHTMLAttributes<'a> {
 #[derive(Default)]
 pub struct SourceHTMLAttributes<'a> {
     /// `height`
-    pub height: Option<&'a str>,
+    pub height: Option<NumberOrString<'a>>,
     /// `media`
     pub media: Option<&'a str>,
     /// `sizes`
@@ -3030,7 +3030,7 @@ pub struct SourceHTMLAttributes<'a> {
     /// `type`
     pub r#type: Option<&'a str>,
     /// `width`
-    pub width: Option<&'a str>,
+    pub width: Option<NumberOrString<'a>>,
     /// What `SourceHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub html: HTMLAttributes<'a>,
@@ -3069,10 +3069,10 @@ pub struct TableHTMLAttributes<'a> {
     pub border: Option<f64>,
     /// `cellPadding`
     #[cfg_attr(rust_js, rust_js::name = "cellPadding")]
-    pub cell_padding: Option<&'a str>,
+    pub cell_padding: Option<NumberOrString<'a>>,
     /// `cellSpacing`
     #[cfg_attr(rust_js, rust_js::name = "cellSpacing")]
-    pub cell_spacing: Option<&'a str>,
+    pub cell_spacing: Option<NumberOrString<'a>>,
     /// `frame`
     pub frame: Option<bool>,
     /// `rules`
@@ -3080,7 +3080,7 @@ pub struct TableHTMLAttributes<'a> {
     /// `summary`
     pub summary: Option<&'a str>,
     /// `width`
-    pub width: Option<&'a str>,
+    pub width: Option<NumberOrString<'a>>,
     /// What `TableHTMLAttributes` extends.
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub html: HTMLAttributes<'a>,
@@ -3120,7 +3120,7 @@ pub struct TextareaHTMLAttributes<'a> {
     /// `rows`
     pub rows: Option<f64>,
     /// `value`
-    pub value: Option<&'a str>,
+    pub value: Option<NumberOrString<'a>>,
     /// `wrap`
     pub wrap: Option<&'a str>,
     /// `onChange`
@@ -3150,9 +3150,9 @@ pub struct TdHTMLAttributes<'a> {
     /// `abbr`
     pub abbr: Option<&'a str>,
     /// `height`
-    pub height: Option<&'a str>,
+    pub height: Option<NumberOrString<'a>>,
     /// `width`
-    pub width: Option<&'a str>,
+    pub width: Option<NumberOrString<'a>>,
     /// `valign`
     pub valign: Option<&'a str>,
     /// What `TdHTMLAttributes` extends.
@@ -3220,14 +3220,14 @@ pub struct TrackHTMLAttributes<'a> {
 #[derive(Default)]
 pub struct VideoHTMLAttributes<'a> {
     /// `height`
-    pub height: Option<&'a str>,
+    pub height: Option<NumberOrString<'a>>,
     /// `playsInline`
     #[cfg_attr(rust_js, rust_js::name = "playsInline")]
     pub plays_inline: Option<bool>,
     /// `poster`
     pub poster: Option<&'a str>,
     /// `width`
-    pub width: Option<&'a str>,
+    pub width: Option<NumberOrString<'a>>,
     /// `disablePictureInPicture`
     #[cfg_attr(rust_js, rust_js::name = "disablePictureInPicture")]
     pub disable_picture_in_picture: Option<bool>,
