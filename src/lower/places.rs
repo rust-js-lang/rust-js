@@ -309,11 +309,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Its variable must be immutable. That's not enough on its own: `let mut
     /// s = r;` moves `r`, and then `s.origin.x = 0` changes the object `r`
     /// still names. So the variable must also be `Copy` (read, never moved:
-    /// the read copies it if needed) or hold nothing changed in place.
+    /// the read copies it if needed) or hold nothing changed in place. Nor
+    /// is one reached through a `&mut`, `e.n` of an `e: &mut N`: what's
+    /// done meanwhile changes it through the same reference.
     pub(super) fn stable_place(&self, e: ExprId) -> Option<Expr> {
         let (place, mutable) = self.place(e)?;
         let mut root = self.strip(e);
         while let ExprKind::Field { lhs, .. } | ExprKind::Deref { arg: lhs } = self.thir[root].kind {
+            if matches!(self.thir[root].kind, ExprKind::Deref { .. })
+                && matches!(
+                    self.thir[lhs].ty.kind(),
+                    ty::Ref(_, _, ty::Mutability::Mut) | ty::RawPtr(..)
+                )
+            {
+                return None;
+            }
             root = self.strip(lhs);
         }
         let ty = self.thir[root].ty;

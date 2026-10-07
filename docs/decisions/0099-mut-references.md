@@ -33,6 +33,11 @@ it, in a `Vec` or a struct, or return it.
 
 ## Decision
 
+(Amended: a place reached through a `&mut` or a raw pointer, `e.n` of an
+`e: &mut N`, isn't a stable one, read as it is later: what's done
+meanwhile writes it through the same reference, as `<p>{e.n}{{ e.n = 5; 1
+}}</p>` did, reading 5. It's read first.)
+
 **A `&mut` a variable holds names its place,** as a `ref mut` binding does
 (ADR 0033). `*r` is the place, read or written:
 

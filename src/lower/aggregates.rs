@@ -96,7 +96,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // as Rust does, so any field with effects runs first.
                 None => {
                     let exprs: Vec<ExprId> = adt.fields.iter().map(|f| f.expr).collect();
-                    let values = self.operands(&exprs, out)?;
+                    let names: Vec<String> = adt
+                        .fields
+                        .iter()
+                        .map(|f| spill_name(variant.fields[f.name].name.as_str()))
+                        .collect();
+                    let values = self.operands_named(&exprs, &names, out)?;
                     let mut spilled = Vec::new();
                     for (field, value) in adt.fields.iter().zip(values) {
                         let value = if value.has_effects() {
@@ -149,9 +154,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // them in declaration order, so every object of a type has the same
         // shape. If that reorders two calls, they go into `const`s first.
         let exprs: Vec<ExprId> = adt.fields.iter().map(|f| f.expr).collect();
+        // One read first is named as its field is.
+        let names: Vec<String> = adt
+            .fields
+            .iter()
+            .map(|f| spill_name(variant.fields[f.name].name.as_str()))
+            .collect();
         let mut values = match spilled_fields {
             Some(values) => values,
-            None => self.operands(&exprs, out)?,
+            None => self.operands_named(&exprs, &names, out)?,
         };
         let reordered = !adt.fields.is_sorted_by_key(|f| f.name);
         if reordered && values.iter().filter(|v| v.has_effects()).count() > 1 {
@@ -333,5 +344,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             params.into_iter().map(Into::into).collect(),
             vec![StmtKind::Return(Some(value)).at(self.js_span(span))],
         ))
+    }
+}
+
+/// What a field read first is named: its name, `href`, or of a tuple
+/// struct's, `0`, which no JS variable is, `tmp`.
+fn spill_name(field: &str) -> String {
+    match field.starts_with(|c: char| c.is_alphabetic() || c == '_') {
+        true => field.to_string(),
+        false => "tmp".to_string(),
     }
 }

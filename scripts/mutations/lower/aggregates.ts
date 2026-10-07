@@ -75,4 +75,16 @@ export const mutations: Mutation[] = [
     replace: "        let value = if false {\n",
     tests: ["test/compiler.test.ts", "-t", "untagged enum"],
   },
+  {
+    name: "tuple-field-named",
+    breaks: "a tuple struct's field read first is named `0`, `const 0 = ..`, which no JS variable is",
+    file: "src/lower/aggregates.rs",
+    find: "        false => \"tmp\".to_string(),",
+    replace: "        false => field.to_string(),",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "drop_functions"
+    ]
+  },
 ];

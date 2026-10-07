@@ -20,7 +20,19 @@ const className$1 = className;
 
 **An attribute or a child already a `const`, or a variable nothing writes
 again, is read as it is**, as a value a hook or a closure captures is: it
-reads the same wherever it's read.
+reads the same wherever it's read. So is a field of one of plain Rust
+data, `p.size`, and a comparison, a conditional, `&&` or `||` of what
+reads alike: `width={p.size === "S" ? "12px" : "20px"}`, `todos.length ===
+0`. Not one whose type has a `&mut`, a raw pointer, interior mutability
+(a `Cell`, an `Rc<RefCell<..>>`) or a JS object: what's done meanwhile
+changes it, a getter's `n.textContent` too. `p.title.map(|t| ..)`, which
+reads its option twice, reads such a field as it is too, where it was
+`const t = p.title`. (Amended: a field read went in a `const` first.)
+
+**A value read first is named as what it's read into is**: an attribute's
+`const className`, a struct's field's `const href`, where a field made
+before a later one's statements was `tmp`; of a tuple struct's, `0`, no
+JS name, `tmp`. (Amended.)
 
 **Only a child that does more than read, and whose JS needs a statement,
 reads the attributes before it first**, its statements lowered aside and

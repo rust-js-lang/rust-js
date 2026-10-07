@@ -170,8 +170,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (option, present) = match fused {
                     Some((kept, value)) => (value, kept),
                     None => {
-                        let option = match option.kind {
+                        // Read twice: a variable, or a field of a plain Rust value,
+                        // `p.title`, as it is; a getter's, in a `const` first.
+                        let option = match &option.kind {
                             js::ExprKind::Var(_) => option,
+                            js::ExprKind::Member(object, _) if matches!(&object.kind, js::ExprKind::Var(name) if self.plain_value(name)) => {
+                                option
+                            }
                             _ => self.spill(&base, option, out),
                         };
                         let present = Expr::bin(Op::LooseNe, option.clone(), Expr::null());

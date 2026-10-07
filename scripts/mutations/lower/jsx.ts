@@ -158,16 +158,16 @@ export const mutations: Mutation[] = [
     name: "comparison-spilled",
     breaks: "a comparison of what reads the same is spilled before a later child's statement: `const condition = version === \"Canary\"`",
     file: "src/lower/jsx.rs",
-    find: "                self.reads_alike(a, out) && self.reads_alike(b, out)\n",
-    replace: "                false && self.reads_alike(a, out) && self.reads_alike(b, out)\n",
+    find: "            ) => self.reads_alike(a, out) && self.reads_alike(b, out),\n",
+    replace: "            ) => false && self.reads_alike(a, out) && self.reads_alike(b, out),\n",
     tests: ["test/jsx.test.ts", "-t", "comparison of what reads the same"],
   },
   {
     name: "comparison-of-anything-alike",
     breaks: "a comparison of a variable written later reads alike, and JSX reads it after the write",
     file: "src/lower/jsx.rs",
-    find: "                self.reads_alike(a, out) && self.reads_alike(b, out)\n",
-    replace: "                true\n",
+    find: "            ) => self.reads_alike(a, out) && self.reads_alike(b, out),\n",
+    replace: "            ) => true,\n",
     tests: ["test/jsx.test.ts"],
   },
   {
@@ -201,5 +201,65 @@ export const mutations: Mutation[] = [
     find: "            \"...\" => Prop::Spread(value),\n",
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "spread another style"],
+  },
+  {
+    name: "field-read-hoisted",
+    breaks: "a field of a plain Rust value nothing writes again is read into a `const` before a later child's statement, `const width = p.size === \"S\" ? ..`, where it stays in place",
+    file: "src/lower/jsx.rs",
+    find: "            js::ExprKind::Member(object, _) => {\n",
+    replace: "            js::ExprKind::Member(object, _) if false => {\n",
+    tests: [
+      "test/jsx.test.ts",
+      "-t",
+      "field of what never changes in place"
+    ]
+  },
+  {
+    name: "conditional-hoisted",
+    breaks: "a conditional of what reads the same is read into a `const` before a later child's statement, `width={width}`",
+    file: "src/lower/jsx.rs",
+    find: "            js::ExprKind::Cond(test, yes, no) => {\n",
+    replace: "            js::ExprKind::Cond(test, yes, no) if false => {\n",
+    tests: [
+      "test/jsx.test.ts",
+      "-t",
+      "field of what never changes in place"
+    ]
+  },
+  {
+    name: "logical-hoisted",
+    breaks: "`status != null && status.length !== 0` is read into a `const condition` before a later child's statement",
+    file: "src/lower/jsx.rs",
+    find: "js::Op::LooseNe | js::Op::And | js::Op::Or,",
+    replace: "js::Op::LooseNe,",
+    tests: [
+      "test/jsx.test.ts",
+      "-t",
+      "comparison of what reads the same"
+    ]
+  },
+  {
+    name: "cell-field-in-place",
+    breaks: "a field through a `Cell`, `count.get()`, is read after what sets it, `<p>5</p>`, where it's `<p>0</p>`",
+    file: "src/lower/jsx.rs",
+    find: "                            && t.is_freeze(self.tcx, self.typing_env)\n",
+    replace: "",
+    tests: [
+      "test/jsx.test.ts",
+      "-t",
+      "field of what never changes in place"
+    ]
+  },
+  {
+    name: "getter-in-place",
+    breaks: "a JS object's getter, `n.textContent`, is read after what writes it",
+    file: "src/lower/jsx.rs",
+    find: "                            && !self.is_js_object(t)\n",
+    replace: "",
+    tests: [
+      "test/jsx.test.ts",
+      "-t",
+      "field of what never changes in place"
+    ]
   },
 ];
