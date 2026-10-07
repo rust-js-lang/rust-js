@@ -434,6 +434,41 @@ static PINNED: Option<ElementType> = Some(element_type(&IconBadge));
   expect([refused.exitCode === 0, refused.stderr.toString().includes("statics of type")], refused.stderr.toString()).toEqual([false, true]);
 });
 
+// A component's children, each kept as `Children.forEach` gives it, for
+// good, as react.dev's Challenges keeps them, each given a ref of its own,
+// `useRef(kept.map(() => createRef()))`, as its Navigation gives each of its
+// buttons one.
+test("children kept from Children.forEach, each given a createRef", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::children::{self, Child};
+use react::webapi::HTMLButtonElement;
+use react::{JSX, ReactNode, create_ref, jsx, use_ref};
+pub struct ListProps<C: ReactNode> {
+    pub children: C,
+}
+pub fn List<C: ReactNode>(ListProps { children }: ListProps<C>) -> JSX::Element {
+    let mut kept: Vec<Child<'static>> = Vec::new();
+    children::for_each(&children, |child| kept.push(child));
+    let kept: &'static [Child<'static>] = Vec::leak(kept);
+    let refs = use_ref(kept.iter().map(|_| create_ref::<&HTMLButtonElement>()).collect::<Vec<_>>());
+    jsx! {
+        <ul>
+            {kept.iter().enumerate().map(|(i, &child)| jsx! {
+                <li key={i}><button ref={refs.current()[i]}>{child}</button></li>
+            }).collect::<Vec<_>>()}
+        </ul>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("Children.forEach(children, (child) => {\n    kept.push(child);\n  });");
+  expect(jsx).toContain("createRef()");
+  const { List } = await import(join(dir, "lib.jsx"));
+  const { createElement } = await import("react");
+  expect(renderToStaticMarkup(createElement(List, null, "a", createElement("b", null, "x")))).toBe("<ul><li><button>a</button></li><li><button><b>x</b></button></li></ul>");
+});
+
 // A default import is named as the module's `use` renames it, `use
 // next::link::Link as NextLink` is `import NextLink from "next/link"`, as
 // react.dev's MDX `Link` has it, beside its own `Link`; a module that

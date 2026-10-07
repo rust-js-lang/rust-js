@@ -108,9 +108,10 @@ test("no binding is gated later than the first release that has it", () => {
 const LEFT_OUT: Record<string, string[]> = {
   // Legacy APIs (react.dev/reference/react/legacy): class components, which
   // rust-js can't write, and what JSX and hooks replaced. `Children`,
-  // `cloneElement` and `isValidElement` are bound, as MDX components use them.
+  // `cloneElement`, `isValidElement` and `createRef` are bound, as MDX
+  // components use them.
   react: [
-    "Component", "PureComponent", "createElement", "createRef",
+    "Component", "PureComponent", "createElement",
     // Internal, and unstable.
     "__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE", "__COMPILER_RUNTIME", "unstable_useCacheRefresh",
   ],

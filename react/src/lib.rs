@@ -799,6 +799,14 @@ impl<T> RefObject<T> {
     }
 }
 
+/// [`createRef`](https://react.dev/reference/react/createRef): a ref, `{ current:
+/// null }`, made anew each call, as a list keeps one for each of its items,
+/// `useRef(items.map(() => createRef()))`.
+#[cfg_attr(rust_js, rust_js::link_name = "react#createRef")]
+pub fn create_ref<T>() -> RefObject<Option<T>> {
+    unreachable!()
+}
+
 /// [`useImperativeHandle`](https://react.dev/reference/react/useImperativeHandle):
 /// what a parent's ref to this component gets, made by `create`.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useImperativeHandle")]

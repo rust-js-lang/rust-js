@@ -627,4 +627,12 @@ export const mutations: Mutation[] = [
     replace: "            && false\n        {\n            return Some(Std::Pointee);\n",
     tests: ["test/corpus.test.ts", "-t", "boxed_array_iter"]
   },
+  {
+    name: "leak-unknown",
+    breaks: "`Vec::leak(v)` and `Box::leak(b)` are refused, where they're the value itself",
+    file: "src/lower/recognition.rs",
+    find: "            \"leak\" if adt(\"Vec\") || owner.is_box() => Std::Same,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^leak"],
+  },
 ];

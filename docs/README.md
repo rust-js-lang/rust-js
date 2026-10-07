@@ -328,6 +328,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0235 A child shown only if a test holds is `test && child`, where the test can't render](decisions/0235-children-shown-if.md)
 - [0236 What JSX makes is `JSX::Element`, TypeScript's `JSX.Element`](decisions/0236-jsx-element.md)
 - [0237 An `if` whose branch leaves has no `else`](decisions/0237-no-else-after-leaving.md)
+- [0238 A value kept for good is the value; children are kept as JS values](decisions/0238-kept-values-and-children.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)
