@@ -458,12 +458,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Vec::new()
         } else {
             // JS ignores extra arguments, so `|_| ..` is `() => ..`, unless
-            // the closure drops what it's given.
+            // the closure drops what it's given. An `async` closure's `_` is a
+            // binding of that name, which its body moves the argument into.
             let mut params = &body.thir.params.raw[1..];
             while let [rest @ .., last] = params
-                && last.pat.as_deref().is_some_and(|p| matches!(p.kind, PatKind::Wild))
+                && last.pat.as_deref().is_some_and(|p| match &p.kind {
+                    PatKind::Wild => true,
+                    PatKind::Binding {
+                        name, subpattern: None, ..
+                    } => name.as_str() == "_",
+                    _ => false,
+                })
                 && !self.has_drops(last.ty)
             {
+                // What the async body moves out of it is nothing.
+                if let Some(PatKind::Binding { var, .. }) = last.pat.as_deref().map(|p| &p.kind) {
+                    let depth = self.loops.len();
+                    self.locals.vars.insert(
+                        *var,
+                        super::Var {
+                            place: Expr::undefined(),
+                            mutable: false,
+                            depth,
+                        },
+                    );
+                }
                 params = rest;
             }
             self.lower_params(params, self.tcx.def_span(body.def_id), &mut stmts)?
