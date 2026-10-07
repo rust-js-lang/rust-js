@@ -39,6 +39,8 @@ proved and recorded, and what to run before pushing. The
 [architecture](docs/architecture.md) says where a change goes, and which
 boundaries [its test](test/architecture.test.ts) holds it to.
 
+A PR is often merged right after it's opened, and sometimes not: expect either, and check its state before building on its branch. A merged PR's branch is deleted, so don't push to it again; sync `main` instead.
+
 ## Five minutes per local command
 
 A hard rule: every command run on this Mac is given a timeout of at most
