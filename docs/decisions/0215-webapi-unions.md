@@ -2,7 +2,9 @@
 
 Status: Accepted. Amends [0024](0024-web-crate.md) and
 [0102](0102-js-and-webapi.md): a union is one function's parameter, of an
-untagged enum (ADR 0214), where it was a function per member.
+untagged enum (ADR 0214), where it was a function per member. Amended by
+[0229](0229-union-parameters.md): the parameter takes each member as it is,
+`impl IntoNodeOrStr`, where it took the enum, `.into()` at each call.
 
 ## Context
 

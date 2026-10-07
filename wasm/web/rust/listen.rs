@@ -11,7 +11,6 @@ pub fn listen(target: &EventTarget, type_: &str, f: Box<dyn FnMut(&Event)>, cont
         AddEventListenerOptions {
             signal: Some(abort_controller::signal(controller)),
             ..Default::default()
-        }
-        .into(),
+        },
     );
 }

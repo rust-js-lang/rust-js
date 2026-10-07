@@ -1,7 +1,9 @@
 # 0214. An untagged enum is its payload: TS's `string | Blob`
 
 Status: Accepted. Extends [0033](0033-enums-with-fields.md): an enum marked
-`#[rust_js::untagged]` has no tag.
+`#[rust_js::untagged]` has no tag. Amended by [0229](0229-union-parameters.md): a
+binding's parameter of one is `impl` a sealed trait of its members, of an
+ordinary function (ADR 0039), as an `extern` one can't be generic.
 
 ## Context
 

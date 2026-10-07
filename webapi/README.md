@@ -16,7 +16,7 @@ node::set_text_content(b, "+");                          // b.textContent = "+"
 event_target::add_event_listener(b, Click, Box::new(move |e| {
     mouse_event::client_x(e);                            // e is the PointerEvent a button's click is
 }));
-element::append(app, b.into());                          // app.append(b)
+element::append(app, b);                          // app.append(b)
 ```
 
 - Each interface is a type (`Element`, `HTMLInputElement`) and a module of
@@ -35,16 +35,17 @@ element::append(app, b.into());                          // app.append(b)
   `html_input_element::unchecked_from(document::create_element_named(document, "input"))`.
 - A result that may be `null` is an `Option`:
   `document::get_element_by_id(document, "app").expect("the page has an #app")`.
-- A promise is a `Promise<T>`, the js crate's, to `.await`: `window::fetch(window, url.into()).await`
+- A promise is a `Promise<T>`, the js crate's, to `.await`: `window::fetch(window, url).await`
   ([ADR 0029](../docs/decisions/0029-async-await.md)). `js::settle(p).await` is a `Result`.
 - Binary data is JS's `ArrayBuffer` and `Uint8Array`, the js crate's: `response::bytes(r).await`.
-- A union is an untagged enum, whose value is the member itself ([ADR 0215](../docs/decisions/0215-webapi-unions.md)):
-  `element::before(el, "text".into())` is `el.before("text")`, and
-  `response::new_with_body(blob.into())` is `new Response(blob)`. An optional argument adds a form:
-  `window::fetch_with_init(window, url.into(), init)`, `text_encoder::encode_with_input(e, "hi")`.
+- A union parameter takes each member as it is, `impl IntoNodeOrStr`, and a union's value is
+  an untagged enum, the member itself ([ADR 0215](../docs/decisions/0215-webapi-unions.md),
+  [ADR 0229](../docs/decisions/0229-union-parameters.md)): `element::before(el, "text")` is `el.before("text")`, and
+  `response::new_with_body(blob)` is `new Response(blob)`. An optional argument adds a form:
+  `window::fetch_with_init(window, url, init)`, `text_encoder::encode_with_input(e, "hi")`.
 - An options object is a struct of `Option` fields, the rest `..Default::default()`:
   `RequestInit { method: Some("POST"), body: Some(json.into()), ..Default::default() }`.
-- A constructor is `new`, `event::new("ping")`, and `request::new(url.into())`.
+- A constructor is `new`, `event::new("ping")`, and `request::new(url)`.
 - A namespace is a module: `web_assembly::compile(bytes).await` is
   `await WebAssembly.compile(bytes)`. An `object` parameter takes any Rust value
   as `&dyn Any`, such as a struct for an import object.
