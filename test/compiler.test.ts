@@ -1691,6 +1691,21 @@ test("js::directive! and js::export_default! make a module a Next.js route", asy
   expect((await import(join(dir, "generic.js"))).default([7, 8])).toBe(7);
 });
 
+// A `match` of a fieldless enum whose arms each give one table's field named
+// as their variant is the table read by the value, as react.dev's
+// ExpandableCallout reads `variantMap[type]`; an arm of another field keeps
+// the conditional. The corpus's `match_index` runs it beside native Rust.
+test("a match giving a table's field named as each variant reads the table by it", () => {
+  const dir = fixture("match-index");
+  writeFileSync(join(dir, "lib.rs"), readFileSync(join(root, "test/corpus/match_index.rs"), "utf8").replace("fn main()", "pub fn main()"));
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("function variant(kind) {\n  return VARIANTS[kind];\n}");
+  expect(js).toContain("function picked(i) {\n  return VARIANTS[pick(i)];\n}");
+  expect(js).toContain('if (kind === "note") {\n    tmp = VARIANTS.pitfall;');
+  expect(js).toContain('tmp = OTHER.pitfall;');
+});
+
 // `let Some(href) = href.filter(|href| !href.is_empty()) else { .. }` tests
 // what the filter does and names `href`, with no `const` of the `Option`:
 // of text, which is falsy only empty, `if (!href)`, as react.dev's Link

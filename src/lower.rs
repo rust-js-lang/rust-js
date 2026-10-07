@@ -1152,6 +1152,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             } if let Some(test) = self.as_matches(scrutinee, arms, out)? => Ok(test),
             ExprKind::Match {
                 scrutinee, ref arms, ..
+            } if let Some(value) = self.match_index(scrutinee, arms, out)? => Ok(value),
+            ExprKind::Match {
+                scrutinee, ref arms, ..
             } if self.body_query().as_for(e).is_none()
                 && let Some(value) = self.match_conditional(scrutinee, arms, js_span, out)? =>
             {

@@ -502,4 +502,28 @@ export const mutations: Mutation[] = [
     replace: "let stable = true;",
     tests: ["test/compiler.test.ts", "-t", "let-else of an Option's filter"],
   },
+  {
+    name: "match-index-unmade",
+    breaks: "`match kind { Kind::Note => &MAP.note, .. }` is `let tmp; if (kind === \"note\") ..`, not `MAP[kind]`",
+    file: "src/lower/patterns.rs",
+    find: "        if arms.len() < 2 {\n            return Ok(None);\n        }\n        const SUBJECT: &str = \"$subject\";\n        let place = self.stable_place(scrutinee);",
+    replace: "        if true {\n            return Ok(None);\n        }\n        const SUBJECT: &str = \"$subject\";\n        let place = self.stable_place(scrutinee);",
+    tests: ["test/compiler.test.ts", "-t", "reads the table by it"],
+  },
+  {
+    name: "match-index-any-field",
+    breaks: "`Kind::Note => &MAP.pitfall` is read as `MAP[kind]`, `MAP.note`",
+    file: "src/lower/patterns.rs",
+    find: "if key != *name || table.as_ref()",
+    replace: "if table.as_ref()",
+    tests: ["test/compiler.test.ts", "-t", "reads the table by it"],
+  },
+  {
+    name: "match-index-any-table",
+    breaks: "arms of two tables, `&A.note` and `&B.pitfall`, are read as the first's, `A[kind]`",
+    file: "src/lower/patterns.rs",
+    find: "table.as_ref().is_some_and(|table| !same_place(table, &of))",
+    replace: "false",
+    tests: ["test/compiler.test.ts", "-t", "reads the table by it"],
+  },
 ];

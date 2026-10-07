@@ -1173,6 +1173,62 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// is in place where the test reads it once, else in a `const` of its
     /// own; what its arms bind, of a subject in place, is named where it is,
     /// `item.path`. `None` where it's statements.
+    /// `match kind { Kind::Note => &MAP.note, Kind::Pitfall => &MAP.pitfall }`,
+    /// each arm a variant whose value is its name giving the field of that
+    /// name of one table: `MAP[kind]`, as JS reads a table by its key. Rust
+    /// says every variant has its arm (ADR 0233).
+    pub(super) fn match_index(&mut self, scrutinee: ExprId, arms: &[ArmId], out: &mut Vec<Stmt>) -> R<Option<Expr>> {
+        if arms.len() < 2 {
+            return Ok(None);
+        }
+        const SUBJECT: &str = "$subject";
+        let place = self.stable_place(scrutinee);
+        let subject = place.clone().unwrap_or_else(|| Expr::var(SUBJECT));
+        let mut table: Option<Expr> = None;
+        for &arm in arms {
+            let arm = &self.thir[arm];
+            if arm.guard.is_some() {
+                return Ok(None);
+            }
+            let mut bindings = Vec::new();
+            let Some(test) = self.pattern_test(&arm.pattern, &subject, &mut bindings)? else {
+                return Ok(None);
+            };
+            let js::ExprKind::Binary(Op::Eq, tested, name) = &test.kind else {
+                return Ok(None);
+            };
+            let js::ExprKind::Str(name) = &name.kind else {
+                return Ok(None);
+            };
+            if !bindings.is_empty() || !same_place(tested, &subject) {
+                return Ok(None);
+            }
+            let body = match self.thir[self.strip(arm.body)].kind {
+                ExprKind::Borrow {
+                    borrow_kind: BorrowKind::Shared,
+                    arg,
+                } => arg,
+                _ => arm.body,
+            };
+            let Some(field) = self.stable_place(body) else {
+                return Ok(None);
+            };
+            let js::ExprKind::Member(of, key) = field.kind else {
+                return Ok(None);
+            };
+            if key != *name || table.as_ref().is_some_and(|table| !same_place(table, &of)) {
+                return Ok(None);
+            }
+            table = Some(*of);
+        }
+        let Some(table) = table else { return Ok(None) };
+        let key = match place {
+            Some(place) => place,
+            None => self.expr(scrutinee, out)?,
+        };
+        Ok(Some(Expr::index(table, key)))
+    }
+
     pub(super) fn match_conditional(
         &mut self,
         scrutinee: ExprId,
