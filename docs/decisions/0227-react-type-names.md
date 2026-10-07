@@ -44,9 +44,12 @@ for the same things, and the `.d.ts` rust-js writes already used React's.
   `EventHandler<MouseEvent<T>>`, one per event, `ReactEventHandler`
   `SyntheticEvent`'s; the generated attributes use them, `on_click:
   Option<event::MouseEventHandler>`. `ChangeEventHandler<T>` takes one
-  element, as this `ChangeEvent` does. An alias is Rust's only, so the
-  `.d.ts` still writes `(event: MouseEvent<HTMLButtonElement>) => void`.
-  (Amended.)
+  element, as this `ChangeEvent` does. Each says it's @types/react's,
+  `#[rust_js::types = "react#MouseEventHandler<T>"]`, so a `.d.ts` writes
+  it as it's written, `onClick?: MouseEventHandler<HTMLButtonElement>` (ADR
+  0196), as `RefCallback`, `FormEvent`, `Reducer` and `EffectCallback` too.
+  (Amended: the `.d.ts` wrote
+  the alias expanded, `(event: MouseEvent<HTMLButtonElement>) => void`.)
 - **An event's native event is its type**, as @types/react's: a
   `SyntheticEvent<T, E = Event>`'s `native_event()` is an `&E`, and a
   `MouseEvent<T, E = MouseEvent>` a `UIEvent<T, E>`, where a `PointerEvent<T>`

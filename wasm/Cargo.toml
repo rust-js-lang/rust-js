@@ -31,6 +31,7 @@ rustc_driver = { path = "rustc/compiler/rustc_driver_impl", package = "rustc_dri
 rustc_expand = { path = "rustc/compiler/rustc_expand" }
 rustc_ast = { path = "rustc/compiler/rustc_ast" }
 rustc_hir = { path = "rustc/compiler/rustc_hir" }
+rustc_hir_analysis = { path = "rustc/compiler/rustc_hir_analysis" }
 rustc_interface = { path = "rustc/compiler/rustc_interface" }
 rustc_middle = { path = "rustc/compiler/rustc_middle" }
 rustc_parse = { path = "rustc/compiler/rustc_parse" }

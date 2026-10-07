@@ -287,32 +287,53 @@ events! {
 
 /// @types/react's names of a [`SyntheticEvent`], whose interfaces add nothing
 /// to it: an `on_reset`'s, and an `on_invalid`'s.
+#[cfg_attr(rust_js, rust_js::types = "react#FormEvent<T>")]
 pub type FormEvent<T = webapi::Element> = SyntheticEvent<T>;
+#[cfg_attr(rust_js, rust_js::types = "react#InvalidEvent<T>")]
 pub type InvalidEvent<T = webapi::Element> = SyntheticEvent<T>;
 
 /// A handler of an event, as @types/react's `EventHandler<E>`:
 /// `on_click: MouseEventHandler<HTMLButtonElement>` is TypeScript's
 /// `onClick: MouseEventHandler<HTMLButtonElement>`.
+#[cfg_attr(rust_js, rust_js::types = "react#EventHandler<E>")]
 pub type EventHandler<E> = Box<dyn Fn(&E)>;
+#[cfg_attr(rust_js, rust_js::types = "react#ReactEventHandler<T>")]
 pub type ReactEventHandler<T = webapi::Element> = EventHandler<SyntheticEvent<T>>;
+#[cfg_attr(rust_js, rust_js::types = "react#ClipboardEventHandler<T>")]
 pub type ClipboardEventHandler<T = webapi::Element> = EventHandler<ClipboardEvent<T>>;
+#[cfg_attr(rust_js, rust_js::types = "react#CompositionEventHandler<T>")]
 pub type CompositionEventHandler<T = webapi::Element> = EventHandler<CompositionEvent<T>>;
+#[cfg_attr(rust_js, rust_js::types = "react#DragEventHandler<T>")]
 pub type DragEventHandler<T = webapi::Element> = EventHandler<DragEvent<T>>;
+#[cfg_attr(rust_js, rust_js::types = "react#FocusEventHandler<T>")]
 pub type FocusEventHandler<T = webapi::Element> = EventHandler<FocusEvent<T>>;
 /// Of one element: @types/react's takes the target's too, which this
 /// `ChangeEvent`'s `value` reads without.
+#[cfg_attr(rust_js, rust_js::types = "react#ChangeEventHandler<T>")]
 pub type ChangeEventHandler<T = webapi::Element> = EventHandler<ChangeEvent<T>>;
+#[cfg_attr(rust_js, rust_js::types = "react#FormEventHandler<T>")]
 pub type FormEventHandler<T = webapi::Element> = EventHandler<FormEvent<T>>;
+#[cfg_attr(rust_js, rust_js::types = "react#InputEventHandler<T>")]
 pub type InputEventHandler<T = webapi::Element> = EventHandler<InputEvent<T>>;
+#[cfg_attr(rust_js, rust_js::types = "react#SubmitEventHandler<T>")]
 pub type SubmitEventHandler<T = webapi::Element> = EventHandler<SubmitEvent<T>>;
+#[cfg_attr(rust_js, rust_js::types = "react#KeyboardEventHandler<T>")]
 pub type KeyboardEventHandler<T = webapi::Element> = EventHandler<KeyboardEvent<T>>;
+#[cfg_attr(rust_js, rust_js::types = "react#MouseEventHandler<T>")]
 pub type MouseEventHandler<T = webapi::Element> = EventHandler<MouseEvent<T>>;
+#[cfg_attr(rust_js, rust_js::types = "react#TouchEventHandler<T>")]
 pub type TouchEventHandler<T = webapi::Element> = EventHandler<TouchEvent<T>>;
+#[cfg_attr(rust_js, rust_js::types = "react#PointerEventHandler<T>")]
 pub type PointerEventHandler<T = webapi::Element> = EventHandler<PointerEvent<T>>;
+#[cfg_attr(rust_js, rust_js::types = "react#UIEventHandler<T>")]
 pub type UIEventHandler<T = webapi::Element> = EventHandler<UIEvent<T>>;
+#[cfg_attr(rust_js, rust_js::types = "react#WheelEventHandler<T>")]
 pub type WheelEventHandler<T = webapi::Element> = EventHandler<WheelEvent<T>>;
+#[cfg_attr(rust_js, rust_js::types = "react#AnimationEventHandler<T>")]
 pub type AnimationEventHandler<T = webapi::Element> = EventHandler<AnimationEvent<T>>;
+#[cfg_attr(rust_js, rust_js::types = "react#ToggleEventHandler<T>")]
 pub type ToggleEventHandler<T = webapi::Element> = EventHandler<ToggleEvent<T>>;
+#[cfg_attr(rust_js, rust_js::types = "react#TransitionEventHandler<T>")]
 pub type TransitionEventHandler<T = webapi::Element> = EventHandler<TransitionEvent<T>>;
 
 impl<T, E> MouseEvent<T, E> {

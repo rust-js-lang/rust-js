@@ -1730,6 +1730,7 @@ dependencies = [
  "rustc_driver_impl",
  "rustc_expand",
  "rustc_hir",
+ "rustc_hir_analysis",
  "rustc_interface",
  "rustc_middle",
  "rustc_parse",

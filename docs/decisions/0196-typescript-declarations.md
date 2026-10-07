@@ -71,6 +71,14 @@ export default Tag;
   parameter of a trait that says no type, `value: &impl js::Defined`, is
   `unknown`, a value of any type, as a person declares one. (Amended: it
   was rustc's name for it, `impl js::Defined + 'a`, which isn't TypeScript.)
+  **A type written as an alias that says what it is to TypeScript**,
+  `#[rust_js::types = "react#MouseEventHandler<T>"]`, is declared by it, as
+  written, a field's, an `Option` field's, or a parameter's: `onClick?:
+  MouseEventHandler<HTMLButtonElement>`, an argument left to its default
+  left out, `MouseEventHandler`. rustc's type is the alias expanded, so the
+  field's type is read as written, its arguments lowered by
+  `rustc_hir_analysis`. (Amended: it was the expansion, `(event:
+  MouseEvent<HTMLButtonElement>) => void`.)
   **Another crate's untagged enum is declared in the
   module that names it**, not exported, the union of its payloads, as this
   crate's are (ADR 0225).
