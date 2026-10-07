@@ -2817,3 +2817,38 @@ pub fn Count(order: u32, total: u32) -> JSX::Element {
   const result = await import(join(dir, "lib.jsx"));
   expect(renderToString(result.Count(1, 4))).toBe("<p>Challenge<!-- --> <!-- -->1<!-- --> of<!-- --> <!-- -->4</p>");
 });
+
+// A node of any type is `Box<dyn ReactNode>`, as @types/react's `ReactNode`
+// is one type: react.dev's ErrorDecoder makes a list of text and links. It's
+// the node itself, a string or an element, as React takes it.
+test("a dyn ReactNode is the node itself", async () => {
+  const source = `#![allow(non_snake_case)]
+use react::{JSX, ReactNode, jsx};
+
+fn urlify(text: &str) -> Vec<Box<dyn ReactNode>> {
+    text.split('|')
+        .enumerate()
+        .map(|(i, part)| -> Box<dyn ReactNode> {
+            if i % 2 == 1 {
+                return Box::new(jsx! { <a key={i} href={part}>{part}</a> });
+            }
+            Box::new(part.to_string())
+        })
+        .collect()
+}
+
+fn Shown(node: &dyn ReactNode) -> JSX::Element {
+    jsx! { <i>{node}</i> }
+}
+
+pub fn Message(text: &str) -> JSX::Element {
+    jsx! { <b>{urlify(text)}{Shown(&"!")}</b> }
+}
+`;
+  const { dir, args } = compile(source);
+  run(args);
+  const code = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(code).toContain("return part;");
+  const result = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(result.Message("see |https://x.dev| now"))).toBe('<b>see <a href="https://x.dev">https://x.dev</a> now<i>!</i></b>');
+});

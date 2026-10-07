@@ -616,6 +616,14 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     .unwrap_or(tcx.types.unit);
                 self.function_type(inputs, output)
             }
+            // A `dyn` of a trait that says what it is to TypeScript:
+            // `dyn ReactNode` is a `ReactNode` (ADR 0242).
+            ty::Dynamic(traits, ..)
+                if let Some(t) = traits.principal_def_id()
+                    && let Some(declared) = written_types(tcx, t) =>
+            {
+                self.written(t, &declared, ty::List::empty())
+            }
             // `(...args: any[]) => any`: a closure's own type, which no
             // signature names, or a `dyn` of another trait.
             ty::Closure(..) | ty::Dynamic(..) => json!({

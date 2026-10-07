@@ -599,6 +599,23 @@ export const wrong: string = helper();
   expect(errors[0]).toContain("use.ts(3,");
 });
 
+// A `dyn ReactNode` is @types/react's `ReactNode`, as its trait says.
+test("declarations type a dyn ReactNode as a ReactNode", () => {
+  buildReact();
+  const dir = fixture("declarations-dyn-node");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
+  writeFileSync(join(dir, "lib.rs"), `use react::ReactNode;
+
+pub fn parts(text: &str) -> Vec<Box<dyn ReactNode>> {
+    text.split('|').map(|part| -> Box<dyn ReactNode> { Box::new(part.to_string()) }).collect()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("export function parts(text: string): ReactNode[];");
+  expect(declarations).toContain('import type { ReactNode } from "react";');
+});
+
 // TypeScript prints them (ADR 0207), through @rust-js/typescript, which a
 // crate without it is told to add, its build failing.
 test("declarations where @rust-js/typescript isn't say to add it", () => {

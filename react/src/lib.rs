@@ -151,6 +151,9 @@ impl ReactNode for bool {}
 impl<T: ReactNode + ?Sized> ReactNode for &T {}
 impl<T: ReactNode> ReactNode for Option<T> {}
 impl<T: ReactNode> ReactNode for Vec<T> {}
+/// A node of any type, `Box<dyn ReactNode>`, as @types/react's `ReactNode` is
+/// one type: the node itself.
+impl<T: ReactNode + ?Sized> ReactNode for Box<T> {}
 impl<T: ReactNode> ReactNode for [T] {}
 /// What JS gives untyped, a child's `props.children` say, as JSX renders it.
 impl ReactNode for Unknown {}
@@ -162,6 +165,7 @@ impl sealed::Sealed for bool {}
 impl<T: ReactNode + ?Sized> sealed::Sealed for &T {}
 impl<T: ReactNode> sealed::Sealed for Option<T> {}
 impl<T: ReactNode> sealed::Sealed for Vec<T> {}
+impl<T: ReactNode + ?Sized> sealed::Sealed for Box<T> {}
 impl<T: ReactNode> sealed::Sealed for [T] {}
 impl sealed::Sealed for Unknown {}
 /// A `bigint`, which rust-js's 64- and 128-bit integers are (ADR 0086), as

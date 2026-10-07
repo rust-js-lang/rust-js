@@ -94,6 +94,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 return None;
             }
+            // `dyn ReactNode` is the node itself, any of them (ADR 0242).
+            ty::Dynamic(traits, ..)
+                if traits
+                    .principal_def_id()
+                    .is_some_and(|t| super::bindings::is_jsx_node(self.tcx, t)) =>
+            {
+                return None;
+            }
             ty::Adt(..) if self.is_js_object(ty) => return None,
             // A standard stream, and what writing to one gives: nothing JS
             // needs, `undefined` (ADR 0132).

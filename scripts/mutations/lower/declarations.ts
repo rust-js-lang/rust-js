@@ -284,4 +284,12 @@ export const mutations: Mutation[] = [
     replace: "    for reexport in reexports.iter().take(0) {",
     tests: ["test/declarations.test.ts", "-t", "re-export what a module"],
   },
+  {
+    name: "dyn-node-a-function",
+    breaks: "`Box<dyn ReactNode>` is declared a function, `(...args: any[]) => any`, not a `ReactNode`",
+    file: "src/lower/declarations.rs",
+    find: "                    && let Some(declared) = written_types(tcx, t) =>",
+    replace: "                    && let Some(declared) = written_types(tcx, t).filter(|_| false) =>",
+    tests: ["test/declarations.test.ts", "-t", "dyn ReactNode"],
+  },
 ];
