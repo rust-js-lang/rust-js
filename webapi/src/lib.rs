@@ -466,6 +466,10 @@ pub mod text {
         #[link_name = "get wholeText"]
         pub safe fn whole_text(this: &Text) -> String;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Text/assignedSlot)
+        #[link_name = "get assignedSlot"]
+        pub safe fn assigned_slot(this: &Text) -> Option<&'static HTMLSlotElement>;
+
         /// Treats `this` as `Text` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static Text;
@@ -844,6 +848,10 @@ pub mod element {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/remove)
         pub safe fn remove(this: &Element);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/assignedSlot)
+        #[link_name = "get assignedSlot"]
+        pub safe fn assigned_slot(this: &Element) -> Option<&'static HTMLSlotElement>;
+
         /// Treats `this` as `Element` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static Element;
@@ -1014,6 +1022,10 @@ pub mod document {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/body)
         #[link_name = "set body"]
         pub safe fn set_body(this: &Document, value: &HTMLElement);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/head)
+        #[link_name = "get head"]
+        pub safe fn head(this: &Document) -> Option<&'static HTMLHeadElement>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/images)
         #[link_name = "get images"]
@@ -2678,6 +2690,10 @@ pub mod html_input_element {
         #[link_name = "set indeterminate"]
         pub safe fn set_indeterminate(this: &HTMLInputElement, value: bool);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/list)
+        #[link_name = "get list"]
+        pub safe fn list(this: &HTMLInputElement) -> Option<&'static HTMLDataListElement>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/max)
         #[link_name = "get max"]
         pub safe fn max(this: &HTMLInputElement) -> String;
@@ -3374,11 +3390,11 @@ pub mod html_select_element {
         pub safe fn named_item(this: &HTMLSelectElement, name: &str) -> Option<&'static HTMLOptionElement>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement/add)
-        pub safe fn add(this: &HTMLSelectElement, element: &HTMLOptionElement);
+        pub safe fn add(this: &HTMLSelectElement, element: HTMLOptionElementOrHTMLOptGroupElement<'_>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement/add)
         #[link_name = "add"]
-        pub safe fn add_with_before(this: &HTMLSelectElement, element: &HTMLOptionElement, before: HTMLElementOrNumber<'_>);
+        pub safe fn add_with_before(this: &HTMLSelectElement, element: HTMLOptionElementOrHTMLOptGroupElement<'_>, before: HTMLElementOrNumber<'_>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement/remove)
         pub safe fn remove(this: &HTMLSelectElement);
@@ -3738,6 +3754,18 @@ pub mod html_table_element {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableElement/caption)
+        #[link_name = "get caption"]
+        pub safe fn caption(this: &HTMLTableElement) -> Option<&'static HTMLTableCaptionElement>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableElement/caption)
+        #[link_name = "set caption"]
+        pub safe fn set_caption(this: &HTMLTableElement, value: &HTMLTableCaptionElement);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableElement/createCaption)
+        #[link_name = "createCaption"]
+        pub safe fn create_caption(this: &HTMLTableElement) -> &'static HTMLTableCaptionElement;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableElement/deleteCaption)
         #[link_name = "deleteCaption"]
         pub safe fn delete_caption(this: &HTMLTableElement);
@@ -4419,6 +4447,2472 @@ pub mod html_details_element {
         /// Treats `this` as `HTMLDetailsElement` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLDetailsElement;
+    }
+}
+
+/// [`HTMLHtmlElement`](https://developer.mozilla.org/docs/Web/API/HTMLHtmlElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLHtmlElement")]
+pub struct HTMLHtmlElement(PhantomData<JsObject>);
+
+impl Deref for HTMLHtmlElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_html_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLHtmlElement/version)
+        #[link_name = "get version"]
+        pub safe fn version(this: &HTMLHtmlElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLHtmlElement/version)
+        #[link_name = "set version"]
+        pub safe fn set_version(this: &HTMLHtmlElement, value: &str);
+
+        /// Treats `this` as `HTMLHtmlElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLHtmlElement;
+    }
+}
+
+/// [`HTMLHeadElement`](https://developer.mozilla.org/docs/Web/API/HTMLHeadElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLHeadElement")]
+pub struct HTMLHeadElement(PhantomData<JsObject>);
+
+impl Deref for HTMLHeadElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_head_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// Treats `this` as `HTMLHeadElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLHeadElement;
+    }
+}
+
+/// [`HTMLTitleElement`](https://developer.mozilla.org/docs/Web/API/HTMLTitleElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLTitleElement")]
+pub struct HTMLTitleElement(PhantomData<JsObject>);
+
+impl Deref for HTMLTitleElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_title_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTitleElement/text)
+        #[link_name = "get text"]
+        pub safe fn text(this: &HTMLTitleElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTitleElement/text)
+        #[link_name = "set text"]
+        pub safe fn set_text(this: &HTMLTitleElement, value: &str);
+
+        /// Treats `this` as `HTMLTitleElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLTitleElement;
+    }
+}
+
+/// [`HTMLBaseElement`](https://developer.mozilla.org/docs/Web/API/HTMLBaseElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLBaseElement")]
+pub struct HTMLBaseElement(PhantomData<JsObject>);
+
+impl Deref for HTMLBaseElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_base_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBaseElement/href)
+        #[link_name = "get href"]
+        pub safe fn href(this: &HTMLBaseElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBaseElement/href)
+        #[link_name = "set href"]
+        pub safe fn set_href(this: &HTMLBaseElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBaseElement/target)
+        #[link_name = "get target"]
+        pub safe fn target(this: &HTMLBaseElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBaseElement/target)
+        #[link_name = "set target"]
+        pub safe fn set_target(this: &HTMLBaseElement, value: &str);
+
+        /// Treats `this` as `HTMLBaseElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLBaseElement;
+    }
+}
+
+/// [`HTMLLinkElement`](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLLinkElement")]
+pub struct HTMLLinkElement(PhantomData<JsObject>);
+
+impl Deref for HTMLLinkElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_link_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/href)
+        #[link_name = "get href"]
+        pub safe fn href(this: &HTMLLinkElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/href)
+        #[link_name = "set href"]
+        pub safe fn set_href(this: &HTMLLinkElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/crossOrigin)
+        #[link_name = "get crossOrigin"]
+        pub safe fn cross_origin(this: &HTMLLinkElement) -> Option<String>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/crossOrigin)
+        #[link_name = "set crossOrigin"]
+        pub safe fn set_cross_origin(this: &HTMLLinkElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/rel)
+        #[link_name = "get rel"]
+        pub safe fn rel(this: &HTMLLinkElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/rel)
+        #[link_name = "set rel"]
+        pub safe fn set_rel(this: &HTMLLinkElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/as)
+        #[link_name = "get as"]
+        pub safe fn as_(this: &HTMLLinkElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/as)
+        #[link_name = "set as"]
+        pub safe fn set_as(this: &HTMLLinkElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/relList)
+        #[link_name = "get relList"]
+        pub safe fn rel_list(this: &HTMLLinkElement) -> &'static DOMTokenList;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/media)
+        #[link_name = "get media"]
+        pub safe fn media(this: &HTMLLinkElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/media)
+        #[link_name = "set media"]
+        pub safe fn set_media(this: &HTMLLinkElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/integrity)
+        #[link_name = "get integrity"]
+        pub safe fn integrity(this: &HTMLLinkElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/integrity)
+        #[link_name = "set integrity"]
+        pub safe fn set_integrity(this: &HTMLLinkElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/hreflang)
+        #[link_name = "get hreflang"]
+        pub safe fn hreflang(this: &HTMLLinkElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/hreflang)
+        #[link_name = "set hreflang"]
+        pub safe fn set_hreflang(this: &HTMLLinkElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/type)
+        #[link_name = "get type"]
+        pub safe fn type_(this: &HTMLLinkElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/type)
+        #[link_name = "set type"]
+        pub safe fn set_type(this: &HTMLLinkElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/sizes)
+        #[link_name = "get sizes"]
+        pub safe fn sizes(this: &HTMLLinkElement) -> &'static DOMTokenList;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/imageSrcset)
+        #[link_name = "get imageSrcset"]
+        pub safe fn image_srcset(this: &HTMLLinkElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/imageSrcset)
+        #[link_name = "set imageSrcset"]
+        pub safe fn set_image_srcset(this: &HTMLLinkElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/imageSizes)
+        #[link_name = "get imageSizes"]
+        pub safe fn image_sizes(this: &HTMLLinkElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/imageSizes)
+        #[link_name = "set imageSizes"]
+        pub safe fn set_image_sizes(this: &HTMLLinkElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/referrerPolicy)
+        #[link_name = "get referrerPolicy"]
+        pub safe fn referrer_policy(this: &HTMLLinkElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/referrerPolicy)
+        #[link_name = "set referrerPolicy"]
+        pub safe fn set_referrer_policy(this: &HTMLLinkElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/blocking)
+        #[link_name = "get blocking"]
+        pub safe fn blocking(this: &HTMLLinkElement) -> &'static DOMTokenList;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/disabled)
+        #[link_name = "get disabled"]
+        pub safe fn disabled(this: &HTMLLinkElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/disabled)
+        #[link_name = "set disabled"]
+        pub safe fn set_disabled(this: &HTMLLinkElement, value: bool);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/fetchPriority)
+        #[link_name = "get fetchPriority"]
+        pub safe fn fetch_priority(this: &HTMLLinkElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/fetchPriority)
+        #[link_name = "set fetchPriority"]
+        pub safe fn set_fetch_priority(this: &HTMLLinkElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/charset)
+        #[link_name = "get charset"]
+        pub safe fn charset(this: &HTMLLinkElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/charset)
+        #[link_name = "set charset"]
+        pub safe fn set_charset(this: &HTMLLinkElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/rev)
+        #[link_name = "get rev"]
+        pub safe fn rev(this: &HTMLLinkElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/rev)
+        #[link_name = "set rev"]
+        pub safe fn set_rev(this: &HTMLLinkElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/target)
+        #[link_name = "get target"]
+        pub safe fn target(this: &HTMLLinkElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/target)
+        #[link_name = "set target"]
+        pub safe fn set_target(this: &HTMLLinkElement, value: &str);
+
+        /// Treats `this` as `HTMLLinkElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLLinkElement;
+    }
+}
+
+/// [`HTMLMetaElement`](https://developer.mozilla.org/docs/Web/API/HTMLMetaElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLMetaElement")]
+pub struct HTMLMetaElement(PhantomData<JsObject>);
+
+impl Deref for HTMLMetaElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_meta_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMetaElement/name)
+        #[link_name = "get name"]
+        pub safe fn name(this: &HTMLMetaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMetaElement/name)
+        #[link_name = "set name"]
+        pub safe fn set_name(this: &HTMLMetaElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMetaElement/httpEquiv)
+        #[link_name = "get httpEquiv"]
+        pub safe fn http_equiv(this: &HTMLMetaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMetaElement/httpEquiv)
+        #[link_name = "set httpEquiv"]
+        pub safe fn set_http_equiv(this: &HTMLMetaElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMetaElement/content)
+        #[link_name = "get content"]
+        pub safe fn content(this: &HTMLMetaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMetaElement/content)
+        #[link_name = "set content"]
+        pub safe fn set_content(this: &HTMLMetaElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMetaElement/media)
+        #[link_name = "get media"]
+        pub safe fn media(this: &HTMLMetaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMetaElement/media)
+        #[link_name = "set media"]
+        pub safe fn set_media(this: &HTMLMetaElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMetaElement/scheme)
+        #[link_name = "get scheme"]
+        pub safe fn scheme(this: &HTMLMetaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMetaElement/scheme)
+        #[link_name = "set scheme"]
+        pub safe fn set_scheme(this: &HTMLMetaElement, value: &str);
+
+        /// Treats `this` as `HTMLMetaElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLMetaElement;
+    }
+}
+
+/// [`HTMLStyleElement`](https://developer.mozilla.org/docs/Web/API/HTMLStyleElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLStyleElement")]
+pub struct HTMLStyleElement(PhantomData<JsObject>);
+
+impl Deref for HTMLStyleElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_style_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLStyleElement/disabled)
+        #[link_name = "get disabled"]
+        pub safe fn disabled(this: &HTMLStyleElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLStyleElement/disabled)
+        #[link_name = "set disabled"]
+        pub safe fn set_disabled(this: &HTMLStyleElement, value: bool);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLStyleElement/media)
+        #[link_name = "get media"]
+        pub safe fn media(this: &HTMLStyleElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLStyleElement/media)
+        #[link_name = "set media"]
+        pub safe fn set_media(this: &HTMLStyleElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLStyleElement/blocking)
+        #[link_name = "get blocking"]
+        pub safe fn blocking(this: &HTMLStyleElement) -> &'static DOMTokenList;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLStyleElement/type)
+        #[link_name = "get type"]
+        pub safe fn type_(this: &HTMLStyleElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLStyleElement/type)
+        #[link_name = "set type"]
+        pub safe fn set_type(this: &HTMLStyleElement, value: &str);
+
+        /// Treats `this` as `HTMLStyleElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLStyleElement;
+    }
+}
+
+/// [`HTMLBodyElement`](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLBodyElement")]
+pub struct HTMLBodyElement(PhantomData<JsObject>);
+
+impl Deref for HTMLBodyElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_body_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/text)
+        #[link_name = "get text"]
+        pub safe fn text(this: &HTMLBodyElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/text)
+        #[link_name = "set text"]
+        pub safe fn set_text(this: &HTMLBodyElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/link)
+        #[link_name = "get link"]
+        pub safe fn link(this: &HTMLBodyElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/link)
+        #[link_name = "set link"]
+        pub safe fn set_link(this: &HTMLBodyElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/vLink)
+        #[link_name = "get vLink"]
+        pub safe fn v_link(this: &HTMLBodyElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/vLink)
+        #[link_name = "set vLink"]
+        pub safe fn set_v_link(this: &HTMLBodyElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/aLink)
+        #[link_name = "get aLink"]
+        pub safe fn a_link(this: &HTMLBodyElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/aLink)
+        #[link_name = "set aLink"]
+        pub safe fn set_a_link(this: &HTMLBodyElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/bgColor)
+        #[link_name = "get bgColor"]
+        pub safe fn bg_color(this: &HTMLBodyElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/bgColor)
+        #[link_name = "set bgColor"]
+        pub safe fn set_bg_color(this: &HTMLBodyElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/background)
+        #[link_name = "get background"]
+        pub safe fn background(this: &HTMLBodyElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/background)
+        #[link_name = "set background"]
+        pub safe fn set_background(this: &HTMLBodyElement, value: &str);
+
+        /// Treats `this` as `HTMLBodyElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLBodyElement;
+    }
+}
+
+/// [`HTMLHRElement`](https://developer.mozilla.org/docs/Web/API/HTMLHRElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLHRElement")]
+pub struct HTMLHRElement(PhantomData<JsObject>);
+
+impl Deref for HTMLHRElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_hr_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLHRElement/align)
+        #[link_name = "get align"]
+        pub safe fn align(this: &HTMLHRElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLHRElement/align)
+        #[link_name = "set align"]
+        pub safe fn set_align(this: &HTMLHRElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLHRElement/color)
+        #[link_name = "get color"]
+        pub safe fn color(this: &HTMLHRElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLHRElement/color)
+        #[link_name = "set color"]
+        pub safe fn set_color(this: &HTMLHRElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLHRElement/noShade)
+        #[link_name = "get noShade"]
+        pub safe fn no_shade(this: &HTMLHRElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLHRElement/noShade)
+        #[link_name = "set noShade"]
+        pub safe fn set_no_shade(this: &HTMLHRElement, value: bool);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLHRElement/size)
+        #[link_name = "get size"]
+        pub safe fn size(this: &HTMLHRElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLHRElement/size)
+        #[link_name = "set size"]
+        pub safe fn set_size(this: &HTMLHRElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLHRElement/width)
+        #[link_name = "get width"]
+        pub safe fn width(this: &HTMLHRElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLHRElement/width)
+        #[link_name = "set width"]
+        pub safe fn set_width(this: &HTMLHRElement, value: &str);
+
+        /// Treats `this` as `HTMLHRElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLHRElement;
+    }
+}
+
+/// [`HTMLPreElement`](https://developer.mozilla.org/docs/Web/API/HTMLPreElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLPreElement")]
+pub struct HTMLPreElement(PhantomData<JsObject>);
+
+impl Deref for HTMLPreElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_pre_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLPreElement/width)
+        #[link_name = "get width"]
+        pub safe fn width(this: &HTMLPreElement) -> i32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLPreElement/width)
+        #[link_name = "set width"]
+        pub safe fn set_width(this: &HTMLPreElement, value: i32);
+
+        /// Treats `this` as `HTMLPreElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLPreElement;
+    }
+}
+
+/// [`HTMLQuoteElement`](https://developer.mozilla.org/docs/Web/API/HTMLQuoteElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLQuoteElement")]
+pub struct HTMLQuoteElement(PhantomData<JsObject>);
+
+impl Deref for HTMLQuoteElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_quote_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLQuoteElement/cite)
+        #[link_name = "get cite"]
+        pub safe fn cite(this: &HTMLQuoteElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLQuoteElement/cite)
+        #[link_name = "set cite"]
+        pub safe fn set_cite(this: &HTMLQuoteElement, value: &str);
+
+        /// Treats `this` as `HTMLQuoteElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLQuoteElement;
+    }
+}
+
+/// [`HTMLMenuElement`](https://developer.mozilla.org/docs/Web/API/HTMLMenuElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLMenuElement")]
+pub struct HTMLMenuElement(PhantomData<JsObject>);
+
+impl Deref for HTMLMenuElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_menu_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMenuElement/compact)
+        #[link_name = "get compact"]
+        pub safe fn compact(this: &HTMLMenuElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMenuElement/compact)
+        #[link_name = "set compact"]
+        pub safe fn set_compact(this: &HTMLMenuElement, value: bool);
+
+        /// Treats `this` as `HTMLMenuElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLMenuElement;
+    }
+}
+
+/// [`HTMLDListElement`](https://developer.mozilla.org/docs/Web/API/HTMLDListElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLDListElement")]
+pub struct HTMLDListElement(PhantomData<JsObject>);
+
+impl Deref for HTMLDListElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_d_list_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLDListElement/compact)
+        #[link_name = "get compact"]
+        pub safe fn compact(this: &HTMLDListElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLDListElement/compact)
+        #[link_name = "set compact"]
+        pub safe fn set_compact(this: &HTMLDListElement, value: bool);
+
+        /// Treats `this` as `HTMLDListElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLDListElement;
+    }
+}
+
+/// [`HTMLDataElement`](https://developer.mozilla.org/docs/Web/API/HTMLDataElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLDataElement")]
+pub struct HTMLDataElement(PhantomData<JsObject>);
+
+impl Deref for HTMLDataElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_data_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLDataElement/value)
+        #[link_name = "get value"]
+        pub safe fn value(this: &HTMLDataElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLDataElement/value)
+        #[link_name = "set value"]
+        pub safe fn set_value(this: &HTMLDataElement, value: &str);
+
+        /// Treats `this` as `HTMLDataElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLDataElement;
+    }
+}
+
+/// [`HTMLTimeElement`](https://developer.mozilla.org/docs/Web/API/HTMLTimeElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLTimeElement")]
+pub struct HTMLTimeElement(PhantomData<JsObject>);
+
+impl Deref for HTMLTimeElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_time_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTimeElement/dateTime)
+        #[link_name = "get dateTime"]
+        pub safe fn date_time(this: &HTMLTimeElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTimeElement/dateTime)
+        #[link_name = "set dateTime"]
+        pub safe fn set_date_time(this: &HTMLTimeElement, value: &str);
+
+        /// Treats `this` as `HTMLTimeElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLTimeElement;
+    }
+}
+
+/// [`HTMLBRElement`](https://developer.mozilla.org/docs/Web/API/HTMLBRElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLBRElement")]
+pub struct HTMLBRElement(PhantomData<JsObject>);
+
+impl Deref for HTMLBRElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_br_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBRElement/clear)
+        #[link_name = "get clear"]
+        pub safe fn clear(this: &HTMLBRElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBRElement/clear)
+        #[link_name = "set clear"]
+        pub safe fn set_clear(this: &HTMLBRElement, value: &str);
+
+        /// Treats `this` as `HTMLBRElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLBRElement;
+    }
+}
+
+/// [`HTMLModElement`](https://developer.mozilla.org/docs/Web/API/HTMLModElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLModElement")]
+pub struct HTMLModElement(PhantomData<JsObject>);
+
+impl Deref for HTMLModElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_mod_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLModElement/cite)
+        #[link_name = "get cite"]
+        pub safe fn cite(this: &HTMLModElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLModElement/cite)
+        #[link_name = "set cite"]
+        pub safe fn set_cite(this: &HTMLModElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLModElement/dateTime)
+        #[link_name = "get dateTime"]
+        pub safe fn date_time(this: &HTMLModElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLModElement/dateTime)
+        #[link_name = "set dateTime"]
+        pub safe fn set_date_time(this: &HTMLModElement, value: &str);
+
+        /// Treats `this` as `HTMLModElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLModElement;
+    }
+}
+
+/// [`HTMLPictureElement`](https://developer.mozilla.org/docs/Web/API/HTMLPictureElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLPictureElement")]
+pub struct HTMLPictureElement(PhantomData<JsObject>);
+
+impl Deref for HTMLPictureElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_picture_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// Treats `this` as `HTMLPictureElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLPictureElement;
+    }
+}
+
+/// [`HTMLSourceElement`](https://developer.mozilla.org/docs/Web/API/HTMLSourceElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLSourceElement")]
+pub struct HTMLSourceElement(PhantomData<JsObject>);
+
+impl Deref for HTMLSourceElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_source_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSourceElement/src)
+        #[link_name = "get src"]
+        pub safe fn src(this: &HTMLSourceElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSourceElement/src)
+        #[link_name = "set src"]
+        pub safe fn set_src(this: &HTMLSourceElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSourceElement/type)
+        #[link_name = "get type"]
+        pub safe fn type_(this: &HTMLSourceElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSourceElement/type)
+        #[link_name = "set type"]
+        pub safe fn set_type(this: &HTMLSourceElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSourceElement/srcset)
+        #[link_name = "get srcset"]
+        pub safe fn srcset(this: &HTMLSourceElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSourceElement/srcset)
+        #[link_name = "set srcset"]
+        pub safe fn set_srcset(this: &HTMLSourceElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSourceElement/sizes)
+        #[link_name = "get sizes"]
+        pub safe fn sizes(this: &HTMLSourceElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSourceElement/sizes)
+        #[link_name = "set sizes"]
+        pub safe fn set_sizes(this: &HTMLSourceElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSourceElement/media)
+        #[link_name = "get media"]
+        pub safe fn media(this: &HTMLSourceElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSourceElement/media)
+        #[link_name = "set media"]
+        pub safe fn set_media(this: &HTMLSourceElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSourceElement/width)
+        #[link_name = "get width"]
+        pub safe fn width(this: &HTMLSourceElement) -> u32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSourceElement/width)
+        #[link_name = "set width"]
+        pub safe fn set_width(this: &HTMLSourceElement, value: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSourceElement/height)
+        #[link_name = "get height"]
+        pub safe fn height(this: &HTMLSourceElement) -> u32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSourceElement/height)
+        #[link_name = "set height"]
+        pub safe fn set_height(this: &HTMLSourceElement, value: u32);
+
+        /// Treats `this` as `HTMLSourceElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLSourceElement;
+    }
+}
+
+/// [`HTMLEmbedElement`](https://developer.mozilla.org/docs/Web/API/HTMLEmbedElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLEmbedElement")]
+pub struct HTMLEmbedElement(PhantomData<JsObject>);
+
+impl Deref for HTMLEmbedElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_embed_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLEmbedElement/src)
+        #[link_name = "get src"]
+        pub safe fn src(this: &HTMLEmbedElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLEmbedElement/src)
+        #[link_name = "set src"]
+        pub safe fn set_src(this: &HTMLEmbedElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLEmbedElement/type)
+        #[link_name = "get type"]
+        pub safe fn type_(this: &HTMLEmbedElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLEmbedElement/type)
+        #[link_name = "set type"]
+        pub safe fn set_type(this: &HTMLEmbedElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLEmbedElement/width)
+        #[link_name = "get width"]
+        pub safe fn width(this: &HTMLEmbedElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLEmbedElement/width)
+        #[link_name = "set width"]
+        pub safe fn set_width(this: &HTMLEmbedElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLEmbedElement/height)
+        #[link_name = "get height"]
+        pub safe fn height(this: &HTMLEmbedElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLEmbedElement/height)
+        #[link_name = "set height"]
+        pub safe fn set_height(this: &HTMLEmbedElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLEmbedElement/getSVGDocument)
+        #[link_name = "getSVGDocument"]
+        pub safe fn get_svg_document(this: &HTMLEmbedElement) -> Option<&'static Document>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLEmbedElement/align)
+        #[link_name = "get align"]
+        pub safe fn align(this: &HTMLEmbedElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLEmbedElement/align)
+        #[link_name = "set align"]
+        pub safe fn set_align(this: &HTMLEmbedElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLEmbedElement/name)
+        #[link_name = "get name"]
+        pub safe fn name(this: &HTMLEmbedElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLEmbedElement/name)
+        #[link_name = "set name"]
+        pub safe fn set_name(this: &HTMLEmbedElement, value: &str);
+
+        /// Treats `this` as `HTMLEmbedElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLEmbedElement;
+    }
+}
+
+/// [`HTMLObjectElement`](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLObjectElement")]
+pub struct HTMLObjectElement(PhantomData<JsObject>);
+
+impl Deref for HTMLObjectElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_object_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/data)
+        #[link_name = "get data"]
+        pub safe fn data(this: &HTMLObjectElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/data)
+        #[link_name = "set data"]
+        pub safe fn set_data(this: &HTMLObjectElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/type)
+        #[link_name = "get type"]
+        pub safe fn type_(this: &HTMLObjectElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/type)
+        #[link_name = "set type"]
+        pub safe fn set_type(this: &HTMLObjectElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/name)
+        #[link_name = "get name"]
+        pub safe fn name(this: &HTMLObjectElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/name)
+        #[link_name = "set name"]
+        pub safe fn set_name(this: &HTMLObjectElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/form)
+        #[link_name = "get form"]
+        pub safe fn form(this: &HTMLObjectElement) -> Option<&'static HTMLFormElement>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/width)
+        #[link_name = "get width"]
+        pub safe fn width(this: &HTMLObjectElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/width)
+        #[link_name = "set width"]
+        pub safe fn set_width(this: &HTMLObjectElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/height)
+        #[link_name = "get height"]
+        pub safe fn height(this: &HTMLObjectElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/height)
+        #[link_name = "set height"]
+        pub safe fn set_height(this: &HTMLObjectElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/contentDocument)
+        #[link_name = "get contentDocument"]
+        pub safe fn content_document(this: &HTMLObjectElement) -> Option<&'static Document>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/contentWindow)
+        #[link_name = "get contentWindow"]
+        pub safe fn content_window(this: &HTMLObjectElement) -> Option<&'static Window>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/getSVGDocument)
+        #[link_name = "getSVGDocument"]
+        pub safe fn get_svg_document(this: &HTMLObjectElement) -> Option<&'static Document>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/willValidate)
+        #[link_name = "get willValidate"]
+        pub safe fn will_validate(this: &HTMLObjectElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/validationMessage)
+        #[link_name = "get validationMessage"]
+        pub safe fn validation_message(this: &HTMLObjectElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/checkValidity)
+        #[link_name = "checkValidity"]
+        pub safe fn check_validity(this: &HTMLObjectElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/reportValidity)
+        #[link_name = "reportValidity"]
+        pub safe fn report_validity(this: &HTMLObjectElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/setCustomValidity)
+        #[link_name = "setCustomValidity"]
+        pub safe fn set_custom_validity(this: &HTMLObjectElement, error: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/align)
+        #[link_name = "get align"]
+        pub safe fn align(this: &HTMLObjectElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/align)
+        #[link_name = "set align"]
+        pub safe fn set_align(this: &HTMLObjectElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/archive)
+        #[link_name = "get archive"]
+        pub safe fn archive(this: &HTMLObjectElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/archive)
+        #[link_name = "set archive"]
+        pub safe fn set_archive(this: &HTMLObjectElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/code)
+        #[link_name = "get code"]
+        pub safe fn code(this: &HTMLObjectElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/code)
+        #[link_name = "set code"]
+        pub safe fn set_code(this: &HTMLObjectElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/declare)
+        #[link_name = "get declare"]
+        pub safe fn declare(this: &HTMLObjectElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/declare)
+        #[link_name = "set declare"]
+        pub safe fn set_declare(this: &HTMLObjectElement, value: bool);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/hspace)
+        #[link_name = "get hspace"]
+        pub safe fn hspace(this: &HTMLObjectElement) -> u32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/hspace)
+        #[link_name = "set hspace"]
+        pub safe fn set_hspace(this: &HTMLObjectElement, value: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/standby)
+        #[link_name = "get standby"]
+        pub safe fn standby(this: &HTMLObjectElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/standby)
+        #[link_name = "set standby"]
+        pub safe fn set_standby(this: &HTMLObjectElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/vspace)
+        #[link_name = "get vspace"]
+        pub safe fn vspace(this: &HTMLObjectElement) -> u32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/vspace)
+        #[link_name = "set vspace"]
+        pub safe fn set_vspace(this: &HTMLObjectElement, value: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/codeBase)
+        #[link_name = "get codeBase"]
+        pub safe fn code_base(this: &HTMLObjectElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/codeBase)
+        #[link_name = "set codeBase"]
+        pub safe fn set_code_base(this: &HTMLObjectElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/codeType)
+        #[link_name = "get codeType"]
+        pub safe fn code_type(this: &HTMLObjectElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/codeType)
+        #[link_name = "set codeType"]
+        pub safe fn set_code_type(this: &HTMLObjectElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/useMap)
+        #[link_name = "get useMap"]
+        pub safe fn use_map(this: &HTMLObjectElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/useMap)
+        #[link_name = "set useMap"]
+        pub safe fn set_use_map(this: &HTMLObjectElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/border)
+        #[link_name = "get border"]
+        pub safe fn border(this: &HTMLObjectElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/border)
+        #[link_name = "set border"]
+        pub safe fn set_border(this: &HTMLObjectElement, value: &str);
+
+        /// Treats `this` as `HTMLObjectElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLObjectElement;
+    }
+}
+
+/// [`HTMLVideoElement`](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLVideoElement")]
+pub struct HTMLVideoElement(PhantomData<JsObject>);
+
+impl Deref for HTMLVideoElement {
+    type Target = HTMLMediaElement;
+
+    fn deref(&self) -> &HTMLMediaElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLMediaElement) }
+    }
+}
+
+pub mod html_video_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/width)
+        #[link_name = "get width"]
+        pub safe fn width(this: &HTMLVideoElement) -> u32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/width)
+        #[link_name = "set width"]
+        pub safe fn set_width(this: &HTMLVideoElement, value: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/height)
+        #[link_name = "get height"]
+        pub safe fn height(this: &HTMLVideoElement) -> u32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/height)
+        #[link_name = "set height"]
+        pub safe fn set_height(this: &HTMLVideoElement, value: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/videoWidth)
+        #[link_name = "get videoWidth"]
+        pub safe fn video_width(this: &HTMLVideoElement) -> u32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/videoHeight)
+        #[link_name = "get videoHeight"]
+        pub safe fn video_height(this: &HTMLVideoElement) -> u32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/poster)
+        #[link_name = "get poster"]
+        pub safe fn poster(this: &HTMLVideoElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/poster)
+        #[link_name = "set poster"]
+        pub safe fn set_poster(this: &HTMLVideoElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/playsInline)
+        #[link_name = "get playsInline"]
+        pub safe fn plays_inline(this: &HTMLVideoElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/playsInline)
+        #[link_name = "set playsInline"]
+        pub safe fn set_plays_inline(this: &HTMLVideoElement, value: bool);
+
+        /// Treats `this` as `HTMLVideoElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLVideoElement;
+    }
+}
+
+/// [`HTMLAudioElement`](https://developer.mozilla.org/docs/Web/API/HTMLAudioElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLAudioElement")]
+pub struct HTMLAudioElement(PhantomData<JsObject>);
+
+impl Deref for HTMLAudioElement {
+    type Target = HTMLMediaElement;
+
+    fn deref(&self) -> &HTMLMediaElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLMediaElement) }
+    }
+}
+
+pub mod html_audio_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// Treats `this` as `HTMLAudioElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLAudioElement;
+    }
+}
+
+/// [`HTMLTrackElement`](https://developer.mozilla.org/docs/Web/API/HTMLTrackElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLTrackElement")]
+pub struct HTMLTrackElement(PhantomData<JsObject>);
+
+impl Deref for HTMLTrackElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_track_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTrackElement/kind)
+        #[link_name = "get kind"]
+        pub safe fn kind(this: &HTMLTrackElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTrackElement/kind)
+        #[link_name = "set kind"]
+        pub safe fn set_kind(this: &HTMLTrackElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTrackElement/src)
+        #[link_name = "get src"]
+        pub safe fn src(this: &HTMLTrackElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTrackElement/src)
+        #[link_name = "set src"]
+        pub safe fn set_src(this: &HTMLTrackElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTrackElement/srclang)
+        #[link_name = "get srclang"]
+        pub safe fn srclang(this: &HTMLTrackElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTrackElement/srclang)
+        #[link_name = "set srclang"]
+        pub safe fn set_srclang(this: &HTMLTrackElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTrackElement/label)
+        #[link_name = "get label"]
+        pub safe fn label(this: &HTMLTrackElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTrackElement/label)
+        #[link_name = "set label"]
+        pub safe fn set_label(this: &HTMLTrackElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTrackElement/default)
+        #[link_name = "get default"]
+        pub safe fn default(this: &HTMLTrackElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTrackElement/default)
+        #[link_name = "set default"]
+        pub safe fn set_default(this: &HTMLTrackElement, value: bool);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTrackElement/readyState)
+        #[link_name = "get readyState"]
+        pub safe fn ready_state(this: &HTMLTrackElement) -> u16;
+
+        /// Treats `this` as `HTMLTrackElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLTrackElement;
+    }
+}
+
+/// [`HTMLMediaElement`](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLMediaElement")]
+pub struct HTMLMediaElement(PhantomData<JsObject>);
+
+impl Deref for HTMLMediaElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_media_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/src)
+        #[link_name = "get src"]
+        pub safe fn src(this: &HTMLMediaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/src)
+        #[link_name = "set src"]
+        pub safe fn set_src(this: &HTMLMediaElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/srcObject)
+        #[link_name = "set srcObject"]
+        pub safe fn set_src_object(this: &HTMLMediaElement, value: &Blob);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/currentSrc)
+        #[link_name = "get currentSrc"]
+        pub safe fn current_src(this: &HTMLMediaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/crossOrigin)
+        #[link_name = "get crossOrigin"]
+        pub safe fn cross_origin(this: &HTMLMediaElement) -> Option<String>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/crossOrigin)
+        #[link_name = "set crossOrigin"]
+        pub safe fn set_cross_origin(this: &HTMLMediaElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/networkState)
+        #[link_name = "get networkState"]
+        pub safe fn network_state(this: &HTMLMediaElement) -> u16;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/preload)
+        #[link_name = "get preload"]
+        pub safe fn preload(this: &HTMLMediaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/preload)
+        #[link_name = "set preload"]
+        pub safe fn set_preload(this: &HTMLMediaElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/load)
+        pub safe fn load(this: &HTMLMediaElement);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/canPlayType)
+        #[link_name = "canPlayType"]
+        pub safe fn can_play_type(this: &HTMLMediaElement, type_: &str) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/readyState)
+        #[link_name = "get readyState"]
+        pub safe fn ready_state(this: &HTMLMediaElement) -> u16;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/seeking)
+        #[link_name = "get seeking"]
+        pub safe fn seeking(this: &HTMLMediaElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/currentTime)
+        #[link_name = "get currentTime"]
+        pub safe fn current_time(this: &HTMLMediaElement) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/currentTime)
+        #[link_name = "set currentTime"]
+        pub safe fn set_current_time(this: &HTMLMediaElement, value: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/fastSeek)
+        #[link_name = "fastSeek"]
+        pub safe fn fast_seek(this: &HTMLMediaElement, time: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/duration)
+        #[link_name = "get duration"]
+        pub safe fn duration(this: &HTMLMediaElement) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/getStartDate)
+        #[link_name = "getStartDate"]
+        pub safe fn get_start_date(this: &HTMLMediaElement) -> &'static JsObject;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/paused)
+        #[link_name = "get paused"]
+        pub safe fn paused(this: &HTMLMediaElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/defaultPlaybackRate)
+        #[link_name = "get defaultPlaybackRate"]
+        pub safe fn default_playback_rate(this: &HTMLMediaElement) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/defaultPlaybackRate)
+        #[link_name = "set defaultPlaybackRate"]
+        pub safe fn set_default_playback_rate(this: &HTMLMediaElement, value: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/playbackRate)
+        #[link_name = "get playbackRate"]
+        pub safe fn playback_rate(this: &HTMLMediaElement) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/playbackRate)
+        #[link_name = "set playbackRate"]
+        pub safe fn set_playback_rate(this: &HTMLMediaElement, value: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/preservesPitch)
+        #[link_name = "get preservesPitch"]
+        pub safe fn preserves_pitch(this: &HTMLMediaElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/preservesPitch)
+        #[link_name = "set preservesPitch"]
+        pub safe fn set_preserves_pitch(this: &HTMLMediaElement, value: bool);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/ended)
+        #[link_name = "get ended"]
+        pub safe fn ended(this: &HTMLMediaElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/autoplay)
+        #[link_name = "get autoplay"]
+        pub safe fn autoplay(this: &HTMLMediaElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/autoplay)
+        #[link_name = "set autoplay"]
+        pub safe fn set_autoplay(this: &HTMLMediaElement, value: bool);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/loop)
+        #[link_name = "get loop"]
+        pub safe fn loop_(this: &HTMLMediaElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/loop)
+        #[link_name = "set loop"]
+        pub safe fn set_loop(this: &HTMLMediaElement, value: bool);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/play)
+        pub safe fn play(this: &HTMLMediaElement) -> Promise<()>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/pause)
+        pub safe fn pause(this: &HTMLMediaElement);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/controls)
+        #[link_name = "get controls"]
+        pub safe fn controls(this: &HTMLMediaElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/controls)
+        #[link_name = "set controls"]
+        pub safe fn set_controls(this: &HTMLMediaElement, value: bool);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/volume)
+        #[link_name = "get volume"]
+        pub safe fn volume(this: &HTMLMediaElement) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/volume)
+        #[link_name = "set volume"]
+        pub safe fn set_volume(this: &HTMLMediaElement, value: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/muted)
+        #[link_name = "get muted"]
+        pub safe fn muted(this: &HTMLMediaElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/muted)
+        #[link_name = "set muted"]
+        pub safe fn set_muted(this: &HTMLMediaElement, value: bool);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/defaultMuted)
+        #[link_name = "get defaultMuted"]
+        pub safe fn default_muted(this: &HTMLMediaElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/defaultMuted)
+        #[link_name = "set defaultMuted"]
+        pub safe fn set_default_muted(this: &HTMLMediaElement, value: bool);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/loading)
+        #[link_name = "get loading"]
+        pub safe fn loading(this: &HTMLMediaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/loading)
+        #[link_name = "set loading"]
+        pub safe fn set_loading(this: &HTMLMediaElement, value: &str);
+
+        /// Treats `this` as `HTMLMediaElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLMediaElement;
+    }
+}
+
+/// [`HTMLMapElement`](https://developer.mozilla.org/docs/Web/API/HTMLMapElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLMapElement")]
+pub struct HTMLMapElement(PhantomData<JsObject>);
+
+impl Deref for HTMLMapElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_map_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMapElement/name)
+        #[link_name = "get name"]
+        pub safe fn name(this: &HTMLMapElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMapElement/name)
+        #[link_name = "set name"]
+        pub safe fn set_name(this: &HTMLMapElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMapElement/areas)
+        #[link_name = "get areas"]
+        pub safe fn areas(this: &HTMLMapElement) -> &'static HTMLCollection;
+
+        /// Treats `this` as `HTMLMapElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLMapElement;
+    }
+}
+
+/// [`HTMLAreaElement`](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLAreaElement")]
+pub struct HTMLAreaElement(PhantomData<JsObject>);
+
+impl Deref for HTMLAreaElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_area_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/alt)
+        #[link_name = "get alt"]
+        pub safe fn alt(this: &HTMLAreaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/alt)
+        #[link_name = "set alt"]
+        pub safe fn set_alt(this: &HTMLAreaElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/coords)
+        #[link_name = "get coords"]
+        pub safe fn coords(this: &HTMLAreaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/coords)
+        #[link_name = "set coords"]
+        pub safe fn set_coords(this: &HTMLAreaElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/shape)
+        #[link_name = "get shape"]
+        pub safe fn shape(this: &HTMLAreaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/shape)
+        #[link_name = "set shape"]
+        pub safe fn set_shape(this: &HTMLAreaElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/download)
+        #[link_name = "get download"]
+        pub safe fn download(this: &HTMLAreaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/download)
+        #[link_name = "set download"]
+        pub safe fn set_download(this: &HTMLAreaElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/ping)
+        #[link_name = "get ping"]
+        pub safe fn ping(this: &HTMLAreaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/ping)
+        #[link_name = "set ping"]
+        pub safe fn set_ping(this: &HTMLAreaElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/rel)
+        #[link_name = "get rel"]
+        pub safe fn rel(this: &HTMLAreaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/rel)
+        #[link_name = "set rel"]
+        pub safe fn set_rel(this: &HTMLAreaElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/relList)
+        #[link_name = "get relList"]
+        pub safe fn rel_list(this: &HTMLAreaElement) -> &'static DOMTokenList;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/referrerPolicy)
+        #[link_name = "get referrerPolicy"]
+        pub safe fn referrer_policy(this: &HTMLAreaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/referrerPolicy)
+        #[link_name = "set referrerPolicy"]
+        pub safe fn set_referrer_policy(this: &HTMLAreaElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/noHref)
+        #[link_name = "get noHref"]
+        pub safe fn no_href(this: &HTMLAreaElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/noHref)
+        #[link_name = "set noHref"]
+        pub safe fn set_no_href(this: &HTMLAreaElement, value: bool);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/origin)
+        #[link_name = "get origin"]
+        pub safe fn origin(this: &HTMLAreaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/protocol)
+        #[link_name = "get protocol"]
+        pub safe fn protocol(this: &HTMLAreaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/protocol)
+        #[link_name = "set protocol"]
+        pub safe fn set_protocol(this: &HTMLAreaElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/username)
+        #[link_name = "get username"]
+        pub safe fn username(this: &HTMLAreaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/username)
+        #[link_name = "set username"]
+        pub safe fn set_username(this: &HTMLAreaElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/password)
+        #[link_name = "get password"]
+        pub safe fn password(this: &HTMLAreaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/password)
+        #[link_name = "set password"]
+        pub safe fn set_password(this: &HTMLAreaElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/host)
+        #[link_name = "get host"]
+        pub safe fn host(this: &HTMLAreaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/host)
+        #[link_name = "set host"]
+        pub safe fn set_host(this: &HTMLAreaElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/hostname)
+        #[link_name = "get hostname"]
+        pub safe fn hostname(this: &HTMLAreaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/hostname)
+        #[link_name = "set hostname"]
+        pub safe fn set_hostname(this: &HTMLAreaElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/port)
+        #[link_name = "get port"]
+        pub safe fn port(this: &HTMLAreaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/port)
+        #[link_name = "set port"]
+        pub safe fn set_port(this: &HTMLAreaElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/pathname)
+        #[link_name = "get pathname"]
+        pub safe fn pathname(this: &HTMLAreaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/pathname)
+        #[link_name = "set pathname"]
+        pub safe fn set_pathname(this: &HTMLAreaElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/search)
+        #[link_name = "get search"]
+        pub safe fn search(this: &HTMLAreaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/search)
+        #[link_name = "set search"]
+        pub safe fn set_search(this: &HTMLAreaElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/hash)
+        #[link_name = "get hash"]
+        pub safe fn hash(this: &HTMLAreaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/hash)
+        #[link_name = "set hash"]
+        pub safe fn set_hash(this: &HTMLAreaElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/hreflang)
+        #[link_name = "get hreflang"]
+        pub safe fn hreflang(this: &HTMLAreaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/hreflang)
+        #[link_name = "set hreflang"]
+        pub safe fn set_hreflang(this: &HTMLAreaElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/type)
+        #[link_name = "get type"]
+        pub safe fn type_(this: &HTMLAreaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/type)
+        #[link_name = "set type"]
+        pub safe fn set_type(this: &HTMLAreaElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/href)
+        #[link_name = "get href"]
+        pub safe fn href(this: &HTMLAreaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/href)
+        #[link_name = "set href"]
+        pub safe fn set_href(this: &HTMLAreaElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/target)
+        #[link_name = "get target"]
+        pub safe fn target(this: &HTMLAreaElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/target)
+        #[link_name = "set target"]
+        pub safe fn set_target(this: &HTMLAreaElement, value: &str);
+
+        /// Treats `this` as `HTMLAreaElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLAreaElement;
+    }
+}
+
+/// [`HTMLTableCaptionElement`](https://developer.mozilla.org/docs/Web/API/HTMLTableCaptionElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLTableCaptionElement")]
+pub struct HTMLTableCaptionElement(PhantomData<JsObject>);
+
+impl Deref for HTMLTableCaptionElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_table_caption_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableCaptionElement/align)
+        #[link_name = "get align"]
+        pub safe fn align(this: &HTMLTableCaptionElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableCaptionElement/align)
+        #[link_name = "set align"]
+        pub safe fn set_align(this: &HTMLTableCaptionElement, value: &str);
+
+        /// Treats `this` as `HTMLTableCaptionElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLTableCaptionElement;
+    }
+}
+
+/// [`HTMLTableColElement`](https://developer.mozilla.org/docs/Web/API/HTMLTableColElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLTableColElement")]
+pub struct HTMLTableColElement(PhantomData<JsObject>);
+
+impl Deref for HTMLTableColElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_table_col_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableColElement/span)
+        #[link_name = "get span"]
+        pub safe fn span(this: &HTMLTableColElement) -> u32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableColElement/span)
+        #[link_name = "set span"]
+        pub safe fn set_span(this: &HTMLTableColElement, value: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableColElement/align)
+        #[link_name = "get align"]
+        pub safe fn align(this: &HTMLTableColElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableColElement/align)
+        #[link_name = "set align"]
+        pub safe fn set_align(this: &HTMLTableColElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableColElement/ch)
+        #[link_name = "get ch"]
+        pub safe fn ch(this: &HTMLTableColElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableColElement/ch)
+        #[link_name = "set ch"]
+        pub safe fn set_ch(this: &HTMLTableColElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableColElement/chOff)
+        #[link_name = "get chOff"]
+        pub safe fn ch_off(this: &HTMLTableColElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableColElement/chOff)
+        #[link_name = "set chOff"]
+        pub safe fn set_ch_off(this: &HTMLTableColElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableColElement/vAlign)
+        #[link_name = "get vAlign"]
+        pub safe fn v_align(this: &HTMLTableColElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableColElement/vAlign)
+        #[link_name = "set vAlign"]
+        pub safe fn set_v_align(this: &HTMLTableColElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableColElement/width)
+        #[link_name = "get width"]
+        pub safe fn width(this: &HTMLTableColElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableColElement/width)
+        #[link_name = "set width"]
+        pub safe fn set_width(this: &HTMLTableColElement, value: &str);
+
+        /// Treats `this` as `HTMLTableColElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLTableColElement;
+    }
+}
+
+/// [`HTMLDataListElement`](https://developer.mozilla.org/docs/Web/API/HTMLDataListElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLDataListElement")]
+pub struct HTMLDataListElement(PhantomData<JsObject>);
+
+impl Deref for HTMLDataListElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_data_list_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLDataListElement/options)
+        #[link_name = "get options"]
+        pub safe fn options(this: &HTMLDataListElement) -> &'static HTMLCollection;
+
+        /// Treats `this` as `HTMLDataListElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLDataListElement;
+    }
+}
+
+/// [`HTMLOptGroupElement`](https://developer.mozilla.org/docs/Web/API/HTMLOptGroupElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLOptGroupElement")]
+pub struct HTMLOptGroupElement(PhantomData<JsObject>);
+
+impl Deref for HTMLOptGroupElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_opt_group_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLOptGroupElement/disabled)
+        #[link_name = "get disabled"]
+        pub safe fn disabled(this: &HTMLOptGroupElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLOptGroupElement/disabled)
+        #[link_name = "set disabled"]
+        pub safe fn set_disabled(this: &HTMLOptGroupElement, value: bool);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLOptGroupElement/label)
+        #[link_name = "get label"]
+        pub safe fn label(this: &HTMLOptGroupElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLOptGroupElement/label)
+        #[link_name = "set label"]
+        pub safe fn set_label(this: &HTMLOptGroupElement, value: &str);
+
+        /// Treats `this` as `HTMLOptGroupElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLOptGroupElement;
+    }
+}
+
+/// [`HTMLProgressElement`](https://developer.mozilla.org/docs/Web/API/HTMLProgressElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLProgressElement")]
+pub struct HTMLProgressElement(PhantomData<JsObject>);
+
+impl Deref for HTMLProgressElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_progress_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLProgressElement/value)
+        #[link_name = "get value"]
+        pub safe fn value(this: &HTMLProgressElement) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLProgressElement/value)
+        #[link_name = "set value"]
+        pub safe fn set_value(this: &HTMLProgressElement, value: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLProgressElement/max)
+        #[link_name = "get max"]
+        pub safe fn max(this: &HTMLProgressElement) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLProgressElement/max)
+        #[link_name = "set max"]
+        pub safe fn set_max(this: &HTMLProgressElement, value: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLProgressElement/position)
+        #[link_name = "get position"]
+        pub safe fn position(this: &HTMLProgressElement) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLProgressElement/labels)
+        #[link_name = "get labels"]
+        pub safe fn labels(this: &HTMLProgressElement) -> &'static NodeList;
+
+        /// Treats `this` as `HTMLProgressElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLProgressElement;
+    }
+}
+
+/// [`HTMLMeterElement`](https://developer.mozilla.org/docs/Web/API/HTMLMeterElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLMeterElement")]
+pub struct HTMLMeterElement(PhantomData<JsObject>);
+
+impl Deref for HTMLMeterElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_meter_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMeterElement/value)
+        #[link_name = "get value"]
+        pub safe fn value(this: &HTMLMeterElement) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMeterElement/value)
+        #[link_name = "set value"]
+        pub safe fn set_value(this: &HTMLMeterElement, value: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMeterElement/min)
+        #[link_name = "get min"]
+        pub safe fn min(this: &HTMLMeterElement) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMeterElement/min)
+        #[link_name = "set min"]
+        pub safe fn set_min(this: &HTMLMeterElement, value: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMeterElement/max)
+        #[link_name = "get max"]
+        pub safe fn max(this: &HTMLMeterElement) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMeterElement/max)
+        #[link_name = "set max"]
+        pub safe fn set_max(this: &HTMLMeterElement, value: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMeterElement/low)
+        #[link_name = "get low"]
+        pub safe fn low(this: &HTMLMeterElement) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMeterElement/low)
+        #[link_name = "set low"]
+        pub safe fn set_low(this: &HTMLMeterElement, value: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMeterElement/high)
+        #[link_name = "get high"]
+        pub safe fn high(this: &HTMLMeterElement) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMeterElement/high)
+        #[link_name = "set high"]
+        pub safe fn set_high(this: &HTMLMeterElement, value: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMeterElement/optimum)
+        #[link_name = "get optimum"]
+        pub safe fn optimum(this: &HTMLMeterElement) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMeterElement/optimum)
+        #[link_name = "set optimum"]
+        pub safe fn set_optimum(this: &HTMLMeterElement, value: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMeterElement/labels)
+        #[link_name = "get labels"]
+        pub safe fn labels(this: &HTMLMeterElement) -> &'static NodeList;
+
+        /// Treats `this` as `HTMLMeterElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLMeterElement;
+    }
+}
+
+/// [`HTMLFieldSetElement`](https://developer.mozilla.org/docs/Web/API/HTMLFieldSetElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLFieldSetElement")]
+pub struct HTMLFieldSetElement(PhantomData<JsObject>);
+
+impl Deref for HTMLFieldSetElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_field_set_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFieldSetElement/disabled)
+        #[link_name = "get disabled"]
+        pub safe fn disabled(this: &HTMLFieldSetElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFieldSetElement/disabled)
+        #[link_name = "set disabled"]
+        pub safe fn set_disabled(this: &HTMLFieldSetElement, value: bool);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFieldSetElement/form)
+        #[link_name = "get form"]
+        pub safe fn form(this: &HTMLFieldSetElement) -> Option<&'static HTMLFormElement>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFieldSetElement/name)
+        #[link_name = "get name"]
+        pub safe fn name(this: &HTMLFieldSetElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFieldSetElement/name)
+        #[link_name = "set name"]
+        pub safe fn set_name(this: &HTMLFieldSetElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFieldSetElement/type)
+        #[link_name = "get type"]
+        pub safe fn type_(this: &HTMLFieldSetElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFieldSetElement/elements)
+        #[link_name = "get elements"]
+        pub safe fn elements(this: &HTMLFieldSetElement) -> &'static HTMLCollection;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFieldSetElement/willValidate)
+        #[link_name = "get willValidate"]
+        pub safe fn will_validate(this: &HTMLFieldSetElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFieldSetElement/validationMessage)
+        #[link_name = "get validationMessage"]
+        pub safe fn validation_message(this: &HTMLFieldSetElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFieldSetElement/checkValidity)
+        #[link_name = "checkValidity"]
+        pub safe fn check_validity(this: &HTMLFieldSetElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFieldSetElement/reportValidity)
+        #[link_name = "reportValidity"]
+        pub safe fn report_validity(this: &HTMLFieldSetElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFieldSetElement/setCustomValidity)
+        #[link_name = "setCustomValidity"]
+        pub safe fn set_custom_validity(this: &HTMLFieldSetElement, error: &str);
+
+        /// Treats `this` as `HTMLFieldSetElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLFieldSetElement;
+    }
+}
+
+/// [`HTMLLegendElement`](https://developer.mozilla.org/docs/Web/API/HTMLLegendElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLLegendElement")]
+pub struct HTMLLegendElement(PhantomData<JsObject>);
+
+impl Deref for HTMLLegendElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_legend_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLegendElement/form)
+        #[link_name = "get form"]
+        pub safe fn form(this: &HTMLLegendElement) -> Option<&'static HTMLFormElement>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLegendElement/align)
+        #[link_name = "get align"]
+        pub safe fn align(this: &HTMLLegendElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLegendElement/align)
+        #[link_name = "set align"]
+        pub safe fn set_align(this: &HTMLLegendElement, value: &str);
+
+        /// Treats `this` as `HTMLLegendElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLLegendElement;
+    }
+}
+
+/// [`HTMLSelectedContentElement`](https://developer.mozilla.org/docs/Web/API/HTMLSelectedContentElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLSelectedContentElement")]
+pub struct HTMLSelectedContentElement(PhantomData<JsObject>);
+
+impl Deref for HTMLSelectedContentElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_selected_content_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// Treats `this` as `HTMLSelectedContentElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLSelectedContentElement;
+    }
+}
+
+/// [`HTMLDialogElement`](https://developer.mozilla.org/docs/Web/API/HTMLDialogElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLDialogElement")]
+pub struct HTMLDialogElement(PhantomData<JsObject>);
+
+impl Deref for HTMLDialogElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_dialog_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLDialogElement/open)
+        #[link_name = "get open"]
+        pub safe fn open(this: &HTMLDialogElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLDialogElement/open)
+        #[link_name = "set open"]
+        pub safe fn set_open(this: &HTMLDialogElement, value: bool);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLDialogElement/returnValue)
+        #[link_name = "get returnValue"]
+        pub safe fn return_value(this: &HTMLDialogElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLDialogElement/returnValue)
+        #[link_name = "set returnValue"]
+        pub safe fn set_return_value(this: &HTMLDialogElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLDialogElement/closedBy)
+        #[link_name = "get closedBy"]
+        pub safe fn closed_by(this: &HTMLDialogElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLDialogElement/closedBy)
+        #[link_name = "set closedBy"]
+        pub safe fn set_closed_by(this: &HTMLDialogElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLDialogElement/show)
+        pub safe fn show(this: &HTMLDialogElement);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLDialogElement/showModal)
+        #[link_name = "showModal"]
+        pub safe fn show_modal(this: &HTMLDialogElement);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLDialogElement/close)
+        pub safe fn close(this: &HTMLDialogElement);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLDialogElement/close)
+        #[link_name = "close"]
+        pub safe fn close_with_return_value(this: &HTMLDialogElement, return_value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLDialogElement/requestClose)
+        #[link_name = "requestClose"]
+        pub safe fn request_close(this: &HTMLDialogElement);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLDialogElement/requestClose)
+        #[link_name = "requestClose"]
+        pub safe fn request_close_with_return_value(this: &HTMLDialogElement, return_value: &str);
+
+        /// Treats `this` as `HTMLDialogElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLDialogElement;
+    }
+}
+
+/// [`HTMLScriptElement`](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLScriptElement")]
+pub struct HTMLScriptElement(PhantomData<JsObject>);
+
+impl Deref for HTMLScriptElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_script_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/type)
+        #[link_name = "get type"]
+        pub safe fn type_(this: &HTMLScriptElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/type)
+        #[link_name = "set type"]
+        pub safe fn set_type(this: &HTMLScriptElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/src)
+        #[link_name = "get src"]
+        pub safe fn src(this: &HTMLScriptElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/src)
+        #[link_name = "set src"]
+        pub safe fn set_src(this: &HTMLScriptElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/noModule)
+        #[link_name = "get noModule"]
+        pub safe fn no_module(this: &HTMLScriptElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/noModule)
+        #[link_name = "set noModule"]
+        pub safe fn set_no_module(this: &HTMLScriptElement, value: bool);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/async)
+        #[link_name = "get async"]
+        pub safe fn async_(this: &HTMLScriptElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/async)
+        #[link_name = "set async"]
+        pub safe fn set_async(this: &HTMLScriptElement, value: bool);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/defer)
+        #[link_name = "get defer"]
+        pub safe fn defer(this: &HTMLScriptElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/defer)
+        #[link_name = "set defer"]
+        pub safe fn set_defer(this: &HTMLScriptElement, value: bool);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/blocking)
+        #[link_name = "get blocking"]
+        pub safe fn blocking(this: &HTMLScriptElement) -> &'static DOMTokenList;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/crossOrigin)
+        #[link_name = "get crossOrigin"]
+        pub safe fn cross_origin(this: &HTMLScriptElement) -> Option<String>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/crossOrigin)
+        #[link_name = "set crossOrigin"]
+        pub safe fn set_cross_origin(this: &HTMLScriptElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/referrerPolicy)
+        #[link_name = "get referrerPolicy"]
+        pub safe fn referrer_policy(this: &HTMLScriptElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/referrerPolicy)
+        #[link_name = "set referrerPolicy"]
+        pub safe fn set_referrer_policy(this: &HTMLScriptElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/integrity)
+        #[link_name = "get integrity"]
+        pub safe fn integrity(this: &HTMLScriptElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/integrity)
+        #[link_name = "set integrity"]
+        pub safe fn set_integrity(this: &HTMLScriptElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/fetchPriority)
+        #[link_name = "get fetchPriority"]
+        pub safe fn fetch_priority(this: &HTMLScriptElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/fetchPriority)
+        #[link_name = "set fetchPriority"]
+        pub safe fn set_fetch_priority(this: &HTMLScriptElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/text)
+        #[link_name = "get text"]
+        pub safe fn text(this: &HTMLScriptElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/text)
+        #[link_name = "set text"]
+        pub safe fn set_text(this: &HTMLScriptElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/charset)
+        #[link_name = "get charset"]
+        pub safe fn charset(this: &HTMLScriptElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/charset)
+        #[link_name = "set charset"]
+        pub safe fn set_charset(this: &HTMLScriptElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/event)
+        #[link_name = "get event"]
+        pub safe fn event(this: &HTMLScriptElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/event)
+        #[link_name = "set event"]
+        pub safe fn set_event(this: &HTMLScriptElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/htmlFor)
+        #[link_name = "get htmlFor"]
+        pub safe fn html_for(this: &HTMLScriptElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/htmlFor)
+        #[link_name = "set htmlFor"]
+        pub safe fn set_html_for(this: &HTMLScriptElement, value: &str);
+
+        /// Treats `this` as `HTMLScriptElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLScriptElement;
+    }
+}
+
+/// [`HTMLTemplateElement`](https://developer.mozilla.org/docs/Web/API/HTMLTemplateElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLTemplateElement")]
+pub struct HTMLTemplateElement(PhantomData<JsObject>);
+
+impl Deref for HTMLTemplateElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_template_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTemplateElement/content)
+        #[link_name = "get content"]
+        pub safe fn content(this: &HTMLTemplateElement) -> &'static DocumentFragment;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTemplateElement/htmlFor)
+        #[link_name = "get htmlFor"]
+        pub safe fn html_for(this: &HTMLTemplateElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTemplateElement/htmlFor)
+        #[link_name = "set htmlFor"]
+        pub safe fn set_html_for(this: &HTMLTemplateElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTemplateElement/shadowRootMode)
+        #[link_name = "get shadowRootMode"]
+        pub safe fn shadow_root_mode(this: &HTMLTemplateElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTemplateElement/shadowRootMode)
+        #[link_name = "set shadowRootMode"]
+        pub safe fn set_shadow_root_mode(this: &HTMLTemplateElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTemplateElement/shadowRootDelegatesFocus)
+        #[link_name = "get shadowRootDelegatesFocus"]
+        pub safe fn shadow_root_delegates_focus(this: &HTMLTemplateElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTemplateElement/shadowRootDelegatesFocus)
+        #[link_name = "set shadowRootDelegatesFocus"]
+        pub safe fn set_shadow_root_delegates_focus(this: &HTMLTemplateElement, value: bool);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTemplateElement/shadowRootSerializable)
+        #[link_name = "get shadowRootSerializable"]
+        pub safe fn shadow_root_serializable(this: &HTMLTemplateElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTemplateElement/shadowRootSerializable)
+        #[link_name = "set shadowRootSerializable"]
+        pub safe fn set_shadow_root_serializable(this: &HTMLTemplateElement, value: bool);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTemplateElement/shadowRootSlotAssignment)
+        #[link_name = "get shadowRootSlotAssignment"]
+        pub safe fn shadow_root_slot_assignment(this: &HTMLTemplateElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTemplateElement/shadowRootSlotAssignment)
+        #[link_name = "set shadowRootSlotAssignment"]
+        pub safe fn set_shadow_root_slot_assignment(this: &HTMLTemplateElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTemplateElement/shadowRootClonable)
+        #[link_name = "get shadowRootClonable"]
+        pub safe fn shadow_root_clonable(this: &HTMLTemplateElement) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTemplateElement/shadowRootClonable)
+        #[link_name = "set shadowRootClonable"]
+        pub safe fn set_shadow_root_clonable(this: &HTMLTemplateElement, value: bool);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTemplateElement/shadowRootCustomElementRegistry)
+        #[link_name = "get shadowRootCustomElementRegistry"]
+        pub safe fn shadow_root_custom_element_registry(this: &HTMLTemplateElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTemplateElement/shadowRootCustomElementRegistry)
+        #[link_name = "set shadowRootCustomElementRegistry"]
+        pub safe fn set_shadow_root_custom_element_registry(this: &HTMLTemplateElement, value: &str);
+
+        /// Treats `this` as `HTMLTemplateElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLTemplateElement;
+    }
+}
+
+/// [`HTMLSlotElement`](https://developer.mozilla.org/docs/Web/API/HTMLSlotElement)
+#[cfg_attr(rust_js, rust_js::types = "HTMLSlotElement")]
+pub struct HTMLSlotElement(PhantomData<JsObject>);
+
+impl Deref for HTMLSlotElement {
+    type Target = HTMLElement;
+
+    fn deref(&self) -> &HTMLElement {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+pub mod html_slot_element {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSlotElement/name)
+        #[link_name = "get name"]
+        pub safe fn name(this: &HTMLSlotElement) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSlotElement/name)
+        #[link_name = "set name"]
+        pub safe fn set_name(this: &HTMLSlotElement, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSlotElement/assign)
+        pub safe fn assign(this: &HTMLSlotElement, nodes: ElementOrText<'_>);
+
+        /// Treats `this` as `HTMLSlotElement` without checking that it is one.
+        #[link_name = "this"]
+        pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLSlotElement;
     }
 }
 
@@ -7674,6 +10168,415 @@ impl<'a> From<ScrollIntoViewOptions<'a>> for BoolOrScrollIntoViewOptions<'a> {
     }
 }
 
+/// `Element | Text`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum ElementOrText<'a> {
+    Element(&'a Element),
+    Text(&'a Text),
+}
+
+impl<'a> From<&'a Element> for ElementOrText<'a> {
+    fn from(value: &'a Element) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLAnchorElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLAnchorElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLButtonElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLButtonElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDivElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLDivElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLFormElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLFormElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLHeadingElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLHeadingElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLImageElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLImageElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLInputElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLInputElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLLabelElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLLabelElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLLIElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLLIElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLOListElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLOListElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLOptionElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLOptionElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLOutputElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLOutputElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLParagraphElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLParagraphElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLSelectElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLSelectElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLSpanElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLSpanElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTextAreaElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLTextAreaElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLUListElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLUListElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTableElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLTableElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTableSectionElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLTableSectionElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTableRowElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLTableRowElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTableCellElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLTableCellElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLIFrameElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLIFrameElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLCanvasElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLCanvasElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDetailsElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLDetailsElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLHtmlElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLHtmlElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLHeadElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLHeadElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTitleElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLTitleElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLBaseElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLBaseElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLLinkElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLLinkElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMetaElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLMetaElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLStyleElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLStyleElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLBodyElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLBodyElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLHRElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLHRElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLPreElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLPreElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLQuoteElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLQuoteElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMenuElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLMenuElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDListElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLDListElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDataElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLDataElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTimeElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLTimeElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLBRElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLBRElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLModElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLModElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLPictureElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLPictureElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLSourceElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLSourceElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLEmbedElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLEmbedElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLObjectElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLObjectElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLVideoElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLVideoElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLAudioElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLAudioElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTrackElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLTrackElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMediaElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLMediaElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMapElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLMapElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLAreaElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLAreaElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTableCaptionElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLTableCaptionElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTableColElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLTableColElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDataListElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLDataListElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLOptGroupElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLOptGroupElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLProgressElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLProgressElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMeterElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLMeterElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLFieldSetElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLFieldSetElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLLegendElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLLegendElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLSelectedContentElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLSelectedContentElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDialogElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLDialogElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLScriptElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLScriptElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTemplateElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLTemplateElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLSlotElement> for ElementOrText<'a> {
+    fn from(value: &'a HTMLSlotElement) -> Self {
+        ElementOrText::Element(value)
+    }
+}
+
+impl<'a> From<&'a Text> for ElementOrText<'a> {
+    fn from(value: &'a Text) -> Self {
+        ElementOrText::Text(value)
+    }
+}
+
 /// `EventListenerOptions | boolean`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum EventListenerOptionsOrBool {
@@ -7863,6 +10766,246 @@ impl<'a> From<&'a HTMLDetailsElement> for GeometryNode<'a> {
     }
 }
 
+impl<'a> From<&'a HTMLHtmlElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLHtmlElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLHeadElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLHeadElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTitleElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLTitleElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLBaseElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLBaseElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLLinkElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLLinkElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMetaElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLMetaElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLStyleElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLStyleElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLBodyElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLBodyElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLHRElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLHRElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLPreElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLPreElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLQuoteElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLQuoteElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMenuElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLMenuElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDListElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLDListElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDataElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLDataElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTimeElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLTimeElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLBRElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLBRElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLModElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLModElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLPictureElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLPictureElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLSourceElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLSourceElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLEmbedElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLEmbedElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLObjectElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLObjectElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLVideoElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLVideoElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLAudioElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLAudioElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTrackElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLTrackElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMediaElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLMediaElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMapElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLMapElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLAreaElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLAreaElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTableCaptionElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLTableCaptionElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTableColElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLTableColElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDataListElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLDataListElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLOptGroupElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLOptGroupElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLProgressElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLProgressElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMeterElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLMeterElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLFieldSetElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLFieldSetElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLLegendElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLLegendElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLSelectedContentElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLSelectedContentElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDialogElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLDialogElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLScriptElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLScriptElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTemplateElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLTemplateElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLSlotElement> for GeometryNode<'a> {
+    fn from(value: &'a HTMLSlotElement) -> Self {
+        GeometryNode::Element(value)
+    }
+}
+
 impl<'a> From<&'a Document> for GeometryNode<'a> {
     fn from(value: &'a Document) -> Self {
         GeometryNode::Document(value)
@@ -8026,16 +11169,276 @@ impl<'a> From<&'a HTMLDetailsElement> for HTMLElementOrNumber<'a> {
     }
 }
 
+impl<'a> From<&'a HTMLHtmlElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLHtmlElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLHeadElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLHeadElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTitleElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLTitleElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLBaseElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLBaseElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLLinkElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLLinkElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMetaElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLMetaElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLStyleElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLStyleElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLBodyElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLBodyElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLHRElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLHRElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLPreElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLPreElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLQuoteElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLQuoteElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMenuElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLMenuElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDListElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLDListElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDataElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLDataElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTimeElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLTimeElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLBRElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLBRElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLModElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLModElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLPictureElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLPictureElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLSourceElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLSourceElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLEmbedElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLEmbedElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLObjectElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLObjectElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLVideoElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLVideoElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLAudioElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLAudioElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTrackElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLTrackElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMediaElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLMediaElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMapElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLMapElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLAreaElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLAreaElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTableCaptionElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLTableCaptionElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTableColElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLTableColElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDataListElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLDataListElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLOptGroupElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLOptGroupElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLProgressElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLProgressElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMeterElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLMeterElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLFieldSetElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLFieldSetElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLLegendElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLLegendElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLSelectedContentElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLSelectedContentElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDialogElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLDialogElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLScriptElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLScriptElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTemplateElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLTemplateElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLSlotElement> for HTMLElementOrNumber<'a> {
+    fn from(value: &'a HTMLSlotElement) -> Self {
+        HTMLElementOrNumber::HTMLElement(value)
+    }
+}
+
 impl<'a> From<i32> for HTMLElementOrNumber<'a> {
     fn from(value: i32) -> Self {
         HTMLElementOrNumber::Number(value)
     }
 }
 
-/// `HTMLImageElement | HTMLCanvasElement | Blob`: each variant's value is the member itself (ADR 0215).
+/// `HTMLOptionElement | HTMLOptGroupElement`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum HTMLOptionElementOrHTMLOptGroupElement<'a> {
+    HTMLOptionElement(&'a HTMLOptionElement),
+    HTMLOptGroupElement(&'a HTMLOptGroupElement),
+}
+
+impl<'a> From<&'a HTMLOptionElement> for HTMLOptionElementOrHTMLOptGroupElement<'a> {
+    fn from(value: &'a HTMLOptionElement) -> Self {
+        HTMLOptionElementOrHTMLOptGroupElement::HTMLOptionElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLOptGroupElement> for HTMLOptionElementOrHTMLOptGroupElement<'a> {
+    fn from(value: &'a HTMLOptGroupElement) -> Self {
+        HTMLOptionElementOrHTMLOptGroupElement::HTMLOptGroupElement(value)
+    }
+}
+
+/// `HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | Blob`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum ImageBitmapSource<'a> {
     HTMLImageElement(&'a HTMLImageElement),
+    HTMLVideoElement(&'a HTMLVideoElement),
     HTMLCanvasElement(&'a HTMLCanvasElement),
     Blob(&'a Blob),
 }
@@ -8043,6 +11446,12 @@ pub enum ImageBitmapSource<'a> {
 impl<'a> From<&'a HTMLImageElement> for ImageBitmapSource<'a> {
     fn from(value: &'a HTMLImageElement) -> Self {
         ImageBitmapSource::HTMLImageElement(value)
+    }
+}
+
+impl<'a> From<&'a HTMLVideoElement> for ImageBitmapSource<'a> {
+    fn from(value: &'a HTMLVideoElement) -> Self {
+        ImageBitmapSource::HTMLVideoElement(value)
     }
 }
 
@@ -8259,6 +11668,246 @@ impl<'a> From<&'a HTMLCanvasElement> for NodeOrStr<'a> {
 
 impl<'a> From<&'a HTMLDetailsElement> for NodeOrStr<'a> {
     fn from(value: &'a HTMLDetailsElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLHtmlElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLHtmlElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLHeadElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLHeadElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTitleElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLTitleElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLBaseElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLBaseElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLLinkElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLLinkElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMetaElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLMetaElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLStyleElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLStyleElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLBodyElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLBodyElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLHRElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLHRElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLPreElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLPreElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLQuoteElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLQuoteElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMenuElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLMenuElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDListElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLDListElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDataElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLDataElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTimeElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLTimeElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLBRElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLBRElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLModElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLModElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLPictureElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLPictureElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLSourceElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLSourceElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLEmbedElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLEmbedElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLObjectElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLObjectElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLVideoElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLVideoElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLAudioElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLAudioElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTrackElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLTrackElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMediaElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLMediaElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMapElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLMapElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLAreaElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLAreaElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTableCaptionElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLTableCaptionElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTableColElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLTableColElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDataListElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLDataListElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLOptGroupElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLOptGroupElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLProgressElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLProgressElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMeterElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLMeterElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLFieldSetElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLFieldSetElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLLegendElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLLegendElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLSelectedContentElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLSelectedContentElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDialogElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLDialogElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLScriptElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLScriptElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTemplateElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLTemplateElement) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
+impl<'a> From<&'a HTMLSlotElement> for NodeOrStr<'a> {
+    fn from(value: &'a HTMLSlotElement) -> Self {
         NodeOrStr::Node(value)
     }
 }
@@ -8526,6 +12175,14 @@ pub mod events {
     #[cfg_attr(rust_js, rust_js::name = "cancel")]
     pub struct Cancel;
 
+    /// `"canplay"`
+    #[cfg_attr(rust_js, rust_js::name = "canplay")]
+    pub struct Canplay;
+
+    /// `"canplaythrough"`
+    #[cfg_attr(rust_js, rust_js::name = "canplaythrough")]
+    pub struct Canplaythrough;
+
     /// `"change"`
     #[cfg_attr(rust_js, rust_js::name = "change")]
     pub struct Change;
@@ -8537,6 +12194,10 @@ pub mod events {
     /// `"clipboardchange"`
     #[cfg_attr(rust_js, rust_js::name = "clipboardchange")]
     pub struct Clipboardchange;
+
+    /// `"close"`
+    #[cfg_attr(rust_js, rust_js::name = "close")]
+    pub struct Close;
 
     /// `"command"`
     #[cfg_attr(rust_js, rust_js::name = "command")]
@@ -8573,6 +12234,10 @@ pub mod events {
     /// `"copy"`
     #[cfg_attr(rust_js, rust_js::name = "copy")]
     pub struct Copy;
+
+    /// `"cuechange"`
+    #[cfg_attr(rust_js, rust_js::name = "cuechange")]
+    pub struct Cuechange;
 
     /// `"cut"`
     #[cfg_attr(rust_js, rust_js::name = "cut")]
@@ -8621,6 +12286,22 @@ pub mod events {
     /// `"drop"`
     #[cfg_attr(rust_js, rust_js::name = "drop")]
     pub struct Drop;
+
+    /// `"durationchange"`
+    #[cfg_attr(rust_js, rust_js::name = "durationchange")]
+    pub struct Durationchange;
+
+    /// `"emptied"`
+    #[cfg_attr(rust_js, rust_js::name = "emptied")]
+    pub struct Emptied;
+
+    /// `"encrypted"`
+    #[cfg_attr(rust_js, rust_js::name = "encrypted")]
+    pub struct Encrypted;
+
+    /// `"ended"`
+    #[cfg_attr(rust_js, rust_js::name = "ended")]
+    pub struct Ended;
 
     /// `"enterpictureinpicture"`
     #[cfg_attr(rust_js, rust_js::name = "enterpictureinpicture")]
@@ -8714,6 +12395,18 @@ pub mod events {
     #[cfg_attr(rust_js, rust_js::name = "load")]
     pub struct Load;
 
+    /// `"loadeddata"`
+    #[cfg_attr(rust_js, rust_js::name = "loadeddata")]
+    pub struct Loadeddata;
+
+    /// `"loadedmetadata"`
+    #[cfg_attr(rust_js, rust_js::name = "loadedmetadata")]
+    pub struct Loadedmetadata;
+
+    /// `"loadstart"`
+    #[cfg_attr(rust_js, rust_js::name = "loadstart")]
+    pub struct Loadstart;
+
     /// `"lostpointercapture"`
     #[cfg_attr(rust_js, rust_js::name = "lostpointercapture")]
     pub struct Lostpointercapture;
@@ -8794,6 +12487,18 @@ pub mod events {
     #[cfg_attr(rust_js, rust_js::name = "paste")]
     pub struct Paste;
 
+    /// `"pause"`
+    #[cfg_attr(rust_js, rust_js::name = "pause")]
+    pub struct Pause;
+
+    /// `"play"`
+    #[cfg_attr(rust_js, rust_js::name = "play")]
+    pub struct Play;
+
+    /// `"playing"`
+    #[cfg_attr(rust_js, rust_js::name = "playing")]
+    pub struct Playing;
+
     /// `"pointercancel"`
     #[cfg_attr(rust_js, rust_js::name = "pointercancel")]
     pub struct Pointercancel;
@@ -8850,6 +12555,10 @@ pub mod events {
     #[cfg_attr(rust_js, rust_js::name = "prerenderingchange")]
     pub struct Prerenderingchange;
 
+    /// `"progress"`
+    #[cfg_attr(rust_js, rust_js::name = "progress")]
+    pub struct Progress;
+
     /// `"promptaction"`
     #[cfg_attr(rust_js, rust_js::name = "promptaction")]
     pub struct Promptaction;
@@ -8857,6 +12566,10 @@ pub mod events {
     /// `"promptdismiss"`
     #[cfg_attr(rust_js, rust_js::name = "promptdismiss")]
     pub struct Promptdismiss;
+
+    /// `"ratechange"`
+    #[cfg_attr(rust_js, rust_js::name = "ratechange")]
+    pub struct Ratechange;
 
     /// `"readystatechange"`
     #[cfg_attr(rust_js, rust_js::name = "readystatechange")]
@@ -8894,6 +12607,14 @@ pub mod events {
     #[cfg_attr(rust_js, rust_js::name = "securitypolicyviolation")]
     pub struct Securitypolicyviolation;
 
+    /// `"seeked"`
+    #[cfg_attr(rust_js, rust_js::name = "seeked")]
+    pub struct Seeked;
+
+    /// `"seeking"`
+    #[cfg_attr(rust_js, rust_js::name = "seeking")]
+    pub struct Seeking;
+
     /// `"select"`
     #[cfg_attr(rust_js, rust_js::name = "select")]
     pub struct Select;
@@ -8910,6 +12631,10 @@ pub mod events {
     #[cfg_attr(rust_js, rust_js::name = "slotchange")]
     pub struct Slotchange;
 
+    /// `"stalled"`
+    #[cfg_attr(rust_js, rust_js::name = "stalled")]
+    pub struct Stalled;
+
     /// `"storage"`
     #[cfg_attr(rust_js, rust_js::name = "storage")]
     pub struct Storage;
@@ -8918,9 +12643,17 @@ pub mod events {
     #[cfg_attr(rust_js, rust_js::name = "submit")]
     pub struct Submit;
 
+    /// `"suspend"`
+    #[cfg_attr(rust_js, rust_js::name = "suspend")]
+    pub struct Suspend;
+
     /// `"textInput"`
     #[cfg_attr(rust_js, rust_js::name = "textInput")]
     pub struct TextInput;
+
+    /// `"timeupdate"`
+    #[cfg_attr(rust_js, rust_js::name = "timeupdate")]
+    pub struct Timeupdate;
 
     /// `"toggle"`
     #[cfg_attr(rust_js, rust_js::name = "toggle")]
@@ -8973,6 +12706,18 @@ pub mod events {
     /// `"visibilitychange"`
     #[cfg_attr(rust_js, rust_js::name = "visibilitychange")]
     pub struct Visibilitychange;
+
+    /// `"volumechange"`
+    #[cfg_attr(rust_js, rust_js::name = "volumechange")]
+    pub struct Volumechange;
+
+    /// `"waiting"`
+    #[cfg_attr(rust_js, rust_js::name = "waiting")]
+    pub struct Waiting;
+
+    /// `"waitingforkey"`
+    #[cfg_attr(rust_js, rust_js::name = "waitingforkey")]
+    pub struct Waitingforkey;
 
     /// `"webglcontextcreationerror"`
     #[cfg_attr(rust_js, rust_js::name = "webglcontextcreationerror")]
@@ -12419,6 +16164,3837 @@ impl Listen<events::Unload> for HTMLDetailsElement { type Event = Event; }
 impl Listen<events::Validationstatuschange> for HTMLDetailsElement { type Event = Event; }
 impl Listen<events::Wheel> for HTMLDetailsElement { type Event = MouseEvent; }
 
+impl Listen<events::DOMActivate> for HTMLHtmlElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLHtmlElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLHtmlElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLHtmlElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLHtmlElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLHtmlElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Change> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Click> for HTMLHtmlElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLHtmlElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLHtmlElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLHtmlElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLHtmlElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLHtmlElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLHtmlElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLHtmlElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLHtmlElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLHtmlElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLHtmlElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLHtmlElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLHtmlElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Error> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLHtmlElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLHtmlElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLHtmlElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLHtmlElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLHtmlElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLHtmlElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLHtmlElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Load> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLHtmlElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLHtmlElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLHtmlElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLHtmlElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLHtmlElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLHtmlElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLHtmlElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLHtmlElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLHtmlElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLHtmlElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLHtmlElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLHtmlElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLHtmlElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLHtmlElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLHtmlElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLHtmlElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLHtmlElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLHtmlElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLHtmlElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Select> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLHtmlElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLHtmlElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLHtmlElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLHtmlElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLHtmlElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLHtmlElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLHtmlElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLHtmlElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLHeadElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLHeadElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLHeadElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLHeadElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLHeadElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLHeadElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Change> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Click> for HTMLHeadElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLHeadElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLHeadElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLHeadElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLHeadElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLHeadElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLHeadElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLHeadElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLHeadElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLHeadElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLHeadElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLHeadElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLHeadElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Error> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLHeadElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLHeadElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLHeadElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLHeadElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLHeadElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLHeadElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLHeadElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Load> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLHeadElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLHeadElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLHeadElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLHeadElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLHeadElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLHeadElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLHeadElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLHeadElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLHeadElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLHeadElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLHeadElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLHeadElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLHeadElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLHeadElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLHeadElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLHeadElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLHeadElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLHeadElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLHeadElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Select> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLHeadElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLHeadElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLHeadElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLHeadElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLHeadElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLHeadElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLHeadElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLHeadElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLTitleElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLTitleElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLTitleElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLTitleElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLTitleElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLTitleElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Change> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Click> for HTMLTitleElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLTitleElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLTitleElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLTitleElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLTitleElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLTitleElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLTitleElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLTitleElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLTitleElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLTitleElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLTitleElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLTitleElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLTitleElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Error> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLTitleElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLTitleElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLTitleElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLTitleElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLTitleElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLTitleElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLTitleElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Load> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLTitleElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLTitleElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLTitleElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLTitleElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLTitleElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLTitleElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLTitleElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLTitleElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLTitleElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLTitleElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLTitleElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLTitleElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLTitleElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLTitleElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLTitleElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLTitleElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLTitleElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLTitleElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLTitleElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Select> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLTitleElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLTitleElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLTitleElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLTitleElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLTitleElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLTitleElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLTitleElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLTitleElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLBaseElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLBaseElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLBaseElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLBaseElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLBaseElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLBaseElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Change> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Click> for HTMLBaseElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLBaseElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLBaseElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLBaseElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLBaseElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLBaseElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLBaseElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLBaseElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLBaseElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLBaseElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLBaseElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLBaseElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLBaseElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Error> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLBaseElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLBaseElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLBaseElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLBaseElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLBaseElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLBaseElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLBaseElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Load> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLBaseElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLBaseElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLBaseElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLBaseElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLBaseElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLBaseElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLBaseElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLBaseElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLBaseElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLBaseElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLBaseElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLBaseElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLBaseElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLBaseElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLBaseElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLBaseElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLBaseElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLBaseElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLBaseElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Select> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLBaseElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLBaseElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLBaseElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLBaseElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLBaseElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLBaseElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLBaseElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLBaseElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLLinkElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLLinkElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLLinkElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLLinkElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLLinkElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLLinkElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Change> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Click> for HTMLLinkElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLLinkElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLLinkElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLLinkElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLLinkElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLLinkElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLLinkElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLLinkElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLLinkElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLLinkElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLLinkElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLLinkElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLLinkElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Error> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLLinkElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLLinkElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLLinkElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLLinkElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLLinkElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLLinkElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLLinkElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Load> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLLinkElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLLinkElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLLinkElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLLinkElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLLinkElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLLinkElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLLinkElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLLinkElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLLinkElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLLinkElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLLinkElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLLinkElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLLinkElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLLinkElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLLinkElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLLinkElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLLinkElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLLinkElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLLinkElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Select> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLLinkElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLLinkElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLLinkElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLLinkElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLLinkElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLLinkElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLLinkElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLLinkElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLMetaElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLMetaElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLMetaElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLMetaElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLMetaElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLMetaElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Change> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Click> for HTMLMetaElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLMetaElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLMetaElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLMetaElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLMetaElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLMetaElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLMetaElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLMetaElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLMetaElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLMetaElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLMetaElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLMetaElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLMetaElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Error> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLMetaElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLMetaElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLMetaElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLMetaElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLMetaElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLMetaElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLMetaElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Load> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLMetaElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLMetaElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLMetaElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLMetaElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLMetaElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLMetaElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLMetaElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLMetaElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLMetaElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLMetaElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLMetaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLMetaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLMetaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLMetaElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLMetaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLMetaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLMetaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLMetaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLMetaElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Select> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLMetaElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLMetaElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLMetaElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLMetaElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLMetaElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLMetaElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLMetaElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLMetaElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLStyleElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLStyleElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLStyleElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLStyleElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLStyleElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLStyleElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Change> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Click> for HTMLStyleElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLStyleElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLStyleElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLStyleElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLStyleElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLStyleElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLStyleElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLStyleElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLStyleElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLStyleElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLStyleElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLStyleElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLStyleElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Error> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLStyleElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLStyleElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLStyleElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLStyleElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLStyleElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLStyleElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLStyleElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Load> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLStyleElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLStyleElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLStyleElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLStyleElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLStyleElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLStyleElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLStyleElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLStyleElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLStyleElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLStyleElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLStyleElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLStyleElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLStyleElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLStyleElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLStyleElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLStyleElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLStyleElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLStyleElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLStyleElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Select> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLStyleElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLStyleElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLStyleElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLStyleElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLStyleElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLStyleElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLStyleElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLStyleElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLBodyElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLBodyElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLBodyElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLBodyElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLBodyElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLBodyElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Change> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Click> for HTMLBodyElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLBodyElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLBodyElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLBodyElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLBodyElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLBodyElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLBodyElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLBodyElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLBodyElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLBodyElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLBodyElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLBodyElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLBodyElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Error> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLBodyElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLBodyElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLBodyElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLBodyElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLBodyElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLBodyElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLBodyElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Load> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLBodyElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLBodyElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLBodyElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLBodyElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLBodyElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLBodyElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLBodyElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLBodyElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLBodyElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLBodyElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLBodyElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLBodyElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLBodyElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLBodyElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLBodyElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLBodyElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLBodyElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLBodyElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLBodyElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Select> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLBodyElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLBodyElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLBodyElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLBodyElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLBodyElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLBodyElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLBodyElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLBodyElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLHRElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLHRElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLHRElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLHRElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLHRElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLHRElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Change> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Click> for HTMLHRElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLHRElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLHRElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLHRElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLHRElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLHRElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLHRElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLHRElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLHRElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLHRElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLHRElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLHRElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLHRElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Error> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLHRElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLHRElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLHRElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLHRElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLHRElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLHRElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLHRElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Load> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLHRElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLHRElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLHRElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLHRElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLHRElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLHRElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLHRElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLHRElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLHRElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLHRElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLHRElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLHRElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLHRElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLHRElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLHRElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLHRElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLHRElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLHRElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLHRElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Select> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLHRElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLHRElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLHRElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLHRElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLHRElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLHRElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLHRElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLHRElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLPreElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLPreElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLPreElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLPreElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLPreElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLPreElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Change> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Click> for HTMLPreElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLPreElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLPreElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLPreElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLPreElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLPreElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLPreElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLPreElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLPreElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLPreElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLPreElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLPreElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLPreElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Error> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLPreElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLPreElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLPreElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLPreElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLPreElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLPreElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLPreElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Load> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLPreElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLPreElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLPreElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLPreElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLPreElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLPreElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLPreElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLPreElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLPreElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLPreElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLPreElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLPreElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLPreElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLPreElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLPreElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLPreElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLPreElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLPreElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLPreElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Select> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLPreElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLPreElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLPreElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLPreElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLPreElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLPreElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLPreElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLPreElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLQuoteElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLQuoteElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLQuoteElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLQuoteElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLQuoteElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLQuoteElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Change> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Click> for HTMLQuoteElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLQuoteElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLQuoteElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLQuoteElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLQuoteElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLQuoteElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLQuoteElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLQuoteElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLQuoteElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLQuoteElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLQuoteElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLQuoteElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLQuoteElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Error> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLQuoteElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLQuoteElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLQuoteElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLQuoteElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLQuoteElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLQuoteElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLQuoteElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Load> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLQuoteElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLQuoteElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLQuoteElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLQuoteElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLQuoteElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLQuoteElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLQuoteElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLQuoteElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLQuoteElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLQuoteElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLQuoteElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLQuoteElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLQuoteElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLQuoteElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLQuoteElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLQuoteElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLQuoteElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLQuoteElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLQuoteElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Select> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLQuoteElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLQuoteElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLQuoteElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLQuoteElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLQuoteElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLQuoteElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLQuoteElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLQuoteElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLMenuElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLMenuElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLMenuElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLMenuElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLMenuElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLMenuElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Change> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Click> for HTMLMenuElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLMenuElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLMenuElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLMenuElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLMenuElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLMenuElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLMenuElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLMenuElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLMenuElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLMenuElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLMenuElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLMenuElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLMenuElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Error> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLMenuElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLMenuElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLMenuElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLMenuElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLMenuElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLMenuElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLMenuElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Load> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLMenuElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLMenuElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLMenuElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLMenuElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLMenuElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLMenuElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLMenuElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLMenuElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLMenuElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLMenuElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLMenuElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLMenuElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLMenuElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLMenuElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLMenuElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLMenuElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLMenuElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLMenuElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLMenuElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Select> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLMenuElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLMenuElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLMenuElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLMenuElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLMenuElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLMenuElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLMenuElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLMenuElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLDListElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLDListElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLDListElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLDListElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLDListElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLDListElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Change> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Click> for HTMLDListElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLDListElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLDListElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLDListElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLDListElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLDListElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLDListElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLDListElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLDListElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLDListElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLDListElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLDListElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLDListElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Error> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLDListElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLDListElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLDListElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLDListElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLDListElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLDListElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLDListElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Load> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLDListElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLDListElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLDListElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLDListElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLDListElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLDListElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLDListElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLDListElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLDListElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLDListElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLDListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLDListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLDListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLDListElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLDListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLDListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLDListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLDListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLDListElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Select> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLDListElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLDListElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLDListElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLDListElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLDListElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLDListElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLDListElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLDListElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLDataElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLDataElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLDataElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLDataElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLDataElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLDataElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Change> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Click> for HTMLDataElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLDataElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLDataElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLDataElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLDataElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLDataElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLDataElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLDataElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLDataElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLDataElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLDataElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLDataElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLDataElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Error> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLDataElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLDataElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLDataElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLDataElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLDataElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLDataElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLDataElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Load> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLDataElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLDataElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLDataElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLDataElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLDataElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLDataElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLDataElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLDataElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLDataElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLDataElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLDataElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLDataElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLDataElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLDataElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLDataElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLDataElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLDataElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLDataElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLDataElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Select> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLDataElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLDataElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLDataElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLDataElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLDataElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLDataElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLDataElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLDataElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLTimeElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLTimeElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLTimeElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLTimeElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLTimeElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLTimeElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Change> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Click> for HTMLTimeElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLTimeElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLTimeElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLTimeElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLTimeElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLTimeElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLTimeElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLTimeElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLTimeElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLTimeElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLTimeElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLTimeElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLTimeElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Error> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLTimeElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLTimeElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLTimeElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLTimeElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLTimeElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLTimeElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLTimeElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Load> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLTimeElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLTimeElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLTimeElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLTimeElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLTimeElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLTimeElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLTimeElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLTimeElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLTimeElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLTimeElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLTimeElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLTimeElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLTimeElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLTimeElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLTimeElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLTimeElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLTimeElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLTimeElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLTimeElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Select> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLTimeElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLTimeElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLTimeElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLTimeElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLTimeElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLTimeElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLTimeElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLTimeElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLBRElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLBRElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLBRElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLBRElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLBRElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLBRElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Change> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Click> for HTMLBRElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLBRElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLBRElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLBRElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLBRElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLBRElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLBRElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLBRElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLBRElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLBRElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLBRElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLBRElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLBRElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Error> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLBRElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLBRElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLBRElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLBRElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLBRElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLBRElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLBRElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Load> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLBRElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLBRElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLBRElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLBRElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLBRElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLBRElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLBRElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLBRElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLBRElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLBRElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLBRElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLBRElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLBRElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLBRElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLBRElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLBRElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLBRElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLBRElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLBRElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Select> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLBRElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLBRElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLBRElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLBRElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLBRElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLBRElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLBRElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLBRElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLModElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLModElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLModElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLModElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLModElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLModElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLModElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLModElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLModElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLModElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLModElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLModElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLModElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLModElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLModElement { type Event = Event; }
+impl Listen<events::Change> for HTMLModElement { type Event = Event; }
+impl Listen<events::Click> for HTMLModElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLModElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLModElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLModElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLModElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLModElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLModElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLModElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLModElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLModElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLModElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLModElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLModElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLModElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLModElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLModElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLModElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLModElement { type Event = Event; }
+impl Listen<events::Error> for HTMLModElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLModElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLModElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLModElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLModElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLModElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLModElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLModElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLModElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLModElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLModElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLModElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLModElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLModElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLModElement { type Event = Event; }
+impl Listen<events::Load> for HTMLModElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLModElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLModElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLModElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLModElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLModElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLModElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLModElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLModElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLModElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLModElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLModElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLModElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLModElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLModElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLModElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLModElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLModElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLModElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLModElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLModElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLModElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLModElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLModElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLModElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLModElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLModElement { type Event = Event; }
+impl Listen<events::Select> for HTMLModElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLModElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLModElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLModElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLModElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLModElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLModElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLModElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLModElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLModElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLModElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLModElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLModElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLModElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLModElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLModElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLModElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLPictureElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLPictureElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLPictureElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLPictureElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLPictureElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLPictureElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Change> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Click> for HTMLPictureElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLPictureElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLPictureElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLPictureElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLPictureElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLPictureElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLPictureElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLPictureElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLPictureElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLPictureElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLPictureElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLPictureElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLPictureElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Error> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLPictureElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLPictureElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLPictureElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLPictureElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLPictureElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLPictureElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLPictureElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Load> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLPictureElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLPictureElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLPictureElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLPictureElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLPictureElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLPictureElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLPictureElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLPictureElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLPictureElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLPictureElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLPictureElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLPictureElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLPictureElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLPictureElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLPictureElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLPictureElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLPictureElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLPictureElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLPictureElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Select> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLPictureElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLPictureElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLPictureElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLPictureElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLPictureElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLPictureElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLPictureElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLPictureElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLSourceElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLSourceElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLSourceElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLSourceElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLSourceElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLSourceElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Change> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Click> for HTMLSourceElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLSourceElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLSourceElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLSourceElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLSourceElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLSourceElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLSourceElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLSourceElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLSourceElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLSourceElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLSourceElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLSourceElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLSourceElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Error> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLSourceElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLSourceElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLSourceElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLSourceElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLSourceElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLSourceElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLSourceElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Load> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLSourceElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLSourceElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLSourceElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLSourceElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLSourceElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLSourceElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLSourceElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLSourceElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLSourceElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLSourceElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLSourceElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLSourceElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLSourceElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLSourceElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLSourceElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLSourceElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLSourceElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLSourceElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLSourceElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Select> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLSourceElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLSourceElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLSourceElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLSourceElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLSourceElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLSourceElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLSourceElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLSourceElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLEmbedElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLEmbedElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLEmbedElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLEmbedElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLEmbedElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLEmbedElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Change> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Click> for HTMLEmbedElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLEmbedElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLEmbedElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLEmbedElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLEmbedElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLEmbedElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLEmbedElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLEmbedElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLEmbedElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLEmbedElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLEmbedElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLEmbedElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLEmbedElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Error> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLEmbedElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLEmbedElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLEmbedElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLEmbedElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLEmbedElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLEmbedElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLEmbedElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Load> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLEmbedElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLEmbedElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLEmbedElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLEmbedElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLEmbedElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLEmbedElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLEmbedElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLEmbedElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLEmbedElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLEmbedElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLEmbedElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLEmbedElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLEmbedElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLEmbedElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLEmbedElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLEmbedElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLEmbedElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLEmbedElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLEmbedElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Select> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLEmbedElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLEmbedElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLEmbedElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLEmbedElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLEmbedElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLEmbedElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLEmbedElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLEmbedElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLObjectElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLObjectElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLObjectElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLObjectElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLObjectElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLObjectElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Change> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Click> for HTMLObjectElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLObjectElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLObjectElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLObjectElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLObjectElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLObjectElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLObjectElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLObjectElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLObjectElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLObjectElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLObjectElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLObjectElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLObjectElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Error> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLObjectElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLObjectElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLObjectElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLObjectElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLObjectElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLObjectElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLObjectElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Load> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLObjectElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLObjectElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLObjectElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLObjectElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLObjectElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLObjectElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLObjectElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLObjectElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLObjectElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLObjectElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLObjectElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLObjectElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLObjectElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLObjectElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLObjectElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLObjectElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLObjectElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLObjectElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLObjectElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Select> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLObjectElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLObjectElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLObjectElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLObjectElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLObjectElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLObjectElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLObjectElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLObjectElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLVideoElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLVideoElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLVideoElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLVideoElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLVideoElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLVideoElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Canplay> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Canplaythrough> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Change> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Click> for HTMLVideoElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLVideoElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLVideoElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLVideoElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLVideoElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLVideoElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLVideoElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLVideoElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLVideoElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLVideoElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLVideoElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLVideoElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLVideoElement { type Event = MouseEvent; }
+impl Listen<events::Durationchange> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Emptied> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Encrypted> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Ended> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Enterpictureinpicture> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Error> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLVideoElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLVideoElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLVideoElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLVideoElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLVideoElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLVideoElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLVideoElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Load> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Loadeddata> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Loadedmetadata> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Loadstart> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLVideoElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLVideoElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLVideoElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLVideoElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLVideoElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLVideoElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLVideoElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLVideoElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLVideoElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLVideoElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Pause> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Play> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Playing> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLVideoElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLVideoElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLVideoElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLVideoElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLVideoElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLVideoElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLVideoElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLVideoElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLVideoElement { type Event = PointerEvent; }
+impl Listen<events::Progress> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Promptaction> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Ratechange> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Resize> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Seeked> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Seeking> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Select> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Stalled> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLVideoElement { type Event = SubmitEvent; }
+impl Listen<events::Suspend> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::TextInput> for HTMLVideoElement { type Event = UIEvent; }
+impl Listen<events::Timeupdate> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Touchcancel> for HTMLVideoElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLVideoElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLVideoElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLVideoElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Volumechange> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Waiting> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Waitingforkey> for HTMLVideoElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLVideoElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLAudioElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLAudioElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLAudioElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLAudioElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLAudioElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLAudioElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Canplay> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Canplaythrough> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Change> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Click> for HTMLAudioElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLAudioElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLAudioElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLAudioElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLAudioElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLAudioElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLAudioElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLAudioElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLAudioElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLAudioElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLAudioElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLAudioElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLAudioElement { type Event = MouseEvent; }
+impl Listen<events::Durationchange> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Emptied> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Encrypted> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Ended> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Enterpictureinpicture> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Error> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLAudioElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLAudioElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLAudioElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLAudioElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLAudioElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLAudioElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLAudioElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Load> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Loadeddata> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Loadedmetadata> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Loadstart> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLAudioElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLAudioElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLAudioElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLAudioElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLAudioElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLAudioElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLAudioElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLAudioElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLAudioElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLAudioElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Pause> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Play> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Playing> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLAudioElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLAudioElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLAudioElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLAudioElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLAudioElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLAudioElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLAudioElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLAudioElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLAudioElement { type Event = PointerEvent; }
+impl Listen<events::Progress> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Promptaction> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Ratechange> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Resize> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Seeked> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Seeking> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Select> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Stalled> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLAudioElement { type Event = SubmitEvent; }
+impl Listen<events::Suspend> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::TextInput> for HTMLAudioElement { type Event = UIEvent; }
+impl Listen<events::Timeupdate> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Touchcancel> for HTMLAudioElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLAudioElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLAudioElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLAudioElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Volumechange> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Waiting> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Waitingforkey> for HTMLAudioElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLAudioElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLTrackElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLTrackElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLTrackElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLTrackElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLTrackElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLTrackElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Change> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Click> for HTMLTrackElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLTrackElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLTrackElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLTrackElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLTrackElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Cuechange> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLTrackElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLTrackElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLTrackElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLTrackElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLTrackElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLTrackElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLTrackElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLTrackElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Error> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLTrackElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLTrackElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLTrackElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLTrackElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLTrackElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLTrackElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLTrackElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Load> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLTrackElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLTrackElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLTrackElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLTrackElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLTrackElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLTrackElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLTrackElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLTrackElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLTrackElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLTrackElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLTrackElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLTrackElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLTrackElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLTrackElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLTrackElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLTrackElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLTrackElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLTrackElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLTrackElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Select> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLTrackElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLTrackElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLTrackElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLTrackElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLTrackElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLTrackElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLTrackElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLTrackElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLMediaElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLMediaElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLMediaElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLMediaElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLMediaElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLMediaElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Canplay> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Canplaythrough> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Change> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Click> for HTMLMediaElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLMediaElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLMediaElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLMediaElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLMediaElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLMediaElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLMediaElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLMediaElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLMediaElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLMediaElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLMediaElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLMediaElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLMediaElement { type Event = MouseEvent; }
+impl Listen<events::Durationchange> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Emptied> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Encrypted> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Ended> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Enterpictureinpicture> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Error> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLMediaElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLMediaElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLMediaElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLMediaElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLMediaElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLMediaElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLMediaElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Load> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Loadeddata> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Loadedmetadata> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Loadstart> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLMediaElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLMediaElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLMediaElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLMediaElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLMediaElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLMediaElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLMediaElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLMediaElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLMediaElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLMediaElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Pause> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Play> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Playing> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLMediaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLMediaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLMediaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLMediaElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLMediaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLMediaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLMediaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLMediaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLMediaElement { type Event = PointerEvent; }
+impl Listen<events::Progress> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Promptaction> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Ratechange> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Resize> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Seeked> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Seeking> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Select> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Stalled> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLMediaElement { type Event = SubmitEvent; }
+impl Listen<events::Suspend> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::TextInput> for HTMLMediaElement { type Event = UIEvent; }
+impl Listen<events::Timeupdate> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Touchcancel> for HTMLMediaElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLMediaElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLMediaElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLMediaElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Volumechange> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Waiting> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Waitingforkey> for HTMLMediaElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLMediaElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLMapElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLMapElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLMapElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLMapElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLMapElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLMapElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Change> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Click> for HTMLMapElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLMapElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLMapElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLMapElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLMapElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLMapElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLMapElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLMapElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLMapElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLMapElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLMapElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLMapElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLMapElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Error> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLMapElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLMapElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLMapElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLMapElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLMapElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLMapElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLMapElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Load> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLMapElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLMapElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLMapElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLMapElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLMapElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLMapElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLMapElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLMapElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLMapElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLMapElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLMapElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLMapElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLMapElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLMapElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLMapElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLMapElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLMapElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLMapElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLMapElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Select> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLMapElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLMapElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLMapElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLMapElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLMapElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLMapElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLMapElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLMapElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLAreaElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLAreaElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLAreaElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLAreaElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLAreaElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLAreaElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Change> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Click> for HTMLAreaElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLAreaElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLAreaElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLAreaElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLAreaElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLAreaElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLAreaElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLAreaElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLAreaElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLAreaElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLAreaElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLAreaElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLAreaElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Error> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLAreaElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLAreaElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLAreaElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLAreaElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLAreaElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLAreaElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLAreaElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Load> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLAreaElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLAreaElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLAreaElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLAreaElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLAreaElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLAreaElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLAreaElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLAreaElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLAreaElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLAreaElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLAreaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLAreaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLAreaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLAreaElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLAreaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLAreaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLAreaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLAreaElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLAreaElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Select> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLAreaElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLAreaElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLAreaElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLAreaElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLAreaElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLAreaElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLAreaElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLAreaElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLTableCaptionElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLTableCaptionElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLTableCaptionElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLTableCaptionElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLTableCaptionElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLTableCaptionElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Change> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Click> for HTMLTableCaptionElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLTableCaptionElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLTableCaptionElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLTableCaptionElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLTableCaptionElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLTableCaptionElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLTableCaptionElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLTableCaptionElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLTableCaptionElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLTableCaptionElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLTableCaptionElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLTableCaptionElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLTableCaptionElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Error> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLTableCaptionElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLTableCaptionElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLTableCaptionElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLTableCaptionElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLTableCaptionElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLTableCaptionElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLTableCaptionElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Load> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLTableCaptionElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLTableCaptionElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLTableCaptionElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLTableCaptionElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLTableCaptionElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLTableCaptionElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLTableCaptionElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLTableCaptionElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLTableCaptionElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLTableCaptionElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLTableCaptionElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLTableCaptionElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLTableCaptionElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLTableCaptionElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLTableCaptionElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLTableCaptionElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLTableCaptionElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLTableCaptionElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLTableCaptionElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Select> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLTableCaptionElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLTableCaptionElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLTableCaptionElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLTableCaptionElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLTableCaptionElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLTableCaptionElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLTableCaptionElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLTableCaptionElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLTableColElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLTableColElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLTableColElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLTableColElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLTableColElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLTableColElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Change> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Click> for HTMLTableColElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLTableColElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLTableColElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLTableColElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLTableColElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLTableColElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLTableColElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLTableColElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLTableColElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLTableColElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLTableColElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLTableColElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLTableColElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Error> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLTableColElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLTableColElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLTableColElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLTableColElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLTableColElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLTableColElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLTableColElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Load> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLTableColElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLTableColElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLTableColElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLTableColElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLTableColElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLTableColElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLTableColElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLTableColElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLTableColElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLTableColElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLTableColElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLTableColElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLTableColElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLTableColElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLTableColElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLTableColElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLTableColElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLTableColElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLTableColElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Select> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLTableColElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLTableColElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLTableColElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLTableColElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLTableColElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLTableColElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLTableColElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLTableColElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLDataListElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLDataListElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLDataListElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLDataListElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLDataListElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLDataListElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Change> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Click> for HTMLDataListElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLDataListElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLDataListElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLDataListElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLDataListElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLDataListElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLDataListElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLDataListElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLDataListElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLDataListElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLDataListElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLDataListElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLDataListElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Error> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLDataListElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLDataListElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLDataListElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLDataListElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLDataListElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLDataListElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLDataListElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Load> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLDataListElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLDataListElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLDataListElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLDataListElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLDataListElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLDataListElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLDataListElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLDataListElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLDataListElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLDataListElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLDataListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLDataListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLDataListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLDataListElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLDataListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLDataListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLDataListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLDataListElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLDataListElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Select> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLDataListElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLDataListElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLDataListElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLDataListElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLDataListElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLDataListElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLDataListElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLDataListElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLOptGroupElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLOptGroupElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLOptGroupElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLOptGroupElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLOptGroupElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLOptGroupElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Change> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Click> for HTMLOptGroupElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLOptGroupElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLOptGroupElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLOptGroupElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLOptGroupElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLOptGroupElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLOptGroupElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLOptGroupElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLOptGroupElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLOptGroupElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLOptGroupElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLOptGroupElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLOptGroupElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Error> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLOptGroupElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLOptGroupElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLOptGroupElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLOptGroupElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLOptGroupElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLOptGroupElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLOptGroupElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Load> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLOptGroupElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLOptGroupElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLOptGroupElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLOptGroupElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLOptGroupElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLOptGroupElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLOptGroupElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLOptGroupElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLOptGroupElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLOptGroupElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLOptGroupElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLOptGroupElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLOptGroupElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLOptGroupElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLOptGroupElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLOptGroupElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLOptGroupElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLOptGroupElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLOptGroupElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Select> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLOptGroupElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLOptGroupElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLOptGroupElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLOptGroupElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLOptGroupElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLOptGroupElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLOptGroupElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLOptGroupElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLProgressElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLProgressElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLProgressElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLProgressElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLProgressElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLProgressElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Change> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Click> for HTMLProgressElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLProgressElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLProgressElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLProgressElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLProgressElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLProgressElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLProgressElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLProgressElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLProgressElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLProgressElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLProgressElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLProgressElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLProgressElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Error> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLProgressElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLProgressElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLProgressElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLProgressElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLProgressElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLProgressElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLProgressElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Load> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLProgressElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLProgressElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLProgressElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLProgressElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLProgressElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLProgressElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLProgressElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLProgressElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLProgressElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLProgressElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLProgressElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLProgressElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLProgressElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLProgressElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLProgressElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLProgressElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLProgressElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLProgressElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLProgressElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Select> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLProgressElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLProgressElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLProgressElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLProgressElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLProgressElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLProgressElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLProgressElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLProgressElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLMeterElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLMeterElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLMeterElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLMeterElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLMeterElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLMeterElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Change> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Click> for HTMLMeterElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLMeterElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLMeterElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLMeterElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLMeterElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLMeterElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLMeterElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLMeterElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLMeterElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLMeterElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLMeterElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLMeterElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLMeterElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Error> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLMeterElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLMeterElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLMeterElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLMeterElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLMeterElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLMeterElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLMeterElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Load> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLMeterElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLMeterElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLMeterElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLMeterElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLMeterElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLMeterElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLMeterElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLMeterElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLMeterElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLMeterElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLMeterElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLMeterElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLMeterElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLMeterElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLMeterElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLMeterElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLMeterElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLMeterElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLMeterElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Select> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLMeterElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLMeterElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLMeterElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLMeterElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLMeterElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLMeterElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLMeterElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLMeterElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLFieldSetElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLFieldSetElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLFieldSetElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLFieldSetElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLFieldSetElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLFieldSetElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Change> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Click> for HTMLFieldSetElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLFieldSetElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLFieldSetElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLFieldSetElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLFieldSetElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLFieldSetElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLFieldSetElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLFieldSetElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLFieldSetElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLFieldSetElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLFieldSetElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLFieldSetElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLFieldSetElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Error> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLFieldSetElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLFieldSetElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLFieldSetElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLFieldSetElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLFieldSetElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLFieldSetElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLFieldSetElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Load> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLFieldSetElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLFieldSetElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLFieldSetElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLFieldSetElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLFieldSetElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLFieldSetElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLFieldSetElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLFieldSetElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLFieldSetElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLFieldSetElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLFieldSetElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLFieldSetElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLFieldSetElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLFieldSetElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLFieldSetElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLFieldSetElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLFieldSetElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLFieldSetElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLFieldSetElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Select> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLFieldSetElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLFieldSetElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLFieldSetElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLFieldSetElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLFieldSetElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLFieldSetElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLFieldSetElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLFieldSetElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLLegendElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLLegendElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLLegendElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLLegendElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLLegendElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLLegendElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Change> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Click> for HTMLLegendElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLLegendElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLLegendElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLLegendElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLLegendElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLLegendElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLLegendElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLLegendElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLLegendElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLLegendElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLLegendElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLLegendElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLLegendElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Error> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLLegendElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLLegendElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLLegendElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLLegendElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLLegendElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLLegendElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLLegendElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Load> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLLegendElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLLegendElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLLegendElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLLegendElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLLegendElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLLegendElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLLegendElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLLegendElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLLegendElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLLegendElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLLegendElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLLegendElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLLegendElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLLegendElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLLegendElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLLegendElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLLegendElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLLegendElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLLegendElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Select> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLLegendElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLLegendElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLLegendElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLLegendElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLLegendElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLLegendElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLLegendElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLLegendElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLSelectedContentElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLSelectedContentElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLSelectedContentElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLSelectedContentElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLSelectedContentElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLSelectedContentElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Change> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Click> for HTMLSelectedContentElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLSelectedContentElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLSelectedContentElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLSelectedContentElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLSelectedContentElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLSelectedContentElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLSelectedContentElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLSelectedContentElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLSelectedContentElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLSelectedContentElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLSelectedContentElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLSelectedContentElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLSelectedContentElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Error> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLSelectedContentElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLSelectedContentElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLSelectedContentElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLSelectedContentElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLSelectedContentElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLSelectedContentElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLSelectedContentElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Load> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLSelectedContentElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLSelectedContentElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLSelectedContentElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLSelectedContentElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLSelectedContentElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLSelectedContentElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLSelectedContentElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLSelectedContentElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLSelectedContentElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLSelectedContentElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLSelectedContentElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLSelectedContentElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLSelectedContentElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLSelectedContentElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLSelectedContentElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLSelectedContentElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLSelectedContentElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLSelectedContentElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLSelectedContentElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Select> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLSelectedContentElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLSelectedContentElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLSelectedContentElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLSelectedContentElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLSelectedContentElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLSelectedContentElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLSelectedContentElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLSelectedContentElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLDialogElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLDialogElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLDialogElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLDialogElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLDialogElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLDialogElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Change> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Click> for HTMLDialogElement { type Event = PointerEvent; }
+impl Listen<events::Close> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Command> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLDialogElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLDialogElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLDialogElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLDialogElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLDialogElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLDialogElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLDialogElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLDialogElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLDialogElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLDialogElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLDialogElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLDialogElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Error> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLDialogElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLDialogElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLDialogElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLDialogElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLDialogElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLDialogElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLDialogElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Load> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLDialogElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLDialogElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLDialogElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLDialogElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLDialogElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLDialogElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLDialogElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLDialogElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLDialogElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLDialogElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLDialogElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLDialogElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLDialogElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLDialogElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLDialogElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLDialogElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLDialogElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLDialogElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLDialogElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Select> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLDialogElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLDialogElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLDialogElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLDialogElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLDialogElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLDialogElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLDialogElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLDialogElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLScriptElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLScriptElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLScriptElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLScriptElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLScriptElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLScriptElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Change> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Click> for HTMLScriptElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLScriptElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLScriptElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLScriptElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLScriptElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLScriptElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLScriptElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLScriptElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLScriptElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLScriptElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLScriptElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLScriptElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLScriptElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Error> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLScriptElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLScriptElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLScriptElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLScriptElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLScriptElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLScriptElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLScriptElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Load> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLScriptElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLScriptElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLScriptElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLScriptElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLScriptElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLScriptElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLScriptElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLScriptElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLScriptElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLScriptElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLScriptElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLScriptElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLScriptElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLScriptElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLScriptElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLScriptElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLScriptElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLScriptElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLScriptElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Select> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLScriptElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLScriptElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLScriptElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLScriptElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLScriptElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLScriptElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLScriptElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLScriptElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLTemplateElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLTemplateElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLTemplateElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLTemplateElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLTemplateElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLTemplateElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Change> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Click> for HTMLTemplateElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLTemplateElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLTemplateElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLTemplateElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLTemplateElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLTemplateElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLTemplateElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLTemplateElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLTemplateElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLTemplateElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLTemplateElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLTemplateElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLTemplateElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Error> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLTemplateElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLTemplateElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLTemplateElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLTemplateElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLTemplateElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLTemplateElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLTemplateElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Load> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLTemplateElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLTemplateElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLTemplateElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLTemplateElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLTemplateElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLTemplateElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLTemplateElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLTemplateElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLTemplateElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLTemplateElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLTemplateElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLTemplateElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLTemplateElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLTemplateElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLTemplateElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLTemplateElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLTemplateElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLTemplateElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLTemplateElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Select> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLTemplateElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLTemplateElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLTemplateElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLTemplateElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLTemplateElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLTemplateElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLTemplateElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLTemplateElement { type Event = MouseEvent; }
+
+impl Listen<events::DOMActivate> for HTMLSlotElement { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for HTMLSlotElement { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for HTMLSlotElement { type Event = FocusEvent; }
+impl Listen<events::Abort> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Animationcancel> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Animationend> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Animationiteration> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Animationstart> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Auxclick> for HTMLSlotElement { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for HTMLSlotElement { type Event = InputEvent; }
+impl Listen<events::Beforematch> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Beforetoggle> for HTMLSlotElement { type Event = ToggleEvent; }
+impl Listen<events::Beforexrselect> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Blur> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Cancel> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Change> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Click> for HTMLSlotElement { type Event = PointerEvent; }
+impl Listen<events::Command> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Compositionend> for HTMLSlotElement { type Event = UIEvent; }
+impl Listen<events::Compositionstart> for HTMLSlotElement { type Event = UIEvent; }
+impl Listen<events::Compositionupdate> for HTMLSlotElement { type Event = UIEvent; }
+impl Listen<events::Contentvisibilityautostatechange> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Contextmenu> for HTMLSlotElement { type Event = PointerEvent; }
+impl Listen<events::Copy> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Cut> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Dblclick> for HTMLSlotElement { type Event = MouseEvent; }
+impl Listen<events::Drag> for HTMLSlotElement { type Event = MouseEvent; }
+impl Listen<events::Dragend> for HTMLSlotElement { type Event = MouseEvent; }
+impl Listen<events::Dragenter> for HTMLSlotElement { type Event = MouseEvent; }
+impl Listen<events::Dragleave> for HTMLSlotElement { type Event = MouseEvent; }
+impl Listen<events::Dragover> for HTMLSlotElement { type Event = MouseEvent; }
+impl Listen<events::Dragstart> for HTMLSlotElement { type Event = MouseEvent; }
+impl Listen<events::Drop> for HTMLSlotElement { type Event = MouseEvent; }
+impl Listen<events::Enterpictureinpicture> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Error> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Fencedtreeclick> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Focus> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Focusin> for HTMLSlotElement { type Event = FocusEvent; }
+impl Listen<events::Focusout> for HTMLSlotElement { type Event = FocusEvent; }
+impl Listen<events::Formdata> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Fullscreenchange> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Fullscreenerror> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Gotpointercapture> for HTMLSlotElement { type Event = PointerEvent; }
+impl Listen<events::Input> for HTMLSlotElement { type Event = InputEvent; }
+impl Listen<events::Installresult> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Keydown> for HTMLSlotElement { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for HTMLSlotElement { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for HTMLSlotElement { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Load> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Lostpointercapture> for HTMLSlotElement { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for HTMLSlotElement { type Event = MouseEvent; }
+impl Listen<events::Mouseenter> for HTMLSlotElement { type Event = MouseEvent; }
+impl Listen<events::Mouseleave> for HTMLSlotElement { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for HTMLSlotElement { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for HTMLSlotElement { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for HTMLSlotElement { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for HTMLSlotElement { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for HTMLSlotElement { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for HTMLSlotElement { type Event = UIEvent; }
+impl Listen<events::Paste> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Pointercancel> for HTMLSlotElement { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for HTMLSlotElement { type Event = PointerEvent; }
+impl Listen<events::Pointerenter> for HTMLSlotElement { type Event = PointerEvent; }
+impl Listen<events::Pointerleave> for HTMLSlotElement { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for HTMLSlotElement { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for HTMLSlotElement { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for HTMLSlotElement { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for HTMLSlotElement { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for HTMLSlotElement { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Promptdismiss> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Reset> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Scroll> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Scrollend> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Select> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Selectionchange> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Selectstart> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Slotchange> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Submit> for HTMLSlotElement { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for HTMLSlotElement { type Event = UIEvent; }
+impl Listen<events::Touchcancel> for HTMLSlotElement { type Event = UIEvent; }
+impl Listen<events::Touchend> for HTMLSlotElement { type Event = UIEvent; }
+impl Listen<events::Touchmove> for HTMLSlotElement { type Event = UIEvent; }
+impl Listen<events::Touchstart> for HTMLSlotElement { type Event = UIEvent; }
+impl Listen<events::Transitioncancel> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Transitionend> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Transitionrun> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Transitionstart> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Unload> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Validationstatuschange> for HTMLSlotElement { type Event = Event; }
+impl Listen<events::Wheel> for HTMLSlotElement { type Event = MouseEvent; }
+
 impl Listen<events::DOMActivate> for Window { type Event = UIEvent; }
 impl Listen<events::DOMContentLoaded> for Window { type Event = Event; }
 impl Listen<events::DOMFocusIn> for Window { type Event = FocusEvent; }
@@ -12548,39 +20124,39 @@ impl Listen<events::Change> for MediaQueryList { type Event = MediaQueryListEven
 impl Tag for tags::A { type Element = HTMLAnchorElement; }
 impl Tag for tags::Abbr { type Element = HTMLElement; }
 impl Tag for tags::Address { type Element = HTMLElement; }
-impl Tag for tags::Area { type Element = HTMLElement; }
+impl Tag for tags::Area { type Element = HTMLAreaElement; }
 impl Tag for tags::Article { type Element = HTMLElement; }
 impl Tag for tags::Aside { type Element = HTMLElement; }
-impl Tag for tags::Audio { type Element = HTMLElement; }
+impl Tag for tags::Audio { type Element = HTMLAudioElement; }
 impl Tag for tags::B { type Element = HTMLElement; }
-impl Tag for tags::Base { type Element = HTMLElement; }
+impl Tag for tags::Base { type Element = HTMLBaseElement; }
 impl Tag for tags::Bdi { type Element = HTMLElement; }
 impl Tag for tags::Bdo { type Element = HTMLElement; }
-impl Tag for tags::Blockquote { type Element = HTMLElement; }
-impl Tag for tags::Body { type Element = HTMLElement; }
-impl Tag for tags::Br { type Element = HTMLElement; }
+impl Tag for tags::Blockquote { type Element = HTMLQuoteElement; }
+impl Tag for tags::Body { type Element = HTMLBodyElement; }
+impl Tag for tags::Br { type Element = HTMLBRElement; }
 impl Tag for tags::Button { type Element = HTMLButtonElement; }
 impl Tag for tags::Camera { type Element = HTMLElement; }
 impl Tag for tags::Canvas { type Element = HTMLCanvasElement; }
-impl Tag for tags::Caption { type Element = HTMLElement; }
+impl Tag for tags::Caption { type Element = HTMLTableCaptionElement; }
 impl Tag for tags::Cite { type Element = HTMLElement; }
 impl Tag for tags::Code { type Element = HTMLElement; }
-impl Tag for tags::Col { type Element = HTMLElement; }
-impl Tag for tags::Colgroup { type Element = HTMLElement; }
-impl Tag for tags::Data { type Element = HTMLElement; }
-impl Tag for tags::Datalist { type Element = HTMLElement; }
+impl Tag for tags::Col { type Element = HTMLTableColElement; }
+impl Tag for tags::Colgroup { type Element = HTMLTableColElement; }
+impl Tag for tags::Data { type Element = HTMLDataElement; }
+impl Tag for tags::Datalist { type Element = HTMLDataListElement; }
 impl Tag for tags::Dd { type Element = HTMLElement; }
-impl Tag for tags::Del { type Element = HTMLElement; }
+impl Tag for tags::Del { type Element = HTMLModElement; }
 impl Tag for tags::Details { type Element = HTMLDetailsElement; }
 impl Tag for tags::Dfn { type Element = HTMLElement; }
-impl Tag for tags::Dialog { type Element = HTMLElement; }
+impl Tag for tags::Dialog { type Element = HTMLDialogElement; }
 impl Tag for tags::Div { type Element = HTMLDivElement; }
-impl Tag for tags::Dl { type Element = HTMLElement; }
+impl Tag for tags::Dl { type Element = HTMLDListElement; }
 impl Tag for tags::Dt { type Element = HTMLElement; }
 impl Tag for tags::Em { type Element = HTMLElement; }
-impl Tag for tags::Embed { type Element = HTMLElement; }
+impl Tag for tags::Embed { type Element = HTMLEmbedElement; }
 impl Tag for tags::Fencedframe { type Element = HTMLElement; }
-impl Tag for tags::Fieldset { type Element = HTMLElement; }
+impl Tag for tags::Fieldset { type Element = HTMLFieldSetElement; }
 impl Tag for tags::Figcaption { type Element = HTMLElement; }
 impl Tag for tags::Figure { type Element = HTMLElement; }
 impl Tag for tags::Footer { type Element = HTMLElement; }
@@ -12592,79 +20168,79 @@ impl Tag for tags::H3 { type Element = HTMLHeadingElement; }
 impl Tag for tags::H4 { type Element = HTMLHeadingElement; }
 impl Tag for tags::H5 { type Element = HTMLHeadingElement; }
 impl Tag for tags::H6 { type Element = HTMLHeadingElement; }
-impl Tag for tags::Head { type Element = HTMLElement; }
+impl Tag for tags::Head { type Element = HTMLHeadElement; }
 impl Tag for tags::Header { type Element = HTMLElement; }
 impl Tag for tags::Hgroup { type Element = HTMLElement; }
-impl Tag for tags::Hr { type Element = HTMLElement; }
-impl Tag for tags::Html { type Element = HTMLElement; }
+impl Tag for tags::Hr { type Element = HTMLHRElement; }
+impl Tag for tags::Html { type Element = HTMLHtmlElement; }
 impl Tag for tags::I { type Element = HTMLElement; }
 impl Tag for tags::Iframe { type Element = HTMLIFrameElement; }
 impl Tag for tags::Img { type Element = HTMLImageElement; }
 impl Tag for tags::Input { type Element = HTMLInputElement; }
-impl Tag for tags::Ins { type Element = HTMLElement; }
+impl Tag for tags::Ins { type Element = HTMLModElement; }
 impl Tag for tags::Install { type Element = HTMLElement; }
 impl Tag for tags::Kbd { type Element = HTMLElement; }
 impl Tag for tags::Label { type Element = HTMLLabelElement; }
-impl Tag for tags::Legend { type Element = HTMLElement; }
+impl Tag for tags::Legend { type Element = HTMLLegendElement; }
 impl Tag for tags::Li { type Element = HTMLLIElement; }
-impl Tag for tags::Link { type Element = HTMLElement; }
+impl Tag for tags::Link { type Element = HTMLLinkElement; }
 impl Tag for tags::Main { type Element = HTMLElement; }
-impl Tag for tags::Map { type Element = HTMLElement; }
+impl Tag for tags::Map { type Element = HTMLMapElement; }
 impl Tag for tags::Mark { type Element = HTMLElement; }
-impl Tag for tags::Menu { type Element = HTMLElement; }
-impl Tag for tags::Meta { type Element = HTMLElement; }
-impl Tag for tags::Meter { type Element = HTMLElement; }
+impl Tag for tags::Menu { type Element = HTMLMenuElement; }
+impl Tag for tags::Meta { type Element = HTMLMetaElement; }
+impl Tag for tags::Meter { type Element = HTMLMeterElement; }
 impl Tag for tags::Microphone { type Element = HTMLElement; }
 impl Tag for tags::Model { type Element = HTMLElement; }
 impl Tag for tags::Nav { type Element = HTMLElement; }
 impl Tag for tags::Noscript { type Element = HTMLElement; }
-impl Tag for tags::Object { type Element = HTMLElement; }
+impl Tag for tags::Object { type Element = HTMLObjectElement; }
 impl Tag for tags::Ol { type Element = HTMLOListElement; }
-impl Tag for tags::Optgroup { type Element = HTMLElement; }
+impl Tag for tags::Optgroup { type Element = HTMLOptGroupElement; }
 impl Tag for tags::Option { type Element = HTMLOptionElement; }
 impl Tag for tags::Output { type Element = HTMLOutputElement; }
 impl Tag for tags::P { type Element = HTMLParagraphElement; }
-impl Tag for tags::Picture { type Element = HTMLElement; }
+impl Tag for tags::Picture { type Element = HTMLPictureElement; }
 impl Tag for tags::Portal { type Element = HTMLElement; }
-impl Tag for tags::Pre { type Element = HTMLElement; }
-impl Tag for tags::Progress { type Element = HTMLElement; }
-impl Tag for tags::Q { type Element = HTMLElement; }
+impl Tag for tags::Pre { type Element = HTMLPreElement; }
+impl Tag for tags::Progress { type Element = HTMLProgressElement; }
+impl Tag for tags::Q { type Element = HTMLQuoteElement; }
 impl Tag for tags::Rp { type Element = HTMLElement; }
 impl Tag for tags::Rt { type Element = HTMLElement; }
 impl Tag for tags::Ruby { type Element = HTMLElement; }
 impl Tag for tags::S { type Element = HTMLElement; }
 impl Tag for tags::Samp { type Element = HTMLElement; }
-impl Tag for tags::Script { type Element = HTMLElement; }
+impl Tag for tags::Script { type Element = HTMLScriptElement; }
 impl Tag for tags::Search { type Element = HTMLElement; }
 impl Tag for tags::Section { type Element = HTMLElement; }
 impl Tag for tags::Select { type Element = HTMLSelectElement; }
-impl Tag for tags::Selectedcontent { type Element = HTMLElement; }
-impl Tag for tags::Slot { type Element = HTMLElement; }
+impl Tag for tags::Selectedcontent { type Element = HTMLSelectedContentElement; }
+impl Tag for tags::Slot { type Element = HTMLSlotElement; }
 impl Tag for tags::Small { type Element = HTMLElement; }
-impl Tag for tags::Source { type Element = HTMLElement; }
+impl Tag for tags::Source { type Element = HTMLSourceElement; }
 impl Tag for tags::Span { type Element = HTMLSpanElement; }
 impl Tag for tags::Strong { type Element = HTMLElement; }
-impl Tag for tags::Style { type Element = HTMLElement; }
+impl Tag for tags::Style { type Element = HTMLStyleElement; }
 impl Tag for tags::Sub { type Element = HTMLElement; }
 impl Tag for tags::Summary { type Element = HTMLElement; }
 impl Tag for tags::Sup { type Element = HTMLElement; }
 impl Tag for tags::Table { type Element = HTMLTableElement; }
 impl Tag for tags::Tbody { type Element = HTMLTableSectionElement; }
 impl Tag for tags::Td { type Element = HTMLTableCellElement; }
-impl Tag for tags::Template { type Element = HTMLElement; }
+impl Tag for tags::Template { type Element = HTMLTemplateElement; }
 impl Tag for tags::Textarea { type Element = HTMLTextAreaElement; }
 impl Tag for tags::Tfoot { type Element = HTMLTableSectionElement; }
 impl Tag for tags::Th { type Element = HTMLTableCellElement; }
 impl Tag for tags::Thead { type Element = HTMLTableSectionElement; }
-impl Tag for tags::Time { type Element = HTMLElement; }
-impl Tag for tags::Title { type Element = HTMLElement; }
+impl Tag for tags::Time { type Element = HTMLTimeElement; }
+impl Tag for tags::Title { type Element = HTMLTitleElement; }
 impl Tag for tags::Tr { type Element = HTMLTableRowElement; }
-impl Tag for tags::Track { type Element = HTMLElement; }
+impl Tag for tags::Track { type Element = HTMLTrackElement; }
 impl Tag for tags::U { type Element = HTMLElement; }
 impl Tag for tags::Ul { type Element = HTMLUListElement; }
 impl Tag for tags::Usermedia { type Element = HTMLElement; }
 impl Tag for tags::Var { type Element = HTMLElement; }
-impl Tag for tags::Video { type Element = HTMLElement; }
+impl Tag for tags::Video { type Element = HTMLVideoElement; }
 impl Tag for tags::Wbr { type Element = HTMLElement; }
 
 unsafe impl IsA<EventTarget> for EventTarget {}
@@ -12821,6 +20397,208 @@ unsafe impl IsA<HTMLElement> for HTMLDetailsElement {}
 unsafe impl IsA<Element> for HTMLDetailsElement {}
 unsafe impl IsA<Node> for HTMLDetailsElement {}
 unsafe impl IsA<EventTarget> for HTMLDetailsElement {}
+unsafe impl IsA<HTMLHtmlElement> for HTMLHtmlElement {}
+unsafe impl IsA<HTMLElement> for HTMLHtmlElement {}
+unsafe impl IsA<Element> for HTMLHtmlElement {}
+unsafe impl IsA<Node> for HTMLHtmlElement {}
+unsafe impl IsA<EventTarget> for HTMLHtmlElement {}
+unsafe impl IsA<HTMLHeadElement> for HTMLHeadElement {}
+unsafe impl IsA<HTMLElement> for HTMLHeadElement {}
+unsafe impl IsA<Element> for HTMLHeadElement {}
+unsafe impl IsA<Node> for HTMLHeadElement {}
+unsafe impl IsA<EventTarget> for HTMLHeadElement {}
+unsafe impl IsA<HTMLTitleElement> for HTMLTitleElement {}
+unsafe impl IsA<HTMLElement> for HTMLTitleElement {}
+unsafe impl IsA<Element> for HTMLTitleElement {}
+unsafe impl IsA<Node> for HTMLTitleElement {}
+unsafe impl IsA<EventTarget> for HTMLTitleElement {}
+unsafe impl IsA<HTMLBaseElement> for HTMLBaseElement {}
+unsafe impl IsA<HTMLElement> for HTMLBaseElement {}
+unsafe impl IsA<Element> for HTMLBaseElement {}
+unsafe impl IsA<Node> for HTMLBaseElement {}
+unsafe impl IsA<EventTarget> for HTMLBaseElement {}
+unsafe impl IsA<HTMLLinkElement> for HTMLLinkElement {}
+unsafe impl IsA<HTMLElement> for HTMLLinkElement {}
+unsafe impl IsA<Element> for HTMLLinkElement {}
+unsafe impl IsA<Node> for HTMLLinkElement {}
+unsafe impl IsA<EventTarget> for HTMLLinkElement {}
+unsafe impl IsA<HTMLMetaElement> for HTMLMetaElement {}
+unsafe impl IsA<HTMLElement> for HTMLMetaElement {}
+unsafe impl IsA<Element> for HTMLMetaElement {}
+unsafe impl IsA<Node> for HTMLMetaElement {}
+unsafe impl IsA<EventTarget> for HTMLMetaElement {}
+unsafe impl IsA<HTMLStyleElement> for HTMLStyleElement {}
+unsafe impl IsA<HTMLElement> for HTMLStyleElement {}
+unsafe impl IsA<Element> for HTMLStyleElement {}
+unsafe impl IsA<Node> for HTMLStyleElement {}
+unsafe impl IsA<EventTarget> for HTMLStyleElement {}
+unsafe impl IsA<HTMLBodyElement> for HTMLBodyElement {}
+unsafe impl IsA<HTMLElement> for HTMLBodyElement {}
+unsafe impl IsA<Element> for HTMLBodyElement {}
+unsafe impl IsA<Node> for HTMLBodyElement {}
+unsafe impl IsA<EventTarget> for HTMLBodyElement {}
+unsafe impl IsA<HTMLHRElement> for HTMLHRElement {}
+unsafe impl IsA<HTMLElement> for HTMLHRElement {}
+unsafe impl IsA<Element> for HTMLHRElement {}
+unsafe impl IsA<Node> for HTMLHRElement {}
+unsafe impl IsA<EventTarget> for HTMLHRElement {}
+unsafe impl IsA<HTMLPreElement> for HTMLPreElement {}
+unsafe impl IsA<HTMLElement> for HTMLPreElement {}
+unsafe impl IsA<Element> for HTMLPreElement {}
+unsafe impl IsA<Node> for HTMLPreElement {}
+unsafe impl IsA<EventTarget> for HTMLPreElement {}
+unsafe impl IsA<HTMLQuoteElement> for HTMLQuoteElement {}
+unsafe impl IsA<HTMLElement> for HTMLQuoteElement {}
+unsafe impl IsA<Element> for HTMLQuoteElement {}
+unsafe impl IsA<Node> for HTMLQuoteElement {}
+unsafe impl IsA<EventTarget> for HTMLQuoteElement {}
+unsafe impl IsA<HTMLMenuElement> for HTMLMenuElement {}
+unsafe impl IsA<HTMLElement> for HTMLMenuElement {}
+unsafe impl IsA<Element> for HTMLMenuElement {}
+unsafe impl IsA<Node> for HTMLMenuElement {}
+unsafe impl IsA<EventTarget> for HTMLMenuElement {}
+unsafe impl IsA<HTMLDListElement> for HTMLDListElement {}
+unsafe impl IsA<HTMLElement> for HTMLDListElement {}
+unsafe impl IsA<Element> for HTMLDListElement {}
+unsafe impl IsA<Node> for HTMLDListElement {}
+unsafe impl IsA<EventTarget> for HTMLDListElement {}
+unsafe impl IsA<HTMLDataElement> for HTMLDataElement {}
+unsafe impl IsA<HTMLElement> for HTMLDataElement {}
+unsafe impl IsA<Element> for HTMLDataElement {}
+unsafe impl IsA<Node> for HTMLDataElement {}
+unsafe impl IsA<EventTarget> for HTMLDataElement {}
+unsafe impl IsA<HTMLTimeElement> for HTMLTimeElement {}
+unsafe impl IsA<HTMLElement> for HTMLTimeElement {}
+unsafe impl IsA<Element> for HTMLTimeElement {}
+unsafe impl IsA<Node> for HTMLTimeElement {}
+unsafe impl IsA<EventTarget> for HTMLTimeElement {}
+unsafe impl IsA<HTMLBRElement> for HTMLBRElement {}
+unsafe impl IsA<HTMLElement> for HTMLBRElement {}
+unsafe impl IsA<Element> for HTMLBRElement {}
+unsafe impl IsA<Node> for HTMLBRElement {}
+unsafe impl IsA<EventTarget> for HTMLBRElement {}
+unsafe impl IsA<HTMLModElement> for HTMLModElement {}
+unsafe impl IsA<HTMLElement> for HTMLModElement {}
+unsafe impl IsA<Element> for HTMLModElement {}
+unsafe impl IsA<Node> for HTMLModElement {}
+unsafe impl IsA<EventTarget> for HTMLModElement {}
+unsafe impl IsA<HTMLPictureElement> for HTMLPictureElement {}
+unsafe impl IsA<HTMLElement> for HTMLPictureElement {}
+unsafe impl IsA<Element> for HTMLPictureElement {}
+unsafe impl IsA<Node> for HTMLPictureElement {}
+unsafe impl IsA<EventTarget> for HTMLPictureElement {}
+unsafe impl IsA<HTMLSourceElement> for HTMLSourceElement {}
+unsafe impl IsA<HTMLElement> for HTMLSourceElement {}
+unsafe impl IsA<Element> for HTMLSourceElement {}
+unsafe impl IsA<Node> for HTMLSourceElement {}
+unsafe impl IsA<EventTarget> for HTMLSourceElement {}
+unsafe impl IsA<HTMLEmbedElement> for HTMLEmbedElement {}
+unsafe impl IsA<HTMLElement> for HTMLEmbedElement {}
+unsafe impl IsA<Element> for HTMLEmbedElement {}
+unsafe impl IsA<Node> for HTMLEmbedElement {}
+unsafe impl IsA<EventTarget> for HTMLEmbedElement {}
+unsafe impl IsA<HTMLObjectElement> for HTMLObjectElement {}
+unsafe impl IsA<HTMLElement> for HTMLObjectElement {}
+unsafe impl IsA<Element> for HTMLObjectElement {}
+unsafe impl IsA<Node> for HTMLObjectElement {}
+unsafe impl IsA<EventTarget> for HTMLObjectElement {}
+unsafe impl IsA<HTMLVideoElement> for HTMLVideoElement {}
+unsafe impl IsA<HTMLMediaElement> for HTMLVideoElement {}
+unsafe impl IsA<HTMLElement> for HTMLVideoElement {}
+unsafe impl IsA<Element> for HTMLVideoElement {}
+unsafe impl IsA<Node> for HTMLVideoElement {}
+unsafe impl IsA<EventTarget> for HTMLVideoElement {}
+unsafe impl IsA<HTMLAudioElement> for HTMLAudioElement {}
+unsafe impl IsA<HTMLMediaElement> for HTMLAudioElement {}
+unsafe impl IsA<HTMLElement> for HTMLAudioElement {}
+unsafe impl IsA<Element> for HTMLAudioElement {}
+unsafe impl IsA<Node> for HTMLAudioElement {}
+unsafe impl IsA<EventTarget> for HTMLAudioElement {}
+unsafe impl IsA<HTMLTrackElement> for HTMLTrackElement {}
+unsafe impl IsA<HTMLElement> for HTMLTrackElement {}
+unsafe impl IsA<Element> for HTMLTrackElement {}
+unsafe impl IsA<Node> for HTMLTrackElement {}
+unsafe impl IsA<EventTarget> for HTMLTrackElement {}
+unsafe impl IsA<HTMLMediaElement> for HTMLMediaElement {}
+unsafe impl IsA<HTMLElement> for HTMLMediaElement {}
+unsafe impl IsA<Element> for HTMLMediaElement {}
+unsafe impl IsA<Node> for HTMLMediaElement {}
+unsafe impl IsA<EventTarget> for HTMLMediaElement {}
+unsafe impl IsA<HTMLMapElement> for HTMLMapElement {}
+unsafe impl IsA<HTMLElement> for HTMLMapElement {}
+unsafe impl IsA<Element> for HTMLMapElement {}
+unsafe impl IsA<Node> for HTMLMapElement {}
+unsafe impl IsA<EventTarget> for HTMLMapElement {}
+unsafe impl IsA<HTMLAreaElement> for HTMLAreaElement {}
+unsafe impl IsA<HTMLElement> for HTMLAreaElement {}
+unsafe impl IsA<Element> for HTMLAreaElement {}
+unsafe impl IsA<Node> for HTMLAreaElement {}
+unsafe impl IsA<EventTarget> for HTMLAreaElement {}
+unsafe impl IsA<HTMLTableCaptionElement> for HTMLTableCaptionElement {}
+unsafe impl IsA<HTMLElement> for HTMLTableCaptionElement {}
+unsafe impl IsA<Element> for HTMLTableCaptionElement {}
+unsafe impl IsA<Node> for HTMLTableCaptionElement {}
+unsafe impl IsA<EventTarget> for HTMLTableCaptionElement {}
+unsafe impl IsA<HTMLTableColElement> for HTMLTableColElement {}
+unsafe impl IsA<HTMLElement> for HTMLTableColElement {}
+unsafe impl IsA<Element> for HTMLTableColElement {}
+unsafe impl IsA<Node> for HTMLTableColElement {}
+unsafe impl IsA<EventTarget> for HTMLTableColElement {}
+unsafe impl IsA<HTMLDataListElement> for HTMLDataListElement {}
+unsafe impl IsA<HTMLElement> for HTMLDataListElement {}
+unsafe impl IsA<Element> for HTMLDataListElement {}
+unsafe impl IsA<Node> for HTMLDataListElement {}
+unsafe impl IsA<EventTarget> for HTMLDataListElement {}
+unsafe impl IsA<HTMLOptGroupElement> for HTMLOptGroupElement {}
+unsafe impl IsA<HTMLElement> for HTMLOptGroupElement {}
+unsafe impl IsA<Element> for HTMLOptGroupElement {}
+unsafe impl IsA<Node> for HTMLOptGroupElement {}
+unsafe impl IsA<EventTarget> for HTMLOptGroupElement {}
+unsafe impl IsA<HTMLProgressElement> for HTMLProgressElement {}
+unsafe impl IsA<HTMLElement> for HTMLProgressElement {}
+unsafe impl IsA<Element> for HTMLProgressElement {}
+unsafe impl IsA<Node> for HTMLProgressElement {}
+unsafe impl IsA<EventTarget> for HTMLProgressElement {}
+unsafe impl IsA<HTMLMeterElement> for HTMLMeterElement {}
+unsafe impl IsA<HTMLElement> for HTMLMeterElement {}
+unsafe impl IsA<Element> for HTMLMeterElement {}
+unsafe impl IsA<Node> for HTMLMeterElement {}
+unsafe impl IsA<EventTarget> for HTMLMeterElement {}
+unsafe impl IsA<HTMLFieldSetElement> for HTMLFieldSetElement {}
+unsafe impl IsA<HTMLElement> for HTMLFieldSetElement {}
+unsafe impl IsA<Element> for HTMLFieldSetElement {}
+unsafe impl IsA<Node> for HTMLFieldSetElement {}
+unsafe impl IsA<EventTarget> for HTMLFieldSetElement {}
+unsafe impl IsA<HTMLLegendElement> for HTMLLegendElement {}
+unsafe impl IsA<HTMLElement> for HTMLLegendElement {}
+unsafe impl IsA<Element> for HTMLLegendElement {}
+unsafe impl IsA<Node> for HTMLLegendElement {}
+unsafe impl IsA<EventTarget> for HTMLLegendElement {}
+unsafe impl IsA<HTMLSelectedContentElement> for HTMLSelectedContentElement {}
+unsafe impl IsA<HTMLElement> for HTMLSelectedContentElement {}
+unsafe impl IsA<Element> for HTMLSelectedContentElement {}
+unsafe impl IsA<Node> for HTMLSelectedContentElement {}
+unsafe impl IsA<EventTarget> for HTMLSelectedContentElement {}
+unsafe impl IsA<HTMLDialogElement> for HTMLDialogElement {}
+unsafe impl IsA<HTMLElement> for HTMLDialogElement {}
+unsafe impl IsA<Element> for HTMLDialogElement {}
+unsafe impl IsA<Node> for HTMLDialogElement {}
+unsafe impl IsA<EventTarget> for HTMLDialogElement {}
+unsafe impl IsA<HTMLScriptElement> for HTMLScriptElement {}
+unsafe impl IsA<HTMLElement> for HTMLScriptElement {}
+unsafe impl IsA<Element> for HTMLScriptElement {}
+unsafe impl IsA<Node> for HTMLScriptElement {}
+unsafe impl IsA<EventTarget> for HTMLScriptElement {}
+unsafe impl IsA<HTMLTemplateElement> for HTMLTemplateElement {}
+unsafe impl IsA<HTMLElement> for HTMLTemplateElement {}
+unsafe impl IsA<Element> for HTMLTemplateElement {}
+unsafe impl IsA<Node> for HTMLTemplateElement {}
+unsafe impl IsA<EventTarget> for HTMLTemplateElement {}
+unsafe impl IsA<HTMLSlotElement> for HTMLSlotElement {}
+unsafe impl IsA<HTMLElement> for HTMLSlotElement {}
+unsafe impl IsA<Element> for HTMLSlotElement {}
+unsafe impl IsA<Node> for HTMLSlotElement {}
+unsafe impl IsA<EventTarget> for HTMLSlotElement {}
 unsafe impl IsA<Window> for Window {}
 unsafe impl IsA<EventTarget> for Window {}
 unsafe impl IsA<Location> for Location {}
@@ -12922,6 +20700,46 @@ unsafe impl Defined for HTMLTableCellElement {}
 unsafe impl Defined for HTMLIFrameElement {}
 unsafe impl Defined for HTMLCanvasElement {}
 unsafe impl Defined for HTMLDetailsElement {}
+unsafe impl Defined for HTMLHtmlElement {}
+unsafe impl Defined for HTMLHeadElement {}
+unsafe impl Defined for HTMLTitleElement {}
+unsafe impl Defined for HTMLBaseElement {}
+unsafe impl Defined for HTMLLinkElement {}
+unsafe impl Defined for HTMLMetaElement {}
+unsafe impl Defined for HTMLStyleElement {}
+unsafe impl Defined for HTMLBodyElement {}
+unsafe impl Defined for HTMLHRElement {}
+unsafe impl Defined for HTMLPreElement {}
+unsafe impl Defined for HTMLQuoteElement {}
+unsafe impl Defined for HTMLMenuElement {}
+unsafe impl Defined for HTMLDListElement {}
+unsafe impl Defined for HTMLDataElement {}
+unsafe impl Defined for HTMLTimeElement {}
+unsafe impl Defined for HTMLBRElement {}
+unsafe impl Defined for HTMLModElement {}
+unsafe impl Defined for HTMLPictureElement {}
+unsafe impl Defined for HTMLSourceElement {}
+unsafe impl Defined for HTMLEmbedElement {}
+unsafe impl Defined for HTMLObjectElement {}
+unsafe impl Defined for HTMLVideoElement {}
+unsafe impl Defined for HTMLAudioElement {}
+unsafe impl Defined for HTMLTrackElement {}
+unsafe impl Defined for HTMLMediaElement {}
+unsafe impl Defined for HTMLMapElement {}
+unsafe impl Defined for HTMLAreaElement {}
+unsafe impl Defined for HTMLTableCaptionElement {}
+unsafe impl Defined for HTMLTableColElement {}
+unsafe impl Defined for HTMLDataListElement {}
+unsafe impl Defined for HTMLOptGroupElement {}
+unsafe impl Defined for HTMLProgressElement {}
+unsafe impl Defined for HTMLMeterElement {}
+unsafe impl Defined for HTMLFieldSetElement {}
+unsafe impl Defined for HTMLLegendElement {}
+unsafe impl Defined for HTMLSelectedContentElement {}
+unsafe impl Defined for HTMLDialogElement {}
+unsafe impl Defined for HTMLScriptElement {}
+unsafe impl Defined for HTMLTemplateElement {}
+unsafe impl Defined for HTMLSlotElement {}
 unsafe impl Defined for Window {}
 unsafe impl Defined for Location {}
 unsafe impl Defined for History {}

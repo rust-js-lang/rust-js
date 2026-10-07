@@ -62,7 +62,7 @@ mod elements;
 pub mod event;
 
 #[doc(hidden)]
-pub use elements::html;
+pub use elements::{has, html};
 /// The DOM, whose types React's APIs use: `react::webapi::FormData`.
 pub use js;
 pub use webapi;

@@ -29,6 +29,16 @@ const INTERFACES = [
   "HTMLSelectElement", "HTMLSpanElement", "HTMLTextAreaElement", "HTMLUListElement",
   "HTMLTableElement", "HTMLTableSectionElement", "HTMLTableRowElement", "HTMLTableCellElement", "HTMLIFrameElement",
   "HTMLCanvasElement", "HTMLDetailsElement",
+  // Every element of HTML, so each tag is of its own (ADR 0224): what its
+  // attributes are, as @types/react has them, follows.
+  "HTMLHtmlElement", "HTMLHeadElement", "HTMLTitleElement", "HTMLBaseElement", "HTMLLinkElement",
+  "HTMLMetaElement", "HTMLStyleElement", "HTMLBodyElement", "HTMLHRElement", "HTMLPreElement",
+  "HTMLQuoteElement", "HTMLMenuElement", "HTMLDListElement", "HTMLDataElement", "HTMLTimeElement",
+  "HTMLBRElement", "HTMLModElement", "HTMLPictureElement", "HTMLSourceElement", "HTMLEmbedElement",
+  "HTMLObjectElement", "HTMLVideoElement", "HTMLAudioElement", "HTMLTrackElement", "HTMLMediaElement",
+  "HTMLMapElement", "HTMLAreaElement", "HTMLTableCaptionElement", "HTMLTableColElement", "HTMLDataListElement",
+  "HTMLOptGroupElement", "HTMLProgressElement", "HTMLMeterElement", "HTMLFieldSetElement", "HTMLLegendElement",
+  "HTMLSelectedContentElement", "HTMLDialogElement", "HTMLScriptElement", "HTMLTemplateElement", "HTMLSlotElement",
   "Window", "Location", "History", "Storage", "DataTransfer", "ToggleEvent", "MessageEvent", "SubmitEvent",
   // hr-time: `window.performance`, the page's clock
   "Performance",

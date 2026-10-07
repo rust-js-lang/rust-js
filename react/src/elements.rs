@@ -12,7 +12,10 @@ use super::*;
 impl<T> Element<T> {
     /// `abbr`
     #[cfg_attr(rust_js, rust_js::link_name = "prop abbr")]
-    pub fn abbr(self, value: impl Value) -> Element<T> {
+    pub fn abbr(self, value: impl Value) -> Element<T>
+    where
+        T: has::Abbr,
+    {
         unreachable!()
     }
 
@@ -30,13 +33,19 @@ impl<T> Element<T> {
 
     /// `accept`
     #[cfg_attr(rust_js, rust_js::link_name = "prop accept")]
-    pub fn accept(self, value: impl Value) -> Element<T> {
+    pub fn accept(self, value: impl Value) -> Element<T>
+    where
+        T: has::Accept,
+    {
         unreachable!()
     }
 
     /// `acceptCharset`
     #[cfg_attr(rust_js, rust_js::link_name = "prop acceptCharset")]
-    pub fn accept_charset(self, value: impl Value) -> Element<T> {
+    pub fn accept_charset(self, value: impl Value) -> Element<T>
+    where
+        T: has::AcceptCharset,
+    {
         unreachable!()
     }
 
@@ -60,7 +69,10 @@ impl<T> Element<T> {
 
     /// `align`
     #[cfg_attr(rust_js, rust_js::link_name = "prop align")]
-    pub fn align(self, value: impl Value) -> Element<T> {
+    pub fn align(self, value: impl Value) -> Element<T>
+    where
+        T: has::Align,
+    {
         unreachable!()
     }
 
@@ -72,13 +84,19 @@ impl<T> Element<T> {
 
     /// `allow`
     #[cfg_attr(rust_js, rust_js::link_name = "prop allow")]
-    pub fn allow(self, value: impl Value) -> Element<T> {
+    pub fn allow(self, value: impl Value) -> Element<T>
+    where
+        T: has::Allow,
+    {
         unreachable!()
     }
 
     /// `allowFullScreen`
     #[cfg_attr(rust_js, rust_js::link_name = "prop allowFullScreen")]
-    pub fn allow_full_screen(self, value: bool) -> Element<T> {
+    pub fn allow_full_screen(self, value: bool) -> Element<T>
+    where
+        T: has::AllowFullScreen,
+    {
         unreachable!()
     }
 
@@ -90,7 +108,10 @@ impl<T> Element<T> {
 
     /// `allowTransparency`
     #[cfg_attr(rust_js, rust_js::link_name = "prop allowTransparency")]
-    pub fn allow_transparency(self, value: impl Value) -> Element<T> {
+    pub fn allow_transparency(self, value: impl Value) -> Element<T>
+    where
+        T: has::AllowTransparency,
+    {
         unreachable!()
     }
 
@@ -108,7 +129,10 @@ impl<T> Element<T> {
 
     /// `alt`
     #[cfg_attr(rust_js, rust_js::link_name = "prop alt")]
-    pub fn alt(self, value: impl Value) -> Element<T> {
+    pub fn alt(self, value: impl Value) -> Element<T>
+    where
+        T: has::Alt,
+    {
         unreachable!()
     }
 
@@ -126,7 +150,10 @@ impl<T> Element<T> {
 
     /// `as`
     #[cfg_attr(rust_js, rust_js::link_name = "prop as")]
-    pub fn r#as(self, value: impl Value) -> Element<T> {
+    pub fn r#as(self, value: impl Value) -> Element<T>
+    where
+        T: has::As,
+    {
         unreachable!()
     }
 
@@ -138,7 +165,10 @@ impl<T> Element<T> {
 
     /// `async`
     #[cfg_attr(rust_js, rust_js::link_name = "prop async")]
-    pub fn r#async(self, value: bool) -> Element<T> {
+    pub fn r#async(self, value: bool) -> Element<T>
+    where
+        T: has::Async,
+    {
         unreachable!()
     }
 
@@ -162,7 +192,10 @@ impl<T> Element<T> {
 
     /// `autoComplete`
     #[cfg_attr(rust_js, rust_js::link_name = "prop autoComplete")]
-    pub fn auto_complete(self, value: impl Value) -> Element<T> {
+    pub fn auto_complete(self, value: impl Value) -> Element<T>
+    where
+        T: has::AutoComplete,
+    {
         unreachable!()
     }
 
@@ -180,7 +213,10 @@ impl<T> Element<T> {
 
     /// `autoPlay`
     #[cfg_attr(rust_js, rust_js::link_name = "prop autoPlay")]
-    pub fn auto_play(self, value: bool) -> Element<T> {
+    pub fn auto_play(self, value: bool) -> Element<T>
+    where
+        T: has::AutoPlay,
+    {
         unreachable!()
     }
 
@@ -240,7 +276,10 @@ impl<T> Element<T> {
 
     /// `bgcolor`
     #[cfg_attr(rust_js, rust_js::link_name = "prop bgcolor")]
-    pub fn bgcolor(self, value: impl Value) -> Element<T> {
+    pub fn bgcolor(self, value: impl Value) -> Element<T>
+    where
+        T: has::Bgcolor,
+    {
         unreachable!()
     }
 
@@ -258,13 +297,19 @@ impl<T> Element<T> {
 
     /// `blocking`
     #[cfg_attr(rust_js, rust_js::link_name = "prop blocking")]
-    pub fn blocking(self, value: impl Value) -> Element<T> {
+    pub fn blocking(self, value: impl Value) -> Element<T>
+    where
+        T: has::Blocking,
+    {
         unreachable!()
     }
 
     /// `border`
     #[cfg_attr(rust_js, rust_js::link_name = "prop border")]
-    pub fn border(self, value: impl Value) -> Element<T> {
+    pub fn border(self, value: impl Value) -> Element<T>
+    where
+        T: has::Border,
+    {
         unreachable!()
     }
 
@@ -288,19 +333,28 @@ impl<T> Element<T> {
 
     /// `capture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop capture")]
-    pub fn capture(self, value: impl Value) -> Element<T> {
+    pub fn capture(self, value: impl Value) -> Element<T>
+    where
+        T: has::Capture,
+    {
         unreachable!()
     }
 
     /// `cellPadding`
     #[cfg_attr(rust_js, rust_js::link_name = "prop cellPadding")]
-    pub fn cell_padding(self, value: impl Value) -> Element<T> {
+    pub fn cell_padding(self, value: impl Value) -> Element<T>
+    where
+        T: has::CellPadding,
+    {
         unreachable!()
     }
 
     /// `cellSpacing`
     #[cfg_attr(rust_js, rust_js::link_name = "prop cellSpacing")]
-    pub fn cell_spacing(self, value: impl Value) -> Element<T> {
+    pub fn cell_spacing(self, value: impl Value) -> Element<T>
+    where
+        T: has::CellSpacing,
+    {
         unreachable!()
     }
 
@@ -312,25 +366,37 @@ impl<T> Element<T> {
 
     /// `charSet`
     #[cfg_attr(rust_js, rust_js::link_name = "prop charSet")]
-    pub fn char_set(self, value: impl Value) -> Element<T> {
+    pub fn char_set(self, value: impl Value) -> Element<T>
+    where
+        T: has::CharSet,
+    {
         unreachable!()
     }
 
     /// `checked`
     #[cfg_attr(rust_js, rust_js::link_name = "prop checked")]
-    pub fn checked(self, value: bool) -> Element<T> {
+    pub fn checked(self, value: bool) -> Element<T>
+    where
+        T: has::Checked,
+    {
         unreachable!()
     }
 
     /// `cite`
     #[cfg_attr(rust_js, rust_js::link_name = "prop cite")]
-    pub fn cite(self, value: impl Value) -> Element<T> {
+    pub fn cite(self, value: impl Value) -> Element<T>
+    where
+        T: has::Cite,
+    {
         unreachable!()
     }
 
     /// `classID`
     #[cfg_attr(rust_js, rust_js::link_name = "prop classID")]
-    pub fn class_id(self, value: impl Value) -> Element<T> {
+    pub fn class_id(self, value: impl Value) -> Element<T>
+    where
+        T: has::ClassID,
+    {
         unreachable!()
     }
 
@@ -366,13 +432,19 @@ impl<T> Element<T> {
 
     /// `closedby`
     #[cfg_attr(rust_js, rust_js::link_name = "prop closedby")]
-    pub fn closedby(self, value: impl Value) -> Element<T> {
+    pub fn closedby(self, value: impl Value) -> Element<T>
+    where
+        T: has::Closedby,
+    {
         unreachable!()
     }
 
     /// `colSpan`
     #[cfg_attr(rust_js, rust_js::link_name = "prop colSpan")]
-    pub fn col_span(self, value: impl Value) -> Element<T> {
+    pub fn col_span(self, value: impl Value) -> Element<T>
+    where
+        T: has::ColSpan,
+    {
         unreachable!()
     }
 
@@ -408,7 +480,10 @@ impl<T> Element<T> {
 
     /// `cols`
     #[cfg_attr(rust_js, rust_js::link_name = "prop cols")]
-    pub fn cols(self, value: impl Value) -> Element<T> {
+    pub fn cols(self, value: impl Value) -> Element<T>
+    where
+        T: has::Cols,
+    {
         unreachable!()
     }
 
@@ -444,19 +519,28 @@ impl<T> Element<T> {
 
     /// `controls`
     #[cfg_attr(rust_js, rust_js::link_name = "prop controls")]
-    pub fn controls(self, value: bool) -> Element<T> {
+    pub fn controls(self, value: bool) -> Element<T>
+    where
+        T: has::Controls,
+    {
         unreachable!()
     }
 
     /// `controlsList`
     #[cfg_attr(rust_js, rust_js::link_name = "prop controlsList")]
-    pub fn controls_list(self, value: impl Value) -> Element<T> {
+    pub fn controls_list(self, value: impl Value) -> Element<T>
+    where
+        T: has::ControlsList,
+    {
         unreachable!()
     }
 
     /// `coords`
     #[cfg_attr(rust_js, rust_js::link_name = "prop coords")]
-    pub fn coords(self, value: impl Value) -> Element<T> {
+    pub fn coords(self, value: impl Value) -> Element<T>
+    where
+        T: has::Coords,
+    {
         unreachable!()
     }
 
@@ -469,7 +553,10 @@ impl<T> Element<T> {
 
     /// `crossOrigin`
     #[cfg_attr(rust_js, rust_js::link_name = "prop crossOrigin")]
-    pub fn cross_origin(self, value: impl Value) -> Element<T> {
+    pub fn cross_origin(self, value: impl Value) -> Element<T>
+    where
+        T: has::CrossOrigin,
+    {
         unreachable!()
     }
 
@@ -499,7 +586,10 @@ impl<T> Element<T> {
 
     /// `data`
     #[cfg_attr(rust_js, rust_js::link_name = "prop data")]
-    pub fn data(self, value: impl Value) -> Element<T> {
+    pub fn data(self, value: impl Value) -> Element<T>
+    where
+        T: has::Data,
+    {
         unreachable!()
     }
 
@@ -511,7 +601,10 @@ impl<T> Element<T> {
 
     /// `dateTime`
     #[cfg_attr(rust_js, rust_js::link_name = "prop dateTime")]
-    pub fn date_time(self, value: impl Value) -> Element<T> {
+    pub fn date_time(self, value: impl Value) -> Element<T>
+    where
+        T: has::DateTime,
+    {
         unreachable!()
     }
 
@@ -523,13 +616,19 @@ impl<T> Element<T> {
 
     /// `decoding`
     #[cfg_attr(rust_js, rust_js::link_name = "prop decoding")]
-    pub fn decoding(self, value: impl Value) -> Element<T> {
+    pub fn decoding(self, value: impl Value) -> Element<T>
+    where
+        T: has::Decoding,
+    {
         unreachable!()
     }
 
     /// `default`
     #[cfg_attr(rust_js, rust_js::link_name = "prop default")]
-    pub fn r#default(self, value: bool) -> Element<T> {
+    pub fn r#default(self, value: bool) -> Element<T>
+    where
+        T: has::Default,
+    {
         unreachable!()
     }
 
@@ -547,7 +646,10 @@ impl<T> Element<T> {
 
     /// `defer`
     #[cfg_attr(rust_js, rust_js::link_name = "prop defer")]
-    pub fn defer(self, value: bool) -> Element<T> {
+    pub fn defer(self, value: bool) -> Element<T>
+    where
+        T: has::Defer,
+    {
         unreachable!()
     }
 
@@ -571,7 +673,10 @@ impl<T> Element<T> {
 
     /// `dirName`
     #[cfg_attr(rust_js, rust_js::link_name = "prop dirName")]
-    pub fn dir_name(self, value: impl Value) -> Element<T> {
+    pub fn dir_name(self, value: impl Value) -> Element<T>
+    where
+        T: has::DirName,
+    {
         unreachable!()
     }
 
@@ -583,13 +688,19 @@ impl<T> Element<T> {
 
     /// `disablePictureInPicture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop disablePictureInPicture")]
-    pub fn disable_picture_in_picture(self, value: bool) -> Element<T> {
+    pub fn disable_picture_in_picture(self, value: bool) -> Element<T>
+    where
+        T: has::DisablePictureInPicture,
+    {
         unreachable!()
     }
 
     /// `disableRemotePlayback`
     #[cfg_attr(rust_js, rust_js::link_name = "prop disableRemotePlayback")]
-    pub fn disable_remote_playback(self, value: bool) -> Element<T> {
+    pub fn disable_remote_playback(self, value: bool) -> Element<T>
+    where
+        T: has::DisableRemotePlayback,
+    {
         unreachable!()
     }
 
@@ -601,7 +712,10 @@ impl<T> Element<T> {
 
     /// `disabled`
     #[cfg_attr(rust_js, rust_js::link_name = "prop disabled")]
-    pub fn disabled(self, value: bool) -> Element<T> {
+    pub fn disabled(self, value: bool) -> Element<T>
+    where
+        T: has::Disabled,
+    {
         unreachable!()
     }
 
@@ -637,7 +751,10 @@ impl<T> Element<T> {
 
     /// `download`
     #[cfg_attr(rust_js, rust_js::link_name = "prop download")]
-    pub fn download(self, value: impl Value) -> Element<T> {
+    pub fn download(self, value: impl Value) -> Element<T>
+    where
+        T: has::Download,
+    {
         unreachable!()
     }
 
@@ -685,7 +802,10 @@ impl<T> Element<T> {
 
     /// `encType`
     #[cfg_attr(rust_js, rust_js::link_name = "prop encType")]
-    pub fn enc_type(self, value: impl Value) -> Element<T> {
+    pub fn enc_type(self, value: impl Value) -> Element<T>
+    where
+        T: has::EncType,
+    {
         unreachable!()
     }
 
@@ -722,7 +842,10 @@ impl<T> Element<T> {
     /// `fetchPriority`
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop fetchPriority")]
-    pub fn fetch_priority(self, value: impl Value) -> Element<T> {
+    pub fn fetch_priority(self, value: impl Value) -> Element<T>
+    where
+        T: has::FetchPriority,
+    {
         unreachable!()
     }
 
@@ -824,31 +947,46 @@ impl<T> Element<T> {
 
     /// `form`
     #[cfg_attr(rust_js, rust_js::link_name = "prop form")]
-    pub fn form(self, value: impl Value) -> Element<T> {
+    pub fn form(self, value: impl Value) -> Element<T>
+    where
+        T: has::Form,
+    {
         unreachable!()
     }
 
     /// `formEncType`
     #[cfg_attr(rust_js, rust_js::link_name = "prop formEncType")]
-    pub fn form_enc_type(self, value: impl Value) -> Element<T> {
+    pub fn form_enc_type(self, value: impl Value) -> Element<T>
+    where
+        T: has::FormEncType,
+    {
         unreachable!()
     }
 
     /// `formMethod`
     #[cfg_attr(rust_js, rust_js::link_name = "prop formMethod")]
-    pub fn form_method(self, value: impl Value) -> Element<T> {
+    pub fn form_method(self, value: impl Value) -> Element<T>
+    where
+        T: has::FormMethod,
+    {
         unreachable!()
     }
 
     /// `formNoValidate`
     #[cfg_attr(rust_js, rust_js::link_name = "prop formNoValidate")]
-    pub fn form_no_validate(self, value: bool) -> Element<T> {
+    pub fn form_no_validate(self, value: bool) -> Element<T>
+    where
+        T: has::FormNoValidate,
+    {
         unreachable!()
     }
 
     /// `formTarget`
     #[cfg_attr(rust_js, rust_js::link_name = "prop formTarget")]
-    pub fn form_target(self, value: impl Value) -> Element<T> {
+    pub fn form_target(self, value: impl Value) -> Element<T>
+    where
+        T: has::FormTarget,
+    {
         unreachable!()
     }
 
@@ -866,13 +1004,19 @@ impl<T> Element<T> {
 
     /// `frame`
     #[cfg_attr(rust_js, rust_js::link_name = "prop frame")]
-    pub fn frame(self, value: impl Value) -> Element<T> {
+    pub fn frame(self, value: impl Value) -> Element<T>
+    where
+        T: has::Frame,
+    {
         unreachable!()
     }
 
     /// `frameBorder`
     #[cfg_attr(rust_js, rust_js::link_name = "prop frameBorder")]
-    pub fn frame_border(self, value: impl Value) -> Element<T> {
+    pub fn frame_border(self, value: impl Value) -> Element<T>
+    where
+        T: has::FrameBorder,
+    {
         unreachable!()
     }
 
@@ -956,13 +1100,19 @@ impl<T> Element<T> {
 
     /// `headers`
     #[cfg_attr(rust_js, rust_js::link_name = "prop headers")]
-    pub fn headers(self, value: impl Value) -> Element<T> {
+    pub fn headers(self, value: impl Value) -> Element<T>
+    where
+        T: has::Headers,
+    {
         unreachable!()
     }
 
     /// `height`
     #[cfg_attr(rust_js, rust_js::link_name = "prop height")]
-    pub fn height(self, value: impl Value) -> Element<T> {
+    pub fn height(self, value: impl Value) -> Element<T>
+    where
+        T: has::Height,
+    {
         unreachable!()
     }
 
@@ -974,7 +1124,10 @@ impl<T> Element<T> {
 
     /// `high`
     #[cfg_attr(rust_js, rust_js::link_name = "prop high")]
-    pub fn high(self, value: impl Value) -> Element<T> {
+    pub fn high(self, value: impl Value) -> Element<T>
+    where
+        T: has::High,
+    {
         unreachable!()
     }
 
@@ -992,25 +1145,37 @@ impl<T> Element<T> {
 
     /// `href`
     #[cfg_attr(rust_js, rust_js::link_name = "prop href")]
-    pub fn href(self, value: impl Value) -> Element<T> {
+    pub fn href(self, value: impl Value) -> Element<T>
+    where
+        T: has::Href,
+    {
         unreachable!()
     }
 
     /// `hrefLang`
     #[cfg_attr(rust_js, rust_js::link_name = "prop hrefLang")]
-    pub fn href_lang(self, value: impl Value) -> Element<T> {
+    pub fn href_lang(self, value: impl Value) -> Element<T>
+    where
+        T: has::HrefLang,
+    {
         unreachable!()
     }
 
     /// `htmlFor`
     #[cfg_attr(rust_js, rust_js::link_name = "prop htmlFor")]
-    pub fn html_for(self, value: impl Value) -> Element<T> {
+    pub fn html_for(self, value: impl Value) -> Element<T>
+    where
+        T: has::HtmlFor,
+    {
         unreachable!()
     }
 
     /// `httpEquiv`
     #[cfg_attr(rust_js, rust_js::link_name = "prop httpEquiv")]
-    pub fn http_equiv(self, value: impl Value) -> Element<T> {
+    pub fn http_equiv(self, value: impl Value) -> Element<T>
+    where
+        T: has::HttpEquiv,
+    {
         unreachable!()
     }
 
@@ -1046,13 +1211,19 @@ impl<T> Element<T> {
 
     /// `imageSizes`
     #[cfg_attr(rust_js, rust_js::link_name = "prop imageSizes")]
-    pub fn image_sizes(self, value: impl Value) -> Element<T> {
+    pub fn image_sizes(self, value: impl Value) -> Element<T>
+    where
+        T: has::ImageSizes,
+    {
         unreachable!()
     }
 
     /// `imageSrcSet`
     #[cfg_attr(rust_js, rust_js::link_name = "prop imageSrcSet")]
-    pub fn image_src_set(self, value: impl Value) -> Element<T> {
+    pub fn image_src_set(self, value: impl Value) -> Element<T>
+    where
+        T: has::ImageSrcSet,
+    {
         unreachable!()
     }
 
@@ -1089,7 +1260,10 @@ impl<T> Element<T> {
 
     /// `integrity`
     #[cfg_attr(rust_js, rust_js::link_name = "prop integrity")]
-    pub fn integrity(self, value: impl Value) -> Element<T> {
+    pub fn integrity(self, value: impl Value) -> Element<T>
+    where
+        T: has::Integrity,
+    {
         unreachable!()
     }
 
@@ -1215,13 +1389,19 @@ impl<T> Element<T> {
 
     /// `kind`
     #[cfg_attr(rust_js, rust_js::link_name = "prop kind")]
-    pub fn kind(self, value: impl Value) -> Element<T> {
+    pub fn kind(self, value: impl Value) -> Element<T>
+    where
+        T: has::Kind,
+    {
         unreachable!()
     }
 
     /// `label`
     #[cfg_attr(rust_js, rust_js::link_name = "prop label")]
-    pub fn label(self, value: impl Value) -> Element<T> {
+    pub fn label(self, value: impl Value) -> Element<T>
+    where
+        T: has::Label,
+    {
         unreachable!()
     }
 
@@ -1257,13 +1437,19 @@ impl<T> Element<T> {
 
     /// `list`
     #[cfg_attr(rust_js, rust_js::link_name = "prop list")]
-    pub fn list(self, value: impl Value) -> Element<T> {
+    pub fn list(self, value: impl Value) -> Element<T>
+    where
+        T: has::List,
+    {
         unreachable!()
     }
 
     /// `loading`
     #[cfg_attr(rust_js, rust_js::link_name = "prop loading")]
-    pub fn loading(self, value: impl Value) -> Element<T> {
+    pub fn loading(self, value: impl Value) -> Element<T>
+    where
+        T: has::Loading,
+    {
         unreachable!()
     }
 
@@ -1275,31 +1461,46 @@ impl<T> Element<T> {
 
     /// `loop`
     #[cfg_attr(rust_js, rust_js::link_name = "prop loop")]
-    pub fn r#loop(self, value: bool) -> Element<T> {
+    pub fn r#loop(self, value: bool) -> Element<T>
+    where
+        T: has::Loop,
+    {
         unreachable!()
     }
 
     /// `low`
     #[cfg_attr(rust_js, rust_js::link_name = "prop low")]
-    pub fn low(self, value: impl Value) -> Element<T> {
+    pub fn low(self, value: impl Value) -> Element<T>
+    where
+        T: has::Low,
+    {
         unreachable!()
     }
 
     /// `manifest`
     #[cfg_attr(rust_js, rust_js::link_name = "prop manifest")]
-    pub fn manifest(self, value: impl Value) -> Element<T> {
+    pub fn manifest(self, value: impl Value) -> Element<T>
+    where
+        T: has::Manifest,
+    {
         unreachable!()
     }
 
     /// `marginHeight`
     #[cfg_attr(rust_js, rust_js::link_name = "prop marginHeight")]
-    pub fn margin_height(self, value: impl Value) -> Element<T> {
+    pub fn margin_height(self, value: impl Value) -> Element<T>
+    where
+        T: has::MarginHeight,
+    {
         unreachable!()
     }
 
     /// `marginWidth`
     #[cfg_attr(rust_js, rust_js::link_name = "prop marginWidth")]
-    pub fn margin_width(self, value: impl Value) -> Element<T> {
+    pub fn margin_width(self, value: impl Value) -> Element<T>
+    where
+        T: has::MarginWidth,
+    {
         unreachable!()
     }
 
@@ -1372,43 +1573,64 @@ impl<T> Element<T> {
 
     /// `max`
     #[cfg_attr(rust_js, rust_js::link_name = "prop max")]
-    pub fn max(self, value: impl Value) -> Element<T> {
+    pub fn max(self, value: impl Value) -> Element<T>
+    where
+        T: has::Max,
+    {
         unreachable!()
     }
 
     /// `maxLength`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maxLength")]
-    pub fn max_length(self, value: impl Value) -> Element<T> {
+    pub fn max_length(self, value: impl Value) -> Element<T>
+    where
+        T: has::MaxLength,
+    {
         unreachable!()
     }
 
     /// `media`
     #[cfg_attr(rust_js, rust_js::link_name = "prop media")]
-    pub fn media(self, value: impl Value) -> Element<T> {
+    pub fn media(self, value: impl Value) -> Element<T>
+    where
+        T: has::Media,
+    {
         unreachable!()
     }
 
     /// `mediaGroup`
     #[cfg_attr(rust_js, rust_js::link_name = "prop mediaGroup")]
-    pub fn media_group(self, value: impl Value) -> Element<T> {
+    pub fn media_group(self, value: impl Value) -> Element<T>
+    where
+        T: has::MediaGroup,
+    {
         unreachable!()
     }
 
     /// `method`
     #[cfg_attr(rust_js, rust_js::link_name = "prop method")]
-    pub fn method(self, value: impl Value) -> Element<T> {
+    pub fn method(self, value: impl Value) -> Element<T>
+    where
+        T: has::Method,
+    {
         unreachable!()
     }
 
     /// `min`
     #[cfg_attr(rust_js, rust_js::link_name = "prop min")]
-    pub fn min(self, value: impl Value) -> Element<T> {
+    pub fn min(self, value: impl Value) -> Element<T>
+    where
+        T: has::Min,
+    {
         unreachable!()
     }
 
     /// `minLength`
     #[cfg_attr(rust_js, rust_js::link_name = "prop minLength")]
-    pub fn min_length(self, value: impl Value) -> Element<T> {
+    pub fn min_length(self, value: impl Value) -> Element<T>
+    where
+        T: has::MinLength,
+    {
         unreachable!()
     }
 
@@ -1420,31 +1642,46 @@ impl<T> Element<T> {
 
     /// `multiple`
     #[cfg_attr(rust_js, rust_js::link_name = "prop multiple")]
-    pub fn multiple(self, value: bool) -> Element<T> {
+    pub fn multiple(self, value: bool) -> Element<T>
+    where
+        T: has::Multiple,
+    {
         unreachable!()
     }
 
     /// `muted`
     #[cfg_attr(rust_js, rust_js::link_name = "prop muted")]
-    pub fn muted(self, value: bool) -> Element<T> {
+    pub fn muted(self, value: bool) -> Element<T>
+    where
+        T: has::Muted,
+    {
         unreachable!()
     }
 
     /// `name`
     #[cfg_attr(rust_js, rust_js::link_name = "prop name")]
-    pub fn name(self, value: impl Value) -> Element<T> {
+    pub fn name(self, value: impl Value) -> Element<T>
+    where
+        T: has::Name,
+    {
         unreachable!()
     }
 
     /// `noModule`
     #[cfg_attr(rust_js, rust_js::link_name = "prop noModule")]
-    pub fn no_module(self, value: bool) -> Element<T> {
+    pub fn no_module(self, value: bool) -> Element<T>
+    where
+        T: has::NoModule,
+    {
         unreachable!()
     }
 
     /// `noValidate`
     #[cfg_attr(rust_js, rust_js::link_name = "prop noValidate")]
-    pub fn no_validate(self, value: bool) -> Element<T> {
+    pub fn no_validate(self, value: bool) -> Element<T>
+    where
+        T: has::NoValidate,
+    {
         unreachable!()
     }
 
@@ -1480,7 +1717,10 @@ impl<T> Element<T> {
 
     /// `open`
     #[cfg_attr(rust_js, rust_js::link_name = "prop open")]
-    pub fn open(self, value: bool) -> Element<T> {
+    pub fn open(self, value: bool) -> Element<T>
+    where
+        T: has::Open,
+    {
         unreachable!()
     }
 
@@ -1492,7 +1732,10 @@ impl<T> Element<T> {
 
     /// `optimum`
     #[cfg_attr(rust_js, rust_js::link_name = "prop optimum")]
-    pub fn optimum(self, value: impl Value) -> Element<T> {
+    pub fn optimum(self, value: impl Value) -> Element<T>
+    where
+        T: has::Optimum,
+    {
         unreachable!()
     }
 
@@ -1576,7 +1819,10 @@ impl<T> Element<T> {
 
     /// `pattern`
     #[cfg_attr(rust_js, rust_js::link_name = "prop pattern")]
-    pub fn pattern(self, value: impl Value) -> Element<T> {
+    pub fn pattern(self, value: impl Value) -> Element<T>
+    where
+        T: has::Pattern,
+    {
         unreachable!()
     }
 
@@ -1600,19 +1846,28 @@ impl<T> Element<T> {
 
     /// `ping`
     #[cfg_attr(rust_js, rust_js::link_name = "prop ping")]
-    pub fn ping(self, value: impl Value) -> Element<T> {
+    pub fn ping(self, value: impl Value) -> Element<T>
+    where
+        T: has::Ping,
+    {
         unreachable!()
     }
 
     /// `placeholder`
     #[cfg_attr(rust_js, rust_js::link_name = "prop placeholder")]
-    pub fn placeholder(self, value: impl Value) -> Element<T> {
+    pub fn placeholder(self, value: impl Value) -> Element<T>
+    where
+        T: has::Placeholder,
+    {
         unreachable!()
     }
 
     /// `playsInline`
     #[cfg_attr(rust_js, rust_js::link_name = "prop playsInline")]
-    pub fn plays_inline(self, value: bool) -> Element<T> {
+    pub fn plays_inline(self, value: bool) -> Element<T>
+    where
+        T: has::PlaysInline,
+    {
         unreachable!()
     }
 
@@ -1675,7 +1930,10 @@ impl<T> Element<T> {
 
     /// `poster`
     #[cfg_attr(rust_js, rust_js::link_name = "prop poster")]
-    pub fn poster(self, value: impl Value) -> Element<T> {
+    pub fn poster(self, value: impl Value) -> Element<T>
+    where
+        T: has::Poster,
+    {
         unreachable!()
     }
 
@@ -1687,7 +1945,10 @@ impl<T> Element<T> {
 
     /// `preload`
     #[cfg_attr(rust_js, rust_js::link_name = "prop preload")]
-    pub fn preload(self, value: impl Value) -> Element<T> {
+    pub fn preload(self, value: impl Value) -> Element<T>
+    where
+        T: has::Preload,
+    {
         unreachable!()
     }
 
@@ -1741,7 +2002,10 @@ impl<T> Element<T> {
 
     /// `readOnly`
     #[cfg_attr(rust_js, rust_js::link_name = "prop readOnly")]
-    pub fn read_only(self, value: bool) -> Element<T> {
+    pub fn read_only(self, value: bool) -> Element<T>
+    where
+        T: has::ReadOnly,
+    {
         unreachable!()
     }
 
@@ -1759,7 +2023,10 @@ impl<T> Element<T> {
 
     /// `referrerPolicy`
     #[cfg_attr(rust_js, rust_js::link_name = "prop referrerPolicy")]
-    pub fn referrer_policy(self, value: impl Value) -> Element<T> {
+    pub fn referrer_policy(self, value: impl Value) -> Element<T>
+    where
+        T: has::ReferrerPolicy,
+    {
         unreachable!()
     }
 
@@ -1789,7 +2056,10 @@ impl<T> Element<T> {
 
     /// `required`
     #[cfg_attr(rust_js, rust_js::link_name = "prop required")]
-    pub fn required(self, value: bool) -> Element<T> {
+    pub fn required(self, value: bool) -> Element<T>
+    where
+        T: has::Required,
+    {
         unreachable!()
     }
 
@@ -1837,7 +2107,10 @@ impl<T> Element<T> {
 
     /// `reversed`
     #[cfg_attr(rust_js, rust_js::link_name = "prop reversed")]
-    pub fn reversed(self, value: bool) -> Element<T> {
+    pub fn reversed(self, value: bool) -> Element<T>
+    where
+        T: has::Reversed,
+    {
         unreachable!()
     }
 
@@ -1855,19 +2128,28 @@ impl<T> Element<T> {
 
     /// `rowSpan`
     #[cfg_attr(rust_js, rust_js::link_name = "prop rowSpan")]
-    pub fn row_span(self, value: impl Value) -> Element<T> {
+    pub fn row_span(self, value: impl Value) -> Element<T>
+    where
+        T: has::RowSpan,
+    {
         unreachable!()
     }
 
     /// `rows`
     #[cfg_attr(rust_js, rust_js::link_name = "prop rows")]
-    pub fn rows(self, value: impl Value) -> Element<T> {
+    pub fn rows(self, value: impl Value) -> Element<T>
+    where
+        T: has::Rows,
+    {
         unreachable!()
     }
 
     /// `rules`
     #[cfg_attr(rust_js, rust_js::link_name = "prop rules")]
-    pub fn rules(self, value: impl Value) -> Element<T> {
+    pub fn rules(self, value: impl Value) -> Element<T>
+    where
+        T: has::Rules,
+    {
         unreachable!()
     }
 
@@ -1885,7 +2167,10 @@ impl<T> Element<T> {
 
     /// `sandbox`
     #[cfg_attr(rust_js, rust_js::link_name = "prop sandbox")]
-    pub fn sandbox(self, value: impl Value) -> Element<T> {
+    pub fn sandbox(self, value: impl Value) -> Element<T>
+    where
+        T: has::Sandbox,
+    {
         unreachable!()
     }
 
@@ -1897,25 +2182,37 @@ impl<T> Element<T> {
 
     /// `scope`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scope")]
-    pub fn scope(self, value: impl Value) -> Element<T> {
+    pub fn scope(self, value: impl Value) -> Element<T>
+    where
+        T: has::Scope,
+    {
         unreachable!()
     }
 
     /// `scoped`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scoped")]
-    pub fn scoped(self, value: bool) -> Element<T> {
+    pub fn scoped(self, value: bool) -> Element<T>
+    where
+        T: has::Scoped,
+    {
         unreachable!()
     }
 
     /// `scrolling`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrolling")]
-    pub fn scrolling(self, value: impl Value) -> Element<T> {
+    pub fn scrolling(self, value: impl Value) -> Element<T>
+    where
+        T: has::Scrolling,
+    {
         unreachable!()
     }
 
     /// `seamless`
     #[cfg_attr(rust_js, rust_js::link_name = "prop seamless")]
-    pub fn seamless(self, value: bool) -> Element<T> {
+    pub fn seamless(self, value: bool) -> Element<T>
+    where
+        T: has::Seamless,
+    {
         unreachable!()
     }
 
@@ -1933,13 +2230,19 @@ impl<T> Element<T> {
 
     /// `selected`
     #[cfg_attr(rust_js, rust_js::link_name = "prop selected")]
-    pub fn selected(self, value: bool) -> Element<T> {
+    pub fn selected(self, value: bool) -> Element<T>
+    where
+        T: has::Selected,
+    {
         unreachable!()
     }
 
     /// `shape`
     #[cfg_attr(rust_js, rust_js::link_name = "prop shape")]
-    pub fn shape(self, value: impl Value) -> Element<T> {
+    pub fn shape(self, value: impl Value) -> Element<T>
+    where
+        T: has::Shape,
+    {
         unreachable!()
     }
 
@@ -1951,13 +2254,19 @@ impl<T> Element<T> {
 
     /// `size`
     #[cfg_attr(rust_js, rust_js::link_name = "prop size")]
-    pub fn size(self, value: impl Value) -> Element<T> {
+    pub fn size(self, value: impl Value) -> Element<T>
+    where
+        T: has::Size,
+    {
         unreachable!()
     }
 
     /// `sizes`
     #[cfg_attr(rust_js, rust_js::link_name = "prop sizes")]
-    pub fn sizes(self, value: impl Value) -> Element<T> {
+    pub fn sizes(self, value: impl Value) -> Element<T>
+    where
+        T: has::Sizes,
+    {
         unreachable!()
     }
 
@@ -1981,7 +2290,10 @@ impl<T> Element<T> {
 
     /// `span`
     #[cfg_attr(rust_js, rust_js::link_name = "prop span")]
-    pub fn span(self, value: impl Value) -> Element<T> {
+    pub fn span(self, value: impl Value) -> Element<T>
+    where
+        T: has::Span,
+    {
         unreachable!()
     }
 
@@ -2017,31 +2329,46 @@ impl<T> Element<T> {
 
     /// `src`
     #[cfg_attr(rust_js, rust_js::link_name = "prop src")]
-    pub fn src(self, value: impl Value) -> Element<T> {
+    pub fn src(self, value: impl Value) -> Element<T>
+    where
+        T: has::Src,
+    {
         unreachable!()
     }
 
     /// `srcDoc`
     #[cfg_attr(rust_js, rust_js::link_name = "prop srcDoc")]
-    pub fn src_doc(self, value: impl Value) -> Element<T> {
+    pub fn src_doc(self, value: impl Value) -> Element<T>
+    where
+        T: has::SrcDoc,
+    {
         unreachable!()
     }
 
     /// `srcLang`
     #[cfg_attr(rust_js, rust_js::link_name = "prop srcLang")]
-    pub fn src_lang(self, value: impl Value) -> Element<T> {
+    pub fn src_lang(self, value: impl Value) -> Element<T>
+    where
+        T: has::SrcLang,
+    {
         unreachable!()
     }
 
     /// `srcSet`
     #[cfg_attr(rust_js, rust_js::link_name = "prop srcSet")]
-    pub fn src_set(self, value: impl Value) -> Element<T> {
+    pub fn src_set(self, value: impl Value) -> Element<T>
+    where
+        T: has::SrcSet,
+    {
         unreachable!()
     }
 
     /// `start`
     #[cfg_attr(rust_js, rust_js::link_name = "prop start")]
-    pub fn start(self, value: impl Value) -> Element<T> {
+    pub fn start(self, value: impl Value) -> Element<T>
+    where
+        T: has::Start,
+    {
         unreachable!()
     }
 
@@ -2071,7 +2398,10 @@ impl<T> Element<T> {
 
     /// `step`
     #[cfg_attr(rust_js, rust_js::link_name = "prop step")]
-    pub fn step(self, value: impl Value) -> Element<T> {
+    pub fn step(self, value: impl Value) -> Element<T>
+    where
+        T: has::Step,
+    {
         unreachable!()
     }
 
@@ -2161,7 +2491,10 @@ impl<T> Element<T> {
 
     /// `summary`
     #[cfg_attr(rust_js, rust_js::link_name = "prop summary")]
-    pub fn summary(self, value: impl Value) -> Element<T> {
+    pub fn summary(self, value: impl Value) -> Element<T>
+    where
+        T: has::Summary,
+    {
         unreachable!()
     }
 
@@ -2203,7 +2536,10 @@ impl<T> Element<T> {
 
     /// `target`
     #[cfg_attr(rust_js, rust_js::link_name = "prop target")]
-    pub fn target(self, value: impl Value) -> Element<T> {
+    pub fn target(self, value: impl Value) -> Element<T>
+    where
+        T: has::Target,
+    {
         unreachable!()
     }
 
@@ -2276,7 +2612,10 @@ impl<T> Element<T> {
 
     /// `type`
     #[cfg_attr(rust_js, rust_js::link_name = "prop type")]
-    pub fn r#type(self, value: impl Value) -> Element<T> {
+    pub fn r#type(self, value: impl Value) -> Element<T>
+    where
+        T: has::Type,
+    {
         unreachable!()
     }
 
@@ -2342,7 +2681,10 @@ impl<T> Element<T> {
 
     /// `useMap`
     #[cfg_attr(rust_js, rust_js::link_name = "prop useMap")]
-    pub fn use_map(self, value: impl Value) -> Element<T> {
+    pub fn use_map(self, value: impl Value) -> Element<T>
+    where
+        T: has::UseMap,
+    {
         unreachable!()
     }
 
@@ -2378,13 +2720,19 @@ impl<T> Element<T> {
 
     /// `valign`
     #[cfg_attr(rust_js, rust_js::link_name = "prop valign")]
-    pub fn valign(self, value: impl Value) -> Element<T> {
+    pub fn valign(self, value: impl Value) -> Element<T>
+    where
+        T: has::Valign,
+    {
         unreachable!()
     }
 
     /// `value`
     #[cfg_attr(rust_js, rust_js::link_name = "prop value")]
-    pub fn value(self, value: impl Value) -> Element<T> {
+    pub fn value(self, value: impl Value) -> Element<T>
+    where
+        T: has::Value,
+    {
         unreachable!()
     }
 
@@ -2456,7 +2804,10 @@ impl<T> Element<T> {
 
     /// `width`
     #[cfg_attr(rust_js, rust_js::link_name = "prop width")]
-    pub fn width(self, value: impl Value) -> Element<T> {
+    pub fn width(self, value: impl Value) -> Element<T>
+    where
+        T: has::Width,
+    {
         unreachable!()
     }
 
@@ -2468,7 +2819,10 @@ impl<T> Element<T> {
 
     /// `wmode`
     #[cfg_attr(rust_js, rust_js::link_name = "prop wmode")]
-    pub fn wmode(self, value: impl Value) -> Element<T> {
+    pub fn wmode(self, value: impl Value) -> Element<T>
+    where
+        T: has::Wmode,
+    {
         unreachable!()
     }
 
@@ -2480,7 +2834,10 @@ impl<T> Element<T> {
 
     /// `wrap`
     #[cfg_attr(rust_js, rust_js::link_name = "prop wrap")]
-    pub fn wrap(self, value: impl Value) -> Element<T> {
+    pub fn wrap(self, value: impl Value) -> Element<T>
+    where
+        T: has::Wrap,
+    {
         unreachable!()
     }
 
@@ -2628,6 +2985,868 @@ impl<T> Element<T> {
         unreachable!()
     }
 
+}
+
+/// What takes each attribute that isn't every element's, as @types/react's
+/// `JSX.IntrinsicElements` says (ADR 0228): `has::Href` an `<a>`'s
+/// `HTMLAnchorElement`, and any `Element`, a tag value's say.
+pub mod has {
+    use super::webapi;
+
+    /// An element that takes `abbr`: <td>, <th>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `abbr`", label = "not an attribute of this tag", note = "@types/react gives `abbr` to <td>, <th>")]
+    pub trait Abbr {}
+    impl Abbr for webapi::HTMLTableCellElement {}
+    impl Abbr for webapi::Element {}
+
+    /// An element that takes `accept`: <input>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `accept`", label = "not an attribute of this tag", note = "@types/react gives `accept` to <input>")]
+    pub trait Accept {}
+    impl Accept for webapi::HTMLInputElement {}
+    impl Accept for webapi::Element {}
+
+    /// An element that takes `acceptCharset`: <form>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `acceptCharset`", label = "not an attribute of this tag", note = "@types/react gives `acceptCharset` to <form>")]
+    pub trait AcceptCharset {}
+    impl AcceptCharset for webapi::HTMLFormElement {}
+    impl AcceptCharset for webapi::Element {}
+
+    /// An element that takes `align`: <table>, <td>, <th>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `align`", label = "not an attribute of this tag", note = "@types/react gives `align` to <table>, <td>, <th>")]
+    pub trait Align {}
+    impl Align for webapi::HTMLTableCellElement {}
+    impl Align for webapi::HTMLTableElement {}
+    impl Align for webapi::Element {}
+
+    /// An element that takes `allow`: <iframe>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `allow`", label = "not an attribute of this tag", note = "@types/react gives `allow` to <iframe>")]
+    pub trait Allow {}
+    impl Allow for webapi::HTMLIFrameElement {}
+    impl Allow for webapi::Element {}
+
+    /// An element that takes `allowFullScreen`: <iframe>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `allowFullScreen`", label = "not an attribute of this tag", note = "@types/react gives `allowFullScreen` to <iframe>")]
+    pub trait AllowFullScreen {}
+    impl AllowFullScreen for webapi::HTMLIFrameElement {}
+    impl AllowFullScreen for webapi::Element {}
+
+    /// An element that takes `allowTransparency`: <iframe>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `allowTransparency`", label = "not an attribute of this tag", note = "@types/react gives `allowTransparency` to <iframe>")]
+    pub trait AllowTransparency {}
+    impl AllowTransparency for webapi::HTMLIFrameElement {}
+    impl AllowTransparency for webapi::Element {}
+
+    /// An element that takes `alt`: <area>, <img>, <input>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `alt`", label = "not an attribute of this tag", note = "@types/react gives `alt` to <area>, <img>, <input>")]
+    pub trait Alt {}
+    impl Alt for webapi::HTMLAreaElement {}
+    impl Alt for webapi::HTMLImageElement {}
+    impl Alt for webapi::HTMLInputElement {}
+    impl Alt for webapi::Element {}
+
+    /// An element that takes `as`: <link>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `as`", label = "not an attribute of this tag", note = "@types/react gives `as` to <link>")]
+    pub trait As {}
+    impl As for webapi::HTMLLinkElement {}
+    impl As for webapi::Element {}
+
+    /// An element that takes `async`: <script>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `async`", label = "not an attribute of this tag", note = "@types/react gives `async` to <script>")]
+    pub trait Async {}
+    impl Async for webapi::HTMLScriptElement {}
+    impl Async for webapi::Element {}
+
+    /// An element that takes `autoComplete`: <form>, <input>, <select>, <textarea>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `autoComplete`", label = "not an attribute of this tag", note = "@types/react gives `autoComplete` to <form>, <input>, <select>, <textarea>")]
+    pub trait AutoComplete {}
+    impl AutoComplete for webapi::HTMLFormElement {}
+    impl AutoComplete for webapi::HTMLInputElement {}
+    impl AutoComplete for webapi::HTMLSelectElement {}
+    impl AutoComplete for webapi::HTMLTextAreaElement {}
+    impl AutoComplete for webapi::Element {}
+
+    /// An element that takes `autoPlay`: <audio>, <video>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `autoPlay`", label = "not an attribute of this tag", note = "@types/react gives `autoPlay` to <audio>, <video>")]
+    pub trait AutoPlay {}
+    impl AutoPlay for webapi::HTMLAudioElement {}
+    impl AutoPlay for webapi::HTMLVideoElement {}
+    impl AutoPlay for webapi::Element {}
+
+    /// An element that takes `bgcolor`: <table>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `bgcolor`", label = "not an attribute of this tag", note = "@types/react gives `bgcolor` to <table>")]
+    pub trait Bgcolor {}
+    impl Bgcolor for webapi::HTMLTableElement {}
+    impl Bgcolor for webapi::Element {}
+
+    /// An element that takes `blocking`: <link>, <script>, <style>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `blocking`", label = "not an attribute of this tag", note = "@types/react gives `blocking` to <link>, <script>, <style>")]
+    pub trait Blocking {}
+    impl Blocking for webapi::HTMLLinkElement {}
+    impl Blocking for webapi::HTMLScriptElement {}
+    impl Blocking for webapi::HTMLStyleElement {}
+    impl Blocking for webapi::Element {}
+
+    /// An element that takes `border`: <table>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `border`", label = "not an attribute of this tag", note = "@types/react gives `border` to <table>")]
+    pub trait Border {}
+    impl Border for webapi::HTMLTableElement {}
+    impl Border for webapi::Element {}
+
+    /// An element that takes `capture`: <input>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `capture`", label = "not an attribute of this tag", note = "@types/react gives `capture` to <input>")]
+    pub trait Capture {}
+    impl Capture for webapi::HTMLInputElement {}
+    impl Capture for webapi::Element {}
+
+    /// An element that takes `cellPadding`: <table>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `cellPadding`", label = "not an attribute of this tag", note = "@types/react gives `cellPadding` to <table>")]
+    pub trait CellPadding {}
+    impl CellPadding for webapi::HTMLTableElement {}
+    impl CellPadding for webapi::Element {}
+
+    /// An element that takes `cellSpacing`: <table>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `cellSpacing`", label = "not an attribute of this tag", note = "@types/react gives `cellSpacing` to <table>")]
+    pub trait CellSpacing {}
+    impl CellSpacing for webapi::HTMLTableElement {}
+    impl CellSpacing for webapi::Element {}
+
+    /// An element that takes `charSet`: <link>, <meta>, <script>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `charSet`", label = "not an attribute of this tag", note = "@types/react gives `charSet` to <link>, <meta>, <script>")]
+    pub trait CharSet {}
+    impl CharSet for webapi::HTMLLinkElement {}
+    impl CharSet for webapi::HTMLMetaElement {}
+    impl CharSet for webapi::HTMLScriptElement {}
+    impl CharSet for webapi::Element {}
+
+    /// An element that takes `checked`: <input>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `checked`", label = "not an attribute of this tag", note = "@types/react gives `checked` to <input>")]
+    pub trait Checked {}
+    impl Checked for webapi::HTMLInputElement {}
+    impl Checked for webapi::Element {}
+
+    /// An element that takes `cite`: <blockquote>, <del>, <ins>, <q>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `cite`", label = "not an attribute of this tag", note = "@types/react gives `cite` to <blockquote>, <del>, <ins>, <q>")]
+    pub trait Cite {}
+    impl Cite for webapi::HTMLModElement {}
+    impl Cite for webapi::HTMLQuoteElement {}
+    impl Cite for webapi::Element {}
+
+    /// An element that takes `classID`: <object>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `classID`", label = "not an attribute of this tag", note = "@types/react gives `classID` to <object>")]
+    pub trait ClassID {}
+    impl ClassID for webapi::HTMLObjectElement {}
+    impl ClassID for webapi::Element {}
+
+    /// An element that takes `closedby`: <dialog>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `closedby`", label = "not an attribute of this tag", note = "@types/react gives `closedby` to <dialog>")]
+    pub trait Closedby {}
+    impl Closedby for webapi::HTMLDialogElement {}
+    impl Closedby for webapi::Element {}
+
+    /// An element that takes `colSpan`: <td>, <th>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `colSpan`", label = "not an attribute of this tag", note = "@types/react gives `colSpan` to <td>, <th>")]
+    pub trait ColSpan {}
+    impl ColSpan for webapi::HTMLTableCellElement {}
+    impl ColSpan for webapi::Element {}
+
+    /// An element that takes `cols`: <textarea>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `cols`", label = "not an attribute of this tag", note = "@types/react gives `cols` to <textarea>")]
+    pub trait Cols {}
+    impl Cols for webapi::HTMLTextAreaElement {}
+    impl Cols for webapi::Element {}
+
+    /// An element that takes `controls`: <audio>, <video>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `controls`", label = "not an attribute of this tag", note = "@types/react gives `controls` to <audio>, <video>")]
+    pub trait Controls {}
+    impl Controls for webapi::HTMLAudioElement {}
+    impl Controls for webapi::HTMLVideoElement {}
+    impl Controls for webapi::Element {}
+
+    /// An element that takes `controlsList`: <audio>, <video>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `controlsList`", label = "not an attribute of this tag", note = "@types/react gives `controlsList` to <audio>, <video>")]
+    pub trait ControlsList {}
+    impl ControlsList for webapi::HTMLAudioElement {}
+    impl ControlsList for webapi::HTMLVideoElement {}
+    impl ControlsList for webapi::Element {}
+
+    /// An element that takes `coords`: <area>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `coords`", label = "not an attribute of this tag", note = "@types/react gives `coords` to <area>")]
+    pub trait Coords {}
+    impl Coords for webapi::HTMLAreaElement {}
+    impl Coords for webapi::Element {}
+
+    /// An element that takes `crossOrigin`: <audio>, <img>, <link>, <script>, <video>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `crossOrigin`", label = "not an attribute of this tag", note = "@types/react gives `crossOrigin` to <audio>, <img>, <link>, <script>, <video>")]
+    pub trait CrossOrigin {}
+    impl CrossOrigin for webapi::HTMLAudioElement {}
+    impl CrossOrigin for webapi::HTMLImageElement {}
+    impl CrossOrigin for webapi::HTMLLinkElement {}
+    impl CrossOrigin for webapi::HTMLScriptElement {}
+    impl CrossOrigin for webapi::HTMLVideoElement {}
+    impl CrossOrigin for webapi::Element {}
+
+    /// An element that takes `data`: <object>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `data`", label = "not an attribute of this tag", note = "@types/react gives `data` to <object>")]
+    pub trait Data {}
+    impl Data for webapi::HTMLObjectElement {}
+    impl Data for webapi::Element {}
+
+    /// An element that takes `dateTime`: <del>, <ins>, <time>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `dateTime`", label = "not an attribute of this tag", note = "@types/react gives `dateTime` to <del>, <ins>, <time>")]
+    pub trait DateTime {}
+    impl DateTime for webapi::HTMLModElement {}
+    impl DateTime for webapi::HTMLTimeElement {}
+    impl DateTime for webapi::Element {}
+
+    /// An element that takes `decoding`: <img>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `decoding`", label = "not an attribute of this tag", note = "@types/react gives `decoding` to <img>")]
+    pub trait Decoding {}
+    impl Decoding for webapi::HTMLImageElement {}
+    impl Decoding for webapi::Element {}
+
+    /// An element that takes `default`: <track>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `default`", label = "not an attribute of this tag", note = "@types/react gives `default` to <track>")]
+    pub trait Default {}
+    impl Default for webapi::HTMLTrackElement {}
+    impl Default for webapi::Element {}
+
+    /// An element that takes `defer`: <script>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `defer`", label = "not an attribute of this tag", note = "@types/react gives `defer` to <script>")]
+    pub trait Defer {}
+    impl Defer for webapi::HTMLScriptElement {}
+    impl Defer for webapi::Element {}
+
+    /// An element that takes `dirName`: <textarea>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `dirName`", label = "not an attribute of this tag", note = "@types/react gives `dirName` to <textarea>")]
+    pub trait DirName {}
+    impl DirName for webapi::HTMLTextAreaElement {}
+    impl DirName for webapi::Element {}
+
+    /// An element that takes `disablePictureInPicture`: <video>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `disablePictureInPicture`", label = "not an attribute of this tag", note = "@types/react gives `disablePictureInPicture` to <video>")]
+    pub trait DisablePictureInPicture {}
+    impl DisablePictureInPicture for webapi::HTMLVideoElement {}
+    impl DisablePictureInPicture for webapi::Element {}
+
+    /// An element that takes `disableRemotePlayback`: <video>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `disableRemotePlayback`", label = "not an attribute of this tag", note = "@types/react gives `disableRemotePlayback` to <video>")]
+    pub trait DisableRemotePlayback {}
+    impl DisableRemotePlayback for webapi::HTMLVideoElement {}
+    impl DisableRemotePlayback for webapi::Element {}
+
+    /// An element that takes `disabled`: <button>, <fieldset>, <input>, <optgroup>, <option>, <select>, <textarea>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `disabled`", label = "not an attribute of this tag", note = "@types/react gives `disabled` to <button>, <fieldset>, <input>, <optgroup>, <option>, <select>, <textarea>")]
+    pub trait Disabled {}
+    impl Disabled for webapi::HTMLButtonElement {}
+    impl Disabled for webapi::HTMLFieldSetElement {}
+    impl Disabled for webapi::HTMLInputElement {}
+    impl Disabled for webapi::HTMLOptGroupElement {}
+    impl Disabled for webapi::HTMLOptionElement {}
+    impl Disabled for webapi::HTMLSelectElement {}
+    impl Disabled for webapi::HTMLTextAreaElement {}
+    impl Disabled for webapi::Element {}
+
+    /// An element that takes `download`: <a>, <area>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `download`", label = "not an attribute of this tag", note = "@types/react gives `download` to <a>, <area>")]
+    pub trait Download {}
+    impl Download for webapi::HTMLAnchorElement {}
+    impl Download for webapi::HTMLAreaElement {}
+    impl Download for webapi::Element {}
+
+    /// An element that takes `encType`: <form>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `encType`", label = "not an attribute of this tag", note = "@types/react gives `encType` to <form>")]
+    pub trait EncType {}
+    impl EncType for webapi::HTMLFormElement {}
+    impl EncType for webapi::Element {}
+
+    /// An element that takes `fetchPriority`: <img>, <link>, <script>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `fetchPriority`", label = "not an attribute of this tag", note = "@types/react gives `fetchPriority` to <img>, <link>, <script>")]
+    pub trait FetchPriority {}
+    impl FetchPriority for webapi::HTMLImageElement {}
+    impl FetchPriority for webapi::HTMLLinkElement {}
+    impl FetchPriority for webapi::HTMLScriptElement {}
+    impl FetchPriority for webapi::Element {}
+
+    /// An element that takes `form`: <button>, <fieldset>, <input>, <label>, <meter>, <object>, <output>, <select>, <textarea>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `form`", label = "not an attribute of this tag", note = "@types/react gives `form` to <button>, <fieldset>, <input>, <label>, <meter>, <object>, <output>, <select>, <textarea>")]
+    pub trait Form {}
+    impl Form for webapi::HTMLButtonElement {}
+    impl Form for webapi::HTMLFieldSetElement {}
+    impl Form for webapi::HTMLInputElement {}
+    impl Form for webapi::HTMLLabelElement {}
+    impl Form for webapi::HTMLMeterElement {}
+    impl Form for webapi::HTMLObjectElement {}
+    impl Form for webapi::HTMLOutputElement {}
+    impl Form for webapi::HTMLSelectElement {}
+    impl Form for webapi::HTMLTextAreaElement {}
+    impl Form for webapi::Element {}
+
+    /// An element that takes `formEncType`: <button>, <input>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `formEncType`", label = "not an attribute of this tag", note = "@types/react gives `formEncType` to <button>, <input>")]
+    pub trait FormEncType {}
+    impl FormEncType for webapi::HTMLButtonElement {}
+    impl FormEncType for webapi::HTMLInputElement {}
+    impl FormEncType for webapi::Element {}
+
+    /// An element that takes `formMethod`: <button>, <input>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `formMethod`", label = "not an attribute of this tag", note = "@types/react gives `formMethod` to <button>, <input>")]
+    pub trait FormMethod {}
+    impl FormMethod for webapi::HTMLButtonElement {}
+    impl FormMethod for webapi::HTMLInputElement {}
+    impl FormMethod for webapi::Element {}
+
+    /// An element that takes `formNoValidate`: <button>, <input>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `formNoValidate`", label = "not an attribute of this tag", note = "@types/react gives `formNoValidate` to <button>, <input>")]
+    pub trait FormNoValidate {}
+    impl FormNoValidate for webapi::HTMLButtonElement {}
+    impl FormNoValidate for webapi::HTMLInputElement {}
+    impl FormNoValidate for webapi::Element {}
+
+    /// An element that takes `formTarget`: <button>, <input>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `formTarget`", label = "not an attribute of this tag", note = "@types/react gives `formTarget` to <button>, <input>")]
+    pub trait FormTarget {}
+    impl FormTarget for webapi::HTMLButtonElement {}
+    impl FormTarget for webapi::HTMLInputElement {}
+    impl FormTarget for webapi::Element {}
+
+    /// An element that takes `frame`: <table>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `frame`", label = "not an attribute of this tag", note = "@types/react gives `frame` to <table>")]
+    pub trait Frame {}
+    impl Frame for webapi::HTMLTableElement {}
+    impl Frame for webapi::Element {}
+
+    /// An element that takes `frameBorder`: <iframe>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `frameBorder`", label = "not an attribute of this tag", note = "@types/react gives `frameBorder` to <iframe>")]
+    pub trait FrameBorder {}
+    impl FrameBorder for webapi::HTMLIFrameElement {}
+    impl FrameBorder for webapi::Element {}
+
+    /// An element that takes `headers`: <td>, <th>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `headers`", label = "not an attribute of this tag", note = "@types/react gives `headers` to <td>, <th>")]
+    pub trait Headers {}
+    impl Headers for webapi::HTMLTableCellElement {}
+    impl Headers for webapi::Element {}
+
+    /// An element that takes `height`: <canvas>, <embed>, <iframe>, <img>, <input>, <object>, <source>, <td>, <video>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `height`", label = "not an attribute of this tag", note = "@types/react gives `height` to <canvas>, <embed>, <iframe>, <img>, <input>, <object>, <source>, <td>, <video>")]
+    pub trait Height {}
+    impl Height for webapi::HTMLCanvasElement {}
+    impl Height for webapi::HTMLEmbedElement {}
+    impl Height for webapi::HTMLIFrameElement {}
+    impl Height for webapi::HTMLImageElement {}
+    impl Height for webapi::HTMLInputElement {}
+    impl Height for webapi::HTMLObjectElement {}
+    impl Height for webapi::HTMLSourceElement {}
+    impl Height for webapi::HTMLTableCellElement {}
+    impl Height for webapi::HTMLVideoElement {}
+    impl Height for webapi::Element {}
+
+    /// An element that takes `high`: <meter>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `high`", label = "not an attribute of this tag", note = "@types/react gives `high` to <meter>")]
+    pub trait High {}
+    impl High for webapi::HTMLMeterElement {}
+    impl High for webapi::Element {}
+
+    /// An element that takes `href`: <a>, <area>, <base>, <link>, <style>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `href`", label = "not an attribute of this tag", note = "@types/react gives `href` to <a>, <area>, <base>, <link>, <style>")]
+    pub trait Href {}
+    impl Href for webapi::HTMLAnchorElement {}
+    impl Href for webapi::HTMLAreaElement {}
+    impl Href for webapi::HTMLBaseElement {}
+    impl Href for webapi::HTMLLinkElement {}
+    impl Href for webapi::HTMLStyleElement {}
+    impl Href for webapi::Element {}
+
+    /// An element that takes `hrefLang`: <a>, <area>, <link>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `hrefLang`", label = "not an attribute of this tag", note = "@types/react gives `hrefLang` to <a>, <area>, <link>")]
+    pub trait HrefLang {}
+    impl HrefLang for webapi::HTMLAnchorElement {}
+    impl HrefLang for webapi::HTMLAreaElement {}
+    impl HrefLang for webapi::HTMLLinkElement {}
+    impl HrefLang for webapi::Element {}
+
+    /// An element that takes `htmlFor`: <label>, <output>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `htmlFor`", label = "not an attribute of this tag", note = "@types/react gives `htmlFor` to <label>, <output>")]
+    pub trait HtmlFor {}
+    impl HtmlFor for webapi::HTMLLabelElement {}
+    impl HtmlFor for webapi::HTMLOutputElement {}
+    impl HtmlFor for webapi::Element {}
+
+    /// An element that takes `httpEquiv`: <meta>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `httpEquiv`", label = "not an attribute of this tag", note = "@types/react gives `httpEquiv` to <meta>")]
+    pub trait HttpEquiv {}
+    impl HttpEquiv for webapi::HTMLMetaElement {}
+    impl HttpEquiv for webapi::Element {}
+
+    /// An element that takes `imageSizes`: <link>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `imageSizes`", label = "not an attribute of this tag", note = "@types/react gives `imageSizes` to <link>")]
+    pub trait ImageSizes {}
+    impl ImageSizes for webapi::HTMLLinkElement {}
+    impl ImageSizes for webapi::Element {}
+
+    /// An element that takes `imageSrcSet`: <link>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `imageSrcSet`", label = "not an attribute of this tag", note = "@types/react gives `imageSrcSet` to <link>")]
+    pub trait ImageSrcSet {}
+    impl ImageSrcSet for webapi::HTMLLinkElement {}
+    impl ImageSrcSet for webapi::Element {}
+
+    /// An element that takes `integrity`: <link>, <script>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `integrity`", label = "not an attribute of this tag", note = "@types/react gives `integrity` to <link>, <script>")]
+    pub trait Integrity {}
+    impl Integrity for webapi::HTMLLinkElement {}
+    impl Integrity for webapi::HTMLScriptElement {}
+    impl Integrity for webapi::Element {}
+
+    /// An element that takes `kind`: <track>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `kind`", label = "not an attribute of this tag", note = "@types/react gives `kind` to <track>")]
+    pub trait Kind {}
+    impl Kind for webapi::HTMLTrackElement {}
+    impl Kind for webapi::Element {}
+
+    /// An element that takes `label`: <optgroup>, <option>, <track>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `label`", label = "not an attribute of this tag", note = "@types/react gives `label` to <optgroup>, <option>, <track>")]
+    pub trait Label {}
+    impl Label for webapi::HTMLOptGroupElement {}
+    impl Label for webapi::HTMLOptionElement {}
+    impl Label for webapi::HTMLTrackElement {}
+    impl Label for webapi::Element {}
+
+    /// An element that takes `list`: <input>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `list`", label = "not an attribute of this tag", note = "@types/react gives `list` to <input>")]
+    pub trait List {}
+    impl List for webapi::HTMLInputElement {}
+    impl List for webapi::Element {}
+
+    /// An element that takes `loading`: <iframe>, <img>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `loading`", label = "not an attribute of this tag", note = "@types/react gives `loading` to <iframe>, <img>")]
+    pub trait Loading {}
+    impl Loading for webapi::HTMLIFrameElement {}
+    impl Loading for webapi::HTMLImageElement {}
+    impl Loading for webapi::Element {}
+
+    /// An element that takes `loop`: <audio>, <video>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `loop`", label = "not an attribute of this tag", note = "@types/react gives `loop` to <audio>, <video>")]
+    pub trait Loop {}
+    impl Loop for webapi::HTMLAudioElement {}
+    impl Loop for webapi::HTMLVideoElement {}
+    impl Loop for webapi::Element {}
+
+    /// An element that takes `low`: <meter>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `low`", label = "not an attribute of this tag", note = "@types/react gives `low` to <meter>")]
+    pub trait Low {}
+    impl Low for webapi::HTMLMeterElement {}
+    impl Low for webapi::Element {}
+
+    /// An element that takes `manifest`: <html>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `manifest`", label = "not an attribute of this tag", note = "@types/react gives `manifest` to <html>")]
+    pub trait Manifest {}
+    impl Manifest for webapi::HTMLHtmlElement {}
+    impl Manifest for webapi::Element {}
+
+    /// An element that takes `marginHeight`: <iframe>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `marginHeight`", label = "not an attribute of this tag", note = "@types/react gives `marginHeight` to <iframe>")]
+    pub trait MarginHeight {}
+    impl MarginHeight for webapi::HTMLIFrameElement {}
+    impl MarginHeight for webapi::Element {}
+
+    /// An element that takes `marginWidth`: <iframe>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `marginWidth`", label = "not an attribute of this tag", note = "@types/react gives `marginWidth` to <iframe>")]
+    pub trait MarginWidth {}
+    impl MarginWidth for webapi::HTMLIFrameElement {}
+    impl MarginWidth for webapi::Element {}
+
+    /// An element that takes `max`: <input>, <meter>, <progress>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `max`", label = "not an attribute of this tag", note = "@types/react gives `max` to <input>, <meter>, <progress>")]
+    pub trait Max {}
+    impl Max for webapi::HTMLInputElement {}
+    impl Max for webapi::HTMLMeterElement {}
+    impl Max for webapi::HTMLProgressElement {}
+    impl Max for webapi::Element {}
+
+    /// An element that takes `maxLength`: <input>, <textarea>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `maxLength`", label = "not an attribute of this tag", note = "@types/react gives `maxLength` to <input>, <textarea>")]
+    pub trait MaxLength {}
+    impl MaxLength for webapi::HTMLInputElement {}
+    impl MaxLength for webapi::HTMLTextAreaElement {}
+    impl MaxLength for webapi::Element {}
+
+    /// An element that takes `media`: <a>, <area>, <link>, <meta>, <source>, <style>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `media`", label = "not an attribute of this tag", note = "@types/react gives `media` to <a>, <area>, <link>, <meta>, <source>, <style>")]
+    pub trait Media {}
+    impl Media for webapi::HTMLAnchorElement {}
+    impl Media for webapi::HTMLAreaElement {}
+    impl Media for webapi::HTMLLinkElement {}
+    impl Media for webapi::HTMLMetaElement {}
+    impl Media for webapi::HTMLSourceElement {}
+    impl Media for webapi::HTMLStyleElement {}
+    impl Media for webapi::Element {}
+
+    /// An element that takes `mediaGroup`: <audio>, <video>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `mediaGroup`", label = "not an attribute of this tag", note = "@types/react gives `mediaGroup` to <audio>, <video>")]
+    pub trait MediaGroup {}
+    impl MediaGroup for webapi::HTMLAudioElement {}
+    impl MediaGroup for webapi::HTMLVideoElement {}
+    impl MediaGroup for webapi::Element {}
+
+    /// An element that takes `method`: <form>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `method`", label = "not an attribute of this tag", note = "@types/react gives `method` to <form>")]
+    pub trait Method {}
+    impl Method for webapi::HTMLFormElement {}
+    impl Method for webapi::Element {}
+
+    /// An element that takes `min`: <input>, <meter>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `min`", label = "not an attribute of this tag", note = "@types/react gives `min` to <input>, <meter>")]
+    pub trait Min {}
+    impl Min for webapi::HTMLInputElement {}
+    impl Min for webapi::HTMLMeterElement {}
+    impl Min for webapi::Element {}
+
+    /// An element that takes `minLength`: <input>, <textarea>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `minLength`", label = "not an attribute of this tag", note = "@types/react gives `minLength` to <input>, <textarea>")]
+    pub trait MinLength {}
+    impl MinLength for webapi::HTMLInputElement {}
+    impl MinLength for webapi::HTMLTextAreaElement {}
+    impl MinLength for webapi::Element {}
+
+    /// An element that takes `multiple`: <input>, <select>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `multiple`", label = "not an attribute of this tag", note = "@types/react gives `multiple` to <input>, <select>")]
+    pub trait Multiple {}
+    impl Multiple for webapi::HTMLInputElement {}
+    impl Multiple for webapi::HTMLSelectElement {}
+    impl Multiple for webapi::Element {}
+
+    /// An element that takes `muted`: <audio>, <video>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `muted`", label = "not an attribute of this tag", note = "@types/react gives `muted` to <audio>, <video>")]
+    pub trait Muted {}
+    impl Muted for webapi::HTMLAudioElement {}
+    impl Muted for webapi::HTMLVideoElement {}
+    impl Muted for webapi::Element {}
+
+    /// An element that takes `name`: <button>, <details>, <fieldset>, <form>, <iframe>, <input>, <map>, <meta>, <object>, <output>, <select>, <slot>, <textarea>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `name`", label = "not an attribute of this tag", note = "@types/react gives `name` to <button>, <details>, <fieldset>, <form>, <iframe>, <input>, <map>, <meta>, <object>, <output>, <select>, <slot>, <textarea>")]
+    pub trait Name {}
+    impl Name for webapi::HTMLButtonElement {}
+    impl Name for webapi::HTMLDetailsElement {}
+    impl Name for webapi::HTMLFieldSetElement {}
+    impl Name for webapi::HTMLFormElement {}
+    impl Name for webapi::HTMLIFrameElement {}
+    impl Name for webapi::HTMLInputElement {}
+    impl Name for webapi::HTMLMapElement {}
+    impl Name for webapi::HTMLMetaElement {}
+    impl Name for webapi::HTMLObjectElement {}
+    impl Name for webapi::HTMLOutputElement {}
+    impl Name for webapi::HTMLSelectElement {}
+    impl Name for webapi::HTMLSlotElement {}
+    impl Name for webapi::HTMLTextAreaElement {}
+    impl Name for webapi::Element {}
+
+    /// An element that takes `noModule`: <script>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `noModule`", label = "not an attribute of this tag", note = "@types/react gives `noModule` to <script>")]
+    pub trait NoModule {}
+    impl NoModule for webapi::HTMLScriptElement {}
+    impl NoModule for webapi::Element {}
+
+    /// An element that takes `noValidate`: <form>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `noValidate`", label = "not an attribute of this tag", note = "@types/react gives `noValidate` to <form>")]
+    pub trait NoValidate {}
+    impl NoValidate for webapi::HTMLFormElement {}
+    impl NoValidate for webapi::Element {}
+
+    /// An element that takes `open`: <details>, <dialog>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `open`", label = "not an attribute of this tag", note = "@types/react gives `open` to <details>, <dialog>")]
+    pub trait Open {}
+    impl Open for webapi::HTMLDetailsElement {}
+    impl Open for webapi::HTMLDialogElement {}
+    impl Open for webapi::Element {}
+
+    /// An element that takes `optimum`: <meter>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `optimum`", label = "not an attribute of this tag", note = "@types/react gives `optimum` to <meter>")]
+    pub trait Optimum {}
+    impl Optimum for webapi::HTMLMeterElement {}
+    impl Optimum for webapi::Element {}
+
+    /// An element that takes `pattern`: <input>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `pattern`", label = "not an attribute of this tag", note = "@types/react gives `pattern` to <input>")]
+    pub trait Pattern {}
+    impl Pattern for webapi::HTMLInputElement {}
+    impl Pattern for webapi::Element {}
+
+    /// An element that takes `ping`: <a>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `ping`", label = "not an attribute of this tag", note = "@types/react gives `ping` to <a>")]
+    pub trait Ping {}
+    impl Ping for webapi::HTMLAnchorElement {}
+    impl Ping for webapi::Element {}
+
+    /// An element that takes `placeholder`: <input>, <textarea>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `placeholder`", label = "not an attribute of this tag", note = "@types/react gives `placeholder` to <input>, <textarea>")]
+    pub trait Placeholder {}
+    impl Placeholder for webapi::HTMLInputElement {}
+    impl Placeholder for webapi::HTMLTextAreaElement {}
+    impl Placeholder for webapi::Element {}
+
+    /// An element that takes `playsInline`: <audio>, <video>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `playsInline`", label = "not an attribute of this tag", note = "@types/react gives `playsInline` to <audio>, <video>")]
+    pub trait PlaysInline {}
+    impl PlaysInline for webapi::HTMLAudioElement {}
+    impl PlaysInline for webapi::HTMLVideoElement {}
+    impl PlaysInline for webapi::Element {}
+
+    /// An element that takes `poster`: <video>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `poster`", label = "not an attribute of this tag", note = "@types/react gives `poster` to <video>")]
+    pub trait Poster {}
+    impl Poster for webapi::HTMLVideoElement {}
+    impl Poster for webapi::Element {}
+
+    /// An element that takes `preload`: <audio>, <video>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `preload`", label = "not an attribute of this tag", note = "@types/react gives `preload` to <audio>, <video>")]
+    pub trait Preload {}
+    impl Preload for webapi::HTMLAudioElement {}
+    impl Preload for webapi::HTMLVideoElement {}
+    impl Preload for webapi::Element {}
+
+    /// An element that takes `readOnly`: <input>, <textarea>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `readOnly`", label = "not an attribute of this tag", note = "@types/react gives `readOnly` to <input>, <textarea>")]
+    pub trait ReadOnly {}
+    impl ReadOnly for webapi::HTMLInputElement {}
+    impl ReadOnly for webapi::HTMLTextAreaElement {}
+    impl ReadOnly for webapi::Element {}
+
+    /// An element that takes `referrerPolicy`: <a>, <area>, <iframe>, <img>, <link>, <script>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `referrerPolicy`", label = "not an attribute of this tag", note = "@types/react gives `referrerPolicy` to <a>, <area>, <iframe>, <img>, <link>, <script>")]
+    pub trait ReferrerPolicy {}
+    impl ReferrerPolicy for webapi::HTMLAnchorElement {}
+    impl ReferrerPolicy for webapi::HTMLAreaElement {}
+    impl ReferrerPolicy for webapi::HTMLIFrameElement {}
+    impl ReferrerPolicy for webapi::HTMLImageElement {}
+    impl ReferrerPolicy for webapi::HTMLLinkElement {}
+    impl ReferrerPolicy for webapi::HTMLScriptElement {}
+    impl ReferrerPolicy for webapi::Element {}
+
+    /// An element that takes `required`: <input>, <select>, <textarea>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `required`", label = "not an attribute of this tag", note = "@types/react gives `required` to <input>, <select>, <textarea>")]
+    pub trait Required {}
+    impl Required for webapi::HTMLInputElement {}
+    impl Required for webapi::HTMLSelectElement {}
+    impl Required for webapi::HTMLTextAreaElement {}
+    impl Required for webapi::Element {}
+
+    /// An element that takes `reversed`: <ol>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `reversed`", label = "not an attribute of this tag", note = "@types/react gives `reversed` to <ol>")]
+    pub trait Reversed {}
+    impl Reversed for webapi::HTMLOListElement {}
+    impl Reversed for webapi::Element {}
+
+    /// An element that takes `rowSpan`: <td>, <th>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `rowSpan`", label = "not an attribute of this tag", note = "@types/react gives `rowSpan` to <td>, <th>")]
+    pub trait RowSpan {}
+    impl RowSpan for webapi::HTMLTableCellElement {}
+    impl RowSpan for webapi::Element {}
+
+    /// An element that takes `rows`: <textarea>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `rows`", label = "not an attribute of this tag", note = "@types/react gives `rows` to <textarea>")]
+    pub trait Rows {}
+    impl Rows for webapi::HTMLTextAreaElement {}
+    impl Rows for webapi::Element {}
+
+    /// An element that takes `rules`: <table>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `rules`", label = "not an attribute of this tag", note = "@types/react gives `rules` to <table>")]
+    pub trait Rules {}
+    impl Rules for webapi::HTMLTableElement {}
+    impl Rules for webapi::Element {}
+
+    /// An element that takes `sandbox`: <iframe>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `sandbox`", label = "not an attribute of this tag", note = "@types/react gives `sandbox` to <iframe>")]
+    pub trait Sandbox {}
+    impl Sandbox for webapi::HTMLIFrameElement {}
+    impl Sandbox for webapi::Element {}
+
+    /// An element that takes `scope`: <td>, <th>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `scope`", label = "not an attribute of this tag", note = "@types/react gives `scope` to <td>, <th>")]
+    pub trait Scope {}
+    impl Scope for webapi::HTMLTableCellElement {}
+    impl Scope for webapi::Element {}
+
+    /// An element that takes `scoped`: <style>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `scoped`", label = "not an attribute of this tag", note = "@types/react gives `scoped` to <style>")]
+    pub trait Scoped {}
+    impl Scoped for webapi::HTMLStyleElement {}
+    impl Scoped for webapi::Element {}
+
+    /// An element that takes `scrolling`: <iframe>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `scrolling`", label = "not an attribute of this tag", note = "@types/react gives `scrolling` to <iframe>")]
+    pub trait Scrolling {}
+    impl Scrolling for webapi::HTMLIFrameElement {}
+    impl Scrolling for webapi::Element {}
+
+    /// An element that takes `seamless`: <iframe>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `seamless`", label = "not an attribute of this tag", note = "@types/react gives `seamless` to <iframe>")]
+    pub trait Seamless {}
+    impl Seamless for webapi::HTMLIFrameElement {}
+    impl Seamless for webapi::Element {}
+
+    /// An element that takes `selected`: <option>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `selected`", label = "not an attribute of this tag", note = "@types/react gives `selected` to <option>")]
+    pub trait Selected {}
+    impl Selected for webapi::HTMLOptionElement {}
+    impl Selected for webapi::Element {}
+
+    /// An element that takes `shape`: <area>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `shape`", label = "not an attribute of this tag", note = "@types/react gives `shape` to <area>")]
+    pub trait Shape {}
+    impl Shape for webapi::HTMLAreaElement {}
+    impl Shape for webapi::Element {}
+
+    /// An element that takes `size`: <input>, <select>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `size`", label = "not an attribute of this tag", note = "@types/react gives `size` to <input>, <select>")]
+    pub trait Size {}
+    impl Size for webapi::HTMLInputElement {}
+    impl Size for webapi::HTMLSelectElement {}
+    impl Size for webapi::Element {}
+
+    /// An element that takes `sizes`: <img>, <link>, <source>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `sizes`", label = "not an attribute of this tag", note = "@types/react gives `sizes` to <img>, <link>, <source>")]
+    pub trait Sizes {}
+    impl Sizes for webapi::HTMLImageElement {}
+    impl Sizes for webapi::HTMLLinkElement {}
+    impl Sizes for webapi::HTMLSourceElement {}
+    impl Sizes for webapi::Element {}
+
+    /// An element that takes `span`: <col>, <colgroup>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `span`", label = "not an attribute of this tag", note = "@types/react gives `span` to <col>, <colgroup>")]
+    pub trait Span {}
+    impl Span for webapi::HTMLTableColElement {}
+    impl Span for webapi::Element {}
+
+    /// An element that takes `src`: <audio>, <embed>, <iframe>, <img>, <input>, <script>, <source>, <track>, <video>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `src`", label = "not an attribute of this tag", note = "@types/react gives `src` to <audio>, <embed>, <iframe>, <img>, <input>, <script>, <source>, <track>, <video>")]
+    pub trait Src {}
+    impl Src for webapi::HTMLAudioElement {}
+    impl Src for webapi::HTMLEmbedElement {}
+    impl Src for webapi::HTMLIFrameElement {}
+    impl Src for webapi::HTMLImageElement {}
+    impl Src for webapi::HTMLInputElement {}
+    impl Src for webapi::HTMLScriptElement {}
+    impl Src for webapi::HTMLSourceElement {}
+    impl Src for webapi::HTMLTrackElement {}
+    impl Src for webapi::HTMLVideoElement {}
+    impl Src for webapi::Element {}
+
+    /// An element that takes `srcDoc`: <iframe>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `srcDoc`", label = "not an attribute of this tag", note = "@types/react gives `srcDoc` to <iframe>")]
+    pub trait SrcDoc {}
+    impl SrcDoc for webapi::HTMLIFrameElement {}
+    impl SrcDoc for webapi::Element {}
+
+    /// An element that takes `srcLang`: <track>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `srcLang`", label = "not an attribute of this tag", note = "@types/react gives `srcLang` to <track>")]
+    pub trait SrcLang {}
+    impl SrcLang for webapi::HTMLTrackElement {}
+    impl SrcLang for webapi::Element {}
+
+    /// An element that takes `srcSet`: <img>, <source>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `srcSet`", label = "not an attribute of this tag", note = "@types/react gives `srcSet` to <img>, <source>")]
+    pub trait SrcSet {}
+    impl SrcSet for webapi::HTMLImageElement {}
+    impl SrcSet for webapi::HTMLSourceElement {}
+    impl SrcSet for webapi::Element {}
+
+    /// An element that takes `start`: <ol>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `start`", label = "not an attribute of this tag", note = "@types/react gives `start` to <ol>")]
+    pub trait Start {}
+    impl Start for webapi::HTMLOListElement {}
+    impl Start for webapi::Element {}
+
+    /// An element that takes `step`: <input>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `step`", label = "not an attribute of this tag", note = "@types/react gives `step` to <input>")]
+    pub trait Step {}
+    impl Step for webapi::HTMLInputElement {}
+    impl Step for webapi::Element {}
+
+    /// An element that takes `summary`: <table>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `summary`", label = "not an attribute of this tag", note = "@types/react gives `summary` to <table>")]
+    pub trait Summary {}
+    impl Summary for webapi::HTMLTableElement {}
+    impl Summary for webapi::Element {}
+
+    /// An element that takes `target`: <a>, <area>, <base>, <form>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `target`", label = "not an attribute of this tag", note = "@types/react gives `target` to <a>, <area>, <base>, <form>")]
+    pub trait Target {}
+    impl Target for webapi::HTMLAnchorElement {}
+    impl Target for webapi::HTMLAreaElement {}
+    impl Target for webapi::HTMLBaseElement {}
+    impl Target for webapi::HTMLFormElement {}
+    impl Target for webapi::Element {}
+
+    /// An element that takes `type`: <a>, <button>, <embed>, <input>, <link>, <menu>, <object>, <ol>, <script>, <source>, <style>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `type`", label = "not an attribute of this tag", note = "@types/react gives `type` to <a>, <button>, <embed>, <input>, <link>, <menu>, <object>, <ol>, <script>, <source>, <style>")]
+    pub trait Type {}
+    impl Type for webapi::HTMLAnchorElement {}
+    impl Type for webapi::HTMLButtonElement {}
+    impl Type for webapi::HTMLEmbedElement {}
+    impl Type for webapi::HTMLInputElement {}
+    impl Type for webapi::HTMLLinkElement {}
+    impl Type for webapi::HTMLMenuElement {}
+    impl Type for webapi::HTMLOListElement {}
+    impl Type for webapi::HTMLObjectElement {}
+    impl Type for webapi::HTMLScriptElement {}
+    impl Type for webapi::HTMLSourceElement {}
+    impl Type for webapi::HTMLStyleElement {}
+    impl Type for webapi::Element {}
+
+    /// An element that takes `useMap`: <img>, <object>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `useMap`", label = "not an attribute of this tag", note = "@types/react gives `useMap` to <img>, <object>")]
+    pub trait UseMap {}
+    impl UseMap for webapi::HTMLImageElement {}
+    impl UseMap for webapi::HTMLObjectElement {}
+    impl UseMap for webapi::Element {}
+
+    /// An element that takes `valign`: <td>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `valign`", label = "not an attribute of this tag", note = "@types/react gives `valign` to <td>")]
+    pub trait Valign {}
+    impl Valign for webapi::HTMLTableCellElement {}
+    impl Valign for webapi::Element {}
+
+    /// An element that takes `value`: <button>, <data>, <input>, <li>, <meter>, <option>, <progress>, <select>, <textarea>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `value`", label = "not an attribute of this tag", note = "@types/react gives `value` to <button>, <data>, <input>, <li>, <meter>, <option>, <progress>, <select>, <textarea>")]
+    pub trait Value {}
+    impl Value for webapi::HTMLButtonElement {}
+    impl Value for webapi::HTMLDataElement {}
+    impl Value for webapi::HTMLInputElement {}
+    impl Value for webapi::HTMLLIElement {}
+    impl Value for webapi::HTMLMeterElement {}
+    impl Value for webapi::HTMLOptionElement {}
+    impl Value for webapi::HTMLProgressElement {}
+    impl Value for webapi::HTMLSelectElement {}
+    impl Value for webapi::HTMLTextAreaElement {}
+    impl Value for webapi::Element {}
+
+    /// An element that takes `width`: <canvas>, <col>, <embed>, <iframe>, <img>, <input>, <object>, <source>, <table>, <td>, <video>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `width`", label = "not an attribute of this tag", note = "@types/react gives `width` to <canvas>, <col>, <embed>, <iframe>, <img>, <input>, <object>, <source>, <table>, <td>, <video>")]
+    pub trait Width {}
+    impl Width for webapi::HTMLCanvasElement {}
+    impl Width for webapi::HTMLEmbedElement {}
+    impl Width for webapi::HTMLIFrameElement {}
+    impl Width for webapi::HTMLImageElement {}
+    impl Width for webapi::HTMLInputElement {}
+    impl Width for webapi::HTMLObjectElement {}
+    impl Width for webapi::HTMLSourceElement {}
+    impl Width for webapi::HTMLTableCellElement {}
+    impl Width for webapi::HTMLTableColElement {}
+    impl Width for webapi::HTMLTableElement {}
+    impl Width for webapi::HTMLVideoElement {}
+    impl Width for webapi::Element {}
+
+    /// An element that takes `wmode`: <object>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `wmode`", label = "not an attribute of this tag", note = "@types/react gives `wmode` to <object>")]
+    pub trait Wmode {}
+    impl Wmode for webapi::HTMLObjectElement {}
+    impl Wmode for webapi::Element {}
+
+    /// An element that takes `wrap`: <textarea>'s.
+    #[diagnostic::on_unimplemented(message = "`{Self}` takes no `wrap`", label = "not an attribute of this tag", note = "@types/react gives `wrap` to <textarea>")]
+    pub trait Wrap {}
+    impl Wrap for webapi::HTMLTextAreaElement {}
+    impl Wrap for webapi::Element {}
 }
 
 /// Event handlers: `on_click` is `onClick`. A handler must not borrow
@@ -3757,7 +4976,7 @@ pub mod html {
         pub safe fn animate_transform() -> Element;
         /// `<area>`
         #[link_name = "<area>"]
-        pub safe fn area() -> Element<webapi::HTMLElement>;
+        pub safe fn area() -> Element<webapi::HTMLAreaElement>;
         /// `<article>`
         #[link_name = "<article>"]
         pub safe fn article() -> Element<webapi::HTMLElement>;
@@ -3766,13 +4985,13 @@ pub mod html {
         pub safe fn aside() -> Element<webapi::HTMLElement>;
         /// `<audio>`
         #[link_name = "<audio>"]
-        pub safe fn audio() -> Element<webapi::HTMLElement>;
+        pub safe fn audio() -> Element<webapi::HTMLAudioElement>;
         /// `<b>`
         #[link_name = "<b>"]
         pub safe fn b() -> Element<webapi::HTMLElement>;
         /// `<base>`
         #[link_name = "<base>"]
-        pub safe fn base() -> Element<webapi::HTMLElement>;
+        pub safe fn base() -> Element<webapi::HTMLBaseElement>;
         /// `<bdi>`
         #[link_name = "<bdi>"]
         pub safe fn bdi() -> Element<webapi::HTMLElement>;
@@ -3781,13 +5000,13 @@ pub mod html {
         pub safe fn bdo() -> Element<webapi::HTMLElement>;
         /// `<blockquote>`
         #[link_name = "<blockquote>"]
-        pub safe fn blockquote() -> Element<webapi::HTMLElement>;
+        pub safe fn blockquote() -> Element<webapi::HTMLQuoteElement>;
         /// `<body>`
         #[link_name = "<body>"]
-        pub safe fn body() -> Element<webapi::HTMLElement>;
+        pub safe fn body() -> Element<webapi::HTMLBodyElement>;
         /// `<br>`
         #[link_name = "<br>"]
-        pub safe fn br() -> Element<webapi::HTMLElement>;
+        pub safe fn br() -> Element<webapi::HTMLBRElement>;
         /// `<button>`
         #[link_name = "<button>"]
         pub safe fn button() -> Element<webapi::HTMLButtonElement>;
@@ -3796,7 +5015,7 @@ pub mod html {
         pub safe fn canvas() -> Element<webapi::HTMLCanvasElement>;
         /// `<caption>`
         #[link_name = "<caption>"]
-        pub safe fn caption() -> Element<webapi::HTMLElement>;
+        pub safe fn caption() -> Element<webapi::HTMLTableCaptionElement>;
         /// `<circle>`
         #[link_name = "<circle>"]
         pub safe fn circle() -> Element;
@@ -3811,16 +5030,16 @@ pub mod html {
         pub safe fn code() -> Element<webapi::HTMLElement>;
         /// `<col>`
         #[link_name = "<col>"]
-        pub safe fn col() -> Element<webapi::HTMLElement>;
+        pub safe fn col() -> Element<webapi::HTMLTableColElement>;
         /// `<colgroup>`
         #[link_name = "<colgroup>"]
-        pub safe fn colgroup() -> Element<webapi::HTMLElement>;
+        pub safe fn colgroup() -> Element<webapi::HTMLTableColElement>;
         /// `<data>`
         #[link_name = "<data>"]
-        pub safe fn data() -> Element<webapi::HTMLElement>;
+        pub safe fn data() -> Element<webapi::HTMLDataElement>;
         /// `<datalist>`
         #[link_name = "<datalist>"]
-        pub safe fn datalist() -> Element<webapi::HTMLElement>;
+        pub safe fn datalist() -> Element<webapi::HTMLDataListElement>;
         /// `<dd>`
         #[link_name = "<dd>"]
         pub safe fn dd() -> Element<webapi::HTMLElement>;
@@ -3829,7 +5048,7 @@ pub mod html {
         pub safe fn defs() -> Element;
         /// `<del>`
         #[link_name = "<del>"]
-        pub safe fn del() -> Element<webapi::HTMLElement>;
+        pub safe fn del() -> Element<webapi::HTMLModElement>;
         /// `<desc>`
         #[link_name = "<desc>"]
         pub safe fn desc() -> Element;
@@ -3841,13 +5060,13 @@ pub mod html {
         pub safe fn dfn() -> Element<webapi::HTMLElement>;
         /// `<dialog>`
         #[link_name = "<dialog>"]
-        pub safe fn dialog() -> Element<webapi::HTMLElement>;
+        pub safe fn dialog() -> Element<webapi::HTMLDialogElement>;
         /// `<div>`
         #[link_name = "<div>"]
         pub safe fn div() -> Element<webapi::HTMLDivElement>;
         /// `<dl>`
         #[link_name = "<dl>"]
-        pub safe fn dl() -> Element<webapi::HTMLElement>;
+        pub safe fn dl() -> Element<webapi::HTMLDListElement>;
         /// `<dt>`
         #[link_name = "<dt>"]
         pub safe fn dt() -> Element<webapi::HTMLElement>;
@@ -3859,7 +5078,7 @@ pub mod html {
         pub safe fn em() -> Element<webapi::HTMLElement>;
         /// `<embed>`
         #[link_name = "<embed>"]
-        pub safe fn embed() -> Element<webapi::HTMLElement>;
+        pub safe fn embed() -> Element<webapi::HTMLEmbedElement>;
         /// `<feBlend>`
         #[link_name = "<feBlend>"]
         pub safe fn fe_blend() -> Element;
@@ -3937,7 +5156,7 @@ pub mod html {
         pub safe fn fe_turbulence() -> Element;
         /// `<fieldset>`
         #[link_name = "<fieldset>"]
-        pub safe fn fieldset() -> Element<webapi::HTMLElement>;
+        pub safe fn fieldset() -> Element<webapi::HTMLFieldSetElement>;
         /// `<figcaption>`
         #[link_name = "<figcaption>"]
         pub safe fn figcaption() -> Element<webapi::HTMLElement>;
@@ -3979,7 +5198,7 @@ pub mod html {
         pub safe fn h6() -> Element<webapi::HTMLHeadingElement>;
         /// `<head>`
         #[link_name = "<head>"]
-        pub safe fn head() -> Element<webapi::HTMLElement>;
+        pub safe fn head() -> Element<webapi::HTMLHeadElement>;
         /// `<header>`
         #[link_name = "<header>"]
         pub safe fn header() -> Element<webapi::HTMLElement>;
@@ -3988,10 +5207,10 @@ pub mod html {
         pub safe fn hgroup() -> Element<webapi::HTMLElement>;
         /// `<hr>`
         #[link_name = "<hr>"]
-        pub safe fn hr() -> Element<webapi::HTMLElement>;
+        pub safe fn hr() -> Element<webapi::HTMLHRElement>;
         /// `<html>`
         #[link_name = "<html>"]
-        pub safe fn html() -> Element<webapi::HTMLElement>;
+        pub safe fn html() -> Element<webapi::HTMLHtmlElement>;
         /// `<i>`
         #[link_name = "<i>"]
         pub safe fn i() -> Element<webapi::HTMLElement>;
@@ -4009,7 +5228,7 @@ pub mod html {
         pub safe fn input() -> Element<webapi::HTMLInputElement>;
         /// `<ins>`
         #[link_name = "<ins>"]
-        pub safe fn ins() -> Element<webapi::HTMLElement>;
+        pub safe fn ins() -> Element<webapi::HTMLModElement>;
         /// `<kbd>`
         #[link_name = "<kbd>"]
         pub safe fn kbd() -> Element<webapi::HTMLElement>;
@@ -4018,7 +5237,7 @@ pub mod html {
         pub safe fn label() -> Element<webapi::HTMLLabelElement>;
         /// `<legend>`
         #[link_name = "<legend>"]
-        pub safe fn legend() -> Element<webapi::HTMLElement>;
+        pub safe fn legend() -> Element<webapi::HTMLLegendElement>;
         /// `<li>`
         #[link_name = "<li>"]
         pub safe fn li() -> Element<webapi::HTMLLIElement>;
@@ -4030,13 +5249,13 @@ pub mod html {
         pub safe fn linear_gradient() -> Element;
         /// `<link>`
         #[link_name = "<link>"]
-        pub safe fn link() -> Element<webapi::HTMLElement>;
+        pub safe fn link() -> Element<webapi::HTMLLinkElement>;
         /// `<main>`
         #[link_name = "<main>"]
         pub safe fn main() -> Element<webapi::HTMLElement>;
         /// `<map>`
         #[link_name = "<map>"]
-        pub safe fn map() -> Element<webapi::HTMLElement>;
+        pub safe fn map() -> Element<webapi::HTMLMapElement>;
         /// `<mark>`
         #[link_name = "<mark>"]
         pub safe fn mark() -> Element<webapi::HTMLElement>;
@@ -4048,16 +5267,16 @@ pub mod html {
         pub safe fn mask() -> Element;
         /// `<menu>`
         #[link_name = "<menu>"]
-        pub safe fn menu() -> Element<webapi::HTMLElement>;
+        pub safe fn menu() -> Element<webapi::HTMLMenuElement>;
         /// `<meta>`
         #[link_name = "<meta>"]
-        pub safe fn meta() -> Element<webapi::HTMLElement>;
+        pub safe fn meta() -> Element<webapi::HTMLMetaElement>;
         /// `<metadata>`
         #[link_name = "<metadata>"]
         pub safe fn metadata() -> Element;
         /// `<meter>`
         #[link_name = "<meter>"]
-        pub safe fn meter() -> Element<webapi::HTMLElement>;
+        pub safe fn meter() -> Element<webapi::HTMLMeterElement>;
         /// `<mpath>`
         #[link_name = "<mpath>"]
         pub safe fn mpath() -> Element;
@@ -4069,13 +5288,13 @@ pub mod html {
         pub safe fn noscript() -> Element<webapi::HTMLElement>;
         /// `<object>`
         #[link_name = "<object>"]
-        pub safe fn object() -> Element<webapi::HTMLElement>;
+        pub safe fn object() -> Element<webapi::HTMLObjectElement>;
         /// `<ol>`
         #[link_name = "<ol>"]
         pub safe fn ol() -> Element<webapi::HTMLOListElement>;
         /// `<optgroup>`
         #[link_name = "<optgroup>"]
-        pub safe fn optgroup() -> Element<webapi::HTMLElement>;
+        pub safe fn optgroup() -> Element<webapi::HTMLOptGroupElement>;
         /// `<option>`
         #[link_name = "<option>"]
         pub safe fn option() -> Element<webapi::HTMLOptionElement>;
@@ -4093,7 +5312,7 @@ pub mod html {
         pub safe fn pattern() -> Element;
         /// `<picture>`
         #[link_name = "<picture>"]
-        pub safe fn picture() -> Element<webapi::HTMLElement>;
+        pub safe fn picture() -> Element<webapi::HTMLPictureElement>;
         /// `<polygon>`
         #[link_name = "<polygon>"]
         pub safe fn polygon() -> Element;
@@ -4102,13 +5321,13 @@ pub mod html {
         pub safe fn polyline() -> Element;
         /// `<pre>`
         #[link_name = "<pre>"]
-        pub safe fn pre() -> Element<webapi::HTMLElement>;
+        pub safe fn pre() -> Element<webapi::HTMLPreElement>;
         /// `<progress>`
         #[link_name = "<progress>"]
-        pub safe fn progress() -> Element<webapi::HTMLElement>;
+        pub safe fn progress() -> Element<webapi::HTMLProgressElement>;
         /// `<q>`
         #[link_name = "<q>"]
-        pub safe fn q() -> Element<webapi::HTMLElement>;
+        pub safe fn q() -> Element<webapi::HTMLQuoteElement>;
         /// `<radialGradient>`
         #[link_name = "<radialGradient>"]
         pub safe fn radial_gradient() -> Element;
@@ -4132,7 +5351,7 @@ pub mod html {
         pub safe fn samp() -> Element<webapi::HTMLElement>;
         /// `<script>`
         #[link_name = "<script>"]
-        pub safe fn script() -> Element<webapi::HTMLElement>;
+        pub safe fn script() -> Element<webapi::HTMLScriptElement>;
         /// `<search>`
         #[link_name = "<search>"]
         pub safe fn search() -> Element<webapi::HTMLElement>;
@@ -4144,19 +5363,19 @@ pub mod html {
         pub safe fn select() -> Element<webapi::HTMLSelectElement>;
         /// `<selectedcontent>`
         #[link_name = "<selectedcontent>"]
-        pub safe fn selectedcontent() -> Element<webapi::HTMLElement>;
+        pub safe fn selectedcontent() -> Element<webapi::HTMLSelectedContentElement>;
         /// `<set>`
         #[link_name = "<set>"]
         pub safe fn set() -> Element;
         /// `<slot>`
         #[link_name = "<slot>"]
-        pub safe fn slot() -> Element<webapi::HTMLElement>;
+        pub safe fn slot() -> Element<webapi::HTMLSlotElement>;
         /// `<small>`
         #[link_name = "<small>"]
         pub safe fn small() -> Element<webapi::HTMLElement>;
         /// `<source>`
         #[link_name = "<source>"]
-        pub safe fn source() -> Element<webapi::HTMLElement>;
+        pub safe fn source() -> Element<webapi::HTMLSourceElement>;
         /// `<span>`
         #[link_name = "<span>"]
         pub safe fn span() -> Element<webapi::HTMLSpanElement>;
@@ -4168,7 +5387,7 @@ pub mod html {
         pub safe fn strong() -> Element<webapi::HTMLElement>;
         /// `<style>`
         #[link_name = "<style>"]
-        pub safe fn style() -> Element<webapi::HTMLElement>;
+        pub safe fn style() -> Element<webapi::HTMLStyleElement>;
         /// `<sub>`
         #[link_name = "<sub>"]
         pub safe fn sub() -> Element<webapi::HTMLElement>;
@@ -4198,7 +5417,7 @@ pub mod html {
         pub safe fn td() -> Element<webapi::HTMLTableCellElement>;
         /// `<template>`
         #[link_name = "<template>"]
-        pub safe fn template() -> Element<webapi::HTMLElement>;
+        pub safe fn template() -> Element<webapi::HTMLTemplateElement>;
         /// `<text>`
         #[link_name = "<text>"]
         pub safe fn text() -> Element;
@@ -4219,16 +5438,16 @@ pub mod html {
         pub safe fn thead() -> Element<webapi::HTMLTableSectionElement>;
         /// `<time>`
         #[link_name = "<time>"]
-        pub safe fn time() -> Element<webapi::HTMLElement>;
+        pub safe fn time() -> Element<webapi::HTMLTimeElement>;
         /// `<title>`
         #[link_name = "<title>"]
-        pub safe fn title() -> Element<webapi::HTMLElement>;
+        pub safe fn title() -> Element<webapi::HTMLTitleElement>;
         /// `<tr>`
         #[link_name = "<tr>"]
         pub safe fn tr() -> Element<webapi::HTMLTableRowElement>;
         /// `<track>`
         #[link_name = "<track>"]
-        pub safe fn track() -> Element<webapi::HTMLElement>;
+        pub safe fn track() -> Element<webapi::HTMLTrackElement>;
         /// `<tspan>`
         #[link_name = "<tspan>"]
         pub safe fn tspan() -> Element;
@@ -4246,7 +5465,7 @@ pub mod html {
         pub safe fn var() -> Element<webapi::HTMLElement>;
         /// `<video>`
         #[link_name = "<video>"]
-        pub safe fn video() -> Element<webapi::HTMLElement>;
+        pub safe fn video() -> Element<webapi::HTMLVideoElement>;
         /// `<view>`
         #[link_name = "<view>"]
         pub safe fn view() -> Element;

@@ -452,6 +452,43 @@ pub fn title(name: Option<&str>) -> String {
   expect([title("Oops"), title(""), title(undefined)]).toEqual(["Oops", "Error", "Error"]);
 });
 
+// Each tag takes what @types/react's `JSX.IntrinsicElements` gives it: an
+// `<a>` an `href`, a `<button>` `disabled`, every element a `title`, and a
+// tag value, which may be any, anything; a `<div>`'s `href` is an error that
+// says so (ADR 0228).
+test("JSX tags take the attributes @types/react gives each", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{Element, Tag, jsx};
+#[derive(Clone, Copy)]
+pub enum As {
+    #[rust_js::name = "a"]
+    A,
+}
+impl Tag for As {}
+pub fn View(Comp: As) -> Element {
+    jsx! {
+        <div title="t">
+            <a href="/a" target="_blank">{"a"}</a>
+            <button disabled={true} type="button">{"b"}</button>
+            <input value="v" placeholder="p" />
+            <Comp href="/c">{"c"}</Comp>
+        </div>
+    }
+}
+`);
+  run(args);
+  const { View } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(View("a"))).toBe('<div title="t"><a href="/a" target="_blank">a</a><button disabled="" type="button">b</button><input placeholder="p" value="v"/><a href="/c">c</a></div>');
+  for (const [wrong, says] of [
+    ['<div href="/a" />', "`react::webapi::HTMLDivElement` takes no `href`"],
+    ["<span disabled={true} />", "`react::webapi::HTMLSpanElement` takes no `disabled`"],
+  ]) {
+    const refused = compile(`use react::{Element, jsx};\npub fn View() -> Element {\n    jsx! { ${wrong} }\n}\n`);
+    const failed = Bun.spawnSync(refused.args, { cwd: refused.dir });
+    expect([failed.exitCode === 0, failed.stderr.toString().includes(says)]).toEqual([false, true]);
+  }
+});
+
 // React DOM's own table leaves these out, as their spelling needs no warning;
 // @types/react types them (ADR 0043).
 test("JSX takes every attribute @types/react types", async () => {
