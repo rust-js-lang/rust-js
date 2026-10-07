@@ -141,7 +141,13 @@ pub(super) fn name_imports(
         .map(|(&module, items)| {
             let mut reserved: HashSet<String> = uses.globals.iter().chain(items).cloned().collect();
             let renamed = renamed_in(tcx, module);
-            let names = (bases.iter())
+            // What the module imports is named first, so it's named as it is
+            // where another module imports another of its name: next/image's
+            // `Image` there, next/legacy/image's here.
+            let (own, others): (Vec<_>, Vec<_>) = bases
+                .iter()
+                .partition(|(export, _)| uses.imported[*export].contains(&module));
+            let names = (own.into_iter().chain(others))
                 .map(|(export, base)| {
                     // A default import is named as the module renames what
                     // holds it: `use …::Link as NextLink` is

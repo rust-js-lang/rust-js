@@ -335,6 +335,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0242 A `dyn ReactNode` is the node itself](decisions/0242-dyn-react-node.md)
 - [0243 A RegExp of a pattern as it's written is a literal](decisions/0243-regex-literals.md)
 - [0244 A value taken apart through a shared reference is destructured](decisions/0244-destructuring-through-references.md)
+- [0245 next/legacy/image, and a module's imports named by its own](decisions/0245-legacy-image-and-module-import-names.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

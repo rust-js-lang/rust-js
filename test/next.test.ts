@@ -10,6 +10,7 @@ const bin = join(root, "next-plugin/bin.js");
 
 const about = `#![allow(non_snake_case)]
 
+use next::legacy::image::Image;
 use next::link::Link;
 use react::attributes::AnchorHTMLAttributes;
 use react::{JSX, jsx};
@@ -18,6 +19,9 @@ pub fn About() -> JSX::Element {
     jsx! {
         <main>
             <h1>{"About, in Rust"}</h1>
+            <div className="logo">
+                <Image src="/next.svg" layout={Some("fill")} objectFit={Some("cover")} alt={Some("Next.js logo")} {..Default::default()} />
+            </div>
             <HomeLink className="home" {..Default::default()} />
         </main>
     }
@@ -119,6 +123,11 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   expect(readFileSync(join(dir, ".next/server/app/index.html"), "utf8")).toContain("Count <!-- -->0");
   const aboutHtml = readFileSync(join(dir, ".next/server/app/about.html"), "utf8");
   expect([aboutHtml.includes('class="home link"'), aboutHtml.includes('aria-label="Home page"')]).toEqual([true, true]);
+  // next/legacy/image, as react.dev's TeamMember has it: its layout and
+  // fit, an `<img>` that fills its parent and covers it.
+  const aboutJsx = readFileSync(join(dir, "app/about/page.jsx"), "utf8");
+  expect([aboutJsx.includes('import Image from "next/legacy/image";'), aboutJsx.includes('<Image src="/next.svg" layout="fill" objectFit="cover" alt="Next.js logo" />')]).toEqual([true, true]);
+  expect([aboutHtml.includes('alt="Next.js logo"'), aboutHtml.includes("object-fit:cover")]).toEqual([true, true]);
   // Its props as written, an anchor's first, which the props it names
   // replace (ADR 0203, 0208).
   expect(readFileSync(join(dir, "app/about/page.jsx"), "utf8")).toContain('<Link href="/" {...anchor} className={classes} aria-label="Home page">');
