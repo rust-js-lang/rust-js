@@ -27,12 +27,16 @@ import Link from "next/link";
 ```
 
 ```js
-// components/MDX/Link.jsx
-import Link$1 from "next/link";
+// inner/leaf.js, of its own `fn join` and a `path_join` that's node:path's `join`
+import { join as join$1 } from "node:path";
 
-function Link({ href, className, children, ...props }) {
+function join(greeting) {
 ```
 
+- **A default import is named as the file's `use` renames it**: `use
+  next::link::Link as NextLink` is `import NextLink from "next/link"`, as
+  react.dev's MDX `Link` names it beside its own; a `static`'s is camel
+  case, as an asset's own name is. (Amended.)
 - **Every module names every import**, so a module's locals avoid it, as
   they did: a library's export (ADR 0100), or one a trait's default
   copied into an impl uses (ADR 0049), is used by modules known only once
@@ -47,3 +51,6 @@ function Link({ href, className, children, ...props }) {
 - **It's tested by the `imports` snapshot**: `inner/leaf.rs` has a `fn
   join` of its own and imports `node:path`'s `join` too, `join$1` there,
   and the root's `import { join } from "node:path"` keeps its name.
+  A JSX test's module renaming next/link's default has `import NextLink
+  from "next/link"`, another's keeps `Link`, and a `static` renamed
+  `banner_img` is `bannerImg`.
