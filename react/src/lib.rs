@@ -440,7 +440,7 @@ impl<T> Element<T> {
     /// A ref to its element, or to one its element extends: a `<button>`'s
     /// holds an `HTMLButtonElement`, or an `Element` (ADR 0224).
     #[cfg_attr(rust_js, rust_js::link_name = "prop ref")]
-    pub fn r#ref<U: 'static, M>(self, value: impl RefValue<&'static U, M>) -> Element<T>
+    pub fn r#ref<U: 'static, M>(self, value: impl Ref<&'static U, M>) -> Element<T>
     where
         T: webapi::IsA<U>,
     {
@@ -498,16 +498,26 @@ impl ActionResult<SyncAction> for () {}
 #[cfg(react = "19.0")]
 impl<F: Future<Output = ()>> ActionResult<AsyncAction> for F {}
 
-/// A JSX ref is a ref object or a callback. React calls a callback on attach
-/// and detach; from React 19, its returned cleanup runs on detach.
-/// The marker only distinguishes types.
-pub trait RefValue<H, M> {}
+/// A JSX ref, @types/react's `Ref<T>`: a [`RefObject`] or a [`RefCallback`],
+/// any `Fn(Option<H>)`. React calls a callback on attach and detach; from
+/// React 19, its returned cleanup runs on detach. The marker only
+/// distinguishes types.
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` is not a `Ref` of `{H}`",
+    label = "a `RefObject<Option<{H}>>` or an `Fn(Option<{H}>)` is"
+)]
+pub trait Ref<H, M> {}
 #[doc(hidden)]
 pub struct ObjectRef;
 #[doc(hidden)]
 pub struct CallbackRef<C>(PhantomData<C>);
-impl<H> RefValue<H, ObjectRef> for RefObject<Option<H>> {}
-impl<H: 'static, C: Cleanup, F: Fn(Option<H>) -> C + 'static> RefValue<H, CallbackRef<C>> for F {}
+impl<H> Ref<H, ObjectRef> for RefObject<Option<H>> {}
+impl<H: 'static, C: Cleanup, F: Fn(Option<H>) -> C + 'static> Ref<H, CallbackRef<C>> for F {}
+
+/// @types/react's `RefCallback<T>`, a callback [`Ref`] a prop holds: given
+/// the element, or `None` when it's gone, and returning nothing, or a
+/// cleanup, `C`, which React 19 runs when it's gone.
+pub type RefCallback<T, C = ()> = Box<dyn Fn(Option<T>) -> C>;
 
 /// A JSX form action is a URL or, on React 19+, a function or action dispatch.
 pub trait FormAction<M> {}
@@ -1252,7 +1262,7 @@ impl<P, H> ComponentType<P, Forwarded> for &'static LocalKey<ForwardRefExoticCom
 /// Check the handle type of a forwarded JSX ref without emitting a runtime call.
 #[doc(hidden)]
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
-pub fn checked_ref<H, M, R: RefValue<H, M>>(this: R) -> R {
+pub fn checked_ref<H, M, R: Ref<H, M>>(this: R) -> R {
     unreachable!()
 }
 
