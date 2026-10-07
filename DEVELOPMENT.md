@@ -55,19 +55,19 @@ wait for it; we only come back to it.
 
 GitHub gives the repository a number of free minutes of its machines, and
 every job of a run counts its own, setup included. So nothing runs on its
-own: no run on each push, none on a schedule. A branch is checked when
-it's ready to merge, once, and again only after a fix. A check costs about
+own but the nightly: no run on each push. A branch is checked when it's
+ready to merge, once, and again only after a fix. A check costs about
 the sum of its jobs, some 2 to 3 hours of machine time with rustc's
 shards; splitting the suite across more machines ends sooner but costs
 more, as each sets itself up again.
 
 ## What runs where
 
-| Check | Inner loop (local) | `bun run ci:check` | By hand, before a release |
+| Check | Inner loop (local) | `bun run ci:check` | Nightly, of `main` |
 |---|---|---|---|
 | The new test, seen to fail, then pass | yes, on the Mac: it's the point | in the suite | in the suite |
 | Its module's focused tests, `bun test test/<file>.test.ts -t <name>` | yes, on the Mac | in the suite | in the suite |
-| The new mutations, `bun scripts/mutations.ts <name>` | yes, on the Mac | the changed ones | all 919 |
+| The new mutations, `bun scripts/mutations.ts <name>` | yes, on the Mac | the changed ones | all of them, on 8 machines |
 | Reading the generated JS and snapshot diffs | yes | the bless patch, read before merging | |
 | `bun run typecheck`, `fmt:check`, clippy, `cargo test` | | **lint** job | |
 | `bun run test`, the whole suite | | **test** job, or shards | |
@@ -213,6 +213,16 @@ and `mutation_shards`, 1, 2, 4 or 8. Before a release, all of them:
 gh workflow run "rustc tests" -f mutations=true -f mutation_shards=8
 gh workflow run "rustc tests" -f fuzz_seeds=600 -f fuzz_start=1000
 ```
+
+### `nightly.yml`, each night at 02:00 UTC+7, of `main`
+
+Every test there is: `check.yml`'s jobs, its suite in 2 shards and every
+mutation on 8 machines where a branch's check runs only its own, and 600
+generated programs, new ones each night, from the day's number. It's a
+group of its own, so it neither cancels nor waits for a `ci:check`.
+`bun run ci:status` shows its latest run first; GitHub mails a failure to
+whoever last changed the schedule. Of a public repository, its machines
+cost nothing. Started by hand too: `gh workflow run nightly.yml`.
 
 ### Kept as they are
 

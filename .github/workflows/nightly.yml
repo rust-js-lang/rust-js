@@ -1,0 +1,42 @@
+name: Nightly
+
+# Every test there is, of `main`, each night at 02:00 UTC+7: check.yml's
+# jobs, the suite, the examples, the WASM compiler, rustc's tests, with
+# every mutation where a branch's check runs only its own, and a batch of
+# generated programs, new ones each night (ADR 0092). Of a public
+# repository, GitHub's machines cost nothing. A failure is mailed to whoever
+# last changed this schedule; `bun run ci:status` shows the latest run.
+on:
+  schedule:
+    - cron: '0 19 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+jobs:
+  check:
+    uses: ./.github/workflows/check.yml
+    with:
+      test_shards: '2'
+      nightly: true
+
+  # Each night's programs are new: 600 from the day's number times 600.
+  seeds:
+    runs-on: ubuntu-latest
+    outputs:
+      start: ${{ steps.start.outputs.start }}
+    steps:
+      - id: start
+        run: echo "start=$(( $(date +%s) / 86400 * 600 ))" >> "$GITHUB_OUTPUT"
+
+  fuzz:
+    needs: seeds
+    uses: ./.github/workflows/rustc-tests.yml
+    with:
+      fuzz_seeds: '600'
+      fuzz_start: ${{ needs.seeds.outputs.start }}

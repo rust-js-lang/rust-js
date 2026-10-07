@@ -3,7 +3,7 @@
 // free minutes are counted:
 //
 //   bun run ci:check [branch] [--shards=4]  # check the branch as it's pushed
-//   bun run ci:status                       # each branch's latest run, and what failed
+//   bun run ci:status                       # each branch's latest run, and what failed, and the nightly's
 //   bun run ci:bless [branch]               # apply its latest run's bless patches
 //
 // A run whose snapshots or rustc's lists differ uploads what blessing them
@@ -37,12 +37,18 @@ function gh(args: string[]): string {
   return p.stdout.toString();
 }
 
-function runs(): Run[] {
-  return JSON.parse(gh(["run", "list", `--workflow=${workflow}`, "--limit=100", "--json=headBranch,databaseId,status,conclusion,createdAt,displayTitle"]));
+function runs(of = workflow, limit = 100): Run[] {
+  return JSON.parse(gh(["run", "list", `--workflow=${of}`, `--limit=${limit}`, "--json=headBranch,databaseId,status,conclusion,createdAt,displayTitle"]));
 }
 
 function status() {
-  for (const run of latestRuns(runs())) {
+  // The latest nightly.yml run of `main`, every test there is, first.
+  // None until it's on `main`, which GitHub reads a schedule from.
+  let nightly: Run[] = [];
+  try {
+    nightly = runs("nightly.yml", 1).map((run) => ({ ...run, headBranch: "nightly" }));
+  } catch {}
+  for (const run of [...nightly, ...latestRuns(runs())]) {
     const result = run.status === "completed" ? run.conclusion : run.status;
     let failed = "";
     if (run.conclusion === "failure") {

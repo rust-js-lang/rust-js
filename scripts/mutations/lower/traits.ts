@@ -409,7 +409,7 @@ export const mutations: Mutation[] = [
     breaks: "`<I as Int>::T: NonZero` isn't found as the evidence for `J: NonZero` of an `I: Int<T = J>`",
     file: "src/lower/traits.rs",
     find: "        if normalized(from) == normalized(to) {",
-    replace: "        if self.tcx.erase_and_anonymize_regions(from) == self.tcx.erase_and_anonymize_regions(to) {",
+    replace: "        if self.recognition.tcx.erase_and_anonymize_regions(from) == self.recognition.tcx.erase_and_anonymize_regions(to) {",
     tests: ["test/corpus.test.ts", "-t", "evidence_paths"],
   },
   {
@@ -472,7 +472,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "parse-error-dyn-refused",
-    breaks: "`s.parse::<i64>()?` into a `Box<dyn Error>` is an error",
+    breaks: "`s.parse::<i64>()?` into a `Box<dyn Error>` is a pair of the dictionary ADR 0186 gives std's parse errors, where it's its message, `$parseErrorDyn(\"ParseIntError\")`",
+    snapshots: true,
     file: "src/lower/traits.rs",
     find: "        if self.is_parse_error(from)\n            && let ty::Adt(adt, _) = from.kind()",
     replace: "        if false\n            && let ty::Adt(adt, _) = from.kind()",
