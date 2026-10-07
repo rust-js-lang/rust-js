@@ -23,6 +23,7 @@ for the same things, and the `.d.ts` rust-js writes already used React's.
 | trait `Node`, `NodeKind` | `ReactNode`, `ReactNodeKind` |
 | `Style` | `CSSProperties` |
 | `Ref<T>` | `RefObject<T>` |
+| trait `RefValue<H, M>`, a JSX ref | `Ref<H, M>`, with `RefCallback<T, C = ()>` (Amended) |
 | `SetState<T>` | `Dispatch<SetStateAction<T>>` |
 | `StartTransition` | `TransitionStartFunction` |
 | trait `Deps` | `DependencyList` |
@@ -66,6 +67,12 @@ for the same things, and the `.d.ts` rust-js writes already used React's.
   where it was a `ChangeEvent`, of `value()`: @types/react's types are the
   rule, over a convenience of the crate's own. Its value is its element's,
   `html_input_element::value(e.current_target())`. (Amended.)
+- **A ref is @types/react's `Ref`**, the trait of what JSX's `ref` takes, a
+  `RefObject` or any `Fn(Option<H>)`, as `Ref<T>` is TypeScript's union of
+  them (ADR 0229), its error saying so, `` `RefObject<Option<i32>>` is not a
+  `Ref` of `&Element` ``; and `RefCallback<T, C = ()>`, a callback a prop
+  holds, `Box<dyn Fn(Option<T>) -> C>`, its `C` the cleanup React 19 runs.
+  (Amended.)
 - **Names React has no type for stay the crate's own**: `Element`, what
   JSX makes, `JSX.Element`; `Rest`, `...props`; `children::Child`;
   `InnerHtml`, `{ __html }`; `Cleanup`, what an effect gives back, which
