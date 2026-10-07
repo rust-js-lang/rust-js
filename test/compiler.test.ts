@@ -842,6 +842,38 @@ pub fn body(response: &webapi::Response) -> Promise<Option<&'static Unknown>> {
   expect(lib.renamed('{"name":"old","n":2}')).toBe("{name:'new',n:2}");
 });
 
+// What's never nullish is a `js::Unknown` too, as any value is TypeScript's
+// `unknown`; and `js::string` is JS's `String(value)`, as `result += value`
+// makes one: react.dev's console line joins its children's text so.
+test("a defined value is an unknown one, and any value is a string as JS makes it", async () => {
+  const withWeb = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("unknown-upcast");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Unknown, string, unknown};
+pub fn message<'a>(text: &'a str, other: Option<&'a Unknown>, use_text: bool) -> Option<&'a Unknown> {
+    if use_text { Some(unknown(text)) } else { other }
+}
+pub fn joined(parts: Vec<Option<&Unknown>>) -> String {
+    let mut result = String::new();
+    for part in parts {
+        result.push_str(&string(part));
+    }
+    result
+}
+pub fn counted(n: u32) -> String {
+    string(Some(unknown(&n)))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return text;");
+  expect(js).toContain("String(part)");
+  expect(js).toContain("return String(n);");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.message("a", 1, true), lib.message("a", 1, false), lib.message("a", undefined, false)]).toEqual(["a", 1, undefined]);
+  expect(lib.joined(["a", 1, undefined, null, { b: 1 }])).toBe("a1undefinednull[object Object]");
+  expect(lib.counted(7)).toBe("7");
+});
+
 // ADR 0225: a WebIDL parameter typed `any` takes a value as JS has it, and
 // one the browser copies, `postMessage`'s, `pushState`'s and
 // `structuredClone`'s, only a value it copies as it is: `js::StructuredClone`.
