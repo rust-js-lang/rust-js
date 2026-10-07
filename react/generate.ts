@@ -16,7 +16,7 @@
 // `<file>`, from the versions.json there is: what the tests check it against.
 
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join } from "node:path";
 import { open } from "@rust-js/typescript";
@@ -401,7 +401,60 @@ const css = await (webrefCss.default ?? webrefCss).listAll();
 const properties = [...new Set(css.properties.map((p: { name: string }) => p.name))]
   .filter((name) => !name.startsWith("-"))
   .sort() as string[];
-lines.push("/// CSS properties: `background_color` is `backgroundColor`. A number is in", "/// pixels where CSS needs a unit, as React makes it.", "impl CSSProperties {");
+// What each takes, as @types/react's `CSSProperties`, csstype's
+// `Properties<string | number>`, types it: a length's `TLength` a number
+// or text, `color`'s text, `opacity`'s a number. One csstype doesn't
+// have takes any `Value`.
+const csstypeFile = join(realpathSync(join(root, "node_modules", "@types", "react")), "..", "..", "csstype", "index.d.ts");
+const csstype = await open([csstypeFile]);
+const cssDeclarations: any[] = (await csstype.read(csstypeFile)).declarations;
+await csstype.close();
+const cssAliases = (space?: string): Map<string, any> =>
+  new Map(
+    (space ? cssDeclarations.find((d: any) => d.kind === "namespace" && d.name === space).declarations : cssDeclarations)
+      .filter((d: any) => d.kind === "type")
+      .map((d: any) => [d.name, d.type]),
+  );
+const cssSpaces: [string | undefined, Map<string, any>][] = [undefined, "Property", "DataType"].map((space) => [space, cssAliases(space)]);
+const resolving = new Set<string>();
+const cssKinds = (t: any): string[] => {
+  switch (t.kind) {
+    case "keyword":
+      return t.keyword === "undefined" ? [] : t.keyword === "number" || t.keyword === "string" ? [t.keyword] : ["other"];
+    case "literal":
+      return [typeof t.value];
+    case "union":
+      return t.types.flatMap(cssKinds);
+    // `(string & {})` and `(number & {})`: any string, any number.
+    case "intersection":
+      return t.types.flatMap((p: any) => (p.kind === "keyword" && (p.keyword === "string" || p.keyword === "number") ? [p.keyword] : []));
+    case "reference": {
+      if (t.name === "TLength") return ["string", "number"];
+      if (t.name === "TTime") return ["string"];
+      // A name of its own namespace is written without it: `ColorBase`, `DataType`'s.
+      const [space, name] = t.name.includes(".") ? t.name.split(".") : [undefined, t.name];
+      const alias = cssSpaces.filter(([s]) => !space || s === space).map(([, aliases]) => aliases.get(name)).find(Boolean);
+      if (!alias || resolving.has(t.name)) return alias ? [] : ["other"];
+      resolving.add(t.name);
+      const kinds = cssKinds(alias);
+      resolving.delete(t.name);
+      return kinds;
+    }
+    default:
+      return ["other"];
+  }
+};
+const cssTypes = new Map<string, string>();
+for (const d of cssDeclarations) {
+  if (d.kind !== "interface" || !/Properties$/.test(d.name) || /Hyphen|Fallback/.test(d.name)) continue;
+  for (const m of d.members) {
+    if (m.kind !== "property" || cssTypes.has(m.name)) continue;
+    const kinds = new Set(cssKinds(m.type));
+    if (kinds.has("other") || kinds.size === 0) continue;
+    cssTypes.set(m.name, kinds.has("number") ? "impl value::NumberOrString" : "impl value::Text");
+  }
+}
+lines.push("/// CSS properties: `background_color` is `backgroundColor`. A number is in", "/// pixels where CSS needs a unit, as React makes it. Each takes what", "/// csstype types it as (ADR 0228).", "impl CSSProperties {");
 const styleMethods = new Set(["new", "set"]);
 for (const property of properties) {
   const camel = property.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
@@ -411,7 +464,7 @@ for (const property of properties) {
   lines.push(
     `    /// \`${property}\``,
     `    #[cfg_attr(rust_js, rust_js::link_name = "prop ${camel}")]`,
-    `    pub fn ${method}(self, value: impl Value) -> CSSProperties {`,
+    `    pub fn ${method}(self, value: ${cssTypes.get(camel) ?? "impl Value"}) -> CSSProperties {`,
     "        unreachable!()",
     "    }",
     "",
