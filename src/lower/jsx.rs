@@ -479,7 +479,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let js::ExprKind::Object(fields) = &mut object.kind else {
             unreachable!("checked by the caller")
         };
-        fields.push(Prop::Field(name, value));
+        // `prop ...`: another object spread over what's set so far.
+        fields.push(match name.as_str() {
+            "..." => Prop::Spread(value),
+            _ => Prop::Field(name, value),
+        });
         Ok(object)
     }
 

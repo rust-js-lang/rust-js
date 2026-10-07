@@ -285,6 +285,13 @@ impl Style {
         unreachable!()
     }
 
+    /// Another style's properties over these, `{ width, ...customStyles }`,
+    /// as react.dev's console box spreads its own; `None` spreads nothing.
+    #[cfg_attr(rust_js, rust_js::link_name = "prop ...")]
+    pub fn spread(self, other: impl StyleValue) -> Style {
+        unreachable!()
+    }
+
     /// Any property, like a custom one: `.set("--accent", "red")`. The name
     /// is a string literal.
     #[cfg_attr(rust_js, rust_js::link_name = "prop")]

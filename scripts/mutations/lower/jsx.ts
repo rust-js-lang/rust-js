@@ -194,4 +194,12 @@ export const mutations: Mutation[] = [
     replace: "                value.has_effects()\n",
     tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
   },
+  {
+    name: "style-spread-a-field",
+    breaks: "`Style::spread(custom)` sets a property named `...`, `{ width, \"...\": customStyles }`, where it spreads them",
+    file: "src/lower/jsx.rs",
+    find: "            \"...\" => Prop::Spread(value),\n",
+    replace: "",
+    tests: ["test/jsx.test.ts", "-t", "spread another style"],
+  },
 ];
