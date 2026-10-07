@@ -1891,6 +1891,35 @@ pub fn Field(FieldProps { on_click, on_change, on_any, on_same }: FieldProps) ->
   expect(jsx).toContain("<input onChange={onChange} />");
 });
 
+// An event's `native_event` is the DOM's event it wraps, typed as
+// @types/react types `nativeEvent`: a click's a `MouseEvent`, a pointer's a
+// `PointerEvent`, a wheel's a `WheelEvent`, so its own fields are read.
+test("JSX native_event is the DOM event of its kind", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::webapi::{mouse_event, pointer_event, wheel_event};
+use react::{Element, jsx};
+pub struct PadProps { pub on_read: fn(String) }
+pub fn Pad(PadProps { on_read }: PadProps) -> Element {
+    jsx! {
+        <div
+            onClick={move |e| on_read(mouse_event::client_x(e.native_event()).to_string())}
+            onPointerDown={move |e| on_read(pointer_event::pointer_type(e.native_event()))}
+            onWheel={move |e| on_read(wheel_event::delta_y(e.native_event()).to_string())} />
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("e.nativeEvent.clientX");
+  const { Pad } = await import(join(dir, "lib.jsx"));
+  const read: string[] = [];
+  const { props } = Pad({ on_read: (s: string) => read.push(s) });
+  props.onClick({ nativeEvent: { clientX: 3 } });
+  props.onPointerDown({ nativeEvent: { pointerType: "pen" } });
+  props.onWheel({ nativeEvent: { deltaY: 1.5 } });
+  expect(read).toEqual(["3", "pen", "1.5"]);
+});
+
 // As react.dev's Button's `style={style}` of an optional prop: `None` none.
 test("JSX passes an optional style on as it is", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
