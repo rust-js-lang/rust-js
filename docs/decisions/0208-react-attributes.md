@@ -43,8 +43,11 @@ export interface ButtonLinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorEle
   `JSX.IntrinsicElements` gives it, or its base's, `HTMLElement`, of
   several.
 - **Each field is optional, its type its values'**: a string, or a type
-  that takes one, `&'a str`; a number `f64`; a boolean or `Booleanish`
-  `bool`; an event handler `Box<dyn Fn(&event::Mouse)>`, its event as
+  that takes one, `&'a str`; a number `f64`; a boolean `bool`; a `number |
+  string`, `width`'s, a `NumberOrString`, and a `Booleanish`, `boolean |
+  "true" | "false"`, `draggable`'s, a `Booleanish`: untagged enums (ADR
+  0214), each the value itself in JS, `width: Some(64.0.into())` (Amended:
+  both were `&'a str`, as a `Booleanish` was a `bool`; ADR 0228); an event handler `Box<dyn Fn(&event::Mouse)>`, its event as
   `elements.rs` has it; `style` a `Style`, which a tag's `style` takes as it
   is, `None` none, as react.dev's Button's `style={style}` passes its own
   on. (Amended: it took only a `Style`.) A `Style` spreads another over

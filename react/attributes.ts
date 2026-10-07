@@ -89,6 +89,10 @@ function rustType(name: string, type: Model): string | null {
   }
   if (types.length === 1 && types[0].kind === "reference" && types[0].name === "CSSProperties") return "CSSProperties";
   const kinds = new Set(types.flatMap((t: Model) => kinds_of(t)));
+  // `width`'s `number | string`, and `draggable`'s `Booleanish`, a
+  // `boolean | "true" | "false"`: either, each its value in JS (ADR 0228).
+  if (kinds.has("string") && kinds.has("number") && !kinds.has("boolean")) return "NumberOrString<'a>";
+  if (kinds.has("string") && kinds.has("boolean") && !kinds.has("number")) return "Booleanish<'a>";
   // A string, where one's a type of it: `string | Blob`'s, which Rust gives.
   if (kinds.has("string")) return "&'a str";
   if (kinds.has("other")) return null;

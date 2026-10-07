@@ -38,6 +38,15 @@ error[E0277]: `react::webapi::HTMLDivElement` takes no `href`
 - **Any `Element` takes every attribute**: a tag of no element of webapi's,
   an SVG one's, and a tag value, `<Comp href=..>` of a `react::Tag` that may
   be an `<a>` (ADR 0220), as TypeScript's are any intrinsic's.
+- **Each attribute takes what @types/react types it as**, in every
+  interface that has it: `className={..}` text (`value::Text`),
+  `tabIndex` a number (`value::Number`), `width` either
+  (`value::NumberOrString`), `draggable` a `bool` or text
+  (`value::Booleanish`), `disabled` a `bool`; each an `Option` of one too.
+  Text for a number is an error that says so, ``` `str` is not a number ```.
+  One @types/react doesn't type, `download`'s `any` or one React DOM's
+  table alone has, takes any `Value`, as each did, a string, number or
+  `bool`, but a hand-written list's `bool`s. (Amended.)
 - **Event handlers stay every element's**, as `DOMAttributes` has them.
 - **An attribute no interface types**, one React DOM's table alone has,
   stays every element's.

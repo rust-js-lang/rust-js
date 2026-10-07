@@ -158,14 +158,6 @@ if (!elementsOnly) writeFileSync(join(import.meta.dir, "versions.json"), `${JSON
 
 // ── react/src/elements.rs ────────────────────────────────────────────────────
 
-// Props that take only a boolean. Others React also accepts booleans for
-// (`hidden`, `capture`, `download`, `value`, `draggable`) take strings too.
-const BOOLEAN = new Set(
-  "allowFullScreen async autoFocus autoPlay checked controls credentialless default defer disabled disablePictureInPicture disableRemotePlayback formNoValidate inert itemScope loop multiple muted noModule noValidate open playsInline readOnly required reversed scoped seamless selected".split(
-    " ",
-  ),
-);
-
 // Written by hand in lib.rs, where they take their own types.
 const HAND_WRITTEN = new Set(["action", "formAction", "style", "dangerouslySetInnerHTML", "children", "ref", "key", "innerHTML", "precedence"]);
 
@@ -200,6 +192,58 @@ const typed: string[] = declarations
   .flatMap((d: any) => d.members)
   .filter((m: any) => m.kind === "property" && /^[a-zA-Z]+$/.test(m.name))
   .map((m: any) => m.name);
+// What each attribute takes, as @types/react types it in every interface
+// that has it (ADR 0228): `tabIndex` a number, `width` a number or text,
+// `draggable` a `Booleanish`, `disabled` a `bool`. One it doesn't type,
+// React DOM's table's alone, or of another type, takes any `Value`.
+const reactNamespace = declarations.find((d: any) => d.kind === "namespace" && d.name === "React").declarations;
+const typeAliases = new Map<string, any>(
+  [...declarations, ...reactNamespace].filter((d: any) => d.kind === "type").map((d: any) => [d.name, d.type]),
+);
+const kindsOf = (t: any): string[] => {
+  switch (t.kind) {
+    case "keyword":
+      if (t.keyword === "undefined") return [];
+      return ["string", "number", "boolean"].includes(t.keyword) ? [t.keyword] : ["other"];
+    case "literal":
+      return [typeof t.value === "string" ? "string" : typeof t.value === "boolean" ? "boolean" : "other"];
+    case "union":
+      return t.types.flatMap(kindsOf);
+    // `"on" | "off" | (string & {})`: any string, as written.
+    case "intersection":
+      return t.types.some((p: any) => p.kind === "keyword" && p.keyword === "string") ? ["string"] : ["other"];
+    case "reference": {
+      const alias = typeAliases.get(t.name.replace(/^React\./, ""));
+      return alias ? kindsOf(alias) : ["other"];
+    }
+    default:
+      return ["other"];
+  }
+};
+const valueKinds = new Map<string, Set<string>>();
+for (const d of reactNamespace) {
+  if (d.kind !== "interface" || !/(HTML|SVG)Attributes$/.test(d.name)) continue;
+  for (const m of d.members) {
+    if (m.kind !== "property" || !/^[a-zA-Z][a-zA-Z0-9]*$/.test(m.name)) continue;
+    if (!valueKinds.has(m.name)) valueKinds.set(m.name, new Set());
+    for (const kind of kindsOf(m.type)) valueKinds.get(m.name)!.add(kind);
+  }
+}
+const valueType = (name: string): string => {
+  const kinds = [...(valueKinds.get(name) ?? ["other"])].sort().join(" ");
+  const types: Record<string, string> = {
+    boolean: "bool",
+    number: "impl value::Number",
+    string: "impl value::Text",
+    "number string": "impl value::NumberOrString",
+    "boolean string": "impl value::Booleanish",
+    // `string | Blob`, a template literal`s: text, as Rust gives none of the other.
+    "other string": "impl value::Text",
+    "number other string": "impl value::NumberOrString",
+  };
+  return types[kinds] ?? "impl Value";
+};
+
 // Each HTML tag's element, as the webapi crate's `Tag` gives it (ADR 0224):
 // `<button>` is an `HTMLButtonElement`. Another, an SVG one's, is any `Element`.
 const webapiSource = readFileSync(join(root, "webapi", "src", "lib.rs"), "utf8");
@@ -251,7 +295,7 @@ for (const [name, entry] of Object.entries(attributes).sort(([a], [b]) => (a < b
   const method = snake(name);
   if (methods.has(method)) throw new Error(`two attributes are \`${method}\``);
   methods.add(method);
-  const ty = BOOLEAN.has(name) ? "bool" : "impl Value";
+  const ty = valueType(name);
   const bound = accepts.has(name) ? `\n    where\n        T: has::${pascal(name)},` : "";
   lines.push(
     `    /// \`${name}\``,

@@ -5,7 +5,7 @@ import { forwardRef } from "react";
 const INPUT = forwardRef(Input);
 
 export function Input(p, reference) {
-  return <input ref={reference} title={p.label} />;
+  return <input ref={reference} tabIndex={p.label} />;
 }
 
 export function Plain(reference) {
@@ -20,7 +20,7 @@ export function App(reference) {
 }
 
 export function Normal(p) {
-  return <input ref={p.ref} title={p.title} />;
+  return <input ref={p.ref} tabIndex={p.title} />;
 }
 
 export function Ordinary(reference) {

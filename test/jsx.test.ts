@@ -489,6 +489,43 @@ pub fn View(Comp: As) -> Element {
   }
 });
 
+// Each attribute takes what @types/react types it as: `tabIndex` a number,
+// `className` text, `width` either, `draggable` a `Booleanish`, a bool or
+// its text; a component's flattened ones the same, of `NumberOrString` and
+// `Booleanish`, which are their value in JS. Text for a number is an error.
+test("JSX attributes take the values @types/react types them as", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::attributes::ImgHTMLAttributes;
+use react::{Element, jsx};
+pub struct PictureProps<'a> {
+    #[rust_js::flatten]
+    pub img: ImgHTMLAttributes<'a>,
+}
+pub fn Picture(PictureProps { img }: PictureProps) -> Element {
+    jsx! { <img width={img.width} draggable={img.html.draggable} /> }
+}
+pub fn View() -> Element {
+    jsx! {
+        <div tabIndex={-1} className="c" draggable={true}>
+            <img width={300} height="2em" draggable="false" />
+            <Picture width={Some(64.0.into())} draggable={Some(true.into())} />
+        </div>
+    }
+}
+`);
+  run(args);
+  const { View } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(View())).toBe('<div tabindex="-1" class="c" draggable="true"><img width="300" height="2em" draggable="false"/><img width="64" draggable="true"/></div>');
+  for (const [wrong, says] of [
+    ['<div tabIndex={"x"} />', "is not a number"],
+    ["<div className={3} />", "is not text"],
+  ]) {
+    const refused = compile(`use react::{Element, jsx};\npub fn View() -> Element {\n    jsx! { ${wrong} }\n}\n`);
+    const failed = Bun.spawnSync(refused.args, { cwd: refused.dir });
+    expect([failed.exitCode === 0, failed.stderr.toString().includes(says)], failed.stderr.toString()).toEqual([false, true]);
+  }
+});
+
 // React DOM's own table leaves these out, as their spelling needs no warning;
 // @types/react types them (ADR 0043).
 test("JSX takes every attribute @types/react types", async () => {
@@ -576,7 +613,7 @@ for (const [name, body, message] of [
   ["duplicate children", '<Card title="x" children={1}>{2}</Card>', 'children were provided twice'],
   ["intrinsic generic", '<div::<i32> />', 'generic arguments belong on a function component'],
   ["HTML entity", '<p>&amp;</p>', 'literal or a Rust expression'],
-  ["empty attribute expression", '<div title={} />', 'Value'],
+  ["empty attribute expression", '<div title={} />', 'is not text'],
   ["bare text", '<p>Hello world</p>', 'literal or a Rust expression'],
 ] as const) {
   test(`JSX ${name} reports the original source and preserves existing output`, () => {
@@ -846,7 +883,7 @@ use react::{Element, ForwardRefExoticComponent, RefObject, forward_ref, jsx, web
 unsafe extern "Rust" { #[link_name = "globalThis.record"] safe fn record(n: i32) -> i32; }
 pub struct Props { pub label: i32 }
 pub fn Input(p: Props, reference: RefObject<Option<&'static webapi::Element>>) -> Element {
-    jsx! { <input ref={reference} title={p.label} /> }
+    jsx! { <input ref={reference} tabIndex={p.label} /> }
 }
 thread_local! { static INPUT: ForwardRefExoticComponent<Props, &'static webapi::Element> = forward_ref(Input); }
 pub fn Plain(reference: RefObject<Option<&'static webapi::Element>>) -> Element {
@@ -856,7 +893,7 @@ pub fn App(reference: RefObject<Option<&'static webapi::Element>>) -> Element {
     jsx! { <INPUT ref={record(1); reference} label={record(2)} /> }
 }
 pub struct NormalProps { pub r#ref: RefObject<Option<&'static webapi::Element>>, pub title: i32 }
-pub fn Normal(p: NormalProps) -> Element { jsx! { <input ref={p.r#ref} title={p.title} /> } }
+pub fn Normal(p: NormalProps) -> Element { jsx! { <input ref={p.r#ref} tabIndex={p.title} /> } }
 pub fn Ordinary(reference: RefObject<Option<&'static webapi::Element>>) -> Element {
     jsx! { <Normal title={record(3)} ref={record(4); reference} /> }
 }

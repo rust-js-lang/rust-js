@@ -12,7 +12,7 @@ use super::*;
 impl<T> Element<T> {
     /// `abbr`
     #[cfg_attr(rust_js, rust_js::link_name = "prop abbr")]
-    pub fn abbr(self, value: impl Value) -> Element<T>
+    pub fn abbr(self, value: impl value::Text) -> Element<T>
     where
         T: has::Abbr,
     {
@@ -21,19 +21,19 @@ impl<T> Element<T> {
 
     /// `about`
     #[cfg_attr(rust_js, rust_js::link_name = "prop about")]
-    pub fn about(self, value: impl Value) -> Element<T> {
+    pub fn about(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `accentHeight`
     #[cfg_attr(rust_js, rust_js::link_name = "prop accentHeight")]
-    pub fn accent_height(self, value: impl Value) -> Element<T> {
+    pub fn accent_height(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `accept`
     #[cfg_attr(rust_js, rust_js::link_name = "prop accept")]
-    pub fn accept(self, value: impl Value) -> Element<T>
+    pub fn accept(self, value: impl value::Text) -> Element<T>
     where
         T: has::Accept,
     {
@@ -42,7 +42,7 @@ impl<T> Element<T> {
 
     /// `acceptCharset`
     #[cfg_attr(rust_js, rust_js::link_name = "prop acceptCharset")]
-    pub fn accept_charset(self, value: impl Value) -> Element<T>
+    pub fn accept_charset(self, value: impl value::Text) -> Element<T>
     where
         T: has::AcceptCharset,
     {
@@ -51,25 +51,25 @@ impl<T> Element<T> {
 
     /// `accessKey`
     #[cfg_attr(rust_js, rust_js::link_name = "prop accessKey")]
-    pub fn access_key(self, value: impl Value) -> Element<T> {
+    pub fn access_key(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `accumulate`
     #[cfg_attr(rust_js, rust_js::link_name = "prop accumulate")]
-    pub fn accumulate(self, value: impl Value) -> Element<T> {
+    pub fn accumulate(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `additive`
     #[cfg_attr(rust_js, rust_js::link_name = "prop additive")]
-    pub fn additive(self, value: impl Value) -> Element<T> {
+    pub fn additive(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `align`
     #[cfg_attr(rust_js, rust_js::link_name = "prop align")]
-    pub fn align(self, value: impl Value) -> Element<T>
+    pub fn align(self, value: impl value::Text) -> Element<T>
     where
         T: has::Align,
     {
@@ -78,13 +78,13 @@ impl<T> Element<T> {
 
     /// `alignmentBaseline`
     #[cfg_attr(rust_js, rust_js::link_name = "prop alignmentBaseline")]
-    pub fn alignment_baseline(self, value: impl Value) -> Element<T> {
+    pub fn alignment_baseline(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `allow`
     #[cfg_attr(rust_js, rust_js::link_name = "prop allow")]
-    pub fn allow(self, value: impl Value) -> Element<T>
+    pub fn allow(self, value: impl value::Text) -> Element<T>
     where
         T: has::Allow,
     {
@@ -102,13 +102,13 @@ impl<T> Element<T> {
 
     /// `allowReorder`
     #[cfg_attr(rust_js, rust_js::link_name = "prop allowReorder")]
-    pub fn allow_reorder(self, value: impl Value) -> Element<T> {
+    pub fn allow_reorder(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `allowTransparency`
     #[cfg_attr(rust_js, rust_js::link_name = "prop allowTransparency")]
-    pub fn allow_transparency(self, value: impl Value) -> Element<T>
+    pub fn allow_transparency(self, value: bool) -> Element<T>
     where
         T: has::AllowTransparency,
     {
@@ -117,19 +117,19 @@ impl<T> Element<T> {
 
     /// `allowpopups`
     #[cfg_attr(rust_js, rust_js::link_name = "prop allowpopups")]
-    pub fn allowpopups(self, value: impl Value) -> Element<T> {
+    pub fn allowpopups(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `alphabetic`
     #[cfg_attr(rust_js, rust_js::link_name = "prop alphabetic")]
-    pub fn alphabetic(self, value: impl Value) -> Element<T> {
+    pub fn alphabetic(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `alt`
     #[cfg_attr(rust_js, rust_js::link_name = "prop alt")]
-    pub fn alt(self, value: impl Value) -> Element<T>
+    pub fn alt(self, value: impl value::Text) -> Element<T>
     where
         T: has::Alt,
     {
@@ -138,19 +138,19 @@ impl<T> Element<T> {
 
     /// `amplitude`
     #[cfg_attr(rust_js, rust_js::link_name = "prop amplitude")]
-    pub fn amplitude(self, value: impl Value) -> Element<T> {
+    pub fn amplitude(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `arabicForm`
     #[cfg_attr(rust_js, rust_js::link_name = "prop arabicForm")]
-    pub fn arabic_form(self, value: impl Value) -> Element<T> {
+    pub fn arabic_form(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `as`
     #[cfg_attr(rust_js, rust_js::link_name = "prop as")]
-    pub fn r#as(self, value: impl Value) -> Element<T>
+    pub fn r#as(self, value: impl value::Text) -> Element<T>
     where
         T: has::As,
     {
@@ -159,7 +159,7 @@ impl<T> Element<T> {
 
     /// `ascent`
     #[cfg_attr(rust_js, rust_js::link_name = "prop ascent")]
-    pub fn ascent(self, value: impl Value) -> Element<T> {
+    pub fn ascent(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
@@ -174,25 +174,25 @@ impl<T> Element<T> {
 
     /// `attributeName`
     #[cfg_attr(rust_js, rust_js::link_name = "prop attributeName")]
-    pub fn attribute_name(self, value: impl Value) -> Element<T> {
+    pub fn attribute_name(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `attributeType`
     #[cfg_attr(rust_js, rust_js::link_name = "prop attributeType")]
-    pub fn attribute_type(self, value: impl Value) -> Element<T> {
+    pub fn attribute_type(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `autoCapitalize`
     #[cfg_attr(rust_js, rust_js::link_name = "prop autoCapitalize")]
-    pub fn auto_capitalize(self, value: impl Value) -> Element<T> {
+    pub fn auto_capitalize(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `autoComplete`
     #[cfg_attr(rust_js, rust_js::link_name = "prop autoComplete")]
-    pub fn auto_complete(self, value: impl Value) -> Element<T>
+    pub fn auto_complete(self, value: impl value::Text) -> Element<T>
     where
         T: has::AutoComplete,
     {
@@ -201,7 +201,7 @@ impl<T> Element<T> {
 
     /// `autoCorrect`
     #[cfg_attr(rust_js, rust_js::link_name = "prop autoCorrect")]
-    pub fn auto_correct(self, value: impl Value) -> Element<T> {
+    pub fn auto_correct(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
@@ -222,61 +222,61 @@ impl<T> Element<T> {
 
     /// `autoReverse`
     #[cfg_attr(rust_js, rust_js::link_name = "prop autoReverse")]
-    pub fn auto_reverse(self, value: impl Value) -> Element<T> {
+    pub fn auto_reverse(self, value: impl value::Booleanish) -> Element<T> {
         unreachable!()
     }
 
     /// `autoSave`
     #[cfg_attr(rust_js, rust_js::link_name = "prop autoSave")]
-    pub fn auto_save(self, value: impl Value) -> Element<T> {
+    pub fn auto_save(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `autosize`
     #[cfg_attr(rust_js, rust_js::link_name = "prop autosize")]
-    pub fn autosize(self, value: impl Value) -> Element<T> {
+    pub fn autosize(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `azimuth`
     #[cfg_attr(rust_js, rust_js::link_name = "prop azimuth")]
-    pub fn azimuth(self, value: impl Value) -> Element<T> {
+    pub fn azimuth(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `baseFrequency`
     #[cfg_attr(rust_js, rust_js::link_name = "prop baseFrequency")]
-    pub fn base_frequency(self, value: impl Value) -> Element<T> {
+    pub fn base_frequency(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `baseProfile`
     #[cfg_attr(rust_js, rust_js::link_name = "prop baseProfile")]
-    pub fn base_profile(self, value: impl Value) -> Element<T> {
+    pub fn base_profile(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `baselineShift`
     #[cfg_attr(rust_js, rust_js::link_name = "prop baselineShift")]
-    pub fn baseline_shift(self, value: impl Value) -> Element<T> {
+    pub fn baseline_shift(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `bbox`
     #[cfg_attr(rust_js, rust_js::link_name = "prop bbox")]
-    pub fn bbox(self, value: impl Value) -> Element<T> {
+    pub fn bbox(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `begin`
     #[cfg_attr(rust_js, rust_js::link_name = "prop begin")]
-    pub fn begin(self, value: impl Value) -> Element<T> {
+    pub fn begin(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `bgcolor`
     #[cfg_attr(rust_js, rust_js::link_name = "prop bgcolor")]
-    pub fn bgcolor(self, value: impl Value) -> Element<T>
+    pub fn bgcolor(self, value: impl value::Text) -> Element<T>
     where
         T: has::Bgcolor,
     {
@@ -285,19 +285,19 @@ impl<T> Element<T> {
 
     /// `bias`
     #[cfg_attr(rust_js, rust_js::link_name = "prop bias")]
-    pub fn bias(self, value: impl Value) -> Element<T> {
+    pub fn bias(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `blinkfeatures`
     #[cfg_attr(rust_js, rust_js::link_name = "prop blinkfeatures")]
-    pub fn blinkfeatures(self, value: impl Value) -> Element<T> {
+    pub fn blinkfeatures(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `blocking`
     #[cfg_attr(rust_js, rust_js::link_name = "prop blocking")]
-    pub fn blocking(self, value: impl Value) -> Element<T>
+    pub fn blocking(self, value: impl value::Text) -> Element<T>
     where
         T: has::Blocking,
     {
@@ -306,7 +306,7 @@ impl<T> Element<T> {
 
     /// `border`
     #[cfg_attr(rust_js, rust_js::link_name = "prop border")]
-    pub fn border(self, value: impl Value) -> Element<T>
+    pub fn border(self, value: impl value::Number) -> Element<T>
     where
         T: has::Border,
     {
@@ -315,25 +315,25 @@ impl<T> Element<T> {
 
     /// `by`
     #[cfg_attr(rust_js, rust_js::link_name = "prop by")]
-    pub fn by(self, value: impl Value) -> Element<T> {
+    pub fn by(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `calcMode`
     #[cfg_attr(rust_js, rust_js::link_name = "prop calcMode")]
-    pub fn calc_mode(self, value: impl Value) -> Element<T> {
+    pub fn calc_mode(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `capHeight`
     #[cfg_attr(rust_js, rust_js::link_name = "prop capHeight")]
-    pub fn cap_height(self, value: impl Value) -> Element<T> {
+    pub fn cap_height(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `capture`
     #[cfg_attr(rust_js, rust_js::link_name = "prop capture")]
-    pub fn capture(self, value: impl Value) -> Element<T>
+    pub fn capture(self, value: impl value::Booleanish) -> Element<T>
     where
         T: has::Capture,
     {
@@ -342,7 +342,7 @@ impl<T> Element<T> {
 
     /// `cellPadding`
     #[cfg_attr(rust_js, rust_js::link_name = "prop cellPadding")]
-    pub fn cell_padding(self, value: impl Value) -> Element<T>
+    pub fn cell_padding(self, value: impl value::NumberOrString) -> Element<T>
     where
         T: has::CellPadding,
     {
@@ -351,7 +351,7 @@ impl<T> Element<T> {
 
     /// `cellSpacing`
     #[cfg_attr(rust_js, rust_js::link_name = "prop cellSpacing")]
-    pub fn cell_spacing(self, value: impl Value) -> Element<T>
+    pub fn cell_spacing(self, value: impl value::NumberOrString) -> Element<T>
     where
         T: has::CellSpacing,
     {
@@ -360,13 +360,13 @@ impl<T> Element<T> {
 
     /// `challenge`
     #[cfg_attr(rust_js, rust_js::link_name = "prop challenge")]
-    pub fn challenge(self, value: impl Value) -> Element<T> {
+    pub fn challenge(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `charSet`
     #[cfg_attr(rust_js, rust_js::link_name = "prop charSet")]
-    pub fn char_set(self, value: impl Value) -> Element<T>
+    pub fn char_set(self, value: impl value::Text) -> Element<T>
     where
         T: has::CharSet,
     {
@@ -384,7 +384,7 @@ impl<T> Element<T> {
 
     /// `cite`
     #[cfg_attr(rust_js, rust_js::link_name = "prop cite")]
-    pub fn cite(self, value: impl Value) -> Element<T>
+    pub fn cite(self, value: impl value::Text) -> Element<T>
     where
         T: has::Cite,
     {
@@ -393,7 +393,7 @@ impl<T> Element<T> {
 
     /// `classID`
     #[cfg_attr(rust_js, rust_js::link_name = "prop classID")]
-    pub fn class_id(self, value: impl Value) -> Element<T>
+    pub fn class_id(self, value: impl value::Text) -> Element<T>
     where
         T: has::ClassID,
     {
@@ -402,37 +402,37 @@ impl<T> Element<T> {
 
     /// `className`
     #[cfg_attr(rust_js, rust_js::link_name = "prop className")]
-    pub fn class_name(self, value: impl Value) -> Element<T> {
+    pub fn class_name(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `clip`
     #[cfg_attr(rust_js, rust_js::link_name = "prop clip")]
-    pub fn clip(self, value: impl Value) -> Element<T> {
+    pub fn clip(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `clipPath`
     #[cfg_attr(rust_js, rust_js::link_name = "prop clipPath")]
-    pub fn clip_path(self, value: impl Value) -> Element<T> {
+    pub fn clip_path(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `clipPathUnits`
     #[cfg_attr(rust_js, rust_js::link_name = "prop clipPathUnits")]
-    pub fn clip_path_units(self, value: impl Value) -> Element<T> {
+    pub fn clip_path_units(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `clipRule`
     #[cfg_attr(rust_js, rust_js::link_name = "prop clipRule")]
-    pub fn clip_rule(self, value: impl Value) -> Element<T> {
+    pub fn clip_rule(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `closedby`
     #[cfg_attr(rust_js, rust_js::link_name = "prop closedby")]
-    pub fn closedby(self, value: impl Value) -> Element<T>
+    pub fn closedby(self, value: impl value::Text) -> Element<T>
     where
         T: has::Closedby,
     {
@@ -441,7 +441,7 @@ impl<T> Element<T> {
 
     /// `colSpan`
     #[cfg_attr(rust_js, rust_js::link_name = "prop colSpan")]
-    pub fn col_span(self, value: impl Value) -> Element<T>
+    pub fn col_span(self, value: impl value::Number) -> Element<T>
     where
         T: has::ColSpan,
     {
@@ -450,37 +450,37 @@ impl<T> Element<T> {
 
     /// `color`
     #[cfg_attr(rust_js, rust_js::link_name = "prop color")]
-    pub fn color(self, value: impl Value) -> Element<T> {
+    pub fn color(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `colorInterpolation`
     #[cfg_attr(rust_js, rust_js::link_name = "prop colorInterpolation")]
-    pub fn color_interpolation(self, value: impl Value) -> Element<T> {
+    pub fn color_interpolation(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `colorInterpolationFilters`
     #[cfg_attr(rust_js, rust_js::link_name = "prop colorInterpolationFilters")]
-    pub fn color_interpolation_filters(self, value: impl Value) -> Element<T> {
+    pub fn color_interpolation_filters(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `colorProfile`
     #[cfg_attr(rust_js, rust_js::link_name = "prop colorProfile")]
-    pub fn color_profile(self, value: impl Value) -> Element<T> {
+    pub fn color_profile(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `colorRendering`
     #[cfg_attr(rust_js, rust_js::link_name = "prop colorRendering")]
-    pub fn color_rendering(self, value: impl Value) -> Element<T> {
+    pub fn color_rendering(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `cols`
     #[cfg_attr(rust_js, rust_js::link_name = "prop cols")]
-    pub fn cols(self, value: impl Value) -> Element<T>
+    pub fn cols(self, value: impl value::Number) -> Element<T>
     where
         T: has::Cols,
     {
@@ -489,31 +489,31 @@ impl<T> Element<T> {
 
     /// `content`
     #[cfg_attr(rust_js, rust_js::link_name = "prop content")]
-    pub fn content(self, value: impl Value) -> Element<T> {
+    pub fn content(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `contentEditable`
     #[cfg_attr(rust_js, rust_js::link_name = "prop contentEditable")]
-    pub fn content_editable(self, value: impl Value) -> Element<T> {
+    pub fn content_editable(self, value: impl value::Booleanish) -> Element<T> {
         unreachable!()
     }
 
     /// `contentScriptType`
     #[cfg_attr(rust_js, rust_js::link_name = "prop contentScriptType")]
-    pub fn content_script_type(self, value: impl Value) -> Element<T> {
+    pub fn content_script_type(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `contentStyleType`
     #[cfg_attr(rust_js, rust_js::link_name = "prop contentStyleType")]
-    pub fn content_style_type(self, value: impl Value) -> Element<T> {
+    pub fn content_style_type(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `contextMenu`
     #[cfg_attr(rust_js, rust_js::link_name = "prop contextMenu")]
-    pub fn context_menu(self, value: impl Value) -> Element<T> {
+    pub fn context_menu(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
@@ -528,7 +528,7 @@ impl<T> Element<T> {
 
     /// `controlsList`
     #[cfg_attr(rust_js, rust_js::link_name = "prop controlsList")]
-    pub fn controls_list(self, value: impl Value) -> Element<T>
+    pub fn controls_list(self, value: impl value::Text) -> Element<T>
     where
         T: has::ControlsList,
     {
@@ -537,7 +537,7 @@ impl<T> Element<T> {
 
     /// `coords`
     #[cfg_attr(rust_js, rust_js::link_name = "prop coords")]
-    pub fn coords(self, value: impl Value) -> Element<T>
+    pub fn coords(self, value: impl value::Text) -> Element<T>
     where
         T: has::Coords,
     {
@@ -547,13 +547,13 @@ impl<T> Element<T> {
     /// `credentialless`
     #[cfg(react = "19.3")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop credentialless")]
-    pub fn credentialless(self, value: bool) -> Element<T> {
+    pub fn credentialless(self, value: impl Value) -> Element<T> {
         unreachable!()
     }
 
     /// `crossOrigin`
     #[cfg_attr(rust_js, rust_js::link_name = "prop crossOrigin")]
-    pub fn cross_origin(self, value: impl Value) -> Element<T>
+    pub fn cross_origin(self, value: impl value::Text) -> Element<T>
     where
         T: has::CrossOrigin,
     {
@@ -562,31 +562,31 @@ impl<T> Element<T> {
 
     /// `cursor`
     #[cfg_attr(rust_js, rust_js::link_name = "prop cursor")]
-    pub fn cursor(self, value: impl Value) -> Element<T> {
+    pub fn cursor(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `cx`
     #[cfg_attr(rust_js, rust_js::link_name = "prop cx")]
-    pub fn cx(self, value: impl Value) -> Element<T> {
+    pub fn cx(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `cy`
     #[cfg_attr(rust_js, rust_js::link_name = "prop cy")]
-    pub fn cy(self, value: impl Value) -> Element<T> {
+    pub fn cy(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `d`
     #[cfg_attr(rust_js, rust_js::link_name = "prop d")]
-    pub fn d(self, value: impl Value) -> Element<T> {
+    pub fn d(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `data`
     #[cfg_attr(rust_js, rust_js::link_name = "prop data")]
-    pub fn data(self, value: impl Value) -> Element<T>
+    pub fn data(self, value: impl value::Text) -> Element<T>
     where
         T: has::Data,
     {
@@ -595,13 +595,13 @@ impl<T> Element<T> {
 
     /// `datatype`
     #[cfg_attr(rust_js, rust_js::link_name = "prop datatype")]
-    pub fn datatype(self, value: impl Value) -> Element<T> {
+    pub fn datatype(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `dateTime`
     #[cfg_attr(rust_js, rust_js::link_name = "prop dateTime")]
-    pub fn date_time(self, value: impl Value) -> Element<T>
+    pub fn date_time(self, value: impl value::Text) -> Element<T>
     where
         T: has::DateTime,
     {
@@ -610,13 +610,13 @@ impl<T> Element<T> {
 
     /// `decelerate`
     #[cfg_attr(rust_js, rust_js::link_name = "prop decelerate")]
-    pub fn decelerate(self, value: impl Value) -> Element<T> {
+    pub fn decelerate(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `decoding`
     #[cfg_attr(rust_js, rust_js::link_name = "prop decoding")]
-    pub fn decoding(self, value: impl Value) -> Element<T>
+    pub fn decoding(self, value: impl value::Text) -> Element<T>
     where
         T: has::Decoding,
     {
@@ -634,13 +634,13 @@ impl<T> Element<T> {
 
     /// `defaultChecked`
     #[cfg_attr(rust_js, rust_js::link_name = "prop defaultChecked")]
-    pub fn default_checked(self, value: impl Value) -> Element<T> {
+    pub fn default_checked(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `defaultValue`
     #[cfg_attr(rust_js, rust_js::link_name = "prop defaultValue")]
-    pub fn default_value(self, value: impl Value) -> Element<T> {
+    pub fn default_value(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
@@ -655,25 +655,25 @@ impl<T> Element<T> {
 
     /// `descent`
     #[cfg_attr(rust_js, rust_js::link_name = "prop descent")]
-    pub fn descent(self, value: impl Value) -> Element<T> {
+    pub fn descent(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `diffuseConstant`
     #[cfg_attr(rust_js, rust_js::link_name = "prop diffuseConstant")]
-    pub fn diffuse_constant(self, value: impl Value) -> Element<T> {
+    pub fn diffuse_constant(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `dir`
     #[cfg_attr(rust_js, rust_js::link_name = "prop dir")]
-    pub fn dir(self, value: impl Value) -> Element<T> {
+    pub fn dir(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `dirName`
     #[cfg_attr(rust_js, rust_js::link_name = "prop dirName")]
-    pub fn dir_name(self, value: impl Value) -> Element<T>
+    pub fn dir_name(self, value: impl value::Text) -> Element<T>
     where
         T: has::DirName,
     {
@@ -682,7 +682,7 @@ impl<T> Element<T> {
 
     /// `direction`
     #[cfg_attr(rust_js, rust_js::link_name = "prop direction")]
-    pub fn direction(self, value: impl Value) -> Element<T> {
+    pub fn direction(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
@@ -706,7 +706,7 @@ impl<T> Element<T> {
 
     /// `disableblinkfeatures`
     #[cfg_attr(rust_js, rust_js::link_name = "prop disableblinkfeatures")]
-    pub fn disableblinkfeatures(self, value: impl Value) -> Element<T> {
+    pub fn disableblinkfeatures(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
@@ -721,31 +721,31 @@ impl<T> Element<T> {
 
     /// `disableguestresize`
     #[cfg_attr(rust_js, rust_js::link_name = "prop disableguestresize")]
-    pub fn disableguestresize(self, value: impl Value) -> Element<T> {
+    pub fn disableguestresize(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `disablewebsecurity`
     #[cfg_attr(rust_js, rust_js::link_name = "prop disablewebsecurity")]
-    pub fn disablewebsecurity(self, value: impl Value) -> Element<T> {
+    pub fn disablewebsecurity(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `display`
     #[cfg_attr(rust_js, rust_js::link_name = "prop display")]
-    pub fn display(self, value: impl Value) -> Element<T> {
+    pub fn display(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `divisor`
     #[cfg_attr(rust_js, rust_js::link_name = "prop divisor")]
-    pub fn divisor(self, value: impl Value) -> Element<T> {
+    pub fn divisor(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `dominantBaseline`
     #[cfg_attr(rust_js, rust_js::link_name = "prop dominantBaseline")]
-    pub fn dominant_baseline(self, value: impl Value) -> Element<T> {
+    pub fn dominant_baseline(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
@@ -760,49 +760,49 @@ impl<T> Element<T> {
 
     /// `draggable`
     #[cfg_attr(rust_js, rust_js::link_name = "prop draggable")]
-    pub fn draggable(self, value: impl Value) -> Element<T> {
+    pub fn draggable(self, value: impl value::Booleanish) -> Element<T> {
         unreachable!()
     }
 
     /// `dur`
     #[cfg_attr(rust_js, rust_js::link_name = "prop dur")]
-    pub fn dur(self, value: impl Value) -> Element<T> {
+    pub fn dur(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `dx`
     #[cfg_attr(rust_js, rust_js::link_name = "prop dx")]
-    pub fn dx(self, value: impl Value) -> Element<T> {
+    pub fn dx(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `dy`
     #[cfg_attr(rust_js, rust_js::link_name = "prop dy")]
-    pub fn dy(self, value: impl Value) -> Element<T> {
+    pub fn dy(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `edgeMode`
     #[cfg_attr(rust_js, rust_js::link_name = "prop edgeMode")]
-    pub fn edge_mode(self, value: impl Value) -> Element<T> {
+    pub fn edge_mode(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `elevation`
     #[cfg_attr(rust_js, rust_js::link_name = "prop elevation")]
-    pub fn elevation(self, value: impl Value) -> Element<T> {
+    pub fn elevation(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `enableBackground`
     #[cfg_attr(rust_js, rust_js::link_name = "prop enableBackground")]
-    pub fn enable_background(self, value: impl Value) -> Element<T> {
+    pub fn enable_background(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `encType`
     #[cfg_attr(rust_js, rust_js::link_name = "prop encType")]
-    pub fn enc_type(self, value: impl Value) -> Element<T>
+    pub fn enc_type(self, value: impl value::Text) -> Element<T>
     where
         T: has::EncType,
     {
@@ -811,38 +811,38 @@ impl<T> Element<T> {
 
     /// `end`
     #[cfg_attr(rust_js, rust_js::link_name = "prop end")]
-    pub fn end(self, value: impl Value) -> Element<T> {
+    pub fn end(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `enterKeyHint`
     #[cfg_attr(rust_js, rust_js::link_name = "prop enterKeyHint")]
-    pub fn enter_key_hint(self, value: impl Value) -> Element<T> {
+    pub fn enter_key_hint(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `exponent`
     #[cfg_attr(rust_js, rust_js::link_name = "prop exponent")]
-    pub fn exponent(self, value: impl Value) -> Element<T> {
+    pub fn exponent(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `exportparts`
     #[cfg_attr(rust_js, rust_js::link_name = "prop exportparts")]
-    pub fn exportparts(self, value: impl Value) -> Element<T> {
+    pub fn exportparts(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `externalResourcesRequired`
     #[cfg_attr(rust_js, rust_js::link_name = "prop externalResourcesRequired")]
-    pub fn external_resources_required(self, value: impl Value) -> Element<T> {
+    pub fn external_resources_required(self, value: impl value::Booleanish) -> Element<T> {
         unreachable!()
     }
 
     /// `fetchPriority`
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop fetchPriority")]
-    pub fn fetch_priority(self, value: impl Value) -> Element<T>
+    pub fn fetch_priority(self, value: impl value::Text) -> Element<T>
     where
         T: has::FetchPriority,
     {
@@ -851,103 +851,103 @@ impl<T> Element<T> {
 
     /// `fill`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fill")]
-    pub fn fill(self, value: impl Value) -> Element<T> {
+    pub fn fill(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `fillOpacity`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fillOpacity")]
-    pub fn fill_opacity(self, value: impl Value) -> Element<T> {
+    pub fn fill_opacity(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `fillRule`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fillRule")]
-    pub fn fill_rule(self, value: impl Value) -> Element<T> {
+    pub fn fill_rule(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `filter`
     #[cfg_attr(rust_js, rust_js::link_name = "prop filter")]
-    pub fn filter(self, value: impl Value) -> Element<T> {
+    pub fn filter(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `filterRes`
     #[cfg_attr(rust_js, rust_js::link_name = "prop filterRes")]
-    pub fn filter_res(self, value: impl Value) -> Element<T> {
+    pub fn filter_res(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `filterUnits`
     #[cfg_attr(rust_js, rust_js::link_name = "prop filterUnits")]
-    pub fn filter_units(self, value: impl Value) -> Element<T> {
+    pub fn filter_units(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `floodColor`
     #[cfg_attr(rust_js, rust_js::link_name = "prop floodColor")]
-    pub fn flood_color(self, value: impl Value) -> Element<T> {
+    pub fn flood_color(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `floodOpacity`
     #[cfg_attr(rust_js, rust_js::link_name = "prop floodOpacity")]
-    pub fn flood_opacity(self, value: impl Value) -> Element<T> {
+    pub fn flood_opacity(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `focusable`
     #[cfg_attr(rust_js, rust_js::link_name = "prop focusable")]
-    pub fn focusable(self, value: impl Value) -> Element<T> {
+    pub fn focusable(self, value: impl value::Booleanish) -> Element<T> {
         unreachable!()
     }
 
     /// `fontFamily`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontFamily")]
-    pub fn font_family(self, value: impl Value) -> Element<T> {
+    pub fn font_family(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `fontSize`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontSize")]
-    pub fn font_size(self, value: impl Value) -> Element<T> {
+    pub fn font_size(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `fontSizeAdjust`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontSizeAdjust")]
-    pub fn font_size_adjust(self, value: impl Value) -> Element<T> {
+    pub fn font_size_adjust(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `fontStretch`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontStretch")]
-    pub fn font_stretch(self, value: impl Value) -> Element<T> {
+    pub fn font_stretch(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `fontStyle`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontStyle")]
-    pub fn font_style(self, value: impl Value) -> Element<T> {
+    pub fn font_style(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `fontVariant`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontVariant")]
-    pub fn font_variant(self, value: impl Value) -> Element<T> {
+    pub fn font_variant(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `fontWeight`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fontWeight")]
-    pub fn font_weight(self, value: impl Value) -> Element<T> {
+    pub fn font_weight(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `form`
     #[cfg_attr(rust_js, rust_js::link_name = "prop form")]
-    pub fn form(self, value: impl Value) -> Element<T>
+    pub fn form(self, value: impl value::Text) -> Element<T>
     where
         T: has::Form,
     {
@@ -956,7 +956,7 @@ impl<T> Element<T> {
 
     /// `formEncType`
     #[cfg_attr(rust_js, rust_js::link_name = "prop formEncType")]
-    pub fn form_enc_type(self, value: impl Value) -> Element<T>
+    pub fn form_enc_type(self, value: impl value::Text) -> Element<T>
     where
         T: has::FormEncType,
     {
@@ -965,7 +965,7 @@ impl<T> Element<T> {
 
     /// `formMethod`
     #[cfg_attr(rust_js, rust_js::link_name = "prop formMethod")]
-    pub fn form_method(self, value: impl Value) -> Element<T>
+    pub fn form_method(self, value: impl value::Text) -> Element<T>
     where
         T: has::FormMethod,
     {
@@ -983,7 +983,7 @@ impl<T> Element<T> {
 
     /// `formTarget`
     #[cfg_attr(rust_js, rust_js::link_name = "prop formTarget")]
-    pub fn form_target(self, value: impl Value) -> Element<T>
+    pub fn form_target(self, value: impl value::Text) -> Element<T>
     where
         T: has::FormTarget,
     {
@@ -992,19 +992,19 @@ impl<T> Element<T> {
 
     /// `format`
     #[cfg_attr(rust_js, rust_js::link_name = "prop format")]
-    pub fn format(self, value: impl Value) -> Element<T> {
+    pub fn format(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `fr`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fr")]
-    pub fn fr(self, value: impl Value) -> Element<T> {
+    pub fn fr(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `frame`
     #[cfg_attr(rust_js, rust_js::link_name = "prop frame")]
-    pub fn frame(self, value: impl Value) -> Element<T>
+    pub fn frame(self, value: bool) -> Element<T>
     where
         T: has::Frame,
     {
@@ -1013,7 +1013,7 @@ impl<T> Element<T> {
 
     /// `frameBorder`
     #[cfg_attr(rust_js, rust_js::link_name = "prop frameBorder")]
-    pub fn frame_border(self, value: impl Value) -> Element<T>
+    pub fn frame_border(self, value: impl value::NumberOrString) -> Element<T>
     where
         T: has::FrameBorder,
     {
@@ -1022,85 +1022,85 @@ impl<T> Element<T> {
 
     /// `from`
     #[cfg_attr(rust_js, rust_js::link_name = "prop from")]
-    pub fn from(self, value: impl Value) -> Element<T> {
+    pub fn from(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `fx`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fx")]
-    pub fn fx(self, value: impl Value) -> Element<T> {
+    pub fn fx(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `fy`
     #[cfg_attr(rust_js, rust_js::link_name = "prop fy")]
-    pub fn fy(self, value: impl Value) -> Element<T> {
+    pub fn fy(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `g1`
     #[cfg_attr(rust_js, rust_js::link_name = "prop g1")]
-    pub fn g1(self, value: impl Value) -> Element<T> {
+    pub fn g1(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `g2`
     #[cfg_attr(rust_js, rust_js::link_name = "prop g2")]
-    pub fn g2(self, value: impl Value) -> Element<T> {
+    pub fn g2(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `glyphName`
     #[cfg_attr(rust_js, rust_js::link_name = "prop glyphName")]
-    pub fn glyph_name(self, value: impl Value) -> Element<T> {
+    pub fn glyph_name(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `glyphOrientationHorizontal`
     #[cfg_attr(rust_js, rust_js::link_name = "prop glyphOrientationHorizontal")]
-    pub fn glyph_orientation_horizontal(self, value: impl Value) -> Element<T> {
+    pub fn glyph_orientation_horizontal(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `glyphOrientationVertical`
     #[cfg_attr(rust_js, rust_js::link_name = "prop glyphOrientationVertical")]
-    pub fn glyph_orientation_vertical(self, value: impl Value) -> Element<T> {
+    pub fn glyph_orientation_vertical(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `glyphRef`
     #[cfg_attr(rust_js, rust_js::link_name = "prop glyphRef")]
-    pub fn glyph_ref(self, value: impl Value) -> Element<T> {
+    pub fn glyph_ref(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `gradientTransform`
     #[cfg_attr(rust_js, rust_js::link_name = "prop gradientTransform")]
-    pub fn gradient_transform(self, value: impl Value) -> Element<T> {
+    pub fn gradient_transform(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `gradientUnits`
     #[cfg_attr(rust_js, rust_js::link_name = "prop gradientUnits")]
-    pub fn gradient_units(self, value: impl Value) -> Element<T> {
+    pub fn gradient_units(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `guestinstance`
     #[cfg_attr(rust_js, rust_js::link_name = "prop guestinstance")]
-    pub fn guestinstance(self, value: impl Value) -> Element<T> {
+    pub fn guestinstance(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `hanging`
     #[cfg_attr(rust_js, rust_js::link_name = "prop hanging")]
-    pub fn hanging(self, value: impl Value) -> Element<T> {
+    pub fn hanging(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `headers`
     #[cfg_attr(rust_js, rust_js::link_name = "prop headers")]
-    pub fn headers(self, value: impl Value) -> Element<T>
+    pub fn headers(self, value: impl value::Text) -> Element<T>
     where
         T: has::Headers,
     {
@@ -1109,7 +1109,7 @@ impl<T> Element<T> {
 
     /// `height`
     #[cfg_attr(rust_js, rust_js::link_name = "prop height")]
-    pub fn height(self, value: impl Value) -> Element<T>
+    pub fn height(self, value: impl value::NumberOrString) -> Element<T>
     where
         T: has::Height,
     {
@@ -1118,13 +1118,13 @@ impl<T> Element<T> {
 
     /// `hidden`
     #[cfg_attr(rust_js, rust_js::link_name = "prop hidden")]
-    pub fn hidden(self, value: impl Value) -> Element<T> {
+    pub fn hidden(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `high`
     #[cfg_attr(rust_js, rust_js::link_name = "prop high")]
-    pub fn high(self, value: impl Value) -> Element<T>
+    pub fn high(self, value: impl value::Number) -> Element<T>
     where
         T: has::High,
     {
@@ -1133,19 +1133,19 @@ impl<T> Element<T> {
 
     /// `horizAdvX`
     #[cfg_attr(rust_js, rust_js::link_name = "prop horizAdvX")]
-    pub fn horiz_adv_x(self, value: impl Value) -> Element<T> {
+    pub fn horiz_adv_x(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `horizOriginX`
     #[cfg_attr(rust_js, rust_js::link_name = "prop horizOriginX")]
-    pub fn horiz_origin_x(self, value: impl Value) -> Element<T> {
+    pub fn horiz_origin_x(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `href`
     #[cfg_attr(rust_js, rust_js::link_name = "prop href")]
-    pub fn href(self, value: impl Value) -> Element<T>
+    pub fn href(self, value: impl value::Text) -> Element<T>
     where
         T: has::Href,
     {
@@ -1154,7 +1154,7 @@ impl<T> Element<T> {
 
     /// `hrefLang`
     #[cfg_attr(rust_js, rust_js::link_name = "prop hrefLang")]
-    pub fn href_lang(self, value: impl Value) -> Element<T>
+    pub fn href_lang(self, value: impl value::Text) -> Element<T>
     where
         T: has::HrefLang,
     {
@@ -1163,7 +1163,7 @@ impl<T> Element<T> {
 
     /// `htmlFor`
     #[cfg_attr(rust_js, rust_js::link_name = "prop htmlFor")]
-    pub fn html_for(self, value: impl Value) -> Element<T>
+    pub fn html_for(self, value: impl value::Text) -> Element<T>
     where
         T: has::HtmlFor,
     {
@@ -1172,7 +1172,7 @@ impl<T> Element<T> {
 
     /// `httpEquiv`
     #[cfg_attr(rust_js, rust_js::link_name = "prop httpEquiv")]
-    pub fn http_equiv(self, value: impl Value) -> Element<T>
+    pub fn http_equiv(self, value: impl value::Text) -> Element<T>
     where
         T: has::HttpEquiv,
     {
@@ -1181,7 +1181,7 @@ impl<T> Element<T> {
 
     /// `httpreferrer`
     #[cfg_attr(rust_js, rust_js::link_name = "prop httpreferrer")]
-    pub fn httpreferrer(self, value: impl Value) -> Element<T> {
+    pub fn httpreferrer(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
@@ -1193,25 +1193,25 @@ impl<T> Element<T> {
 
     /// `id`
     #[cfg_attr(rust_js, rust_js::link_name = "prop id")]
-    pub fn id(self, value: impl Value) -> Element<T> {
+    pub fn id(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `ideographic`
     #[cfg_attr(rust_js, rust_js::link_name = "prop ideographic")]
-    pub fn ideographic(self, value: impl Value) -> Element<T> {
+    pub fn ideographic(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `imageRendering`
     #[cfg_attr(rust_js, rust_js::link_name = "prop imageRendering")]
-    pub fn image_rendering(self, value: impl Value) -> Element<T> {
+    pub fn image_rendering(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `imageSizes`
     #[cfg_attr(rust_js, rust_js::link_name = "prop imageSizes")]
-    pub fn image_sizes(self, value: impl Value) -> Element<T>
+    pub fn image_sizes(self, value: impl value::Text) -> Element<T>
     where
         T: has::ImageSizes,
     {
@@ -1220,7 +1220,7 @@ impl<T> Element<T> {
 
     /// `imageSrcSet`
     #[cfg_attr(rust_js, rust_js::link_name = "prop imageSrcSet")]
-    pub fn image_src_set(self, value: impl Value) -> Element<T>
+    pub fn image_src_set(self, value: impl value::Text) -> Element<T>
     where
         T: has::ImageSrcSet,
     {
@@ -1229,13 +1229,13 @@ impl<T> Element<T> {
 
     /// `in`
     #[cfg_attr(rust_js, rust_js::link_name = "prop in")]
-    pub fn r#in(self, value: impl Value) -> Element<T> {
+    pub fn r#in(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `in2`
     #[cfg_attr(rust_js, rust_js::link_name = "prop in2")]
-    pub fn in2(self, value: impl Value) -> Element<T> {
+    pub fn in2(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
@@ -1254,13 +1254,13 @@ impl<T> Element<T> {
 
     /// `inputMode`
     #[cfg_attr(rust_js, rust_js::link_name = "prop inputMode")]
-    pub fn input_mode(self, value: impl Value) -> Element<T> {
+    pub fn input_mode(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `integrity`
     #[cfg_attr(rust_js, rust_js::link_name = "prop integrity")]
-    pub fn integrity(self, value: impl Value) -> Element<T>
+    pub fn integrity(self, value: impl value::Text) -> Element<T>
     where
         T: has::Integrity,
     {
@@ -1269,31 +1269,31 @@ impl<T> Element<T> {
 
     /// `intercept`
     #[cfg_attr(rust_js, rust_js::link_name = "prop intercept")]
-    pub fn intercept(self, value: impl Value) -> Element<T> {
+    pub fn intercept(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `is`
     #[cfg_attr(rust_js, rust_js::link_name = "prop is")]
-    pub fn is(self, value: impl Value) -> Element<T> {
+    pub fn is(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `itemID`
     #[cfg_attr(rust_js, rust_js::link_name = "prop itemID")]
-    pub fn item_id(self, value: impl Value) -> Element<T> {
+    pub fn item_id(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `itemProp`
     #[cfg_attr(rust_js, rust_js::link_name = "prop itemProp")]
-    pub fn item_prop(self, value: impl Value) -> Element<T> {
+    pub fn item_prop(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `itemRef`
     #[cfg_attr(rust_js, rust_js::link_name = "prop itemRef")]
-    pub fn item_ref(self, value: impl Value) -> Element<T> {
+    pub fn item_ref(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
@@ -1305,91 +1305,91 @@ impl<T> Element<T> {
 
     /// `itemType`
     #[cfg_attr(rust_js, rust_js::link_name = "prop itemType")]
-    pub fn item_type(self, value: impl Value) -> Element<T> {
+    pub fn item_type(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `k`
     #[cfg_attr(rust_js, rust_js::link_name = "prop k")]
-    pub fn k(self, value: impl Value) -> Element<T> {
+    pub fn k(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `k1`
     #[cfg_attr(rust_js, rust_js::link_name = "prop k1")]
-    pub fn k1(self, value: impl Value) -> Element<T> {
+    pub fn k1(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `k2`
     #[cfg_attr(rust_js, rust_js::link_name = "prop k2")]
-    pub fn k2(self, value: impl Value) -> Element<T> {
+    pub fn k2(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `k3`
     #[cfg_attr(rust_js, rust_js::link_name = "prop k3")]
-    pub fn k3(self, value: impl Value) -> Element<T> {
+    pub fn k3(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `k4`
     #[cfg_attr(rust_js, rust_js::link_name = "prop k4")]
-    pub fn k4(self, value: impl Value) -> Element<T> {
+    pub fn k4(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `kernelMatrix`
     #[cfg_attr(rust_js, rust_js::link_name = "prop kernelMatrix")]
-    pub fn kernel_matrix(self, value: impl Value) -> Element<T> {
+    pub fn kernel_matrix(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `kernelUnitLength`
     #[cfg_attr(rust_js, rust_js::link_name = "prop kernelUnitLength")]
-    pub fn kernel_unit_length(self, value: impl Value) -> Element<T> {
+    pub fn kernel_unit_length(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `kerning`
     #[cfg_attr(rust_js, rust_js::link_name = "prop kerning")]
-    pub fn kerning(self, value: impl Value) -> Element<T> {
+    pub fn kerning(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `keyParams`
     #[cfg_attr(rust_js, rust_js::link_name = "prop keyParams")]
-    pub fn key_params(self, value: impl Value) -> Element<T> {
+    pub fn key_params(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `keyPoints`
     #[cfg_attr(rust_js, rust_js::link_name = "prop keyPoints")]
-    pub fn key_points(self, value: impl Value) -> Element<T> {
+    pub fn key_points(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `keySplines`
     #[cfg_attr(rust_js, rust_js::link_name = "prop keySplines")]
-    pub fn key_splines(self, value: impl Value) -> Element<T> {
+    pub fn key_splines(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `keyTimes`
     #[cfg_attr(rust_js, rust_js::link_name = "prop keyTimes")]
-    pub fn key_times(self, value: impl Value) -> Element<T> {
+    pub fn key_times(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `keyType`
     #[cfg_attr(rust_js, rust_js::link_name = "prop keyType")]
-    pub fn key_type(self, value: impl Value) -> Element<T> {
+    pub fn key_type(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `kind`
     #[cfg_attr(rust_js, rust_js::link_name = "prop kind")]
-    pub fn kind(self, value: impl Value) -> Element<T>
+    pub fn kind(self, value: impl value::Text) -> Element<T>
     where
         T: has::Kind,
     {
@@ -1398,7 +1398,7 @@ impl<T> Element<T> {
 
     /// `label`
     #[cfg_attr(rust_js, rust_js::link_name = "prop label")]
-    pub fn label(self, value: impl Value) -> Element<T>
+    pub fn label(self, value: impl value::Text) -> Element<T>
     where
         T: has::Label,
     {
@@ -1407,37 +1407,37 @@ impl<T> Element<T> {
 
     /// `lang`
     #[cfg_attr(rust_js, rust_js::link_name = "prop lang")]
-    pub fn lang(self, value: impl Value) -> Element<T> {
+    pub fn lang(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `lengthAdjust`
     #[cfg_attr(rust_js, rust_js::link_name = "prop lengthAdjust")]
-    pub fn length_adjust(self, value: impl Value) -> Element<T> {
+    pub fn length_adjust(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `letterSpacing`
     #[cfg_attr(rust_js, rust_js::link_name = "prop letterSpacing")]
-    pub fn letter_spacing(self, value: impl Value) -> Element<T> {
+    pub fn letter_spacing(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `lightingColor`
     #[cfg_attr(rust_js, rust_js::link_name = "prop lightingColor")]
-    pub fn lighting_color(self, value: impl Value) -> Element<T> {
+    pub fn lighting_color(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `limitingConeAngle`
     #[cfg_attr(rust_js, rust_js::link_name = "prop limitingConeAngle")]
-    pub fn limiting_cone_angle(self, value: impl Value) -> Element<T> {
+    pub fn limiting_cone_angle(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `list`
     #[cfg_attr(rust_js, rust_js::link_name = "prop list")]
-    pub fn list(self, value: impl Value) -> Element<T>
+    pub fn list(self, value: impl value::Text) -> Element<T>
     where
         T: has::List,
     {
@@ -1446,7 +1446,7 @@ impl<T> Element<T> {
 
     /// `loading`
     #[cfg_attr(rust_js, rust_js::link_name = "prop loading")]
-    pub fn loading(self, value: impl Value) -> Element<T>
+    pub fn loading(self, value: impl value::Text) -> Element<T>
     where
         T: has::Loading,
     {
@@ -1455,7 +1455,7 @@ impl<T> Element<T> {
 
     /// `local`
     #[cfg_attr(rust_js, rust_js::link_name = "prop local")]
-    pub fn local(self, value: impl Value) -> Element<T> {
+    pub fn local(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
@@ -1470,7 +1470,7 @@ impl<T> Element<T> {
 
     /// `low`
     #[cfg_attr(rust_js, rust_js::link_name = "prop low")]
-    pub fn low(self, value: impl Value) -> Element<T>
+    pub fn low(self, value: impl value::Number) -> Element<T>
     where
         T: has::Low,
     {
@@ -1479,7 +1479,7 @@ impl<T> Element<T> {
 
     /// `manifest`
     #[cfg_attr(rust_js, rust_js::link_name = "prop manifest")]
-    pub fn manifest(self, value: impl Value) -> Element<T>
+    pub fn manifest(self, value: impl value::Text) -> Element<T>
     where
         T: has::Manifest,
     {
@@ -1488,7 +1488,7 @@ impl<T> Element<T> {
 
     /// `marginHeight`
     #[cfg_attr(rust_js, rust_js::link_name = "prop marginHeight")]
-    pub fn margin_height(self, value: impl Value) -> Element<T>
+    pub fn margin_height(self, value: impl value::Number) -> Element<T>
     where
         T: has::MarginHeight,
     {
@@ -1497,7 +1497,7 @@ impl<T> Element<T> {
 
     /// `marginWidth`
     #[cfg_attr(rust_js, rust_js::link_name = "prop marginWidth")]
-    pub fn margin_width(self, value: impl Value) -> Element<T>
+    pub fn margin_width(self, value: impl value::Number) -> Element<T>
     where
         T: has::MarginWidth,
     {
@@ -1506,49 +1506,49 @@ impl<T> Element<T> {
 
     /// `markerEnd`
     #[cfg_attr(rust_js, rust_js::link_name = "prop markerEnd")]
-    pub fn marker_end(self, value: impl Value) -> Element<T> {
+    pub fn marker_end(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `markerHeight`
     #[cfg_attr(rust_js, rust_js::link_name = "prop markerHeight")]
-    pub fn marker_height(self, value: impl Value) -> Element<T> {
+    pub fn marker_height(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `markerMid`
     #[cfg_attr(rust_js, rust_js::link_name = "prop markerMid")]
-    pub fn marker_mid(self, value: impl Value) -> Element<T> {
+    pub fn marker_mid(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `markerStart`
     #[cfg_attr(rust_js, rust_js::link_name = "prop markerStart")]
-    pub fn marker_start(self, value: impl Value) -> Element<T> {
+    pub fn marker_start(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `markerUnits`
     #[cfg_attr(rust_js, rust_js::link_name = "prop markerUnits")]
-    pub fn marker_units(self, value: impl Value) -> Element<T> {
+    pub fn marker_units(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `markerWidth`
     #[cfg_attr(rust_js, rust_js::link_name = "prop markerWidth")]
-    pub fn marker_width(self, value: impl Value) -> Element<T> {
+    pub fn marker_width(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `mask`
     #[cfg_attr(rust_js, rust_js::link_name = "prop mask")]
-    pub fn mask(self, value: impl Value) -> Element<T> {
+    pub fn mask(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `maskContentUnits`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maskContentUnits")]
-    pub fn mask_content_units(self, value: impl Value) -> Element<T> {
+    pub fn mask_content_units(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
@@ -1561,19 +1561,19 @@ impl<T> Element<T> {
 
     /// `maskUnits`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maskUnits")]
-    pub fn mask_units(self, value: impl Value) -> Element<T> {
+    pub fn mask_units(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `mathematical`
     #[cfg_attr(rust_js, rust_js::link_name = "prop mathematical")]
-    pub fn mathematical(self, value: impl Value) -> Element<T> {
+    pub fn mathematical(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `max`
     #[cfg_attr(rust_js, rust_js::link_name = "prop max")]
-    pub fn max(self, value: impl Value) -> Element<T>
+    pub fn max(self, value: impl value::NumberOrString) -> Element<T>
     where
         T: has::Max,
     {
@@ -1582,7 +1582,7 @@ impl<T> Element<T> {
 
     /// `maxLength`
     #[cfg_attr(rust_js, rust_js::link_name = "prop maxLength")]
-    pub fn max_length(self, value: impl Value) -> Element<T>
+    pub fn max_length(self, value: impl value::Number) -> Element<T>
     where
         T: has::MaxLength,
     {
@@ -1591,7 +1591,7 @@ impl<T> Element<T> {
 
     /// `media`
     #[cfg_attr(rust_js, rust_js::link_name = "prop media")]
-    pub fn media(self, value: impl Value) -> Element<T>
+    pub fn media(self, value: impl value::Text) -> Element<T>
     where
         T: has::Media,
     {
@@ -1600,7 +1600,7 @@ impl<T> Element<T> {
 
     /// `mediaGroup`
     #[cfg_attr(rust_js, rust_js::link_name = "prop mediaGroup")]
-    pub fn media_group(self, value: impl Value) -> Element<T>
+    pub fn media_group(self, value: impl value::Text) -> Element<T>
     where
         T: has::MediaGroup,
     {
@@ -1609,7 +1609,7 @@ impl<T> Element<T> {
 
     /// `method`
     #[cfg_attr(rust_js, rust_js::link_name = "prop method")]
-    pub fn method(self, value: impl Value) -> Element<T>
+    pub fn method(self, value: impl value::Text) -> Element<T>
     where
         T: has::Method,
     {
@@ -1618,7 +1618,7 @@ impl<T> Element<T> {
 
     /// `min`
     #[cfg_attr(rust_js, rust_js::link_name = "prop min")]
-    pub fn min(self, value: impl Value) -> Element<T>
+    pub fn min(self, value: impl value::NumberOrString) -> Element<T>
     where
         T: has::Min,
     {
@@ -1627,7 +1627,7 @@ impl<T> Element<T> {
 
     /// `minLength`
     #[cfg_attr(rust_js, rust_js::link_name = "prop minLength")]
-    pub fn min_length(self, value: impl Value) -> Element<T>
+    pub fn min_length(self, value: impl value::Number) -> Element<T>
     where
         T: has::MinLength,
     {
@@ -1636,7 +1636,7 @@ impl<T> Element<T> {
 
     /// `mode`
     #[cfg_attr(rust_js, rust_js::link_name = "prop mode")]
-    pub fn mode(self, value: impl Value) -> Element<T> {
+    pub fn mode(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
@@ -1660,7 +1660,7 @@ impl<T> Element<T> {
 
     /// `name`
     #[cfg_attr(rust_js, rust_js::link_name = "prop name")]
-    pub fn name(self, value: impl Value) -> Element<T>
+    pub fn name(self, value: impl value::Text) -> Element<T>
     where
         T: has::Name,
     {
@@ -1687,31 +1687,31 @@ impl<T> Element<T> {
 
     /// `nodeintegration`
     #[cfg_attr(rust_js, rust_js::link_name = "prop nodeintegration")]
-    pub fn nodeintegration(self, value: impl Value) -> Element<T> {
+    pub fn nodeintegration(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `nonce`
     #[cfg_attr(rust_js, rust_js::link_name = "prop nonce")]
-    pub fn nonce(self, value: impl Value) -> Element<T> {
+    pub fn nonce(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `numOctaves`
     #[cfg_attr(rust_js, rust_js::link_name = "prop numOctaves")]
-    pub fn num_octaves(self, value: impl Value) -> Element<T> {
+    pub fn num_octaves(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `offset`
     #[cfg_attr(rust_js, rust_js::link_name = "prop offset")]
-    pub fn offset(self, value: impl Value) -> Element<T> {
+    pub fn offset(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `opacity`
     #[cfg_attr(rust_js, rust_js::link_name = "prop opacity")]
-    pub fn opacity(self, value: impl Value) -> Element<T> {
+    pub fn opacity(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
@@ -1726,13 +1726,13 @@ impl<T> Element<T> {
 
     /// `operator`
     #[cfg_attr(rust_js, rust_js::link_name = "prop operator")]
-    pub fn operator(self, value: impl Value) -> Element<T> {
+    pub fn operator(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `optimum`
     #[cfg_attr(rust_js, rust_js::link_name = "prop optimum")]
-    pub fn optimum(self, value: impl Value) -> Element<T>
+    pub fn optimum(self, value: impl value::Number) -> Element<T>
     where
         T: has::Optimum,
     {
@@ -1741,85 +1741,85 @@ impl<T> Element<T> {
 
     /// `order`
     #[cfg_attr(rust_js, rust_js::link_name = "prop order")]
-    pub fn order(self, value: impl Value) -> Element<T> {
+    pub fn order(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `orient`
     #[cfg_attr(rust_js, rust_js::link_name = "prop orient")]
-    pub fn orient(self, value: impl Value) -> Element<T> {
+    pub fn orient(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `orientation`
     #[cfg_attr(rust_js, rust_js::link_name = "prop orientation")]
-    pub fn orientation(self, value: impl Value) -> Element<T> {
+    pub fn orientation(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `origin`
     #[cfg_attr(rust_js, rust_js::link_name = "prop origin")]
-    pub fn origin(self, value: impl Value) -> Element<T> {
+    pub fn origin(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `overflow`
     #[cfg_attr(rust_js, rust_js::link_name = "prop overflow")]
-    pub fn overflow(self, value: impl Value) -> Element<T> {
+    pub fn overflow(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `overlinePosition`
     #[cfg_attr(rust_js, rust_js::link_name = "prop overlinePosition")]
-    pub fn overline_position(self, value: impl Value) -> Element<T> {
+    pub fn overline_position(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `overlineThickness`
     #[cfg_attr(rust_js, rust_js::link_name = "prop overlineThickness")]
-    pub fn overline_thickness(self, value: impl Value) -> Element<T> {
+    pub fn overline_thickness(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `paintOrder`
     #[cfg_attr(rust_js, rust_js::link_name = "prop paintOrder")]
-    pub fn paint_order(self, value: impl Value) -> Element<T> {
+    pub fn paint_order(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `panose1`
     #[cfg_attr(rust_js, rust_js::link_name = "prop panose1")]
-    pub fn panose1(self, value: impl Value) -> Element<T> {
+    pub fn panose1(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `part`
     #[cfg_attr(rust_js, rust_js::link_name = "prop part")]
-    pub fn part(self, value: impl Value) -> Element<T> {
+    pub fn part(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `partition`
     #[cfg_attr(rust_js, rust_js::link_name = "prop partition")]
-    pub fn partition(self, value: impl Value) -> Element<T> {
+    pub fn partition(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `path`
     #[cfg_attr(rust_js, rust_js::link_name = "prop path")]
-    pub fn path(self, value: impl Value) -> Element<T> {
+    pub fn path(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `pathLength`
     #[cfg_attr(rust_js, rust_js::link_name = "prop pathLength")]
-    pub fn path_length(self, value: impl Value) -> Element<T> {
+    pub fn path_length(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `pattern`
     #[cfg_attr(rust_js, rust_js::link_name = "prop pattern")]
-    pub fn pattern(self, value: impl Value) -> Element<T>
+    pub fn pattern(self, value: impl value::Text) -> Element<T>
     where
         T: has::Pattern,
     {
@@ -1828,25 +1828,25 @@ impl<T> Element<T> {
 
     /// `patternContentUnits`
     #[cfg_attr(rust_js, rust_js::link_name = "prop patternContentUnits")]
-    pub fn pattern_content_units(self, value: impl Value) -> Element<T> {
+    pub fn pattern_content_units(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `patternTransform`
     #[cfg_attr(rust_js, rust_js::link_name = "prop patternTransform")]
-    pub fn pattern_transform(self, value: impl Value) -> Element<T> {
+    pub fn pattern_transform(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `patternUnits`
     #[cfg_attr(rust_js, rust_js::link_name = "prop patternUnits")]
-    pub fn pattern_units(self, value: impl Value) -> Element<T> {
+    pub fn pattern_units(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `ping`
     #[cfg_attr(rust_js, rust_js::link_name = "prop ping")]
-    pub fn ping(self, value: impl Value) -> Element<T>
+    pub fn ping(self, value: impl value::Text) -> Element<T>
     where
         T: has::Ping,
     {
@@ -1855,7 +1855,7 @@ impl<T> Element<T> {
 
     /// `placeholder`
     #[cfg_attr(rust_js, rust_js::link_name = "prop placeholder")]
-    pub fn placeholder(self, value: impl Value) -> Element<T>
+    pub fn placeholder(self, value: impl value::Text) -> Element<T>
     where
         T: has::Placeholder,
     {
@@ -1873,64 +1873,64 @@ impl<T> Element<T> {
 
     /// `plugins`
     #[cfg_attr(rust_js, rust_js::link_name = "prop plugins")]
-    pub fn plugins(self, value: impl Value) -> Element<T> {
+    pub fn plugins(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `pointerEvents`
     #[cfg_attr(rust_js, rust_js::link_name = "prop pointerEvents")]
-    pub fn pointer_events(self, value: impl Value) -> Element<T> {
+    pub fn pointer_events(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `points`
     #[cfg_attr(rust_js, rust_js::link_name = "prop points")]
-    pub fn points(self, value: impl Value) -> Element<T> {
+    pub fn points(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `pointsAtX`
     #[cfg_attr(rust_js, rust_js::link_name = "prop pointsAtX")]
-    pub fn points_at_x(self, value: impl Value) -> Element<T> {
+    pub fn points_at_x(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `pointsAtY`
     #[cfg_attr(rust_js, rust_js::link_name = "prop pointsAtY")]
-    pub fn points_at_y(self, value: impl Value) -> Element<T> {
+    pub fn points_at_y(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `pointsAtZ`
     #[cfg_attr(rust_js, rust_js::link_name = "prop pointsAtZ")]
-    pub fn points_at_z(self, value: impl Value) -> Element<T> {
+    pub fn points_at_z(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `popover`
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop popover")]
-    pub fn popover(self, value: impl Value) -> Element<T> {
+    pub fn popover(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `popoverTarget`
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop popoverTarget")]
-    pub fn popover_target(self, value: impl Value) -> Element<T> {
+    pub fn popover_target(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `popoverTargetAction`
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "prop popoverTargetAction")]
-    pub fn popover_target_action(self, value: impl Value) -> Element<T> {
+    pub fn popover_target_action(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `poster`
     #[cfg_attr(rust_js, rust_js::link_name = "prop poster")]
-    pub fn poster(self, value: impl Value) -> Element<T>
+    pub fn poster(self, value: impl value::Text) -> Element<T>
     where
         T: has::Poster,
     {
@@ -1939,13 +1939,13 @@ impl<T> Element<T> {
 
     /// `prefix`
     #[cfg_attr(rust_js, rust_js::link_name = "prop prefix")]
-    pub fn prefix(self, value: impl Value) -> Element<T> {
+    pub fn prefix(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `preload`
     #[cfg_attr(rust_js, rust_js::link_name = "prop preload")]
-    pub fn preload(self, value: impl Value) -> Element<T>
+    pub fn preload(self, value: impl value::Text) -> Element<T>
     where
         T: has::Preload,
     {
@@ -1954,19 +1954,19 @@ impl<T> Element<T> {
 
     /// `preserveAlpha`
     #[cfg_attr(rust_js, rust_js::link_name = "prop preserveAlpha")]
-    pub fn preserve_alpha(self, value: impl Value) -> Element<T> {
+    pub fn preserve_alpha(self, value: impl value::Booleanish) -> Element<T> {
         unreachable!()
     }
 
     /// `preserveAspectRatio`
     #[cfg_attr(rust_js, rust_js::link_name = "prop preserveAspectRatio")]
-    pub fn preserve_aspect_ratio(self, value: impl Value) -> Element<T> {
+    pub fn preserve_aspect_ratio(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `primitiveUnits`
     #[cfg_attr(rust_js, rust_js::link_name = "prop primitiveUnits")]
-    pub fn primitive_units(self, value: impl Value) -> Element<T> {
+    pub fn primitive_units(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
@@ -1978,25 +1978,25 @@ impl<T> Element<T> {
 
     /// `property`
     #[cfg_attr(rust_js, rust_js::link_name = "prop property")]
-    pub fn property(self, value: impl Value) -> Element<T> {
+    pub fn property(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `r`
     #[cfg_attr(rust_js, rust_js::link_name = "prop r")]
-    pub fn r(self, value: impl Value) -> Element<T> {
+    pub fn r(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `radioGroup`
     #[cfg_attr(rust_js, rust_js::link_name = "prop radioGroup")]
-    pub fn radio_group(self, value: impl Value) -> Element<T> {
+    pub fn radio_group(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `radius`
     #[cfg_attr(rust_js, rust_js::link_name = "prop radius")]
-    pub fn radius(self, value: impl Value) -> Element<T> {
+    pub fn radius(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
@@ -2011,19 +2011,19 @@ impl<T> Element<T> {
 
     /// `refX`
     #[cfg_attr(rust_js, rust_js::link_name = "prop refX")]
-    pub fn ref_x(self, value: impl Value) -> Element<T> {
+    pub fn ref_x(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `refY`
     #[cfg_attr(rust_js, rust_js::link_name = "prop refY")]
-    pub fn ref_y(self, value: impl Value) -> Element<T> {
+    pub fn ref_y(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `referrerPolicy`
     #[cfg_attr(rust_js, rust_js::link_name = "prop referrerPolicy")]
-    pub fn referrer_policy(self, value: impl Value) -> Element<T>
+    pub fn referrer_policy(self, value: impl value::Text) -> Element<T>
     where
         T: has::ReferrerPolicy,
     {
@@ -2032,25 +2032,25 @@ impl<T> Element<T> {
 
     /// `rel`
     #[cfg_attr(rust_js, rust_js::link_name = "prop rel")]
-    pub fn rel(self, value: impl Value) -> Element<T> {
+    pub fn rel(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `renderingIntent`
     #[cfg_attr(rust_js, rust_js::link_name = "prop renderingIntent")]
-    pub fn rendering_intent(self, value: impl Value) -> Element<T> {
+    pub fn rendering_intent(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `repeatCount`
     #[cfg_attr(rust_js, rust_js::link_name = "prop repeatCount")]
-    pub fn repeat_count(self, value: impl Value) -> Element<T> {
+    pub fn repeat_count(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `repeatDur`
     #[cfg_attr(rust_js, rust_js::link_name = "prop repeatDur")]
-    pub fn repeat_dur(self, value: impl Value) -> Element<T> {
+    pub fn repeat_dur(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
@@ -2065,43 +2065,43 @@ impl<T> Element<T> {
 
     /// `requiredExtensions`
     #[cfg_attr(rust_js, rust_js::link_name = "prop requiredExtensions")]
-    pub fn required_extensions(self, value: impl Value) -> Element<T> {
+    pub fn required_extensions(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `requiredFeatures`
     #[cfg_attr(rust_js, rust_js::link_name = "prop requiredFeatures")]
-    pub fn required_features(self, value: impl Value) -> Element<T> {
+    pub fn required_features(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `resource`
     #[cfg_attr(rust_js, rust_js::link_name = "prop resource")]
-    pub fn resource(self, value: impl Value) -> Element<T> {
+    pub fn resource(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `restart`
     #[cfg_attr(rust_js, rust_js::link_name = "prop restart")]
-    pub fn restart(self, value: impl Value) -> Element<T> {
+    pub fn restart(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `result`
     #[cfg_attr(rust_js, rust_js::link_name = "prop result")]
-    pub fn result(self, value: impl Value) -> Element<T> {
+    pub fn result(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `results`
     #[cfg_attr(rust_js, rust_js::link_name = "prop results")]
-    pub fn results(self, value: impl Value) -> Element<T> {
+    pub fn results(self, value: impl value::Number) -> Element<T> {
         unreachable!()
     }
 
     /// `rev`
     #[cfg_attr(rust_js, rust_js::link_name = "prop rev")]
-    pub fn rev(self, value: impl Value) -> Element<T> {
+    pub fn rev(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
@@ -2116,19 +2116,19 @@ impl<T> Element<T> {
 
     /// `role`
     #[cfg_attr(rust_js, rust_js::link_name = "prop role")]
-    pub fn role(self, value: impl Value) -> Element<T> {
+    pub fn role(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `rotate`
     #[cfg_attr(rust_js, rust_js::link_name = "prop rotate")]
-    pub fn rotate(self, value: impl Value) -> Element<T> {
+    pub fn rotate(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `rowSpan`
     #[cfg_attr(rust_js, rust_js::link_name = "prop rowSpan")]
-    pub fn row_span(self, value: impl Value) -> Element<T>
+    pub fn row_span(self, value: impl value::Number) -> Element<T>
     where
         T: has::RowSpan,
     {
@@ -2137,7 +2137,7 @@ impl<T> Element<T> {
 
     /// `rows`
     #[cfg_attr(rust_js, rust_js::link_name = "prop rows")]
-    pub fn rows(self, value: impl Value) -> Element<T>
+    pub fn rows(self, value: impl value::Number) -> Element<T>
     where
         T: has::Rows,
     {
@@ -2146,7 +2146,7 @@ impl<T> Element<T> {
 
     /// `rules`
     #[cfg_attr(rust_js, rust_js::link_name = "prop rules")]
-    pub fn rules(self, value: impl Value) -> Element<T>
+    pub fn rules(self, value: impl value::Text) -> Element<T>
     where
         T: has::Rules,
     {
@@ -2155,19 +2155,19 @@ impl<T> Element<T> {
 
     /// `rx`
     #[cfg_attr(rust_js, rust_js::link_name = "prop rx")]
-    pub fn rx(self, value: impl Value) -> Element<T> {
+    pub fn rx(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `ry`
     #[cfg_attr(rust_js, rust_js::link_name = "prop ry")]
-    pub fn ry(self, value: impl Value) -> Element<T> {
+    pub fn ry(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `sandbox`
     #[cfg_attr(rust_js, rust_js::link_name = "prop sandbox")]
-    pub fn sandbox(self, value: impl Value) -> Element<T>
+    pub fn sandbox(self, value: impl value::Text) -> Element<T>
     where
         T: has::Sandbox,
     {
@@ -2176,13 +2176,13 @@ impl<T> Element<T> {
 
     /// `scale`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scale")]
-    pub fn scale(self, value: impl Value) -> Element<T> {
+    pub fn scale(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `scope`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scope")]
-    pub fn scope(self, value: impl Value) -> Element<T>
+    pub fn scope(self, value: impl value::Text) -> Element<T>
     where
         T: has::Scope,
     {
@@ -2200,7 +2200,7 @@ impl<T> Element<T> {
 
     /// `scrolling`
     #[cfg_attr(rust_js, rust_js::link_name = "prop scrolling")]
-    pub fn scrolling(self, value: impl Value) -> Element<T>
+    pub fn scrolling(self, value: impl value::Text) -> Element<T>
     where
         T: has::Scrolling,
     {
@@ -2218,13 +2218,13 @@ impl<T> Element<T> {
 
     /// `security`
     #[cfg_attr(rust_js, rust_js::link_name = "prop security")]
-    pub fn security(self, value: impl Value) -> Element<T> {
+    pub fn security(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `seed`
     #[cfg_attr(rust_js, rust_js::link_name = "prop seed")]
-    pub fn seed(self, value: impl Value) -> Element<T> {
+    pub fn seed(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
@@ -2239,7 +2239,7 @@ impl<T> Element<T> {
 
     /// `shape`
     #[cfg_attr(rust_js, rust_js::link_name = "prop shape")]
-    pub fn shape(self, value: impl Value) -> Element<T>
+    pub fn shape(self, value: impl value::Text) -> Element<T>
     where
         T: has::Shape,
     {
@@ -2248,13 +2248,13 @@ impl<T> Element<T> {
 
     /// `shapeRendering`
     #[cfg_attr(rust_js, rust_js::link_name = "prop shapeRendering")]
-    pub fn shape_rendering(self, value: impl Value) -> Element<T> {
+    pub fn shape_rendering(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `size`
     #[cfg_attr(rust_js, rust_js::link_name = "prop size")]
-    pub fn size(self, value: impl Value) -> Element<T>
+    pub fn size(self, value: impl value::Number) -> Element<T>
     where
         T: has::Size,
     {
@@ -2263,7 +2263,7 @@ impl<T> Element<T> {
 
     /// `sizes`
     #[cfg_attr(rust_js, rust_js::link_name = "prop sizes")]
-    pub fn sizes(self, value: impl Value) -> Element<T>
+    pub fn sizes(self, value: impl value::Text) -> Element<T>
     where
         T: has::Sizes,
     {
@@ -2272,25 +2272,25 @@ impl<T> Element<T> {
 
     /// `slope`
     #[cfg_attr(rust_js, rust_js::link_name = "prop slope")]
-    pub fn slope(self, value: impl Value) -> Element<T> {
+    pub fn slope(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `slot`
     #[cfg_attr(rust_js, rust_js::link_name = "prop slot")]
-    pub fn slot(self, value: impl Value) -> Element<T> {
+    pub fn slot(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `spacing`
     #[cfg_attr(rust_js, rust_js::link_name = "prop spacing")]
-    pub fn spacing(self, value: impl Value) -> Element<T> {
+    pub fn spacing(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `span`
     #[cfg_attr(rust_js, rust_js::link_name = "prop span")]
-    pub fn span(self, value: impl Value) -> Element<T>
+    pub fn span(self, value: impl value::Number) -> Element<T>
     where
         T: has::Span,
     {
@@ -2299,37 +2299,37 @@ impl<T> Element<T> {
 
     /// `specularConstant`
     #[cfg_attr(rust_js, rust_js::link_name = "prop specularConstant")]
-    pub fn specular_constant(self, value: impl Value) -> Element<T> {
+    pub fn specular_constant(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `specularExponent`
     #[cfg_attr(rust_js, rust_js::link_name = "prop specularExponent")]
-    pub fn specular_exponent(self, value: impl Value) -> Element<T> {
+    pub fn specular_exponent(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `speed`
     #[cfg_attr(rust_js, rust_js::link_name = "prop speed")]
-    pub fn speed(self, value: impl Value) -> Element<T> {
+    pub fn speed(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `spellCheck`
     #[cfg_attr(rust_js, rust_js::link_name = "prop spellCheck")]
-    pub fn spell_check(self, value: impl Value) -> Element<T> {
+    pub fn spell_check(self, value: impl value::Booleanish) -> Element<T> {
         unreachable!()
     }
 
     /// `spreadMethod`
     #[cfg_attr(rust_js, rust_js::link_name = "prop spreadMethod")]
-    pub fn spread_method(self, value: impl Value) -> Element<T> {
+    pub fn spread_method(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `src`
     #[cfg_attr(rust_js, rust_js::link_name = "prop src")]
-    pub fn src(self, value: impl Value) -> Element<T>
+    pub fn src(self, value: impl value::Text) -> Element<T>
     where
         T: has::Src,
     {
@@ -2338,7 +2338,7 @@ impl<T> Element<T> {
 
     /// `srcDoc`
     #[cfg_attr(rust_js, rust_js::link_name = "prop srcDoc")]
-    pub fn src_doc(self, value: impl Value) -> Element<T>
+    pub fn src_doc(self, value: impl value::Text) -> Element<T>
     where
         T: has::SrcDoc,
     {
@@ -2347,7 +2347,7 @@ impl<T> Element<T> {
 
     /// `srcLang`
     #[cfg_attr(rust_js, rust_js::link_name = "prop srcLang")]
-    pub fn src_lang(self, value: impl Value) -> Element<T>
+    pub fn src_lang(self, value: impl value::Text) -> Element<T>
     where
         T: has::SrcLang,
     {
@@ -2356,7 +2356,7 @@ impl<T> Element<T> {
 
     /// `srcSet`
     #[cfg_attr(rust_js, rust_js::link_name = "prop srcSet")]
-    pub fn src_set(self, value: impl Value) -> Element<T>
+    pub fn src_set(self, value: impl value::Text) -> Element<T>
     where
         T: has::SrcSet,
     {
@@ -2365,7 +2365,7 @@ impl<T> Element<T> {
 
     /// `start`
     #[cfg_attr(rust_js, rust_js::link_name = "prop start")]
-    pub fn start(self, value: impl Value) -> Element<T>
+    pub fn start(self, value: impl value::Number) -> Element<T>
     where
         T: has::Start,
     {
@@ -2374,31 +2374,31 @@ impl<T> Element<T> {
 
     /// `startOffset`
     #[cfg_attr(rust_js, rust_js::link_name = "prop startOffset")]
-    pub fn start_offset(self, value: impl Value) -> Element<T> {
+    pub fn start_offset(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `stdDeviation`
     #[cfg_attr(rust_js, rust_js::link_name = "prop stdDeviation")]
-    pub fn std_deviation(self, value: impl Value) -> Element<T> {
+    pub fn std_deviation(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `stemh`
     #[cfg_attr(rust_js, rust_js::link_name = "prop stemh")]
-    pub fn stemh(self, value: impl Value) -> Element<T> {
+    pub fn stemh(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `stemv`
     #[cfg_attr(rust_js, rust_js::link_name = "prop stemv")]
-    pub fn stemv(self, value: impl Value) -> Element<T> {
+    pub fn stemv(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `step`
     #[cfg_attr(rust_js, rust_js::link_name = "prop step")]
-    pub fn step(self, value: impl Value) -> Element<T>
+    pub fn step(self, value: impl value::NumberOrString) -> Element<T>
     where
         T: has::Step,
     {
@@ -2407,91 +2407,91 @@ impl<T> Element<T> {
 
     /// `stitchTiles`
     #[cfg_attr(rust_js, rust_js::link_name = "prop stitchTiles")]
-    pub fn stitch_tiles(self, value: impl Value) -> Element<T> {
+    pub fn stitch_tiles(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `stopColor`
     #[cfg_attr(rust_js, rust_js::link_name = "prop stopColor")]
-    pub fn stop_color(self, value: impl Value) -> Element<T> {
+    pub fn stop_color(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `stopOpacity`
     #[cfg_attr(rust_js, rust_js::link_name = "prop stopOpacity")]
-    pub fn stop_opacity(self, value: impl Value) -> Element<T> {
+    pub fn stop_opacity(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `strikethroughPosition`
     #[cfg_attr(rust_js, rust_js::link_name = "prop strikethroughPosition")]
-    pub fn strikethrough_position(self, value: impl Value) -> Element<T> {
+    pub fn strikethrough_position(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `strikethroughThickness`
     #[cfg_attr(rust_js, rust_js::link_name = "prop strikethroughThickness")]
-    pub fn strikethrough_thickness(self, value: impl Value) -> Element<T> {
+    pub fn strikethrough_thickness(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `string`
     #[cfg_attr(rust_js, rust_js::link_name = "prop string")]
-    pub fn string(self, value: impl Value) -> Element<T> {
+    pub fn string(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `stroke`
     #[cfg_attr(rust_js, rust_js::link_name = "prop stroke")]
-    pub fn stroke(self, value: impl Value) -> Element<T> {
+    pub fn stroke(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `strokeDasharray`
     #[cfg_attr(rust_js, rust_js::link_name = "prop strokeDasharray")]
-    pub fn stroke_dasharray(self, value: impl Value) -> Element<T> {
+    pub fn stroke_dasharray(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `strokeDashoffset`
     #[cfg_attr(rust_js, rust_js::link_name = "prop strokeDashoffset")]
-    pub fn stroke_dashoffset(self, value: impl Value) -> Element<T> {
+    pub fn stroke_dashoffset(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `strokeLinecap`
     #[cfg_attr(rust_js, rust_js::link_name = "prop strokeLinecap")]
-    pub fn stroke_linecap(self, value: impl Value) -> Element<T> {
+    pub fn stroke_linecap(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `strokeLinejoin`
     #[cfg_attr(rust_js, rust_js::link_name = "prop strokeLinejoin")]
-    pub fn stroke_linejoin(self, value: impl Value) -> Element<T> {
+    pub fn stroke_linejoin(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `strokeMiterlimit`
     #[cfg_attr(rust_js, rust_js::link_name = "prop strokeMiterlimit")]
-    pub fn stroke_miterlimit(self, value: impl Value) -> Element<T> {
+    pub fn stroke_miterlimit(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `strokeOpacity`
     #[cfg_attr(rust_js, rust_js::link_name = "prop strokeOpacity")]
-    pub fn stroke_opacity(self, value: impl Value) -> Element<T> {
+    pub fn stroke_opacity(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `strokeWidth`
     #[cfg_attr(rust_js, rust_js::link_name = "prop strokeWidth")]
-    pub fn stroke_width(self, value: impl Value) -> Element<T> {
+    pub fn stroke_width(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `summary`
     #[cfg_attr(rust_js, rust_js::link_name = "prop summary")]
-    pub fn summary(self, value: impl Value) -> Element<T>
+    pub fn summary(self, value: impl value::Text) -> Element<T>
     where
         T: has::Summary,
     {
@@ -2500,43 +2500,43 @@ impl<T> Element<T> {
 
     /// `suppressContentEditableWarning`
     #[cfg_attr(rust_js, rust_js::link_name = "prop suppressContentEditableWarning")]
-    pub fn suppress_content_editable_warning(self, value: impl Value) -> Element<T> {
+    pub fn suppress_content_editable_warning(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `suppressHydrationWarning`
     #[cfg_attr(rust_js, rust_js::link_name = "prop suppressHydrationWarning")]
-    pub fn suppress_hydration_warning(self, value: impl Value) -> Element<T> {
+    pub fn suppress_hydration_warning(self, value: bool) -> Element<T> {
         unreachable!()
     }
 
     /// `surfaceScale`
     #[cfg_attr(rust_js, rust_js::link_name = "prop surfaceScale")]
-    pub fn surface_scale(self, value: impl Value) -> Element<T> {
+    pub fn surface_scale(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `systemLanguage`
     #[cfg_attr(rust_js, rust_js::link_name = "prop systemLanguage")]
-    pub fn system_language(self, value: impl Value) -> Element<T> {
+    pub fn system_language(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `tabIndex`
     #[cfg_attr(rust_js, rust_js::link_name = "prop tabIndex")]
-    pub fn tab_index(self, value: impl Value) -> Element<T> {
+    pub fn tab_index(self, value: impl value::Number) -> Element<T> {
         unreachable!()
     }
 
     /// `tableValues`
     #[cfg_attr(rust_js, rust_js::link_name = "prop tableValues")]
-    pub fn table_values(self, value: impl Value) -> Element<T> {
+    pub fn table_values(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `target`
     #[cfg_attr(rust_js, rust_js::link_name = "prop target")]
-    pub fn target(self, value: impl Value) -> Element<T>
+    pub fn target(self, value: impl value::Text) -> Element<T>
     where
         T: has::Target,
     {
@@ -2545,55 +2545,55 @@ impl<T> Element<T> {
 
     /// `targetX`
     #[cfg_attr(rust_js, rust_js::link_name = "prop targetX")]
-    pub fn target_x(self, value: impl Value) -> Element<T> {
+    pub fn target_x(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `targetY`
     #[cfg_attr(rust_js, rust_js::link_name = "prop targetY")]
-    pub fn target_y(self, value: impl Value) -> Element<T> {
+    pub fn target_y(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `textAnchor`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textAnchor")]
-    pub fn text_anchor(self, value: impl Value) -> Element<T> {
+    pub fn text_anchor(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `textDecoration`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textDecoration")]
-    pub fn text_decoration(self, value: impl Value) -> Element<T> {
+    pub fn text_decoration(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `textLength`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textLength")]
-    pub fn text_length(self, value: impl Value) -> Element<T> {
+    pub fn text_length(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `textRendering`
     #[cfg_attr(rust_js, rust_js::link_name = "prop textRendering")]
-    pub fn text_rendering(self, value: impl Value) -> Element<T> {
+    pub fn text_rendering(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `title`
     #[cfg_attr(rust_js, rust_js::link_name = "prop title")]
-    pub fn title(self, value: impl Value) -> Element<T> {
+    pub fn title(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `to`
     #[cfg_attr(rust_js, rust_js::link_name = "prop to")]
-    pub fn to(self, value: impl Value) -> Element<T> {
+    pub fn to(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `transform`
     #[cfg_attr(rust_js, rust_js::link_name = "prop transform")]
-    pub fn transform(self, value: impl Value) -> Element<T> {
+    pub fn transform(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
@@ -2606,13 +2606,13 @@ impl<T> Element<T> {
 
     /// `translate`
     #[cfg_attr(rust_js, rust_js::link_name = "prop translate")]
-    pub fn translate(self, value: impl Value) -> Element<T> {
+    pub fn translate(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `type`
     #[cfg_attr(rust_js, rust_js::link_name = "prop type")]
-    pub fn r#type(self, value: impl Value) -> Element<T>
+    pub fn r#type(self, value: impl value::Text) -> Element<T>
     where
         T: has::Type,
     {
@@ -2621,67 +2621,67 @@ impl<T> Element<T> {
 
     /// `typeof`
     #[cfg_attr(rust_js, rust_js::link_name = "prop typeof")]
-    pub fn r#typeof(self, value: impl Value) -> Element<T> {
+    pub fn r#typeof(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `u1`
     #[cfg_attr(rust_js, rust_js::link_name = "prop u1")]
-    pub fn u1(self, value: impl Value) -> Element<T> {
+    pub fn u1(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `u2`
     #[cfg_attr(rust_js, rust_js::link_name = "prop u2")]
-    pub fn u2(self, value: impl Value) -> Element<T> {
+    pub fn u2(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `underlinePosition`
     #[cfg_attr(rust_js, rust_js::link_name = "prop underlinePosition")]
-    pub fn underline_position(self, value: impl Value) -> Element<T> {
+    pub fn underline_position(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `underlineThickness`
     #[cfg_attr(rust_js, rust_js::link_name = "prop underlineThickness")]
-    pub fn underline_thickness(self, value: impl Value) -> Element<T> {
+    pub fn underline_thickness(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `unicode`
     #[cfg_attr(rust_js, rust_js::link_name = "prop unicode")]
-    pub fn unicode(self, value: impl Value) -> Element<T> {
+    pub fn unicode(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `unicodeBidi`
     #[cfg_attr(rust_js, rust_js::link_name = "prop unicodeBidi")]
-    pub fn unicode_bidi(self, value: impl Value) -> Element<T> {
+    pub fn unicode_bidi(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `unicodeRange`
     #[cfg_attr(rust_js, rust_js::link_name = "prop unicodeRange")]
-    pub fn unicode_range(self, value: impl Value) -> Element<T> {
+    pub fn unicode_range(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `unitsPerEm`
     #[cfg_attr(rust_js, rust_js::link_name = "prop unitsPerEm")]
-    pub fn units_per_em(self, value: impl Value) -> Element<T> {
+    pub fn units_per_em(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `unselectable`
     #[cfg_attr(rust_js, rust_js::link_name = "prop unselectable")]
-    pub fn unselectable(self, value: impl Value) -> Element<T> {
+    pub fn unselectable(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `useMap`
     #[cfg_attr(rust_js, rust_js::link_name = "prop useMap")]
-    pub fn use_map(self, value: impl Value) -> Element<T>
+    pub fn use_map(self, value: impl value::Text) -> Element<T>
     where
         T: has::UseMap,
     {
@@ -2690,37 +2690,37 @@ impl<T> Element<T> {
 
     /// `useragent`
     #[cfg_attr(rust_js, rust_js::link_name = "prop useragent")]
-    pub fn useragent(self, value: impl Value) -> Element<T> {
+    pub fn useragent(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `vAlphabetic`
     #[cfg_attr(rust_js, rust_js::link_name = "prop vAlphabetic")]
-    pub fn v_alphabetic(self, value: impl Value) -> Element<T> {
+    pub fn v_alphabetic(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `vHanging`
     #[cfg_attr(rust_js, rust_js::link_name = "prop vHanging")]
-    pub fn v_hanging(self, value: impl Value) -> Element<T> {
+    pub fn v_hanging(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `vIdeographic`
     #[cfg_attr(rust_js, rust_js::link_name = "prop vIdeographic")]
-    pub fn v_ideographic(self, value: impl Value) -> Element<T> {
+    pub fn v_ideographic(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `vMathematical`
     #[cfg_attr(rust_js, rust_js::link_name = "prop vMathematical")]
-    pub fn v_mathematical(self, value: impl Value) -> Element<T> {
+    pub fn v_mathematical(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `valign`
     #[cfg_attr(rust_js, rust_js::link_name = "prop valign")]
-    pub fn valign(self, value: impl Value) -> Element<T>
+    pub fn valign(self, value: impl value::Text) -> Element<T>
     where
         T: has::Valign,
     {
@@ -2729,7 +2729,7 @@ impl<T> Element<T> {
 
     /// `value`
     #[cfg_attr(rust_js, rust_js::link_name = "prop value")]
-    pub fn value(self, value: impl Value) -> Element<T>
+    pub fn value(self, value: impl value::NumberOrString) -> Element<T>
     where
         T: has::Value,
     {
@@ -2738,73 +2738,73 @@ impl<T> Element<T> {
 
     /// `values`
     #[cfg_attr(rust_js, rust_js::link_name = "prop values")]
-    pub fn values(self, value: impl Value) -> Element<T> {
+    pub fn values(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `vectorEffect`
     #[cfg_attr(rust_js, rust_js::link_name = "prop vectorEffect")]
-    pub fn vector_effect(self, value: impl Value) -> Element<T> {
+    pub fn vector_effect(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `version`
     #[cfg_attr(rust_js, rust_js::link_name = "prop version")]
-    pub fn version(self, value: impl Value) -> Element<T> {
+    pub fn version(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `vertAdvY`
     #[cfg_attr(rust_js, rust_js::link_name = "prop vertAdvY")]
-    pub fn vert_adv_y(self, value: impl Value) -> Element<T> {
+    pub fn vert_adv_y(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `vertOriginX`
     #[cfg_attr(rust_js, rust_js::link_name = "prop vertOriginX")]
-    pub fn vert_origin_x(self, value: impl Value) -> Element<T> {
+    pub fn vert_origin_x(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `vertOriginY`
     #[cfg_attr(rust_js, rust_js::link_name = "prop vertOriginY")]
-    pub fn vert_origin_y(self, value: impl Value) -> Element<T> {
+    pub fn vert_origin_y(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `viewBox`
     #[cfg_attr(rust_js, rust_js::link_name = "prop viewBox")]
-    pub fn view_box(self, value: impl Value) -> Element<T> {
+    pub fn view_box(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `viewTarget`
     #[cfg_attr(rust_js, rust_js::link_name = "prop viewTarget")]
-    pub fn view_target(self, value: impl Value) -> Element<T> {
+    pub fn view_target(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `visibility`
     #[cfg_attr(rust_js, rust_js::link_name = "prop visibility")]
-    pub fn visibility(self, value: impl Value) -> Element<T> {
+    pub fn visibility(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `vocab`
     #[cfg_attr(rust_js, rust_js::link_name = "prop vocab")]
-    pub fn vocab(self, value: impl Value) -> Element<T> {
+    pub fn vocab(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `webpreferences`
     #[cfg_attr(rust_js, rust_js::link_name = "prop webpreferences")]
-    pub fn webpreferences(self, value: impl Value) -> Element<T> {
+    pub fn webpreferences(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `width`
     #[cfg_attr(rust_js, rust_js::link_name = "prop width")]
-    pub fn width(self, value: impl Value) -> Element<T>
+    pub fn width(self, value: impl value::NumberOrString) -> Element<T>
     where
         T: has::Width,
     {
@@ -2813,13 +2813,13 @@ impl<T> Element<T> {
 
     /// `widths`
     #[cfg_attr(rust_js, rust_js::link_name = "prop widths")]
-    pub fn widths(self, value: impl Value) -> Element<T> {
+    pub fn widths(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `wmode`
     #[cfg_attr(rust_js, rust_js::link_name = "prop wmode")]
-    pub fn wmode(self, value: impl Value) -> Element<T>
+    pub fn wmode(self, value: impl value::Text) -> Element<T>
     where
         T: has::Wmode,
     {
@@ -2828,13 +2828,13 @@ impl<T> Element<T> {
 
     /// `wordSpacing`
     #[cfg_attr(rust_js, rust_js::link_name = "prop wordSpacing")]
-    pub fn word_spacing(self, value: impl Value) -> Element<T> {
+    pub fn word_spacing(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `wrap`
     #[cfg_attr(rust_js, rust_js::link_name = "prop wrap")]
-    pub fn wrap(self, value: impl Value) -> Element<T>
+    pub fn wrap(self, value: impl value::Text) -> Element<T>
     where
         T: has::Wrap,
     {
@@ -2843,145 +2843,145 @@ impl<T> Element<T> {
 
     /// `writingMode`
     #[cfg_attr(rust_js, rust_js::link_name = "prop writingMode")]
-    pub fn writing_mode(self, value: impl Value) -> Element<T> {
+    pub fn writing_mode(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `x`
     #[cfg_attr(rust_js, rust_js::link_name = "prop x")]
-    pub fn x(self, value: impl Value) -> Element<T> {
+    pub fn x(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `x1`
     #[cfg_attr(rust_js, rust_js::link_name = "prop x1")]
-    pub fn x1(self, value: impl Value) -> Element<T> {
+    pub fn x1(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `x2`
     #[cfg_attr(rust_js, rust_js::link_name = "prop x2")]
-    pub fn x2(self, value: impl Value) -> Element<T> {
+    pub fn x2(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `xChannelSelector`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xChannelSelector")]
-    pub fn x_channel_selector(self, value: impl Value) -> Element<T> {
+    pub fn x_channel_selector(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `xHeight`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xHeight")]
-    pub fn x_height(self, value: impl Value) -> Element<T> {
+    pub fn x_height(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `xlinkActuate`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xlinkActuate")]
-    pub fn xlink_actuate(self, value: impl Value) -> Element<T> {
+    pub fn xlink_actuate(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `xlinkArcrole`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xlinkArcrole")]
-    pub fn xlink_arcrole(self, value: impl Value) -> Element<T> {
+    pub fn xlink_arcrole(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `xlinkHref`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xlinkHref")]
-    pub fn xlink_href(self, value: impl Value) -> Element<T> {
+    pub fn xlink_href(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `xlinkRole`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xlinkRole")]
-    pub fn xlink_role(self, value: impl Value) -> Element<T> {
+    pub fn xlink_role(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `xlinkShow`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xlinkShow")]
-    pub fn xlink_show(self, value: impl Value) -> Element<T> {
+    pub fn xlink_show(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `xlinkTitle`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xlinkTitle")]
-    pub fn xlink_title(self, value: impl Value) -> Element<T> {
+    pub fn xlink_title(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `xlinkType`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xlinkType")]
-    pub fn xlink_type(self, value: impl Value) -> Element<T> {
+    pub fn xlink_type(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `xmlBase`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xmlBase")]
-    pub fn xml_base(self, value: impl Value) -> Element<T> {
+    pub fn xml_base(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `xmlLang`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xmlLang")]
-    pub fn xml_lang(self, value: impl Value) -> Element<T> {
+    pub fn xml_lang(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `xmlSpace`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xmlSpace")]
-    pub fn xml_space(self, value: impl Value) -> Element<T> {
+    pub fn xml_space(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `xmlns`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xmlns")]
-    pub fn xmlns(self, value: impl Value) -> Element<T> {
+    pub fn xmlns(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `xmlnsXlink`
     #[cfg_attr(rust_js, rust_js::link_name = "prop xmlnsXlink")]
-    pub fn xmlns_xlink(self, value: impl Value) -> Element<T> {
+    pub fn xmlns_xlink(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `y`
     #[cfg_attr(rust_js, rust_js::link_name = "prop y")]
-    pub fn y(self, value: impl Value) -> Element<T> {
+    pub fn y(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `y1`
     #[cfg_attr(rust_js, rust_js::link_name = "prop y1")]
-    pub fn y1(self, value: impl Value) -> Element<T> {
+    pub fn y1(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `y2`
     #[cfg_attr(rust_js, rust_js::link_name = "prop y2")]
-    pub fn y2(self, value: impl Value) -> Element<T> {
+    pub fn y2(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `yChannelSelector`
     #[cfg_attr(rust_js, rust_js::link_name = "prop yChannelSelector")]
-    pub fn y_channel_selector(self, value: impl Value) -> Element<T> {
+    pub fn y_channel_selector(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
     /// `z`
     #[cfg_attr(rust_js, rust_js::link_name = "prop z")]
-    pub fn z(self, value: impl Value) -> Element<T> {
+    pub fn z(self, value: impl value::NumberOrString) -> Element<T> {
         unreachable!()
     }
 
     /// `zoomAndPan`
     #[cfg_attr(rust_js, rust_js::link_name = "prop zoomAndPan")]
-    pub fn zoom_and_pan(self, value: impl Value) -> Element<T> {
+    pub fn zoom_and_pan(self, value: impl value::Text) -> Element<T> {
         unreachable!()
     }
 
