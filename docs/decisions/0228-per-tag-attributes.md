@@ -58,6 +58,15 @@ error[E0277]: `react::webapi::HTMLDivElement` takes no `href`
   One @types/react doesn't type, `download`'s `any` or one React DOM's
   table alone has, takes any `Value`, as each did, a string, number or
   `bool`, but a hand-written list's `bool`s. (Amended.)
+- **A literal of an attribute of a few strings is one of them**, as
+  TypeScript checks it: `<img referrerPolicy="no-referer">` is ``jsx:
+  `"no-referer"` isn't a `referrerPolicy`, which is one of "", "no-referrer",
+  ..``, a `<button>`'s `type="sumbit"` and `aria-live="loud"` too. rust-js's
+  JSX parser checks it against a table `react/literals.ts` writes from
+  @types/react, `src/jsx_syntax/literals.rs`, by the tag where tags differ:
+  an `<input>`'s `type` takes any string. A value that isn't a literal, a
+  `&str` variable, isn't checked, where TypeScript refuses a `string` there.
+  (Amended: each took any text.)
 - **Event handlers stay every element's**, as `DOMAttributes` has them.
 - **An attribute no interface types**, one React DOM's table alone has,
   stays every element's.
