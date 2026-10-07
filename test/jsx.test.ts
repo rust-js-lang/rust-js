@@ -699,6 +699,38 @@ thread_local! {
   }
 });
 
+// A context's `Consumer`, as @types/react has it, `<THEME.Consumer>`, of a
+// function of its value, its children; and `createPortal`'s `ReactPortal`,
+// an element, `ReactPortal extends ReactElement`, a component's result by
+// `.element()`.
+test("JSX reads a context by its Consumer, and a portal is a ReactPortal", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::dom::create_portal;
+use react::webapi::HTMLElement;
+use react::{Context, Element, ReactPortal, create_context, jsx};
+thread_local! {
+    pub static THEME: Context<&'static str> = create_context("light");
+}
+pub fn Label() -> Element {
+    jsx! { <THEME.Consumer>{|theme: &&str| jsx! { <b>{*theme}</b> }}</THEME.Consumer> }
+}
+pub fn Away(container: &'static HTMLElement) -> Element {
+    let portal: &ReactPortal = create_portal(jsx! { <i>{"away"}</i> }, container);
+    portal.element()
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("<THEME.Consumer>{(theme) => <b>{theme}</b>}</THEME.Consumer>");
+  expect(jsx).toContain('const portal = createPortal(<i>away</i>, container);\n  return portal;');
+  const { Label, THEME } = await import(join(dir, "lib.jsx"));
+  const { createElement } = await import("react");
+  expect([
+    renderToStaticMarkup(createElement(Label)),
+    renderToStaticMarkup(createElement(THEME, { value: "dark" }, createElement(Label))),
+  ]).toEqual(["<b>light</b>", "<b>dark</b>"]);
+});
+
 // react.dev's Toc gives its `IsInTocContext.Provider` a list of headings: a
 // provider's children are any node, as a component's are.
 test("JSX context providers take any node as children", async () => {
