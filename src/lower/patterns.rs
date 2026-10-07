@@ -523,6 +523,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(place) = self.stable_place(e) {
             return Ok((place, true));
         }
+        // What a binding gives back as it is, `kind_of(&children)` or
+        // `classify(value)`, is its argument's place: the node itself,
+        // matched, and what's bound of it names it.
+        if let ExprKind::Call { fun, ref args, .. } = self.thir[self.strip(e)].kind
+            && let [arg] = args[..]
+            && let Some((def_id, _)) = fn_def(self.thir[fun].ty)
+            && bindings::is_binding(self.tcx, def_id)
+            && matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::This)
+        {
+            let arg = match self.thir[self.strip(arg)].kind {
+                ExprKind::Borrow { arg, .. } => arg,
+                _ => arg,
+            };
+            if let Some(place) = self.stable_place(arg) {
+                return Ok((place, true));
+            }
+        }
         // `&mut x`: the place, which its `ref mut` bindings name, as a `&x`
         // one is; of a temporary, `&mut Some(3)`, a `let` of it (ADR 0099).
         // Of a value JS can't change in place, the `&mut` is a handle on the
@@ -941,7 +958,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: js::Span,
         out: &mut Vec<Stmt>,
     ) {
-        let label = (levels.len() > 1 && else_out.is_some()).then(|| fresh_in(&mut self.labels, "chain"));
+        // An `else` of one statement, `throw ..`, is written at each level a
+        // test fails at, as a person writes it; a longer one is reached
+        // from them all by a label's `break`.
+        let repeated = else_out.as_ref().is_some_and(|e| e.len() == 1);
+        let label = (levels.len() > 1 && else_out.is_some() && !repeated).then(|| fresh_in(&mut self.labels, "chain"));
         let leaves = matches!(
             then_out.last().map(|s| &s.kind),
             Some(StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Break(_) | StmtKind::Continue(_))
@@ -955,13 +976,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let single = levels.len() == 1;
         let mut body = then_out;
         for (before, tests, bindings) in levels.into_iter().rev() {
-            let test = tests
-                .into_iter()
-                .reduce(|a, b| Expr::bin(Op::And, a, b))
-                .unwrap_or_else(|| Expr::bool(true));
+            let test = tests.into_iter().reduce(and).unwrap_or_else(|| Expr::bool(true));
             let mut inner = bindings;
             inner.extend(body);
-            let els = if single { else_out.take() } else { None };
+            let els = match (single, repeated) {
+                (true, _) => else_out.take(),
+                (false, true) => else_out.clone(),
+                (false, false) => None,
+            };
             body = before;
             body.push(StmtKind::If(test, inner, els).at(span));
         }
@@ -1619,5 +1641,29 @@ fn is_literal(value: &Expr) -> bool {
             .iter()
             .all(|p| matches!(p, js::Prop::Field(_, v) if is_literal(v))),
         _ => value.is_constant(),
+    }
+}
+
+/// `a && b`, but `b` alone where it's `typeof x === "string"` after `x !=
+/// null`, which a `typeof` of a string, a number or the like holds of no
+/// `null`: `Some(s)` of an `Option<&Unknown>`, then `Kind::String(t)` of `s`.
+fn and(a: Expr, b: Expr) -> Expr {
+    use js::ExprKind as K;
+    let not_null = |e: &Expr| match &e.kind {
+        K::Binary(Op::LooseNe, x, null) if matches!(null.kind, K::Null) => Some((**x).clone()),
+        _ => None,
+    };
+    let typed = |e: &Expr| match &e.kind {
+        K::Binary(Op::Eq, of, kind) => match (&of.kind, &kind.kind) {
+            (K::Unary(UnaryOp::Typeof, x), K::Str(kind)) if kind != "object" && kind != "undefined" => {
+                Some((**x).clone())
+            }
+            _ => None,
+        },
+        _ => None,
+    };
+    match (not_null(&a), typed(&b)) {
+        (Some(x), Some(y)) if matches!((&x.kind, &y.kind), (K::Var(x), K::Var(y)) if x == y) => b,
+        _ => Expr::bin(Op::And, a, b),
     }
 }

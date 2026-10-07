@@ -128,6 +128,21 @@ pub fn chained_twice(n: i32) -> (i32, u32) {
     (v, calls.get())
 }
 
+/// An `else` of more than one statement, reached from each level by a label.
+pub fn chained_long_else(n: i32) -> i32 {
+    let calls = Cell::new(0);
+    let counted = |m: i32| {
+        calls.set(calls.get() + 1);
+        half(m)
+    };
+    if let Some(h) = half(n) && let Some(q) = counted(h) && q > 1 {
+        q
+    } else {
+        calls.set(calls.get() + 10);
+        -(calls.get() as i32)
+    }
+}
+
 /// Without an `else`, and binding a tuple.
 pub fn chained_statement(n: i32) -> i32 {
     let mut total = 0;
