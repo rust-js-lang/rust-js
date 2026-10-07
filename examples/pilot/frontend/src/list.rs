@@ -4,7 +4,7 @@
 use crate::api::{self, Failure};
 use js::spawn;
 use models::Contact;
-use react::event::Change;
+use react::event::ChangeEvent;
 use react::{Element, jsx, use_effect, use_state};
 use webapi::abort_controller;
 
@@ -69,7 +69,7 @@ pub fn ContactList() -> Element {
                 placeholder="Search"
                 aria-label="Search"
                 value={query.clone()}
-                onChange={move |e: &Change<_>| set_query.set(e.value())} />
+                onChange={move |e: &ChangeEvent<_>| set_query.set(e.value())} />
             {results}
         </section>
     }

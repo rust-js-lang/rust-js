@@ -102,7 +102,7 @@ pub(super) fn module(
 }
 
 /// An item's type parameters bound by a trait that says what it is to
-/// TypeScript, each with the trait: `(0, Node)` of `fn Tag<C: Node>`.
+/// TypeScript, each with the trait: `(0, ReactNode)` of `fn Tag<C: ReactNode>`.
 fn erasures(tcx: TyCtxt<'_>, def_id: DefId) -> Vec<(u32, DefId)> {
     (tcx.clauses_of(def_id).clauses.iter())
         .filter_map(|(clause, _)| clause.as_trait_clause())
@@ -167,7 +167,7 @@ struct Declarations<'a, 'tcx> {
     /// declaration, `None` while it's being made, as a payload names it.
     foreign: BTreeMap<String, Option<Value>>,
     /// The type parameters of the item being declared that are a type of
-    /// TypeScript's, by index: `C: Node`'s `ReactNode`.
+    /// TypeScript's, by index: `C: ReactNode`'s `ReactNode`.
     erased: HashMap<u32, Value>,
 }
 
@@ -184,7 +184,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
     }
 
     /// An item's type parameters that are a type of TypeScript's, by index,
-    /// as the trait each is bound by says (`#[rust_js::types]`): `C: Node`
+    /// as the trait each is bound by says (`#[rust_js::types]`): `C: ReactNode`
     /// is a `ReactNode`, as a person writes `children: ReactNode`.
     fn erased(&mut self, def_id: DefId) -> HashMap<u32, Value> {
         let mut erased = HashMap::new();
@@ -496,7 +496,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 None => reference(param.name.as_str(), Vec::new()),
             },
             // A function of what Rust says it takes and gives:
-            // `dyn Fn(&event::Mouse)` is `(event: MouseEvent<Element>) => void`.
+            // `dyn Fn(&event::MouseEvent)` is `(event: MouseEvent<Element>) => void`.
             ty::FnPtr(..) => {
                 let sig = ty.fn_sig(tcx).skip_binder();
                 self.function_type(sig.inputs(), sig.output())
@@ -546,7 +546,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 if is_rest(tcx, ty) {
                     return reference("Record", vec![keyword("string"), keyword("unknown")]);
                 }
-                // A binding's, as it says it's typed: React's `Memo<P>`,
+                // A binding's, as it says it's typed: React's `MemoExoticComponent<P>`,
                 // `react#NamedExoticComponent`, is `NamedExoticComponent<P>`,
                 // and `react#AnchorHTMLAttributes<HTMLAnchorElement>` that.
                 if let Some(declared) = written_types(tcx, did) {

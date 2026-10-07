@@ -244,7 +244,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// An update's derived `Default` base, `..Default::default()`, of
     /// `fields`: each one's default, but none for a field the update gives
-    /// where making it does nothing, as a `Node`'s does (ADR 0201). And
+    /// where making it does nothing, as a `ReactNode`'s does (ADR 0201). And
     /// whether one the update gives is made still, for its effects.
     fn update_default(
         &mut self,
@@ -272,7 +272,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok((props, kept))
     }
 
-    /// Is `ty` a type parameter this function bounds by react's `Node`? Each
+    /// Is `ty` a type parameter this function bounds by react's `ReactNode`? Each
     /// type that is one is std's or React's, whose default does nothing.
     fn is_node_param(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Param(_))

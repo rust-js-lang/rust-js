@@ -8,13 +8,13 @@ use super::*;
 /// `children`, rendered into `container`, somewhere else in the DOM. Events
 /// still bubble through the React tree.
 #[cfg_attr(rust_js, rust_js::link_name = "react-dom#createPortal")]
-pub fn create_portal(children: impl Node, container: &webapi::Element) -> Element {
+pub fn create_portal(children: impl ReactNode, container: &webapi::Element) -> Element {
     unreachable!()
 }
 
 /// `createPortal(children, container, key)`.
 #[cfg_attr(rust_js, rust_js::link_name = "react-dom#createPortal")]
-pub fn create_portal_with_key(children: impl Node, container: &webapi::Element, key: impl Key) -> Element {
+pub fn create_portal_with_key(children: impl ReactNode, container: &webapi::Element, key: impl Key) -> Element {
     unreachable!()
 }
 
@@ -263,7 +263,7 @@ pub mod client {
     impl Root {
         /// Show `children` in the root's element, replacing what was there.
         #[cfg_attr(rust_js, rust_js::link_name = "render")]
-        pub fn render(&self, children: impl Node) {
+        pub fn render(&self, children: impl ReactNode) {
             unreachable!()
         }
 
@@ -302,13 +302,13 @@ pub mod client {
     /// [`hydrateRoot`](https://react.dev/reference/react-dom/client/hydrateRoot):
     /// attach React to HTML the server rendered from `children`.
     #[cfg_attr(rust_js, rust_js::link_name = "react-dom/client#hydrateRoot")]
-    pub fn hydrate_root(container: &webapi::Element, children: impl Node) -> &'static Root {
+    pub fn hydrate_root(container: &webapi::Element, children: impl ReactNode) -> &'static Root {
         unreachable!()
     }
 
     /// `hydrateRoot(container, children, options)`.
     #[cfg_attr(rust_js, rust_js::link_name = "react-dom/client#hydrateRoot")]
-    pub fn hydrate_root_with(container: &webapi::Element, children: impl Node, options: RootOptions) -> &'static Root {
+    pub fn hydrate_root_with(container: &webapi::Element, children: impl ReactNode, options: RootOptions) -> &'static Root {
         unreachable!()
     }
 }
@@ -332,24 +332,24 @@ pub mod server {
     /// HTML that [`client::hydrate_root`] can take over. A suspending
     /// component gets its fallback.
     #[cfg_attr(rust_js, rust_js::link_name = "react-dom/server#renderToString")]
-    pub fn render_to_string(children: impl Node) -> String {
+    pub fn render_to_string(children: impl ReactNode) -> String {
         unreachable!()
     }
 
     #[cfg_attr(rust_js, rust_js::link_name = "react-dom/server#renderToString")]
-    pub fn render_to_string_with(children: impl Node, options: StringOptions) -> String {
+    pub fn render_to_string_with(children: impl ReactNode, options: StringOptions) -> String {
         unreachable!()
     }
 
     /// [`renderToStaticMarkup`](https://react.dev/reference/react-dom/server/renderToStaticMarkup):
     /// HTML that won't be hydrated.
     #[cfg_attr(rust_js, rust_js::link_name = "react-dom/server#renderToStaticMarkup")]
-    pub fn render_to_static_markup(children: impl Node) -> String {
+    pub fn render_to_static_markup(children: impl ReactNode) -> String {
         unreachable!()
     }
 
     #[cfg_attr(rust_js, rust_js::link_name = "react-dom/server#renderToStaticMarkup")]
-    pub fn render_to_static_markup_with(children: impl Node, options: StringOptions) -> String {
+    pub fn render_to_static_markup_with(children: impl ReactNode, options: StringOptions) -> String {
         unreachable!()
     }
 
@@ -380,9 +380,9 @@ pub mod server {
     }
 
     /// What [`render_to_readable_stream`] gives: a stream of the page's HTML.
-    pub struct RenderStream(PhantomData<JsObject>);
+    pub struct ReactDOMServerReadableStream(PhantomData<JsObject>);
 
-    impl Deref for RenderStream {
+    impl Deref for ReactDOMServerReadableStream {
         type Target = webapi::ReadableStream;
 
         fn deref(&self) -> &webapi::ReadableStream {
@@ -391,7 +391,7 @@ pub mod server {
         }
     }
 
-    impl RenderStream {
+    impl ReactDOMServerReadableStream {
         /// Resolves once everything, suspended parts too, is rendered.
         #[cfg_attr(rust_js, rust_js::link_name = "get allReady")]
         pub fn all_ready(&self) -> Promise<()> {
@@ -403,7 +403,7 @@ pub mod server {
     /// a Web stream of the page's HTML, sent as it's ready. It rejects if the
     /// page's shell fails.
     #[cfg_attr(rust_js, rust_js::link_name = "react-dom/server#renderToReadableStream")]
-    pub fn render_to_readable_stream(children: impl Node, options: StreamOptions) -> Promise<&'static RenderStream> {
+    pub fn render_to_readable_stream(children: impl ReactNode, options: StreamOptions) -> Promise<&'static ReactDOMServerReadableStream> {
         unreachable!()
     }
 
@@ -411,7 +411,7 @@ pub mod server {
     /// as a Web stream, a page [`prerender`] postponed.
     #[cfg(react = "19.2")]
     #[cfg_attr(rust_js, rust_js::link_name = "react-dom/server#resume")]
-    pub fn resume(children: impl Node, postponed: &Postponed, options: StreamOptions) -> Promise<&'static RenderStream> {
+    pub fn resume(children: impl ReactNode, postponed: &PostponedState, options: StreamOptions) -> Promise<&'static ReactDOMServerReadableStream> {
         unreachable!()
     }
 
@@ -443,7 +443,7 @@ pub mod server {
     pub struct PipeableStream(PhantomData<JsObject>);
 
     impl PipeableStream {
-        /// Send the HTML to a Node `Writable`, like an HTTP response.
+        /// Send the HTML to a ReactNode `Writable`, like an HTTP response.
         #[cfg_attr(rust_js, rust_js::link_name = "pipe")]
         pub fn pipe<W>(&self, destination: &W) {
             unreachable!()
@@ -459,7 +459,7 @@ pub mod server {
     /// [`renderToPipeableStream`](https://react.dev/reference/react-dom/server/renderToPipeableStream):
     /// the page's HTML, for Node's streams.
     #[cfg_attr(rust_js, rust_js::link_name = "react-dom/server#renderToPipeableStream")]
-    pub fn render_to_pipeable_stream(children: impl Node, options: PipeOptions) -> &'static PipeableStream {
+    pub fn render_to_pipeable_stream(children: impl ReactNode, options: PipeOptions) -> &'static PipeableStream {
         unreachable!()
     }
 
@@ -467,12 +467,12 @@ pub mod server {
     /// finish, for Node's streams, a page [`prerender`] postponed.
     #[cfg(react = "19.2")]
     #[cfg_attr(rust_js, rust_js::link_name = "react-dom/server#resumeToPipeableStream")]
-    pub fn resume_to_pipeable_stream(children: impl Node, postponed: &Postponed, options: PipeOptions) -> Promise<&'static PipeableStream> {
+    pub fn resume_to_pipeable_stream(children: impl ReactNode, postponed: &PostponedState, options: PipeOptions) -> Promise<&'static PipeableStream> {
         unreachable!()
     }
 
     /// What a prerender left for later: JSON, to keep until the request.
-    pub struct Postponed(PhantomData<JsObject>);
+    pub struct PostponedState(PhantomData<JsObject>);
 }
 
 // ── react-dom/static ────────────────────────────────────────────────────
@@ -481,18 +481,18 @@ pub mod server {
 /// rendering a whole page ahead of time, waiting for all of it.
 pub mod prerender {
     #[cfg(react = "19.0")]
-    use super::server::{Postponed, StreamOptions};
+    use super::server::{PostponedState, StreamOptions};
     #[cfg(react = "19.0")]
     use super::*;
 
     /// What a prerender gives: the HTML, and what it left for later.
     #[cfg(react = "19.0")]
-    pub struct Prerendered(PhantomData<JsObject>);
+    pub struct PrerenderResult(PhantomData<JsObject>);
 
     #[cfg(react = "19.0")]
-    impl Prerendered {
+    impl PrerenderResult {
         /// The HTML: a Web stream, or, from the `*_to_node_stream`
-        /// functions, a Node `Readable`.
+        /// functions, a ReactNode `Readable`.
         #[cfg_attr(rust_js, rust_js::link_name = "get prelude")]
         pub fn prelude(&self) -> &'static webapi::ReadableStream {
             unreachable!()
@@ -500,7 +500,7 @@ pub mod prerender {
 
         /// What [`server::resume`] finishes, if anything was postponed.
         #[cfg_attr(rust_js, rust_js::link_name = "get postponed")]
-        pub fn postponed(&self) -> Option<&'static Postponed> {
+        pub fn postponed(&self) -> Option<&'static PostponedState> {
             unreachable!()
         }
     }
@@ -509,7 +509,7 @@ pub mod prerender {
     /// with Web streams.
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "react-dom/static#prerender")]
-    pub fn prerender(children: impl Node, options: StreamOptions) -> Promise<&'static Prerendered> {
+    pub fn prerender(children: impl ReactNode, options: StreamOptions) -> Promise<&'static PrerenderResult> {
         unreachable!()
     }
 
@@ -517,7 +517,7 @@ pub mod prerender {
     /// with Node's streams.
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "react-dom/static#prerenderToNodeStream")]
-    pub fn prerender_to_node_stream(children: impl Node, options: StreamOptions) -> Promise<&'static Prerendered> {
+    pub fn prerender_to_node_stream(children: impl ReactNode, options: StreamOptions) -> Promise<&'static PrerenderResult> {
         unreachable!()
     }
 
@@ -525,7 +525,7 @@ pub mod prerender {
     /// go on with a prerender that was postponed.
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "react-dom/static#resumeAndPrerender")]
-    pub fn resume_and_prerender(children: impl Node, postponed: &Postponed, options: StreamOptions) -> Promise<&'static Prerendered> {
+    pub fn resume_and_prerender(children: impl ReactNode, postponed: &PostponedState, options: StreamOptions) -> Promise<&'static PrerenderResult> {
         unreachable!()
     }
 
@@ -533,10 +533,10 @@ pub mod prerender {
     #[cfg(react = "19.0")]
     #[cfg_attr(rust_js, rust_js::link_name = "react-dom/static#resumeAndPrerenderToNodeStream")]
     pub fn resume_and_prerender_to_node_stream(
-        children: impl Node,
-        postponed: &Postponed,
+        children: impl ReactNode,
+        postponed: &PostponedState,
         options: StreamOptions,
-    ) -> Promise<&'static Prerendered> {
+    ) -> Promise<&'static PrerenderResult> {
         unreachable!()
     }
 }

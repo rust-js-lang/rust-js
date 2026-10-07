@@ -1,11 +1,11 @@
 //! [React's events](https://react.dev/reference/react-dom/components/common#react-event-object),
 //! which wrap the DOM's. Each derefs to the one it extends, as React's do:
-//! a [`Pointer`] is a [`Mouse`], which is a [`Ui`], which is an [`Event`].
+//! a [`PointerEvent`] is a [`MouseEvent`], which is a [`UIEvent`], which is an [`SyntheticEvent`].
 //!
-//! Each is of an element, `Mouse<T = webapi::Element>`, as React's
+//! Each is of an element, `MouseEvent<T = webapi::Element>`, as React's
 //! `MouseEvent<T = Element>` is: a `<button>`'s handler gets a
-//! `Mouse<webapi::HtmlButtonElement>`, whose `current_target` is the button
-//! (ADR 0224). A handler of any element's event is `Mouse::widen`ed, and an
+//! `MouseEvent<webapi::HtmlButtonElement>`, whose `current_target` is the button
+//! (ADR 0224). A handler of any element's event is `MouseEvent::widen`ed, and an
 //! event `upcast` to any element's.
 
 use core::marker::PhantomData;
@@ -17,9 +17,9 @@ use js::JsObject;
 /// what every handler gets. To TypeScript, @types/react's of the same
 /// name, but this one's, `SyntheticEvent`.
 #[cfg_attr(rust_js, rust_js::types = "react#SyntheticEvent<T>")]
-pub struct Event<T = webapi::Element>(PhantomData<JsObject>, PhantomData<T>);
+pub struct SyntheticEvent<T = webapi::Element>(PhantomData<JsObject>, PhantomData<T>);
 
-impl<T> Event<T> {
+impl<T> SyntheticEvent<T> {
     /// Stop the browser's default action, like submitting a form.
     #[cfg_attr(rust_js, rust_js::link_name = "preventDefault")]
     pub fn prevent_default(&self) {
@@ -58,7 +58,7 @@ macro_rules! fields {
     };
 }
 
-fields!(Event {
+fields!(SyntheticEvent {
     bubbles: bool = "bubbles";
     cancelable: bool = "cancelable";
     /// The element whose handler this is: a `<button>`'s is a `HtmlButtonElement`.
@@ -83,7 +83,7 @@ macro_rules! widen {
     ($name:ident) => {
         impl $name {
             /// A handler of any element's event, where an element's is wanted:
-            /// `<button onClick={event::Mouse::widen(on_click)}>`. One that takes
+            /// `<button onClick={event::MouseEvent::widen(on_click)}>`. One that takes
             /// any element's event takes a button's.
             #[cfg_attr(rust_js, rust_js::link_name = "this")]
             pub fn widen<T: webapi::IsA<webapi::Element>>(this: Box<dyn Fn(&$name)>) -> Box<dyn Fn(&$name<T>)> {
@@ -92,7 +92,7 @@ macro_rules! widen {
         }
 
         impl<T: 'static> $name<T> {
-            /// An async handler, `event::Mouse::spawn(async move |e| { .. })`:
+            /// An async handler, `event::MouseEvent::spawn(async move |e| { .. })`:
             /// each event runs it, without waiting for it, as `js::spawn` runs a
             /// future. In JS it's the async function itself, `async (e) => { .. }`,
             /// whose promise React ignores, as it does what any handler returns.
@@ -114,7 +114,7 @@ macro_rules! widen {
     };
 }
 
-widen!(Event);
+widen!(SyntheticEvent);
 
 /// Declares an event type that extends another, and what it is to TypeScript.
 macro_rules! events {
@@ -141,13 +141,13 @@ macro_rules! events {
 
 events! {
     /// A [UI event](https://developer.mozilla.org/docs/Web/API/UIEvent), like a scroll.
-    Ui as "react#UIEvent<T>": Event {
+    UIEvent as "react#UIEvent<T>": SyntheticEvent {
         detail: i32 = "detail";
         view: &'static webapi::Window = "view";
     }
 
     /// A click, or another [mouse event](https://developer.mozilla.org/docs/Web/API/MouseEvent).
-    Mouse as "react#MouseEvent<T>": Ui {
+    MouseEvent as "react#MouseEvent<T>": UIEvent {
         alt_key: bool = "altKey";
         /// Which button: 0 is the main one.
         button: i32 = "button";
@@ -168,7 +168,7 @@ events! {
 
     /// A [pointer event](https://developer.mozilla.org/docs/Web/API/PointerEvent):
     /// mouse, pen or touch.
-    Pointer as "react#PointerEvent<T>": Mouse {
+    PointerEvent as "react#PointerEvent<T>": MouseEvent {
         height: f64 = "height";
         is_primary: bool = "isPrimary";
         pointer_id: i32 = "pointerId";
@@ -184,26 +184,26 @@ events! {
 
     /// A [drag event](https://developer.mozilla.org/docs/Web/API/DragEvent).
     /// Call `prevent_default` in `on_drag_over` to allow a drop.
-    Drag as "react#DragEvent<T>": Mouse {
+    DragEvent as "react#DragEvent<T>": MouseEvent {
         data_transfer: &'static webapi::DataTransfer = "dataTransfer";
     }
 
     /// A [wheel event](https://developer.mozilla.org/docs/Web/API/WheelEvent).
-    Wheel as "react#WheelEvent<T>": Mouse {
+    WheelEvent as "react#WheelEvent<T>": MouseEvent {
         delta_mode: u32 = "deltaMode";
         delta_x: f64 = "deltaX";
         delta_y: f64 = "deltaY";
         delta_z: f64 = "deltaZ";
     }
 
-    /// Focus coming or going: `on_focus` and `on_blur`, which bubble in React.
-    Focus as "react#FocusEvent<T>": Ui {
+    /// FocusEvent coming or going: `on_focus` and `on_blur`, which bubble in React.
+    FocusEvent as "react#FocusEvent<T>": UIEvent {
         /// Where focus went, or came from.
         related_target: Option<&'static webapi::Element> = "relatedTarget";
     }
 
     /// A key pressed or let go.
-    Keyboard as "react#KeyboardEvent<T>": Ui {
+    KeyboardEvent as "react#KeyboardEvent<T>": UIEvent {
         alt_key: bool = "altKey";
         /// Which key it is on the keyboard, like `"KeyA"`.
         code: String = "code";
@@ -218,7 +218,7 @@ events! {
     }
 
     /// A [touch event](https://developer.mozilla.org/docs/Web/API/TouchEvent).
-    Touch as "react#TouchEvent<T>": Ui {
+    TouchEvent as "react#TouchEvent<T>": UIEvent {
         alt_key: bool = "altKey";
         changed_touches: &'static webapi::TouchList = "changedTouches";
         ctrl_key: bool = "ctrlKey";
@@ -229,43 +229,43 @@ events! {
     }
 
     /// A CSS [animation event](https://developer.mozilla.org/docs/Web/API/AnimationEvent).
-    Animation as "react#AnimationEvent<T>": Event {
+    AnimationEvent as "react#AnimationEvent<T>": SyntheticEvent {
         animation_name: String = "animationName";
         elapsed_time: f64 = "elapsedTime";
         pseudo_element: String = "pseudoElement";
     }
 
     /// A CSS [transition event](https://developer.mozilla.org/docs/Web/API/TransitionEvent).
-    Transition as "react#TransitionEvent<T>": Event {
+    TransitionEvent as "react#TransitionEvent<T>": SyntheticEvent {
         elapsed_time: f64 = "elapsedTime";
         property_name: String = "propertyName";
         pseudo_element: String = "pseudoElement";
     }
 
     /// Copying, cutting or pasting.
-    Clipboard as "react#ClipboardEvent<T>": Event {
+    ClipboardEvent as "react#ClipboardEvent<T>": SyntheticEvent {
         clipboard_data: &'static webapi::DataTransfer = "clipboardData";
     }
 
     /// Text being composed with an input method.
-    Composition as "react#CompositionEvent<T>": Event {
+    CompositionEvent as "react#CompositionEvent<T>": SyntheticEvent {
         data: String = "data";
     }
 
     /// `on_before_input`: text about to be typed.
-    Input as "react#InputEvent<T>": Event {
+    InputEvent as "react#InputEvent<T>": SyntheticEvent {
         data: Option<String> = "data";
     }
 
     /// A popover or `<details>` opening or closing: `on_toggle`, `on_before_toggle`.
-    Toggle as "react#ToggleEvent<T>": Event {
+    ToggleEvent as "react#ToggleEvent<T>": SyntheticEvent {
         /// `"open"` or `"closed"`.
         new_state: String = "newState";
         old_state: String = "oldState";
     }
 
     /// An `<input>`, `<select>` or `<textarea>` changing: `on_change`, `on_input`.
-    Change as "react#ChangeEvent<T>": Event {
+    ChangeEvent as "react#ChangeEvent<T>": SyntheticEvent {
         /// What's in it now: `e.target.value`.
         value: String = "target.value";
         /// Whether a checkbox is checked now: `e.target.checked`.
@@ -273,7 +273,7 @@ events! {
     }
 }
 
-impl<T> Mouse<T> {
+impl<T> MouseEvent<T> {
     /// Whether a modifier key, like `"Shift"` or `"CapsLock"`, is down.
     #[cfg_attr(rust_js, rust_js::link_name = "getModifierState")]
     pub fn get_modifier_state(&self, key: &str) -> bool {
@@ -281,7 +281,7 @@ impl<T> Mouse<T> {
     }
 }
 
-impl<T> Keyboard<T> {
+impl<T> KeyboardEvent<T> {
     #[cfg_attr(rust_js, rust_js::link_name = "getModifierState")]
     pub fn get_modifier_state(&self, key: &str) -> bool {
         unreachable!()

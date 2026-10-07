@@ -46,7 +46,7 @@ operations remain ordinary Rust APIs.
 
 Attributes use React's spelling: `className`, `onPointerDownCapture`,
 `aria-label`, and so on. Handlers receive typed events such as
-`event::Mouse` and `event::Keyboard`. A `ref` accepts a ref object or a
+`event::MouseEvent` and `event::KeyboardEvent`. A `ref` accepts a ref object or a
 callback; `action` and `formAction` accept URLs, or on React 19+, functions
 and action dispatches. No alternate prop names are needed.
 
@@ -80,7 +80,7 @@ level. In Rust that's a `thread_local!`, which rust-js compiles to just that:
 ```rust
 thread_local! {
     static THEME: Context<&'static str> = create_context("light");
-    static FAST_CARD: Memo<CardProps> = memo(Card);
+    static FAST_CARD: MemoExoticComponent<CardProps> = memo(Card);
 }
 
 pub fn Toolbar() -> Element {

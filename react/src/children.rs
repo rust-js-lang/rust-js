@@ -4,7 +4,7 @@
 
 use js::JsObject;
 
-use super::{Node, ReactElement, sealed};
+use super::{ReactNode, ReactElement, sealed};
 
 /// A child as [`to_array`] gives one: text, a number, an element, or another
 /// node, a portal say, told apart as an untagged enum is (ADR 0214).
@@ -17,7 +17,7 @@ pub enum Child<'a> {
     Other(&'a JsObject),
 }
 
-impl Node for Child<'_> {}
+impl ReactNode for Child<'_> {}
 impl sealed::Sealed for Child<'_> {}
 
 /// [`Children.toArray(children)`](https://react.dev/reference/react/Children#children-toarray):
@@ -25,7 +25,7 @@ impl sealed::Sealed for Child<'_> {}
 /// out, each keyed.
 #[cfg_attr(rust_js, rust_js::link_name = "react#Children.toArray")]
 #[allow(unused_variables)]
-pub fn to_array<C: Node>(children: &C) -> Vec<Child<'_>> {
+pub fn to_array<C: ReactNode>(children: &C) -> Vec<Child<'_>> {
     unreachable!()
 }
 
@@ -33,6 +33,6 @@ pub fn to_array<C: Node>(children: &C) -> Vec<Child<'_>> {
 /// `f` of each child, as [`to_array`] has them.
 #[cfg_attr(rust_js, rust_js::link_name = "react#Children.forEach")]
 #[allow(unused_variables)]
-pub fn for_each<C: Node>(children: &C, f: impl FnMut(Child<'_>)) {
+pub fn for_each<C: ReactNode>(children: &C, f: impl FnMut(Child<'_>)) {
     unreachable!()
 }

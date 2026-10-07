@@ -353,7 +353,7 @@ pub(super) fn has_flatten(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && adt.non_enum_variant().fields.iter().any(|f| is_flatten(tcx, f)))
 }
 
-/// Whether `id` is react's `Node`, what React renders as a child: a
+/// Whether `id` is react's `ReactNode`, what React renders as a child: a
 /// sealed trait, its types std's and React's (ADR 0201).
 pub(super) fn is_jsx_node(tcx: TyCtxt<'_>, id: DefId) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("jsx_node")];

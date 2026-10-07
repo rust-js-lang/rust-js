@@ -3,8 +3,8 @@
 
 use std::rc::Rc;
 
-use react::event::Keyboard;
-use react::{Element, Ref, jsx, use_effect, use_ref};
+use react::event::KeyboardEvent;
+use react::{Element, RefObject, jsx, use_effect, use_ref};
 
 use crate::codemirror::{EditorState, EditorView, destroy, open_view, set_theme, show};
 use crate::dark_mode::use_dark_mode;
@@ -13,7 +13,7 @@ pub struct EditorProps {
     /// What it shows: a file's state, with its text and undo history.
     pub state: &'static EditorState,
     /// Where a parent that reads the editor gets its view.
-    pub view: Option<Ref<Option<&'static EditorView>>>,
+    pub view: Option<RefObject<Option<&'static EditorView>>>,
     /// What ⌘/Ctrl-Enter does.
     pub on_submit: Option<Rc<dyn Fn()>>,
 }
@@ -54,7 +54,7 @@ pub fn Editor(EditorProps { state, view, on_submit }: EditorProps) -> Element {
             className="min-w-0 overflow-hidden [&_.cm-editor]:h-full [&_.cm-editor]:text-[13px]"
             ref={parent}
             // Before CodeMirror sees it, since its own Mod-Enter inserts a line.
-            onKeyDownCapture={move |e: &Keyboard<_>| {
+            onKeyDownCapture={move |e: &KeyboardEvent<_>| {
                 if let Some(submit) = &on_submit
                 && (e.meta_key() || e.ctrl_key())
                 && e.key() == "Enter"

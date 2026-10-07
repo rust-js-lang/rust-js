@@ -123,36 +123,36 @@ macro_rules! jsx {
 /// `None` is nothing. Each is the JS value React expects already, so nothing
 /// converts them. Only these are: what each one's `Default` makes is
 /// std's or React's, which rust-js knows does nothing else. To TypeScript,
-/// a type parameter of one is a `ReactNode`: `children: C` of a `C: Node`
+/// a type parameter of one is a `ReactNode`: `children: C` of a `C: ReactNode`
 /// is `children: ReactNode`.
 #[cfg_attr(rust_js, rust_js::jsx_node)]
 #[cfg_attr(rust_js, rust_js::types = "react#ReactNode<>")]
-pub trait Node: sealed::Sealed {}
+pub trait ReactNode: sealed::Sealed {}
 
 mod sealed {
     pub trait Sealed {}
 }
 
-impl Node for Element {}
-impl Node for &str {}
-impl Node for String {}
-impl Node for () {}
-impl Node for bool {}
-impl<T: Node + ?Sized> Node for &T {}
-impl<T: Node> Node for Option<T> {}
-impl<T: Node> Node for Vec<T> {}
-impl<T: Node> Node for [T] {}
+impl ReactNode for Element {}
+impl ReactNode for &str {}
+impl ReactNode for String {}
+impl ReactNode for () {}
+impl ReactNode for bool {}
+impl<T: ReactNode + ?Sized> ReactNode for &T {}
+impl<T: ReactNode> ReactNode for Option<T> {}
+impl<T: ReactNode> ReactNode for Vec<T> {}
+impl<T: ReactNode> ReactNode for [T] {}
 /// What JS gives untyped, a child's `props.children` say, as JSX renders it.
-impl Node for Unknown {}
+impl ReactNode for Unknown {}
 impl sealed::Sealed for Element {}
 impl sealed::Sealed for &str {}
 impl sealed::Sealed for String {}
 impl sealed::Sealed for () {}
 impl sealed::Sealed for bool {}
-impl<T: Node + ?Sized> sealed::Sealed for &T {}
-impl<T: Node> sealed::Sealed for Option<T> {}
-impl<T: Node> sealed::Sealed for Vec<T> {}
-impl<T: Node> sealed::Sealed for [T] {}
+impl<T: ReactNode + ?Sized> sealed::Sealed for &T {}
+impl<T: ReactNode> sealed::Sealed for Option<T> {}
+impl<T: ReactNode> sealed::Sealed for Vec<T> {}
+impl<T: ReactNode> sealed::Sealed for [T] {}
 impl sealed::Sealed for Unknown {}
 
 /// A node, told apart by what it is, as JSX's `typeof children ===
@@ -160,22 +160,22 @@ impl sealed::Sealed for Unknown {}
 /// text, an element, a list of nodes, as JSX gives several children, or any
 /// other node, of [`kind_of`] (ADR 0214). Each is a node itself.
 #[cfg_attr(rust_js, rust_js::untagged)]
-pub enum NodeKind<'a> {
+pub enum ReactNodeKind<'a> {
     Text(&'a str),
     Element(&'a ReactElement),
-    List(&'a [NodeKind<'a>]),
+    List(&'a [ReactNodeKind<'a>]),
     #[cfg_attr(rust_js, rust_js::otherwise)]
     Other(&'a JsObject),
 }
 
-impl Node for NodeKind<'_> {}
-impl sealed::Sealed for NodeKind<'_> {}
+impl ReactNode for ReactNodeKind<'_> {}
+impl sealed::Sealed for ReactNodeKind<'_> {}
 
 /// What `node` is, its text, an element or another node: the node itself,
-/// matched, `if let NodeKind::Text(text) = kind_of(&children)`.
+/// matched, `if let ReactNodeKind::Text(text) = kind_of(&children)`.
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
 #[allow(unused_variables)]
-pub fn kind_of<C: Node>(this: &C) -> NodeKind<'_> {
+pub fn kind_of<C: ReactNode>(this: &C) -> ReactNodeKind<'_> {
     unreachable!()
 }
 
@@ -213,7 +213,7 @@ impl ReactElement {
     }
 }
 
-impl Node for ReactElement {}
+impl ReactNode for ReactElement {}
 impl sealed::Sealed for ReactElement {}
 
 /// [`cloneElement`](https://react.dev/reference/react/cloneElement):
@@ -227,15 +227,15 @@ pub fn clone_element<P>(element: &ReactElement, props: P) -> &'static ReactEleme
 }
 
 macro_rules! numbers {
-    ($($t:ty),*) => { $(impl Node for $t {} impl sealed::Sealed for $t {} impl Value for $t {})* };
+    ($($t:ty),*) => { $(impl ReactNode for $t {} impl sealed::Sealed for $t {} impl Value for $t {})* };
 }
 numbers!(i8, i16, i32, u8, u16, u32, usize, f64);
 
 macro_rules! tuples {
     ($($name:ident)+) => {
-        impl<$($name: Node),+> Node for ($($name,)+) {}
-        impl<$($name: Node),+> sealed::Sealed for ($($name,)+) {}
-        impl<$($name),+> Deps for ($($name,)+) {}
+        impl<$($name: ReactNode),+> ReactNode for ($($name,)+) {}
+        impl<$($name: ReactNode),+> sealed::Sealed for ($($name,)+) {}
+        impl<$($name),+> DependencyList for ($($name,)+) {}
     };
 }
 tuples!(A);
@@ -262,13 +262,13 @@ impl Value for bool {}
 impl<T: Value + ?Sized> Value for &T {}
 impl<T: Value> Value for Option<T> {}
 
-/// What a [`style`](Element::style) can be: a [`Style`], or an `Option` of
+/// What a [`style`](Element::style) can be: a [`CSSProperties`], or an `Option` of
 /// one, which leaves it out when `None`, as a component's optional `style`
 /// prop passed on.
 pub trait StyleValue {}
 
-impl StyleValue for Style {}
-impl StyleValue for Option<Style> {}
+impl StyleValue for CSSProperties {}
+impl StyleValue for Option<CSSProperties> {}
 
 /// What a [`key`](Element::key) can be: a string or a number.
 pub trait Key {}
@@ -281,28 +281,28 @@ impl Key for usize {}
 impl<T: Key + ?Sized> Key for &T {}
 
 /// A [`style`](Element::style) object, `{ color: "red", fontSize: 12 }`:
-/// made by `Style::new()`, then CSS properties by name, `.color("red")`.
+/// made by `CSSProperties::new()`, then CSS properties by name, `.color("red")`.
 /// To TypeScript, React's `CSSProperties`, as a tag's `style` is.
 #[cfg_attr(rust_js, rust_js::types = "react#CSSProperties")]
-pub struct Style(PhantomData<JsObject>);
+pub struct CSSProperties(PhantomData<JsObject>);
 
-impl Style {
+impl CSSProperties {
     #[cfg_attr(rust_js, rust_js::link_name = "{}")]
-    pub fn new() -> Style {
+    pub fn new() -> CSSProperties {
         unreachable!()
     }
 
     /// Another style's properties over these, `{ width, ...customStyles }`,
     /// as react.dev's console box spreads its own; `None` spreads nothing.
     #[cfg_attr(rust_js, rust_js::link_name = "prop ...")]
-    pub fn spread(self, other: impl StyleValue) -> Style {
+    pub fn spread(self, other: impl StyleValue) -> CSSProperties {
         unreachable!()
     }
 
     /// Any property, like a custom one: `.set("--accent", "red")`. The name
     /// is a string literal.
     #[cfg_attr(rust_js, rust_js::link_name = "prop")]
-    pub fn set(self, name: &'static str, value: impl Value) -> Style {
+    pub fn set(self, name: &'static str, value: impl Value) -> CSSProperties {
         unreachable!()
     }
 }
@@ -334,9 +334,9 @@ impl<T> Element<T> {
         unreachable!()
     }
 
-    /// Its children: one [`Node`], or several as a tuple.
+    /// Its children: one [`ReactNode`], or several as a tuple.
     #[cfg_attr(rust_js, rust_js::link_name = "prop children")]
-    pub fn children(self, children: impl Node) -> Element<T> {
+    pub fn children(self, children: impl ReactNode) -> Element<T> {
         unreachable!()
     }
 
@@ -364,8 +364,8 @@ impl<T> Element<T> {
     }
 
     /// [`style`](https://react.dev/reference/react-dom/components/common#applying-css-styles):
-    /// `.style(Style::new().color("red"))` is `style={{ color: "red" }}`,
-    /// and of an `Option<Style>`, none where it's `None`.
+    /// `.style(CSSProperties::new().color("red"))` is `style={{ color: "red" }}`,
+    /// and of an `Option<CSSProperties>`, none where it's `None`.
     #[cfg_attr(rust_js, rust_js::link_name = "prop style")]
     pub fn style(self, style: impl StyleValue) -> Element<T> {
         unreachable!()
@@ -415,7 +415,7 @@ pub trait RefValue<H, M> {}
 pub struct ObjectRef;
 #[doc(hidden)]
 pub struct CallbackRef<C>(PhantomData<C>);
-impl<H> RefValue<H, ObjectRef> for Ref<Option<H>> {}
+impl<H> RefValue<H, ObjectRef> for RefObject<Option<H>> {}
 impl<H: 'static, C: Cleanup, F: Fn(Option<H>) -> C + 'static> RefValue<H, CallbackRef<C>> for F {}
 
 /// A JSX form action is a URL or, on React 19+, a function or action dispatch.
@@ -463,22 +463,22 @@ macro_rules! handle {
 /// what sets it. `let (count, set_count) = use_state(0);` is
 /// `const [count, setCount] = useState(0);`.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useState")]
-pub fn use_state<T>(initial: T) -> (&'static T, SetState<T>) {
+pub fn use_state<T>(initial: T) -> (&'static T, Dispatch<SetStateAction<T>>) {
     unreachable!()
 }
 
 /// `useState(() => initial())`: the first value, computed on the first render only.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useState")]
-pub fn use_state_with<T>(initial: impl Fn() -> T + 'static) -> (&'static T, SetState<T>) {
+pub fn use_state_with<T>(initial: impl Fn() -> T + 'static) -> (&'static T, Dispatch<SetStateAction<T>>) {
     unreachable!()
 }
 
-handle! {
-    /// What [`use_state`] gives to set the state: React's `setCount`.
-    SetState<T>
-}
+/// What [`use_state`]'s setter takes, as @types/react's `SetStateAction<S>`:
+/// a value, `set`, or a function of the previous one, `update`. Its setter
+/// is a `Dispatch<SetStateAction<T>>`, React's `setCount`.
+pub struct SetStateAction<T>(PhantomData<T>);
 
-impl<T> SetState<T> {
+impl<T> Dispatch<SetStateAction<T>> {
     /// `setCount(value)`.
     #[cfg_attr(rust_js, rust_js::link_name = "this()")]
     pub fn set(&self, value: T) {
@@ -596,16 +596,16 @@ pub fn use_context<T>(context: &'static LocalKey<Context<T>>) -> &'static T {
 /// value across renders, without rendering again when it changes. For a DOM
 /// element, start it with `None` and give it to [`Element::ref`].
 #[cfg_attr(rust_js, rust_js::link_name = "react#useRef")]
-pub fn use_ref<T>(initial: T) -> Ref<T> {
+pub fn use_ref<T>(initial: T) -> RefObject<T> {
     unreachable!()
 }
 
 handle! {
     /// What [`use_ref`] gives: `{ current }`.
-    Ref<T>
+    RefObject<T>
 }
 
-impl<T> Ref<T> {
+impl<T> RefObject<T> {
     /// `ref.current`.
     #[cfg_attr(rust_js, rust_js::link_name = "get current")]
     pub fn current(&self) -> T {
@@ -622,7 +622,7 @@ impl<T> Ref<T> {
 /// [`useImperativeHandle`](https://react.dev/reference/react/useImperativeHandle):
 /// what a parent's ref to this component gets, made by `create`.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useImperativeHandle")]
-pub fn use_imperative_handle<H>(r: Ref<Option<H>>, create: impl Fn() -> H + 'static, deps: impl Deps) {
+pub fn use_imperative_handle<H>(r: RefObject<Option<H>>, create: impl Fn() -> H + 'static, deps: impl DependencyList) {
     unreachable!()
 }
 
@@ -630,10 +630,10 @@ pub fn use_imperative_handle<H>(r: Ref<Option<H>>, create: impl Fn() -> H + 'sta
 
 /// What an effect's dependencies are: a tuple of values, `(count, name)` for
 /// `[count, name]`, or `()` for `[]`, when it runs once.
-pub trait Deps {}
+pub trait DependencyList {}
 
-impl Deps for () {}
-impl<T, const N: usize> Deps for [T; N] {}
+impl DependencyList for () {}
+impl<T, const N: usize> DependencyList for [T; N] {}
 
 /// What an effect returns: nothing, or a function that cleans it up.
 pub trait Cleanup {}
@@ -648,7 +648,7 @@ impl<F: FnOnce() + 'static> Cleanup for Option<F> {}
 /// [`useEffect`](https://react.dev/reference/react/useEffect): run `effect`
 /// after a render in which `deps` changed.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useEffect")]
-pub fn use_effect<C: Cleanup>(effect: impl Fn() -> C + 'static, deps: impl Deps) {
+pub fn use_effect<C: Cleanup>(effect: impl Fn() -> C + 'static, deps: impl DependencyList) {
     unreachable!()
 }
 
@@ -661,7 +661,7 @@ pub fn use_effect_on_every_render<C: Cleanup>(effect: impl Fn() -> C + 'static) 
 /// [`useLayoutEffect`](https://react.dev/reference/react/useLayoutEffect):
 /// [`use_effect`], before the browser paints.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useLayoutEffect")]
-pub fn use_layout_effect<C: Cleanup>(effect: impl Fn() -> C + 'static, deps: impl Deps) {
+pub fn use_layout_effect<C: Cleanup>(effect: impl Fn() -> C + 'static, deps: impl DependencyList) {
     unreachable!()
 }
 
@@ -674,7 +674,7 @@ pub fn use_layout_effect_on_every_render<C: Cleanup>(effect: impl Fn() -> C + 's
 /// [`useInsertionEffect`](https://react.dev/reference/react/useInsertionEffect):
 /// before layout effects, for CSS-in-JS libraries to insert styles.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useInsertionEffect")]
-pub fn use_insertion_effect<C: Cleanup>(effect: impl Fn() -> C + 'static, deps: impl Deps) {
+pub fn use_insertion_effect<C: Cleanup>(effect: impl Fn() -> C + 'static, deps: impl DependencyList) {
     unreachable!()
 }
 
@@ -698,36 +698,36 @@ pub fn use_effect_event<F: 'static>(f: F) -> &'static F {
 /// [`useMemo`](https://react.dev/reference/react/useMemo): `f`'s value, computed
 /// again only when `deps` change.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useMemo")]
-pub fn use_memo<T>(f: impl Fn() -> T + 'static, deps: impl Deps) -> &'static T {
+pub fn use_memo<T>(f: impl Fn() -> T + 'static, deps: impl DependencyList) -> &'static T {
     unreachable!()
 }
 
 /// [`useCallback`](https://react.dev/reference/react/useCallback): the same
 /// function across renders, until `deps` change.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useCallback")]
-pub fn use_callback<F: 'static>(f: F, deps: impl Deps) -> &'static F {
+pub fn use_callback<F: 'static>(f: F, deps: impl DependencyList) -> &'static F {
     unreachable!()
 }
 
 /// [`useTransition`](https://react.dev/reference/react/useTransition): whether
 /// a Transition is pending, and what starts one.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useTransition")]
-pub fn use_transition() -> (bool, StartTransition) {
+pub fn use_transition() -> (bool, TransitionStartFunction) {
     unreachable!()
 }
 
 /// What [`use_transition`] gives: React's `startTransition`.
-pub struct StartTransition(PhantomData<JsObject>);
+pub struct TransitionStartFunction(PhantomData<JsObject>);
 
-impl Clone for StartTransition {
+impl Clone for TransitionStartFunction {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl Copy for StartTransition {}
+impl Copy for TransitionStartFunction {}
 
-impl StartTransition {
+impl TransitionStartFunction {
     /// `startTransition(action)`: the updates in `action` render without
     /// blocking the page. From React 19, `action` can be `async`.
     #[cfg_attr(rust_js, rust_js::link_name = "this()")]
@@ -831,20 +831,20 @@ pub fn __omitted<T>() -> T {
 /// uppercase letter, as JSX and Fast Refresh need.
 #[cfg_attr(rust_js, rust_js::link_name = "<*>")]
 #[doc(hidden)]
-pub fn component<P, M>(component: impl Component<P, M>, props: P) -> Element {
+pub fn component<P, M>(component: impl ComponentType<P, M>, props: P) -> Element {
     unreachable!()
 }
 
 /// A JSX component: a function from its props to an [`Element`], or
 /// one with no props, or one made by [`memo`], [`lazy`] or [`forward_ref`].
 /// `M` only tells them apart.
-pub trait Component<P, M> {}
+pub trait ComponentType<P, M> {}
 
 pub struct NoProps;
 pub struct WithProps;
 
-impl<F: Fn() -> Element> Component<(), NoProps> for F {}
-impl<P, F: Fn(P) -> Element> Component<P, WithProps> for F {}
+impl<F: Fn() -> Element> ComponentType<(), NoProps> for F {}
+impl<P, F: Fn(P) -> Element> ComponentType<P, WithProps> for F {}
 
 /// A DOM element's tag as a value, as JSX's `<Comp>` of `const Comp =
 /// "h1"`: a fieldless enum whose variants are named as tags are, `"h1"`,
@@ -856,7 +856,7 @@ pub trait Tag: Copy {}
 pub struct Intrinsic;
 
 /// A tag given its props whole, `<Comp {...rest} />`, as a component is.
-impl<P, T: Tag> Component<P, Intrinsic> for T {}
+impl<P, T: Tag> ComponentType<P, Intrinsic> for T {}
 impl<T: Tag> Tag for &T {}
 
 /// `<Comp>` of a [`Tag`] `Comp`.
@@ -869,14 +869,14 @@ pub fn tag(tag: impl Tag) -> Element {
 /// Children with nothing around them: `<>..</>`.
 #[cfg_attr(rust_js, rust_js::link_name = "<>")]
 #[doc(hidden)]
-pub fn fragment(children: impl Node) -> Element {
+pub fn fragment(children: impl ReactNode) -> Element {
     unreachable!()
 }
 
 /// [`<StrictMode>`](https://react.dev/reference/react/StrictMode).
 #[cfg_attr(rust_js, rust_js::link_name = "<react#StrictMode>")]
 #[doc(hidden)]
-pub fn strict_mode(children: impl Node) -> Element {
+pub fn strict_mode(children: impl ReactNode) -> Element {
     unreachable!()
 }
 
@@ -899,7 +899,7 @@ macro_rules! built_in {
         }
 
         $(#[cfg($cfg)])?
-        impl Node for $name {}
+        impl ReactNode for $name {}
 
         $(#[cfg($cfg)])?
         impl crate::sealed::Sealed for $name {}
@@ -927,7 +927,7 @@ macro_rules! built_in {
 
             /// Its children, which finish the element.
             #[cfg_attr(rust_js, rust_js::link_name = "prop children")]
-            pub fn children(self, children: impl Node) -> Element {
+            pub fn children(self, children: impl ReactNode) -> Element {
                 unreachable!()
             }
         }
@@ -945,7 +945,7 @@ built_in! {
     /// `fallback` until its children stop suspending.
     Suspense = suspense "Suspense" {
         /// What to show while the children load.
-        fallback: impl Node = "fallback";
+        fallback: impl ReactNode = "fallback";
     }
 }
 
@@ -1050,7 +1050,7 @@ impl ViewTransitionInstance {
 //
 //     thread_local! {
 //         static THEME: Context<&'static str> = create_context("light");
-//         static FAST_CARD: Memo<CardProps> = memo(Card);
+//         static FAST_CARD: MemoExoticComponent<CardProps> = memo(Card);
 //     }
 //
 //     const THEME = createContext("light");
@@ -1073,7 +1073,7 @@ pub fn create_context<T>(default: T) -> Context<T> {
 /// Props of `<THEME value={value}>{children}</THEME>` on React 19+,
 /// or `<THEME.Provider value={value}>{children}</THEME.Provider>` on React 18+.
 /// Its children are any node, as a component's are.
-pub struct Provider<T, C> {
+pub struct ProviderProps<T, C> {
     pub value: T,
     pub children: C,
 }
@@ -1081,44 +1081,44 @@ pub struct Provider<T, C> {
 pub struct ProvidesContext;
 
 #[cfg(react = "19.0")]
-impl<T, C: Node> Component<Provider<T, C>, ProvidesContext> for &'static LocalKey<Context<T>> {}
+impl<T, C: ReactNode> ComponentType<ProviderProps<T, C>, ProvidesContext> for &'static LocalKey<Context<T>> {}
 
 /// `THEME.Provider`, a context's provider in every React version:
 /// Used by `<THEME.Provider value={value}>{children}</THEME.Provider>`.
 #[cfg_attr(rust_js, rust_js::link_name = "get Provider")]
 #[doc(hidden)]
-pub fn provider<T>(this: &'static LocalKey<Context<T>>) -> ContextProvider<T> {
+pub fn provider<T>(this: &'static LocalKey<Context<T>>) -> Provider<T> {
     unreachable!()
 }
 
-pub struct ContextProvider<T>(PhantomData<JsObject>, PhantomData<T>);
+pub struct Provider<T>(PhantomData<JsObject>, PhantomData<T>);
 
-impl<T, C: Node> Component<Provider<T, C>, ProvidesContext> for ContextProvider<T> {}
+impl<T, C: ReactNode> ComponentType<ProviderProps<T, C>, ProvidesContext> for Provider<T> {}
 
 /// A component that [`memo`] made: React skips rendering it again while its
 /// props are the same as last time.
 #[cfg_attr(rust_js, rust_js::types = "react#NamedExoticComponent")]
-pub struct Memo<P>(PhantomData<JsObject>, PhantomData<P>);
+pub struct MemoExoticComponent<P>(PhantomData<JsObject>, PhantomData<P>);
 
 /// [`memo`](https://react.dev/reference/react/memo), in a `thread_local!`.
 /// Props are the same when each field is (`Object.is`).
 #[cfg_attr(rust_js, rust_js::link_name = "react#memo")]
-pub fn memo<P, M>(component: impl Component<P, M>) -> Memo<P> {
+pub fn memo<P, M>(component: impl ComponentType<P, M>) -> MemoExoticComponent<P> {
     unreachable!()
 }
 
 /// `memo(component, arePropsEqual)`: the props are the same when `are_equal` says so.
 #[cfg_attr(rust_js, rust_js::link_name = "react#memo")]
-pub fn memo_with<P, M>(component: impl Component<P, M>, are_equal: impl Fn(&P, &P) -> bool + 'static) -> Memo<P> {
+pub fn memo_with<P, M>(component: impl ComponentType<P, M>, are_equal: impl Fn(&P, &P) -> bool + 'static) -> MemoExoticComponent<P> {
     unreachable!()
 }
 
 pub struct Memoized;
 
-impl<P> Component<P, Memoized> for &'static LocalKey<Memo<P>> {}
+impl<P> ComponentType<P, Memoized> for &'static LocalKey<MemoExoticComponent<P>> {}
 
 /// A component [`lazy`] loads the first time it renders.
-pub struct Lazy<P>(PhantomData<JsObject>, PhantomData<P>);
+pub struct LazyExoticComponent<P>(PhantomData<JsObject>, PhantomData<P>);
 
 /// A JS module whose default export is a component taking `P`, as
 /// [`import_module`] loads it.
@@ -1128,7 +1128,7 @@ pub struct Module<P>(PhantomData<JsObject>, PhantomData<P>);
 /// `lazy(|| import_module("./Chart.jsx"))`. It suspends while it loads, so
 /// render it inside `<Suspense fallback={...}>...</Suspense>`.
 #[cfg_attr(rust_js, rust_js::link_name = "react#lazy")]
-pub fn lazy<P>(load: impl Fn() -> Promise<Module<P>> + 'static) -> Lazy<P> {
+pub fn lazy<P>(load: impl Fn() -> Promise<Module<P>> + 'static) -> LazyExoticComponent<P> {
     unreachable!()
 }
 
@@ -1141,22 +1141,22 @@ pub fn import_module<P>(specifier: &'static str) -> Promise<Module<P>> {
 
 pub struct Loaded;
 
-impl<P> Component<P, Loaded> for &'static LocalKey<Lazy<P>> {}
+impl<P> ComponentType<P, Loaded> for &'static LocalKey<LazyExoticComponent<P>> {}
 
 /// A component that [`forward_ref`] made: its parent's `ref` reaches it.
-pub struct ForwardRef<P, H>(PhantomData<JsObject>, PhantomData<(P, H)>);
+pub struct ForwardRefExoticComponent<P, H>(PhantomData<JsObject>, PhantomData<(P, H)>);
 
 /// [`forwardRef`](https://react.dev/reference/react/forwardRef), in a
 /// `thread_local!`: `render` gets the props and the parent's ref. From React
 /// 19 a component can take `ref` as a prop instead.
 #[cfg_attr(rust_js, rust_js::link_name = "react#forwardRef")]
-pub fn forward_ref<P, H>(render: impl Fn(P, Ref<Option<H>>) -> Element + 'static) -> ForwardRef<P, H> {
+pub fn forward_ref<P, H>(render: impl Fn(P, RefObject<Option<H>>) -> Element + 'static) -> ForwardRefExoticComponent<P, H> {
     unreachable!()
 }
 
 pub struct Forwarded;
 
-impl<P, H> Component<P, Forwarded> for &'static LocalKey<ForwardRef<P, H>> {}
+impl<P, H> ComponentType<P, Forwarded> for &'static LocalKey<ForwardRefExoticComponent<P, H>> {}
 
 /// Check the handle type of a forwarded JSX ref without emitting a runtime call.
 #[doc(hidden)]

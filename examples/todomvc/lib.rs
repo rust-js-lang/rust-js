@@ -14,7 +14,7 @@ mod model;
 use item::TodoItem;
 use model::{Action, Filter, load, reduce, save};
 use react::dom::client::create_root;
-use react::event::{Change, Keyboard};
+use react::event::{ChangeEvent, KeyboardEvent};
 use react::{Element, jsx, use_effect, use_reducer_with, use_state};
 use webapi::events::Hashchange;
 use webapi::{AddEventListenerOptions, abort_controller, document, event_target, location, window};
@@ -50,7 +50,7 @@ pub fn App() -> Element {
     use_effect(move || save(todos), (todos,));
     let active = todos.iter().filter(|todo| !todo.completed).count();
     let completed = todos.len() - active;
-    let add = move |e: &Keyboard<_>| {
+    let add = move |e: &KeyboardEvent<_>| {
         let title = draft.trim().to_string();
         if e.key() == "Enter" && !title.is_empty() {
             dispatch.dispatch(Action::Add(title));
@@ -68,7 +68,7 @@ pub fn App() -> Element {
                         placeholder="What needs to be done?"
                         autoFocus={true}
                         value={draft.clone()}
-                        onChange={move |e: &Change<_>| set_draft.set(e.value())}
+                        onChange={move |e: &ChangeEvent<_>| set_draft.set(e.value())}
                         onKeyDown={add} />
                 </header>
                 {if todos.is_empty() { None } else { Some(jsx! {
@@ -78,7 +78,7 @@ pub fn App() -> Element {
                             className="toggle-all"
                             type="checkbox"
                             checked={active == 0}
-                            onChange={move |e: &Change<_>| dispatch.dispatch(Action::ToggleAll(e.checked()))} />
+                            onChange={move |e: &ChangeEvent<_>| dispatch.dispatch(Action::ToggleAll(e.checked()))} />
                         <label htmlFor="toggle-all">{"Mark all as complete"}</label>
                         <ul className="todo-list">
                             {todos

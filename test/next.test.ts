@@ -11,7 +11,7 @@ const bin = join(root, "next-plugin/bin.js");
 const about = `#![allow(non_snake_case)]
 
 use next::link::Link;
-use react::attributes::AnchorHtmlAttributes;
+use react::attributes::AnchorHTMLAttributes;
 use react::{Element, jsx};
 
 pub fn About() -> Element {
@@ -27,7 +27,7 @@ pub fn About() -> Element {
 pub struct HomeLinkProps<'a> {
     pub class_name: &'a str,
     #[cfg_attr(rust_js, rust_js::flatten)]
-    pub anchor: AnchorHtmlAttributes<'a>,
+    pub anchor: AnchorHTMLAttributes<'a>,
 }
 
 pub fn HomeLink(HomeLinkProps { class_name, anchor }: HomeLinkProps) -> Element {
