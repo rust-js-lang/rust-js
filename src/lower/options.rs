@@ -357,7 +357,7 @@ pub(super) fn is_some_box(value: Expr) -> Expr {
 /// it: `filter(..).unwrap_or(d)` is `x != null && keep ? x : d`. A
 /// conditional of another `Option`, `c ? maybe() : undefined`, isn't one:
 /// its `maybe()` may be `None`.
-fn filtered(option: &Expr) -> Option<(Expr, Expr)> {
+pub(super) fn filtered(option: &Expr) -> Option<(Expr, Expr)> {
     let js::ExprKind::Cond(test, value, none) = &option.kind else {
         return None;
     };

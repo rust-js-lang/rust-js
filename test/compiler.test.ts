@@ -1691,6 +1691,48 @@ test("js::directive! and js::export_default! make a module a Next.js route", asy
   expect((await import(join(dir, "generic.js"))).default([7, 8])).toBe(7);
 });
 
+// `let Some(href) = href.filter(|href| !href.is_empty()) else { .. }` tests
+// what the filter does and names `href`, with no `const` of the `Option`:
+// of text, which is falsy only empty, `if (!href)`, as react.dev's Link
+// has it. An array, which is truthy empty, keeps its `length` test, and
+// what's bound of a variable that changes is a copy.
+test("a let-else of an Option's filter tests the filter, and binds what it kept", async () => {
+  const dir = fixture("let-else-filter");
+  writeFileSync(join(dir, "lib.rs"), `pub fn link(href: Option<&str>) -> String {
+    let Some(href) = href.filter(|href| !href.is_empty()) else {
+        return "none".to_string();
+    };
+    href.to_uppercase()
+}
+pub fn named(name: Option<String>) -> String {
+    if let Some(n) = name.filter(|n| !n.is_empty()) { n.to_uppercase() } else { "anon".to_string() }
+}
+pub fn listed(items: Option<Vec<u32>>) -> u32 {
+    let Some(items) = items.filter(|items| !items.is_empty()) else {
+        return 0;
+    };
+    items[0]
+}
+pub fn later(mut href: Option<&str>) -> String {
+    let Some(h) = href.filter(|h| !h.is_empty()) else {
+        return "none".to_string();
+    };
+    href = Some("changed");
+    format!("{h} {}", href.unwrap_or_default())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('export function link(href) {\n  if (!href) {\n    return "none";\n  }\n  return href.toUpperCase();\n}');
+  expect(js).toContain('if (name) {\n    return name.toUpperCase();');
+  expect(js).toContain("if (!(items != null && items.length !== 0)) {\n    return 0;\n  }\n  return $index(items, 0);");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.link("/a"), lib.link(""), lib.link(undefined)]).toEqual(["/A", "none", "none"]);
+  expect([lib.named("ann"), lib.named(""), lib.named(undefined)]).toEqual(["ANN", "anon", "anon"]);
+  expect([lib.listed([7]), lib.listed([]), lib.listed(undefined)]).toEqual([7, 0, 0]);
+  expect([lib.later("/a"), lib.later("")]).toEqual(["/a changed", "none"]);
+});
+
 // `Some(Direction::Up)` of an `Option` of a unit variant is `d === "Up"`:
 // `undefined === "Up"` is false too, so it's said without `d != null`, as
 // a constant is. Where the variant is an object's, `d.TAG`, it's needed.
