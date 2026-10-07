@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
     name: "initializer-reads-statics",
     breaks: "a static's initializer that reads another is lowered, which JS may read before it's made",
     file: "src/lower/pipeline.rs",
-    find: "                && !super::body_queries::reads_statics(&body.thir)",
+    find: "                && !super::body_queries::reads_statics(tcx, &body.thir, tcx.parent_module_from_def_id(def_id))",
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "another static"],
   },

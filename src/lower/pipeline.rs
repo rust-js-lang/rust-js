@@ -103,7 +103,7 @@ pub fn lower_crate<'tcx>(
             if !mutable
                 && super::copies::shareable(tcx, ty)
                 && let Some(body) = initializers.iter().find(|body| body.def_id == def_id)
-                && !super::body_queries::reads_statics(&body.thir)
+                && !super::body_queries::reads_statics(tcx, &body.thir, tcx.parent_module_from_def_id(def_id))
             {
                 initialized.push(body);
                 continue;

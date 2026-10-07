@@ -14,7 +14,7 @@ use rustc_middle::ty;
 use rustc_middle::ty::Ty;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LocalDefId};
-use rustc_span::{Span, sym};
+use rustc_span::{Span, Symbol, sym};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What an `Option<T>`'s `T` is in JS: through references, `Box` and `Rc`,
@@ -565,6 +565,9 @@ fn valtree_of<'tcx>(tcx: TyCtxt<'tcx>, value: ConstValue, ty: Ty<'tcx>) -> Optio
             valtree_at(tcx, pointee(tcx, pointer)?, *inner)
         }
         ty::Adt(adt, _) if adt.is_union() => None,
+        // A JS value, react's `ElementType` say, is nothing in Rust's memory:
+        // its initializer says what it is (ADR 0234).
+        ty::Adt(adt, args) if marks_js_object(tcx, *adt, args) => None,
         ty::Array(..) | ty::Tuple(_) | ty::Adt(..) => {
             let parts = tcx.try_destructure_mir_constant_for_user_output(value, ty)?;
             // An enum's starts with its variant's index, as rustc's own does.
@@ -581,6 +584,22 @@ fn valtree_of<'tcx>(tcx: TyCtxt<'tcx>, value: ConstValue, ty: Ty<'tcx>) -> Optio
         }
         _ => None,
     }
+}
+
+/// A struct that's a JS value, as `Recognition::is_js_object` tells one:
+/// `PhantomData` of an extern type or of `#[rust_js::js_object]` first.
+pub(super) fn marks_js_object<'tcx>(tcx: TyCtxt<'tcx>, adt: ty::AdtDef<'tcx>, args: ty::GenericArgsRef<'tcx>) -> bool {
+    adt.is_struct() && adt.non_enum_variant().fields.iter().next().is_some_and(|field| {
+        matches!(field.ty(tcx, args).skip_normalization().kind(), ty::Adt(marker, marked) if marker.is_phantom_data()
+        && marked.types().next().is_some_and(|t| match t.kind() {
+            ty::Foreign(_) => true,
+            ty::Adt(object, _) => tcx
+                .get_attrs_by_path(object.did(), &[Symbol::intern("rust_js"), Symbol::intern("js_object")])
+                .next()
+                .is_some(),
+            _ => false,
+        }))
+    })
 }
 
 /// A constant value as a JS literal, in the shapes of ADRs 0011, 0013, 0020

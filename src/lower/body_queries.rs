@@ -10,6 +10,7 @@ use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::{self, ExprId, ExprKind, LocalVarId, Pat, PatKind, Thir};
 use rustc_middle::ty::adjustment::PointerCoercion;
 use rustc_middle::ty::{self, TyCtxt};
+use rustc_span::def_id::{DefId, LocalModId};
 use std::collections::{HashMap, HashSet};
 
 /// The parts of a `for pat in head { body }` (ADR 0025).
@@ -335,10 +336,24 @@ fn lends_iterator<'tcx>(tcx: TyCtxt<'tcx>, callee: rustc_span::def_id::DefId, ty
             })
 }
 
-/// Does `thir` read a static? A static's value, made where its module loads,
-/// may not be there yet where another's initializer is (ADR 0096).
-pub(super) fn reads_statics(thir: &Thir<'_>) -> bool {
-    thir.exprs
-        .iter()
-        .any(|e| matches!(e.kind, ExprKind::StaticRef { .. } | ExprKind::ThreadLocalRef(_)))
+/// Does `thir` read a static of `module`, or a `thread_local!`'s, whose
+/// value, made where its module loads, may not be there yet where another's
+/// initializer is (ADR 0096)? Another module's is an import, which JS makes
+/// first (ADR 0234).
+pub(super) fn reads_statics(tcx: TyCtxt<'_>, thir: &Thir<'_>, module: LocalModId) -> bool {
+    let own = |def_id: DefId| {
+        def_id
+            .as_local()
+            .is_some_and(|local| tcx.parent_module_from_def_id(local) == module)
+    };
+    thir.exprs.iter().any(|e| match e.kind {
+        ExprKind::StaticRef { def_id, .. } | ExprKind::ThreadLocalRef(def_id) => own(def_id),
+        ExprKind::NamedConst { def_id, .. } => {
+            own(def_id)
+                && def_id
+                    .as_local()
+                    .is_some_and(|local| super::analysis::is_thread_local(tcx, local))
+        }
+        _ => false,
+    })
 }

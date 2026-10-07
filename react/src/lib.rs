@@ -1040,7 +1040,7 @@ impl ElementProps for attributes::SVGAttributes<'_> {}
 /// What an [`ElementType`] is made of: a [`Tag`], or a [`memo`] component
 /// that takes what a DOM element takes. Not a `Tag` itself, which would
 /// make the component's `<Icon ..>` two components at once.
-pub trait IntoElementType {}
+pub trait IntoElementType: Copy {}
 
 impl<T: Tag> IntoElementType for T {}
 impl<P: ElementProps> IntoElementType for &'static LocalKey<MemoExoticComponent<P>> {}
@@ -1055,12 +1055,18 @@ pub struct ElementType(PhantomData<JsObject>);
 
 impl Tag for ElementType {}
 
+// SAFETY: it holds nothing in Rust, only a marker of what it is in JS,
+// where it's a function or a string, on JS's one thread: a `static`'s
+// table may hold one, as react.dev's `variantMap` does.
+unsafe impl Sync for ElementType {}
+
 /// A tag, or a component of an element's props, as an [`ElementType`]:
-/// the same value.
+/// the same value. A `const fn`, so a `static`'s table holds one, as
+/// react.dev's `variantMap` does.
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
 #[allow(unused_variables)]
-pub fn element_type(this: impl IntoElementType) -> ElementType {
-    unreachable!()
+pub const fn element_type(this: impl IntoElementType) -> ElementType {
+    ElementType(PhantomData)
 }
 
 /// `<Comp>` of a [`Tag`] `Comp`.

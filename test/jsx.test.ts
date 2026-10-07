@@ -296,9 +296,8 @@ pub fn Pick(href: &str) -> Element {
 // keeps its icons in `variantMap` and renders `<variant.Icon className=.. />`
 // (ADR 0234).
 test("components of an element's props are an ElementType, rendered as a tag", async () => {
-  const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::attributes::SVGAttributes;
-use react::{Element, ElementProps, ElementType, MemoExoticComponent, element_type, jsx, memo};
+  const icons = `use react::attributes::SVGAttributes;
+use react::{Element, ElementProps, MemoExoticComponent, jsx, memo};
 pub struct BadgeProps {
     #[rust_js::flatten]
     pub svg: SVGAttributes<'static>,
@@ -315,6 +314,11 @@ fn Note(props: SVGAttributes<'static>) -> Element {
 fn Badge(props: BadgeProps) -> Element {
     jsx! { <svg className={props.svg.class_name} width={props.size.unwrap_or("1em")} /> }
 }
+`;
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+mod icons;
+use icons::{IconBadge, IconNote};
+use react::{Element, ElementType, element_type, jsx};
 pub struct Variant {
     pub title: &'static str,
     #[rust_js::name = "Icon"]
@@ -334,11 +338,16 @@ pub fn Callout(which: u32) -> Element {
         </h3>
     }
 }
+// A \`static\`'s table holds one, as react.dev's \`variantMap\` does.
+static PINNED: Variant = Variant { title: "p", icon: Some(element_type(&IconBadge)) };
+pub fn Pinned() -> Element {
+    jsx! { <h3>{PINNED.icon.map(|Icon| jsx! { <Icon className={Some("pin")} /> })}{PINNED.title}</h3> }
+}
 // Its own props given by name, as a component's are: still one component.
 pub fn Badged() -> Element {
     jsx! { <IconBadge className={Some("b")} size={Some("2em")} /> }
 }
-`);
+`, { "icons.rs": icons });
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain("icon = IconNote;");
@@ -349,8 +358,20 @@ pub fn Badged() -> Element {
     '<h3><svg class="inline" width="1em"></svg>t</h3>',
     "<h3>t</h3>",
   ]);
-  const { Badged } = await import(join(dir, "lib.jsx"));
+  // A `static` of another module's components is made of them, which JS
+  // imports first.
+  expect(jsx).toContain('const PINNED = { title: "p", Icon: IconBadge };');
+  const { Badged, Pinned } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(Pinned())).toBe('<h3><svg class="pin" width="1em"></svg>p</h3>');
   expect(renderToStaticMarkup(Badged())).toBe('<svg class="b" width="2em"></svg>');
+  // Of its own module's, made after it in JS, it's refused, as a static
+  // read before it's made is.
+  const own = compile(`use react::{ElementType, MemoExoticComponent, element_type, jsx, memo};
+${icons.replace(/^use .*\n/gm, "")}
+static PINNED: Option<ElementType> = Some(element_type(&IconBadge));
+`.replace("use react::{ElementType", "use react::attributes::SVGAttributes;\nuse react::{Element, ElementProps, ElementType"));
+  const refused = Bun.spawnSync(own.args, { cwd: own.dir });
+  expect([refused.exitCode === 0, refused.stderr.toString().includes("statics of type")], refused.stderr.toString()).toEqual([false, true]);
 });
 
 // A default import is named as the module's `use` renames it, `use

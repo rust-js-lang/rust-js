@@ -42,4 +42,20 @@ export const mutations: Mutation[] = [
     replace: "            && expr.ty != expr.ty\n",
     tests: ["test/corpus.test.ts", "-t", "iter_by_ref"],
   },
+  {
+    name: "other-module-static-unread",
+    breaks: "a static made of another module's components is refused, as if JS hadn't imported them first",
+    file: "src/lower/body_queries.rs",
+    find: "            .is_some_and(|local| tcx.parent_module_from_def_id(local) == module)\n",
+    replace: "            .is_some_and(|_| true)\n",
+    tests: ["test/jsx.test.ts", "-t", "ElementType, rendered as a tag"],
+  },
+  {
+    name: "own-thread-local-unread",
+    breaks: "a static made of its own module's `thread_local!` component is written before it, which JS hasn't made yet",
+    file: "src/lower/body_queries.rs",
+    find: "        ExprKind::NamedConst { def_id, .. } => {\n            own(def_id)\n",
+    replace: "        ExprKind::NamedConst { def_id, .. } => {\n            false && own(def_id)\n",
+    tests: ["test/jsx.test.ts", "-t", "ElementType, rendered as a tag"],
+  },
 ];

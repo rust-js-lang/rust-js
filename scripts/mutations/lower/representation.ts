@@ -203,4 +203,12 @@ export const mutations: Mutation[] = [
     replace: "            if false {\n",
     tests: ["test/corpus.test.ts", "-t", "untagged_enums"],
   },
+  {
+    name: "js-object-value-tree-said",
+    breaks: "a static of react's `ElementType` is what rustc's memory says, `Icon: [undefined]`, not `Icon: IconBadge`",
+    file: "src/lower/representation.rs",
+    find: "        ty::Adt(adt, args) if marks_js_object(tcx, *adt, args) => None,\n",
+    replace: "",
+    tests: ["test/jsx.test.ts", "-t", "ElementType, rendered as a tag"],
+  },
 ];

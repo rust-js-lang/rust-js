@@ -46,6 +46,13 @@ variant.Icon != null ? <variant.Icon className={..} /> : undefined
   element's attributes, which its component takes.
 - **A closure's parameters and `let`s inside JSX are its own**, `|Icon|`
   of a child's `map`, as a function's are.
+- **A `static`'s table holds them**, as `variantMap` does: `element_type`
+  is a `const fn`, `ElementType` is `Sync`, holding nothing in Rust, and
+  a static of a JS value is written from its initializer, `Icon:
+  IconWarning`, as rustc's memory says nothing of what it is. One that
+  reads its own module's `thread_local!` is refused, as one that reads its
+  own module's static is: JS would read it before it's made. Another
+  module's is an import, which JS makes first. (Amended.)
 
 ## Why
 
@@ -58,7 +65,8 @@ variant.Icon != null ? <variant.Icon className={..} /> : undefined
 - **It's tested**: a JSX test holds two `memo` icons of different props,
   one flattening `SVGAttributes` beside a `size`, in one
   `Option<ElementType>` field, and renders each, and none, and one
-  given its own props by name.
+  given its own props by name; a `static` of another module's icons is
+  `{ title: "p", Icon: IconBadge }`, and one of its own module's refused.
 
 ## Costs
 

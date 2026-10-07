@@ -91,4 +91,12 @@ export const mutations: Mutation[] = [
     replace: "                if false {\n                    return once(place, &|e| {\n",
     tests: ["test/corpus.test.ts", "-t", "untagged_enums"],
   },
+  {
+    name: "copy-js-object-unshared",
+    breaks: "a static holding react's `ElementType` is refused: `statics of type Variant`",
+    file: "src/lower/copies.rs",
+    find: "                tcx.type_is_copy_modulo_regions(ty::TypingEnv::fully_monomorphized(), ty)\n",
+    replace: "                false\n",
+    tests: ["test/jsx.test.ts", "-t", "ElementType, rendered as a tag"],
+  },
 ];
