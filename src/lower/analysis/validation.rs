@@ -242,10 +242,14 @@ pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body
             }
         }
         let mut props = HashSet::new();
+        // What's a base of them, `..props.html`: a flattened field read whole
+        // there is the object its parent is, `{...props}`.
+        let mut bases = HashSet::new();
         while let Some(e) = made.pop() {
             props.insert(e);
             if let ExprKind::Adt(ref adt) = thir[e].kind {
                 if let AdtExprBase::Base(ref fru) = adt.base {
+                    bases.insert(strip(thir, fru.base));
                     made.push(strip(thir, fru.base));
                 }
                 for field in &adt.fields {
@@ -265,7 +269,9 @@ pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body
         for (e, expr) in thir.exprs.iter_enumerated() {
             match expr.kind {
                 ExprKind::Field { lhs, name, .. }
-                    if bindings::is_flatten_field(tcx, thir[lhs].ty, name.as_usize()) && !read_through.contains(&e) =>
+                    if bindings::is_flatten_field(tcx, thir[lhs].ty, name.as_usize())
+                        && !read_through.contains(&e)
+                        && !bases.contains(&e) =>
                 {
                     refuse(
                         expr.span,

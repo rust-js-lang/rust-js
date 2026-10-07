@@ -45,6 +45,15 @@ error: missing prop `href` of `ButtonLinkProps`
 - **The flattened field itself may be given whole**, `props={props}`, a
   component's own passed on, written `{...props}`; given whole and names
   of it too is an error.
+- **A component's own, updated, is its rest spread, then the update**:
+  `props={AnchorHTMLAttributes { html: HTMLAttributes { class_name, ..props.html
+  }, ..props }}` of a component's flattened `props` is `{...props}
+  className={..}`, as react.dev's Link gives `ExternalLink` its classes.
+  Its props pattern's rest, `...props`, holds no key the pattern names, so
+  what it gives is spread, not each field, and one the other component
+  has too, `href`, isn't given twice; a flattened field read whole as a
+  base, `..props.html`, is the object its parent is. The spread is before
+  the update, which holds, as Rust's does. (Amended.)
 - **A name nothing has is rustc's error**, at the name.
 - **With a base, `{..base}`, it's the struct literal with it**, as before.
 - **The props are as written**, by where each one's value is (ADR 0203),

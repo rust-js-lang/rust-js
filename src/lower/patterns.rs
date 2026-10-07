@@ -109,6 +109,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                     }
                 }
+                if let Some(rest) = &rest {
+                    let taken = named.iter().map(|(key, _, _)| key.clone()).collect();
+                    self.locals.rests.insert(rest.clone(), taken);
+                }
                 js::Pattern::Object(named, rest)
             }
             Shape::Other => return None,
