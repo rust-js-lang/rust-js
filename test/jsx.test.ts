@@ -2,7 +2,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup, renderToString } from "react-dom/server";
 import { buildReact, compiler, expectSnapshot, fixture, root, run, target } from "./support";
 import { decodeMappings, lookup } from "./sourcemap";
 
@@ -2796,4 +2796,24 @@ pub fn Empty() -> JSX::Element { jsx! { <hr /> } }
   const tree = result.App();
   expect(tree.key).toBe("group");
   expect(renderToStaticMarkup(tree)).toBe('<div title="spread" class="card"></div><section title="panel"><b>new</b></section><section title="dot"><i></i></section><section title="path"><u></u></section><hr/>');
+});
+
+// Adjacent text children are each a text node, as react.dev's Challenge
+// has them, `{order} of{' '}{total}`: the first in braces, so JSX doesn't
+// read the two as one text, which React would render as one node.
+test("adjacent text children stay apart", async () => {
+  const source = `#![allow(non_snake_case)]
+use react::{JSX, jsx};
+
+pub fn Count(order: u32, total: u32) -> JSX::Element {
+    jsx! { <p>{"Challenge"}{" "}{order}{" of"}{" "}{total}</p> }
+}
+`;
+  const { dir, args } = compile(source);
+  run(args);
+  const code = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(code).toContain('{"Challenge"} {order}');
+  expect(code).toContain('{" of"} {total}');
+  const result = await import(join(dir, "lib.jsx"));
+  expect(renderToString(result.Count(1, 4))).toBe("<p>Challenge<!-- --> <!-- -->1<!-- --> of<!-- --> <!-- -->4</p>");
 });

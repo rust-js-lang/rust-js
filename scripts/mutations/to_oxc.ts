@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "        for reexport in module.reexports.iter().take(0) {",
     tests: ["test/compiler.test.ts","-t","re-exported from it"],
   },
+  {
+    name: "adjacent-text-joined",
+    breaks: "text right before text is JSX text, which JSX reads as one with the next, and React renders one text node, not two",
+    file: "src/to_oxc.rs",
+    find: "            text[i] = writable && !text.get(i + 1).is_some_and(|&next| next);",
+    replace: "            text[i] = writable;",
+    tests: ["test/jsx.test.ts", "-t", "adjacent text children"],
+  },
 ];

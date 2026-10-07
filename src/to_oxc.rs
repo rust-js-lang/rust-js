@@ -883,12 +883,22 @@ impl<'a> Cx<'a> {
         let depth = self.depth.get();
         let mut children = ArenaVec::new_in(b);
         let inline = self.inline.replace(self.inline.get() || has_text);
+        // Which children are JSX text: text that JSX can write, but not
+        // right before text, which JSX would read as one with it, and React
+        // render as one text node, not two. So the earlier is in braces,
+        // `{" of"} {total}`: a formatter makes a later `{" "}` a space, of
+        // the text before it.
+        let mut text = vec![false; jsx.children.len()];
+        for i in (0..jsx.children.len()).rev() {
+            let writable = matches!(&jsx.children[i].kind, ExprKind::Str(s) if jsx_text_safe(s) && !s.is_empty());
+            text[i] = writable && !text.get(i + 1).is_some_and(|&next| next);
+        }
         self.nested(lines, || {
-            for child in &jsx.children {
+            for (child, &text) in jsx.children.iter().zip(&text) {
                 if lines {
                     children.push(self.jsx_newline(depth + 1));
                 }
-                children.push(self.jsx_child(child));
+                children.push(self.jsx_child(child, text));
             }
         });
         self.inline.set(inline);
@@ -969,12 +979,13 @@ impl<'a> Cx<'a> {
         Some(JSXAttributeItem::new_attribute(sp, name, value, b))
     }
 
-    /// Text as text, `Count is `; anything else in braces, `{count}`.
-    fn jsx_child(&self, child: &js::Expr) -> JSXChild<'a> {
+    /// Text as text, `Count is `, when it's `text`; anything else in braces,
+    /// `{count}`.
+    fn jsx_child(&self, child: &js::Expr, text: bool) -> JSXChild<'a> {
         let b = &self.b;
         let sp = span(child.span);
         match &child.kind {
-            ExprKind::Str(s) if jsx_text_safe(s) && !s.is_empty() => JSXChild::new_text(sp, self.name(s), None, b),
+            ExprKind::Str(s) if text => JSXChild::new_text(sp, self.name(s), None, b),
             ExprKind::Jsx(jsx) => match self.jsx(sp, jsx) {
                 Expression::JSXElement(e) => JSXChild::Element(e),
                 Expression::JSXFragment(f) => JSXChild::Fragment(f),
