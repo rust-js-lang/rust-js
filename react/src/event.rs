@@ -270,14 +270,25 @@ events! {
         old_state: String = "oldState";
     }
 
-    /// An `<input>`, `<select>` or `<textarea>` changing: `on_change`, `on_input`.
+    /// An `<input>`, `<select>` or `<textarea>` changing: `on_change`.
     ChangeEvent as "react#ChangeEvent<T>": SyntheticEvent<T> {
         /// What's in it now: `e.target.value`.
         value: String = "target.value";
         /// Whether a checkbox is checked now: `e.target.checked`.
         checked: bool = "target.checked";
     }
+
+    /// A form sent: `on_submit`.
+    SubmitEvent as "react#SubmitEvent<T>": SyntheticEvent<T, webapi::SubmitEvent> {
+        /// The button that sent it, `None` where none did, `form.requestSubmit()` say.
+        submitter: Option<&'static webapi::HTMLElement> = "submitter";
+    }
 }
+
+/// @types/react's names of a [`SyntheticEvent`], whose interfaces add nothing
+/// to it: an `on_reset`'s, and an `on_invalid`'s.
+pub type FormEvent<T = webapi::Element> = SyntheticEvent<T>;
+pub type InvalidEvent<T = webapi::Element> = SyntheticEvent<T>;
 
 /// A handler of an event, as @types/react's `EventHandler<E>`:
 /// `on_click: MouseEventHandler<HTMLButtonElement>` is TypeScript's
@@ -291,7 +302,9 @@ pub type FocusEventHandler<T = webapi::Element> = EventHandler<FocusEvent<T>>;
 /// Of one element: @types/react's takes the target's too, which this
 /// `ChangeEvent`'s `value` reads without.
 pub type ChangeEventHandler<T = webapi::Element> = EventHandler<ChangeEvent<T>>;
+pub type FormEventHandler<T = webapi::Element> = EventHandler<FormEvent<T>>;
 pub type InputEventHandler<T = webapi::Element> = EventHandler<InputEvent<T>>;
+pub type SubmitEventHandler<T = webapi::Element> = EventHandler<SubmitEvent<T>>;
 pub type KeyboardEventHandler<T = webapi::Element> = EventHandler<KeyboardEvent<T>>;
 pub type MouseEventHandler<T = webapi::Element> = EventHandler<MouseEvent<T>>;
 pub type TouchEventHandler<T = webapi::Element> = EventHandler<TouchEvent<T>>;

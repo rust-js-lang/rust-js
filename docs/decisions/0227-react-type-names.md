@@ -55,6 +55,17 @@ for the same things, and the `.d.ts` rust-js writes already used React's.
   take `E`, as React's. `#[rust_js::types]` names `T` alone, so the `.d.ts`
   writes `MouseEvent<HTMLButtonElement>`, its `E` the default. webapi binds
   the native events React's wrap (ADR 0024). (Amended.)
+- **A form's submit is a `SubmitEvent`**, as @types/react's `onSubmit` is,
+  whose `submitter()` is the button that sent it and whose native event is
+  webapi's `SubmitEvent`, where it was a `SyntheticEvent`; with
+  `SubmitEventHandler`. `FormEvent` and `InvalidEvent`, which add nothing
+  to a `SyntheticEvent` in @types/react, are its names, with
+  `FormEventHandler`. (Amended.)
+- **`onInput` is an `InputEvent`**, as @types/react's `InputEventHandler`
+  types it, of `data()` and a native `InputEvent`, as `onBeforeInput` is,
+  where it was a `ChangeEvent`, of `value()`: @types/react's types are the
+  rule, over a convenience of the crate's own. Its value is its element's,
+  `html_input_element::value(e.current_target())`. (Amended.)
 - **Names React has no type for stay the crate's own**: `Element`, what
   JSX makes, `JSX.Element`; `Rest`, `...props`; `children::Child`;
   `InnerHtml`, `{ __html }`; `Cleanup`, what an effect gives back, which

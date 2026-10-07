@@ -8,7 +8,7 @@ export const EVENT_TYPES: Record<string, string> = {};
 const groups: Record<string, string> = {
   AnimationEvent: "AnimationEnd AnimationIteration AnimationStart",
   MouseEvent: "AuxClick Click ContextMenu DoubleClick MouseDown MouseEnter MouseLeave MouseMove MouseOut MouseOver MouseUp",
-  InputEvent: "BeforeInput",
+  InputEvent: "BeforeInput Input",
   FocusEvent: "Blur Focus",
   CompositionEvent: "CompositionEnd CompositionStart CompositionUpdate",
   ClipboardEvent: "Copy Cut Paste",
@@ -20,7 +20,8 @@ const groups: Record<string, string> = {
   TransitionEvent: "TransitionCancel TransitionEnd TransitionRun TransitionStart",
   WheelEvent: "Wheel",
   ToggleEvent: "BeforeToggle Toggle",
-  ChangeEvent: "Change Input",
+  SubmitEvent: "Submit",
+  ChangeEvent: "Change",
   UIEvent: "Scroll ScrollEnd",
 };
 for (const [type, names] of Object.entries(groups)) for (const name of names.split(" ")) EVENT_TYPES[`on${name}`] = type;

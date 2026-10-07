@@ -6,7 +6,7 @@ use crate::route::go;
 use crate::sonner::toast;
 use js::spawn;
 use models::{FieldError, NewContact, validate};
-use react::event::{ChangeEvent, SyntheticEvent};
+use react::event::{ChangeEvent, SubmitEvent};
 use react::{Element, jsx, use_state};
 
 /// The message for `field`, if one of `errors` is about it.
@@ -23,7 +23,7 @@ pub fn NewContactForm() -> Element {
     let (age, set_age) = use_state(String::new());
     let (errors, set_errors) = use_state(Vec::<FieldError>::new());
     let (sending, set_sending) = use_state(false);
-    let submit = move |e: &SyntheticEvent<_>| {
+    let submit = move |e: &SubmitEvent<_>| {
         e.prevent_default();
         // Every field's error at once: an age that isn't a number is one.
         let parsed = age.trim().parse::<u32>().ok();
