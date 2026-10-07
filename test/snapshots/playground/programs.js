@@ -26,8 +26,8 @@ export function resolve(from, specifier) {
 }
 
 export function link(files) {
-  const imports = new RegExp('^import ([^;]+?) from "([^"]+)";', "gm");
-  const sourceMap = new RegExp("^//# sourceMappingURL=.*$", "m");
+  const imports = /^import ([^;]+?) from "([^"]+)";/gm;
+  const sourceMap = /^\/\/# sourceMappingURL=.*$/m;
   let entries = [];
   for (const [path, code] of files) {
     const from = path;
@@ -67,14 +67,14 @@ export function prepare(files, modules, styles, rootFile, test, run) {
   } else {
     tests = rootFile;
   }
-  const hasMain = new RegExp("^export (async )?function main\\(\\)", "m");
+  const hasMain = /^export (async )?function main\(\)/m;
   const runnable = test
     ? sources.some((param) => param[0] === tests)
     : sources.some((param) => param[0] === rootFile && hasMain.test(param[1]));
   if (!runnable) {
     return "Nothing";
   }
-  const cssImports = new RegExp('^import "([^"]+\\.css)"(;)', "gm");
+  const cssImports = /^import "([^"]+\.css)"(;)/gm;
   let css = [];
   for (const item of sources) {
     for (const [, specifier] of Array.from(item[1].matchAll(cssImports))) {
@@ -92,7 +92,7 @@ export function prepare(files, modules, styles, rootFile, test, run) {
     });
   }
   const look = css.length === 0 ? FRAME_STYLE : `<style>\n${css.join("")}</style>`;
-  const imports = new RegExp('^import (?:[^;]+? from )?"([^"]+)";', "gm");
+  const imports = /^import (?:[^;]+? from )?"([^"]+)";/gm;
   let external = [];
   for (const item$1 of sources) {
     for (const [, specifier$1] of Array.from(item$1[1].matchAll(imports))) {

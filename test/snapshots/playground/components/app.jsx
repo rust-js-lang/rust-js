@@ -191,7 +191,7 @@ export function App() {
     if (path.length === 0) {
       return;
     }
-    const modulePath = new RegExp("^([a-z_][a-z0-9_]*/)*[a-z_][a-z0-9_]*\\.rs$", "");
+    const modulePath = /^([a-z_][a-z0-9_]*\/)*[a-z_][a-z0-9_]*\.rs$/;
     if (!modulePath.test(path)) {
       const text = `"${path}" isn't a Rust module file name, like math.rs or geometry/shape.rs.`;
       setStatus(say(text, "Bad"));

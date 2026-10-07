@@ -383,6 +383,8 @@ pub mod reg_exp {
 
     unsafe extern "Rust" {
         /// `new RegExp(pattern, flags)`: flags like `"gm"`.
+        /// Of a pattern and flags written as they are, it's their literal,
+        /// `/%s/g`, as JS writes one.
         #[link_name = "new RegExp"]
         pub safe fn new(pattern: &str, flags: &str) -> &'static RegExp;
 

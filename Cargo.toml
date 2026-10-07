@@ -22,6 +22,7 @@ oxc_ast_visit = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.1
 oxc_codegen = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
 oxc_formatter = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
 oxc_formatter_core = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
+oxc_regular_expression = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
 oxc_sourcemap = "=8.1.2"
 oxc_span = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
 oxc_syntax = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
