@@ -3,8 +3,7 @@
 function main() {
   const deep = { TAG: "Second", _0: "Empty" };
   const top = { TAG: "Third", _0: { TAG: "First", _0: { TAG: "Fourth", _0: undefined } } };
-  const match = deep;
-  console.log(`${c19Debug_fmt(deep)} ${c2Debug_fmt(top)} ${match.TAG === "Second"}`);
+  console.log(`${c19Debug_fmt(deep)} ${c2Debug_fmt(top)} ${deep.TAG === "Second"}`);
 }
 
 export function entry() {

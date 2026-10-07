@@ -10,6 +10,7 @@ use rustc_ast::{LitKind, Mutability};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::{BindingMode, ByRef, RangeEnd};
 use rustc_middle::mir::BorrowKind;
+use rustc_middle::thir::visit::{self, Visitor};
 use rustc_middle::thir::{self, ArmId, ExprId, ExprKind, LogicalOp, Pat, PatKind, PatRangeBoundary};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::{DesugaringKind, Span};
@@ -1254,12 +1255,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         }
         let items = self.item_subject(scrutinee);
+        let start = out.len();
         let (subject, stable) = self.subject(scrutinee, "match", out)?;
         let mut bindings = Vec::new();
         let test = self.pattern_test(&self.thir[first].pattern, &subject, &mut bindings)?;
         if let Some(guard) = self.thir[first].guard {
             self.check_guarded(guard, &bindings)?;
         }
+        // Tested once, first, and bound nowhere, it's read where it's tested:
+        // `child.type.mdxName === "inlineCode"`, as react.dev's Link has it.
+        let test = match test {
+            Some(test) if bindings.is_empty() && self.thir[first].guard.is_none() && !self.makes_drops(scrutinee) => {
+                Some(read_in_place(test, out, start))
+            }
+            test => test,
+        };
         if !bindings.is_empty() && (!stable || bindings.iter().any(|b| b.mutable)) {
             return Err(self.unsupported(self.thir[first].pattern.span, "this binding in `matches!`"));
         }
@@ -1290,6 +1300,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (None, None) => Expr::bool(true),
         };
         Ok(Some(test))
+    }
+
+    /// Does `e`, or anything in it, make a value with a destructor, whose
+    /// `const` its drop names?
+    fn makes_drops(&self, e: ExprId) -> bool {
+        struct Types<'a, 'tcx> {
+            thir: &'a thir::Thir<'tcx>,
+            types: Vec<Ty<'tcx>>,
+        }
+        impl<'a, 'tcx> Visitor<'a, 'tcx> for Types<'a, 'tcx> {
+            fn thir(&self) -> &'a thir::Thir<'tcx> {
+                self.thir
+            }
+            fn visit_expr(&mut self, expr: &'a thir::Expr<'tcx>) {
+                self.types.push(expr.ty);
+                visit::walk_expr(self, expr);
+            }
+        }
+        let mut types = Types {
+            thir: self.thir,
+            types: Vec::new(),
+        };
+        types.visit_expr(&self.thir[e]);
+        types.types.into_iter().any(|ty| self.has_drops(ty))
     }
 
     /// A JS boolean test for "`subject` matches `pat`" (`None`: always matches).
@@ -1418,7 +1452,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // `undefined >= 1` is false too.
                     Some(test) if matches!(value.kind, PatKind::Constant { .. } | PatKind::Range(_)) => test,
                     Some(test) if names_value(&test) => test,
-                    Some(test) => Expr::bin(Op::And, present, test),
+                    Some(test) => and(present, test),
                     None => present,
                 }))
             }
@@ -1431,9 +1465,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ..
             } if self.untagged(pat.ty).is_some() => {
                 let variant = adt_def.variant(*variant_index);
-                let mut tests = vec![self.untagged_variant_test(pat.ty, variant, subject)];
+                let kind = self.untagged_variant_test(pat.ty, variant, subject);
+                let mut tests = Vec::new();
                 for field in subpatterns {
                     tests.extend(self.pattern_test(&field.pattern, subject, bindings)?);
+                }
+                // `x === "a"` holds of a string only: `Kind::String("a")`
+                // needs no `typeof x === "string"`.
+                if !tests.first().is_some_and(|test| says_kind(test, subject, &kind)) {
+                    tests.insert(0, kind);
                 }
                 Ok(tests.into_iter().reduce(|a, b| Expr::bin(Op::And, a, b)))
             }
@@ -1646,6 +1686,106 @@ fn is_literal(value: &Expr) -> bool {
             .all(|p| matches!(p, js::Prop::Field(_, v) if is_literal(v))),
         _ => value.is_constant(),
     }
+}
+
+/// Is `test` `x === "a"` of `subject`, a literal of the kind `kind`,
+/// `typeof x === "string"`, tests?
+fn says_kind(test: &Expr, subject: &Expr, kind: &Expr) -> bool {
+    use js::ExprKind as K;
+    let K::Binary(Op::Eq, left, literal) = &test.kind else {
+        return false;
+    };
+    let of = match literal.kind {
+        K::Str(_) => "string",
+        K::Num(_) => "number",
+        K::Bool(_) => "boolean",
+        _ => return false,
+    };
+    same_place(left, subject)
+        && matches!(&kind.kind, K::Binary(Op::Eq, typeof_, name)
+            if matches!(&typeof_.kind, K::Unary(UnaryOp::Typeof, x) if same_place(x, subject))
+                && matches!(&name.kind, K::Str(name) if name == of))
+}
+
+/// `test`, with the `const`s lowering its subject put last in `out`, from
+/// `start` on, each read where `test` reads it, where that's once and
+/// first, as JS read the `const`: `const match = value.a; match === "x"`
+/// is `value.a === "x"`.
+fn read_in_place(mut test: Expr, out: &mut Vec<Stmt>, start: usize) -> Expr {
+    loop {
+        test = fold_head(test);
+        let Some(Stmt {
+            kind: StmtKind::Const(name, value),
+            ..
+        }) = out[start..].last()
+        else {
+            return test;
+        };
+        let mut reads = 0;
+        test.visit_vars(&mut |var| reads += usize::from(var == name));
+        if reads != 1 || !reads_first(&test, name) {
+            return test;
+        }
+        let Some(read) = test.substitute(&|var| (var == name).then(|| value.clone())) else {
+            return test;
+        };
+        out.pop();
+        test = read;
+    }
+}
+
+/// Is `name` what JS reads first of `e`, before anything it does?
+fn reads_first(e: &Expr, name: &str) -> bool {
+    use js::ExprKind as K;
+    match &e.kind {
+        K::Var(var) => var == name,
+        K::Binary(_, first, _)
+        | K::Member(first, _)
+        | K::Index(first, _)
+        | K::Unary(_, first)
+        | K::Cond(first, _, _)
+        | K::Call(first, _) => reads_first(first, name),
+        _ => false,
+    }
+}
+
+/// `(u != null ? u : undefined) === "x"`, at the head of `&&`s, is `u ===
+/// "x"`, and its `typeof` `u`'s: neither `null` nor `undefined` is `"x"`,
+/// nor a `"string"`. `Option::map` of what gives back its argument,
+/// `classify`, makes it.
+fn fold_head(e: Expr) -> Expr {
+    use js::ExprKind as K;
+    let span = e.span;
+    let either = |e: &Expr| match &e.kind {
+        K::Cond(test, value, none) => match (&test.kind, &none.kind) {
+            (K::Binary(Op::LooseNe, u, null), K::Undefined)
+                if matches!(null.kind, K::Null)
+                    && matches!((&u.kind, &value.kind), (K::Var(a), K::Var(b)) if a == b) =>
+            {
+                Some((**value).clone())
+            }
+            _ => None,
+        },
+        _ => None,
+    };
+    let folded = match e.kind {
+        K::Binary(Op::And, first, rest) => K::Binary(Op::And, Box::new(fold_head(*first)), rest),
+        K::Binary(Op::Eq, left, right) if matches!(right.kind, K::Str(_) | K::Num(_) | K::Bool(_)) => {
+            match either(&left) {
+                Some(u) => K::Binary(Op::Eq, Box::new(u), right),
+                None => match left.kind {
+                    K::Unary(UnaryOp::Typeof, of) if matches!(&right.kind, K::Str(kind) if kind != "undefined" && kind != "object") =>
+                    {
+                        let of = either(&of).map(Box::new).unwrap_or(of);
+                        K::Binary(Op::Eq, Box::new(Expr::unary(UnaryOp::Typeof, *of)), right)
+                    }
+                    kind => K::Binary(Op::Eq, Box::new(Expr { kind, span: left.span }), right),
+                },
+            }
+        }
+        kind => kind,
+    };
+    Expr { kind: folded, span }
 }
 
 /// `a && b`, but `b` alone where it's `typeof x === "string"` after `x !=

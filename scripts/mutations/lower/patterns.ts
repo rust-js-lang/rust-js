@@ -422,4 +422,52 @@ export const mutations: Mutation[] = [
       "flattened props with a field of them set"
     ]
   },
+  {
+    name: "untagged-kind-said-twice",
+    breaks: "`Kind::String(\"a\")` is `typeof x === \"string\" && x === \"a\"`, which the literal alone says",
+    file: "src/lower/patterns.rs",
+    find: "if !tests.first().is_some_and(|test| says_kind(test, subject, &kind)) {",
+    replace: "if true {",
+    tests: ["test/compiler.test.ts", "-t", "kind's literal"],
+  },
+  {
+    name: "matches-subject-kept",
+    breaks: "`matches!(js::get(v, \"a\").map(classify), Some(Kind::String(\"x\")))` keeps its `const`s, not `v.a === \"x\"`",
+    file: "src/lower/patterns.rs",
+    find: "Some(read_in_place(test, out, start))",
+    replace: "Some(test)",
+    tests: ["test/compiler.test.ts", "-t", "kind's literal"],
+  },
+  {
+    name: "matches-drops-read-in-place",
+    breaks: "a temporary with a destructor, `make(n).0`, is read in place, which its drop can't name",
+    file: "src/lower/patterns.rs",
+    find: " && !self.makes_drops(scrutinee)",
+    replace: "",
+    tests: ["test/compiler.test.ts", "-t", "kind's literal"],
+  },
+  {
+    name: "unnormalized-not-folded",
+    breaks: "`(u != null ? u : undefined) === \"x\"` stays, and `u` in its `const`",
+    file: "src/lower/patterns.rs",
+    find: "Some(u) => K::Binary(Op::Eq, Box::new(u), right),",
+    replace: "Some(_) => K::Binary(Op::Eq, left, right),",
+    tests: ["test/compiler.test.ts", "-t", "kind's literal"],
+  },
+  {
+    name: "unnormalized-typeof-not-folded",
+    breaks: "`typeof (u != null ? u : undefined) === \"string\"` stays, and `u` in its `const`",
+    file: "src/lower/patterns.rs",
+    find: "let of = either(&of).map(Box::new).unwrap_or(of);",
+    replace: "let of = of;",
+    tests: ["test/compiler.test.ts", "-t", "kind's literal"],
+  },
+  {
+    name: "some-typeof-null-tested",
+    breaks: "`Some(Kind::String(_))` is `m != null && typeof m === \"string\"`, which no `null` passes",
+    file: "src/lower/patterns.rs",
+    find: "Some(test) => and(present, test),",
+    replace: "Some(test) => Expr::bin(Op::And, present, test),",
+    tests: ["test/compiler.test.ts", "-t", "kind's literal"],
+  },
 ];

@@ -981,6 +981,53 @@ pub fn body(response: &webapi::Response) -> Promise<Option<&'static Unknown>> {
   expect(lib.renamed('{"name":"old","n":2}')).toBe("{name:'new',n:2}");
 });
 
+// `matches!` of a kind's literal says the literal: `x === "a"` holds of no
+// other kind, nor of `null`, so neither `typeof` nor `!= null` is said, and
+// what's tested once is read where it's tested, as react.dev's Link tests
+// `child.type.mdxName === "inlineCode"`. A temporary with a destructor
+// stays in its `const`, which its drop names.
+test("matches! of a kind's literal tests the value alone, where it's read", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("matches-literal");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Kind, Unknown, classify};
+pub fn is_code(value: &Unknown) -> bool {
+    matches!(js::get(value, "mdxName").map(classify), Some(Kind::String("inlineCode")))
+}
+pub fn is_text(value: Option<&Unknown>) -> bool {
+    matches!(value.map(classify), Some(Kind::String("inlineCode")))
+}
+pub fn kind_is(value: &Unknown) -> bool {
+    matches!(classify(value), Kind::String("inlineCode"))
+}
+pub fn is_string(value: &Unknown) -> bool {
+    matches!(js::get(value, "mdxName").map(classify), Some(Kind::String(_)))
+}
+pub struct Loud(pub u32);
+impl Drop for Loud {
+    fn drop(&mut self) {}
+}
+fn make(n: u32) -> Loud {
+    Loud(n)
+}
+pub fn is_three(n: u32) -> bool {
+    matches!(make(n).0, 3)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('export function is_code(value) {\n  return value.mdxName === "inlineCode";\n}');
+  expect(js).toContain('export function is_text(value) {\n  return value === "inlineCode";\n}');
+  expect(js).toContain('export function kind_is(value) {\n  return value === "inlineCode";\n}');
+  expect(js).toContain('export function is_string(value) {\n  return typeof value.mdxName === "string";\n}');
+  const lib = await import(join(dir, "lib.js"));
+  const values = [{ mdxName: "inlineCode" }, { mdxName: "pre" }, { mdxName: null }, {}, { mdxName: 5 }];
+  expect(values.map(lib.is_code)).toEqual([true, false, false, false, false]);
+  expect(values.map((v) => lib.is_string(v))).toEqual([true, true, false, false, false]);
+  expect(["inlineCode", "pre", 5, null, undefined].map((v) => lib.is_text(v))).toEqual([true, false, false, false, false]);
+  expect(["inlineCode", "pre", 5, {}].map((v) => lib.kind_is(v))).toEqual([true, false, false, false]);
+  expect([lib.is_three(3), lib.is_three(4)]).toEqual([true, false]);
+});
+
 // What's never nullish is a `js::Unknown` too, as any value is TypeScript's
 // `unknown`; and `js::string` is JS's `String(value)`, as `result += value`
 // makes one: react.dev's console line joins its children's text so.
