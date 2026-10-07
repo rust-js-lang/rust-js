@@ -82,4 +82,12 @@ export const mutations: Mutation[] = [
     replace: "                && false",
     tests: ["test/jsx.test.ts", "-t", "a props field"],
   },
+  {
+    name: "async-closure-underscore-kept",
+    breaks: "an `async` closure's `_` stays a parameter, `async (_) => ..`, where a closure's is left out, `() => ..`",
+    file: "src/lower/bodies.rs",
+    find: "                    } => name.as_str() == \"_\",\n",
+    replace: "                    } => name.as_str() == \"__\",\n",
+    tests: ["test/jsx.test.ts", "-t", "async event handler"],
+  },
 ];

@@ -79,6 +79,14 @@ const label = busy ? <span>…</span> : <b>Save</b>;
   in JS. Each is the value itself. It's sound: a handler that takes any
   element's event takes a button's. **An associated function whose first
   parameter is `this` is a method**, as a free one is, which `widen` is.
+- **An async handler is the async function itself**: `event::Mouse::spawn(async
+  move |_| { .. })` is `async () => { .. }`, where a closure that calls
+  `js::spawn` of an `async` block is `() => { (async () => { .. })(); }`.
+  Each event runs it without waiting for it, as `spawn` would, and React
+  ignores the promise, as it does what any handler returns. It's of event
+  types only, so an effect, whose promise React would take for a cleanup,
+  isn't given one. An `async` closure's `_` is left out, as a closure's is.
+  (Amended.)
 - **A `ref` holds its tag's element or one it extends**: `<button ref={r}>`
   takes a `Ref<Option<&'static U>>`, or a callback of one, where
   `HtmlButtonElement: IsA<U>` (ADR 0223). An `<input>`'s ref on a

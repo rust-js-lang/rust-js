@@ -91,6 +91,18 @@ macro_rules! widen {
             }
         }
 
+        impl<T: 'static> $name<T> {
+            /// An async handler, `event::Mouse::spawn(async move |e| { .. })`:
+            /// each event runs it, without waiting for it, as `js::spawn` runs a
+            /// future. In JS it's the async function itself, `async (e) => { .. }`,
+            /// whose promise React ignores, as it does what any handler returns.
+            #[cfg_attr(rust_js, rust_js::link_name = "this")]
+            #[allow(unused_variables)]
+            pub fn spawn(this: impl AsyncFn(&$name<T>) + 'static) -> Box<dyn Fn(&$name<T>)> {
+                unreachable!()
+            }
+        }
+
         impl<T: webapi::IsA<webapi::Element>> $name<T> {
             /// This event, as any element's: for a handler that takes any
             /// element's, `move |e| f(e.upcast())`.

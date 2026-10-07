@@ -1683,6 +1683,46 @@ pub fn A(p: P) -> Element {
   expect([refused.exitCode === 0, refused.stderr.toString().includes("take them apart where they're given")]).toEqual([false, true]);
 });
 
+// An async handler is the async function itself, as react.dev's
+// `async function handleCopy()` is, where `spawn` in a closure would call
+// one in place, `(async () => { .. })()`.
+test("JSX takes an async event handler as the async function it is", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use js::Promise;
+use react::webapi::HtmlButtonElement;
+use react::{Element, event, jsx, use_state};
+unsafe extern "Rust" {
+    #[link_name = "Promise.resolve"]
+    safe fn resolved() -> Promise<()>;
+}
+pub struct ButtonProps {
+    pub on_click: Box<dyn Fn(&event::Mouse<HtmlButtonElement>)>,
+}
+pub fn Button(ButtonProps { on_click }: ButtonProps) -> Element {
+    jsx! { <button onClick={on_click}>{"Copy"}</button> }
+}
+pub fn Copy() -> Element {
+    let (copied, set_copied) = use_state(false);
+    let handle_copy = event::Mouse::spawn(async move |_| {
+        resolved().await;
+        set_copied.set(true);
+    });
+    jsx! { <div><Button onClick={handle_copy} />{if *copied { "Copied" } else { "Copy" }}</div> }
+}
+`);
+  args.push("--extern", `js=${join(target, "libjs.rmeta")}`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("const handleCopy = async () => {\n    await Promise.resolve();\n    setCopied(true);\n  };");
+  expect(jsx).not.toContain("(async");
+  const { Button } = await import(join(dir, "lib.jsx"));
+  let clicked = false;
+  const handler = async () => { clicked = true; };
+  const button = Button({ on_click: handler });
+  button.props.onClick();
+  expect(clicked).toBe(true);
+});
+
 // A component's optional handler passed on to an element, as react.dev's
 // Button does its onClick, is `onClick={onClick}` (ADR 0198): React
 // ignores what a handler returns, and no handler does what one that calls
