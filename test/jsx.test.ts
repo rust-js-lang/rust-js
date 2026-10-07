@@ -324,6 +324,12 @@ use react::{JSX, jsx};
 pub fn Level(level: u32) -> JSX::Element {
     jsx! { <p>{(level == 1).then(|| jsx! { <b>{"warn"}</b> })}{"x"}</p> }
 }
+// A \`bool\` is one whatever its shape, a variable too, as react.dev's
+// TeamMember has \`{isLead && <span>★</span>}\`.
+pub fn Lead(group: &str) -> JSX::Element {
+    let is_lead = group.ends_with('*');
+    jsx! { <p>{is_lead.then(|| jsx! { <b>{"lead"}</b> })}</p> }
+}
 // Text and a number keep their != null, as "" and 0 would render;
 // a test of text by its truthiness keeps its conditional.
 pub fn Named(name: Option<&'static str>, count: Option<u32>, href: Option<&'static str>) -> JSX::Element {
@@ -339,6 +345,7 @@ pub fn Named(name: Option<&'static str>, count: Option<u32>, href: Option<&'stat
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain('{level === 1 && <b>warn</b>}');
+  expect(jsx).toContain("{isLead && <b>lead</b>}");
   expect(jsx).toContain("{name != null && <b>{name}</b>}");
   expect(jsx).toContain("{count != null && <i>{count}</i>}");
   expect(jsx).not.toContain("{count &&");
@@ -346,6 +353,8 @@ pub fn Named(name: Option<&'static str>, count: Option<u32>, href: Option<&'stat
   expect(jsx).toContain("{href ? <a href={href} /> : undefined}");
   const { Level } = await import(join(dir, "lib.jsx"));
   expect([1, 2].map((level) => renderToStaticMarkup(Level(level)))).toEqual(["<p><b>warn</b>x</p>", "<p>x</p>"]);
+  const { Lead } = await import(join(dir, "lib.jsx"));
+  expect(["a*", "a"].map((group) => renderToStaticMarkup(Lead(group)))).toEqual(["<p><b>lead</b></p>", "<p></p>"]);
   const { Named } = await import(join(dir, "lib.jsx"));
   expect([renderToStaticMarkup(Named("", 0, "")), renderToStaticMarkup(Named(undefined, undefined, undefined))]).toEqual(["<p><b></b><i>0</i></p>", "<p></p>"]);
 });

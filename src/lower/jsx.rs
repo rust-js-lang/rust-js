@@ -500,7 +500,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let js::ExprKind::Cond(test, shown, none) = &value.kind else {
             return value;
         };
-        if !matches!(none.kind, js::ExprKind::Undefined) || !is_boolean(test) {
+        if !matches!(none.kind, js::ExprKind::Undefined) || !(is_boolean(test) || self.tests_bool(child)) {
             return value;
         }
         let test = match &test.kind {
@@ -515,6 +515,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             kind: js::ExprKind::Binary(js::Op::And, Box::new(test), shown.clone()),
             span: value.span,
         }
+    }
+
+    /// Is `child` a call on a `bool`, `is_lead.then(..)`, whose test is one
+    /// whatever its shape, a variable's too?
+    fn tests_bool(&self, child: ExprId) -> bool {
+        matches!(self.thir[self.strip(child)].kind, ExprKind::Call { fun, ref args, .. }
+            if args.first().is_some_and(|&receiver| self.thir[receiver].ty.is_bool())
+                && super::fn_def(self.thir[fun].ty)
+                    .is_some_and(|(def_id, _)| matches!(self.tcx.item_name(def_id).as_str(), "then" | "then_some")))
     }
 
     /// Is `child` a call of an `Option` of a JS object, `variant.icon.map(..)`?
