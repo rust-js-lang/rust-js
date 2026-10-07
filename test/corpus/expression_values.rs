@@ -65,6 +65,14 @@ fn give(f: fn(Loud), loud: Loud) {
     println!("given");
 }
 
+// `size_of` and `align_of` as values of a type parameter's: what the caller
+// gives for `T`.
+fn sizes<T>() -> (usize, usize) {
+    let size = std::mem::size_of::<T>;
+    let align = std::mem::align_of::<T>;
+    (size(), align())
+}
+
 // An `if let` that always matches is one Rust warns of, but takes.
 #[allow(irrefutable_let_patterns)]
 fn main() {
@@ -94,4 +102,5 @@ fn main() {
     give(drop, Loud(2));
     give(std::mem::forget, Loud(3));
     println!("{}", Marker::new().is_marker());
+    println!("{:?} {:?}", sizes::<u32>(), sizes::<(u8, u16)>());
 }

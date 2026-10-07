@@ -156,7 +156,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "tail-operand-outermost-scope",
-    breaks: "an operand of a function's tail is the body's, whose JS is outside the variables' `try`s, so one after a `let` is refused",
+    snapshots: true,
+    breaks: "a function's tail with a temporary of a destructor is returned from inside the variables' `try`s, where it's kept and returned after them",
     file: "src/lower/drops.rs",
     find: "                        Some(at) => open = Some(at),\n                        None => return Err(self.unsupported(span, \"a temporary with a destructor here\")),",
     replace: "                        Some(_) => open = Some(0),\n                        None => return Err(self.unsupported(span, \"a temporary with a destructor here\")),",
