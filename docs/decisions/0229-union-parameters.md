@@ -114,11 +114,10 @@ pub fn upload(body: impl IntoUploadBody) {
 - **A field and a result stay the enum**: a field needs one type, so it's
   `RequestInit { body: Some(blob.into()), .. }`, as now.
 - **A trait of another crate's passes no dictionary** (ADR 0100), so a
-  user's `fn send(body: impl IntoBodyInit)` is `send(body)`. A trait of
-  the crate's own still does, as any of its traits: an exported function
-  that takes one takes its dictionary too, `kind(body, IntoUploadBody)`.
-  So a union's trait belongs in a crate of bindings, as webapi's; a
-  marker trait of no methods passing none is a decision of its own.
+  user's `fn send(body: impl IntoBodyInit)` is `send(body)`, and nor does
+  one of the crate's own, as it has nothing in it (ADR 0230): `fn
+  kind(body: impl IntoUploadBody)` is `kind(body)`. (Amended: one of the
+  crate's own passed one, `kind(body, IntoUploadBody)`.)
 
 ## Why
 

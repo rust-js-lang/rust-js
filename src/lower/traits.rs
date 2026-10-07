@@ -198,7 +198,20 @@ fn bound_of<'tcx>(
         let partial_eq = tcx.require_lang_item(LangItem::PartialEq, tcx.def_span(id));
         tr = ty::TraitRef::new(tcx, partial_eq, [tr.self_ty(), tr.self_ty()]);
     }
-    operational(tcx, foreign, tr.def_id).then_some(tr)
+    (operational(tcx, foreign, tr.def_id) && !is_marker(tcx, foreign, tr.def_id)).then_some(tr)
+}
+
+/// A trait of the crate's or a library's with nothing in it: no items, and
+/// each supertrait one too, or one of no dictionary, `Send`. A bound of it
+/// passes no dictionary, as nothing would read it: `named<T: Marker>(value)`
+/// is `named(value)`. A `dyn` of it still carries its impl's, whose `$drop`
+/// drops it (ADR 0098). `Copy` isn't one: its dictionary copies.
+pub(super) fn is_marker(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_, '_>, id: DefId) -> bool {
+    (id.is_local() || foreign.in_library(id))
+        && tcx.associated_items(id).in_definition_order().next().is_none()
+        && supertraits(tcx, id, ty::GenericArgs::identity_for_item(tcx, id))
+            .iter()
+            .all(|(_, tr, _)| !operational(tcx, foreign, tr.def_id) || is_marker(tcx, foreign, tr.def_id))
 }
 
 /// The bounds of a function's own type parameters, which end its `bounds`:
@@ -870,6 +883,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if let Some(found) = self.evidence_for(tr) {
             return Ok(found);
+        }
+        // A marker's of a type a bound gave none for, as none passes one: a
+        // type parameter made a `dyn`, `Box::new(value)` of a `T: Marker`.
+        // What its impl's would have, its drop and its supertraits', made here.
+        if tr.self_ty().has_param() && is_marker(self.tcx, self.krate.foreign, tr.def_id) {
+            let mut props = Vec::new();
+            for (name, supertrait, _) in supertraits(self.tcx, tr.def_id, tr.args) {
+                if operational(self.tcx, self.krate.foreign, supertrait.def_id) {
+                    let dictionary = self.dictionary(supertrait, span)?;
+                    props.push(Prop::Field(
+                        name,
+                        Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(dictionary)).at(js::Span::NONE)]),
+                    ));
+                }
+            }
+            if self.drops(tr.self_ty()) == Drops::Runs
+                && let Some(drop) = self.drop_function(tr.self_ty(), span)?
+            {
+                props.push(Prop::Field("$drop".into(), drop));
+            }
+            return Ok(Expr::object(props));
         }
         // Derived and std impls of `Default` and `Clone` (ADR 0052).
         let ty = tr.self_ty();

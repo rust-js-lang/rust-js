@@ -9,7 +9,9 @@ bounds', not a sibling's; a generic function's own `Holder<T>` is any
 `Holder<..>` changed in place.) Extends [0047](0047-methods.md),
 [0023](0023-strings-references-shared-state.md), and
 [0039](0039-generic-bindings.md). Replaces 0047's rejection of trait methods
-for the supported subset below.
+for the supported subset below. Amended by
+[0230](0230-marker-bounds.md): a bound of a trait with nothing in it passes no
+dictionary.
 
 ## Context
 
