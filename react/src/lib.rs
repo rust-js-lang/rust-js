@@ -205,6 +205,12 @@ impl ReactElement {
     pub fn key(&self) -> Option<&'static str> {
         unreachable!()
     }
+
+    /// It, as what JSX makes, a component's result say. The element itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    pub fn element(&self) -> Element {
+        unreachable!()
+    }
 }
 
 impl Node for ReactElement {}
@@ -212,10 +218,11 @@ impl sealed::Sealed for ReactElement {}
 
 /// [`cloneElement`](https://react.dev/reference/react/cloneElement):
 /// `element` again, `props`' fields over its own,
-/// `clone_element(child, Linked { is_link: true })`.
+/// `clone_element(child, Linked { is_link: true })`: an element, as
+/// @types/react's `ReactElement`, so a child as any other, `Child::Element`.
 #[cfg_attr(rust_js, rust_js::link_name = "react#cloneElement")]
 #[allow(unused_variables)]
-pub fn clone_element<P>(element: &ReactElement, props: P) -> Element {
+pub fn clone_element<P>(element: &ReactElement, props: P) -> &'static ReactElement {
     unreachable!()
 }
 
