@@ -31,6 +31,15 @@ value written in place,** as `Option::map` already was:
 | `insert`, `remove`, `swap`, `truncate`, `dedup`, `extend` | `$insertAt`, `$removeAt`, `$swap`, `$truncate`, `$dedup`, `$extend` |
 | `windows(n)`, `chunks(n)`, `concat()` | `$windows`, `$chunks`, `flat()` |
 
+- **A `filter` of a variable goes into what takes its `Option` next**:
+  `t.filter(|t| !t.is_empty()).unwrap_or("Error")` is `t != null &&
+  t.length !== 0 ? t : "Error"`, as `title || 'Error'` is in react.dev's
+  TypeScript, and `.map(|e| jsx! { <p>{e}</p> })` of one is `e != null &&
+  e.length !== 0 ? <p>{e}</p> : undefined`: its test holds only where the
+  variable isn't `None`, so it's what `unwrap_or` and `map` test, and the
+  variable what they take, with no `const` of the `Option` between. A
+  conditional of another `Option`, `c ? maybe() : undefined`, isn't one,
+  as its `maybe()` may be `None`. (Amended.)
 - **A closure made of statements gets a name first:** `const then = (x) =>
   { .. }; r.TAG === "Ok" ? then(r._0) : r`.
 - **Closures inside the body don't stop it going in place,** unless they

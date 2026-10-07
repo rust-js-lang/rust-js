@@ -107,6 +107,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Whether `value` reads only variables that never change, so it's the
+    /// same read before or after anything else: a `useState` value, a
+    /// parameter, and elements of them.
+    fn reads_unchanging(&self, value: &Expr, out: &[Stmt]) -> bool {
+        let mut vars = Vec::new();
+        value.visit_vars(&mut |var| vars.push(var));
+        value.reads_only_vars() && vars.into_iter().all(|var| self.reads_alike(&Expr::var(var), out))
+    }
+
     fn capture_jsx_input(&mut self, base: &str, value: &mut Expr, out: &mut Vec<Stmt>) {
         let stable = self.reads_alike(value, out);
         if !stable && !self.capture_jsx(value, out) {
@@ -210,14 +219,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Read before the children, where a prop after them, a base's, is
         // made after them, as Rust makes it, and the order shows: it does
         // something, or reads what children that do something might change,
-        // `{..base}` of `bump(&mut base)`. A constant is made nowhere.
+        // `{..base}` of `bump(&mut base)`. A constant is made nowhere, and
+        // children that read only what never changes read the same after.
         if let Some(i) = fields
             .iter()
             .position(|p| matches!(p, Prop::Field(name, _) if name == "children"))
             && let Prop::Field(_, children) = &fields[i]
             && fields[i + 1..].iter().any(|p| {
                 let (Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Spread(value)) = p;
-                value.has_effects() || (children.has_effects() && !value.is_constant())
+                (value.has_effects() && !self.reads_unchanging(children, out))
+                    || (children.has_effects() && !value.is_constant())
             })
         {
             for prop in &mut fields {

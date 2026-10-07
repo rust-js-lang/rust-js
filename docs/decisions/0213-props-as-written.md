@@ -51,7 +51,13 @@ error: missing prop `href` of `ButtonLinkProps`
   a flattened struct's too; Rust makes them in the companion's order, so
   what does something, reordered, is made first in that order, and an
   object made here, a flattened struct's, is made each of its values, so
-  it stays one taken apart where it's given.
+  it stays one taken apart where it's given. Children the props declare
+  before a prop that does something, which Rust makes first, are made
+  first too, but where they read only variables that never change, a
+  state's value or a parameter, and do nothing: those read the same
+  after, so react.dev's Button keeps `<span>{expanded ? .. : ..}</span>`
+  in place beside a `className` its `cn` makes. (Amended: they were made
+  first always, and every prop with them.)
 - **A `Default` struct of only `Option`s and the like, none flattened,
   is its literal with its `Default`**: its companion has no slot for each
   of its fields, which React's `HtmlAttributes` has hundreds of.
