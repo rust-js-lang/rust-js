@@ -252,6 +252,59 @@ pub fn crumbs(crumbs: &[Crumb]) -> Vec<Element> {
   expect(js).not.toContain("const key");
 });
 
+// A default import is named as the module's `use` renames it, `use
+// next::link::Link as NextLink` is `import NextLink from "next/link"`, as
+// react.dev's MDX `Link` has it, beside its own `Link`; a module that
+// doesn't rename it keeps its name, and a `static`'s is camel case, as an
+// asset's own name is (ADR 0202).
+test("a default import is named as the module's use renames it", () => {
+  const source = `#![allow(non_snake_case, non_upper_case_globals)]
+pub mod next {
+    use react::{Element, ReactNode};
+    #[rust_js::link_name = "next/link#default"]
+    pub fn Link<C: ReactNode>(props: LinkProps<'_, C>) -> Element { unreachable!() }
+    pub struct LinkProps<'a, C> {
+        pub href: &'a str,
+        pub children: C,
+    }
+}
+pub mod crumbs {
+    use crate::next::Link;
+    use react::{Element, jsx};
+    pub fn Crumb() -> Element {
+        jsx! { <Link href="/a">{"a"}</Link> }
+    }
+}
+pub mod mdx {
+    use crate::next::Link as NextLink;
+    use react::{Element, jsx};
+    pub fn Link() -> Element {
+        jsx! { <NextLink href="/b">{"b"}</NextLink> }
+    }
+}
+pub mod assets {
+    unsafe extern "Rust" {
+        #[link_name = "./hero.png#default"]
+        pub safe static hero_img: &'static str;
+    }
+}
+pub mod banner {
+    use crate::assets::hero_img as banner_img;
+    pub fn banner() -> &'static str {
+        banner_img
+    }
+}
+`;
+  const { dir, args } = compile(source);
+  run(args);
+  const crumbs = readFileSync(join(dir, "crumbs.jsx"), "utf8");
+  const mdx = readFileSync(join(dir, "mdx.jsx"), "utf8");
+  expect(crumbs).toContain('import Link from "next/link";');
+  expect(mdx).toContain('import NextLink from "next/link";');
+  expect(mdx).toContain('<NextLink href="/b">');
+  expect(readFileSync(join(dir, "banner.js"), "utf8")).toContain('import bannerImg from "./hero.png";');
+});
+
 // A list whose callback has statements, and a handler of several, stay in
 // their JSX, as a person writes them: oxfmt lays them out where they are
 // (ADR 0218), as react.dev's `Breadcrumbs` maps its crumbs.

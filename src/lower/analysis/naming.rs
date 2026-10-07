@@ -5,7 +5,8 @@ use crate::lower::bindings;
 use crate::lower::bindings::{Export, is_binding, js_import, js_path, module_binding};
 use crate::lower::traits;
 use crate::lower::{Body, FnInfo, camel_case, fresh_in};
-use rustc_hir::def::DefKind;
+use rustc_hir::def::{DefKind, Res};
+use rustc_hir::{ItemKind, UseKind};
 use rustc_middle::thir::{ExprKind, Pat, PatKind, StmtKind};
 use rustc_middle::ty;
 use rustc_middle::ty::TyCtxt;
@@ -139,10 +140,47 @@ pub(super) fn name_imports(
         .iter()
         .map(|(&module, items)| {
             let mut reserved: HashSet<String> = uses.globals.iter().chain(items).cloned().collect();
+            let renamed = renamed_in(tcx, module);
             let names = (bases.iter())
-                .map(|(export, base)| ((*export).clone(), fresh_in(&mut reserved, base)))
+                .map(|(export, base)| {
+                    // A default import is named as the module renames what
+                    // holds it: `use …::Link as NextLink` is
+                    // `import NextLink from "next/link"`, as react.dev's MDX
+                    // `Link` has it beside its own `Link`.
+                    let alias = (export.1 == "default")
+                        .then(|| uses.bound_to.get(*export))
+                        .flatten()
+                        .and_then(|held| held.iter().filter_map(|id| renamed.get(id)).min());
+                    ((*export).clone(), fresh_in(&mut reserved, alias.unwrap_or(base)))
+                })
                 .collect();
             (module, names)
+        })
+        .collect()
+}
+
+/// What a module's `use`s rename, by their new names: `use …::Link as
+/// NextLink` is next/link's `Link` by `NextLink`, and a `static`'s is camel
+/// case, as its own name is.
+fn renamed_in(tcx: TyCtxt<'_>, module: LocalModId) -> HashMap<DefId, String> {
+    tcx.hir_module_items(module)
+        .free_items()
+        .filter_map(|id| match tcx.hir_item(id).kind {
+            ItemKind::Use(path, UseKind::Single(ident)) => match path.res.value_ns {
+                Some(Res::Def(kind, def_id)) if ident.name != tcx.item_name(def_id) => {
+                    let name = ident.name.to_string();
+                    Some((
+                        def_id,
+                        if matches!(kind, DefKind::Static { .. }) {
+                            camel_case(&name)
+                        } else {
+                            name
+                        },
+                    ))
+                }
+                _ => None,
+            },
+            _ => None,
         })
         .collect()
 }
