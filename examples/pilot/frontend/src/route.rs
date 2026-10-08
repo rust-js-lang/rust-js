@@ -2,7 +2,8 @@
 
 use react::{use_effect, use_state};
 use webapi::events::Hashchange;
-use webapi::{AddEventListenerOptions, EventTargetExt, abort_controller, location, window};
+use webapi::window;
+use webapi::{AddEventListenerOptions, EventTargetExt, abort_controller};
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum Route {
@@ -24,12 +25,12 @@ pub fn parse(hash: &str) -> Route {
 }
 
 fn hash() -> String {
-    location::hash(window::location(window))
+    window.location().hash()
 }
 
 /// Go to `hash`, as a link would.
 pub fn go(to: &str) {
-    location::set_hash(window::location(window), to);
+    window.location().set_hash(to);
 }
 
 /// The route, and a render each time it changes.
@@ -40,11 +41,11 @@ pub fn use_route() -> Route {
             let controller = abort_controller::new();
             // It's removed when the effect is cleaned up: its signal aborts.
             let options = AddEventListenerOptions {
-                signal: Some(abort_controller::signal(controller)),
+                signal: Some(controller.signal()),
                 ..Default::default()
             };
             window.add_event_listener_with_options(Hashchange, move |_| set_current.set(hash()), options);
-            move || abort_controller::abort(controller)
+            move || controller.abort()
         },
         (),
     );

@@ -433,3 +433,35 @@ pub fn hide(file: File) -> File {
   const lib = await import(join(dir, "lib.js"));
   expect(lib.hide({ code: "c", hidden: false, active: true })).toEqual({ code: "c", hidden: true, active: true });
 });
+
+// A format string written across lines keeps them too, as react.dev's
+// DownloadButton writes the page it downloads; one written with `\n`, or
+// whose value is written across lines, doesn't.
+test("a format string written across lines keeps its lines", async () => {
+  const dir = fixture("multiline-format");
+  writeFileSync(join(dir, "lib.rs"), [
+    "pub fn page(code: &str) -> String {",
+    "    format!(",
+    "        r#\"<script>",
+    "{code}",
+    "</script>\"#",
+    "    )",
+    "}",
+    "",
+    "pub fn escaped(code: &str) -> String {",
+    "    format!(\"<b>\\n{code}</b>\")",
+    "}",
+    "",
+    "pub fn valued(code: &str) -> String {",
+    "    format!(\"<i>{}</i>\", format!(\"{code}",
+    "!\"))",
+    "}",
+    "",
+  ].join("\n"));
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  return `<script>\n${code}\n</script>`;");
+  expect(js).toContain("  return `<b>\\n${code}</b>`;");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.page("x"), lib.escaped("x"), lib.valued("x")]).toEqual(["<script>\nx\n</script>", "<b>\nx</b>", "<i>x\n!</i>"]);
+});

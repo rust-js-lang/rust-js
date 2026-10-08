@@ -5,9 +5,10 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 use js::{Promise, spawn};
+use webapi::{document};
 use webapi::events::Click;
 use webapi::tags::{Button, Div, Output};
-use webapi::{EventTargetExt, Element, document, element, node};
+use webapi::{EventTargetExt, Element};
 
 unsafe extern "Rust" {
     #[link_name = "setTimeout"]
@@ -24,18 +25,18 @@ fn sleep(ms: u32) -> Promise<()> {
 async fn count_down(output: &'static Element, from: u32) {
     let mut n = from;
     while n > 0 {
-        node::set_text_content(output, &n.to_string());
+        output.set_text_content(&n.to_string());
         sleep(500).await;
         n -= 1;
     }
-    node::set_text_content(output, "Go!");
+    output.set_text_content("Go!");
 }
 
 pub fn main() {
-    let app = document::get_element_by_id(document, "app").expect("the page has an #app");
-    let start = document::create_element(document, Button);
-    node::set_text_content(start, "Start");
-    let output = document::create_element(document, Output);
+    let app = document.get_element_by_id("app").expect("the page has an #app");
+    let start = document.create_element(Button);
+    start.set_text_content("Start");
+    let output = document.create_element(Output);
     // One countdown at a time.
     let running = Rc::new(Cell::new(false));
     start.add_event_listener(Click, move |_| {
@@ -49,8 +50,8 @@ pub fn main() {
             running.set(false);
         }));
     });
-    element::append(app, start);
-    element::append(app, output);
+    app.append(start);
+    app.append(output);
 }
 
 #[cfg(test)]
@@ -60,11 +61,11 @@ mod tests {
 
     /// An empty page with the `<div id="app">` that `main` looks for.
     fn page() -> &'static Element {
-        let body = document::body(document).unwrap();
-        node::set_text_content(body, "");
-        let app = document::create_element(document, Div);
-        element::set_id(app, "app");
-        element::append(body, app);
+        let body = document.body().unwrap();
+        body.set_text_content("");
+        let app = document.create_element(Div);
+        app.set_id("app");
+        body.append(app);
         app
     }
 
@@ -74,7 +75,7 @@ mod tests {
     fn a_click_shows_the_first_number_at_once() {
         let app = page();
         main();
-        html_element::click(html_element::unchecked_from(element::query_selector(app, "button").unwrap()));
-        assert_eq!(node::text_content(element::query_selector(app, "output").unwrap()).unwrap(), "3");
+        html_element::unchecked_from(app.query_selector("button").unwrap()).click();
+        assert_eq!(app.query_selector("output").unwrap().text_content().unwrap(), "3");
     }
 }

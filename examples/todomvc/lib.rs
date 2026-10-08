@@ -16,22 +16,23 @@ use model::{Action, Filter, load, reduce, save};
 use react::dom::client::create_root;
 use react::event::{ChangeEvent, KeyboardEvent};
 use react::{JSX, jsx, use_effect, use_reducer_with, use_state};
+use webapi::{document, window};
 use webapi::events::Hashchange;
-use webapi::{AddEventListenerOptions, EventTargetExt, abort_controller, document, location, window};
+use webapi::{AddEventListenerOptions, EventTargetExt, abort_controller};
 
 /// The route's filter, and a render each time the hash changes.
 fn use_filter() -> Filter {
-    let hash = || location::hash(window::location(window));
+    let hash = || window.location().hash();
     let (current, set_current) = use_state(hash());
     use_effect(
         move || {
             let controller = abort_controller::new();
             let options = AddEventListenerOptions {
-                signal: Some(abort_controller::signal(controller)),
+                signal: Some(controller.signal()),
                 ..Default::default()
             };
             window.add_event_listener_with_options(Hashchange, move |_| set_current.set(hash()), options);
-            move || abort_controller::abort(controller)
+            move || controller.abort()
         },
         (),
     );
@@ -113,6 +114,6 @@ pub fn App() -> JSX::Element {
 }
 
 pub fn main() {
-    let app = document::get_element_by_id(document, "app").expect("the page has an #app");
+    let app = document.get_element_by_id("app").expect("the page has an #app");
     create_root(app).render(jsx! { <App /> });
 }

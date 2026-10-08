@@ -414,7 +414,7 @@ impl<T> core::future::Future for Promise<T> {
 /// `promise`, settled either way: its `.await` is `Ok` of what it fulfils
 /// with, or `Err` of what it's rejected with, where the `.await` of the
 /// promise itself would throw. For a promise of the webapi crate's, as
-/// `settle(window::fetch(window, url)).await` is a network error's `Err`
+/// `settle(window.fetch(url)).await` is a network error's `Err`
 /// (ADR 0035).
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
 #[allow(unused_variables)]
@@ -726,7 +726,7 @@ pub mod object {
 }
 
 /// A JS [`ArrayBuffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer):
-/// raw bytes, as `response::array_buffer` gives them.
+/// raw bytes, as `response.array_buffer()` gives them.
 pub struct ArrayBuffer(PhantomData<JsObject>);
 
 pub mod array_buffer {
@@ -739,7 +739,7 @@ pub mod array_buffer {
 }
 
 /// A JS [`Uint8Array`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array):
-/// a view of the bytes in an `ArrayBuffer`, as `response::bytes` gives them.
+/// a view of the bytes in an `ArrayBuffer`, as `response.bytes()` gives them.
 pub struct Uint8Array(PhantomData<JsObject>);
 
 pub mod uint8_array {

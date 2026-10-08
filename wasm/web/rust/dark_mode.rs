@@ -2,12 +2,12 @@
 // In JS it's `useDarkMode`, the name React finds a hook by (ADR 0046).
 
 use react::{Notify, use_sync_external_store};
-use webapi::{MediaQueryList, abort_controller, media_query_list, window};
+use webapi::{MediaQueryList, abort_controller, window};
 
 use crate::listen::listen;
 
 thread_local! {
-    static DARK: &'static MediaQueryList = window::match_media(window, "(prefers-color-scheme: dark)");
+    static DARK: &'static MediaQueryList = window.match_media("(prefers-color-scheme: dark)");
 }
 
 pub fn use_dark_mode() -> bool {
@@ -20,8 +20,8 @@ pub fn use_dark_mode() -> bool {
                 Box::new(move |_| notify.call()),
                 controller,
             );
-            move || abort_controller::abort(controller)
+            move || controller.abort()
         },
-        || media_query_list::matches(DARK.with(|dark| *dark)),
+        || DARK.with(|dark| *dark).matches(),
     )
 }

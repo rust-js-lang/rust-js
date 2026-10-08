@@ -14,7 +14,7 @@ use js::{decode_uri_component, encode_uri_component, settle, spawn};
 let query = encode_uri_component("a b&c");             // encodeURIComponent("a b&c")
 let text = decode_uri_component("%E0%A4%A");           // Err: a URIError
 spawn(Box::new(async move {                            // runs, unawaited
-    match settle(webapi::window::fetch(webapi::window, &url)).await {
+    match settle(webapi::window.fetch(&url)).await {
         Ok(response) => { .. }                         // what fetch fulfils with
         Err(error) => { .. }                           // a network error: not a throw
     }
@@ -33,7 +33,7 @@ spawn(Box::new(async move {                            // runs, unawaited
   A Rust value's JSON is serde's ([ADR 0077](../docs/decisions/0077-serde-json.md)).
 - `Unknown` is a JS value of any shape, as TypeScript's `unknown` is
   ([ADR 0225](../docs/decisions/0225-unknown-values.md)): what `json::parse(text)`
-  gives, or `webapi`'s `response::json(r)`. `classify(value)` tells what it is,
+  gives, or `webapi`'s `r.json()`. `classify(value)` tells what it is,
   a `Kind` to `match`, by `typeof`; `get(value, key)` and `set(value, key, to)`
   are `value[key]`; `object::keys(value)` is `Object.keys`.
 - `Json` is a JSON value, ReScript's `JSON.t`: `Json::parse(text)`, then

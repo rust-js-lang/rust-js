@@ -144,3 +144,15 @@ also covers the new fixture in the normal compiler verification workflow.
   that does nothing. The `_named` and `_with_options` forms too.
 - **Its browser test runs with the other browser tests**, after the rest of
   the suite (`scripts/test.ts`): it opens a page per case in Chromium.
+- **Every member is a method, not only an event's.** `el.append(..)`,
+  `document.create_element(Button)`, `input.set_value("x")`,
+  `window.fetch(url)`: each instance member of each interface is a method of
+  its type, and a type has its parent's by `Deref`. Its module keeps what
+  takes no value of it, constructors, statics, constants and
+  `unchecked_from`. One call style across the crate; the JS is the same.
+  Callers migrated by rewriting `module::f(x, ..)` as `x.f(..)`. Making them
+  methods showed a bug the modules hid: CSS properties took TypeScript's
+  `setProperty` and four other methods as properties, `get setProperty`,
+  which as a method shadowed the declaration's own; they're left out now.
+  The coverage measure counts a member bound on a type its class derefs to,
+  as a method call finds it (96.1%).

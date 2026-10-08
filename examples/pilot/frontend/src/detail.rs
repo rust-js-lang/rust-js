@@ -22,7 +22,7 @@ pub fn ContactPage(ContactPageProps { id }: ContactPageProps) -> JSX::Element {
     use_effect(
         move || {
             let controller = abort_controller::new();
-            let signal = abort_controller::signal(controller);
+            let signal = controller.signal();
             set_loaded.set(Loaded::Loading);
             spawn(Box::new(async move {
                 match api::contact(id, signal).await {
@@ -34,7 +34,7 @@ pub fn ContactPage(ContactPageProps { id }: ContactPageProps) -> JSX::Element {
                     Err(failure) => set_loaded.set(Loaded::Failed(failure.message())),
                 }
             }));
-            move || abort_controller::abort(controller)
+            move || controller.abort()
         },
         (id,),
     );

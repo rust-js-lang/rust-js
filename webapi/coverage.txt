@@ -1,6 +1,6 @@
 # The webapi crate against TypeScript's DOM (@types/web): bun test test/webapi-coverage.test.ts
 # classes: 699 of 701 (99.7%)
-# members: 8129 of 8488 (95.8%)
+# members: 8160 of 8488 (96.1%)
 AbortController.abort
 AbortController.constructor
 AbortController.signal
@@ -237,12 +237,20 @@ CSSCounterStyleRule.speakAs
 CSSCounterStyleRule.suffix
 CSSCounterStyleRule.symbols
 CSSCounterStyleRule.system
+CSSFontFaceDescriptors.cssText
 CSSFontFaceDescriptors.fontDisplay
 CSSFontFaceDescriptors.fontFamily
 CSSFontFaceDescriptors.fontFeatureSettings
 CSSFontFaceDescriptors.fontStretch
 CSSFontFaceDescriptors.fontStyle
 CSSFontFaceDescriptors.fontWeight
+CSSFontFaceDescriptors.getPropertyPriority
+CSSFontFaceDescriptors.getPropertyValue
+CSSFontFaceDescriptors.item
+CSSFontFaceDescriptors.length
+CSSFontFaceDescriptors.parentRule
+CSSFontFaceDescriptors.removeProperty
+CSSFontFaceDescriptors.setProperty
 CSSFontFaceDescriptors.sizeAdjust
 CSSFontFaceDescriptors.src
 CSSFontFaceDescriptors.unicodeRange
@@ -303,11 +311,19 @@ CSSNumericValue.sub
 CSSNumericValue.to
 CSSNumericValue.toSum
 CSSNumericValue.type
+CSSPageDescriptors.cssText
+CSSPageDescriptors.getPropertyPriority
+CSSPageDescriptors.getPropertyValue
+CSSPageDescriptors.item
+CSSPageDescriptors.length
 CSSPageDescriptors.margin
 CSSPageDescriptors.marginBottom
 CSSPageDescriptors.marginLeft
 CSSPageDescriptors.marginRight
 CSSPageDescriptors.marginTop
+CSSPageDescriptors.parentRule
+CSSPageDescriptors.removeProperty
+CSSPageDescriptors.setProperty
 CSSPageDescriptors.size
 CSSPageRule.selectorText
 CSSPerspective.constructor
@@ -315,6 +331,9 @@ CSSPerspective.length
 CSSPositionTryDescriptors.alignSelf
 CSSPositionTryDescriptors.blockSize
 CSSPositionTryDescriptors.bottom
+CSSPositionTryDescriptors.cssText
+CSSPositionTryDescriptors.getPropertyPriority
+CSSPositionTryDescriptors.getPropertyValue
 CSSPositionTryDescriptors.height
 CSSPositionTryDescriptors.inlineSize
 CSSPositionTryDescriptors.inset
@@ -324,8 +343,10 @@ CSSPositionTryDescriptors.insetBlockStart
 CSSPositionTryDescriptors.insetInline
 CSSPositionTryDescriptors.insetInlineEnd
 CSSPositionTryDescriptors.insetInlineStart
+CSSPositionTryDescriptors.item
 CSSPositionTryDescriptors.justifySelf
 CSSPositionTryDescriptors.left
+CSSPositionTryDescriptors.length
 CSSPositionTryDescriptors.margin
 CSSPositionTryDescriptors.marginBlock
 CSSPositionTryDescriptors.marginBlockEnd
@@ -345,10 +366,13 @@ CSSPositionTryDescriptors.minBlockSize
 CSSPositionTryDescriptors.minHeight
 CSSPositionTryDescriptors.minInlineSize
 CSSPositionTryDescriptors.minWidth
+CSSPositionTryDescriptors.parentRule
 CSSPositionTryDescriptors.placeSelf
 CSSPositionTryDescriptors.positionAnchor
 CSSPositionTryDescriptors.positionArea
+CSSPositionTryDescriptors.removeProperty
 CSSPositionTryDescriptors.right
+CSSPositionTryDescriptors.setProperty
 CSSPositionTryDescriptors.top
 CSSPositionTryDescriptors.width
 CSSPositionTryRule.name
@@ -2470,6 +2494,9 @@ HTMLFieldSetElement.willValidate
 HTMLFontElement.color
 HTMLFontElement.face
 HTMLFontElement.size
+HTMLFormControlsCollection.item
+HTMLFormControlsCollection.length
+HTMLFormControlsCollection.namedItem
 HTMLFormElement.acceptCharset
 HTMLFormElement.action
 HTMLFormElement.autocomplete
@@ -2784,7 +2811,9 @@ HTMLOptionElement.selected
 HTMLOptionElement.text
 HTMLOptionElement.value
 HTMLOptionsCollection.add
+HTMLOptionsCollection.item
 HTMLOptionsCollection.length
+HTMLOptionsCollection.namedItem
 HTMLOptionsCollection.remove
 HTMLOptionsCollection.selectedIndex
 HTMLOutputElement.checkValidity
@@ -4251,6 +4280,8 @@ RTCTrackEvent.receiver
 RTCTrackEvent.streams
 RTCTrackEvent.track
 RTCTrackEvent.transceiver
+RadioNodeList.forEach
+RadioNodeList.item
 RadioNodeList.value
 Range.END_TO_END
 Range.END_TO_START

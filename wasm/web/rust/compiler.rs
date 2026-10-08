@@ -19,8 +19,8 @@ use std::rc::Rc;
 
 use js::{JsError, JsObject, Promise, Uint8Array, array_buffer, js_error, number, uint8_array};
 use webapi::{
-    Response, WebAssemblyInstance, WebAssemblyMemory, WebAssemblyModule, performance, response, text_decoder,
-    text_encoder, web_assembly, web_assembly_instance, web_assembly_memory, window,
+    Response, WebAssemblyInstance, WebAssemblyMemory, WebAssemblyModule, performance, text_decoder, text_encoder,
+    web_assembly, window,
 };
 
 /// A file in the WASI shim's in-memory filesystem.
@@ -156,7 +156,7 @@ pub fn mb(n: f64) -> String {
 /// Download the compiler, the sysroot, the webapi and js crates and the examples,
 /// giving `stat` each one's time as it arrives.
 pub async fn load(stat: Stat) -> Loaded {
-    let start = performance::now(performance);
+    let start = performance.now();
     // All downloads start here, together: a JS promise runs as soon as it's made
     // (ADR 0029). Awaiting them one by one below only collects the results.
     let module = load_compiler(start, stat.clone());
@@ -177,21 +177,21 @@ pub async fn load(stat: Stat) -> Loaded {
         styles,
         examples: examples.await,
     };
-    stat("ready after".to_string(), ms(performance::now(performance) - start));
+    stat("ready after".to_string(), ms(performance.now() - start));
     loaded
 }
 
 async fn load_compiler(start: f64, stat: Stat) -> &'static WebAssemblyModule {
-    let module = web_assembly::compile_streaming(window::fetch(window, "./rust-js.wasm")).await;
+    let module = web_assembly::compile_streaming(window.fetch("./rust-js.wasm")).await;
     stat(
         "download + compile rust-js.wasm".to_string(),
-        ms(performance::now(performance) - start),
+        ms(performance.now() - start),
     );
     module
 }
 
 async fn load_sysroot(start: f64, stat: Stat) -> HashMap<String, &'static WasiFile> {
-    let names = names_json(window::fetch(window, "./sysroot.json").await).await;
+    let names = names_json(window.fetch("./sysroot.json").await).await;
     // Every file's download starts before the first is awaited.
     let mut downloads = Vec::new();
     for name in names {
@@ -208,7 +208,7 @@ async fn load_sysroot(start: f64, stat: Stat) -> HashMap<String, &'static WasiFi
         "download sysroot".to_string(),
         format!(
             "{} ({} files, {})",
-            ms(performance::now(performance) - start),
+            ms(performance.now() - start),
             entries.len(),
             mb(size as f64)
         ),
@@ -217,33 +217,35 @@ async fn load_sysroot(start: f64, stat: Stat) -> HashMap<String, &'static WasiFi
 }
 
 async fn load_sysroot_file(name: String) -> (String, &'static WasiFile) {
-    let response = window::fetch(window, format!("./sysroot/{name}").as_str()).await;
-    let bytes = uint8_array::new(response::array_buffer(response).await);
+    let response = window.fetch(format!("./sysroot/{name}").as_str()).await;
+    let bytes = uint8_array::new(response.array_buffer().await);
     (name, new_file(bytes, &FileOptions { readonly: true }))
 }
 
 /// `@rust-js/runtime` and React's modules, and the stylesheets, for a
 /// program to import (ADR 0044).
 async fn load_packages(start: f64, stat: Stat) -> (Vec<(String, String)>, Vec<(String, String)>) {
-    let runtime = response::text(window::fetch(window, "./runtime.js").await);
-    let packages = packages_json(window::fetch(window, "./packages.json").await);
+    let runtime = window.fetch("./runtime.js").await.text();
+    let packages = packages_json(window.fetch("./packages.json").await);
     let mut modules = vec![("@rust-js/runtime".to_string(), runtime.await)];
     let packages = packages.await;
     modules.extend(text_fields(packages.modules));
     stat(
         "download runtime and packages".to_string(),
-        ms(performance::now(performance) - start),
+        ms(performance.now() - start),
     );
     (modules, text_fields(packages.styles))
 }
 
 async fn load_binding_crate(name: &str, start: f64, stat: Stat) -> &'static WasiFile {
-    let bytes = response::array_buffer(window::fetch(window, format!("./crates/lib{name}.rmeta").as_str()).await).await;
+    let bytes = (window.fetch(format!("./crates/lib{name}.rmeta").as_str()).await)
+        .array_buffer()
+        .await;
     stat(
         format!("download {name} crate"),
         format!(
             "{} ({})",
-            ms(performance::now(performance) - start),
+            ms(performance.now() - start),
             mb(array_buffer::byte_length(bytes) as f64)
         ),
     );
@@ -251,12 +253,12 @@ async fn load_binding_crate(name: &str, start: f64, stat: Stat) -> &'static Wasi
 }
 
 async fn load_examples() -> Vec<Example> {
-    examples_json(window::fetch(window, "./examples.json").await).await
+    examples_json(window.fetch("./examples.json").await).await
 }
 
 async fn fetch_example_file(name: String, path: String) -> (String, String) {
-    let response = window::fetch(window, format!("./examples/{name}/{path}").as_str()).await;
-    (path, response::text(response).await)
+    let response = window.fetch(format!("./examples/{name}/{path}").as_str()).await;
+    (path, response.text().await)
 }
 
 /// An example's files, `path → text`, in the order it lists them.
@@ -322,7 +324,7 @@ fn directory_of(sources: &HashMap<String, String>) -> HashMap<String, &'static I
             }
             None => path.as_str(),
         };
-        let bytes = text_encoder::encode_with_input(text_encoder::new(), text);
+        let bytes = text_encoder::new().encode_with_input(text);
         folder.insert(name.to_string(), file_inode(new_plain_file(bytes)));
     }
     top
@@ -334,7 +336,7 @@ fn js_files_in(folder: &WasiDirectory, prefix: &str, found: &mut Vec<(String, St
         if is_directory(entry) {
             js_files_in(as_directory(entry), &format!("{prefix}{name}/"), found);
         } else if is_file(entry) && (name.ends_with(".js") || name.ends_with(".jsx")) {
-            let text = text_decoder::decode_with_input(text_decoder::new(), file_data(as_file(entry)));
+            let text = text_decoder::new().decode_with_input(file_data(as_file(entry)));
             found.push((format!("{prefix}{name}"), text));
         }
     }
@@ -413,14 +415,14 @@ pub async fn compile(loaded: &Loaded, sources: &HashMap<String, String>, root_fi
         &WasiOptions { debug: false },
     );
 
-    let t0 = performance::now(performance);
+    let t0 = performance.now();
     let imports = Imports {
         wasi_snapshot_preview1: wasi_import(wasi),
     };
     let instance = web_assembly::instantiate_with_web_assembly_module_and_import_object(loaded.module, &imports).await;
-    let t1 = performance::now(performance);
+    let t1 = performance.now();
     let started = run_wasi(wasi, instance);
-    let t2 = performance::now(performance);
+    let t2 = performance.now();
     let ok = matches!(started, Ok(0));
     let exit = match started {
         Ok(code) => code.to_string(),
@@ -438,7 +440,7 @@ pub async fn compile(loaded: &Loaded, sources: &HashMap<String, String>, root_fi
     if ok {
         js_files_in(preopen_dir(out_dir), "", &mut files);
     }
-    let memory = web_assembly_memory::buffer(exported_memory(web_assembly_instance::exports(instance)));
+    let memory = exported_memory(instance.exports()).buffer();
     Compiled {
         exit,
         ok,

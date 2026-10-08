@@ -90,7 +90,7 @@ react = { package = "rust-js-react", version = "${version("react")}" }
 `);
   writeFileSync(
     join(app, "src", "lib.rs"),
-    "#![allow(non_snake_case)]\nuse react::{JSX, jsx};\n\npub fn body(document: &webapi::Document) -> Option<&'static webapi::HTMLElement> {\n    webapi::document::body(document)\n}\n\npub fn App() -> JSX::Element {\n    jsx! { <p>{\"from npm\"}</p> }\n}\n",
+    "#![allow(non_snake_case)]\nuse react::{JSX, jsx};\n\npub fn body(document: &webapi::Document) -> Option<&'static webapi::HTMLElement> {\n    document.body()\n}\n\npub fn App() -> JSX::Element {\n    jsx! { <p>{\"from npm\"}</p> }\n}\n",
   );
   mkdirSync(join(app, ".cargo"));
   writeFileSync(join(app, ".cargo", "config.toml"), `[patch.crates-io]

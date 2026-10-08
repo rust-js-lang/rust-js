@@ -2,26 +2,26 @@
 //! check in the generated JS.
 
 use js::uint8_array;
-use webapi::{Event, EventTargetExt, document, element, event, html_input_element, node, text_decoder, text_encoder, window};
+use webapi::{Event, EventTargetExt, event, html_input_element, node, text_decoder, text_encoder, document, window};
 
 pub fn forms() -> String {
-    let input = html_input_element::unchecked_from(document::create_element_named(document, "input"));
-    html_input_element::set_value(input, "typed");
-    let app = document::get_element_by_id(document, "app").expect("the page has an #app");
-    element::append(app, input);
-    element::append(app, "!");
+    let input = html_input_element::unchecked_from(document.create_element_named("input"));
+    input.set_value("typed");
+    let app = document.get_element_by_id("app").expect("the page has an #app");
+    app.append(input);
+    app.append("!");
     let ping: &Event = event::new("ping");
     app.add_event_listener_named("ping", |e| e.prevent_default());
     let _ = window.dispatch_event(ping);
-    node::text_content(app).unwrap() + &html_input_element::value(input)
+    app.text_content().unwrap() + &input.value()
 }
 
 /// Optional arguments give more forms: `encode_with_input(e, text)` is
 /// `e.encode(text)`, and a union takes its member as it is (ADR 0229):
 /// `decode_with_input(d, bytes)` is `d.decode(bytes)`.
 pub fn round_trip(text: &str) -> (u32, String) {
-    let bytes = text_encoder::encode_with_input(text_encoder::new(), text);
-    let back = text_decoder::decode_with_input(text_decoder::new_with_label("utf-8"), bytes);
+    let bytes = text_encoder::new().encode_with_input(text);
+    let back = text_decoder::new_with_label("utf-8").decode_with_input(bytes);
     (uint8_array::length(bytes), back)
 }
 
@@ -30,7 +30,7 @@ pub fn round_trip(text: &str) -> (u32, String) {
 pub fn bodies(url: &str) -> (&'static webapi::Response, js::Promise<&'static webapi::Response>) {
     let blob = webapi::blob::new();
     let response = webapi::response::new_with_body(blob);
-    (response, window::fetch(window, url))
+    (response, window.fetch(url))
 }
 
 /// A `sequence` is a slice (ADR 0219): a `Blob` of its parts, each a
@@ -38,24 +38,24 @@ pub fn bodies(url: &str) -> (&'static webapi::Response, js::Promise<&'static web
 /// Blob([text, "!"])` and `navigator.clipboard.write(items)`.
 pub fn copied(text: &str, items: &[&webapi::ClipboardItem]) -> (&'static webapi::Blob, js::Promise<()>) {
     let blob = webapi::blob::new_with_blob_parts(&[text.into(), "!".into()]);
-    (blob, webapi::clipboard::write(webapi::navigator::clipboard(webapi::navigator), items))
+    (blob, webapi::navigator.clipboard().write(items))
 }
 
 /// A frame's window, a message's sender, and the page's clock:
 /// `frame.contentWindow`, `e.source` and `window.performance.now()`.
 pub fn from_frame(frame: &webapi::HTMLIFrameElement, e: &Event) -> (bool, f64) {
     let sender = webapi::message_event::unchecked_from(e).source();
-    let window_of = webapi::html_i_frame_element::content_window(frame);
-    (js::object::is(&sender, &window_of), webapi::performance::now(window::performance(window)))
+    let window_of = frame.content_window();
+    (js::object::is(&sender, &window_of), window.performance().now())
 }
 
 /// A canvas, which a library like canvas-confetti draws on: its size, set
 /// and read, `canvas.width = 320`.
 pub fn canvas_size() -> (u32, u32) {
-    let canvas = webapi::html_canvas_element::unchecked_from(document::create_element_named(document, "canvas"));
-    webapi::html_canvas_element::set_width(canvas, 320);
-    webapi::html_canvas_element::set_height(canvas, 200);
-    (webapi::html_canvas_element::width(canvas), webapi::html_canvas_element::height(canvas))
+    let canvas = webapi::html_canvas_element::unchecked_from(document.create_element_named("canvas"));
+    canvas.set_width(320);
+    canvas.set_height(200);
+    (canvas.width(), canvas.height())
 }
 
 /// A static method, the class's own, as react.dev's DownloadButton asks
@@ -76,23 +76,20 @@ pub fn kinds(
     param: &webapi::AudioParam,
     bytes: &js::Uint8Array,
 ) -> (Vec<String>, usize, f64, f32, u16, Option<f64>) {
-    let names = element::get_attribute_names(el);
-    let languages = webapi::navigator::languages(webapi::navigator);
-    let into = text_encoder::encode_into(text_encoder::new(), "hi", bytes);
-    (names, languages.len(), webapi::blob::size(blob), webapi::audio_param::value(param), node::ELEMENT_NODE, into.written)
+    let names = el.get_attribute_names();
+    let languages = webapi::navigator.languages();
+    let into = text_encoder::new().encode_into("hi", bytes);
+    (names, languages.len(), blob.size(), param.value(), node::ELEMENT_NODE, into.written)
 }
 
 /// An event handler property, `onclick`: a closure given the event its name
 /// is on the target, a button's click a `PointerEvent`, or `None`, `null`.
 pub fn handlers(button: &webapi::HTMLButtonElement) -> bool {
-    webapi::html_element::set_onclick(
-        button,
-        Some(Box::new(|e: &webapi::PointerEvent| {
+    button.set_onclick(Some(Box::new(|e: &webapi::PointerEvent| {
             e.prevent_default();
-        })),
-    );
-    let set = webapi::html_element::onclick(button).is_some();
-    webapi::html_element::set_onclick(button, None);
+        })));
+    let set = button.onclick().is_some();
+    button.set_onclick(None);
     set
 }
 
@@ -104,21 +101,21 @@ pub fn socket(url: &str) -> &'static webapi::WebSocket {
 /// A CSS property of an element's style, by its own name, as TypeScript has
 /// each: `style.backgroundColor`.
 pub fn styled(el: &webapi::HTMLElement) -> String {
-    let style = webapi::html_element::style(el);
-    webapi::css_style_properties::set_background_color(style, "red");
-    webapi::css_style_properties::webkit_line_clamp(style)
+    let style = el.style();
+    style.set_background_color("red");
+    style.webkit_line_clamp()
 }
 
 /// What an iterable, a maplike or a setlike declares: `forEach` of each
 /// item, and a map's `get`, `has` and `size`.
 pub fn iterables(nodes: &webapi::NodeList, headers: &webapi::Headers, ranges: &webapi::HighlightRegistry) -> (u32, Option<String>, bool, u32) {
     let mut count = 0;
-    webapi::node_list::for_each(nodes, Box::new(move |_node: &webapi::Node, _i: u32, _list: &webapi::NodeList| {
+    nodes.for_each(Box::new(move |_node: &webapi::Node, _i: u32, _list: &webapi::NodeList| {
         count += 1;
     }));
     let mut seen = 0;
-    webapi::headers::for_each(headers, Box::new(move |_value: &str, _name: &str, _headers: &webapi::Headers| {
+    headers.for_each(Box::new(move |_value: &str, _name: &str, _headers: &webapi::Headers| {
         seen += 1;
     }));
-    (seen, webapi::headers::get(headers, "a"), webapi::highlight_registry::has(ranges, "x"), webapi::highlight_registry::size(ranges))
+    (seen, headers.get("a"), ranges.has("x"), ranges.size())
 }

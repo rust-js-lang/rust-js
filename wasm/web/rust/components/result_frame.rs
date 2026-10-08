@@ -7,9 +7,7 @@ use std::rc::Rc;
 
 use js::{object, set_timeout};
 use react::{JSX, jsx, use_effect, use_ref};
-use webapi::{
-    Event, HTMLIFrameElement, abort_controller, abort_signal, element, html_i_frame_element, message_event, window,
-};
+use webapi::{Event, HTMLIFrameElement, abort_controller, message_event, window};
 
 use crate::listen::listen;
 use crate::programs::{Outcome, Program, Report, outcome};
@@ -47,10 +45,9 @@ pub fn ResultFrame(ResultFrameProps { program, on_outcome }: ResultFrameProps) -
                     "message",
                     Box::new(move |e| {
                         let from_frame = match frame.current() {
-                            Some(frame) => object::is(
-                                &message_event::unchecked_from(e).source(),
-                                &html_i_frame_element::content_window(frame),
-                            ),
+                            Some(frame) => {
+                                object::is(&message_event::unchecked_from(e).source(), &frame.content_window())
+                            }
                             None => false,
                         };
                         let report = match message_data(e) {
@@ -60,7 +57,7 @@ pub fn ResultFrame(ResultFrameProps { program, on_outcome }: ResultFrameProps) -
                         // As tall as its page, from the height it starts with.
                         if let (Some(height), Some(frame)) = (report.height, frame.current()) {
                             let style = format!("height: {}px", height.max(280.0).min(4000.0));
-                            element::set_attribute(frame, "style", &style);
+                            frame.set_attribute("style", &style);
                             return;
                         }
                         if let Some(outcome) = outcome(report) {
@@ -70,18 +67,18 @@ pub fn ResultFrame(ResultFrameProps { program, on_outcome }: ResultFrameProps) -
                     }),
                     controller,
                 );
-                let signal = abort_controller::signal(controller);
+                let signal = controller.signal();
                 let silent = on_outcome.clone();
                 set_timeout(
                     Box::new(move || {
-                        if !abort_signal::aborted(signal) && !reported.get() {
+                        if !signal.aborted() && !reported.get() {
                             silent(Outcome::Silent);
                         }
                     }),
                     3000,
                 );
             }
-            move || abort_controller::abort(controller)
+            move || controller.abort()
         },
         (run,),
     );

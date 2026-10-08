@@ -283,7 +283,7 @@ test("async code becomes async functions and await", async () => {
   expect(log.value).toEqual([1, 2]);
   await Bun.sleep(20);
   expect(log.value).toEqual([1, 2, 3]);
-  // `window::fetch`, from the webapi crate, and the response's promises.
+  // `window.fetch(..)`, from the webapi crate, and the response's promises.
   // Bun has `fetch`; the webapi crate reaches it through `window`. A POST's
   // answer is its method and body, as the server was sent them.
   const server = Bun.serve({
@@ -849,10 +849,10 @@ test("webapi's event and tag maps type a listener and an element", () => {
   const dir = fixture("webapi-maps");
   const source = `use webapi::events::{Click, Keydown};
 use webapi::tags::Button;
-use webapi::{EventTargetExt, document, html_button_element};
+use webapi::{EventTargetExt, document};
 pub fn wire() -> &'static webapi::HTMLButtonElement {
-    let button = document::create_element(document, Button);
-    html_button_element::set_disabled(button, false);
+    let button = document.create_element(Button);
+    button.set_disabled(false);
     button.add_event_listener(Click, |e| {
         let _ = e.client_x();
     });
@@ -891,16 +891,16 @@ test("webapi's SVG elements are made by their tags", () => {
   const dir = fixture("webapi-svg");
   writeFileSync(join(dir, "lib.rs"), `use webapi::namespaces::Svg;
 use webapi::svg_tags::{Circle, Svg as SvgTag};
-use webapi::{SVGCircleElement, SVGSVGElement, document, element, svg_geometry_element};
+use webapi::{SVGCircleElement, SVGSVGElement, document};
 pub fn draw() -> (&'static SVGSVGElement, &'static SVGCircleElement, bool) {
-    let svg = document::create_element_ns(document, Svg, SvgTag);
-    let circle = document::create_element_ns(document, Svg, Circle);
-    element::set_attribute(circle, "r", "4");
-    element::append(svg, circle);
-    (svg, circle, svg_geometry_element::is_point_in_fill(circle))
+    let svg = document.create_element_ns(Svg, SvgTag);
+    let circle = document.create_element_ns(Svg, Circle);
+    circle.set_attribute("r", "4");
+    svg.append(circle);
+    (svg, circle, circle.is_point_in_fill())
 }
 pub fn named() -> &'static webapi::Element {
-    document::create_element_ns_named(document, "http://www.w3.org/2000/svg", "g")
+    document.create_element_ns_named("http://www.w3.org/2000/svg", "g")
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
@@ -918,7 +918,7 @@ pub fn named() -> &'static webapi::Element {
 test("a union parameter takes each member as it is", async () => {
   const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("union-parameters");
-  const source = `use webapi::{Blob, BodyInit, Element, IntoBodyInit, Response, element, response, window};
+  const source = `use webapi::{Blob, BodyInit, Element, IntoBodyInit, Response, response, window};
 
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum UploadBody<'a> {
@@ -983,8 +983,8 @@ pub fn kind<'a>(body: impl IntoBodyInit + 'a) -> String {
 }
 
 pub fn page(el: &Element, blob: &Blob, url: &str) -> (&'static Response, js::Promise<&'static Response>) {
-    element::before(el, "text");
-    (response::new_with_body(blob), window::fetch(window, url))
+    el.before("text");
+    (response::new_with_body(blob), window.fetch(url))
 }
 `;
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
@@ -1021,12 +1021,12 @@ pub fn page(el: &Element, blob: &Blob, url: &str) -> (&'static Response, js::Pro
 test("a binding's callback parameter is a closure", async () => {
   const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("callback-parameters");
-  writeFileSync(join(dir, "lib.rs"), `use webapi::{Element, IntersectionObserver, IntersectionObserverInit, intersection_observer, intersection_observer_entry, window};
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{Element, IntersectionObserver, IntersectionObserverInit, intersection_observer, window};
 
 pub fn watch(target: &'static Element, seen: &'static dyn Fn(bool)) -> &'static IntersectionObserver {
     let observer = intersection_observer::new_with_options(
         Box::new(move |entries, _| {
-            entries.iter().for_each(|entry| seen(intersection_observer_entry::is_intersecting(entry)));
+            entries.iter().for_each(|entry| seen(entry.is_intersecting()));
         }),
         IntersectionObserverInit {
             root_margin: Some("0px 0px"),
@@ -1034,12 +1034,12 @@ pub fn watch(target: &'static Element, seen: &'static dyn Fn(bool)) -> &'static 
             ..Default::default()
         },
     );
-    intersection_observer::observe(observer, target);
+    observer.observe(target);
     observer
 }
 
 pub fn next_frame(then: &'static dyn Fn(f64)) -> u32 {
-    window::request_animation_frame(window, Box::new(move |time| then(time)))
+    window.request_animation_frame(Box::new(move |time| then(time)))
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
@@ -1519,7 +1519,7 @@ test("the history global is the page's history", async () => {
   writeFileSync(join(dir, "lib.rs"), `use webapi::history;
 
 pub fn restore() {
-    history::set_scroll_restoration(history, "auto");
+    history.set_scroll_restoration("auto");
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
@@ -1540,10 +1540,10 @@ pub fn restore() {
 test("a getter's option mapped to a property is an optional chain", async () => {
   const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("getter-chain");
-  writeFileSync(join(dir, "lib.rs"), `use webapi::{Element, element};
+  writeFileSync(join(dir, "lib.rs"), `use webapi::Element;
 
 pub fn first_id(parent: &Element) -> Option<String> {
-    element::first_element_child(parent).map(|child| element::id(child))
+    parent.first_element_child().map(|child| child.id())
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
@@ -1722,7 +1722,7 @@ pub fn shown(value: &Unknown) -> String {
     show(Some(value))
 }
 pub fn body(response: &webapi::Response) -> Promise<Option<&'static Unknown>> {
-    webapi::response::json(response)
+    response.json()
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
@@ -1844,27 +1844,27 @@ test("webapi's any parameters take any value as JS has it, and a clone only one 
   const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("any-params");
   const source = `use js::StructuredClone;
-use webapi::{history, window};
+use webapi::window;
 pub struct Saved {
     pub page: u32,
 }
 // Its fields are numbers, which the browser copies.
 unsafe impl StructuredClone for Saved {}
 pub fn save(page: u32) {
-    history::push_state(window::history(window), Saved { page }, "");
+    window.history().push_state(Saved { page }, "");
 }
 pub fn copy(text: &str) -> Option<&'static js::Unknown> {
-    window::structured_clone(window, text)
+    window.structured_clone(text)
 }
 pub fn copies(blob: &webapi::Blob) -> Option<&'static js::Unknown> {
-    window::structured_clone(window, (vec![Some(1.5), None], "a", blob))
+    window.structured_clone((vec![Some(1.5), None], "a", blob))
 }
 pub fn send(text: String) {
-    window::post_message(window, Some(text), "*");
+    window.post_message(Some(text), "*");
 }
 pub fn report(error: &js::JsError) {
-    window::report_error(window, error);
-    window::report_error(window, || ());
+    window.report_error(error);
+    window.report_error(|| ());
 }
 `;
   writeFileSync(join(dir, "lib.rs"), source);
@@ -1876,11 +1876,11 @@ pub fn report(error: &js::JsError) {
   expect(js).toContain('window.postMessage(text, "*");');
   expect(js).toContain("window.reportError(error);");
   for (const [written, error] of [
-    ["window::structured_clone(window, || ())", "the trait `js::StructuredClone` is not implemented for closure"],
-    ["window::structured_clone(window, Some(None::<i32>))", "the trait `js::Defined` is not implemented for `std::option::Option<i32>`"],
-    ["window::structured_clone(window, window)", "the trait `js::StructuredClone` is not implemented for `webapi::Window`"],
+    ["window.structured_clone(|| ())", "the trait `js::StructuredClone` is not implemented for closure"],
+    ["window.structured_clone(Some(None::<i32>))", "the trait `js::Defined` is not implemented for `std::option::Option<i32>`"],
+    ["window.structured_clone(window)", "the trait `js::StructuredClone` is not implemented for `webapi::Window`"],
   ]) {
-    writeFileSync(join(dir, "lib.rs"), source.replace("window::structured_clone(window, text)", written));
+    writeFileSync(join(dir, "lib.rs"), source.replace("window.structured_clone(text)", written));
     const result = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "wrong.js"), ...withWeb], { cwd: dir });
     expect(result.exitCode).not.toBe(0);
     expect(result.stderr.toString()).toContain(error);
@@ -1955,7 +1955,7 @@ pub fn built() -> Vec<String> {
 // An element's constructor is WebIDL's `[HTMLConstructor]`, which only a
 // custom element's class can call: `new HTMLDivElement()` in a page throws
 // "Illegal constructor". So webapi binds none, and an element is made with
-// `document::create_element`. Other constructors, `new Event`, it binds.
+// `document.create_element(..)`. Other constructors, `new Event`, it binds.
 test("the webapi crate binds no element constructor, which a page can't call", () => {
   const lib = readFileSync(join(root, "webapi", "src", "lib.rs"), "utf8");
   expect(lib.match(/#\[link_name = "new HTML\w*"\]/g) ?? []).toEqual([]);

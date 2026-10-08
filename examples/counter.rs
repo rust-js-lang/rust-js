@@ -5,17 +5,18 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
-// Each DOM interface is a type and a module of its members, and each tag
+// Each DOM interface is a type whose members are its methods, and each tag
 // and event's name a type whose value is its string (ADR 0223):
-// `document::create_element(document, Button)` is `document.createElement("button")`,
+// `document.create_element(Button)` is `document.createElement("button")`,
 // an `HTMLButtonElement`.
+use webapi::{document};
 use webapi::events::Click;
 use webapi::tags::{Button, Div, Output};
-use webapi::{Element, EventTargetExt, HTMLButtonElement, HTMLOutputElement, document, element, node};
+use webapi::{Element, EventTargetExt, HTMLButtonElement, HTMLOutputElement};
 
 fn button(label: &str) -> &'static HTMLButtonElement {
-    let b = document::create_element(document, Button);
-    node::set_text_content(b, label);
+    let b = document.create_element(Button);
+    b.set_text_content(label);
     b
 }
 
@@ -25,22 +26,22 @@ fn stepper(label: &str, by: i32, count: &Rc<Cell<i32>>, output: &'static HTMLOut
     let count = count.clone();
     b.add_event_listener(Click, move |_| {
         count.set(count.get() + by);
-        node::set_text_content(output, &count.get().to_string());
+        output.set_text_content(&count.get().to_string());
     });
     b
 }
 
 pub fn main() {
-    let app = document::get_element_by_id(document, "app").expect("the page has an #app");
+    let app = document.get_element_by_id("app").expect("the page has an #app");
     // Both buttons change one count, so they share it: `Rc` to share, `Cell`
     // to change it through a shared reference.
     let count = Rc::new(Cell::new(0));
-    let output = document::create_element(document, Output);
-    node::set_text_content(output, "0");
+    let output = document.create_element(Output);
+    output.set_text_content("0");
     // An `Element` is a `Node` (`Deref`), so it goes where `append` wants a `Node`.
-    element::append(app, stepper("-", -1, &count, output));
-    element::append(app, output);
-    element::append(app, stepper("+", 1, &count, output));
+    app.append(stepper("-", -1, &count, output));
+    app.append(output);
+    app.append(stepper("+", 1, &count, output));
 }
 
 // Tests, in Rust (ADR 0026): `rust-js --test` compiles them, and `bun test`
@@ -48,31 +49,31 @@ pub fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use webapi::{HTMLElement, dom_rect_read_only, html_element, node_list};
+    use webapi::{HTMLElement, html_element};
 
     /// An empty page with the `<div id="app">` that `main` looks for.
     fn page() -> &'static Element {
-        let body = document::body(document).unwrap();
-        node::set_text_content(body, "");
-        let app = document::create_element(document, Div);
-        element::set_id(app, "app");
-        element::append(body, app);
+        let body = document.body().unwrap();
+        body.set_text_content("");
+        let app = document.create_element(Div);
+        app.set_id("app");
+        body.append(app);
         app
     }
 
     fn nth_button(app: &Element, n: u32) -> &'static HTMLElement {
-        html_element::unchecked_from(node_list::item(element::query_selector_all(app, "button"), n).unwrap())
+        html_element::unchecked_from(app.query_selector_all("button").item(n).unwrap())
     }
 
     fn shown(app: &Element) -> String {
-        node::text_content(element::query_selector(app, "output").unwrap()).unwrap()
+        app.query_selector("output").unwrap().text_content().unwrap()
     }
 
     #[test]
     fn starts_at_zero() {
         let app = page();
         main();
-        assert_eq!(node::text_content(app).unwrap(), "-0+");
+        assert_eq!(app.text_content().unwrap(), "-0+");
     }
 
     #[test]
@@ -80,14 +81,14 @@ mod tests {
         let app = page();
         main();
         let (minus, plus) = (nth_button(app, 0), nth_button(app, 1));
-        html_element::click(plus);
-        html_element::click(plus);
-        html_element::click(plus);
-        html_element::click(minus);
+        plus.click();
+        plus.click();
+        plus.click();
+        minus.click();
         assert_eq!(shown(app), "2");
-        html_element::click(minus);
-        html_element::click(minus);
-        html_element::click(minus);
+        minus.click();
+        minus.click();
+        minus.click();
         assert_eq!(shown(app), "-1");
     }
 
@@ -98,11 +99,11 @@ mod tests {
     fn the_count_sits_between_the_buttons() {
         let app = page();
         main();
-        let minus = element::get_bounding_client_rect(nth_button(app, 0));
-        let output = element::get_bounding_client_rect(element::query_selector(app, "output").unwrap());
-        let plus = element::get_bounding_client_rect(nth_button(app, 1));
-        assert!(dom_rect_read_only::width(minus) > 0.0, "the buttons have a size");
-        assert!(dom_rect_read_only::right(minus) <= dom_rect_read_only::left(output));
-        assert!(dom_rect_read_only::right(output) <= dom_rect_read_only::left(plus));
+        let minus = nth_button(app, 0).get_bounding_client_rect();
+        let output = app.query_selector("output").unwrap().get_bounding_client_rect();
+        let plus = nth_button(app, 1).get_bounding_client_rect();
+        assert!(minus.width() > 0.0, "the buttons have a size");
+        assert!(minus.right() <= output.left());
+        assert!(output.right() <= plus.left());
     }
 }

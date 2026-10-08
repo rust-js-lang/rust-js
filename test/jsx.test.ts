@@ -86,7 +86,7 @@ pub(crate) fn Card(p: Props) -> JSX::Element {
 test("a component a JS module exports is a JSX tag, and a binding is a value", async () => {
   const source = `#![allow(non_snake_case)]
 use react::{JSX, jsx};
-use react::webapi::{abort_controller, abort_signal};
+use react::webapi::{AbortSignal, abort_controller};
 
 pub struct BadgeProps {
     pub label: &'static str,
@@ -113,9 +113,9 @@ pub fn values() -> (Vec<String>, Vec<f64>, Vec<bool>) {
     // As \`.map\`'s own argument, \`parseInt\` would be given each index too.
     let numbers = vec!["10", "10", "10"].into_iter().map(parse_int).collect();
     let controller = abort_controller::new();
-    abort_controller::abort(controller);
-    let signals = vec![abort_controller::signal(controller), abort_controller::signal(abort_controller::new())];
-    let aborted = signals.into_iter().map(abort_signal::aborted).collect();
+    controller.abort();
+    let signals = vec![controller.signal(), abort_controller::new().signal()];
+    let aborted = signals.into_iter().map(AbortSignal::aborted).collect();
     (encoded, numbers, aborted)
 }
 `;
@@ -1207,8 +1207,8 @@ pub fn App(busy: bool) -> JSX::Element {
     jsx! {
         <form>
             <input ref={input} />
-            <button onClick={|e| webapi::html_button_element::set_disabled(e.current_target(), true)}>{label}</button>
-            <details onToggle={|e| webapi::html_details_element::set_open(e.current_target(), false)} />
+            <button onClick={|e| e.current_target().set_disabled(true)}>{label}</button>
+            <details onToggle={|e| e.current_target().set_open(false)} />
         </form>
     }
 }
@@ -1225,7 +1225,7 @@ pub fn App(busy: bool) -> JSX::Element {
   // handler of any element's event not widened, are each rustc's error.
   for (const [wrong, written, error] of [
     ["<input ref={input} />", "<button ref={input} />", "the trait `react::webapi::IsA<react::webapi::HTMLInputElement>` is not implemented for `react::webapi::HTMLButtonElement`"],
-    ["onClick={|e| webapi::html_button_element::set_disabled(e.current_target(), true)}", "onClick={|e: &event::MouseEvent<webapi::HTMLInputElement>| { let _ = e; }}", "expected closure signature `for<'a> fn(&'a MouseEvent<react::webapi::HTMLButtonElement>) -> _`"],
+    ["onClick={|e| e.current_target().set_disabled(true)}", "onClick={|e: &event::MouseEvent<webapi::HTMLInputElement>| { let _ = e; }}", "expected closure signature `for<'a> fn(&'a MouseEvent<react::webapi::HTMLButtonElement>) -> _`"],
     ["onClick={event::MouseEvent::widen(on_click)}", "onClick={on_click}", "found `dyn for<'a> std::ops::Fn(&'a react::event::MouseEvent)`"],
   ]) {
     writeFileSync(join(dir, "lib.rs"), source.replace(wrong, written));
@@ -2401,7 +2401,7 @@ pub fn Bare(HeadingProps { r#as: Comp, rest, .. }: HeadingProps<()>) -> JSX::Ele
 test("JSX keeps a field of what never changes in place", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use std::cell::Cell;
-use react::webapi::{Node, node};
+use react::webapi::Node;
 use react::{JSX, jsx};
 pub enum Size { S, Md }
 pub struct P { pub size: Option<Size>, pub title: Option<&'static str> }
@@ -2420,7 +2420,7 @@ pub fn Badge(p: P) -> JSX::Element {
     }
 }
 pub fn Live(n: &'static Node) -> JSX::Element {
-    jsx! { <div><p>{node::text_content(n)}</p>{{ node::set_text_content(n, "x"); 1 }}</div> }
+    jsx! { <div><p>{n.text_content()}</p>{{ n.set_text_content("x"); 1 }}</div> }
 }
 pub struct N { pub n: i32 }
 pub fn Edited(e: &mut N) -> JSX::Element {
@@ -2685,7 +2685,7 @@ pub fn Field(FieldProps { on_click, on_change, on_any, on_same }: FieldProps) ->
 test("JSX onSubmit gets a SubmitEvent, of its submitter", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::event::{FormEvent, FormEventHandler, InvalidEvent, SubmitEventHandler};
-use react::webapi::{HTMLFormElement, html_element};
+use react::webapi::HTMLFormElement;
 use react::{JSX, jsx};
 pub struct FormProps {
     pub on_send: fn(String),
@@ -2701,7 +2701,7 @@ pub fn Form(FormProps { on_send, on_reset, on_submitted }: FormProps) -> JSX::El
         <form
             onSubmit={move |e| {
                 e.prevent_default();
-                let by = e.submitter().map(|b| html_element::title(b)).unwrap_or_default();
+                let by = e.submitter().map(|b| b.title()).unwrap_or_default();
                 on_send(format!("{by} {}", e.native_event().submitter().is_some()));
             }}
             onReset={on_reset} />
@@ -2723,7 +2723,7 @@ pub fn Form(FormProps { on_send, on_reset, on_submitted }: FormProps) -> JSX::El
 test("JSX onInput gets an InputEvent, as @types/react types it", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::event::InputEventHandler;
-use react::webapi::{HTMLInputElement, html_input_element};
+use react::webapi::HTMLInputElement;
 use react::{JSX, jsx};
 pub struct FieldProps {
     pub on_read: fn(String),
@@ -2737,7 +2737,7 @@ pub fn Field(FieldProps { on_read, on_typed }: FieldProps) -> JSX::Element {
                 "{} {} {}",
                 e.data().unwrap_or_default(),
                 e.native_event().input_type(),
-                html_input_element::value(e.current_target()),
+                e.current_target().value(),
             ))}
             onChange={move |e| on_read(e.value())} />
     }

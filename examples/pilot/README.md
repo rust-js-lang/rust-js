@@ -85,7 +85,7 @@ And how it's developed and deployed (ROADMAP M3.4):
 
 Fixed in the compiler, each with a test and a mutation:
 
-- **A binding used as a value** (`.map(abort_signal::aborted)`) wasn't
+- **A binding used as a value** (`.map(AbortSignal::aborted)`) wasn't
   supported, and neither was **a package's component** as a JSX tag, which
   lowers to one (ADRs 0039, 0040).
 

@@ -5,10 +5,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use js::{JsObject, Promise, Uint8Array, array_buffer, spawn, uint8_array};
-use webapi::{
-    AddEventListenerOptions, EventTargetExt, RequestInit, abort_controller, event, event_target, response, web_assembly,
-    web_assembly_instance, window,
-};
+use webapi::{AddEventListenerOptions, EventTargetExt, RequestInit, abort_controller, event, event_target, web_assembly, window};
 
 unsafe extern "Rust" {
     /// Resolves with `value` after `ms` milliseconds.
@@ -80,16 +77,16 @@ pub fn spawned() -> Rc<RefCell<Vec<u32>>> {
 
 /// `fetch`, from the webapi crate: its promises, awaited one after the other.
 pub async fn load(url: &str) -> (u16, bool, String) {
-    let response = window::fetch(window, url).await;
-    let body = response::text(response).await;
-    (response::status(response), response::ok(response), body)
+    let response = window.fetch(url).await;
+    let body = response.text().await;
+    (response.status(), response.ok(), body)
 }
 
 /// A dictionary a function takes (ADR 0102): a struct of what's given, the
 /// rest `..Default::default()`, which JS reads as not given.
 pub async fn post(url: &str, body: &str) -> String {
     let init = RequestInit { method: Some("POST"), body: Some(body.into()), ..Default::default() };
-    response::text(window::fetch_with_init(window, url, init).await).await
+    window.fetch_with_init(url, init).await.text().await
 }
 
 /// A listener that goes when its signal aborts: `addEventListener`'s options.
@@ -98,20 +95,20 @@ pub fn listen_until_aborted() -> u32 {
     let target = event_target::new();
     let controller = abort_controller::new();
     let counted = Rc::clone(&count);
-    let options = AddEventListenerOptions { signal: Some(abort_controller::signal(controller)), ..Default::default() };
+    let options = AddEventListenerOptions { signal: Some(controller.signal()), ..Default::default() };
     target.add_event_listener_named_with_options("ping", move |_| *counted.borrow_mut() += 1, options);
     let _ = target.dispatch_event(event::new("ping"));
-    abort_controller::abort(controller);
+    controller.abort();
     let _ = target.dispatch_event(event::new("ping"));
     *count.borrow()
 }
 
 /// Binary data: `bytes()`, `arrayBuffer()`, and a view of a buffer.
 pub async fn load_bytes(url: &str) -> (u32, u32, u32) {
-    let response = window::fetch(window, url).await;
-    let copy = response::clone(response);
-    let bytes = response::bytes(response).await;
-    let buffer = response::array_buffer(copy).await;
+    let response = window.fetch(url).await;
+    let copy = response.clone();
+    let bytes = response.bytes().await;
+    let buffer = copy.array_buffer().await;
     let view = uint8_array::new(buffer);
     (uint8_array::length(bytes), array_buffer::byte_length(buffer), uint8_array::length(view))
 }
@@ -140,12 +137,12 @@ pub async fn run_wasm(bytes: &Uint8Array, a: i32, b: i32) -> i32 {
     let module = web_assembly::compile(bytes).await;
     let imports = Imports { env: Env { double: Box::new(|x| x * 2) } };
     let instance = web_assembly::instantiate_with_web_assembly_module_and_import_object(module, &imports).await;
-    wasm_add(web_assembly_instance::exports(instance), a, b)
+    wasm_add(instance.exports(), a, b)
 }
 
 /// The other `instantiate`: from bytes, to a `{ module, instance }` dictionary.
 pub async fn instantiate_bytes(bytes: &Uint8Array) -> bool {
     let imports = Imports { env: Env { double: Box::new(|x| x) } };
     let source = web_assembly::instantiate_with_import_object(uint8_array::buffer(bytes), &imports).await;
-    web_assembly::validate(bytes) && wasm_add(web_assembly_instance::exports(source.instance), 1, 2) == 3
+    web_assembly::validate(bytes) && wasm_add(source.instance.exports(), 1, 2) == 3
 }

@@ -244,12 +244,12 @@ pub fn App() -> JSX::Element {
 
     let open_file: Rc<dyn Fn(String)> = Rc::new(move |path: String| set_project.set(project.opening(&path, live())));
     let delete_file: Rc<dyn Fn(String)> = Rc::new(move |path: String| {
-        if window::confirm_with_message(window, &format!("Delete {path}?")) {
+        if window.confirm_with_message(&format!("Delete {path}?")) {
             set_project.set(project.removing(&path));
         }
     });
     let new_file = move || {
-        let answer = match window::prompt_with_message(window, "New file, e.g. math.rs or geometry/shape.rs:") {
+        let answer = match window.prompt_with_message("New file, e.g. math.rs or geometry/shape.rs:") {
             Some(answer) => answer,
             None => return,
         };

@@ -3,7 +3,7 @@
 
 use js::{encode_uri_component, settle};
 use models::{Contact, NewContact, Problem};
-use webapi::{AbortSignal, RequestInit, abort_signal, headers, response, window};
+use webapi::{AbortSignal, RequestInit, headers, window};
 
 /// Why a request failed.
 pub enum Failure {
@@ -29,13 +29,13 @@ impl Failure {
 /// not. A rejection, a network error or an abort, is an `Err` (`settle`).
 async fn call(url: &str, init: RequestInit<'_>, ok: u16) -> Result<String, Failure> {
     let signal = init.signal;
-    let response = match settle(window::fetch_with_init(window, url, init)).await {
+    let response = match settle(window.fetch_with_init(url, init)).await {
         Ok(response) => response,
-        Err(_) if signal.is_some_and(abort_signal::aborted) => return Err(Failure::Aborted),
+        Err(_) if signal.is_some_and(AbortSignal::aborted) => return Err(Failure::Aborted),
         Err(_) => return Err(Failure::Network),
     };
-    let status = response::status(response);
-    let text = response::text(response).await;
+    let status = response.status();
+    let text = response.text().await;
     if status == ok {
         return Ok(text);
     }
@@ -72,7 +72,7 @@ pub async fn contact(id: u32, signal: &AbortSignal) -> Result<Contact, Failure> 
 /// `new`, stored: the contact the server made of it.
 pub async fn create(new: &NewContact) -> Result<Contact, Failure> {
     let json = headers::new();
-    headers::set(json, "content-type", "application/json");
+    json.set("content-type", "application/json");
     let body = serde_json::to_string(new).expect("JSON of a model");
     let init = RequestInit {
         method: Some("POST"),

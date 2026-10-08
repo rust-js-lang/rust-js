@@ -1,10 +1,8 @@
 use std::cell::Cell;
 
+use webapi::{document};
 use webapi::events::{Click, Keydown};
-use webapi::{
-    AddEventListenerOptions, Event, EventListenerOptions, EventTargetExt, HTMLButtonElement, PointerEvent,
-    abort_controller, document, listener,
-};
+use webapi::{AddEventListenerOptions, Event, EventListenerOptions, EventTargetExt, HTMLButtonElement, PointerEvent, abort_controller, listener};
 
 unsafe extern "Rust" {
     #[link_name = "globalThis.record"]
@@ -70,11 +68,11 @@ pub fn aborted(button: &HTMLButtonElement) {
         Click,
         |e| record(e.client_x()),
         AddEventListenerOptions {
-            signal: Some(abort_controller::signal(controller)),
+            signal: Some(controller.signal()),
             ..Default::default()
         },
     );
-    abort_controller::abort(controller);
+    controller.abort();
 }
 
 pub fn capture(button: &HTMLButtonElement) {

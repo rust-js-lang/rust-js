@@ -4,8 +4,8 @@ Status: Accepted. Amended by [0215](0215-webapi-unions.md): a union is its untag
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
-Amended by [0282](0282-event-listener-methods.md): event operations use
-metadata-backed methods. The original cross-crate-body limitation below
+Amended by [0282](0282-event-listener-methods.md): every member is a
+metadata-backed method, `el.append(..)`. The original cross-crate-body limitation below
 does not apply to attribute-backed methods.
 
 ## Context

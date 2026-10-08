@@ -22,7 +22,7 @@ pub fn ContactList() -> JSX::Element {
     use_effect(
         move || {
             let controller = abort_controller::new();
-            let signal = abort_controller::signal(controller);
+            let signal = controller.signal();
             let query = query.clone();
             set_loaded.set(Loaded::Loading);
             spawn(Box::new(async move {
@@ -32,7 +32,7 @@ pub fn ContactList() -> JSX::Element {
                     Err(failure) => set_loaded.set(Loaded::Failed(failure.message())),
                 }
             }));
-            move || abort_controller::abort(controller)
+            move || controller.abort()
         },
         (query, attempt),
     );

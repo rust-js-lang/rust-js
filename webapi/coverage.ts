@@ -8,7 +8,8 @@ import { readFileSync } from "node:fs";
 import idl from "@webref/idl";
 import { open } from "@rust-js/typescript";
 
-export type Members = { members: Set<string>; statics: Set<string>; ctor: boolean; extends: string[] };
+/** A class's members, and of them its methods. */
+export type Members = { members: Set<string>; methods: Set<string>; statics: Set<string>; ctor: boolean; extends: string[] };
 
 export type Coverage = {
   /** Every member of TypeScript's classes, `Element.append`. */
@@ -32,7 +33,7 @@ export async function typescript(): Promise<Map<string, Members>> {
   await session.close();
   const interfaces = new Map<string, Members>();
   const of = (name: string) => {
-    if (!interfaces.has(name)) interfaces.set(name, { members: new Set(), statics: new Set(), ctor: false, extends: [] });
+    if (!interfaces.has(name)) interfaces.set(name, { members: new Set(), methods: new Set(), statics: new Set(), ctor: false, extends: [] });
     return interfaces.get(name)!;
   };
   const classes = new Set<string>();
@@ -41,6 +42,7 @@ export async function typescript(): Promise<Map<string, Members>> {
       const m = of(d.name);
       for (const e of d.extends) if (e.kind === "reference") m.extends.push(e.name);
       for (const member of d.members) if (member.kind === "method" || member.kind === "property") m.members.add(member.name);
+      for (const member of d.members) if (member.kind === "method") m.methods.add(member.name);
     } else if (d.kind === "const" && d.type.kind === "object" && d.type.members.some((x: any) => x.name === "prototype")) {
       classes.add(d.name);
       const m = of(d.name);
@@ -63,7 +65,16 @@ export async function typescript(): Promise<Map<string, Members>> {
       m.extends.filter((e) => classes.has(e)).flatMap((e) => [...of(e).members, ...everything(e, new Set())]),
     );
     const members = new Set([...m.members, ...mixins(name, new Set())].filter((x) => !parents.has(x)));
-    out.set(name, { ...m, members });
+    // Its methods, its mixins' and its parents' too.
+    const methods = new Set<string>();
+    const add = (n: string, seen: Set<string>) => {
+      if (seen.has(n)) return;
+      seen.add(n);
+      for (const x of of(n).methods) methods.add(x);
+      for (const e of of(n).extends) add(e, seen);
+    };
+    add(name, new Set());
+    out.set(name, { ...m, members, methods });
   }
   return out;
 }
@@ -72,7 +83,7 @@ export async function typescript(): Promise<Map<string, Members>> {
  * link name says, `get x` and `set x` are `x`, `new X` the constructor,
  * `X.y` the static `y`, or its own name; and each constant, a member and
  * a static of its name. */
-function webapi(): { bound: Set<string>; types: Set<string> } {
+function webapi(): { bound: Set<string>; types: Set<string>; parents: Map<string, string> } {
   const text = readFileSync(lib, "utf8");
   const bound = new Set<string>();
   // The type a module is of: its JS name, `rust_js::name` or its own.
@@ -107,7 +118,9 @@ function webapi(): { bound: Set<string>; types: Set<string> } {
     if (fn) link = undefined;
   }
   const types = new Set([...text.matchAll(/^pub struct (\w+)/gm)].map((m) => m[1]));
-  return { bound, types };
+  // What each type derefs to: a member of its parent is one of its own.
+  const parents = new Map([...text.matchAll(/^impl Deref for (\w+) \{\n\s+type Target = (\w+);/gm)].map((m) => [m[1], m[2]]));
+  return { bound, types, parents };
 }
 
 /** The classes WebIDL gives a constructor JS can call: not one TypeScript
@@ -124,7 +137,13 @@ async function constructible(): Promise<Set<string>> {
 export async function measure(): Promise<Coverage> {
   const ts = await typescript();
   const made = await constructible();
-  const { bound, types } = webapi();
+  const { bound, types, parents } = webapi();
+  // Bound on the class or on one it derefs to, as a method call finds it.
+  const has = (x: string) => {
+    const dot = x.indexOf(".");
+    for (let c: string | undefined = x.slice(0, dot); c; c = parents.get(c)) if (bound.has(c + x.slice(dot))) return true;
+    return false;
+  };
   const all: string[] = [];
   for (const [name, m] of ts) {
     for (const x of m.members) all.push(`${name}.${x}`);
@@ -133,7 +152,7 @@ export async function measure(): Promise<Coverage> {
   }
   all.sort();
   const classes = [...ts.keys()].sort();
-  return { all, covered: all.filter((x) => bound.has(x)), classes, typed: classes.filter((c) => types.has(c)) };
+  return { all, covered: all.filter((x) => !x.includes(".static:") && !x.endsWith(".constructor") ? has(x) : bound.has(x)), classes, typed: classes.filter((c) => types.has(c)) };
 }
 
 /** The baseline's text: a summary, then each member bound. */
