@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "[\"import\", \"camel_case\", \"directive\", \"export_default\"]",
     tests: ["test/compiler.test.ts", "-t", "js::on_load!"],
   },
+  {
+    name: "truthy-form-unknown",
+    breaks: "`js::truthy`'s `!!` is a method's name, `value.!!()`",
+    file: "src/lower/bindings.rs",
+    find: "        \"!!\" => return JsForm::Truthy,\n",
+    replace: "",
+    tests: ["test/compiler.test.ts", "-t", "tested as JS tests it"],
+  },
 ];

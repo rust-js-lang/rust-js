@@ -120,7 +120,9 @@ value.name = "new";
   `None`, as `result += child.props.children` does. (Amended.)
 - **Every step out of the types is written**: `classify`, `get`, a `match`.
   There's no `any` that a value becomes silently, as TypeScript's is, and
-  no raw JS, ReScript's `%raw`, which rust-js couldn't read.
+  no raw JS, ReScript's `%raw`, which rust-js couldn't read. A value given a
+  type unchecked, as `any` is, is written `unsafe { js::cast(value) }`
+  (ADR 0271).
 
 - **A function is told apart too**, `Kind::Function`, `typeof value ===
   "function"`, as react.dev's SidebarLink tests `scrollIntoViewIfNeeded`.

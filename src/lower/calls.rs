@@ -12,7 +12,7 @@ use super::recognition::{
 };
 use super::{Dest, FnCx, R};
 use crate::js;
-use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
+use crate::js::{Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
 use crate::runtime::Helper;
 use rustc_ast::{LitKind, Mutability};
 use rustc_hir::attrs::lang_items::LangItem;
@@ -293,6 +293,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (JsForm::This, Some(this)) if args.is_empty() => this,
                 (JsForm::GetIndex, Some(this)) if args.len() == 1 => keyed(this, args.remove(0)),
                 (JsForm::In, Some(this)) if args.len() == 1 => Expr::bin(Op::In, args.remove(0), this),
+                (JsForm::Truthy, Some(this)) if args.is_empty() => {
+                    Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, this))
+                }
                 (JsForm::SetIndex, Some(this)) if args.len() == 2 => {
                     let (key, value) = (args.remove(0), args.remove(0));
                     out.push(StmtKind::Assign(keyed(this, key), value).at(self.js_span(span)));

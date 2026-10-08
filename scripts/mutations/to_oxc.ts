@@ -146,4 +146,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/compiler.test.ts", "-t", "js::on_load!"],
   },
+  {
+    name: "truthy-test-kept",
+    breaks: "`if js::truthy(value)` is `if (!!value)`, not `if (value)`",
+    file: "src/to_oxc.rs",
+    find: "    fn test(&self, e: &js::Expr) -> Expression<'a> {\n        if let",
+    replace: "    fn test(&self, e: &js::Expr) -> Expression<'a> {\n        if false && let",
+    tests: ["test/compiler.test.ts", "-t", "tested as JS tests it"],
+  },
 ];

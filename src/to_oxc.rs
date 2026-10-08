@@ -492,6 +492,16 @@ impl<'a> Cx<'a> {
         })
     }
 
+    /// A test, which JS makes a `bool` of itself: `!!a` is `a` there.
+    fn test(&self, e: &js::Expr) -> Expression<'a> {
+        if let ExprKind::Unary(UnaryOp::Not, inner) = &e.kind
+            && let ExprKind::Unary(UnaryOp::Not, value) = &inner.kind
+        {
+            return self.expr(value);
+        }
+        self.expr(e)
+    }
+
     /// `stmts`, each pushed to `out`. An `if` whose branch leaves has no
     /// `else`: what was in it follows, as JS writes it, `if (c) { return a; }
     /// return b;` (ADR 0237). Its locals stay apart, as every local of a
@@ -502,7 +512,7 @@ impl<'a> Cx<'a> {
                 StmtKind::If(cond, then, Some(els)) if leaves(then) => {
                     out.push(Statement::new_if_statement(
                         span(s.span),
-                        self.expr(cond),
+                        self.test(cond),
                         self.block(then),
                         None,
                         &self.b,
@@ -584,7 +594,7 @@ impl<'a> Cx<'a> {
                     ] => self.stmt(only),
                     _ => self.block(els),
                 });
-                Statement::new_if_statement(sp, self.expr(cond), self.block(then), els, b)
+                Statement::new_if_statement(sp, self.test(cond), self.block(then), els, b)
             }
             StmtKind::Labeled(label, body) => {
                 let block = Statement::new_block_statement(sp, self.stmts(body), b);
@@ -853,7 +863,7 @@ impl<'a> Cx<'a> {
                 }
             }
             ExprKind::Cond(test, then, els) => {
-                Expression::new_conditional_expression(sp, self.expr(test), self.expr(then), self.expr(els), b)
+                Expression::new_conditional_expression(sp, self.test(test), self.expr(then), self.expr(els), b)
             }
             ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
                 let is_async = matches!(e.kind, ExprKind::AsyncArrow(..));

@@ -75,4 +75,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/compiler.test.ts", "-t", "js::on_load!"],
   },
+  {
+    name: "not-of-truthy-kept",
+    breaks: "`!js::truthy(value)` is `!!!value`, not `!value`",
+    file: "src/js.rs",
+    find: "        if let (UnaryOp::Not, ExprKind::Unary(UnaryOp::Not, inner)) = (op, &arg.kind)\n",
+    replace: "        if false && let (UnaryOp::Not, ExprKind::Unary(UnaryOp::Not, inner)) = (op, &arg.kind)\n",
+    tests: ["test/compiler.test.ts", "-t", "tested as JS tests it"],
+  },
 ];

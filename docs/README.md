@@ -1,7 +1,3 @@
-- [0267 js::on_load! is what a module runs when it's loaded](decisions/0267-on-load.md)
-- [0268 An element's type, key and props may be JS values of any shape](decisions/0268-unknown-elements.md)
-- [0269 What every global scope has is called bare](decisions/0269-global-scope.md)
-- [0270 A thread-local only read and set is its module's variable](decisions/0270-module-variables.md)
 # rust-js design docs
 
 rust-js compiles Rust to readable JavaScript. The whole design follows from one
@@ -362,6 +358,11 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0264 A variant's own name is the variant](decisions/0264-enum-own-names.md)
 - [0265 A component a thread_local! holds takes props of any lifetime](decisions/0265-held-component-lifetimes.md)
 - [0266 Text kept where it isn't empty, or another, is ||](decisions/0266-text-or.md)
+- [0267 js::on_load! is what a module runs when it's loaded](decisions/0267-on-load.md)
+- [0268 An element's type, key and props may be JS values of any shape](decisions/0268-unknown-elements.md)
+- [0269 What every global scope has is called bare](decisions/0269-global-scope.md)
+- [0270 A thread-local only read and set is its module's variable](decisions/0270-module-variables.md)
+- [0271 A JS value's truthiness, and a value vouched to be a type](decisions/0271-truthy-and-cast.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

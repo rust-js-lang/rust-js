@@ -138,6 +138,28 @@ pub fn unknown_of<T: Defined + Copy>(this: T) -> &'static Unknown {
     unreachable!()
 }
 
+/// Whether `value` is [truthy](https://developer.mozilla.org/docs/Glossary/Truthy),
+/// as JS's `if (value)` asks: `None`, `""`, `0`, `NaN` and `false` aren't,
+/// all else is.
+#[cfg_attr(rust_js, rust_js::link_name = "!!")]
+#[allow(unused_variables)]
+pub fn truthy<T: Defined + ?Sized>(this: Option<&T>) -> bool {
+    unreachable!()
+}
+
+/// `value` as a `T`, unchecked, as TypeScript's `any` is given a type: the
+/// value itself.
+///
+/// # Safety
+///
+/// `value` must be what JS has of a `T`: a JSON object of strings is a
+/// `&Dict<String>`, a string or `undefined` an `Option<String>`.
+#[cfg_attr(rust_js, rust_js::link_name = "this")]
+#[allow(unused_variables)]
+pub unsafe fn cast<T>(this: Option<&Unknown>) -> T {
+    unreachable!()
+}
+
 /// [`String(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/String):
 /// any value as text, as JS makes it, `result += value` say: `"undefined"`
 /// of `None`, `"[object Object]"` of an object.

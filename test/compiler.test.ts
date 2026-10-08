@@ -1181,6 +1181,44 @@ pub fn page(code: u32) -> Page {
 // ADR 0225: a JS value of unknown shape is a `js::Unknown`, as TypeScript's
 // `unknown` and ReScript's are, which `classify` tells by `typeof`, and
 // whose properties are read and set by name, as `obj[key]` is.
+// ADR 0271: JS's truthiness of a value, `!value` as a person tests one, and
+// a value of any shape given a type it's vouched to have, the value itself.
+test("a JS value is tested as JS tests it, and cast as it's vouched", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("truthy");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+pub fn missing(value: Option<&Unknown>) -> bool {
+    !js::truthy(value)
+}
+pub fn present(value: Option<&Unknown>) -> bool {
+    js::truthy(value)
+}
+pub fn shown(value: Option<&Unknown>) -> &'static str {
+    if js::truthy(value) { "yes" } else { "no" }
+}
+pub fn named(name: Option<&str>) -> &'static str {
+    if !js::truthy(name) { "none" } else { "some" }
+}
+pub fn text(value: Option<&'static Unknown>) -> Option<String> {
+    unsafe { js::cast(value) }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function missing(value) {\n  return !value;\n}");
+  expect(js).toContain("export function present(value) {\n  return !!value;\n}");
+  expect(js).toContain('export function shown(value) {\n  if (value) {\n    return "yes";\n  }');
+  expect(js).toContain('export function named(name) {\n  if (!name) {\n    return "none";\n  }');
+  expect(js).toContain("export function text(value) {\n  return value;\n}");
+  const lib = await import(join(dir, "lib.js"));
+  const values = [undefined, null, 0, "", false, NaN, "a", 1, {}, [], -1];
+  expect(values.map(lib.missing)).toEqual([true, true, true, true, true, true, false, false, false, false, false]);
+  expect(values.map(lib.present)).toEqual(values.map(Boolean));
+  expect(values.map(lib.shown)).toEqual(values.map((v) => (v ? "yes" : "no")));
+  expect(["", "a", undefined].map(lib.named)).toEqual(["none", "some", "none"]);
+  expect([lib.text("x"), lib.text(undefined)]).toEqual(["x", undefined]);
+});
+
 test("an unknown JS value is classified, and its properties read by name", async () => {
   const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("unknown");

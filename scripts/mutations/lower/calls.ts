@@ -262,4 +262,12 @@ export const mutations: Mutation[] = [
     replace: "Expr::bin(Op::In, this, args.remove(0))",
     tests: ["test/compiler.test.ts", "-t", "string functions are JS's"],
   },
+  {
+    name: "truthy-once",
+    breaks: "`js::truthy(value)` is `!value`, whether it's falsy",
+    file: "src/lower/calls.rs",
+    find: "Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, this))",
+    replace: "Expr::unary(UnaryOp::Not, this)",
+    tests: ["test/compiler.test.ts", "-t", "tested as JS tests it"],
+  },
 ];

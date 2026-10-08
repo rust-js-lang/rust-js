@@ -547,6 +547,12 @@ impl Expr {
     }
 
     pub fn unary(op: UnaryOp, arg: Expr) -> Expr {
+        // `!!!a` is `!a`, for every `a`: the inner two make a `bool` of it.
+        if let (UnaryOp::Not, ExprKind::Unary(UnaryOp::Not, inner)) = (op, &arg.kind)
+            && let ExprKind::Unary(UnaryOp::Not, value) = &inner.kind
+        {
+            return Expr::unary(UnaryOp::Not, (**value).clone());
+        }
         // `!(a === b)` is `a !== b`, for every `a` and `b`.
         if let (UnaryOp::Not, ExprKind::Binary(eq @ (Op::Eq | Op::Ne | Op::LooseEq | Op::LooseNe), a, b)) =
             (op, &arg.kind)

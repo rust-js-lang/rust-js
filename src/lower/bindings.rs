@@ -119,6 +119,8 @@ pub(super) enum JsForm {
     GetIndex,
     /// `in []`: `key in this`, whether it has a property by a name given.
     In,
+    /// `!!`: `!!this`, whether it's truthy.
+    Truthy,
     /// `set []`: `this[key] = value`.
     SetIndex,
 }
@@ -131,6 +133,7 @@ pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "prop" => return JsForm::Prop(None),
         "get []" => return JsForm::GetIndex,
         "in []" => return JsForm::In,
+        "!!" => return JsForm::Truthy,
         "set []" => return JsForm::SetIndex,
         _ => {}
     }
