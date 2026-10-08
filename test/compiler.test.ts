@@ -1143,6 +1143,38 @@ pub fn later(then: &'static dyn Fn()) {
   }
 });
 
+// ADR 0214: an untagged enum only made, never told apart, may have variants
+// of one kind, as Next.js's `getStaticProps` gives `{ props }` or
+// `{ notFound: true }`, react.dev's errors page's: each is its payload.
+test("an untagged enum only made may hold objects in two variants", async () => {
+  const dir = fixture("untagged-objects");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Found {
+    pub props: u32,
+}
+
+pub struct Missing {
+    #[cfg_attr(rust_js, rust_js::name = "notFound")]
+    pub not_found: bool,
+}
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Page {
+    Found(Found),
+    Missing(Missing),
+}
+
+pub fn page(code: u32) -> Page {
+    if code == 0 { Page::Missing(Missing { not_found: true }) } else { Page::Found(Found { props: code }) }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("{ notFound: true }");
+  expect(js).toContain("{ props: code }");
+  const { page } = await import(join(dir, "lib.js"));
+  expect([page(0), page(3)]).toEqual([{ notFound: true }, { props: 3 }]);
+});
+
 // ADR 0225: a JS value of unknown shape is a `js::Unknown`, as TypeScript's
 // `unknown` and ReScript's are, which `classify` tells by `typeof`, and
 // whose properties are read and set by name, as `obj[key]` is.

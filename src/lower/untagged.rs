@@ -5,7 +5,7 @@
 
 use super::FnCx;
 use super::bindings;
-use super::recognition::{Recognition, conversion_target, serde_impl};
+use super::recognition::{Recognition, StdItem, conversion_target, serde_impl, std_item};
 use super::representation::Num;
 use crate::js::{Expr, Op, UnaryOp};
 use rustc_hir as hir;
@@ -284,6 +284,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
+/// Does something but a `match` tell `def_id`'s variants apart: its
+/// `Clone`, `PartialEq` or `Debug`, or its drop (ADR 0214)?
+fn tested_by_impls<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, recognition: &Recognition<'_, 'tcx>) -> bool {
+    let traits = [
+        tcx.lang_items().clone_trait(),
+        tcx.lang_items().eq_trait(),
+        Some(std_item(tcx, StdItem::Debug)),
+    ];
+    let implemented = traits.into_iter().flatten().any(|tr| {
+        tcx.all_impls(tr).any(|imp| {
+            matches!(tcx.type_of(imp).instantiate_identity().skip_normalization().kind(),
+                ty::Adt(adt, _) if adt.did() == def_id)
+        })
+    });
+    let ty = tcx.type_of(def_id).instantiate_identity().skip_normalization();
+    implemented || ty.needs_drop(tcx, recognition.typing_env)
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Another variant of the untagged enum `ty` whose value is of
+    /// `variant`'s kind, which a test can't tell from it (ADR 0214).
+    pub(super) fn untagged_alike(&self, ty: Ty<'tcx>, variant: &VariantDef) -> Option<String> {
+        let (adt, args) = self.untagged(ty)?;
+        let recognition = self.recognition();
+        let kind_of = |v: &VariantDef| {
+            (!bindings::is_otherwise(self.tcx, v.def_id))
+                .then(|| recognition.untagged_kind(v.fields.iter().next()?.ty(self.tcx, args).skip_normalization()))
+                .flatten()
+        };
+        let own = kind_of(variant)?;
+        (adt.variants().iter())
+            .find(|other| other.def_id != variant.def_id && kind_of(other).as_ref() == Some(&own))
+            .map(|other| other.name.to_string())
+    }
+}
+
 /// Report each untagged enum JS couldn't tell the variants of apart, and
 /// each `From` into one that isn't its variant of its argument. False if
 /// there was one.
@@ -340,7 +376,13 @@ pub(super) fn validate<'tcx>(tcx: TyCtxt<'tcx>, foreign: &super::library::Foreig
                     );
                     continue;
                 };
-                if let Some((_, other)) = seen.iter().find(|(k, _)| *k == kind) {
+                // Two variants of one kind are told apart nowhere but where
+                // one is tested: an enum only made, `getStaticProps`'s `{ props }`
+                // or `{ notFound }`, is its payloads. An impl or a drop that
+                // tests them is refused here.
+                if let Some((_, other)) = seen.iter().find(|(k, _)| *k == kind)
+                    && tested_by_impls(tcx, def_id.to_def_id(), &recognition)
+                {
                     error(
                         span,
                         format!(

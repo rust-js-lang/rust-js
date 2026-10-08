@@ -598,4 +598,12 @@ export const mutations: Mutation[] = [
     replace: "if true || text.as_str() == super::bindings::variant_name(self.tcx, adt.variant(variant_index)))))",
     tests: ["test/compiler.test.ts", "-t", "enum's own names"],
   },
+  {
+    name: "matched-untagged-alike-allowed",
+    breaks: "a `match` of an untagged enum's variant another of its kind is tested as, which takes one for the other",
+    file: "src/lower/patterns.rs",
+    find: "if let Some(other) = self.untagged_alike(pat.ty, variant) {",
+    replace: "if let Some(other) = self.untagged_alike(pat.ty, variant).filter(|_| false) {",
+    tests: ["test/diagnostics.test.ts", "-t", "one kind, matched"],
+  },
 ];

@@ -108,3 +108,14 @@ impl<'a> From<&'a str> for Src<'a> {
   a call of it is the object itself.
 - Not yet: a variant of no fields, a string literal; a serde
   representation, which serde's own `#[serde(untagged)]` says.
+
+## Since
+
+- **Two variants of one kind may be made**, an enum never told apart:
+  Next.js's `getStaticProps` gives `{ props }` or `{ notFound: true }`,
+  each its payload, as react.dev's errors page's. A `match` or `if let`
+  of one is refused where it's written, and the enum itself where its
+  `Clone`, `PartialEq` or `Debug`, or its drop, would tell them apart. A
+  compiler test makes one; the diagnostics test matches one and clones
+  another; mutations refuse the made one, and let the matched and the
+  cloned be.

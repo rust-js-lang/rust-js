@@ -1706,6 +1706,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ..
             } if self.untagged(pat.ty).is_some() => {
                 let variant = adt_def.variant(*variant_index);
+                if let Some(other) = self.untagged_alike(pat.ty, variant) {
+                    let message = format!(
+                        "`{}` and `{other}` hold values of one kind, which JS can't tell apart in an untagged enum (ADR 0214)",
+                        variant.name
+                    );
+                    return Err(self.tcx.dcx().span_err(pat.span, message));
+                }
                 let kind = self.untagged_variant_test(pat.ty, variant, subject);
                 let mut tests = Vec::new();
                 for field in subpatterns {

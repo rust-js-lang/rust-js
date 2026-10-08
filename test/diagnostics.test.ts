@@ -108,6 +108,10 @@ for (const [name, source, message, crate] of [
   // An untagged enum (ADR 0214): JS tells a variant by its payload's kind, so each holds one
   // value of a kind of its own, and a `From` into one is its variant of its argument.
   ["an untagged enum's variants of one kind", '#[rust_js::untagged] pub enum E { A(String), B(&\'static str) }\npub fn f(e: E) -> u32 { match e { E::A(_) => 1, E::B(_) => 2 } }', "which JS can't tell apart"],
+  // Only made, they may share a kind; a `match` that tells them apart can't
+  // be, nor an impl.
+  ["an untagged enum's variants of one kind, matched", '#[rust_js::untagged] pub enum E { A(&\'static str), B(char) }\npub fn f(e: E) -> u32 { match e { E::A(_) => 1, E::B(_) => 2 } }', "which JS can't tell apart"],
+  ["an untagged enum's variants of one kind, cloned", '#[rust_js::untagged] #[derive(Clone)] pub enum E { A(String), B(&\'static str) }\npub fn f(s: String) -> E { E::A(s) }', "which JS can't tell apart"],
   // A variadic binding's rest arguments are its last parameter, a slice (ADR 0221).
   ["a variadic binding of no slice", 'unsafe extern "Rust" {\n    #[link_name = "Math.max"]\n    #[rust_js::variadic]\n    safe fn max(a: f64, b: f64) -> f64;\n}\npub fn f() -> f64 { max(1.0, 2.0) }', "isn't a slice"],
   ["an untagged enum's otherwise variant before another", '#[rust_js::untagged] pub enum E { #[rust_js::otherwise] A(String), B(u32) }\npub fn f(e: E) -> u32 { match e { E::A(_) => 0, E::B(n) => n } }', "is its last"],
