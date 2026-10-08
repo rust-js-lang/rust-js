@@ -2955,3 +2955,43 @@ pub fn Keyed(props: &'static PanelProps<'static>) -> JSX::Element {
   expect(tree.props.extra).toBe(1);
   expect(renderToStaticMarkup(tree)).toBe('<p title="t" data-wide="true"></p>');
 });
+
+// A component keyed first, its props captured in written order in a
+// one-armed match, is the element itself, with no variable to hold it,
+// as react.dev's PackageImport keys each CodeBlock, `key={i}`.
+test("a keyed component captured in order is its element, held in nothing", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+
+#[derive(Clone, Copy)]
+pub struct ItemProps<'a> {
+    pub label: &'a str,
+}
+
+pub fn Item(ItemProps { label }: ItemProps) -> JSX::Element {
+    jsx! { <li>{label}</li> }
+}
+
+pub fn List(items: &'static [ItemProps<'static>]) -> JSX::Element {
+    let shown: Vec<Option<JSX::Element>> = items
+        .iter()
+        .enumerate()
+        .map(|(i, item)| {
+            if !item.label.is_empty() {
+                let props = item;
+                Some(jsx! { <Item key={i} {..*props} /> })
+            } else {
+                None
+            }
+        })
+        .collect();
+    jsx! { <ul>{shown}</ul> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("return <Item {...props} key={i} />;");
+  expect(jsx).not.toContain("let tmp");
+  const { List } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(List([{ label: "a" }, { label: "" }, { label: "b" }]))).toBe("<ul><li>a</li><li>b</li></ul>");
+});

@@ -1160,6 +1160,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 Ok(value)
             }
+            // One arm, which rustc has checked always matches, as `jsx!`
+            // captures props in written order, `match (a, b) { (x, y) => .. }`:
+            // its variables bound as a `let` would, and its body the value,
+            // with no variable to hold it (ADR 0252).
+            ExprKind::Match {
+                scrutinee, ref arms, ..
+            } if let [arm] = arms[..]
+                && self.thir[arm].guard.is_none()
+                && self.body_query().as_for(e).is_none() =>
+            {
+                let items = self.item_subject(scrutinee);
+                let (subject, stable) = self.subject(scrutinee, "match", out)?;
+                self.destructure(&self.thir[arm].pattern, subject, stable, items, out)?;
+                self.expr(self.thir[arm].body, out)
+            }
             ExprKind::If {
                 cond,
                 then,

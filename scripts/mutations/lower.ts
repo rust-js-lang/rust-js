@@ -330,4 +330,12 @@ export const mutations: Mutation[] = [
       "flattened props where they"
     ]
   },
+  {
+    name: "one-arm-match-held",
+    breaks: "a one-armed match's value, a keyed element jsx! captured in order, is held in a variable, `let tmp; tmp = <Item />`",
+    file: "src/lower.rs",
+    find: "            } if let [arm] = arms[..]\n",
+    replace: "            } if let [arm] = arms[..]\n                && false\n",
+    tests: ["test/jsx.test.ts", "-t", "captured in order is its element"],
+  },
 ];

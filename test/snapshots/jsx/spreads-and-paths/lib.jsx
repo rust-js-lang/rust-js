@@ -9,13 +9,11 @@ export function App() {
   const props = { title: "panel", children: <i>old</i> };
   const Selected = Empty;
   const props$1 = { ...attrs };
-  let tmp;
   const match = <b>new</b>;
-  tmp = <Card title={props.title}>{match}</Card>;
   return (
     <Fragment key="group">
       <div title="named" {...props$1} />
-      {tmp}
+      <Card title={props.title}>{match}</Card>
       <Card title="dot">
         <i />
       </Card>
