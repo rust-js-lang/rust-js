@@ -87,4 +87,12 @@ export const mutations: Mutation[] = [
     replace: "        if false\n            && let (Some(base), Shape::Object(fields)) = (&base, &shape)",
     tests: ["test/jsx.test.ts","-t","updated from a reference are spread"],
   },
+  {
+    name: "pure-defaults-wait-for-fields",
+    breaks: "a field made by a call, beside defaults that do nothing, is made first in a `const`, `const class_name = classes()`",
+    file: "src/lower/aggregates.rs",
+    find: "let value = if defaults_act && value.has_effects() {",
+    replace: "let value = if value.has_effects() {",
+    tests: ["test/jsx.test.ts", "-t", "flattened prop made by a call"],
+  },
 ];

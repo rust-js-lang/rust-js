@@ -351,6 +351,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0258 A promise's then, a module of a component, next/head and the Router](decisions/0258-search-bindings.md)
 - [0259 A module's constant element, and an image's title](decisions/0259-constant-elements.md)
 - [0260 A binding's callback parameter, and IntersectionObserver](decisions/0260-webapi-callbacks.md)
+- [0261 Defaults that do nothing don't move what's made beside them](decisions/0261-defaults-made-in-place.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

@@ -338,4 +338,12 @@ export const mutations: Mutation[] = [
     replace: "            } if let [arm] = arms[..]\n                && false\n",
     tests: ["test/jsx.test.ts", "-t", "captured in order is its element"],
   },
+  {
+    name: "constant-object-unsettled",
+    breaks: "an object of constants, a struct's default, is made first in a `const` where a later operand runs statements, and spread, `{...anchor}`",
+    file: "src/lower.rs",
+    find: "let settled = evaluated.value.is_made_of_constants()",
+    replace: "let settled = evaluated.value.is_constant()",
+    tests: ["test/jsx.test.ts", "-t", "flattened prop made by a call"],
+  },
 ];

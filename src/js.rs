@@ -642,6 +642,17 @@ impl Expr {
         )
     }
 
+    /// A constant, or an object made here of them, which nothing made
+    /// before it or after can change.
+    pub fn is_made_of_constants(&self) -> bool {
+        match &self.kind {
+            ExprKind::Object(props) => {
+                (props.iter()).all(|prop| matches!(prop, Prop::Field(_, value) if value.is_made_of_constants()))
+            }
+            _ => self.is_constant(),
+        }
+    }
+
     /// Each variable this reads, closures' bodies too, but not a string's
     /// or a regular expression's text, nor a property's name.
     pub fn visit_vars<'a>(&'a self, read: &mut dyn FnMut(&'a str)) {

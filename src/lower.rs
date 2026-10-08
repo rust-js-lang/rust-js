@@ -1315,7 +1315,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // held then (ADR 0099).
             let borrowed = matches!(self.thir[self.strip(e)].kind, ExprKind::Borrow { arg, .. }
                 if self.place(arg).is_some() && !self.through_rebound(arg, false));
-            let settled = evaluated.value.is_constant()
+            // An object made here of constants, a struct's default, is the
+            // same made before or after what follows.
+            let settled = evaluated.value.is_made_of_constants()
                 || borrowed
                 || self.stable_place(self.strip_refs(e)).is_some()
                 || self.ref_place(e).is_some_and(|(_, mutable)| !mutable);

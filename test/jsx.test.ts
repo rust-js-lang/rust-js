@@ -3033,6 +3033,69 @@ pub fn List(items: &'static [ItemProps<'static>]) -> JSX::Element {
   expect(renderToStaticMarkup(List([{ label: "a" }, { label: "" }, { label: "b" }]))).toBe("<ul><li>a</li><li>b</li></ul>");
 });
 
+// A child whose flattened prop is made by a call, as react.dev's TopNav
+// gives its `Logo` classes inside next/link's `Link`: the call is made
+// where it's given, as the defaults beside it do nothing, and the link's
+// own flattened props, none given, are nothing.
+test("a child's flattened prop made by a call is made in place", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::attributes::{AnchorHTMLAttributes, SVGAttributes};
+use react::{JSX, ReactNode, jsx};
+
+#[derive(Default)]
+pub struct LinkProps<'a, C> {
+    pub href: &'a str,
+    #[rust_js::flatten]
+    pub anchor: AnchorHTMLAttributes<'a>,
+    pub children: C,
+}
+
+pub fn Link<C: ReactNode>(props: LinkProps<C>) -> JSX::Element {
+    jsx! { <a href={props.href}>{props.children}</a> }
+}
+
+#[derive(Default)]
+pub struct LogoProps<'a> {
+    #[rust_js::flatten]
+    pub props: SVGAttributes<'a>,
+}
+
+pub fn Logo(LogoProps { props }: LogoProps) -> JSX::Element {
+    jsx! { <svg {...props} /> }
+}
+
+fn classes() -> String {
+    "logo".to_string()
+}
+
+pub fn Brand() -> JSX::Element {
+    jsx! { <Link href="/"><Logo className={Some(classes().as_str())} /></Link> }
+}
+
+// One made by statements, which the link's defaults needn't be made before.
+pub fn Counted() -> JSX::Element {
+    jsx! {
+        <Link href="/">
+            <Logo className={Some({
+                let mut n = 0;
+                while n < 2 {
+                    n += 1;
+                }
+                if n == 2 { "two" } else { "other" }
+            })} />
+        </Link>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain('return (\n    <Link href="/">\n      <Logo className={classes()} />\n    </Link>\n  );');
+  expect(jsx).not.toContain("anchor");
+  const { Brand, Counted } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(Brand())).toBe('<a href="/"><svg class="logo"></svg></a>');
+  expect(renderToStaticMarkup(Counted())).toBe('<a href="/"><svg class="two"></svg></a>');
+});
+
 // A prop named as no JS variable can be, `data-platform`, destructured by
 // its name quoted, as react.dev's TopNav gives its `Kbd` one.
 test("a destructured prop of a hyphenated name is quoted", async () => {

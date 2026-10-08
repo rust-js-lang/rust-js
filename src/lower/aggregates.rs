@@ -102,9 +102,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .map(|f| spill_name(variant.fields[f.name].name.as_str()))
                         .collect();
                     let values = self.operands_named(&exprs, &names, out)?;
+                    let given: Vec<usize> = adt.fields.iter().map(|f| f.name.as_usize()).collect();
+                    let derived = match self.derived_default_fields(fru.base, ty) {
+                        Some(fields) => Some(self.update_default(fields, &given, span)?),
+                        None => None,
+                    };
+                    // Defaults that do nothing, a derived `Default`'s, needn't
+                    // wait for the fields: those are made in place.
+                    let defaults_act =
+                        (derived.as_ref()).is_none_or(|(props, _)| props.iter().any(|(_, value)| value.has_effects()));
                     let mut spilled = Vec::new();
                     for (field, value) in adt.fields.iter().zip(values) {
-                        let value = if value.has_effects() {
+                        let value = if defaults_act && value.has_effects() {
                             self.spill(variant.fields[field.name].name.as_str(), value, out)
                         } else {
                             value
@@ -112,10 +121,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         spilled.push(value);
                     }
                     spilled_fields = Some(spilled);
-                    let given: Vec<usize> = adt.fields.iter().map(|f| f.name.as_usize()).collect();
-                    let base = match self.derived_default_fields(fru.base, ty) {
-                        Some(fields) => {
-                            let (props, kept) = self.update_default(fields, &given, span)?;
+                    let base = match derived {
+                        Some((props, kept)) => {
                             // Each default the update reads is made in its place,
                             // in the order the base would make them, unless one
                             // it doesn't read is made for its effects, a
