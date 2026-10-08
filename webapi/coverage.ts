@@ -5,6 +5,7 @@
 
 import { readFileSync } from "node:fs";
 
+import idl from "@webref/idl";
 import { open } from "@rust-js/typescript";
 
 export type Members = { members: Set<string>; statics: Set<string>; ctor: boolean; extends: string[] };
@@ -98,14 +99,26 @@ function webapi(): { bound: Set<string>; types: Set<string> } {
   return { bound, types };
 }
 
+/** The classes WebIDL gives a constructor JS can call: not one TypeScript
+ * declares where WebIDL has none, `new Node()`, nor an `[HTMLConstructor]`
+ * element's, which only a custom element's `super()` calls. */
+async function constructible(): Promise<Set<string>> {
+  const all = Object.values((await idl.parseAll()) as Record<string, any[]>).flat();
+  const html = new Set(all.filter((d) => d.type === "interface" && (d.extAttrs ?? []).some((a: any) => a.name === "HTMLConstructor")).map((d) => d.name));
+  return new Set(
+    all.filter((d) => d.type === "interface" && !html.has(d.name) && (d.members ?? []).some((m: any) => m.type === "constructor")).map((d) => d.name),
+  );
+}
+
 export async function measure(): Promise<Coverage> {
   const ts = await typescript();
+  const made = await constructible();
   const { bound, types } = webapi();
   const all: string[] = [];
   for (const [name, m] of ts) {
     for (const x of m.members) all.push(`${name}.${x}`);
     for (const x of m.statics) all.push(`${name}.static:${x}`);
-    if (m.ctor) all.push(`${name}.constructor`);
+    if (m.ctor && made.has(name)) all.push(`${name}.constructor`);
   }
   all.sort();
   const classes = [...ts.keys()].sort();

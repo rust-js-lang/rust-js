@@ -184,7 +184,9 @@ for (const [spec, defs] of Object.entries(all)) {
     const ts = d.type === "interface" ? typescriptDom.get(d.name) : undefined;
     // A mixin's, as a class that includes it has them.
     const kept = (m: Member) =>
-      !!m.name && (d.type === "interface mixin" ? anyClassHas.has(m.name) : !!ts && (m.special === "static" ? ts.statics : ts.members).has(m.name));
+      m.type === "constructor"
+        ? !!ts?.ctor
+        : !!m.name && (d.type === "interface mixin" ? anyClassHas.has(m.name) : !!ts && (m.special === "static" ? ts.statics : ts.members).has(m.name));
     for (const m of d.members ?? []) if (!kept(m)) leftOut.add(m);
   }
 }
@@ -255,25 +257,26 @@ const globalScope: Interface = {
 const missing = INTERFACES.filter((name) => !interfaces.has(name));
 if (missing.length) throw new Error(`not in ${SPECS.join(", ")}: ${missing.join(", ")}`);
 
-// The dictionaries a function takes, through a union, a sequence or another
-// dictionary: each a struct that borrows, which a result can't be, so one a
-// function gives too is left out of the result, not the parameter.
-const takenDictionaries = new Set<string>();
-const takes = (t: IdlType | undefined): void => {
+// The dictionaries a function gives, through a promise, a union, a sequence
+// or another dictionary: each a struct that owns what it holds, which one
+// a function takes is too, by value, where it's both, not a struct that
+// borrows.
+const givenDictionaries = new Set<string>();
+const gives = (t: IdlType | undefined): void => {
   if (!t) return;
-  if (Array.isArray(t.idlType)) return t.idlType.forEach(takes);
+  if (Array.isArray(t.idlType)) return t.idlType.forEach(gives);
   const name = t.idlType as string;
   const aliased = typedefs.get(name);
-  if (aliased) return takes(aliased);
+  if (aliased) return gives(aliased);
   const d = dictionaries.get(name);
-  if (!d || takenDictionaries.has(name)) return;
-  takenDictionaries.add(name);
+  if (!d || givenDictionaries.has(name)) return;
+  givenDictionaries.add(name);
   for (let p: Def | undefined = d; p; p = p.inheritance ? dictionaries.get(p.inheritance) : undefined) {
-    for (const m of p.members ?? []) takes(m.idlType);
+    for (const m of p.members ?? []) gives(m.idlType);
   }
 };
 for (const i of interfaces.values()) {
-  for (const { member } of i.members) for (const a of member.arguments ?? []) takes(a.idlType);
+  for (const { member } of i.members) if (member.type === "attribute" || member.type === "operation") gives(member.idlType);
 }
 
 // ── Names ───────────────────────────────────────────────────────────────
@@ -406,8 +409,7 @@ const usedDictionaries = new Map<string, Field[]>();
  */
 function dictionaryType(d: Def): string | { skip: string } {
   if (usedDictionaries.has(d.name)) return typeName(d.name);
-  // One a function takes is a struct that borrows, which a result can't be.
-  if (takenDictionaries.has(d.name) || paramDictionaries.has(d.name)) return { skip: `${d.name} as a parameter too` };
+  if (paramDictionaries.has(d.name)) return { skip: `${d.name} as a parameter too` };
   // Its own name first, for a field of its own type.
   const fields: Field[] = [];
   usedDictionaries.set(d.name, fields);
@@ -440,7 +442,8 @@ function dictionaryMembers(d: Def): Member[] {
  * left out; one of a union is its enum (ADR 0215).
  */
 function paramDictionary(d: Def): string | { skip: string } {
-  if (usedDictionaries.has(d.name)) return { skip: `${d.name} as a result too` };
+  // One a function gives too is the result's struct, given by value.
+  if (givenDictionaries.has(d.name) || usedDictionaries.has(d.name)) return dictionaryType(d);
   let known = paramDictionaries.get(d.name);
   if (!known) {
     const fields: Field[] = [];
@@ -460,7 +463,8 @@ function paramDictionary(d: Def): string | { skip: string } {
 }
 
 /** A parameter type that's a dictionary: `RequestInit<'_>`. */
-const isDictionary = (rust: string) => paramDictionaries.has([...paramDictionaries.keys()].find((n) => rust.replace(/<'_>$/, "") === typeName(n)) ?? "");
+const isDictionary = (rust: string) =>
+  [...paramDictionaries.keys(), ...usedDictionaries.keys()].some((n) => rust.replace(/<'_>$/, "") === typeName(n));
 
 /** The Rust types a parameter can take: one per supported member of a union. */
 function alternatives(t: IdlType): string[] {
@@ -1011,6 +1015,7 @@ module("global", functionsOf(globalScope));
 for (const [name, fields] of usedDictionaries) {
   line();
   line(`/// The \`${name}\` dictionary: a JS object with these fields, a \`None\` one not there.`);
+  if (fields.every((f) => f.optional)) line(`#[derive(Default)]`);
   line(`pub struct ${typeName(name)} {`);
   for (const f of fields) {
     if (f.rust !== f.js) line(`    #[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(f.js)})]`);

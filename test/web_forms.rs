@@ -95,3 +95,8 @@ pub fn handlers(button: &webapi::HTMLButtonElement) -> bool {
     webapi::html_element::set_onclick(button, None);
     set
 }
+
+/// A constructor of a class from a spec the crate didn't read before.
+pub fn socket(url: &str) -> &'static webapi::WebSocket {
+    webapi::web_socket::new(url)
+}

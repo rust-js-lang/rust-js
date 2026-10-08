@@ -82,3 +82,11 @@ so nothing said when it fell behind.
   is on the target, as `add_event_listener`'s is (ADR 0223): a button's
   `set_onclick` takes `Option<Box<dyn FnMut(&PointerEvent)>>`, whose `None`
   is `null` (`rust_js::nullable`, ADR 0275). Members: 75.0% to 83.5%.
+- **A constructor counts where WebIDL has one JS can call**: not where
+  TypeScript declares `new()` and WebIDL has none, `new Node()`, nor an
+  `[HTMLConstructor]` element's, which only a custom element's `super()`
+  calls (a TypeScript loophole, not parity). The other specs' constructors
+  are generated where TypeScript has them, `new WebSocket(url)`.
+- **A dictionary a function gives and another takes is one struct**, the
+  result's, which owns what it holds, taken by value: `CookieStoreGetOptions`.
+  Members: 89.2% of 8,488.

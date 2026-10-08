@@ -14809,7 +14809,7 @@ pub mod navigator {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/requestMediaKeySystemAccess)
         #[link_name = "requestMediaKeySystemAccess"]
-        pub safe fn request_media_key_system_access(this: &Navigator, key_system: &str, supported_configurations: &[MediaKeySystemConfiguration<'_>]) -> Promise<&'static MediaKeySystemAccess>;
+        pub safe fn request_media_key_system_access(this: &Navigator, key_system: &str, supported_configurations: &[MediaKeySystemConfiguration]) -> Promise<&'static MediaKeySystemAccess>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/serviceWorker)
         #[link_name = "get serviceWorker"]
@@ -19643,6 +19643,14 @@ pub mod analyser_node {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AnalyserNode/AnalyserNode)
+        #[link_name = "new AnalyserNode"]
+        pub safe fn new(context: &BaseAudioContext) -> &'static AnalyserNode;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AnalyserNode/AnalyserNode)
+        #[link_name = "new AnalyserNode"]
+        pub safe fn new_with_options(context: &BaseAudioContext, options: AnalyserOptions<'_>) -> &'static AnalyserNode;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AnalyserNode/getByteFrequencyData)
         #[link_name = "getByteFrequencyData"]
         pub safe fn get_byte_frequency_data(this: &AnalyserNode, array: &Uint8Array);
@@ -19713,6 +19721,18 @@ pub mod animation {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/overallProgress)
         #[link_name = "get overallProgress"]
         pub safe fn overall_progress(this: &Animation) -> Option<f64>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/Animation)
+        #[link_name = "new Animation"]
+        pub safe fn new() -> &'static Animation;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/Animation)
+        #[link_name = "new Animation"]
+        pub safe fn new_with_effect(effect: &AnimationEffect) -> &'static Animation;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/Animation)
+        #[link_name = "new Animation"]
+        pub safe fn new_with_effect_and_timeline(effect: &AnimationEffect, timeline: &AnimationTimeline) -> &'static Animation;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/id)
         #[link_name = "get id"]
@@ -19884,6 +19904,14 @@ pub mod animation_playback_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationPlaybackEvent/AnimationPlaybackEvent)
+        #[link_name = "new AnimationPlaybackEvent"]
+        pub safe fn new(type_: &str) -> &'static AnimationPlaybackEvent;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationPlaybackEvent/AnimationPlaybackEvent)
+        #[link_name = "new AnimationPlaybackEvent"]
+        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: AnimationPlaybackEventInit<'_>) -> &'static AnimationPlaybackEvent;
+
         /// Treats `this` as `AnimationPlaybackEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static AnimationPlaybackEvent;
@@ -19957,6 +19985,10 @@ pub mod audio_buffer {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBuffer/AudioBuffer)
+        #[link_name = "new AudioBuffer"]
+        pub safe fn new(options: AudioBufferOptions) -> &'static AudioBuffer;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBuffer/sampleRate)
         #[link_name = "get sampleRate"]
         pub safe fn sample_rate(this: &AudioBuffer) -> f32;
@@ -19992,6 +20024,14 @@ pub mod audio_buffer_source_node {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBufferSourceNode/AudioBufferSourceNode)
+        #[link_name = "new AudioBufferSourceNode"]
+        pub safe fn new(context: &BaseAudioContext) -> &'static AudioBufferSourceNode;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBufferSourceNode/AudioBufferSourceNode)
+        #[link_name = "new AudioBufferSourceNode"]
+        pub safe fn new_with_options(context: &BaseAudioContext, options: AudioBufferSourceOptions<'_>) -> &'static AudioBufferSourceNode;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBufferSourceNode/buffer)
         #[link_name = "get buffer"]
         pub safe fn buffer(this: &AudioBufferSourceNode) -> Option<&'static AudioBuffer>;
@@ -20055,6 +20095,14 @@ pub mod audio_context {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioContext/AudioContext)
+        #[link_name = "new AudioContext"]
+        pub safe fn new() -> &'static AudioContext;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioContext/AudioContext)
+        #[link_name = "new AudioContext"]
+        pub safe fn new_with_context_options(context_options: AudioContextOptions<'_>) -> &'static AudioContext;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioContext/baseLatency)
         #[link_name = "get baseLatency"]
         pub safe fn base_latency(this: &AudioContext) -> f64;
@@ -20102,6 +20150,10 @@ pub mod audio_data {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioData/AudioData)
+        #[link_name = "new AudioData"]
+        pub safe fn new(init: AudioDataInit<'_>) -> &'static AudioData;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioData/format)
         #[link_name = "get format"]
         pub safe fn format(this: &AudioData) -> Option<String>;
@@ -20163,6 +20215,10 @@ pub mod audio_decoder {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioDecoder/AudioDecoder)
+        #[link_name = "new AudioDecoder"]
+        pub safe fn new(init: AudioDecoderInit<'_>) -> &'static AudioDecoder;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioDecoder/state)
         #[link_name = "get state"]
         pub safe fn state(this: &AudioDecoder) -> String;
@@ -20181,7 +20237,7 @@ pub mod audio_decoder {
         pub safe fn set_ondequeue(this: &AudioDecoder, value: Option<Box<dyn FnMut(&Event)>>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioDecoder/configure)
-        pub safe fn configure(this: &AudioDecoder, config: AudioDecoderConfig<'_>);
+        pub safe fn configure(this: &AudioDecoder, config: AudioDecoderConfig);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioDecoder/decode)
         pub safe fn decode(this: &AudioDecoder, chunk: &EncodedAudioChunk);
@@ -20197,7 +20253,7 @@ pub mod audio_decoder {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioDecoder/isConfigSupported)
         #[link_name = "AudioDecoder.isConfigSupported"]
-        pub safe fn is_config_supported(config: AudioDecoderConfig<'_>) -> Promise<AudioDecoderSupport>;
+        pub safe fn is_config_supported(config: AudioDecoderConfig) -> Promise<AudioDecoderSupport>;
 
         /// Treats `this` as `AudioDecoder` without checking that it is one.
         #[link_name = "this"]
@@ -20249,6 +20305,10 @@ pub mod audio_encoder {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioEncoder/AudioEncoder)
+        #[link_name = "new AudioEncoder"]
+        pub safe fn new(init: AudioEncoderInit<'_>) -> &'static AudioEncoder;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioEncoder/state)
         #[link_name = "get state"]
         pub safe fn state(this: &AudioEncoder) -> String;
@@ -20267,7 +20327,7 @@ pub mod audio_encoder {
         pub safe fn set_ondequeue(this: &AudioEncoder, value: Option<Box<dyn FnMut(&Event)>>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioEncoder/configure)
-        pub safe fn configure(this: &AudioEncoder, config: AudioEncoderConfig<'_>);
+        pub safe fn configure(this: &AudioEncoder, config: AudioEncoderConfig);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioEncoder/encode)
         pub safe fn encode(this: &AudioEncoder, data: &AudioData);
@@ -20283,7 +20343,7 @@ pub mod audio_encoder {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioEncoder/isConfigSupported)
         #[link_name = "AudioEncoder.isConfigSupported"]
-        pub safe fn is_config_supported(config: AudioEncoderConfig<'_>) -> Promise<AudioEncoderSupport>;
+        pub safe fn is_config_supported(config: AudioEncoderConfig) -> Promise<AudioEncoderSupport>;
 
         /// Treats `this` as `AudioEncoder` without checking that it is one.
         #[link_name = "this"]
@@ -20537,6 +20597,10 @@ pub mod audio_processing_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioProcessingEvent/AudioProcessingEvent)
+        #[link_name = "new AudioProcessingEvent"]
+        pub safe fn new(type_: &str, event_init_dict: AudioProcessingEventInit<'_>) -> &'static AudioProcessingEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioProcessingEvent/playbackTime)
         #[link_name = "get playbackTime"]
         pub safe fn playback_time(this: &AudioProcessingEvent) -> f64;
@@ -20641,6 +20705,14 @@ pub mod audio_worklet_node {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioWorkletNode/AudioWorkletNode)
+        #[link_name = "new AudioWorkletNode"]
+        pub safe fn new(context: &BaseAudioContext, name: &str) -> &'static AudioWorkletNode;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioWorkletNode/AudioWorkletNode)
+        #[link_name = "new AudioWorkletNode"]
+        pub safe fn new_with_options(context: &BaseAudioContext, name: &str, options: AudioWorkletNodeOptions<'_>) -> &'static AudioWorkletNode;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioWorkletNode/parameters)
         #[link_name = "get parameters"]
         pub safe fn parameters(this: &AudioWorkletNode) -> &'static AudioParamMap;
@@ -20986,6 +21058,14 @@ pub mod biquad_filter_node {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/BiquadFilterNode/BiquadFilterNode)
+        #[link_name = "new BiquadFilterNode"]
+        pub safe fn new(context: &BaseAudioContext) -> &'static BiquadFilterNode;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/BiquadFilterNode/BiquadFilterNode)
+        #[link_name = "new BiquadFilterNode"]
+        pub safe fn new_with_options(context: &BaseAudioContext, options: BiquadFilterOptions<'_>) -> &'static BiquadFilterNode;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/BiquadFilterNode/type)
         #[link_name = "get type"]
         pub safe fn type_(this: &BiquadFilterNode) -> String;
@@ -21033,6 +21113,10 @@ pub mod blob_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/BlobEvent/BlobEvent)
+        #[link_name = "new BlobEvent"]
+        pub safe fn new(type_: &str, event_init_dict: BlobEventInit<'_>) -> &'static BlobEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/BlobEvent/data)
         #[link_name = "get data"]
         pub safe fn data(this: &BlobEvent) -> &'static Blob;
@@ -21744,6 +21828,10 @@ pub mod css_keyword_value {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSKeywordValue/CSSKeywordValue)
+        #[link_name = "new CSSKeywordValue"]
+        pub safe fn new(value: &str) -> &'static CSSKeywordValue;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSKeywordValue/value)
         #[link_name = "get value"]
         pub safe fn value(this: &CSSKeywordValue) -> String;
@@ -21845,6 +21933,14 @@ pub mod css_math_clamp {
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &CSSStyleValue) -> &'static CSSMathClamp;
     }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMathClamp/CSSMathClamp)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSMathClamp")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(lower: impl IntoCSSNumberish, value: impl IntoCSSNumberish, upper: impl IntoCSSNumberish) -> &'static CSSMathClamp {
+        unreachable!()
+    }
 }
 
 /// [`CSSMathInvert`](https://developer.mozilla.org/docs/Web/API/CSSMathInvert)
@@ -21871,6 +21967,14 @@ pub mod css_math_invert {
         /// Treats `this` as `CSSMathInvert` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &CSSStyleValue) -> &'static CSSMathInvert;
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMathInvert/CSSMathInvert)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSMathInvert")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(arg: impl IntoCSSNumberish) -> &'static CSSMathInvert {
+        unreachable!()
     }
 }
 
@@ -21899,6 +22003,14 @@ pub mod css_math_max {
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &CSSStyleValue) -> &'static CSSMathMax;
     }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMathMax/CSSMathMax)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSMathMax")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(args: impl IntoCSSNumberish) -> &'static CSSMathMax {
+        unreachable!()
+    }
 }
 
 /// [`CSSMathMin`](https://developer.mozilla.org/docs/Web/API/CSSMathMin)
@@ -21925,6 +22037,14 @@ pub mod css_math_min {
         /// Treats `this` as `CSSMathMin` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &CSSStyleValue) -> &'static CSSMathMin;
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMathMin/CSSMathMin)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSMathMin")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(args: impl IntoCSSNumberish) -> &'static CSSMathMin {
+        unreachable!()
     }
 }
 
@@ -21953,6 +22073,14 @@ pub mod css_math_negate {
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &CSSStyleValue) -> &'static CSSMathNegate;
     }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMathNegate/CSSMathNegate)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSMathNegate")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(arg: impl IntoCSSNumberish) -> &'static CSSMathNegate {
+        unreachable!()
+    }
 }
 
 /// [`CSSMathProduct`](https://developer.mozilla.org/docs/Web/API/CSSMathProduct)
@@ -21980,6 +22108,14 @@ pub mod css_math_product {
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &CSSStyleValue) -> &'static CSSMathProduct;
     }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMathProduct/CSSMathProduct)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSMathProduct")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(args: impl IntoCSSNumberish) -> &'static CSSMathProduct {
+        unreachable!()
+    }
 }
 
 /// [`CSSMathSum`](https://developer.mozilla.org/docs/Web/API/CSSMathSum)
@@ -22006,6 +22142,14 @@ pub mod css_math_sum {
         /// Treats `this` as `CSSMathSum` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &CSSStyleValue) -> &'static CSSMathSum;
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMathSum/CSSMathSum)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSMathSum")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(args: impl IntoCSSNumberish) -> &'static CSSMathSum {
+        unreachable!()
     }
 }
 
@@ -22053,6 +22197,14 @@ pub mod css_matrix_component {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMatrixComponent/CSSMatrixComponent)
+        #[link_name = "new CSSMatrixComponent"]
+        pub safe fn new(matrix: &DOMMatrixReadOnly) -> &'static CSSMatrixComponent;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMatrixComponent/CSSMatrixComponent)
+        #[link_name = "new CSSMatrixComponent"]
+        pub safe fn new_with_options(matrix: &DOMMatrixReadOnly, options: CSSMatrixComponentOptions) -> &'static CSSMatrixComponent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMatrixComponent/matrix)
         #[link_name = "get matrix"]
         pub safe fn matrix(this: &CSSMatrixComponent) -> &'static DOMMatrix;
@@ -22402,6 +22554,14 @@ pub mod css_perspective {
         /// Treats `this` as `CSSPerspective` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &CSSTransformComponent) -> &'static CSSPerspective;
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSPerspective/CSSPerspective)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSPerspective")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(length: impl IntoCSSPerspectiveValue) -> &'static CSSPerspective {
+        unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSPerspective/length)
@@ -22831,6 +22991,10 @@ pub mod css_rotate {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSRotate/CSSRotate)
+        #[link_name = "new CSSRotate"]
+        pub safe fn new(angle: &CSSNumericValue) -> &'static CSSRotate;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSRotate/angle)
         #[link_name = "get angle"]
         pub safe fn angle(this: &CSSRotate) -> &'static CSSNumericValue;
@@ -22977,6 +23141,22 @@ pub mod css_scale {
         pub safe fn unchecked_from(this: &CSSTransformComponent) -> &'static CSSScale;
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSScale/CSSScale)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSScale")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(x: impl IntoCSSNumberish, y: impl IntoCSSNumberish) -> &'static CSSScale {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSScale/CSSScale)
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSScale")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_z(x: impl IntoCSSNumberish, y: impl IntoCSSNumberish, z: impl IntoCSSNumberish) -> &'static CSSScale {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSScale/x)
     #[cfg_attr(rust_js, rust_js::link_name = "set x")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -23050,6 +23230,10 @@ pub mod css_skew {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSSkew/CSSSkew)
+        #[link_name = "new CSSSkew"]
+        pub safe fn new(ax: &CSSNumericValue, ay: &CSSNumericValue) -> &'static CSSSkew;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSSkew/ax)
         #[link_name = "get ax"]
         pub safe fn ax(this: &CSSSkew) -> &'static CSSNumericValue;
@@ -23089,6 +23273,10 @@ pub mod css_skew_x {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSSkewX/CSSSkewX)
+        #[link_name = "new CSSSkewX"]
+        pub safe fn new(ax: &CSSNumericValue) -> &'static CSSSkewX;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSSkewX/ax)
         #[link_name = "get ax"]
         pub safe fn ax(this: &CSSSkewX) -> &'static CSSNumericValue;
@@ -23120,6 +23308,10 @@ pub mod css_skew_y {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSSkewY/CSSSkewY)
+        #[link_name = "new CSSSkewY"]
+        pub safe fn new(ay: &CSSNumericValue) -> &'static CSSSkewY;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSSkewY/ay)
         #[link_name = "get ay"]
         pub safe fn ay(this: &CSSSkewY) -> &'static CSSNumericValue;
@@ -23362,6 +23554,10 @@ pub mod css_transform_value {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTransformValue/CSSTransformValue)
+        #[link_name = "new CSSTransformValue"]
+        pub safe fn new(transforms: &[&CSSTransformComponent]) -> &'static CSSTransformValue;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTransformValue/length)
         #[link_name = "get length"]
         pub safe fn length(this: &CSSTransformValue) -> u32;
@@ -23424,6 +23620,14 @@ pub mod css_translate {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTranslate/CSSTranslate)
+        #[link_name = "new CSSTranslate"]
+        pub safe fn new(x: &CSSNumericValue, y: &CSSNumericValue) -> &'static CSSTranslate;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTranslate/CSSTranslate)
+        #[link_name = "new CSSTranslate"]
+        pub safe fn new_with_z(x: &CSSNumericValue, y: &CSSNumericValue, z: &CSSNumericValue) -> &'static CSSTranslate;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTranslate/x)
         #[link_name = "get x"]
         pub safe fn x(this: &CSSTranslate) -> &'static CSSNumericValue;
@@ -23471,6 +23675,10 @@ pub mod css_unit_value {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSUnitValue/CSSUnitValue)
+        #[link_name = "new CSSUnitValue"]
+        pub safe fn new(value: f64, unit: &str) -> &'static CSSUnitValue;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSUnitValue/value)
         #[link_name = "get value"]
         pub safe fn value(this: &CSSUnitValue) -> f64;
@@ -23506,6 +23714,10 @@ pub mod css_unparsed_value {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSUnparsedValue/CSSUnparsedValue)
+        #[link_name = "new CSSUnparsedValue"]
+        pub safe fn new(members: &[CSSUnparsedSegment<'_>]) -> &'static CSSUnparsedValue;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSUnparsedValue/length)
         #[link_name = "get length"]
         pub safe fn length(this: &CSSUnparsedValue) -> u32;
@@ -23524,6 +23736,14 @@ pub mod css_variable_reference_value {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSVariableReferenceValue/CSSVariableReferenceValue)
+        #[link_name = "new CSSVariableReferenceValue"]
+        pub safe fn new(variable: &str) -> &'static CSSVariableReferenceValue;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSVariableReferenceValue/CSSVariableReferenceValue)
+        #[link_name = "new CSSVariableReferenceValue"]
+        pub safe fn new_with_fallback(variable: &str, fallback: &CSSUnparsedValue) -> &'static CSSVariableReferenceValue;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSVariableReferenceValue/variable)
         #[link_name = "get variable"]
         pub safe fn variable(this: &CSSVariableReferenceValue) -> String;
@@ -24291,6 +24511,14 @@ pub mod channel_merger_node {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ChannelMergerNode/ChannelMergerNode)
+        #[link_name = "new ChannelMergerNode"]
+        pub safe fn new(context: &BaseAudioContext) -> &'static ChannelMergerNode;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ChannelMergerNode/ChannelMergerNode)
+        #[link_name = "new ChannelMergerNode"]
+        pub safe fn new_with_options(context: &BaseAudioContext, options: ChannelMergerOptions<'_>) -> &'static ChannelMergerNode;
+
         /// Treats `this` as `ChannelMergerNode` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static ChannelMergerNode;
@@ -24314,6 +24542,14 @@ pub mod channel_splitter_node {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ChannelSplitterNode/ChannelSplitterNode)
+        #[link_name = "new ChannelSplitterNode"]
+        pub safe fn new(context: &BaseAudioContext) -> &'static ChannelSplitterNode;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ChannelSplitterNode/ChannelSplitterNode)
+        #[link_name = "new ChannelSplitterNode"]
+        pub safe fn new_with_options(context: &BaseAudioContext, options: ChannelSplitterOptions<'_>) -> &'static ChannelSplitterNode;
+
         /// Treats `this` as `ChannelSplitterNode` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static ChannelSplitterNode;
@@ -24337,6 +24573,14 @@ pub mod close_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseEvent/CloseEvent)
+        #[link_name = "new CloseEvent"]
+        pub safe fn new(type_: &str) -> &'static CloseEvent;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseEvent/CloseEvent)
+        #[link_name = "new CloseEvent"]
+        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: CloseEventInit<'_>) -> &'static CloseEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseEvent/wasClean)
         #[link_name = "get wasClean"]
         pub safe fn was_clean(this: &CloseEvent) -> bool;
@@ -24461,6 +24705,10 @@ pub mod compression_stream {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CompressionStream/CompressionStream)
+        #[link_name = "new CompressionStream"]
+        pub safe fn new(format: &str) -> &'static CompressionStream;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CompressionStream/readable)
         #[link_name = "get readable"]
         pub safe fn readable(this: &CompressionStream) -> &'static ReadableStream;
@@ -24488,6 +24736,14 @@ pub mod constant_source_node {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ConstantSourceNode/ConstantSourceNode)
+        #[link_name = "new ConstantSourceNode"]
+        pub safe fn new(context: &BaseAudioContext) -> &'static ConstantSourceNode;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ConstantSourceNode/ConstantSourceNode)
+        #[link_name = "new ConstantSourceNode"]
+        pub safe fn new_with_options(context: &BaseAudioContext, options: ConstantSourceOptions) -> &'static ConstantSourceNode;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ConstantSourceNode/offset)
         #[link_name = "get offset"]
         pub safe fn offset(this: &ConstantSourceNode) -> &'static AudioParam;
@@ -24515,6 +24771,14 @@ pub mod content_visibility_auto_state_change_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ContentVisibilityAutoStateChangeEvent/ContentVisibilityAutoStateChangeEvent)
+        #[link_name = "new ContentVisibilityAutoStateChangeEvent"]
+        pub safe fn new(type_: &str) -> &'static ContentVisibilityAutoStateChangeEvent;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ContentVisibilityAutoStateChangeEvent/ContentVisibilityAutoStateChangeEvent)
+        #[link_name = "new ContentVisibilityAutoStateChangeEvent"]
+        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: ContentVisibilityAutoStateChangeEventInit) -> &'static ContentVisibilityAutoStateChangeEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ContentVisibilityAutoStateChangeEvent/skipped)
         #[link_name = "get skipped"]
         pub safe fn skipped(this: &ContentVisibilityAutoStateChangeEvent) -> bool;
@@ -24542,6 +24806,14 @@ pub mod convolver_node {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ConvolverNode/ConvolverNode)
+        #[link_name = "new ConvolverNode"]
+        pub safe fn new(context: &BaseAudioContext) -> &'static ConvolverNode;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ConvolverNode/ConvolverNode)
+        #[link_name = "new ConvolverNode"]
+        pub safe fn new_with_options(context: &BaseAudioContext, options: ConvolverOptions<'_>) -> &'static ConvolverNode;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ConvolverNode/buffer)
         #[link_name = "get buffer"]
         pub safe fn buffer(this: &ConvolverNode) -> Option<&'static AudioBuffer>;
@@ -24581,6 +24853,14 @@ pub mod cookie_change_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieChangeEvent/CookieChangeEvent)
+        #[link_name = "new CookieChangeEvent"]
+        pub safe fn new(type_: &str) -> &'static CookieChangeEvent;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieChangeEvent/CookieChangeEvent)
+        #[link_name = "new CookieChangeEvent"]
+        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: CookieChangeEventInit<'_>) -> &'static CookieChangeEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieChangeEvent/changed)
         #[link_name = "get changed"]
         pub safe fn changed(this: &CookieChangeEvent) -> &'static [CookieListItem];
@@ -24617,7 +24897,7 @@ pub mod cookie_store {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieStore/get)
         #[link_name = "get"]
-        pub safe fn get_with_options(this: &CookieStore, options: CookieStoreGetOptions<'_>) -> Promise<CookieListItem>;
+        pub safe fn get_with_options(this: &CookieStore, options: CookieStoreGetOptions) -> Promise<CookieListItem>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieStore/getAll)
         #[link_name = "getAll"]
@@ -24625,7 +24905,7 @@ pub mod cookie_store {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieStore/getAll)
         #[link_name = "getAll"]
-        pub safe fn get_all_with_options(this: &CookieStore, options: CookieStoreGetOptions<'_>) -> Promise<Vec<CookieListItem>>;
+        pub safe fn get_all_with_options(this: &CookieStore, options: CookieStoreGetOptions) -> Promise<Vec<CookieListItem>>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieStore/set)
         pub safe fn set(this: &CookieStore, name: &str, value: &str) -> Promise<()>;
@@ -24665,10 +24945,14 @@ pub mod cookie_store_manager {
 
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieStoreManager/subscribe)
-        pub safe fn subscribe(this: &CookieStoreManager, subscriptions: &[CookieStoreGetOptions<'_>]) -> Promise<()>;
+        pub safe fn subscribe(this: &CookieStoreManager, subscriptions: &[CookieStoreGetOptions]) -> Promise<()>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieStoreManager/getSubscriptions)
+        #[link_name = "getSubscriptions"]
+        pub safe fn get_subscriptions(this: &CookieStoreManager) -> Promise<Vec<CookieStoreGetOptions>>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieStoreManager/unsubscribe)
-        pub safe fn unsubscribe(this: &CookieStoreManager, subscriptions: &[CookieStoreGetOptions<'_>]) -> Promise<()>;
+        pub safe fn unsubscribe(this: &CookieStoreManager, subscriptions: &[CookieStoreGetOptions]) -> Promise<()>;
     }
 }
 
@@ -24960,6 +25244,18 @@ pub mod dom_exception {
     pub const DATA_CLONE_ERR: u16 = 25;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMException/DOMException)
+        #[link_name = "new DOMException"]
+        pub safe fn new() -> &'static DOMException;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMException/DOMException)
+        #[link_name = "new DOMException"]
+        pub safe fn new_with_message(message: &str) -> &'static DOMException;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMException/DOMException)
+        #[link_name = "new DOMException"]
+        pub safe fn new_with_message_and_name(message: &str, name: &str) -> &'static DOMException;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMException/name)
         #[link_name = "get name"]
         pub safe fn name(this: &DOMException) -> String;
@@ -26014,6 +26310,10 @@ pub mod decompression_stream {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DecompressionStream/DecompressionStream)
+        #[link_name = "new DecompressionStream"]
+        pub safe fn new(format: &str) -> &'static DecompressionStream;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/DecompressionStream/readable)
         #[link_name = "get readable"]
         pub safe fn readable(this: &DecompressionStream) -> &'static ReadableStream;
@@ -26041,6 +26341,14 @@ pub mod delay_node {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DelayNode/DelayNode)
+        #[link_name = "new DelayNode"]
+        pub safe fn new(context: &BaseAudioContext) -> &'static DelayNode;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DelayNode/DelayNode)
+        #[link_name = "new DelayNode"]
+        pub safe fn new_with_options(context: &BaseAudioContext, options: DelayOptions<'_>) -> &'static DelayNode;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/DelayNode/delayTime)
         #[link_name = "get delayTime"]
         pub safe fn delay_time(this: &DelayNode) -> &'static AudioParam;
@@ -26068,6 +26376,14 @@ pub mod device_motion_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceMotionEvent/DeviceMotionEvent)
+        #[link_name = "new DeviceMotionEvent"]
+        pub safe fn new(type_: &str) -> &'static DeviceMotionEvent;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceMotionEvent/DeviceMotionEvent)
+        #[link_name = "new DeviceMotionEvent"]
+        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: DeviceMotionEventInit) -> &'static DeviceMotionEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceMotionEvent/interval)
         #[link_name = "get interval"]
         pub safe fn interval(this: &DeviceMotionEvent) -> f64;
@@ -26095,6 +26411,14 @@ pub mod device_orientation_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEvent/DeviceOrientationEvent)
+        #[link_name = "new DeviceOrientationEvent"]
+        pub safe fn new(type_: &str) -> &'static DeviceOrientationEvent;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEvent/DeviceOrientationEvent)
+        #[link_name = "new DeviceOrientationEvent"]
+        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: DeviceOrientationEventInit) -> &'static DeviceOrientationEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEvent/alpha)
         #[link_name = "get alpha"]
         pub safe fn alpha(this: &DeviceOrientationEvent) -> Option<f64>;
@@ -26213,6 +26537,10 @@ pub mod document_picture_in_picture_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentPictureInPictureEvent/DocumentPictureInPictureEvent)
+        #[link_name = "new DocumentPictureInPictureEvent"]
+        pub safe fn new(type_: &str, event_init_dict: DocumentPictureInPictureEventInit<'_>) -> &'static DocumentPictureInPictureEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentPictureInPictureEvent/window)
         #[link_name = "get window"]
         pub safe fn window(this: &DocumentPictureInPictureEvent) -> &'static Window;
@@ -26240,6 +26568,14 @@ pub mod document_timeline {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentTimeline/DocumentTimeline)
+        #[link_name = "new DocumentTimeline"]
+        pub safe fn new() -> &'static DocumentTimeline;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentTimeline/DocumentTimeline)
+        #[link_name = "new DocumentTimeline"]
+        pub safe fn new_with_options(options: DocumentTimelineOptions) -> &'static DocumentTimeline;
+
         /// Treats `this` as `DocumentTimeline` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &AnimationTimeline) -> &'static DocumentTimeline;
@@ -26325,6 +26661,14 @@ pub mod dynamics_compressor_node {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DynamicsCompressorNode/DynamicsCompressorNode)
+        #[link_name = "new DynamicsCompressorNode"]
+        pub safe fn new(context: &BaseAudioContext) -> &'static DynamicsCompressorNode;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DynamicsCompressorNode/DynamicsCompressorNode)
+        #[link_name = "new DynamicsCompressorNode"]
+        pub safe fn new_with_options(context: &BaseAudioContext, options: DynamicsCompressorOptions<'_>) -> &'static DynamicsCompressorNode;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/DynamicsCompressorNode/threshold)
         #[link_name = "get threshold"]
         pub safe fn threshold(this: &DynamicsCompressorNode) -> &'static AudioParam;
@@ -26857,6 +27201,10 @@ pub mod encoded_audio_chunk {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/EncodedAudioChunk/EncodedAudioChunk)
+        #[link_name = "new EncodedAudioChunk"]
+        pub safe fn new(init: EncodedAudioChunkInit<'_>) -> &'static EncodedAudioChunk;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/EncodedAudioChunk/type)
         #[link_name = "get type"]
         pub safe fn type_(this: &EncodedAudioChunk) -> String;
@@ -26891,6 +27239,10 @@ pub mod encoded_video_chunk {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/EncodedVideoChunk/EncodedVideoChunk)
+        #[link_name = "new EncodedVideoChunk"]
+        pub safe fn new(init: EncodedVideoChunkInit<'_>) -> &'static EncodedVideoChunk;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/EncodedVideoChunk/type)
         #[link_name = "get type"]
         pub safe fn type_(this: &EncodedVideoChunk) -> String;
@@ -27636,6 +27988,22 @@ pub mod font_face {
         #[link_name = "get loaded"]
         pub safe fn loaded(this: &FontFace) -> Promise<&'static FontFace>;
     }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFace/FontFace)
+    #[cfg_attr(rust_js, rust_js::link_name = "new FontFace")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(family: &str, source: impl IntoStrOrUint8ArrayOrArrayBuffer) -> &'static FontFace {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFace/FontFace)
+    #[cfg_attr(rust_js, rust_js::link_name = "new FontFace")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_descriptors(family: &str, source: impl IntoStrOrUint8ArrayOrArrayBuffer, descriptors: FontFaceDescriptors<'_>) -> &'static FontFace {
+        unreachable!()
+    }
 }
 
 /// [`FontFaceSet`](https://developer.mozilla.org/docs/Web/API/FontFaceSet)
@@ -27727,6 +28095,14 @@ pub mod font_face_set_load_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSetLoadEvent/FontFaceSetLoadEvent)
+        #[link_name = "new FontFaceSetLoadEvent"]
+        pub safe fn new(type_: &str) -> &'static FontFaceSetLoadEvent;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSetLoadEvent/FontFaceSetLoadEvent)
+        #[link_name = "new FontFaceSetLoadEvent"]
+        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: FontFaceSetLoadEventInit<'_>) -> &'static FontFaceSetLoadEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSetLoadEvent/fontfaces)
         #[link_name = "get fontfaces"]
         pub safe fn fontfaces(this: &FontFaceSetLoadEvent) -> &'static [&'static FontFace];
@@ -27971,10 +28347,14 @@ pub mod gpu_canvas_context {
 
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCanvasContext/configure)
-        pub safe fn configure(this: &GPUCanvasContext, configuration: GPUCanvasConfiguration<'_>);
+        pub safe fn configure(this: &GPUCanvasContext, configuration: GPUCanvasConfiguration);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCanvasContext/unconfigure)
         pub safe fn unconfigure(this: &GPUCanvasContext);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCanvasContext/getConfiguration)
+        #[link_name = "getConfiguration"]
+        pub safe fn get_configuration(this: &GPUCanvasContext) -> Option<GPUCanvasConfiguration>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCanvasContext/getCurrentTexture)
         #[link_name = "getCurrentTexture"]
@@ -28442,6 +28822,10 @@ pub mod gpu_internal_error {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUInternalError/GPUInternalError)
+        #[link_name = "new GPUInternalError"]
+        pub safe fn new(message: &str) -> &'static GPUInternalError;
+
         /// Treats `this` as `GPUInternalError` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &GPUError) -> &'static GPUInternalError;
@@ -28465,6 +28849,10 @@ pub mod gpu_out_of_memory_error {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUOutOfMemoryError/GPUOutOfMemoryError)
+        #[link_name = "new GPUOutOfMemoryError"]
+        pub safe fn new(message: &str) -> &'static GPUOutOfMemoryError;
+
         /// Treats `this` as `GPUOutOfMemoryError` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &GPUError) -> &'static GPUOutOfMemoryError;
@@ -28488,6 +28876,14 @@ pub mod gpu_pipeline_error {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUPipelineError/GPUPipelineError)
+        #[link_name = "new GPUPipelineError"]
+        pub safe fn new() -> &'static GPUPipelineError;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUPipelineError/GPUPipelineError)
+        #[link_name = "new GPUPipelineError"]
+        pub safe fn new_with_message(message: &str) -> &'static GPUPipelineError;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUPipelineError/reason)
         #[link_name = "get reason"]
         pub safe fn reason(this: &GPUPipelineError) -> String;
@@ -29200,6 +29596,10 @@ pub mod gpu_uncaptured_error_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUUncapturedErrorEvent/GPUUncapturedErrorEvent)
+        #[link_name = "new GPUUncapturedErrorEvent"]
+        pub safe fn new(type_: &str, gpu_uncaptured_error_event_init_dict: GPUUncapturedErrorEventInit<'_>) -> &'static GPUUncapturedErrorEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUUncapturedErrorEvent/error)
         #[link_name = "get error"]
         pub safe fn error(this: &GPUUncapturedErrorEvent) -> &'static GPUError;
@@ -29227,6 +29627,10 @@ pub mod gpu_validation_error {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUValidationError/GPUValidationError)
+        #[link_name = "new GPUValidationError"]
+        pub safe fn new(message: &str) -> &'static GPUValidationError;
+
         /// Treats `this` as `GPUValidationError` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &GPUError) -> &'static GPUValidationError;
@@ -29250,6 +29654,14 @@ pub mod gain_node {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GainNode/GainNode)
+        #[link_name = "new GainNode"]
+        pub safe fn new(context: &BaseAudioContext) -> &'static GainNode;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GainNode/GainNode)
+        #[link_name = "new GainNode"]
+        pub safe fn new_with_options(context: &BaseAudioContext, options: GainOptions<'_>) -> &'static GainNode;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GainNode/gain)
         #[link_name = "get gain"]
         pub safe fn gain(this: &GainNode) -> &'static AudioParam;
@@ -29341,6 +29753,14 @@ pub mod gamepad_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GamepadEvent/GamepadEvent)
+        #[link_name = "new GamepadEvent"]
+        pub safe fn new(type_: &str) -> &'static GamepadEvent;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GamepadEvent/GamepadEvent)
+        #[link_name = "new GamepadEvent"]
+        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: GamepadEventInit<'_>) -> &'static GamepadEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GamepadEvent/gamepad)
         #[link_name = "get gamepad"]
         pub safe fn gamepad(this: &GamepadEvent) -> &'static Gamepad;
@@ -30221,6 +30641,10 @@ pub mod highlight {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Highlight/Highlight)
+        #[link_name = "new Highlight"]
+        pub safe fn new(initial_ranges: &AbstractRange) -> &'static Highlight;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Highlight/priority)
         #[link_name = "get priority"]
         pub safe fn priority(this: &Highlight) -> i32;
@@ -31127,6 +31551,14 @@ pub mod idb_version_change_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBVersionChangeEvent/IDBVersionChangeEvent)
+        #[link_name = "new IDBVersionChangeEvent"]
+        pub safe fn new(type_: &str) -> &'static IDBVersionChangeEvent;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBVersionChangeEvent/IDBVersionChangeEvent)
+        #[link_name = "new IDBVersionChangeEvent"]
+        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: IDBVersionChangeEventInit) -> &'static IDBVersionChangeEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBVersionChangeEvent/oldVersion)
         #[link_name = "get oldVersion"]
         pub safe fn old_version(this: &IDBVersionChangeEvent) -> f64;
@@ -31158,6 +31590,10 @@ pub mod iir_filter_node {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IIRFilterNode/IIRFilterNode)
+        #[link_name = "new IIRFilterNode"]
+        pub safe fn new(context: &BaseAudioContext, options: IIRFilterOptions<'_>) -> &'static IIRFilterNode;
+
         /// Treats `this` as `IIRFilterNode` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static IIRFilterNode;
@@ -31225,17 +31661,25 @@ pub mod image_capture {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageCapture/ImageCapture)
+        #[link_name = "new ImageCapture"]
+        pub safe fn new(video_track: &MediaStreamTrack) -> &'static ImageCapture;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageCapture/takePhoto)
         #[link_name = "takePhoto"]
         pub safe fn take_photo(this: &ImageCapture) -> Promise<&'static Blob>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageCapture/takePhoto)
         #[link_name = "takePhoto"]
-        pub safe fn take_photo_with_photo_settings(this: &ImageCapture, photo_settings: PhotoSettings<'_>) -> Promise<&'static Blob>;
+        pub safe fn take_photo_with_photo_settings(this: &ImageCapture, photo_settings: PhotoSettings) -> Promise<&'static Blob>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageCapture/getPhotoCapabilities)
         #[link_name = "getPhotoCapabilities"]
         pub safe fn get_photo_capabilities(this: &ImageCapture) -> Promise<PhotoCapabilities>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageCapture/getPhotoSettings)
+        #[link_name = "getPhotoSettings"]
+        pub safe fn get_photo_settings(this: &ImageCapture) -> Promise<PhotoSettings>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageCapture/grabFrame)
         #[link_name = "grabFrame"]
@@ -31289,6 +31733,10 @@ pub mod image_decoder {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageDecoder/ImageDecoder)
+        #[link_name = "new ImageDecoder"]
+        pub safe fn new(init: ImageDecoderInit<'_>) -> &'static ImageDecoder;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageDecoder/type)
         #[link_name = "get type"]
         pub safe fn type_(this: &ImageDecoder) -> String;
@@ -31432,6 +31880,10 @@ pub mod keyframe_effect {
         #[link_name = "set iterationComposite"]
         pub safe fn set_iteration_composite(this: &KeyframeEffect, value: &str);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyframeEffect/KeyframeEffect)
+        #[link_name = "new KeyframeEffect"]
+        pub safe fn new(target: &Element, keyframes: &dyn core::any::Any) -> &'static KeyframeEffect;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyframeEffect/target)
         #[link_name = "get target"]
         pub safe fn target(this: &KeyframeEffect) -> Option<&'static Element>;
@@ -31467,6 +31919,14 @@ pub mod keyframe_effect {
         /// Treats `this` as `KeyframeEffect` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &AnimationEffect) -> &'static KeyframeEffect;
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyframeEffect/KeyframeEffect)
+    #[cfg_attr(rust_js, rust_js::link_name = "new KeyframeEffect")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(target: &Element, keyframes: &dyn core::any::Any, options: impl IntoNumberOrKeyframeEffectOptions) -> &'static KeyframeEffect {
+        unreachable!()
     }
 }
 
@@ -31624,6 +32084,14 @@ pub mod midi_connection_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIConnectionEvent/MIDIConnectionEvent)
+        #[link_name = "new MIDIConnectionEvent"]
+        pub safe fn new(type_: &str) -> &'static MIDIConnectionEvent;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIConnectionEvent/MIDIConnectionEvent)
+        #[link_name = "new MIDIConnectionEvent"]
+        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: MIDIConnectionEventInit<'_>) -> &'static MIDIConnectionEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIConnectionEvent/port)
         #[link_name = "get port"]
         pub safe fn port(this: &MIDIConnectionEvent) -> Option<&'static MIDIPort>;
@@ -31687,6 +32155,14 @@ pub mod midi_message_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIMessageEvent/MIDIMessageEvent)
+        #[link_name = "new MIDIMessageEvent"]
+        pub safe fn new(type_: &str) -> &'static MIDIMessageEvent;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIMessageEvent/MIDIMessageEvent)
+        #[link_name = "new MIDIMessageEvent"]
+        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: MIDIMessageEventInit<'_>) -> &'static MIDIMessageEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIMessageEvent/data)
         #[link_name = "get data"]
         pub safe fn data(this: &MIDIMessageEvent) -> Option<&'static Uint8Array>;
@@ -32776,11 +33252,11 @@ pub mod media_capabilities {
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaCapabilities/decodingInfo)
         #[link_name = "decodingInfo"]
-        pub safe fn decoding_info(this: &MediaCapabilities, configuration: MediaDecodingConfiguration<'_>) -> Promise<MediaCapabilitiesDecodingInfo>;
+        pub safe fn decoding_info(this: &MediaCapabilities, configuration: MediaDecodingConfiguration) -> Promise<MediaCapabilitiesDecodingInfo>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaCapabilities/encodingInfo)
         #[link_name = "encodingInfo"]
-        pub safe fn encoding_info(this: &MediaCapabilities, configuration: MediaEncodingConfiguration<'_>) -> Promise<MediaCapabilitiesEncodingInfo>;
+        pub safe fn encoding_info(this: &MediaCapabilities, configuration: MediaEncodingConfiguration) -> Promise<MediaCapabilitiesEncodingInfo>;
     }
 }
 
@@ -32862,7 +33338,7 @@ pub mod media_devices {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaDevices/getUserMedia)
         #[link_name = "getUserMedia"]
-        pub safe fn get_user_media_with_constraints(this: &MediaDevices, constraints: MediaStreamConstraints<'_>) -> Promise<&'static MediaStream>;
+        pub safe fn get_user_media_with_constraints(this: &MediaDevices, constraints: MediaStreamConstraints) -> Promise<&'static MediaStream>;
 
         /// Treats `this` as `MediaDevices` without checking that it is one.
         #[link_name = "this"]
@@ -32887,6 +33363,10 @@ pub mod media_element_audio_source_node {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaElementAudioSourceNode/MediaElementAudioSourceNode)
+        #[link_name = "new MediaElementAudioSourceNode"]
+        pub safe fn new(context: &AudioContext, options: MediaElementAudioSourceOptions<'_>) -> &'static MediaElementAudioSourceNode;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaElementAudioSourceNode/mediaElement)
         #[link_name = "get mediaElement"]
         pub safe fn media_element(this: &MediaElementAudioSourceNode) -> &'static HTMLMediaElement;
@@ -32914,6 +33394,14 @@ pub mod media_encrypted_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaEncryptedEvent/MediaEncryptedEvent)
+        #[link_name = "new MediaEncryptedEvent"]
+        pub safe fn new(type_: &str) -> &'static MediaEncryptedEvent;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaEncryptedEvent/MediaEncryptedEvent)
+        #[link_name = "new MediaEncryptedEvent"]
+        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: MediaEncryptedEventInit<'_>) -> &'static MediaEncryptedEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaEncryptedEvent/initDataType)
         #[link_name = "get initDataType"]
         pub safe fn init_data_type(this: &MediaEncryptedEvent) -> String;
@@ -32975,6 +33463,10 @@ pub mod media_key_message_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeyMessageEvent/MediaKeyMessageEvent)
+        #[link_name = "new MediaKeyMessageEvent"]
+        pub safe fn new(type_: &str, event_init_dict: MediaKeyMessageEventInit<'_>) -> &'static MediaKeyMessageEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeyMessageEvent/messageType)
         #[link_name = "get messageType"]
         pub safe fn message_type(this: &MediaKeyMessageEvent) -> String;
@@ -33105,6 +33597,10 @@ pub mod media_key_system_access {
         #[link_name = "get keySystem"]
         pub safe fn key_system(this: &MediaKeySystemAccess) -> String;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeySystemAccess/getConfiguration)
+        #[link_name = "getConfiguration"]
+        pub safe fn get_configuration(this: &MediaKeySystemAccess) -> MediaKeySystemConfiguration;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeySystemAccess/createMediaKeys)
         #[link_name = "createMediaKeys"]
         pub safe fn create_media_keys(this: &MediaKeySystemAccess) -> Promise<&'static MediaKeys>;
@@ -33186,6 +33682,14 @@ pub mod media_metadata {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaMetadata/MediaMetadata)
+        #[link_name = "new MediaMetadata"]
+        pub safe fn new() -> &'static MediaMetadata;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaMetadata/MediaMetadata)
+        #[link_name = "new MediaMetadata"]
+        pub safe fn new_with_init(init: MediaMetadataInit<'_>) -> &'static MediaMetadata;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaMetadata/title)
         #[link_name = "get title"]
         pub safe fn title(this: &MediaMetadata) -> String;
@@ -33237,6 +33741,14 @@ pub mod media_recorder {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/MediaRecorder)
+        #[link_name = "new MediaRecorder"]
+        pub safe fn new(stream: &MediaStream) -> &'static MediaRecorder;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/MediaRecorder)
+        #[link_name = "new MediaRecorder"]
+        pub safe fn new_with_options(stream: &MediaStream, options: MediaRecorderOptions<'_>) -> &'static MediaRecorder;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/stream)
         #[link_name = "get stream"]
         pub safe fn stream(this: &MediaRecorder) -> &'static MediaStream;
@@ -33404,6 +33916,10 @@ pub mod media_source {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSource/MediaSource)
+        #[link_name = "new MediaSource"]
+        pub safe fn new() -> &'static MediaSource;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSource/sourceBuffers)
         #[link_name = "get sourceBuffers"]
         pub safe fn source_buffers(this: &MediaSource) -> &'static SourceBufferList;
@@ -33506,6 +34022,10 @@ pub mod media_stream {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStream/MediaStream)
+        #[link_name = "new MediaStream"]
+        pub safe fn new() -> &'static MediaStream;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStream/id)
         #[link_name = "get id"]
         pub safe fn id(this: &MediaStream) -> String;
@@ -33582,6 +34102,14 @@ pub mod media_stream_audio_destination_node {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamAudioDestinationNode/MediaStreamAudioDestinationNode)
+        #[link_name = "new MediaStreamAudioDestinationNode"]
+        pub safe fn new(context: &AudioContext) -> &'static MediaStreamAudioDestinationNode;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamAudioDestinationNode/MediaStreamAudioDestinationNode)
+        #[link_name = "new MediaStreamAudioDestinationNode"]
+        pub safe fn new_with_options(context: &AudioContext, options: AudioNodeOptions<'_>) -> &'static MediaStreamAudioDestinationNode;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamAudioDestinationNode/stream)
         #[link_name = "get stream"]
         pub safe fn stream(this: &MediaStreamAudioDestinationNode) -> &'static MediaStream;
@@ -33609,6 +34137,10 @@ pub mod media_stream_audio_source_node {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamAudioSourceNode/MediaStreamAudioSourceNode)
+        #[link_name = "new MediaStreamAudioSourceNode"]
+        pub safe fn new(context: &AudioContext, options: MediaStreamAudioSourceOptions<'_>) -> &'static MediaStreamAudioSourceNode;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamAudioSourceNode/mediaStream)
         #[link_name = "get mediaStream"]
         pub safe fn media_stream(this: &MediaStreamAudioSourceNode) -> &'static MediaStream;
@@ -33709,6 +34241,10 @@ pub mod media_stream_track {
         #[link_name = "getCapabilities"]
         pub safe fn get_capabilities(this: &MediaStreamTrack) -> MediaTrackCapabilities;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack/getConstraints)
+        #[link_name = "getConstraints"]
+        pub safe fn get_constraints(this: &MediaStreamTrack) -> MediaTrackConstraints;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack/getSettings)
         #[link_name = "getSettings"]
         pub safe fn get_settings(this: &MediaStreamTrack) -> MediaTrackSettings;
@@ -33719,7 +34255,7 @@ pub mod media_stream_track {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack/applyConstraints)
         #[link_name = "applyConstraints"]
-        pub safe fn apply_constraints_with_constraints(this: &MediaStreamTrack, constraints: MediaTrackConstraints<'_>) -> Promise<()>;
+        pub safe fn apply_constraints_with_constraints(this: &MediaStreamTrack, constraints: MediaTrackConstraints) -> Promise<()>;
 
         /// Treats `this` as `MediaStreamTrack` without checking that it is one.
         #[link_name = "this"]
@@ -33744,6 +34280,10 @@ pub mod media_stream_track_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrackEvent/MediaStreamTrackEvent)
+        #[link_name = "new MediaStreamTrackEvent"]
+        pub safe fn new(type_: &str, event_init_dict: MediaStreamTrackEventInit<'_>) -> &'static MediaStreamTrackEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrackEvent/track)
         #[link_name = "get track"]
         pub safe fn track(this: &MediaStreamTrackEvent) -> &'static MediaStreamTrack;
@@ -34475,6 +35015,14 @@ pub mod notification {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/Notification)
+        #[link_name = "new Notification"]
+        pub safe fn new(title: &str) -> &'static Notification;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/Notification)
+        #[link_name = "new Notification"]
+        pub safe fn new_with_options(title: &str, options: NotificationOptions<'_>) -> &'static Notification;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/requestPermission)
         #[link_name = "Notification.requestPermission"]
         pub safe fn request_permission() -> Promise<String>;
@@ -34555,6 +35103,10 @@ pub mod notification {
         #[link_name = "get data"]
         pub safe fn data(this: &Notification) -> Option<&'static Unknown>;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/actions)
+        #[link_name = "get actions"]
+        pub safe fn actions(this: &Notification) -> &'static [NotificationAction];
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/close)
         pub safe fn close(this: &Notification);
 
@@ -34581,6 +35133,10 @@ pub mod offline_audio_completion_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/OfflineAudioCompletionEvent/OfflineAudioCompletionEvent)
+        #[link_name = "new OfflineAudioCompletionEvent"]
+        pub safe fn new(type_: &str, event_init_dict: OfflineAudioCompletionEventInit<'_>) -> &'static OfflineAudioCompletionEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/OfflineAudioCompletionEvent/renderedBuffer)
         #[link_name = "get renderedBuffer"]
         pub safe fn rendered_buffer(this: &OfflineAudioCompletionEvent) -> &'static AudioBuffer;
@@ -34608,6 +35164,10 @@ pub mod offline_audio_context {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/OfflineAudioContext/OfflineAudioContext)
+        #[link_name = "new OfflineAudioContext"]
+        pub safe fn new(context_options: OfflineAudioContextOptions<'_>) -> &'static OfflineAudioContext;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/OfflineAudioContext/startRendering)
         #[link_name = "startRendering"]
         pub safe fn start_rendering(this: &OfflineAudioContext) -> Promise<&'static AudioBuffer>;
@@ -35270,6 +35830,14 @@ pub mod oscillator_node {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/OscillatorNode/OscillatorNode)
+        #[link_name = "new OscillatorNode"]
+        pub safe fn new(context: &BaseAudioContext) -> &'static OscillatorNode;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/OscillatorNode/OscillatorNode)
+        #[link_name = "new OscillatorNode"]
+        pub safe fn new_with_options(context: &BaseAudioContext, options: OscillatorOptions<'_>) -> &'static OscillatorNode;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/OscillatorNode/type)
         #[link_name = "get type"]
         pub safe fn type_(this: &OscillatorNode) -> String;
@@ -35313,6 +35881,14 @@ pub mod overconstrained_error {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/OverconstrainedError/OverconstrainedError)
+        #[link_name = "new OverconstrainedError"]
+        pub safe fn new(constraint: &str) -> &'static OverconstrainedError;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/OverconstrainedError/OverconstrainedError)
+        #[link_name = "new OverconstrainedError"]
+        pub safe fn new_with_message(constraint: &str, message: &str) -> &'static OverconstrainedError;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/OverconstrainedError/constraint)
         #[link_name = "get constraint"]
         pub safe fn constraint(this: &OverconstrainedError) -> String;
@@ -35449,6 +36025,14 @@ pub mod panner_node {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PannerNode/PannerNode)
+        #[link_name = "new PannerNode"]
+        pub safe fn new(context: &BaseAudioContext) -> &'static PannerNode;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PannerNode/PannerNode)
+        #[link_name = "new PannerNode"]
+        pub safe fn new_with_options(context: &BaseAudioContext, options: PannerOptions<'_>) -> &'static PannerNode;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/PannerNode/panningModel)
         #[link_name = "get panningModel"]
         pub safe fn panning_model(this: &PannerNode) -> String;
@@ -35651,6 +36235,14 @@ pub mod payment_method_change_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentMethodChangeEvent/PaymentMethodChangeEvent)
+        #[link_name = "new PaymentMethodChangeEvent"]
+        pub safe fn new(type_: &str) -> &'static PaymentMethodChangeEvent;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentMethodChangeEvent/PaymentMethodChangeEvent)
+        #[link_name = "new PaymentMethodChangeEvent"]
+        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: PaymentMethodChangeEventInit<'_>) -> &'static PaymentMethodChangeEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentMethodChangeEvent/methodName)
         #[link_name = "get methodName"]
         pub safe fn method_name(this: &PaymentMethodChangeEvent) -> String;
@@ -35682,8 +36274,20 @@ pub mod payment_request {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequest/PaymentRequest)
+        #[link_name = "new PaymentRequest"]
+        pub safe fn new(method_data: &[PaymentMethodData<'_>], details: PaymentDetailsInit<'_>) -> &'static PaymentRequest;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequest/PaymentRequest)
+        #[link_name = "new PaymentRequest"]
+        pub safe fn new_with_options(method_data: &[PaymentMethodData<'_>], details: PaymentDetailsInit<'_>, options: PaymentOptions<'_>) -> &'static PaymentRequest;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequest/show)
         pub safe fn show(this: &PaymentRequest) -> Promise<&'static PaymentResponse>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequest/show)
+        #[link_name = "show"]
+        pub safe fn show_with_details_promise(this: &PaymentRequest, details_promise: Promise<PaymentDetailsUpdate>) -> Promise<&'static PaymentResponse>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequest/abort)
         pub safe fn abort(this: &PaymentRequest) -> Promise<()>;
@@ -35754,6 +36358,18 @@ pub mod payment_request_update_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequestUpdateEvent/PaymentRequestUpdateEvent)
+        #[link_name = "new PaymentRequestUpdateEvent"]
+        pub safe fn new(type_: &str) -> &'static PaymentRequestUpdateEvent;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequestUpdateEvent/PaymentRequestUpdateEvent)
+        #[link_name = "new PaymentRequestUpdateEvent"]
+        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: PaymentRequestUpdateEventInit) -> &'static PaymentRequestUpdateEvent;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequestUpdateEvent/updateWith)
+        #[link_name = "updateWith"]
+        pub safe fn update_with(this: &PaymentRequestUpdateEvent, details_promise: Promise<PaymentDetailsUpdate>);
+
         /// Treats `this` as `PaymentRequestUpdateEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static PaymentRequestUpdateEvent;
@@ -35928,6 +36544,14 @@ pub mod performance_mark {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceMark/PerformanceMark)
+        #[link_name = "new PerformanceMark"]
+        pub safe fn new(mark_name: &str) -> &'static PerformanceMark;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceMark/PerformanceMark)
+        #[link_name = "new PerformanceMark"]
+        pub safe fn new_with_mark_options(mark_name: &str, mark_options: PerformanceMarkOptions) -> &'static PerformanceMark;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceMark/detail)
         #[link_name = "get detail"]
         pub safe fn detail(this: &PerformanceMark) -> Option<&'static Unknown>;
@@ -36070,6 +36694,10 @@ pub mod performance_observer {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceObserver/PerformanceObserver)
+        #[link_name = "new PerformanceObserver"]
+        pub safe fn new(callback: Box<dyn FnMut(&PerformanceObserverEntryList, &PerformanceObserver, PerformanceObserverCallbackOptions)>) -> &'static PerformanceObserver;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceObserver/observe)
         pub safe fn observe(this: &PerformanceObserver);
 
@@ -36386,6 +37014,20 @@ pub mod performance_timing {
 #[cfg_attr(rust_js, rust_js::types = "PeriodicWave")]
 pub struct PeriodicWave(PhantomData<JsObject>);
 
+pub mod periodic_wave {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PeriodicWave/PeriodicWave)
+        #[link_name = "new PeriodicWave"]
+        pub safe fn new(context: &BaseAudioContext) -> &'static PeriodicWave;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PeriodicWave/PeriodicWave)
+        #[link_name = "new PeriodicWave"]
+        pub safe fn new_with_options(context: &BaseAudioContext, options: PeriodicWaveOptions<'_>) -> &'static PeriodicWave;
+    }
+}
+
 /// [`PermissionStatus`](https://developer.mozilla.org/docs/Web/API/PermissionStatus)
 #[cfg_attr(rust_js, rust_js::types = "PermissionStatus")]
 pub struct PermissionStatus(PhantomData<JsObject>);
@@ -36456,6 +37098,10 @@ pub mod picture_in_picture_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PictureInPictureEvent/PictureInPictureEvent)
+        #[link_name = "new PictureInPictureEvent"]
+        pub safe fn new(type_: &str, event_init_dict: PictureInPictureEventInit<'_>) -> &'static PictureInPictureEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/PictureInPictureEvent/pictureInPictureWindow)
         #[link_name = "get pictureInPictureWindow"]
         pub safe fn picture_in_picture_window(this: &PictureInPictureEvent) -> &'static PictureInPictureWindow;
@@ -36989,6 +37635,14 @@ pub mod rtcdtmf_tone_change_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDTMFToneChangeEvent/RTCDTMFToneChangeEvent)
+        #[link_name = "new RTCDTMFToneChangeEvent"]
+        pub safe fn new(type_: &str) -> &'static RTCDTMFToneChangeEvent;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDTMFToneChangeEvent/RTCDTMFToneChangeEvent)
+        #[link_name = "new RTCDTMFToneChangeEvent"]
+        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: RTCDTMFToneChangeEventInit<'_>) -> &'static RTCDTMFToneChangeEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDTMFToneChangeEvent/tone)
         #[link_name = "get tone"]
         pub safe fn tone(this: &RTCDTMFToneChangeEvent) -> String;
@@ -37163,6 +37817,10 @@ pub mod rtc_data_channel_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannelEvent/RTCDataChannelEvent)
+        #[link_name = "new RTCDataChannelEvent"]
+        pub safe fn new(type_: &str, event_init_dict: RTCDataChannelEventInit<'_>) -> &'static RTCDataChannelEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannelEvent/channel)
         #[link_name = "get channel"]
         pub safe fn channel(this: &RTCDataChannelEvent) -> &'static RTCDataChannel;
@@ -37234,6 +37892,14 @@ pub mod rtc_encoded_audio_frame {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCEncodedAudioFrame/RTCEncodedAudioFrame)
+        #[link_name = "new RTCEncodedAudioFrame"]
+        pub safe fn new(original_frame: &RTCEncodedAudioFrame) -> &'static RTCEncodedAudioFrame;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCEncodedAudioFrame/RTCEncodedAudioFrame)
+        #[link_name = "new RTCEncodedAudioFrame"]
+        pub safe fn new_with_options(original_frame: &RTCEncodedAudioFrame, options: RTCEncodedAudioFrameOptions) -> &'static RTCEncodedAudioFrame;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCEncodedAudioFrame/data)
         #[link_name = "get data"]
         pub safe fn data(this: &RTCEncodedAudioFrame) -> &'static ArrayBuffer;
@@ -37256,6 +37922,14 @@ pub mod rtc_encoded_video_frame {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCEncodedVideoFrame/RTCEncodedVideoFrame)
+        #[link_name = "new RTCEncodedVideoFrame"]
+        pub safe fn new(original_frame: &RTCEncodedVideoFrame) -> &'static RTCEncodedVideoFrame;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCEncodedVideoFrame/RTCEncodedVideoFrame)
+        #[link_name = "new RTCEncodedVideoFrame"]
+        pub safe fn new_with_options(original_frame: &RTCEncodedVideoFrame, options: RTCEncodedVideoFrameOptions) -> &'static RTCEncodedVideoFrame;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCEncodedVideoFrame/type)
         #[link_name = "get type"]
         pub safe fn type_(this: &RTCEncodedVideoFrame) -> String;
@@ -37291,6 +37965,14 @@ pub mod rtc_error {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCError/RTCError)
+        #[link_name = "new RTCError"]
+        pub safe fn new(init: RTCErrorInit<'_>) -> &'static RTCError;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCError/RTCError)
+        #[link_name = "new RTCError"]
+        pub safe fn new_with_message(init: RTCErrorInit<'_>, message: &str) -> &'static RTCError;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCError/errorDetail)
         #[link_name = "get errorDetail"]
         pub safe fn error_detail(this: &RTCError) -> String;
@@ -37334,6 +38016,10 @@ pub mod rtc_error_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCErrorEvent/RTCErrorEvent)
+        #[link_name = "new RTCErrorEvent"]
+        pub safe fn new(type_: &str, event_init_dict: RTCErrorEventInit<'_>) -> &'static RTCErrorEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCErrorEvent/error)
         #[link_name = "get error"]
         pub safe fn error(this: &RTCErrorEvent) -> &'static RTCError;
@@ -37352,6 +38038,14 @@ pub mod rtc_ice_candidate {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/RTCIceCandidate)
+        #[link_name = "new RTCIceCandidate"]
+        pub safe fn new() -> &'static RTCIceCandidate;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/RTCIceCandidate)
+        #[link_name = "new RTCIceCandidate"]
+        pub safe fn new_with_candidate_init_dict(candidate_init_dict: RTCLocalIceCandidateInit<'_>) -> &'static RTCIceCandidate;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/candidate)
         #[link_name = "get candidate"]
         pub safe fn candidate(this: &RTCIceCandidate) -> String;
@@ -37407,6 +38101,10 @@ pub mod rtc_ice_candidate {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/usernameFragment)
         #[link_name = "get usernameFragment"]
         pub safe fn username_fragment(this: &RTCIceCandidate) -> Option<String>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/toJSON)
+        #[link_name = "toJSON"]
+        pub safe fn to_json(this: &RTCIceCandidate) -> RTCIceCandidateInit;
     }
 }
 
@@ -37466,6 +38164,10 @@ pub mod rtc_ice_transport {
         #[cfg_attr(rust_js, rust_js::nullable(value))]
         pub safe fn set_onselectedcandidatepairchange(this: &RTCIceTransport, value: Option<Box<dyn FnMut(&Event)>>);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceTransport/RTCIceTransport)
+        #[link_name = "new RTCIceTransport"]
+        pub safe fn new() -> &'static RTCIceTransport;
+
         /// Treats `this` as `RTCIceTransport` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static RTCIceTransport;
@@ -37489,6 +38191,26 @@ pub mod rtc_peer_connection {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/RTCPeerConnection)
+        #[link_name = "new RTCPeerConnection"]
+        pub safe fn new() -> &'static RTCPeerConnection;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/RTCPeerConnection)
+        #[link_name = "new RTCPeerConnection"]
+        pub safe fn new_with_configuration(configuration: RTCConfiguration) -> &'static RTCPeerConnection;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/createOffer)
+        #[link_name = "createOffer"]
+        pub safe fn create_offer(this: &RTCPeerConnection) -> Promise<RTCSessionDescriptionInit>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/createOffer)
+        #[link_name = "createOffer"]
+        pub safe fn create_offer_with_options(this: &RTCPeerConnection, options: RTCOfferOptions) -> Promise<RTCSessionDescriptionInit>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/createAnswer)
+        #[link_name = "createAnswer"]
+        pub safe fn create_answer(this: &RTCPeerConnection) -> Promise<RTCSessionDescriptionInit>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/setLocalDescription)
         #[link_name = "setLocalDescription"]
         pub safe fn set_local_description(this: &RTCPeerConnection) -> Promise<()>;
@@ -37511,7 +38233,7 @@ pub mod rtc_peer_connection {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/setRemoteDescription)
         #[link_name = "setRemoteDescription"]
-        pub safe fn set_remote_description(this: &RTCPeerConnection, description: RTCSessionDescriptionInit<'_>) -> Promise<()>;
+        pub safe fn set_remote_description(this: &RTCPeerConnection, description: RTCSessionDescriptionInit) -> Promise<()>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/remoteDescription)
         #[link_name = "get remoteDescription"]
@@ -37531,7 +38253,7 @@ pub mod rtc_peer_connection {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/addIceCandidate)
         #[link_name = "addIceCandidate"]
-        pub safe fn add_ice_candidate_with_candidate(this: &RTCPeerConnection, candidate: RTCIceCandidateInit<'_>) -> Promise<()>;
+        pub safe fn add_ice_candidate_with_candidate(this: &RTCPeerConnection, candidate: RTCIceCandidateInit) -> Promise<()>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/signalingState)
         #[link_name = "get signalingState"]
@@ -37557,13 +38279,17 @@ pub mod rtc_peer_connection {
         #[link_name = "restartIce"]
         pub safe fn restart_ice(this: &RTCPeerConnection);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/getConfiguration)
+        #[link_name = "getConfiguration"]
+        pub safe fn get_configuration(this: &RTCPeerConnection) -> RTCConfiguration;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/setConfiguration)
         #[link_name = "setConfiguration"]
         pub safe fn set_configuration(this: &RTCPeerConnection);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/setConfiguration)
         #[link_name = "setConfiguration"]
-        pub safe fn set_configuration_with_configuration(this: &RTCPeerConnection, configuration: RTCConfiguration<'_>);
+        pub safe fn set_configuration_with_configuration(this: &RTCPeerConnection, configuration: RTCConfiguration);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/close)
         pub safe fn close(this: &RTCPeerConnection);
@@ -37633,11 +38359,11 @@ pub mod rtc_peer_connection {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/createOffer)
         #[link_name = "createOffer"]
-        pub safe fn create_offer_with_success_callback_and_failure_callback(this: &RTCPeerConnection, success_callback: Box<dyn FnMut(RTCSessionDescriptionInit<'_>)>, failure_callback: Box<dyn FnMut(&DOMException)>) -> Promise<()>;
+        pub safe fn create_offer_with_success_callback_and_failure_callback(this: &RTCPeerConnection, success_callback: Box<dyn FnMut(RTCSessionDescriptionInit)>, failure_callback: Box<dyn FnMut(&DOMException)>) -> Promise<()>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/createOffer)
         #[link_name = "createOffer"]
-        pub safe fn create_offer_with_success_callback_and_failure_callback_and_options(this: &RTCPeerConnection, success_callback: Box<dyn FnMut(RTCSessionDescriptionInit<'_>)>, failure_callback: Box<dyn FnMut(&DOMException)>, options: RTCOfferOptions) -> Promise<()>;
+        pub safe fn create_offer_with_success_callback_and_failure_callback_and_options(this: &RTCPeerConnection, success_callback: Box<dyn FnMut(RTCSessionDescriptionInit)>, failure_callback: Box<dyn FnMut(&DOMException)>, options: RTCOfferOptions) -> Promise<()>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/setLocalDescription)
         #[link_name = "setLocalDescription"]
@@ -37645,15 +38371,15 @@ pub mod rtc_peer_connection {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/createAnswer)
         #[link_name = "createAnswer"]
-        pub safe fn create_answer_with_success_callback_and_failure_callback(this: &RTCPeerConnection, success_callback: Box<dyn FnMut(RTCSessionDescriptionInit<'_>)>, failure_callback: Box<dyn FnMut(&DOMException)>) -> Promise<()>;
+        pub safe fn create_answer_with_success_callback_and_failure_callback(this: &RTCPeerConnection, success_callback: Box<dyn FnMut(RTCSessionDescriptionInit)>, failure_callback: Box<dyn FnMut(&DOMException)>) -> Promise<()>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/setRemoteDescription)
         #[link_name = "setRemoteDescription"]
-        pub safe fn set_remote_description_with_success_callback_and_failure_callback(this: &RTCPeerConnection, description: RTCSessionDescriptionInit<'_>, success_callback: Box<dyn FnMut()>, failure_callback: Box<dyn FnMut(&DOMException)>) -> Promise<()>;
+        pub safe fn set_remote_description_with_success_callback_and_failure_callback(this: &RTCPeerConnection, description: RTCSessionDescriptionInit, success_callback: Box<dyn FnMut()>, failure_callback: Box<dyn FnMut(&DOMException)>) -> Promise<()>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/addIceCandidate)
         #[link_name = "addIceCandidate"]
-        pub safe fn add_ice_candidate_with_candidate_and_success_callback_and_failure_callback(this: &RTCPeerConnection, candidate: RTCIceCandidateInit<'_>, success_callback: Box<dyn FnMut()>, failure_callback: Box<dyn FnMut(&DOMException)>) -> Promise<()>;
+        pub safe fn add_ice_candidate_with_candidate_and_success_callback_and_failure_callback(this: &RTCPeerConnection, candidate: RTCIceCandidateInit, success_callback: Box<dyn FnMut()>, failure_callback: Box<dyn FnMut(&DOMException)>) -> Promise<()>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/generateCertificate)
         #[link_name = "RTCPeerConnection.generateCertificate"]
@@ -37756,6 +38482,10 @@ pub mod rtc_peer_connection_ice_error_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceErrorEvent/RTCPeerConnectionIceErrorEvent)
+        #[link_name = "new RTCPeerConnectionIceErrorEvent"]
+        pub safe fn new(type_: &str, event_init_dict: RTCPeerConnectionIceErrorEventInit<'_>) -> &'static RTCPeerConnectionIceErrorEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceErrorEvent/address)
         #[link_name = "get address"]
         pub safe fn address(this: &RTCPeerConnectionIceErrorEvent) -> Option<String>;
@@ -37799,6 +38529,14 @@ pub mod rtc_peer_connection_ice_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceEvent/RTCPeerConnectionIceEvent)
+        #[link_name = "new RTCPeerConnectionIceEvent"]
+        pub safe fn new(type_: &str) -> &'static RTCPeerConnectionIceEvent;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceEvent/RTCPeerConnectionIceEvent)
+        #[link_name = "new RTCPeerConnectionIceEvent"]
+        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: RTCPeerConnectionIceEventInit<'_>) -> &'static RTCPeerConnectionIceEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceEvent/candidate)
         #[link_name = "get candidate"]
         pub safe fn candidate(this: &RTCPeerConnectionIceEvent) -> Option<&'static RTCIceCandidate>;
@@ -37863,6 +38601,34 @@ pub mod rtc_rtp_receiver {
 #[cfg_attr(rust_js, rust_js::types = "RTCRtpScriptTransform")]
 pub struct RTCRtpScriptTransform(PhantomData<JsObject>);
 
+pub mod rtc_rtp_script_transform {
+    use super::*;
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpScriptTransform/RTCRtpScriptTransform)
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCRtpScriptTransform")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(worker_or_worker_and_parameters: impl IntoWorkerOrWorkerAndParameters) -> &'static RTCRtpScriptTransform {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpScriptTransform/RTCRtpScriptTransform)
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCRtpScriptTransform")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options<O>(worker_or_worker_and_parameters: impl IntoWorkerOrWorkerAndParameters, options: O) -> &'static RTCRtpScriptTransform {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpScriptTransform/RTCRtpScriptTransform)
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCRtpScriptTransform")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options_and_transfer<O>(worker_or_worker_and_parameters: impl IntoWorkerOrWorkerAndParameters, options: O, transfer: &[&dyn core::any::Any]) -> &'static RTCRtpScriptTransform {
+        unreachable!()
+    }
+}
+
 /// [`RTCRtpSender`](https://developer.mozilla.org/docs/Web/API/RTCRtpSender)
 #[cfg_attr(rust_js, rust_js::types = "RTCRtpSender")]
 pub struct RTCRtpSender(PhantomData<JsObject>);
@@ -37885,7 +38651,11 @@ pub mod rtc_rtp_sender {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpSender/setParameters)
         #[link_name = "setParameters"]
-        pub safe fn set_parameters(this: &RTCRtpSender, parameters: RTCRtpSendParameters<'_>) -> Promise<()>;
+        pub safe fn set_parameters(this: &RTCRtpSender, parameters: RTCRtpSendParameters) -> Promise<()>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpSender/getParameters)
+        #[link_name = "getParameters"]
+        pub safe fn get_parameters(this: &RTCRtpSender) -> RTCRtpSendParameters;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpSender/replaceTrack)
         #[link_name = "replaceTrack"]
@@ -37946,7 +38716,7 @@ pub mod rtc_rtp_transceiver {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpTransceiver/setCodecPreferences)
         #[link_name = "setCodecPreferences"]
-        pub safe fn set_codec_preferences(this: &RTCRtpTransceiver, codecs: &[RTCRtpCodec<'_>]);
+        pub safe fn set_codec_preferences(this: &RTCRtpTransceiver, codecs: &[RTCRtpCodec]);
     }
 }
 
@@ -38006,6 +38776,10 @@ pub mod rtc_session_description {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCSessionDescription/RTCSessionDescription)
+        #[link_name = "new RTCSessionDescription"]
+        pub safe fn new(description_init_dict: RTCSessionDescriptionInit) -> &'static RTCSessionDescription;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCSessionDescription/type)
         #[link_name = "get type"]
         pub safe fn type_(this: &RTCSessionDescription) -> String;
@@ -38013,6 +38787,10 @@ pub mod rtc_session_description {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCSessionDescription/sdp)
         #[link_name = "get sdp"]
         pub safe fn sdp(this: &RTCSessionDescription) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCSessionDescription/toJSON)
+        #[link_name = "toJSON"]
+        pub safe fn to_json(this: &RTCSessionDescription) -> RTCSessionDescriptionInit;
     }
 }
 
@@ -38037,6 +38815,10 @@ pub mod rtc_track_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCTrackEvent/RTCTrackEvent)
+        #[link_name = "new RTCTrackEvent"]
+        pub safe fn new(type_: &str, event_init_dict: RTCTrackEventInit<'_>) -> &'static RTCTrackEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCTrackEvent/receiver)
         #[link_name = "get receiver"]
         pub safe fn receiver(this: &RTCTrackEvent) -> &'static RTCRtpReceiver;
@@ -38475,6 +39257,14 @@ pub mod reporting_observer {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ReportingObserver/ReportingObserver)
+        #[link_name = "new ReportingObserver"]
+        pub safe fn new(callback: Box<dyn FnMut(&[Report], &ReportingObserver)>) -> &'static ReportingObserver;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ReportingObserver/ReportingObserver)
+        #[link_name = "new ReportingObserver"]
+        pub safe fn new_with_options(callback: Box<dyn FnMut(&[Report], &ReportingObserver)>, options: ReportingObserverOptions<'_>) -> &'static ReportingObserver;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ReportingObserver/observe)
         pub safe fn observe(this: &ReportingObserver);
 
@@ -38495,6 +39285,10 @@ pub mod resize_observer {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ResizeObserver/ResizeObserver)
+        #[link_name = "new ResizeObserver"]
+        pub safe fn new(callback: Box<dyn FnMut(&[&ResizeObserverEntry], &ResizeObserver)>) -> &'static ResizeObserver;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ResizeObserver/observe)
         pub safe fn observe(this: &ResizeObserver, target: &Element);
 
@@ -39305,6 +40099,9 @@ pub mod sanitizer {
         #[link_name = "new Sanitizer"]
         pub safe fn new() -> &'static Sanitizer;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Sanitizer/get)
+        pub safe fn get(this: &Sanitizer) -> SanitizerConfig;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Sanitizer/setComments)
         #[link_name = "setComments"]
         pub safe fn set_comments(this: &Sanitizer, allow: bool) -> bool;
@@ -39546,6 +40343,14 @@ pub mod scroll_timeline {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ScrollTimeline/ScrollTimeline)
+        #[link_name = "new ScrollTimeline"]
+        pub safe fn new() -> &'static ScrollTimeline;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ScrollTimeline/ScrollTimeline)
+        #[link_name = "new ScrollTimeline"]
+        pub safe fn new_with_options(options: ScrollTimelineOptions<'_>) -> &'static ScrollTimeline;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ScrollTimeline/source)
         #[link_name = "get source"]
         pub safe fn source(this: &ScrollTimeline) -> Option<&'static Element>;
@@ -39577,6 +40382,14 @@ pub mod security_policy_violation_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/SecurityPolicyViolationEvent)
+        #[link_name = "new SecurityPolicyViolationEvent"]
+        pub safe fn new(type_: &str) -> &'static SecurityPolicyViolationEvent;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/SecurityPolicyViolationEvent)
+        #[link_name = "new SecurityPolicyViolationEvent"]
+        pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: SecurityPolicyViolationEventInit<'_>) -> &'static SecurityPolicyViolationEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/documentURI)
         #[link_name = "get documentURI"]
         pub safe fn document_uri(this: &SecurityPolicyViolationEvent) -> String;
@@ -40460,6 +41273,10 @@ pub mod speech_recognition_error_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionErrorEvent/SpeechRecognitionErrorEvent)
+        #[link_name = "new SpeechRecognitionErrorEvent"]
+        pub safe fn new(type_: &str, event_init_dict: SpeechRecognitionErrorEventInit<'_>) -> &'static SpeechRecognitionErrorEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionErrorEvent/error)
         #[link_name = "get error"]
         pub safe fn error(this: &SpeechRecognitionErrorEvent) -> String;
@@ -40491,6 +41308,10 @@ pub mod speech_recognition_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionEvent/SpeechRecognitionEvent)
+        #[link_name = "new SpeechRecognitionEvent"]
+        pub safe fn new(type_: &str, event_init_dict: SpeechRecognitionEventInit<'_>) -> &'static SpeechRecognitionEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionEvent/resultIndex)
         #[link_name = "get resultIndex"]
         pub safe fn result_index(this: &SpeechRecognitionEvent) -> u32;
@@ -40620,6 +41441,10 @@ pub mod speech_synthesis_error_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisErrorEvent/SpeechSynthesisErrorEvent)
+        #[link_name = "new SpeechSynthesisErrorEvent"]
+        pub safe fn new(type_: &str, event_init_dict: SpeechSynthesisErrorEventInit<'_>) -> &'static SpeechSynthesisErrorEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisErrorEvent/error)
         #[link_name = "get error"]
         pub safe fn error(this: &SpeechSynthesisErrorEvent) -> String;
@@ -40647,6 +41472,10 @@ pub mod speech_synthesis_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisEvent/SpeechSynthesisEvent)
+        #[link_name = "new SpeechSynthesisEvent"]
+        pub safe fn new(type_: &str, event_init_dict: SpeechSynthesisEventInit<'_>) -> &'static SpeechSynthesisEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisEvent/utterance)
         #[link_name = "get utterance"]
         pub safe fn utterance(this: &SpeechSynthesisEvent) -> &'static SpeechSynthesisUtterance;
@@ -40690,6 +41519,14 @@ pub mod speech_synthesis_utterance {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/SpeechSynthesisUtterance)
+        #[link_name = "new SpeechSynthesisUtterance"]
+        pub safe fn new() -> &'static SpeechSynthesisUtterance;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/SpeechSynthesisUtterance)
+        #[link_name = "new SpeechSynthesisUtterance"]
+        pub safe fn new_with_text(text: &str) -> &'static SpeechSynthesisUtterance;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/text)
         #[link_name = "get text"]
         pub safe fn text(this: &SpeechSynthesisUtterance) -> String;
@@ -40881,6 +41718,14 @@ pub mod stereo_panner_node {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/StereoPannerNode/StereoPannerNode)
+        #[link_name = "new StereoPannerNode"]
+        pub safe fn new(context: &BaseAudioContext) -> &'static StereoPannerNode;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/StereoPannerNode/StereoPannerNode)
+        #[link_name = "new StereoPannerNode"]
+        pub safe fn new_with_options(context: &BaseAudioContext, options: StereoPannerOptions<'_>) -> &'static StereoPannerNode;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/StereoPannerNode/pan)
         #[link_name = "get pan"]
         pub safe fn pan(this: &StereoPannerNode) -> &'static AudioParam;
@@ -41217,6 +42062,14 @@ pub mod task_controller {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/TaskController/TaskController)
+        #[link_name = "new TaskController"]
+        pub safe fn new() -> &'static TaskController;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/TaskController/TaskController)
+        #[link_name = "new TaskController"]
+        pub safe fn new_with_init(init: TaskControllerInit<'_>) -> &'static TaskController;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/TaskController/setPriority)
         #[link_name = "setPriority"]
         pub safe fn set_priority(this: &TaskController, priority: &str);
@@ -41244,6 +42097,10 @@ pub mod task_priority_change_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/TaskPriorityChangeEvent/TaskPriorityChangeEvent)
+        #[link_name = "new TaskPriorityChangeEvent"]
+        pub safe fn new(type_: &str, priority_change_event_init_dict: TaskPriorityChangeEventInit<'_>) -> &'static TaskPriorityChangeEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/TaskPriorityChangeEvent/previousPriority)
         #[link_name = "get previousPriority"]
         pub safe fn previous_priority(this: &TaskPriorityChangeEvent) -> String;
@@ -41929,6 +42786,38 @@ pub mod url_pattern {
         pub safe fn has_reg_exp_groups(this: &URLPattern) -> bool;
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/URLPattern/URLPattern)
+    #[cfg_attr(rust_js, rust_js::link_name = "new URLPattern")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(input: impl IntoURLPatternInput, base_url: &str) -> &'static URLPattern {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/URLPattern/URLPattern)
+    #[cfg_attr(rust_js, rust_js::link_name = "new URLPattern")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_options(input: impl IntoURLPatternInput, base_url: &str, options: URLPatternOptions) -> &'static URLPattern {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/URLPattern/URLPattern)
+    #[cfg_attr(rust_js, rust_js::link_name = "new URLPattern")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_input(input: impl IntoURLPatternInput) -> &'static URLPattern {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/URLPattern/URLPattern)
+    #[cfg_attr(rust_js, rust_js::link_name = "new URLPattern")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_input_and_options(input: impl IntoURLPatternInput, options: URLPatternOptions) -> &'static URLPattern {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URLPattern/test)
     #[cfg_attr(rust_js, rust_js::link_name = "test")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -42053,6 +42942,10 @@ pub mod vtt_cue {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/VTTCue/VTTCue)
+        #[link_name = "new VTTCue"]
+        pub safe fn new(start_time: f64, end_time: f64, text: &str) -> &'static VTTCue;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/VTTCue/region)
         #[link_name = "get region"]
         pub safe fn region(this: &VTTCue) -> Option<&'static VTTRegion>;
@@ -42151,6 +43044,10 @@ pub mod vtt_region {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/VTTRegion/VTTRegion)
+        #[link_name = "new VTTRegion"]
+        pub safe fn new() -> &'static VTTRegion;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/VTTRegion/id)
         #[link_name = "get id"]
         pub safe fn id(this: &VTTRegion) -> String;
@@ -42279,6 +43176,14 @@ pub mod video_color_space {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoColorSpace/VideoColorSpace)
+        #[link_name = "new VideoColorSpace"]
+        pub safe fn new() -> &'static VideoColorSpace;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoColorSpace/VideoColorSpace)
+        #[link_name = "new VideoColorSpace"]
+        pub safe fn new_with_init(init: VideoColorSpaceInit) -> &'static VideoColorSpace;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoColorSpace/primaries)
         #[link_name = "get primaries"]
         pub safe fn primaries(this: &VideoColorSpace) -> Option<String>;
@@ -42294,6 +43199,10 @@ pub mod video_color_space {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoColorSpace/fullRange)
         #[link_name = "get fullRange"]
         pub safe fn full_range(this: &VideoColorSpace) -> Option<bool>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoColorSpace/toJSON)
+        #[link_name = "toJSON"]
+        pub safe fn to_json(this: &VideoColorSpace) -> VideoColorSpaceInit;
     }
 }
 
@@ -42314,6 +43223,10 @@ pub mod video_decoder {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoDecoder/VideoDecoder)
+        #[link_name = "new VideoDecoder"]
+        pub safe fn new(init: VideoDecoderInit<'_>) -> &'static VideoDecoder;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoDecoder/state)
         #[link_name = "get state"]
         pub safe fn state(this: &VideoDecoder) -> String;
@@ -42332,7 +43245,7 @@ pub mod video_decoder {
         pub safe fn set_ondequeue(this: &VideoDecoder, value: Option<Box<dyn FnMut(&Event)>>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoDecoder/configure)
-        pub safe fn configure(this: &VideoDecoder, config: VideoDecoderConfig<'_>);
+        pub safe fn configure(this: &VideoDecoder, config: VideoDecoderConfig);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoDecoder/decode)
         pub safe fn decode(this: &VideoDecoder, chunk: &EncodedVideoChunk);
@@ -42348,7 +43261,7 @@ pub mod video_decoder {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoDecoder/isConfigSupported)
         #[link_name = "VideoDecoder.isConfigSupported"]
-        pub safe fn is_config_supported(config: VideoDecoderConfig<'_>) -> Promise<VideoDecoderSupport>;
+        pub safe fn is_config_supported(config: VideoDecoderConfig) -> Promise<VideoDecoderSupport>;
 
         /// Treats `this` as `VideoDecoder` without checking that it is one.
         #[link_name = "this"]
@@ -42373,6 +43286,10 @@ pub mod video_encoder {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoEncoder/VideoEncoder)
+        #[link_name = "new VideoEncoder"]
+        pub safe fn new(init: VideoEncoderInit<'_>) -> &'static VideoEncoder;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoEncoder/state)
         #[link_name = "get state"]
         pub safe fn state(this: &VideoEncoder) -> String;
@@ -42391,7 +43308,7 @@ pub mod video_encoder {
         pub safe fn set_ondequeue(this: &VideoEncoder, value: Option<Box<dyn FnMut(&Event)>>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoEncoder/configure)
-        pub safe fn configure(this: &VideoEncoder, config: VideoEncoderConfig<'_>);
+        pub safe fn configure(this: &VideoEncoder, config: VideoEncoderConfig);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoEncoder/encode)
         pub safe fn encode(this: &VideoEncoder, frame: &VideoFrame);
@@ -42411,7 +43328,7 @@ pub mod video_encoder {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoEncoder/isConfigSupported)
         #[link_name = "VideoEncoder.isConfigSupported"]
-        pub safe fn is_config_supported(config: VideoEncoderConfig<'_>) -> Promise<VideoEncoderSupport>;
+        pub safe fn is_config_supported(config: VideoEncoderConfig) -> Promise<VideoEncoderSupport>;
 
         /// Treats `this` as `VideoEncoder` without checking that it is one.
         #[link_name = "this"]
@@ -42481,6 +43398,38 @@ pub mod video_frame {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoFrame/close)
         pub safe fn close(this: &VideoFrame);
     }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoFrame/VideoFrame)
+    #[cfg_attr(rust_js, rust_js::link_name = "new VideoFrame")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new(image: impl IntoCanvasImageSource) -> &'static VideoFrame {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoFrame/VideoFrame)
+    #[cfg_attr(rust_js, rust_js::link_name = "new VideoFrame")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_init(image: impl IntoCanvasImageSource, init: VideoFrameInit<'_>) -> &'static VideoFrame {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoFrame/copyTo)
+    #[cfg_attr(rust_js, rust_js::link_name = "copyTo")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn copy_to(this: &VideoFrame, destination: impl IntoAllowSharedBufferSource) -> Promise<Vec<PlaneLayout>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoFrame/copyTo)
+    #[cfg_attr(rust_js, rust_js::link_name = "copyTo")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn copy_to_with_options(this: &VideoFrame, destination: impl IntoAllowSharedBufferSource, options: VideoFrameCopyToOptions<'_>) -> Promise<Vec<PlaneLayout>> {
+        unreachable!()
+    }
 }
 
 /// [`VideoPlaybackQuality`](https://developer.mozilla.org/docs/Web/API/VideoPlaybackQuality)
@@ -42526,6 +43475,14 @@ pub mod view_timeline {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ViewTimeline/ViewTimeline)
+        #[link_name = "new ViewTimeline"]
+        pub safe fn new() -> &'static ViewTimeline;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ViewTimeline/ViewTimeline)
+        #[link_name = "new ViewTimeline"]
+        pub safe fn new_with_options(options: ViewTimelineOptions<'_>) -> &'static ViewTimeline;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ViewTimeline/subject)
         #[link_name = "get subject"]
         pub safe fn subject(this: &ViewTimeline) -> &'static Element;
@@ -42737,6 +43694,14 @@ pub mod wave_shaper_node {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WaveShaperNode/WaveShaperNode)
+        #[link_name = "new WaveShaperNode"]
+        pub safe fn new(context: &BaseAudioContext) -> &'static WaveShaperNode;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WaveShaperNode/WaveShaperNode)
+        #[link_name = "new WaveShaperNode"]
+        pub safe fn new_with_options(context: &BaseAudioContext, options: WaveShaperOptions<'_>) -> &'static WaveShaperNode;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WaveShaperNode/oversample)
         #[link_name = "get oversample"]
         pub safe fn oversample(this: &WaveShaperNode) -> String;
@@ -45727,6 +46692,14 @@ pub mod web_gl_context_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLContextEvent/WebGLContextEvent)
+        #[link_name = "new WebGLContextEvent"]
+        pub safe fn new(type_: &str) -> &'static WebGLContextEvent;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLContextEvent/WebGLContextEvent)
+        #[link_name = "new WebGLContextEvent"]
+        pub safe fn new_with_event_init(type_: &str, event_init: WebGLContextEventInit<'_>) -> &'static WebGLContextEvent;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLContextEvent/statusMessage)
         #[link_name = "get statusMessage"]
         pub safe fn status_message(this: &WebGLContextEvent) -> String;
@@ -47305,6 +48278,10 @@ pub mod web_socket {
     pub const CLOSED: u16 = 3;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/WebSocket)
+        #[link_name = "new WebSocket"]
+        pub safe fn new(url: &str) -> &'static WebSocket;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/url)
         #[link_name = "get url"]
         pub safe fn url(this: &WebSocket) -> String;
@@ -47385,6 +48362,14 @@ pub mod web_socket {
         pub safe fn unchecked_from(this: &EventTarget) -> &'static WebSocket;
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/WebSocket)
+    #[cfg_attr(rust_js, rust_js::link_name = "new WebSocket")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_with_protocols(url: &str, protocols: impl IntoStrOrList) -> &'static WebSocket {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/send)
     #[cfg_attr(rust_js, rust_js::link_name = "send")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -47402,6 +48387,14 @@ pub mod web_transport {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransport/WebTransport)
+        #[link_name = "new WebTransport"]
+        pub safe fn new(url: &str) -> &'static WebTransport;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransport/WebTransport)
+        #[link_name = "new WebTransport"]
+        pub safe fn new_with_options(url: &str, options: WebTransportOptions<'_>) -> &'static WebTransport;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransport/getStats)
         #[link_name = "getStats"]
         pub safe fn get_stats(this: &WebTransport) -> Promise<WebTransportConnectionStats>;
@@ -47422,12 +48415,16 @@ pub mod web_transport {
         #[link_name = "get protocol"]
         pub safe fn protocol(this: &WebTransport) -> String;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransport/closed)
+        #[link_name = "get closed"]
+        pub safe fn closed(this: &WebTransport) -> Promise<WebTransportCloseInfo>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransport/close)
         pub safe fn close(this: &WebTransport);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransport/close)
         #[link_name = "close"]
-        pub safe fn close_with_close_info(this: &WebTransport, close_info: WebTransportCloseInfo<'_>);
+        pub safe fn close_with_close_info(this: &WebTransport, close_info: WebTransportCloseInfo);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransport/datagrams)
         #[link_name = "get datagrams"]
@@ -47528,6 +48525,18 @@ pub mod web_transport_error {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportError/WebTransportError)
+        #[link_name = "new WebTransportError"]
+        pub safe fn new() -> &'static WebTransportError;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportError/WebTransportError)
+        #[link_name = "new WebTransportError"]
+        pub safe fn new_with_message(message: &str) -> &'static WebTransportError;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportError/WebTransportError)
+        #[link_name = "new WebTransportError"]
+        pub safe fn new_with_message_and_options(message: &str, options: WebTransportErrorOptions<'_>) -> &'static WebTransportError;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportError/source)
         #[link_name = "get source"]
         pub safe fn source(this: &WebTransportError) -> String;
@@ -48462,7 +49471,18 @@ pub mod global {
     }
 }
 
+/// The `SanitizerConfig` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct SanitizerConfig {
+    pub comments: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "dataAttributes")]
+    pub data_attributes: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "javascriptURLs")]
+    pub javascript_ur_ls: Option<bool>,
+}
+
 /// The `TextEncoderEncodeIntoResult` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct TextEncoderEncodeIntoResult {
     pub read: Option<f64>,
     pub written: Option<f64>,
@@ -48481,7 +49501,36 @@ pub struct ModuleImportDescriptor {
     pub kind: String,
 }
 
+/// The `MediaKeySystemConfiguration` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct MediaKeySystemConfiguration {
+    pub label: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "initDataTypes")]
+    pub init_data_types: Option<Vec<String>>,
+    #[cfg_attr(rust_js, rust_js::name = "audioCapabilities")]
+    pub audio_capabilities: Option<Vec<MediaKeySystemMediaCapability>>,
+    #[cfg_attr(rust_js, rust_js::name = "videoCapabilities")]
+    pub video_capabilities: Option<Vec<MediaKeySystemMediaCapability>>,
+    #[cfg_attr(rust_js, rust_js::name = "distinctiveIdentifier")]
+    pub distinctive_identifier: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "persistentState")]
+    pub persistent_state: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "sessionTypes")]
+    pub session_types: Option<Vec<String>>,
+}
+
+/// The `MediaKeySystemMediaCapability` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct MediaKeySystemMediaCapability {
+    #[cfg_attr(rust_js, rust_js::name = "contentType")]
+    pub content_type: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "encryptionScheme")]
+    pub encryption_scheme: Option<Option<String>>,
+    pub robustness: Option<String>,
+}
+
 /// The `EffectTiming` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct EffectTiming {
     pub fill: Option<String>,
     #[cfg_attr(rust_js, rust_js::name = "iterationStart")]
@@ -48492,6 +49541,7 @@ pub struct EffectTiming {
 }
 
 /// The `ComputedEffectTiming` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct ComputedEffectTiming {
     pub fill: Option<String>,
     #[cfg_attr(rust_js, rust_js::name = "iterationStart")]
@@ -48505,6 +49555,7 @@ pub struct ComputedEffectTiming {
 }
 
 /// The `AudioTimestamp` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct AudioTimestamp {
     #[cfg_attr(rust_js, rust_js::name = "contextTime")]
     pub context_time: Option<f64>,
@@ -48512,14 +49563,39 @@ pub struct AudioTimestamp {
     pub performance_time: Option<f64>,
 }
 
+/// The `AudioDecoderConfig` dictionary: a JS object with these fields, a `None` one not there.
+pub struct AudioDecoderConfig {
+    pub codec: String,
+    #[cfg_attr(rust_js, rust_js::name = "sampleRate")]
+    pub sample_rate: u32,
+    #[cfg_attr(rust_js, rust_js::name = "numberOfChannels")]
+    pub number_of_channels: u32,
+}
+
 /// The `AudioDecoderSupport` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct AudioDecoderSupport {
     pub supported: Option<bool>,
+    pub config: Option<AudioDecoderConfig>,
+}
+
+/// The `AudioEncoderConfig` dictionary: a JS object with these fields, a `None` one not there.
+pub struct AudioEncoderConfig {
+    pub codec: String,
+    #[cfg_attr(rust_js, rust_js::name = "sampleRate")]
+    pub sample_rate: u32,
+    #[cfg_attr(rust_js, rust_js::name = "numberOfChannels")]
+    pub number_of_channels: u32,
+    pub bitrate: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "bitrateMode")]
+    pub bitrate_mode: Option<String>,
 }
 
 /// The `AudioEncoderSupport` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct AudioEncoderSupport {
     pub supported: Option<bool>,
+    pub config: Option<AudioEncoderConfig>,
 }
 
 /// The `CSSContainerCondition` dictionary: a JS object with these fields, a `None` one not there.
@@ -48529,6 +49605,7 @@ pub struct CSSContainerCondition {
 }
 
 /// The `CSSNumericType` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct CSSNumericType {
     pub length: Option<i32>,
     pub angle: Option<i32>,
@@ -48542,6 +49619,7 @@ pub struct CSSNumericType {
 }
 
 /// The `CanvasRenderingContext2DSettings` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct CanvasRenderingContext2DSettings {
     pub alpha: Option<bool>,
     pub desynchronized: Option<bool>,
@@ -48554,24 +49632,69 @@ pub struct CanvasRenderingContext2DSettings {
 }
 
 /// The `CookieListItem` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct CookieListItem {
     pub name: Option<String>,
     pub value: Option<String>,
 }
 
+/// The `CookieStoreGetOptions` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct CookieStoreGetOptions {
+    pub name: Option<String>,
+    pub url: Option<String>,
+}
+
+/// The `GPUCanvasConfiguration` dictionary: a JS object with these fields, a `None` one not there.
+pub struct GPUCanvasConfiguration {
+    pub device: &'static GPUDevice,
+    pub format: String,
+    pub usage: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "viewFormats")]
+    pub view_formats: Option<Vec<String>>,
+    #[cfg_attr(rust_js, rust_js::name = "colorSpace")]
+    pub color_space: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "toneMapping")]
+    pub tone_mapping: Option<GPUCanvasToneMapping>,
+    #[cfg_attr(rust_js, rust_js::name = "alphaMode")]
+    pub alpha_mode: Option<String>,
+}
+
+/// The `GPUCanvasToneMapping` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct GPUCanvasToneMapping {
+    pub mode: Option<String>,
+}
+
 /// The `HighlightHitResult` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct HighlightHitResult {
     pub highlight: Option<&'static Highlight>,
     pub ranges: Option<Vec<&'static AbstractRange>>,
 }
 
 /// The `IDBDatabaseInfo` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct IDBDatabaseInfo {
     pub name: Option<String>,
     pub version: Option<f64>,
 }
 
+/// The `PhotoSettings` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct PhotoSettings {
+    #[cfg_attr(rust_js, rust_js::name = "fillLightMode")]
+    pub fill_light_mode: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "imageHeight")]
+    pub image_height: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "imageWidth")]
+    pub image_width: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "redEyeReduction")]
+    pub red_eye_reduction: Option<bool>,
+}
+
 /// The `PhotoCapabilities` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct PhotoCapabilities {
     #[cfg_attr(rust_js, rust_js::name = "redEyeReduction")]
     pub red_eye_reduction: Option<String>,
@@ -48584,6 +49707,7 @@ pub struct PhotoCapabilities {
 }
 
 /// The `MediaSettingsRange` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct MediaSettingsRange {
     pub max: Option<f64>,
     pub min: Option<f64>,
@@ -48597,6 +49721,7 @@ pub struct ImageDecodeResult {
 }
 
 /// The `MediaTrackCapabilities` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct MediaTrackCapabilities {
     pub width: Option<ULongRange>,
     pub height: Option<ULongRange>,
@@ -48628,24 +49753,28 @@ pub struct MediaTrackCapabilities {
 }
 
 /// The `ULongRange` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct ULongRange {
     pub max: Option<u32>,
     pub min: Option<u32>,
 }
 
 /// The `DoubleRange` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct DoubleRange {
     pub max: Option<f64>,
     pub min: Option<f64>,
 }
 
 /// The `LockManagerSnapshot` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct LockManagerSnapshot {
     pub held: Option<Vec<LockInfo>>,
     pub pending: Option<Vec<LockInfo>>,
 }
 
 /// The `LockInfo` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct LockInfo {
     pub name: Option<String>,
     pub mode: Option<String>,
@@ -48661,6 +49790,74 @@ pub struct MediaCapabilitiesDecodingInfo {
     pub power_efficient: bool,
     #[cfg_attr(rust_js, rust_js::name = "keySystemAccess")]
     pub key_system_access: Option<&'static MediaKeySystemAccess>,
+    pub configuration: MediaDecodingConfiguration,
+}
+
+/// The `MediaDecodingConfiguration` dictionary: a JS object with these fields, a `None` one not there.
+pub struct MediaDecodingConfiguration {
+    pub video: Option<VideoConfiguration>,
+    pub audio: Option<AudioConfiguration>,
+    #[cfg_attr(rust_js, rust_js::name = "type")]
+    pub type_: String,
+    #[cfg_attr(rust_js, rust_js::name = "keySystemConfiguration")]
+    pub key_system_configuration: Option<MediaCapabilitiesKeySystemConfiguration>,
+}
+
+/// The `VideoConfiguration` dictionary: a JS object with these fields, a `None` one not there.
+pub struct VideoConfiguration {
+    #[cfg_attr(rust_js, rust_js::name = "contentType")]
+    pub content_type: String,
+    pub width: u32,
+    pub height: u32,
+    pub bitrate: f64,
+    pub framerate: f64,
+    #[cfg_attr(rust_js, rust_js::name = "hasAlphaChannel")]
+    pub has_alpha_channel: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "hdrMetadataType")]
+    pub hdr_metadata_type: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "colorGamut")]
+    pub color_gamut: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "transferFunction")]
+    pub transfer_function: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "scalabilityMode")]
+    pub scalability_mode: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "spatialScalability")]
+    pub spatial_scalability: Option<bool>,
+}
+
+/// The `AudioConfiguration` dictionary: a JS object with these fields, a `None` one not there.
+pub struct AudioConfiguration {
+    #[cfg_attr(rust_js, rust_js::name = "contentType")]
+    pub content_type: String,
+    pub channels: Option<String>,
+    pub bitrate: Option<f64>,
+    pub samplerate: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "spatialRendering")]
+    pub spatial_rendering: Option<bool>,
+}
+
+/// The `MediaCapabilitiesKeySystemConfiguration` dictionary: a JS object with these fields, a `None` one not there.
+pub struct MediaCapabilitiesKeySystemConfiguration {
+    #[cfg_attr(rust_js, rust_js::name = "keySystem")]
+    pub key_system: String,
+    #[cfg_attr(rust_js, rust_js::name = "initDataType")]
+    pub init_data_type: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "distinctiveIdentifier")]
+    pub distinctive_identifier: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "persistentState")]
+    pub persistent_state: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "sessionTypes")]
+    pub session_types: Option<Vec<String>>,
+    pub audio: Option<KeySystemTrackConfiguration>,
+    pub video: Option<KeySystemTrackConfiguration>,
+}
+
+/// The `KeySystemTrackConfiguration` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct KeySystemTrackConfiguration {
+    pub robustness: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "encryptionScheme")]
+    pub encryption_scheme: Option<Option<String>>,
 }
 
 /// The `MediaCapabilitiesEncodingInfo` dictionary: a JS object with these fields, a `None` one not there.
@@ -48669,9 +49866,30 @@ pub struct MediaCapabilitiesEncodingInfo {
     pub smooth: bool,
     #[cfg_attr(rust_js, rust_js::name = "powerEfficient")]
     pub power_efficient: bool,
+    pub configuration: MediaEncodingConfiguration,
+}
+
+/// The `MediaEncodingConfiguration` dictionary: a JS object with these fields, a `None` one not there.
+pub struct MediaEncodingConfiguration {
+    pub video: Option<VideoConfiguration>,
+    pub audio: Option<AudioConfiguration>,
+    #[cfg_attr(rust_js, rust_js::name = "type")]
+    pub type_: String,
+}
+
+/// The `MediaTrackConstraints` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct MediaTrackConstraints {
+    pub advanced: Option<Vec<MediaTrackConstraintSet>>,
+}
+
+/// The `MediaTrackConstraintSet` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct MediaTrackConstraintSet {
 }
 
 /// The `MediaTrackSupportedConstraints` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct MediaTrackSupportedConstraints {
     pub width: Option<bool>,
     pub height: Option<bool>,
@@ -48705,6 +49923,7 @@ pub struct MediaTrackSupportedConstraints {
 }
 
 /// The `MediaTrackSettings` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct MediaTrackSettings {
     pub width: Option<u32>,
     pub height: Option<u32>,
@@ -48736,33 +49955,94 @@ pub struct MediaTrackSettings {
 }
 
 /// The `NavigationResult` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct NavigationResult {
     pub committed: Option<Promise<&'static NavigationHistoryEntry>>,
     pub finished: Option<Promise<&'static NavigationHistoryEntry>>,
 }
 
 /// The `NavigationPreloadState` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct NavigationPreloadState {
     pub enabled: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "headerValue")]
     pub header_value: Option<String>,
 }
 
+/// The `NotificationAction` dictionary: a JS object with these fields, a `None` one not there.
+pub struct NotificationAction {
+    pub action: String,
+    pub title: String,
+    pub navigate: Option<String>,
+    pub icon: Option<String>,
+}
+
+/// The `PaymentDetailsUpdate` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct PaymentDetailsUpdate {
+    pub error: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "shippingAddressErrors")]
+    pub shipping_address_errors: Option<AddressErrors>,
+    #[cfg_attr(rust_js, rust_js::name = "payerErrors")]
+    pub payer_errors: Option<PayerErrors>,
+    #[cfg_attr(rust_js, rust_js::name = "paymentMethodErrors")]
+    pub payment_method_errors: Option<&'static JsObject>,
+}
+
+/// The `AddressErrors` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct AddressErrors {
+    #[cfg_attr(rust_js, rust_js::name = "addressLine")]
+    pub address_line: Option<String>,
+    pub city: Option<String>,
+    pub country: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "dependentLocality")]
+    pub dependent_locality: Option<String>,
+    pub organization: Option<String>,
+    pub phone: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "postalCode")]
+    pub postal_code: Option<String>,
+    pub recipient: Option<String>,
+    pub region: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "sortingCode")]
+    pub sorting_code: Option<String>,
+}
+
+/// The `PayerErrors` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct PayerErrors {
+    pub email: Option<String>,
+    pub name: Option<String>,
+    pub phone: Option<String>,
+}
+
 /// The `AuthenticationExtensionsClientOutputs` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct AuthenticationExtensionsClientOutputs {
 }
 
 /// The `PublicKeyCredentialCreationOptions` dictionary: a JS object with these fields, a `None` one not there.
 pub struct PublicKeyCredentialCreationOptions {
+    pub rp: PublicKeyCredentialRpEntity,
     pub user: PublicKeyCredentialUserEntity,
+    #[cfg_attr(rust_js, rust_js::name = "pubKeyCredParams")]
+    pub pub_key_cred_params: Vec<PublicKeyCredentialParameters>,
     pub timeout: Option<u32>,
     #[cfg_attr(rust_js, rust_js::name = "excludeCredentials")]
     pub exclude_credentials: Option<Vec<PublicKeyCredentialDescriptor>>,
+    #[cfg_attr(rust_js, rust_js::name = "authenticatorSelection")]
+    pub authenticator_selection: Option<AuthenticatorSelectionCriteria>,
     pub hints: Option<Vec<String>>,
     pub attestation: Option<String>,
     #[cfg_attr(rust_js, rust_js::name = "attestationFormats")]
     pub attestation_formats: Option<Vec<String>>,
     pub extensions: Option<AuthenticationExtensionsClientInputs>,
+}
+
+/// The `PublicKeyCredentialRpEntity` dictionary: a JS object with these fields, a `None` one not there.
+pub struct PublicKeyCredentialRpEntity {
+    pub name: String,
+    pub id: Option<String>,
 }
 
 /// The `PublicKeyCredentialUserEntity` dictionary: a JS object with these fields, a `None` one not there.
@@ -48772,6 +50052,13 @@ pub struct PublicKeyCredentialUserEntity {
     pub display_name: String,
 }
 
+/// The `PublicKeyCredentialParameters` dictionary: a JS object with these fields, a `None` one not there.
+pub struct PublicKeyCredentialParameters {
+    #[cfg_attr(rust_js, rust_js::name = "type")]
+    pub type_: String,
+    pub alg: i32,
+}
+
 /// The `PublicKeyCredentialDescriptor` dictionary: a JS object with these fields, a `None` one not there.
 pub struct PublicKeyCredentialDescriptor {
     #[cfg_attr(rust_js, rust_js::name = "type")]
@@ -48779,11 +50066,26 @@ pub struct PublicKeyCredentialDescriptor {
     pub transports: Option<Vec<String>>,
 }
 
+/// The `AuthenticatorSelectionCriteria` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct AuthenticatorSelectionCriteria {
+    #[cfg_attr(rust_js, rust_js::name = "authenticatorAttachment")]
+    pub authenticator_attachment: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "residentKey")]
+    pub resident_key: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "requireResidentKey")]
+    pub require_resident_key: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "userVerification")]
+    pub user_verification: Option<String>,
+}
+
 /// The `AuthenticationExtensionsClientInputs` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct AuthenticationExtensionsClientInputs {
 }
 
 /// The `PublicKeyCredentialRequestOptions` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct PublicKeyCredentialRequestOptions {
     pub timeout: Option<u32>,
     #[cfg_attr(rust_js, rust_js::name = "rpId")]
@@ -48797,6 +50099,7 @@ pub struct PublicKeyCredentialRequestOptions {
 }
 
 /// The `PushSubscriptionJSON` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct PushSubscriptionJSON {
     pub endpoint: Option<String>,
     #[cfg_attr(rust_js, rust_js::name = "expirationTime")]
@@ -48804,12 +50107,14 @@ pub struct PushSubscriptionJSON {
 }
 
 /// The `RTCDtlsFingerprint` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct RTCDtlsFingerprint {
     pub algorithm: Option<String>,
     pub value: Option<String>,
 }
 
 /// The `RTCEncodedAudioFrameMetadata` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct RTCEncodedAudioFrameMetadata {
     #[cfg_attr(rust_js, rust_js::name = "synchronizationSource")]
     pub synchronization_source: Option<u32>,
@@ -48834,6 +50139,7 @@ pub struct RTCEncodedAudioFrameMetadata {
 }
 
 /// The `RTCEncodedVideoFrameMetadata` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct RTCEncodedVideoFrameMetadata {
     #[cfg_attr(rust_js, rust_js::name = "synchronizationSource")]
     pub synchronization_source: Option<u32>,
@@ -48863,8 +50169,76 @@ pub struct RTCEncodedVideoFrameMetadata {
     pub timestamp: Option<f64>,
 }
 
+/// The `RTCIceCandidateInit` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct RTCIceCandidateInit {
+    pub candidate: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "sdpMid")]
+    pub sdp_mid: Option<Option<String>>,
+    #[cfg_attr(rust_js, rust_js::name = "sdpMLineIndex")]
+    pub sdp_m_line_index: Option<Option<u16>>,
+    #[cfg_attr(rust_js, rust_js::name = "usernameFragment")]
+    pub username_fragment: Option<Option<String>>,
+}
+
+/// The `RTCConfiguration` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct RTCConfiguration {
+    #[cfg_attr(rust_js, rust_js::name = "iceServers")]
+    pub ice_servers: Option<Vec<RTCIceServer>>,
+    #[cfg_attr(rust_js, rust_js::name = "iceTransportPolicy")]
+    pub ice_transport_policy: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "bundlePolicy")]
+    pub bundle_policy: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "rtcpMuxPolicy")]
+    pub rtcp_mux_policy: Option<String>,
+    pub certificates: Option<Vec<&'static RTCCertificate>>,
+    #[cfg_attr(rust_js, rust_js::name = "iceCandidatePoolSize")]
+    pub ice_candidate_pool_size: Option<u8>,
+}
+
+/// The `RTCIceServer` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct RTCIceServer {
+    pub username: Option<String>,
+    pub credential: Option<String>,
+}
+
+/// The `RTCSessionDescriptionInit` dictionary: a JS object with these fields, a `None` one not there.
+pub struct RTCSessionDescriptionInit {
+    #[cfg_attr(rust_js, rust_js::name = "type")]
+    pub type_: String,
+    pub sdp: Option<String>,
+}
+
+/// The `RTCRtpEncodingParameters` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct RTCRtpEncodingParameters {
+    pub rid: Option<String>,
+    pub active: Option<bool>,
+    pub codec: Option<RTCRtpCodec>,
+    #[cfg_attr(rust_js, rust_js::name = "maxBitrate")]
+    pub max_bitrate: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "maxFramerate")]
+    pub max_framerate: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "scaleResolutionDownBy")]
+    pub scale_resolution_down_by: Option<f64>,
+}
+
+/// The `RTCRtpCodec` dictionary: a JS object with these fields, a `None` one not there.
+pub struct RTCRtpCodec {
+    #[cfg_attr(rust_js, rust_js::name = "mimeType")]
+    pub mime_type: String,
+    #[cfg_attr(rust_js, rust_js::name = "clockRate")]
+    pub clock_rate: u32,
+    pub channels: Option<u16>,
+    #[cfg_attr(rust_js, rust_js::name = "sdpFmtpLine")]
+    pub sdp_fmtp_line: Option<String>,
+}
+
 /// The `RTCRtpCapabilities` dictionary: a JS object with these fields, a `None` one not there.
 pub struct RTCRtpCapabilities {
+    pub codecs: Vec<RTCRtpCodec>,
     #[cfg_attr(rust_js, rust_js::name = "headerExtensions")]
     pub header_extensions: Vec<RTCRtpHeaderExtensionCapability>,
 }
@@ -48876,6 +50250,38 @@ pub struct RTCRtpHeaderExtensionCapability {
 
 /// The `RTCRtpReceiveParameters` dictionary: a JS object with these fields, a `None` one not there.
 pub struct RTCRtpReceiveParameters {
+    #[cfg_attr(rust_js, rust_js::name = "headerExtensions")]
+    pub header_extensions: Vec<RTCRtpHeaderExtensionParameters>,
+    pub rtcp: RTCRtcpParameters,
+    pub codecs: Vec<RTCRtpCodecParameters>,
+}
+
+/// The `RTCRtpHeaderExtensionParameters` dictionary: a JS object with these fields, a `None` one not there.
+pub struct RTCRtpHeaderExtensionParameters {
+    pub uri: String,
+    pub id: u16,
+    pub encrypted: Option<bool>,
+}
+
+/// The `RTCRtcpParameters` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct RTCRtcpParameters {
+    pub cname: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "reducedSize")]
+    pub reduced_size: Option<bool>,
+}
+
+/// The `RTCRtpCodecParameters` dictionary: a JS object with these fields, a `None` one not there.
+pub struct RTCRtpCodecParameters {
+    #[cfg_attr(rust_js, rust_js::name = "mimeType")]
+    pub mime_type: String,
+    #[cfg_attr(rust_js, rust_js::name = "clockRate")]
+    pub clock_rate: u32,
+    pub channels: Option<u16>,
+    #[cfg_attr(rust_js, rust_js::name = "sdpFmtpLine")]
+    pub sdp_fmtp_line: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "payloadType")]
+    pub payload_type: u8,
 }
 
 /// The `RTCRtpContributingSource` dictionary: a JS object with these fields, a `None` one not there.
@@ -48898,13 +50304,26 @@ pub struct RTCRtpSynchronizationSource {
     pub rtp_timestamp: u32,
 }
 
+/// The `RTCRtpSendParameters` dictionary: a JS object with these fields, a `None` one not there.
+pub struct RTCRtpSendParameters {
+    #[cfg_attr(rust_js, rust_js::name = "headerExtensions")]
+    pub header_extensions: Vec<RTCRtpHeaderExtensionParameters>,
+    pub rtcp: RTCRtcpParameters,
+    pub codecs: Vec<RTCRtpCodecParameters>,
+    #[cfg_attr(rust_js, rust_js::name = "transactionId")]
+    pub transaction_id: String,
+    pub encodings: Vec<RTCRtpEncodingParameters>,
+}
+
 /// The `ReadableStreamReadResult` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct ReadableStreamReadResult {
     pub value: Option<Option<&'static Unknown>>,
     pub done: Option<bool>,
 }
 
 /// The `Report` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct Report {
     #[cfg_attr(rust_js, rust_js::name = "type")]
     pub type_: Option<String>,
@@ -48913,10 +50332,35 @@ pub struct Report {
 }
 
 /// The `ReportBody` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct ReportBody {
 }
 
+/// The `SanitizerElementNamespaceWithAttributes` dictionary: a JS object with these fields, a `None` one not there.
+pub struct SanitizerElementNamespaceWithAttributes {
+    pub name: String,
+    pub namespace: Option<Option<String>>,
+}
+
+/// The `SanitizerElementNamespace` dictionary: a JS object with these fields, a `None` one not there.
+pub struct SanitizerElementNamespace {
+    pub name: String,
+    pub namespace: Option<Option<String>>,
+}
+
+/// The `SanitizerProcessingInstruction` dictionary: a JS object with these fields, a `None` one not there.
+pub struct SanitizerProcessingInstruction {
+    pub target: String,
+}
+
+/// The `SanitizerAttributeNamespace` dictionary: a JS object with these fields, a `None` one not there.
+pub struct SanitizerAttributeNamespace {
+    pub name: String,
+    pub namespace: Option<Option<String>>,
+}
+
 /// The `SerialPortInfo` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct SerialPortInfo {
     #[cfg_attr(rust_js, rust_js::name = "usbVendorId")]
     pub usb_vendor_id: Option<u16>,
@@ -48937,12 +50381,61 @@ pub struct SerialInputSignals {
 }
 
 /// The `StorageEstimate` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct StorageEstimate {
     pub usage: Option<f64>,
     pub quota: Option<f64>,
 }
 
+/// The `JsonWebKey` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct JsonWebKey {
+    pub kty: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "use")]
+    pub use_: Option<String>,
+    pub key_ops: Option<Vec<String>>,
+    pub alg: Option<String>,
+    pub ext: Option<bool>,
+    pub crv: Option<String>,
+    pub x: Option<String>,
+    pub y: Option<String>,
+    pub d: Option<String>,
+    pub n: Option<String>,
+    pub e: Option<String>,
+    pub p: Option<String>,
+    pub q: Option<String>,
+    pub dp: Option<String>,
+    pub dq: Option<String>,
+    pub qi: Option<String>,
+    pub oth: Option<Vec<RsaOtherPrimesInfo>>,
+    pub k: Option<String>,
+}
+
+/// The `RsaOtherPrimesInfo` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct RsaOtherPrimesInfo {
+    pub r: Option<String>,
+    pub d: Option<String>,
+    pub t: Option<String>,
+}
+
+/// The `URLPatternInit` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct URLPatternInit {
+    pub protocol: Option<String>,
+    pub username: Option<String>,
+    pub password: Option<String>,
+    pub hostname: Option<String>,
+    pub port: Option<String>,
+    pub pathname: Option<String>,
+    pub search: Option<String>,
+    pub hash: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "baseURL")]
+    pub base_url: Option<String>,
+}
+
 /// The `URLPatternResult` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct URLPatternResult {
     pub protocol: Option<URLPatternComponentResult>,
     pub username: Option<URLPatternComponentResult>,
@@ -48955,21 +50448,88 @@ pub struct URLPatternResult {
 }
 
 /// The `URLPatternComponentResult` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct URLPatternComponentResult {
     pub input: Option<String>,
 }
 
+/// The `VideoColorSpaceInit` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct VideoColorSpaceInit {
+    pub primaries: Option<Option<String>>,
+    pub transfer: Option<Option<String>>,
+    pub matrix: Option<Option<String>>,
+    #[cfg_attr(rust_js, rust_js::name = "fullRange")]
+    pub full_range: Option<Option<bool>>,
+}
+
+/// The `VideoDecoderConfig` dictionary: a JS object with these fields, a `None` one not there.
+pub struct VideoDecoderConfig {
+    pub codec: String,
+    #[cfg_attr(rust_js, rust_js::name = "codedWidth")]
+    pub coded_width: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "codedHeight")]
+    pub coded_height: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "displayAspectWidth")]
+    pub display_aspect_width: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "displayAspectHeight")]
+    pub display_aspect_height: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "colorSpace")]
+    pub color_space: Option<VideoColorSpaceInit>,
+    #[cfg_attr(rust_js, rust_js::name = "hardwareAcceleration")]
+    pub hardware_acceleration: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "optimizeForLatency")]
+    pub optimize_for_latency: Option<bool>,
+    pub rotation: Option<f64>,
+    pub flip: Option<bool>,
+}
+
 /// The `VideoDecoderSupport` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct VideoDecoderSupport {
     pub supported: Option<bool>,
+    pub config: Option<VideoDecoderConfig>,
+}
+
+/// The `VideoEncoderConfig` dictionary: a JS object with these fields, a `None` one not there.
+pub struct VideoEncoderConfig {
+    pub codec: String,
+    pub width: u32,
+    pub height: u32,
+    #[cfg_attr(rust_js, rust_js::name = "displayWidth")]
+    pub display_width: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "displayHeight")]
+    pub display_height: Option<u32>,
+    pub bitrate: Option<f64>,
+    pub framerate: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "hardwareAcceleration")]
+    pub hardware_acceleration: Option<String>,
+    pub alpha: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "scalabilityMode")]
+    pub scalability_mode: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "bitrateMode")]
+    pub bitrate_mode: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "latencyMode")]
+    pub latency_mode: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "contentHint")]
+    pub content_hint: Option<String>,
 }
 
 /// The `VideoEncoderSupport` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct VideoEncoderSupport {
     pub supported: Option<bool>,
+    pub config: Option<VideoEncoderConfig>,
+}
+
+/// The `PlaneLayout` dictionary: a JS object with these fields, a `None` one not there.
+pub struct PlaneLayout {
+    pub offset: u32,
+    pub stride: u32,
 }
 
 /// The `WebGLContextAttributes` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct WebGLContextAttributes {
     pub alpha: Option<bool>,
     pub depth: Option<bool>,
@@ -49018,6 +50578,7 @@ pub struct WebTransportConnectionStats {
 }
 
 /// The `WebTransportDatagramStats` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct WebTransportDatagramStats {
     #[cfg_attr(rust_js, rust_js::name = "droppedIncoming")]
     pub dropped_incoming: Option<f64>,
@@ -49029,7 +50590,16 @@ pub struct WebTransportDatagramStats {
     pub lost_outgoing: Option<f64>,
 }
 
+/// The `WebTransportCloseInfo` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct WebTransportCloseInfo {
+    #[cfg_attr(rust_js, rust_js::name = "closeCode")]
+    pub close_code: Option<u32>,
+    pub reason: Option<String>,
+}
+
 /// The `WebTransportReceiveStreamStats` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct WebTransportReceiveStreamStats {
     #[cfg_attr(rust_js, rust_js::name = "bytesReceived")]
     pub bytes_received: Option<f64>,
@@ -49038,6 +50608,7 @@ pub struct WebTransportReceiveStreamStats {
 }
 
 /// The `WebTransportSendStreamStats` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
 pub struct WebTransportSendStreamStats {
     #[cfg_attr(rust_js, rust_js::name = "bytesWritten")]
     pub bytes_written: Option<f64>,
@@ -49062,25 +50633,6 @@ pub struct AddEventListenerOptions<'a> {
     pub signal: Option<&'a AbortSignal>,
 }
 
-/// The [`AddressErrors`](https://developer.mozilla.org/docs/Web/API/AddressErrors) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
-pub struct AddressErrors<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "addressLine")]
-    pub address_line: Option<&'a str>,
-    pub city: Option<&'a str>,
-    pub country: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "dependentLocality")]
-    pub dependent_locality: Option<&'a str>,
-    pub organization: Option<&'a str>,
-    pub phone: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "postalCode")]
-    pub postal_code: Option<&'a str>,
-    pub recipient: Option<&'a str>,
-    pub region: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "sortingCode")]
-    pub sorting_code: Option<&'a str>,
-}
-
 /// The [`AllAcceptedCredentialsOptions`](https://developer.mozilla.org/docs/Web/API/AllAcceptedCredentialsOptions) dictionary: a JS object of these fields, a `None` one not given.
 pub struct AllAcceptedCredentialsOptions<'a> {
     #[cfg_attr(rust_js, rust_js::name = "rpId")]
@@ -49089,6 +50641,25 @@ pub struct AllAcceptedCredentialsOptions<'a> {
     pub user_id: &'a str,
     #[cfg_attr(rust_js, rust_js::name = "allAcceptedCredentialIds")]
     pub all_accepted_credential_ids: &'a [&'a str],
+}
+
+/// The [`AnalyserOptions`](https://developer.mozilla.org/docs/Web/API/AnalyserOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct AnalyserOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "channelCount")]
+    pub channel_count: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "channelCountMode")]
+    pub channel_count_mode: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "channelInterpretation")]
+    pub channel_interpretation: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "fftSize")]
+    pub fft_size: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "maxDecibels")]
+    pub max_decibels: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "minDecibels")]
+    pub min_decibels: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "smoothingTimeConstant")]
+    pub smoothing_time_constant: Option<f64>,
 }
 
 /// The [`AnimationEventInit`](https://developer.mozilla.org/docs/Web/API/AnimationEventInit) dictionary: a JS object of these fields, a `None` one not given.
@@ -49105,21 +50676,59 @@ pub struct AnimationEventInit<'a> {
     pub pseudo_element: Option<&'a str>,
 }
 
+/// The [`AnimationPlaybackEventInit`](https://developer.mozilla.org/docs/Web/API/AnimationPlaybackEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct AnimationPlaybackEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "currentTime")]
+    pub current_time: Option<CSSNumberish<'a>>,
+    #[cfg_attr(rust_js, rust_js::name = "timelineTime")]
+    pub timeline_time: Option<CSSNumberish<'a>>,
+}
+
 /// The [`AssignedNodesOptions`](https://developer.mozilla.org/docs/Web/API/AssignedNodesOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct AssignedNodesOptions {
     pub flatten: Option<bool>,
 }
 
-/// The [`AudioConfiguration`](https://developer.mozilla.org/docs/Web/API/AudioConfiguration) dictionary: a JS object of these fields, a `None` one not given.
-pub struct AudioConfiguration<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "contentType")]
-    pub content_type: &'a str,
-    pub channels: Option<&'a str>,
-    pub bitrate: Option<f64>,
-    pub samplerate: Option<u32>,
-    #[cfg_attr(rust_js, rust_js::name = "spatialRendering")]
-    pub spatial_rendering: Option<bool>,
+/// The [`AudioBufferOptions`](https://developer.mozilla.org/docs/Web/API/AudioBufferOptions) dictionary: a JS object of these fields, a `None` one not given.
+pub struct AudioBufferOptions {
+    #[cfg_attr(rust_js, rust_js::name = "numberOfChannels")]
+    pub number_of_channels: Option<u32>,
+    pub length: u32,
+    #[cfg_attr(rust_js, rust_js::name = "sampleRate")]
+    pub sample_rate: f32,
+}
+
+/// The [`AudioBufferSourceOptions`](https://developer.mozilla.org/docs/Web/API/AudioBufferSourceOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct AudioBufferSourceOptions<'a> {
+    pub buffer: Option<&'a AudioBuffer>,
+    pub detune: Option<f32>,
+    #[cfg_attr(rust_js, rust_js::name = "loop")]
+    pub loop_: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "loopEnd")]
+    pub loop_end: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "loopStart")]
+    pub loop_start: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "playbackRate")]
+    pub playback_rate: Option<f32>,
+}
+
+/// The [`AudioContextOptions`](https://developer.mozilla.org/docs/Web/API/AudioContextOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct AudioContextOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "latencyHint")]
+    pub latency_hint: Option<StrOrNumber<'a>>,
+    #[cfg_attr(rust_js, rust_js::name = "sampleRate")]
+    pub sample_rate: Option<f32>,
+    #[cfg_attr(rust_js, rust_js::name = "sinkId")]
+    pub sink_id: Option<StrOrAudioSinkOptions<'a>>,
+    #[cfg_attr(rust_js, rust_js::name = "renderSizeHint")]
+    pub render_size_hint: Option<StrOrNumber<'a>>,
 }
 
 /// The [`AudioDataCopyToOptions`](https://developer.mozilla.org/docs/Web/API/AudioDataCopyToOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -49133,39 +50742,104 @@ pub struct AudioDataCopyToOptions<'a> {
     pub format: Option<&'a str>,
 }
 
-/// The [`AudioDecoderConfig`](https://developer.mozilla.org/docs/Web/API/AudioDecoderConfig) dictionary: a JS object of these fields, a `None` one not given.
-pub struct AudioDecoderConfig<'a> {
-    pub codec: &'a str,
+/// The [`AudioDataInit`](https://developer.mozilla.org/docs/Web/API/AudioDataInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct AudioDataInit<'a> {
+    pub format: &'a str,
     #[cfg_attr(rust_js, rust_js::name = "sampleRate")]
-    pub sample_rate: u32,
+    pub sample_rate: f32,
+    #[cfg_attr(rust_js, rust_js::name = "numberOfFrames")]
+    pub number_of_frames: u32,
     #[cfg_attr(rust_js, rust_js::name = "numberOfChannels")]
     pub number_of_channels: u32,
-    pub description: Option<AllowSharedBufferSource<'a>>,
+    pub timestamp: f64,
+    pub data: AllowSharedBufferSource<'a>,
+    pub transfer: Option<&'a [&'a ArrayBuffer]>,
 }
 
-/// The [`AudioEncoderConfig`](https://developer.mozilla.org/docs/Web/API/AudioEncoderConfig) dictionary: a JS object of these fields, a `None` one not given.
-pub struct AudioEncoderConfig<'a> {
-    pub codec: &'a str,
-    #[cfg_attr(rust_js, rust_js::name = "sampleRate")]
-    pub sample_rate: u32,
-    #[cfg_attr(rust_js, rust_js::name = "numberOfChannels")]
-    pub number_of_channels: u32,
-    pub bitrate: Option<f64>,
-    #[cfg_attr(rust_js, rust_js::name = "bitrateMode")]
-    pub bitrate_mode: Option<&'a str>,
+/// The [`AudioDecoderInit`](https://developer.mozilla.org/docs/Web/API/AudioDecoderInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct AudioDecoderInit<'a> {
+    pub output: Box<dyn FnMut(&'a AudioData)>,
+    pub error: Box<dyn FnMut(&'a DOMException)>,
 }
 
-/// The [`AuthenticatorSelectionCriteria`](https://developer.mozilla.org/docs/Web/API/AuthenticatorSelectionCriteria) dictionary: a JS object of these fields, a `None` one not given.
+/// The [`AudioEncoderInit`](https://developer.mozilla.org/docs/Web/API/AudioEncoderInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct AudioEncoderInit<'a> {
+    pub output: Box<dyn FnMut(&'a EncodedAudioChunk, EncodedAudioChunkMetadata)>,
+    pub error: Box<dyn FnMut(&'a DOMException)>,
+}
+
+/// The [`AudioNodeOptions`](https://developer.mozilla.org/docs/Web/API/AudioNodeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
-pub struct AuthenticatorSelectionCriteria<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "authenticatorAttachment")]
-    pub authenticator_attachment: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "residentKey")]
-    pub resident_key: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "requireResidentKey")]
-    pub require_resident_key: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "userVerification")]
-    pub user_verification: Option<&'a str>,
+pub struct AudioNodeOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "channelCount")]
+    pub channel_count: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "channelCountMode")]
+    pub channel_count_mode: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "channelInterpretation")]
+    pub channel_interpretation: Option<&'a str>,
+}
+
+/// The [`AudioProcessingEventInit`](https://developer.mozilla.org/docs/Web/API/AudioProcessingEventInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct AudioProcessingEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "playbackTime")]
+    pub playback_time: f64,
+    #[cfg_attr(rust_js, rust_js::name = "inputBuffer")]
+    pub input_buffer: &'a AudioBuffer,
+    #[cfg_attr(rust_js, rust_js::name = "outputBuffer")]
+    pub output_buffer: &'a AudioBuffer,
+}
+
+/// The [`AudioSinkOptions`](https://developer.mozilla.org/docs/Web/API/AudioSinkOptions) dictionary: a JS object of these fields, a `None` one not given.
+pub struct AudioSinkOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "type")]
+    pub type_: &'a str,
+}
+
+/// The [`AudioWorkletNodeOptions`](https://developer.mozilla.org/docs/Web/API/AudioWorkletNodeOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct AudioWorkletNodeOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "channelCount")]
+    pub channel_count: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "channelCountMode")]
+    pub channel_count_mode: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "channelInterpretation")]
+    pub channel_interpretation: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "numberOfInputs")]
+    pub number_of_inputs: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "numberOfOutputs")]
+    pub number_of_outputs: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "outputChannelCount")]
+    pub output_channel_count: Option<&'a [u32]>,
+}
+
+/// The [`BiquadFilterOptions`](https://developer.mozilla.org/docs/Web/API/BiquadFilterOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct BiquadFilterOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "channelCount")]
+    pub channel_count: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "channelCountMode")]
+    pub channel_count_mode: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "channelInterpretation")]
+    pub channel_interpretation: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "type")]
+    pub type_: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "Q")]
+    pub q: Option<f32>,
+    pub detune: Option<f32>,
+    pub frequency: Option<f32>,
+    pub gain: Option<f32>,
+}
+
+/// The [`BlobEventInit`](https://developer.mozilla.org/docs/Web/API/BlobEventInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct BlobEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    pub data: &'a Blob,
+    pub timecode: Option<f64>,
 }
 
 /// The [`BlobPropertyBag`](https://developer.mozilla.org/docs/Web/API/BlobPropertyBag) dictionary: a JS object of these fields, a `None` one not given.
@@ -49203,6 +50877,41 @@ pub struct CaretPositionFromPointOptions<'a> {
     pub shadow_roots: Option<&'a [&'a ShadowRoot]>,
 }
 
+/// The [`ChannelMergerOptions`](https://developer.mozilla.org/docs/Web/API/ChannelMergerOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct ChannelMergerOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "channelCount")]
+    pub channel_count: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "channelCountMode")]
+    pub channel_count_mode: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "channelInterpretation")]
+    pub channel_interpretation: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "numberOfInputs")]
+    pub number_of_inputs: Option<u32>,
+}
+
+/// The [`ChannelSplitterOptions`](https://developer.mozilla.org/docs/Web/API/ChannelSplitterOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct ChannelSplitterOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "channelCount")]
+    pub channel_count: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "channelCountMode")]
+    pub channel_count_mode: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "channelInterpretation")]
+    pub channel_interpretation: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "numberOfOutputs")]
+    pub number_of_outputs: Option<u32>,
+}
+
+/// The [`ChapterInformationInit`](https://developer.mozilla.org/docs/Web/API/ChapterInformationInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct ChapterInformationInit<'a> {
+    pub title: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "startTime")]
+    pub start_time: Option<f64>,
+    pub artwork: Option<&'a [MediaImage<'a>]>,
+}
+
 /// The [`CheckVisibilityOptions`](https://developer.mozilla.org/docs/Web/API/CheckVisibilityOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct CheckVisibilityOptions {
@@ -49234,6 +50943,18 @@ pub struct ClipboardUnsanitizedFormats<'a> {
     pub unsanitized: Option<&'a [&'a str]>,
 }
 
+/// The [`CloseEventInit`](https://developer.mozilla.org/docs/Web/API/CloseEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct CloseEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "wasClean")]
+    pub was_clean: Option<bool>,
+    pub code: Option<u16>,
+    pub reason: Option<&'a str>,
+}
+
 /// The [`CloseWatcherOptions`](https://developer.mozilla.org/docs/Web/API/CloseWatcherOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct CloseWatcherOptions<'a> {
@@ -49261,43 +50982,19 @@ pub struct CompositionEventInit<'a> {
     pub data: Option<&'a str>,
 }
 
-/// The [`ConstrainBooleanOrDOMStringParameters`](https://developer.mozilla.org/docs/Web/API/ConstrainBooleanOrDOMStringParameters) dictionary: a JS object of these fields, a `None` one not given.
+/// The [`ConstantSourceOptions`](https://developer.mozilla.org/docs/Web/API/ConstantSourceOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
-pub struct ConstrainBooleanOrDOMStringParameters<'a> {
-    pub exact: Option<BoolOrStr<'a>>,
-    pub ideal: Option<BoolOrStr<'a>>,
+pub struct ConstantSourceOptions {
+    pub offset: Option<f32>,
 }
 
-/// The [`ConstrainBooleanParameters`](https://developer.mozilla.org/docs/Web/API/ConstrainBooleanParameters) dictionary: a JS object of these fields, a `None` one not given.
+/// The [`ContentVisibilityAutoStateChangeEventInit`](https://developer.mozilla.org/docs/Web/API/ContentVisibilityAutoStateChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
-pub struct ConstrainBooleanParameters {
-    pub exact: Option<bool>,
-    pub ideal: Option<bool>,
-}
-
-/// The [`ConstrainDOMStringParameters`](https://developer.mozilla.org/docs/Web/API/ConstrainDOMStringParameters) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
-pub struct ConstrainDOMStringParameters<'a> {
-    pub exact: Option<StrOrList<'a>>,
-    pub ideal: Option<StrOrList<'a>>,
-}
-
-/// The [`ConstrainDoubleRange`](https://developer.mozilla.org/docs/Web/API/ConstrainDoubleRange) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
-pub struct ConstrainDoubleRange {
-    pub max: Option<f64>,
-    pub min: Option<f64>,
-    pub exact: Option<f64>,
-    pub ideal: Option<f64>,
-}
-
-/// The [`ConstrainULongRange`](https://developer.mozilla.org/docs/Web/API/ConstrainULongRange) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
-pub struct ConstrainULongRange {
-    pub max: Option<u32>,
-    pub min: Option<u32>,
-    pub exact: Option<u32>,
-    pub ideal: Option<u32>,
+pub struct ContentVisibilityAutoStateChangeEventInit {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    pub skipped: Option<bool>,
 }
 
 /// The [`ConvertCoordinateOptions`](https://developer.mozilla.org/docs/Web/API/ConvertCoordinateOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -49307,6 +51004,30 @@ pub struct ConvertCoordinateOptions<'a> {
     pub from_box: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "toBox")]
     pub to_box: Option<&'a str>,
+}
+
+/// The [`ConvolverOptions`](https://developer.mozilla.org/docs/Web/API/ConvolverOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct ConvolverOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "channelCount")]
+    pub channel_count: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "channelCountMode")]
+    pub channel_count_mode: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "channelInterpretation")]
+    pub channel_interpretation: Option<&'a str>,
+    pub buffer: Option<&'a AudioBuffer>,
+    #[cfg_attr(rust_js, rust_js::name = "disableNormalization")]
+    pub disable_normalization: Option<bool>,
+}
+
+/// The [`CookieChangeEventInit`](https://developer.mozilla.org/docs/Web/API/CookieChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct CookieChangeEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    pub changed: Option<&'a [CookieListItem]>,
+    pub deleted: Option<&'a [CookieListItem]>,
 }
 
 /// The [`CookieInit`](https://developer.mozilla.org/docs/Web/API/CookieInit) dictionary: a JS object of these fields, a `None` one not given.
@@ -49331,13 +51052,6 @@ pub struct CookieStoreDeleteOptions<'a> {
     pub partitioned: Option<bool>,
 }
 
-/// The [`CookieStoreGetOptions`](https://developer.mozilla.org/docs/Web/API/CookieStoreGetOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
-pub struct CookieStoreGetOptions<'a> {
-    pub name: Option<&'a str>,
-    pub url: Option<&'a str>,
-}
-
 /// The [`CredentialCreationOptions`](https://developer.mozilla.org/docs/Web/API/CredentialCreationOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct CredentialCreationOptions<'a> {
@@ -49352,6 +51066,13 @@ pub struct CredentialRequestOptions<'a> {
     #[cfg_attr(rust_js, rust_js::name = "uiMode")]
     pub ui_mode: Option<&'a str>,
     pub signal: Option<&'a AbortSignal>,
+}
+
+/// The [`CSSMatrixComponentOptions`](https://developer.mozilla.org/docs/Web/API/CSSMatrixComponentOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct CSSMatrixComponentOptions {
+    #[cfg_attr(rust_js, rust_js::name = "is2D")]
+    pub is2_d: Option<bool>,
 }
 
 /// The [`CSSStyleSheetInit`](https://developer.mozilla.org/docs/Web/API/CSSStyleSheetInit) dictionary: a JS object of these fields, a `None` one not given.
@@ -49382,11 +51103,68 @@ pub struct CustomEventInit {
     pub composed: Option<bool>,
 }
 
+/// The [`DelayOptions`](https://developer.mozilla.org/docs/Web/API/DelayOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct DelayOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "channelCount")]
+    pub channel_count: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "channelCountMode")]
+    pub channel_count_mode: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "channelInterpretation")]
+    pub channel_interpretation: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "maxDelayTime")]
+    pub max_delay_time: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "delayTime")]
+    pub delay_time: Option<f64>,
+}
+
+/// The [`DeviceMotionEventAccelerationInit`](https://developer.mozilla.org/docs/Web/API/DeviceMotionEventAccelerationInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct DeviceMotionEventAccelerationInit {
+    pub x: Option<f64>,
+    pub y: Option<f64>,
+    pub z: Option<f64>,
+}
+
+/// The [`DeviceMotionEventInit`](https://developer.mozilla.org/docs/Web/API/DeviceMotionEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct DeviceMotionEventInit {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    pub acceleration: Option<DeviceMotionEventAccelerationInit>,
+    #[cfg_attr(rust_js, rust_js::name = "accelerationIncludingGravity")]
+    pub acceleration_including_gravity: Option<DeviceMotionEventAccelerationInit>,
+    #[cfg_attr(rust_js, rust_js::name = "rotationRate")]
+    pub rotation_rate: Option<DeviceMotionEventRotationRateInit>,
+    pub interval: Option<f64>,
+}
+
+/// The [`DeviceMotionEventRotationRateInit`](https://developer.mozilla.org/docs/Web/API/DeviceMotionEventRotationRateInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct DeviceMotionEventRotationRateInit {
+    pub alpha: Option<f64>,
+    pub beta: Option<f64>,
+    pub gamma: Option<f64>,
+}
+
+/// The [`DeviceOrientationEventInit`](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct DeviceOrientationEventInit {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    pub alpha: Option<f64>,
+    pub beta: Option<f64>,
+    pub gamma: Option<f64>,
+    pub absolute: Option<bool>,
+}
+
 /// The [`DisplayMediaStreamOptions`](https://developer.mozilla.org/docs/Web/API/DisplayMediaStreamOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct DisplayMediaStreamOptions<'a> {
-    pub video: Option<BoolOrMediaTrackConstraints<'a>>,
-    pub audio: Option<BoolOrMediaTrackConstraints<'a>>,
+    pub video: Option<BoolOrMediaTrackConstraints>,
+    pub audio: Option<BoolOrMediaTrackConstraints>,
     #[cfg_attr(rust_js, rust_js::name = "selfBrowserSurface")]
     pub self_browser_surface: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "systemAudio")]
@@ -49401,6 +51179,14 @@ pub struct DisplayMediaStreamOptions<'a> {
     pub audio_selection: Option<&'a str>,
 }
 
+/// The [`DocumentPictureInPictureEventInit`](https://developer.mozilla.org/docs/Web/API/DocumentPictureInPictureEventInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct DocumentPictureInPictureEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    pub window: &'a Window,
+}
+
 /// The [`DocumentPictureInPictureOptions`](https://developer.mozilla.org/docs/Web/API/DocumentPictureInPictureOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct DocumentPictureInPictureOptions {
@@ -49410,6 +51196,13 @@ pub struct DocumentPictureInPictureOptions {
     pub disallow_return_to_opener: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "preferInitialWindowPlacement")]
     pub prefer_initial_window_placement: Option<bool>,
+}
+
+/// The [`DocumentTimelineOptions`](https://developer.mozilla.org/docs/Web/API/DocumentTimelineOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct DocumentTimelineOptions {
+    #[cfg_attr(rust_js, rust_js::name = "originTime")]
+    pub origin_time: Option<f64>,
 }
 
 /// The [`DOMMatrix2DInit`](https://developer.mozilla.org/docs/Web/API/DOMMatrix2DInit) dictionary: a JS object of these fields, a `None` one not given.
@@ -49537,6 +51330,22 @@ pub struct DragEventInit<'a> {
     pub data_transfer: Option<&'a DataTransfer>,
 }
 
+/// The [`DynamicsCompressorOptions`](https://developer.mozilla.org/docs/Web/API/DynamicsCompressorOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct DynamicsCompressorOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "channelCount")]
+    pub channel_count: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "channelCountMode")]
+    pub channel_count_mode: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "channelInterpretation")]
+    pub channel_interpretation: Option<&'a str>,
+    pub attack: Option<f32>,
+    pub knee: Option<f32>,
+    pub ratio: Option<f32>,
+    pub release: Option<f32>,
+    pub threshold: Option<f32>,
+}
+
 /// The [`ElementCreationOptions`](https://developer.mozilla.org/docs/Web/API/ElementCreationOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ElementCreationOptions<'a> {
@@ -49549,6 +51358,43 @@ pub struct ElementCreationOptions<'a> {
 #[derive(Default)]
 pub struct ElementDefinitionOptions<'a> {
     pub extends: Option<&'a str>,
+}
+
+/// The [`EncodedAudioChunkInit`](https://developer.mozilla.org/docs/Web/API/EncodedAudioChunkInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct EncodedAudioChunkInit<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "type")]
+    pub type_: &'a str,
+    pub timestamp: f64,
+    pub duration: Option<f64>,
+    pub data: AllowSharedBufferSource<'a>,
+    pub transfer: Option<&'a [&'a ArrayBuffer]>,
+}
+
+/// The [`EncodedAudioChunkMetadata`](https://developer.mozilla.org/docs/Web/API/EncodedAudioChunkMetadata) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct EncodedAudioChunkMetadata {
+    #[cfg_attr(rust_js, rust_js::name = "decoderConfig")]
+    pub decoder_config: Option<AudioDecoderConfig>,
+}
+
+/// The [`EncodedVideoChunkInit`](https://developer.mozilla.org/docs/Web/API/EncodedVideoChunkInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct EncodedVideoChunkInit<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "type")]
+    pub type_: &'a str,
+    pub timestamp: f64,
+    pub duration: Option<f64>,
+    pub data: AllowSharedBufferSource<'a>,
+    pub transfer: Option<&'a [&'a ArrayBuffer]>,
+}
+
+/// The [`EncodedVideoChunkMetadata`](https://developer.mozilla.org/docs/Web/API/EncodedVideoChunkMetadata) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct EncodedVideoChunkMetadata<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "decoderConfig")]
+    pub decoder_config: Option<VideoDecoderConfig>,
+    pub svc: Option<SvcOutputMetadata>,
+    #[cfg_attr(rust_js, rust_js::name = "alphaSideData")]
+    pub alpha_side_data: Option<BufferSource<'a>>,
 }
 
 /// The [`ErrorEventInit`](https://developer.mozilla.org/docs/Web/API/ErrorEventInit) dictionary: a JS object of these fields, a `None` one not given.
@@ -49647,6 +51493,36 @@ pub struct FocusOptions {
     pub focus_visible: Option<bool>,
 }
 
+/// The [`FontFaceDescriptors`](https://developer.mozilla.org/docs/Web/API/FontFaceDescriptors) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct FontFaceDescriptors<'a> {
+    pub style: Option<&'a str>,
+    pub weight: Option<&'a str>,
+    pub stretch: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "unicodeRange")]
+    pub unicode_range: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "featureSettings")]
+    pub feature_settings: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "variationSettings")]
+    pub variation_settings: Option<&'a str>,
+    pub display: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "ascentOverride")]
+    pub ascent_override: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "descentOverride")]
+    pub descent_override: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "lineGapOverride")]
+    pub line_gap_override: Option<&'a str>,
+}
+
+/// The [`FontFaceSetLoadEventInit`](https://developer.mozilla.org/docs/Web/API/FontFaceSetLoadEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct FontFaceSetLoadEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    pub fontfaces: Option<&'a [&'a FontFace]>,
+}
+
 /// The [`FormDataEventInit`](https://developer.mozilla.org/docs/Web/API/FormDataEventInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct FormDataEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -49665,6 +51541,18 @@ pub struct FullscreenOptions<'a> {
     pub navigation_ui: Option<&'a str>,
 }
 
+/// The [`GainOptions`](https://developer.mozilla.org/docs/Web/API/GainOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct GainOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "channelCount")]
+    pub channel_count: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "channelCountMode")]
+    pub channel_count_mode: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "channelInterpretation")]
+    pub channel_interpretation: Option<&'a str>,
+    pub gain: Option<f32>,
+}
+
 /// The [`GamepadEffectParameters`](https://developer.mozilla.org/docs/Web/API/GamepadEffectParameters) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct GamepadEffectParameters {
@@ -49679,6 +51567,15 @@ pub struct GamepadEffectParameters {
     pub left_trigger: Option<f64>,
     #[cfg_attr(rust_js, rust_js::name = "rightTrigger")]
     pub right_trigger: Option<f64>,
+}
+
+/// The [`GamepadEventInit`](https://developer.mozilla.org/docs/Web/API/GamepadEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct GamepadEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    pub gamepad: Option<&'a Gamepad>,
 }
 
 /// The [`GetAnimationsOptions`](https://developer.mozilla.org/docs/Web/API/GetAnimationsOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -49788,27 +51685,6 @@ pub struct GPUBufferDescriptor<'a> {
     pub usage: u32,
     #[cfg_attr(rust_js, rust_js::name = "mappedAtCreation")]
     pub mapped_at_creation: Option<bool>,
-}
-
-/// The [`GPUCanvasConfiguration`](https://developer.mozilla.org/docs/Web/API/GPUCanvasConfiguration) dictionary: a JS object of these fields, a `None` one not given.
-pub struct GPUCanvasConfiguration<'a> {
-    pub device: &'a GPUDevice,
-    pub format: &'a str,
-    pub usage: Option<u32>,
-    #[cfg_attr(rust_js, rust_js::name = "viewFormats")]
-    pub view_formats: Option<&'a [&'a str]>,
-    #[cfg_attr(rust_js, rust_js::name = "colorSpace")]
-    pub color_space: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "toneMapping")]
-    pub tone_mapping: Option<GPUCanvasToneMapping<'a>>,
-    #[cfg_attr(rust_js, rust_js::name = "alphaMode")]
-    pub alpha_mode: Option<&'a str>,
-}
-
-/// The [`GPUCanvasToneMapping`](https://developer.mozilla.org/docs/Web/API/GPUCanvasToneMapping) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
-pub struct GPUCanvasToneMapping<'a> {
-    pub mode: Option<&'a str>,
 }
 
 /// The [`GPUColorDict`](https://developer.mozilla.org/docs/Web/API/GPUColorDict) dictionary: a JS object of these fields, a `None` one not given.
@@ -50259,6 +52135,14 @@ pub struct GPUTextureViewDescriptor<'a> {
     pub swizzle: Option<&'a str>,
 }
 
+/// The [`GPUUncapturedErrorEventInit`](https://developer.mozilla.org/docs/Web/API/GPUUncapturedErrorEventInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct GPUUncapturedErrorEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    pub error: &'a GPUError,
+}
+
 /// The [`GPUVertexAttribute`](https://developer.mozilla.org/docs/Web/API/GPUVertexAttribute) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUVertexAttribute<'a> {
     pub format: &'a str,
@@ -50326,10 +52210,34 @@ pub struct IDBTransactionOptions<'a> {
     pub durability: Option<&'a str>,
 }
 
+/// The [`IDBVersionChangeEventInit`](https://developer.mozilla.org/docs/Web/API/IDBVersionChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct IDBVersionChangeEventInit {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "oldVersion")]
+    pub old_version: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "newVersion")]
+    pub new_version: Option<f64>,
+}
+
 /// The [`IdleRequestOptions`](https://developer.mozilla.org/docs/Web/API/IdleRequestOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct IdleRequestOptions {
     pub timeout: Option<u32>,
+}
+
+/// The [`IIRFilterOptions`](https://developer.mozilla.org/docs/Web/API/IIRFilterOptions) dictionary: a JS object of these fields, a `None` one not given.
+pub struct IIRFilterOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "channelCount")]
+    pub channel_count: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "channelCountMode")]
+    pub channel_count_mode: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "channelInterpretation")]
+    pub channel_interpretation: Option<&'a str>,
+    pub feedforward: &'a [f64],
+    pub feedback: &'a [f64],
 }
 
 /// The [`ImageBitmapOptions`](https://developer.mozilla.org/docs/Web/API/ImageBitmapOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -50365,6 +52273,22 @@ pub struct ImageDecodeOptions {
     pub frame_index: Option<u32>,
     #[cfg_attr(rust_js, rust_js::name = "completeFramesOnly")]
     pub complete_frames_only: Option<bool>,
+}
+
+/// The [`ImageDecoderInit`](https://developer.mozilla.org/docs/Web/API/ImageDecoderInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct ImageDecoderInit<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "type")]
+    pub type_: &'a str,
+    pub data: ImageBufferSource<'a>,
+    #[cfg_attr(rust_js, rust_js::name = "colorSpaceConversion")]
+    pub color_space_conversion: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "desiredWidth")]
+    pub desired_width: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "desiredHeight")]
+    pub desired_height: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "preferAnimation")]
+    pub prefer_animation: Option<bool>,
+    pub transfer: Option<&'a [&'a ArrayBuffer]>,
 }
 
 /// The [`ImageEncodeOptions`](https://developer.mozilla.org/docs/Web/API/ImageEncodeOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -50431,30 +52355,6 @@ pub struct IntersectionObserverInit<'a> {
     pub track_visibility: Option<bool>,
 }
 
-/// The [`JsonWebKey`](https://developer.mozilla.org/docs/Web/API/JsonWebKey) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
-pub struct JsonWebKey<'a> {
-    pub kty: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "use")]
-    pub use_: Option<&'a str>,
-    pub key_ops: Option<&'a [&'a str]>,
-    pub alg: Option<&'a str>,
-    pub ext: Option<bool>,
-    pub crv: Option<&'a str>,
-    pub x: Option<&'a str>,
-    pub y: Option<&'a str>,
-    pub d: Option<&'a str>,
-    pub n: Option<&'a str>,
-    pub e: Option<&'a str>,
-    pub p: Option<&'a str>,
-    pub q: Option<&'a str>,
-    pub dp: Option<&'a str>,
-    pub dq: Option<&'a str>,
-    pub qi: Option<&'a str>,
-    pub oth: Option<&'a [RsaOtherPrimesInfo<'a>]>,
-    pub k: Option<&'a str>,
-}
-
 /// The [`KeyboardEventInit`](https://developer.mozilla.org/docs/Web/API/KeyboardEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct KeyboardEventInit<'a> {
@@ -50515,12 +52415,18 @@ pub struct KeyframeAnimationOptions<'a> {
     pub timeline: Option<&'a AnimationTimeline>,
 }
 
-/// The [`KeySystemTrackConfiguration`](https://developer.mozilla.org/docs/Web/API/KeySystemTrackConfiguration) dictionary: a JS object of these fields, a `None` one not given.
+/// The [`KeyframeEffectOptions`](https://developer.mozilla.org/docs/Web/API/KeyframeEffectOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
-pub struct KeySystemTrackConfiguration<'a> {
-    pub robustness: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "encryptionScheme")]
-    pub encryption_scheme: Option<&'a str>,
+pub struct KeyframeEffectOptions<'a> {
+    pub fill: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "iterationStart")]
+    pub iteration_start: Option<f64>,
+    pub iterations: Option<f64>,
+    pub direction: Option<&'a str>,
+    pub easing: Option<&'a str>,
+    pub composite: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "pseudoElement")]
+    pub pseudo_element: Option<&'a str>,
 }
 
 /// The [`LockOptions`](https://developer.mozilla.org/docs/Web/API/LockOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -50533,38 +52439,40 @@ pub struct LockOptions<'a> {
     pub signal: Option<&'a AbortSignal>,
 }
 
-/// The [`MediaCapabilitiesKeySystemConfiguration`](https://developer.mozilla.org/docs/Web/API/MediaCapabilitiesKeySystemConfiguration) dictionary: a JS object of these fields, a `None` one not given.
-pub struct MediaCapabilitiesKeySystemConfiguration<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "keySystem")]
-    pub key_system: &'a str,
+/// The [`MediaElementAudioSourceOptions`](https://developer.mozilla.org/docs/Web/API/MediaElementAudioSourceOptions) dictionary: a JS object of these fields, a `None` one not given.
+pub struct MediaElementAudioSourceOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "mediaElement")]
+    pub media_element: &'a HTMLMediaElement,
+}
+
+/// The [`MediaEncryptedEventInit`](https://developer.mozilla.org/docs/Web/API/MediaEncryptedEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct MediaEncryptedEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "initDataType")]
     pub init_data_type: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "distinctiveIdentifier")]
-    pub distinctive_identifier: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "persistentState")]
-    pub persistent_state: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "sessionTypes")]
-    pub session_types: Option<&'a [&'a str]>,
-    pub audio: Option<KeySystemTrackConfiguration<'a>>,
-    pub video: Option<KeySystemTrackConfiguration<'a>>,
+    #[cfg_attr(rust_js, rust_js::name = "initData")]
+    pub init_data: Option<&'a ArrayBuffer>,
 }
 
-/// The [`MediaDecodingConfiguration`](https://developer.mozilla.org/docs/Web/API/MediaDecodingConfiguration) dictionary: a JS object of these fields, a `None` one not given.
-pub struct MediaDecodingConfiguration<'a> {
-    pub video: Option<VideoConfiguration<'a>>,
-    pub audio: Option<AudioConfiguration<'a>>,
+/// The [`MediaImage`](https://developer.mozilla.org/docs/Web/API/MediaImage) dictionary: a JS object of these fields, a `None` one not given.
+pub struct MediaImage<'a> {
+    pub src: &'a str,
+    pub sizes: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: &'a str,
-    #[cfg_attr(rust_js, rust_js::name = "keySystemConfiguration")]
-    pub key_system_configuration: Option<MediaCapabilitiesKeySystemConfiguration<'a>>,
+    pub type_: Option<&'a str>,
 }
 
-/// The [`MediaEncodingConfiguration`](https://developer.mozilla.org/docs/Web/API/MediaEncodingConfiguration) dictionary: a JS object of these fields, a `None` one not given.
-pub struct MediaEncodingConfiguration<'a> {
-    pub video: Option<VideoConfiguration<'a>>,
-    pub audio: Option<AudioConfiguration<'a>>,
-    #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: &'a str,
+/// The [`MediaKeyMessageEventInit`](https://developer.mozilla.org/docs/Web/API/MediaKeyMessageEventInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct MediaKeyMessageEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "messageType")]
+    pub message_type: &'a str,
+    pub message: &'a ArrayBuffer,
 }
 
 /// The [`MediaKeysPolicy`](https://developer.mozilla.org/docs/Web/API/MediaKeysPolicy) dictionary: a JS object of these fields, a `None` one not given.
@@ -50574,32 +52482,15 @@ pub struct MediaKeysPolicy<'a> {
     pub min_hdcp_version: Option<&'a str>,
 }
 
-/// The [`MediaKeySystemConfiguration`](https://developer.mozilla.org/docs/Web/API/MediaKeySystemConfiguration) dictionary: a JS object of these fields, a `None` one not given.
+/// The [`MediaMetadataInit`](https://developer.mozilla.org/docs/Web/API/MediaMetadataInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
-pub struct MediaKeySystemConfiguration<'a> {
-    pub label: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "initDataTypes")]
-    pub init_data_types: Option<&'a [&'a str]>,
-    #[cfg_attr(rust_js, rust_js::name = "audioCapabilities")]
-    pub audio_capabilities: Option<&'a [MediaKeySystemMediaCapability<'a>]>,
-    #[cfg_attr(rust_js, rust_js::name = "videoCapabilities")]
-    pub video_capabilities: Option<&'a [MediaKeySystemMediaCapability<'a>]>,
-    #[cfg_attr(rust_js, rust_js::name = "distinctiveIdentifier")]
-    pub distinctive_identifier: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "persistentState")]
-    pub persistent_state: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "sessionTypes")]
-    pub session_types: Option<&'a [&'a str]>,
-}
-
-/// The [`MediaKeySystemMediaCapability`](https://developer.mozilla.org/docs/Web/API/MediaKeySystemMediaCapability) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
-pub struct MediaKeySystemMediaCapability<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "contentType")]
-    pub content_type: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "encryptionScheme")]
-    pub encryption_scheme: Option<&'a str>,
-    pub robustness: Option<&'a str>,
+pub struct MediaMetadataInit<'a> {
+    pub title: Option<&'a str>,
+    pub artist: Option<&'a str>,
+    pub album: Option<&'a str>,
+    pub artwork: Option<&'a [MediaImage<'a>]>,
+    #[cfg_attr(rust_js, rust_js::name = "chapterInfo")]
+    pub chapter_info: Option<&'a [ChapterInformationInit<'a>]>,
 }
 
 /// The [`MediaPositionState`](https://developer.mozilla.org/docs/Web/API/MediaPositionState) dictionary: a JS object of these fields, a `None` one not given.
@@ -50621,6 +52512,25 @@ pub struct MediaQueryListEventInit<'a> {
     pub matches: Option<bool>,
 }
 
+/// The [`MediaRecorderOptions`](https://developer.mozilla.org/docs/Web/API/MediaRecorderOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct MediaRecorderOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "mimeType")]
+    pub mime_type: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "audioBitsPerSecond")]
+    pub audio_bits_per_second: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "videoBitsPerSecond")]
+    pub video_bits_per_second: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "bitsPerSecond")]
+    pub bits_per_second: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "audioBitrateMode")]
+    pub audio_bitrate_mode: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "videoKeyFrameIntervalDuration")]
+    pub video_key_frame_interval_duration: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "videoKeyFrameIntervalCount")]
+    pub video_key_frame_interval_count: Option<u32>,
+}
+
 /// The [`MediaSessionActionDetails`](https://developer.mozilla.org/docs/Web/API/MediaSessionActionDetails) dictionary: a JS object of these fields, a `None` one not given.
 pub struct MediaSessionActionDetails<'a> {
     pub action: &'a str,
@@ -50636,80 +52546,25 @@ pub struct MediaSessionActionDetails<'a> {
     pub enter_picture_in_picture_reason: Option<&'a str>,
 }
 
+/// The [`MediaStreamAudioSourceOptions`](https://developer.mozilla.org/docs/Web/API/MediaStreamAudioSourceOptions) dictionary: a JS object of these fields, a `None` one not given.
+pub struct MediaStreamAudioSourceOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "mediaStream")]
+    pub media_stream: &'a MediaStream,
+}
+
 /// The [`MediaStreamConstraints`](https://developer.mozilla.org/docs/Web/API/MediaStreamConstraints) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
-pub struct MediaStreamConstraints<'a> {
-    pub video: Option<BoolOrMediaTrackConstraints<'a>>,
-    pub audio: Option<BoolOrMediaTrackConstraints<'a>>,
+pub struct MediaStreamConstraints {
+    pub video: Option<BoolOrMediaTrackConstraints>,
+    pub audio: Option<BoolOrMediaTrackConstraints>,
 }
 
-/// The [`MediaTrackConstraints`](https://developer.mozilla.org/docs/Web/API/MediaTrackConstraints) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
-pub struct MediaTrackConstraints<'a> {
-    pub width: Option<ConstrainULong>,
-    pub height: Option<ConstrainULong>,
-    #[cfg_attr(rust_js, rust_js::name = "aspectRatio")]
-    pub aspect_ratio: Option<ConstrainDouble>,
-    #[cfg_attr(rust_js, rust_js::name = "frameRate")]
-    pub frame_rate: Option<ConstrainDouble>,
-    #[cfg_attr(rust_js, rust_js::name = "facingMode")]
-    pub facing_mode: Option<ConstrainDOMString<'a>>,
-    #[cfg_attr(rust_js, rust_js::name = "resizeMode")]
-    pub resize_mode: Option<ConstrainDOMString<'a>>,
-    #[cfg_attr(rust_js, rust_js::name = "sampleRate")]
-    pub sample_rate: Option<ConstrainULong>,
-    #[cfg_attr(rust_js, rust_js::name = "sampleSize")]
-    pub sample_size: Option<ConstrainULong>,
-    #[cfg_attr(rust_js, rust_js::name = "echoCancellation")]
-    pub echo_cancellation: Option<ConstrainBooleanOrDOMString<'a>>,
-    #[cfg_attr(rust_js, rust_js::name = "autoGainControl")]
-    pub auto_gain_control: Option<ConstrainBoolean>,
-    #[cfg_attr(rust_js, rust_js::name = "noiseSuppression")]
-    pub noise_suppression: Option<ConstrainBoolean>,
-    pub latency: Option<ConstrainDouble>,
-    #[cfg_attr(rust_js, rust_js::name = "channelCount")]
-    pub channel_count: Option<ConstrainULong>,
-    #[cfg_attr(rust_js, rust_js::name = "deviceId")]
-    pub device_id: Option<ConstrainDOMString<'a>>,
-    #[cfg_attr(rust_js, rust_js::name = "groupId")]
-    pub group_id: Option<ConstrainDOMString<'a>>,
-    #[cfg_attr(rust_js, rust_js::name = "backgroundBlur")]
-    pub background_blur: Option<ConstrainBoolean>,
-    pub advanced: Option<&'a [MediaTrackConstraintSet<'a>]>,
-}
-
-/// The [`MediaTrackConstraintSet`](https://developer.mozilla.org/docs/Web/API/MediaTrackConstraintSet) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
-pub struct MediaTrackConstraintSet<'a> {
-    pub width: Option<ConstrainULong>,
-    pub height: Option<ConstrainULong>,
-    #[cfg_attr(rust_js, rust_js::name = "aspectRatio")]
-    pub aspect_ratio: Option<ConstrainDouble>,
-    #[cfg_attr(rust_js, rust_js::name = "frameRate")]
-    pub frame_rate: Option<ConstrainDouble>,
-    #[cfg_attr(rust_js, rust_js::name = "facingMode")]
-    pub facing_mode: Option<ConstrainDOMString<'a>>,
-    #[cfg_attr(rust_js, rust_js::name = "resizeMode")]
-    pub resize_mode: Option<ConstrainDOMString<'a>>,
-    #[cfg_attr(rust_js, rust_js::name = "sampleRate")]
-    pub sample_rate: Option<ConstrainULong>,
-    #[cfg_attr(rust_js, rust_js::name = "sampleSize")]
-    pub sample_size: Option<ConstrainULong>,
-    #[cfg_attr(rust_js, rust_js::name = "echoCancellation")]
-    pub echo_cancellation: Option<ConstrainBooleanOrDOMString<'a>>,
-    #[cfg_attr(rust_js, rust_js::name = "autoGainControl")]
-    pub auto_gain_control: Option<ConstrainBoolean>,
-    #[cfg_attr(rust_js, rust_js::name = "noiseSuppression")]
-    pub noise_suppression: Option<ConstrainBoolean>,
-    pub latency: Option<ConstrainDouble>,
-    #[cfg_attr(rust_js, rust_js::name = "channelCount")]
-    pub channel_count: Option<ConstrainULong>,
-    #[cfg_attr(rust_js, rust_js::name = "deviceId")]
-    pub device_id: Option<ConstrainDOMString<'a>>,
-    #[cfg_attr(rust_js, rust_js::name = "groupId")]
-    pub group_id: Option<ConstrainDOMString<'a>>,
-    #[cfg_attr(rust_js, rust_js::name = "backgroundBlur")]
-    pub background_blur: Option<ConstrainBoolean>,
+/// The [`MediaStreamTrackEventInit`](https://developer.mozilla.org/docs/Web/API/MediaStreamTrackEventInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct MediaStreamTrackEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    pub track: &'a MediaStreamTrack,
 }
 
 /// The [`MemoryDescriptor`](https://developer.mozilla.org/docs/Web/API/MemoryDescriptor) dictionary: a JS object of these fields, a `None` one not given.
@@ -50729,6 +52584,24 @@ pub struct MessageEventInit<'a> {
     pub last_event_id: Option<&'a str>,
     pub source: Option<MessageEventSource<'a>>,
     pub ports: Option<&'a [&'a MessagePort]>,
+}
+
+/// The [`MIDIConnectionEventInit`](https://developer.mozilla.org/docs/Web/API/MIDIConnectionEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct MIDIConnectionEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    pub port: Option<&'a MIDIPort>,
+}
+
+/// The [`MIDIMessageEventInit`](https://developer.mozilla.org/docs/Web/API/MIDIMessageEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct MIDIMessageEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    pub data: Option<&'a Uint8Array>,
 }
 
 /// The [`MIDIOptions`](https://developer.mozilla.org/docs/Web/API/MIDIOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -50857,14 +52730,6 @@ pub struct NavigationNavigateOptions<'a> {
     pub history: Option<&'a str>,
 }
 
-/// The [`NotificationAction`](https://developer.mozilla.org/docs/Web/API/NotificationAction) dictionary: a JS object of these fields, a `None` one not given.
-pub struct NotificationAction<'a> {
-    pub action: &'a str,
-    pub title: &'a str,
-    pub navigate: Option<&'a str>,
-    pub icon: Option<&'a str>,
-}
-
 /// The [`NotificationOptions`](https://developer.mozilla.org/docs/Web/API/NotificationOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct NotificationOptions<'a> {
@@ -50882,7 +52747,27 @@ pub struct NotificationOptions<'a> {
     pub silent: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "requireInteraction")]
     pub require_interaction: Option<bool>,
-    pub actions: Option<&'a [NotificationAction<'a>]>,
+    pub actions: Option<&'a [NotificationAction]>,
+}
+
+/// The [`OfflineAudioCompletionEventInit`](https://developer.mozilla.org/docs/Web/API/OfflineAudioCompletionEventInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct OfflineAudioCompletionEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "renderedBuffer")]
+    pub rendered_buffer: &'a AudioBuffer,
+}
+
+/// The [`OfflineAudioContextOptions`](https://developer.mozilla.org/docs/Web/API/OfflineAudioContextOptions) dictionary: a JS object of these fields, a `None` one not given.
+pub struct OfflineAudioContextOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "numberOfChannels")]
+    pub number_of_channels: Option<u32>,
+    pub length: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "sampleRate")]
+    pub sample_rate: f32,
+    #[cfg_attr(rust_js, rust_js::name = "renderSizeHint")]
+    pub render_size_hint: Option<StrOrNumber<'a>>,
 }
 
 /// The [`OptionalEffectTiming`](https://developer.mozilla.org/docs/Web/API/OptionalEffectTiming) dictionary: a JS object of these fields, a `None` one not given.
@@ -50898,6 +52783,23 @@ pub struct OptionalEffectTiming<'a> {
     pub duration: Option<NumberOrStr<'a>>,
     pub direction: Option<&'a str>,
     pub easing: Option<&'a str>,
+}
+
+/// The [`OscillatorOptions`](https://developer.mozilla.org/docs/Web/API/OscillatorOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct OscillatorOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "channelCount")]
+    pub channel_count: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "channelCountMode")]
+    pub channel_count_mode: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "channelInterpretation")]
+    pub channel_interpretation: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "type")]
+    pub type_: Option<&'a str>,
+    pub frequency: Option<f32>,
+    pub detune: Option<f32>,
+    #[cfg_attr(rust_js, rust_js::name = "periodicWave")]
+    pub periodic_wave: Option<&'a PeriodicWave>,
 }
 
 /// The [`PageRevealEventInit`](https://developer.mozilla.org/docs/Web/API/PageRevealEventInit) dictionary: a JS object of these fields, a `None` one not given.
@@ -50930,26 +52832,139 @@ pub struct PageTransitionEventInit {
     pub persisted: Option<bool>,
 }
 
+/// The [`PannerOptions`](https://developer.mozilla.org/docs/Web/API/PannerOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct PannerOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "channelCount")]
+    pub channel_count: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "channelCountMode")]
+    pub channel_count_mode: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "channelInterpretation")]
+    pub channel_interpretation: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "panningModel")]
+    pub panning_model: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "distanceModel")]
+    pub distance_model: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "positionX")]
+    pub position_x: Option<f32>,
+    #[cfg_attr(rust_js, rust_js::name = "positionY")]
+    pub position_y: Option<f32>,
+    #[cfg_attr(rust_js, rust_js::name = "positionZ")]
+    pub position_z: Option<f32>,
+    #[cfg_attr(rust_js, rust_js::name = "orientationX")]
+    pub orientation_x: Option<f32>,
+    #[cfg_attr(rust_js, rust_js::name = "orientationY")]
+    pub orientation_y: Option<f32>,
+    #[cfg_attr(rust_js, rust_js::name = "orientationZ")]
+    pub orientation_z: Option<f32>,
+    #[cfg_attr(rust_js, rust_js::name = "refDistance")]
+    pub ref_distance: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "maxDistance")]
+    pub max_distance: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "rolloffFactor")]
+    pub rolloff_factor: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "coneInnerAngle")]
+    pub cone_inner_angle: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "coneOuterAngle")]
+    pub cone_outer_angle: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "coneOuterGain")]
+    pub cone_outer_gain: Option<f64>,
+}
+
 /// The [`ParseHTMLUnsafeOptions`](https://developer.mozilla.org/docs/Web/API/ParseHTMLUnsafeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ParseHTMLUnsafeOptions<'a> {
     pub sanitizer: Option<SanitizerOrSanitizerConfigOrStr<'a>>,
 }
 
-/// The [`PayerErrors`](https://developer.mozilla.org/docs/Web/API/PayerErrors) dictionary: a JS object of these fields, a `None` one not given.
+/// The [`PaymentCurrencyAmount`](https://developer.mozilla.org/docs/Web/API/PaymentCurrencyAmount) dictionary: a JS object of these fields, a `None` one not given.
+pub struct PaymentCurrencyAmount<'a> {
+    pub currency: &'a str,
+    pub value: &'a str,
+}
+
+/// The [`PaymentDetailsInit`](https://developer.mozilla.org/docs/Web/API/PaymentDetailsInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct PaymentDetailsInit<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "displayItems")]
+    pub display_items: Option<&'a [PaymentItem<'a>]>,
+    #[cfg_attr(rust_js, rust_js::name = "shippingOptions")]
+    pub shipping_options: Option<&'a [PaymentShippingOption<'a>]>,
+    pub modifiers: Option<&'a [PaymentDetailsModifier<'a>]>,
+    pub id: Option<&'a str>,
+    pub total: PaymentItem<'a>,
+}
+
+/// The [`PaymentDetailsModifier`](https://developer.mozilla.org/docs/Web/API/PaymentDetailsModifier) dictionary: a JS object of these fields, a `None` one not given.
+pub struct PaymentDetailsModifier<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "supportedMethods")]
+    pub supported_methods: &'a str,
+    pub total: Option<PaymentItem<'a>>,
+    #[cfg_attr(rust_js, rust_js::name = "additionalDisplayItems")]
+    pub additional_display_items: Option<&'a [PaymentItem<'a>]>,
+}
+
+/// The [`PaymentItem`](https://developer.mozilla.org/docs/Web/API/PaymentItem) dictionary: a JS object of these fields, a `None` one not given.
+pub struct PaymentItem<'a> {
+    pub label: &'a str,
+    pub amount: PaymentCurrencyAmount<'a>,
+    pub pending: Option<bool>,
+}
+
+/// The [`PaymentMethodChangeEventInit`](https://developer.mozilla.org/docs/Web/API/PaymentMethodChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
-pub struct PayerErrors<'a> {
-    pub email: Option<&'a str>,
-    pub name: Option<&'a str>,
-    pub phone: Option<&'a str>,
+pub struct PaymentMethodChangeEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "methodName")]
+    pub method_name: Option<&'a str>,
+}
+
+/// The [`PaymentMethodData`](https://developer.mozilla.org/docs/Web/API/PaymentMethodData) dictionary: a JS object of these fields, a `None` one not given.
+pub struct PaymentMethodData<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "supportedMethods")]
+    pub supported_methods: &'a str,
+}
+
+/// The [`PaymentOptions`](https://developer.mozilla.org/docs/Web/API/PaymentOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct PaymentOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "requestPayerName")]
+    pub request_payer_name: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "requestBillingAddress")]
+    pub request_billing_address: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "requestPayerEmail")]
+    pub request_payer_email: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "requestPayerPhone")]
+    pub request_payer_phone: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "requestShipping")]
+    pub request_shipping: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "shippingType")]
+    pub shipping_type: Option<&'a str>,
+}
+
+/// The [`PaymentRequestUpdateEventInit`](https://developer.mozilla.org/docs/Web/API/PaymentRequestUpdateEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct PaymentRequestUpdateEventInit {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+}
+
+/// The [`PaymentShippingOption`](https://developer.mozilla.org/docs/Web/API/PaymentShippingOption) dictionary: a JS object of these fields, a `None` one not given.
+pub struct PaymentShippingOption<'a> {
+    pub id: &'a str,
+    pub label: &'a str,
+    pub amount: PaymentCurrencyAmount<'a>,
+    pub selected: Option<bool>,
 }
 
 /// The [`PaymentValidationErrors`](https://developer.mozilla.org/docs/Web/API/PaymentValidationErrors) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct PaymentValidationErrors<'a> {
-    pub payer: Option<PayerErrors<'a>>,
+    pub payer: Option<PayerErrors>,
     #[cfg_attr(rust_js, rust_js::name = "shippingAddress")]
-    pub shipping_address: Option<AddressErrors<'a>>,
+    pub shipping_address: Option<AddressErrors>,
     pub error: Option<&'a str>,
 }
 
@@ -50966,6 +52981,13 @@ pub struct PerformanceMeasureOptions<'a> {
     pub start: Option<StrOrNumber<'a>>,
     pub duration: Option<f64>,
     pub end: Option<StrOrNumber<'a>>,
+}
+
+/// The [`PerformanceObserverCallbackOptions`](https://developer.mozilla.org/docs/Web/API/PerformanceObserverCallbackOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct PerformanceObserverCallbackOptions {
+    #[cfg_attr(rust_js, rust_js::name = "droppedEntriesCount")]
+    pub dropped_entries_count: Option<f64>,
 }
 
 /// The [`PerformanceObserverInit`](https://developer.mozilla.org/docs/Web/API/PerformanceObserverInit) dictionary: a JS object of these fields, a `None` one not given.
@@ -50985,23 +53007,22 @@ pub struct PeriodicWaveConstraints {
     pub disable_normalization: Option<bool>,
 }
 
-/// The [`PhotoSettings`](https://developer.mozilla.org/docs/Web/API/PhotoSettings) dictionary: a JS object of these fields, a `None` one not given.
+/// The [`PeriodicWaveOptions`](https://developer.mozilla.org/docs/Web/API/PeriodicWaveOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
-pub struct PhotoSettings<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "fillLightMode")]
-    pub fill_light_mode: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "imageHeight")]
-    pub image_height: Option<f64>,
-    #[cfg_attr(rust_js, rust_js::name = "imageWidth")]
-    pub image_width: Option<f64>,
-    #[cfg_attr(rust_js, rust_js::name = "redEyeReduction")]
-    pub red_eye_reduction: Option<bool>,
+pub struct PeriodicWaveOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "disableNormalization")]
+    pub disable_normalization: Option<bool>,
+    pub real: Option<&'a [f32]>,
+    pub imag: Option<&'a [f32]>,
 }
 
-/// The [`PlaneLayout`](https://developer.mozilla.org/docs/Web/API/PlaneLayout) dictionary: a JS object of these fields, a `None` one not given.
-pub struct PlaneLayout {
-    pub offset: u32,
-    pub stride: u32,
+/// The [`PictureInPictureEventInit`](https://developer.mozilla.org/docs/Web/API/PictureInPictureEventInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct PictureInPictureEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "pictureInPictureWindow")]
+    pub picture_in_picture_window: &'a PictureInPictureWindow,
 }
 
 /// The [`PointerEventInit`](https://developer.mozilla.org/docs/Web/API/PointerEventInit) dictionary: a JS object of these fields, a `None` one not given.
@@ -51129,16 +53150,16 @@ pub struct PromiseRejectionEventInit {
 
 /// The [`PublicKeyCredentialCreationOptionsJSON`](https://developer.mozilla.org/docs/Web/API/PublicKeyCredentialCreationOptionsJSON) dictionary: a JS object of these fields, a `None` one not given.
 pub struct PublicKeyCredentialCreationOptionsJSON<'a> {
-    pub rp: PublicKeyCredentialRpEntity<'a>,
+    pub rp: PublicKeyCredentialRpEntity,
     pub user: PublicKeyCredentialUserEntityJSON<'a>,
     pub challenge: &'a str,
     #[cfg_attr(rust_js, rust_js::name = "pubKeyCredParams")]
-    pub pub_key_cred_params: &'a [PublicKeyCredentialParameters<'a>],
+    pub pub_key_cred_params: &'a [PublicKeyCredentialParameters],
     pub timeout: Option<u32>,
     #[cfg_attr(rust_js, rust_js::name = "excludeCredentials")]
     pub exclude_credentials: Option<&'a [PublicKeyCredentialDescriptorJSON<'a>]>,
     #[cfg_attr(rust_js, rust_js::name = "authenticatorSelection")]
-    pub authenticator_selection: Option<AuthenticatorSelectionCriteria<'a>>,
+    pub authenticator_selection: Option<AuthenticatorSelectionCriteria>,
     pub hints: Option<&'a [&'a str]>,
     pub attestation: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "attestationFormats")]
@@ -51153,13 +53174,6 @@ pub struct PublicKeyCredentialDescriptorJSON<'a> {
     pub transports: Option<&'a [&'a str]>,
 }
 
-/// The [`PublicKeyCredentialParameters`](https://developer.mozilla.org/docs/Web/API/PublicKeyCredentialParameters) dictionary: a JS object of these fields, a `None` one not given.
-pub struct PublicKeyCredentialParameters<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: &'a str,
-    pub alg: i32,
-}
-
 /// The [`PublicKeyCredentialRequestOptionsJSON`](https://developer.mozilla.org/docs/Web/API/PublicKeyCredentialRequestOptionsJSON) dictionary: a JS object of these fields, a `None` one not given.
 pub struct PublicKeyCredentialRequestOptionsJSON<'a> {
     pub challenge: &'a str,
@@ -51171,12 +53185,6 @@ pub struct PublicKeyCredentialRequestOptionsJSON<'a> {
     #[cfg_attr(rust_js, rust_js::name = "userVerification")]
     pub user_verification: Option<&'a str>,
     pub hints: Option<&'a [&'a str]>,
-}
-
-/// The [`PublicKeyCredentialRpEntity`](https://developer.mozilla.org/docs/Web/API/PublicKeyCredentialRpEntity) dictionary: a JS object of these fields, a `None` one not given.
-pub struct PublicKeyCredentialRpEntity<'a> {
-    pub name: &'a str,
-    pub id: Option<&'a str>,
 }
 
 /// The [`PublicKeyCredentialUserEntityJSON`](https://developer.mozilla.org/docs/Web/API/PublicKeyCredentialUserEntityJSON) dictionary: a JS object of these fields, a `None` one not given.
@@ -51231,6 +53239,13 @@ pub struct RegistrationOptions<'a> {
     pub update_via_cache: Option<&'a str>,
 }
 
+/// The [`ReportingObserverOptions`](https://developer.mozilla.org/docs/Web/API/ReportingObserverOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct ReportingObserverOptions<'a> {
+    pub types: Option<&'a [&'a str]>,
+    pub buffered: Option<bool>,
+}
+
 /// The [`RequestInit`](https://developer.mozilla.org/docs/Web/API/RequestInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct RequestInit<'a> {
@@ -51267,28 +53282,12 @@ pub struct ResponseInit<'a> {
     pub headers: Option<&'a [&'a [&'a str]]>,
 }
 
-/// The [`RsaOtherPrimesInfo`](https://developer.mozilla.org/docs/Web/API/RsaOtherPrimesInfo) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
-pub struct RsaOtherPrimesInfo<'a> {
-    pub r: Option<&'a str>,
-    pub d: Option<&'a str>,
-    pub t: Option<&'a str>,
-}
-
-/// The [`RTCConfiguration`](https://developer.mozilla.org/docs/Web/API/RTCConfiguration) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
-pub struct RTCConfiguration<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "iceServers")]
-    pub ice_servers: Option<&'a [RTCIceServer<'a>]>,
-    #[cfg_attr(rust_js, rust_js::name = "iceTransportPolicy")]
-    pub ice_transport_policy: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "bundlePolicy")]
-    pub bundle_policy: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "rtcpMuxPolicy")]
-    pub rtcp_mux_policy: Option<&'a str>,
-    pub certificates: Option<&'a [&'a RTCCertificate]>,
-    #[cfg_attr(rust_js, rust_js::name = "iceCandidatePoolSize")]
-    pub ice_candidate_pool_size: Option<u8>,
+/// The [`RTCDataChannelEventInit`](https://developer.mozilla.org/docs/Web/API/RTCDataChannelEventInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct RTCDataChannelEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    pub channel: &'a RTCDataChannel,
 }
 
 /// The [`RTCDataChannelInit`](https://developer.mozilla.org/docs/Web/API/RTCDataChannelInit) dictionary: a JS object of these fields, a `None` one not given.
@@ -51304,9 +53303,52 @@ pub struct RTCDataChannelInit<'a> {
     pub id: Option<u16>,
 }
 
-/// The [`RTCIceCandidateInit`](https://developer.mozilla.org/docs/Web/API/RTCIceCandidateInit) dictionary: a JS object of these fields, a `None` one not given.
+/// The [`RTCDTMFToneChangeEventInit`](https://developer.mozilla.org/docs/Web/API/RTCDTMFToneChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
-pub struct RTCIceCandidateInit<'a> {
+pub struct RTCDTMFToneChangeEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    pub tone: Option<&'a str>,
+}
+
+/// The [`RTCEncodedAudioFrameOptions`](https://developer.mozilla.org/docs/Web/API/RTCEncodedAudioFrameOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct RTCEncodedAudioFrameOptions {
+    pub metadata: Option<RTCEncodedAudioFrameMetadata>,
+}
+
+/// The [`RTCEncodedVideoFrameOptions`](https://developer.mozilla.org/docs/Web/API/RTCEncodedVideoFrameOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct RTCEncodedVideoFrameOptions {
+    pub metadata: Option<RTCEncodedVideoFrameMetadata>,
+}
+
+/// The [`RTCErrorEventInit`](https://developer.mozilla.org/docs/Web/API/RTCErrorEventInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct RTCErrorEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    pub error: &'a RTCError,
+}
+
+/// The [`RTCErrorInit`](https://developer.mozilla.org/docs/Web/API/RTCErrorInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct RTCErrorInit<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "errorDetail")]
+    pub error_detail: &'a str,
+    #[cfg_attr(rust_js, rust_js::name = "sdpLineNumber")]
+    pub sdp_line_number: Option<i32>,
+    #[cfg_attr(rust_js, rust_js::name = "sctpCauseCode")]
+    pub sctp_cause_code: Option<i32>,
+    #[cfg_attr(rust_js, rust_js::name = "receivedAlert")]
+    pub received_alert: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "sentAlert")]
+    pub sent_alert: Option<u32>,
+}
+
+/// The [`RTCLocalIceCandidateInit`](https://developer.mozilla.org/docs/Web/API/RTCLocalIceCandidateInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct RTCLocalIceCandidateInit<'a> {
     pub candidate: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "sdpMid")]
     pub sdp_mid: Option<&'a str>,
@@ -51314,13 +53356,9 @@ pub struct RTCIceCandidateInit<'a> {
     pub sdp_m_line_index: Option<u16>,
     #[cfg_attr(rust_js, rust_js::name = "usernameFragment")]
     pub username_fragment: Option<&'a str>,
-}
-
-/// The [`RTCIceServer`](https://developer.mozilla.org/docs/Web/API/RTCIceServer) dictionary: a JS object of these fields, a `None` one not given.
-pub struct RTCIceServer<'a> {
-    pub urls: StrOrList<'a>,
-    pub username: Option<&'a str>,
-    pub credential: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "relayProtocol")]
+    pub relay_protocol: Option<&'a str>,
+    pub url: Option<&'a str>,
 }
 
 /// The [`RTCLocalSessionDescriptionInit`](https://developer.mozilla.org/docs/Web/API/RTCLocalSessionDescriptionInit) dictionary: a JS object of these fields, a `None` one not given.
@@ -51338,68 +53376,28 @@ pub struct RTCOfferOptions {
     pub ice_restart: Option<bool>,
 }
 
-/// The [`RTCRtcpParameters`](https://developer.mozilla.org/docs/Web/API/RTCRtcpParameters) dictionary: a JS object of these fields, a `None` one not given.
+/// The [`RTCPeerConnectionIceErrorEventInit`](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceErrorEventInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct RTCPeerConnectionIceErrorEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    pub address: Option<&'a str>,
+    pub port: Option<u16>,
+    pub url: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "errorCode")]
+    pub error_code: u16,
+    #[cfg_attr(rust_js, rust_js::name = "errorText")]
+    pub error_text: Option<&'a str>,
+}
+
+/// The [`RTCPeerConnectionIceEventInit`](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
-pub struct RTCRtcpParameters<'a> {
-    pub cname: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "reducedSize")]
-    pub reduced_size: Option<bool>,
-}
-
-/// The [`RTCRtpCodec`](https://developer.mozilla.org/docs/Web/API/RTCRtpCodec) dictionary: a JS object of these fields, a `None` one not given.
-pub struct RTCRtpCodec<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "mimeType")]
-    pub mime_type: &'a str,
-    #[cfg_attr(rust_js, rust_js::name = "clockRate")]
-    pub clock_rate: u32,
-    pub channels: Option<u16>,
-    #[cfg_attr(rust_js, rust_js::name = "sdpFmtpLine")]
-    pub sdp_fmtp_line: Option<&'a str>,
-}
-
-/// The [`RTCRtpCodecParameters`](https://developer.mozilla.org/docs/Web/API/RTCRtpCodecParameters) dictionary: a JS object of these fields, a `None` one not given.
-pub struct RTCRtpCodecParameters<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "mimeType")]
-    pub mime_type: &'a str,
-    #[cfg_attr(rust_js, rust_js::name = "clockRate")]
-    pub clock_rate: u32,
-    pub channels: Option<u16>,
-    #[cfg_attr(rust_js, rust_js::name = "sdpFmtpLine")]
-    pub sdp_fmtp_line: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "payloadType")]
-    pub payload_type: u8,
-}
-
-/// The [`RTCRtpEncodingParameters`](https://developer.mozilla.org/docs/Web/API/RTCRtpEncodingParameters) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
-pub struct RTCRtpEncodingParameters<'a> {
-    pub rid: Option<&'a str>,
-    pub active: Option<bool>,
-    pub codec: Option<RTCRtpCodec<'a>>,
-    #[cfg_attr(rust_js, rust_js::name = "maxBitrate")]
-    pub max_bitrate: Option<u32>,
-    #[cfg_attr(rust_js, rust_js::name = "maxFramerate")]
-    pub max_framerate: Option<f64>,
-    #[cfg_attr(rust_js, rust_js::name = "scaleResolutionDownBy")]
-    pub scale_resolution_down_by: Option<f64>,
-}
-
-/// The [`RTCRtpHeaderExtensionParameters`](https://developer.mozilla.org/docs/Web/API/RTCRtpHeaderExtensionParameters) dictionary: a JS object of these fields, a `None` one not given.
-pub struct RTCRtpHeaderExtensionParameters<'a> {
-    pub uri: &'a str,
-    pub id: u16,
-    pub encrypted: Option<bool>,
-}
-
-/// The [`RTCRtpSendParameters`](https://developer.mozilla.org/docs/Web/API/RTCRtpSendParameters) dictionary: a JS object of these fields, a `None` one not given.
-pub struct RTCRtpSendParameters<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "headerExtensions")]
-    pub header_extensions: &'a [RTCRtpHeaderExtensionParameters<'a>],
-    pub rtcp: RTCRtcpParameters<'a>,
-    pub codecs: &'a [RTCRtpCodecParameters<'a>],
-    #[cfg_attr(rust_js, rust_js::name = "transactionId")]
-    pub transaction_id: &'a str,
-    pub encodings: &'a [RTCRtpEncodingParameters<'a>],
+pub struct RTCPeerConnectionIceEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    pub candidate: Option<&'a RTCIceCandidate>,
+    pub url: Option<&'a str>,
 }
 
 /// The [`RTCRtpTransceiverInit`](https://developer.mozilla.org/docs/Web/API/RTCRtpTransceiverInit) dictionary: a JS object of these fields, a `None` one not given.
@@ -51408,62 +53406,18 @@ pub struct RTCRtpTransceiverInit<'a> {
     pub direction: Option<&'a str>,
     pub streams: Option<&'a [&'a MediaStream]>,
     #[cfg_attr(rust_js, rust_js::name = "sendEncodings")]
-    pub send_encodings: Option<&'a [RTCRtpEncodingParameters<'a>]>,
+    pub send_encodings: Option<&'a [RTCRtpEncodingParameters]>,
 }
 
-/// The [`RTCSessionDescriptionInit`](https://developer.mozilla.org/docs/Web/API/RTCSessionDescriptionInit) dictionary: a JS object of these fields, a `None` one not given.
-pub struct RTCSessionDescriptionInit<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: &'a str,
-    pub sdp: Option<&'a str>,
-}
-
-/// The [`SanitizerAttributeNamespace`](https://developer.mozilla.org/docs/Web/API/SanitizerAttributeNamespace) dictionary: a JS object of these fields, a `None` one not given.
-pub struct SanitizerAttributeNamespace<'a> {
-    pub name: &'a str,
-    pub namespace: Option<&'a str>,
-}
-
-/// The [`SanitizerConfig`](https://developer.mozilla.org/docs/Web/API/SanitizerConfig) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
-pub struct SanitizerConfig<'a> {
-    pub elements: Option<&'a [SanitizerElementWithAttributes<'a>]>,
-    #[cfg_attr(rust_js, rust_js::name = "removeElements")]
-    pub remove_elements: Option<&'a [SanitizerElement<'a>]>,
-    #[cfg_attr(rust_js, rust_js::name = "replaceWithChildrenElements")]
-    pub replace_with_children_elements: Option<&'a [SanitizerElement<'a>]>,
-    #[cfg_attr(rust_js, rust_js::name = "processingInstructions")]
-    pub processing_instructions: Option<&'a [SanitizerPI<'a>]>,
-    #[cfg_attr(rust_js, rust_js::name = "removeProcessingInstructions")]
-    pub remove_processing_instructions: Option<&'a [SanitizerPI<'a>]>,
-    pub attributes: Option<&'a [SanitizerAttribute<'a>]>,
-    #[cfg_attr(rust_js, rust_js::name = "removeAttributes")]
-    pub remove_attributes: Option<&'a [SanitizerAttribute<'a>]>,
-    pub comments: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "dataAttributes")]
-    pub data_attributes: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "javascriptURLs")]
-    pub javascript_ur_ls: Option<bool>,
-}
-
-/// The [`SanitizerElementNamespace`](https://developer.mozilla.org/docs/Web/API/SanitizerElementNamespace) dictionary: a JS object of these fields, a `None` one not given.
-pub struct SanitizerElementNamespace<'a> {
-    pub name: &'a str,
-    pub namespace: Option<&'a str>,
-}
-
-/// The [`SanitizerElementNamespaceWithAttributes`](https://developer.mozilla.org/docs/Web/API/SanitizerElementNamespaceWithAttributes) dictionary: a JS object of these fields, a `None` one not given.
-pub struct SanitizerElementNamespaceWithAttributes<'a> {
-    pub name: &'a str,
-    pub namespace: Option<&'a str>,
-    pub attributes: Option<&'a [SanitizerAttribute<'a>]>,
-    #[cfg_attr(rust_js, rust_js::name = "removeAttributes")]
-    pub remove_attributes: Option<&'a [SanitizerAttribute<'a>]>,
-}
-
-/// The [`SanitizerProcessingInstruction`](https://developer.mozilla.org/docs/Web/API/SanitizerProcessingInstruction) dictionary: a JS object of these fields, a `None` one not given.
-pub struct SanitizerProcessingInstruction<'a> {
-    pub target: &'a str,
+/// The [`RTCTrackEventInit`](https://developer.mozilla.org/docs/Web/API/RTCTrackEventInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct RTCTrackEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    pub receiver: &'a RTCRtpReceiver,
+    pub track: &'a MediaStreamTrack,
+    pub streams: Option<&'a [&'a MediaStream]>,
+    pub transceiver: &'a RTCRtpTransceiver,
 }
 
 /// The [`SchedulerPostTaskOptions`](https://developer.mozilla.org/docs/Web/API/SchedulerPostTaskOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -51483,12 +53437,48 @@ pub struct ScrollIntoViewOptions<'a> {
     pub container: Option<&'a str>,
 }
 
+/// The [`ScrollTimelineOptions`](https://developer.mozilla.org/docs/Web/API/ScrollTimelineOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct ScrollTimelineOptions<'a> {
+    pub source: Option<&'a Element>,
+    pub axis: Option<&'a str>,
+}
+
 /// The [`ScrollToOptions`](https://developer.mozilla.org/docs/Web/API/ScrollToOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ScrollToOptions<'a> {
     pub behavior: Option<&'a str>,
     pub left: Option<f64>,
     pub top: Option<f64>,
+}
+
+/// The [`SecurityPolicyViolationEventInit`](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct SecurityPolicyViolationEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "documentURI")]
+    pub document_uri: Option<&'a str>,
+    pub referrer: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "blockedURI")]
+    pub blocked_uri: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "violatedDirective")]
+    pub violated_directive: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "effectiveDirective")]
+    pub effective_directive: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "originalPolicy")]
+    pub original_policy: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "sourceFile")]
+    pub source_file: Option<&'a str>,
+    pub sample: Option<&'a str>,
+    pub disposition: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "statusCode")]
+    pub status_code: Option<u16>,
+    #[cfg_attr(rust_js, rust_js::name = "lineNumber")]
+    pub line_number: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "columnNumber")]
+    pub column_number: Option<u32>,
 }
 
 /// The [`SerialOptions`](https://developer.mozilla.org/docs/Web/API/SerialOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -51589,6 +53579,56 @@ pub struct ShowPopoverOptions<'a> {
     pub source: Option<&'a HTMLElement>,
 }
 
+/// The [`SpeechRecognitionErrorEventInit`](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionErrorEventInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct SpeechRecognitionErrorEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    pub error: &'a str,
+    pub message: Option<&'a str>,
+}
+
+/// The [`SpeechRecognitionEventInit`](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionEventInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct SpeechRecognitionEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "resultIndex")]
+    pub result_index: Option<u32>,
+    pub results: &'a SpeechRecognitionResultList,
+}
+
+/// The [`SpeechSynthesisErrorEventInit`](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisErrorEventInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct SpeechSynthesisErrorEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    pub utterance: &'a SpeechSynthesisUtterance,
+    #[cfg_attr(rust_js, rust_js::name = "charIndex")]
+    pub char_index: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "charLength")]
+    pub char_length: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "elapsedTime")]
+    pub elapsed_time: Option<f32>,
+    pub name: Option<&'a str>,
+    pub error: &'a str,
+}
+
+/// The [`SpeechSynthesisEventInit`](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisEventInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct SpeechSynthesisEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    pub utterance: &'a SpeechSynthesisUtterance,
+    #[cfg_attr(rust_js, rust_js::name = "charIndex")]
+    pub char_index: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "charLength")]
+    pub char_length: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "elapsedTime")]
+    pub elapsed_time: Option<f32>,
+    pub name: Option<&'a str>,
+}
+
 /// The [`StartViewTransitionOptions`](https://developer.mozilla.org/docs/Web/API/StartViewTransitionOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct StartViewTransitionOptions<'a> {
@@ -51606,6 +53646,18 @@ pub struct StaticRangeInit<'a> {
     pub end_container: &'a Node,
     #[cfg_attr(rust_js, rust_js::name = "endOffset")]
     pub end_offset: u32,
+}
+
+/// The [`StereoPannerOptions`](https://developer.mozilla.org/docs/Web/API/StereoPannerOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct StereoPannerOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "channelCount")]
+    pub channel_count: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "channelCountMode")]
+    pub channel_count_mode: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "channelInterpretation")]
+    pub channel_interpretation: Option<&'a str>,
+    pub pan: Option<f32>,
 }
 
 /// The [`StorageEventInit`](https://developer.mozilla.org/docs/Web/API/StorageEventInit) dictionary: a JS object of these fields, a `None` one not given.
@@ -51643,6 +53695,28 @@ pub struct SubmitEventInit<'a> {
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
     pub submitter: Option<&'a HTMLElement>,
+}
+
+/// The [`SvcOutputMetadata`](https://developer.mozilla.org/docs/Web/API/SvcOutputMetadata) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct SvcOutputMetadata {
+    #[cfg_attr(rust_js, rust_js::name = "temporalLayerId")]
+    pub temporal_layer_id: Option<u32>,
+}
+
+/// The [`TaskControllerInit`](https://developer.mozilla.org/docs/Web/API/TaskControllerInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct TaskControllerInit<'a> {
+    pub priority: Option<&'a str>,
+}
+
+/// The [`TaskPriorityChangeEventInit`](https://developer.mozilla.org/docs/Web/API/TaskPriorityChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct TaskPriorityChangeEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "previousPriority")]
+    pub previous_priority: &'a str,
 }
 
 /// The [`TaskSignalAnyInit`](https://developer.mozilla.org/docs/Web/API/TaskSignalAnyInit) dictionary: a JS object of these fields, a `None` one not given.
@@ -51800,19 +53874,11 @@ pub struct UnknownCredentialOptions<'a> {
     pub credential_id: &'a str,
 }
 
-/// The [`URLPatternInit`](https://developer.mozilla.org/docs/Web/API/URLPatternInit) dictionary: a JS object of these fields, a `None` one not given.
+/// The [`URLPatternOptions`](https://developer.mozilla.org/docs/Web/API/URLPatternOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
-pub struct URLPatternInit<'a> {
-    pub protocol: Option<&'a str>,
-    pub username: Option<&'a str>,
-    pub password: Option<&'a str>,
-    pub hostname: Option<&'a str>,
-    pub port: Option<&'a str>,
-    pub pathname: Option<&'a str>,
-    pub search: Option<&'a str>,
-    pub hash: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "baseURL")]
-    pub base_url: Option<&'a str>,
+pub struct URLPatternOptions {
+    #[cfg_attr(rust_js, rust_js::name = "ignoreCase")]
+    pub ignore_case: Option<bool>,
 }
 
 /// The [`ValidityStateFlags`](https://developer.mozilla.org/docs/Web/API/ValidityStateFlags) dictionary: a JS object of these fields, a `None` one not given.
@@ -51840,82 +53906,10 @@ pub struct ValidityStateFlags {
     pub custom_error: Option<bool>,
 }
 
-/// The [`VideoColorSpaceInit`](https://developer.mozilla.org/docs/Web/API/VideoColorSpaceInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
-pub struct VideoColorSpaceInit<'a> {
-    pub primaries: Option<&'a str>,
-    pub transfer: Option<&'a str>,
-    pub matrix: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "fullRange")]
-    pub full_range: Option<bool>,
-}
-
-/// The [`VideoConfiguration`](https://developer.mozilla.org/docs/Web/API/VideoConfiguration) dictionary: a JS object of these fields, a `None` one not given.
-pub struct VideoConfiguration<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "contentType")]
-    pub content_type: &'a str,
-    pub width: u32,
-    pub height: u32,
-    pub bitrate: f64,
-    pub framerate: f64,
-    #[cfg_attr(rust_js, rust_js::name = "hasAlphaChannel")]
-    pub has_alpha_channel: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "hdrMetadataType")]
-    pub hdr_metadata_type: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "colorGamut")]
-    pub color_gamut: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "transferFunction")]
-    pub transfer_function: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "scalabilityMode")]
-    pub scalability_mode: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "spatialScalability")]
-    pub spatial_scalability: Option<bool>,
-}
-
-/// The [`VideoDecoderConfig`](https://developer.mozilla.org/docs/Web/API/VideoDecoderConfig) dictionary: a JS object of these fields, a `None` one not given.
-pub struct VideoDecoderConfig<'a> {
-    pub codec: &'a str,
-    pub description: Option<AllowSharedBufferSource<'a>>,
-    #[cfg_attr(rust_js, rust_js::name = "codedWidth")]
-    pub coded_width: Option<u32>,
-    #[cfg_attr(rust_js, rust_js::name = "codedHeight")]
-    pub coded_height: Option<u32>,
-    #[cfg_attr(rust_js, rust_js::name = "displayAspectWidth")]
-    pub display_aspect_width: Option<u32>,
-    #[cfg_attr(rust_js, rust_js::name = "displayAspectHeight")]
-    pub display_aspect_height: Option<u32>,
-    #[cfg_attr(rust_js, rust_js::name = "colorSpace")]
-    pub color_space: Option<VideoColorSpaceInit<'a>>,
-    #[cfg_attr(rust_js, rust_js::name = "hardwareAcceleration")]
-    pub hardware_acceleration: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "optimizeForLatency")]
-    pub optimize_for_latency: Option<bool>,
-    pub rotation: Option<f64>,
-    pub flip: Option<bool>,
-}
-
-/// The [`VideoEncoderConfig`](https://developer.mozilla.org/docs/Web/API/VideoEncoderConfig) dictionary: a JS object of these fields, a `None` one not given.
-pub struct VideoEncoderConfig<'a> {
-    pub codec: &'a str,
-    pub width: u32,
-    pub height: u32,
-    #[cfg_attr(rust_js, rust_js::name = "displayWidth")]
-    pub display_width: Option<u32>,
-    #[cfg_attr(rust_js, rust_js::name = "displayHeight")]
-    pub display_height: Option<u32>,
-    pub bitrate: Option<f64>,
-    pub framerate: Option<f64>,
-    #[cfg_attr(rust_js, rust_js::name = "hardwareAcceleration")]
-    pub hardware_acceleration: Option<&'a str>,
-    pub alpha: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "scalabilityMode")]
-    pub scalability_mode: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "bitrateMode")]
-    pub bitrate_mode: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "latencyMode")]
-    pub latency_mode: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "contentHint")]
-    pub content_hint: Option<&'a str>,
+/// The [`VideoDecoderInit`](https://developer.mozilla.org/docs/Web/API/VideoDecoderInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct VideoDecoderInit<'a> {
+    pub output: Box<dyn FnMut(&'a VideoFrame)>,
+    pub error: Box<dyn FnMut(&'a DOMException)>,
 }
 
 /// The [`VideoEncoderEncodeOptions`](https://developer.mozilla.org/docs/Web/API/VideoEncoderEncodeOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -51923,6 +53917,35 @@ pub struct VideoEncoderConfig<'a> {
 pub struct VideoEncoderEncodeOptions {
     #[cfg_attr(rust_js, rust_js::name = "keyFrame")]
     pub key_frame: Option<bool>,
+}
+
+/// The [`VideoEncoderInit`](https://developer.mozilla.org/docs/Web/API/VideoEncoderInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct VideoEncoderInit<'a> {
+    pub output: Box<dyn FnMut(&'a EncodedVideoChunk, EncodedVideoChunkMetadata<'a>)>,
+    pub error: Box<dyn FnMut(&'a DOMException)>,
+}
+
+/// The [`VideoFrameBufferInit`](https://developer.mozilla.org/docs/Web/API/VideoFrameBufferInit) dictionary: a JS object of these fields, a `None` one not given.
+pub struct VideoFrameBufferInit<'a> {
+    pub format: &'a str,
+    #[cfg_attr(rust_js, rust_js::name = "codedWidth")]
+    pub coded_width: u32,
+    #[cfg_attr(rust_js, rust_js::name = "codedHeight")]
+    pub coded_height: u32,
+    pub timestamp: f64,
+    pub duration: Option<f64>,
+    pub layout: Option<&'a [PlaneLayout]>,
+    #[cfg_attr(rust_js, rust_js::name = "visibleRect")]
+    pub visible_rect: Option<DOMRectInit>,
+    pub rotation: Option<f64>,
+    pub flip: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "displayWidth")]
+    pub display_width: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "displayHeight")]
+    pub display_height: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "colorSpace")]
+    pub color_space: Option<VideoColorSpaceInit>,
+    pub transfer: Option<&'a [&'a ArrayBuffer]>,
 }
 
 /// The [`VideoFrameCallbackMetadata`](https://developer.mozilla.org/docs/Web/API/VideoFrameCallbackMetadata) dictionary: a JS object of these fields, a `None` one not given.
@@ -51957,6 +53980,43 @@ pub struct VideoFrameCopyToOptions<'a> {
     pub color_space: Option<&'a str>,
 }
 
+/// The [`VideoFrameInit`](https://developer.mozilla.org/docs/Web/API/VideoFrameInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct VideoFrameInit<'a> {
+    pub duration: Option<f64>,
+    pub timestamp: Option<f64>,
+    pub alpha: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "visibleRect")]
+    pub visible_rect: Option<DOMRectInit>,
+    pub rotation: Option<f64>,
+    pub flip: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "displayWidth")]
+    pub display_width: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "displayHeight")]
+    pub display_height: Option<u32>,
+}
+
+/// The [`ViewTimelineOptions`](https://developer.mozilla.org/docs/Web/API/ViewTimelineOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct ViewTimelineOptions<'a> {
+    pub subject: Option<&'a Element>,
+    pub axis: Option<&'a str>,
+    pub inset: Option<StrOrList<'a>>,
+}
+
+/// The [`WaveShaperOptions`](https://developer.mozilla.org/docs/Web/API/WaveShaperOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct WaveShaperOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "channelCount")]
+    pub channel_count: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "channelCountMode")]
+    pub channel_count_mode: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "channelInterpretation")]
+    pub channel_interpretation: Option<&'a str>,
+    pub curve: Option<&'a [f32]>,
+    pub oversample: Option<&'a str>,
+}
+
 /// The [`WebAssemblyCompileOptions`](https://developer.mozilla.org/docs/Web/API/WebAssemblyCompileOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct WebAssemblyCompileOptions<'a> {
@@ -51965,12 +54025,49 @@ pub struct WebAssemblyCompileOptions<'a> {
     pub builtins: Option<&'a [&'a str]>,
 }
 
-/// The [`WebTransportCloseInfo`](https://developer.mozilla.org/docs/Web/API/WebTransportCloseInfo) dictionary: a JS object of these fields, a `None` one not given.
+/// The [`WebGLContextEventInit`](https://developer.mozilla.org/docs/Web/API/WebGLContextEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
-pub struct WebTransportCloseInfo<'a> {
-    #[cfg_attr(rust_js, rust_js::name = "closeCode")]
-    pub close_code: Option<u32>,
-    pub reason: Option<&'a str>,
+pub struct WebGLContextEventInit<'a> {
+    pub bubbles: Option<bool>,
+    pub cancelable: Option<bool>,
+    pub composed: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "statusMessage")]
+    pub status_message: Option<&'a str>,
+}
+
+/// The [`WebTransportErrorOptions`](https://developer.mozilla.org/docs/Web/API/WebTransportErrorOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct WebTransportErrorOptions<'a> {
+    pub source: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "streamErrorCode")]
+    pub stream_error_code: Option<u32>,
+}
+
+/// The [`WebTransportHash`](https://developer.mozilla.org/docs/Web/API/WebTransportHash) dictionary: a JS object of these fields, a `None` one not given.
+pub struct WebTransportHash<'a> {
+    pub algorithm: &'a str,
+    pub value: BufferSource<'a>,
+}
+
+/// The [`WebTransportOptions`](https://developer.mozilla.org/docs/Web/API/WebTransportOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct WebTransportOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "allowPooling")]
+    pub allow_pooling: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "requireUnreliable")]
+    pub require_unreliable: Option<bool>,
+    pub headers: Option<&'a [&'a [&'a str]]>,
+    #[cfg_attr(rust_js, rust_js::name = "serverCertificateHashes")]
+    pub server_certificate_hashes: Option<&'a [WebTransportHash<'a>]>,
+    #[cfg_attr(rust_js, rust_js::name = "congestionControl")]
+    pub congestion_control: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "anticipatedConcurrentIncomingUnidirectionalStreams")]
+    pub anticipated_concurrent_incoming_unidirectional_streams: Option<u16>,
+    #[cfg_attr(rust_js, rust_js::name = "anticipatedConcurrentIncomingBidirectionalStreams")]
+    pub anticipated_concurrent_incoming_bidirectional_streams: Option<u16>,
+    pub protocols: Option<&'a [&'a str]>,
+    #[cfg_attr(rust_js, rust_js::name = "datagramsReadableType")]
+    pub datagrams_readable_type: Option<&'a str>,
 }
 
 /// The [`WebTransportSendStreamOptions`](https://developer.mozilla.org/docs/Web/API/WebTransportSendStreamOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -52046,6 +54143,13 @@ pub struct WheelEventInit<'a> {
 pub struct WindowPostMessageOptions<'a> {
     #[cfg_attr(rust_js, rust_js::name = "targetOrigin")]
     pub target_origin: Option<&'a str>,
+}
+
+/// The [`WorkerAndParameters`](https://developer.mozilla.org/docs/Web/API/WorkerAndParameters) dictionary: a JS object of these fields, a `None` one not given.
+pub struct WorkerAndParameters<'a> {
+    pub worker: &'a Worker,
+    #[cfg_attr(rust_js, rust_js::name = "type")]
+    pub type_: Option<&'a str>,
 }
 
 /// The [`WorkerOptions`](https://developer.mozilla.org/docs/Web/API/WorkerOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -52410,19 +54514,19 @@ impl<'a> BoolOrImportNodeOptions<'a> {
 
 /// `boolean | MediaTrackConstraints`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
-pub enum BoolOrMediaTrackConstraints<'a> {
+pub enum BoolOrMediaTrackConstraints {
     Bool(bool),
-    MediaTrackConstraints(MediaTrackConstraints<'a>),
+    MediaTrackConstraints(MediaTrackConstraints),
 }
 
-impl<'a> From<bool> for BoolOrMediaTrackConstraints<'a> {
+impl From<bool> for BoolOrMediaTrackConstraints {
     fn from(value: bool) -> Self {
         BoolOrMediaTrackConstraints::Bool(value)
     }
 }
 
-impl<'a> From<MediaTrackConstraints<'a>> for BoolOrMediaTrackConstraints<'a> {
-    fn from(value: MediaTrackConstraints<'a>) -> Self {
+impl From<MediaTrackConstraints> for BoolOrMediaTrackConstraints {
+    fn from(value: MediaTrackConstraints) -> Self {
         BoolOrMediaTrackConstraints::MediaTrackConstraints(value)
     }
 }
@@ -52432,14 +54536,14 @@ impl<'a> From<MediaTrackConstraints<'a>> for BoolOrMediaTrackConstraints<'a> {
 #[cfg_attr(rust_js, rust_js::types = "boolean | MediaTrackConstraints")]
 pub trait IntoBoolOrMediaTrackConstraints: sealed::Sealed {}
 impl IntoBoolOrMediaTrackConstraints for bool {}
-impl IntoBoolOrMediaTrackConstraints for MediaTrackConstraints<'_> {}
-impl IntoBoolOrMediaTrackConstraints for BoolOrMediaTrackConstraints<'_> {}
+impl IntoBoolOrMediaTrackConstraints for MediaTrackConstraints {}
+impl IntoBoolOrMediaTrackConstraints for BoolOrMediaTrackConstraints {}
 
-impl<'a> BoolOrMediaTrackConstraints<'a> {
+impl BoolOrMediaTrackConstraints {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
     #[allow(unused_variables)]
-    pub fn of(this: impl IntoBoolOrMediaTrackConstraints + 'a) -> BoolOrMediaTrackConstraints<'a> {
+    pub fn of(this: impl IntoBoolOrMediaTrackConstraints) -> BoolOrMediaTrackConstraints {
         unreachable!()
     }
 }
@@ -52520,42 +54624,6 @@ impl<'a> BoolOrScrollIntoViewOptions<'a> {
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
     #[allow(unused_variables)]
     pub fn of(this: impl IntoBoolOrScrollIntoViewOptions + 'a) -> BoolOrScrollIntoViewOptions<'a> {
-        unreachable!()
-    }
-}
-
-/// `boolean | string`: each variant's value is the member itself (ADR 0215).
-#[cfg_attr(rust_js, rust_js::untagged)]
-pub enum BoolOrStr<'a> {
-    Bool(bool),
-    Str(&'a str),
-}
-
-impl<'a> From<bool> for BoolOrStr<'a> {
-    fn from(value: bool) -> Self {
-        BoolOrStr::Bool(value)
-    }
-}
-
-impl<'a> From<&'a str> for BoolOrStr<'a> {
-    fn from(value: &'a str) -> Self {
-        BoolOrStr::Str(value)
-    }
-}
-
-/// What a `boolean | string` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `boolean | string`")]
-#[cfg_attr(rust_js, rust_js::types = "boolean | string")]
-pub trait IntoBoolOrStr: sealed::Sealed {}
-impl IntoBoolOrStr for bool {}
-impl IntoBoolOrStr for &str {}
-impl IntoBoolOrStr for BoolOrStr<'_> {}
-
-impl<'a> BoolOrStr<'a> {
-    /// The member a parameter was given, as its enum, to `match`: the value itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "this")]
-    #[allow(unused_variables)]
-    pub fn of(this: impl IntoBoolOrStr + 'a) -> BoolOrStr<'a> {
         unreachable!()
     }
 }
@@ -52672,202 +54740,6 @@ impl<'a> CanvasImageSource<'a> {
     }
 }
 
-/// `boolean | ConstrainBooleanParameters`: each variant's value is the member itself (ADR 0215).
-#[cfg_attr(rust_js, rust_js::untagged)]
-pub enum ConstrainBoolean {
-    Bool(bool),
-    ConstrainBooleanParameters(ConstrainBooleanParameters),
-}
-
-impl From<bool> for ConstrainBoolean {
-    fn from(value: bool) -> Self {
-        ConstrainBoolean::Bool(value)
-    }
-}
-
-impl From<ConstrainBooleanParameters> for ConstrainBoolean {
-    fn from(value: ConstrainBooleanParameters) -> Self {
-        ConstrainBoolean::ConstrainBooleanParameters(value)
-    }
-}
-
-/// What a `boolean | ConstrainBooleanParameters` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `boolean | ConstrainBooleanParameters`")]
-#[cfg_attr(rust_js, rust_js::types = "boolean | ConstrainBooleanParameters")]
-pub trait IntoConstrainBoolean: sealed::Sealed {}
-impl IntoConstrainBoolean for bool {}
-impl IntoConstrainBoolean for ConstrainBooleanParameters {}
-impl IntoConstrainBoolean for ConstrainBoolean {}
-
-impl ConstrainBoolean {
-    /// The member a parameter was given, as its enum, to `match`: the value itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "this")]
-    #[allow(unused_variables)]
-    pub fn of(this: impl IntoConstrainBoolean) -> ConstrainBoolean {
-        unreachable!()
-    }
-}
-
-/// `boolean | string | ConstrainBooleanOrDOMStringParameters`: each variant's value is the member itself (ADR 0215).
-#[cfg_attr(rust_js, rust_js::untagged)]
-pub enum ConstrainBooleanOrDOMString<'a> {
-    Bool(bool),
-    Str(&'a str),
-    ConstrainBooleanOrDOMStringParameters(ConstrainBooleanOrDOMStringParameters<'a>),
-}
-
-impl<'a> From<bool> for ConstrainBooleanOrDOMString<'a> {
-    fn from(value: bool) -> Self {
-        ConstrainBooleanOrDOMString::Bool(value)
-    }
-}
-
-impl<'a> From<&'a str> for ConstrainBooleanOrDOMString<'a> {
-    fn from(value: &'a str) -> Self {
-        ConstrainBooleanOrDOMString::Str(value)
-    }
-}
-
-impl<'a> From<ConstrainBooleanOrDOMStringParameters<'a>> for ConstrainBooleanOrDOMString<'a> {
-    fn from(value: ConstrainBooleanOrDOMStringParameters<'a>) -> Self {
-        ConstrainBooleanOrDOMString::ConstrainBooleanOrDOMStringParameters(value)
-    }
-}
-
-/// What a `boolean | string | ConstrainBooleanOrDOMStringParameters` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `boolean | string | ConstrainBooleanOrDOMStringParameters`")]
-#[cfg_attr(rust_js, rust_js::types = "boolean | string | ConstrainBooleanOrDOMStringParameters")]
-pub trait IntoConstrainBooleanOrDOMString: sealed::Sealed {}
-impl IntoConstrainBooleanOrDOMString for bool {}
-impl IntoConstrainBooleanOrDOMString for &str {}
-impl IntoConstrainBooleanOrDOMString for ConstrainBooleanOrDOMStringParameters<'_> {}
-impl IntoConstrainBooleanOrDOMString for ConstrainBooleanOrDOMString<'_> {}
-
-impl<'a> ConstrainBooleanOrDOMString<'a> {
-    /// The member a parameter was given, as its enum, to `match`: the value itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "this")]
-    #[allow(unused_variables)]
-    pub fn of(this: impl IntoConstrainBooleanOrDOMString + 'a) -> ConstrainBooleanOrDOMString<'a> {
-        unreachable!()
-    }
-}
-
-/// `string | List | ConstrainDOMStringParameters`: each variant's value is the member itself (ADR 0215).
-#[cfg_attr(rust_js, rust_js::untagged)]
-pub enum ConstrainDOMString<'a> {
-    Str(&'a str),
-    List(&'a [&'a str]),
-    ConstrainDOMStringParameters(ConstrainDOMStringParameters<'a>),
-}
-
-impl<'a> From<&'a str> for ConstrainDOMString<'a> {
-    fn from(value: &'a str) -> Self {
-        ConstrainDOMString::Str(value)
-    }
-}
-
-impl<'a> From<&'a [&'a str]> for ConstrainDOMString<'a> {
-    fn from(value: &'a [&'a str]) -> Self {
-        ConstrainDOMString::List(value)
-    }
-}
-
-impl<'a> From<ConstrainDOMStringParameters<'a>> for ConstrainDOMString<'a> {
-    fn from(value: ConstrainDOMStringParameters<'a>) -> Self {
-        ConstrainDOMString::ConstrainDOMStringParameters(value)
-    }
-}
-
-/// What a `string | List | ConstrainDOMStringParameters` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | List | ConstrainDOMStringParameters`")]
-#[cfg_attr(rust_js, rust_js::types = "string | List | ConstrainDOMStringParameters")]
-pub trait IntoConstrainDOMString: sealed::Sealed {}
-impl IntoConstrainDOMString for &str {}
-impl IntoConstrainDOMString for &[&str] {}
-impl IntoConstrainDOMString for ConstrainDOMStringParameters<'_> {}
-impl IntoConstrainDOMString for ConstrainDOMString<'_> {}
-
-impl<'a> ConstrainDOMString<'a> {
-    /// The member a parameter was given, as its enum, to `match`: the value itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "this")]
-    #[allow(unused_variables)]
-    pub fn of(this: impl IntoConstrainDOMString + 'a) -> ConstrainDOMString<'a> {
-        unreachable!()
-    }
-}
-
-/// `number | ConstrainDoubleRange`: each variant's value is the member itself (ADR 0215).
-#[cfg_attr(rust_js, rust_js::untagged)]
-pub enum ConstrainDouble {
-    Number(f64),
-    ConstrainDoubleRange(ConstrainDoubleRange),
-}
-
-impl From<f64> for ConstrainDouble {
-    fn from(value: f64) -> Self {
-        ConstrainDouble::Number(value)
-    }
-}
-
-impl From<ConstrainDoubleRange> for ConstrainDouble {
-    fn from(value: ConstrainDoubleRange) -> Self {
-        ConstrainDouble::ConstrainDoubleRange(value)
-    }
-}
-
-/// What a `number | ConstrainDoubleRange` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `number | ConstrainDoubleRange`")]
-#[cfg_attr(rust_js, rust_js::types = "number | ConstrainDoubleRange")]
-pub trait IntoConstrainDouble: sealed::Sealed {}
-impl IntoConstrainDouble for f64 {}
-impl IntoConstrainDouble for ConstrainDoubleRange {}
-impl IntoConstrainDouble for ConstrainDouble {}
-
-impl ConstrainDouble {
-    /// The member a parameter was given, as its enum, to `match`: the value itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "this")]
-    #[allow(unused_variables)]
-    pub fn of(this: impl IntoConstrainDouble) -> ConstrainDouble {
-        unreachable!()
-    }
-}
-
-/// `number | ConstrainULongRange`: each variant's value is the member itself (ADR 0215).
-#[cfg_attr(rust_js, rust_js::untagged)]
-pub enum ConstrainULong {
-    Number(u32),
-    ConstrainULongRange(ConstrainULongRange),
-}
-
-impl From<u32> for ConstrainULong {
-    fn from(value: u32) -> Self {
-        ConstrainULong::Number(value)
-    }
-}
-
-impl From<ConstrainULongRange> for ConstrainULong {
-    fn from(value: ConstrainULongRange) -> Self {
-        ConstrainULong::ConstrainULongRange(value)
-    }
-}
-
-/// What a `number | ConstrainULongRange` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `number | ConstrainULongRange`")]
-#[cfg_attr(rust_js, rust_js::types = "number | ConstrainULongRange")]
-pub trait IntoConstrainULong: sealed::Sealed {}
-impl IntoConstrainULong for u32 {}
-impl IntoConstrainULong for ConstrainULongRange {}
-impl IntoConstrainULong for ConstrainULong {}
-
-impl ConstrainULong {
-    /// The member a parameter was given, as its enum, to `match`: the value itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "this")]
-    #[allow(unused_variables)]
-    pub fn of(this: impl IntoConstrainULong) -> ConstrainULong {
-        unreachable!()
-    }
-}
-
 /// `number | CSSNumericValue`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum CSSNumberish<'a> {
@@ -52963,6 +54835,105 @@ impl<'a> CSSNumberish<'a> {
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
     #[allow(unused_variables)]
     pub fn of(this: impl IntoCSSNumberish + 'a) -> CSSNumberish<'a> {
+        unreachable!()
+    }
+}
+
+/// `CSSNumericValue | CSSKeywordValue`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum CSSNumericValueOrCSSKeywordValue<'a> {
+    CSSNumericValue(&'a CSSNumericValue),
+    CSSKeywordValue(&'a CSSKeywordValue),
+}
+
+impl<'a> From<&'a CSSNumericValue> for CSSNumericValueOrCSSKeywordValue<'a> {
+    fn from(value: &'a CSSNumericValue) -> Self {
+        CSSNumericValueOrCSSKeywordValue::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSMathClamp> for CSSNumericValueOrCSSKeywordValue<'a> {
+    fn from(value: &'a CSSMathClamp) -> Self {
+        CSSNumericValueOrCSSKeywordValue::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSMathInvert> for CSSNumericValueOrCSSKeywordValue<'a> {
+    fn from(value: &'a CSSMathInvert) -> Self {
+        CSSNumericValueOrCSSKeywordValue::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSMathMax> for CSSNumericValueOrCSSKeywordValue<'a> {
+    fn from(value: &'a CSSMathMax) -> Self {
+        CSSNumericValueOrCSSKeywordValue::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSMathMin> for CSSNumericValueOrCSSKeywordValue<'a> {
+    fn from(value: &'a CSSMathMin) -> Self {
+        CSSNumericValueOrCSSKeywordValue::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSMathNegate> for CSSNumericValueOrCSSKeywordValue<'a> {
+    fn from(value: &'a CSSMathNegate) -> Self {
+        CSSNumericValueOrCSSKeywordValue::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSMathProduct> for CSSNumericValueOrCSSKeywordValue<'a> {
+    fn from(value: &'a CSSMathProduct) -> Self {
+        CSSNumericValueOrCSSKeywordValue::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSMathSum> for CSSNumericValueOrCSSKeywordValue<'a> {
+    fn from(value: &'a CSSMathSum) -> Self {
+        CSSNumericValueOrCSSKeywordValue::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSMathValue> for CSSNumericValueOrCSSKeywordValue<'a> {
+    fn from(value: &'a CSSMathValue) -> Self {
+        CSSNumericValueOrCSSKeywordValue::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSUnitValue> for CSSNumericValueOrCSSKeywordValue<'a> {
+    fn from(value: &'a CSSUnitValue) -> Self {
+        CSSNumericValueOrCSSKeywordValue::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSKeywordValue> for CSSNumericValueOrCSSKeywordValue<'a> {
+    fn from(value: &'a CSSKeywordValue) -> Self {
+        CSSNumericValueOrCSSKeywordValue::CSSKeywordValue(value)
+    }
+}
+
+/// What a `CSSNumericValue | CSSKeywordValue` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `CSSNumericValue | CSSKeywordValue`")]
+#[cfg_attr(rust_js, rust_js::types = "CSSNumericValue | CSSKeywordValue")]
+pub trait IntoCSSNumericValueOrCSSKeywordValue: sealed::Sealed {}
+impl IntoCSSNumericValueOrCSSKeywordValue for &CSSNumericValue {}
+impl IntoCSSNumericValueOrCSSKeywordValue for &CSSMathClamp {}
+impl IntoCSSNumericValueOrCSSKeywordValue for &CSSMathInvert {}
+impl IntoCSSNumericValueOrCSSKeywordValue for &CSSMathMax {}
+impl IntoCSSNumericValueOrCSSKeywordValue for &CSSMathMin {}
+impl IntoCSSNumericValueOrCSSKeywordValue for &CSSMathNegate {}
+impl IntoCSSNumericValueOrCSSKeywordValue for &CSSMathProduct {}
+impl IntoCSSNumericValueOrCSSKeywordValue for &CSSMathSum {}
+impl IntoCSSNumericValueOrCSSKeywordValue for &CSSMathValue {}
+impl IntoCSSNumericValueOrCSSKeywordValue for &CSSUnitValue {}
+impl IntoCSSNumericValueOrCSSKeywordValue for &CSSKeywordValue {}
+impl IntoCSSNumericValueOrCSSKeywordValue for CSSNumericValueOrCSSKeywordValue<'_> {}
+
+impl<'a> CSSNumericValueOrCSSKeywordValue<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoCSSNumericValueOrCSSKeywordValue + 'a) -> CSSNumericValueOrCSSKeywordValue<'a> {
         unreachable!()
     }
 }
@@ -53204,6 +55175,42 @@ impl<'a> CSSStyleValueOrStr<'a> {
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
     #[allow(unused_variables)]
     pub fn of(this: impl IntoCSSStyleValueOrStr + 'a) -> CSSStyleValueOrStr<'a> {
+        unreachable!()
+    }
+}
+
+/// `string | CSSVariableReferenceValue`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum CSSUnparsedSegment<'a> {
+    Str(&'a str),
+    CSSVariableReferenceValue(&'a CSSVariableReferenceValue),
+}
+
+impl<'a> From<&'a str> for CSSUnparsedSegment<'a> {
+    fn from(value: &'a str) -> Self {
+        CSSUnparsedSegment::Str(value)
+    }
+}
+
+impl<'a> From<&'a CSSVariableReferenceValue> for CSSUnparsedSegment<'a> {
+    fn from(value: &'a CSSVariableReferenceValue) -> Self {
+        CSSUnparsedSegment::CSSVariableReferenceValue(value)
+    }
+}
+
+/// What a `string | CSSVariableReferenceValue` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | CSSVariableReferenceValue`")]
+#[cfg_attr(rust_js, rust_js::types = "string | CSSVariableReferenceValue")]
+pub trait IntoCSSUnparsedSegment: sealed::Sealed {}
+impl IntoCSSUnparsedSegment for &str {}
+impl IntoCSSUnparsedSegment for &CSSVariableReferenceValue {}
+impl IntoCSSUnparsedSegment for CSSUnparsedSegment<'_> {}
+
+impl<'a> CSSUnparsedSegment<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoCSSUnparsedSegment + 'a) -> CSSUnparsedSegment<'a> {
         unreachable!()
     }
 }
@@ -58880,6 +60887,57 @@ impl<'a> ImageBitmapSource<'a> {
     }
 }
 
+/// `ArrayBuffer | Uint8Array | ReadableStream`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum ImageBufferSource<'a> {
+    ArrayBuffer(&'a ArrayBuffer),
+    Uint8Array(&'a Uint8Array),
+    ReadableStream(&'a ReadableStream),
+}
+
+impl<'a> From<&'a ArrayBuffer> for ImageBufferSource<'a> {
+    fn from(value: &'a ArrayBuffer) -> Self {
+        ImageBufferSource::ArrayBuffer(value)
+    }
+}
+
+impl<'a> From<&'a Uint8Array> for ImageBufferSource<'a> {
+    fn from(value: &'a Uint8Array) -> Self {
+        ImageBufferSource::Uint8Array(value)
+    }
+}
+
+impl<'a> From<&'a ReadableStream> for ImageBufferSource<'a> {
+    fn from(value: &'a ReadableStream) -> Self {
+        ImageBufferSource::ReadableStream(value)
+    }
+}
+
+impl<'a> From<&'a WebTransportReceiveStream> for ImageBufferSource<'a> {
+    fn from(value: &'a WebTransportReceiveStream) -> Self {
+        ImageBufferSource::ReadableStream(value)
+    }
+}
+
+/// What a `ArrayBuffer | Uint8Array | ReadableStream` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `ArrayBuffer | Uint8Array | ReadableStream`")]
+#[cfg_attr(rust_js, rust_js::types = "ArrayBuffer | Uint8Array | ReadableStream")]
+pub trait IntoImageBufferSource: sealed::Sealed {}
+impl IntoImageBufferSource for &ArrayBuffer {}
+impl IntoImageBufferSource for &Uint8Array {}
+impl IntoImageBufferSource for &ReadableStream {}
+impl IntoImageBufferSource for &WebTransportReceiveStream {}
+impl IntoImageBufferSource for ImageBufferSource<'_> {}
+
+impl<'a> ImageBufferSource<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoImageBufferSource + 'a) -> ImageBufferSource<'a> {
+        unreachable!()
+    }
+}
+
 /// `number | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum LineAndPositionSetting<'a> {
@@ -60406,6 +62464,42 @@ impl<'a> NumberOrKeyframeAnimationOptions<'a> {
     }
 }
 
+/// `number | KeyframeEffectOptions`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum NumberOrKeyframeEffectOptions<'a> {
+    Number(f64),
+    KeyframeEffectOptions(KeyframeEffectOptions<'a>),
+}
+
+impl<'a> From<f64> for NumberOrKeyframeEffectOptions<'a> {
+    fn from(value: f64) -> Self {
+        NumberOrKeyframeEffectOptions::Number(value)
+    }
+}
+
+impl<'a> From<KeyframeEffectOptions<'a>> for NumberOrKeyframeEffectOptions<'a> {
+    fn from(value: KeyframeEffectOptions<'a>) -> Self {
+        NumberOrKeyframeEffectOptions::KeyframeEffectOptions(value)
+    }
+}
+
+/// What a `number | KeyframeEffectOptions` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `number | KeyframeEffectOptions`")]
+#[cfg_attr(rust_js, rust_js::types = "number | KeyframeEffectOptions")]
+pub trait IntoNumberOrKeyframeEffectOptions: sealed::Sealed {}
+impl IntoNumberOrKeyframeEffectOptions for f64 {}
+impl IntoNumberOrKeyframeEffectOptions for KeyframeEffectOptions<'_> {}
+impl IntoNumberOrKeyframeEffectOptions for NumberOrKeyframeEffectOptions<'_> {}
+
+impl<'a> NumberOrKeyframeEffectOptions<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoNumberOrKeyframeEffectOptions + 'a) -> NumberOrKeyframeEffectOptions<'a> {
+        unreachable!()
+    }
+}
+
 /// `number | List`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum NumberOrList<'a> {
@@ -60554,7 +62648,7 @@ impl<'a> RequestInfo<'a> {
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum SanitizerAttribute<'a> {
     Str(&'a str),
-    SanitizerAttributeNamespace(SanitizerAttributeNamespace<'a>),
+    SanitizerAttributeNamespace(SanitizerAttributeNamespace),
 }
 
 impl<'a> From<&'a str> for SanitizerAttribute<'a> {
@@ -60563,8 +62657,8 @@ impl<'a> From<&'a str> for SanitizerAttribute<'a> {
     }
 }
 
-impl<'a> From<SanitizerAttributeNamespace<'a>> for SanitizerAttribute<'a> {
-    fn from(value: SanitizerAttributeNamespace<'a>) -> Self {
+impl<'a> From<SanitizerAttributeNamespace> for SanitizerAttribute<'a> {
+    fn from(value: SanitizerAttributeNamespace) -> Self {
         SanitizerAttribute::SanitizerAttributeNamespace(value)
     }
 }
@@ -60574,7 +62668,7 @@ impl<'a> From<SanitizerAttributeNamespace<'a>> for SanitizerAttribute<'a> {
 #[cfg_attr(rust_js, rust_js::types = "string | SanitizerAttributeNamespace")]
 pub trait IntoSanitizerAttribute: sealed::Sealed {}
 impl IntoSanitizerAttribute for &str {}
-impl IntoSanitizerAttribute for SanitizerAttributeNamespace<'_> {}
+impl IntoSanitizerAttribute for SanitizerAttributeNamespace {}
 impl IntoSanitizerAttribute for SanitizerAttribute<'_> {}
 
 impl<'a> SanitizerAttribute<'a> {
@@ -60589,12 +62683,12 @@ impl<'a> SanitizerAttribute<'a> {
 /// `SanitizerConfig | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum SanitizerConfigOrStr<'a> {
-    SanitizerConfig(SanitizerConfig<'a>),
+    SanitizerConfig(SanitizerConfig),
     Str(&'a str),
 }
 
-impl<'a> From<SanitizerConfig<'a>> for SanitizerConfigOrStr<'a> {
-    fn from(value: SanitizerConfig<'a>) -> Self {
+impl<'a> From<SanitizerConfig> for SanitizerConfigOrStr<'a> {
+    fn from(value: SanitizerConfig) -> Self {
         SanitizerConfigOrStr::SanitizerConfig(value)
     }
 }
@@ -60609,7 +62703,7 @@ impl<'a> From<&'a str> for SanitizerConfigOrStr<'a> {
 #[diagnostic::on_unimplemented(message = "`{Self}` is not a `SanitizerConfig | string`")]
 #[cfg_attr(rust_js, rust_js::types = "SanitizerConfig | string")]
 pub trait IntoSanitizerConfigOrStr: sealed::Sealed {}
-impl IntoSanitizerConfigOrStr for SanitizerConfig<'_> {}
+impl IntoSanitizerConfigOrStr for SanitizerConfig {}
 impl IntoSanitizerConfigOrStr for &str {}
 impl IntoSanitizerConfigOrStr for SanitizerConfigOrStr<'_> {}
 
@@ -60626,7 +62720,7 @@ impl<'a> SanitizerConfigOrStr<'a> {
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum SanitizerElement<'a> {
     Str(&'a str),
-    SanitizerElementNamespace(SanitizerElementNamespace<'a>),
+    SanitizerElementNamespace(SanitizerElementNamespace),
 }
 
 impl<'a> From<&'a str> for SanitizerElement<'a> {
@@ -60635,8 +62729,8 @@ impl<'a> From<&'a str> for SanitizerElement<'a> {
     }
 }
 
-impl<'a> From<SanitizerElementNamespace<'a>> for SanitizerElement<'a> {
-    fn from(value: SanitizerElementNamespace<'a>) -> Self {
+impl<'a> From<SanitizerElementNamespace> for SanitizerElement<'a> {
+    fn from(value: SanitizerElementNamespace) -> Self {
         SanitizerElement::SanitizerElementNamespace(value)
     }
 }
@@ -60646,7 +62740,7 @@ impl<'a> From<SanitizerElementNamespace<'a>> for SanitizerElement<'a> {
 #[cfg_attr(rust_js, rust_js::types = "string | SanitizerElementNamespace")]
 pub trait IntoSanitizerElement: sealed::Sealed {}
 impl IntoSanitizerElement for &str {}
-impl IntoSanitizerElement for SanitizerElementNamespace<'_> {}
+impl IntoSanitizerElement for SanitizerElementNamespace {}
 impl IntoSanitizerElement for SanitizerElement<'_> {}
 
 impl<'a> SanitizerElement<'a> {
@@ -60662,7 +62756,7 @@ impl<'a> SanitizerElement<'a> {
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum SanitizerElementWithAttributes<'a> {
     Str(&'a str),
-    SanitizerElementNamespaceWithAttributes(SanitizerElementNamespaceWithAttributes<'a>),
+    SanitizerElementNamespaceWithAttributes(SanitizerElementNamespaceWithAttributes),
 }
 
 impl<'a> From<&'a str> for SanitizerElementWithAttributes<'a> {
@@ -60671,8 +62765,8 @@ impl<'a> From<&'a str> for SanitizerElementWithAttributes<'a> {
     }
 }
 
-impl<'a> From<SanitizerElementNamespaceWithAttributes<'a>> for SanitizerElementWithAttributes<'a> {
-    fn from(value: SanitizerElementNamespaceWithAttributes<'a>) -> Self {
+impl<'a> From<SanitizerElementNamespaceWithAttributes> for SanitizerElementWithAttributes<'a> {
+    fn from(value: SanitizerElementNamespaceWithAttributes) -> Self {
         SanitizerElementWithAttributes::SanitizerElementNamespaceWithAttributes(value)
     }
 }
@@ -60682,7 +62776,7 @@ impl<'a> From<SanitizerElementNamespaceWithAttributes<'a>> for SanitizerElementW
 #[cfg_attr(rust_js, rust_js::types = "string | SanitizerElementNamespaceWithAttributes")]
 pub trait IntoSanitizerElementWithAttributes: sealed::Sealed {}
 impl IntoSanitizerElementWithAttributes for &str {}
-impl IntoSanitizerElementWithAttributes for SanitizerElementNamespaceWithAttributes<'_> {}
+impl IntoSanitizerElementWithAttributes for SanitizerElementNamespaceWithAttributes {}
 impl IntoSanitizerElementWithAttributes for SanitizerElementWithAttributes<'_> {}
 
 impl<'a> SanitizerElementWithAttributes<'a> {
@@ -60698,7 +62792,7 @@ impl<'a> SanitizerElementWithAttributes<'a> {
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum SanitizerOrSanitizerConfigOrStr<'a> {
     Sanitizer(&'a Sanitizer),
-    SanitizerConfig(SanitizerConfig<'a>),
+    SanitizerConfig(SanitizerConfig),
     Str(&'a str),
 }
 
@@ -60708,8 +62802,8 @@ impl<'a> From<&'a Sanitizer> for SanitizerOrSanitizerConfigOrStr<'a> {
     }
 }
 
-impl<'a> From<SanitizerConfig<'a>> for SanitizerOrSanitizerConfigOrStr<'a> {
-    fn from(value: SanitizerConfig<'a>) -> Self {
+impl<'a> From<SanitizerConfig> for SanitizerOrSanitizerConfigOrStr<'a> {
+    fn from(value: SanitizerConfig) -> Self {
         SanitizerOrSanitizerConfigOrStr::SanitizerConfig(value)
     }
 }
@@ -60725,7 +62819,7 @@ impl<'a> From<&'a str> for SanitizerOrSanitizerConfigOrStr<'a> {
 #[cfg_attr(rust_js, rust_js::types = "Sanitizer | SanitizerConfig | string")]
 pub trait IntoSanitizerOrSanitizerConfigOrStr: sealed::Sealed {}
 impl IntoSanitizerOrSanitizerConfigOrStr for &Sanitizer {}
-impl IntoSanitizerOrSanitizerConfigOrStr for SanitizerConfig<'_> {}
+impl IntoSanitizerOrSanitizerConfigOrStr for SanitizerConfig {}
 impl IntoSanitizerOrSanitizerConfigOrStr for &str {}
 impl IntoSanitizerOrSanitizerConfigOrStr for SanitizerOrSanitizerConfigOrStr<'_> {}
 
@@ -60742,7 +62836,7 @@ impl<'a> SanitizerOrSanitizerConfigOrStr<'a> {
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum SanitizerPI<'a> {
     Str(&'a str),
-    SanitizerProcessingInstruction(SanitizerProcessingInstruction<'a>),
+    SanitizerProcessingInstruction(SanitizerProcessingInstruction),
 }
 
 impl<'a> From<&'a str> for SanitizerPI<'a> {
@@ -60751,8 +62845,8 @@ impl<'a> From<&'a str> for SanitizerPI<'a> {
     }
 }
 
-impl<'a> From<SanitizerProcessingInstruction<'a>> for SanitizerPI<'a> {
-    fn from(value: SanitizerProcessingInstruction<'a>) -> Self {
+impl<'a> From<SanitizerProcessingInstruction> for SanitizerPI<'a> {
+    fn from(value: SanitizerProcessingInstruction) -> Self {
         SanitizerPI::SanitizerProcessingInstruction(value)
     }
 }
@@ -60762,7 +62856,7 @@ impl<'a> From<SanitizerProcessingInstruction<'a>> for SanitizerPI<'a> {
 #[cfg_attr(rust_js, rust_js::types = "string | SanitizerProcessingInstruction")]
 pub trait IntoSanitizerPI: sealed::Sealed {}
 impl IntoSanitizerPI for &str {}
-impl IntoSanitizerPI for SanitizerProcessingInstruction<'_> {}
+impl IntoSanitizerPI for SanitizerProcessingInstruction {}
 impl IntoSanitizerPI for SanitizerPI<'_> {}
 
 impl<'a> SanitizerPI<'a> {
@@ -60806,6 +62900,42 @@ impl<'a> StrOrArrayBuffer<'a> {
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
     #[allow(unused_variables)]
     pub fn of(this: impl IntoStrOrArrayBuffer + 'a) -> StrOrArrayBuffer<'a> {
+        unreachable!()
+    }
+}
+
+/// `string | AudioSinkOptions`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum StrOrAudioSinkOptions<'a> {
+    Str(&'a str),
+    AudioSinkOptions(AudioSinkOptions<'a>),
+}
+
+impl<'a> From<&'a str> for StrOrAudioSinkOptions<'a> {
+    fn from(value: &'a str) -> Self {
+        StrOrAudioSinkOptions::Str(value)
+    }
+}
+
+impl<'a> From<AudioSinkOptions<'a>> for StrOrAudioSinkOptions<'a> {
+    fn from(value: AudioSinkOptions<'a>) -> Self {
+        StrOrAudioSinkOptions::AudioSinkOptions(value)
+    }
+}
+
+/// What a `string | AudioSinkOptions` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | AudioSinkOptions`")]
+#[cfg_attr(rust_js, rust_js::types = "string | AudioSinkOptions")]
+pub trait IntoStrOrAudioSinkOptions: sealed::Sealed {}
+impl IntoStrOrAudioSinkOptions for &str {}
+impl IntoStrOrAudioSinkOptions for AudioSinkOptions<'_> {}
+impl IntoStrOrAudioSinkOptions for StrOrAudioSinkOptions<'_> {}
+
+impl<'a> StrOrAudioSinkOptions<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoStrOrAudioSinkOptions + 'a) -> StrOrAudioSinkOptions<'a> {
         unreachable!()
     }
 }
@@ -60930,7 +63060,7 @@ impl<'a> StrOrList<'a> {
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum StrOrNumber<'a> {
     Str(&'a str),
-    Number(f64),
+    Number(u32),
 }
 
 impl<'a> From<&'a str> for StrOrNumber<'a> {
@@ -60939,8 +63069,8 @@ impl<'a> From<&'a str> for StrOrNumber<'a> {
     }
 }
 
-impl<'a> From<f64> for StrOrNumber<'a> {
-    fn from(value: f64) -> Self {
+impl<'a> From<u32> for StrOrNumber<'a> {
+    fn from(value: u32) -> Self {
         StrOrNumber::Number(value)
     }
 }
@@ -60950,7 +63080,7 @@ impl<'a> From<f64> for StrOrNumber<'a> {
 #[cfg_attr(rust_js, rust_js::types = "string | number")]
 pub trait IntoStrOrNumber: sealed::Sealed {}
 impl IntoStrOrNumber for &str {}
-impl IntoStrOrNumber for f64 {}
+impl IntoStrOrNumber for u32 {}
 impl IntoStrOrNumber for StrOrNumber<'_> {}
 
 impl<'a> StrOrNumber<'a> {
@@ -61066,6 +63196,50 @@ impl<'a> StrOrTaskSignal<'a> {
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
     #[allow(unused_variables)]
     pub fn of(this: impl IntoStrOrTaskSignal + 'a) -> StrOrTaskSignal<'a> {
+        unreachable!()
+    }
+}
+
+/// `string | Uint8Array | ArrayBuffer`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum StrOrUint8ArrayOrArrayBuffer<'a> {
+    Str(&'a str),
+    Uint8Array(&'a Uint8Array),
+    ArrayBuffer(&'a ArrayBuffer),
+}
+
+impl<'a> From<&'a str> for StrOrUint8ArrayOrArrayBuffer<'a> {
+    fn from(value: &'a str) -> Self {
+        StrOrUint8ArrayOrArrayBuffer::Str(value)
+    }
+}
+
+impl<'a> From<&'a Uint8Array> for StrOrUint8ArrayOrArrayBuffer<'a> {
+    fn from(value: &'a Uint8Array) -> Self {
+        StrOrUint8ArrayOrArrayBuffer::Uint8Array(value)
+    }
+}
+
+impl<'a> From<&'a ArrayBuffer> for StrOrUint8ArrayOrArrayBuffer<'a> {
+    fn from(value: &'a ArrayBuffer) -> Self {
+        StrOrUint8ArrayOrArrayBuffer::ArrayBuffer(value)
+    }
+}
+
+/// What a `string | Uint8Array | ArrayBuffer` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | Uint8Array | ArrayBuffer`")]
+#[cfg_attr(rust_js, rust_js::types = "string | Uint8Array | ArrayBuffer")]
+pub trait IntoStrOrUint8ArrayOrArrayBuffer: sealed::Sealed {}
+impl IntoStrOrUint8ArrayOrArrayBuffer for &str {}
+impl IntoStrOrUint8ArrayOrArrayBuffer for &Uint8Array {}
+impl IntoStrOrUint8ArrayOrArrayBuffer for &ArrayBuffer {}
+impl IntoStrOrUint8ArrayOrArrayBuffer for StrOrUint8ArrayOrArrayBuffer<'_> {}
+
+impl<'a> StrOrUint8ArrayOrArrayBuffer<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoStrOrUint8ArrayOrArrayBuffer + 'a) -> StrOrUint8ArrayOrArrayBuffer<'a> {
         unreachable!()
     }
 }
@@ -61246,7 +63420,7 @@ impl<'a> Uint8ArrayOrArrayBufferOrBlobOrStr<'a> {
 pub enum Uint8ArrayOrArrayBufferOrJsonWebKey<'a> {
     Uint8Array(&'a Uint8Array),
     ArrayBuffer(&'a ArrayBuffer),
-    JsonWebKey(JsonWebKey<'a>),
+    JsonWebKey(JsonWebKey),
 }
 
 impl<'a> From<&'a Uint8Array> for Uint8ArrayOrArrayBufferOrJsonWebKey<'a> {
@@ -61261,8 +63435,8 @@ impl<'a> From<&'a ArrayBuffer> for Uint8ArrayOrArrayBufferOrJsonWebKey<'a> {
     }
 }
 
-impl<'a> From<JsonWebKey<'a>> for Uint8ArrayOrArrayBufferOrJsonWebKey<'a> {
-    fn from(value: JsonWebKey<'a>) -> Self {
+impl<'a> From<JsonWebKey> for Uint8ArrayOrArrayBufferOrJsonWebKey<'a> {
+    fn from(value: JsonWebKey) -> Self {
         Uint8ArrayOrArrayBufferOrJsonWebKey::JsonWebKey(value)
     }
 }
@@ -61273,7 +63447,7 @@ impl<'a> From<JsonWebKey<'a>> for Uint8ArrayOrArrayBufferOrJsonWebKey<'a> {
 pub trait IntoUint8ArrayOrArrayBufferOrJsonWebKey: sealed::Sealed {}
 impl IntoUint8ArrayOrArrayBufferOrJsonWebKey for &Uint8Array {}
 impl IntoUint8ArrayOrArrayBufferOrJsonWebKey for &ArrayBuffer {}
-impl IntoUint8ArrayOrArrayBufferOrJsonWebKey for JsonWebKey<'_> {}
+impl IntoUint8ArrayOrArrayBufferOrJsonWebKey for JsonWebKey {}
 impl IntoUint8ArrayOrArrayBufferOrJsonWebKey for Uint8ArrayOrArrayBufferOrJsonWebKey<'_> {}
 
 impl<'a> Uint8ArrayOrArrayBufferOrJsonWebKey<'a> {
@@ -61333,7 +63507,7 @@ impl<'a> Uint8ArrayOrArrayBufferOrStr<'a> {
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum URLPatternInput<'a> {
     Str(&'a str),
-    URLPatternInit(URLPatternInit<'a>),
+    URLPatternInit(URLPatternInit),
 }
 
 impl<'a> From<&'a str> for URLPatternInput<'a> {
@@ -61342,8 +63516,8 @@ impl<'a> From<&'a str> for URLPatternInput<'a> {
     }
 }
 
-impl<'a> From<URLPatternInit<'a>> for URLPatternInput<'a> {
-    fn from(value: URLPatternInit<'a>) -> Self {
+impl<'a> From<URLPatternInit> for URLPatternInput<'a> {
+    fn from(value: URLPatternInit) -> Self {
         URLPatternInput::URLPatternInit(value)
     }
 }
@@ -61353,7 +63527,7 @@ impl<'a> From<URLPatternInit<'a>> for URLPatternInput<'a> {
 #[cfg_attr(rust_js, rust_js::types = "string | URLPatternInit")]
 pub trait IntoURLPatternInput: sealed::Sealed {}
 impl IntoURLPatternInput for &str {}
-impl IntoURLPatternInput for URLPatternInit<'_> {}
+impl IntoURLPatternInput for URLPatternInit {}
 impl IntoURLPatternInput for URLPatternInput<'_> {}
 
 impl<'a> URLPatternInput<'a> {
@@ -61401,6 +63575,42 @@ impl<'a> VibratePattern<'a> {
     }
 }
 
+/// `Worker | WorkerAndParameters`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum WorkerOrWorkerAndParameters<'a> {
+    Worker(&'a Worker),
+    WorkerAndParameters(WorkerAndParameters<'a>),
+}
+
+impl<'a> From<&'a Worker> for WorkerOrWorkerAndParameters<'a> {
+    fn from(value: &'a Worker) -> Self {
+        WorkerOrWorkerAndParameters::Worker(value)
+    }
+}
+
+impl<'a> From<WorkerAndParameters<'a>> for WorkerOrWorkerAndParameters<'a> {
+    fn from(value: WorkerAndParameters<'a>) -> Self {
+        WorkerOrWorkerAndParameters::WorkerAndParameters(value)
+    }
+}
+
+/// What a `Worker | WorkerAndParameters` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Worker | WorkerAndParameters`")]
+#[cfg_attr(rust_js, rust_js::types = "Worker | WorkerAndParameters")]
+pub trait IntoWorkerOrWorkerAndParameters: sealed::Sealed {}
+impl IntoWorkerOrWorkerAndParameters for &Worker {}
+impl IntoWorkerOrWorkerAndParameters for WorkerAndParameters<'_> {}
+impl IntoWorkerOrWorkerAndParameters for WorkerOrWorkerAndParameters<'_> {}
+
+impl<'a> WorkerOrWorkerAndParameters<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoWorkerOrWorkerAndParameters + 'a) -> WorkerOrWorkerAndParameters<'a> {
+        unreachable!()
+    }
+}
+
 mod sealed {
     use super::*;
 
@@ -61424,6 +63634,7 @@ mod sealed {
     impl Sealed for &CSSTransformValue {}
     impl Sealed for &CSSUnitValue {}
     impl Sealed for &CSSUnparsedValue {}
+    impl Sealed for &CSSVariableReferenceValue {}
     impl Sealed for &CanvasCaptureMediaStreamTrack {}
     impl Sealed for &CanvasGradient {}
     impl Sealed for &CanvasPattern {}
@@ -61612,6 +63823,7 @@ mod sealed {
     impl Sealed for &VideoFrame {}
     impl Sealed for &WebTransportReceiveStream {}
     impl Sealed for &Window {}
+    impl Sealed for &Worker {}
     impl Sealed for &XMLDocument {}
     impl Sealed for &[&[&str]] {}
     impl Sealed for &[&str] {}
@@ -61622,31 +63834,23 @@ mod sealed {
     impl Sealed for AddEventListenerOptions<'_> {}
     impl Sealed for AddEventListenerOptionsOrBool<'_> {}
     impl Sealed for AllowSharedBufferSource<'_> {}
+    impl Sealed for AudioSinkOptions<'_> {}
     impl Sealed for BlobOrMediaSource<'_> {}
     impl Sealed for BlobPart<'_> {}
     impl Sealed for BluetoothServiceUUID<'_> {}
     impl Sealed for BodyInit<'_> {}
     impl Sealed for BoolOrImportNodeOptions<'_> {}
-    impl Sealed for BoolOrMediaTrackConstraints<'_> {}
+    impl Sealed for BoolOrMediaTrackConstraints {}
     impl Sealed for BoolOrNumberOrStr<'_> {}
     impl Sealed for BoolOrScrollIntoViewOptions<'_> {}
-    impl Sealed for BoolOrStr<'_> {}
     impl Sealed for Box<dyn FnMut() -> Promise<Option<&'static Unknown>>> {}
     impl Sealed for BufferSource<'_> {}
     impl Sealed for CSSNumberish<'_> {}
+    impl Sealed for CSSNumericValueOrCSSKeywordValue<'_> {}
     impl Sealed for CSSPerspectiveValue<'_> {}
     impl Sealed for CSSStyleValueOrStr<'_> {}
+    impl Sealed for CSSUnparsedSegment<'_> {}
     impl Sealed for CanvasImageSource<'_> {}
-    impl Sealed for ConstrainBoolean {}
-    impl Sealed for ConstrainBooleanOrDOMString<'_> {}
-    impl Sealed for ConstrainBooleanOrDOMStringParameters<'_> {}
-    impl Sealed for ConstrainBooleanParameters {}
-    impl Sealed for ConstrainDOMString<'_> {}
-    impl Sealed for ConstrainDOMStringParameters<'_> {}
-    impl Sealed for ConstrainDouble {}
-    impl Sealed for ConstrainDoubleRange {}
-    impl Sealed for ConstrainULong {}
-    impl Sealed for ConstrainULongRange {}
     impl Sealed for DOMPointInit {}
     impl Sealed for DocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr<'_> {}
     impl Sealed for ElementCreationOptions<'_> {}
@@ -61679,41 +63883,45 @@ mod sealed {
     impl Sealed for IDBObjectStoreOrIDBIndex<'_> {}
     impl Sealed for IDBObjectStoreOrIDBIndexOrIDBCursor<'_> {}
     impl Sealed for ImageBitmapSource<'_> {}
+    impl Sealed for ImageBufferSource<'_> {}
     impl Sealed for ImportNodeOptions<'_> {}
-    impl Sealed for JsonWebKey<'_> {}
+    impl Sealed for JsonWebKey {}
     impl Sealed for KeyframeAnimationOptions<'_> {}
+    impl Sealed for KeyframeEffectOptions<'_> {}
     impl Sealed for LineAndPositionSetting<'_> {}
     impl Sealed for ListOrStr<'_> {}
     impl Sealed for ListenerOrStartViewTransitionOptions<'_> {}
     impl Sealed for MediaListOrStr<'_> {}
     impl Sealed for MediaProvider<'_> {}
     impl Sealed for MediaStreamTrackOrStr<'_> {}
-    impl Sealed for MediaTrackConstraints<'_> {}
+    impl Sealed for MediaTrackConstraints {}
     impl Sealed for MessageEventSource<'_> {}
     impl Sealed for NodeOrStr<'_> {}
     impl Sealed for NumberOrDOMPointInit {}
     impl Sealed for NumberOrDOMPointInitOrList<'_> {}
     impl Sealed for NumberOrKeyframeAnimationOptions<'_> {}
+    impl Sealed for NumberOrKeyframeEffectOptions<'_> {}
     impl Sealed for NumberOrList<'_> {}
     impl Sealed for NumberOrStr<'_> {}
     impl Sealed for Path2DOrStr<'_> {}
     impl Sealed for PerformanceMeasureOptions<'_> {}
     impl Sealed for RequestInfo<'_> {}
     impl Sealed for SanitizerAttribute<'_> {}
-    impl Sealed for SanitizerAttributeNamespace<'_> {}
-    impl Sealed for SanitizerConfig<'_> {}
+    impl Sealed for SanitizerAttributeNamespace {}
+    impl Sealed for SanitizerConfig {}
     impl Sealed for SanitizerConfigOrStr<'_> {}
     impl Sealed for SanitizerElement<'_> {}
-    impl Sealed for SanitizerElementNamespace<'_> {}
-    impl Sealed for SanitizerElementNamespaceWithAttributes<'_> {}
+    impl Sealed for SanitizerElementNamespace {}
+    impl Sealed for SanitizerElementNamespaceWithAttributes {}
     impl Sealed for SanitizerElementWithAttributes<'_> {}
     impl Sealed for SanitizerOrSanitizerConfigOrStr<'_> {}
     impl Sealed for SanitizerPI<'_> {}
-    impl Sealed for SanitizerProcessingInstruction<'_> {}
+    impl Sealed for SanitizerProcessingInstruction {}
     impl Sealed for ScrollIntoViewOptions<'_> {}
     impl Sealed for SharedWorkerOptions<'_> {}
     impl Sealed for StartViewTransitionOptions<'_> {}
     impl Sealed for StrOrArrayBuffer<'_> {}
+    impl Sealed for StrOrAudioSinkOptions<'_> {}
     impl Sealed for StrOrCanvasGradientOrCanvasPattern<'_> {}
     impl Sealed for StrOrElementCreationOptions<'_> {}
     impl Sealed for StrOrList<'_> {}
@@ -61721,15 +63929,18 @@ mod sealed {
     impl Sealed for StrOrPerformanceMeasureOptions<'_> {}
     impl Sealed for StrOrSharedWorkerOptions<'_> {}
     impl Sealed for StrOrTaskSignal<'_> {}
+    impl Sealed for StrOrUint8ArrayOrArrayBuffer<'_> {}
     impl Sealed for TexImageSource<'_> {}
     impl Sealed for TogglePopoverOptions<'_> {}
     impl Sealed for TogglePopoverOptionsOrBool<'_> {}
-    impl Sealed for URLPatternInit<'_> {}
+    impl Sealed for URLPatternInit {}
     impl Sealed for URLPatternInput<'_> {}
     impl Sealed for Uint8ArrayOrArrayBufferOrBlobOrStr<'_> {}
     impl Sealed for Uint8ArrayOrArrayBufferOrJsonWebKey<'_> {}
     impl Sealed for Uint8ArrayOrArrayBufferOrStr<'_> {}
     impl Sealed for VibratePattern<'_> {}
+    impl Sealed for WorkerAndParameters<'_> {}
+    impl Sealed for WorkerOrWorkerAndParameters<'_> {}
     impl Sealed for WriteParams<'_> {}
     impl Sealed for bool {}
     impl Sealed for f64 {}

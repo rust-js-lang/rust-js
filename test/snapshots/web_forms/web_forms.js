@@ -67,4 +67,8 @@ export function handlers(button) {
   button.onclick = null;
   return set;
 }
+
+export function socket(url) {
+  return new WebSocket(url);
+}
 //# sourceMappingURL=web_forms.js.map
