@@ -69,7 +69,7 @@ function app(name: string): string {
   writeFileSync(cargo, readFileSync(cargo, "utf8").replaceAll('path = "../../', `path = "${root}/`) + "\n[package.metadata.rust-js]\ndeclarations = true\n");
   const page = join(dir, "app/page.rs");
   writeFileSync(page, readFileSync(page, "utf8")
-    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod counter;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n\nuse next::image::Image;")
+    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod counter;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/_app.rs\"]\nmod app;\n\nuse next::image::Image;")
     .replace('{" file."}\n                    </h1>', '{" file."}\n                    </h1>\n                    <counter::Counter />'));
   writeFileSync(join(dir, "app/counter.rs"), counter("Count "));
   // The Pages Router's route, as react.dev's pages read it: compiled, not
@@ -83,6 +83,19 @@ function app(name: string): string {
   // and not found for one, as react.dev's errors page is.
   mkdirSync(join(dir, "pages/codes"), { recursive: true });
   writeFileSync(join(dir, "pages/codes/[code].rs"), code);
+  // The Pages Router's app, which renders each page in it, as react.dev's
+  // _app does.
+  writeFileSync(join(dir, "pages/_app.rs"), `#![allow(non_snake_case)]
+
+use next::app::AppProps;
+use react::{JSX, jsx};
+
+pub fn MyApp(AppProps { component: Component, page_props: pageProps, .. }: AppProps) -> JSX::Element {
+    jsx! { <main className="app"><Component {...pageProps} /></main> }
+}
+
+js::export_default!(MyApp);
+`);
   return dir;
 }
 
@@ -255,7 +268,8 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   // The Pages Router's page, built for each path but the one not found.
   const built = (path: string) => existsSync(join(dir, `.next/server/pages/codes/${path}.html`));
   expect([built("0"), built("1"), built("2")]).toEqual([false, true, true]);
-  expect(readFileSync(join(dir, ".next/server/pages/codes/1.html"), "utf8")).toContain("Code <!-- -->1");
+  expect(readFileSync(join(dir, ".next/server/pages/codes/1.html"), "utf8")).toContain('<main class="app"><p>Code <!-- -->1</p></main>');
+  expect(readFileSync(join(dir, "pages/_app.jsx"), "utf8")).toContain("export function MyApp({ Component, pageProps }) {");
   // Its props as written, an anchor's first, which the props it names
   // replace (ADR 0203, 0208).
   expect(readFileSync(join(dir, "app/about/page.jsx"), "utf8")).toContain('<Link href="/" {...anchor} className={classes} aria-label="Home page">');

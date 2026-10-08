@@ -63,3 +63,10 @@ string an untagged enum can't be yet (ADR 0214).
 - **They're `next`'s types**, as the react crate's are `@types/react`'s.
 - **It's tested**: the Next.js example builds a page for the paths it
   gives, each with its props, and none for the one not found.
+
+## Since
+
+- **`next/app`'s `AppProps`**, what `pages/_app` is given: its
+  `Component`, an `ElementType`, and its `pageProps`, `&Unknown` unless
+  said, as react.dev's _app renders `<Component {...pageProps} />`. The
+  Next.js example's app wraps each page in a `<main>`.

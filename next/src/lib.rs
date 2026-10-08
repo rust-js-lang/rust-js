@@ -19,6 +19,7 @@
 // A binding's parameters are its JS function's: its body never runs.
 #![allow(non_snake_case, unused_variables)]
 
+pub mod app;
 mod data_fetching;
 pub mod head;
 pub mod image;
