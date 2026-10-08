@@ -1204,10 +1204,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let (test, kept) = super::options::filtered(value)?;
         out.pop();
-        let test = match self.is_string_like(field.pattern.ty) && non_empty(&test, &kept) {
-            true => kept.clone(),
-            false => test,
-        };
         Some((test, kept, &field.pattern))
     }
 
@@ -1973,7 +1969,6 @@ fn says_kind(test: &Expr, subject: &Expr, kind: &Expr) -> bool {
 /// is `value.a === "x"`.
 fn read_in_place(mut test: Expr, out: &mut Vec<Stmt>, start: usize) -> Expr {
     loop {
-        test = fold_head(test);
         let Some(Stmt {
             kind: StmtKind::Const(name, value),
             ..
@@ -2007,57 +2002,6 @@ fn reads_first(e: &Expr, name: &str) -> bool {
         | K::Call(first, _) => reads_first(first, name),
         _ => false,
     }
-}
-
-/// `(u != null ? u : undefined) === "x"`, at the head of `&&`s, is `u ===
-/// "x"`, and its `typeof` `u`'s: neither `null` nor `undefined` is `"x"`,
-/// nor a `"string"`. `Option::map` of what gives back its argument,
-/// `classify`, makes it.
-fn fold_head(e: Expr) -> Expr {
-    use js::ExprKind as K;
-    let span = e.span;
-    let either = |e: &Expr| match &e.kind {
-        K::Cond(test, value, none) => match (&test.kind, &none.kind) {
-            (K::Binary(Op::LooseNe, u, null), K::Undefined)
-                if matches!(null.kind, K::Null)
-                    && matches!((&u.kind, &value.kind), (K::Var(a), K::Var(b)) if a == b) =>
-            {
-                Some((**value).clone())
-            }
-            _ => None,
-        },
-        _ => None,
-    };
-    let folded = match e.kind {
-        K::Binary(Op::And, first, rest) => K::Binary(Op::And, Box::new(fold_head(*first)), rest),
-        K::Binary(Op::Eq, left, right) if matches!(right.kind, K::Str(_) | K::Num(_) | K::Bool(_)) => {
-            match either(&left) {
-                Some(u) => K::Binary(Op::Eq, Box::new(u), right),
-                None => match left.kind {
-                    K::Unary(UnaryOp::Typeof, of) if matches!(&right.kind, K::Str(kind) if kind != "undefined" && kind != "object") =>
-                    {
-                        let of = either(&of).map(Box::new).unwrap_or(of);
-                        K::Binary(Op::Eq, Box::new(Expr::unary(UnaryOp::Typeof, *of)), right)
-                    }
-                    kind => K::Binary(Op::Eq, Box::new(Expr { kind, span: left.span }), right),
-                },
-            }
-        }
-        kind => kind,
-    };
-    Expr { kind: folded, span }
-}
-
-/// Is `test` `x != null && x.length !== 0` of `x`?
-fn non_empty(test: &Expr, x: &Expr) -> bool {
-    use js::ExprKind as K;
-    let K::Binary(Op::And, present, length) = &test.kind else {
-        return false;
-    };
-    matches!(&present.kind, K::Binary(Op::LooseNe, v, null) if same_place(v, x) && matches!(null.kind, K::Null))
-        && matches!(&length.kind, K::Binary(Op::Ne, len, zero)
-            if matches!(&len.kind, K::Member(v, field) if field == "length" && same_place(v, x))
-                && zero.as_int() == Some(0))
 }
 
 /// `a && b`, but `b` alone where it's `typeof x === "string"` after `x !=

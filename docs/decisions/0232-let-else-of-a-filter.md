@@ -43,3 +43,10 @@ if (!href) {
 - **It's tested**: a compiler test checks the JS of a `let`-`else` of
   `&str`, an `if let` of `String`, a `Vec`'s, and of a variable that
   changes after, and runs each, empty, missing and given.
+
+## Since
+
+- **Text's test is `!href` with no rule of its own.** A string's
+  `is_empty()` is `!s`, and `href != null && !!href` is `!!href` (both
+  ADR 0266), so the filter's own test already reads as the
+  truthiness this ADR put in its place, which went.

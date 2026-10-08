@@ -55,3 +55,11 @@ if (child.type.mdxName === "inlineCode") {
   `Some(Kind::String(_))`, runs each on strings, numbers, `null` and
   missing properties, and runs a `matches!` of a temporary with a
   destructor.
+
+## Since
+
+- **`(u != null ? u : undefined) === "x"` isn't folded any more: nothing
+  makes it.** `value.map(classify)` is `value` itself since a `this`
+  binding's `map` is the option (ADR 0264), so `classify(value) ==
+  Kind::String("x")` reads `value === "x"` without the fold, which no test
+  could tell from its absence, and went.
