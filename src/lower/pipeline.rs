@@ -161,7 +161,7 @@ pub fn lower_crate<'tcx>(
     let no_body = rustc_middle::thir::Thir::new(rustc_middle::thir::BodyTy::Const(tcx.types.unit));
     // Lower each body once. Cross-module references have symbolic names until
     // the link step knows exactly which imports and local names survive.
-    let mut lowered_items = Vec::new();
+    let mut lowered_items: Vec<(DefId, super::LoweredFn)> = Vec::new();
     let foreign = super::library::Foreign::new(tcx, dependencies);
     let no_drops = RefCell::new(HashMap::new());
     let drop_checks = RefCell::new(Vec::new());
@@ -227,6 +227,16 @@ pub fn lower_crate<'tcx>(
         let (def_id, body) = work[next];
         next += 1;
         let module = fns[&def_id].module;
+        // Locals must never shadow a function or an import of this file; an
+        // `on_load!` body's are at its top, beside an earlier body's, which
+        // they mustn't be either (ADR 0267).
+        let mut names = taken[&module].clone();
+        if super::bindings::is_on_load(tcx, def_id) {
+            let earlier = lowered_items
+                .iter()
+                .filter(|(id, _)| super::bindings::is_on_load(tcx, *id) && fns[id].module == module);
+            names.extend(earlier.flat_map(|(_, item)| item.function.body.iter().flat_map(declared)));
+        }
         let mut cx = FnCx {
             tcx,
             typing_env: ty::TypingEnv::post_analysis(tcx, def_id),
@@ -239,8 +249,7 @@ pub fn lower_crate<'tcx>(
             body_facts: body.map_or(&no_facts, |body| &body.facts),
             module,
             locals: Locals::default(),
-            // Locals must never shadow a function or an import of this file.
-            names: taken[&module].clone(),
+            names,
             module_names: &taken[&module],
             labels: HashSet::new(),
             loops: Vec::new(),
@@ -631,5 +640,14 @@ fn module_variable(value: Expr, plain: Option<bool>) -> Expr {
             held.clone()
         }
         _ => value,
+    }
+}
+
+/// The variables a statement declares where it is: `const x`, `let [a, b]`.
+fn declared(statement: &js::Stmt) -> Vec<String> {
+    match &statement.kind {
+        StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name.clone()],
+        StmtKind::Destructure { pattern, .. } => pattern.names().into_iter().map(str::to_owned).collect(),
+        _ => Vec::new(),
     }
 }

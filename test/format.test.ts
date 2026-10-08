@@ -676,3 +676,50 @@ pub fn body(response: &webapi::Response) -> Promise<Option<&'static Unknown>> {
   expect(lib.renamed('{"name":"old","n":2}')).toBe("{name:'new',n:2}");
   expect([lib.shown(() => 1), lib.shown({ f: Math.max })]).toEqual(["fn", "{f:fn}"]);
 });
+
+// ADR 0267: each `on_load!` body is a function's, its locals its own: two
+// that bind one name are two variables at the module's top.
+test("on_load bodies that bind one name each keep their own", async () => {
+  const dir = fixture("on-load-scopes");
+  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
+    #[link_name = "globalThis.onLoadSeen"]
+    safe fn seen(n: u32);
+}
+fn pair() -> (u32, u32) {
+    (1, 0)
+}
+js::on_load! {
+    let (x, y) = pair();
+    seen(x + y);
+}
+js::on_load! {
+    let x = 2;
+    seen(x);
+}
+pub fn ready() -> u32 {
+    other::three()
+}
+pub mod other {
+    js::on_load! {
+        let x = 4;
+        super::seen(x);
+    }
+    pub fn three() -> u32 {
+        3
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("const [x, y] = pair();\nglobalThis.onLoadSeen((x + y) >>> 0);\nconst x$1 = 2;\nglobalThis.onLoadSeen(x$1);");
+  // Another module's top is its own.
+  expect(readFileSync(join(dir, "other.js"), "utf8")).toContain("const x = 4;");
+  const seen: number[] = [];
+  const globals = globalThis as typeof globalThis & { onLoadSeen?: (n: number) => void };
+  globals.onLoadSeen = (n) => seen.push(n);
+  try {
+    expect((await import(join(dir, "lib.js"))).ready()).toBe(3);
+    expect(seen).toEqual([4, 1, 2]);
+  } finally {
+    delete globals.onLoadSeen;
+  }
+});

@@ -51,3 +51,7 @@ import("../MDX/CodeBlock/CodeBlock");
   statements out, and its helper unimported. A link test calls another
   module's function from a closure, beside a local of that function's name;
   mutations leave their names unreserved, or their imports unresolved.
+- Each body's locals are its own, as a function's are: a later body's is
+  none of an earlier one's in its module, `x$1` beside `x`, as none is a
+  function's or an import's of it. (Amended: two that bound one name
+  declared it twice at the module's top, which JS won't load.)

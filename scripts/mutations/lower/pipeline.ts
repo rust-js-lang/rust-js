@@ -3,6 +3,30 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "on-load-earlier-names-unreserved",
+    breaks: "two `on_load!` bodies that bind one name declare it twice at the module's top, which JS won't load",
+    file: "src/lower/pipeline.rs",
+    find: "        if super::bindings::is_on_load(tcx, def_id) {",
+    replace: "        if false {",
+    tests: ["test/format.test.ts", "-t", "on_load bodies that bind one name"],
+  },
+  {
+    name: "on-load-names-of-any-module",
+    breaks: "an `on_load!` body's names are renamed for another module's body, `x$1` where `x` is free",
+    file: "src/lower/pipeline.rs",
+    find: ".filter(|(id, _)| super::bindings::is_on_load(tcx, *id) && fns[id].module == module);",
+    replace: ".filter(|(id, _)| super::bindings::is_on_load(tcx, *id));",
+    tests: ["test/format.test.ts", "-t", "on_load bodies that bind one name"],
+  },
+  {
+    name: "on-load-destructured-names-unreserved",
+    breaks: "a name an earlier `on_load!` body destructures is declared again by a later one",
+    file: "src/lower/pipeline.rs",
+    find: "        StmtKind::Destructure { pattern, .. } => pattern.names().into_iter().map(str::to_owned).collect(),\n",
+    replace: "",
+    tests: ["test/format.test.ts", "-t", "on_load bodies that bind one name"],
+  },
+  {
     name: "library-codec-unused",
     breaks: "a library lowers only the codecs it uses itself, so its consumers can't read its types",
     file: "src/lower/pipeline.rs",
