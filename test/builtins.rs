@@ -40,6 +40,12 @@ pub fn wrapped(children: Option<&'static Unknown>) -> &'static Unknown {
     js::unknown_of(Wrapper { children })
 }
 
+/// Text that may be none, as a JS value of any shape: the option itself,
+/// as react.dev's createFileMap shows a code block's children.
+pub fn as_unknown(text: Option<&str>) -> Option<&Unknown> {
+    text.map(js::unknown)
+}
+
 /// A dictionary made empty, then filled, as react.dev's createFileMap makes
 /// Sandpack's files.
 pub fn filled() -> &'static js::Dict<u32> {

@@ -100,8 +100,8 @@ export const mutations: Mutation[] = [
     name: "own-name-map-called",
     breaks: "an option mapped by a function giving each variant its own name, `section.map(Section::as_str)`, is a conditional of a call, not `section`",
     file: "src/lower/options.rs",
-    find: "                    && self.gives_own_name(function)\n",
-    replace: "                    && false\n",
+    find: "                    && (self.gives_own_name(function)\n",
+    replace: "                    && (false && self.gives_own_name(function)\n",
     tests: ["test/compiler.test.ts", "-t", "enum's own names"],
   },
   {
@@ -127,5 +127,13 @@ export const mutations: Mutation[] = [
     find: "                            && let Some(chain) = optional_chain(&option, b, p)\n",
     replace: "                            && let Some(chain) = optional_chain(&option, b, p).filter(|_| false)\n",
     tests: ["test/compiler.test.ts", "-t", "mapped to a property is an optional chain"],
+  },
+  {
+    name: "map-of-value-itself-called",
+    breaks: "`text.map(js::unknown)` is `text != null ? text : undefined`, not `text`",
+    file: "src/lower/options.rs",
+    find: "                        || super::bindings::is_binding(self.tcx, function)\n",
+    replace: "                        || false && super::bindings::is_binding(self.tcx, function)\n",
+    tests: ["test/compiler.test.ts", "-t", "string functions are JS's"],
   },
 ];

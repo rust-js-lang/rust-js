@@ -25,6 +25,10 @@ export function wrapped(children) {
   return { children };
 }
 
+export function as_unknown(text) {
+  return text;
+}
+
 export function filled() {
   const files = {};
   files["/App.js"] = 1;

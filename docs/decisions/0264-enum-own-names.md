@@ -55,3 +55,8 @@ and a call, as before.
 - **It's tested**: a compiler test names a section both ways, its own name
   and another; mutations keep the conditional, the returns, the call, and
   take another name for its own.
+
+## Since
+
+- **So is `o.map(f)` of a binding that's the value itself**, `text.map(js::unknown)`
+  is `text`.

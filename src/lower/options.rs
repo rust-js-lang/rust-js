@@ -147,8 +147,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (option, f) = (arg(), arg());
                 // By a function giving each variant its own name, the option
                 // itself: `section.map(Section::as_str)` is `section` (ADR 0264).
+                // So by a binding that's the value itself, `map(js::unknown)`.
                 if let Some((function, _)) = super::fn_def(self.thir[args[1]].ty)
-                    && self.gives_own_name(function)
+                    && (self.gives_own_name(function)
+                        || super::bindings::is_binding(self.tcx, function)
+                            && matches!(
+                                super::bindings::js_form(self.tcx, function),
+                                super::bindings::JsForm::This
+                            ))
+                    && !self.boxed_payload(generic_args.type_at(0))
+                    && !self.boxed_payload(generic_args.type_at(1))
                 {
                     return Ok(Some(option));
                 }
