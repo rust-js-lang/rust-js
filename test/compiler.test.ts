@@ -1146,6 +1146,35 @@ pub fn later(then: &'static dyn Fn()) {
   }
 });
 
+// ADR 0272: Node's modules, as @types/node types them, are the JS a person
+// writes in Node: an import of `fs`'s, and `process`, a global, as
+// react.dev's errors page reads its Markdown in `getStaticProps`.
+test("node's modules are imported, and its globals called", async () => {
+  const dir = fixture("node");
+  run(["node/build.sh", "-o", join(dir, "libnode.rmeta")]);
+  writeFileSync(join(dir, "lib.rs"), `use node::{BufferEncoding, fs, process};
+
+pub fn read(path: &str) -> String {
+    match fs::read_file_sync(path, BufferEncoding::Utf8) {
+        Ok(text) => text,
+        Err(_) => "missing".to_string(),
+    }
+}
+
+pub fn here() -> String {
+    process::cwd()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('import { readFileSync } from "fs";');
+  expect(js).toContain('readFileSync(path, "utf8")');
+  expect(js).toContain("return process.cwd();");
+  writeFileSync(join(dir, "note.md"), "# Note");
+  const { read, here } = await import(join(dir, "lib.js"));
+  expect([read(join(dir, "note.md")), read(join(dir, "none.md")), here()]).toEqual(["# Note", "missing", process.cwd()]);
+});
+
 // ADR 0214: an untagged enum only made, never told apart, may have variants
 // of one kind, as Next.js's `getStaticProps` gives `{ props }` or
 // `{ notFound: true }`, react.dev's errors page's: each is its payload.

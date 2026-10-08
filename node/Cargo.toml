@@ -1,0 +1,22 @@
+# Node.js for rust-js (ADR 0272): its modules, bound as any JS is, for a
+# program's code that runs in Node, a Next.js page's `getStaticProps` say.
+[package]
+name = "rust-js-node"
+version = "0.0.1"
+edition = "2024"
+description = "Node.js for rust-js: its modules, typed as @types/node types them"
+license = "MIT"
+repository = "https://github.com/rust-js-lang/rust-js"
+readme = "README.md"
+include = ["src", "README.md"]
+
+[lib]
+name = "node"
+path = "src/lib.rs"
+
+[dependencies]
+js = { package = "rust-js-builtins", path = "../builtins", version = "~0.0.1" }
+
+# rust-js compiles with `--cfg=rust_js` (ADR 0113): a `cfg` Cargo checks for.
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(rust_js)"] }
