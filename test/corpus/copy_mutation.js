@@ -56,7 +56,7 @@ function main() {
   console.log(
     `[${nested.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${snapshot.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
   );
-  const tagged = { n: 1, unit: undefined };
+  const tagged = { n: 1 };
   const copy$1 = duplicate(tagged, { clone: (value) => value });
   copy$1.n = (copy$1.n + 1) | 0;
   console.log(`${tagged.n} ${copy$1.n}`);

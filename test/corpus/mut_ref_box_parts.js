@@ -54,7 +54,7 @@ function main() {
   const o$2 = { value: n };
   generic(o$2, { eq: (a, b) => a === b }, { fmt: (value) => String(value) });
   n = o$2.value;
-  generic({ value: undefined }, { eq: (a, b) => a === b }, { fmt: (value) => String(value) });
+  generic({}, { eq: (a, b) => a === b }, { fmt: (value) => String(value) });
   let [a, b] = [2, 7];
   const tmp = n;
   const o$3 = { value: a };

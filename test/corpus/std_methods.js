@@ -60,7 +60,7 @@ function main() {
   console.log(
     `${taken == null ? "None" : `Some(${taken})`} ${a == null ? "None" : `Some(${a})`} ${old$2 == null ? "None" : `Some(${old$2})`} ${b == null ? "None" : `Some(${b})`} ${first == null ? "None" : `Some(${$debugStr(first)})`} ${second == null ? "None" : `Some(${$debugStr(second)})`} ${slot == null ? "None" : `Some(${$debugStr(slot)})`}`,
   );
-  const stack = { head: undefined };
+  const stack = {};
   Stack.push(stack, 1);
   Stack.push(stack, 2);
   const arg = Stack.pop(stack);

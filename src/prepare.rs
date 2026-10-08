@@ -377,6 +377,12 @@ fn expr(e: &mut Expr) {
         }
         ExprKind::Array(items) => items.iter_mut().for_each(expr),
         ExprKind::Object(props) => {
+            // A field that's `undefined`, a `None` say, is no key, `{ code }`,
+            // as JS leaves it out: what reads it reads `undefined` either way
+            // (ADR 0280). Not after a spread, whose field it would then be.
+            if !props.iter().any(|p| matches!(p, Prop::Spread(_))) {
+                props.retain(|p| !matches!(p, Prop::Field(_, value) if matches!(value.kind, ExprKind::Undefined)));
+            }
             for prop in props {
                 let (Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Spread(value)) = prop;
                 expr(value);

@@ -1321,14 +1321,14 @@ pub fn moved(p: Props) -> Props {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('return { code: null, message: "m", title: undefined };');
-  expect(js).toContain("return { code: code ?? null, message: null, title: undefined };");
-  expect(js).toContain("return { code, message, title: undefined };");
+  expect(js).toContain('return { code: null, message: "m" };');
+  expect(js).toContain("return { code: code ?? null, message: null };");
+  expect(js).toContain("return { code, message };");
   // A conditional of `Some` or `None` is one of the value or `null`.
-  expect(js).toContain("return { code: code || null, message: null, title: undefined };");
-  expect(js).toContain('return { code: p.code, message: p.title ?? "", title: undefined };');
+  expect(js).toContain("return { code: code || null, message: null };");
+  expect(js).toContain('return { code: p.code, message: p.title ?? "" };');
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.given(undefined), lib.given("1")]).toEqual([{ code: null, message: null, title: undefined }, { code: "1", message: null, title: undefined }]);
+  expect([lib.given(undefined), lib.given("1")]).toEqual([{ code: null, message: null }, { code: "1", message: null }]);
   expect(JSON.stringify(lib.passed(lib.given(undefined)))).toBe('{"code":null,"message":null}');
   expect([lib.chosen("1").code, lib.chosen("").code, lib.chosen(undefined).code]).toEqual(["1", null, null]);
 });
@@ -1445,6 +1445,63 @@ pub fn first_id(parent: &Element) -> Option<String> {
   expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("return parent.firstElementChild?.id;");
   const { first_id } = await import(join(dir, "lib.js"));
   expect([first_id({ firstElementChild: { id: "a" } }), first_id({ firstElementChild: null })]).toEqual(["a", undefined]);
+});
+
+// ADR 0280: a field made of a literal `None` is no key, `{ code }`, as
+// hand-written JS leaves it out, and as react.dev's sandboxes give Sandpack
+// `{ code, hidden, active }`. Rust can't tell: it reads a key that isn't
+// there as `None`, compares the two alike, and hashes them alike.
+test("a field of a literal None is left out", async () => {
+  const dir = fixture("none-fields");
+  writeFileSync(join(dir, "lib.rs"), `use std::collections::HashSet;
+
+#[derive(PartialEq, Eq, Hash, Clone, Debug, Default)]
+pub struct File {
+    pub code: String,
+    pub hidden: Option<bool>,
+    pub read_only: Option<bool>,
+}
+
+pub fn literal(code: &str) -> File {
+    File { code: code.to_string(), hidden: Some(true), read_only: None }
+}
+
+pub fn given(code: &str, read_only: Option<bool>) -> File {
+    File { code: code.to_string(), hidden: Some(true), read_only }
+}
+
+pub fn defaulted(code: &str) -> File {
+    File { code: code.to_string(), ..Default::default() }
+}
+
+#[derive(Clone, Copy)]
+pub struct Flags {
+    pub on: Option<bool>,
+    pub off: Option<bool>,
+}
+
+pub fn reset(flags: &Flags) -> Flags {
+    Flags { on: None, ..*flags }
+}
+
+pub fn alike(code: &str) -> (bool, usize, String) {
+    let a = literal(code);
+    let b = given(code, None);
+    let set: HashSet<File> = [a.clone(), b.clone()].into_iter().collect();
+    (a == b, set.len(), format!("{a:?}"))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return { code, hidden: true };");
+  const lib = await import(join(dir, "lib.js"));
+  expect(Object.keys(lib.literal("a"))).toEqual(["code", "hidden"]);
+  expect(Object.keys(lib.defaulted("a"))).toEqual(["code"]);
+  expect(lib.given("a", undefined).hidden).toBe(true);
+  // Not after a spread, whose field it would be.
+  expect(js).toContain("return { ...flags, on: undefined };");
+  expect(lib.reset({ on: true, off: false })).toEqual({ on: undefined, off: false });
+  expect(lib.alike("a")).toEqual([true, 1, 'File { code: "a", hidden: Some(true), read_only: None }']);
 });
 
 // ADR 0214: an untagged enum only made, never told apart, may have variants

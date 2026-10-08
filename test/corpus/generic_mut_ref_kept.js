@@ -49,7 +49,7 @@ function first(v) {
 }
 
 function main() {
-  const list = { value: 1, next: { value: 2, next: undefined } };
+  const list = { value: 1, next: { value: 2 } };
   const refs = to_refs(list);
   console.log(
     `[${refs.map((item) => String(item.value)).join(", ")}] ${$eq(refs, [{ value: 1 }, { value: 2 }])}`,

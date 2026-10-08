@@ -12,7 +12,9 @@ function $key(value) {
       if (Array.isArray(value)) {
         return "[" + value.map($key).join(",") + "]";
       }
-      return "{" + Object.keys(value).sort().map((k) => JSON.stringify(k) + ":" + $key(value[k])).join(",") + "}";
+      // A field that's `None`, there or left out, is no part of it (ADR 0280).
+      const keys = Object.keys(value).filter((k) => value[k] != null);
+      return "{" + keys.sort().map((k) => JSON.stringify(k) + ":" + $key(value[k])).join(",") + "}";
     default:
       return String(value);
   }

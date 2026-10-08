@@ -250,12 +250,12 @@ export function iterations() {
 export function generic_iterations() {
   return [
     $iterator(
-      { item: undefined, times: 3 },
+      { times: 3 },
       (iterator) => repeatIterator_next(iterator, { clone: (value) => value }),
       true,
     ).toArray().length,
     $iterator(
-      { item: undefined, times: 2 },
+      { times: 2 },
       (iterator) => repeatIterator_next(iterator, { clone: (value) => value }),
       true,
     )

@@ -197,7 +197,7 @@ export function boxes() {
     text = out.value;
     n = count$2.value;
   }
-  const stats = { hits: 1, last: undefined };
+  const stats = { hits: 1 };
   const count$3 = { value: stats.hits };
   bump(count$3, 4);
   stats.hits = count$3.value;

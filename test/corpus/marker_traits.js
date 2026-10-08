@@ -13,7 +13,7 @@ function shared(value) {
 
 function main() {
   console.log(`${hit()} ${hit()} ${COUNTER.hits.value}`);
-  const handle = { id: 7, marker: undefined };
+  const handle = { id: 7 };
   console.log(`${shared(handle).id} ${shared(3)}`);
 }
 

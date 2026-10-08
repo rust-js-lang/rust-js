@@ -331,8 +331,9 @@ export function $eq(a, b) {
   if (Array.isArray(a)) {
     return Array.isArray(b) && a.length === b.length && a.every((x, i) => $eq(x, b[i]));
   }
-  const keys = Object.keys(a);
-  return keys.length === Object.keys(b).length && keys.every((k) => $eq(a[k], b[k]));
+  // A key one has and the other hasn't is a `None` the other left out (ADR 0280).
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  return [...keys].every((k) => $eq(a[k], b[k]));
 }
 
 // `left` and `right` are their `{:?}` strings already (ADR 0060).
@@ -452,7 +453,9 @@ export function $key(value) {
       if (Array.isArray(value)) {
         return "[" + value.map($key).join(",") + "]";
       }
-      return "{" + Object.keys(value).sort().map((k) => JSON.stringify(k) + ":" + $key(value[k])).join(",") + "}";
+      // A field that's `None`, there or left out, is no part of it (ADR 0280).
+      const keys = Object.keys(value).filter((k) => value[k] != null);
+      return "{" + keys.sort().map((k) => JSON.stringify(k) + ":" + $key(value[k])).join(",") + "}";
     default:
       return String(value);
   }

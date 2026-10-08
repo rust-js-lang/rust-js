@@ -63,7 +63,7 @@ function main() {
   const kept = stamp(undefined, 1n, "kept", loudZone());
   try {
     console.log(`kept ${kept.at}`);
-    const source = { value: undefined, impl: loudSource() };
+    const source = { impl: loudSource() };
     take(source, { make: (object) => object.impl.make(object.value), $dropItem: noisyDrop_drop });
     take(undefined, loudSource());
   } finally {

@@ -33,7 +33,7 @@ const Parser = {
   expect(parser, token, what) {
     const match = Parser.next(parser);
     if (match != null && $eq(match, token)) {
-      return { TAG: "Ok", _0: undefined };
+      return { TAG: "Ok" };
     }
     return { TAG: "Err", _0: { TAG: "Expected", _0: what } };
   },
@@ -262,7 +262,7 @@ const Calculator = {
       }
       const value$1 = result$2._0;
       calculator.vars.set(name, value$1);
-      return { TAG: "Ok", _0: undefined };
+      return { TAG: "Ok" };
     }
     const parser$1 = { tokens, at: 0 };
     const result$3 = Parser.expr(parser$1);

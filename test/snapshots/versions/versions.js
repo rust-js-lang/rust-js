@@ -44,10 +44,7 @@ function largest(items, TPartialOrd, TCopy) {
 
 export function tour() {
   let out = "";
-  const pets = [
-    { value: undefined, impl: dogDescribe() },
-    { value: { lives: 9 }, impl: catDescribe() },
-  ];
+  const pets = [{ impl: dogDescribe() }, { value: { lives: 9 }, impl: catDescribe() }];
   for (const p of pets) {
     out += `${p.impl.name(p.value)} ${p.impl.describe(p.value)} ${p.impl.shout(p.value)}\n`;
   }

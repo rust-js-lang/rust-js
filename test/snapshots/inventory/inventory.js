@@ -31,7 +31,7 @@ export const Store = {
     } else {
       store.log.push(`audit at ${$toFixed(store.revenue, 2)}`);
     }
-    return { TAG: "Ok", _0: undefined };
+    return { TAG: "Ok" };
   },
 };
 

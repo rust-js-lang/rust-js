@@ -18,7 +18,6 @@ export function sample() {
     order_id: 7,
     item_name: 'pen "blue"',
     qty: 3,
-    note: undefined,
     price: 2.5,
     tags: ["a", "b\n"],
     paid: true,
@@ -33,7 +32,6 @@ export function sample() {
   return {
     id: [5],
     at: [-1, 2],
-    unit: undefined,
     len: { value: 1 },
     shapes: [
       "Dot",

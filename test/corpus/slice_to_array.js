@@ -6,23 +6,23 @@ function main() {
   const bytes = [1, 2, 3, 4, 5];
   const slice = $slice(bytes, 0, 3);
   const fixed = $unwrapOk(
-    slice.length === 3 ? { TAG: "Ok", _0: slice } : { TAG: "Err", _0: undefined },
+    slice.length === 3 ? { TAG: "Ok", _0: slice } : { TAG: "Err" },
     undefined,
     (e) => "TryFromSliceError(())",
   );
   const slice$1 = $slice(bytes, 1, 3);
   const owned = $unwrapOk(
-    slice$1.length === 2 ? { TAG: "Ok", _0: slice$1 } : { TAG: "Err", _0: undefined },
+    slice$1.length === 2 ? { TAG: "Ok", _0: slice$1 } : { TAG: "Err" },
     undefined,
     (e$1) => "TryFromSliceError(())",
   );
   const slice$2 = $slice(bytes, 0, 3);
-  const wrong = slice$2.length === 4 ? { TAG: "Ok", _0: slice$2 } : { TAG: "Err", _0: undefined };
+  const wrong = slice$2.length === 4 ? { TAG: "Ok", _0: slice$2 } : { TAG: "Err" };
   console.log(
     `[${fixed.map((item) => String(item)).join(", ")}] [${owned.map((item) => String(item)).join(", ")}] ${wrong.TAG === "Ok" ? `Ok([${wrong._0.map((item) => String(item)).join(", ")}])` : "Err(TryFromSliceError(()))"} ${wrong.TAG !== "Ok"}`,
   );
   const slice$3 = $slice(bytes, 0);
-  const match = slice$3.length === 2 ? { TAG: "Ok", _0: slice$3 } : { TAG: "Err", _0: undefined };
+  const match = slice$3.length === 2 ? { TAG: "Ok", _0: slice$3 } : { TAG: "Err" };
   if (match.TAG === "Ok") {
     console.log(`[${match._0.map((item) => String(item)).join(", ")}]`);
   } else {
@@ -30,7 +30,7 @@ function main() {
   }
   const words = ["a", "b"];
   const pair = $unwrapOk(
-    words.length === 2 ? { TAG: "Ok", _0: words } : { TAG: "Err", _0: undefined },
+    words.length === 2 ? { TAG: "Ok", _0: words } : { TAG: "Err" },
     undefined,
     (e$2) => "TryFromSliceError(())",
   );

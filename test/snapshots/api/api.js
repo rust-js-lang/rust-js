@@ -581,7 +581,7 @@ export function report() {
   } else {
     out += `err ${$displayJsonError(match$22._0)}\n`;
   }
-  const page = { items: [{ name: "z", age: 9 }], next_item: undefined, total: 1 };
+  const page = { items: [{ name: "z", age: 9 }], total: 1 };
   out += $unwrapOk(
     $toJson(
       page,
@@ -690,7 +690,7 @@ export function report() {
   const n = borrowed("7", $json.u8);
   const m = borrowed("x", $json.u8);
   out += `${n == null ? "None" : `Some(${n})`} ${m == null ? "None" : `Some(${m})`}\n`;
-  out += encode({ data: undefined, ok: true }, (value$51, json$51) => {
+  out += encode({ ok: true }, (value$51, json$51) => {
     responseSerialize_serialize(value$51, json$51, (value$52, json$52) => {
       json$52.null();
     });

@@ -9,6 +9,7 @@ function $eq(a, b) {
   if (Array.isArray(a)) {
     return Array.isArray(b) && a.length === b.length && a.every((x, i) => $eq(x, b[i]));
   }
-  const keys = Object.keys(a);
-  return keys.length === Object.keys(b).length && keys.every((k) => $eq(a[k], b[k]));
+  // A key one has and the other hasn't is a `None` the other left out (ADR 0280).
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  return [...keys].every((k) => $eq(a[k], b[k]));
 }

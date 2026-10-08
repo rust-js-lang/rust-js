@@ -9,8 +9,7 @@ const TABLE = [
   ["triple", triple],
 ];
 const MAYBE = triple;
-const GREETER = { value: undefined, impl: enGreet() };
-
+const GREETER = { impl: enGreet() };
 const SHOWN = { value: 42, impl: { fmt: String } };
 
 const ADD = (x) => (x + 10) | 0;

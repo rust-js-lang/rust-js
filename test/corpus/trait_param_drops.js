@@ -31,7 +31,7 @@ function main() {
     noisyDrop_drop,
   );
   console.log(`${sinkTakeA_take(undefined, [8], noisyDrop_drop)}`);
-  const box = { value: undefined, impl: sinkTakeA(noisyDrop_drop) };
+  const box = { impl: sinkTakeA(noisyDrop_drop) };
   let box$live = true;
   let tmp;
   let box$1;
@@ -40,7 +40,7 @@ function main() {
   let all;
   try {
     tmp = box;
-    box$1 = { value: undefined, impl: keepTakeA(noisyDrop_drop) };
+    box$1 = { impl: keepTakeA(noisyDrop_drop) };
     box$1$live = true;
     try {
       arg = { value: [1], impl: wrapTakeNoisy({ default: () => 0 }) };

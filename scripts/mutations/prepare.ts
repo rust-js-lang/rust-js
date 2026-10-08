@@ -98,4 +98,20 @@ export const mutations: Mutation[] = [
     replace: "            && els.as_ref().is_some_and(|_| false)\n",
     tests: ["test/format.test.ts", "-t", "else of nothing"],
   },
+  {
+    name: "undefined-fields-kept",
+    breaks: "`{ code, hidden: true, read_only: undefined }`, a `None`'s key",
+    file: "src/prepare.rs",
+    find: "            if !props.iter().any(|p| matches!(p, Prop::Spread(_))) {\n",
+    replace: "            if false {\n",
+    tests: ["test/compiler.test.ts", "-t", "literal None is left out"],
+  },
+  {
+    name: "undefined-after-spread-dropped",
+    breaks: "`{ ...base, read_only: undefined }` is `{ ...base }`, base's `Some`",
+    file: "src/prepare.rs",
+    find: "            if !props.iter().any(|p| matches!(p, Prop::Spread(_))) {\n",
+    replace: "            if true {\n",
+    tests: ["test/compiler.test.ts", "-t", "literal None is left out"],
+  },
 ];

@@ -58,22 +58,7 @@ export async function load(url) {
 }
 
 export async function post(url, body) {
-  const init = {
-    method: "POST",
-    headers: undefined,
-    body,
-    referrer: undefined,
-    referrerPolicy: undefined,
-    mode: undefined,
-    credentials: undefined,
-    cache: undefined,
-    redirect: undefined,
-    integrity: undefined,
-    keepalive: undefined,
-    signal: undefined,
-    duplex: undefined,
-    priority: undefined,
-  };
+  const init = { method: "POST", body };
   return await (await window.fetch(url, init)).text();
 }
 
@@ -82,12 +67,7 @@ export function listen_until_aborted() {
   const target = new EventTarget();
   const controller = new AbortController();
   const counted = count;
-  const options = {
-    capture: undefined,
-    passive: undefined,
-    once: undefined,
-    signal: controller.signal,
-  };
+  const options = { signal: controller.signal };
   target.addEventListener(
     "ping",
     () => {

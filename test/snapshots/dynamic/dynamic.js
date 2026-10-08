@@ -614,7 +614,7 @@ export function report() {
   } else {
     out += `err ${$displayJsonError(match$43._0)}\n`;
   }
-  const user = { name: "r", age: 9, tags: ["t"], extra: undefined, initial: "z" };
+  const user = { name: "r", age: 9, tags: ["t"], initial: "z" };
   const value$2 = $unwrapOk(
     $toJsonValue(user, userSerialize_serialize),
     undefined,
