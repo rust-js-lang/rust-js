@@ -694,7 +694,12 @@ impl<'a> Cx<'a> {
             }
             js::Pattern::Object(fields, rest) => {
                 let fields = fields.iter().map(|(field, var, default)| {
-                    let key = PropertyKey::new_static_identifier(SPAN, self.name(field), b);
+                    // A field that isn't a JS name, `data-platform`, is quoted.
+                    let key = if js_identifier(field) {
+                        PropertyKey::new_static_identifier(SPAN, self.name(field), b)
+                    } else {
+                        PropertyKey::new_string_literal(SPAN, self.name(field), None, b)
+                    };
                     // `{ size = "md" }`, where it's missing (ADR 0212).
                     let value = match default {
                         Some(default) => BindingPattern::new_assignment_pattern(SPAN, name(var), self.expr(default), b),
@@ -1096,9 +1101,7 @@ impl<'a> Cx<'a> {
                 let computed = name == "__proto__";
                 // A key that isn't a JS name, like a CSS custom property's
                 // `--gap`, is quoted.
-                let identifier = name.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_' || c == '$')
-                    && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '$');
-                let key = if computed || !identifier {
+                let key = if computed || !js_identifier(name) {
                     PropertyKey::new_string_literal(SPAN, self.name(name), None, b)
                 } else {
                     PropertyKey::new_static_identifier(SPAN, self.name(name), b)
@@ -1347,4 +1350,10 @@ fn leaves(stmts: &[js::Stmt]) -> bool {
         Some(StmtKind::If(_, then, Some(els))) => leaves(then) && leaves(els),
         _ => false,
     }
+}
+
+/// Is `name` a JS name, which a key may be as it is?
+fn js_identifier(name: &str) -> bool {
+    name.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_' || c == '$')
+        && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '$')
 }

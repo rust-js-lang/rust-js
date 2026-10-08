@@ -3033,6 +3033,28 @@ pub fn List(items: &'static [ItemProps<'static>]) -> JSX::Element {
   expect(renderToStaticMarkup(List([{ label: "a" }, { label: "" }, { label: "b" }]))).toBe("<ul><li>a</li><li>b</li></ul>");
 });
 
+// A prop named as no JS variable can be, `data-platform`, destructured by
+// its name quoted, as react.dev's TopNav gives its `Kbd` one.
+test("a destructured prop of a hyphenated name is quoted", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+
+pub struct KbdProps<'a> {
+    #[rust_js::name = "data-platform"]
+    pub data_platform: Option<&'a str>,
+}
+
+pub fn Kbd(KbdProps { data_platform }: KbdProps) -> JSX::Element {
+    jsx! { <kbd data-platform={data_platform}>{"K"}</kbd> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain('export function Kbd({ "data-platform": dataPlatform }) {');
+  const { Kbd } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(Kbd({ "data-platform": "mac" }))).toBe('<kbd data-platform="mac">K</kbd>');
+});
+
 // An element made once, a module's constant, rendered wherever it's read,
 // as react.dev's TopNav renders its icons: an element is never changed, so
 // it's copied as it is.

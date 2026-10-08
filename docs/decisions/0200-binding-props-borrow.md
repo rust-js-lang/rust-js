@@ -68,7 +68,8 @@ return (
   Next.js renders, `class="home link"` and `aria-label="Home page"`, and
   the JSX, `{...rest}`, no copy of it.
 
-## Costs
+## Since
 
-- **A field `rust_js::name` names with a `-` is tested as a binding's
-  only**: a component of the crate's own that reads one isn't.
+- **A component of the crate's own reads one by its name quoted**,
+  `function Kbd({ "data-platform": dataPlatform })`, as react.dev's TopNav
+  has it; a JSX test renders one, and a mutation prints the name bare.

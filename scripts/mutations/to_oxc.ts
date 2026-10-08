@@ -130,4 +130,12 @@ export const mutations: Mutation[] = [
     replace: "                (Some(default), true) => format!(\"{{ default as {default} }}\"),",
     tests: ["test/declarations.test.ts","-t","default export is imported as one"],
   },
+  {
+    name: "pattern-key-unquoted",
+    breaks: "a destructured field that isn't a JS name is bare, `{ data-platform: dataPlatform }`, which JS can't parse",
+    file: "src/to_oxc.rs",
+    find: "                    let key = if js_identifier(field) {",
+    replace: "                    let key = if true || js_identifier(field) {",
+    tests: ["test/jsx.test.ts", "-t", "hyphenated name is quoted"],
+  },
 ];
