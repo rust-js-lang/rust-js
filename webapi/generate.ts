@@ -15,7 +15,7 @@ import webrefElements from "@webref/elements";
 import elementsPackage from "@webref/elements/package.json" with { type: "json" };
 
 // The specs to read. Partial interfaces and mixins from these are merged in.
-const SPECS = ["dom", "html", "hr-time", "uievents", "pointerevents", "cssom", "cssom-view", "geometry", "fetch", "encoding", "wasm-js-api", "wasm-web-api", "xhr", "streams", "touch-events", "FileAPI", "clipboard-apis", "css-animations", "css-transitions", "SVG", "svg-paths", "svg-animations", "filter-effects", "css-masking", "intersection-observer"];
+const SPECS = ["dom", "html", "hr-time", "uievents", "pointerevents", "cssom", "cssom-view", "geometry", "fetch", "encoding", "wasm-js-api", "wasm-web-api", "xhr", "streams", "touch-events", "FileAPI", "clipboard-apis", "css-animations", "css-transitions", "SVG", "svg-paths", "svg-animations", "filter-effects", "css-masking", "intersection-observer", "url"];
 
 // The everyday DOM. Members that use any other interface are skipped.
 const INTERFACES = [
@@ -63,7 +63,7 @@ const INTERFACES = [
   // wasm-js-api: `WebAssembly.Module` and friends
   "Module", "Instance", "Memory",
   // FileAPI: raw data, a fetch's body or a download's
-  "Blob", "File",
+  "Blob", "File", "URL",
   // html, clipboard-apis: the browser, and what's copied
   "Navigator", "Clipboard", "ClipboardItem",
   // SVG, svg-animations, filter-effects, css-masking: each SVG element, and
@@ -606,8 +606,15 @@ function functionsOf(i: Interface): Fn[] {
         fns.push({ name: `set_${snakeWords(m.name!)}`, jsName: `set ${m.name}`, params: [...self, `value: ${value}`], result: "()", doc });
       }
     } else if (m.type === "operation") {
-      if (!m.name || m.special === "static") {
-        skip(m.special || "unnamed");
+      if (!m.name) {
+        skip("unnamed");
+        continue;
+      }
+      // A static method is the class's, `URL.createObjectURL(blob)`: unless
+      // an instance's method has its name, `Response.json`, which keeps it.
+      const isStatic = m.special === "static";
+      if (isStatic && i.members.some(({ member: o }) => o.type === "operation" && o.name === m.name && o.special !== "static")) {
+        skip("static clash");
         continue;
       }
       const result = rustType(m.idlType!, "result");
@@ -633,7 +640,8 @@ function functionsOf(i: Interface): Fn[] {
       const name = NAMED[`${i.name}.${m.name}`] ?? snake(m.name);
       const base = lead.length > 0 ? `${name}_with_${lead.join("_and_")}` : name;
       for (const v of [requiredForm(base, sig), ...optionalForms(name, lead, sig, m.arguments ?? [])]) {
-        fns.push({ name: v.name, jsName: member(m.name), params: [...self, ...v.params], result: orNull(result, m.idlType!), doc });
+        const jsName = isStatic ? `${i.name}.${m.name}` : member(m.name);
+        fns.push({ name: v.name, jsName, params: isStatic ? v.params : [...self, ...v.params], result: orNull(result, m.idlType!), doc });
       }
     }
   }

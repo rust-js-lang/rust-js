@@ -206,3 +206,13 @@ which always passes `--extern webapi=..`.
 
 - **`history` is a global too**, the page's, as `document` is: react.dev's
   _app sets `history.scrollRestoration`.
+
+## Since
+
+- **A static method is the class's**, a function of its module with no
+  `this`: `url::create_object_url(blob)` is `URL.createObjectURL(blob)`,
+  `html_script_element::supports("importmap")` is
+  `HTMLScriptElement.supports("importmap")`, as react.dev's DownloadButton
+  uses them. They were skipped. One an instance method's name has,
+  `Response.json`, still is: the instance's keeps the name. `URL` is in the
+  crate, from the URL spec. Case N.

@@ -824,6 +824,8 @@ test("the webapi crate's bindings become plain JS", async () => {
   expect(js).toContain('const blob = new Blob([text, "!"]);\n  return [blob, navigator.clipboard.write(items)];');
   // A canvas's size, its setters and getters (HTMLCanvasElement).
   expect(js).toContain('const canvas = document.createElement("canvas");\n  canvas.width = 320;\n  canvas.height = 200;\n  return [canvas.width, canvas.height];');
+  // A static method is the class's: `URL.createObjectURL(blob)`.
+  expect(js).toContain('const url = URL.createObjectURL(blob);\n  URL.revokeObjectURL(url);\n  return [HTMLScriptElement.supports("importmap"), url];');
   const { round_trip } = await import(join(target, "web_forms.js"));
   // "é" is two bytes in UTF-8.
   expect(round_trip("héllo")).toEqual([6, "héllo"]);

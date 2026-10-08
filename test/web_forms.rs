@@ -57,3 +57,12 @@ pub fn canvas_size() -> (u32, u32) {
     webapi::html_canvas_element::set_height(canvas, 200);
     (webapi::html_canvas_element::width(canvas), webapi::html_canvas_element::height(canvas))
 }
+
+/// A static method, the class's own, as react.dev's DownloadButton asks
+/// whether a script may be an import map and makes a URL of a blob:
+/// `HTMLScriptElement.supports("importmap")`, `URL.createObjectURL(blob)`.
+pub fn statics(blob: &webapi::Blob) -> (bool, String) {
+    let url = webapi::url::create_object_url(blob);
+    webapi::url::revoke_object_url(&url);
+    (webapi::html_script_element::supports("importmap"), url)
+}
