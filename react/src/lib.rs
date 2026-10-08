@@ -1380,6 +1380,17 @@ pub struct LazyExoticComponent<P>(PhantomData<JsObject>, PhantomData<P>);
 /// [`import_module`] loads it.
 pub struct Module<P>(PhantomData<JsObject>, PhantomData<P>);
 
+impl<P> Module<P> {
+    /// A module of `component` as its default, `{ default: component }`: what
+    /// [`lazy`] loads of one whose component isn't its default,
+    /// `import(..).then((mod) => ({ default: mod.Named }))`.
+    #[cfg_attr(rust_js, rust_js::link_name = "{default}")]
+    #[allow(unused_variables)]
+    pub fn of<M>(component: impl ComponentType<P, M>) -> Module<P> {
+        unreachable!()
+    }
+}
+
 /// [`lazy`](https://react.dev/reference/react/lazy), in a `thread_local!`:
 /// `lazy(|| import_module("./Chart.jsx"))`. It suspends while it loads, so
 /// render it inside `<Suspense fallback={...}>...</Suspense>`.

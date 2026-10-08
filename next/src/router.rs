@@ -6,6 +6,13 @@ use core::marker::PhantomData;
 
 use js::JsObject;
 
+unsafe extern "Rust" {
+    /// [`Router`](https://nextjs.org/docs/pages/api-reference/functions/use-router#router-object),
+    /// next/router's default export: the router, outside a component.
+    #[link_name = "next/router#default"]
+    pub safe static Router: &'static NextRouter;
+}
+
 #[cfg_attr(rust_js, rust_js::link_name = "next/router#useRouter")]
 pub fn use_router() -> &'static NextRouter {
     unreachable!()

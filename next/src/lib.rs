@@ -1,6 +1,6 @@
 //! [Next.js](https://nextjs.org) for rust-js (ADR 0192): what an app's
 //! routes, `app/page.rs` beside `app/layout.js`, use of it. Its components,
-//! `next/image`, `next/legacy/image` and `next/link`, and its navigation,
+//! `next/head`, `next/image`, `next/legacy/image` and `next/link`, and its navigation,
 //! `next/navigation`.
 //!
 //! ```rust,ignore
@@ -19,6 +19,7 @@
 // A binding's parameters are its JS function's: its body never runs.
 #![allow(non_snake_case, unused_variables)]
 
+pub mod head;
 pub mod image;
 pub mod legacy;
 pub mod link;

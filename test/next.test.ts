@@ -96,6 +96,11 @@ fn label(home: bool) -> &'static str {
     if home { "Home" } else { "Away" }
 }
 
+// The page's head, by next/head, as react.dev's Search preconnects there.
+pub fn Preconnect() -> JSX::Element {
+    jsx! { <next::head::Head><link rel="preconnect" href="https://example.net" /></next::head::Head> }
+}
+
 // Its classes made before its children, as JSX makes them.
 pub fn Linked() -> JSX::Element {
     let anchor = use_ref::<Option<&'static HTMLAnchorElement>>(None);
@@ -105,7 +110,12 @@ pub fn Linked() -> JSX::Element {
 
 // A handler of the router's events, given on and taken off by the same
 // function, as react.dev's usePendingRoute has them.
-const routeEvents = `pub fn use_route_events() {
+const routeEvents = `// The singleton router, Next.js's default export of next/router.
+pub fn go(url: &str) {
+    next::router::Router.push(url);
+}
+
+pub fn use_route_events() {
     let events = next::router::use_router().events();
     react::use_effect(
         move || {
@@ -160,7 +170,9 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   expect(readFileSync(join(dir, "app/about/page.jsx"), "utf8")).toContain('import Link from "next/link";');
   expect(readFileSync(join(dir, "app/linked.jsx"), "utf8")).toContain('<Link href="/" ref={anchor} title="Home" className={classes(true)} passHref>\n      {label(true)}');
   const routePath = readFileSync(join(dir, "app/route_path.js"), "utf8");
-  expect([routePath.includes('import { useRouter } from "next/router";'), routePath.includes("return useRouter().asPath;")]).toEqual([true, true]);
+  expect(routePath.includes("return useRouter().asPath;")).toBe(true);
+  expect([routePath.includes('import Router, { useRouter } from "next/router";'), routePath.includes("Router.push(url);")]).toEqual([true, true]);
+  expect(readFileSync(join(dir, "app/linked.jsx"), "utf8")).toContain('import Head from "next/head";');
   expect([routePath.includes("const events = useRouter().events;"), routePath.includes('events.on("routeChangeStart", started);'), routePath.includes('events.off("routeChangeStart", started)')]).toEqual([true, true, true]);
   // The Server Component's page is rendered at build time, the counter in it.
   expect(readFileSync(join(dir, ".next/server/app/index.html"), "utf8")).toContain("Count <!-- -->0");

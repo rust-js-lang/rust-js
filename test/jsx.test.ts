@@ -3027,3 +3027,38 @@ pub fn Tags(labels: Vec<&'static str>) -> JSX::Element {
   const { Tags } = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(Tags(["a", ""]))).toBe("<p><i>some</i><i>none</i></p>");
 });
+
+// A module whose component isn't its default, lazy-loaded as one, as
+// react.dev's Search loads DocSearch's modal: `import(..).then((mod) =>
+// ({ default: mod.DocSearchModal }))`, by `Promise::then_resolve` and
+// `Module::of`.
+test("a module's named component is loaded as a module's default", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use core::marker::PhantomData;
+use js::{JsObject, Promise};
+use react::{JSX, Module};
+
+pub struct LabelProps<'a> {
+    pub text: &'a str,
+}
+
+pub struct Labels(PhantomData<JsObject>);
+
+unsafe extern "Rust" {
+    #[link_name = "import"]
+    safe fn import_labels(specifier: &str) -> Promise<&'static Labels>;
+    #[link_name = "get Label"]
+    safe fn label_of(this: &Labels) -> fn(LabelProps) -> JSX::Element;
+}
+
+pub fn load() -> Promise<Module<LabelProps<'static>>> {
+    import_labels("./labels.js").then_resolve(|r#mod| Module::of(label_of(r#mod)))
+}
+`, { "labels.js": 'export function Label({ text }) { return text; }\n' });
+  run([...args.slice(0, -2), "--extern", `js=${join(target, "libjs.rmeta")}`, ...args.slice(-2)]);
+  const jsx = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(jsx).toContain('return import("./labels.js").then((mod) => ({ default: mod.Label }));');
+  const lib = await import(join(dir, "lib.js"));
+  const labels = await import(join(dir, "labels.js"));
+  expect((await lib.load()).default).toBe(labels.Label);
+});
