@@ -25,6 +25,18 @@ interop and tooling. The first production app is an intermediate milestone.
   evaluation order, side effects, copying, overflow, and errors. Differences
   from native Rust must be deliberate, documented, and tested. Readability
   does not justify accidental behavior changes.
+- **Decide a disagreement by what the program can observe**
+  ([ADR 0262](docs/decisions/0262-when-rust-and-js-disagree.md)). Where Rust
+  and JavaScript differ:
+  - the program can't observe it: take JavaScript's, and say why;
+  - it can, but only where it's rare and harmless: take JavaScript's, and
+    list where under the ADR's Consequences;
+  - results would change: keep Rust's, paid for in output (`>>> 0`,
+    `$byteLen`);
+  - Rust's can't be kept: a compile error, never silent drift.
+
+  The program's meaning is rustc's: never make wrong Rust work in
+  JavaScript for nicer output. Every decision states which case it's in.
 - **Reject unsupported features clearly.** Report useful compiler errors;
   never silently approximate behavior or publish partial output on failure.
 - **Make interop fundamental.** Browser APIs, React, npm, Vite, and JavaScript
