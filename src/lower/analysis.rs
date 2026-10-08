@@ -247,16 +247,6 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         uses.imported.entry(export).or_default();
     }
 
-    // Each thread-local's `init` function: lowered like any function, its
-    // body is the variable's value.
-    let thread_local_inits: HashMap<LocalDefId, LocalDefId> = bodies
-        .iter()
-        .filter(|body| tcx.def_kind(body.def_id) == DefKind::Fn)
-        .filter_map(|body| Some((body.def_id, in_thread_local(tcx, body.def_id)?)))
-        .collect();
-
-    let plain_locals = plain_locals::plain_thread_locals(tcx, all_bodies, thread_local_inits.values().copied());
-
     // `const` items (ADR 0031) and statics (ADR 0096), with the values rustc
     // has computed. One in a function goes beside it, in its module.
     let consts: Vec<LocalDefId> = tcx
@@ -274,6 +264,24 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             _ => false,
         })
         .collect();
+
+    // Each thread-local's `init` function: lowered like any function, its
+    // body is the variable's value. Or, of a `const { .. }` one, the `const`
+    // in its block, whose value is.
+    let thread_local_inits: HashMap<LocalDefId, LocalDefId> = bodies
+        .iter()
+        .map(|body| body.def_id)
+        .filter(|&d| tcx.def_kind(d) == DefKind::Fn)
+        .chain(
+            consts
+                .iter()
+                .copied()
+                .filter(|&d| matches!(tcx.def_kind(d), DefKind::Const { .. })),
+        )
+        .filter_map(|d| Some((d, in_thread_local(tcx, d)?)))
+        .collect();
+
+    let plain_locals = plain_locals::plain_thread_locals(tcx, all_bodies, thread_local_inits.values().copied());
 
     // A derived `Serialize`'s `serialize` and `Deserialize`'s `deserialize`,
     // which rust-js writes (ADRs 0077 and 0078).

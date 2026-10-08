@@ -57,3 +57,11 @@ COUNT = (COUNT + 1) >>> 0;
   `RefCell`'s `Vec`, beside a public one and one another module reads;
   mutations box them all, unbox the other module's, and make a set one a
   `const`. The thread-locals example and its snapshot say each.
+
+## Since
+
+- **A `const { .. }` thread-local is one too**, by its own name: std puts
+  its value in a `const` of its block, `__RUST_STD_INTERNAL_INIT`, which was
+  written by that name while the thread-local was read by its own, as
+  react.dev's errors page's `cachedErrorCodes` found. And one that starts
+  `None`, set later, is `let SEEN;`, as JS starts a variable `undefined`.

@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "if false && reexports && seen_modules.insert(module)",
     tests: ["test/compiler.test.ts", "-t", "only pub uses"],
   },
+  {
+    name: "const-thread-local-init-unseen",
+    breaks: "a `const { .. }` thread-local's value is a `const` of std's name, `__RUST_STD_INTERNAL_INIT`, which nothing reads",
+    file: "src/lower/analysis.rs",
+    find: "                .filter(|&d| matches!(tcx.def_kind(d), DefKind::Const { .. })),\n",
+    replace: "                .filter(|&d| matches!(tcx.def_kind(d), DefKind::Const { .. }) && false),\n",
+    tests: ["test/compiler.test.ts", "-t", "only read and set is the module's let"],
+  },
 ];

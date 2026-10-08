@@ -1066,6 +1066,14 @@ thread_local! {
     static COUNT: Cell<u32> = Cell::new(0);
     static LOG: RefCell<Vec<String>> = RefCell::new(Vec::new());
     pub static SHARED: Cell<u32> = Cell::new(0);
+    static SEEN: Cell<Option<u32>> = const { Cell::new(None) };
+}
+
+pub fn seen(n: u32) -> u32 {
+    if SEEN.get().is_none() {
+        SEEN.set(Some(n));
+    }
+    SEEN.get().unwrap_or(0)
 }
 
 pub fn bump() -> u32 {
@@ -1109,6 +1117,12 @@ pub fn tick() {
   expect(js).toContain("COUNT = (COUNT + 1) >>> 0;");
   expect(js).not.toContain("COUNT.value");
   expect(js).not.toContain("LOG.value");
+  // One made by a \`const { .. }\` is too, by its own name.
+  expect(js).not.toContain("__RUST_STD_INTERNAL_INIT");
+  expect(js).toContain("let SEEN;\n");
+  expect(js).toContain("  if (SEEN == null) {\n    SEEN = n;\n  }");
+  const { seen } = await import(join(dir, "lib.js"));
+  expect([seen(3), seen(4)]).toEqual([3, 3]);
   const { bump, note, shared, ticked } = await import(join(dir, "lib.js"));
   expect([bump(), bump(), note("a"), note("b"), shared(), shared(), ticked()]).toEqual([1, 2, 1, 2, 2, 4, 1]);
 });

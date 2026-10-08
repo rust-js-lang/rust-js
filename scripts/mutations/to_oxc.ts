@@ -154,4 +154,12 @@ export const mutations: Mutation[] = [
     replace: "    fn test(&self, e: &js::Expr) -> Expression<'a> {\n        if false && let",
     tests: ["test/compiler.test.ts", "-t", "tested as JS tests it"],
   },
+  {
+    name: "let-undefined-written",
+    breaks: "a module's variable set later is `let SEEN = undefined;`, not `let SEEN;`",
+    file: "src/to_oxc.rs",
+    find: "            (ExprKind::Undefined, true) => None,\n",
+    replace: "",
+    tests: ["test/compiler.test.ts", "-t", "only read and set is the module's let"],
+  },
 ];

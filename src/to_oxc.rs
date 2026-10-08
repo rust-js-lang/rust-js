@@ -470,7 +470,12 @@ impl<'a> Cx<'a> {
         let b = &self.b;
         let sp = span(c.span);
         let id = BindingPattern::new_binding_identifier(SPAN, self.name(&c.name), b);
-        let declarator = VariableDeclarator::new(sp, id, None, Some(self.expr(&c.value)), false, b);
+        // `let cached;`: a variable set later starts `undefined` by itself.
+        let init = match (&c.value.kind, c.mutable) {
+            (ExprKind::Undefined, true) => None,
+            _ => Some(self.expr(&c.value)),
+        };
+        let declarator = VariableDeclarator::new(sp, id, None, init, false, b);
         let kind = if c.mutable {
             VariableDeclarationKind::Let
         } else {

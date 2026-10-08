@@ -122,4 +122,20 @@ export const mutations: Mutation[] = [
     replace: "                located: false,\n",
     tests: ["test/compiler.test.ts", "-t", "path. module's JS is beside"],
   },
+  {
+    name: "const-thread-local-own-name",
+    breaks: "a `const { .. }` thread-local's value is named by std's `const`, not the thread-local",
+    file: "src/lower/pipeline.rs",
+    find: "        let key = thread_local_inits.get(&def_id).copied();\n",
+    replace: "        let key = thread_local_inits.get(&def_id).copied().filter(|_| false);\n",
+    tests: ["test/compiler.test.ts", "-t", "only read and set is the module's let"],
+  },
+  {
+    name: "const-thread-local-boxed",
+    breaks: "a `const { .. }` thread-local only read and set keeps its cell's `{ value }`, which `SEEN == null` never is",
+    file: "src/lower/pipeline.rs",
+    find: "(key, module_variable(value, plain), plain == Some(true))",
+    replace: "(key, value, plain == Some(true))",
+    tests: ["test/compiler.test.ts", "-t", "only read and set is the module's let"],
+  },
 ];

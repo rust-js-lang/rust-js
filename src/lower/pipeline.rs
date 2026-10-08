@@ -134,13 +134,23 @@ pub fn lower_crate<'tcx>(
             failed = true;
             continue;
         };
-        let info = &fns[&def_id.to_def_id()];
-        let span = span.source_callsite();
+        // A `const { .. }` thread-local's value, the `const` in its block, is
+        // its variable, by its name.
+        let key = thread_local_inits.get(&def_id).copied();
+        let (named, value, mutable) = match key {
+            Some(key) => {
+                let plain = plain_locals.get(&key).copied();
+                (key, module_variable(value, plain), plain == Some(true))
+            }
+            None => (def_id, value, false),
+        };
+        let info = &fns[&named.to_def_id()];
+        let span = tcx.def_span(named).source_callsite();
         const_items.entry(info.module).or_default().push(js::Const {
             name: info.name.clone(),
             value,
-            mutable: false,
-            export: tcx.visibility(def_id).is_public() || called_from_elsewhere.contains(&def_id.to_def_id()),
+            mutable,
+            export: tcx.visibility(named).is_public() || called_from_elsewhere.contains(&named.to_def_id()),
             span: sources.span(span),
         });
     }
@@ -338,19 +348,8 @@ pub fn lower_crate<'tcx>(
                 };
                 let info = &fns[&key.to_def_id()];
                 let span = tcx.def_span(key).source_callsite();
-                // One only read and set is its module's variable of what its
-                // cell holds, a `let` if it's set (ADR 0270).
                 let plain = plain_locals.get(&key).copied();
-                let value = match value.kind {
-                    js::ExprKind::Object(ref props)
-                        if plain.is_some()
-                            && let [js::Prop::Field(field, held)] = props.as_slice()
-                            && field == "value" =>
-                    {
-                        held.clone()
-                    }
-                    _ => value,
-                };
+                let value = module_variable(value, plain);
                 pass.local_consts.entry(info.module).or_default().push(js::Const {
                     name: info.name.clone(),
                     value,
@@ -602,4 +601,19 @@ fn reexports(
         .into_iter()
         .map(|(path, named)| LoweredImport { path, named })
         .collect()
+}
+
+/// A thread-local's value, `{ value: 0 }`: of one only read and set, what
+/// its cell holds, its module's variable, a `let` if it's set (ADR 0270).
+fn module_variable(value: Expr, plain: Option<bool>) -> Expr {
+    match value.kind {
+        js::ExprKind::Object(ref props)
+            if plain.is_some()
+                && let [js::Prop::Field(field, held)] = props.as_slice()
+                && field == "value" =>
+        {
+            held.clone()
+        }
+        _ => value,
+    }
 }
