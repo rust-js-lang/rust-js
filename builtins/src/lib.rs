@@ -7,6 +7,10 @@
 //! It holds declarations only, so it's never compiled to JS: a program calls
 //! what it declares, and the calls become plain JS.
 
+// A JS method of several forms, `slice` and `slice_to_end`, is one link
+// name of several Rust signatures, as the webapi crate's are.
+#![allow(clashing_extern_declarations)]
+
 use core::marker::PhantomData;
 
 /// `import "./App.css";` in the module's JS, for what a module does when
