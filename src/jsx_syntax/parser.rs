@@ -420,7 +420,19 @@ impl Jsx<'_> {
             *value = bind(value.clone(), *at);
         }
         if let Some(value) = &mut spread {
-            *value = bind(value.clone(), span);
+            // `..*props`, a struct read through a reference: the reference
+            // is what's captured, and the base still read through it, which
+            // is a spread (ADR 0250).
+            let trees: Vec<TokenTree> = value.iter().cloned().collect();
+            *value = match trees.as_slice() {
+                [TokenTree::Token(star, spacing), rest @ ..] if star.kind == TokenKind::Star && !rest.is_empty() => {
+                    let reference = bind(TokenStream::new(rest.to_vec()), span);
+                    let mut read = vec![TokenTree::Token(star.clone(), *spacing)];
+                    read.extend(reference.iter().cloned());
+                    TokenStream::new(read)
+                }
+                _ => bind(value.clone(), span),
+            };
         }
         let children = if has_children { bind(children, span) } else { children };
         let mut key = None;

@@ -33,6 +33,9 @@ jsx! { <Panel wide={Some(true)} {..*props} /> }
 
 - **The spread is first, wherever the base is written**: in Rust the
   named fields win, and in JSX what's after does.
+- **A keyed one's too**: `jsx!` captures each prop to keep JSX's order
+  where its `key` comes first, and of `..*props` it captures the
+  reference, so the base is still read through it. (Amended.)
 - **A field that's copied as it's read**, a `Copy` struct the crate
   changes in place (ADR 0020), keeps each field read on its own.
 
@@ -41,4 +44,5 @@ jsx! { <Panel wide={Some(true)} {..*props} /> }
 - **It's the JS a person writes**, and every key of the props passes.
 - **It's tested**: a JSX test updates props through a reference, renders
   the field it names over the base's, and finds a key the type doesn't
-  name passed on. Mutations read each field, and put the spread last.
+  name passed on, keyed first too. Mutations read each field, put the
+  spread last, and capture the struct read, not its reference.

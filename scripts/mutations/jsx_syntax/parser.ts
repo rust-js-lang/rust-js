@@ -154,4 +154,12 @@ export const mutations: Mutation[] = [
     replace: "let tag = local &&",
     tests: ["test/jsx.test.ts", "-t", "function type is a tag"],
   },
+  {
+    name: "captured-base-copied",
+    breaks: "a keyed component's `{..*props}` is captured as the struct read, not its reference, so it's each field read, not `{...props}`",
+    file: "src/jsx_syntax/parser.rs",
+    find: "if star.kind == TokenKind::Star && !rest.is_empty() =>",
+    replace: "if false && star.kind == TokenKind::Star && !rest.is_empty() =>",
+    tests: ["test/jsx.test.ts", "-t", "updated from a reference are spread"],
+  },
 ];

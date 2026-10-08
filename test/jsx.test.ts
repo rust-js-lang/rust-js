@@ -2940,10 +2940,16 @@ pub fn Panel(PanelProps { title, wide }: PanelProps) -> JSX::Element {
 pub fn Again(props: &'static PanelProps<'static>) -> JSX::Element {
     jsx! { <Panel wide={Some(true)} {..*props} /> }
 }
+
+// Keyed first, its props captured in order: still the props spread.
+pub fn Keyed(props: &'static PanelProps<'static>) -> JSX::Element {
+    jsx! { <Panel key={props.title} wide={Some(true)} {..*props} /> }
+}
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain("<Panel {...props} wide />");
+  expect(jsx).toContain("<Panel {...props} wide key={props.title} />");
   const { Again } = await import(join(dir, "lib.jsx"));
   const tree = Again({ title: "t", wide: false, extra: 1 });
   expect(tree.props.extra).toBe(1);
