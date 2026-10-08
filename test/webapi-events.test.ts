@@ -34,6 +34,10 @@ test("event methods keep target types and retained callback lifetimes", () => {
     ['webapi::event_target::add_event_listener(button, Click, |_| {});', 'cannot find function `add_event_listener`'],
     ['button.add_listener(Click, |_| {});', 'no method named `add_listener`'],
     ['button.add_event_listener(Click, |e| webapi::event::prevent_default(e));', 'cannot find function `prevent_default`'],
+    // Removal finds the same function, so a closure made for it, a new one,
+    // never removes anything: only a shared callback, `listener(..)`'s, can.
+    ['button.remove_event_listener(Click, |_| {});', 'mismatched types'],
+    ['button.remove_event_listener_named("custom", |_| {});', 'mismatched types'],
   ]) {
     writeFileSync(source, `use webapi::{EventTargetExt, HTMLButtonElement, listener, PointerEvent, KeyboardEvent};
 use webapi::events::{Click, Keydown, Message};

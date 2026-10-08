@@ -134,3 +134,13 @@ also covers the new fixture in the normal compiler verification workflow.
   binding metadata on the native and browser-hosted compiler paths.
 - This changes no event delivery or `FnMut` reentrancy contract. The browser
   still owns dispatch; the shared callback factory preserves identity.
+
+## Since
+
+- **Removal takes a shared callback, `listener(..)`'s**, `&'static dyn
+  Fn(&Event)`, not any closure: removal finds the function added, and a
+  closure made for the call is a new one, which removes nothing, so
+  `button.remove_event_listener(Click, |_| {})` is a type error, not a call
+  that does nothing. The `_named` and `_with_options` forms too.
+- **Its browser test runs with the other browser tests**, after the rest of
+  the suite (`scripts/test.ts`): it opens a page per case in Chromium.

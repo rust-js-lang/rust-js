@@ -901,6 +901,9 @@ for (const names of [eventNames, tagNames, svgTagNames]) {
 const typed = (doc: string[], js: string, signature: string, visibility = "pub ") =>
   [...doc.map((d) => `    /// ${d}`), `    #[cfg_attr(rust_js, rust_js::link_name = ${JSON.stringify(js)})]`, "    // rust-js writes its JS: the body never runs, nor reads a parameter.", "    #[allow(unused_variables)]", `    ${visibility}fn ${signature} {`, `        unreachable!()`, `    }`].join("\n");
 const listener = "impl FnMut(&<Self as Listen<E>>::Event) + 'static";
+// Removal finds the function added, so it takes a shared one, `listener(..)`'s:
+// a closure made for the call is a new function, which removes nothing.
+const shared = "&'static dyn Fn(&<Self as Listen<E>>::Event)";
 const TYPED: Record<string, string[]> = {
   Document: [
     typed([`[MDN](${mdn("Document", "createElement")}): the element a tag is (ADR 0223),`, "`create_element(document, Button)` an `HTMLButtonElement`. Another name is", "`create_element_named`'s, an `Element`."], "createElement", `create_element<T: Tag>(this: &Document, tag: T) -> &'static <T as Tag>::Element`),
@@ -1096,17 +1099,18 @@ for (const options of [false, true]) {
   const removeOptions = options ? ", options: impl IntoEventListenerOptionsOrBool" : "";
   for (const [name, js, callback, extra] of [
     [`add_event_listener${suffix}`, "addEventListener", listener, addOptions],
-    [`remove_event_listener${suffix}`, "removeEventListener", listener, removeOptions],
+    [`remove_event_listener${suffix}`, "removeEventListener", shared, removeOptions],
   ]) {
     line(typed([`[MDN](${mdn("EventTarget", js)}). The event type comes from this receiver.`], js,
       `${name}<E>(&self, event: E, listener: ${callback}${extra}) where Self: Listen<E>`, ""));
     line();
   }
-  for (const [name, js, extra] of [
-    ["add", "addEventListener", addOptions], ["remove", "removeEventListener", removeOptions],
+  for (const [name, js, callback, extra] of [
+    ["add", "addEventListener", "impl FnMut(&Event) + 'static", addOptions],
+    ["remove", "removeEventListener", "&'static dyn Fn(&Event)", removeOptions],
   ]) {
     line(typed(["A custom name, with the base Event."], js,
-      `${name}_event_listener_named${suffix}(&self, name: &str, listener: impl FnMut(&Event) + 'static${extra})`, ""));
+      `${name}_event_listener_named${suffix}(&self, name: &str, listener: ${callback}${extra})`, ""));
     line();
   }
 }
