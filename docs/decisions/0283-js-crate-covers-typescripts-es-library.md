@@ -114,3 +114,13 @@ its own for, as TypeScript's ES2024 libs declare them; a test measures it.**
   `namespace Intl` ends at its own brace, a `new` after its doc comment is
   one, and an interface's members are those of what it extends too
   (`Intl.Locale`'s `region` is `LocaleOptions`'). 87.8% of 689.
+- **`Reflect` and `Proxy`**, every member, after TypeScript's; ReScript has
+  neither. Each is of a JS value of any shape, an `Unknown`, as `get` and
+  `set` are, a key a `PropertyKey`. A proxy is an `Unknown`, not its
+  target's type: its traps may give anything, which a Rust type's fields
+  wouldn't be. A `PropertyDescriptor` and a `ProxyHandler` are made empty,
+  `{}`, and given what's set, as JS tells what's left out from what's
+  `undefined` there: a descriptor's `writable` left out is the property's
+  as it was. `set_prototype_of`'s `None` is `null` (ADR 0275); a
+  `getPrototypeOf` trap gives an object, since a closure's `None` is
+  `undefined`, which JS throws of. 90.0%.
