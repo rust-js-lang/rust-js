@@ -99,4 +99,12 @@ export const mutations: Mutation[] = [
     replace: "                false\n",
     tests: ["test/jsx.test.ts", "-t", "ElementType, rendered as a tag"],
   },
+  {
+    name: "fn-param-copied",
+    breaks: "props holding an `F: Fn() + Copy` are kept whole, `param.next`, as if the function needed a copy of its own",
+    file: "src/lower/copies.rs",
+    find: "(self.is_unknown(ty) && !self.is_callable(ty))",
+    replace: "self.is_unknown(ty)",
+    tests: ["test/jsx.test.ts", "-t", "Fn type parameter"],
+  },
 ];

@@ -2861,3 +2861,29 @@ pub fn Message(text: &str) -> JSX::Element {
   const result = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(result.Message("see |https://x.dev| now"))).toBe('<b>see <a href="https://x.dev">https://x.dev</a> now<i>!</i></b>');
 });
+
+// A component generic in a callback, `F: Fn() + Copy`, takes its props apart
+// as any other, as react.dev's Challenge does: a copy of a JS function is
+// the function (ADR 0246).
+test("props of an Fn type parameter are destructured", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+
+pub struct NextProps<F: Fn() + Copy + 'static> {
+    pub total: usize,
+    pub next: F,
+}
+
+pub fn Next<F: Fn() + Copy + 'static>(NextProps { total, next }: NextProps<F>) -> JSX::Element {
+    jsx! { <button onClick={move |_| next()}>{total}</button> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("export function Next({ total, next }) {");
+  const { Next } = await import(join(dir, "lib.jsx"));
+  let clicked = 0;
+  const tree = Next({ total: 3, next: () => clicked++ });
+  tree.props.onClick();
+  expect([renderToStaticMarkup(tree), clicked]).toEqual(["<button>3</button>", 1]);
+});

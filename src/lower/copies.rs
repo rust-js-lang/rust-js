@@ -201,7 +201,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     pub(super) fn contains_mutated_uncached(&self, ty: Ty<'tcx>) -> bool {
-        self.is_unknown(ty)
+        // A type parameter may be anything changed in place, but a function's:
+        // a copy of a JS function is the function (ADR 0246).
+        (self.is_unknown(ty) && !self.is_callable(ty))
             || self.mutated_itself(ty)
             || match self.shape(ty) {
                 Shape::Object(fields) => fields.iter().any(|&(_, t)| self.contains_mutated(t)),
