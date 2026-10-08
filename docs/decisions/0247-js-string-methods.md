@@ -43,3 +43,10 @@ const label = isLead ? g.slice(0, -1).trim() : g;
 - **It's the JS a person writes**, and one declaration, not one each.
 - **It's tested**: a compiler test calls each on a string with an emoji
   and spaces around it, beside JS's own, and checks each is the method.
+
+## Since
+
+- **`split` and `split_by_reg_exp`** are JS's `text.split(..)`, by text and
+  by a pattern of no groups, as react.dev's pages take a path's query and
+  hash off, `asPath.split(/[\?\#]/)`, where each page declared its own. The
+  compiler test splits by both.

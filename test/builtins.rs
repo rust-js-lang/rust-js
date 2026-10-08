@@ -39,6 +39,12 @@ pub fn replaced_first(text: &str, from: &str, to: &str) -> String {
     string::replace(text, from, to)
 }
 
+/// JS's `split` of a string, by text and by a pattern of no groups, as
+/// react.dev's pages take a path's query and hash off, `/[\?\#]/`.
+pub fn split_parts(text: &str) -> (Vec<String>, Vec<String>) {
+    (string::split(text, ","), string::split_by_reg_exp(text, reg_exp::new(r"[,;]", "")))
+}
+
 /// Each UTF-16 code unit of `text`, by JS's `charAt`: an emoji's two halves.
 pub fn units(text: &str) -> Vec<String> {
     (0..string::length(text)).map(|i| string::char_at(text, i)).collect()

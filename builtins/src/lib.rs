@@ -482,9 +482,20 @@ pub mod string {
 
         /// [`text.replace(pattern, replacement)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/replace):
         /// its first `pattern` replaced, where Rust's `str::replace` replaces each;
-        /// `        /// [`text.trim()`]` in `replacement` is the match.
+        /// `$&` in `replacement` is the match.
         #[link_name = "replace"]
         pub safe fn replace(this: &str, pattern: &str, replacement: &str) -> String;
+
+        /// [`text.split(separator)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/split):
+        /// the text between each `separator`, an empty one each UTF-16 code unit.
+        #[link_name = "split"]
+        pub safe fn split(this: &str, separator: &str) -> Vec<String>;
+
+        /// [`text.split(pattern)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/split):
+        /// the text between each match of `pattern`, one of no groups: a group's
+        /// match is put between, which a binding a program declares types.
+        #[link_name = "split"]
+        pub safe fn split_by_reg_exp(this: &str, pattern: &super::RegExp) -> Vec<String>;
 
         /// [`text.trim()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/trim):
         /// without JS's white space and line ends at either end, which aren't
