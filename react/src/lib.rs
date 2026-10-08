@@ -445,6 +445,8 @@ impl<'a> From<&'a str> for Booleanish<'a> {
 pub trait Key {}
 
 impl Key for &str {}
+/// A JS value of any shape, as a key read from JSON is.
+impl Key for Unknown {}
 impl Key for String {}
 impl Key for i32 {}
 impl Key for u32 {}
@@ -1110,6 +1112,24 @@ impl Tag for ElementType {}
 // where it's a function or a string, on JS's one thread: a `static`'s
 // table may hold one, as react.dev's `variantMap` does.
 unsafe impl Sync for ElementType {}
+
+impl ElementType {
+    /// A JS value as what JSX renders, a tag's name or a component, as
+    /// react.dev's errors page reads one from JSON: the value itself,
+    /// unchecked.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn from_unknown(this: &Unknown) -> ElementType {
+        unreachable!()
+    }
+}
+
+unsafe extern "Rust" {
+    /// [`Fragment`](https://react.dev/reference/react/Fragment) as a value,
+    /// an [`ElementType`]: what a tag read at run time may be.
+    #[link_name = "react#Fragment"]
+    pub safe static FRAGMENT: ElementType;
+}
 
 /// A tag, or a component of an element's props, as an [`ElementType`]:
 /// the same value. A `const fn`, so a `static`'s table holds one, as

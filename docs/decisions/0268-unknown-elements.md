@@ -1,0 +1,55 @@
+# 0268. An element's type, key and props may be JS values of any shape
+
+Status: Accepted. Extends [0225](0225-unknown-values.md) and
+[0234](0234-element-type.md).
+
+Case: A ([0262](0262-when-rust-and-js-disagree.md)).
+
+## Context
+
+react.dev's errors page revives its elements from JSON: each is an array
+of a type, a key and props, the type an MDX component's name, or
+`"wrapper"` for a fragment:
+
+```tsx
+let Type = val[1];
+if (Type === 'wrapper') {
+  Type = Fragment;
+}
+return <Type key={key} {...props} />;
+```
+
+Read from JSON, each is a `js::Unknown` (ADR 0225). React's `ElementType`
+was made of a tag or a component only, a key of text or numbers, and
+JSX's spread only of a struct or a `Rest`.
+
+## Decision
+
+- **`ElementType::from_unknown(value)`** is the value as what JSX renders,
+  unchecked: the value itself.
+- **`react::FRAGMENT`** is React's `Fragment` as a value, an `ElementType`.
+- **A `js::Unknown` is a key**, as React takes any.
+- **A JS value of any shape is spread as props**, its own properties: a
+  `js::Unknown`, or another JS object type.
+
+```rust
+let mut Type = ElementType::from_unknown(r#type);
+if matches!(classify(r#type), Kind::String("wrapper")) {
+    Type = FRAGMENT;
+}
+jsx! { <Type key={key} {...props} /> }
+```
+
+```js
+let Type = type;
+if (type === "wrapper") {
+  Type = Fragment;
+}
+return <Type key={key} {...props} />;
+```
+
+## Why
+
+- **It's what JSX does with these values**, as the site does.
+- **It's tested**: a JSX test renders a tag and a wrapper from values of
+  any shape, keyed by a number; a mutation refuses their props.

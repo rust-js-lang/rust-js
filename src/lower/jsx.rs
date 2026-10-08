@@ -635,9 +635,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let message = "rust-js makes JSX from one expression: set an element's props in the chain that makes it";
             return Err(self.tcx.dcx().span_err(self.thir[args[0]].span, message));
         }
+        // A struct's fields, a `Rest`'s, or a JS value's own properties, a
+        // `js::Unknown` read from JSON say (ADR 0268).
         if name == "..."
             && !matches!(self.shape(self.thir[value].ty), Shape::Object(_))
             && !super::bindings::is_rest(self.tcx, self.thir[value].ty)
+            && !self.recognition().is_js_object(self.thir[value].ty.peel_refs())
         {
             return Err(self.unsupported(self.thir[value].span, "JSX props spread of a non-struct value"));
         }

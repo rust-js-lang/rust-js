@@ -3052,6 +3052,31 @@ pub fn List(items: &'static [ItemProps<'static>]) -> JSX::Element {
   expect(renderToStaticMarkup(List([{ label: "a" }, { label: "" }, { label: "b" }]))).toBe("<ul><li>a</li><li>b</li></ul>");
 });
 
+// An element of what JS gives at run time, as react.dev's errors page
+// revives its elements from JSON: its type, its key and its props each a
+// `js::Unknown`, a wrapper's `Fragment` (ADR 0268).
+test("an element's type, key and props may be JS values of any shape", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use js::{Kind, Unknown, classify};
+use react::{ElementType, FRAGMENT, JSX, jsx};
+
+pub fn revived(r#type: &'static Unknown, key: &'static Unknown, props: &'static Unknown) -> JSX::Element {
+    let mut Type = ElementType::from_unknown(r#type);
+    if matches!(classify(r#type), Kind::String("wrapper")) {
+        Type = FRAGMENT;
+    }
+    jsx! { <Type key={key} {...props} /> }
+}
+`);
+  run([...args, "--extern", `js=${join(target, "libjs.rmeta")}`]);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain('let Type = type;\n  if (type === "wrapper") {\n    Type = Fragment;\n  }\n  return <Type key={key} {...props} />;');
+  const { revived } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(revived("b", "k", { children: "bold", title: "t" }))).toBe('<b title="t">bold</b>');
+  expect(renderToStaticMarkup(revived("wrapper", 0, { children: "plain" }))).toBe("plain");
+  expect(revived("b", 7, {}).key).toBe("7");
+});
+
 // A component a `thread_local!` holds, `memo`'s, typed with its props'
 // `'static` form, given props that borrow what the caller made: JS frees
 // nothing, so they're alive while it renders, as react.dev's Page gives Seo

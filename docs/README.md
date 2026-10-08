@@ -1,4 +1,5 @@
 - [0267 js::on_load! is what a module runs when it's loaded](decisions/0267-on-load.md)
+- [0268 An element's type, key and props may be JS values of any shape](decisions/0268-unknown-elements.md)
 # rust-js design docs
 
 rust-js compiles Rust to readable JavaScript. The whole design follows from one

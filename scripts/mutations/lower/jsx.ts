@@ -354,4 +354,12 @@ export const mutations: Mutation[] = [
     replace: "                        Prop::Spread(_) => None,",
     tests: ["test/jsx.test.ts","-t","updated from a reference are spread"],
   },
+  {
+    name: "unknown-props-unspread",
+    breaks: "props that are a JS value of any shape, `{...props}` of a `js::Unknown`, are refused",
+    file: "src/lower/jsx.rs",
+    find: "            && !self.recognition().is_js_object(self.thir[value].ty.peel_refs())\n",
+    replace: "",
+    tests: ["test/jsx.test.ts", "-t", "JS values of any shape"],
+  },
 ];
