@@ -292,4 +292,12 @@ export const mutations: Mutation[] = [
     replace: "                    && let Some(declared) = written_types(tcx, t).filter(|_| false) =>",
     tests: ["test/declarations.test.ts", "-t", "dyn ReactNode"],
   },
+  {
+    name: "default-export-const-as-function",
+    breaks: "a private `thread_local!` default export is declared a function, not `declare const Memoized: ..`",
+    file: "src/lower/declarations.rs",
+    find: "                _ => out.constant(def_id),\n",
+    replace: "                _ => out.function(def_id),\n",
+    tests: ["test/declarations.test.ts","-t","thread-local default"],
+  },
 ];

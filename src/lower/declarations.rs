@@ -65,7 +65,10 @@ pub(super) fn module(
         // by no name of its own, as `function Recap() {..}` is in JS.
         if !tcx.visibility(def_id).is_public() {
             out.erased = out.erased(def_id);
-            let mut declared = out.function(def_id);
+            let mut declared = match tcx.def_kind(def_id) {
+                DefKind::Fn => out.function(def_id),
+                _ => out.constant(def_id),
+            };
             declared["exported"] = json!(false);
             declared["declare"] = json!(true);
             items.push(declared);

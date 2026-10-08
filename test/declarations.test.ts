@@ -616,6 +616,41 @@ pub fn parts(text: &str) -> Vec<Box<dyn ReactNode>> {
   expect(declarations).toContain('import type { ReactNode } from "react";');
 });
 
+// A memo'd component kept in a `thread_local!` is a module's default
+// export too, as react.dev's CodeBlock/index has `export default
+// memo(function CodeBlockWrapper ..)`.
+test("declarations declare a thread-local default export", async () => {
+  buildReact();
+  const dir = fixture("declarations-default-static");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
+  writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case, non_upper_case_globals)]
+use react::{JSX, MemoExoticComponent, jsx, memo};
+
+pub struct LabelProps<'a> {
+    pub text: &'a str,
+}
+
+fn Label(LabelProps { text }: LabelProps) -> JSX::Element {
+    jsx! { <b>{text}</b> }
+}
+
+thread_local! {
+    static Memoized: MemoExoticComponent<LabelProps<'static>> = memo(Label);
+}
+
+js::export_default!(Memoized);
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(js).toContain("export default Memoized;");
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("declare const Memoized: NamedExoticComponent<LabelProps>;\n\nexport default Memoized;");
+  const { createElement } = await import("react");
+  const { renderToStaticMarkup } = await import("react-dom/server");
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(createElement(lib.default, { text: "hi" }))).toBe("<b>hi</b>");
+});
+
 // TypeScript prints them (ADR 0207), through @rust-js/typescript, which a
 // crate without it is told to add, its build failing.
 test("declarations where @rust-js/typescript isn't say to add it", () => {

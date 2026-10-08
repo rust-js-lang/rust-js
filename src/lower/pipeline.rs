@@ -455,7 +455,7 @@ pub fn lower_crate<'tcx>(
                     _ => {
                         tcx.dcx().span_err(
                             span,
-                            "rust-js: `js::export_default!` names one function of its own module, once",
+                            "rust-js: `js::export_default!` names one function or thread-local of its own module, once",
                         );
                     }
                 }

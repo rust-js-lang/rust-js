@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [
     replace: "        .is_some_and(|field| is_rest(tcx, field.ty(tcx, args).skip_normalization()))",
     tests: ["test/jsx.test.ts", "-t", "flattened struct"],
   },
+  {
+    name: "default-export-function-only",
+    breaks: "`js::export_default!(Memoized)` of a `thread_local!` memo'd component is an error, not `export default Memoized;`",
+    file: "src/lower/bindings.rs",
+    find: "Some(Res::Def(DefKind::Fn | DefKind::Const { .. }, function)) => Some(function),",
+    replace: "Some(Res::Def(DefKind::Fn, function)) => Some(function),",
+    tests: ["test/declarations.test.ts","-t","thread-local default"],
+  },
 ];

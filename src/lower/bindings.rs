@@ -378,8 +378,10 @@ pub(super) fn default_exports(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<(Optio
                             ..
                         },
                     ] => match tcx.hir_item(*item).kind {
+                        // A function, or a `thread_local!`'s const, a memo'd
+                        // component's (ADR 0248).
                         ItemKind::Use(path, _) => match path.res.value_ns {
-                            Some(Res::Def(DefKind::Fn, function)) => Some(function),
+                            Some(Res::Def(DefKind::Fn | DefKind::Const { .. }, function)) => Some(function),
                             _ => None,
                         },
                         _ => None,

@@ -338,6 +338,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0245 next/legacy/image, and a module's imports named by its own](decisions/0245-legacy-image-and-module-import-names.md)
 - [0246 A type parameter of a function needs no copy of its own](decisions/0246-function-parameters-need-no-copy.md)
 - [0247 JS's string methods are the builtins crate's `string`](decisions/0247-js-string-methods.md)
+- [0248 A `thread_local!` is a module's default export too](decisions/0248-thread-local-default-export.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)
