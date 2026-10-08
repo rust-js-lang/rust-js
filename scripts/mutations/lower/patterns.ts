@@ -552,11 +552,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unchanging-part-spilled",
-    breaks: "a captured part that reads only variables that never change, a ref's `Some(anchor)`, is made into a `const` of its own, `const match = anchor`",
+    breaks: "a captured part that reads only variables that never change, `Some(name)`, is made into a `const` of its own, `const match$1 = name`",
     file: "src/lower/patterns.rs",
     find: " || self.reads_unchanging(&value, out)\n",
     replace: "\n",
-    tests: ["test/next.test.ts", "-t", "rust-js-next build"],
+    tests: ["test/jsx.test.ts", "-t", "captured prop that reads what never changes"],
   },
   {
     name: "default-const-unread",

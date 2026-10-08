@@ -1468,12 +1468,14 @@ pub fn Card(o: Opts) -> JSX::Element { jsx! { <section title={o.title.unwrap_or(
 #[derive(Default)]
 pub struct Framed { pub title: Option<&'static str>, pub children: JSX::Element }
 pub fn Frame(f: Framed) -> JSX::Element { jsx! { <div title={f.title.unwrap_or("bare")}>{f.children}</div> } }
+// A child that might do something, which captured would be held in a variable.
+fn kid() -> &'static str { "kid" }
 pub fn App() -> JSX::Element {
     jsx! {
         <>
             <Card title={Some("named")} {..Default::default()} />
             <Card width={Some(3)} {..Opts { title: Some("base"), width: Some(9) }} />
-            <Frame title={Some("t")} {..Default::default()}><b>{"kid"}</b></Frame>
+            <Frame title={Some("t")} {..Default::default()}><b>{kid()}</b></Frame>
             <Frame {..Default::default()} />
         </>
     }
@@ -2941,19 +2943,54 @@ pub fn Again(props: &'static PanelProps<'static>) -> JSX::Element {
     jsx! { <Panel wide={Some(true)} {..*props} /> }
 }
 
-// Keyed first, its props captured in order: still the props spread.
+fn described(title: Option<&str>) -> String {
+    format!("{}-panel", title.unwrap_or(""))
+}
+
+// Keyed first by a key that might do something, its props captured in
+// order: still the props spread.
 pub fn Keyed(props: &'static PanelProps<'static>) -> JSX::Element {
-    jsx! { <Panel key={props.title} wide={Some(true)} {..*props} /> }
+    jsx! { <Panel key={described(props.title)} wide={Some(true)} {..*props} /> }
 }
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain("<Panel {...props} wide />");
-  expect(jsx).toContain("<Panel {...props} wide key={props.title} />");
+  expect(jsx).toContain("<Panel {...props} wide key={match} />");
   const { Again } = await import(join(dir, "lib.jsx"));
   const tree = Again({ title: "t", wide: false, extra: 1 });
   expect(tree.props.extra).toBe(1);
   expect(renderToStaticMarkup(tree)).toBe('<p title="t" data-wide="true"></p>');
+});
+
+// A captured prop that reads only variables that never change, `Some(name)`,
+// is read where it's given, not made a `const` of its own.
+test("a captured prop that reads what never changes is read in place", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+
+pub struct PanelProps<'a> {
+    pub title: Option<&'a str>,
+    pub wide: Option<bool>,
+}
+
+pub fn Panel(PanelProps { title, wide }: PanelProps) -> JSX::Element {
+    jsx! { <p title={title} data-wide={wide.unwrap_or(false)}></p> }
+}
+
+fn described(title: &str) -> String {
+    format!("{title}-panel")
+}
+
+pub fn Named(name: &'static str) -> JSX::Element {
+    jsx! { <Panel key={described(name)} title={Some(name)} wide={Some(true)} /> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("<Panel title={name} wide key={match} />");
+  const { Named } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(Named("n"))).toBe('<p title="n" data-wide="true"></p>');
 });
 
 // A component keyed first, its props captured in written order in a
@@ -2979,7 +3016,7 @@ pub fn List(items: &'static [ItemProps<'static>]) -> JSX::Element {
         .map(|(i, item)| {
             if !item.label.is_empty() {
                 let props = item;
-                Some(jsx! { <Item key={i} {..*props} /> })
+                Some(jsx! { <Item key={i.to_string()} {..*props} /> })
             } else {
                 None
             }
@@ -2990,7 +3027,7 @@ pub fn List(items: &'static [ItemProps<'static>]) -> JSX::Element {
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(jsx).toContain("return <Item {...props} key={i} />;");
+  expect(jsx).toContain("return <Item {...props} key={match} />;");
   expect(jsx).not.toContain("let tmp");
   const { List } = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(List([{ label: "a" }, { label: "" }, { label: "b" }]))).toBe("<ul><li>a</li><li>b</li></ul>");
