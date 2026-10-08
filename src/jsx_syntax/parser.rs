@@ -692,7 +692,9 @@ fn signature(sess: &Session, item: &ast::Item) -> Option<(Ident, String, String,
             };
             let props = match segment.ident.as_str() {
                 "Context" => "::react::ProviderProps".to_string(),
-                "MemoExoticComponent" | "LazyExoticComponent" | "ForwardRefExoticComponent" => props_path(ty)?,
+                "MemoExoticComponent" | "LazyExoticComponent" | "ForwardRefExoticComponent" | "ComponentValue" => {
+                    props_path(ty)?
+                }
                 _ => return None,
             };
             {

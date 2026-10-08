@@ -111,6 +111,24 @@ pub fn Linked() -> JSX::Element {
 pub fn Titled() -> JSX::Element {
     jsx! { <next::image::Image src="/next.svg" alt="Next.js logo" title={Some("Next.js")} width={Some(90)} height={Some(18)} /> }
 }
+
+pub struct LocatedProps<'a> {
+    pub prefix: &'a str,
+}
+
+// A component next/router's withRouter gives the router, as react.dev's Seo
+// is, and rendered as a tag.
+thread_local! {
+    pub static Located: react::ComponentValue<LocatedProps<'static>> = next::router::with_router(
+        |next::router::WithRouterProps { props: LocatedProps { prefix }, router }| {
+            jsx! { <p>{prefix}{router.as_path()}</p> }
+        },
+    );
+}
+
+pub fn Location() -> JSX::Element {
+    jsx! { <Located prefix="at " /> }
+}
 `;
 
 // A handler of the router's events, given on and taken off by the same
@@ -179,6 +197,8 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   expect([routePath.includes('import Router, { useRouter } from "next/router";'), routePath.includes("Router.push(url);")]).toEqual([true, true]);
   expect(readFileSync(join(dir, "app/linked.jsx"), "utf8")).toContain('import Head from "next/head";');
   expect(readFileSync(join(dir, "app/linked.jsx"), "utf8")).toContain('<Image src="/next.svg" alt="Next.js logo" title="Next.js" width={90} height={18} />');
+  const linkedJsx = readFileSync(join(dir, "app/linked.jsx"), "utf8");
+  expect([linkedJsx.includes("export const Located = withRouter(({ prefix, router }) => ("), linkedJsx.includes('return <Located prefix="at " />;')]).toEqual([true, true]);
   expect([routePath.includes("const events = useRouter().events;"), routePath.includes('events.on("routeChangeStart", started);'), routePath.includes('events.off("routeChangeStart", started)')]).toEqual([true, true, true]);
   // The Server Component's page is rendered at build time, the counter in it.
   expect(readFileSync(join(dir, ".next/server/app/index.html"), "utf8")).toContain("Count <!-- -->0");

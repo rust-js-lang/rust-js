@@ -40,6 +40,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => return None,
         };
+        // A flattened struct taken apart, `WithRouterProps { props: SeoProps {
+        // title, .. }, router }`: its fields are its parent's in JS (ADR 0204),
+        // so its pattern's are the parent's pattern's, `{ title, router }`.
+        // Each where it's written, among the other fields.
+        let mut flattened = Vec::new();
+        let mut kept = Vec::new();
+        let mut written = Vec::new();
+        for (at, (i, field)) in fields.into_iter().enumerate() {
+            if matches!(pat.kind, PatKind::Leaf { .. })
+                && bindings::is_flatten_field(self.tcx, pat.ty, i)
+                && matches!(without_refs(field).kind, PatKind::Leaf { .. })
+            {
+                let (nested, mutable) = self.js_pattern(field)?;
+                flattened.push((at, nested, mutable));
+            } else {
+                kept.push((i, field));
+                written.push(at);
+            }
+        }
+        let fields = kept;
         // `(i, &x)`: a reference is the value (ADR 0023), so that part is `x`.
         let parts: Vec<_> = fields
             .into_iter()
@@ -71,7 +91,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             })
             .collect::<Option<_>>()?;
-        let mutable = parts.iter().any(|(_, part)| part.is_some_and(|(_, _, m)| m));
+        let mutable =
+            parts.iter().any(|(_, part)| part.is_some_and(|(_, _, m)| m)) || flattened.iter().any(|(_, _, m)| *m);
         if matches!(pat.kind, PatKind::Array { .. }) {
             let mut items = Vec::new();
             for (i, part) in parts {
@@ -85,6 +106,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Some((js::Pattern::Array(items), mutable));
         }
         let pattern = match self.shape(pat.ty) {
+            Shape::Array(_) if !flattened.is_empty() => return None,
             Shape::Array(tys) => {
                 let mut items = vec![None; tys.len()];
                 for (i, part) in parts {
@@ -99,7 +121,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Shape::Object(fields) => {
                 let mut named = Vec::new();
                 let mut rest = None;
-                for (i, part) in parts {
+                let some_flattened = !flattened.is_empty();
+                let mut flattened = flattened.into_iter().peekable();
+                let mut flattened_rest = None;
+                let mut merge = |nested: js::Pattern, named: &mut Vec<_>| -> Option<()> {
+                    let js::Pattern::Object(more, more_rest) = nested else {
+                        return None;
+                    };
+                    named.extend(more);
+                    if more_rest.is_some() {
+                        if flattened_rest.is_some() {
+                            return None;
+                        }
+                        flattened_rest = more_rest;
+                    }
+                    Some(())
+                };
+                for (k, (i, part)) in parts.into_iter().enumerate() {
+                    while let Some((_, nested, _)) = flattened.next_if(|(at, _, _)| *at < written[k]) {
+                        merge(nested, &mut named)?;
+                    }
                     let Some((name, var, m)) = part else { continue };
                     let bound = self.bind(var, name.as_str(), m);
                     // The props a component's struct doesn't name, `...rest` (ADR
@@ -111,6 +152,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             named.push((fields[i].0.clone(), bound, default))
                         }
                     }
+                }
+                for (_, nested, _) in flattened {
+                    merge(nested, &mut named)?;
+                }
+                // A rest beside one would hold the flattened struct's fields
+                // its pattern leaves.
+                if some_flattened {
+                    if rest.is_some() {
+                        return None;
+                    }
+                    rest = flattened_rest;
                 }
                 // What the rest holds is what isn't named, so a field the
                 // pattern leaves, `..` or `_`, is named still, `className:

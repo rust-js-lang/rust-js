@@ -170,4 +170,12 @@ export const mutations: Mutation[] = [
     replace: ".position(|(name, value, _)| name == \"key\" && (true || !does_nothing(value)))",
     tests: ["test/jsx.test.ts", "-t", "key that does nothing"],
   },
+  {
+    name: "component-value-no-companion",
+    breaks: "a `thread_local!` component a library's function made, next/router's `withRouter`'s, has no props companion, so `<Located prefix=.. />` isn't a tag",
+    file: "src/jsx_syntax/parser.rs",
+    find: "                \"MemoExoticComponent\" | \"LazyExoticComponent\" | \"ForwardRefExoticComponent\" | \"ComponentValue\" => {",
+    replace: "                \"MemoExoticComponent\" | \"LazyExoticComponent\" | \"ForwardRefExoticComponent\" => {",
+    tests: ["test/next.test.ts", "-t", "rust-js-next build"],
+  },
 ];

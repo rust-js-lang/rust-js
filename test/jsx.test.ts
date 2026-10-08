@@ -3033,6 +3033,35 @@ pub fn List(items: &'static [ItemProps<'static>]) -> JSX::Element {
   expect(renderToStaticMarkup(List([{ label: "a" }, { label: "" }, { label: "b" }]))).toBe("<ul><li>a</li><li>b</li></ul>");
 });
 
+// Props a flattened struct holds, taken apart with the rest: its fields are
+// the props' own in JS, `{ title, frame }`, as written, as next/router's
+// `withRouter` gives react.dev's Seo its props and the router.
+test("a flattened struct's pattern takes its fields apart with the props'", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+
+pub struct Framed<'a> {
+    #[rust_js::flatten]
+    pub props: CardProps<'a>,
+    pub frame: &'a str,
+}
+
+pub struct CardProps<'a> {
+    pub title: &'a str,
+    pub width: u32,
+}
+
+pub fn Card(Framed { props: CardProps { title, .. }, frame }: Framed) -> JSX::Element {
+    jsx! { <section title={title} className={frame} /> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("export function Card({ title, frame }) {");
+  const { Card } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(Card({ title: "t", width: 1, frame: "f" }))).toBe('<section title="t" class="f"></section>');
+});
+
 // A child whose flattened prop is made by a call, as react.dev's TopNav
 // gives its `Logo` classes inside next/link's `Link`: the call is made
 // where it's given, as the defaults beside it do nothing, and the link's

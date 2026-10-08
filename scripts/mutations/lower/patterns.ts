@@ -238,8 +238,8 @@ export const mutations: Mutation[] = [
     name: "unbound-field-in-rest",
     breaks: "a field the pattern leaves, `..`, is in the rest, `...props` holding `className`",
     file: "src/lower/patterns.rs",
-    find: "                if rest.is_some() {",
-    replace: "                if false && rest.is_some() {",
+    find: "or the rest would hold it (ADR 0205).\n                if rest.is_some() {",
+    replace: "or the rest would hold it (ADR 0205).\n                if false && rest.is_some() {",
     tests: ["test/jsx.test.ts", "-t", "chain of flattened"],
   },
   {
@@ -565,5 +565,21 @@ export const mutations: Mutation[] = [
     find: "        if let Some(name) = bindings::field_default_const(self.tcx, field) {",
     replace: "        if let Some(name) = bindings::field_default_const(self.tcx, field).filter(|_| false) {",
     tests: ["test/jsx.test.ts", "-t", "default may be a const"],
+  },
+  {
+    name: "flattened-pattern-refused",
+    breaks: "a flattened struct taken apart, `Framed { props: CardProps { title, .. }, frame }`, is refused, where its fields are the props' own",
+    file: "src/lower/patterns.rs",
+    find: "                && bindings::is_flatten_field(self.tcx, pat.ty, i)\n",
+    replace: "                && bindings::is_flatten_field(self.tcx, pat.ty, i)\n                && false\n",
+    tests: ["test/jsx.test.ts", "-t", "flattened struct's pattern"],
+  },
+  {
+    name: "flattened-pattern-last",
+    breaks: "a flattened struct's fields are taken apart after the props' others, `{ frame, title }`, not as written",
+    file: "src/lower/patterns.rs",
+    find: "                    while let Some((_, nested, _)) = flattened.next_if(|(at, _, _)| *at < written[k]) {",
+    replace: "                    while let Some((_, nested, _)) = flattened.next_if(|_| false) {",
+    tests: ["test/jsx.test.ts", "-t", "flattened struct's pattern"],
   },
 ];

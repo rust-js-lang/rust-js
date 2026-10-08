@@ -5,6 +5,7 @@
 use core::marker::PhantomData;
 
 use js::JsObject;
+use react::{ComponentType, ComponentValue};
 
 unsafe extern "Rust" {
     /// [`Router`](https://nextjs.org/docs/pages/api-reference/functions/use-router#router-object),
@@ -15,6 +16,23 @@ unsafe extern "Rust" {
 
 #[cfg_attr(rust_js, rust_js::link_name = "next/router#useRouter")]
 pub fn use_router() -> &'static NextRouter {
+    unreachable!()
+}
+
+/// The props of a component [`with_router`] wraps: those it's given, and
+/// the router.
+pub struct WithRouterProps<P> {
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub props: P,
+    pub router: &'static NextRouter,
+}
+
+/// [`withRouter`](https://nextjs.org/docs/pages/api-reference/functions/use-router#withrouter),
+/// in a `thread_local!`: a component given `P`, which renders `component`
+/// with the router too, as react.dev's `Seo` is made.
+#[cfg_attr(rust_js, rust_js::link_name = "next/router#withRouter")]
+#[allow(unused_variables)]
+pub fn with_router<P, M>(component: impl ComponentType<WithRouterProps<P>, M>) -> ComponentValue<P> {
     unreachable!()
 }
 

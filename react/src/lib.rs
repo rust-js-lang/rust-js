@@ -1435,6 +1435,16 @@ pub struct Forwarded;
 
 impl<P, H> ComponentType<P, Forwarded> for &'static LocalKey<ForwardRefExoticComponent<P, H>> {}
 
+/// A component as a value, @types/react's `ComponentType<P>`, that a
+/// library's function made, as next/router's `withRouter` does: in a
+/// `thread_local!`, rendered as its tag.
+#[cfg_attr(rust_js, rust_js::types = "react#ComponentType")]
+pub struct ComponentValue<P>(PhantomData<JsObject>, PhantomData<P>);
+
+pub struct Made;
+
+impl<P> ComponentType<P, Made> for &'static LocalKey<ComponentValue<P>> {}
+
 /// Check the handle type of a forwarded JSX ref without emitting a runtime call.
 #[doc(hidden)]
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
