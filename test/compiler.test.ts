@@ -4,7 +4,7 @@
 //                  └─rust-js───► fib.js ──► actual results ───┴─► must be equal
 
 import { beforeAll, expect, test } from "bun:test";
-import { copyFileSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { runSync } from "./child";
@@ -1146,6 +1146,41 @@ pub fn later(then: &'static dyn Fn()) {
   }
 });
 
+// ADR 0273: a `#[path]` module's JS is beside its file, `x/[y].rs`'s
+// `x/[y].js`, as Next.js finds a page, and what it imports is seen from
+// there: the crate's root, and a file beside the root's.
+test("a #[path] module's JS is beside its file", async () => {
+  const dir = fixture("path-module");
+  mkdirSync(join(dir, "x"));
+  writeFileSync(join(dir, "lib.rs"), `#[path = "x/[y].rs"]
+pub mod y;
+
+pub fn top() -> u32 {
+    y::f() + 1
+}
+
+pub fn base() -> u32 {
+    40
+}
+`);
+  writeFileSync(join(dir, "x/[y].rs"), `unsafe extern "Rust" {
+    #[link_name = "./data.js#default"]
+    safe static data: u32;
+}
+
+pub fn f() -> u32 {
+    crate::base() + data
+}
+`);
+  writeFileSync(join(dir, "data.js"), "export default 1;\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain('import { f } from "./x/[y].js";');
+  const y = readFileSync(join(dir, "x/[y].js"), "utf8");
+  expect([y.includes('import { base } from "../lib.js";'), y.includes('import data from "../data.js";')]).toEqual([true, true]);
+  const { top } = await import(join(dir, "lib.js"));
+  expect(top()).toBe(42);
+});
+
 // ADR 0272: Node's modules, as @types/node types them, are the JS a person
 // writes in Node: an import of `fs`'s, and `process`, a global, as
 // react.dev's errors page reads its Markdown in `getStaticProps`.
@@ -1207,9 +1242,6 @@ pub fn page(code: u32) -> Page {
   expect([page(0), page(3)]).toEqual([{ notFound: true }, { props: 3 }]);
 });
 
-// ADR 0225: a JS value of unknown shape is a `js::Unknown`, as TypeScript's
-// `unknown` and ReScript's are, which `classify` tells by `typeof`, and
-// whose properties are read and set by name, as `obj[key]` is.
 // ADR 0271: JS's truthiness of a value, `!value` as a person tests one, and
 // a value of any shape given a type it's vouched to have, the value itself.
 test("a JS value is tested as JS tests it, and cast as it's vouched", async () => {
@@ -1248,6 +1280,9 @@ pub fn text(value: Option<&'static Unknown>) -> Option<String> {
   expect([lib.text("x"), lib.text(undefined)]).toEqual(["x", undefined]);
 });
 
+// ADR 0225: a JS value of unknown shape is a `js::Unknown`, as TypeScript's
+// `unknown` and ReScript's are, which `classify` tells by `typeof`, and
+// whose properties are read and set by name, as `obj[key]` is.
 test("an unknown JS value is classified, and its properties read by name", async () => {
   const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("unknown");

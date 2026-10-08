@@ -43,6 +43,9 @@ pub struct LoweredModule {
     pub runtime: Vec<Helper>,
     /// Whether it has JSX, so it's a `.jsx` file (ADR 0040).
     pub jsx: bool,
+    /// Whether its file is where its `#[path]` says, not its path's: its JS
+    /// goes beside that file, as a Next.js page's `[code].rs` (ADR 0273).
+    pub located: bool,
 }
 
 /// Named exports used from one Rust module, before its JS path is resolved.

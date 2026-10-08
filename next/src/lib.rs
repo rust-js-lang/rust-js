@@ -19,9 +19,15 @@
 // A binding's parameters are its JS function's: its body never runs.
 #![allow(non_snake_case, unused_variables)]
 
+mod data_fetching;
 pub mod head;
 pub mod image;
 pub mod legacy;
 pub mod link;
 pub mod navigation;
 pub mod router;
+
+pub use data_fetching::{
+    GetStaticPathsContext, GetStaticPathsResult, GetStaticPropsContext, GetStaticPropsResult, RevalidateReason, StaticNotFound,
+    StaticPath, StaticPathParams, StaticProps,
+};

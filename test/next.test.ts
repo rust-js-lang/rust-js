@@ -68,7 +68,7 @@ function app(name: string): string {
   writeFileSync(cargo, readFileSync(cargo, "utf8").replaceAll('path = "../../', `path = "${root}/`));
   const page = join(dir, "app/page.rs");
   writeFileSync(page, readFileSync(page, "utf8")
-    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod counter;\nmod linked;\nmod route_path;\n\nuse next::image::Image;")
+    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod counter;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n\nuse next::image::Image;")
     .replace('{" file."}\n                    </h1>', '{" file."}\n                    </h1>\n                    <counter::Counter />'));
   writeFileSync(join(dir, "app/counter.rs"), counter("Count "));
   // The Pages Router's route, as react.dev's pages read it: compiled, not
@@ -78,8 +78,47 @@ function app(name: string): string {
   writeFileSync(join(dir, "app/route_path.rs"), "pub fn route_path() -> String {\n    next::router::use_router().as_path().to_string()\n}\n\n" + routeEvents);
   mkdirSync(join(dir, "app/about"));
   writeFileSync(join(dir, "app/about/page.rs"), about);
+  // A Pages Router page built for the paths it gives, each with its props,
+  // and not found for one, as react.dev's errors page is.
+  mkdirSync(join(dir, "pages/codes"), { recursive: true });
+  writeFileSync(join(dir, "pages/codes/[code].rs"), code);
   return dir;
 }
+
+const code = `#![allow(non_snake_case)]
+
+use next::{
+    GetStaticPathsContext, GetStaticPathsResult, GetStaticPropsContext, GetStaticPropsResult, StaticNotFound, StaticPath,
+    StaticPathParams, StaticProps,
+};
+use react::{JSX, jsx};
+
+pub struct Params {
+    pub code: String,
+}
+
+pub struct CodeProps {
+    pub code: String,
+}
+
+pub fn Code(CodeProps { code }: CodeProps) -> JSX::Element {
+    jsx! { <p>{"Code "}{code}</p> }
+}
+
+js::export_default!(Code);
+
+pub async fn getStaticProps(GetStaticPropsContext { params, .. }: GetStaticPropsContext<Params>) -> GetStaticPropsResult<CodeProps> {
+    match params {
+        Some(Params { code }) if code != "0" => GetStaticPropsResult::Props(StaticProps { props: CodeProps { code } }),
+        _ => GetStaticPropsResult::NotFound(StaticNotFound { not_found: true }),
+    }
+}
+
+pub async fn getStaticPaths(_: GetStaticPathsContext) -> GetStaticPathsResult<Params> {
+    let params = |code: &str| StaticPath::Params(StaticPathParams { params: Params { code: code.to_string() } });
+    GetStaticPathsResult { paths: vec![params("0"), params("1"), StaticPath::Path("/codes/2".to_string())], fallback: false }
+}
+`;
 
 const linked = `#![allow(non_snake_case)]
 js::directive!("use client");
@@ -209,6 +248,10 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   const aboutJsx = readFileSync(join(dir, "app/about/page.jsx"), "utf8");
   expect([aboutJsx.includes('import Image from "next/legacy/image";'), aboutJsx.includes('<Image src="/next.svg" layout="fill" objectFit="cover" alt="Next.js logo" />')]).toEqual([true, true]);
   expect([aboutHtml.includes('alt="Next.js logo"'), aboutHtml.includes("object-fit:cover")]).toEqual([true, true]);
+  // The Pages Router's page, built for each path but the one not found.
+  const built = (path: string) => existsSync(join(dir, `.next/server/pages/codes/${path}.html`));
+  expect([built("0"), built("1"), built("2")]).toEqual([false, true, true]);
+  expect(readFileSync(join(dir, ".next/server/pages/codes/1.html"), "utf8")).toContain("Code <!-- -->1");
   // Its props as written, an anchor's first, which the props it names
   // replace (ADR 0203, 0208).
   expect(readFileSync(join(dir, "app/about/page.jsx"), "utf8")).toContain('<Link href="/" {...anchor} className={classes} aria-label="Home page">');

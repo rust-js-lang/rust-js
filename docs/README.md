@@ -364,6 +364,8 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0270 A thread-local only read and set is its module's variable](decisions/0270-module-variables.md)
 - [0271 A JS value's truthiness, and a value vouched to be a type](decisions/0271-truthy-and-cast.md)
 - [0272 Node's modules are a crate of their own, typed as @types/node](decisions/0272-node.md)
+- [0273 A `#[path]` module's JS is beside its file](decisions/0273-path-modules.md)
+- [0274 Next.js's getStaticProps and getStaticPaths, typed as next types them](decisions/0274-next-data-fetching.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

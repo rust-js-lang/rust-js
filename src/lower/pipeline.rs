@@ -8,6 +8,7 @@ use crate::program::{ImportRequest, LoweredImport, LoweredModule, Unlinked, Unli
 use crate::runtime::Helper;
 use rustc_hir as hir;
 use rustc_hir::def::{DefKind, Res};
+use rustc_hir::find_attr;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::{DefId, LocalModId};
 use std::cell::RefCell;
@@ -522,6 +523,7 @@ pub fn lower_crate<'tcx>(
                 declarations,
                 runtime: Vec::new(),
                 jsx: pass.jsx.contains(&module),
+                located: find_attr!(tcx, module.to_def_id(), Path(..)),
             };
             let mut imports: Vec<_> = targets.remove(&module).unwrap_or_default().into_iter().collect();
             imports.sort_by(|(a, an, _), (b, bn, _)| (&paths[a], an).cmp(&(&paths[b], bn)));

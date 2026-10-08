@@ -1,10 +1,10 @@
 //! Resolve and validate all artifacts before touching output files.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
 use crate::manifest::{self, Manifest, fingerprint};
-use crate::paths::{absolute, parent_dir, relative_resolved, resolve};
+use crate::paths::{absolute, parent_dir, relative, relative_resolved, resolve};
 
 use crate::publish::{Artifact, ArtifactPlan};
 use crate::{js, program, to_oxc};
@@ -25,6 +25,8 @@ pub struct OutputPlan {
     /// The JS files the plan has, once planned, which a crate's checks read.
     pub written: Vec<PathBuf>,
     jsx: HashSet<Vec<String>>,
+    /// Each `#[path]` module's file, where its JS goes beside (ADR 0273).
+    located: HashMap<Vec<String>, PathBuf>,
 }
 
 impl OutputPlan {
@@ -65,7 +67,15 @@ impl OutputPlan {
                 .packages
                 .into_iter()
                 .map(|package| js::Package {
-                    from: relocate(&package.from, dir),
+                    from: if self.located.contains_key(&module.path) {
+                        self.relative_specifier(
+                            &module.path,
+                            &parent_dir(&self.output).join(&package.from),
+                            &package.from,
+                        )
+                    } else {
+                        relocate(&package.from, dir)
+                    },
                     ..package
                 })
                 .collect();
@@ -230,6 +240,9 @@ impl OutputPlan {
     /// with JSX is a `.jsx` file, as JSX tools expect (ADR 0040).
     fn js_path(&self, module: &[String]) -> PathBuf {
         let jsx = self.jsx.contains(module);
+        if let Some(file) = self.located.get(module) {
+            return file.with_extension(if jsx { "jsx" } else { "js" });
+        }
         if module.is_empty() {
             return if jsx {
                 self.output.with_extension("jsx")
@@ -247,6 +260,10 @@ impl OutputPlan {
     /// `./util.js`, `../lib.js`. Computed from module paths alone, since the
     /// target file may not have been written yet.
     fn specifier(&self, from: &[String], to: &[String]) -> String {
+        if self.located.contains_key(from) || self.located.contains_key(to) {
+            let to_file = self.js_path(to);
+            return self.relative_specifier(from, &to_file, "./");
+        }
         // A module's file sits in the directory named by all but the last
         // segment of its path; the root's file is in the top directory.
         let dir = |path: &[String]| path.len().saturating_sub(1);
@@ -269,6 +286,22 @@ impl OutputPlan {
         }
         specifier.push_str(&file);
         specifier
+    }
+}
+
+impl OutputPlan {
+    /// `to`, seen from module `from`'s file: `./a.js`, `../../b.js`, a
+    /// relative `specifier` as written where `to` is no file of the crate's.
+    fn relative_specifier(&self, from: &[String], to: &std::path::Path, specifier: &str) -> String {
+        if !specifier.starts_with("./") && !specifier.starts_with("../") {
+            return specifier.to_string();
+        }
+        let path = relative(parent_dir(&self.js_path(from)), to);
+        if path.starts_with("../") {
+            path
+        } else {
+            format!("./{path}")
+        }
     }
 }
 
@@ -343,6 +376,7 @@ impl OutputPlan {
             settings: crate::settings::Settings::default(),
             written: Vec::new(),
             jsx: HashSet::new(),
+            located: HashMap::new(),
         }
     }
 
@@ -353,6 +387,20 @@ impl OutputPlan {
             .iter()
             .filter(|m| m.jsx)
             .map(|m| m.path.clone())
+            .collect();
+        // A `#[path]` module's file, below the root's directory as the output
+        // is: `../pages/codes/[code].rs` from `app/page.rs` (ADR 0273).
+        self.located = lowered
+            .modules
+            .iter()
+            .filter(|m| m.located)
+            .filter_map(|m| {
+                let file = m.file.as_ref()?;
+                Some((
+                    m.path.clone(),
+                    parent_dir(&self.output).join(relative(parent_dir(&self.input), file)),
+                ))
+            })
             .collect();
         let sources: Vec<PathBuf> = sources.into_iter().map(|p| absolute(&p)).collect::<Result<_, _>>()?;
         if let Some(library) = &mut lowered.library {

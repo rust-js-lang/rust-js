@@ -180,7 +180,7 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
 
 /**
  * Each module's JS, and its map, beside its Rust, as ReScript writes it in
- * source and a project commits it (ADR 0041): `src/api.rs`'s is
+ * source and a project commits it (ADRs 0041, 0273): `src/api.rs`'s is
  * `src/api.js`, or `.jsx`. A module that isn't a file of its own, an
  * inline `mod inner { .. }`, is where its file would be: `src/inner.js`
  * of `src/lib.rs`'s, `src/api/inner.js` of `src/api.rs`'s, and it's an
@@ -209,14 +209,18 @@ export function writeInSource(manifests, ledger) {
     return `crate \`${crate}\`'s ${module.length === 0 ? "root" : own}`;
   };
   for (const { library, modules } of manifests) {
-    const crateRoot = modules.find((m) => m.module.length === 0).source;
+    const root = modules.find((m) => m.module.length === 0);
+    const crateRoot = root.source;
     for (const { file, source, module } of modules) {
       const extension = file.endsWith(".jsx") ? ".jsx" : ".js";
       // The module whose file `source` is, by where it is: `src/api.rs`
       // and `src/api/mod.rs` are `api`'s.
       const own = source === crateRoot ? [] : relative(dirname(crateRoot), source).replace(/\.rs$/, "").split(sep);
       if (own.at(-1) === "mod") own.pop();
-      const written = own.length === module.length && own.every((name, i) => name === module[i]);
+      // Or where its JS is, by its file: a `#[path]` module's (ADR 0273).
+      const placed = relative(dirname(root.file), file).replace(/\.jsx?$/, "").split(sep);
+      const same = (path) => own.length === path.length && own.every((name, i) => name === path[i]);
+      const written = same(module) || (source !== crateRoot && same(placed));
       moved.set(file, written ? source.replace(/\.rs$/, extension) : join(dirname(crateRoot), ...module) + extension);
     }
     for (const { file, module } of [...modules].sort((a, b) => a.module.length - b.module.length)) {

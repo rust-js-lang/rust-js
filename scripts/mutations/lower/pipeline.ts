@@ -114,4 +114,12 @@ export const mutations: Mutation[] = [
     replace: "None if false && super::bindings::is_on_load(tcx, def_id) =>",
     tests: ["test/compiler.test.ts", "-t", "js::on_load!"],
   },
+  {
+    name: "path-module-unseen",
+    breaks: "a `#[path]` module isn't told apart, its JS where its module path says",
+    file: "src/lower/pipeline.rs",
+    find: "                located: find_attr!(tcx, module.to_def_id(), Path(..)),\n",
+    replace: "                located: false,\n",
+    tests: ["test/compiler.test.ts", "-t", "path. module's JS is beside"],
+  },
 ];
