@@ -1342,6 +1342,51 @@ pub fn weak(state: &'static State) -> (Option<u32>, bool) {
   expect(lib.weak({ n: 5 })).toEqual([5, true]);
 });
 
+// ADR 0283: JS's Promise's statics and methods are the js crate's, as
+// ReScript's Stdlib has them; `allSettled`'s results a union tagged by
+// `status` (ADR 0284).
+test("a Promise's statics and methods are JS's", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("js-promises");
+  writeFileSync(join(dir, "lib.rs"), `use js::{PromiseSettledResult, PromiseWithResolvers, js_error, promise};
+pub async fn made() -> u32 {
+    promise::new(|resolve, _| resolve(1)).then(|n: u32| promise::resolve(n + 1)).await
+}
+pub async fn caught() -> String {
+    promise::reject::<String>(&js_error::new("boom")).catch(|e| promise::resolve(e.message())).finally(|| {}).await
+}
+pub async fn paired() -> (u32, String) {
+    promise::all2((promise::resolve(1), promise::resolve("a".to_string()))).await
+}
+pub async fn settled() -> Vec<String> {
+    let all = promise::all_settled(vec![promise::resolve(1), promise::reject(&js_error::new("no"))]).await;
+    all.into_iter()
+        .map(|r| match r {
+            PromiseSettledResult::Fulfilled { value } => value.to_string(),
+            PromiseSettledResult::Rejected { reason } => reason.message(),
+        })
+        .collect()
+}
+pub async fn resolvers() -> u32 {
+    let PromiseWithResolvers { promise, resolve, .. } = promise::with_resolvers::<u32>();
+    resolve(7);
+    promise::race(vec![promise, promise::any(vec![promise::resolve(8)])]).await
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return await new Promise((resolve) => {\n    resolve(1);\n  }).then(");
+  expect(js).toContain('Promise.reject(new Error("boom"))\n    .catch((e) => Promise.resolve(e.message))');
+  expect(js).toContain('Promise.all([Promise.resolve(1), Promise.resolve("a")])');
+  expect(js).toContain('r.status === "fulfilled"');
+  const lib = await import(join(dir, "lib.js"));
+  expect(await lib.made()).toBe(2);
+  expect(await lib.caught()).toBe("boom");
+  expect(await lib.paired()).toEqual([1, "a"]);
+  expect(await lib.settled()).toEqual(["1", "no"]);
+  expect(await lib.resolvers()).toBe(7);
+});
+
 // ADR 0283: JS's typed arrays are the js crate's, each element a Rust number
 // of its kind, a `BigInt64Array`'s an `i64`, the `BigInt` rust-js makes one.
 test("typed arrays and their buffers are JS's", async () => {

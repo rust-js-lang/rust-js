@@ -17,6 +17,8 @@ use core::marker::PhantomData;
 
 pub mod date;
 pub use date::Date;
+pub mod promise;
+pub use promise::{PromiseSettledResult, PromiseWithResolvers};
 pub mod symbol;
 pub use symbol::Symbol;
 mod typed_arrays;

@@ -99,3 +99,14 @@ its own for, as TypeScript's ES2024 libs declare them; a test measures it.**
 - **What TypeScript marks `@deprecated` isn't counted**: `RegExp.$1` and
   the rest of Annex B's legacy, by the interface it's on (`String.sub` is,
   `Atomics.sub` isn't). 88.1% of 675.
+- **`Promise`**, every member, after ReScript's `Stdlib_Promise`:
+  `promise::new(|resolve, reject| ..)`, `then` of a closure that gives a
+  promise (`then_resolve` of one that gives a value, as ReScript's
+  `thenResolve`), `catch`, `finally`, and `resolve`, `reject`, `race`,
+  `any`, `all` and `with_resolvers` in its module. `all_settled` gives
+  `PromiseSettledResult`s, a union tagged by `status` (ADR 0284), as
+  TypeScript's `PromiseSettledResult` is and ReScript's `settledResult`.
+  ReScript's `all2` to `all6` are what `Promise.all` makes of a tuple; here
+  `all2` to `all4`, a tuple of promises to a promise of a tuple. A
+  rejection's reason is a `JsError`, as `settle`'s is, where TypeScript has
+  `any` and ReScript `exn`. 89.6%.

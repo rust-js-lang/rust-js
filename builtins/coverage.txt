@@ -1,5 +1,5 @@
 # The js crate against TypeScript's ES2024 library, where Rust has no type of its own: bun test test/builtins-coverage.test.ts
-# members: 595 of 675 (88.1%)
+# members: 605 of 675 (89.6%)
 ArrayBuffer.byteLength
 ArrayBuffer.constructor
 ArrayBuffer.resize
@@ -375,6 +375,16 @@ Int8Array.values
 Int8Array.with
 JSON.static:parse
 JSON.static:stringify
+Promise.catch
+Promise.constructor
+Promise.finally
+Promise.static:all
+Promise.static:allSettled
+Promise.static:any
+Promise.static:race
+Promise.static:reject
+Promise.static:resolve
+Promise.static:withResolvers
 Promise.then
 RegExp.constructor
 RegExp.dotAll
