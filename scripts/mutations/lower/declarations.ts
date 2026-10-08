@@ -5,6 +5,14 @@ const tests = ["test/declarations.test.ts"];
 
 export const mutations: Mutation[] = [
   {
+    name: "enum-fields-declared-any",
+    breaks: "an enum with fields is declared `any`, not its tagged objects' union",
+    file: "src/lower/declarations.rs",
+    find: "            false => {\n                let args = ty::GenericArgs::identity_for_item(self.tcx, def_id);",
+    replace: "            false if true => keyword(\"any\"),\n            false => {\n                let args = ty::GenericArgs::identity_for_item(self.tcx, def_id);",
+    tests: ["test/declarations.test.ts","-t","declarations type what a module exports"],
+  },
+  {
     name: "foreign-untagged-any",
     breaks: "another crate's untagged enum, `js::Json`, is `any`, not the union of its payloads",
     file: "src/lower/declarations.rs",

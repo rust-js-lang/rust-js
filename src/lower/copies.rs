@@ -154,7 +154,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                         let tag = Expr::bin(
                             Op::Eq,
-                            Expr::member(e.clone(), "TAG"),
+                            Expr::member(e.clone(), super::bindings::tag_key(self.tcx, adt.did())),
                             Expr::str(super::bindings::variant_name(self.tcx, variant)),
                         );
                         value = Expr::cond(tag, Expr::object(props), value);

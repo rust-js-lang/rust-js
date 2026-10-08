@@ -433,3 +433,78 @@ pub fn hide(file: File) -> File {
   const lib = await import(join(dir, "lib.js"));
   expect(lib.hide({ code: "c", hidden: false, active: true })).toEqual({ code: "c", hidden: true, active: true });
 });
+
+// ADR 0284: an enum tagged by a property of its own, `#[rust_js::tag =
+// "status"]`, is a discriminated union, as TypeScript's and ReScript's
+// `@tag` are: each variant an object of its name and its fields,
+// `{ status: "fulfilled", value }`, as `Promise.allSettled` gives them.
+test("an enum tagged by a property of its own is a discriminated union", async () => {
+  const dir = fixture("tagged-enum");
+  writeFileSync(join(dir, "lib.rs"), `// A name equal to another of any case: its own \`==\`.
+#[derive(Clone, Debug)]
+pub struct Name(pub String);
+
+impl PartialEq for Name {
+    fn eq(&self, other: &Name) -> bool {
+        self.0.to_lowercase() == other.0.to_lowercase()
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::tag = "status")]
+#[derive(Clone, Debug, PartialEq)]
+pub enum Settled {
+    #[cfg_attr(rust_js, rust_js::name = "named")]
+    Named { name: Name },
+    #[cfg_attr(rust_js, rust_js::name = "fulfilled")]
+    Fulfilled { value: u32 },
+    #[cfg_attr(rust_js, rust_js::name = "rejected")]
+    Rejected { reason: String },
+    #[cfg_attr(rust_js, rust_js::name = "pending")]
+    Pending,
+    #[cfg_attr(rust_js, rust_js::name = "measured")]
+    Measured { values: Vec<f64> },
+}
+
+pub fn made(n: u32) -> Vec<Settled> {
+    vec![Settled::Fulfilled { value: n }, Settled::Rejected { reason: "no".to_string() }, Settled::Pending]
+}
+
+pub fn told(s: &Settled) -> String {
+    match s {
+        Settled::Fulfilled { value } => format!("got {value}"),
+        Settled::Rejected { reason } => format!("failed: {reason}"),
+        Settled::Pending => "waiting".to_string(),
+        Settled::Named { name } => name.0.clone(),
+        Settled::Measured { values } => format!("{} values", values.len()),
+    }
+}
+
+pub fn same(a: &Settled, b: &Settled) -> bool {
+    a.clone() == *b
+}
+
+const WAITING: Settled = Settled::Pending;
+const DONE: Settled = Settled::Fulfilled { value: 7 };
+
+pub fn constants() -> (Settled, Settled) {
+    (WAITING, DONE)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('{ status: "fulfilled", value: n }');
+  expect(js).toContain('{ status: "pending" }');
+  expect(js).toContain('if (s.status === "fulfilled") {');
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.constants()).toEqual([{ status: "pending" }, { status: "fulfilled", value: 7 }]);
+  expect(lib.made(1)).toEqual([{ status: "fulfilled", value: 1 }, { status: "rejected", reason: "no" }, { status: "pending" }]);
+  // What JS made, as Promise.allSettled does, is read as Rust's.
+  expect([lib.told({ status: "fulfilled", value: 2 }), lib.told({ status: "rejected", reason: "x" }), lib.told({ status: "pending" })])
+    .toEqual(["got 2", "failed: x", "waiting"]);
+  expect([lib.same({ status: "fulfilled", value: 2 }, { status: "fulfilled", value: 2 }), lib.same({ status: "pending" }, { status: "rejected", reason: "x" })])
+    .toEqual([true, false]);
+  expect(lib.same({ status: "named", name: ["Ada"] }, { status: "named", name: ["ADA"] })).toBe(true);
+  // Equality compares fields by the tag too, NaN unequal as Rust has it.
+  expect([lib.same({ status: "measured", values: [1] }, { status: "measured", values: [1] }), lib.same({ status: "measured", values: [NaN] }, { status: "measured", values: [NaN] })])
+    .toEqual([true, false]);
+});

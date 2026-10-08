@@ -479,7 +479,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let test = match adt.variants().len() {
                             1 => Expr::bool(true),
                             _ if untagged => self.untagged_variant_test(ty, variant, &value),
-                            _ => Expr::bin(Op::Eq, Expr::member(value.clone(), "TAG"), tag),
+                            _ => Expr::bin(
+                                Op::Eq,
+                                Expr::member(value.clone(), super::bindings::tag_key(self.tcx, adt.did())),
+                                tag,
+                            ),
                         };
                         out.push(StmtKind::If(test, fields, None).at(js_span));
                     }
@@ -577,7 +581,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         _ if untagged => self.untagged_variant_test(ty, variant, &value),
                         _ => Expr::bin(
                             Op::Eq,
-                            Expr::member(value.clone(), "TAG"),
+                            Expr::member(value.clone(), super::bindings::tag_key(self.tcx, adt.did())),
                             Expr::str(variant_name(self.tcx, variant)),
                         ),
                     };

@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "tagged-unit-variant-test-string",
+    breaks: "a discriminated union's fieldless variant is tested as a string, `s === \"pending\"`",
+    file: "src/lower/patterns.rs",
+    find: "                    let unit = variant.fields.is_empty() && bindings::declared_tag(self.tcx, adt_def.did()).is_none();",
+    replace: "                    let unit = variant.fields.is_empty();",
+    tests: ["test/format.test.ts","-t","discriminated union"],
+  },
+  {
+    name: "tagged-variant-test-tag",
+    breaks: "a discriminated union's variant is tested by `TAG`, not its own tag",
+    file: "src/lower/patterns.rs",
+    find: "                    let key = bindings::tag_key(self.tcx, adt_def.did());",
+    replace: "                    let key = String::from(\"TAG\");",
+    tests: ["test/format.test.ts","-t","discriminated union"],
+  },
+  {
     name: "guard-statements",
     breaks: "a guard's statements don't run before its test",
     file: "src/lower/patterns.rs",

@@ -237,6 +237,37 @@ pub fn count(items: Items<u32>) -> usize {
         Items::Label(_) => 1,
     }
 }
+
+// An enum with fields is its tagged objects' union, a variant without its
+// name (ADR 0033); a discriminated union's, each an object (ADR 0284).
+pub enum Shape {
+    Empty,
+    Circle(f64),
+    Rect { w: f64, h: f64 },
+}
+
+pub fn area(shape: Shape) -> f64 {
+    match shape {
+        Shape::Empty => 0.0,
+        Shape::Circle(r) => r * r,
+        Shape::Rect { w, h } => w * h,
+    }
+}
+
+#[rust_js::tag = "status"]
+pub enum Settled {
+    #[rust_js::name = "fulfilled"]
+    Fulfilled { value: u32 },
+    #[rust_js::name = "pending"]
+    Pending,
+}
+
+pub fn settled(s: Settled) -> u32 {
+    match s {
+        Settled::Fulfilled { value } => value,
+        Settled::Pending => 0,
+    }
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
@@ -267,6 +298,8 @@ pub fn count(items: Items<u32>) -> usize {
     "export function width(size: Size): string;",
     "export type Items<T> = T[] | string;",
     "export function count(items: Items<number>): number;",
+    'export type Shape = "Empty" | {\n    TAG: "Circle";\n    _0: number;\n} | {\n    TAG: "Rect";\n    w: number;\n    h: number;\n};',
+    'export type Settled = {\n    status: "fulfilled";\n    value: number;\n} | {\n    status: "pending";\n};',
   ]) {
     expect(declarations).toContain(line);
   }

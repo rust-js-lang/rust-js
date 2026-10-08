@@ -1746,9 +1746,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let name = Expr::str(bindings::variant_name(self.tcx, variant));
                 let mut tests = Vec::new();
                 if adt_def.variants().len() > 1 {
-                    tests.push(match variant.fields.is_empty() {
+                    let key = bindings::tag_key(self.tcx, adt_def.did());
+                    let unit = variant.fields.is_empty() && bindings::declared_tag(self.tcx, adt_def.did()).is_none();
+                    tests.push(match unit {
                         true => Expr::bin(Op::Eq, subject.clone(), name),
-                        false => Expr::bin(Op::Eq, Expr::member(subject.clone(), "TAG"), name),
+                        false => Expr::bin(Op::Eq, Expr::member(subject.clone(), &key), name),
                     });
                 }
                 for field in subpatterns {

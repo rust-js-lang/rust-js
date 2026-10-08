@@ -74,7 +74,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::int(n));
         }
         if adt.adt_def.is_enum() && variant.fields.is_empty() {
-            return Ok(Expr::str(bindings::variant_name(self.tcx, variant)));
+            return Ok(bindings::unit_variant(self.tcx, adt.adt_def.did(), variant));
         }
         if adt.adt_def.is_union() {
             return Err(self.unsupported(span, "unions"));
@@ -202,7 +202,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
 
-        let tag = adt.adt_def.is_enum().then(|| bindings::variant_name(self.tcx, variant));
+        let tag = (adt.adt_def.is_enum()).then(|| {
+            (
+                bindings::tag_key(self.tcx, adt.adt_def.did()),
+                bindings::variant_name(self.tcx, variant),
+            )
+        });
         let shape = match tag {
             Some(_) => Shape::Object(self.variant_fields(variant, adt.args)),
             None => self.shape(ty),
@@ -412,7 +417,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else if adt_def.is_union() || self.is_fmt_result(ty) {
             return Err(self.unsupported(span, "this constructor as a value"));
         } else {
-            let tag = adt_def.is_enum().then(|| bindings::variant_name(self.tcx, variant));
+            let tag = (adt_def.is_enum()).then(|| {
+                (
+                    bindings::tag_key(self.tcx, adt_def.did()),
+                    bindings::variant_name(self.tcx, variant),
+                )
+            });
             let shape = match tag {
                 Some(_) => Shape::Object(self.variant_fields(variant, adt_args)),
                 None => self.shape(ty),

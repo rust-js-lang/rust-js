@@ -1,5 +1,6 @@
 //! Decode the binding language independently of call lowering.
 
+use crate::js;
 use rustc_ast::LitKind;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::{DefKind, Res};
@@ -44,6 +45,28 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
                         "rust-js: `#[rust_js::nullable({name})]` names no parameter of this function that's an `Option`"
                     );
                     tcx.dcx().span_err(tcx.def_span(def), message);
+                    valid = false;
+                }
+            }
+        }
+        // A discriminated union's variants are objects of named fields, none
+        // of them its tag's (ADR 0284).
+        if matches!(tcx.def_kind(def), DefKind::Enum)
+            && let Some(key) = declared_tag(tcx, def.to_def_id())
+        {
+            for variant in tcx.adt_def(def).variants() {
+                let tuple = matches!(variant.ctor_kind(), Some(rustc_hir::def::CtorKind::Fn));
+                let clash = variant.fields.iter().any(|f| field_key(tcx, f) == key);
+                if tuple || clash {
+                    let what = if tuple {
+                        "a tuple variant, whose fields have no names"
+                    } else {
+                        "a field of the tag's name"
+                    };
+                    let message = format!(
+                        "rust-js: `#[rust_js::tag = \"{key}\"]`'s enum has {what}: each variant's fields are named properties beside `{key}`"
+                    );
+                    tcx.dcx().span_err(tcx.def_span(variant.def_id), message);
                     valid = false;
                 }
             }
@@ -222,6 +245,29 @@ pub(super) fn unit_name(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
 
 pub(super) fn variant_name(tcx: TyCtxt<'_>, variant: &VariantDef) -> String {
     given_name(tcx, variant.def_id).unwrap_or_else(|| variant.name.to_string())
+}
+
+/// The property an enum's variant is told by: `TAG` (ADR 0033), or the
+/// one it names, `#[rust_js::tag = "status"]`, a discriminated union's,
+/// each variant an object of it, its fieldless ones too (ADR 0284).
+pub(super) fn tag_key(tcx: TyCtxt<'_>, adt: DefId) -> String {
+    declared_tag(tcx, adt).unwrap_or_else(|| "TAG".to_string())
+}
+
+/// An enum's `#[rust_js::tag = ".."]`, if it has one.
+pub(super) fn declared_tag(tcx: TyCtxt<'_>, adt: DefId) -> Option<String> {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("tag")];
+    Some(tcx.get_attrs_by_path(adt, &path).next()?.value_str()?.to_string())
+}
+
+/// A variant without fields: its name (ADR 0013), or of a discriminated
+/// union an object of it, `{ status: "pending" }` (ADR 0284).
+pub(super) fn unit_variant(tcx: TyCtxt<'_>, adt: DefId, variant: &VariantDef) -> js::Expr {
+    let name = js::Expr::str(variant_name(tcx, variant));
+    match declared_tag(tcx, adt) {
+        Some(key) => js::Expr::object(vec![js::Prop::Field(key, name)]),
+        None => name,
+    }
 }
 
 /// Whether an enum is untagged, `#[rust_js::untagged]`: a value is its

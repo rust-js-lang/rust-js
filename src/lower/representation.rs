@@ -678,7 +678,7 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
                 return fields.first().and_then(|&payload| const_js(tcx, payload));
             }
             if fields.is_empty() {
-                return Some(Expr::str(super::bindings::variant_name(tcx, variant)));
+                return Some(super::bindings::unit_variant(tcx, adt.did(), variant));
             }
             let values = all(fields)?;
             let props = values
@@ -686,9 +686,12 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
                 .enumerate()
                 .map(|(i, v)| Prop::Field(variant_field(tcx, variant, i), v));
             Some(Expr::object(
-                std::iter::once(Prop::Field("TAG".into(), Expr::str(variant.name.to_string())))
-                    .chain(props)
-                    .collect(),
+                std::iter::once(Prop::Field(
+                    super::bindings::tag_key(tcx, adt.did()),
+                    Expr::str(super::bindings::variant_name(tcx, variant)),
+                ))
+                .chain(props)
+                .collect(),
             ))
         }
         // A std struct's fields are its own, not the JS value rust-js makes

@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "tagged-variant-made-with-tag",
+    breaks: "a discriminated union's variant is made `{ TAG: \"fulfilled\", value }`",
+    file: "src/lower.rs",
+    find: "            let tag = tag.map(|(key, name)| Prop::Field(key, Expr::str(name)));",
+    replace: "            let tag = tag.map(|(_, name)| Prop::Field(\"TAG\".into(), Expr::str(name)));",
+    tests: ["test/format.test.ts","-t","discriminated union"],
+  },
+  {
     name: "raw-lines-escaped",
     breaks: "a raw string written across lines is one line of `\\n`s",
     file: "src/lower.rs",

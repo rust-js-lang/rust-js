@@ -1762,10 +1762,10 @@ fn discriminants<'tcx>(tcx: TyCtxt<'tcx>, adt: ty::AdtDef<'tcx>) -> Vec<(String,
 /// A struct's or a variant's value, of its fields' values in declared order:
 /// an object, tagged `{ TAG: "Circle", _0: r }` for a variant (ADR 0033), or
 /// an array for a tuple struct (ADR 0020).
-fn assembled(shape: Shape<'_>, tag: Option<String>, items: Vec<Expr>) -> Expr {
+fn assembled(shape: Shape<'_>, tag: Option<(String, String)>, items: Vec<Expr>) -> Expr {
     match shape {
         Shape::Object(fields) => {
-            let tag = tag.map(|name| Prop::Field("TAG".into(), Expr::str(name)));
+            let tag = tag.map(|(key, name)| Prop::Field(key, Expr::str(name)));
             let fields = fields.into_iter().zip(items).map(|((name, _), v)| Prop::Field(name, v));
             Expr::object(tag.into_iter().chain(fields).collect())
         }

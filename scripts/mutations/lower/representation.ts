@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "tagged-constant-tag",
+    breaks: "a constant of a discriminated union's variant is `{ TAG: \"Fulfilled\", value }`, its Rust name under `TAG`",
+    file: "src/lower/representation.rs",
+    find: "                    super::bindings::tag_key(tcx, adt.did()),",
+    replace: "                    \"TAG\".to_string(),",
+    tests: ["test/format.test.ts","-t","discriminated union"],
+  },
+  {
     name: "named-unit-const-undefined",
     breaks: "a constant of a unit struct named `#[rust_js::name]` is `undefined`, not its string",
     file: "src/lower/representation.rs",

@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "tagged-unit-variant-string",
+    breaks: "a discriminated union's variant without fields is its bare name, `\"pending\"`, not `{ status: \"pending\" }`",
+    file: "src/lower/bindings.rs",
+    find: "        Some(key) => js::Expr::object(vec![js::Prop::Field(key, name)]),",
+    replace: "        Some(_) => name,",
+    tests: ["test/format.test.ts","-t","discriminated union"],
+  },
+  {
+    name: "tagged-tuple-variant-accepted",
+    breaks: "a `#[rust_js::tag]` enum's tuple variant is accepted, its fields `_0` beside the tag",
+    file: "src/lower/bindings.rs",
+    find: "                if tuple || clash {",
+    replace: "                if clash {",
+    tests: ["test/diagnostics.test.ts","-t","tagged enum"],
+  },
+  {
     name: "event-method-receiver-lost",
     breaks: "an event's metadata-backed method loses its self receiver",
     file: "src/lower/bindings.rs",

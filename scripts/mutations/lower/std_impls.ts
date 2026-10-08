@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "tagged-eq-tag",
+    breaks: "`==` of a discriminated union's fields reads `TAG`, which it hasn't",
+    file: "src/lower/std_impls.rs",
+    find: "                    let key = super::bindings::tag_key(self.tcx, adt.did());",
+    replace: "                    let key = String::from(\"TAG\");",
+    tests: ["test/format.test.ts","-t","discriminated union"],
+  },
+  {
     name: "library-recursive-clone-inline",
     breaks: "a clone of a library's type inside itself isn't a function that calls itself, and never ends",
     file: "src/lower/std_impls.rs",

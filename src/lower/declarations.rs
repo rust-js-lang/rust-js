@@ -18,7 +18,8 @@ use rustc_span::def_id::{DefId, LocalModId};
 use serde_json::{Value, json};
 
 use super::bindings::{
-    field_default, field_key, fn_name, is_binding, is_flatten, is_mark, is_nullable, is_rest, is_untagged, variant_name,
+    declared_tag, field_default, field_key, fn_name, is_binding, is_flatten, is_mark, is_nullable, is_rest,
+    is_untagged, tag_key, variant_name,
 };
 use super::recognition::{StdItem, is_std_def};
 use super::representation::Num;
@@ -544,7 +545,31 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     .map(|v| json!({ "kind": "literal", "value": variant_name(self.tcx, v) }))
                     .collect::<Vec<_>>(),
             }),
-            false => keyword("any"),
+            // `{ TAG: "Circle"; _0: number } | "Empty"`, each variant as rust-js
+            // makes it (ADR 0033), as ReScript's genType declares one; of a
+            // discriminated union, each an object of its tag (ADR 0284).
+            false => {
+                let args = ty::GenericArgs::identity_for_item(self.tcx, def_id);
+                let key = tag_key(self.tcx, def_id);
+                let tagged = declared_tag(self.tcx, def_id).is_some();
+                let types: Vec<Value> = (adt.variants().iter())
+                    .map(|v| {
+                        let name = json!({ "kind": "literal", "value": variant_name(self.tcx, v) });
+                        if v.fields.is_empty() && !tagged {
+                            return name;
+                        }
+                        let tuple = matches!(v.ctor_kind(), Some(rustc_hir::def::CtorKind::Fn));
+                        let tag = json!({ "kind": "property", "name": key, "optional": false, "readonly": false, "type": name });
+                        let fields = v.fields.iter().enumerate().map(|(i, field)| {
+                            let ty = self.ts(field.ty(self.tcx, args).skip_normalization());
+                            let name = if tuple { format!("_{i}") } else { field_key(self.tcx, field) };
+                            json!({ "kind": "property", "name": name, "optional": false, "readonly": false, "type": ty })
+                        });
+                        json!({ "kind": "object", "members": std::iter::once(tag).chain(fields).collect::<Vec<_>>() })
+                    })
+                    .collect();
+                json!({ "kind": "union", "types": types })
+            }
         };
         json!({
             "kind": "type",

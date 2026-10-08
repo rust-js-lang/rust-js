@@ -309,7 +309,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let copy = self.clone_fields(place.clone(), fields, span, out)?;
                     let test = Expr::bin(
                         Op::Eq,
-                        Expr::member(place.clone(), "TAG"),
+                        Expr::member(place.clone(), super::bindings::tag_key(self.tcx, adt.did())),
                         Expr::str(variant_name(self.tcx, variant)),
                     );
                     value = Expr::cond(test, copy, value);
@@ -468,7 +468,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let variant = self
                     .default_variant(default, ty)
                     .ok_or_else(|| self.unsupported(span, &format!("`Default` of `{ty}`")))?;
-                Expr::str(variant_name(self.tcx, adt.variant_with_ctor_id(variant)))
+                super::bindings::unit_variant(self.tcx, adt.did(), adt.variant_with_ctor_id(variant))
             }
             ty::Adt(adt, _) if self.is_std(adt.did()) => {
                 return Err(self.unsupported(span, &format!("`Default` of `{ty}`")));
@@ -684,7 +684,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         continue;
                     }
                     let name = variant_name(self.tcx, variant);
-                    let tag = |x: &Expr| Expr::bin(Op::Eq, Expr::member(x.clone(), "TAG"), Expr::str(name.clone()));
+                    let key = super::bindings::tag_key(self.tcx, adt.did());
+                    let tag =
+                        |x: &Expr| Expr::bin(Op::Eq, Expr::member(x.clone(), key.clone()), Expr::str(name.clone()));
                     let mut same = tag(&b);
                     for (field, t) in fields {
                         let field = self.eq_value(
