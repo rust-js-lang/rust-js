@@ -141,3 +141,10 @@ value.name = "new";
 
 - The `js` crate's next release has `Unknown`, and `webapi`'s needs it: the
   two are released together.
+
+## Since
+
+- **`json::parse_with(text, reviver)` is `JSON.parse(text, reviver)`**: each
+  part given to the reviver with its key, innermost first, made what it
+  gives, as react.dev's errors page revives its elements from JSON. The
+  builtins test leaves out each property a reviver gives none of.

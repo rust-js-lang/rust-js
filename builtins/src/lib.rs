@@ -542,6 +542,16 @@ pub mod json {
         #[link_name = "JSON.parse"]
         pub safe fn parse(text: &str) -> Result<Option<&'static Unknown>, &'static JsError>;
 
+        /// [`JSON.parse(text, reviver)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse#the_reviver_parameter):
+        /// the value `text` is, each part of it given to `reviver` with its
+        /// key, innermost first, and made what that gives; a property it gives
+        /// `None` of is left out.
+        #[link_name = "JSON.parse"]
+        pub safe fn parse_with(
+            text: &str,
+            reviver: Box<dyn Fn(&str, Option<&'static Unknown>) -> Option<&'static Unknown>>,
+        ) -> Result<Option<&'static Unknown>, &'static JsError>;
+
         /// [`JSON.stringify(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify):
         /// `text`'s JSON, in quotes, with its `"`, `\` and control characters
         /// escaped, which is a JS string literal too.

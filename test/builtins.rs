@@ -1,7 +1,17 @@
 //! The builtins crate (ADR 0102) as a program calls it: each function is the
 //! JS global or method it names. For the test in compiler.test.ts.
 
-use js::{json, reg_exp, string};
+use js::{Unknown, json, reg_exp, string};
+
+/// JSON's value, each property a reviver gives none of left out, as
+/// react.dev's errors page revives its elements.
+pub fn revived(text: &str) -> Option<&'static Unknown> {
+    json::parse_with(text, Box::new(hidden)).ok().flatten()
+}
+
+fn hidden(key: &str, value: Option<&'static Unknown>) -> Option<&'static Unknown> {
+    if key == "secret" { None } else { value }
+}
 
 /// A string's JSON text, which is a JS string literal too.
 pub fn quoted(text: &str) -> String {
