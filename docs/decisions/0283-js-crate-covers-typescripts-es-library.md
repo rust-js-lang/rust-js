@@ -141,3 +141,17 @@ its own for, as TypeScript's ES2024 libs declare them; a test measures it.**
   is given as the reference `shared_array_buffer::new` gives,
   `new_with_buffer(shared)`, not `&shared`, which a generic doesn't
   dereference. 91.9%.
+- **`Intl`**, every member, after ReScript's `Stdlib_Intl` and TypeScript's
+  `lib.es*.intl.d.ts`, in `js::intl`. A formatter is made of `locales`, a
+  `&[&str]` whose empty one is the user's, as ReScript's `array<string>`,
+  and its options: a struct of `Option`s, `None` left out (`undefined`,
+  which Intl reads as not given), `..Default::default()` the rest, as
+  webapi's dictionaries are. Each string union is an enum, as ReScript's
+  polymorphic variants are, where TypeScript's resolved options are
+  `string`s; a number's `format` has ReScript's `format_big_int` and
+  `format_string` beside it. `Locale::new` and `get_canonical_locales`
+  are `Result`s of the `RangeError` of a tag that isn't one; `Segments`
+  are iterated as `segments::iter(s)`, `Iterator.from(s)`. A date's
+  `to_locale_string_with(locales, options)` takes the same options. The
+  shape is written once, in `builtins/intl.ts`, which writes
+  `src/intl.rs`, as the typed arrays are. 100.0% of 689.

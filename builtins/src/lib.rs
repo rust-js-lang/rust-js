@@ -19,6 +19,7 @@ pub mod atomics;
 pub use atomics::{AtomicArray, WaitAsyncResult, WaitAsyncValue, WaitResult, WaitableArray};
 pub mod date;
 pub use date::Date;
+pub mod intl;
 pub mod promise;
 pub use promise::{PromiseSettledResult, PromiseWithResolvers};
 pub mod proxy;

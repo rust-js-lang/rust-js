@@ -34,3 +34,15 @@ test("the typed arrays are what their template writes", () => {
   writeFileSync(file, committed);
   expect(written).toBe(committed);
 });
+
+// Intl's formatters and their options, written once in builtins/intl.ts:
+// what's committed is what it writes.
+test("Intl is what its template writes", () => {
+  const file = join(root, "builtins/src/intl.rs");
+  const committed = readFileSync(file, "utf8");
+  const p = Bun.spawnSync([process.execPath, join(root, "builtins/intl.ts")], { cwd: root });
+  expect(p.exitCode).toBe(0);
+  const written = readFileSync(file, "utf8");
+  writeFileSync(file, committed);
+  expect(written).toBe(committed);
+});

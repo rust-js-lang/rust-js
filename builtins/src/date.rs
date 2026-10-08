@@ -7,6 +7,7 @@
 // A binding's parameters are its JS function's: its body never runs.
 #![allow(unused_variables)]
 
+use super::intl::DateTimeFormatOptions;
 use super::{JsError, JsObject};
 use core::marker::PhantomData;
 
@@ -273,6 +274,24 @@ impl Date {
     /// [`date.toLocaleTimeString()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/toLocaleTimeString): its time as the user's locale writes it.
     #[cfg_attr(rust_js, rust_js::link_name = "toLocaleTimeString")]
     pub fn to_locale_time_string(&self) -> String {
+        unreachable!()
+    }
+
+    /// `date.toLocaleString(locales, options)`: its date and time as `intl::date_time_format::new(locales, options)` writes them.
+    #[cfg_attr(rust_js, rust_js::link_name = "toLocaleString")]
+    pub fn to_locale_string_with(&self, locales: &[&str], options: &DateTimeFormatOptions<'_>) -> String {
+        unreachable!()
+    }
+
+    /// `date.toLocaleDateString(locales, options)`: its date as `intl::date_time_format::new(locales, options)` writes it.
+    #[cfg_attr(rust_js, rust_js::link_name = "toLocaleDateString")]
+    pub fn to_locale_date_string_with(&self, locales: &[&str], options: &DateTimeFormatOptions<'_>) -> String {
+        unreachable!()
+    }
+
+    /// `date.toLocaleTimeString(locales, options)`: its time as `intl::date_time_format::new(locales, options)` writes them.
+    #[cfg_attr(rust_js, rust_js::link_name = "toLocaleTimeString")]
+    pub fn to_locale_time_string_with(&self, locales: &[&str], options: &DateTimeFormatOptions<'_>) -> String {
         unreachable!()
     }
 

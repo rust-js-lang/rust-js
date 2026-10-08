@@ -1461,6 +1461,56 @@ pub async fn waited() -> bool {
   expect(await lib.waited()).toBe(true);
 });
 
+// ADR 0283: Intl's formatters are the js crate's, their options structs whose
+// `None` isn't given, each string union an enum.
+test("Intl's formatters are JS's, their options typed", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("js-intl");
+  writeFileSync(join(dir, "lib.rs"), `use js::date;
+use js::intl::{self, *};
+pub fn numbers() -> (String, String, bool, Vec<String>, String) {
+    let price = number_format::new(&["en-US"], &NumberFormatOptions { style: Some(NumberStyle::Currency), currency: Some("USD"), ..Default::default() });
+    let plain = number_format::new(&["en-US"], &NumberFormatOptions { use_grouping: Some(UseGrouping::Bool(false)), ..Default::default() });
+    let options = plain.resolved_options();
+    let parts = price.format_to_parts(-1.5).into_iter().filter(|p| p.r#type != NumberFormatPartType::Literal).map(|p| p.value).collect();
+    (price.format(1234.5), plain.format(1234.0), options.use_grouping == UseGrouping::Bool(false), parts, price.format_range(3.0, 5.0))
+}
+pub fn dates() -> (String, String, Vec<String>) {
+    let d = date::new_with_time(0.0);
+    let utc = DateTimeFormatOptions { time_zone: Some("UTC"), year: Some(NumericStyle::Numeric), month: Some(MonthStyle::Long), day: Some(NumericStyle::Numeric), ..Default::default() };
+    let format = date_time_format::new(&["en-US"], &utc);
+    let kinds = format.format_to_parts(d).into_iter().filter(|p| p.r#type != DateTimeFormatPartType::Literal).map(|p| p.value).collect();
+    (format.format(d), d.to_locale_date_string_with(&["en-GB"], &utc), kinds)
+}
+pub fn words() -> (Vec<String>, PluralCategory, String, String, Option<String>, usize) {
+    let collator = collator::new(&["en"], &CollatorOptions { numeric: Some(true), ..Default::default() });
+    let mut files = vec!["file10", "file2", "File1"];
+    files.sort_by(|a, b| collator.compare(a, b));
+    let ordinal = plural_rules::new(&["en-US"], &PluralRulesOptions { r#type: Some(PluralRuleType::Ordinal), ..Default::default() });
+    let ago = relative_time_format::new(&["en"], &RelativeTimeFormatOptions { numeric: Some(RelativeTimeNumeric::Auto), ..Default::default() });
+    let list = list_format::new(&["en"], &ListFormatOptions { r#type: Some(ListFormatType::Disjunction), ..Default::default() });
+    let names = display_names::new(&["en"], &DisplayNamesOptions { r#type: DisplayNamesType::Region, locale_matcher: None, style: None, language_display: None, fallback: None });
+    let words = segmenter::new(&["en"], &SegmenterOptions { granularity: Some(Granularity::Word), ..Default::default() });
+    let count = segments::iter(words.segment("Hello, big world")).filter(|s| s.is_word_like == Some(true)).count();
+    (files.iter().map(|f| f.to_string()).collect(), ordinal.select(2.0), ago.format(-1.0, RelativeTimeUnit::Day), list.format(&["a", "b"]), names.of("US"), count)
+}
+pub fn locales() -> (String, bool, Vec<String>, bool) {
+    let maximal = locale::new("en", &LocaleOptions::default()).map(|l| l.maximize().to_string()).unwrap_or_default();
+    let canonical = intl::get_canonical_locales(&["EN-us"]).unwrap_or_default();
+    (maximal, locale::new("not a tag!", &LocaleOptions::default()).is_err(), canonical, intl::supported_values_of(SupportedValuesKey::Currency).len() > 10)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('new Intl.NumberFormat(["en-US"], { style: "currency", currency: "USD"');
+  expect(js).toContain('const format = new Intl.DateTimeFormat(["en-US"], utc);');
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.numbers()).toEqual(["$1,234.50", "1234", true, ["-", "$", "1", ".", "50"], "$3.00 – $5.00"]);
+  expect(lib.dates()).toEqual(["January 1, 1970", "1 January 1970", ["January", "1", "1970"]]);
+  expect(lib.words()).toEqual([["File1", "file2", "file10"], "two", "yesterday", "a or b", "United States", 3]);
+  expect(lib.locales()).toEqual(["en-Latn-US", true, ["en-US"], true]);
+});
+
 // ADR 0283: JS's typed arrays are the js crate's, each element a Rust number
 // of its kind, a `BigInt64Array`'s an `i64`, the `BigInt` rust-js makes one.
 test("typed arrays and their buffers are JS's", async () => {
