@@ -34,6 +34,7 @@ use oxc_ast::ast::{
 };
 use oxc_ast::builder::AstBuilder;
 use oxc_codegen::{Codegen, CodegenOptions, IndentChar};
+use oxc_regular_expression::{LiteralParser, Options};
 use oxc_sourcemap::{SourceMap, SourceMapBuilder};
 use oxc_span::{SPAN, SourceType, Span};
 use oxc_syntax::number::NumberBase;
@@ -866,6 +867,9 @@ impl<'a> Cx<'a> {
                 let call = CallExpression::boxed(sp, self.expr(callee), None, ArenaVec::from_iter_in(args, b), true, b);
                 Expression::new_chain_expression(sp, ChainElement::CallExpression(call), b)
             }
+            ExprKind::New(callee, args) if let Some(literal) = regex_literal(callee, args) => {
+                Expression::new_identifier(sp, self.name(&literal), b)
+            }
             ExprKind::New(callee, args) => {
                 let args = args.iter().map(argument);
                 Expression::new_new_expression(sp, self.expr(callee), None, ArenaVec::from_iter_in(args, b), b)
@@ -1132,6 +1136,55 @@ impl<'a> Cx<'a> {
     fn label(&self, name: &str) -> LabelIdentifier<'a> {
         LabelIdentifier::new(SPAN, self.name(name), &self.b)
     }
+}
+
+/// `new RegExp("%s", "g")` as JS writes it, `/%s/g` (ADR 0243): its pattern
+/// and flags as they're written, a `/` escaped where it would end it, when
+/// JS parses them as a literal. One it doesn't is made as it runs, to throw
+/// then, not as the module is read. A global is never a local's name, so
+/// `RegExp` is JS's.
+fn regex_literal(callee: &js::Expr, args: &[js::Expr]) -> Option<String> {
+    if !matches!(&callee.kind, ExprKind::Var(name) if name == "RegExp") {
+        return None;
+    }
+    let [pattern, rest @ ..] = args else {
+        return None;
+    };
+    let ExprKind::Str(pattern) = &pattern.kind else {
+        return None;
+    };
+    let flags = match rest {
+        [] => "",
+        [flags] => match &flags.kind {
+            ExprKind::Str(flags) => flags.as_str(),
+            _ => return None,
+        },
+        _ => return None,
+    };
+    if pattern.contains(['\n', '\r', '\u{2028}', '\u{2029}']) {
+        return None;
+    }
+    let mut body = String::new();
+    let (mut escaped, mut class) = (false, false);
+    for c in pattern.chars() {
+        match c {
+            '/' if !escaped && !class => body.push('\\'),
+            '[' if !escaped => class = true,
+            ']' if !escaped => class = false,
+            _ => {}
+        }
+        escaped = c == '\\' && !escaped;
+        body.push(c);
+    }
+    // `//` would be a comment: an empty pattern's literal is JS's own source of it.
+    if body.is_empty() {
+        body.push_str("(?:)");
+    }
+    let allocator = Allocator::default();
+    LiteralParser::new(&allocator, &body, Some(flags), Options::default())
+        .parse()
+        .ok()?;
+    Some(format!("/{body}/{flags}"))
 }
 
 /// Can `s` be JSX text as it is? Braces and angle brackets start JSX, `&` an

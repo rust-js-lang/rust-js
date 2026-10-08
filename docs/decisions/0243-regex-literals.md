@@ -35,6 +35,9 @@ reg_exp::new(r"^/\d+$", "m")
 - **One that JS doesn't parse is made as it runs**, `new RegExp("(")`, to
   throw then, not as the module is read; one with a line break too, which
   no literal holds. oxc's parser of regular expressions tells.
+- **It's the printer's**: lowering makes the global `RegExp`, and printing,
+  which oxc is behind, writes it as its literal, where oxc's parser reads
+  it as one. A global is never a local's name.
 
 ## Why
 

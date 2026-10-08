@@ -14,8 +14,6 @@ use super::{Dest, FnCx, R};
 use crate::js;
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
 use crate::runtime::Helper;
-use oxc_allocator::Allocator;
-use oxc_regular_expression::{LiteralParser, Options};
 use rustc_ast::{LitKind, Mutability};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::find_attr;
@@ -278,12 +276,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Expr::call(Expr::member(this, name).or_at(fun_span), args)
                 }
                 (JsForm::Call(name), None) => Expr::call(self.js_ref(&name).or_at(fun_span), args),
-                (JsForm::New(name), None)
-                    if name == "RegExp"
-                        && let Some(literal) = regex_literal(&args) =>
-                {
-                    literal.or_at(fun_span)
-                }
                 (JsForm::New(name), None) => Expr::new_(self.js_ref(&name).or_at(fun_span), args),
                 (JsForm::Get(name), Some(this)) if args.is_empty() && !name.contains('#') => Expr::member(this, name),
                 (JsForm::Set(name), Some(this)) if args.len() == 1 && !name.contains('#') => {
@@ -1082,51 +1074,6 @@ pub(super) fn apply(f: Expr, args: Vec<Expr>) -> Expr {
         }
     }
     Expr::call(f, args)
-}
-
-/// `new RegExp("%s", "g")` as JS writes it, `/%s/g` (ADR 0243): its pattern
-/// and flags as they're written, a `/` escaped where it would end it, when
-/// JS parses them as a literal. One it doesn't is made as it runs, to throw
-/// then, not as the module is read.
-fn regex_literal(args: &[Expr]) -> Option<Expr> {
-    let [pattern, rest @ ..] = args else {
-        return None;
-    };
-    let js::ExprKind::Str(pattern) = &pattern.kind else {
-        return None;
-    };
-    let flags = match rest {
-        [] => "",
-        [flags] => match &flags.kind {
-            js::ExprKind::Str(flags) => flags.as_str(),
-            _ => return None,
-        },
-        _ => return None,
-    };
-    if pattern.contains(['\n', '\r', '\u{2028}', '\u{2029}']) {
-        return None;
-    }
-    let mut body = String::new();
-    let (mut escaped, mut class) = (false, false);
-    for c in pattern.chars() {
-        match c {
-            '/' if !escaped && !class => body.push('\\'),
-            '[' if !escaped => class = true,
-            ']' if !escaped => class = false,
-            _ => {}
-        }
-        escaped = c == '\\' && !escaped;
-        body.push(c);
-    }
-    // `//` would be a comment: an empty pattern's literal is JS's own source of it.
-    if body.is_empty() {
-        body.push_str("(?:)");
-    }
-    let allocator = Allocator::default();
-    LiteralParser::new(&allocator, &body, Some(flags), Options::default())
-        .parse()
-        .ok()?;
-    Some(Expr::regex(&format!("/{body}/{flags}")))
 }
 
 /// `this[key]`, or `this.name` of a key written that's a name, as a person
