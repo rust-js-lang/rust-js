@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0063](0063-text.md) and
 [0138](0138-string-byte-counts.md).
 
+Case: C ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Code that reads bytes makes text of them: a parser of a URL's

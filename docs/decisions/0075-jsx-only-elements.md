@@ -1,5 +1,7 @@
 # 0075: JSX is the public syntax for React elements
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Decision
 
 Use `jsx!` to construct every React element. Builder functions and methods remain

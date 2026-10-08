@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0121](0121-value-keys.md).
 
+Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A type hashes itself where its derive can't, or shouldn't: semver's

@@ -2,6 +2,8 @@
 
 Status: Accepted. Amends [0040](0040-jsx.md).
 
+Case: A ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 JSX prints an element's attributes before its children, and rust-js keeps

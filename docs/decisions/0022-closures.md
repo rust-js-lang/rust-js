@@ -2,6 +2,8 @@
 
 Status: Accepted
 
+Case: C, A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Web code is callbacks: every event handler is a closure. A Rust closure

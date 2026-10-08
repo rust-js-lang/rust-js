@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0017](0017-differential-testing.md) and [0088](0088-corpus.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `bun test` took 285 seconds, one file after another. Bun runs test files

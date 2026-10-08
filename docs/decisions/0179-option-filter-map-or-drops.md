@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0098](0098-destructors.md).
 
+Case: C ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `filter` of an `Option` keeps its value only if a test says so, and

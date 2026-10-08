@@ -3,6 +3,8 @@
 Status: Accepted. Amends [0098](0098-destructors.md) and
 [0106](0106-generic-traits.md).
 
+Case: C ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A generic function is given a drop for each type parameter a caller gives

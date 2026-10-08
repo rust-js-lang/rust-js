@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0030](0030-option.md), whose `if let` this chains.
 
+Case: C, A ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Rust 2024 joins `let`s and conditions with `&&`:

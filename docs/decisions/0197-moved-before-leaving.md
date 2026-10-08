@@ -2,6 +2,8 @@
 
 Status: Accepted. Amends [0098](0098-destructors.md).
 
+Case: A ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A value with a destructor that a scope owns is dropped as the scope ends,

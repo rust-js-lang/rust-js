@@ -2,6 +2,8 @@
 
 Status: Accepted. Amends [0196](0196-typescript-declarations.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A type of another of the crate's modules was `any` in a module's `.d.ts`

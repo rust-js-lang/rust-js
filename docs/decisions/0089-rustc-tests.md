@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0088](0088-corpus.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Our tests are programs we wrote, around what we knew rust-js does. What

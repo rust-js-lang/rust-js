@@ -2,6 +2,8 @@
 
 Status: Accepted. Builds on [0013](0013-fieldless-enums.md).
 
+Case: N, A ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 react.dev's ExpandableCallout keeps each callout's look in one object,

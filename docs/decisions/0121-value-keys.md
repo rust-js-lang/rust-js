@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0059](0059-hashmap.md).
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 ADR 0059 makes a `HashMap` a JS `Map`, and refuses any key JS doesn't

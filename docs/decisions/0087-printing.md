@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0058](0058-format-options.md) and [0066](0066-template-literals.md).
 
+Case: A, C, B, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `println!` is how a Rust program says what it's doing: a command-line tool's

@@ -2,6 +2,8 @@
 
 Status: Accepted. Changes [0034](0034-strings-and-chars.md); extends [0065](0065-format-with-oxfmt.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `format!`, `write!`, `{:?}` and `panic!` build their string from text and

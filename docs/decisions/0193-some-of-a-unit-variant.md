@@ -2,6 +2,8 @@
 
 Status: Accepted. Amends [0030](0030-option.md).
 
+Case: A ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `Some(p)` of an `Option` is `o != null`, and `p`'s test of the value

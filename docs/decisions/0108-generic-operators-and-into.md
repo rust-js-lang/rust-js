@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0049](0049-traits-and-generics.md),
 [0063](0063-text.md) and [0064](0064-numbers.md).
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `a + b` of a `u32` is `(a + b) >>> 0`, and of a `Vec2` its impl's

@@ -3,6 +3,8 @@
 Status: Accepted. Amends [0054](0054-display.md), [0148](0148-write-to-string.md)
 and [0166](0166-user-fmt-write.md); extends [0100](0100-separate-crates.md).
 
+Case: C, D, B ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A writer returns the string it writes (ADR 0054), and a `fmt::Result` is

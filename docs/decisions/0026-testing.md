@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0012](0012-panics-and-runtime-helpers.md) to
 `panic!` and the assertion macros.
 
+Case: N, C ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A program written with rust-js needs tests. How the others do it (checked

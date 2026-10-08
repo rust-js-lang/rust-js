@@ -4,6 +4,8 @@ Status: Accepted. Extends [0166](0166-user-fmt-write.md),
 [0148](0148-write-to-string.md), [0099](0099-mut-references.md) and
 [0106](0106-generic-traits.md).
 
+Case: C ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Code that formats into whatever it's given takes a `W: fmt::Write`, and

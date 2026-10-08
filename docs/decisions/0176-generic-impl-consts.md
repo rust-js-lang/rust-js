@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0106](0106-generic-traits.md) and
 [0031](0031-consts.md).
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 ADR 0106 left out a generic impl's constant made of its parameters':

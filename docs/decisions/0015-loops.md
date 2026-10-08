@@ -2,6 +2,8 @@
 
 Status: Accepted
 
+Case: N, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 THIR has one loop construct, `Loop`. Rust's `while` is desugared before we see it:

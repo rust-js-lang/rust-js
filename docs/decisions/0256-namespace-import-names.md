@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0028](0028-js-module-imports.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 react.dev's BrandMenu imports Radix's context menu as a namespace and

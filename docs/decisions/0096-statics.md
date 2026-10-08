@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0031](0031-consts.md) and [0037](0037-thread-locals.md).
 
+Case: C, A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `static` items are an error (ADR 0031, 0037). They're how Rust keeps one

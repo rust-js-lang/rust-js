@@ -5,6 +5,8 @@ Status: Accepted. Amends [0214](0214-untagged-enums.md) and
 trait of its members, where it was the untagged enum. Builds on
 [0039](0039-generic-bindings.md) and [0100](0100-separate-crates.md).
 
+Case: N, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A union parameter is its untagged enum (ADR 0215), so every call converts:

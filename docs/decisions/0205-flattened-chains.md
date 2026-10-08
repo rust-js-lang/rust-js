@@ -2,6 +2,8 @@
 
 Status: Accepted. Amends [0204](0204-flattened-props.md).
 
+Case: N, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 TypeScript's element props are a chain, `AnchorHTMLAttributes extends

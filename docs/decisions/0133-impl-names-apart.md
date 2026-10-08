@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0049](0049-traits-and-generics.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A trait impl's JS name is its type's and its trait's, `circleShape` (ADR

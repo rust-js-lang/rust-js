@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0061](0061-generic-iterators.md),
 [0071](0071-stepping-iterators.md) and [0052](0052-std-trait-impls.md).
 
+Case: A, C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 An iterator that's `Clone` can be kept and gone over again, a clone at a

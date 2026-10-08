@@ -3,6 +3,8 @@
 Status: Accepted. Amends [0040](0040-jsx.md): a handler or child that
 prints on several lines stays in its JSX, where it went in a `const` first.
 
+Case: A ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 oxc's printer indented code by the statement it was in, not by where it

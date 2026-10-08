@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0164](0164-double-ended-iterators.md).
 
+Case: B, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 An iterator that wraps another passes its hint on, as utf8_iter's

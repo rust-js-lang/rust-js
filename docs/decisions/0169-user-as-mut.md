@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0162](0162-generic-as-ref.md) and
 [0167](0167-borrow.md).
 
+Case: N, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A collection that keeps a slice lends it out mutably, as smallvec's

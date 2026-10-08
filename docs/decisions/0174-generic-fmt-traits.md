@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0165](0165-other-fmt-traits.md) and
 [0049](0049-traits-and-generics.md).
 
+Case: N, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 ADR 0165 called a type's own `LowerHex` or `Pointer` where its type is

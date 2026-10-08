@@ -5,6 +5,8 @@ Status: Accepted. Extends [0033](0033-enums-with-fields.md): an enum marked
 binding's parameter of one is `impl` a sealed trait of its members, of an
 ordinary function (ADR 0039), as an `extern` one can't be generic.
 
+Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 TypeScript says "a string or a `Blob`" with a union, `string | Blob`, and

@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0040](0040-jsx.md) and [0213](0213-props-as-written.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 JSX reads a capitalized variable as what to render, and a string there is a

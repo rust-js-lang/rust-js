@@ -4,6 +4,8 @@ Status: Accepted. Extends [0088](0088-corpus.md) and [0093](0093-mutations.md).
 Extended by [0120](0120-first-npm-release.md): a release's distribution is
 qualified on the host it's built for.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `pack:distribution` makes the four packages an app installs: the compiler

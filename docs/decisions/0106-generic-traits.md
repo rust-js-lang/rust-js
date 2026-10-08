@@ -6,6 +6,8 @@ constant of its parameters, are to come. (Amended: a generic impl's
 constant of its parameters is in, ADR 0176.) Extends [0049](0049-traits-and-generics.md)
 and [0051](0051-generic-options.md).
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 ADR 0049 supports the crate's own traits without type parameters of their

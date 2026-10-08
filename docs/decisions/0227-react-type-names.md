@@ -4,6 +4,8 @@ Status: Accepted. Renames what [0041](0041-react.md), [0043](0043-react-versions
 [0208](0208-react-attributes.md), [0224](0224-typed-intrinsic-elements.md) and
 [0226](0226-react-children.md) named.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A component's children in TypeScript are `children: React.ReactNode`; in

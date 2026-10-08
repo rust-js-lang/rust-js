@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0054](0054-display.md), [0060](0060-debug.md) and [0136](0136-common-std-methods.md). Its `alternate` parameter is superseded by [0143](0143-formatter-options.md): writers take an `options` object, `{ alternate: true }`.
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `{:#?}` was an error everywhere: of a `Vec`, an `Option`, a derived `Debug`,

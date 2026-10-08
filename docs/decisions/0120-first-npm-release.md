@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0094](0094-qualification.md) and
 [0105](0105-create.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A distribution (ADR 0094) is the packages an app installs, packed and

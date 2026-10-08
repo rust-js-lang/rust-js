@@ -2,6 +2,8 @@
 
 Status: Accepted. Amends [0028](0028-js-module-imports.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 An import's name is the same in every file that has it, unique among the

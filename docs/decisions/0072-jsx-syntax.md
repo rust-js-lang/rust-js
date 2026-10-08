@@ -2,6 +2,8 @@
 
 Status: Accepted
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 React already lowers to readable JSX, with Vite Fast Refresh and Rust source

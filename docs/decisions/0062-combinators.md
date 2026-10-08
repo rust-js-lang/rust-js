@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0030](0030-option.md), [0035](0035-results-and-throwing-js.md) and [0036](0036-iterators-and-sorting.md).
 
+Case: C, A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Everyday Rust chains `Option`'s and `Result`'s combinators, iterator

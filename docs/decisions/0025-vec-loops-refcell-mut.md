@@ -2,6 +2,8 @@
 
 Status: Accepted. Extended by [0036](0036-iterators-and-sorting.md): iterator chains and sorting.
 
+Case: A, B, C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A todo list is the smallest real web app: a list that changes. In Rust it's

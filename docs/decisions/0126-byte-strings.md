@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0063](0063-text.md).
 
+Case: C, A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A byte string, `b"GET"`, was an error as a value, though one as a pattern

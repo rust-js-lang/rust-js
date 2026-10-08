@@ -2,6 +2,8 @@
 
 Status: Accepted
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 rustc's driver lets a tool run code at fixed points through the `Callbacks`

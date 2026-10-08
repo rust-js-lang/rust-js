@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0102](0102-js-and-webapi.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 react.dev's code reads its strings by JS's indexes, UTF-16 code units:

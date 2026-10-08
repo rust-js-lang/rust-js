@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0036](0036-iterators-and-sorting.md), [0057](0057-ordering.md) and [0064](0064-numbers.md).
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Graph searches use a queue (`VecDeque`) and a priority queue (`BinaryHeap`,

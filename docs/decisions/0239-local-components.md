@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0220](0220-jsx-tag-values.md) and
 [0213](0213-props-as-written.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 react.dev's Challenges picks its heading as it renders, and gives it props

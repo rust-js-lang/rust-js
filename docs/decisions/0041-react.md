@@ -3,6 +3,8 @@
 Status: Accepted. Uses ADRs 0038 (names), 0039 (generic bindings) and 0040
 (JSX).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 The goal is a React component written in Rust that compiles to the

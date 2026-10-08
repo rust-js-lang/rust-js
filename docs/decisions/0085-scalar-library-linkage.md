@@ -2,6 +2,8 @@
 
 Status: Accepted, and replaced by [0100](0100-separate-crates.md), whose manifest version 2 is this contract grown to the types, methods and impls a library exports. Extends 0019 and 0084 for a deliberately narrow subset.
 
+Case: N, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Sharing a source module does not prove dependency linkage. A Cargo path library

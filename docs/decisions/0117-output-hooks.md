@@ -3,6 +3,8 @@
 Status: Accepted, but for checks in Cargo's build, to come. Extends
 [0065](0065-format-with-oxfmt.md) and [0114](0114-app-cargo-toml.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 rust-js lays the JS out as oxfmt does, and moves the source map to the

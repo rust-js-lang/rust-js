@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0036](0036-iterators-and-sorting.md) and [0128](0128-iterator-sources.md).
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A range was an iterator only where it was written: `for i in 0..n` and

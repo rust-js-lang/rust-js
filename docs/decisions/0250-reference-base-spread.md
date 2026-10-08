@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0213](0213-props-as-written.md).
 
+Case: N, C ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 react.dev's CodeDiagram renders each `<pre>` child anew as a CodeBlock,

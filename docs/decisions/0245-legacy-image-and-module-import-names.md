@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0192](0192-next.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 react.dev's TeamMember shows each member's photo with Next.js's older

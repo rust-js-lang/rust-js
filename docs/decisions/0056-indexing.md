@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0020](0020-structs-and-tuples.md) and [0025](0025-vec-loops-refcell-mut.md).
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A slice or an array was read with `a[i]`, as `$index(a, i)`. That helper

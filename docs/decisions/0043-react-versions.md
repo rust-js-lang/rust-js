@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0041](0041-react.md).
 
+Case: N, A ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 The `react` crate covered hooks, context and `memo`. The goal is React's and

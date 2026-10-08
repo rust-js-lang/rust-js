@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0224](0224-typed-intrinsic-elements.md), which left
 this for later, and [0043](0043-react-versions.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 TypeScript's `JSX.IntrinsicElements` says what each tag takes:

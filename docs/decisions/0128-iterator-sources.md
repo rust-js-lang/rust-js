@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0036](0036-iterators-and-sorting.md) and [0055](0055-iterator.md).
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 std makes iterators out of nothing: `iter::once(x)`, `iter::empty()`,

@@ -2,6 +2,8 @@
 
 Status: Accepted. Amends [0192](0192-next.md) and [0200](0200-binding-props-borrow.md).
 
+Case: N, A ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A component's props were written in its struct's order, a cost ADR 0192

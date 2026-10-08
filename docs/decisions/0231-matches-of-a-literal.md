@@ -3,6 +3,8 @@
 Status: Accepted. Builds on [0193](0193-some-of-a-unit-variant.md) and
 [0214](0214-untagged-enums.md).
 
+Case: N, C ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 react.dev's `Link` tests a child's type, `child.type?.mdxName ===

@@ -4,6 +4,8 @@ Status: Accepted. Extends [0038](0038-js-names-and-destructuring.md). Amended
 by [0110](0110-stable-syntax.md): it's written `js::camel_case!();`, as stable
 Rust has no inner attribute of a tool.
 
+Case: N, B, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 ADR 0038 renames variables and parameters to camelCase, `set_count` to

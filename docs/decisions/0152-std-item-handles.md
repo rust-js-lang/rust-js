@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0099](0099-mut-references.md).
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A JS number or string in an array or a `Map` can't be pointed at: there's

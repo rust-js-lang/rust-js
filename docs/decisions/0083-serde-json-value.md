@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0033](0033-enums-with-fields.md), [0059](0059-hashmap.md) and [0077](0077-serde-json.md) to [0082](0082-serde-flatten.md).
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Not every JSON has a type: a field of settings, a response a client passes

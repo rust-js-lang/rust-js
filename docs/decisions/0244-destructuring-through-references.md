@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0020](0020-structs-and-tuples.md) and
 [0023](0023-strings-references-shared-state.md).
 
+Case: A ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 react.dev's ErrorDecoder takes its params apart as it gets them:

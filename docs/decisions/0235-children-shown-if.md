@@ -2,6 +2,8 @@
 
 Status: Accepted. Builds on [0040](0040-jsx.md).
 
+Case: A, C ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 react.dev writes a child shown only when a test holds with `&&`, some 57

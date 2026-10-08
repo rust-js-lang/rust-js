@@ -2,6 +2,8 @@
 
 Status: Accepted.
 
+Case: A, N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 react.dev's Challenges parses its children into challenges, which its

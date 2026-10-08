@@ -5,6 +5,8 @@ Status: Accepted. The DOM itself comes generated, in the `web` crate: see
 Generic bindings use the tool attribute rejected below, which rust-js now
 registers itself: see [0039](0039-generic-bindings.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A web program talks to the DOM. Rust needs a way to say "this function,

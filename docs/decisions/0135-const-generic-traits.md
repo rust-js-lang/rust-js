@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0107](0107-const-generics.md) and [0133](0133-impl-names-apart.md).
 
+Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A function's, a type's and an impl's const parameters are values their

@@ -2,6 +2,8 @@
 
 Status: Accepted. Complements [0017](0017-differential-testing.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 ADR 0017 tests behavior: the JS must compute what native Rust computes.

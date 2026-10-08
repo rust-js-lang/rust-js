@@ -3,6 +3,8 @@
 Status: Accepted. Amends [0196](0196-typescript-declarations.md); uses
 [0206](0206-typescript-module.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 rust-js wrote a module's `.d.ts` as strings (ADR 0196): its own guess at

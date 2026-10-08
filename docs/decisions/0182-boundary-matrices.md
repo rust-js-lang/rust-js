@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0093](0093-mutations.md) and the corpus's
 comparison with native Rust.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 The corpus's cases are programs someone thought of; the generated programs

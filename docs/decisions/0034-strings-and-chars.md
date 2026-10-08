@@ -2,6 +2,8 @@
 
 Status: Accepted; `format!` is a template literal now ([0066](0066-template-literals.md)), and byte counts are counted ([0138](0138-string-byte-counts.md)). Extends [0023](0023-strings-references-shared-state.md).
 
+Case: A, D, C ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A `String` or `&str` is a JS string (ADR 0023), but rust-js knew only a few

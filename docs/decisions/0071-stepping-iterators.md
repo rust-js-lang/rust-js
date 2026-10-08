@@ -8,6 +8,8 @@ where a loop that stopped early had left `it` as it was, a wrong answer;
 know where it is. num-traits' float parser found them. `by_ref()` of an
 iterator of the crate's is the iterator too, ADR 0184.) Extends [0036](0036-iterators-and-sorting.md) and [0055](0055-iterator.md).
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 An iterator over an array is the array itself (ADR 0036): `v.iter().map(f)`

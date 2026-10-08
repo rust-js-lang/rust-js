@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0019](0019-one-js-file-per-module.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A build tool runs rust-js again and again, over what it wrote before: after

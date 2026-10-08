@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0055](0055-iterator.md) and
 [0160](0160-user-collections.md).
 
+Case: N, C ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 An iterator of the crate's is a JS iterator of its own `next` (ADR 0055).

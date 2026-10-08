@@ -6,6 +6,8 @@ stopped uuid and writeable; `split_first` and `split_last`, chrono's.) Extends [
 [0052](0052-std-trait-impls.md), [0062](0062-combinators.md) and
 [0025](0025-vec-loops-refcell-mut.md).
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 App code stopped at methods each one line long: `extend_from_slice`,

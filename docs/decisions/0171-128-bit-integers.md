@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0086](0086-64-bit-integers.md).
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 ADR 0086 made an `i64` or a `u64` a BigInt and left 128 bits out. The

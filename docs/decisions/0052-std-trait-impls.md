@@ -4,6 +4,8 @@ Status: Accepted. Extends [0049](0049-traits-and-generics.md) and [0020](0020-st
 (Amended: a derived impl here is std's derive's; another crate's derive's is
 the crate's own code, ADR 0186.)
 
+Case: C, A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 ADR 0049 gave traits a JS shape: a dictionary per impl, dictionaries as

@@ -2,6 +2,8 @@
 
 Status: Accepted. Extended by [0088](0088-corpus.md): outcomes are compared exactly, and a corpus of programs runs natively and as JS.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 How do we know the JS behaves like Rust? Writing expected values by hand

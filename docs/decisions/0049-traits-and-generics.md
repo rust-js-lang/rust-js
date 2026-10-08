@@ -13,6 +13,8 @@ for the supported subset below. Amended by
 [0230](0230-marker-bounds.md): a bound of a trait with nothing in it passes no
 dictionary.
 
+Case: C, D, N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `Circle { r: 2.0 }` is `{ r: 2 }`, and both an `i32` and an `f64` are JS

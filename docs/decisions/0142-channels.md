@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0098](0098-destructors.md).
 
+Case: C, B, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `std::sync::mpsc::channel()` is how Rust code hands values from producers

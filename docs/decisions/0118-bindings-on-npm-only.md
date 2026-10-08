@@ -6,6 +6,8 @@ crates.io for [0116](0116-binding-versions.md)'s bindings: the community's too
 `@rust-js/webapi` and `@rust-js/react`, and
 `@rust-js-bindings/canvas-confetti`, an app installing each from npm.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 ADR 0116 versions bindings, and ADR 0115 publishes them to crates.io, a

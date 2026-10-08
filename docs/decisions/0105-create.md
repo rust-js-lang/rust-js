@@ -5,6 +5,8 @@ and [0103](0103-runtime-package.md). Extended by [0114](0114-app-cargo-toml.md):
 app has a `Cargo.toml`, for an editor; by [0120](0120-first-npm-release.md): it's on npm,
 and an app names its compiler.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 The vite-react example is the app a new user wants: create-vite's React

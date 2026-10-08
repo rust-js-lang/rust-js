@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends 0006, 0018, 0019, 0040 and 0041.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 JSX adds output extensions and presentation choices; Vite adds repeated builds.

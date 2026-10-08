@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0125](0125-function-values.md).
 
+Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Three of stable Rust's forms were errors:

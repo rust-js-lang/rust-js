@@ -2,6 +2,8 @@
 
 Status: Accepted. Amended by [0215](0215-webapi-unions.md): a union is its untagged enum, where it was a function per member; and by [0223](0223-webapi-event-and-tag-maps.md): an event's name and a tag are types, `add_event_listener(b, Click, ..)` and `create_element(document, Button)`, where they were strings. Extends [0021](0021-js-interop.md). Named `webapi`, and its JS-language types moved to the `js` crate, by [0102](0102-js-and-webapi.md), which also names its forms as ReScript's.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 ADR 0021 lets a program declare the JS it uses. A real web program uses a

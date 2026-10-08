@@ -4,6 +4,8 @@ Status: Accepted. **Extended by [0019](0019-one-js-file-per-module.md):**
 the output is one JS file per module. `-o` names the crate root's file, and
 the other modules go beside it.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 We need a command-line shape and a crate model before anything else works.

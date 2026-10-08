@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0049](0049-traits-and-generics.md) and
 [0159](0159-user-from-str.md).
 
+Case: N, A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Code that reads a value of any type from text is generic over `FromStr`:

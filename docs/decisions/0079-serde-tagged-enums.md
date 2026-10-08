@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0078](0078-serde-json-reading.md).
 
+Case: C ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 ADR 0078 reads an enum when it's externally tagged, `{"Circle": 1.5}`,

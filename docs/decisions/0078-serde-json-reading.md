@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0077](0077-serde-json.md).
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 ADR 0077 made the client write what the server reads. The other way, the

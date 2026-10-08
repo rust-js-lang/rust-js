@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0248](0248-thread-local-default-export.md) and
 [0202](0202-imports-named-around-importers.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 react.dev's CodeBlock/index exports one thing, by default, which its

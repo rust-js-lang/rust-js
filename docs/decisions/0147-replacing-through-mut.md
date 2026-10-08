@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0025](0025-vec-loops-refcell-mut.md),
 [0033](0033-enums-with-fields.md) and [0099](0099-mut-references.md).
 
+Case: C ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `*r = v` replaces what a `&mut` points at, and `mem::replace`, `mem::swap`

@@ -2,6 +2,8 @@
 
 Status: Accepted. Supersedes the printer half of [0007](0007-js-ast-and-printer.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Our own printer (`js.rs`, ~320 lines) handled precedence and indentation

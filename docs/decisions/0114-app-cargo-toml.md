@@ -5,6 +5,8 @@ Extended by [0115](0115-binding-crates-on-crates-io.md): the crates are packaged
 for crates.io; by [0117](0117-output-hooks.md): it has the crate's settings for
 its JS.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A plain rustc compiles a program and the crates it uses (ADR 0113), but an

@@ -5,6 +5,8 @@ stands: `lower.rs` still builds our small JS AST and never thinks about
 parentheses. The printer half is replaced: oxc now prints, and `js.rs` no
 longer contains a printer. The reasoning below is kept for history.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 The lowering could print JS strings directly. But then every piece of code

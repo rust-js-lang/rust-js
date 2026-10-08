@@ -2,6 +2,8 @@
 
 Status: Accepted.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 react.dev's ErrorDecoder splits a message at its links, a list of text

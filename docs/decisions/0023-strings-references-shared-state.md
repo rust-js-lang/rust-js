@@ -3,6 +3,8 @@
 Status: Accepted. Extended by [0034](0034-strings-and-chars.md): more string
 methods, `char`, and `format!`.
 
+Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 An imperative web program needs three more things:

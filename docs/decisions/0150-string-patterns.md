@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0063](0063-text.md) and
 [0138](0138-string-byte-counts.md).
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `split`, `find` and `split_once` of a `&str` or a `char` pattern compile

@@ -2,6 +2,8 @@
 
 Status: Accepted.
 
+Case: A ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 react.dev's `getRouteMeta` compares a route's path, `Option<String>`, with

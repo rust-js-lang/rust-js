@@ -2,6 +2,8 @@
 
 Status: Accepted
 
+Case: C ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 When `expr()` lowers something that needs statements (a block with `let`s, a

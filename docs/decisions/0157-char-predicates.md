@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0063](0063-text.md), [0138](0138-string-byte-counts.md)
 and [0150](0150-string-patterns.md).
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A pattern can be what a `char` is, not only what text is:

@@ -2,6 +2,8 @@
 
 Status: Accepted. Amends [0084](0084-owned-phases-and-host-boundaries.md), [0088](0088-corpus.md), [0089](0089-rustc-tests.md) and [0092](0092-generated-programs.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Every program the corpus, rustc's tests and the generated programs check

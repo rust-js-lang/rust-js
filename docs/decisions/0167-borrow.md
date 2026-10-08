@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0049](0049-traits-and-generics.md) and
 [0162](0162-generic-as-ref.md).
 
+Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `Borrow` is how Rust says "this key can be looked up as that": a map's

@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0041](0041-react.md), [0075](0075-jsx-only-elements.md)
 and [0223](0223-webapi-event-and-tag-maps.md).
 
+Case: N, A ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 In TypeScript, `<button>` is a `HTMLButtonElement` all the way up:

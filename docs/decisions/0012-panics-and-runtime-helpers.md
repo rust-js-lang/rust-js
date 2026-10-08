@@ -3,6 +3,8 @@
 Status: Accepted, and its helpers' place replaced by [0103](0103-runtime-package.md): a module imports them from `@rust-js/runtime`, not each its own. `panic!` and the assertion macros followed, with the same
 `throw new Error(..)`: see [0026](0026-testing.md).
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Some Rust operations panic **in every build profile**, not only debug:

@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0024](0024-web-crate.md), [0102](0102-js-and-webapi.md)
 and [0013](0013-fieldless-enums.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `webapi` took any event name and gave every listener the base `Event`:

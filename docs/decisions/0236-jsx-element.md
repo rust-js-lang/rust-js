@@ -4,6 +4,8 @@ Status: Accepted. Amends [0196](0196-typescript-declarations.md),
 [0224](0224-typed-intrinsic-elements.md) and
 [0227](0227-react-type-names.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 @types/react names what JSX makes `JSX.Element`, `interface Element extends

@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0054](0054-display.md), [0060](0060-debug.md) and [0074](0074-mut-boxes.md).
 
+Case: C, A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Some std methods that ordinary Rust calls all the time were errors:

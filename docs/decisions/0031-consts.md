@@ -2,6 +2,8 @@
 
 Status: Accepted.
 
+Case: A, C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `const` items were an error. Programs want them for URLs, sizes, limits and

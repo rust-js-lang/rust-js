@@ -2,6 +2,8 @@
 
 Status: Accepted. Amends [0020](0020-structs-and-tuples.md).
 
+Case: B ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 react.dev's Challenge takes its props apart, a callback among them:

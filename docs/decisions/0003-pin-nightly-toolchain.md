@@ -2,6 +2,8 @@
 
 Status: Accepted. Amended by [0109](0109-stable-release.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 To read THIR we link against rustc's own crates (`rustc_driver`,

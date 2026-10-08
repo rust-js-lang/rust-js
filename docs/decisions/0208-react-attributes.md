@@ -3,6 +3,8 @@
 Status: Accepted. Uses [0204](0204-flattened-props.md), [0205](0205-flattened-chains.md)
 and [0206](0206-typescript-module.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A React component's props are often an element's and its own,

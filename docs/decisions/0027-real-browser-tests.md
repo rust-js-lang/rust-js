@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0026](0026-testing.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 happy-dom (ADR 0026) is fast, but it's a simulation. It does no layout

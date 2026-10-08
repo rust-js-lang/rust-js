@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0077](0077-serde-json.md), [0078](0078-serde-json-reading.md) and [0052](0052-std-trait-impls.md).
 
+Case: C ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 An API's responses are often generic: a `Page<T>` of whatever was asked

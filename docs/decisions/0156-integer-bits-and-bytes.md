@@ -9,6 +9,8 @@ digits, `$swapBytes(x, bits, signed)`; and a float's `recip()` and
 and `Float` asked them.) Extends [0086](0086-64-bit-integers.md),
 [0122](0122-f32.md) and [0155](0155-integer-families.md).
 
+Case: C, B, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Hashes, checksums, random number generators and binary formats rotate an

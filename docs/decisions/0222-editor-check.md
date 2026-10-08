@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0101](0101-cargo-workspace-wrapper.md) and
 [0113](0113-plain-rustc.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A plain rustc compiles an app but what's inside JSX (ADR 0113): `jsx!` is

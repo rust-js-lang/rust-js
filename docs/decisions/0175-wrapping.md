@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0011](0011-numbers.md), [0086](0086-64-bit-integers.md)
 and [0108](0108-generic-operators-and-into.md).
 
+Case: C ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `Wrapping<T>` is a number whose arithmetic wraps, in debug builds too.

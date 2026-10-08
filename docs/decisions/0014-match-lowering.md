@@ -2,6 +2,8 @@
 
 Status: Accepted
 
+Case: N, C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `match` has no direct JS equivalent. JS `switch` compares with `===` only,

@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0124](0124-or-pattern-bindings.md).
 
+Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Two of stable Rust's forms were errors: an inline constant, `const {

@@ -4,6 +4,8 @@ Status: Accepted. Amends [0052](0052-std-trait-impls.md) and
 [0060](0060-debug.md); extends [0141](0141-std-trait-objects.md) and
 [0034](0034-strings-and-chars.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 rust-js has std's derives' meaning itself: a derived `Clone` is written in

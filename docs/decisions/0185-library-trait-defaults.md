@@ -4,6 +4,8 @@ Status: Accepted. Extends [0100](0100-separate-crates.md),
 [0049](0049-traits-and-generics.md), [0174](0174-generic-fmt-traits.md)
 and [0019](0019-one-js-file-per-module.md).
 
+Case: N, C ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A default method's body is copied into each impl of its trait, with `Self`

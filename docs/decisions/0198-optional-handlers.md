@@ -5,6 +5,8 @@ Status: Accepted. Extends [0041](0041-react.md). Amended by
 element's event, which a handler of any element's takes `upcast`,
 `f(e.upcast())`, the event itself in JS: the handler is still `f`.
 
+Case: A ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A component's handler that its caller may not give, react.dev's

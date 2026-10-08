@@ -5,6 +5,8 @@ forms of [0024](0024-web-crate.md). [0039](0039-generic-bindings.md) adds
 imports for their side effects, and names a default import after the `static`
 that holds it.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 To write rust-js's own playground in rust-js, a program has to use JS

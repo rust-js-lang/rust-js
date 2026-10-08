@@ -5,6 +5,8 @@ with fields are objects tagged with their names; and by
 [0223](0223-webapi-event-and-tag-maps.md): a unit struct named
 `#[rust_js::name]` is that string, as a variant is.
 
+Case: A, C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 An enum whose variants carry no data (a "C-like" enum) needs a JS

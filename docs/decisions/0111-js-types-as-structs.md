@@ -3,6 +3,8 @@
 Status: Accepted. Amends [0021](0021-js-interop.md), [0024](0024-web-crate.md)
 and [0110](0110-stable-syntax.md): a binding's JS type is stable Rust.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A binding names a JS type Rust only holds a reference to: CodeMirror's

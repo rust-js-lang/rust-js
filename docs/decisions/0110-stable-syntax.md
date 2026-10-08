@@ -4,6 +4,8 @@ Status: Accepted: a program's syntax. A binding's JS type is a struct of a
 `JsObject` since [0111](0111-js-types-as-structs.md). Amends [0039](0039-generic-bindings.md),
 [0046](0046-camel-case-crates.md) and [0109](0109-stable-release.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 rust-js checks a program with a stable release's rustc (ADR 0109), but its

@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0220](0220-jsx-tag-values.md).
 
+Case: N, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 react.dev's ExpandableCallout keeps an icon per callout in `variantMap`,

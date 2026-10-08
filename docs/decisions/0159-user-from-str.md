@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0049](0049-traits-and-generics.md) and
 [0063](0063-text.md).
 
+Case: N, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Shared models read their values from text, a form's field or a URL's

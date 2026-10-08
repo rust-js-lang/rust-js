@@ -2,6 +2,8 @@
 
 Status: Accepted. `Reverse` compares the other way round, and another crate's struct is an error rather than field by field ([0068](0068-queues.md)). Extends [0036](0036-iterators-and-sorting.md) and [0053](0053-partial-eq.md).
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 An `Ordering` is -1, 0 or 1 (ADR 0036), and JS's `<` compares numbers the

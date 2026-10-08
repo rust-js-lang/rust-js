@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0062](0062-combinators.md).
 
+Case: A ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `[path.as_slice(), &[last]].concat()` is how Rust writes "these, then one

@@ -3,6 +3,8 @@
 Status: Accepted. Amends [0192](0192-next.md); extends [0194](0194-jsx-attributes-read-once.md)
 and [0195](0195-rest-props.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 react.dev's `ButtonLink` is a `next/link` `Link` with classes it computes,

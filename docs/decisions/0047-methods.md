@@ -4,6 +4,8 @@ Status: Accepted. Extends [0020](0020-structs-and-tuples.md).
 Trait-method rejection is superseded by [0049](0049-traits-and-generics.md)
 for its supported subset; inherent methods keep this representation.
 
+Case: N, D, B ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 rust-js compiled free functions only: an `impl` block was an error. Rust

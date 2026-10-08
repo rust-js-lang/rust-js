@@ -2,6 +2,8 @@
 
 Status: Accepted. Amends [0036](0036-iterators-and-sorting.md); extends [0055](0055-iterator.md) and [0128](0128-iterator-sources.md).
 
+Case: C, A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 An iterator chain is a JS array, and its adapters the array's methods (ADR

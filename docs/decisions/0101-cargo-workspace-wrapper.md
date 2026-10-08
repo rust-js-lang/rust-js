@@ -4,6 +4,8 @@ Status: Accepted. Extends [0100](0100-separate-crates.md), and replaces
 [0085](0085-scalar-library-linkage.md)'s planning of a Cargo graph for
 building one.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 ADR 0100 compiles each crate on its own, dependencies first, to JS, its

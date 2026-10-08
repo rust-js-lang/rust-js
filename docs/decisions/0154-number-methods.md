@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0063](0063-text.md), [0064](0064-numbers.md),
 [0086](0086-64-bit-integers.md) and [0122](0122-f32.md).
 
+Case: C, B, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 App code stopped at number methods: `clamp`, `from_str_radix`,

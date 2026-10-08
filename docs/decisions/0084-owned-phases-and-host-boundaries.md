@@ -2,6 +2,8 @@
 
 Status: Accepted. Refines 0009, 0042, 0045 and 0069.
 
+Case: N, C ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Decision
 
 Keep one compiler crate. Separate responsibilities through owned values and

@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0098](0098-destructors.md).
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A value with a destructor that a pattern takes apart where it's made was an

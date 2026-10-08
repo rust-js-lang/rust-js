@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0064](0064-numbers.md), [0086](0086-64-bit-integers.md)
 and [0154](0154-number-methods.md).
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `checked_add`, `wrapping_mul` and `saturating_sub` compiled, but each

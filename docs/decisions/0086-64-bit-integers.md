@@ -2,6 +2,8 @@
 
 Status: Accepted. (Amended: 128-bit integers too, ADR 0171.) Extends [0011](0011-numbers.md), [0064](0064-numbers.md), [0077](0077-serde-json.md) and [0083](0083-serde-json-value.md).
 
+Case: C, B, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 IDs, timestamps, hashes and money are 64-bit in most APIs: a database's

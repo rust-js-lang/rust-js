@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0020](0020-structs-and-tuples.md) and [0052](0052-std-trait-impls.md).
 
+Case: C, D, B ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A user `Drop` is an error (ADR 0097). It's the std trait rustc's tests

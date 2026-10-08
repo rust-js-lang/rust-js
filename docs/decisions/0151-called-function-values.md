@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0070](0070-function-values.md),
 [0125](0125-function-values.md) and [0130](0130-if-let-values-and-fn-items.md).
 
+Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A std function taken as a value was an arrow only where `std_fn_value`

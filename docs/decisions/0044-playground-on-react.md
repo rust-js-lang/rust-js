@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0032](0032-dogfooding-the-playground.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 The playground is Rust compiled by rust-js (ADR 0032), but it was written the

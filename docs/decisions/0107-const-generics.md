@@ -4,6 +4,8 @@ Status: Accepted: a function's, a type's and an impl's const parameters; a trait
 trait method's own by ADR 0135. Generic const expressions are to come.
 Extends [0049](0049-traits-and-generics.md) and [0106](0106-generic-traits.md).
 
+Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `fn sum<const N: usize>(values: [u32; N])` has a number in its generics,

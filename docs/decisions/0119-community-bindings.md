@@ -9,6 +9,8 @@ hand, as rust-js's packages are (ADR 0120). Builds on
 A checker of bindings against their libraries is designed here, and
 deferred.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A program can bind any JS library itself, `#[rust_js::link_name]` in its

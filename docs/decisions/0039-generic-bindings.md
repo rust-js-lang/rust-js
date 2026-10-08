@@ -6,6 +6,8 @@ knows, with no `register_tool`, and an import is `js::import!("./App.css");`.
 Amended by [0113](0113-plain-rustc.md): the attribute is
 `#[cfg_attr(rust_js, rust_js::link_name = "..")]`, which a plain rustc leaves out.
 
+Case: N, C ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A binding in an `extern` block can't be generic. rustc rejects type

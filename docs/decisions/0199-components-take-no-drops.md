@@ -2,6 +2,8 @@
 
 Status: Accepted. Amends [0098](0098-destructors.md) and [0190](0190-generic-no-destructor.md).
 
+Case: D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A generic function takes a drop for a type parameter its caller may give

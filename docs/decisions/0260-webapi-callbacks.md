@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0024](0024-web-crate.md) and
 [0219](0219-webapi-sequences.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 react.dev's TopNav shadows its bar once the page has scrolled, which an

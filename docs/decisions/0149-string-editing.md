@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0034](0034-strings-and-chars.md) and
 [0138](0138-string-byte-counts.md).
 
+Case: C, A ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A `String` is a JS string (ADR 0023), which can't change: `push_str` is

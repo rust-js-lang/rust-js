@@ -5,6 +5,8 @@ function takes no dictionary of a trait with nothing in it. Amends
 [0229](0229-union-parameters.md): a union's trait of the crate's own
 passes none either.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A generic function takes a dictionary of each bound (ADR 0049), what its

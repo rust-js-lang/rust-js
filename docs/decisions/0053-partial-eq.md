@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0052](0052-std-trait-impls.md).
 
+Case: C, A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `==` already compiled in two ways:

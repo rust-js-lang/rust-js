@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0036](0036-iterators-and-sorting.md) and [0055](0055-iterator.md).
 
+Case: N, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 An iterator has two JS forms:

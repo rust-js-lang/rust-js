@@ -3,6 +3,8 @@
 Status: Accepted; a chain whose stages do what can be seen is lazy ([0139](0139-lazy-chains.md)). Extends [0025](0025-vec-loops-refcell-mut.md), where a
 `Vec` is a JS array and `for` loops over one.
 
+Case: B, A, C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Rust code works on collections through iterator chains, such as

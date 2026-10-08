@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0013](0013-fieldless-enums.md): variants without
 fields are still their names.
 
+Case: A, C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Rust's enums carry data: `Shape::Circle(r)`, `Result<T, E>`, a tree's

@@ -4,6 +4,8 @@ Status: Accepted. Amends [0034](0034-strings-and-chars.md),
 [0036](0036-iterators-and-sorting.md) and
 [0182](0182-boundary-matrices.md).
 
+Case: C, A ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Two of the semantics page's differences were JS's, kept for its look:

@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0033](0033-enums-with-fields.md), [0059](0059-hashmap.md) and [0062](0062-combinators.md).
 
+Case: A, C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A program that applies events to a store hit, in turn:

@@ -5,6 +5,8 @@ stable release, `1.99.0`, where it was `nightly-2026-03-25`. Amended by
 [0110](0110-stable-syntax.md): rust-js's syntax is stable Rust's, so its
 session allows no unstable feature, and rustc refuses a crate's own itself.
 
+Case: N, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 rust-js checks a program with the rustc it links, so its pin is the Rust a

@@ -4,6 +4,8 @@ Status: Accepted. Amends [0101](0101-cargo-workspace-wrapper.md), [0109](0109-st
 [0110](0110-stable-syntax.md) and [0111](0111-js-types-as-structs.md): no crate a
 program uses is unstable.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 The crates a program uses, js, webapi and react, hold declarations, which a

@@ -2,6 +2,8 @@
 
 Status: Accepted. Builds on [0030](0030-option.md).
 
+Case: N, C ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 react.dev's `Link` leaves early without an `href`, `if (!href) { return

@@ -2,6 +2,8 @@
 
 Status: Accepted.
 
+Case: A, B, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A web program keeps state between events: how many times something ran,

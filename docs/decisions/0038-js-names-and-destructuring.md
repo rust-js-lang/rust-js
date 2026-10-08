@@ -2,6 +2,8 @@
 
 Status: Accepted.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A React component written by hand starts like this:

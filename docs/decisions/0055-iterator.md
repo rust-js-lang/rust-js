@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0036](0036-iterators-and-sorting.md) and [0052](0052-std-trait-impls.md).
 
+Case: C, A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 ADR 0036 made an iterator a JS array: `v.iter().map(f)` is `v.map(f)`. That

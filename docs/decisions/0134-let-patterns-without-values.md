@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0038](0038-js-names-and-destructuring.md).
 
+Case: N, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A destructuring assignment gives values to variables declared before it,

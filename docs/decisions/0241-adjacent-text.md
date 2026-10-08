@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0040](0040-jsx.md).
 
+Case: C ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 react.dev's Challenge writes two texts side by side:

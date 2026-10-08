@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0013](0013-fieldless-enums.md) to types with fields.
 (Amended: an array of what's changed in place contains it too.)
 
+Case: C, A, B, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Structs and tuples need a JS form. ReScript's answer, checked in its compiler

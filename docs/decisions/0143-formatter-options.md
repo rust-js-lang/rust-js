@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0058](0058-format-options.md); supersedes the
 `alternate` parameter of [0137](0137-pretty-debug.md).
 
+Case: C, B, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A placeholder's options go to the `fmt` that shows the value, and Rust

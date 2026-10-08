@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0034](0034-strings-and-chars.md), [0063](0063-text.md) and [0064](0064-numbers.md).
 
+Case: A, C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A program that parses rows of text wrote `line.split(',').map(str::trim)`:

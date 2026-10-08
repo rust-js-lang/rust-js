@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0034](0034-strings-and-chars.md) and [0054](0054-display.md). Extended by [0143](0143-formatter-options.md).
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `format!` was string concatenation with no options (ADR 0034). `{:>8}`,

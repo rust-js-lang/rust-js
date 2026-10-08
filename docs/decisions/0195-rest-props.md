@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0041](0041-react.md) and [0192](0192-next.md).
 
+Case: N, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A component's props are a struct of the fields it names (ADR 0041), but

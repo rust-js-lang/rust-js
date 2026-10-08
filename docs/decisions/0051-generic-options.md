@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0030](0030-option.md) and [0049](0049-traits-and-generics.md). Amended: concrete code boxes too; a lazy iterator's `find` boxes its own.
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `Some(x)` is `x`, and `None` is `undefined` (ADR 0030). That's only right when

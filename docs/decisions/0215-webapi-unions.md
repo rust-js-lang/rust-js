@@ -6,6 +6,8 @@ untagged enum (ADR 0214), where it was a function per member. Amended by
 [0229](0229-union-parameters.md): the parameter takes each member as it is,
 `impl IntoNodeOrStr`, where it took the enum, `.into()` at each call.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 WebIDL's unions are everywhere a web API takes "one of these":

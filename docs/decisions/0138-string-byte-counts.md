@@ -2,6 +2,8 @@
 
 Status: Accepted. Supersedes [0034](0034-strings-and-chars.md)'s byte counts being an error.
 
+Case: C, A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A string is a JS string (ADR 0023), of UTF-16 units, and Rust's counts its

@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0203](0203-component-props-as-written.md).
 
+Case: A ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `jsx!` gives a component's `key` after its props are made, and a `ref`

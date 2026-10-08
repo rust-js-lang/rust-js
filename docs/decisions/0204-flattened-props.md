@@ -4,6 +4,8 @@ Status: Accepted. Extends [0195](0195-rest-props.md) and [0196](0196-typescript-
 amended by [0205](0205-flattened-chains.md), which chains them and gives a
 name both have to the props.
 
+Case: N, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 TypeScript makes a component's props of other types', `AnchorProps &

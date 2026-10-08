@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0041](0041-react.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 react.dev's CodeDiagram gives each child it renders anew its own key,

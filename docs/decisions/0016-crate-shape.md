@@ -8,6 +8,8 @@ thread-locals with [0037](0037-thread-locals.md), and functions as values
 with [0039](0039-generic-bindings.md).
 The other limits stand.
 
+Case: D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A Rust crate contains more than free functions: modules, `impl` blocks and

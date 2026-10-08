@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0025](0025-vec-loops-refcell-mut.md), [0031](0031-consts.md) and [0052](0052-std-trait-impls.md).
 
+Case: C, D, B ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A program that computes calls numbers' methods (`x.sqrt()`, `n.pow(2)`,

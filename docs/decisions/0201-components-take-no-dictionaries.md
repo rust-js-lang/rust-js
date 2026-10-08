@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0199](0199-components-take-no-drops.md) and
 [0192](0192-next.md).
 
+Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 react.dev's `ButtonLink` gives its children, a type parameter, to

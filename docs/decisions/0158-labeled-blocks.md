@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0015](0015-loops.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A labeled block leaves early with a value, as a function returns early,

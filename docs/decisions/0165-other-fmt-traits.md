@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0054](0054-display.md) and
 [0143](0143-formatter-options.md).
 
+Case: N, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A type of the crate's shows by its own `Display` and `Debug` (ADR 0054).

@@ -8,6 +8,8 @@ an object inside what a generic function takes or gives, and a handle to
 an object replaced whole, are to come. Extends
 [0049](0049-traits-and-generics.md), [0025](0025-vec-loops-refcell-mut.md), [0033](0033-enums-with-fields.md) and [0074](0074-mut-boxes.md).
 
+Case: A, C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A `&mut` to a JS object is the object (ADR 0025), and a `&mut` to anything

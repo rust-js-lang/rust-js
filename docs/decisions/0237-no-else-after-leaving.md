@@ -2,6 +2,8 @@
 
 Status: Accepted.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Rust's `if c { a } else { b }` is one expression, and rust-js wrote both

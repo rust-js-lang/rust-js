@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0098](0098-destructors.md),
 [0071](0071-stepping-iterators.md) and [0179](0179-option-filter-map-or-drops.md).
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 bitflags stopped at three gaps, each of a kind other crates have too. Its

@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0023](0023-strings-references-shared-state.md)
 and [0025](0025-vec-loops-refcell-mut.md).
 
+Case: A, B, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Shared state in Rust that may cross threads is `Arc<Mutex<T>>` or

@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0036](0036-iterators-and-sorting.md). Extended by
 [0121](0121-value-keys.md): a key that compares by value, a struct or a tuple.
 
+Case: A, C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `HashMap` and `HashSet` were errors, and they're among the most used types

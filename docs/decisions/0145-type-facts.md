@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0049](0049-traits-and-generics.md), [0090](0090-wasm32-front-end.md)
 and [0098](0098-destructors.md).
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `size_of::<u32>()` is `4`, rustc's answer for the wasm32 target rust-js

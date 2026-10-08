@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0088](0088-corpus.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 The corpus and rustc's own tests are programs someone wrote, each about

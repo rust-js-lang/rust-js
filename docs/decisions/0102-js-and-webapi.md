@@ -5,6 +5,8 @@ untagged enum, so a function has no other forms of one, and a constructor
 no family of sources. Amends [0024](0024-web-crate.md), whose `web` crate is now
 `webapi`, and [0035](0035-results-and-throwing-js.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 The pilot (ROADMAP M3.3) declared bindings the web crate should have given

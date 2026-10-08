@@ -4,6 +4,8 @@ Status: Accepted. Extends [0054](0054-display.md). (Amended: a `fmt::Result`
 that may be an `Err` is `undefined` or the `fmt::Error`, and its methods
 ask which, ADR 0187.)
 
+Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `write!` and `writeln!` into a `String`, through `std::fmt::Write`, are how

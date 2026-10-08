@@ -4,6 +4,8 @@ Status: Accepted. Extends [0034](0034-strings-and-chars.md) and [0052](0052-std-
 (Amended: `Err(fmt::Error)` is thrown, with what the writer wrote, and
 each consumer takes it as std's does, ADR 0187.)
 
+Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `format!` is string concatenation (ADR 0034; a template literal since ADR 0066): `format!("{} of {}", a, b)`

@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0012](0012-panics-and-runtime-helpers.md), [0036](0036-iterators-and-sorting.md)
 and [0055](0055-iterator.md).
 
+Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 chrono stopped at three of std's functions besides `Duration`'s (ADR 0188):

@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0020](0020-structs-and-tuples.md), [0051](0051-generic-options.md), [0058](0058-format-options.md), [0062](0062-combinators.md) and [0071](0071-stepping-iterators.md).
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A program with traits, generics and version numbers wrote

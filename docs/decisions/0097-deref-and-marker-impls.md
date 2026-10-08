@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0052](0052-std-trait-impls.md) and [0056](0056-indexing.md).
 
+Case: A, C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 208 of rustc's tests stop at "user implementations of this standard or

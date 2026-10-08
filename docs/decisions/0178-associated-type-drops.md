@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0098](0098-destructors.md),
 [0106](0106-generic-traits.md) and [0163](0163-trait-method-drops.md).
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Generic code can hold a value of an associated type, whose type only the

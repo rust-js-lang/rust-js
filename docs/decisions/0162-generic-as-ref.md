@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0049](0049-traits-and-generics.md) and
 [0161](0161-generic-from-str.md).
 
+Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 An API that takes "anything that's text" or "anything that's a slice" is

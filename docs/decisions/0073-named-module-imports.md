@@ -2,6 +2,8 @@
 
 Status: Accepted. Refines 0019 and 0069.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Generated code should read like handwritten JavaScript and JSX. Namespace

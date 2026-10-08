@@ -3,6 +3,8 @@
 Status: Accepted. Replaces [0012](0012-panics-and-runtime-helpers.md)'s helpers,
 each module's own, and amends [0019](0019-one-js-file-per-module.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 ADR 0012 put each runtime helper into the module that uses it, and named

@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0063](0063-text.md).
 
+Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Error types name the file they're about, and thiserror shows one by its

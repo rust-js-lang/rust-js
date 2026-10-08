@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0098](0098-destructors.md) and [0100](0100-separate-crates.md).
 
+Case: D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 rust-js runs a value's destructor where Rust does (ADR 0098). A generic

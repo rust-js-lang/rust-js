@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0024](0024-web-crate.md) and
 [0215](0215-webapi-unions.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 WebIDL's `sequence<T>` is a JS array a function takes: `new Blob(parts)`

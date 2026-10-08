@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0025](0025-vec-loops-refcell-mut.md) and [0052](0052-std-trait-impls.md).
 
+Case: C, A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A `&mut` to a JS object is the object (ADR 0025): a change through it is a

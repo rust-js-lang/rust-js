@@ -3,6 +3,8 @@
 Status: Accepted. Changes [0024](0024-web-crate.md): results that may be
 `null` are `Option`s now.
 
+Case: A, C, B ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 The web platform answers "nothing here" with `null`:

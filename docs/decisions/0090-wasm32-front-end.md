@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0025](0025-vec-loops-refcell-mut.md).
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 rust-js runs rustc's front end, which parses, type-checks and borrow-checks

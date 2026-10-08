@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0088](0088-corpus.md), [0089](0089-rustc-tests.md) and [0092](0092-generated-programs.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A test that passes says the compiler does what the test checks, not that

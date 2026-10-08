@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0214](0214-untagged-enums.md) and
 [0043](0043-react-versions.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 react.dev's MDX components read their children: a `CodeDiagram` keeps its

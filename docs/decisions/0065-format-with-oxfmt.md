@@ -4,6 +4,8 @@ Status: Accepted. Extends [0018](0018-print-with-oxc.md). Extended by
 [0117](0117-output-hooks.md): a crate sets the formatter's options, and can run its
 own formatter after it.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 oxc's printer (ADR 0018) writes each node the same way wherever it is: an

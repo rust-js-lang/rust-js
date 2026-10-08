@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0055](0055-iterator.md), [0061](0061-generic-iterators.md), [0071](0071-stepping-iterators.md) and [0139](0139-lazy-chains.md).
 
+Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A function that returns one of several iterators, or takes any iterator

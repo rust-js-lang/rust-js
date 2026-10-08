@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0106](0106-generic-traits.md).
 
+Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A generic associated type, `type Iter<'a>`, was an error: an associated

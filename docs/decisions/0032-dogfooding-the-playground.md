@@ -3,6 +3,8 @@
 Status: Accepted, and done: the whole playground is Rust now. `main.ts` only
 calls its `start`. It is React components now, one per file: [0044](0044-playground-on-react.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 The playground (`wasm/web/main.ts`) is a real web app: editors, a file

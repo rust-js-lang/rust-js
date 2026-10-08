@@ -2,6 +2,8 @@
 
 Status: Accepted. Extended by [0086](0086-64-bit-integers.md): `i64` and `u64` are BigInts, and an `f64` cast to an integer saturates.
 
+Case: C, D, B ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 JS has one number type: a 64-bit float (f64). Rust has `i8` through `u128`,

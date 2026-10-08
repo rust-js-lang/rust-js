@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0044](0044-playground-on-react.md), whose context
 said Bun bundled the page.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Once React rendered it (ADR 0044), the playground was a React app bundled by Bun:

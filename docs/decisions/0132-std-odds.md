@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0023](0023-strings-references-shared-state.md) and [0054](0054-display.md).
 
+Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Some small std forms were errors:

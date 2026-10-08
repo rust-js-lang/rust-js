@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0011](0011-numbers.md), [0086](0086-64-bit-integers.md)
 and [0030](0030-option.md).
 
+Case: A ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A type that can't be zero lets `Option` of it take no more room, so crates

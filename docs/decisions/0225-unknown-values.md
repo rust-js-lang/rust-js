@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0102](0102-js-and-webapi.md), [0214](0214-untagged-enums.md)
 and [0024](0024-web-crate.md).
 
+Case: N, C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Every language that types JS has a value of unknown shape, and a way to

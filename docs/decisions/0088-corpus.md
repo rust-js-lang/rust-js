@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0017](0017-differential-testing.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 ADR 0017 made native Rust the oracle, but how the tests asked it had holes:

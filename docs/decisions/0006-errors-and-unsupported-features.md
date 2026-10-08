@@ -2,6 +2,8 @@
 
 Status: Accepted
 
+Case: D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Two kinds of "no" can happen:

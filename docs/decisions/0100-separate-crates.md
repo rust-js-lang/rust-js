@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0085](0085-scalar-library-linkage.md), [0049](0049-traits-and-generics.md) and [0098](0098-destructors.md). Cargo runs these compilations as [0101](0101-cargo-workspace-wrapper.md) says.
 
+Case: N, C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A full-stack app shares crates between its server and its client:

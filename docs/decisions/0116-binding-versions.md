@@ -7,6 +7,8 @@ generated. ① and React's crate per React minor are deferred. Amends
 [0115](0115-binding-crates-on-crates-io.md); [0118](0118-bindings-on-npm-only.md)
 puts npm's peer dependencies where this has rust-js check.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 rust-js will have many bindings, one for each JS library a program uses,

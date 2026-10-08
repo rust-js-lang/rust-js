@@ -4,6 +4,8 @@ Status: Accepted. Extends [0054](0054-display.md).
 (Amended: a `Debug` another crate's derive writes is the crate's own impl,
 ADR 0186.)
 
+Case: C, D, B ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `{:?}` was `$debug(value)`, a runtime helper that looks at the JS value

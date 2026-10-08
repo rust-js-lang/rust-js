@@ -4,6 +4,8 @@ Status: Accepted. Builds on [0203](0203-component-props-as-written.md),
 [0204](0204-flattened-props.md), [0205](0205-flattened-chains.md) and
 [0212](0212-props-defaults.md).
 
+Case: N, A ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 `jsx!` gave a component a struct literal of its props, so a Rust caller

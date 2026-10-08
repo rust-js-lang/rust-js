@@ -2,6 +2,8 @@
 
 Status: Accepted.
 
+Case: N, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A React component writes its props' defaults where it takes them apart,

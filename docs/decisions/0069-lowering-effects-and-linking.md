@@ -2,6 +2,8 @@
 
 Status: Accepted. Refines 0042, 0049, 0059 and 0064.
 
+Case: C, D, N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 Combining a map lookup and write into one short JS expression discarded a

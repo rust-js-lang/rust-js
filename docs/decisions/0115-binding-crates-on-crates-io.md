@@ -8,6 +8,8 @@ is installed: each crate packaged so is an npm package's, and an app's
 `Cargo.toml` names it by version. [0116](0116-binding-versions.md) gives
 `builtins` and `webapi` versions of their own.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A plain stable rustc compiles the binding crates, `js`, `webapi` and

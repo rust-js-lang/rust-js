@@ -3,6 +3,8 @@
 Status: Accepted. Builds on [0033](0033-enums-with-fields.md), where a
 `Result` is ReScript's `{ TAG: "Ok", _0: v }`.
 
+Case: N, A, C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 JS reports failure by throwing. Rust has no exceptions: it returns a

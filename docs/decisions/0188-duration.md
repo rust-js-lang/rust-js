@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0011](0011-numbers.md), [0086](0086-64-bit-integers.md)
 and [0177](0177-nonzero.md).
 
+Case: A, C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 chrono's `TimeDelta` converts to and from std's `Duration`, and adds one

@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0201](0201-components-take-no-dictionaries.md) and
 [0213](0213-props-as-written.md).
 
+Case: A ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 react.dev's TopNav gives its `Logo` classes inside next/link's `Link`:

@@ -5,6 +5,8 @@ Status: Accepted. Amends [0039](0039-generic-bindings.md),
 [0112](0112-rust-js-compiles-the-bindings.md). Extended by
 [0114](0114-app-cargo-toml.md): an app is a Cargo package, which an editor checks.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 rust-js compiles a program, and its binding crates, with rustc and rust-js's

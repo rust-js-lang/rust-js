@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0077](0077-serde-json.md), [0078](0078-serde-json-reading.md) and [0079](0079-serde-tagged-enums.md).
 
+Case: C ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 An API shares parts between its types: a page's `page` and `total` beside

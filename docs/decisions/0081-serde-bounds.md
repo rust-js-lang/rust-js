@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0049](0049-traits-and-generics.md) and [0080](0080-serde-generics-and-conversions.md).
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A client talks to its server through a few generic functions: one that

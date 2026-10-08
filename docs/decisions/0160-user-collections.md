@@ -4,6 +4,8 @@ Status: Accepted. Extends [0049](0049-traits-and-generics.md),
 [0055](0055-iterator.md), [0061](0061-generic-iterators.md) and
 [0159](0159-user-from-str.md).
 
+Case: N, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A domain model's collections and amounts are types of the crate's: a cart

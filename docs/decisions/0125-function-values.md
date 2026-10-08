@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0030](0030-option.md) and [0033](0033-enums-with-fields.md).
 
+Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A function of the crate's was a value already, its JS name, and a std

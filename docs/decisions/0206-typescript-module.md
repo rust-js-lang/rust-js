@@ -2,6 +2,8 @@
 
 Status: Accepted.
 
+Case: N ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 rust-js meets TypeScript both ways. It writes a crate's `.d.ts` (ADR

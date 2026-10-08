@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0063](0063-text.md), [0098](0098-destructors.md)
 and [0131](0131-temporaries-taken-apart.md).
 
+Case: C, D, A ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 chrono stopped at its last four places, after ADR 0190:

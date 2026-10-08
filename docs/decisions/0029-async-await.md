@@ -2,6 +2,8 @@
 
 Status: Accepted.
 
+Case: B, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 rust-js's own playground does its work through promises: `fetch`,

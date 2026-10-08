@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0052](0052-std-trait-impls.md) and [0060](0060-debug.md).
 
+Case: C, B, D ([0262](0262-when-rust-and-js-disagree.md)).
+
 ## Context
 
 A full-stack Rust app shares its types between the server and the client:
