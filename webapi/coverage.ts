@@ -128,9 +128,10 @@ function webapi(): { bound: Set<string>; types: Set<string>; parents: Map<string
  * element's, which only a custom element's `super()` calls. */
 async function constructible(): Promise<Set<string>> {
   const all = Object.values((await idl.parseAll()) as Record<string, any[]>).flat();
-  const html = new Set(all.filter((d) => d.type === "interface" && (d.extAttrs ?? []).some((a: any) => a.name === "HTMLConstructor")).map((d) => d.name));
+  // HTML marks the constructor itself, `[HTMLConstructor] constructor();`.
+  const html = (x: any) => (x.extAttrs ?? []).some((a: any) => a.name === "HTMLConstructor");
   return new Set(
-    all.filter((d) => d.type === "interface" && !html.has(d.name) && (d.members ?? []).some((m: any) => m.type === "constructor")).map((d) => d.name),
+    all.filter((d) => d.type === "interface" && !html(d) && (d.members ?? []).some((m: any) => m.type === "constructor" && !html(m))).map((d) => d.name),
   );
 }
 

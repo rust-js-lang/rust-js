@@ -108,3 +108,6 @@ so nothing said when it fell behind.
   an adapter is JS's iterator helper, `next()` is `$next(it)`. An array's
   key is its index, a `u32`; a set's its value. No type of the js crate's
   was needed. 96.4%.
+- **An `[HTMLConstructor]` element's constructor isn't counted**: HTML
+  marks the constructor, not its interface, so 69 that JS throws of,
+  `new HTMLDivElement()`, were counted missing. 97.2% of 8,419.
