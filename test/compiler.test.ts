@@ -1425,6 +1425,42 @@ pub fn proxied(o: &'static Unknown) -> (String, String, bool) {
   expect(lib.proxied(Object.assign(Object.create(null), { a: 1 }))).toEqual(["1", "missing", true]);
 });
 
+// ADR 0283: Atomics' functions take an integer typed array, its element a
+// Rust number of its kind, and one that a thread may wait on a
+// SharedArrayBuffer's.
+test("Atomics are JS's, of a view of a shared buffer", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("js-atomics");
+  writeFileSync(join(dir, "lib.rs"), `use js::{WaitAsyncValue, WaitResult, atomics, big_int64_array, int32_array, shared_array_buffer};
+pub fn counted() -> (i32, i32, i32, i64, bool, bool) {
+    let shared = shared_array_buffer::new(16);
+    let counts = int32_array::new_with_buffer(shared);
+    atomics::add(counts, 0, 5);
+    let before = atomics::sub(counts, 0, 2);
+    atomics::compare_exchange(counts, 1, 0, 9);
+    let wide = big_int64_array::new(1);
+    atomics::store(wide, 0, 7);
+    let waited = matches!(atomics::wait(counts, 0, 0), WaitResult::NotEqual);
+    (before, atomics::load(counts, 0), atomics::load(counts, 1), atomics::or(wide, 0, 8), waited, counts.buffer().growable())
+}
+pub async fn waited() -> bool {
+    let counts = int32_array::new_with_buffer(shared_array_buffer::new(4));
+    match atomics::wait_async_with_timeout(counts, 0, 0, 1.0).value {
+        WaitAsyncValue::Waiting(promise) => matches!(promise.await, WaitResult::TimedOut),
+        WaitAsyncValue::Ended(_) => false,
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const counts = new Int32Array(shared);");
+  expect(js).toContain("Atomics.compareExchange(counts, 1, 0, 9);");
+  expect(js).toContain('Atomics.wait(counts, 0, 0) === "not-equal"');
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.counted()).toEqual([5, 3, 9, 7n, true, false]);
+  expect(await lib.waited()).toBe(true);
+});
+
 // ADR 0283: JS's typed arrays are the js crate's, each element a Rust number
 // of its kind, a `BigInt64Array`'s an `i64`, the `BigInt` rust-js makes one.
 test("typed arrays and their buffers are JS's", async () => {
@@ -1441,9 +1477,9 @@ pub fn floats() -> (f64, Option<f64>, u32, String) {
 }
 pub fn bytes() -> (u32, u32, i8, Vec<u8>) {
     let buffer = array_buffer::new(8);
-    let view = data_view::new(&buffer);
+    let view = data_view::new(buffer);
     view.set_int16(0, -2, true);
-    let bytes = uint8_array::new_with_buffer(&buffer);
+    let bytes = uint8_array::new_with_buffer(buffer);
     let signed = int8_array::of(&[1, -1, 127]);
     (buffer.byte_length(), bytes.length(), signed.get(1).unwrap_or(0), bytes.subarray(0, 2).values().collect())
 }

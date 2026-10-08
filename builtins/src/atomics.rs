@@ -20,28 +20,28 @@ pub unsafe trait AtomicArray {
     type Element;
 }
 
-unsafe impl AtomicArray for Int8Array {
+unsafe impl<B> AtomicArray for Int8Array<B> {
     type Element = i8;
 }
-unsafe impl AtomicArray for Uint8Array {
+unsafe impl<B> AtomicArray for Uint8Array<B> {
     type Element = u8;
 }
-unsafe impl AtomicArray for Int16Array {
+unsafe impl<B> AtomicArray for Int16Array<B> {
     type Element = i16;
 }
-unsafe impl AtomicArray for Uint16Array {
+unsafe impl<B> AtomicArray for Uint16Array<B> {
     type Element = u16;
 }
-unsafe impl AtomicArray for Int32Array {
+unsafe impl<B> AtomicArray for Int32Array<B> {
     type Element = i32;
 }
-unsafe impl AtomicArray for Uint32Array {
+unsafe impl<B> AtomicArray for Uint32Array<B> {
     type Element = u32;
 }
-unsafe impl AtomicArray for BigInt64Array {
+unsafe impl<B> AtomicArray for BigInt64Array<B> {
     type Element = i64;
 }
-unsafe impl AtomicArray for BigUint64Array {
+unsafe impl<B> AtomicArray for BigUint64Array<B> {
     type Element = u64;
 }
 
@@ -53,8 +53,8 @@ unsafe impl AtomicArray for BigUint64Array {
 /// It must be one of these.
 pub unsafe trait WaitableArray: AtomicArray {}
 
-unsafe impl WaitableArray for Int32Array {}
-unsafe impl WaitableArray for BigInt64Array {}
+unsafe impl<B> WaitableArray for Int32Array<B> {}
+unsafe impl<B> WaitableArray for BigInt64Array<B> {}
 
 /// How a wait ended.
 pub enum WaitResult {

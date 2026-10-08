@@ -124,3 +124,20 @@ its own for, as TypeScript's ES2024 libs declare them; a test measures it.**
   as it was. `set_prototype_of`'s `None` is `null` (ADR 0275); a
   `getPrototypeOf` trap gives an object, since a closure's `None` is
   `undefined`, which JS throws of. 90.0%.
+- **`Atomics`**, every member, after TypeScript's; ReScript has none. Each
+  takes an `AtomicArray`, an integer typed array, and its `Element`, the
+  Rust number of its kind (`i64` of a `BigInt64Array`); `wait`, `notify`
+  and `wait_async` an `Int32Array` or a `BigInt64Array`, a
+  `WaitableArray`. `wait` gives a `WaitResult`, `"ok"`, `"not-equal"` or
+  `"timed-out"`; `wait_async`'s `value` is one, or the promise of one, an
+  untagged enum (ADR 0214), where TypeScript's union is told by `async`.
+  An optional count or timeout is a function of its own,
+  `wait_with_timeout`.
+- **A view is generic over its buffer**, `Int32Array<B = ArrayBuffer>`, as
+  TypeScript's are since 5.7: `new_with_buffer` takes an
+  `ArrayBufferLike`, an `ArrayBuffer` or a `SharedArrayBuffer`, as JS
+  does, and its `buffer()` is the one it views, so a shared one's has no
+  `resize` to throw. One made otherwise is an `ArrayBuffer`'s. The buffer
+  is given as the reference `shared_array_buffer::new` gives,
+  `new_with_buffer(shared)`, not `&shared`, which a generic doesn't
+  dereference. 91.9%.

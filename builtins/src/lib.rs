@@ -15,6 +15,8 @@
 
 use core::marker::PhantomData;
 
+pub mod atomics;
+pub use atomics::{AtomicArray, WaitAsyncResult, WaitAsyncValue, WaitResult, WaitableArray};
 pub mod date;
 pub use date::Date;
 pub mod promise;
@@ -933,17 +935,17 @@ unsafe impl WeakKey for Date {}
 unsafe impl WeakKey for Symbol {}
 unsafe impl WeakKey for ArrayBuffer {}
 unsafe impl WeakKey for SharedArrayBuffer {}
-unsafe impl WeakKey for DataView {}
-unsafe impl WeakKey for Int8Array {}
-unsafe impl WeakKey for Uint8Array {}
-unsafe impl WeakKey for Uint8ClampedArray {}
-unsafe impl WeakKey for Int16Array {}
-unsafe impl WeakKey for Uint16Array {}
-unsafe impl WeakKey for Int32Array {}
-unsafe impl WeakKey for Uint32Array {}
-unsafe impl WeakKey for Float32Array {}
-unsafe impl WeakKey for Float64Array {}
-unsafe impl WeakKey for BigInt64Array {}
-unsafe impl WeakKey for BigUint64Array {}
+unsafe impl<B> WeakKey for DataView<B> {}
+unsafe impl<B> WeakKey for Int8Array<B> {}
+unsafe impl<B> WeakKey for Uint8Array<B> {}
+unsafe impl<B> WeakKey for Uint8ClampedArray<B> {}
+unsafe impl<B> WeakKey for Int16Array<B> {}
+unsafe impl<B> WeakKey for Uint16Array<B> {}
+unsafe impl<B> WeakKey for Int32Array<B> {}
+unsafe impl<B> WeakKey for Uint32Array<B> {}
+unsafe impl<B> WeakKey for Float32Array<B> {}
+unsafe impl<B> WeakKey for Float64Array<B> {}
+unsafe impl<B> WeakKey for BigInt64Array<B> {}
+unsafe impl<B> WeakKey for BigUint64Array<B> {}
 unsafe impl<T> WeakKey for Dict<T> {}
 unsafe impl<T> WeakKey for Promise<T> {}

@@ -102,15 +102,29 @@ close();
 line("    }");
 line("}");
 
+line();
+line("/// A buffer a typed array or a `DataView` views, TypeScript's `ArrayBufferLike`:");
+line("/// an `ArrayBuffer`, or a `SharedArrayBuffer`, as `Atomics` wants. A view is");
+line("/// generic over it, `Int32Array<SharedArrayBuffer>`, its `buffer()` the one it is,");
+line("/// as TypeScript's are; one of an `ArrayBuffer` unless said.");
+line("///");
+line("/// # Safety");
+line("///");
+line("/// It must be one of these.");
+line("pub unsafe trait ArrayBufferLike {}");
+line();
+line("unsafe impl ArrayBufferLike for ArrayBuffer {}");
+line("unsafe impl ArrayBufferLike for SharedArrayBuffer {}");
+
 // ── DataView ─────────────────────────────────────────────────────────────
 
 line();
 line(`/// [\`DataView\`](${page("DataView")}): a buffer's bytes read and written as numbers`);
 line("/// of any kind, at any offset, big-endian unless `little_endian` says.");
-line("pub struct DataView(PhantomData<JsObject>);");
+line("pub struct DataView<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);");
 line();
-line("impl DataView {");
-method(`[\`view.buffer\`](${page("DataView/buffer")}): the buffer it views.`, "get buffer", "buffer(&self) -> &'static ArrayBuffer");
+line("impl<B> DataView<B> {");
+method(`[\`view.buffer\`](${page("DataView/buffer")}): the buffer it views.`, "get buffer", "buffer(&self) -> &'static B");
 method(`[\`view.byteLength\`](${page("DataView/byteLength")}): how many bytes it views.`, "get byteLength", "byte_length(&self) -> u32");
 method(`[\`view.byteOffset\`](${page("DataView/byteOffset")}): where in its buffer it starts.`, "get byteOffset", "byte_offset(&self) -> u32");
 for (const [kind, rust] of [["Int8", "i8"], ["Uint8", "u8"], ["Int16", "i16"], ["Uint16", "u16"], ["Int32", "i32"], ["Uint32", "u32"], ["Float32", "f32"], ["Float64", "f64"], ["BigInt64", "i64"], ["BigUint64", "u64"]]) {
@@ -124,11 +138,9 @@ line();
 line("pub mod data_view {");
 line("    use super::*;");
 line();
-line('    unsafe extern "Rust" {');
-extern(`[\`new DataView(buffer)\`](${page("DataView/DataView")}): a view of all of \`buffer\`.`, "new DataView", "new(buffer: &ArrayBuffer) -> &'static DataView");
-extern(`[\`new DataView(buffer, offset, length)\`](${page("DataView/DataView")}): of \`length\` bytes from \`offset\`.`, "new DataView", "new_with_offset_and_length(buffer: &ArrayBuffer, offset: u32, length: u32) -> &'static DataView");
+method(`[\`new DataView(buffer)\`](${page("DataView/DataView")}): a view of all of \`buffer\`.`, "new DataView", "new<B: ArrayBufferLike>(buffer: &B) -> &'static DataView<B>");
+method(`[\`new DataView(buffer, offset, length)\`](${page("DataView/DataView")}): of \`length\` bytes from \`offset\`.`, "new DataView", "new_with_offset_and_length<B: ArrayBufferLike>(buffer: &B, offset: u32, length: u32) -> &'static DataView<B>");
 close();
-line("    }");
 line("}");
 
 // ── The typed arrays ─────────────────────────────────────────────────────
@@ -137,16 +149,16 @@ for (const [name, e] of ELEMENTS) {
   const module = snake(name);
   const t = (m: string) => page(`TypedArray/${m}`);
   line();
-  line(`/// [\`${name}\`](${page(name)}): ${BYTES[e]}-byte \`${e}\`s in an \`ArrayBuffer\`.`);
-  line(`pub struct ${name}(PhantomData<JsObject>);`);
+  line(`/// [\`${name}\`](${page(name)}): ${BYTES[e]}-byte \`${e}\`s in a buffer, \`B\`.`);
+  line(`pub struct ${name}<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);`);
   line();
   line(`// An object, never \`undefined\`, which a structured clone copies.`);
-  line(`unsafe impl Defined for ${name} {}`);
-  line(`unsafe impl StructuredClone for ${name} {}`);
+  line(`unsafe impl<B> Defined for ${name}<B> {}`);
+  line(`unsafe impl<B> StructuredClone for ${name}<B> {}`);
   line();
-  line(`impl ${name} {`);
+  line(`impl<B> ${name}<B> {`);
   method(`[\`array.length\`](${t("length")}): how many elements it has.`, "get length", "length(&self) -> u32");
-  method(`[\`array.buffer\`](${t("buffer")}): the buffer it views.`, "get buffer", "buffer(&self) -> &'static ArrayBuffer");
+  method(`[\`array.buffer\`](${t("buffer")}): the buffer it views.`, "get buffer", "buffer(&self) -> &'static B");
   method(`[\`array.byteLength\`](${t("byteLength")}): how many bytes it views.`, "get byteLength", "byte_length(&self) -> u32");
   method(`[\`array.byteOffset\`](${t("byteOffset")}): where in its buffer it starts.`, "get byteOffset", "byte_offset(&self) -> u32");
   method(`[\`array.BYTES_PER_ELEMENT\`](${page(`TypedArray/BYTES_PER_ELEMENT`)}): ${BYTES[e]}.`, "get BYTES_PER_ELEMENT", "bytes_per_element(&self) -> u32");
@@ -155,12 +167,12 @@ for (const [name, e] of ELEMENTS) {
   method(`[\`array.at(index)\`](${t("at")}): its element at \`index\`, from its end if negative.`, "at", `at(&self, index: i32) -> Option<${e}>`);
   method(`[\`array.set(items)\`](${t("set")}): \`items\` written from its start.`, "set", `set(&self, items: &[${e}])`);
   method(`[\`array.set(items, offset)\`](${t("set")}): \`items\` written from \`offset\`.`, "set", `set_with_offset(&self, items: &[${e}], offset: u32)`);
-  method(`[\`array.fill(value)\`](${t("fill")}): each element \`value\`; itself.`, "fill", `fill(&self, value: ${e}) -> &'static ${name}`);
-  method(`[\`array.fill(value, start, end)\`](${t("fill")}): its elements from \`start\` to \`end\` \`value\`; itself.`, "fill", `fill_range(&self, value: ${e}, start: i32, end: i32) -> &'static ${name}`);
-  method(`[\`array.copyWithin(target, start)\`](${t("copyWithin")}): its elements from \`start\` copied to \`target\`; itself.`, "copyWithin", `copy_within(&self, target: i32, start: i32) -> &'static ${name}`);
-  method(`[\`array.reverse()\`](${t("reverse")}): its elements reversed, in place; itself.`, "reverse", `reverse(&self) -> &'static ${name}`);
-  method(`[\`array.sort()\`](${t("sort")}): its elements in order, in place; itself.`, "sort", `sort(&self) -> &'static ${name}`);
-  method(`[\`array.sort(compare)\`](${t("sort")}): in \`compare\`'s order, \`a.cmp(&b)\` as Rust sorts, an \`Ordering\` JS reads as -1, 0 or 1 (ADR 0057); itself.`, "sort", `sort_by(&self, compare: impl FnMut(${e}, ${e}) -> core::cmp::Ordering + 'static) -> &'static ${name}`);
+  method(`[\`array.fill(value)\`](${t("fill")}): each element \`value\`; itself.`, "fill", `fill(&self, value: ${e}) -> &'static ${name}<B>`);
+  method(`[\`array.fill(value, start, end)\`](${t("fill")}): its elements from \`start\` to \`end\` \`value\`; itself.`, "fill", `fill_range(&self, value: ${e}, start: i32, end: i32) -> &'static ${name}<B>`);
+  method(`[\`array.copyWithin(target, start)\`](${t("copyWithin")}): its elements from \`start\` copied to \`target\`; itself.`, "copyWithin", `copy_within(&self, target: i32, start: i32) -> &'static ${name}<B>`);
+  method(`[\`array.reverse()\`](${t("reverse")}): its elements reversed, in place; itself.`, "reverse", `reverse(&self) -> &'static ${name}<B>`);
+  method(`[\`array.sort()\`](${t("sort")}): its elements in order, in place; itself.`, "sort", `sort(&self) -> &'static ${name}<B>`);
+  method(`[\`array.sort(compare)\`](${t("sort")}): in \`compare\`'s order, \`a.cmp(&b)\` as Rust sorts, an \`Ordering\` JS reads as -1, 0 or 1 (ADR 0057); itself.`, "sort", `sort_by(&self, compare: impl FnMut(${e}, ${e}) -> core::cmp::Ordering + 'static) -> &'static ${name}<B>`);
   method(`[\`array.toSorted(compare)\`](${t("toSorted")}): a copy in \`compare\`'s order.`, "toSorted", `to_sorted_by(&self, compare: impl FnMut(${e}, ${e}) -> core::cmp::Ordering + 'static) -> &'static ${name}`);
   method(`[\`array.toSorted()\`](${t("toSorted")}): a sorted copy.`, "toSorted", `to_sorted(&self) -> &'static ${name}`);
   method(`[\`array.toReversed()\`](${t("toReversed")}): a reversed copy.`, "toReversed", `to_reversed(&self) -> &'static ${name}`);
@@ -168,8 +180,8 @@ for (const [name, e] of ELEMENTS) {
   method(`[\`array.slice(start, end)\`](${t("slice")}): a copy of its elements from \`start\` to \`end\`.`, "slice", `slice(&self, start: i32, end: i32) -> &'static ${name}`);
   method(`[\`array.slice(start)\`](${t("slice")}): a copy of its elements from \`start\` on.`, "slice", `slice_to_end(&self, start: i32) -> &'static ${name}`);
   method(`[\`array.slice()\`](${t("slice")}): a copy.`, "slice", `copy(&self) -> &'static ${name}`);
-  method(`[\`array.subarray(start, end)\`](${t("subarray")}): a view of its elements from \`start\` to \`end\`, sharing its buffer.`, "subarray", `subarray(&self, start: i32, end: i32) -> &'static ${name}`);
-  method(`[\`array.subarray(start)\`](${t("subarray")}): a view of its elements from \`start\` on.`, "subarray", `subarray_to_end(&self, start: i32) -> &'static ${name}`);
+  method(`[\`array.subarray(start, end)\`](${t("subarray")}): a view of its elements from \`start\` to \`end\`, sharing its buffer.`, "subarray", `subarray(&self, start: i32, end: i32) -> &'static ${name}<B>`);
+  method(`[\`array.subarray(start)\`](${t("subarray")}): a view of its elements from \`start\` on.`, "subarray", `subarray_to_end(&self, start: i32) -> &'static ${name}<B>`);
   method(`[\`array.includes(value)\`](${t("includes")}): whether it has \`value\`, NaN too.`, "includes", `includes(&self, value: ${e}) -> bool`);
   method(`[\`array.indexOf(value)\`](${t("indexOf")}): where it first has \`value\`, or -1.`, "indexOf", `index_of(&self, value: ${e}) -> i32`);
   method(`[\`array.indexOf(value, from)\`](${t("indexOf")}): where it first has \`value\` from \`from\` on, or -1.`, "indexOf", `index_of_from(&self, value: ${e}, from: i32) -> i32`);
@@ -198,7 +210,7 @@ for (const [name, e] of ELEMENTS) {
   method(`[\`array.join(separator)\`](${t("join")}): its elements as text, \`separator\` between.`, "join", "join(&self, separator: &str) -> String");
   method(`[\`array.toString()\`](${t("toString")}): its elements as text, \`,\` between.`, "toString", "to_string(&self) -> String");
   method(`[\`array.toLocaleString()\`](${t("toLocaleString")}): its elements as the user's locale writes them.`, "toLocaleString", "to_locale_string(&self) -> String");
-  method(`[\`array.valueOf()\`](${t("valueOf")}): itself.`, "valueOf", `value_of(&self) -> &'static ${name}`);
+  method(`[\`array.valueOf()\`](${t("valueOf")}): itself.`, "valueOf", `value_of(&self) -> &'static ${name}<B>`);
   method(`[\`array.keys()\`](${t("keys")}): its indices, a JS iterator (ADR 0140).`, "keys", "keys(&self) -> Box<dyn Iterator<Item = u32>>");
   method(`[\`array.values()\`](${t("values")}): its elements, a JS iterator.`, "values", `values(&self) -> Box<dyn Iterator<Item = ${e}>>`);
   method(`[\`array.entries()\`](${t("entries")}): its indices and elements, a JS iterator.`, "entries", `entries(&self) -> Box<dyn Iterator<Item = (u32, ${e})>>`);
@@ -213,12 +225,14 @@ for (const [name, e] of ELEMENTS) {
   line();
   line('    unsafe extern "Rust" {');
   extern(`[\`new ${name}(length)\`](${page(`${name}/${name}`)}): \`length\` elements, each 0.`, `new ${name}`, `new(length: u32) -> &'static ${name}`);
-  extern(`[\`new ${name}(buffer)\`](${page(`${name}/${name}`)}): a view of all of \`buffer\`.`, `new ${name}`, `new_with_buffer(buffer: &ArrayBuffer) -> &'static ${name}`);
-  extern(`[\`new ${name}(buffer, byteOffset, length)\`](${page(`${name}/${name}`)}): a view of \`length\` elements from \`byte_offset\`.`, `new ${name}`, `new_with_buffer_offset_and_length(buffer: &ArrayBuffer, byte_offset: u32, length: u32) -> &'static ${name}`);
   extern(`[\`${name}.from(items)\`](${t("from")}): a typed array of \`items\`.`, `${name}.from`, `from(items: &[${e}]) -> &'static ${name}`);
   extern(`[\`${name}.of(..items)\`](${t("of")}): a typed array of \`items\`.`, `${name}.of`, `of(items: &[${e}]) -> &'static ${name}`, true);
   close();
   line("    }");
+  line();
+  method(`[\`new ${name}(buffer)\`](${page(`${name}/${name}`)}): a view of all of \`buffer\`.`, `new ${name}`, `new_with_buffer<B: ArrayBufferLike>(buffer: &B) -> &'static ${name}<B>`);
+  method(`[\`new ${name}(buffer, byteOffset, length)\`](${page(`${name}/${name}`)}): a view of \`length\` elements from \`byte_offset\`.`, `new ${name}`, `new_with_buffer_offset_and_length<B: ArrayBufferLike>(buffer: &B, byte_offset: u32, length: u32) -> &'static ${name}<B>`);
+  close();
   line("}");
 }
 
