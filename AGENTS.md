@@ -37,6 +37,21 @@ milestone on the way.
   callers are core. Preserve public representations and interfaces, and keep
   the native and browser compilers consistent.
 
+## Ports drive rust-js
+
+We port TypeScript and JavaScript projects to Rust, react.dev first, to find
+what rust-js lacks. The port is not the goal; what it uncovers is.
+
+- **A limit stops the port.** When a port needs a feature rust-js lacks, a
+  binding, or gets JavaScript that doesn't read as the original does, stop
+  porting and fix rust-js: a failing test, the fix, its mutations, an ADR.
+  Then write the port the natural way.
+- **Never work around rust-js in a port**: no local stand-in bindings, no
+  restructured Rust to dodge an error, no accepting noisy output. A
+  workaround hides the gap the port exists to find.
+- **A port is faithful**: the same behavior, and output as close to the
+  original as its Rust allows.
+
 ## Making changes
 
 Follow [CONTRIBUTING.md](CONTRIBUTING.md): how a change is made, proved and
