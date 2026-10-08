@@ -840,7 +840,10 @@ test("the webapi crate's bindings become plain JS", async () => {
   expect(js).toContain("const keys = headers.keys();\n  return [names, long, $next(keys)];");
   // A typed array, an SVG alias's class, and a union of a typedef.
   expect(js).toContain('const data = buffer.getChannelData(0);\n  const point = svg.createSVGPoint();\n  point.x = 2;\n  const face = new FontFace("Mono", new Uint8Array(4));');
-  const { round_trip, iterated, samples } = await import(join(target, "web_forms.js"));
+  // A stringifier's `toString()`.
+  expect(js).toContain("return [url.toString(), list.toString()];");
+  const { round_trip, iterated, samples, texts } = await import(join(target, "web_forms.js"));
+  expect(texts(new URL("https://example.com/a"), { toString: () => "a b" })).toEqual(["https://example.com/a", "a b"]);
   (globalThis as any).FontFace = class { constructor(public family: string) {} };
   expect(samples({ getChannelData: () => new Float32Array([0.5]) }, { createSVGPoint: () => ({ x: 0 }) }).slice(0, 2)).toEqual([0.5, 2]);
   delete (globalThis as any).FontFace;

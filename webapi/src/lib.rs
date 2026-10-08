@@ -5895,6 +5895,14 @@ impl DOMTokenList {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMTokenList/toString)
+    #[cfg_attr(rust_js, rust_js::link_name = "toString")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn to_string(&self) -> String {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMTokenList/value)
     #[cfg_attr(rust_js, rust_js::link_name = "get value")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -8786,6 +8794,14 @@ impl HTMLAnchorElement {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_type(&self, value: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAnchorElement/toString)
+    #[cfg_attr(rust_js, rust_js::link_name = "toString")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn to_string(&self) -> String {
         unreachable!()
     }
 
@@ -17003,6 +17019,14 @@ impl HTMLAreaElement {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/toString)
+    #[cfg_attr(rust_js, rust_js::link_name = "toString")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn to_string(&self) -> String {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement/href)
     #[cfg_attr(rust_js, rust_js::link_name = "get href")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -21386,6 +21410,14 @@ impl Window {
 pub struct Location(PhantomData<JsObject>);
 
 impl Location {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Location/toString)
+    #[cfg_attr(rust_js, rust_js::link_name = "toString")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn to_string(&self) -> String {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Location/href)
     #[cfg_attr(rust_js, rust_js::link_name = "get href")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -34218,6 +34250,14 @@ pub mod url {
 }
 
 impl URL {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/URL/toString)
+    #[cfg_attr(rust_js, rust_js::link_name = "toString")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn to_string(&self) -> String {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URL/href)
     #[cfg_attr(rust_js, rust_js::link_name = "get href")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -48451,6 +48491,17 @@ pub mod css_style_value {
     }
 }
 
+impl CSSStyleValue {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleValue/toString)
+    #[cfg_attr(rust_js, rust_js::link_name = "toString")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn to_string(&self) -> String {
+        unreachable!()
+    }
+
+}
+
 /// [`CSSSupportsRule`](https://developer.mozilla.org/docs/Web/API/CSSSupportsRule)
 #[cfg_attr(rust_js, rust_js::types = "CSSSupportsRule")]
 pub struct CSSSupportsRule(PhantomData<JsObject>);
@@ -48479,6 +48530,14 @@ pub mod css_supports_rule {
 pub struct CSSTransformComponent(PhantomData<JsObject>);
 
 impl CSSTransformComponent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTransformComponent/toString)
+    #[cfg_attr(rust_js, rust_js::link_name = "toString")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn to_string(&self) -> String {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTransformComponent/is2D)
     #[cfg_attr(rust_js, rust_js::link_name = "get is2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -52601,6 +52660,14 @@ impl DOMMatrixReadOnly {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn to_float64_array(&self) -> &'static Float64Array {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/toString)
+    #[cfg_attr(rust_js, rust_js::link_name = "toString")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn to_string(&self) -> String {
         unreachable!()
     }
 
@@ -65333,6 +65400,14 @@ impl MediaKeys {
 pub struct MediaList(PhantomData<JsObject>);
 
 impl MediaList {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaList/toString)
+    #[cfg_attr(rust_js, rust_js::link_name = "toString")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn to_string(&self) -> String {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaList/mediaText)
     #[cfg_attr(rust_js, rust_js::link_name = "get mediaText")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -74106,6 +74181,14 @@ impl Range {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/toString)
+    #[cfg_attr(rust_js, rust_js::link_name = "toString")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn to_string(&self) -> String {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/createContextualFragment)
     #[cfg_attr(rust_js, rust_js::link_name = "createContextualFragment")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -76628,6 +76711,14 @@ impl Selection {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn contains_node_with_allow_partial_containment(&self, node: &Node, allow_partial_containment: bool) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/toString)
+    #[cfg_attr(rust_js, rust_js::link_name = "toString")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn to_string(&self) -> String {
         unreachable!()
     }
 
@@ -80325,6 +80416,14 @@ impl URLSearchParams {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn entries(&self) -> Box<dyn Iterator<Item = (String, String)>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/toString)
+    #[cfg_attr(rust_js, rust_js::link_name = "toString")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn to_string(&self) -> String {
         unreachable!()
     }
 

@@ -143,3 +143,9 @@ pub fn samples(buffer: &webapi::AudioBuffer, svg: &webapi::SVGSVGElement) -> (f3
     let face = webapi::font_face::new("Mono", js::uint8_array::new(4));
     (data.get(0).unwrap_or(0.0), point.x(), face)
 }
+
+/// A stringifier is `to_string()`, JS's `toString()`: of `stringifier;`,
+/// and of a `stringifier attribute`, a URL's `href`.
+pub fn texts(url: &webapi::URL, list: &webapi::DOMTokenList) -> (String, String) {
+    (url.to_string(), list.to_string())
+}

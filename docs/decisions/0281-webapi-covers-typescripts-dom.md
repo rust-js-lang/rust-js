@@ -120,3 +120,5 @@ so nothing said when it fell behind.
   typedef in it by its name, `StrOrBufferSource` of `(DOMString or
   BufferSource)`, as TypeScript's `string | BufferSource` is, not by every
   member it flattens to. 97.7%.
+- **A stringifier is `to_string()`**, JS's `toString()`: of `stringifier;`
+  and of a `stringifier attribute`, `url.to_string()` its `href`. 97.8%.

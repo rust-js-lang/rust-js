@@ -192,6 +192,8 @@ for (const [spec, defs] of Object.entries(all)) {
         ? !!ts?.ctor
         : m.type === "iterable" || m.type === "maplike" || m.type === "setlike"
           ? !!ts?.members.has("forEach")
+          : m.special === "stringifier" && !m.name
+          ? !!ts?.members.has("toString")
           : !!m.name && (d.type === "interface mixin" ? anyClassHas.has(m.name) : !!ts && (m.special === "static" ? ts.statics : ts.members).has(m.name));
     for (const m of d.members ?? []) if (!kept(m)) leftOut.add(m);
   }
@@ -609,6 +611,15 @@ const NAMED: Record<string, string> = {
   "Document.createElementNS": "create_element_ns_named",
 };
 
+/** A stringifier's `toString()`, `url.to_string()`, its text. */
+const toString = (i: Interface): Fn => ({
+  name: "to_string",
+  jsName: "toString",
+  params: [`this: &${typeName(i.name)}`],
+  result: "String",
+  doc: [`[MDN](${mdn(i.name, "toString")})`],
+});
+
 /** The root of `name`'s inheritance chain within INTERFACES. */
 function root(name: string): string {
   const parent = interfaces.get(name)!.parent;
@@ -776,6 +787,8 @@ function functionsOf(i: Interface): Fn[] {
         });
         continue;
       }
+      // `stringifier attribute USVString href`: `toString()` is it too.
+      if (m.special === "stringifier") fns.push(toString(i));
       const result = rustType(m.idlType!, "result");
       // A getter whose type isn't supported (a union, say) is skipped, but
       // its setter can still take the union's enum.
@@ -790,6 +803,11 @@ function functionsOf(i: Interface): Fn[] {
         fns.push({ name: `set_${snakeWords(m.name!)}`, jsName: `set ${m.name}`, params: [...self, `value: ${value}`], result: "()", doc });
       }
     } else if (m.type === "operation") {
+      // `stringifier;`: what JS's `toString()` makes of it.
+      if (!m.name && m.special === "stringifier") {
+        fns.push(toString(i));
+        continue;
+      }
       if (!m.name) {
         skip("unnamed");
         continue;

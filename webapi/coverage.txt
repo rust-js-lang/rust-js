@@ -1,6 +1,6 @@
 # The webapi crate against TypeScript's DOM (@types/web): bun test test/webapi-coverage.test.ts
 # classes: 699 of 701 (99.7%)
-# members: 8222 of 8419 (97.7%)
+# members: 8234 of 8419 (97.8%)
 AbortController.abort
 AbortController.constructor
 AbortController.signal
@@ -994,8 +994,10 @@ CSSStyleSheet.replaceSync
 CSSStyleSheet.rules
 CSSStyleValue.static:parse
 CSSStyleValue.static:parseAll
+CSSStyleValue.toString
 CSSTransformComponent.is2D
 CSSTransformComponent.toMatrix
+CSSTransformComponent.toString
 CSSTransformValue.constructor
 CSSTransformValue.entries
 CSSTransformValue.forEach
@@ -1313,6 +1315,7 @@ DOMMatrixReadOnly.static:fromMatrix
 DOMMatrixReadOnly.toFloat32Array
 DOMMatrixReadOnly.toFloat64Array
 DOMMatrixReadOnly.toJSON
+DOMMatrixReadOnly.toString
 DOMMatrixReadOnly.transformPoint
 DOMMatrixReadOnly.translate
 DOMParser.constructor
@@ -1364,6 +1367,7 @@ DOMTokenList.length
 DOMTokenList.remove
 DOMTokenList.replace
 DOMTokenList.supports
+DOMTokenList.toString
 DOMTokenList.toggle
 DOMTokenList.value
 DOMTokenList.values
@@ -2261,6 +2265,7 @@ HTMLAnchorElement.search
 HTMLAnchorElement.shape
 HTMLAnchorElement.target
 HTMLAnchorElement.text
+HTMLAnchorElement.toString
 HTMLAnchorElement.type
 HTMLAnchorElement.username
 HTMLAreaElement.alt
@@ -2283,6 +2288,7 @@ HTMLAreaElement.rel
 HTMLAreaElement.search
 HTMLAreaElement.shape
 HTMLAreaElement.target
+HTMLAreaElement.toString
 HTMLAreaElement.type
 HTMLAreaElement.username
 HTMLBRElement.clear
@@ -3266,6 +3272,7 @@ Location.protocol
 Location.reload
 Location.replace
 Location.search
+Location.toString
 Lock.mode
 Lock.name
 LockManager.query
@@ -3454,6 +3461,7 @@ MediaList.deleteMedium
 MediaList.item
 MediaList.length
 MediaList.mediaText
+MediaList.toString
 MediaMetadata.album
 MediaMetadata.artist
 MediaMetadata.artwork
@@ -4347,6 +4355,7 @@ Range.static:END_TO_START
 Range.static:START_TO_END
 Range.static:START_TO_START
 Range.surroundContents
+Range.toString
 ReadableByteStreamController.byobRequest
 ReadableByteStreamController.close
 ReadableByteStreamController.desiredSize
@@ -5306,6 +5315,7 @@ Selection.removeRange
 Selection.selectAllChildren
 Selection.setBaseAndExtent
 Selection.setPosition
+Selection.toString
 Selection.type
 Serial.getPorts
 Serial.requestPort
@@ -5626,6 +5636,7 @@ URL.static:createObjectURL
 URL.static:parse
 URL.static:revokeObjectURL
 URL.toJSON
+URL.toString
 URL.username
 URLPattern.constructor
 URLPattern.exec
@@ -5651,6 +5662,7 @@ URLSearchParams.keys
 URLSearchParams.set
 URLSearchParams.size
 URLSearchParams.sort
+URLSearchParams.toString
 URLSearchParams.values
 UserActivation.hasBeenActive
 UserActivation.isActive
