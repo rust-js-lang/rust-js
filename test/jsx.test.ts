@@ -2899,3 +2899,22 @@ pub fn counted() -> u32 {
   tree.props.onClick();
   expect([renderToStaticMarkup(tree), clicked]).toEqual(["<button>3</button>", 1]);
 });
+
+// A key may be none, as @types/react's `key?: Key | null`: react.dev's
+// CodeDiagram gives each child's own, `key={child.key}`.
+test("an element's key may be an Option", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+
+pub fn Keyed(keys: Vec<Option<&'static str>>) -> JSX::Element {
+    jsx! { <ul>{keys.iter().map(|key| jsx! { <li key={*key}>{key.unwrap_or("none")}</li> }).collect::<Vec<_>>()}</ul> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("<li key={key}>");
+  const { Keyed } = await import(join(dir, "lib.jsx"));
+  const tree = Keyed(["a", undefined]);
+  expect(tree.props.children.map((li: any) => li.key)).toEqual(["a", null]);
+  expect(renderToStaticMarkup(tree)).toBe("<ul><li>a</li><li>none</li></ul>");
+});

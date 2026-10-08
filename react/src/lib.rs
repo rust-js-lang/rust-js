@@ -430,7 +430,8 @@ impl<'a> From<&'a str> for Booleanish<'a> {
     }
 }
 
-/// What a [`key`](Element::key) can be: a string or a number.
+/// What a [`key`](Element::key) can be: a string or a number, or none, as
+/// @types/react's `key?: Key | null` has it, `None` no key.
 pub trait Key {}
 
 impl Key for &str {}
@@ -439,6 +440,7 @@ impl Key for i32 {}
 impl Key for u32 {}
 impl Key for usize {}
 impl<T: Key + ?Sized> Key for &T {}
+impl<T: Key> Key for Option<T> {}
 
 /// A [`style`](Element::style) object, `{ color: "red", fontSize: 12 }`:
 /// made by `CSSProperties::new()`, then CSS properties by name, `.color("red")`.
