@@ -68,4 +68,12 @@ export const mutations: Mutation[] = [
     replace: "            let names = (others.into_iter().chain(own))\n",
     tests: ["test/next.test.ts", "-t", "rust-js-next build"],
   },
+  {
+    name: "namespace-named-by-file",
+    breaks: "a namespace whose bindings `mod ContextMenu` holds is named by its file, `import * as menu`",
+    file: "src/lower/analysis/naming.rs",
+    find: "                (\"*\", _, Some(module)) => module,\n",
+    replace: "\n",
+    tests: ["test/compiler.test.ts", "-t", "namespace import is named"],
+  },
 ];

@@ -1762,6 +1762,34 @@ test("js::directive! and js::export_default! make a module a Next.js route", asy
 // A module's `pub use` of another module's function is a JS re-export,
 // `export { helper } from "./inner.js"`, as react.dev's Challenges/index
 // re-exports `Challenges` (ADR 0240).
+// A JS module's namespace, `#*.Root`, whose bindings a Rust module holds,
+// is imported by that module's name, as react.dev's BrandMenu has
+// `import * as ContextMenu` and `<ContextMenu.Root>`.
+test("a namespace import is named as the module of its bindings", async () => {
+  const dir = fixture("namespace-module");
+  writeFileSync(join(dir, "menu.js"), "export function Root() { return 1; }\nexport function Item() { return 2; }\n");
+  writeFileSync(join(dir, "lib.rs"), `#[allow(non_snake_case)]
+mod ContextMenu {
+    unsafe extern "Rust" {
+        #[link_name = "./menu.js#*.Root"]
+        pub safe fn Root() -> u32;
+        #[link_name = "./menu.js#*.Item"]
+        pub safe fn Item() -> u32;
+    }
+}
+
+pub fn both() -> u32 {
+    ContextMenu::Root() + ContextMenu::Item()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('import * as ContextMenu from "./menu.js";');
+  expect(js).toContain("ContextMenu.Root() + ContextMenu.Item()");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.both()).toBe(3);
+});
+
 test("a pub use of another module's function is re-exported from it", async () => {
   const dir = fixture("reexports");
   writeFileSync(join(dir, "lib.rs"), "mod inner;\npub use inner::helper;\npub use inner::other as renamed;\nuse inner::other;\n\npub fn own() -> u32 {\n    other() + 1\n}\n");

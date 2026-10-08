@@ -346,6 +346,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0253 next/link takes a ref and passHref](decisions/0253-next-link-ref.md)
 - [0254 A key or ref that does nothing is captured in no order](decisions/0254-pure-key-ref.md)
 - [0255 next/router's events](decisions/0255-next-router-events.md)
+- [0256 A namespace import is named as the module of its bindings](decisions/0256-namespace-import-names.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

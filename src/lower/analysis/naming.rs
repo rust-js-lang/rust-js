@@ -128,9 +128,23 @@ pub(super) fn name_imports(
                 [only] if tcx.def_kind(**only) == DefKind::Fn => Some(bindings::fn_name(tcx, **only)),
                 _ => None,
             };
-            let base = match (export.as_str(), held_by) {
-                ("default", Some(name)) => name,
-                ("default" | "*", _) => module_binding(from),
+            // A namespace whose bindings a Rust module holds, `mod ContextMenu`,
+            // is that module's name (ADR 0256).
+            let holder = (export == "*")
+                .then(|| uses.bound_to.get(export_key))
+                .flatten()
+                .and_then(|held| {
+                    let mut modules = held
+                        .iter()
+                        .map(|id| id.as_local().map(|id| tcx.parent_module_from_def_id(id)));
+                    let first = modules.next()??;
+                    (!first.is_top_level_module() && modules.all(|module| module == Some(first)))
+                        .then(|| tcx.item_name(first.to_def_id()).to_string())
+                });
+            let base = match (export.as_str(), held_by, holder) {
+                ("default", Some(name), _) => name,
+                ("*", _, Some(module)) => module,
+                ("default" | "*", _, _) => module_binding(from),
                 _ => export.clone(),
             };
             (export_key, base)
