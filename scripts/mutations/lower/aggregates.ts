@@ -38,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "derived-default-base-lowered",
     breaks: "an update's derived `Default` base is lowered whole, its children's default too",
     file: "src/lower/aggregates.rs",
-    find: "                    let base = match self.derived_default_fields(fru.base, ty) {",
-    replace: "                    let base = match None::<Vec<(String, Ty<'tcx>)>> {",
+    find: "                    let derived = match self.derived_default_fields(fru.base, ty) {",
+    replace: "                    let derived = match None::<Vec<(String, Ty<'tcx>)>> {",
     tests: ["test/jsx.test.ts","-t","and the component no dictionary"],
   },
   {
