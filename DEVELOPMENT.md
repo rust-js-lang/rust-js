@@ -122,6 +122,12 @@ other machine, no sync, and the files stay ours to edit.
 The trade: whatever these apps start isn't checked for malware, including
 what an agent runs. Turn it off in the same place.
 
+To set the Mac up once: rustup, with the toolchain and components
+[rust-toolchain.toml](rust-toolchain.toml) pins, and the `wasm32-wasip1`
+and `wasm32-unknown-unknown` targets; the Bun version the workflows set
+up; Node 24; then `bun install` and `bunx --bun playwright install
+chromium`; and the apps above under Developer Tools.
+
 ## Working on `main`
 
 - **Each change is a commit on `main`, pushed directly**: no branches, no
@@ -205,6 +211,7 @@ and `mutation_shards`, 1, 2, 4 or 8. Before a release, all of them:
 ```bash
 gh workflow run "rustc tests" -f mutations=true -f mutation_shards=8
 gh workflow run "rustc tests" -f fuzz_seeds=600 -f fuzz_start=1000
+gh workflow run "rustc tests" -f bless=true    # rustc's lists, as a bless patch
 ```
 
 ### `nightly.yml`, each night at 02:00 UTC+7, of `main`
