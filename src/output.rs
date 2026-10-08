@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
 use crate::manifest::{self, Manifest, fingerprint};
-use crate::paths::{absolute, parent_dir, relative, relative_resolved, resolve};
+use crate::paths::{absolute, parent_dir, relative, relative_resolved, resolve, specifier_file};
 
 use crate::publish::{Artifact, ArtifactPlan};
 use crate::{js, program, to_oxc};
@@ -438,6 +438,8 @@ impl OutputPlan {
                 source: module.file.as_deref().map(absolute).transpose()?,
                 located: module.located,
                 imports,
+                links: Vec::new(),
+                type_links: Vec::new(),
             });
         }
         let test_artifact = self.tests(&lowered.tests);
@@ -482,6 +484,15 @@ impl OutputPlan {
         artifacts.extend(metadata);
         for artifact in &mut artifacts {
             artifact.path = absolute(&artifact.path)?;
+        }
+        // Where each module's JS and declarations name another's file, by a
+        // parse of what was printed: what a host that copies them elsewhere
+        // rewrites (ADR 0101).
+        for module in &mut modules {
+            module.links = links(&artifacts, &module.file, false)?;
+            if let Some(types) = &module.types {
+                module.type_links = links(&artifacts, types, true)?;
+            }
         }
         self.written = artifacts
             .iter()
@@ -544,6 +555,23 @@ impl OutputPlan {
         artifacts.extend(extra);
         Ok(ArtifactPlan { artifacts, stale })
     }
+}
+
+/// Each relative specifier in `file`, as written, by its bytes, and the file
+/// it names: none of a file not written, or of a package, `"react"`.
+fn links(artifacts: &[Artifact], file: &std::path::Path, declarations: bool) -> Result<Vec<manifest::Link>, String> {
+    let Some(artifact) = artifacts.iter().find(|artifact| artifact.path == file) else {
+        return Ok(Vec::new());
+    };
+    let code = std::str::from_utf8(&artifact.bytes).map_err(|e| e.to_string())?;
+    to_oxc::module_specifiers(code, declarations)?
+        .into_iter()
+        .filter(|(_, _, specifier)| specifier.starts_with("./") || specifier.starts_with("../"))
+        .map(|(start, end, specifier)| {
+            let file = specifier_file(parent_dir(file), &specifier)?;
+            Ok(manifest::Link { start, end, file })
+        })
+        .collect()
 }
 
 /// `Tag.d.ts` of `Tag.jsx` or `Tag.js`: its declarations' (ADR 0196).

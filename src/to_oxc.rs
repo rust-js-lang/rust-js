@@ -25,15 +25,18 @@ use oxc_allocator::{Allocator, ArenaBox, ArenaVec};
 use oxc_ast::ast::{
     Argument, ArrayExpressionElement, ArrowFunctionBody, AssignmentTarget, BindingIdentifier, BindingPattern,
     BindingProperty, BindingRestElement, BlockStatement, CallExpression, CatchClause, CatchParameter, ChainElement,
-    ComputedMemberExpression, Declaration, Expression, ForStatementInit, ForStatementLeft, FormalParameter,
-    FormalParameterKind, FormalParameters, FunctionBody, FunctionType, IdentifierName, JSXAttributeItem,
-    JSXAttributeName, JSXAttributeValue, JSXChild, JSXClosingElement, JSXClosingFragment, JSXElementName,
-    JSXExpression, JSXIdentifier, JSXMemberExpressionObject, JSXOpeningElement, JSXOpeningFragment, LabelIdentifier,
-    ObjectPropertyKind, Program, PropertyKey, PropertyKind, SimpleAssignmentTarget, Statement, StaticMemberExpression,
-    TemplateElement, TemplateElementValue, VariableDeclarationKind, VariableDeclarator,
+    ComputedMemberExpression, Declaration, ExportFromDeclaration, Expression, ForStatementInit, ForStatementLeft,
+    FormalParameter, FormalParameterKind, FormalParameters, FunctionBody, FunctionType, IdentifierName,
+    ImportDeclaration, JSXAttributeItem, JSXAttributeName, JSXAttributeValue, JSXChild, JSXClosingElement,
+    JSXClosingFragment, JSXElementName, JSXExpression, JSXIdentifier, JSXMemberExpressionObject, JSXOpeningElement,
+    JSXOpeningFragment, LabelIdentifier, ObjectPropertyKind, Program, PropertyKey, PropertyKind,
+    SimpleAssignmentTarget, Statement, StaticMemberExpression, StringLiteral, TemplateElement, TemplateElementValue,
+    VariableDeclarationKind, VariableDeclarator,
 };
 use oxc_ast::builder::AstBuilder;
+use oxc_ast_visit::Visit;
 use oxc_codegen::{Codegen, CodegenOptions, IndentChar};
+use oxc_parser::Parser;
 use oxc_regular_expression::{LiteralParser, Options};
 use oxc_sourcemap::{SourceMap, SourceMapBuilder};
 use oxc_span::{SPAN, SourceType, Span};
@@ -1413,4 +1416,40 @@ fn tested(e: &js::Expr) -> js::Expr {
         },
         _ => e.clone(),
     }
+}
+
+/// Where `code`, a module rust-js wrote, or its `declarations`, names another
+/// by its path: each specifier of an `import` and an `export .. from`, what
+/// rust-js prints of them, as the byte range of its text between its quotes,
+/// and the text. A host that moves the files rewrites these and nothing
+/// else (ADR 0101): found by a parse, whatever comes before them.
+pub fn module_specifiers(code: &str, declarations: bool) -> Result<Vec<(usize, usize, String)>, String> {
+    struct Specifiers(Vec<(usize, usize, String)>);
+    impl Specifiers {
+        fn add(&mut self, source: &StringLiteral) {
+            let (start, end) = (source.span.start as usize + 1, source.span.end as usize - 1);
+            self.0.push((start, end, source.value.to_string()));
+        }
+    }
+    impl<'a> Visit<'a> for Specifiers {
+        fn visit_import_declaration(&mut self, it: &ImportDeclaration<'a>) {
+            self.add(&it.source);
+        }
+        fn visit_export_from_declaration(&mut self, it: &ExportFromDeclaration<'a>) {
+            self.add(&it.source);
+        }
+    }
+    let allocator = Allocator::default();
+    let source_type = if declarations {
+        SourceType::d_ts()
+    } else {
+        SourceType::mjs().with_jsx(true)
+    };
+    let parsed = Parser::new(&allocator, code, source_type).parse();
+    if let Some(error) = parsed.diagnostics.errors().next() {
+        return Err(format!("rust-js can't read the module it wrote: {error}"));
+    }
+    let mut found = Specifiers(Vec::new());
+    found.visit_program(&parsed.program);
+    Ok(found.0)
 }

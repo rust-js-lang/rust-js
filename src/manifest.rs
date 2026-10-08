@@ -61,6 +61,25 @@ pub struct Module {
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub located: bool,
     pub imports: Vec<PathBuf>,
+    /// Where its JS names another module's file, `"./util.js"`, by the
+    /// compiler's parse of it: what a host that copies the files elsewhere
+    /// rewrites, and nothing else (ADR 0101). Written even where there's
+    /// none, so a host tells a manifest of an older compiler, which had
+    /// none, from one of a module that names no other.
+    #[serde(default)]
+    pub links: Vec<Link>,
+    /// Where its `.d.ts` does.
+    #[serde(default)]
+    pub type_links: Vec<Link>,
+}
+
+/// A specifier in a file: the byte range of its text, between its quotes,
+/// and the file it names.
+#[derive(Serialize, Deserialize)]
+pub struct Link {
+    pub start: usize,
+    pub end: usize,
+    pub file: PathBuf,
 }
 
 #[derive(Serialize, Deserialize)]

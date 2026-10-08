@@ -33,6 +33,23 @@ pub(crate) fn relative_resolved(from: &Path, to: &Path) -> String {
     relative.to_string_lossy().into_owned()
 }
 
+/// The file a relative `specifier`, `../util.js`, names from `dir`: each
+/// `.` and `..` of it taken as written, as JS resolves it, then `absolute`.
+pub(crate) fn specifier_file(dir: &Path, specifier: &str) -> Result<PathBuf, String> {
+    let mut path = dir.to_path_buf();
+    for part in specifier.split('/') {
+        match part {
+            // A WASI host's `absolute` is the path as it is, so `./` is dropped here.
+            "" | "." => {}
+            ".." => {
+                path.pop();
+            }
+            part => path.push(part),
+        }
+    }
+    absolute(&path)
+}
+
 /// `path`, absolute, through each symlink of what exists of it.
 pub(crate) fn absolute(path: &Path) -> Result<PathBuf, String> {
     if cfg!(target_os = "wasi") {

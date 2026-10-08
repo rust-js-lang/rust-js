@@ -129,8 +129,14 @@ would overwrite. If that's another module's, `mod root` of a `[lib] path
 `sources/alpha.rs` and `sources/beta.rs`, it's an error, before anything's
 written, as rust-js's own output refuses `mod lib` of `lib.rs`. An import of
 another crate's module is of its copy, `../../models/src/lib.js`: only
-the import declarations each module's JS begins with, and its closing
-source-map comment, change, never a string that reads like one. A copy is
+the specifiers the compiler found where it names another module's file,
+its manifest's `links` of its JS and `type_links` of its declarations, by
+its parse of what it printed, and the closing source-map comment, change,
+never a string that reads like one. (Amended: they were found by scanning
+the text for the imports each module begins with, which missed one after a
+`"use client"`, every `export .. from`, and each declaration's.) A
+manifest of an older compiler's, without them, is an error that says to
+build again. A copy is
 written only if it changed, and the copies are published as a build's
 output is (ADR 0091): every byte prepared first, then all of it or none.
 A ledger beside Cargo's build records what was written beside each

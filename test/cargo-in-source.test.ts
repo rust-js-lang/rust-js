@@ -122,3 +122,29 @@ test("a Cargo build's declarations in source are beside each module's JS", async
   expect(readdirSync(src).filter((file) => file.endsWith(".d.ts")).sort()).toEqual(["App.d.ts", "util.d.ts"]);
   expect(readFileSync(join(src, "App.d.ts"), "utf8")).toContain("export function answer(n: number): number;");
 }, 600_000);
+
+// Where a module names another's file is where the compiler's own parse
+// says, not where an import is printed (ADR 0101): after a directive, in an
+// `export .. from`, and in a declaration, each names the root by the name
+// it's copied to, `App.js`, not the build's `lib.js`.
+test("a Cargo build's JS in source names each module's copy, wherever it names it", async () => {
+  const dir = fixture("cargo-in-source-links");
+  const src = join(dir, "src");
+  mkdirSync(src, { recursive: true });
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.1.0"\nedition = "2024"\n\n[lib]\npath = "src/App.rs"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
+  writeFileSync(join(src, "App.rs"), "pub mod child;\npub mod plain;\n\npub struct Value {\n    pub n: u32,\n}\n\npub fn base() -> u32 {\n    1\n}\n");
+  writeFileSync(join(src, "child.rs"), '#[cfg_attr(rust_js, rust_js::directive = "use client")]\nconst _: () = ();\n\npub fn twice() -> u32 {\n    crate::base() * 2\n}\n');
+  writeFileSync(join(src, "plain.rs"), "pub use crate::base;\n\npub fn make() -> crate::Value {\n    crate::Value { n: 3 }\n}\n");
+  await checkCargo({ manifestPath: join(dir, "Cargo.toml"), toolchain: pin, compiler, offline: true, packageName: "app", inSource: true });
+  const child = readFileSync(join(src, "child.js"), "utf8");
+  const plain = readFileSync(join(src, "plain.js"), "utf8");
+  const types = readFileSync(join(src, "plain.d.ts"), "utf8");
+  expect(child).toContain('"use client";\n\nimport { base } from "./App.js";');
+  expect(plain).toContain('export { base } from "./App.js";');
+  expect(types).toContain('from "./App.js";');
+  for (const text of [child, plain, types]) expect(text).not.toContain("lib.js");
+  const program = `const child = await import(${JSON.stringify(join(src, "child.js"))});
+const plain = await import(${JSON.stringify(join(src, "plain.js"))});
+console.log(child.twice(), plain.base(), plain.make().n);`;
+  expect(run([node ?? "node", "--input-type=module", "--eval", program]).trim()).toBe("2 1 3");
+}, 600_000);

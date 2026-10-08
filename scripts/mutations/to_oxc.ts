@@ -3,6 +3,22 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "import-specifier-unlinked",
+    breaks: "an `import`'s specifier isn't in its module's links, so a host that copies the files keeps the build's name",
+    file: "src/to_oxc.rs",
+    find: "        fn visit_import_declaration(&mut self, it: &ImportDeclaration<'a>) {\n            self.add(&it.source);",
+    replace: "        fn visit_import_declaration(&mut self, it: &ImportDeclaration<'a>) {\n            let _ = it;",
+    tests: ["test/manifest.test.ts", "-t", "links are each relative specifier"],
+  },
+  {
+    name: "export-from-specifier-unlinked",
+    breaks: "an `export .. from`'s specifier isn't in its module's links, so a re-export keeps the build's name",
+    file: "src/to_oxc.rs",
+    find: "        fn visit_export_from_declaration(&mut self, it: &ExportFromDeclaration<'a>) {\n            self.add(&it.source);",
+    replace: "        fn visit_export_from_declaration(&mut self, it: &ExportFromDeclaration<'a>) {\n            let _ = it;",
+    tests: ["test/manifest.test.ts", "-t", "links are each relative specifier"],
+  },
+  {
     name: "keyed-field-assigned-dotted",
     breaks: "`files.two_d = Some(3)` of a field named `2d` is `files.2d = 3`, which doesn't parse",
     file: "src/to_oxc.rs",

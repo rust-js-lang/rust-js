@@ -203,3 +203,50 @@ test("the build adapter drops what other keys cached that no build used for a we
   pruneUnused(join(cache, "react"), join(cache, "react/19.3.0/current"), 2, now);
   expect(["react/19.3.0/current", "react/19.3.0/recent", "react/19.3.0/old", "react/18.2.0"].map((p) => existsSync(join(cache, p)))).toEqual([true, true, false, false]);
 });
+
+// ADR 0101: a module's `links` are where its JS and its declarations name
+// another module's file, by the compiler's parse of what it printed: each
+// relative specifier's bytes, after a directive and in an `export .. from`
+// too, and none of a package's, `@rust-js/runtime`.
+test("a manifest's links are each relative specifier a module's files print", async () => {
+  buildCompiler();
+  const dir = fixture("manifest-links");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n[package.metadata.rust-js]\ndeclarations = true\n');
+  writeFileSync(join(dir, "lib.rs"), `pub struct Value {
+    pub n: u32,
+}
+pub fn base(n: Option<u32>) -> u32 {
+    n.unwrap()
+}
+pub mod child {
+    #[cfg_attr(rust_js, rust_js::directive = "use client")]
+    const _: () = ();
+    pub use crate::base;
+    pub fn make() -> crate::Value {
+        crate::Value { n: crate::base(Some(1)) }
+    }
+}
+pub mod deep {
+    pub mod inner {
+        pub fn two() -> u32 {
+            crate::base(Some(2))
+        }
+    }
+}
+`);
+  const manifestPath = join(dir, "manifest.json");
+  const p = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--manifest", manifestPath], { stderr: "pipe" });
+  expect(p.exitCode, p.stderr.toString()).toBe(0);
+  const manifest = parseManifest(readFileSync(manifestPath, "utf8"));
+  const named = (file: string, links: { start: number; end: number; file: string }[]) =>
+    links.map((link) => [readFileSync(file).subarray(link.start, link.end).toString(), link.file]);
+  const lib = join(realpathSync(dir), "lib.js");
+  const root = manifest.modules.find((m: { module: string[] }) => m.module.length === 0);
+  const child = manifest.modules.find((m: { module: string[] }) => m.module[0] === "child");
+  expect(named(root.file, root.links)).toEqual([]);
+  expect(readFileSync(root.file, "utf8")).toContain('from "@rust-js/runtime"');
+  expect(named(child.file, child.links)).toEqual([["./lib.js", lib], ["./lib.js", lib]]);
+  expect(named(child.types, child.type_links)).toEqual([["./lib.js", lib], ["./lib.js", lib]]);
+  const inner = manifest.modules.find((m: { module: string[] }) => m.module.join("::") === "deep::inner");
+  expect(named(inner.file, inner.links)).toEqual([["../lib.js", lib]]);
+});

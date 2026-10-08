@@ -22,6 +22,11 @@ export function parseManifest(text) {
   const paths = value => strings(value) && value.every(path);
   const fingerprint = value => object(value) && path(value.file)
     && typeof value.hash === "string" && /^[0-9a-f]{16}$/.test(value.hash);
+  // Where a file names another's, by the compiler's parse of it (ADR 0101):
+  // absent of an older compiler's.
+  const links = value => value === undefined || Array.isArray(value) && value.every(link => object(link)
+    && Number.isInteger(link.start) && Number.isInteger(link.end) && 0 <= link.start && link.start <= link.end
+    && path(link.file));
   if (!object(result) || result.version !== 1) {
     throw new Error(`Unsupported rust-js manifest version ${result?.version}; expected 1`);
   }
@@ -46,7 +51,8 @@ export function parseManifest(text) {
       || !Array.isArray(result.modules) || !result.modules.every(module => object(module)
         && strings(module.module) && path(module.file) && path(module.map)
         && (module.types === undefined || path(module.types))
-        && (module.source === null || path(module.source)) && paths(module.imports))
+        && (module.source === null || path(module.source)) && paths(module.imports)
+        && links(module.links) && links(module.type_links))
       || !Array.isArray(result.artifacts) || !result.artifacts.every(artifact => object(artifact)
         && path(artifact.file) && typeof artifact.hash === "string" && /^[0-9a-f]{16}$/.test(artifact.hash))) {
     throw new Error("Invalid rust-js manifest: expected absolute paths, modules and fingerprinted artifacts");
@@ -73,6 +79,8 @@ export function mapManifestPaths(manifest, map) {
       ...module, file: map(module.file), map: map(module.map),
       ...(module.types === undefined ? {} : { types: map(module.types) }),
       source: module.source === null ? null : map(module.source), imports: module.imports.map(map),
+      ...(module.links === undefined ? {} : { links: module.links.map(link => ({ ...link, file: map(link.file) })) }),
+      ...(module.type_links === undefined ? {} : { type_links: module.type_links.map(link => ({ ...link, file: map(link.file) })) }),
     })),
     artifacts: manifest.artifacts.map(artifact => ({ ...artifact, file: map(artifact.file) })),
     ...(manifest.library === undefined ? {} : { library: {

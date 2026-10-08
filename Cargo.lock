@@ -715,6 +715,7 @@ dependencies = [
  "oxc_codegen",
  "oxc_formatter",
  "oxc_formatter_core",
+ "oxc_parser",
  "oxc_regular_expression",
  "oxc_sourcemap",
  "oxc_span",

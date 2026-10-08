@@ -194,7 +194,7 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
  * that this build doesn't write goes, if it's still as written: an edited
  * one is a person's, and one rust-js wrote some other way isn't this
  * build's. Where each JS went.
- * @param {{ library: { name: string }, modules: { file: string, map?: string, types?: string, source: string, module: string[], located?: boolean }[] }[]} manifests
+ * @param {{ library: { name: string }, modules: { file: string, map?: string, types?: string, source: string, module: string[], located?: boolean, links?: { start: number, end: number, file: string }[], type_links?: { start: number, end: number, file: string }[] }[] }[]} manifests
  * @param {string} ledger
  * @param {string[]} [routes] directories where each file is a route,
  * Next.js's `pages/`: a module's there gets no declarations, which
@@ -239,14 +239,23 @@ export function writeInSource(manifests, ledger, routes = []) {
   const writes = new Map();
   const crates = manifests.map(({ modules }) => {
     const files = [];
-    for (const { file, map, types } of modules) {
+    for (const { file, map, types, links, type_links } of modules) {
       const to = moved.get(file);
-      writes.set(to, Buffer.from(relocated(readFileSync(file, "utf8"), file, to, moved)));
+      // A manifest of an older compiler's says nothing of where its JS names
+      // another's, and Cargo has its build as done.
+      if (links === undefined) {
+        throw new Error(`${file} was built by an older rust-js, whose manifest doesn't say what it imports: `
+          + "`cargo clean --target wasm32-unknown-unknown` to build it again");
+      }
+      const js = relinked(readFileSync(file), links, to, moved).toString("utf8")
+        .replace(/\/\/# sourceMappingURL=\S+(\s*)$/, `//# sourceMappingURL=${basename(to)}.map$1`);
+      writes.set(to, Buffer.from(js));
       files.push(to);
-      // Its declarations, `Tag.d.ts` beside `Tag.jsx` (ADR 0196).
+      // Its declarations, `Tag.d.ts` beside `Tag.jsx` (ADR 0196), naming
+      // what they import where it's copied too.
       if (types && existsSync(types) && !routed(to)) {
         const typesTo = to.replace(/\.jsx?$/, ".d.ts");
-        writes.set(typesTo, readFileSync(types));
+        writes.set(typesTo, relinked(readFileSync(types), type_links ?? [], typesTo, moved));
         files.push(typesTo);
       }
       if (map && existsSync(map)) {
@@ -274,38 +283,28 @@ export function writeInSource(manifests, ledger, routes = []) {
 }
 
 /**
- * `file`'s JS for where it's copied, `to`: each import declaration, which
- * rust-js writes before any code (src/to_oxc.rs), names the copy of what it
- * imports, and the source-map comment it ends with, the map beside it, by
- * its name now, where a root of another name, `src/App.rs`'s, was written
- * as the build's `lib.js`. Nothing else changes: a string that reads like
- * an import is the program's.
- * @param {string} text
- * @param {string} file
+ * `bytes`, a file rust-js wrote, for where it's copied, `to`: each
+ * specifier the compiler found in it by a parse, its manifest's `links`
+ * (ADR 0101), that names a file copied too names the copy, from `to`;
+ * after a directive, in an `export .. from` or in a declaration alike.
+ * Nothing else changes: a string that reads like an import is the program's.
+ * @param {Buffer} bytes
+ * @param {{ start: number, end: number, file: string }[]} links
  * @param {string} to
  * @param {Map<string, string>} moved
  */
-function relocated(text, file, to, moved) {
-  const header = text.indexOf("\n") + 1;
-  // `import { a } from "./x.js";`, `import x from "./x.js";` or
-  // `import "./x.js";`, over lines or not, one after another.
-  const declaration = /\s*import\b[^;"']*?(["'])([^"']+)\1\s*;/y;
-  declaration.lastIndex = header;
-  let end = header;
-  const parts = [text.slice(0, header)];
-  for (let found; (found = declaration.exec(text)); end = declaration.lastIndex) {
-    const [whole, quote, spec] = found;
-    const target = /^\.{1,2}\//.test(spec) ? moved.get(resolve(dirname(file), spec)) : undefined;
-    if (!target) {
-      parts.push(whole);
-      continue;
-    }
+function relinked(bytes, links, to, moved) {
+  const parts = [];
+  let at = 0;
+  for (const { start, end, file } of links) {
+    const target = moved.get(file);
+    if (!target) continue;
     const path = relative(dirname(to), target);
-    const at = whole.lastIndexOf(`${quote}${spec}${quote}`);
-    parts.push(`${whole.slice(0, at)}${quote}${path.startsWith(".") ? path : `./${path}`}${quote}${whole.slice(at + spec.length + 2)}`);
+    parts.push(bytes.subarray(at, start), Buffer.from(path.startsWith(".") ? path : `./${path}`));
+    at = end;
   }
-  const rest = text.slice(end).replace(/\/\/# sourceMappingURL=\S+(\s*)$/, `//# sourceMappingURL=${basename(to)}.map$1`);
-  return parts.join("") + rest;
+  parts.push(bytes.subarray(at));
+  return Buffer.concat(parts);
 }
 
 /**

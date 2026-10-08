@@ -3,6 +3,22 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "package-specifier-linked",
+    breaks: "a package's specifier, `@rust-js/runtime`, is a link to a file beside the module that isn't there",
+    file: "src/output.rs",
+    find: '        .filter(|(_, _, specifier)| specifier.starts_with("./") || specifier.starts_with("../"))\n',
+    replace: "",
+    tests: ["test/manifest.test.ts", "-t", "links are each relative specifier"],
+  },
+  {
+    name: "type-links-unset",
+    breaks: "a module's declarations have no links, so a host that copies them keeps the build's names",
+    file: "src/output.rs",
+    find: "                module.type_links = links(&artifacts, types, true)?;",
+    replace: "                let _ = types;",
+    tests: ["test/manifest.test.ts", "-t", "links are each relative specifier"],
+  },
+  {
     name: "obsolete-declarations-kept",
     breaks: "obsolete generated declarations remain after a module is removed or declarations are disabled",
     file: "src/output.rs",
