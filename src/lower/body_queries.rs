@@ -188,6 +188,9 @@ pub(super) struct BodyFacts {
     pub(super) uses: HashMap<LocalVarId, usize>,
     pub(super) mutably_borrowed: HashSet<LocalVarId>,
     pub(super) stepped: HashSet<LocalVarId>,
+    /// What a borrow lends, `g` of `&mut g`, as a closure's call does: read
+    /// there, it's not copied.
+    pub(super) lent: HashSet<ExprId>,
 }
 
 impl BodyFacts {
@@ -202,11 +205,11 @@ impl BodyFacts {
                 ExprKind::VarRef { id } => {
                     *facts.uses.entry(id).or_default() += 1;
                 }
-                ExprKind::Borrow {
-                    borrow_kind: BorrowKind::Mut { .. },
-                    arg,
-                } => {
-                    if let Some(id) = query.root_var(arg) {
+                ExprKind::Borrow { borrow_kind, arg } => {
+                    facts.lent.insert(strip(thir, arg));
+                    if matches!(borrow_kind, BorrowKind::Mut { .. })
+                        && let Some(id) = query.root_var(arg)
+                    {
                         facts.mutably_borrowed.insert(id);
                     }
                 }

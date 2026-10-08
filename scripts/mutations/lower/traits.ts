@@ -729,4 +729,12 @@ export const mutations: Mutation[] = [
     replace: "            return Ok(Expr::object(props));",
     tests: ["test/traits.test.ts","-t","nothing in it passes no dictionary"],
   },
+  {
+    name: "stateful-closure-copy-bound",
+    breaks: "a closure that changes what it captured is given where a `Copy` bound copies it, and each copy shares its count",
+    file: "src/lower/traits.rs",
+    find: "            if self.copies_own_captures(ty) {",
+    replace: "            if false && self.copies_own_captures(ty) {",
+    tests: ["test/corpus.test.ts", "-t", "copied_closure_bound"],
+  },
 ];

@@ -107,4 +107,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n            return false;",
     tests: ["test/jsx.test.ts", "-t", "Fn type parameter"],
   },
+  {
+    name: "unchanging-closure-uncopied",
+    breaks: "a closure that changes nothing it captured is taken for one that does, and its copy rejected",
+    file: "src/lower/copies.rs",
+    find: "matches!(ty.kind(), ty::Closure(_, args) if args.as_closure().kind() != ty::ClosureKind::Fn) && self.is_copy(ty)",
+    replace: "matches!(ty.kind(), ty::Closure(..)) && self.is_copy(ty)",
+    tests: ["test/corpus.test.ts", "-t", "moved_closure"],
+  },
 ];

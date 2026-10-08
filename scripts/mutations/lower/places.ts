@@ -150,4 +150,28 @@ export const mutations: Mutation[] = [
       "field of what never changes in place"
     ]
   },
+  {
+    name: "stateful-closure-copied",
+    breaks: "a `Copy` closure that changes what it captured is copied, and the copy shares its count, `2 3` where Rust's is `2 2`",
+    file: "src/lower/places.rs",
+    find: "if self.copies_own_captures(ty) && !self.body_facts.lent.contains(&self.strip(e)) && !self.only_use(e) {",
+    replace: "if false && self.copies_own_captures(ty) && !self.body_facts.lent.contains(&self.strip(e)) && !self.only_use(e) {",
+    tests: ["test/corpus.test.ts", "-t", "copied_closure\\.rs"],
+  },
+  {
+    name: "lent-closure-copied",
+    breaks: "a closure's call, which lends it, is taken for a copy, and rejected",
+    file: "src/lower/places.rs",
+    find: "if self.copies_own_captures(ty) && !self.body_facts.lent.contains(&self.strip(e)) && !self.only_use(e) {",
+    replace: "if self.copies_own_captures(ty) && !self.only_use(e) {",
+    tests: ["test/corpus.test.ts", "-t", "moved_closure"],
+  },
+  {
+    name: "moved-closure-copied",
+    breaks: "a closure moved, its variable's only use, is taken for a copy, and rejected",
+    file: "src/lower/places.rs",
+    find: "if self.copies_own_captures(ty) && !self.body_facts.lent.contains(&self.strip(e)) && !self.only_use(e) {",
+    replace: "if self.copies_own_captures(ty) && !self.body_facts.lent.contains(&self.strip(e)) {",
+    tests: ["test/corpus.test.ts", "-t", "moved_closure"],
+  },
 ];

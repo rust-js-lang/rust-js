@@ -177,6 +177,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Is `ty` a `Copy` closure that changes what it captured? Rust gives
+    /// each copy its own captures, where a copy of a JS function is the
+    /// function, sharing them (ADR 0246).
+    pub(super) fn copies_own_captures(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Closure(_, args) if args.as_closure().kind() != ty::ClosureKind::Fn) && self.is_copy(ty)
+    }
+
     pub(super) fn is_copy(&self, ty: Ty<'tcx>) -> bool {
         self.tcx.type_is_copy_modulo_regions(self.typing_env, ty)
     }

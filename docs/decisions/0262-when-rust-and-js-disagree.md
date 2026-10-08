@@ -30,6 +30,8 @@ Can the program observe the difference?
 ├─ Yes, and results would change ──► C: Rust's, paid for in output
 │
 └─ Yes, and Rust's can't be kept ──► D: a compile error, never silent drift
+
+No disagreement at all, tooling, bindings' shape, the output's layout: N
 ```
 
 - **A, not observable: JS's.** JS runs a module on one thread, so a

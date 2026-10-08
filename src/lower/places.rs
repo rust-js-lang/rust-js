@@ -743,6 +743,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         self.moved(e, out)?;
         if let Some((place, _)) = self.place(e) {
+            // A copy no one could tell from a move is its variable's only use;
+            // a call lends the closure, and copies nothing.
+            if self.copies_own_captures(ty) && !self.body_facts.lent.contains(&self.strip(e)) && !self.only_use(e) {
+                return Err(self.unsupported(self.thir[e].span, "copying a closure that changes what it captured"));
+            }
             return Ok(self.copy_if_needed(place, ty));
         }
         match self.thir[self.strip(e)].kind {

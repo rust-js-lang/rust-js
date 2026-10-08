@@ -663,13 +663,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(var) = self.body_query().root_var(u).and_then(|id| self.locals.vars.get(&id)) else {
             return false;
         };
-        if !var.mutable {
-            return false;
-        }
-        let only_use = match self.thir[u].kind {
-            ExprKind::VarRef { id } => self.body_facts.uses.get(&id) == Some(&1) && var.depth == self.loops.len(),
+        var.mutable && !self.only_use(u)
+    }
+
+    /// Is `e` its variable's only use, outside any loop the variable isn't
+    /// also in? Then nothing reads the variable after it.
+    pub(super) fn only_use(&self, e: ExprId) -> bool {
+        match self.thir[self.strip(e)].kind {
+            ExprKind::VarRef { id } => {
+                self.body_facts.uses.get(&id) == Some(&1)
+                    && self
+                        .locals
+                        .vars
+                        .get(&id)
+                        .is_some_and(|var| var.depth == self.loops.len())
+            }
             _ => false,
-        };
-        !only_use
+        }
     }
 }
