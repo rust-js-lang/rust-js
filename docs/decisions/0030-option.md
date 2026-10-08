@@ -108,3 +108,9 @@ const app = $unwrap(document.getElementById("app"), "the page has an #app");
 - `?` on an `Option` came with ADR 0035. Not yet: `and_then`, `ok_or`, `take`, `as_ref`,
   `as_mut`, and nested options. Other enums with fields are tagged objects
   (ADR 0033); `Option` is the special case that needs no tag.
+
+## Since
+
+- **`if x.is_none() { x = Some(e) }` is `x ??= e`**: the same test, and `e`
+  made only where `x` is none, as react.dev's errors page caches the codes
+  it fetched, `cachedErrorCodes ||= ..`.
