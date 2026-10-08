@@ -32,6 +32,9 @@ unsafe extern "Rust" {
 
     /// The `navigator` global.
     pub safe static navigator: &'static Navigator;
+
+    /// The `history` global.
+    pub safe static history: &'static History;
 }
 
 /// [`EventTarget`](https://developer.mozilla.org/docs/Web/API/EventTarget)

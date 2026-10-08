@@ -203,3 +203,6 @@ which always passes `--extern webapi=..`.
 - ADR 0021's extern types still work for one-off bindings.
 - Updating means bumping `@webref/idl` and rerunning the generator. The
   crate's diff shows what changed on the platform.
+
+- **`history` is a global too**, the page's, as `document` is: react.dev's
+  _app sets `history.scrollRestoration`.

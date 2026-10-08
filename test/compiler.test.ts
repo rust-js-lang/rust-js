@@ -1406,6 +1406,29 @@ pub fn here() -> String {
   expect([read(join(dir, "note.md")), read(join(dir, "none.md")), here()]).toEqual(["# Note", "missing", process.cwd()]);
 });
 
+// The `history` global, a window's, as `document` is, as react.dev's _app
+// sets `history.scrollRestoration` where the browser is Safari.
+test("the history global is the page's history", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("history-global");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::history;
+
+pub fn restore() {
+    history::set_scroll_restoration(history, "auto");
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain('history.scrollRestoration = "auto";');
+  const previous = (globalThis as any).history;
+  (globalThis as any).history = { scrollRestoration: "manual" };
+  try {
+    (await import(join(dir, "lib.js"))).restore();
+    expect((globalThis as any).history.scrollRestoration).toBe("auto");
+  } finally {
+    (globalThis as any).history = previous;
+  }
+});
+
 // ADR 0214: an untagged enum only made, never told apart, may have variants
 // of one kind, as Next.js's `getStaticProps` gives `{ props }` or
 // `{ notFound: true }`, react.dev's errors page's: each is its payload.

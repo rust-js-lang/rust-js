@@ -131,9 +131,9 @@ const BUILTINS = new Set(["ArrayBuffer", "Uint8Array"]);
 // `HeadersInit` is a sequence or a record, and `fetch` takes a `Headers` too.
 const FIELD_TYPES: Record<string, string> = { "RequestInit.headers": "&'a Headers" };
 
-// The globals at the crate root: `document`, `window`, and `performance`,
-// which a worker has too.
-const GLOBALS: [string, string][] = [["document", "Document"], ["window", "Window"], ["performance", "Performance"], ["navigator", "Navigator"]];
+// The globals at the crate root: `document`, `window`, `performance`, which
+// a worker has too, `navigator`, and `history`, the page's.
+const GLOBALS: [string, string][] = [["document", "Document"], ["window", "Window"], ["performance", "Performance"], ["navigator", "Navigator"], ["history", "History"]];
 
 // ── Reading the IDL ─────────────────────────────────────────────────────
 
