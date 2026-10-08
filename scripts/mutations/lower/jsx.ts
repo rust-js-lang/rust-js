@@ -346,4 +346,12 @@ export const mutations: Mutation[] = [
     replace: "(is_boolean(test) || false && self.tests_bool(child))",
     tests: ["test/jsx.test.ts", "-t", "shown only if a test holds"],
   },
+  {
+    name: "base-spread-last",
+    breaks: "a base's spread is after what it's updated with, `<Panel wide {...props} />`, which then wins",
+    file: "src/lower/jsx.rs",
+    find: "                        Prop::Spread(_) => Some(BytePos(0)),",
+    replace: "                        Prop::Spread(_) => None,",
+    tests: ["test/jsx.test.ts","-t","updated from a reference are spread"],
+  },
 ];

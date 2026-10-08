@@ -79,4 +79,12 @@ export const mutations: Mutation[] = [
       "drop_functions"
     ]
   },
+  {
+    name: "ref-base-field-by-field",
+    breaks: "`..*props` through a reference is each field read, `title={props.title}`, not `{...props}`, and a key its type doesn't name is lost",
+    file: "src/lower/aggregates.rs",
+    find: "        if tag.is_none()\n            && let (Some(base), Shape::Object(fields)) = (&base, &shape)",
+    replace: "        if false\n            && let (Some(base), Shape::Object(fields)) = (&base, &shape)",
+    tests: ["test/jsx.test.ts","-t","updated from a reference are spread"],
+  },
 ];

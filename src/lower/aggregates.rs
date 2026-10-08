@@ -195,6 +195,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Shape::Array(tys) => tys.clone(),
             Shape::Other => unreachable!("a struct with fields"),
         };
+        // `..*props`, a struct read whole through a shared reference, whose
+        // other fields need no copy of their own: spread, then what's named,
+        // `{...props} noMargin`, as react.dev's CodeDiagram gives CodeBlock a
+        // child's props (ADR 0250).
+        if tag.is_none()
+            && let (Some(base), Shape::Object(fields)) = (&base, &shape)
+            && let AdtExprBase::Base(fru) = &adt.base
+            && let thir::ExprKind::Deref { arg } = self.thir[self.strip(fru.base)].kind
+            && matches!(self.thir[arg].ty.kind(), ty::Ref(_, _, ty::Mutability::Not))
+            && (fields.iter().enumerate())
+                .all(|(i, &(_, t))| given.contains_key(&i) || !(self.contains_mutated(t) && self.is_copy(t)))
+        {
+            let mut props = vec![Prop::Spread(base.clone())];
+            for (i, (name, _)) in fields.iter().enumerate() {
+                if let Some(value) = given.remove(&i) {
+                    props.push(Prop::Field(name.clone(), value));
+                }
+            }
+            return Ok(Expr::object(props));
+        }
         let mut items = Vec::new();
         for (i, field_ty) in field_tys.into_iter().enumerate() {
             items.push(match (given.remove(&i), &base) {

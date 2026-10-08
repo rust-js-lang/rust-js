@@ -326,7 +326,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 other => {
                     let at = match &other {
                         Prop::Field(key, _) | Prop::Getter(key, _) => written.get(key).copied(),
-                        Prop::Spread(_) => None,
+                        // A base's, `{..*props}`, before what it's updated
+                        // with, which JSX's order says wins (ADR 0250).
+                        Prop::Spread(_) => Some(BytePos(0)),
                     };
                     attrs.push((at, other));
                 }

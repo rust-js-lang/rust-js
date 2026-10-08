@@ -2918,3 +2918,34 @@ pub fn Keyed(keys: Vec<Option<&'static str>>) -> JSX::Element {
   expect(tree.props.children.map((li: any) => li.key)).toEqual(["a", null]);
   expect(renderToStaticMarkup(tree)).toBe("<ul><li>a</li><li>none</li></ul>");
 });
+
+// Props given whole through a reference, the rest of a child's own, are
+// spread, then the props named, as react.dev's CodeDiagram gives
+// CodeBlock a <pre>'s props, `{...child.props} noMargin={true}`: what the
+// props hold is shared, and a key their type doesn't name passes too.
+test("a component's props updated from a reference are spread", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+
+#[derive(Clone, Copy)]
+pub struct PanelProps<'a> {
+    pub title: Option<&'a str>,
+    pub wide: Option<bool>,
+}
+
+pub fn Panel(PanelProps { title, wide }: PanelProps) -> JSX::Element {
+    jsx! { <p title={title} data-wide={wide.unwrap_or(false)}></p> }
+}
+
+pub fn Again(props: &'static PanelProps<'static>) -> JSX::Element {
+    jsx! { <Panel wide={Some(true)} {..*props} /> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("<Panel {...props} wide />");
+  const { Again } = await import(join(dir, "lib.jsx"));
+  const tree = Again({ title: "t", wide: false, extra: 1 });
+  expect(tree.props.extra).toBe(1);
+  expect(renderToStaticMarkup(tree)).toBe('<p title="t" data-wide="true"></p>');
+});

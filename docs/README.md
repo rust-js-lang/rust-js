@@ -340,6 +340,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0247 JS's string methods are the builtins crate's `string`](decisions/0247-js-string-methods.md)
 - [0248 A `thread_local!` is a module's default export too](decisions/0248-thread-local-default-export.md)
 - [0249 An element's key may be none](decisions/0249-optional-keys.md)
+- [0250 Props updated from a reference are a spread](decisions/0250-reference-base-spread.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)
