@@ -56,6 +56,11 @@ const match = $try(() => JSON.parse(json));   // { TAG: "Ok", _0: .. } or { TAG:
   `Ok`. (Amended: an error was shown by `$debug`, which knows no types:
   `{ TAG: "Missing", .. }` for `Missing { .. }`, and a string escaped as JSON
   escapes it.)
+- **A `js::JsError` is shown as JS shows it**, `String(error)`, `SyntaxError:
+  ..`, by `{:?}` and so by an `unwrap()`'s panic: its `Debug`, which the
+  builtins crate's metadata has but no JS, is recognized. A width or other
+  option for it is an error, as for a `&dyn Debug`. (Amended: `{:?}` of one
+  was refused, so an `unwrap()` of a catching binding was too.)
 - **`.clone()` of a type that's never changed in place is the value itself**,
   since nothing can tell the two apart (ADR 0020). A `Result`, a `String`, most
   enums: one object serves as both.

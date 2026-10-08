@@ -1,7 +1,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildCompiler, buildSerde, compiler, fixture, root } from "./support";
+import { buildCompiler, buildSerde, buildWebapi, compiler, fixture, root, target } from "./support";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -25,6 +25,8 @@ for (const [name, source, message, crate] of [
   // A placeholder's options are given to what shows the value (ADR 0058), but a
   // `&dyn Debug` is the string it shows already, and serde_json's `fmt`s are rust-js's.
   ["a width for a dyn Debug", 'pub fn f(v: u8) -> String { let d: &dyn std::fmt::Debug = &v; format!("{:5?}", d) }', "options for a"],
+  // A JS error is the string JS shows of it, `String(error)` (ADR 0271).
+  ["a width for a JsError", 'pub fn f(e: &js::JsError) -> String { format!("{:>9?}", e) }', "options for a", "js"],
   ["a width for a serde_json Value", 'pub fn f(v: &serde_json::Value) -> String { format!("{:>9}", v) }', "options for a", "serde"],
   // A static's initializer is code where rustc's value can't say it (ADR 0096),
   // but not one reading another static, nor of a value that can change in place.
@@ -134,7 +136,8 @@ for (const [name, source, message, crate] of [
     const dir = fixture("diagnostic");
     const input = join(dir, "lib.rs"), output = join(dir, "lib.js"), manifest = join(dir, "manifest.json");
     writeFileSync(input, source);
-    const args = [compiler, input, "-o", output, "--manifest", manifest, ...(crate ? ["--", ...buildSerde()] : [])];
+    const crates = crate === "js" ? (buildWebapi(), ["--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]) : crate ? buildSerde() : [];
+    const args = [compiler, input, "-o", output, "--manifest", manifest, ...(crates.length ? ["--", ...crates] : [])];
     const rejected = Bun.spawnSync(args);
     expect(rejected.exitCode).not.toBe(0);
     expect(rejected.stderr.toString()).toContain(message);

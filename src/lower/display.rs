@@ -291,7 +291,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// and a `&dyn Debug`, the string it shows already (ADR 0060).
     fn can_apply(&self, ty: Ty<'tcx>, pretty: &Pretty, span: Span) -> R<()> {
         if matches!(pretty, Pretty::Given(..))
-            && (self.json_type(ty).is_some() || self.is_json_error(ty) || self.is_dyn_debug(ty))
+            && (self.json_type(ty).is_some()
+                || self.is_json_error(ty)
+                || self.recognition().is_js_error(ty)
+                || self.is_dyn_debug(ty))
         {
             return Err(self.unsupported(span, &format!("options for a `{ty}`")));
         }
@@ -1098,6 +1101,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_string_like(ty) {
             self.runtime.insert(Helper::DebugStr);
             return Ok(Expr::call(Expr::var("$debugStr"), vec![value]));
+        }
+        // What a JS function threw, as JS shows it: `SyntaxError: ..`.
+        if self.recognition().is_js_error(ty) {
+            return Ok(Expr::call(Expr::var("String"), vec![value]));
         }
         if self.is_json_error(ty) {
             self.runtime.insert(Helper::JsonError);

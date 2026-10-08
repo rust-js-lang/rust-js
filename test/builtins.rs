@@ -21,6 +21,25 @@ pub fn named(value: &Unknown, key: &Unknown) -> Option<&'static Unknown> {
     if js::has(value, key) { js::get(value, key) } else { None }
 }
 
+/// Whether `value` has a property of the name a key that's none has,
+/// `"undefined"`, as react.dev's errors page asks of a type it may not have.
+pub fn holds_none(value: &Unknown, key: Option<&Unknown>) -> bool {
+    js::has(value, &key)
+}
+
+pub struct Wrapper {
+    pub children: Option<&'static Unknown>,
+}
+
+// An object, never `undefined`.
+unsafe impl js::Defined for Wrapper {}
+
+/// A struct given by value as a JS value of any shape, an element's props as
+/// react.dev's errors page makes them.
+pub fn wrapped(children: Option<&'static Unknown>) -> &'static Unknown {
+    js::unknown_of(Wrapper { children })
+}
+
 fn hidden(key: &str, value: Option<&'static Unknown>) -> Option<&'static Unknown> {
     if key == "secret" { None } else { value }
 }

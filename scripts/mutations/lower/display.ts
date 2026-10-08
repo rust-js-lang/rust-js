@@ -284,4 +284,20 @@ export const mutations: Mutation[] = [
     replace: "            return Ok(Expr::str(\"TryFromSliceError\"));",
     tests: ["test/corpus.test.ts","-t","slice_to_array"],
   },
+  {
+    name: "js-error-debug-unknown",
+    breaks: "`{:?}` of a `js::JsError`, as an `unwrap`'s panic shows it, is refused",
+    file: "src/lower/display.rs",
+    find: "        if self.recognition().is_js_error(ty) {\n",
+    replace: "        if false && self.recognition().is_js_error(ty) {\n",
+    tests: ["test/compiler.test.ts", "-t", "a JS error is shown as JS shows it"],
+  },
+  {
+    name: "js-error-width-dropped",
+    breaks: "`{:>9?}` of a `js::JsError` is its text with no width, not refused",
+    file: "src/lower/display.rs",
+    find: "                || self.recognition().is_js_error(ty)\n",
+    replace: "",
+    tests: ["test/diagnostics.test.ts", "-t", "a width for a JsError"],
+  },
 ];

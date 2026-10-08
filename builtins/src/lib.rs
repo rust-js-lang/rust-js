@@ -130,11 +130,13 @@ pub fn unknown<T: Defined + ?Sized>(this: &T) -> &Unknown {
     unreachable!()
 }
 
-/// `value`, given by value, as a JS value of any shape: a handle, an element
-/// or a number, which has no lifetime of its own in JS. The value itself.
+/// `value`, given by value, as a JS value of any shape: an element, a
+/// handle, or an object of its fields, made where it's given, which
+/// [`unknown`] would borrow only for its block. The value itself, kept as
+/// long as JS has it.
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
 #[allow(unused_variables)]
-pub fn unknown_of<T: Defined + Copy>(this: T) -> &'static Unknown {
+pub fn unknown_of<T: Defined + 'static>(this: T) -> &'static Unknown {
     unreachable!()
 }
 
@@ -186,8 +188,11 @@ pub fn has<K: PropertyKey + ?Sized>(this: &Unknown, key: &K) -> bool {
 }
 
 /// What names a property, as `key in value` and `value[key]` take it: text,
-/// a number, or a JS value of any shape, whose text JS makes the name.
+/// a number, or a JS value of any shape, whose text JS makes the name, or
+/// none, `undefined`, named `"undefined"`.
 pub trait PropertyKey {}
+
+impl<T: PropertyKey + ?Sized> PropertyKey for Option<&T> {}
 
 impl PropertyKey for str {}
 impl PropertyKey for String {}
@@ -614,6 +619,14 @@ pub mod json {
 /// [`Error`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error).
 /// An `extern` function that returns `Result<T, &JsError>` catches it (ADR 0035).
 pub struct JsError(PhantomData<JsObject>);
+
+/// What JS shows of it, `String(error)`, `SyntaxError: ..`: an `unwrap`'s
+/// panic says it.
+impl core::fmt::Debug for JsError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str(&js_error::to_string(self))
+    }
+}
 
 pub mod js_error {
     use super::*;

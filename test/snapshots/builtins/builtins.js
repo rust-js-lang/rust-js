@@ -17,6 +17,14 @@ export function named(value, key) {
   return undefined;
 }
 
+export function holds_none(value, key) {
+  return key in value;
+}
+
+export function wrapped(children) {
+  return { children };
+}
+
 function hidden(key, value) {
   if (key === "secret") {
     return undefined;

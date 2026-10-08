@@ -651,4 +651,12 @@ export const mutations: Mutation[] = [
     replace: "tcx.associated_item_def_ids(id).is_empty()",
     tests: ["test/jsx.test.ts", "-t", "thread_local component takes props"],
   },
+  {
+    name: "js-error-of-another-crate",
+    breaks: "`js::JsError` isn't told apart, its `{:?}` refused",
+    file: "src/lower/recognition.rs",
+    find: "self.tcx.crate_name(adt.did().krate).as_str() == \"js\"",
+    replace: "self.tcx.crate_name(adt.did().krate).as_str() == \"jsx\"",
+    tests: ["test/compiler.test.ts", "-t", "a JS error is shown as JS shows it"],
+  },
 ];

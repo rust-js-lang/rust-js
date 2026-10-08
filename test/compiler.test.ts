@@ -481,6 +481,10 @@ test("the builtins crate's string functions are JS's string methods", () => {
   expect(js).toContain("  if (key in value) {\n    return value[key];\n  }");
   expect([builtins.named({ a: 1 }, "a"), builtins.named({ a: 1 }, "b")]).toEqual([1, undefined]);
   expect(() => builtins.revived("{")).toThrow();
+  expect([builtins.holds_none({ undefined: 1 }, undefined), builtins.holds_none({}, undefined), builtins.holds_none({ a: 1 }, "a")]).toEqual([true, false, true]);
+  expect(js).toContain("export function holds_none(value, key) {\n  return key in value;\n}");
+  expect(js).toContain("return { children };");
+  expect(builtins.wrapped("text")).toEqual({ children: "text" });
   expect(js).toContain("return key in value;");
   expect([builtins.holds({ a: 1 }, "a"), builtins.holds({}, "toString"), builtins.holds({}, "b")]).toEqual([true, true, false]);
   for (const call of ["text.slice(1, -1)", "text.slice(-2)", "text.substring(1, 3)", "text.substring(1)", "text.trim()", "text.trimStart()", "text.trimEnd()", 'text.indexOf(part)', "text.indexOf(part, 2)", "text.lastIndexOf(part)", "text.length", "text.charAt(i)", "text.replace(from, to)"]) {
@@ -1179,6 +1183,30 @@ pub fn f() -> u32 {
   expect([y.includes('import { base } from "../lib.js";'), y.includes('import data from "../data.js";')]).toEqual([true, true]);
   const { top } = await import(join(dir, "lib.js"));
   expect(top()).toBe(42);
+});
+
+// ADR 0035: what a JS function threw is shown as JS shows it, `String(error)`,
+// `SyntaxError: ..`, by `{:?}` and by an `unwrap`'s panic.
+test("a JS error is shown as JS shows it", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("js-error");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Unknown, json};
+pub fn parsed(text: &str) -> Option<&'static Unknown> {
+    json::parse(text).unwrap()
+}
+pub fn shown(text: &str) -> String {
+    match json::parse(text) {
+        Ok(_) => "parsed".to_string(),
+        Err(error) => format!("{error:?}"),
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("return String(match._0);");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.parsed("[1]")).toEqual([1]);
+  expect(() => lib.parsed("{")).toThrow("called `Result::unwrap()` on an `Err` value: SyntaxError");
+  expect([lib.shown("{").startsWith("SyntaxError: "), lib.shown("1")]).toEqual([true, "parsed"]);
 });
 
 // ADR 0272: Node's modules, as @types/node types them, are the JS a person

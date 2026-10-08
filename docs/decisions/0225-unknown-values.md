@@ -158,9 +158,12 @@ value.name = "new";
   page asks of its MDX components. A binding's `in []` is that operator.
 - **A key is a `js::PropertyKey`**, for `has` and `get`: text, an
   integer, or a JS value of any shape, as a reviver's key is a string or an
-  array's index. JS makes each the property's name, as `in` and `[]` do.
+  array's index, or none, `undefined`, whose name is `"undefined"`, as the
+  page asks `Type in MDXComponents` of a type it may not have. JS makes each
+  the property's name, as `in` and `[]` do.
 - **`js::unknown_of(value)`** is a value given by value as a JS value of any
   shape, the value itself: an element made where it's given, which
-  `js::unknown(&value)` would borrow only for its block. It takes a `Copy`
-  value, which has no lifetime of its own in JS, an element or an element's
-  type.
+  `js::unknown(&value)` would borrow only for its block, or a struct's
+  object, `{ children }`, as the page makes a wrapper's props. It takes any
+  `'static` value, kept as long as JS has it, as a `Box::leak` keeps one.
+  (Amended: it took a `Copy` one.)

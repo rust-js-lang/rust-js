@@ -1495,6 +1495,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 .any(|name| self.is_std_adt(ty, Symbol::intern(name)))
     }
 
+    /// `js::JsError`, what a JS function threw: the builtins crate's.
+    pub(super) fn is_js_error(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate).as_str() == "js"
+            && self.tcx.item_name(adt.did()).as_str() == "JsError")
+    }
+
     pub(super) fn is_js_object(&self, ty: Ty<'tcx>) -> bool {
         let ty::Adt(adt, args) = ty.kind() else { return false };
         if !adt.is_struct() {
