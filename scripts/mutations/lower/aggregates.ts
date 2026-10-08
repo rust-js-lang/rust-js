@@ -3,6 +3,30 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "owned-update-copied",
+    breaks: "`File { hidden: Some(true), ..file }` reads each field of `file`, `{ code: file.code, .. }`, not `{ ...file, hidden: true }`",
+    file: "src/lower/aggregates.rs",
+    find: "                    !bindings::has_flatten(self.tcx, ty) && !self.contains_mutated(ty)",
+    replace: "                    false",
+    tests: ["test/format.test.ts","-t","a struct updated from one it owns"],
+  },
+  {
+    name: "owned-update-mutated-spread",
+    breaks: "a base of a type the crate changes in place is spread through an alias, `const props = base`, which reads it later",
+    file: "src/lower/aggregates.rs",
+    find: "                    !bindings::has_flatten(self.tcx, ty) && !self.contains_mutated(ty)",
+    replace: "                    !bindings::has_flatten(self.tcx, ty)",
+    tests: ["test/jsx.test.ts","-t","children that change the base first"],
+  },
+  {
+    name: "owned-update-flatten-spread",
+    breaks: "a base with flattened fields is spread, and its flattened fields given as an object",
+    file: "src/lower/aggregates.rs",
+    find: "                    !bindings::has_flatten(self.tcx, ty) && !self.contains_mutated(ty)",
+    replace: "                    !self.contains_mutated(ty)",
+    tests: ["test/jsx.test.ts","-t","flattened props with a field"],
+  },
+  {
     name: "named-unit-struct-undefined",
     breaks: "a unit struct named `#[rust_js::name]`, `webapi`'s `Click`, is `undefined`, not its string",
     file: "src/lower/aggregates.rs",

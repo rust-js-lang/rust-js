@@ -24,6 +24,6 @@ export function Spread() {
 
 export function Override() {
   const props = { title: "old", children: <span /> };
-  return <Card title="new">{props.children}</Card>;
+  return <Card {...props} title="new" />;
 }
 //# sourceMappingURL=lib.jsx.map

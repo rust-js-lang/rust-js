@@ -411,3 +411,25 @@ pub fn maybe(files: Option<&Files>) -> Option<String> {
   expect([lib.set(files, 3), files["2d"]]).toEqual([3, 3]);
   expect([lib.maybe(files), lib.maybe(undefined)]).toEqual(["w", undefined]);
 });
+
+// A struct updated from one it owns, `..file`, is that one spread, then the
+// fields named, as a reference's is (ADR 0250): `{ ...code, hidden: true }`,
+// as react.dev's RSC template hides its files.
+test("a struct updated from one it owns is a spread", async () => {
+  const dir = fixture("owned-spread");
+  writeFileSync(join(dir, "lib.rs"), `pub struct File {
+    pub code: String,
+    pub hidden: Option<bool>,
+    pub active: Option<bool>,
+}
+
+pub fn hide(file: File) -> File {
+    File { hidden: Some(true), ..file }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return { ...file, hidden: true };");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.hide({ code: "c", hidden: false, active: true })).toEqual({ code: "c", hidden: true, active: true });
+});

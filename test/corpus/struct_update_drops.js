@@ -9,7 +9,7 @@ function swap_y(p) {
     p$y$live = false;
     const y = keep(p.y);
     p$x$live = false;
-    return { x: p.x, y, n: p.n };
+    return { ...p, y };
   } finally {
     if (p$x$live) {
       noisyDrop_drop(p.x);
@@ -38,7 +38,7 @@ function rebuild(p, stop) {
     }
     tmp = [9];
     p$x$live = false;
-    return { x: p.x, y: tmp, n: p.n };
+    return { ...p, y: tmp };
   } finally {
     if (p$x$live) {
       noisyDrop_drop(p.x);
@@ -52,7 +52,7 @@ function main() {
   let p$x$live = true;
   try {
     p$x$live = false;
-    const q = { x: p.x, y: [3], n: p.n };
+    const q = { ...p, y: [3] };
     try {
       console.log(`q ${q.x[0]} ${q.y[0]} ${q.n}`);
     } finally {

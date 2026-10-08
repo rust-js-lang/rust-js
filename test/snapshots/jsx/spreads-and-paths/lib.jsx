@@ -11,7 +11,7 @@ export function App() {
   return (
     <Fragment key="group">
       <div title="named" {...attrs} />
-      <Card title={props.title}>
+      <Card {...props}>
         <b>new</b>
       </Card>
       <Card title="dot">

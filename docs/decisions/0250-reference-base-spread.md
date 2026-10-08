@@ -48,3 +48,13 @@ jsx! { <Panel wide={Some(true)} {..*props} /> }
   the field it names over the base's, and finds a key the type doesn't
   name passed on, keyed first too. Mutations read each field, put the
   spread last, and capture the struct read, not its reference.
+
+## Since
+
+- **A struct updated from one a variable holds, `..file`, is a spread
+  too**, `{ ...file, hidden: true }`, as react.dev's RSC template hides its
+  files: Rust has moved or copied it, and JS's spread copies it. Its value
+  is made after the fields, as Rust makes it. Not of a type the crate
+  changes in place, which a spread read later, through the `const` JSX
+  keeps it in, could see changed; nor of one with flattened fields, which
+  are written as they are (ADR 0204). Case N.

@@ -212,15 +212,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Shape::Array(tys) => tys.clone(),
             Shape::Other => unreachable!("a struct with fields"),
         };
-        // `..*props`, a struct read whole through a shared reference, whose
-        // other fields need no copy of their own: spread, then what's named,
-        // `{...props} noMargin`, as react.dev's CodeDiagram gives CodeBlock a
-        // child's props (ADR 0250).
+        // `..*props`, a struct read whole through a shared reference, or
+        // `..file`, one a variable holds, whose other fields need no copy of
+        // their own: spread, then what's named, `{...props} noMargin`, as
+        // react.dev's CodeDiagram gives CodeBlock a child's props (ADR 0250).
         if tag.is_none()
             && let (Some(base), Shape::Object(fields)) = (&base, &shape)
             && let AdtExprBase::Base(fru) = &adt.base
-            && let thir::ExprKind::Deref { arg } = self.thir[self.strip(fru.base)].kind
-            && matches!(self.thir[arg].ty.kind(), ty::Ref(_, _, ty::Mutability::Not))
+            && match self.thir[self.strip(fru.base)].kind {
+                thir::ExprKind::Deref { arg } => matches!(self.thir[arg].ty.kind(), ty::Ref(_, _, ty::Mutability::Not)),
+                thir::ExprKind::VarRef { .. } | thir::ExprKind::UpvarRef { .. } => {
+                    !bindings::has_flatten(self.tcx, ty) && !self.contains_mutated(ty)
+                }
+                _ => false,
+            }
             && (fields.iter().enumerate())
                 .all(|(i, &(_, t))| given.contains_key(&i) || !(self.contains_mutated(t) && self.is_copy(t)))
         {

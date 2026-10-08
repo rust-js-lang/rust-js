@@ -73,7 +73,7 @@ export function eager(n) {
 }
 
 export function fill(slot, n) {
-  return { id: slot.id, value: half(n) };
+  return { ...slot, value: half(n) };
 }
 
 export function same(a, b) {
