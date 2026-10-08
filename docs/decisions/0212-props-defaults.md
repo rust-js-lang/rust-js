@@ -47,6 +47,10 @@ export interface ButtonLinkProps<C> {
   Heading takes `isPageAnchor = true`, and a number of a number's, written
   as a literal of that type is. One of another type is an error; `= true`
   was read as no literal at all, and the type's `Default`, `false`, taken.
+- **An object of literals is a `const` the attribute names**,
+  `#[rust_js::default(DEFAULT_PARAMETERS)]` of a `const` beside the
+  struct, which no attribute's literal can say, as react.dev's Search
+  takes `searchParameters = {hitsPerPage: 30, ..}`. (Amended.)
 - **A component's props with one are taken apart where they're given**,
   `fn ButtonLink(ButtonLinkProps { size, .. }: ButtonLinkProps)`: taken
   whole, a JS caller's missing field would have none, so that's an error.

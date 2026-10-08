@@ -8,6 +8,7 @@ use super::{
 use crate::js::{self, Expr, Op, Stmt, StmtKind, UnaryOp};
 use rustc_ast::{LitKind, Mutability};
 use rustc_hir::attrs::lang_items::LangItem;
+use rustc_hir::def::DefKind;
 use rustc_hir::{BindingMode, ByRef, RangeEnd};
 use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::visit::{self, Visitor};
@@ -142,6 +143,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ty::Adt(adt, args) = ty.kind() else { return None };
         let field = adt.non_enum_variant().fields.iter().nth(i)?;
         let field_ty = field.ty(self.tcx, args).skip_normalization();
+        // `#[rust_js::default(NAME)]`: a `const` beside the struct, its value.
+        if let Some(name) = bindings::field_default_const(self.tcx, field) {
+            let module = self.tcx.parent_module_from_def_id(adt.did().expect_local());
+            let named = (self.tcx.hir_module_free_items(module))
+                .map(|id| id.owner_id.to_def_id())
+                .find(|&id| matches!(self.tcx.def_kind(id), DefKind::Const { .. }) && self.tcx.item_name(id) == name);
+            let Some(def_id) = named else {
+                self.unsupported(span, "a props field's default that names no `const` beside its struct");
+                return None;
+            };
+            let value = super::eval_const(self.tcx, self.typing_env, def_id, ty::List::empty(), span)
+                .and_then(|value| super::const_js(self.tcx, value));
+            let Some(value) = value.filter(is_literal) else {
+                self.unsupported(span, "a props field's default `const` that isn't a literal");
+                return None;
+            };
+            return Some(value);
+        }
         let default = match bindings::field_default(self.tcx, field)? {
             Some(lit) => {
                 let of_type = match lit {

@@ -327,6 +327,17 @@ pub(super) fn field_default(tcx: TyCtxt<'_>, field: &FieldDef) -> Option<Option<
         .map(|attr| attr.value_lit().map(|lit| lit.kind))
 }
 
+/// The `const` a props field's default names, `#[rust_js::default(NAME)]`
+/// (ADR 0212): an object of literals, which no attribute can say.
+pub(super) fn field_default_const(tcx: TyCtxt<'_>, field: &FieldDef) -> Option<Symbol> {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("default")];
+    let attr = tcx.get_attrs_by_path(field.did, &path).next()?;
+    match attr.meta_item_list()?.as_slice() {
+        [name] => name.ident().map(|ident| ident.name),
+        _ => None,
+    }
+}
+
 /// Whether field `i` of `ty`, a struct, is flattened (ADR 0204).
 pub(super) fn is_flatten_field(tcx: TyCtxt<'_>, ty: Ty<'_>, i: usize) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct()

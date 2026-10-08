@@ -3062,3 +3062,33 @@ pub fn load() -> Promise<Module<LabelProps<'static>>> {
   const labels = await import(join(dir, "labels.js"));
   expect((await lib.load()).default).toBe(labels.Label);
 });
+
+// A props field's default of a struct, an object of literals, is a
+// `const` named by `#[rust_js::default(NAME)]`, as react.dev's Search
+// takes `searchParameters = {hitsPerPage: 30, ..}` (ADR 0212).
+test("a props field's default may be a const", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+
+pub struct Parameters {
+    pub hits_per_page: u32,
+    pub highlighted: &'static [&'static str],
+}
+
+const DEFAULT_PARAMETERS: Parameters = Parameters { hits_per_page: 30, highlighted: &["content"] };
+
+pub struct ResultsProps {
+    #[rust_js::default(DEFAULT_PARAMETERS)]
+    pub parameters: Parameters,
+}
+
+pub fn Results(ResultsProps { parameters }: ResultsProps) -> JSX::Element {
+    jsx! { <p title={parameters.highlighted.join(",")}>{parameters.hits_per_page}</p> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain('export function Results({ parameters = { hits_per_page: 30, highlighted: ["content"] } }) {');
+  const { Results } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(Results({}))).toBe('<p title="content">30</p>');
+});

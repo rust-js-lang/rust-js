@@ -558,4 +558,12 @@ export const mutations: Mutation[] = [
     replace: "\n",
     tests: ["test/next.test.ts", "-t", "rust-js-next build"],
   },
+  {
+    name: "default-const-unread",
+    breaks: "a props field's `#[rust_js::default(NAME)]` is its type's Default, not the const it names",
+    file: "src/lower/patterns.rs",
+    find: "        if let Some(name) = bindings::field_default_const(self.tcx, field) {",
+    replace: "        if let Some(name) = bindings::field_default_const(self.tcx, field).filter(|_| false) {",
+    tests: ["test/jsx.test.ts", "-t", "default may be a const"],
+  },
 ];
