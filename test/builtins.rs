@@ -6,13 +6,19 @@ use js::{Unknown, json, reg_exp, string};
 /// JSON's value, each property a reviver gives none of left out, as
 /// react.dev's errors page revives its elements.
 pub fn revived(text: &str) -> Option<&'static Unknown> {
-    json::parse_with(text, Box::new(hidden)).ok().flatten()
+    json::parse_with(text, Box::new(hidden))
 }
 
 /// Whether `value` has a property of the name, its own or its prototype's,
 /// as react.dev's errors page asks of its MDX components.
 pub fn holds(value: &Unknown, key: &str) -> bool {
     js::has(value, key)
+}
+
+/// A property by a name that's itself a JS value, as react.dev's errors page
+/// looks up the component a JSON element names.
+pub fn named(value: &Unknown, key: &Unknown) -> Option<&'static Unknown> {
+    if js::has(value, key) { js::get(value, key) } else { None }
 }
 
 fn hidden(key: &str, value: Option<&'static Unknown>) -> Option<&'static Unknown> {

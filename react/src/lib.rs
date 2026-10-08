@@ -1113,6 +1113,13 @@ impl Tag for ElementType {}
 // table may hold one, as react.dev's `variantMap` does.
 unsafe impl Sync for ElementType {}
 
+// A function or a string in JS, never `undefined`: a JS value of any shape,
+// `js::unknown_of(FRAGMENT)`, as a JSON reviver gives one.
+unsafe impl js::Defined for ElementType {}
+
+// An object in JS, never `undefined`: a JS value of any shape too.
+unsafe impl<T> js::Defined for Element<T> {}
+
 impl ElementType {
     /// A JS value as what JSX renders, a tag's name or a component, as
     /// react.dev's errors page reads one from JSON: the value itself,

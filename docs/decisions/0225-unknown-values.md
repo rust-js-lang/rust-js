@@ -147,7 +147,18 @@ value.name = "new";
 - **`json::parse_with(text, reviver)` is `JSON.parse(text, reviver)`**: each
   part given to the reviver with its key, innermost first, made what it
   gives, as react.dev's errors page revives its elements from JSON. The
-  builtins test leaves out each property a reviver gives none of.
+  builtins test leaves out each property a reviver gives none of. It gives
+  the value, not a `Result`: a reviver is for JSON a program made itself,
+  as the page's is its own build's, so JSON that isn't is a bug, and
+  `JSON.parse`'s throw is a panic, as the page has it, with no `try`.
 - **`js::has(value, key)` is `key in value`**, JS's `in`: whether an object
   has a property of the name, its own or its prototype's, as the errors
   page asks of its MDX components. A binding's `in []` is that operator.
+- **A key is a `js::PropertyKey`**, for `has` and `get`: text, an
+  integer, or a JS value of any shape, as a reviver's key is a string or an
+  array's index. JS makes each the property's name, as `in` and `[]` do.
+- **`js::unknown_of(value)`** is a value given by value as a JS value of any
+  shape, the value itself: an element made where it's given, which
+  `js::unknown(&value)` would borrow only for its block. It takes a `Copy`
+  value, which has no lifetime of its own in JS, an element or an element's
+  type.

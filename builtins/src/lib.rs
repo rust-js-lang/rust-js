@@ -130,6 +130,14 @@ pub fn unknown<T: Defined + ?Sized>(this: &T) -> &Unknown {
     unreachable!()
 }
 
+/// `value`, given by value, as a JS value of any shape: a handle, an element
+/// or a number, which has no lifetime of its own in JS. The value itself.
+#[cfg_attr(rust_js, rust_js::link_name = "this")]
+#[allow(unused_variables)]
+pub fn unknown_of<T: Defined + Copy>(this: T) -> &'static Unknown {
+    unreachable!()
+}
+
 /// [`String(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/String):
 /// any value as text, as JS makes it, `result += value` say: `"undefined"`
 /// of `None`, `"[object Object]"` of an object.
@@ -143,7 +151,7 @@ pub fn string(value: Option<&Unknown>) -> String {
 /// `undefined` or `null`, as where there's none.
 #[cfg_attr(rust_js, rust_js::link_name = "get []")]
 #[allow(unused_variables)]
-pub fn get(this: &Unknown, key: &str) -> Option<&'static Unknown> {
+pub fn get<K: PropertyKey + ?Sized>(this: &Unknown, key: &K) -> Option<&'static Unknown> {
     unreachable!()
 }
 
@@ -151,9 +159,20 @@ pub fn get(this: &Unknown, key: &str) -> Option<&'static Unknown> {
 /// or its prototype's, as JS's `in` asks.
 #[cfg_attr(rust_js, rust_js::link_name = "in []")]
 #[allow(unused_variables)]
-pub fn has(this: &Unknown, key: &str) -> bool {
+pub fn has<K: PropertyKey + ?Sized>(this: &Unknown, key: &K) -> bool {
     unreachable!()
 }
+
+/// What names a property, as `key in value` and `value[key]` take it: text,
+/// a number, or a JS value of any shape, whose text JS makes the name.
+pub trait PropertyKey {}
+
+impl PropertyKey for str {}
+impl PropertyKey for String {}
+impl PropertyKey for Unknown {}
+impl PropertyKey for u32 {}
+impl PropertyKey for i32 {}
+impl PropertyKey for usize {}
 
 /// `value[key] = to`: `to` as JS has it, a string or a number, or an
 /// object.
@@ -553,12 +572,13 @@ pub mod json {
         /// [`JSON.parse(text, reviver)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse#the_reviver_parameter):
         /// the value `text` is, each part of it given to `reviver` with its
         /// key, innermost first, and made what that gives; a property it gives
-        /// `None` of is left out.
+        /// `None` of is left out. Of JSON a program made itself: JSON that
+        /// isn't throws, a panic.
         #[link_name = "JSON.parse"]
         pub safe fn parse_with(
             text: &str,
             reviver: Box<dyn Fn(&str, Option<&'static Unknown>) -> Option<&'static Unknown>>,
-        ) -> Result<Option<&'static Unknown>, &'static JsError>;
+        ) -> Option<&'static Unknown>;
 
         /// [`JSON.stringify(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify):
         /// `text`'s JSON, in quotes, with its `"`, `\` and control characters

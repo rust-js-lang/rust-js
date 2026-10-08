@@ -3067,6 +3067,12 @@ pub fn revived(r#type: &'static Unknown, key: &'static Unknown, props: &'static 
     }
     jsx! { <Type key={key} {...props} /> }
 }
+
+// An element, or React's \`Fragment\`, as a JS value of any shape, as a JSON
+// reviver gives one.
+pub fn kept(wrapped: bool) -> &'static Unknown {
+    if wrapped { js::unknown_of(FRAGMENT) } else { js::unknown_of(jsx! { <b>{"kept"}</b> }) }
+}
 `);
   run([...args, "--extern", `js=${join(target, "libjs.rmeta")}`]);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
@@ -3075,6 +3081,9 @@ pub fn revived(r#type: &'static Unknown, key: &'static Unknown, props: &'static 
   expect(renderToStaticMarkup(revived("b", "k", { children: "bold", title: "t" }))).toBe('<b title="t">bold</b>');
   expect(renderToStaticMarkup(revived("wrapper", 0, { children: "plain" }))).toBe("plain");
   expect(revived("b", 7, {}).key).toBe("7");
+  const { kept } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(kept(false))).toBe("<b>kept</b>");
+  expect(kept(true)).toBe((await import("react")).Fragment);
 });
 
 // A component a `thread_local!` holds, `memo`'s, typed with its props'

@@ -53,3 +53,9 @@ return <Type key={key} {...props} />;
 - **It's what JSX does with these values**, as the site does.
 - **It's tested**: a JSX test renders a tag and a wrapper from values of
   any shape, keyed by a number; a mutation refuses their props.
+
+## Since
+
+- **An element and an element's type are JS values of any shape too**,
+  `js::Defined`, as a reviver gives `Fragment` or the element it made:
+  `js::unknown_of(jsx! { <b /> })` is the element itself.
