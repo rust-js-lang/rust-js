@@ -15,7 +15,7 @@ import webrefElements from "@webref/elements";
 import elementsPackage from "@webref/elements/package.json" with { type: "json" };
 
 // The specs to read. Partial interfaces and mixins from these are merged in.
-const SPECS = ["dom", "html", "hr-time", "uievents", "pointerevents", "cssom", "cssom-view", "geometry", "fetch", "encoding", "wasm-js-api", "wasm-web-api", "xhr", "streams", "touch-events", "FileAPI", "clipboard-apis", "css-animations", "css-transitions", "SVG", "svg-paths", "svg-animations", "filter-effects", "css-masking"];
+const SPECS = ["dom", "html", "hr-time", "uievents", "pointerevents", "cssom", "cssom-view", "geometry", "fetch", "encoding", "wasm-js-api", "wasm-web-api", "xhr", "streams", "touch-events", "FileAPI", "clipboard-apis", "css-animations", "css-transitions", "SVG", "svg-paths", "svg-animations", "filter-effects", "css-masking", "intersection-observer"];
 
 // The everyday DOM. Members that use any other interface are skipped.
 const INTERFACES = [
@@ -52,6 +52,8 @@ const INTERFACES = [
   "CSSStyleDeclaration", "CSSStyleProperties",
   // cssom-view, geometry: where things are on the page
   "DOMRectReadOnly", "DOMRect", "MediaQueryList", "MediaQueryListEvent",
+  // intersection-observer: when an element comes into view, or goes out
+  "IntersectionObserver", "IntersectionObserverEntry",
   // fetch: `window::fetch`, and what it gives back
   "Headers", "Request", "Response",
   // xhr, streams, touch-events: what React's forms, server rendering and touch events use
@@ -156,6 +158,7 @@ type Def = {
   target?: string;
   includes?: string;
   idlType?: IdlType;
+  arguments?: Arg[];
   extAttrs?: { name: string; rhs?: { value: string } }[];
 };
 
@@ -167,6 +170,7 @@ const everywhere: Def[] = Object.values(all).flat();
 const enums = new Set(everywhere.filter((d) => d.type === "enum").map((d) => d.name));
 const typedefs = new Map(everywhere.filter((d) => d.type === "typedef").map((d) => [d.name, d.idlType!]));
 const dictionaries = new Map(everywhere.filter((d) => d.type === "dictionary" && !d.partial).map((d) => [d.name, d]));
+const callbacks = new Map(everywhere.filter((d) => d.type === "callback").map((d) => [d.name, d]));
 
 type Interface = {
   name: string;
@@ -288,6 +292,21 @@ function rustType(t: IdlType, at: Position): string | { skip: string } {
   if (NUMBERS[name]) return NUMBERS[name];
   if (STRINGS.has(name) || enums.has(name)) return at === "param" ? "&str" : "String";
   if (name === "EventListener" && at === "param") return "Box<dyn FnMut(&Event)>";
+  // A callback a function takes is a closure, given what JS calls it with
+  // as a function's parameters are, `None` of a `null` one:
+  // `new IntersectionObserver(|entries, observer| ..)`. An event handler
+  // attribute's, `onclick`, isn't: a listener is `add_event_listener`'s,
+  // typed by its event.
+  const callback = name.endsWith("EventHandlerNonNull") ? undefined : callbacks.get(name);
+  if (callback && at === "param") {
+    const args = (callback.arguments ?? []).map((a) => {
+      const type = paramType(a.idlType);
+      return type && a.idlType.nullable ? `Option<${type}>` : type;
+    });
+    const result = rustType(callback.idlType!, "result");
+    if (args.some((a) => !a || a === ANY) || typeof result !== "string") return { skip: "callback" };
+    return `Box<dyn FnMut(${args.join(", ")})${result === "()" ? "" : ` -> ${result}`}>`;
+  }
   // A value of any shape a function gives is the js crate's `Unknown`, or
   // `None` of `undefined` and `null` (ADR 0225): `response.json()`.
   // One it takes is of any type, as JS has it: a generic `M`, `message: M`.

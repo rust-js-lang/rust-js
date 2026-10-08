@@ -984,6 +984,61 @@ pub fn page(el: &Element, blob: &Blob, url: &str) -> (&'static Response, js::Pro
   expect([wrong.exitCode === 0, wrong.stderr.toString().includes("is not a `string | Blob`")], wrong.stderr.toString()).toEqual([false, true]);
 });
 
+// ADR 0260: a binding's callback parameter is a closure, given what JS
+// calls it with as a function's parameters are, as react.dev's TopNav
+// watches whether the page has scrolled.
+test("a binding's callback parameter is a closure", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("callback-parameters");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{Element, IntersectionObserver, IntersectionObserverInit, intersection_observer, intersection_observer_entry, window};
+
+pub fn watch(target: &'static Element, seen: &'static dyn Fn(bool)) -> &'static IntersectionObserver {
+    let observer = intersection_observer::new_with_options(
+        Box::new(move |entries, _| {
+            entries.iter().for_each(|entry| seen(intersection_observer_entry::is_intersecting(entry)));
+        }),
+        IntersectionObserverInit {
+            root_margin: Some("0px 0px"),
+            threshold: Some(0.0.into()),
+            ..Default::default()
+        },
+    );
+    intersection_observer::observe(observer, target);
+    observer
+}
+
+pub fn next_frame(then: &'static dyn Fn(f64)) -> u32 {
+    window::request_animation_frame(window, Box::new(move |time| then(time)))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("new IntersectionObserver(");
+  expect(js).toContain("return window.requestAnimationFrame((time) => {\n    then(time);\n  });");
+  const globals = globalThis as any;
+  const previous = [globals.IntersectionObserver, globals.window];
+  const given: unknown[] = [];
+  globals.IntersectionObserver = class {
+    constructor(private callback: (entries: unknown[], observer: unknown) => void, options: unknown) {
+      given.push(options);
+    }
+    observe(target: unknown) {
+      this.callback([{ isIntersecting: false, target }, { isIntersecting: true, target }], this);
+    }
+  };
+  globals.window = { requestAnimationFrame: (callback: (time: number) => void) => (callback(16), 7) };
+  try {
+    const { watch, next_frame } = await import(join(dir, "lib.js"));
+    const seen: unknown[] = [];
+    watch({}, (value: boolean) => seen.push(value));
+    expect([seen, given]).toEqual([[false, true], [{ rootMargin: "0px 0px", threshold: 0 }]]);
+    const times: number[] = [];
+    expect([next_frame((time: number) => times.push(time)), times]).toEqual([7, [16]]);
+  } finally {
+    [globals.IntersectionObserver, globals.window] = previous;
+  }
+});
+
 // ADR 0225: a JS value of unknown shape is a `js::Unknown`, as TypeScript's
 // `unknown` and ReScript's are, which `classify` tells by `typeof`, and
 // whose properties are read and set by name, as `obj[key]` is.
