@@ -80,8 +80,8 @@ pub struct Unknown(PhantomData<JsObject>);
 
 /// What an [`Unknown`] is, as JS's `typeof` and `Array.isArray` tell it:
 /// each variant's value is the value itself (ADR 0214). An array's items
-/// may be `undefined` or `null`; anything else, an object, a function or a
-/// symbol, is an `Object`, whose properties [`get`] reads.
+/// may be `undefined` or `null`; a function is a `Function`; anything else,
+/// an object or a symbol, is an `Object`, whose properties [`get`] reads.
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum Kind<'a> {
     String(&'a str),
@@ -89,6 +89,8 @@ pub enum Kind<'a> {
     /// A `bigint`, as an `i64` is one (ADR 0086): one wider isn't wrapped.
     BigInt(i64),
     Bool(bool),
+    /// A function, `typeof value === "function"`, of whatever it takes.
+    Function(&'a dyn Fn()),
     Array(&'a [Option<&'a Unknown>]),
     #[cfg_attr(rust_js, rust_js::otherwise)]
     Object(&'a Unknown),

@@ -998,6 +998,7 @@ fn show(value: Option<&Unknown>) -> String {
             Kind::Number(n) => n.to_string(),
             Kind::BigInt(n) => format!("{n}n"),
             Kind::Bool(b) => b.to_string(),
+            Kind::Function(_) => "fn".to_string(),
             Kind::Array(items) => format!("[{}]", items.iter().map(|item| show(*item)).collect::<Vec<_>>().join(",")),
             Kind::Object(fields) => format!(
                 "{{{}}}",
@@ -1021,6 +1022,9 @@ pub fn renamed(text: &str) -> String {
         _ => "invalid".to_string(),
     }
 }
+pub fn shown(value: &Unknown) -> String {
+    show(Some(value))
+}
 pub fn body(response: &webapi::Response) -> Promise<Option<&'static Unknown>> {
     webapi::response::json(response)
 }
@@ -1031,6 +1035,7 @@ pub fn body(response: &webapi::Response) -> Promise<Option<&'static Unknown>> {
   // variable is `[key]`, one written that's a name `.name`.
   expect(js).toContain('}\n  if (typeof value === "string") {');
   expect(js).toContain("}\n  if (Array.isArray(value)) {");
+  expect(js).toContain('if (typeof value === "function") {');
   expect(js).toContain("Object.keys(value)");
   expect(js).toContain("show(value[key])");
   expect(js).toContain('match._0.name = "new";');
@@ -1040,6 +1045,7 @@ pub fn body(response: &webapi::Response) -> Promise<Option<&'static Unknown>> {
   expect([lib.parsed('{"a":[1,"x",null,true],"b":{}}'), lib.parsed("12"), lib.parsed("null"), lib.parsed("nope")])
     .toEqual(["{a:[1,'x',null,true],b:{}}", "12", "null", "invalid"]);
   expect(lib.renamed('{"name":"old","n":2}')).toBe("{name:'new',n:2}");
+  expect([lib.shown(() => 1), lib.shown({ f: Math.max })]).toEqual(["fn", "{f:fn}"]);
 });
 
 // `matches!` of a kind's literal says the literal: `x === "a"` holds of no

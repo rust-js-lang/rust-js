@@ -120,6 +120,10 @@ value.name = "new";
   There's no `any` that a value becomes silently, as TypeScript's is, and
   no raw JS, ReScript's `%raw`, which rust-js couldn't read.
 
+- **A function is told apart too**, `Kind::Function`, `typeof value ===
+  "function"`, as react.dev's SidebarLink tests `scrollIntoViewIfNeeded`.
+  (Amended: it was an `Object`.)
+
 ## Why
 
 - **It's ReScript's `unknown` and `Classify`, and TypeScript's `unknown`
