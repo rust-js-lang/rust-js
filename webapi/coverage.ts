@@ -68,32 +68,40 @@ export async function typescript(): Promise<Map<string, Members>> {
   return out;
 }
 
-/** What src/lib.rs binds, by the MDN link on each function: `get x` and
- * `set x` are `x`, `new X` the constructor, `X.y` the static `y`. */
+/** What src/lib.rs binds: each function of a type's module, by the JS its
+ * link name says, `get x` and `set x` are `x`, `new X` the constructor,
+ * `X.y` the static `y`, or its own name; and each constant, a member and
+ * a static of its name. */
 function webapi(): { bound: Set<string>; types: Set<string> } {
   const text = readFileSync(lib, "utf8");
-  const lines = text.split("\n");
   const bound = new Set<string>();
-  // A module's constants, `pub const ELEMENT_NODE`: the class's member and
-  // static of the name, `Node.ELEMENT_NODE`, by the struct before it.
+  // The type a module is of: its JS name, `rust_js::name` or its own.
   let struct = "";
-  for (const l of lines) {
-    struct = l.match(/^pub struct (\w+)/)?.[1] ?? struct;
-    const c = l.match(/^\s+pub const (\w+):/)?.[1];
-    if (c) for (const member of [c, `static:${c}`]) bound.add(`${struct}.${member}`);
-  }
-  for (let i = 0; i < lines.length; i++) {
-    const mdn = lines[i].match(/developer\.mozilla\.org\/docs\/Web\/API\/(\w+)\/(\w+)/);
-    if (!mdn) continue;
-    let link: string | undefined;
-    for (let j = i + 1; j < Math.min(i + 4, lines.length) && !link; j++) {
-      link = lines[j].match(/link_name = "([^"]+)"/)?.[1] ?? lines[j].match(/pub (?:safe )?fn (\w+)/)?.[1];
+  let named = "";
+  let type = "";
+  let link: string | undefined;
+  for (const l of text.split("\n")) {
+    named = l.match(/rust_js::name = "([\w.]+)"/)?.[1] ?? named;
+    const s = l.match(/^pub struct (\w+)/)?.[1];
+    if (s) {
+      struct = named || s;
+      named = "";
     }
-    const member =
-      link?.startsWith("new ") ? "constructor"
-      : link && /^[A-Z]\w*\.\w+$/.test(link) ? `static:${link.split(".")[1]}`
-      : mdn[2];
-    bound.add(`${mdn[1]}.${member}`);
+    if (/^pub mod /.test(l)) type = struct;
+    if (l === "}") type = "";
+    link = l.match(/link_name = "([^"]+)"/)?.[1] ?? link;
+    const fn = l.match(/^\s+pub (?:safe )?fn (\w+)/)?.[1];
+    const constant = l.match(/^\s+pub const (\w+):/)?.[1];
+    if (type && constant) for (const m of [constant, `static:${constant}`]) bound.add(`${type}.${m}`);
+    if (type && fn) {
+      const js = link ?? fn;
+      const member =
+        js.startsWith("new ") ? "constructor"
+        : /^[A-Z][\w.]*\.\w+$/.test(js) ? `static:${js.split(".").pop()}`
+        : js.replace(/^(get|set) /, "");
+      bound.add(`${type}.${member}`);
+    }
+    if (fn) link = undefined;
   }
   const types = new Set([...text.matchAll(/^pub struct (\w+)/gm)].map((m) => m[1]));
   return { bound, types };

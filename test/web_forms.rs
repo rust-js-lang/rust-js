@@ -100,3 +100,11 @@ pub fn handlers(button: &webapi::HTMLButtonElement) -> bool {
 pub fn socket(url: &str) -> &'static webapi::WebSocket {
     webapi::web_socket::new(url)
 }
+
+/// A CSS property of an element's style, by its own name, as TypeScript has
+/// each: `style.backgroundColor`.
+pub fn styled(el: &webapi::HTMLElement) -> String {
+    let style = webapi::html_element::style(el);
+    webapi::css_style_properties::set_background_color(style, "red");
+    webapi::css_style_properties::webkit_line_clamp(style)
+}

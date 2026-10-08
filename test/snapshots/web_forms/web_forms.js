@@ -71,4 +71,10 @@ export function handlers(button) {
 export function socket(url) {
   return new WebSocket(url);
 }
+
+export function styled(el) {
+  const style = el.style;
+  style.backgroundColor = "red";
+  return style.webkitLineClamp;
+}
 //# sourceMappingURL=web_forms.js.map

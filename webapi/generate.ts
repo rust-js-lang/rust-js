@@ -942,6 +942,25 @@ function generic(f: Fn): string {
   ].join("\n");
 }
 
+/**
+ * Each CSS property of a style, by its name, as TypeScript has them and
+ * CSSOM says (`[CEReactions] attribute CSSOMString _camel_cased_attribute`,
+ * which WebIDL can't list): `style.backgroundColor`, text to read and set.
+ */
+function cssProperties(have: Fn[]): Fn[] {
+  const names = new Set(have.map((f) => f.name));
+  const fns: Fn[] = [];
+  for (const js of [...(typescriptDom.get("CSSStyleProperties")?.members ?? [])].sort()) {
+    if (!/^[a-z]\w*$/i.test(js) || names.has(snake(js))) continue;
+    // Its CSS name: `backgroundColor` is `background-color`, `webkitLineClamp` `-webkit-line-clamp`.
+    const css = js.replace(/^webkit(?=[A-Z])/, "-webkit").replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
+    const doc = [`[\`${css}\`](https://developer.mozilla.org/docs/Web/CSS/${css})`];
+    fns.push({ name: snake(js), jsName: `get ${js}`, params: ["this: &CSSStyleProperties"], result: "String", doc });
+    fns.push({ name: `set_${snakeWords(js)}`, jsName: `set ${js}`, params: ["this: &CSSStyleProperties", "value: &str"], result: "()", doc });
+  }
+  return fns;
+}
+
 /** `pub mod <name> { .. }`, holding a type's or a namespace's functions. */
 function module(name: string, all: Fn[], typed: string[] = [], constants: string[] = []) {
   if (all.length === 0 && constants.length === 0) return;
@@ -998,6 +1017,7 @@ for (const name of INTERFACES) {
     line(`}`);
   }
   const fns = [...functionsOf(i), ...(EXTRA[name] ?? [])];
+  if (name === "CSSStyleProperties") fns.push(...cssProperties(fns));
   module(snake(qualified(name)), fns, TYPED[name] ?? [], [...(constantsOf.get(name)?.values() ?? [])]);
 }
 

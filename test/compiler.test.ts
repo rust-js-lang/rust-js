@@ -831,6 +831,7 @@ test("the webapi crate's bindings become plain JS", async () => {
   // An event handler property is set to a closure, or to `null`.
   expect(js).toContain("button.onclick = (e) => {\n    e.preventDefault();\n  };\n  const set = button.onclick != null;\n  button.onclick = null;\n  return set;");
   expect(js).toContain("return new WebSocket(url);");
+  expect(js).toContain('const style = el.style;\n  style.backgroundColor = "red";\n  return style.webkitLineClamp;');
   const { round_trip } = await import(join(target, "web_forms.js"));
   // "é" is two bytes in UTF-8.
   expect(round_trip("héllo")).toEqual([6, "héllo"]);

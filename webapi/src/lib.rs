@@ -13506,6 +13506,4326 @@ pub mod css_style_properties {
         /// Treats `this` as `CSSStyleProperties` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &CSSStyleDeclaration) -> &'static CSSStyleProperties;
+
+        /// [`accent-color`](https://developer.mozilla.org/docs/Web/CSS/accent-color)
+        #[link_name = "get accentColor"]
+        pub safe fn accent_color(this: &CSSStyleProperties) -> String;
+
+        /// [`accent-color`](https://developer.mozilla.org/docs/Web/CSS/accent-color)
+        #[link_name = "set accentColor"]
+        pub safe fn set_accent_color(this: &CSSStyleProperties, value: &str);
+
+        /// [`align-content`](https://developer.mozilla.org/docs/Web/CSS/align-content)
+        #[link_name = "get alignContent"]
+        pub safe fn align_content(this: &CSSStyleProperties) -> String;
+
+        /// [`align-content`](https://developer.mozilla.org/docs/Web/CSS/align-content)
+        #[link_name = "set alignContent"]
+        pub safe fn set_align_content(this: &CSSStyleProperties, value: &str);
+
+        /// [`align-items`](https://developer.mozilla.org/docs/Web/CSS/align-items)
+        #[link_name = "get alignItems"]
+        pub safe fn align_items(this: &CSSStyleProperties) -> String;
+
+        /// [`align-items`](https://developer.mozilla.org/docs/Web/CSS/align-items)
+        #[link_name = "set alignItems"]
+        pub safe fn set_align_items(this: &CSSStyleProperties, value: &str);
+
+        /// [`align-self`](https://developer.mozilla.org/docs/Web/CSS/align-self)
+        #[link_name = "get alignSelf"]
+        pub safe fn align_self(this: &CSSStyleProperties) -> String;
+
+        /// [`align-self`](https://developer.mozilla.org/docs/Web/CSS/align-self)
+        #[link_name = "set alignSelf"]
+        pub safe fn set_align_self(this: &CSSStyleProperties, value: &str);
+
+        /// [`alignment-baseline`](https://developer.mozilla.org/docs/Web/CSS/alignment-baseline)
+        #[link_name = "get alignmentBaseline"]
+        pub safe fn alignment_baseline(this: &CSSStyleProperties) -> String;
+
+        /// [`alignment-baseline`](https://developer.mozilla.org/docs/Web/CSS/alignment-baseline)
+        #[link_name = "set alignmentBaseline"]
+        pub safe fn set_alignment_baseline(this: &CSSStyleProperties, value: &str);
+
+        /// [`all`](https://developer.mozilla.org/docs/Web/CSS/all)
+        #[link_name = "get all"]
+        pub safe fn all(this: &CSSStyleProperties) -> String;
+
+        /// [`all`](https://developer.mozilla.org/docs/Web/CSS/all)
+        #[link_name = "set all"]
+        pub safe fn set_all(this: &CSSStyleProperties, value: &str);
+
+        /// [`anchor-name`](https://developer.mozilla.org/docs/Web/CSS/anchor-name)
+        #[link_name = "get anchorName"]
+        pub safe fn anchor_name(this: &CSSStyleProperties) -> String;
+
+        /// [`anchor-name`](https://developer.mozilla.org/docs/Web/CSS/anchor-name)
+        #[link_name = "set anchorName"]
+        pub safe fn set_anchor_name(this: &CSSStyleProperties, value: &str);
+
+        /// [`anchor-scope`](https://developer.mozilla.org/docs/Web/CSS/anchor-scope)
+        #[link_name = "get anchorScope"]
+        pub safe fn anchor_scope(this: &CSSStyleProperties) -> String;
+
+        /// [`anchor-scope`](https://developer.mozilla.org/docs/Web/CSS/anchor-scope)
+        #[link_name = "set anchorScope"]
+        pub safe fn set_anchor_scope(this: &CSSStyleProperties, value: &str);
+
+        /// [`animation`](https://developer.mozilla.org/docs/Web/CSS/animation)
+        #[link_name = "get animation"]
+        pub safe fn animation(this: &CSSStyleProperties) -> String;
+
+        /// [`animation`](https://developer.mozilla.org/docs/Web/CSS/animation)
+        #[link_name = "set animation"]
+        pub safe fn set_animation(this: &CSSStyleProperties, value: &str);
+
+        /// [`animation-composition`](https://developer.mozilla.org/docs/Web/CSS/animation-composition)
+        #[link_name = "get animationComposition"]
+        pub safe fn animation_composition(this: &CSSStyleProperties) -> String;
+
+        /// [`animation-composition`](https://developer.mozilla.org/docs/Web/CSS/animation-composition)
+        #[link_name = "set animationComposition"]
+        pub safe fn set_animation_composition(this: &CSSStyleProperties, value: &str);
+
+        /// [`animation-delay`](https://developer.mozilla.org/docs/Web/CSS/animation-delay)
+        #[link_name = "get animationDelay"]
+        pub safe fn animation_delay(this: &CSSStyleProperties) -> String;
+
+        /// [`animation-delay`](https://developer.mozilla.org/docs/Web/CSS/animation-delay)
+        #[link_name = "set animationDelay"]
+        pub safe fn set_animation_delay(this: &CSSStyleProperties, value: &str);
+
+        /// [`animation-direction`](https://developer.mozilla.org/docs/Web/CSS/animation-direction)
+        #[link_name = "get animationDirection"]
+        pub safe fn animation_direction(this: &CSSStyleProperties) -> String;
+
+        /// [`animation-direction`](https://developer.mozilla.org/docs/Web/CSS/animation-direction)
+        #[link_name = "set animationDirection"]
+        pub safe fn set_animation_direction(this: &CSSStyleProperties, value: &str);
+
+        /// [`animation-duration`](https://developer.mozilla.org/docs/Web/CSS/animation-duration)
+        #[link_name = "get animationDuration"]
+        pub safe fn animation_duration(this: &CSSStyleProperties) -> String;
+
+        /// [`animation-duration`](https://developer.mozilla.org/docs/Web/CSS/animation-duration)
+        #[link_name = "set animationDuration"]
+        pub safe fn set_animation_duration(this: &CSSStyleProperties, value: &str);
+
+        /// [`animation-fill-mode`](https://developer.mozilla.org/docs/Web/CSS/animation-fill-mode)
+        #[link_name = "get animationFillMode"]
+        pub safe fn animation_fill_mode(this: &CSSStyleProperties) -> String;
+
+        /// [`animation-fill-mode`](https://developer.mozilla.org/docs/Web/CSS/animation-fill-mode)
+        #[link_name = "set animationFillMode"]
+        pub safe fn set_animation_fill_mode(this: &CSSStyleProperties, value: &str);
+
+        /// [`animation-iteration-count`](https://developer.mozilla.org/docs/Web/CSS/animation-iteration-count)
+        #[link_name = "get animationIterationCount"]
+        pub safe fn animation_iteration_count(this: &CSSStyleProperties) -> String;
+
+        /// [`animation-iteration-count`](https://developer.mozilla.org/docs/Web/CSS/animation-iteration-count)
+        #[link_name = "set animationIterationCount"]
+        pub safe fn set_animation_iteration_count(this: &CSSStyleProperties, value: &str);
+
+        /// [`animation-name`](https://developer.mozilla.org/docs/Web/CSS/animation-name)
+        #[link_name = "get animationName"]
+        pub safe fn animation_name(this: &CSSStyleProperties) -> String;
+
+        /// [`animation-name`](https://developer.mozilla.org/docs/Web/CSS/animation-name)
+        #[link_name = "set animationName"]
+        pub safe fn set_animation_name(this: &CSSStyleProperties, value: &str);
+
+        /// [`animation-play-state`](https://developer.mozilla.org/docs/Web/CSS/animation-play-state)
+        #[link_name = "get animationPlayState"]
+        pub safe fn animation_play_state(this: &CSSStyleProperties) -> String;
+
+        /// [`animation-play-state`](https://developer.mozilla.org/docs/Web/CSS/animation-play-state)
+        #[link_name = "set animationPlayState"]
+        pub safe fn set_animation_play_state(this: &CSSStyleProperties, value: &str);
+
+        /// [`animation-range`](https://developer.mozilla.org/docs/Web/CSS/animation-range)
+        #[link_name = "get animationRange"]
+        pub safe fn animation_range(this: &CSSStyleProperties) -> String;
+
+        /// [`animation-range`](https://developer.mozilla.org/docs/Web/CSS/animation-range)
+        #[link_name = "set animationRange"]
+        pub safe fn set_animation_range(this: &CSSStyleProperties, value: &str);
+
+        /// [`animation-range-end`](https://developer.mozilla.org/docs/Web/CSS/animation-range-end)
+        #[link_name = "get animationRangeEnd"]
+        pub safe fn animation_range_end(this: &CSSStyleProperties) -> String;
+
+        /// [`animation-range-end`](https://developer.mozilla.org/docs/Web/CSS/animation-range-end)
+        #[link_name = "set animationRangeEnd"]
+        pub safe fn set_animation_range_end(this: &CSSStyleProperties, value: &str);
+
+        /// [`animation-range-start`](https://developer.mozilla.org/docs/Web/CSS/animation-range-start)
+        #[link_name = "get animationRangeStart"]
+        pub safe fn animation_range_start(this: &CSSStyleProperties) -> String;
+
+        /// [`animation-range-start`](https://developer.mozilla.org/docs/Web/CSS/animation-range-start)
+        #[link_name = "set animationRangeStart"]
+        pub safe fn set_animation_range_start(this: &CSSStyleProperties, value: &str);
+
+        /// [`animation-timeline`](https://developer.mozilla.org/docs/Web/CSS/animation-timeline)
+        #[link_name = "get animationTimeline"]
+        pub safe fn animation_timeline(this: &CSSStyleProperties) -> String;
+
+        /// [`animation-timeline`](https://developer.mozilla.org/docs/Web/CSS/animation-timeline)
+        #[link_name = "set animationTimeline"]
+        pub safe fn set_animation_timeline(this: &CSSStyleProperties, value: &str);
+
+        /// [`animation-timing-function`](https://developer.mozilla.org/docs/Web/CSS/animation-timing-function)
+        #[link_name = "get animationTimingFunction"]
+        pub safe fn animation_timing_function(this: &CSSStyleProperties) -> String;
+
+        /// [`animation-timing-function`](https://developer.mozilla.org/docs/Web/CSS/animation-timing-function)
+        #[link_name = "set animationTimingFunction"]
+        pub safe fn set_animation_timing_function(this: &CSSStyleProperties, value: &str);
+
+        /// [`appearance`](https://developer.mozilla.org/docs/Web/CSS/appearance)
+        #[link_name = "get appearance"]
+        pub safe fn appearance(this: &CSSStyleProperties) -> String;
+
+        /// [`appearance`](https://developer.mozilla.org/docs/Web/CSS/appearance)
+        #[link_name = "set appearance"]
+        pub safe fn set_appearance(this: &CSSStyleProperties, value: &str);
+
+        /// [`aspect-ratio`](https://developer.mozilla.org/docs/Web/CSS/aspect-ratio)
+        #[link_name = "get aspectRatio"]
+        pub safe fn aspect_ratio(this: &CSSStyleProperties) -> String;
+
+        /// [`aspect-ratio`](https://developer.mozilla.org/docs/Web/CSS/aspect-ratio)
+        #[link_name = "set aspectRatio"]
+        pub safe fn set_aspect_ratio(this: &CSSStyleProperties, value: &str);
+
+        /// [`backdrop-filter`](https://developer.mozilla.org/docs/Web/CSS/backdrop-filter)
+        #[link_name = "get backdropFilter"]
+        pub safe fn backdrop_filter(this: &CSSStyleProperties) -> String;
+
+        /// [`backdrop-filter`](https://developer.mozilla.org/docs/Web/CSS/backdrop-filter)
+        #[link_name = "set backdropFilter"]
+        pub safe fn set_backdrop_filter(this: &CSSStyleProperties, value: &str);
+
+        /// [`backface-visibility`](https://developer.mozilla.org/docs/Web/CSS/backface-visibility)
+        #[link_name = "get backfaceVisibility"]
+        pub safe fn backface_visibility(this: &CSSStyleProperties) -> String;
+
+        /// [`backface-visibility`](https://developer.mozilla.org/docs/Web/CSS/backface-visibility)
+        #[link_name = "set backfaceVisibility"]
+        pub safe fn set_backface_visibility(this: &CSSStyleProperties, value: &str);
+
+        /// [`background`](https://developer.mozilla.org/docs/Web/CSS/background)
+        #[link_name = "get background"]
+        pub safe fn background(this: &CSSStyleProperties) -> String;
+
+        /// [`background`](https://developer.mozilla.org/docs/Web/CSS/background)
+        #[link_name = "set background"]
+        pub safe fn set_background(this: &CSSStyleProperties, value: &str);
+
+        /// [`background-attachment`](https://developer.mozilla.org/docs/Web/CSS/background-attachment)
+        #[link_name = "get backgroundAttachment"]
+        pub safe fn background_attachment(this: &CSSStyleProperties) -> String;
+
+        /// [`background-attachment`](https://developer.mozilla.org/docs/Web/CSS/background-attachment)
+        #[link_name = "set backgroundAttachment"]
+        pub safe fn set_background_attachment(this: &CSSStyleProperties, value: &str);
+
+        /// [`background-blend-mode`](https://developer.mozilla.org/docs/Web/CSS/background-blend-mode)
+        #[link_name = "get backgroundBlendMode"]
+        pub safe fn background_blend_mode(this: &CSSStyleProperties) -> String;
+
+        /// [`background-blend-mode`](https://developer.mozilla.org/docs/Web/CSS/background-blend-mode)
+        #[link_name = "set backgroundBlendMode"]
+        pub safe fn set_background_blend_mode(this: &CSSStyleProperties, value: &str);
+
+        /// [`background-clip`](https://developer.mozilla.org/docs/Web/CSS/background-clip)
+        #[link_name = "get backgroundClip"]
+        pub safe fn background_clip(this: &CSSStyleProperties) -> String;
+
+        /// [`background-clip`](https://developer.mozilla.org/docs/Web/CSS/background-clip)
+        #[link_name = "set backgroundClip"]
+        pub safe fn set_background_clip(this: &CSSStyleProperties, value: &str);
+
+        /// [`background-color`](https://developer.mozilla.org/docs/Web/CSS/background-color)
+        #[link_name = "get backgroundColor"]
+        pub safe fn background_color(this: &CSSStyleProperties) -> String;
+
+        /// [`background-color`](https://developer.mozilla.org/docs/Web/CSS/background-color)
+        #[link_name = "set backgroundColor"]
+        pub safe fn set_background_color(this: &CSSStyleProperties, value: &str);
+
+        /// [`background-image`](https://developer.mozilla.org/docs/Web/CSS/background-image)
+        #[link_name = "get backgroundImage"]
+        pub safe fn background_image(this: &CSSStyleProperties) -> String;
+
+        /// [`background-image`](https://developer.mozilla.org/docs/Web/CSS/background-image)
+        #[link_name = "set backgroundImage"]
+        pub safe fn set_background_image(this: &CSSStyleProperties, value: &str);
+
+        /// [`background-origin`](https://developer.mozilla.org/docs/Web/CSS/background-origin)
+        #[link_name = "get backgroundOrigin"]
+        pub safe fn background_origin(this: &CSSStyleProperties) -> String;
+
+        /// [`background-origin`](https://developer.mozilla.org/docs/Web/CSS/background-origin)
+        #[link_name = "set backgroundOrigin"]
+        pub safe fn set_background_origin(this: &CSSStyleProperties, value: &str);
+
+        /// [`background-position`](https://developer.mozilla.org/docs/Web/CSS/background-position)
+        #[link_name = "get backgroundPosition"]
+        pub safe fn background_position(this: &CSSStyleProperties) -> String;
+
+        /// [`background-position`](https://developer.mozilla.org/docs/Web/CSS/background-position)
+        #[link_name = "set backgroundPosition"]
+        pub safe fn set_background_position(this: &CSSStyleProperties, value: &str);
+
+        /// [`background-position-x`](https://developer.mozilla.org/docs/Web/CSS/background-position-x)
+        #[link_name = "get backgroundPositionX"]
+        pub safe fn background_position_x(this: &CSSStyleProperties) -> String;
+
+        /// [`background-position-x`](https://developer.mozilla.org/docs/Web/CSS/background-position-x)
+        #[link_name = "set backgroundPositionX"]
+        pub safe fn set_background_position_x(this: &CSSStyleProperties, value: &str);
+
+        /// [`background-position-y`](https://developer.mozilla.org/docs/Web/CSS/background-position-y)
+        #[link_name = "get backgroundPositionY"]
+        pub safe fn background_position_y(this: &CSSStyleProperties) -> String;
+
+        /// [`background-position-y`](https://developer.mozilla.org/docs/Web/CSS/background-position-y)
+        #[link_name = "set backgroundPositionY"]
+        pub safe fn set_background_position_y(this: &CSSStyleProperties, value: &str);
+
+        /// [`background-repeat`](https://developer.mozilla.org/docs/Web/CSS/background-repeat)
+        #[link_name = "get backgroundRepeat"]
+        pub safe fn background_repeat(this: &CSSStyleProperties) -> String;
+
+        /// [`background-repeat`](https://developer.mozilla.org/docs/Web/CSS/background-repeat)
+        #[link_name = "set backgroundRepeat"]
+        pub safe fn set_background_repeat(this: &CSSStyleProperties, value: &str);
+
+        /// [`background-size`](https://developer.mozilla.org/docs/Web/CSS/background-size)
+        #[link_name = "get backgroundSize"]
+        pub safe fn background_size(this: &CSSStyleProperties) -> String;
+
+        /// [`background-size`](https://developer.mozilla.org/docs/Web/CSS/background-size)
+        #[link_name = "set backgroundSize"]
+        pub safe fn set_background_size(this: &CSSStyleProperties, value: &str);
+
+        /// [`baseline-shift`](https://developer.mozilla.org/docs/Web/CSS/baseline-shift)
+        #[link_name = "get baselineShift"]
+        pub safe fn baseline_shift(this: &CSSStyleProperties) -> String;
+
+        /// [`baseline-shift`](https://developer.mozilla.org/docs/Web/CSS/baseline-shift)
+        #[link_name = "set baselineShift"]
+        pub safe fn set_baseline_shift(this: &CSSStyleProperties, value: &str);
+
+        /// [`baseline-source`](https://developer.mozilla.org/docs/Web/CSS/baseline-source)
+        #[link_name = "get baselineSource"]
+        pub safe fn baseline_source(this: &CSSStyleProperties) -> String;
+
+        /// [`baseline-source`](https://developer.mozilla.org/docs/Web/CSS/baseline-source)
+        #[link_name = "set baselineSource"]
+        pub safe fn set_baseline_source(this: &CSSStyleProperties, value: &str);
+
+        /// [`block-size`](https://developer.mozilla.org/docs/Web/CSS/block-size)
+        #[link_name = "get blockSize"]
+        pub safe fn block_size(this: &CSSStyleProperties) -> String;
+
+        /// [`block-size`](https://developer.mozilla.org/docs/Web/CSS/block-size)
+        #[link_name = "set blockSize"]
+        pub safe fn set_block_size(this: &CSSStyleProperties, value: &str);
+
+        /// [`border`](https://developer.mozilla.org/docs/Web/CSS/border)
+        #[link_name = "get border"]
+        pub safe fn border(this: &CSSStyleProperties) -> String;
+
+        /// [`border`](https://developer.mozilla.org/docs/Web/CSS/border)
+        #[link_name = "set border"]
+        pub safe fn set_border(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-block`](https://developer.mozilla.org/docs/Web/CSS/border-block)
+        #[link_name = "get borderBlock"]
+        pub safe fn border_block(this: &CSSStyleProperties) -> String;
+
+        /// [`border-block`](https://developer.mozilla.org/docs/Web/CSS/border-block)
+        #[link_name = "set borderBlock"]
+        pub safe fn set_border_block(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-block-color`](https://developer.mozilla.org/docs/Web/CSS/border-block-color)
+        #[link_name = "get borderBlockColor"]
+        pub safe fn border_block_color(this: &CSSStyleProperties) -> String;
+
+        /// [`border-block-color`](https://developer.mozilla.org/docs/Web/CSS/border-block-color)
+        #[link_name = "set borderBlockColor"]
+        pub safe fn set_border_block_color(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-block-end`](https://developer.mozilla.org/docs/Web/CSS/border-block-end)
+        #[link_name = "get borderBlockEnd"]
+        pub safe fn border_block_end(this: &CSSStyleProperties) -> String;
+
+        /// [`border-block-end`](https://developer.mozilla.org/docs/Web/CSS/border-block-end)
+        #[link_name = "set borderBlockEnd"]
+        pub safe fn set_border_block_end(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-block-end-color`](https://developer.mozilla.org/docs/Web/CSS/border-block-end-color)
+        #[link_name = "get borderBlockEndColor"]
+        pub safe fn border_block_end_color(this: &CSSStyleProperties) -> String;
+
+        /// [`border-block-end-color`](https://developer.mozilla.org/docs/Web/CSS/border-block-end-color)
+        #[link_name = "set borderBlockEndColor"]
+        pub safe fn set_border_block_end_color(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-block-end-style`](https://developer.mozilla.org/docs/Web/CSS/border-block-end-style)
+        #[link_name = "get borderBlockEndStyle"]
+        pub safe fn border_block_end_style(this: &CSSStyleProperties) -> String;
+
+        /// [`border-block-end-style`](https://developer.mozilla.org/docs/Web/CSS/border-block-end-style)
+        #[link_name = "set borderBlockEndStyle"]
+        pub safe fn set_border_block_end_style(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-block-end-width`](https://developer.mozilla.org/docs/Web/CSS/border-block-end-width)
+        #[link_name = "get borderBlockEndWidth"]
+        pub safe fn border_block_end_width(this: &CSSStyleProperties) -> String;
+
+        /// [`border-block-end-width`](https://developer.mozilla.org/docs/Web/CSS/border-block-end-width)
+        #[link_name = "set borderBlockEndWidth"]
+        pub safe fn set_border_block_end_width(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-block-start`](https://developer.mozilla.org/docs/Web/CSS/border-block-start)
+        #[link_name = "get borderBlockStart"]
+        pub safe fn border_block_start(this: &CSSStyleProperties) -> String;
+
+        /// [`border-block-start`](https://developer.mozilla.org/docs/Web/CSS/border-block-start)
+        #[link_name = "set borderBlockStart"]
+        pub safe fn set_border_block_start(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-block-start-color`](https://developer.mozilla.org/docs/Web/CSS/border-block-start-color)
+        #[link_name = "get borderBlockStartColor"]
+        pub safe fn border_block_start_color(this: &CSSStyleProperties) -> String;
+
+        /// [`border-block-start-color`](https://developer.mozilla.org/docs/Web/CSS/border-block-start-color)
+        #[link_name = "set borderBlockStartColor"]
+        pub safe fn set_border_block_start_color(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-block-start-style`](https://developer.mozilla.org/docs/Web/CSS/border-block-start-style)
+        #[link_name = "get borderBlockStartStyle"]
+        pub safe fn border_block_start_style(this: &CSSStyleProperties) -> String;
+
+        /// [`border-block-start-style`](https://developer.mozilla.org/docs/Web/CSS/border-block-start-style)
+        #[link_name = "set borderBlockStartStyle"]
+        pub safe fn set_border_block_start_style(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-block-start-width`](https://developer.mozilla.org/docs/Web/CSS/border-block-start-width)
+        #[link_name = "get borderBlockStartWidth"]
+        pub safe fn border_block_start_width(this: &CSSStyleProperties) -> String;
+
+        /// [`border-block-start-width`](https://developer.mozilla.org/docs/Web/CSS/border-block-start-width)
+        #[link_name = "set borderBlockStartWidth"]
+        pub safe fn set_border_block_start_width(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-block-style`](https://developer.mozilla.org/docs/Web/CSS/border-block-style)
+        #[link_name = "get borderBlockStyle"]
+        pub safe fn border_block_style(this: &CSSStyleProperties) -> String;
+
+        /// [`border-block-style`](https://developer.mozilla.org/docs/Web/CSS/border-block-style)
+        #[link_name = "set borderBlockStyle"]
+        pub safe fn set_border_block_style(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-block-width`](https://developer.mozilla.org/docs/Web/CSS/border-block-width)
+        #[link_name = "get borderBlockWidth"]
+        pub safe fn border_block_width(this: &CSSStyleProperties) -> String;
+
+        /// [`border-block-width`](https://developer.mozilla.org/docs/Web/CSS/border-block-width)
+        #[link_name = "set borderBlockWidth"]
+        pub safe fn set_border_block_width(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-bottom`](https://developer.mozilla.org/docs/Web/CSS/border-bottom)
+        #[link_name = "get borderBottom"]
+        pub safe fn border_bottom(this: &CSSStyleProperties) -> String;
+
+        /// [`border-bottom`](https://developer.mozilla.org/docs/Web/CSS/border-bottom)
+        #[link_name = "set borderBottom"]
+        pub safe fn set_border_bottom(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-bottom-color`](https://developer.mozilla.org/docs/Web/CSS/border-bottom-color)
+        #[link_name = "get borderBottomColor"]
+        pub safe fn border_bottom_color(this: &CSSStyleProperties) -> String;
+
+        /// [`border-bottom-color`](https://developer.mozilla.org/docs/Web/CSS/border-bottom-color)
+        #[link_name = "set borderBottomColor"]
+        pub safe fn set_border_bottom_color(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-bottom-left-radius`](https://developer.mozilla.org/docs/Web/CSS/border-bottom-left-radius)
+        #[link_name = "get borderBottomLeftRadius"]
+        pub safe fn border_bottom_left_radius(this: &CSSStyleProperties) -> String;
+
+        /// [`border-bottom-left-radius`](https://developer.mozilla.org/docs/Web/CSS/border-bottom-left-radius)
+        #[link_name = "set borderBottomLeftRadius"]
+        pub safe fn set_border_bottom_left_radius(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-bottom-right-radius`](https://developer.mozilla.org/docs/Web/CSS/border-bottom-right-radius)
+        #[link_name = "get borderBottomRightRadius"]
+        pub safe fn border_bottom_right_radius(this: &CSSStyleProperties) -> String;
+
+        /// [`border-bottom-right-radius`](https://developer.mozilla.org/docs/Web/CSS/border-bottom-right-radius)
+        #[link_name = "set borderBottomRightRadius"]
+        pub safe fn set_border_bottom_right_radius(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-bottom-style`](https://developer.mozilla.org/docs/Web/CSS/border-bottom-style)
+        #[link_name = "get borderBottomStyle"]
+        pub safe fn border_bottom_style(this: &CSSStyleProperties) -> String;
+
+        /// [`border-bottom-style`](https://developer.mozilla.org/docs/Web/CSS/border-bottom-style)
+        #[link_name = "set borderBottomStyle"]
+        pub safe fn set_border_bottom_style(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-bottom-width`](https://developer.mozilla.org/docs/Web/CSS/border-bottom-width)
+        #[link_name = "get borderBottomWidth"]
+        pub safe fn border_bottom_width(this: &CSSStyleProperties) -> String;
+
+        /// [`border-bottom-width`](https://developer.mozilla.org/docs/Web/CSS/border-bottom-width)
+        #[link_name = "set borderBottomWidth"]
+        pub safe fn set_border_bottom_width(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-collapse`](https://developer.mozilla.org/docs/Web/CSS/border-collapse)
+        #[link_name = "get borderCollapse"]
+        pub safe fn border_collapse(this: &CSSStyleProperties) -> String;
+
+        /// [`border-collapse`](https://developer.mozilla.org/docs/Web/CSS/border-collapse)
+        #[link_name = "set borderCollapse"]
+        pub safe fn set_border_collapse(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-color`](https://developer.mozilla.org/docs/Web/CSS/border-color)
+        #[link_name = "get borderColor"]
+        pub safe fn border_color(this: &CSSStyleProperties) -> String;
+
+        /// [`border-color`](https://developer.mozilla.org/docs/Web/CSS/border-color)
+        #[link_name = "set borderColor"]
+        pub safe fn set_border_color(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-end-end-radius`](https://developer.mozilla.org/docs/Web/CSS/border-end-end-radius)
+        #[link_name = "get borderEndEndRadius"]
+        pub safe fn border_end_end_radius(this: &CSSStyleProperties) -> String;
+
+        /// [`border-end-end-radius`](https://developer.mozilla.org/docs/Web/CSS/border-end-end-radius)
+        #[link_name = "set borderEndEndRadius"]
+        pub safe fn set_border_end_end_radius(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-end-start-radius`](https://developer.mozilla.org/docs/Web/CSS/border-end-start-radius)
+        #[link_name = "get borderEndStartRadius"]
+        pub safe fn border_end_start_radius(this: &CSSStyleProperties) -> String;
+
+        /// [`border-end-start-radius`](https://developer.mozilla.org/docs/Web/CSS/border-end-start-radius)
+        #[link_name = "set borderEndStartRadius"]
+        pub safe fn set_border_end_start_radius(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-image`](https://developer.mozilla.org/docs/Web/CSS/border-image)
+        #[link_name = "get borderImage"]
+        pub safe fn border_image(this: &CSSStyleProperties) -> String;
+
+        /// [`border-image`](https://developer.mozilla.org/docs/Web/CSS/border-image)
+        #[link_name = "set borderImage"]
+        pub safe fn set_border_image(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-image-outset`](https://developer.mozilla.org/docs/Web/CSS/border-image-outset)
+        #[link_name = "get borderImageOutset"]
+        pub safe fn border_image_outset(this: &CSSStyleProperties) -> String;
+
+        /// [`border-image-outset`](https://developer.mozilla.org/docs/Web/CSS/border-image-outset)
+        #[link_name = "set borderImageOutset"]
+        pub safe fn set_border_image_outset(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-image-repeat`](https://developer.mozilla.org/docs/Web/CSS/border-image-repeat)
+        #[link_name = "get borderImageRepeat"]
+        pub safe fn border_image_repeat(this: &CSSStyleProperties) -> String;
+
+        /// [`border-image-repeat`](https://developer.mozilla.org/docs/Web/CSS/border-image-repeat)
+        #[link_name = "set borderImageRepeat"]
+        pub safe fn set_border_image_repeat(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-image-slice`](https://developer.mozilla.org/docs/Web/CSS/border-image-slice)
+        #[link_name = "get borderImageSlice"]
+        pub safe fn border_image_slice(this: &CSSStyleProperties) -> String;
+
+        /// [`border-image-slice`](https://developer.mozilla.org/docs/Web/CSS/border-image-slice)
+        #[link_name = "set borderImageSlice"]
+        pub safe fn set_border_image_slice(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-image-source`](https://developer.mozilla.org/docs/Web/CSS/border-image-source)
+        #[link_name = "get borderImageSource"]
+        pub safe fn border_image_source(this: &CSSStyleProperties) -> String;
+
+        /// [`border-image-source`](https://developer.mozilla.org/docs/Web/CSS/border-image-source)
+        #[link_name = "set borderImageSource"]
+        pub safe fn set_border_image_source(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-image-width`](https://developer.mozilla.org/docs/Web/CSS/border-image-width)
+        #[link_name = "get borderImageWidth"]
+        pub safe fn border_image_width(this: &CSSStyleProperties) -> String;
+
+        /// [`border-image-width`](https://developer.mozilla.org/docs/Web/CSS/border-image-width)
+        #[link_name = "set borderImageWidth"]
+        pub safe fn set_border_image_width(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-inline`](https://developer.mozilla.org/docs/Web/CSS/border-inline)
+        #[link_name = "get borderInline"]
+        pub safe fn border_inline(this: &CSSStyleProperties) -> String;
+
+        /// [`border-inline`](https://developer.mozilla.org/docs/Web/CSS/border-inline)
+        #[link_name = "set borderInline"]
+        pub safe fn set_border_inline(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-inline-color`](https://developer.mozilla.org/docs/Web/CSS/border-inline-color)
+        #[link_name = "get borderInlineColor"]
+        pub safe fn border_inline_color(this: &CSSStyleProperties) -> String;
+
+        /// [`border-inline-color`](https://developer.mozilla.org/docs/Web/CSS/border-inline-color)
+        #[link_name = "set borderInlineColor"]
+        pub safe fn set_border_inline_color(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-inline-end`](https://developer.mozilla.org/docs/Web/CSS/border-inline-end)
+        #[link_name = "get borderInlineEnd"]
+        pub safe fn border_inline_end(this: &CSSStyleProperties) -> String;
+
+        /// [`border-inline-end`](https://developer.mozilla.org/docs/Web/CSS/border-inline-end)
+        #[link_name = "set borderInlineEnd"]
+        pub safe fn set_border_inline_end(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-inline-end-color`](https://developer.mozilla.org/docs/Web/CSS/border-inline-end-color)
+        #[link_name = "get borderInlineEndColor"]
+        pub safe fn border_inline_end_color(this: &CSSStyleProperties) -> String;
+
+        /// [`border-inline-end-color`](https://developer.mozilla.org/docs/Web/CSS/border-inline-end-color)
+        #[link_name = "set borderInlineEndColor"]
+        pub safe fn set_border_inline_end_color(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-inline-end-style`](https://developer.mozilla.org/docs/Web/CSS/border-inline-end-style)
+        #[link_name = "get borderInlineEndStyle"]
+        pub safe fn border_inline_end_style(this: &CSSStyleProperties) -> String;
+
+        /// [`border-inline-end-style`](https://developer.mozilla.org/docs/Web/CSS/border-inline-end-style)
+        #[link_name = "set borderInlineEndStyle"]
+        pub safe fn set_border_inline_end_style(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-inline-end-width`](https://developer.mozilla.org/docs/Web/CSS/border-inline-end-width)
+        #[link_name = "get borderInlineEndWidth"]
+        pub safe fn border_inline_end_width(this: &CSSStyleProperties) -> String;
+
+        /// [`border-inline-end-width`](https://developer.mozilla.org/docs/Web/CSS/border-inline-end-width)
+        #[link_name = "set borderInlineEndWidth"]
+        pub safe fn set_border_inline_end_width(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-inline-start`](https://developer.mozilla.org/docs/Web/CSS/border-inline-start)
+        #[link_name = "get borderInlineStart"]
+        pub safe fn border_inline_start(this: &CSSStyleProperties) -> String;
+
+        /// [`border-inline-start`](https://developer.mozilla.org/docs/Web/CSS/border-inline-start)
+        #[link_name = "set borderInlineStart"]
+        pub safe fn set_border_inline_start(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-inline-start-color`](https://developer.mozilla.org/docs/Web/CSS/border-inline-start-color)
+        #[link_name = "get borderInlineStartColor"]
+        pub safe fn border_inline_start_color(this: &CSSStyleProperties) -> String;
+
+        /// [`border-inline-start-color`](https://developer.mozilla.org/docs/Web/CSS/border-inline-start-color)
+        #[link_name = "set borderInlineStartColor"]
+        pub safe fn set_border_inline_start_color(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-inline-start-style`](https://developer.mozilla.org/docs/Web/CSS/border-inline-start-style)
+        #[link_name = "get borderInlineStartStyle"]
+        pub safe fn border_inline_start_style(this: &CSSStyleProperties) -> String;
+
+        /// [`border-inline-start-style`](https://developer.mozilla.org/docs/Web/CSS/border-inline-start-style)
+        #[link_name = "set borderInlineStartStyle"]
+        pub safe fn set_border_inline_start_style(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-inline-start-width`](https://developer.mozilla.org/docs/Web/CSS/border-inline-start-width)
+        #[link_name = "get borderInlineStartWidth"]
+        pub safe fn border_inline_start_width(this: &CSSStyleProperties) -> String;
+
+        /// [`border-inline-start-width`](https://developer.mozilla.org/docs/Web/CSS/border-inline-start-width)
+        #[link_name = "set borderInlineStartWidth"]
+        pub safe fn set_border_inline_start_width(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-inline-style`](https://developer.mozilla.org/docs/Web/CSS/border-inline-style)
+        #[link_name = "get borderInlineStyle"]
+        pub safe fn border_inline_style(this: &CSSStyleProperties) -> String;
+
+        /// [`border-inline-style`](https://developer.mozilla.org/docs/Web/CSS/border-inline-style)
+        #[link_name = "set borderInlineStyle"]
+        pub safe fn set_border_inline_style(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-inline-width`](https://developer.mozilla.org/docs/Web/CSS/border-inline-width)
+        #[link_name = "get borderInlineWidth"]
+        pub safe fn border_inline_width(this: &CSSStyleProperties) -> String;
+
+        /// [`border-inline-width`](https://developer.mozilla.org/docs/Web/CSS/border-inline-width)
+        #[link_name = "set borderInlineWidth"]
+        pub safe fn set_border_inline_width(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-left`](https://developer.mozilla.org/docs/Web/CSS/border-left)
+        #[link_name = "get borderLeft"]
+        pub safe fn border_left(this: &CSSStyleProperties) -> String;
+
+        /// [`border-left`](https://developer.mozilla.org/docs/Web/CSS/border-left)
+        #[link_name = "set borderLeft"]
+        pub safe fn set_border_left(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-left-color`](https://developer.mozilla.org/docs/Web/CSS/border-left-color)
+        #[link_name = "get borderLeftColor"]
+        pub safe fn border_left_color(this: &CSSStyleProperties) -> String;
+
+        /// [`border-left-color`](https://developer.mozilla.org/docs/Web/CSS/border-left-color)
+        #[link_name = "set borderLeftColor"]
+        pub safe fn set_border_left_color(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-left-style`](https://developer.mozilla.org/docs/Web/CSS/border-left-style)
+        #[link_name = "get borderLeftStyle"]
+        pub safe fn border_left_style(this: &CSSStyleProperties) -> String;
+
+        /// [`border-left-style`](https://developer.mozilla.org/docs/Web/CSS/border-left-style)
+        #[link_name = "set borderLeftStyle"]
+        pub safe fn set_border_left_style(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-left-width`](https://developer.mozilla.org/docs/Web/CSS/border-left-width)
+        #[link_name = "get borderLeftWidth"]
+        pub safe fn border_left_width(this: &CSSStyleProperties) -> String;
+
+        /// [`border-left-width`](https://developer.mozilla.org/docs/Web/CSS/border-left-width)
+        #[link_name = "set borderLeftWidth"]
+        pub safe fn set_border_left_width(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-radius`](https://developer.mozilla.org/docs/Web/CSS/border-radius)
+        #[link_name = "get borderRadius"]
+        pub safe fn border_radius(this: &CSSStyleProperties) -> String;
+
+        /// [`border-radius`](https://developer.mozilla.org/docs/Web/CSS/border-radius)
+        #[link_name = "set borderRadius"]
+        pub safe fn set_border_radius(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-right`](https://developer.mozilla.org/docs/Web/CSS/border-right)
+        #[link_name = "get borderRight"]
+        pub safe fn border_right(this: &CSSStyleProperties) -> String;
+
+        /// [`border-right`](https://developer.mozilla.org/docs/Web/CSS/border-right)
+        #[link_name = "set borderRight"]
+        pub safe fn set_border_right(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-right-color`](https://developer.mozilla.org/docs/Web/CSS/border-right-color)
+        #[link_name = "get borderRightColor"]
+        pub safe fn border_right_color(this: &CSSStyleProperties) -> String;
+
+        /// [`border-right-color`](https://developer.mozilla.org/docs/Web/CSS/border-right-color)
+        #[link_name = "set borderRightColor"]
+        pub safe fn set_border_right_color(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-right-style`](https://developer.mozilla.org/docs/Web/CSS/border-right-style)
+        #[link_name = "get borderRightStyle"]
+        pub safe fn border_right_style(this: &CSSStyleProperties) -> String;
+
+        /// [`border-right-style`](https://developer.mozilla.org/docs/Web/CSS/border-right-style)
+        #[link_name = "set borderRightStyle"]
+        pub safe fn set_border_right_style(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-right-width`](https://developer.mozilla.org/docs/Web/CSS/border-right-width)
+        #[link_name = "get borderRightWidth"]
+        pub safe fn border_right_width(this: &CSSStyleProperties) -> String;
+
+        /// [`border-right-width`](https://developer.mozilla.org/docs/Web/CSS/border-right-width)
+        #[link_name = "set borderRightWidth"]
+        pub safe fn set_border_right_width(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-spacing`](https://developer.mozilla.org/docs/Web/CSS/border-spacing)
+        #[link_name = "get borderSpacing"]
+        pub safe fn border_spacing(this: &CSSStyleProperties) -> String;
+
+        /// [`border-spacing`](https://developer.mozilla.org/docs/Web/CSS/border-spacing)
+        #[link_name = "set borderSpacing"]
+        pub safe fn set_border_spacing(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-start-end-radius`](https://developer.mozilla.org/docs/Web/CSS/border-start-end-radius)
+        #[link_name = "get borderStartEndRadius"]
+        pub safe fn border_start_end_radius(this: &CSSStyleProperties) -> String;
+
+        /// [`border-start-end-radius`](https://developer.mozilla.org/docs/Web/CSS/border-start-end-radius)
+        #[link_name = "set borderStartEndRadius"]
+        pub safe fn set_border_start_end_radius(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-start-start-radius`](https://developer.mozilla.org/docs/Web/CSS/border-start-start-radius)
+        #[link_name = "get borderStartStartRadius"]
+        pub safe fn border_start_start_radius(this: &CSSStyleProperties) -> String;
+
+        /// [`border-start-start-radius`](https://developer.mozilla.org/docs/Web/CSS/border-start-start-radius)
+        #[link_name = "set borderStartStartRadius"]
+        pub safe fn set_border_start_start_radius(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-style`](https://developer.mozilla.org/docs/Web/CSS/border-style)
+        #[link_name = "get borderStyle"]
+        pub safe fn border_style(this: &CSSStyleProperties) -> String;
+
+        /// [`border-style`](https://developer.mozilla.org/docs/Web/CSS/border-style)
+        #[link_name = "set borderStyle"]
+        pub safe fn set_border_style(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-top`](https://developer.mozilla.org/docs/Web/CSS/border-top)
+        #[link_name = "get borderTop"]
+        pub safe fn border_top(this: &CSSStyleProperties) -> String;
+
+        /// [`border-top`](https://developer.mozilla.org/docs/Web/CSS/border-top)
+        #[link_name = "set borderTop"]
+        pub safe fn set_border_top(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-top-color`](https://developer.mozilla.org/docs/Web/CSS/border-top-color)
+        #[link_name = "get borderTopColor"]
+        pub safe fn border_top_color(this: &CSSStyleProperties) -> String;
+
+        /// [`border-top-color`](https://developer.mozilla.org/docs/Web/CSS/border-top-color)
+        #[link_name = "set borderTopColor"]
+        pub safe fn set_border_top_color(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-top-left-radius`](https://developer.mozilla.org/docs/Web/CSS/border-top-left-radius)
+        #[link_name = "get borderTopLeftRadius"]
+        pub safe fn border_top_left_radius(this: &CSSStyleProperties) -> String;
+
+        /// [`border-top-left-radius`](https://developer.mozilla.org/docs/Web/CSS/border-top-left-radius)
+        #[link_name = "set borderTopLeftRadius"]
+        pub safe fn set_border_top_left_radius(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-top-right-radius`](https://developer.mozilla.org/docs/Web/CSS/border-top-right-radius)
+        #[link_name = "get borderTopRightRadius"]
+        pub safe fn border_top_right_radius(this: &CSSStyleProperties) -> String;
+
+        /// [`border-top-right-radius`](https://developer.mozilla.org/docs/Web/CSS/border-top-right-radius)
+        #[link_name = "set borderTopRightRadius"]
+        pub safe fn set_border_top_right_radius(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-top-style`](https://developer.mozilla.org/docs/Web/CSS/border-top-style)
+        #[link_name = "get borderTopStyle"]
+        pub safe fn border_top_style(this: &CSSStyleProperties) -> String;
+
+        /// [`border-top-style`](https://developer.mozilla.org/docs/Web/CSS/border-top-style)
+        #[link_name = "set borderTopStyle"]
+        pub safe fn set_border_top_style(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-top-width`](https://developer.mozilla.org/docs/Web/CSS/border-top-width)
+        #[link_name = "get borderTopWidth"]
+        pub safe fn border_top_width(this: &CSSStyleProperties) -> String;
+
+        /// [`border-top-width`](https://developer.mozilla.org/docs/Web/CSS/border-top-width)
+        #[link_name = "set borderTopWidth"]
+        pub safe fn set_border_top_width(this: &CSSStyleProperties, value: &str);
+
+        /// [`border-width`](https://developer.mozilla.org/docs/Web/CSS/border-width)
+        #[link_name = "get borderWidth"]
+        pub safe fn border_width(this: &CSSStyleProperties) -> String;
+
+        /// [`border-width`](https://developer.mozilla.org/docs/Web/CSS/border-width)
+        #[link_name = "set borderWidth"]
+        pub safe fn set_border_width(this: &CSSStyleProperties, value: &str);
+
+        /// [`bottom`](https://developer.mozilla.org/docs/Web/CSS/bottom)
+        #[link_name = "get bottom"]
+        pub safe fn bottom(this: &CSSStyleProperties) -> String;
+
+        /// [`bottom`](https://developer.mozilla.org/docs/Web/CSS/bottom)
+        #[link_name = "set bottom"]
+        pub safe fn set_bottom(this: &CSSStyleProperties, value: &str);
+
+        /// [`box-decoration-break`](https://developer.mozilla.org/docs/Web/CSS/box-decoration-break)
+        #[link_name = "get boxDecorationBreak"]
+        pub safe fn box_decoration_break(this: &CSSStyleProperties) -> String;
+
+        /// [`box-decoration-break`](https://developer.mozilla.org/docs/Web/CSS/box-decoration-break)
+        #[link_name = "set boxDecorationBreak"]
+        pub safe fn set_box_decoration_break(this: &CSSStyleProperties, value: &str);
+
+        /// [`box-shadow`](https://developer.mozilla.org/docs/Web/CSS/box-shadow)
+        #[link_name = "get boxShadow"]
+        pub safe fn box_shadow(this: &CSSStyleProperties) -> String;
+
+        /// [`box-shadow`](https://developer.mozilla.org/docs/Web/CSS/box-shadow)
+        #[link_name = "set boxShadow"]
+        pub safe fn set_box_shadow(this: &CSSStyleProperties, value: &str);
+
+        /// [`box-sizing`](https://developer.mozilla.org/docs/Web/CSS/box-sizing)
+        #[link_name = "get boxSizing"]
+        pub safe fn box_sizing(this: &CSSStyleProperties) -> String;
+
+        /// [`box-sizing`](https://developer.mozilla.org/docs/Web/CSS/box-sizing)
+        #[link_name = "set boxSizing"]
+        pub safe fn set_box_sizing(this: &CSSStyleProperties, value: &str);
+
+        /// [`break-after`](https://developer.mozilla.org/docs/Web/CSS/break-after)
+        #[link_name = "get breakAfter"]
+        pub safe fn break_after(this: &CSSStyleProperties) -> String;
+
+        /// [`break-after`](https://developer.mozilla.org/docs/Web/CSS/break-after)
+        #[link_name = "set breakAfter"]
+        pub safe fn set_break_after(this: &CSSStyleProperties, value: &str);
+
+        /// [`break-before`](https://developer.mozilla.org/docs/Web/CSS/break-before)
+        #[link_name = "get breakBefore"]
+        pub safe fn break_before(this: &CSSStyleProperties) -> String;
+
+        /// [`break-before`](https://developer.mozilla.org/docs/Web/CSS/break-before)
+        #[link_name = "set breakBefore"]
+        pub safe fn set_break_before(this: &CSSStyleProperties, value: &str);
+
+        /// [`break-inside`](https://developer.mozilla.org/docs/Web/CSS/break-inside)
+        #[link_name = "get breakInside"]
+        pub safe fn break_inside(this: &CSSStyleProperties) -> String;
+
+        /// [`break-inside`](https://developer.mozilla.org/docs/Web/CSS/break-inside)
+        #[link_name = "set breakInside"]
+        pub safe fn set_break_inside(this: &CSSStyleProperties, value: &str);
+
+        /// [`caption-side`](https://developer.mozilla.org/docs/Web/CSS/caption-side)
+        #[link_name = "get captionSide"]
+        pub safe fn caption_side(this: &CSSStyleProperties) -> String;
+
+        /// [`caption-side`](https://developer.mozilla.org/docs/Web/CSS/caption-side)
+        #[link_name = "set captionSide"]
+        pub safe fn set_caption_side(this: &CSSStyleProperties, value: &str);
+
+        /// [`caret-color`](https://developer.mozilla.org/docs/Web/CSS/caret-color)
+        #[link_name = "get caretColor"]
+        pub safe fn caret_color(this: &CSSStyleProperties) -> String;
+
+        /// [`caret-color`](https://developer.mozilla.org/docs/Web/CSS/caret-color)
+        #[link_name = "set caretColor"]
+        pub safe fn set_caret_color(this: &CSSStyleProperties, value: &str);
+
+        /// [`clear`](https://developer.mozilla.org/docs/Web/CSS/clear)
+        #[link_name = "get clear"]
+        pub safe fn clear(this: &CSSStyleProperties) -> String;
+
+        /// [`clear`](https://developer.mozilla.org/docs/Web/CSS/clear)
+        #[link_name = "set clear"]
+        pub safe fn set_clear(this: &CSSStyleProperties, value: &str);
+
+        /// [`clip`](https://developer.mozilla.org/docs/Web/CSS/clip)
+        #[link_name = "get clip"]
+        pub safe fn clip(this: &CSSStyleProperties) -> String;
+
+        /// [`clip`](https://developer.mozilla.org/docs/Web/CSS/clip)
+        #[link_name = "set clip"]
+        pub safe fn set_clip(this: &CSSStyleProperties, value: &str);
+
+        /// [`clip-path`](https://developer.mozilla.org/docs/Web/CSS/clip-path)
+        #[link_name = "get clipPath"]
+        pub safe fn clip_path(this: &CSSStyleProperties) -> String;
+
+        /// [`clip-path`](https://developer.mozilla.org/docs/Web/CSS/clip-path)
+        #[link_name = "set clipPath"]
+        pub safe fn set_clip_path(this: &CSSStyleProperties, value: &str);
+
+        /// [`clip-rule`](https://developer.mozilla.org/docs/Web/CSS/clip-rule)
+        #[link_name = "get clipRule"]
+        pub safe fn clip_rule(this: &CSSStyleProperties) -> String;
+
+        /// [`clip-rule`](https://developer.mozilla.org/docs/Web/CSS/clip-rule)
+        #[link_name = "set clipRule"]
+        pub safe fn set_clip_rule(this: &CSSStyleProperties, value: &str);
+
+        /// [`color`](https://developer.mozilla.org/docs/Web/CSS/color)
+        #[link_name = "get color"]
+        pub safe fn color(this: &CSSStyleProperties) -> String;
+
+        /// [`color`](https://developer.mozilla.org/docs/Web/CSS/color)
+        #[link_name = "set color"]
+        pub safe fn set_color(this: &CSSStyleProperties, value: &str);
+
+        /// [`color-interpolation`](https://developer.mozilla.org/docs/Web/CSS/color-interpolation)
+        #[link_name = "get colorInterpolation"]
+        pub safe fn color_interpolation(this: &CSSStyleProperties) -> String;
+
+        /// [`color-interpolation`](https://developer.mozilla.org/docs/Web/CSS/color-interpolation)
+        #[link_name = "set colorInterpolation"]
+        pub safe fn set_color_interpolation(this: &CSSStyleProperties, value: &str);
+
+        /// [`color-interpolation-filters`](https://developer.mozilla.org/docs/Web/CSS/color-interpolation-filters)
+        #[link_name = "get colorInterpolationFilters"]
+        pub safe fn color_interpolation_filters(this: &CSSStyleProperties) -> String;
+
+        /// [`color-interpolation-filters`](https://developer.mozilla.org/docs/Web/CSS/color-interpolation-filters)
+        #[link_name = "set colorInterpolationFilters"]
+        pub safe fn set_color_interpolation_filters(this: &CSSStyleProperties, value: &str);
+
+        /// [`color-scheme`](https://developer.mozilla.org/docs/Web/CSS/color-scheme)
+        #[link_name = "get colorScheme"]
+        pub safe fn color_scheme(this: &CSSStyleProperties) -> String;
+
+        /// [`color-scheme`](https://developer.mozilla.org/docs/Web/CSS/color-scheme)
+        #[link_name = "set colorScheme"]
+        pub safe fn set_color_scheme(this: &CSSStyleProperties, value: &str);
+
+        /// [`column-count`](https://developer.mozilla.org/docs/Web/CSS/column-count)
+        #[link_name = "get columnCount"]
+        pub safe fn column_count(this: &CSSStyleProperties) -> String;
+
+        /// [`column-count`](https://developer.mozilla.org/docs/Web/CSS/column-count)
+        #[link_name = "set columnCount"]
+        pub safe fn set_column_count(this: &CSSStyleProperties, value: &str);
+
+        /// [`column-fill`](https://developer.mozilla.org/docs/Web/CSS/column-fill)
+        #[link_name = "get columnFill"]
+        pub safe fn column_fill(this: &CSSStyleProperties) -> String;
+
+        /// [`column-fill`](https://developer.mozilla.org/docs/Web/CSS/column-fill)
+        #[link_name = "set columnFill"]
+        pub safe fn set_column_fill(this: &CSSStyleProperties, value: &str);
+
+        /// [`column-gap`](https://developer.mozilla.org/docs/Web/CSS/column-gap)
+        #[link_name = "get columnGap"]
+        pub safe fn column_gap(this: &CSSStyleProperties) -> String;
+
+        /// [`column-gap`](https://developer.mozilla.org/docs/Web/CSS/column-gap)
+        #[link_name = "set columnGap"]
+        pub safe fn set_column_gap(this: &CSSStyleProperties, value: &str);
+
+        /// [`column-rule`](https://developer.mozilla.org/docs/Web/CSS/column-rule)
+        #[link_name = "get columnRule"]
+        pub safe fn column_rule(this: &CSSStyleProperties) -> String;
+
+        /// [`column-rule`](https://developer.mozilla.org/docs/Web/CSS/column-rule)
+        #[link_name = "set columnRule"]
+        pub safe fn set_column_rule(this: &CSSStyleProperties, value: &str);
+
+        /// [`column-rule-color`](https://developer.mozilla.org/docs/Web/CSS/column-rule-color)
+        #[link_name = "get columnRuleColor"]
+        pub safe fn column_rule_color(this: &CSSStyleProperties) -> String;
+
+        /// [`column-rule-color`](https://developer.mozilla.org/docs/Web/CSS/column-rule-color)
+        #[link_name = "set columnRuleColor"]
+        pub safe fn set_column_rule_color(this: &CSSStyleProperties, value: &str);
+
+        /// [`column-rule-style`](https://developer.mozilla.org/docs/Web/CSS/column-rule-style)
+        #[link_name = "get columnRuleStyle"]
+        pub safe fn column_rule_style(this: &CSSStyleProperties) -> String;
+
+        /// [`column-rule-style`](https://developer.mozilla.org/docs/Web/CSS/column-rule-style)
+        #[link_name = "set columnRuleStyle"]
+        pub safe fn set_column_rule_style(this: &CSSStyleProperties, value: &str);
+
+        /// [`column-rule-width`](https://developer.mozilla.org/docs/Web/CSS/column-rule-width)
+        #[link_name = "get columnRuleWidth"]
+        pub safe fn column_rule_width(this: &CSSStyleProperties) -> String;
+
+        /// [`column-rule-width`](https://developer.mozilla.org/docs/Web/CSS/column-rule-width)
+        #[link_name = "set columnRuleWidth"]
+        pub safe fn set_column_rule_width(this: &CSSStyleProperties, value: &str);
+
+        /// [`column-span`](https://developer.mozilla.org/docs/Web/CSS/column-span)
+        #[link_name = "get columnSpan"]
+        pub safe fn column_span(this: &CSSStyleProperties) -> String;
+
+        /// [`column-span`](https://developer.mozilla.org/docs/Web/CSS/column-span)
+        #[link_name = "set columnSpan"]
+        pub safe fn set_column_span(this: &CSSStyleProperties, value: &str);
+
+        /// [`column-width`](https://developer.mozilla.org/docs/Web/CSS/column-width)
+        #[link_name = "get columnWidth"]
+        pub safe fn column_width(this: &CSSStyleProperties) -> String;
+
+        /// [`column-width`](https://developer.mozilla.org/docs/Web/CSS/column-width)
+        #[link_name = "set columnWidth"]
+        pub safe fn set_column_width(this: &CSSStyleProperties, value: &str);
+
+        /// [`columns`](https://developer.mozilla.org/docs/Web/CSS/columns)
+        #[link_name = "get columns"]
+        pub safe fn columns(this: &CSSStyleProperties) -> String;
+
+        /// [`columns`](https://developer.mozilla.org/docs/Web/CSS/columns)
+        #[link_name = "set columns"]
+        pub safe fn set_columns(this: &CSSStyleProperties, value: &str);
+
+        /// [`contain`](https://developer.mozilla.org/docs/Web/CSS/contain)
+        #[link_name = "get contain"]
+        pub safe fn contain(this: &CSSStyleProperties) -> String;
+
+        /// [`contain`](https://developer.mozilla.org/docs/Web/CSS/contain)
+        #[link_name = "set contain"]
+        pub safe fn set_contain(this: &CSSStyleProperties, value: &str);
+
+        /// [`contain-intrinsic-block-size`](https://developer.mozilla.org/docs/Web/CSS/contain-intrinsic-block-size)
+        #[link_name = "get containIntrinsicBlockSize"]
+        pub safe fn contain_intrinsic_block_size(this: &CSSStyleProperties) -> String;
+
+        /// [`contain-intrinsic-block-size`](https://developer.mozilla.org/docs/Web/CSS/contain-intrinsic-block-size)
+        #[link_name = "set containIntrinsicBlockSize"]
+        pub safe fn set_contain_intrinsic_block_size(this: &CSSStyleProperties, value: &str);
+
+        /// [`contain-intrinsic-height`](https://developer.mozilla.org/docs/Web/CSS/contain-intrinsic-height)
+        #[link_name = "get containIntrinsicHeight"]
+        pub safe fn contain_intrinsic_height(this: &CSSStyleProperties) -> String;
+
+        /// [`contain-intrinsic-height`](https://developer.mozilla.org/docs/Web/CSS/contain-intrinsic-height)
+        #[link_name = "set containIntrinsicHeight"]
+        pub safe fn set_contain_intrinsic_height(this: &CSSStyleProperties, value: &str);
+
+        /// [`contain-intrinsic-inline-size`](https://developer.mozilla.org/docs/Web/CSS/contain-intrinsic-inline-size)
+        #[link_name = "get containIntrinsicInlineSize"]
+        pub safe fn contain_intrinsic_inline_size(this: &CSSStyleProperties) -> String;
+
+        /// [`contain-intrinsic-inline-size`](https://developer.mozilla.org/docs/Web/CSS/contain-intrinsic-inline-size)
+        #[link_name = "set containIntrinsicInlineSize"]
+        pub safe fn set_contain_intrinsic_inline_size(this: &CSSStyleProperties, value: &str);
+
+        /// [`contain-intrinsic-size`](https://developer.mozilla.org/docs/Web/CSS/contain-intrinsic-size)
+        #[link_name = "get containIntrinsicSize"]
+        pub safe fn contain_intrinsic_size(this: &CSSStyleProperties) -> String;
+
+        /// [`contain-intrinsic-size`](https://developer.mozilla.org/docs/Web/CSS/contain-intrinsic-size)
+        #[link_name = "set containIntrinsicSize"]
+        pub safe fn set_contain_intrinsic_size(this: &CSSStyleProperties, value: &str);
+
+        /// [`contain-intrinsic-width`](https://developer.mozilla.org/docs/Web/CSS/contain-intrinsic-width)
+        #[link_name = "get containIntrinsicWidth"]
+        pub safe fn contain_intrinsic_width(this: &CSSStyleProperties) -> String;
+
+        /// [`contain-intrinsic-width`](https://developer.mozilla.org/docs/Web/CSS/contain-intrinsic-width)
+        #[link_name = "set containIntrinsicWidth"]
+        pub safe fn set_contain_intrinsic_width(this: &CSSStyleProperties, value: &str);
+
+        /// [`container`](https://developer.mozilla.org/docs/Web/CSS/container)
+        #[link_name = "get container"]
+        pub safe fn container(this: &CSSStyleProperties) -> String;
+
+        /// [`container`](https://developer.mozilla.org/docs/Web/CSS/container)
+        #[link_name = "set container"]
+        pub safe fn set_container(this: &CSSStyleProperties, value: &str);
+
+        /// [`container-name`](https://developer.mozilla.org/docs/Web/CSS/container-name)
+        #[link_name = "get containerName"]
+        pub safe fn container_name(this: &CSSStyleProperties) -> String;
+
+        /// [`container-name`](https://developer.mozilla.org/docs/Web/CSS/container-name)
+        #[link_name = "set containerName"]
+        pub safe fn set_container_name(this: &CSSStyleProperties, value: &str);
+
+        /// [`container-type`](https://developer.mozilla.org/docs/Web/CSS/container-type)
+        #[link_name = "get containerType"]
+        pub safe fn container_type(this: &CSSStyleProperties) -> String;
+
+        /// [`container-type`](https://developer.mozilla.org/docs/Web/CSS/container-type)
+        #[link_name = "set containerType"]
+        pub safe fn set_container_type(this: &CSSStyleProperties, value: &str);
+
+        /// [`content`](https://developer.mozilla.org/docs/Web/CSS/content)
+        #[link_name = "get content"]
+        pub safe fn content(this: &CSSStyleProperties) -> String;
+
+        /// [`content`](https://developer.mozilla.org/docs/Web/CSS/content)
+        #[link_name = "set content"]
+        pub safe fn set_content(this: &CSSStyleProperties, value: &str);
+
+        /// [`content-visibility`](https://developer.mozilla.org/docs/Web/CSS/content-visibility)
+        #[link_name = "get contentVisibility"]
+        pub safe fn content_visibility(this: &CSSStyleProperties) -> String;
+
+        /// [`content-visibility`](https://developer.mozilla.org/docs/Web/CSS/content-visibility)
+        #[link_name = "set contentVisibility"]
+        pub safe fn set_content_visibility(this: &CSSStyleProperties, value: &str);
+
+        /// [`counter-increment`](https://developer.mozilla.org/docs/Web/CSS/counter-increment)
+        #[link_name = "get counterIncrement"]
+        pub safe fn counter_increment(this: &CSSStyleProperties) -> String;
+
+        /// [`counter-increment`](https://developer.mozilla.org/docs/Web/CSS/counter-increment)
+        #[link_name = "set counterIncrement"]
+        pub safe fn set_counter_increment(this: &CSSStyleProperties, value: &str);
+
+        /// [`counter-reset`](https://developer.mozilla.org/docs/Web/CSS/counter-reset)
+        #[link_name = "get counterReset"]
+        pub safe fn counter_reset(this: &CSSStyleProperties) -> String;
+
+        /// [`counter-reset`](https://developer.mozilla.org/docs/Web/CSS/counter-reset)
+        #[link_name = "set counterReset"]
+        pub safe fn set_counter_reset(this: &CSSStyleProperties, value: &str);
+
+        /// [`counter-set`](https://developer.mozilla.org/docs/Web/CSS/counter-set)
+        #[link_name = "get counterSet"]
+        pub safe fn counter_set(this: &CSSStyleProperties) -> String;
+
+        /// [`counter-set`](https://developer.mozilla.org/docs/Web/CSS/counter-set)
+        #[link_name = "set counterSet"]
+        pub safe fn set_counter_set(this: &CSSStyleProperties, value: &str);
+
+        /// [`css-text`](https://developer.mozilla.org/docs/Web/CSS/css-text)
+        #[link_name = "get cssText"]
+        pub safe fn css_text(this: &CSSStyleProperties) -> String;
+
+        /// [`css-text`](https://developer.mozilla.org/docs/Web/CSS/css-text)
+        #[link_name = "set cssText"]
+        pub safe fn set_css_text(this: &CSSStyleProperties, value: &str);
+
+        /// [`cursor`](https://developer.mozilla.org/docs/Web/CSS/cursor)
+        #[link_name = "get cursor"]
+        pub safe fn cursor(this: &CSSStyleProperties) -> String;
+
+        /// [`cursor`](https://developer.mozilla.org/docs/Web/CSS/cursor)
+        #[link_name = "set cursor"]
+        pub safe fn set_cursor(this: &CSSStyleProperties, value: &str);
+
+        /// [`cx`](https://developer.mozilla.org/docs/Web/CSS/cx)
+        #[link_name = "get cx"]
+        pub safe fn cx(this: &CSSStyleProperties) -> String;
+
+        /// [`cx`](https://developer.mozilla.org/docs/Web/CSS/cx)
+        #[link_name = "set cx"]
+        pub safe fn set_cx(this: &CSSStyleProperties, value: &str);
+
+        /// [`cy`](https://developer.mozilla.org/docs/Web/CSS/cy)
+        #[link_name = "get cy"]
+        pub safe fn cy(this: &CSSStyleProperties) -> String;
+
+        /// [`cy`](https://developer.mozilla.org/docs/Web/CSS/cy)
+        #[link_name = "set cy"]
+        pub safe fn set_cy(this: &CSSStyleProperties, value: &str);
+
+        /// [`d`](https://developer.mozilla.org/docs/Web/CSS/d)
+        #[link_name = "get d"]
+        pub safe fn d(this: &CSSStyleProperties) -> String;
+
+        /// [`d`](https://developer.mozilla.org/docs/Web/CSS/d)
+        #[link_name = "set d"]
+        pub safe fn set_d(this: &CSSStyleProperties, value: &str);
+
+        /// [`direction`](https://developer.mozilla.org/docs/Web/CSS/direction)
+        #[link_name = "get direction"]
+        pub safe fn direction(this: &CSSStyleProperties) -> String;
+
+        /// [`direction`](https://developer.mozilla.org/docs/Web/CSS/direction)
+        #[link_name = "set direction"]
+        pub safe fn set_direction(this: &CSSStyleProperties, value: &str);
+
+        /// [`display`](https://developer.mozilla.org/docs/Web/CSS/display)
+        #[link_name = "get display"]
+        pub safe fn display(this: &CSSStyleProperties) -> String;
+
+        /// [`display`](https://developer.mozilla.org/docs/Web/CSS/display)
+        #[link_name = "set display"]
+        pub safe fn set_display(this: &CSSStyleProperties, value: &str);
+
+        /// [`dominant-baseline`](https://developer.mozilla.org/docs/Web/CSS/dominant-baseline)
+        #[link_name = "get dominantBaseline"]
+        pub safe fn dominant_baseline(this: &CSSStyleProperties) -> String;
+
+        /// [`dominant-baseline`](https://developer.mozilla.org/docs/Web/CSS/dominant-baseline)
+        #[link_name = "set dominantBaseline"]
+        pub safe fn set_dominant_baseline(this: &CSSStyleProperties, value: &str);
+
+        /// [`dynamic-range-limit`](https://developer.mozilla.org/docs/Web/CSS/dynamic-range-limit)
+        #[link_name = "get dynamicRangeLimit"]
+        pub safe fn dynamic_range_limit(this: &CSSStyleProperties) -> String;
+
+        /// [`dynamic-range-limit`](https://developer.mozilla.org/docs/Web/CSS/dynamic-range-limit)
+        #[link_name = "set dynamicRangeLimit"]
+        pub safe fn set_dynamic_range_limit(this: &CSSStyleProperties, value: &str);
+
+        /// [`empty-cells`](https://developer.mozilla.org/docs/Web/CSS/empty-cells)
+        #[link_name = "get emptyCells"]
+        pub safe fn empty_cells(this: &CSSStyleProperties) -> String;
+
+        /// [`empty-cells`](https://developer.mozilla.org/docs/Web/CSS/empty-cells)
+        #[link_name = "set emptyCells"]
+        pub safe fn set_empty_cells(this: &CSSStyleProperties, value: &str);
+
+        /// [`field-sizing`](https://developer.mozilla.org/docs/Web/CSS/field-sizing)
+        #[link_name = "get fieldSizing"]
+        pub safe fn field_sizing(this: &CSSStyleProperties) -> String;
+
+        /// [`field-sizing`](https://developer.mozilla.org/docs/Web/CSS/field-sizing)
+        #[link_name = "set fieldSizing"]
+        pub safe fn set_field_sizing(this: &CSSStyleProperties, value: &str);
+
+        /// [`fill`](https://developer.mozilla.org/docs/Web/CSS/fill)
+        #[link_name = "get fill"]
+        pub safe fn fill(this: &CSSStyleProperties) -> String;
+
+        /// [`fill`](https://developer.mozilla.org/docs/Web/CSS/fill)
+        #[link_name = "set fill"]
+        pub safe fn set_fill(this: &CSSStyleProperties, value: &str);
+
+        /// [`fill-opacity`](https://developer.mozilla.org/docs/Web/CSS/fill-opacity)
+        #[link_name = "get fillOpacity"]
+        pub safe fn fill_opacity(this: &CSSStyleProperties) -> String;
+
+        /// [`fill-opacity`](https://developer.mozilla.org/docs/Web/CSS/fill-opacity)
+        #[link_name = "set fillOpacity"]
+        pub safe fn set_fill_opacity(this: &CSSStyleProperties, value: &str);
+
+        /// [`fill-rule`](https://developer.mozilla.org/docs/Web/CSS/fill-rule)
+        #[link_name = "get fillRule"]
+        pub safe fn fill_rule(this: &CSSStyleProperties) -> String;
+
+        /// [`fill-rule`](https://developer.mozilla.org/docs/Web/CSS/fill-rule)
+        #[link_name = "set fillRule"]
+        pub safe fn set_fill_rule(this: &CSSStyleProperties, value: &str);
+
+        /// [`filter`](https://developer.mozilla.org/docs/Web/CSS/filter)
+        #[link_name = "get filter"]
+        pub safe fn filter(this: &CSSStyleProperties) -> String;
+
+        /// [`filter`](https://developer.mozilla.org/docs/Web/CSS/filter)
+        #[link_name = "set filter"]
+        pub safe fn set_filter(this: &CSSStyleProperties, value: &str);
+
+        /// [`flex`](https://developer.mozilla.org/docs/Web/CSS/flex)
+        #[link_name = "get flex"]
+        pub safe fn flex(this: &CSSStyleProperties) -> String;
+
+        /// [`flex`](https://developer.mozilla.org/docs/Web/CSS/flex)
+        #[link_name = "set flex"]
+        pub safe fn set_flex(this: &CSSStyleProperties, value: &str);
+
+        /// [`flex-basis`](https://developer.mozilla.org/docs/Web/CSS/flex-basis)
+        #[link_name = "get flexBasis"]
+        pub safe fn flex_basis(this: &CSSStyleProperties) -> String;
+
+        /// [`flex-basis`](https://developer.mozilla.org/docs/Web/CSS/flex-basis)
+        #[link_name = "set flexBasis"]
+        pub safe fn set_flex_basis(this: &CSSStyleProperties, value: &str);
+
+        /// [`flex-direction`](https://developer.mozilla.org/docs/Web/CSS/flex-direction)
+        #[link_name = "get flexDirection"]
+        pub safe fn flex_direction(this: &CSSStyleProperties) -> String;
+
+        /// [`flex-direction`](https://developer.mozilla.org/docs/Web/CSS/flex-direction)
+        #[link_name = "set flexDirection"]
+        pub safe fn set_flex_direction(this: &CSSStyleProperties, value: &str);
+
+        /// [`flex-flow`](https://developer.mozilla.org/docs/Web/CSS/flex-flow)
+        #[link_name = "get flexFlow"]
+        pub safe fn flex_flow(this: &CSSStyleProperties) -> String;
+
+        /// [`flex-flow`](https://developer.mozilla.org/docs/Web/CSS/flex-flow)
+        #[link_name = "set flexFlow"]
+        pub safe fn set_flex_flow(this: &CSSStyleProperties, value: &str);
+
+        /// [`flex-grow`](https://developer.mozilla.org/docs/Web/CSS/flex-grow)
+        #[link_name = "get flexGrow"]
+        pub safe fn flex_grow(this: &CSSStyleProperties) -> String;
+
+        /// [`flex-grow`](https://developer.mozilla.org/docs/Web/CSS/flex-grow)
+        #[link_name = "set flexGrow"]
+        pub safe fn set_flex_grow(this: &CSSStyleProperties, value: &str);
+
+        /// [`flex-shrink`](https://developer.mozilla.org/docs/Web/CSS/flex-shrink)
+        #[link_name = "get flexShrink"]
+        pub safe fn flex_shrink(this: &CSSStyleProperties) -> String;
+
+        /// [`flex-shrink`](https://developer.mozilla.org/docs/Web/CSS/flex-shrink)
+        #[link_name = "set flexShrink"]
+        pub safe fn set_flex_shrink(this: &CSSStyleProperties, value: &str);
+
+        /// [`flex-wrap`](https://developer.mozilla.org/docs/Web/CSS/flex-wrap)
+        #[link_name = "get flexWrap"]
+        pub safe fn flex_wrap(this: &CSSStyleProperties) -> String;
+
+        /// [`flex-wrap`](https://developer.mozilla.org/docs/Web/CSS/flex-wrap)
+        #[link_name = "set flexWrap"]
+        pub safe fn set_flex_wrap(this: &CSSStyleProperties, value: &str);
+
+        /// [`float`](https://developer.mozilla.org/docs/Web/CSS/float)
+        #[link_name = "get float"]
+        pub safe fn float(this: &CSSStyleProperties) -> String;
+
+        /// [`float`](https://developer.mozilla.org/docs/Web/CSS/float)
+        #[link_name = "set float"]
+        pub safe fn set_float(this: &CSSStyleProperties, value: &str);
+
+        /// [`flood-color`](https://developer.mozilla.org/docs/Web/CSS/flood-color)
+        #[link_name = "get floodColor"]
+        pub safe fn flood_color(this: &CSSStyleProperties) -> String;
+
+        /// [`flood-color`](https://developer.mozilla.org/docs/Web/CSS/flood-color)
+        #[link_name = "set floodColor"]
+        pub safe fn set_flood_color(this: &CSSStyleProperties, value: &str);
+
+        /// [`flood-opacity`](https://developer.mozilla.org/docs/Web/CSS/flood-opacity)
+        #[link_name = "get floodOpacity"]
+        pub safe fn flood_opacity(this: &CSSStyleProperties) -> String;
+
+        /// [`flood-opacity`](https://developer.mozilla.org/docs/Web/CSS/flood-opacity)
+        #[link_name = "set floodOpacity"]
+        pub safe fn set_flood_opacity(this: &CSSStyleProperties, value: &str);
+
+        /// [`font`](https://developer.mozilla.org/docs/Web/CSS/font)
+        #[link_name = "get font"]
+        pub safe fn font(this: &CSSStyleProperties) -> String;
+
+        /// [`font`](https://developer.mozilla.org/docs/Web/CSS/font)
+        #[link_name = "set font"]
+        pub safe fn set_font(this: &CSSStyleProperties, value: &str);
+
+        /// [`font-family`](https://developer.mozilla.org/docs/Web/CSS/font-family)
+        #[link_name = "get fontFamily"]
+        pub safe fn font_family(this: &CSSStyleProperties) -> String;
+
+        /// [`font-family`](https://developer.mozilla.org/docs/Web/CSS/font-family)
+        #[link_name = "set fontFamily"]
+        pub safe fn set_font_family(this: &CSSStyleProperties, value: &str);
+
+        /// [`font-feature-settings`](https://developer.mozilla.org/docs/Web/CSS/font-feature-settings)
+        #[link_name = "get fontFeatureSettings"]
+        pub safe fn font_feature_settings(this: &CSSStyleProperties) -> String;
+
+        /// [`font-feature-settings`](https://developer.mozilla.org/docs/Web/CSS/font-feature-settings)
+        #[link_name = "set fontFeatureSettings"]
+        pub safe fn set_font_feature_settings(this: &CSSStyleProperties, value: &str);
+
+        /// [`font-kerning`](https://developer.mozilla.org/docs/Web/CSS/font-kerning)
+        #[link_name = "get fontKerning"]
+        pub safe fn font_kerning(this: &CSSStyleProperties) -> String;
+
+        /// [`font-kerning`](https://developer.mozilla.org/docs/Web/CSS/font-kerning)
+        #[link_name = "set fontKerning"]
+        pub safe fn set_font_kerning(this: &CSSStyleProperties, value: &str);
+
+        /// [`font-language-override`](https://developer.mozilla.org/docs/Web/CSS/font-language-override)
+        #[link_name = "get fontLanguageOverride"]
+        pub safe fn font_language_override(this: &CSSStyleProperties) -> String;
+
+        /// [`font-language-override`](https://developer.mozilla.org/docs/Web/CSS/font-language-override)
+        #[link_name = "set fontLanguageOverride"]
+        pub safe fn set_font_language_override(this: &CSSStyleProperties, value: &str);
+
+        /// [`font-optical-sizing`](https://developer.mozilla.org/docs/Web/CSS/font-optical-sizing)
+        #[link_name = "get fontOpticalSizing"]
+        pub safe fn font_optical_sizing(this: &CSSStyleProperties) -> String;
+
+        /// [`font-optical-sizing`](https://developer.mozilla.org/docs/Web/CSS/font-optical-sizing)
+        #[link_name = "set fontOpticalSizing"]
+        pub safe fn set_font_optical_sizing(this: &CSSStyleProperties, value: &str);
+
+        /// [`font-palette`](https://developer.mozilla.org/docs/Web/CSS/font-palette)
+        #[link_name = "get fontPalette"]
+        pub safe fn font_palette(this: &CSSStyleProperties) -> String;
+
+        /// [`font-palette`](https://developer.mozilla.org/docs/Web/CSS/font-palette)
+        #[link_name = "set fontPalette"]
+        pub safe fn set_font_palette(this: &CSSStyleProperties, value: &str);
+
+        /// [`font-size`](https://developer.mozilla.org/docs/Web/CSS/font-size)
+        #[link_name = "get fontSize"]
+        pub safe fn font_size(this: &CSSStyleProperties) -> String;
+
+        /// [`font-size`](https://developer.mozilla.org/docs/Web/CSS/font-size)
+        #[link_name = "set fontSize"]
+        pub safe fn set_font_size(this: &CSSStyleProperties, value: &str);
+
+        /// [`font-size-adjust`](https://developer.mozilla.org/docs/Web/CSS/font-size-adjust)
+        #[link_name = "get fontSizeAdjust"]
+        pub safe fn font_size_adjust(this: &CSSStyleProperties) -> String;
+
+        /// [`font-size-adjust`](https://developer.mozilla.org/docs/Web/CSS/font-size-adjust)
+        #[link_name = "set fontSizeAdjust"]
+        pub safe fn set_font_size_adjust(this: &CSSStyleProperties, value: &str);
+
+        /// [`font-stretch`](https://developer.mozilla.org/docs/Web/CSS/font-stretch)
+        #[link_name = "get fontStretch"]
+        pub safe fn font_stretch(this: &CSSStyleProperties) -> String;
+
+        /// [`font-stretch`](https://developer.mozilla.org/docs/Web/CSS/font-stretch)
+        #[link_name = "set fontStretch"]
+        pub safe fn set_font_stretch(this: &CSSStyleProperties, value: &str);
+
+        /// [`font-style`](https://developer.mozilla.org/docs/Web/CSS/font-style)
+        #[link_name = "get fontStyle"]
+        pub safe fn font_style(this: &CSSStyleProperties) -> String;
+
+        /// [`font-style`](https://developer.mozilla.org/docs/Web/CSS/font-style)
+        #[link_name = "set fontStyle"]
+        pub safe fn set_font_style(this: &CSSStyleProperties, value: &str);
+
+        /// [`font-synthesis`](https://developer.mozilla.org/docs/Web/CSS/font-synthesis)
+        #[link_name = "get fontSynthesis"]
+        pub safe fn font_synthesis(this: &CSSStyleProperties) -> String;
+
+        /// [`font-synthesis`](https://developer.mozilla.org/docs/Web/CSS/font-synthesis)
+        #[link_name = "set fontSynthesis"]
+        pub safe fn set_font_synthesis(this: &CSSStyleProperties, value: &str);
+
+        /// [`font-synthesis-small-caps`](https://developer.mozilla.org/docs/Web/CSS/font-synthesis-small-caps)
+        #[link_name = "get fontSynthesisSmallCaps"]
+        pub safe fn font_synthesis_small_caps(this: &CSSStyleProperties) -> String;
+
+        /// [`font-synthesis-small-caps`](https://developer.mozilla.org/docs/Web/CSS/font-synthesis-small-caps)
+        #[link_name = "set fontSynthesisSmallCaps"]
+        pub safe fn set_font_synthesis_small_caps(this: &CSSStyleProperties, value: &str);
+
+        /// [`font-synthesis-style`](https://developer.mozilla.org/docs/Web/CSS/font-synthesis-style)
+        #[link_name = "get fontSynthesisStyle"]
+        pub safe fn font_synthesis_style(this: &CSSStyleProperties) -> String;
+
+        /// [`font-synthesis-style`](https://developer.mozilla.org/docs/Web/CSS/font-synthesis-style)
+        #[link_name = "set fontSynthesisStyle"]
+        pub safe fn set_font_synthesis_style(this: &CSSStyleProperties, value: &str);
+
+        /// [`font-synthesis-weight`](https://developer.mozilla.org/docs/Web/CSS/font-synthesis-weight)
+        #[link_name = "get fontSynthesisWeight"]
+        pub safe fn font_synthesis_weight(this: &CSSStyleProperties) -> String;
+
+        /// [`font-synthesis-weight`](https://developer.mozilla.org/docs/Web/CSS/font-synthesis-weight)
+        #[link_name = "set fontSynthesisWeight"]
+        pub safe fn set_font_synthesis_weight(this: &CSSStyleProperties, value: &str);
+
+        /// [`font-variant`](https://developer.mozilla.org/docs/Web/CSS/font-variant)
+        #[link_name = "get fontVariant"]
+        pub safe fn font_variant(this: &CSSStyleProperties) -> String;
+
+        /// [`font-variant`](https://developer.mozilla.org/docs/Web/CSS/font-variant)
+        #[link_name = "set fontVariant"]
+        pub safe fn set_font_variant(this: &CSSStyleProperties, value: &str);
+
+        /// [`font-variant-alternates`](https://developer.mozilla.org/docs/Web/CSS/font-variant-alternates)
+        #[link_name = "get fontVariantAlternates"]
+        pub safe fn font_variant_alternates(this: &CSSStyleProperties) -> String;
+
+        /// [`font-variant-alternates`](https://developer.mozilla.org/docs/Web/CSS/font-variant-alternates)
+        #[link_name = "set fontVariantAlternates"]
+        pub safe fn set_font_variant_alternates(this: &CSSStyleProperties, value: &str);
+
+        /// [`font-variant-caps`](https://developer.mozilla.org/docs/Web/CSS/font-variant-caps)
+        #[link_name = "get fontVariantCaps"]
+        pub safe fn font_variant_caps(this: &CSSStyleProperties) -> String;
+
+        /// [`font-variant-caps`](https://developer.mozilla.org/docs/Web/CSS/font-variant-caps)
+        #[link_name = "set fontVariantCaps"]
+        pub safe fn set_font_variant_caps(this: &CSSStyleProperties, value: &str);
+
+        /// [`font-variant-east-asian`](https://developer.mozilla.org/docs/Web/CSS/font-variant-east-asian)
+        #[link_name = "get fontVariantEastAsian"]
+        pub safe fn font_variant_east_asian(this: &CSSStyleProperties) -> String;
+
+        /// [`font-variant-east-asian`](https://developer.mozilla.org/docs/Web/CSS/font-variant-east-asian)
+        #[link_name = "set fontVariantEastAsian"]
+        pub safe fn set_font_variant_east_asian(this: &CSSStyleProperties, value: &str);
+
+        /// [`font-variant-emoji`](https://developer.mozilla.org/docs/Web/CSS/font-variant-emoji)
+        #[link_name = "get fontVariantEmoji"]
+        pub safe fn font_variant_emoji(this: &CSSStyleProperties) -> String;
+
+        /// [`font-variant-emoji`](https://developer.mozilla.org/docs/Web/CSS/font-variant-emoji)
+        #[link_name = "set fontVariantEmoji"]
+        pub safe fn set_font_variant_emoji(this: &CSSStyleProperties, value: &str);
+
+        /// [`font-variant-ligatures`](https://developer.mozilla.org/docs/Web/CSS/font-variant-ligatures)
+        #[link_name = "get fontVariantLigatures"]
+        pub safe fn font_variant_ligatures(this: &CSSStyleProperties) -> String;
+
+        /// [`font-variant-ligatures`](https://developer.mozilla.org/docs/Web/CSS/font-variant-ligatures)
+        #[link_name = "set fontVariantLigatures"]
+        pub safe fn set_font_variant_ligatures(this: &CSSStyleProperties, value: &str);
+
+        /// [`font-variant-numeric`](https://developer.mozilla.org/docs/Web/CSS/font-variant-numeric)
+        #[link_name = "get fontVariantNumeric"]
+        pub safe fn font_variant_numeric(this: &CSSStyleProperties) -> String;
+
+        /// [`font-variant-numeric`](https://developer.mozilla.org/docs/Web/CSS/font-variant-numeric)
+        #[link_name = "set fontVariantNumeric"]
+        pub safe fn set_font_variant_numeric(this: &CSSStyleProperties, value: &str);
+
+        /// [`font-variant-position`](https://developer.mozilla.org/docs/Web/CSS/font-variant-position)
+        #[link_name = "get fontVariantPosition"]
+        pub safe fn font_variant_position(this: &CSSStyleProperties) -> String;
+
+        /// [`font-variant-position`](https://developer.mozilla.org/docs/Web/CSS/font-variant-position)
+        #[link_name = "set fontVariantPosition"]
+        pub safe fn set_font_variant_position(this: &CSSStyleProperties, value: &str);
+
+        /// [`font-variation-settings`](https://developer.mozilla.org/docs/Web/CSS/font-variation-settings)
+        #[link_name = "get fontVariationSettings"]
+        pub safe fn font_variation_settings(this: &CSSStyleProperties) -> String;
+
+        /// [`font-variation-settings`](https://developer.mozilla.org/docs/Web/CSS/font-variation-settings)
+        #[link_name = "set fontVariationSettings"]
+        pub safe fn set_font_variation_settings(this: &CSSStyleProperties, value: &str);
+
+        /// [`font-weight`](https://developer.mozilla.org/docs/Web/CSS/font-weight)
+        #[link_name = "get fontWeight"]
+        pub safe fn font_weight(this: &CSSStyleProperties) -> String;
+
+        /// [`font-weight`](https://developer.mozilla.org/docs/Web/CSS/font-weight)
+        #[link_name = "set fontWeight"]
+        pub safe fn set_font_weight(this: &CSSStyleProperties, value: &str);
+
+        /// [`forced-color-adjust`](https://developer.mozilla.org/docs/Web/CSS/forced-color-adjust)
+        #[link_name = "get forcedColorAdjust"]
+        pub safe fn forced_color_adjust(this: &CSSStyleProperties) -> String;
+
+        /// [`forced-color-adjust`](https://developer.mozilla.org/docs/Web/CSS/forced-color-adjust)
+        #[link_name = "set forcedColorAdjust"]
+        pub safe fn set_forced_color_adjust(this: &CSSStyleProperties, value: &str);
+
+        /// [`gap`](https://developer.mozilla.org/docs/Web/CSS/gap)
+        #[link_name = "get gap"]
+        pub safe fn gap(this: &CSSStyleProperties) -> String;
+
+        /// [`gap`](https://developer.mozilla.org/docs/Web/CSS/gap)
+        #[link_name = "set gap"]
+        pub safe fn set_gap(this: &CSSStyleProperties, value: &str);
+
+        /// [`get-property-priority`](https://developer.mozilla.org/docs/Web/CSS/get-property-priority)
+        #[link_name = "get getPropertyPriority"]
+        pub safe fn get_property_priority(this: &CSSStyleProperties) -> String;
+
+        /// [`get-property-priority`](https://developer.mozilla.org/docs/Web/CSS/get-property-priority)
+        #[link_name = "set getPropertyPriority"]
+        pub safe fn set_get_property_priority(this: &CSSStyleProperties, value: &str);
+
+        /// [`get-property-value`](https://developer.mozilla.org/docs/Web/CSS/get-property-value)
+        #[link_name = "get getPropertyValue"]
+        pub safe fn get_property_value(this: &CSSStyleProperties) -> String;
+
+        /// [`get-property-value`](https://developer.mozilla.org/docs/Web/CSS/get-property-value)
+        #[link_name = "set getPropertyValue"]
+        pub safe fn set_get_property_value(this: &CSSStyleProperties, value: &str);
+
+        /// [`grid`](https://developer.mozilla.org/docs/Web/CSS/grid)
+        #[link_name = "get grid"]
+        pub safe fn grid(this: &CSSStyleProperties) -> String;
+
+        /// [`grid`](https://developer.mozilla.org/docs/Web/CSS/grid)
+        #[link_name = "set grid"]
+        pub safe fn set_grid(this: &CSSStyleProperties, value: &str);
+
+        /// [`grid-area`](https://developer.mozilla.org/docs/Web/CSS/grid-area)
+        #[link_name = "get gridArea"]
+        pub safe fn grid_area(this: &CSSStyleProperties) -> String;
+
+        /// [`grid-area`](https://developer.mozilla.org/docs/Web/CSS/grid-area)
+        #[link_name = "set gridArea"]
+        pub safe fn set_grid_area(this: &CSSStyleProperties, value: &str);
+
+        /// [`grid-auto-columns`](https://developer.mozilla.org/docs/Web/CSS/grid-auto-columns)
+        #[link_name = "get gridAutoColumns"]
+        pub safe fn grid_auto_columns(this: &CSSStyleProperties) -> String;
+
+        /// [`grid-auto-columns`](https://developer.mozilla.org/docs/Web/CSS/grid-auto-columns)
+        #[link_name = "set gridAutoColumns"]
+        pub safe fn set_grid_auto_columns(this: &CSSStyleProperties, value: &str);
+
+        /// [`grid-auto-flow`](https://developer.mozilla.org/docs/Web/CSS/grid-auto-flow)
+        #[link_name = "get gridAutoFlow"]
+        pub safe fn grid_auto_flow(this: &CSSStyleProperties) -> String;
+
+        /// [`grid-auto-flow`](https://developer.mozilla.org/docs/Web/CSS/grid-auto-flow)
+        #[link_name = "set gridAutoFlow"]
+        pub safe fn set_grid_auto_flow(this: &CSSStyleProperties, value: &str);
+
+        /// [`grid-auto-rows`](https://developer.mozilla.org/docs/Web/CSS/grid-auto-rows)
+        #[link_name = "get gridAutoRows"]
+        pub safe fn grid_auto_rows(this: &CSSStyleProperties) -> String;
+
+        /// [`grid-auto-rows`](https://developer.mozilla.org/docs/Web/CSS/grid-auto-rows)
+        #[link_name = "set gridAutoRows"]
+        pub safe fn set_grid_auto_rows(this: &CSSStyleProperties, value: &str);
+
+        /// [`grid-column`](https://developer.mozilla.org/docs/Web/CSS/grid-column)
+        #[link_name = "get gridColumn"]
+        pub safe fn grid_column(this: &CSSStyleProperties) -> String;
+
+        /// [`grid-column`](https://developer.mozilla.org/docs/Web/CSS/grid-column)
+        #[link_name = "set gridColumn"]
+        pub safe fn set_grid_column(this: &CSSStyleProperties, value: &str);
+
+        /// [`grid-column-end`](https://developer.mozilla.org/docs/Web/CSS/grid-column-end)
+        #[link_name = "get gridColumnEnd"]
+        pub safe fn grid_column_end(this: &CSSStyleProperties) -> String;
+
+        /// [`grid-column-end`](https://developer.mozilla.org/docs/Web/CSS/grid-column-end)
+        #[link_name = "set gridColumnEnd"]
+        pub safe fn set_grid_column_end(this: &CSSStyleProperties, value: &str);
+
+        /// [`grid-column-gap`](https://developer.mozilla.org/docs/Web/CSS/grid-column-gap)
+        #[link_name = "get gridColumnGap"]
+        pub safe fn grid_column_gap(this: &CSSStyleProperties) -> String;
+
+        /// [`grid-column-gap`](https://developer.mozilla.org/docs/Web/CSS/grid-column-gap)
+        #[link_name = "set gridColumnGap"]
+        pub safe fn set_grid_column_gap(this: &CSSStyleProperties, value: &str);
+
+        /// [`grid-column-start`](https://developer.mozilla.org/docs/Web/CSS/grid-column-start)
+        #[link_name = "get gridColumnStart"]
+        pub safe fn grid_column_start(this: &CSSStyleProperties) -> String;
+
+        /// [`grid-column-start`](https://developer.mozilla.org/docs/Web/CSS/grid-column-start)
+        #[link_name = "set gridColumnStart"]
+        pub safe fn set_grid_column_start(this: &CSSStyleProperties, value: &str);
+
+        /// [`grid-gap`](https://developer.mozilla.org/docs/Web/CSS/grid-gap)
+        #[link_name = "get gridGap"]
+        pub safe fn grid_gap(this: &CSSStyleProperties) -> String;
+
+        /// [`grid-gap`](https://developer.mozilla.org/docs/Web/CSS/grid-gap)
+        #[link_name = "set gridGap"]
+        pub safe fn set_grid_gap(this: &CSSStyleProperties, value: &str);
+
+        /// [`grid-row`](https://developer.mozilla.org/docs/Web/CSS/grid-row)
+        #[link_name = "get gridRow"]
+        pub safe fn grid_row(this: &CSSStyleProperties) -> String;
+
+        /// [`grid-row`](https://developer.mozilla.org/docs/Web/CSS/grid-row)
+        #[link_name = "set gridRow"]
+        pub safe fn set_grid_row(this: &CSSStyleProperties, value: &str);
+
+        /// [`grid-row-end`](https://developer.mozilla.org/docs/Web/CSS/grid-row-end)
+        #[link_name = "get gridRowEnd"]
+        pub safe fn grid_row_end(this: &CSSStyleProperties) -> String;
+
+        /// [`grid-row-end`](https://developer.mozilla.org/docs/Web/CSS/grid-row-end)
+        #[link_name = "set gridRowEnd"]
+        pub safe fn set_grid_row_end(this: &CSSStyleProperties, value: &str);
+
+        /// [`grid-row-gap`](https://developer.mozilla.org/docs/Web/CSS/grid-row-gap)
+        #[link_name = "get gridRowGap"]
+        pub safe fn grid_row_gap(this: &CSSStyleProperties) -> String;
+
+        /// [`grid-row-gap`](https://developer.mozilla.org/docs/Web/CSS/grid-row-gap)
+        #[link_name = "set gridRowGap"]
+        pub safe fn set_grid_row_gap(this: &CSSStyleProperties, value: &str);
+
+        /// [`grid-row-start`](https://developer.mozilla.org/docs/Web/CSS/grid-row-start)
+        #[link_name = "get gridRowStart"]
+        pub safe fn grid_row_start(this: &CSSStyleProperties) -> String;
+
+        /// [`grid-row-start`](https://developer.mozilla.org/docs/Web/CSS/grid-row-start)
+        #[link_name = "set gridRowStart"]
+        pub safe fn set_grid_row_start(this: &CSSStyleProperties, value: &str);
+
+        /// [`grid-template`](https://developer.mozilla.org/docs/Web/CSS/grid-template)
+        #[link_name = "get gridTemplate"]
+        pub safe fn grid_template(this: &CSSStyleProperties) -> String;
+
+        /// [`grid-template`](https://developer.mozilla.org/docs/Web/CSS/grid-template)
+        #[link_name = "set gridTemplate"]
+        pub safe fn set_grid_template(this: &CSSStyleProperties, value: &str);
+
+        /// [`grid-template-areas`](https://developer.mozilla.org/docs/Web/CSS/grid-template-areas)
+        #[link_name = "get gridTemplateAreas"]
+        pub safe fn grid_template_areas(this: &CSSStyleProperties) -> String;
+
+        /// [`grid-template-areas`](https://developer.mozilla.org/docs/Web/CSS/grid-template-areas)
+        #[link_name = "set gridTemplateAreas"]
+        pub safe fn set_grid_template_areas(this: &CSSStyleProperties, value: &str);
+
+        /// [`grid-template-columns`](https://developer.mozilla.org/docs/Web/CSS/grid-template-columns)
+        #[link_name = "get gridTemplateColumns"]
+        pub safe fn grid_template_columns(this: &CSSStyleProperties) -> String;
+
+        /// [`grid-template-columns`](https://developer.mozilla.org/docs/Web/CSS/grid-template-columns)
+        #[link_name = "set gridTemplateColumns"]
+        pub safe fn set_grid_template_columns(this: &CSSStyleProperties, value: &str);
+
+        /// [`grid-template-rows`](https://developer.mozilla.org/docs/Web/CSS/grid-template-rows)
+        #[link_name = "get gridTemplateRows"]
+        pub safe fn grid_template_rows(this: &CSSStyleProperties) -> String;
+
+        /// [`grid-template-rows`](https://developer.mozilla.org/docs/Web/CSS/grid-template-rows)
+        #[link_name = "set gridTemplateRows"]
+        pub safe fn set_grid_template_rows(this: &CSSStyleProperties, value: &str);
+
+        /// [`height`](https://developer.mozilla.org/docs/Web/CSS/height)
+        #[link_name = "get height"]
+        pub safe fn height(this: &CSSStyleProperties) -> String;
+
+        /// [`height`](https://developer.mozilla.org/docs/Web/CSS/height)
+        #[link_name = "set height"]
+        pub safe fn set_height(this: &CSSStyleProperties, value: &str);
+
+        /// [`hyphenate-character`](https://developer.mozilla.org/docs/Web/CSS/hyphenate-character)
+        #[link_name = "get hyphenateCharacter"]
+        pub safe fn hyphenate_character(this: &CSSStyleProperties) -> String;
+
+        /// [`hyphenate-character`](https://developer.mozilla.org/docs/Web/CSS/hyphenate-character)
+        #[link_name = "set hyphenateCharacter"]
+        pub safe fn set_hyphenate_character(this: &CSSStyleProperties, value: &str);
+
+        /// [`hyphenate-limit-chars`](https://developer.mozilla.org/docs/Web/CSS/hyphenate-limit-chars)
+        #[link_name = "get hyphenateLimitChars"]
+        pub safe fn hyphenate_limit_chars(this: &CSSStyleProperties) -> String;
+
+        /// [`hyphenate-limit-chars`](https://developer.mozilla.org/docs/Web/CSS/hyphenate-limit-chars)
+        #[link_name = "set hyphenateLimitChars"]
+        pub safe fn set_hyphenate_limit_chars(this: &CSSStyleProperties, value: &str);
+
+        /// [`hyphens`](https://developer.mozilla.org/docs/Web/CSS/hyphens)
+        #[link_name = "get hyphens"]
+        pub safe fn hyphens(this: &CSSStyleProperties) -> String;
+
+        /// [`hyphens`](https://developer.mozilla.org/docs/Web/CSS/hyphens)
+        #[link_name = "set hyphens"]
+        pub safe fn set_hyphens(this: &CSSStyleProperties, value: &str);
+
+        /// [`image-orientation`](https://developer.mozilla.org/docs/Web/CSS/image-orientation)
+        #[link_name = "get imageOrientation"]
+        pub safe fn image_orientation(this: &CSSStyleProperties) -> String;
+
+        /// [`image-orientation`](https://developer.mozilla.org/docs/Web/CSS/image-orientation)
+        #[link_name = "set imageOrientation"]
+        pub safe fn set_image_orientation(this: &CSSStyleProperties, value: &str);
+
+        /// [`image-rendering`](https://developer.mozilla.org/docs/Web/CSS/image-rendering)
+        #[link_name = "get imageRendering"]
+        pub safe fn image_rendering(this: &CSSStyleProperties) -> String;
+
+        /// [`image-rendering`](https://developer.mozilla.org/docs/Web/CSS/image-rendering)
+        #[link_name = "set imageRendering"]
+        pub safe fn set_image_rendering(this: &CSSStyleProperties, value: &str);
+
+        /// [`inline-size`](https://developer.mozilla.org/docs/Web/CSS/inline-size)
+        #[link_name = "get inlineSize"]
+        pub safe fn inline_size(this: &CSSStyleProperties) -> String;
+
+        /// [`inline-size`](https://developer.mozilla.org/docs/Web/CSS/inline-size)
+        #[link_name = "set inlineSize"]
+        pub safe fn set_inline_size(this: &CSSStyleProperties, value: &str);
+
+        /// [`inset`](https://developer.mozilla.org/docs/Web/CSS/inset)
+        #[link_name = "get inset"]
+        pub safe fn inset(this: &CSSStyleProperties) -> String;
+
+        /// [`inset`](https://developer.mozilla.org/docs/Web/CSS/inset)
+        #[link_name = "set inset"]
+        pub safe fn set_inset(this: &CSSStyleProperties, value: &str);
+
+        /// [`inset-block`](https://developer.mozilla.org/docs/Web/CSS/inset-block)
+        #[link_name = "get insetBlock"]
+        pub safe fn inset_block(this: &CSSStyleProperties) -> String;
+
+        /// [`inset-block`](https://developer.mozilla.org/docs/Web/CSS/inset-block)
+        #[link_name = "set insetBlock"]
+        pub safe fn set_inset_block(this: &CSSStyleProperties, value: &str);
+
+        /// [`inset-block-end`](https://developer.mozilla.org/docs/Web/CSS/inset-block-end)
+        #[link_name = "get insetBlockEnd"]
+        pub safe fn inset_block_end(this: &CSSStyleProperties) -> String;
+
+        /// [`inset-block-end`](https://developer.mozilla.org/docs/Web/CSS/inset-block-end)
+        #[link_name = "set insetBlockEnd"]
+        pub safe fn set_inset_block_end(this: &CSSStyleProperties, value: &str);
+
+        /// [`inset-block-start`](https://developer.mozilla.org/docs/Web/CSS/inset-block-start)
+        #[link_name = "get insetBlockStart"]
+        pub safe fn inset_block_start(this: &CSSStyleProperties) -> String;
+
+        /// [`inset-block-start`](https://developer.mozilla.org/docs/Web/CSS/inset-block-start)
+        #[link_name = "set insetBlockStart"]
+        pub safe fn set_inset_block_start(this: &CSSStyleProperties, value: &str);
+
+        /// [`inset-inline`](https://developer.mozilla.org/docs/Web/CSS/inset-inline)
+        #[link_name = "get insetInline"]
+        pub safe fn inset_inline(this: &CSSStyleProperties) -> String;
+
+        /// [`inset-inline`](https://developer.mozilla.org/docs/Web/CSS/inset-inline)
+        #[link_name = "set insetInline"]
+        pub safe fn set_inset_inline(this: &CSSStyleProperties, value: &str);
+
+        /// [`inset-inline-end`](https://developer.mozilla.org/docs/Web/CSS/inset-inline-end)
+        #[link_name = "get insetInlineEnd"]
+        pub safe fn inset_inline_end(this: &CSSStyleProperties) -> String;
+
+        /// [`inset-inline-end`](https://developer.mozilla.org/docs/Web/CSS/inset-inline-end)
+        #[link_name = "set insetInlineEnd"]
+        pub safe fn set_inset_inline_end(this: &CSSStyleProperties, value: &str);
+
+        /// [`inset-inline-start`](https://developer.mozilla.org/docs/Web/CSS/inset-inline-start)
+        #[link_name = "get insetInlineStart"]
+        pub safe fn inset_inline_start(this: &CSSStyleProperties) -> String;
+
+        /// [`inset-inline-start`](https://developer.mozilla.org/docs/Web/CSS/inset-inline-start)
+        #[link_name = "set insetInlineStart"]
+        pub safe fn set_inset_inline_start(this: &CSSStyleProperties, value: &str);
+
+        /// [`isolation`](https://developer.mozilla.org/docs/Web/CSS/isolation)
+        #[link_name = "get isolation"]
+        pub safe fn isolation(this: &CSSStyleProperties) -> String;
+
+        /// [`isolation`](https://developer.mozilla.org/docs/Web/CSS/isolation)
+        #[link_name = "set isolation"]
+        pub safe fn set_isolation(this: &CSSStyleProperties, value: &str);
+
+        /// [`item`](https://developer.mozilla.org/docs/Web/CSS/item)
+        #[link_name = "get item"]
+        pub safe fn item(this: &CSSStyleProperties) -> String;
+
+        /// [`item`](https://developer.mozilla.org/docs/Web/CSS/item)
+        #[link_name = "set item"]
+        pub safe fn set_item(this: &CSSStyleProperties, value: &str);
+
+        /// [`justify-content`](https://developer.mozilla.org/docs/Web/CSS/justify-content)
+        #[link_name = "get justifyContent"]
+        pub safe fn justify_content(this: &CSSStyleProperties) -> String;
+
+        /// [`justify-content`](https://developer.mozilla.org/docs/Web/CSS/justify-content)
+        #[link_name = "set justifyContent"]
+        pub safe fn set_justify_content(this: &CSSStyleProperties, value: &str);
+
+        /// [`justify-items`](https://developer.mozilla.org/docs/Web/CSS/justify-items)
+        #[link_name = "get justifyItems"]
+        pub safe fn justify_items(this: &CSSStyleProperties) -> String;
+
+        /// [`justify-items`](https://developer.mozilla.org/docs/Web/CSS/justify-items)
+        #[link_name = "set justifyItems"]
+        pub safe fn set_justify_items(this: &CSSStyleProperties, value: &str);
+
+        /// [`justify-self`](https://developer.mozilla.org/docs/Web/CSS/justify-self)
+        #[link_name = "get justifySelf"]
+        pub safe fn justify_self(this: &CSSStyleProperties) -> String;
+
+        /// [`justify-self`](https://developer.mozilla.org/docs/Web/CSS/justify-self)
+        #[link_name = "set justifySelf"]
+        pub safe fn set_justify_self(this: &CSSStyleProperties, value: &str);
+
+        /// [`left`](https://developer.mozilla.org/docs/Web/CSS/left)
+        #[link_name = "get left"]
+        pub safe fn left(this: &CSSStyleProperties) -> String;
+
+        /// [`left`](https://developer.mozilla.org/docs/Web/CSS/left)
+        #[link_name = "set left"]
+        pub safe fn set_left(this: &CSSStyleProperties, value: &str);
+
+        /// [`length`](https://developer.mozilla.org/docs/Web/CSS/length)
+        #[link_name = "get length"]
+        pub safe fn length(this: &CSSStyleProperties) -> String;
+
+        /// [`length`](https://developer.mozilla.org/docs/Web/CSS/length)
+        #[link_name = "set length"]
+        pub safe fn set_length(this: &CSSStyleProperties, value: &str);
+
+        /// [`letter-spacing`](https://developer.mozilla.org/docs/Web/CSS/letter-spacing)
+        #[link_name = "get letterSpacing"]
+        pub safe fn letter_spacing(this: &CSSStyleProperties) -> String;
+
+        /// [`letter-spacing`](https://developer.mozilla.org/docs/Web/CSS/letter-spacing)
+        #[link_name = "set letterSpacing"]
+        pub safe fn set_letter_spacing(this: &CSSStyleProperties, value: &str);
+
+        /// [`lighting-color`](https://developer.mozilla.org/docs/Web/CSS/lighting-color)
+        #[link_name = "get lightingColor"]
+        pub safe fn lighting_color(this: &CSSStyleProperties) -> String;
+
+        /// [`lighting-color`](https://developer.mozilla.org/docs/Web/CSS/lighting-color)
+        #[link_name = "set lightingColor"]
+        pub safe fn set_lighting_color(this: &CSSStyleProperties, value: &str);
+
+        /// [`line-break`](https://developer.mozilla.org/docs/Web/CSS/line-break)
+        #[link_name = "get lineBreak"]
+        pub safe fn line_break(this: &CSSStyleProperties) -> String;
+
+        /// [`line-break`](https://developer.mozilla.org/docs/Web/CSS/line-break)
+        #[link_name = "set lineBreak"]
+        pub safe fn set_line_break(this: &CSSStyleProperties, value: &str);
+
+        /// [`line-height`](https://developer.mozilla.org/docs/Web/CSS/line-height)
+        #[link_name = "get lineHeight"]
+        pub safe fn line_height(this: &CSSStyleProperties) -> String;
+
+        /// [`line-height`](https://developer.mozilla.org/docs/Web/CSS/line-height)
+        #[link_name = "set lineHeight"]
+        pub safe fn set_line_height(this: &CSSStyleProperties, value: &str);
+
+        /// [`list-style`](https://developer.mozilla.org/docs/Web/CSS/list-style)
+        #[link_name = "get listStyle"]
+        pub safe fn list_style(this: &CSSStyleProperties) -> String;
+
+        /// [`list-style`](https://developer.mozilla.org/docs/Web/CSS/list-style)
+        #[link_name = "set listStyle"]
+        pub safe fn set_list_style(this: &CSSStyleProperties, value: &str);
+
+        /// [`list-style-image`](https://developer.mozilla.org/docs/Web/CSS/list-style-image)
+        #[link_name = "get listStyleImage"]
+        pub safe fn list_style_image(this: &CSSStyleProperties) -> String;
+
+        /// [`list-style-image`](https://developer.mozilla.org/docs/Web/CSS/list-style-image)
+        #[link_name = "set listStyleImage"]
+        pub safe fn set_list_style_image(this: &CSSStyleProperties, value: &str);
+
+        /// [`list-style-position`](https://developer.mozilla.org/docs/Web/CSS/list-style-position)
+        #[link_name = "get listStylePosition"]
+        pub safe fn list_style_position(this: &CSSStyleProperties) -> String;
+
+        /// [`list-style-position`](https://developer.mozilla.org/docs/Web/CSS/list-style-position)
+        #[link_name = "set listStylePosition"]
+        pub safe fn set_list_style_position(this: &CSSStyleProperties, value: &str);
+
+        /// [`list-style-type`](https://developer.mozilla.org/docs/Web/CSS/list-style-type)
+        #[link_name = "get listStyleType"]
+        pub safe fn list_style_type(this: &CSSStyleProperties) -> String;
+
+        /// [`list-style-type`](https://developer.mozilla.org/docs/Web/CSS/list-style-type)
+        #[link_name = "set listStyleType"]
+        pub safe fn set_list_style_type(this: &CSSStyleProperties, value: &str);
+
+        /// [`margin`](https://developer.mozilla.org/docs/Web/CSS/margin)
+        #[link_name = "get margin"]
+        pub safe fn margin(this: &CSSStyleProperties) -> String;
+
+        /// [`margin`](https://developer.mozilla.org/docs/Web/CSS/margin)
+        #[link_name = "set margin"]
+        pub safe fn set_margin(this: &CSSStyleProperties, value: &str);
+
+        /// [`margin-block`](https://developer.mozilla.org/docs/Web/CSS/margin-block)
+        #[link_name = "get marginBlock"]
+        pub safe fn margin_block(this: &CSSStyleProperties) -> String;
+
+        /// [`margin-block`](https://developer.mozilla.org/docs/Web/CSS/margin-block)
+        #[link_name = "set marginBlock"]
+        pub safe fn set_margin_block(this: &CSSStyleProperties, value: &str);
+
+        /// [`margin-block-end`](https://developer.mozilla.org/docs/Web/CSS/margin-block-end)
+        #[link_name = "get marginBlockEnd"]
+        pub safe fn margin_block_end(this: &CSSStyleProperties) -> String;
+
+        /// [`margin-block-end`](https://developer.mozilla.org/docs/Web/CSS/margin-block-end)
+        #[link_name = "set marginBlockEnd"]
+        pub safe fn set_margin_block_end(this: &CSSStyleProperties, value: &str);
+
+        /// [`margin-block-start`](https://developer.mozilla.org/docs/Web/CSS/margin-block-start)
+        #[link_name = "get marginBlockStart"]
+        pub safe fn margin_block_start(this: &CSSStyleProperties) -> String;
+
+        /// [`margin-block-start`](https://developer.mozilla.org/docs/Web/CSS/margin-block-start)
+        #[link_name = "set marginBlockStart"]
+        pub safe fn set_margin_block_start(this: &CSSStyleProperties, value: &str);
+
+        /// [`margin-bottom`](https://developer.mozilla.org/docs/Web/CSS/margin-bottom)
+        #[link_name = "get marginBottom"]
+        pub safe fn margin_bottom(this: &CSSStyleProperties) -> String;
+
+        /// [`margin-bottom`](https://developer.mozilla.org/docs/Web/CSS/margin-bottom)
+        #[link_name = "set marginBottom"]
+        pub safe fn set_margin_bottom(this: &CSSStyleProperties, value: &str);
+
+        /// [`margin-inline`](https://developer.mozilla.org/docs/Web/CSS/margin-inline)
+        #[link_name = "get marginInline"]
+        pub safe fn margin_inline(this: &CSSStyleProperties) -> String;
+
+        /// [`margin-inline`](https://developer.mozilla.org/docs/Web/CSS/margin-inline)
+        #[link_name = "set marginInline"]
+        pub safe fn set_margin_inline(this: &CSSStyleProperties, value: &str);
+
+        /// [`margin-inline-end`](https://developer.mozilla.org/docs/Web/CSS/margin-inline-end)
+        #[link_name = "get marginInlineEnd"]
+        pub safe fn margin_inline_end(this: &CSSStyleProperties) -> String;
+
+        /// [`margin-inline-end`](https://developer.mozilla.org/docs/Web/CSS/margin-inline-end)
+        #[link_name = "set marginInlineEnd"]
+        pub safe fn set_margin_inline_end(this: &CSSStyleProperties, value: &str);
+
+        /// [`margin-inline-start`](https://developer.mozilla.org/docs/Web/CSS/margin-inline-start)
+        #[link_name = "get marginInlineStart"]
+        pub safe fn margin_inline_start(this: &CSSStyleProperties) -> String;
+
+        /// [`margin-inline-start`](https://developer.mozilla.org/docs/Web/CSS/margin-inline-start)
+        #[link_name = "set marginInlineStart"]
+        pub safe fn set_margin_inline_start(this: &CSSStyleProperties, value: &str);
+
+        /// [`margin-left`](https://developer.mozilla.org/docs/Web/CSS/margin-left)
+        #[link_name = "get marginLeft"]
+        pub safe fn margin_left(this: &CSSStyleProperties) -> String;
+
+        /// [`margin-left`](https://developer.mozilla.org/docs/Web/CSS/margin-left)
+        #[link_name = "set marginLeft"]
+        pub safe fn set_margin_left(this: &CSSStyleProperties, value: &str);
+
+        /// [`margin-right`](https://developer.mozilla.org/docs/Web/CSS/margin-right)
+        #[link_name = "get marginRight"]
+        pub safe fn margin_right(this: &CSSStyleProperties) -> String;
+
+        /// [`margin-right`](https://developer.mozilla.org/docs/Web/CSS/margin-right)
+        #[link_name = "set marginRight"]
+        pub safe fn set_margin_right(this: &CSSStyleProperties, value: &str);
+
+        /// [`margin-top`](https://developer.mozilla.org/docs/Web/CSS/margin-top)
+        #[link_name = "get marginTop"]
+        pub safe fn margin_top(this: &CSSStyleProperties) -> String;
+
+        /// [`margin-top`](https://developer.mozilla.org/docs/Web/CSS/margin-top)
+        #[link_name = "set marginTop"]
+        pub safe fn set_margin_top(this: &CSSStyleProperties, value: &str);
+
+        /// [`marker`](https://developer.mozilla.org/docs/Web/CSS/marker)
+        #[link_name = "get marker"]
+        pub safe fn marker(this: &CSSStyleProperties) -> String;
+
+        /// [`marker`](https://developer.mozilla.org/docs/Web/CSS/marker)
+        #[link_name = "set marker"]
+        pub safe fn set_marker(this: &CSSStyleProperties, value: &str);
+
+        /// [`marker-end`](https://developer.mozilla.org/docs/Web/CSS/marker-end)
+        #[link_name = "get markerEnd"]
+        pub safe fn marker_end(this: &CSSStyleProperties) -> String;
+
+        /// [`marker-end`](https://developer.mozilla.org/docs/Web/CSS/marker-end)
+        #[link_name = "set markerEnd"]
+        pub safe fn set_marker_end(this: &CSSStyleProperties, value: &str);
+
+        /// [`marker-mid`](https://developer.mozilla.org/docs/Web/CSS/marker-mid)
+        #[link_name = "get markerMid"]
+        pub safe fn marker_mid(this: &CSSStyleProperties) -> String;
+
+        /// [`marker-mid`](https://developer.mozilla.org/docs/Web/CSS/marker-mid)
+        #[link_name = "set markerMid"]
+        pub safe fn set_marker_mid(this: &CSSStyleProperties, value: &str);
+
+        /// [`marker-start`](https://developer.mozilla.org/docs/Web/CSS/marker-start)
+        #[link_name = "get markerStart"]
+        pub safe fn marker_start(this: &CSSStyleProperties) -> String;
+
+        /// [`marker-start`](https://developer.mozilla.org/docs/Web/CSS/marker-start)
+        #[link_name = "set markerStart"]
+        pub safe fn set_marker_start(this: &CSSStyleProperties, value: &str);
+
+        /// [`mask`](https://developer.mozilla.org/docs/Web/CSS/mask)
+        #[link_name = "get mask"]
+        pub safe fn mask(this: &CSSStyleProperties) -> String;
+
+        /// [`mask`](https://developer.mozilla.org/docs/Web/CSS/mask)
+        #[link_name = "set mask"]
+        pub safe fn set_mask(this: &CSSStyleProperties, value: &str);
+
+        /// [`mask-clip`](https://developer.mozilla.org/docs/Web/CSS/mask-clip)
+        #[link_name = "get maskClip"]
+        pub safe fn mask_clip(this: &CSSStyleProperties) -> String;
+
+        /// [`mask-clip`](https://developer.mozilla.org/docs/Web/CSS/mask-clip)
+        #[link_name = "set maskClip"]
+        pub safe fn set_mask_clip(this: &CSSStyleProperties, value: &str);
+
+        /// [`mask-composite`](https://developer.mozilla.org/docs/Web/CSS/mask-composite)
+        #[link_name = "get maskComposite"]
+        pub safe fn mask_composite(this: &CSSStyleProperties) -> String;
+
+        /// [`mask-composite`](https://developer.mozilla.org/docs/Web/CSS/mask-composite)
+        #[link_name = "set maskComposite"]
+        pub safe fn set_mask_composite(this: &CSSStyleProperties, value: &str);
+
+        /// [`mask-image`](https://developer.mozilla.org/docs/Web/CSS/mask-image)
+        #[link_name = "get maskImage"]
+        pub safe fn mask_image(this: &CSSStyleProperties) -> String;
+
+        /// [`mask-image`](https://developer.mozilla.org/docs/Web/CSS/mask-image)
+        #[link_name = "set maskImage"]
+        pub safe fn set_mask_image(this: &CSSStyleProperties, value: &str);
+
+        /// [`mask-mode`](https://developer.mozilla.org/docs/Web/CSS/mask-mode)
+        #[link_name = "get maskMode"]
+        pub safe fn mask_mode(this: &CSSStyleProperties) -> String;
+
+        /// [`mask-mode`](https://developer.mozilla.org/docs/Web/CSS/mask-mode)
+        #[link_name = "set maskMode"]
+        pub safe fn set_mask_mode(this: &CSSStyleProperties, value: &str);
+
+        /// [`mask-origin`](https://developer.mozilla.org/docs/Web/CSS/mask-origin)
+        #[link_name = "get maskOrigin"]
+        pub safe fn mask_origin(this: &CSSStyleProperties) -> String;
+
+        /// [`mask-origin`](https://developer.mozilla.org/docs/Web/CSS/mask-origin)
+        #[link_name = "set maskOrigin"]
+        pub safe fn set_mask_origin(this: &CSSStyleProperties, value: &str);
+
+        /// [`mask-position`](https://developer.mozilla.org/docs/Web/CSS/mask-position)
+        #[link_name = "get maskPosition"]
+        pub safe fn mask_position(this: &CSSStyleProperties) -> String;
+
+        /// [`mask-position`](https://developer.mozilla.org/docs/Web/CSS/mask-position)
+        #[link_name = "set maskPosition"]
+        pub safe fn set_mask_position(this: &CSSStyleProperties, value: &str);
+
+        /// [`mask-repeat`](https://developer.mozilla.org/docs/Web/CSS/mask-repeat)
+        #[link_name = "get maskRepeat"]
+        pub safe fn mask_repeat(this: &CSSStyleProperties) -> String;
+
+        /// [`mask-repeat`](https://developer.mozilla.org/docs/Web/CSS/mask-repeat)
+        #[link_name = "set maskRepeat"]
+        pub safe fn set_mask_repeat(this: &CSSStyleProperties, value: &str);
+
+        /// [`mask-size`](https://developer.mozilla.org/docs/Web/CSS/mask-size)
+        #[link_name = "get maskSize"]
+        pub safe fn mask_size(this: &CSSStyleProperties) -> String;
+
+        /// [`mask-size`](https://developer.mozilla.org/docs/Web/CSS/mask-size)
+        #[link_name = "set maskSize"]
+        pub safe fn set_mask_size(this: &CSSStyleProperties, value: &str);
+
+        /// [`mask-type`](https://developer.mozilla.org/docs/Web/CSS/mask-type)
+        #[link_name = "get maskType"]
+        pub safe fn mask_type(this: &CSSStyleProperties) -> String;
+
+        /// [`mask-type`](https://developer.mozilla.org/docs/Web/CSS/mask-type)
+        #[link_name = "set maskType"]
+        pub safe fn set_mask_type(this: &CSSStyleProperties, value: &str);
+
+        /// [`math-depth`](https://developer.mozilla.org/docs/Web/CSS/math-depth)
+        #[link_name = "get mathDepth"]
+        pub safe fn math_depth(this: &CSSStyleProperties) -> String;
+
+        /// [`math-depth`](https://developer.mozilla.org/docs/Web/CSS/math-depth)
+        #[link_name = "set mathDepth"]
+        pub safe fn set_math_depth(this: &CSSStyleProperties, value: &str);
+
+        /// [`math-shift`](https://developer.mozilla.org/docs/Web/CSS/math-shift)
+        #[link_name = "get mathShift"]
+        pub safe fn math_shift(this: &CSSStyleProperties) -> String;
+
+        /// [`math-shift`](https://developer.mozilla.org/docs/Web/CSS/math-shift)
+        #[link_name = "set mathShift"]
+        pub safe fn set_math_shift(this: &CSSStyleProperties, value: &str);
+
+        /// [`math-style`](https://developer.mozilla.org/docs/Web/CSS/math-style)
+        #[link_name = "get mathStyle"]
+        pub safe fn math_style(this: &CSSStyleProperties) -> String;
+
+        /// [`math-style`](https://developer.mozilla.org/docs/Web/CSS/math-style)
+        #[link_name = "set mathStyle"]
+        pub safe fn set_math_style(this: &CSSStyleProperties, value: &str);
+
+        /// [`max-block-size`](https://developer.mozilla.org/docs/Web/CSS/max-block-size)
+        #[link_name = "get maxBlockSize"]
+        pub safe fn max_block_size(this: &CSSStyleProperties) -> String;
+
+        /// [`max-block-size`](https://developer.mozilla.org/docs/Web/CSS/max-block-size)
+        #[link_name = "set maxBlockSize"]
+        pub safe fn set_max_block_size(this: &CSSStyleProperties, value: &str);
+
+        /// [`max-height`](https://developer.mozilla.org/docs/Web/CSS/max-height)
+        #[link_name = "get maxHeight"]
+        pub safe fn max_height(this: &CSSStyleProperties) -> String;
+
+        /// [`max-height`](https://developer.mozilla.org/docs/Web/CSS/max-height)
+        #[link_name = "set maxHeight"]
+        pub safe fn set_max_height(this: &CSSStyleProperties, value: &str);
+
+        /// [`max-inline-size`](https://developer.mozilla.org/docs/Web/CSS/max-inline-size)
+        #[link_name = "get maxInlineSize"]
+        pub safe fn max_inline_size(this: &CSSStyleProperties) -> String;
+
+        /// [`max-inline-size`](https://developer.mozilla.org/docs/Web/CSS/max-inline-size)
+        #[link_name = "set maxInlineSize"]
+        pub safe fn set_max_inline_size(this: &CSSStyleProperties, value: &str);
+
+        /// [`max-width`](https://developer.mozilla.org/docs/Web/CSS/max-width)
+        #[link_name = "get maxWidth"]
+        pub safe fn max_width(this: &CSSStyleProperties) -> String;
+
+        /// [`max-width`](https://developer.mozilla.org/docs/Web/CSS/max-width)
+        #[link_name = "set maxWidth"]
+        pub safe fn set_max_width(this: &CSSStyleProperties, value: &str);
+
+        /// [`min-block-size`](https://developer.mozilla.org/docs/Web/CSS/min-block-size)
+        #[link_name = "get minBlockSize"]
+        pub safe fn min_block_size(this: &CSSStyleProperties) -> String;
+
+        /// [`min-block-size`](https://developer.mozilla.org/docs/Web/CSS/min-block-size)
+        #[link_name = "set minBlockSize"]
+        pub safe fn set_min_block_size(this: &CSSStyleProperties, value: &str);
+
+        /// [`min-height`](https://developer.mozilla.org/docs/Web/CSS/min-height)
+        #[link_name = "get minHeight"]
+        pub safe fn min_height(this: &CSSStyleProperties) -> String;
+
+        /// [`min-height`](https://developer.mozilla.org/docs/Web/CSS/min-height)
+        #[link_name = "set minHeight"]
+        pub safe fn set_min_height(this: &CSSStyleProperties, value: &str);
+
+        /// [`min-inline-size`](https://developer.mozilla.org/docs/Web/CSS/min-inline-size)
+        #[link_name = "get minInlineSize"]
+        pub safe fn min_inline_size(this: &CSSStyleProperties) -> String;
+
+        /// [`min-inline-size`](https://developer.mozilla.org/docs/Web/CSS/min-inline-size)
+        #[link_name = "set minInlineSize"]
+        pub safe fn set_min_inline_size(this: &CSSStyleProperties, value: &str);
+
+        /// [`min-width`](https://developer.mozilla.org/docs/Web/CSS/min-width)
+        #[link_name = "get minWidth"]
+        pub safe fn min_width(this: &CSSStyleProperties) -> String;
+
+        /// [`min-width`](https://developer.mozilla.org/docs/Web/CSS/min-width)
+        #[link_name = "set minWidth"]
+        pub safe fn set_min_width(this: &CSSStyleProperties, value: &str);
+
+        /// [`mix-blend-mode`](https://developer.mozilla.org/docs/Web/CSS/mix-blend-mode)
+        #[link_name = "get mixBlendMode"]
+        pub safe fn mix_blend_mode(this: &CSSStyleProperties) -> String;
+
+        /// [`mix-blend-mode`](https://developer.mozilla.org/docs/Web/CSS/mix-blend-mode)
+        #[link_name = "set mixBlendMode"]
+        pub safe fn set_mix_blend_mode(this: &CSSStyleProperties, value: &str);
+
+        /// [`object-fit`](https://developer.mozilla.org/docs/Web/CSS/object-fit)
+        #[link_name = "get objectFit"]
+        pub safe fn object_fit(this: &CSSStyleProperties) -> String;
+
+        /// [`object-fit`](https://developer.mozilla.org/docs/Web/CSS/object-fit)
+        #[link_name = "set objectFit"]
+        pub safe fn set_object_fit(this: &CSSStyleProperties, value: &str);
+
+        /// [`object-position`](https://developer.mozilla.org/docs/Web/CSS/object-position)
+        #[link_name = "get objectPosition"]
+        pub safe fn object_position(this: &CSSStyleProperties) -> String;
+
+        /// [`object-position`](https://developer.mozilla.org/docs/Web/CSS/object-position)
+        #[link_name = "set objectPosition"]
+        pub safe fn set_object_position(this: &CSSStyleProperties, value: &str);
+
+        /// [`offset`](https://developer.mozilla.org/docs/Web/CSS/offset)
+        #[link_name = "get offset"]
+        pub safe fn offset(this: &CSSStyleProperties) -> String;
+
+        /// [`offset`](https://developer.mozilla.org/docs/Web/CSS/offset)
+        #[link_name = "set offset"]
+        pub safe fn set_offset(this: &CSSStyleProperties, value: &str);
+
+        /// [`offset-anchor`](https://developer.mozilla.org/docs/Web/CSS/offset-anchor)
+        #[link_name = "get offsetAnchor"]
+        pub safe fn offset_anchor(this: &CSSStyleProperties) -> String;
+
+        /// [`offset-anchor`](https://developer.mozilla.org/docs/Web/CSS/offset-anchor)
+        #[link_name = "set offsetAnchor"]
+        pub safe fn set_offset_anchor(this: &CSSStyleProperties, value: &str);
+
+        /// [`offset-distance`](https://developer.mozilla.org/docs/Web/CSS/offset-distance)
+        #[link_name = "get offsetDistance"]
+        pub safe fn offset_distance(this: &CSSStyleProperties) -> String;
+
+        /// [`offset-distance`](https://developer.mozilla.org/docs/Web/CSS/offset-distance)
+        #[link_name = "set offsetDistance"]
+        pub safe fn set_offset_distance(this: &CSSStyleProperties, value: &str);
+
+        /// [`offset-path`](https://developer.mozilla.org/docs/Web/CSS/offset-path)
+        #[link_name = "get offsetPath"]
+        pub safe fn offset_path(this: &CSSStyleProperties) -> String;
+
+        /// [`offset-path`](https://developer.mozilla.org/docs/Web/CSS/offset-path)
+        #[link_name = "set offsetPath"]
+        pub safe fn set_offset_path(this: &CSSStyleProperties, value: &str);
+
+        /// [`offset-position`](https://developer.mozilla.org/docs/Web/CSS/offset-position)
+        #[link_name = "get offsetPosition"]
+        pub safe fn offset_position(this: &CSSStyleProperties) -> String;
+
+        /// [`offset-position`](https://developer.mozilla.org/docs/Web/CSS/offset-position)
+        #[link_name = "set offsetPosition"]
+        pub safe fn set_offset_position(this: &CSSStyleProperties, value: &str);
+
+        /// [`offset-rotate`](https://developer.mozilla.org/docs/Web/CSS/offset-rotate)
+        #[link_name = "get offsetRotate"]
+        pub safe fn offset_rotate(this: &CSSStyleProperties) -> String;
+
+        /// [`offset-rotate`](https://developer.mozilla.org/docs/Web/CSS/offset-rotate)
+        #[link_name = "set offsetRotate"]
+        pub safe fn set_offset_rotate(this: &CSSStyleProperties, value: &str);
+
+        /// [`opacity`](https://developer.mozilla.org/docs/Web/CSS/opacity)
+        #[link_name = "get opacity"]
+        pub safe fn opacity(this: &CSSStyleProperties) -> String;
+
+        /// [`opacity`](https://developer.mozilla.org/docs/Web/CSS/opacity)
+        #[link_name = "set opacity"]
+        pub safe fn set_opacity(this: &CSSStyleProperties, value: &str);
+
+        /// [`order`](https://developer.mozilla.org/docs/Web/CSS/order)
+        #[link_name = "get order"]
+        pub safe fn order(this: &CSSStyleProperties) -> String;
+
+        /// [`order`](https://developer.mozilla.org/docs/Web/CSS/order)
+        #[link_name = "set order"]
+        pub safe fn set_order(this: &CSSStyleProperties, value: &str);
+
+        /// [`orphans`](https://developer.mozilla.org/docs/Web/CSS/orphans)
+        #[link_name = "get orphans"]
+        pub safe fn orphans(this: &CSSStyleProperties) -> String;
+
+        /// [`orphans`](https://developer.mozilla.org/docs/Web/CSS/orphans)
+        #[link_name = "set orphans"]
+        pub safe fn set_orphans(this: &CSSStyleProperties, value: &str);
+
+        /// [`outline`](https://developer.mozilla.org/docs/Web/CSS/outline)
+        #[link_name = "get outline"]
+        pub safe fn outline(this: &CSSStyleProperties) -> String;
+
+        /// [`outline`](https://developer.mozilla.org/docs/Web/CSS/outline)
+        #[link_name = "set outline"]
+        pub safe fn set_outline(this: &CSSStyleProperties, value: &str);
+
+        /// [`outline-color`](https://developer.mozilla.org/docs/Web/CSS/outline-color)
+        #[link_name = "get outlineColor"]
+        pub safe fn outline_color(this: &CSSStyleProperties) -> String;
+
+        /// [`outline-color`](https://developer.mozilla.org/docs/Web/CSS/outline-color)
+        #[link_name = "set outlineColor"]
+        pub safe fn set_outline_color(this: &CSSStyleProperties, value: &str);
+
+        /// [`outline-offset`](https://developer.mozilla.org/docs/Web/CSS/outline-offset)
+        #[link_name = "get outlineOffset"]
+        pub safe fn outline_offset(this: &CSSStyleProperties) -> String;
+
+        /// [`outline-offset`](https://developer.mozilla.org/docs/Web/CSS/outline-offset)
+        #[link_name = "set outlineOffset"]
+        pub safe fn set_outline_offset(this: &CSSStyleProperties, value: &str);
+
+        /// [`outline-style`](https://developer.mozilla.org/docs/Web/CSS/outline-style)
+        #[link_name = "get outlineStyle"]
+        pub safe fn outline_style(this: &CSSStyleProperties) -> String;
+
+        /// [`outline-style`](https://developer.mozilla.org/docs/Web/CSS/outline-style)
+        #[link_name = "set outlineStyle"]
+        pub safe fn set_outline_style(this: &CSSStyleProperties, value: &str);
+
+        /// [`outline-width`](https://developer.mozilla.org/docs/Web/CSS/outline-width)
+        #[link_name = "get outlineWidth"]
+        pub safe fn outline_width(this: &CSSStyleProperties) -> String;
+
+        /// [`outline-width`](https://developer.mozilla.org/docs/Web/CSS/outline-width)
+        #[link_name = "set outlineWidth"]
+        pub safe fn set_outline_width(this: &CSSStyleProperties, value: &str);
+
+        /// [`overflow`](https://developer.mozilla.org/docs/Web/CSS/overflow)
+        #[link_name = "get overflow"]
+        pub safe fn overflow(this: &CSSStyleProperties) -> String;
+
+        /// [`overflow`](https://developer.mozilla.org/docs/Web/CSS/overflow)
+        #[link_name = "set overflow"]
+        pub safe fn set_overflow(this: &CSSStyleProperties, value: &str);
+
+        /// [`overflow-anchor`](https://developer.mozilla.org/docs/Web/CSS/overflow-anchor)
+        #[link_name = "get overflowAnchor"]
+        pub safe fn overflow_anchor(this: &CSSStyleProperties) -> String;
+
+        /// [`overflow-anchor`](https://developer.mozilla.org/docs/Web/CSS/overflow-anchor)
+        #[link_name = "set overflowAnchor"]
+        pub safe fn set_overflow_anchor(this: &CSSStyleProperties, value: &str);
+
+        /// [`overflow-block`](https://developer.mozilla.org/docs/Web/CSS/overflow-block)
+        #[link_name = "get overflowBlock"]
+        pub safe fn overflow_block(this: &CSSStyleProperties) -> String;
+
+        /// [`overflow-block`](https://developer.mozilla.org/docs/Web/CSS/overflow-block)
+        #[link_name = "set overflowBlock"]
+        pub safe fn set_overflow_block(this: &CSSStyleProperties, value: &str);
+
+        /// [`overflow-clip-margin`](https://developer.mozilla.org/docs/Web/CSS/overflow-clip-margin)
+        #[link_name = "get overflowClipMargin"]
+        pub safe fn overflow_clip_margin(this: &CSSStyleProperties) -> String;
+
+        /// [`overflow-clip-margin`](https://developer.mozilla.org/docs/Web/CSS/overflow-clip-margin)
+        #[link_name = "set overflowClipMargin"]
+        pub safe fn set_overflow_clip_margin(this: &CSSStyleProperties, value: &str);
+
+        /// [`overflow-inline`](https://developer.mozilla.org/docs/Web/CSS/overflow-inline)
+        #[link_name = "get overflowInline"]
+        pub safe fn overflow_inline(this: &CSSStyleProperties) -> String;
+
+        /// [`overflow-inline`](https://developer.mozilla.org/docs/Web/CSS/overflow-inline)
+        #[link_name = "set overflowInline"]
+        pub safe fn set_overflow_inline(this: &CSSStyleProperties, value: &str);
+
+        /// [`overflow-wrap`](https://developer.mozilla.org/docs/Web/CSS/overflow-wrap)
+        #[link_name = "get overflowWrap"]
+        pub safe fn overflow_wrap(this: &CSSStyleProperties) -> String;
+
+        /// [`overflow-wrap`](https://developer.mozilla.org/docs/Web/CSS/overflow-wrap)
+        #[link_name = "set overflowWrap"]
+        pub safe fn set_overflow_wrap(this: &CSSStyleProperties, value: &str);
+
+        /// [`overflow-x`](https://developer.mozilla.org/docs/Web/CSS/overflow-x)
+        #[link_name = "get overflowX"]
+        pub safe fn overflow_x(this: &CSSStyleProperties) -> String;
+
+        /// [`overflow-x`](https://developer.mozilla.org/docs/Web/CSS/overflow-x)
+        #[link_name = "set overflowX"]
+        pub safe fn set_overflow_x(this: &CSSStyleProperties, value: &str);
+
+        /// [`overflow-y`](https://developer.mozilla.org/docs/Web/CSS/overflow-y)
+        #[link_name = "get overflowY"]
+        pub safe fn overflow_y(this: &CSSStyleProperties) -> String;
+
+        /// [`overflow-y`](https://developer.mozilla.org/docs/Web/CSS/overflow-y)
+        #[link_name = "set overflowY"]
+        pub safe fn set_overflow_y(this: &CSSStyleProperties, value: &str);
+
+        /// [`overscroll-behavior`](https://developer.mozilla.org/docs/Web/CSS/overscroll-behavior)
+        #[link_name = "get overscrollBehavior"]
+        pub safe fn overscroll_behavior(this: &CSSStyleProperties) -> String;
+
+        /// [`overscroll-behavior`](https://developer.mozilla.org/docs/Web/CSS/overscroll-behavior)
+        #[link_name = "set overscrollBehavior"]
+        pub safe fn set_overscroll_behavior(this: &CSSStyleProperties, value: &str);
+
+        /// [`overscroll-behavior-block`](https://developer.mozilla.org/docs/Web/CSS/overscroll-behavior-block)
+        #[link_name = "get overscrollBehaviorBlock"]
+        pub safe fn overscroll_behavior_block(this: &CSSStyleProperties) -> String;
+
+        /// [`overscroll-behavior-block`](https://developer.mozilla.org/docs/Web/CSS/overscroll-behavior-block)
+        #[link_name = "set overscrollBehaviorBlock"]
+        pub safe fn set_overscroll_behavior_block(this: &CSSStyleProperties, value: &str);
+
+        /// [`overscroll-behavior-inline`](https://developer.mozilla.org/docs/Web/CSS/overscroll-behavior-inline)
+        #[link_name = "get overscrollBehaviorInline"]
+        pub safe fn overscroll_behavior_inline(this: &CSSStyleProperties) -> String;
+
+        /// [`overscroll-behavior-inline`](https://developer.mozilla.org/docs/Web/CSS/overscroll-behavior-inline)
+        #[link_name = "set overscrollBehaviorInline"]
+        pub safe fn set_overscroll_behavior_inline(this: &CSSStyleProperties, value: &str);
+
+        /// [`overscroll-behavior-x`](https://developer.mozilla.org/docs/Web/CSS/overscroll-behavior-x)
+        #[link_name = "get overscrollBehaviorX"]
+        pub safe fn overscroll_behavior_x(this: &CSSStyleProperties) -> String;
+
+        /// [`overscroll-behavior-x`](https://developer.mozilla.org/docs/Web/CSS/overscroll-behavior-x)
+        #[link_name = "set overscrollBehaviorX"]
+        pub safe fn set_overscroll_behavior_x(this: &CSSStyleProperties, value: &str);
+
+        /// [`overscroll-behavior-y`](https://developer.mozilla.org/docs/Web/CSS/overscroll-behavior-y)
+        #[link_name = "get overscrollBehaviorY"]
+        pub safe fn overscroll_behavior_y(this: &CSSStyleProperties) -> String;
+
+        /// [`overscroll-behavior-y`](https://developer.mozilla.org/docs/Web/CSS/overscroll-behavior-y)
+        #[link_name = "set overscrollBehaviorY"]
+        pub safe fn set_overscroll_behavior_y(this: &CSSStyleProperties, value: &str);
+
+        /// [`padding`](https://developer.mozilla.org/docs/Web/CSS/padding)
+        #[link_name = "get padding"]
+        pub safe fn padding(this: &CSSStyleProperties) -> String;
+
+        /// [`padding`](https://developer.mozilla.org/docs/Web/CSS/padding)
+        #[link_name = "set padding"]
+        pub safe fn set_padding(this: &CSSStyleProperties, value: &str);
+
+        /// [`padding-block`](https://developer.mozilla.org/docs/Web/CSS/padding-block)
+        #[link_name = "get paddingBlock"]
+        pub safe fn padding_block(this: &CSSStyleProperties) -> String;
+
+        /// [`padding-block`](https://developer.mozilla.org/docs/Web/CSS/padding-block)
+        #[link_name = "set paddingBlock"]
+        pub safe fn set_padding_block(this: &CSSStyleProperties, value: &str);
+
+        /// [`padding-block-end`](https://developer.mozilla.org/docs/Web/CSS/padding-block-end)
+        #[link_name = "get paddingBlockEnd"]
+        pub safe fn padding_block_end(this: &CSSStyleProperties) -> String;
+
+        /// [`padding-block-end`](https://developer.mozilla.org/docs/Web/CSS/padding-block-end)
+        #[link_name = "set paddingBlockEnd"]
+        pub safe fn set_padding_block_end(this: &CSSStyleProperties, value: &str);
+
+        /// [`padding-block-start`](https://developer.mozilla.org/docs/Web/CSS/padding-block-start)
+        #[link_name = "get paddingBlockStart"]
+        pub safe fn padding_block_start(this: &CSSStyleProperties) -> String;
+
+        /// [`padding-block-start`](https://developer.mozilla.org/docs/Web/CSS/padding-block-start)
+        #[link_name = "set paddingBlockStart"]
+        pub safe fn set_padding_block_start(this: &CSSStyleProperties, value: &str);
+
+        /// [`padding-bottom`](https://developer.mozilla.org/docs/Web/CSS/padding-bottom)
+        #[link_name = "get paddingBottom"]
+        pub safe fn padding_bottom(this: &CSSStyleProperties) -> String;
+
+        /// [`padding-bottom`](https://developer.mozilla.org/docs/Web/CSS/padding-bottom)
+        #[link_name = "set paddingBottom"]
+        pub safe fn set_padding_bottom(this: &CSSStyleProperties, value: &str);
+
+        /// [`padding-inline`](https://developer.mozilla.org/docs/Web/CSS/padding-inline)
+        #[link_name = "get paddingInline"]
+        pub safe fn padding_inline(this: &CSSStyleProperties) -> String;
+
+        /// [`padding-inline`](https://developer.mozilla.org/docs/Web/CSS/padding-inline)
+        #[link_name = "set paddingInline"]
+        pub safe fn set_padding_inline(this: &CSSStyleProperties, value: &str);
+
+        /// [`padding-inline-end`](https://developer.mozilla.org/docs/Web/CSS/padding-inline-end)
+        #[link_name = "get paddingInlineEnd"]
+        pub safe fn padding_inline_end(this: &CSSStyleProperties) -> String;
+
+        /// [`padding-inline-end`](https://developer.mozilla.org/docs/Web/CSS/padding-inline-end)
+        #[link_name = "set paddingInlineEnd"]
+        pub safe fn set_padding_inline_end(this: &CSSStyleProperties, value: &str);
+
+        /// [`padding-inline-start`](https://developer.mozilla.org/docs/Web/CSS/padding-inline-start)
+        #[link_name = "get paddingInlineStart"]
+        pub safe fn padding_inline_start(this: &CSSStyleProperties) -> String;
+
+        /// [`padding-inline-start`](https://developer.mozilla.org/docs/Web/CSS/padding-inline-start)
+        #[link_name = "set paddingInlineStart"]
+        pub safe fn set_padding_inline_start(this: &CSSStyleProperties, value: &str);
+
+        /// [`padding-left`](https://developer.mozilla.org/docs/Web/CSS/padding-left)
+        #[link_name = "get paddingLeft"]
+        pub safe fn padding_left(this: &CSSStyleProperties) -> String;
+
+        /// [`padding-left`](https://developer.mozilla.org/docs/Web/CSS/padding-left)
+        #[link_name = "set paddingLeft"]
+        pub safe fn set_padding_left(this: &CSSStyleProperties, value: &str);
+
+        /// [`padding-right`](https://developer.mozilla.org/docs/Web/CSS/padding-right)
+        #[link_name = "get paddingRight"]
+        pub safe fn padding_right(this: &CSSStyleProperties) -> String;
+
+        /// [`padding-right`](https://developer.mozilla.org/docs/Web/CSS/padding-right)
+        #[link_name = "set paddingRight"]
+        pub safe fn set_padding_right(this: &CSSStyleProperties, value: &str);
+
+        /// [`padding-top`](https://developer.mozilla.org/docs/Web/CSS/padding-top)
+        #[link_name = "get paddingTop"]
+        pub safe fn padding_top(this: &CSSStyleProperties) -> String;
+
+        /// [`padding-top`](https://developer.mozilla.org/docs/Web/CSS/padding-top)
+        #[link_name = "set paddingTop"]
+        pub safe fn set_padding_top(this: &CSSStyleProperties, value: &str);
+
+        /// [`page`](https://developer.mozilla.org/docs/Web/CSS/page)
+        #[link_name = "get page"]
+        pub safe fn page(this: &CSSStyleProperties) -> String;
+
+        /// [`page`](https://developer.mozilla.org/docs/Web/CSS/page)
+        #[link_name = "set page"]
+        pub safe fn set_page(this: &CSSStyleProperties, value: &str);
+
+        /// [`page-break-after`](https://developer.mozilla.org/docs/Web/CSS/page-break-after)
+        #[link_name = "get pageBreakAfter"]
+        pub safe fn page_break_after(this: &CSSStyleProperties) -> String;
+
+        /// [`page-break-after`](https://developer.mozilla.org/docs/Web/CSS/page-break-after)
+        #[link_name = "set pageBreakAfter"]
+        pub safe fn set_page_break_after(this: &CSSStyleProperties, value: &str);
+
+        /// [`page-break-before`](https://developer.mozilla.org/docs/Web/CSS/page-break-before)
+        #[link_name = "get pageBreakBefore"]
+        pub safe fn page_break_before(this: &CSSStyleProperties) -> String;
+
+        /// [`page-break-before`](https://developer.mozilla.org/docs/Web/CSS/page-break-before)
+        #[link_name = "set pageBreakBefore"]
+        pub safe fn set_page_break_before(this: &CSSStyleProperties, value: &str);
+
+        /// [`page-break-inside`](https://developer.mozilla.org/docs/Web/CSS/page-break-inside)
+        #[link_name = "get pageBreakInside"]
+        pub safe fn page_break_inside(this: &CSSStyleProperties) -> String;
+
+        /// [`page-break-inside`](https://developer.mozilla.org/docs/Web/CSS/page-break-inside)
+        #[link_name = "set pageBreakInside"]
+        pub safe fn set_page_break_inside(this: &CSSStyleProperties, value: &str);
+
+        /// [`paint-order`](https://developer.mozilla.org/docs/Web/CSS/paint-order)
+        #[link_name = "get paintOrder"]
+        pub safe fn paint_order(this: &CSSStyleProperties) -> String;
+
+        /// [`paint-order`](https://developer.mozilla.org/docs/Web/CSS/paint-order)
+        #[link_name = "set paintOrder"]
+        pub safe fn set_paint_order(this: &CSSStyleProperties, value: &str);
+
+        /// [`parent-rule`](https://developer.mozilla.org/docs/Web/CSS/parent-rule)
+        #[link_name = "get parentRule"]
+        pub safe fn parent_rule(this: &CSSStyleProperties) -> String;
+
+        /// [`parent-rule`](https://developer.mozilla.org/docs/Web/CSS/parent-rule)
+        #[link_name = "set parentRule"]
+        pub safe fn set_parent_rule(this: &CSSStyleProperties, value: &str);
+
+        /// [`perspective`](https://developer.mozilla.org/docs/Web/CSS/perspective)
+        #[link_name = "get perspective"]
+        pub safe fn perspective(this: &CSSStyleProperties) -> String;
+
+        /// [`perspective`](https://developer.mozilla.org/docs/Web/CSS/perspective)
+        #[link_name = "set perspective"]
+        pub safe fn set_perspective(this: &CSSStyleProperties, value: &str);
+
+        /// [`perspective-origin`](https://developer.mozilla.org/docs/Web/CSS/perspective-origin)
+        #[link_name = "get perspectiveOrigin"]
+        pub safe fn perspective_origin(this: &CSSStyleProperties) -> String;
+
+        /// [`perspective-origin`](https://developer.mozilla.org/docs/Web/CSS/perspective-origin)
+        #[link_name = "set perspectiveOrigin"]
+        pub safe fn set_perspective_origin(this: &CSSStyleProperties, value: &str);
+
+        /// [`place-content`](https://developer.mozilla.org/docs/Web/CSS/place-content)
+        #[link_name = "get placeContent"]
+        pub safe fn place_content(this: &CSSStyleProperties) -> String;
+
+        /// [`place-content`](https://developer.mozilla.org/docs/Web/CSS/place-content)
+        #[link_name = "set placeContent"]
+        pub safe fn set_place_content(this: &CSSStyleProperties, value: &str);
+
+        /// [`place-items`](https://developer.mozilla.org/docs/Web/CSS/place-items)
+        #[link_name = "get placeItems"]
+        pub safe fn place_items(this: &CSSStyleProperties) -> String;
+
+        /// [`place-items`](https://developer.mozilla.org/docs/Web/CSS/place-items)
+        #[link_name = "set placeItems"]
+        pub safe fn set_place_items(this: &CSSStyleProperties, value: &str);
+
+        /// [`place-self`](https://developer.mozilla.org/docs/Web/CSS/place-self)
+        #[link_name = "get placeSelf"]
+        pub safe fn place_self(this: &CSSStyleProperties) -> String;
+
+        /// [`place-self`](https://developer.mozilla.org/docs/Web/CSS/place-self)
+        #[link_name = "set placeSelf"]
+        pub safe fn set_place_self(this: &CSSStyleProperties, value: &str);
+
+        /// [`pointer-events`](https://developer.mozilla.org/docs/Web/CSS/pointer-events)
+        #[link_name = "get pointerEvents"]
+        pub safe fn pointer_events(this: &CSSStyleProperties) -> String;
+
+        /// [`pointer-events`](https://developer.mozilla.org/docs/Web/CSS/pointer-events)
+        #[link_name = "set pointerEvents"]
+        pub safe fn set_pointer_events(this: &CSSStyleProperties, value: &str);
+
+        /// [`position`](https://developer.mozilla.org/docs/Web/CSS/position)
+        #[link_name = "get position"]
+        pub safe fn position(this: &CSSStyleProperties) -> String;
+
+        /// [`position`](https://developer.mozilla.org/docs/Web/CSS/position)
+        #[link_name = "set position"]
+        pub safe fn set_position(this: &CSSStyleProperties, value: &str);
+
+        /// [`position-anchor`](https://developer.mozilla.org/docs/Web/CSS/position-anchor)
+        #[link_name = "get positionAnchor"]
+        pub safe fn position_anchor(this: &CSSStyleProperties) -> String;
+
+        /// [`position-anchor`](https://developer.mozilla.org/docs/Web/CSS/position-anchor)
+        #[link_name = "set positionAnchor"]
+        pub safe fn set_position_anchor(this: &CSSStyleProperties, value: &str);
+
+        /// [`position-area`](https://developer.mozilla.org/docs/Web/CSS/position-area)
+        #[link_name = "get positionArea"]
+        pub safe fn position_area(this: &CSSStyleProperties) -> String;
+
+        /// [`position-area`](https://developer.mozilla.org/docs/Web/CSS/position-area)
+        #[link_name = "set positionArea"]
+        pub safe fn set_position_area(this: &CSSStyleProperties, value: &str);
+
+        /// [`position-try`](https://developer.mozilla.org/docs/Web/CSS/position-try)
+        #[link_name = "get positionTry"]
+        pub safe fn position_try(this: &CSSStyleProperties) -> String;
+
+        /// [`position-try`](https://developer.mozilla.org/docs/Web/CSS/position-try)
+        #[link_name = "set positionTry"]
+        pub safe fn set_position_try(this: &CSSStyleProperties, value: &str);
+
+        /// [`position-try-fallbacks`](https://developer.mozilla.org/docs/Web/CSS/position-try-fallbacks)
+        #[link_name = "get positionTryFallbacks"]
+        pub safe fn position_try_fallbacks(this: &CSSStyleProperties) -> String;
+
+        /// [`position-try-fallbacks`](https://developer.mozilla.org/docs/Web/CSS/position-try-fallbacks)
+        #[link_name = "set positionTryFallbacks"]
+        pub safe fn set_position_try_fallbacks(this: &CSSStyleProperties, value: &str);
+
+        /// [`position-try-order`](https://developer.mozilla.org/docs/Web/CSS/position-try-order)
+        #[link_name = "get positionTryOrder"]
+        pub safe fn position_try_order(this: &CSSStyleProperties) -> String;
+
+        /// [`position-try-order`](https://developer.mozilla.org/docs/Web/CSS/position-try-order)
+        #[link_name = "set positionTryOrder"]
+        pub safe fn set_position_try_order(this: &CSSStyleProperties, value: &str);
+
+        /// [`position-visibility`](https://developer.mozilla.org/docs/Web/CSS/position-visibility)
+        #[link_name = "get positionVisibility"]
+        pub safe fn position_visibility(this: &CSSStyleProperties) -> String;
+
+        /// [`position-visibility`](https://developer.mozilla.org/docs/Web/CSS/position-visibility)
+        #[link_name = "set positionVisibility"]
+        pub safe fn set_position_visibility(this: &CSSStyleProperties, value: &str);
+
+        /// [`print-color-adjust`](https://developer.mozilla.org/docs/Web/CSS/print-color-adjust)
+        #[link_name = "get printColorAdjust"]
+        pub safe fn print_color_adjust(this: &CSSStyleProperties) -> String;
+
+        /// [`print-color-adjust`](https://developer.mozilla.org/docs/Web/CSS/print-color-adjust)
+        #[link_name = "set printColorAdjust"]
+        pub safe fn set_print_color_adjust(this: &CSSStyleProperties, value: &str);
+
+        /// [`quotes`](https://developer.mozilla.org/docs/Web/CSS/quotes)
+        #[link_name = "get quotes"]
+        pub safe fn quotes(this: &CSSStyleProperties) -> String;
+
+        /// [`quotes`](https://developer.mozilla.org/docs/Web/CSS/quotes)
+        #[link_name = "set quotes"]
+        pub safe fn set_quotes(this: &CSSStyleProperties, value: &str);
+
+        /// [`r`](https://developer.mozilla.org/docs/Web/CSS/r)
+        #[link_name = "get r"]
+        pub safe fn r(this: &CSSStyleProperties) -> String;
+
+        /// [`r`](https://developer.mozilla.org/docs/Web/CSS/r)
+        #[link_name = "set r"]
+        pub safe fn set_r(this: &CSSStyleProperties, value: &str);
+
+        /// [`remove-property`](https://developer.mozilla.org/docs/Web/CSS/remove-property)
+        #[link_name = "get removeProperty"]
+        pub safe fn remove_property(this: &CSSStyleProperties) -> String;
+
+        /// [`remove-property`](https://developer.mozilla.org/docs/Web/CSS/remove-property)
+        #[link_name = "set removeProperty"]
+        pub safe fn set_remove_property(this: &CSSStyleProperties, value: &str);
+
+        /// [`resize`](https://developer.mozilla.org/docs/Web/CSS/resize)
+        #[link_name = "get resize"]
+        pub safe fn resize(this: &CSSStyleProperties) -> String;
+
+        /// [`resize`](https://developer.mozilla.org/docs/Web/CSS/resize)
+        #[link_name = "set resize"]
+        pub safe fn set_resize(this: &CSSStyleProperties, value: &str);
+
+        /// [`right`](https://developer.mozilla.org/docs/Web/CSS/right)
+        #[link_name = "get right"]
+        pub safe fn right(this: &CSSStyleProperties) -> String;
+
+        /// [`right`](https://developer.mozilla.org/docs/Web/CSS/right)
+        #[link_name = "set right"]
+        pub safe fn set_right(this: &CSSStyleProperties, value: &str);
+
+        /// [`rotate`](https://developer.mozilla.org/docs/Web/CSS/rotate)
+        #[link_name = "get rotate"]
+        pub safe fn rotate(this: &CSSStyleProperties) -> String;
+
+        /// [`rotate`](https://developer.mozilla.org/docs/Web/CSS/rotate)
+        #[link_name = "set rotate"]
+        pub safe fn set_rotate(this: &CSSStyleProperties, value: &str);
+
+        /// [`row-gap`](https://developer.mozilla.org/docs/Web/CSS/row-gap)
+        #[link_name = "get rowGap"]
+        pub safe fn row_gap(this: &CSSStyleProperties) -> String;
+
+        /// [`row-gap`](https://developer.mozilla.org/docs/Web/CSS/row-gap)
+        #[link_name = "set rowGap"]
+        pub safe fn set_row_gap(this: &CSSStyleProperties, value: &str);
+
+        /// [`ruby-align`](https://developer.mozilla.org/docs/Web/CSS/ruby-align)
+        #[link_name = "get rubyAlign"]
+        pub safe fn ruby_align(this: &CSSStyleProperties) -> String;
+
+        /// [`ruby-align`](https://developer.mozilla.org/docs/Web/CSS/ruby-align)
+        #[link_name = "set rubyAlign"]
+        pub safe fn set_ruby_align(this: &CSSStyleProperties, value: &str);
+
+        /// [`ruby-position`](https://developer.mozilla.org/docs/Web/CSS/ruby-position)
+        #[link_name = "get rubyPosition"]
+        pub safe fn ruby_position(this: &CSSStyleProperties) -> String;
+
+        /// [`ruby-position`](https://developer.mozilla.org/docs/Web/CSS/ruby-position)
+        #[link_name = "set rubyPosition"]
+        pub safe fn set_ruby_position(this: &CSSStyleProperties, value: &str);
+
+        /// [`rx`](https://developer.mozilla.org/docs/Web/CSS/rx)
+        #[link_name = "get rx"]
+        pub safe fn rx(this: &CSSStyleProperties) -> String;
+
+        /// [`rx`](https://developer.mozilla.org/docs/Web/CSS/rx)
+        #[link_name = "set rx"]
+        pub safe fn set_rx(this: &CSSStyleProperties, value: &str);
+
+        /// [`ry`](https://developer.mozilla.org/docs/Web/CSS/ry)
+        #[link_name = "get ry"]
+        pub safe fn ry(this: &CSSStyleProperties) -> String;
+
+        /// [`ry`](https://developer.mozilla.org/docs/Web/CSS/ry)
+        #[link_name = "set ry"]
+        pub safe fn set_ry(this: &CSSStyleProperties, value: &str);
+
+        /// [`scale`](https://developer.mozilla.org/docs/Web/CSS/scale)
+        #[link_name = "get scale"]
+        pub safe fn scale(this: &CSSStyleProperties) -> String;
+
+        /// [`scale`](https://developer.mozilla.org/docs/Web/CSS/scale)
+        #[link_name = "set scale"]
+        pub safe fn set_scale(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-behavior`](https://developer.mozilla.org/docs/Web/CSS/scroll-behavior)
+        #[link_name = "get scrollBehavior"]
+        pub safe fn scroll_behavior(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-behavior`](https://developer.mozilla.org/docs/Web/CSS/scroll-behavior)
+        #[link_name = "set scrollBehavior"]
+        pub safe fn set_scroll_behavior(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-margin`](https://developer.mozilla.org/docs/Web/CSS/scroll-margin)
+        #[link_name = "get scrollMargin"]
+        pub safe fn scroll_margin(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-margin`](https://developer.mozilla.org/docs/Web/CSS/scroll-margin)
+        #[link_name = "set scrollMargin"]
+        pub safe fn set_scroll_margin(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-margin-block`](https://developer.mozilla.org/docs/Web/CSS/scroll-margin-block)
+        #[link_name = "get scrollMarginBlock"]
+        pub safe fn scroll_margin_block(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-margin-block`](https://developer.mozilla.org/docs/Web/CSS/scroll-margin-block)
+        #[link_name = "set scrollMarginBlock"]
+        pub safe fn set_scroll_margin_block(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-margin-block-end`](https://developer.mozilla.org/docs/Web/CSS/scroll-margin-block-end)
+        #[link_name = "get scrollMarginBlockEnd"]
+        pub safe fn scroll_margin_block_end(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-margin-block-end`](https://developer.mozilla.org/docs/Web/CSS/scroll-margin-block-end)
+        #[link_name = "set scrollMarginBlockEnd"]
+        pub safe fn set_scroll_margin_block_end(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-margin-block-start`](https://developer.mozilla.org/docs/Web/CSS/scroll-margin-block-start)
+        #[link_name = "get scrollMarginBlockStart"]
+        pub safe fn scroll_margin_block_start(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-margin-block-start`](https://developer.mozilla.org/docs/Web/CSS/scroll-margin-block-start)
+        #[link_name = "set scrollMarginBlockStart"]
+        pub safe fn set_scroll_margin_block_start(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-margin-bottom`](https://developer.mozilla.org/docs/Web/CSS/scroll-margin-bottom)
+        #[link_name = "get scrollMarginBottom"]
+        pub safe fn scroll_margin_bottom(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-margin-bottom`](https://developer.mozilla.org/docs/Web/CSS/scroll-margin-bottom)
+        #[link_name = "set scrollMarginBottom"]
+        pub safe fn set_scroll_margin_bottom(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-margin-inline`](https://developer.mozilla.org/docs/Web/CSS/scroll-margin-inline)
+        #[link_name = "get scrollMarginInline"]
+        pub safe fn scroll_margin_inline(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-margin-inline`](https://developer.mozilla.org/docs/Web/CSS/scroll-margin-inline)
+        #[link_name = "set scrollMarginInline"]
+        pub safe fn set_scroll_margin_inline(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-margin-inline-end`](https://developer.mozilla.org/docs/Web/CSS/scroll-margin-inline-end)
+        #[link_name = "get scrollMarginInlineEnd"]
+        pub safe fn scroll_margin_inline_end(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-margin-inline-end`](https://developer.mozilla.org/docs/Web/CSS/scroll-margin-inline-end)
+        #[link_name = "set scrollMarginInlineEnd"]
+        pub safe fn set_scroll_margin_inline_end(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-margin-inline-start`](https://developer.mozilla.org/docs/Web/CSS/scroll-margin-inline-start)
+        #[link_name = "get scrollMarginInlineStart"]
+        pub safe fn scroll_margin_inline_start(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-margin-inline-start`](https://developer.mozilla.org/docs/Web/CSS/scroll-margin-inline-start)
+        #[link_name = "set scrollMarginInlineStart"]
+        pub safe fn set_scroll_margin_inline_start(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-margin-left`](https://developer.mozilla.org/docs/Web/CSS/scroll-margin-left)
+        #[link_name = "get scrollMarginLeft"]
+        pub safe fn scroll_margin_left(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-margin-left`](https://developer.mozilla.org/docs/Web/CSS/scroll-margin-left)
+        #[link_name = "set scrollMarginLeft"]
+        pub safe fn set_scroll_margin_left(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-margin-right`](https://developer.mozilla.org/docs/Web/CSS/scroll-margin-right)
+        #[link_name = "get scrollMarginRight"]
+        pub safe fn scroll_margin_right(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-margin-right`](https://developer.mozilla.org/docs/Web/CSS/scroll-margin-right)
+        #[link_name = "set scrollMarginRight"]
+        pub safe fn set_scroll_margin_right(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-margin-top`](https://developer.mozilla.org/docs/Web/CSS/scroll-margin-top)
+        #[link_name = "get scrollMarginTop"]
+        pub safe fn scroll_margin_top(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-margin-top`](https://developer.mozilla.org/docs/Web/CSS/scroll-margin-top)
+        #[link_name = "set scrollMarginTop"]
+        pub safe fn set_scroll_margin_top(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-padding`](https://developer.mozilla.org/docs/Web/CSS/scroll-padding)
+        #[link_name = "get scrollPadding"]
+        pub safe fn scroll_padding(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-padding`](https://developer.mozilla.org/docs/Web/CSS/scroll-padding)
+        #[link_name = "set scrollPadding"]
+        pub safe fn set_scroll_padding(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-padding-block`](https://developer.mozilla.org/docs/Web/CSS/scroll-padding-block)
+        #[link_name = "get scrollPaddingBlock"]
+        pub safe fn scroll_padding_block(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-padding-block`](https://developer.mozilla.org/docs/Web/CSS/scroll-padding-block)
+        #[link_name = "set scrollPaddingBlock"]
+        pub safe fn set_scroll_padding_block(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-padding-block-end`](https://developer.mozilla.org/docs/Web/CSS/scroll-padding-block-end)
+        #[link_name = "get scrollPaddingBlockEnd"]
+        pub safe fn scroll_padding_block_end(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-padding-block-end`](https://developer.mozilla.org/docs/Web/CSS/scroll-padding-block-end)
+        #[link_name = "set scrollPaddingBlockEnd"]
+        pub safe fn set_scroll_padding_block_end(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-padding-block-start`](https://developer.mozilla.org/docs/Web/CSS/scroll-padding-block-start)
+        #[link_name = "get scrollPaddingBlockStart"]
+        pub safe fn scroll_padding_block_start(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-padding-block-start`](https://developer.mozilla.org/docs/Web/CSS/scroll-padding-block-start)
+        #[link_name = "set scrollPaddingBlockStart"]
+        pub safe fn set_scroll_padding_block_start(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-padding-bottom`](https://developer.mozilla.org/docs/Web/CSS/scroll-padding-bottom)
+        #[link_name = "get scrollPaddingBottom"]
+        pub safe fn scroll_padding_bottom(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-padding-bottom`](https://developer.mozilla.org/docs/Web/CSS/scroll-padding-bottom)
+        #[link_name = "set scrollPaddingBottom"]
+        pub safe fn set_scroll_padding_bottom(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-padding-inline`](https://developer.mozilla.org/docs/Web/CSS/scroll-padding-inline)
+        #[link_name = "get scrollPaddingInline"]
+        pub safe fn scroll_padding_inline(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-padding-inline`](https://developer.mozilla.org/docs/Web/CSS/scroll-padding-inline)
+        #[link_name = "set scrollPaddingInline"]
+        pub safe fn set_scroll_padding_inline(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-padding-inline-end`](https://developer.mozilla.org/docs/Web/CSS/scroll-padding-inline-end)
+        #[link_name = "get scrollPaddingInlineEnd"]
+        pub safe fn scroll_padding_inline_end(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-padding-inline-end`](https://developer.mozilla.org/docs/Web/CSS/scroll-padding-inline-end)
+        #[link_name = "set scrollPaddingInlineEnd"]
+        pub safe fn set_scroll_padding_inline_end(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-padding-inline-start`](https://developer.mozilla.org/docs/Web/CSS/scroll-padding-inline-start)
+        #[link_name = "get scrollPaddingInlineStart"]
+        pub safe fn scroll_padding_inline_start(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-padding-inline-start`](https://developer.mozilla.org/docs/Web/CSS/scroll-padding-inline-start)
+        #[link_name = "set scrollPaddingInlineStart"]
+        pub safe fn set_scroll_padding_inline_start(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-padding-left`](https://developer.mozilla.org/docs/Web/CSS/scroll-padding-left)
+        #[link_name = "get scrollPaddingLeft"]
+        pub safe fn scroll_padding_left(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-padding-left`](https://developer.mozilla.org/docs/Web/CSS/scroll-padding-left)
+        #[link_name = "set scrollPaddingLeft"]
+        pub safe fn set_scroll_padding_left(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-padding-right`](https://developer.mozilla.org/docs/Web/CSS/scroll-padding-right)
+        #[link_name = "get scrollPaddingRight"]
+        pub safe fn scroll_padding_right(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-padding-right`](https://developer.mozilla.org/docs/Web/CSS/scroll-padding-right)
+        #[link_name = "set scrollPaddingRight"]
+        pub safe fn set_scroll_padding_right(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-padding-top`](https://developer.mozilla.org/docs/Web/CSS/scroll-padding-top)
+        #[link_name = "get scrollPaddingTop"]
+        pub safe fn scroll_padding_top(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-padding-top`](https://developer.mozilla.org/docs/Web/CSS/scroll-padding-top)
+        #[link_name = "set scrollPaddingTop"]
+        pub safe fn set_scroll_padding_top(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-snap-align`](https://developer.mozilla.org/docs/Web/CSS/scroll-snap-align)
+        #[link_name = "get scrollSnapAlign"]
+        pub safe fn scroll_snap_align(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-snap-align`](https://developer.mozilla.org/docs/Web/CSS/scroll-snap-align)
+        #[link_name = "set scrollSnapAlign"]
+        pub safe fn set_scroll_snap_align(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-snap-stop`](https://developer.mozilla.org/docs/Web/CSS/scroll-snap-stop)
+        #[link_name = "get scrollSnapStop"]
+        pub safe fn scroll_snap_stop(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-snap-stop`](https://developer.mozilla.org/docs/Web/CSS/scroll-snap-stop)
+        #[link_name = "set scrollSnapStop"]
+        pub safe fn set_scroll_snap_stop(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-snap-type`](https://developer.mozilla.org/docs/Web/CSS/scroll-snap-type)
+        #[link_name = "get scrollSnapType"]
+        pub safe fn scroll_snap_type(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-snap-type`](https://developer.mozilla.org/docs/Web/CSS/scroll-snap-type)
+        #[link_name = "set scrollSnapType"]
+        pub safe fn set_scroll_snap_type(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-timeline`](https://developer.mozilla.org/docs/Web/CSS/scroll-timeline)
+        #[link_name = "get scrollTimeline"]
+        pub safe fn scroll_timeline(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-timeline`](https://developer.mozilla.org/docs/Web/CSS/scroll-timeline)
+        #[link_name = "set scrollTimeline"]
+        pub safe fn set_scroll_timeline(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-timeline-axis`](https://developer.mozilla.org/docs/Web/CSS/scroll-timeline-axis)
+        #[link_name = "get scrollTimelineAxis"]
+        pub safe fn scroll_timeline_axis(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-timeline-axis`](https://developer.mozilla.org/docs/Web/CSS/scroll-timeline-axis)
+        #[link_name = "set scrollTimelineAxis"]
+        pub safe fn set_scroll_timeline_axis(this: &CSSStyleProperties, value: &str);
+
+        /// [`scroll-timeline-name`](https://developer.mozilla.org/docs/Web/CSS/scroll-timeline-name)
+        #[link_name = "get scrollTimelineName"]
+        pub safe fn scroll_timeline_name(this: &CSSStyleProperties) -> String;
+
+        /// [`scroll-timeline-name`](https://developer.mozilla.org/docs/Web/CSS/scroll-timeline-name)
+        #[link_name = "set scrollTimelineName"]
+        pub safe fn set_scroll_timeline_name(this: &CSSStyleProperties, value: &str);
+
+        /// [`scrollbar-color`](https://developer.mozilla.org/docs/Web/CSS/scrollbar-color)
+        #[link_name = "get scrollbarColor"]
+        pub safe fn scrollbar_color(this: &CSSStyleProperties) -> String;
+
+        /// [`scrollbar-color`](https://developer.mozilla.org/docs/Web/CSS/scrollbar-color)
+        #[link_name = "set scrollbarColor"]
+        pub safe fn set_scrollbar_color(this: &CSSStyleProperties, value: &str);
+
+        /// [`scrollbar-gutter`](https://developer.mozilla.org/docs/Web/CSS/scrollbar-gutter)
+        #[link_name = "get scrollbarGutter"]
+        pub safe fn scrollbar_gutter(this: &CSSStyleProperties) -> String;
+
+        /// [`scrollbar-gutter`](https://developer.mozilla.org/docs/Web/CSS/scrollbar-gutter)
+        #[link_name = "set scrollbarGutter"]
+        pub safe fn set_scrollbar_gutter(this: &CSSStyleProperties, value: &str);
+
+        /// [`scrollbar-width`](https://developer.mozilla.org/docs/Web/CSS/scrollbar-width)
+        #[link_name = "get scrollbarWidth"]
+        pub safe fn scrollbar_width(this: &CSSStyleProperties) -> String;
+
+        /// [`scrollbar-width`](https://developer.mozilla.org/docs/Web/CSS/scrollbar-width)
+        #[link_name = "set scrollbarWidth"]
+        pub safe fn set_scrollbar_width(this: &CSSStyleProperties, value: &str);
+
+        /// [`set-property`](https://developer.mozilla.org/docs/Web/CSS/set-property)
+        #[link_name = "get setProperty"]
+        pub safe fn set_property(this: &CSSStyleProperties) -> String;
+
+        /// [`set-property`](https://developer.mozilla.org/docs/Web/CSS/set-property)
+        #[link_name = "set setProperty"]
+        pub safe fn set_set_property(this: &CSSStyleProperties, value: &str);
+
+        /// [`shape-image-threshold`](https://developer.mozilla.org/docs/Web/CSS/shape-image-threshold)
+        #[link_name = "get shapeImageThreshold"]
+        pub safe fn shape_image_threshold(this: &CSSStyleProperties) -> String;
+
+        /// [`shape-image-threshold`](https://developer.mozilla.org/docs/Web/CSS/shape-image-threshold)
+        #[link_name = "set shapeImageThreshold"]
+        pub safe fn set_shape_image_threshold(this: &CSSStyleProperties, value: &str);
+
+        /// [`shape-margin`](https://developer.mozilla.org/docs/Web/CSS/shape-margin)
+        #[link_name = "get shapeMargin"]
+        pub safe fn shape_margin(this: &CSSStyleProperties) -> String;
+
+        /// [`shape-margin`](https://developer.mozilla.org/docs/Web/CSS/shape-margin)
+        #[link_name = "set shapeMargin"]
+        pub safe fn set_shape_margin(this: &CSSStyleProperties, value: &str);
+
+        /// [`shape-outside`](https://developer.mozilla.org/docs/Web/CSS/shape-outside)
+        #[link_name = "get shapeOutside"]
+        pub safe fn shape_outside(this: &CSSStyleProperties) -> String;
+
+        /// [`shape-outside`](https://developer.mozilla.org/docs/Web/CSS/shape-outside)
+        #[link_name = "set shapeOutside"]
+        pub safe fn set_shape_outside(this: &CSSStyleProperties, value: &str);
+
+        /// [`shape-rendering`](https://developer.mozilla.org/docs/Web/CSS/shape-rendering)
+        #[link_name = "get shapeRendering"]
+        pub safe fn shape_rendering(this: &CSSStyleProperties) -> String;
+
+        /// [`shape-rendering`](https://developer.mozilla.org/docs/Web/CSS/shape-rendering)
+        #[link_name = "set shapeRendering"]
+        pub safe fn set_shape_rendering(this: &CSSStyleProperties, value: &str);
+
+        /// [`stop-color`](https://developer.mozilla.org/docs/Web/CSS/stop-color)
+        #[link_name = "get stopColor"]
+        pub safe fn stop_color(this: &CSSStyleProperties) -> String;
+
+        /// [`stop-color`](https://developer.mozilla.org/docs/Web/CSS/stop-color)
+        #[link_name = "set stopColor"]
+        pub safe fn set_stop_color(this: &CSSStyleProperties, value: &str);
+
+        /// [`stop-opacity`](https://developer.mozilla.org/docs/Web/CSS/stop-opacity)
+        #[link_name = "get stopOpacity"]
+        pub safe fn stop_opacity(this: &CSSStyleProperties) -> String;
+
+        /// [`stop-opacity`](https://developer.mozilla.org/docs/Web/CSS/stop-opacity)
+        #[link_name = "set stopOpacity"]
+        pub safe fn set_stop_opacity(this: &CSSStyleProperties, value: &str);
+
+        /// [`stroke`](https://developer.mozilla.org/docs/Web/CSS/stroke)
+        #[link_name = "get stroke"]
+        pub safe fn stroke(this: &CSSStyleProperties) -> String;
+
+        /// [`stroke`](https://developer.mozilla.org/docs/Web/CSS/stroke)
+        #[link_name = "set stroke"]
+        pub safe fn set_stroke(this: &CSSStyleProperties, value: &str);
+
+        /// [`stroke-dasharray`](https://developer.mozilla.org/docs/Web/CSS/stroke-dasharray)
+        #[link_name = "get strokeDasharray"]
+        pub safe fn stroke_dasharray(this: &CSSStyleProperties) -> String;
+
+        /// [`stroke-dasharray`](https://developer.mozilla.org/docs/Web/CSS/stroke-dasharray)
+        #[link_name = "set strokeDasharray"]
+        pub safe fn set_stroke_dasharray(this: &CSSStyleProperties, value: &str);
+
+        /// [`stroke-dashoffset`](https://developer.mozilla.org/docs/Web/CSS/stroke-dashoffset)
+        #[link_name = "get strokeDashoffset"]
+        pub safe fn stroke_dashoffset(this: &CSSStyleProperties) -> String;
+
+        /// [`stroke-dashoffset`](https://developer.mozilla.org/docs/Web/CSS/stroke-dashoffset)
+        #[link_name = "set strokeDashoffset"]
+        pub safe fn set_stroke_dashoffset(this: &CSSStyleProperties, value: &str);
+
+        /// [`stroke-linecap`](https://developer.mozilla.org/docs/Web/CSS/stroke-linecap)
+        #[link_name = "get strokeLinecap"]
+        pub safe fn stroke_linecap(this: &CSSStyleProperties) -> String;
+
+        /// [`stroke-linecap`](https://developer.mozilla.org/docs/Web/CSS/stroke-linecap)
+        #[link_name = "set strokeLinecap"]
+        pub safe fn set_stroke_linecap(this: &CSSStyleProperties, value: &str);
+
+        /// [`stroke-linejoin`](https://developer.mozilla.org/docs/Web/CSS/stroke-linejoin)
+        #[link_name = "get strokeLinejoin"]
+        pub safe fn stroke_linejoin(this: &CSSStyleProperties) -> String;
+
+        /// [`stroke-linejoin`](https://developer.mozilla.org/docs/Web/CSS/stroke-linejoin)
+        #[link_name = "set strokeLinejoin"]
+        pub safe fn set_stroke_linejoin(this: &CSSStyleProperties, value: &str);
+
+        /// [`stroke-miterlimit`](https://developer.mozilla.org/docs/Web/CSS/stroke-miterlimit)
+        #[link_name = "get strokeMiterlimit"]
+        pub safe fn stroke_miterlimit(this: &CSSStyleProperties) -> String;
+
+        /// [`stroke-miterlimit`](https://developer.mozilla.org/docs/Web/CSS/stroke-miterlimit)
+        #[link_name = "set strokeMiterlimit"]
+        pub safe fn set_stroke_miterlimit(this: &CSSStyleProperties, value: &str);
+
+        /// [`stroke-opacity`](https://developer.mozilla.org/docs/Web/CSS/stroke-opacity)
+        #[link_name = "get strokeOpacity"]
+        pub safe fn stroke_opacity(this: &CSSStyleProperties) -> String;
+
+        /// [`stroke-opacity`](https://developer.mozilla.org/docs/Web/CSS/stroke-opacity)
+        #[link_name = "set strokeOpacity"]
+        pub safe fn set_stroke_opacity(this: &CSSStyleProperties, value: &str);
+
+        /// [`stroke-width`](https://developer.mozilla.org/docs/Web/CSS/stroke-width)
+        #[link_name = "get strokeWidth"]
+        pub safe fn stroke_width(this: &CSSStyleProperties) -> String;
+
+        /// [`stroke-width`](https://developer.mozilla.org/docs/Web/CSS/stroke-width)
+        #[link_name = "set strokeWidth"]
+        pub safe fn set_stroke_width(this: &CSSStyleProperties, value: &str);
+
+        /// [`tab-size`](https://developer.mozilla.org/docs/Web/CSS/tab-size)
+        #[link_name = "get tabSize"]
+        pub safe fn tab_size(this: &CSSStyleProperties) -> String;
+
+        /// [`tab-size`](https://developer.mozilla.org/docs/Web/CSS/tab-size)
+        #[link_name = "set tabSize"]
+        pub safe fn set_tab_size(this: &CSSStyleProperties, value: &str);
+
+        /// [`table-layout`](https://developer.mozilla.org/docs/Web/CSS/table-layout)
+        #[link_name = "get tableLayout"]
+        pub safe fn table_layout(this: &CSSStyleProperties) -> String;
+
+        /// [`table-layout`](https://developer.mozilla.org/docs/Web/CSS/table-layout)
+        #[link_name = "set tableLayout"]
+        pub safe fn set_table_layout(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-align`](https://developer.mozilla.org/docs/Web/CSS/text-align)
+        #[link_name = "get textAlign"]
+        pub safe fn text_align(this: &CSSStyleProperties) -> String;
+
+        /// [`text-align`](https://developer.mozilla.org/docs/Web/CSS/text-align)
+        #[link_name = "set textAlign"]
+        pub safe fn set_text_align(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-align-last`](https://developer.mozilla.org/docs/Web/CSS/text-align-last)
+        #[link_name = "get textAlignLast"]
+        pub safe fn text_align_last(this: &CSSStyleProperties) -> String;
+
+        /// [`text-align-last`](https://developer.mozilla.org/docs/Web/CSS/text-align-last)
+        #[link_name = "set textAlignLast"]
+        pub safe fn set_text_align_last(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-anchor`](https://developer.mozilla.org/docs/Web/CSS/text-anchor)
+        #[link_name = "get textAnchor"]
+        pub safe fn text_anchor(this: &CSSStyleProperties) -> String;
+
+        /// [`text-anchor`](https://developer.mozilla.org/docs/Web/CSS/text-anchor)
+        #[link_name = "set textAnchor"]
+        pub safe fn set_text_anchor(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-autospace`](https://developer.mozilla.org/docs/Web/CSS/text-autospace)
+        #[link_name = "get textAutospace"]
+        pub safe fn text_autospace(this: &CSSStyleProperties) -> String;
+
+        /// [`text-autospace`](https://developer.mozilla.org/docs/Web/CSS/text-autospace)
+        #[link_name = "set textAutospace"]
+        pub safe fn set_text_autospace(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-box`](https://developer.mozilla.org/docs/Web/CSS/text-box)
+        #[link_name = "get textBox"]
+        pub safe fn text_box(this: &CSSStyleProperties) -> String;
+
+        /// [`text-box`](https://developer.mozilla.org/docs/Web/CSS/text-box)
+        #[link_name = "set textBox"]
+        pub safe fn set_text_box(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-box-edge`](https://developer.mozilla.org/docs/Web/CSS/text-box-edge)
+        #[link_name = "get textBoxEdge"]
+        pub safe fn text_box_edge(this: &CSSStyleProperties) -> String;
+
+        /// [`text-box-edge`](https://developer.mozilla.org/docs/Web/CSS/text-box-edge)
+        #[link_name = "set textBoxEdge"]
+        pub safe fn set_text_box_edge(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-box-trim`](https://developer.mozilla.org/docs/Web/CSS/text-box-trim)
+        #[link_name = "get textBoxTrim"]
+        pub safe fn text_box_trim(this: &CSSStyleProperties) -> String;
+
+        /// [`text-box-trim`](https://developer.mozilla.org/docs/Web/CSS/text-box-trim)
+        #[link_name = "set textBoxTrim"]
+        pub safe fn set_text_box_trim(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-combine-upright`](https://developer.mozilla.org/docs/Web/CSS/text-combine-upright)
+        #[link_name = "get textCombineUpright"]
+        pub safe fn text_combine_upright(this: &CSSStyleProperties) -> String;
+
+        /// [`text-combine-upright`](https://developer.mozilla.org/docs/Web/CSS/text-combine-upright)
+        #[link_name = "set textCombineUpright"]
+        pub safe fn set_text_combine_upright(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-decoration`](https://developer.mozilla.org/docs/Web/CSS/text-decoration)
+        #[link_name = "get textDecoration"]
+        pub safe fn text_decoration(this: &CSSStyleProperties) -> String;
+
+        /// [`text-decoration`](https://developer.mozilla.org/docs/Web/CSS/text-decoration)
+        #[link_name = "set textDecoration"]
+        pub safe fn set_text_decoration(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-decoration-color`](https://developer.mozilla.org/docs/Web/CSS/text-decoration-color)
+        #[link_name = "get textDecorationColor"]
+        pub safe fn text_decoration_color(this: &CSSStyleProperties) -> String;
+
+        /// [`text-decoration-color`](https://developer.mozilla.org/docs/Web/CSS/text-decoration-color)
+        #[link_name = "set textDecorationColor"]
+        pub safe fn set_text_decoration_color(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-decoration-line`](https://developer.mozilla.org/docs/Web/CSS/text-decoration-line)
+        #[link_name = "get textDecorationLine"]
+        pub safe fn text_decoration_line(this: &CSSStyleProperties) -> String;
+
+        /// [`text-decoration-line`](https://developer.mozilla.org/docs/Web/CSS/text-decoration-line)
+        #[link_name = "set textDecorationLine"]
+        pub safe fn set_text_decoration_line(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-decoration-skip-ink`](https://developer.mozilla.org/docs/Web/CSS/text-decoration-skip-ink)
+        #[link_name = "get textDecorationSkipInk"]
+        pub safe fn text_decoration_skip_ink(this: &CSSStyleProperties) -> String;
+
+        /// [`text-decoration-skip-ink`](https://developer.mozilla.org/docs/Web/CSS/text-decoration-skip-ink)
+        #[link_name = "set textDecorationSkipInk"]
+        pub safe fn set_text_decoration_skip_ink(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-decoration-style`](https://developer.mozilla.org/docs/Web/CSS/text-decoration-style)
+        #[link_name = "get textDecorationStyle"]
+        pub safe fn text_decoration_style(this: &CSSStyleProperties) -> String;
+
+        /// [`text-decoration-style`](https://developer.mozilla.org/docs/Web/CSS/text-decoration-style)
+        #[link_name = "set textDecorationStyle"]
+        pub safe fn set_text_decoration_style(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-decoration-thickness`](https://developer.mozilla.org/docs/Web/CSS/text-decoration-thickness)
+        #[link_name = "get textDecorationThickness"]
+        pub safe fn text_decoration_thickness(this: &CSSStyleProperties) -> String;
+
+        /// [`text-decoration-thickness`](https://developer.mozilla.org/docs/Web/CSS/text-decoration-thickness)
+        #[link_name = "set textDecorationThickness"]
+        pub safe fn set_text_decoration_thickness(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-emphasis`](https://developer.mozilla.org/docs/Web/CSS/text-emphasis)
+        #[link_name = "get textEmphasis"]
+        pub safe fn text_emphasis(this: &CSSStyleProperties) -> String;
+
+        /// [`text-emphasis`](https://developer.mozilla.org/docs/Web/CSS/text-emphasis)
+        #[link_name = "set textEmphasis"]
+        pub safe fn set_text_emphasis(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-emphasis-color`](https://developer.mozilla.org/docs/Web/CSS/text-emphasis-color)
+        #[link_name = "get textEmphasisColor"]
+        pub safe fn text_emphasis_color(this: &CSSStyleProperties) -> String;
+
+        /// [`text-emphasis-color`](https://developer.mozilla.org/docs/Web/CSS/text-emphasis-color)
+        #[link_name = "set textEmphasisColor"]
+        pub safe fn set_text_emphasis_color(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-emphasis-position`](https://developer.mozilla.org/docs/Web/CSS/text-emphasis-position)
+        #[link_name = "get textEmphasisPosition"]
+        pub safe fn text_emphasis_position(this: &CSSStyleProperties) -> String;
+
+        /// [`text-emphasis-position`](https://developer.mozilla.org/docs/Web/CSS/text-emphasis-position)
+        #[link_name = "set textEmphasisPosition"]
+        pub safe fn set_text_emphasis_position(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-emphasis-style`](https://developer.mozilla.org/docs/Web/CSS/text-emphasis-style)
+        #[link_name = "get textEmphasisStyle"]
+        pub safe fn text_emphasis_style(this: &CSSStyleProperties) -> String;
+
+        /// [`text-emphasis-style`](https://developer.mozilla.org/docs/Web/CSS/text-emphasis-style)
+        #[link_name = "set textEmphasisStyle"]
+        pub safe fn set_text_emphasis_style(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-indent`](https://developer.mozilla.org/docs/Web/CSS/text-indent)
+        #[link_name = "get textIndent"]
+        pub safe fn text_indent(this: &CSSStyleProperties) -> String;
+
+        /// [`text-indent`](https://developer.mozilla.org/docs/Web/CSS/text-indent)
+        #[link_name = "set textIndent"]
+        pub safe fn set_text_indent(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-justify`](https://developer.mozilla.org/docs/Web/CSS/text-justify)
+        #[link_name = "get textJustify"]
+        pub safe fn text_justify(this: &CSSStyleProperties) -> String;
+
+        /// [`text-justify`](https://developer.mozilla.org/docs/Web/CSS/text-justify)
+        #[link_name = "set textJustify"]
+        pub safe fn set_text_justify(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-orientation`](https://developer.mozilla.org/docs/Web/CSS/text-orientation)
+        #[link_name = "get textOrientation"]
+        pub safe fn text_orientation(this: &CSSStyleProperties) -> String;
+
+        /// [`text-orientation`](https://developer.mozilla.org/docs/Web/CSS/text-orientation)
+        #[link_name = "set textOrientation"]
+        pub safe fn set_text_orientation(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-overflow`](https://developer.mozilla.org/docs/Web/CSS/text-overflow)
+        #[link_name = "get textOverflow"]
+        pub safe fn text_overflow(this: &CSSStyleProperties) -> String;
+
+        /// [`text-overflow`](https://developer.mozilla.org/docs/Web/CSS/text-overflow)
+        #[link_name = "set textOverflow"]
+        pub safe fn set_text_overflow(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-rendering`](https://developer.mozilla.org/docs/Web/CSS/text-rendering)
+        #[link_name = "get textRendering"]
+        pub safe fn text_rendering(this: &CSSStyleProperties) -> String;
+
+        /// [`text-rendering`](https://developer.mozilla.org/docs/Web/CSS/text-rendering)
+        #[link_name = "set textRendering"]
+        pub safe fn set_text_rendering(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-shadow`](https://developer.mozilla.org/docs/Web/CSS/text-shadow)
+        #[link_name = "get textShadow"]
+        pub safe fn text_shadow(this: &CSSStyleProperties) -> String;
+
+        /// [`text-shadow`](https://developer.mozilla.org/docs/Web/CSS/text-shadow)
+        #[link_name = "set textShadow"]
+        pub safe fn set_text_shadow(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-transform`](https://developer.mozilla.org/docs/Web/CSS/text-transform)
+        #[link_name = "get textTransform"]
+        pub safe fn text_transform(this: &CSSStyleProperties) -> String;
+
+        /// [`text-transform`](https://developer.mozilla.org/docs/Web/CSS/text-transform)
+        #[link_name = "set textTransform"]
+        pub safe fn set_text_transform(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-underline-offset`](https://developer.mozilla.org/docs/Web/CSS/text-underline-offset)
+        #[link_name = "get textUnderlineOffset"]
+        pub safe fn text_underline_offset(this: &CSSStyleProperties) -> String;
+
+        /// [`text-underline-offset`](https://developer.mozilla.org/docs/Web/CSS/text-underline-offset)
+        #[link_name = "set textUnderlineOffset"]
+        pub safe fn set_text_underline_offset(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-underline-position`](https://developer.mozilla.org/docs/Web/CSS/text-underline-position)
+        #[link_name = "get textUnderlinePosition"]
+        pub safe fn text_underline_position(this: &CSSStyleProperties) -> String;
+
+        /// [`text-underline-position`](https://developer.mozilla.org/docs/Web/CSS/text-underline-position)
+        #[link_name = "set textUnderlinePosition"]
+        pub safe fn set_text_underline_position(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-wrap`](https://developer.mozilla.org/docs/Web/CSS/text-wrap)
+        #[link_name = "get textWrap"]
+        pub safe fn text_wrap(this: &CSSStyleProperties) -> String;
+
+        /// [`text-wrap`](https://developer.mozilla.org/docs/Web/CSS/text-wrap)
+        #[link_name = "set textWrap"]
+        pub safe fn set_text_wrap(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-wrap-mode`](https://developer.mozilla.org/docs/Web/CSS/text-wrap-mode)
+        #[link_name = "get textWrapMode"]
+        pub safe fn text_wrap_mode(this: &CSSStyleProperties) -> String;
+
+        /// [`text-wrap-mode`](https://developer.mozilla.org/docs/Web/CSS/text-wrap-mode)
+        #[link_name = "set textWrapMode"]
+        pub safe fn set_text_wrap_mode(this: &CSSStyleProperties, value: &str);
+
+        /// [`text-wrap-style`](https://developer.mozilla.org/docs/Web/CSS/text-wrap-style)
+        #[link_name = "get textWrapStyle"]
+        pub safe fn text_wrap_style(this: &CSSStyleProperties) -> String;
+
+        /// [`text-wrap-style`](https://developer.mozilla.org/docs/Web/CSS/text-wrap-style)
+        #[link_name = "set textWrapStyle"]
+        pub safe fn set_text_wrap_style(this: &CSSStyleProperties, value: &str);
+
+        /// [`timeline-scope`](https://developer.mozilla.org/docs/Web/CSS/timeline-scope)
+        #[link_name = "get timelineScope"]
+        pub safe fn timeline_scope(this: &CSSStyleProperties) -> String;
+
+        /// [`timeline-scope`](https://developer.mozilla.org/docs/Web/CSS/timeline-scope)
+        #[link_name = "set timelineScope"]
+        pub safe fn set_timeline_scope(this: &CSSStyleProperties, value: &str);
+
+        /// [`top`](https://developer.mozilla.org/docs/Web/CSS/top)
+        #[link_name = "get top"]
+        pub safe fn top(this: &CSSStyleProperties) -> String;
+
+        /// [`top`](https://developer.mozilla.org/docs/Web/CSS/top)
+        #[link_name = "set top"]
+        pub safe fn set_top(this: &CSSStyleProperties, value: &str);
+
+        /// [`touch-action`](https://developer.mozilla.org/docs/Web/CSS/touch-action)
+        #[link_name = "get touchAction"]
+        pub safe fn touch_action(this: &CSSStyleProperties) -> String;
+
+        /// [`touch-action`](https://developer.mozilla.org/docs/Web/CSS/touch-action)
+        #[link_name = "set touchAction"]
+        pub safe fn set_touch_action(this: &CSSStyleProperties, value: &str);
+
+        /// [`transform`](https://developer.mozilla.org/docs/Web/CSS/transform)
+        #[link_name = "get transform"]
+        pub safe fn transform(this: &CSSStyleProperties) -> String;
+
+        /// [`transform`](https://developer.mozilla.org/docs/Web/CSS/transform)
+        #[link_name = "set transform"]
+        pub safe fn set_transform(this: &CSSStyleProperties, value: &str);
+
+        /// [`transform-box`](https://developer.mozilla.org/docs/Web/CSS/transform-box)
+        #[link_name = "get transformBox"]
+        pub safe fn transform_box(this: &CSSStyleProperties) -> String;
+
+        /// [`transform-box`](https://developer.mozilla.org/docs/Web/CSS/transform-box)
+        #[link_name = "set transformBox"]
+        pub safe fn set_transform_box(this: &CSSStyleProperties, value: &str);
+
+        /// [`transform-origin`](https://developer.mozilla.org/docs/Web/CSS/transform-origin)
+        #[link_name = "get transformOrigin"]
+        pub safe fn transform_origin(this: &CSSStyleProperties) -> String;
+
+        /// [`transform-origin`](https://developer.mozilla.org/docs/Web/CSS/transform-origin)
+        #[link_name = "set transformOrigin"]
+        pub safe fn set_transform_origin(this: &CSSStyleProperties, value: &str);
+
+        /// [`transform-style`](https://developer.mozilla.org/docs/Web/CSS/transform-style)
+        #[link_name = "get transformStyle"]
+        pub safe fn transform_style(this: &CSSStyleProperties) -> String;
+
+        /// [`transform-style`](https://developer.mozilla.org/docs/Web/CSS/transform-style)
+        #[link_name = "set transformStyle"]
+        pub safe fn set_transform_style(this: &CSSStyleProperties, value: &str);
+
+        /// [`transition`](https://developer.mozilla.org/docs/Web/CSS/transition)
+        #[link_name = "get transition"]
+        pub safe fn transition(this: &CSSStyleProperties) -> String;
+
+        /// [`transition`](https://developer.mozilla.org/docs/Web/CSS/transition)
+        #[link_name = "set transition"]
+        pub safe fn set_transition(this: &CSSStyleProperties, value: &str);
+
+        /// [`transition-behavior`](https://developer.mozilla.org/docs/Web/CSS/transition-behavior)
+        #[link_name = "get transitionBehavior"]
+        pub safe fn transition_behavior(this: &CSSStyleProperties) -> String;
+
+        /// [`transition-behavior`](https://developer.mozilla.org/docs/Web/CSS/transition-behavior)
+        #[link_name = "set transitionBehavior"]
+        pub safe fn set_transition_behavior(this: &CSSStyleProperties, value: &str);
+
+        /// [`transition-delay`](https://developer.mozilla.org/docs/Web/CSS/transition-delay)
+        #[link_name = "get transitionDelay"]
+        pub safe fn transition_delay(this: &CSSStyleProperties) -> String;
+
+        /// [`transition-delay`](https://developer.mozilla.org/docs/Web/CSS/transition-delay)
+        #[link_name = "set transitionDelay"]
+        pub safe fn set_transition_delay(this: &CSSStyleProperties, value: &str);
+
+        /// [`transition-duration`](https://developer.mozilla.org/docs/Web/CSS/transition-duration)
+        #[link_name = "get transitionDuration"]
+        pub safe fn transition_duration(this: &CSSStyleProperties) -> String;
+
+        /// [`transition-duration`](https://developer.mozilla.org/docs/Web/CSS/transition-duration)
+        #[link_name = "set transitionDuration"]
+        pub safe fn set_transition_duration(this: &CSSStyleProperties, value: &str);
+
+        /// [`transition-property`](https://developer.mozilla.org/docs/Web/CSS/transition-property)
+        #[link_name = "get transitionProperty"]
+        pub safe fn transition_property(this: &CSSStyleProperties) -> String;
+
+        /// [`transition-property`](https://developer.mozilla.org/docs/Web/CSS/transition-property)
+        #[link_name = "set transitionProperty"]
+        pub safe fn set_transition_property(this: &CSSStyleProperties, value: &str);
+
+        /// [`transition-timing-function`](https://developer.mozilla.org/docs/Web/CSS/transition-timing-function)
+        #[link_name = "get transitionTimingFunction"]
+        pub safe fn transition_timing_function(this: &CSSStyleProperties) -> String;
+
+        /// [`transition-timing-function`](https://developer.mozilla.org/docs/Web/CSS/transition-timing-function)
+        #[link_name = "set transitionTimingFunction"]
+        pub safe fn set_transition_timing_function(this: &CSSStyleProperties, value: &str);
+
+        /// [`translate`](https://developer.mozilla.org/docs/Web/CSS/translate)
+        #[link_name = "get translate"]
+        pub safe fn translate(this: &CSSStyleProperties) -> String;
+
+        /// [`translate`](https://developer.mozilla.org/docs/Web/CSS/translate)
+        #[link_name = "set translate"]
+        pub safe fn set_translate(this: &CSSStyleProperties, value: &str);
+
+        /// [`unicode-bidi`](https://developer.mozilla.org/docs/Web/CSS/unicode-bidi)
+        #[link_name = "get unicodeBidi"]
+        pub safe fn unicode_bidi(this: &CSSStyleProperties) -> String;
+
+        /// [`unicode-bidi`](https://developer.mozilla.org/docs/Web/CSS/unicode-bidi)
+        #[link_name = "set unicodeBidi"]
+        pub safe fn set_unicode_bidi(this: &CSSStyleProperties, value: &str);
+
+        /// [`user-select`](https://developer.mozilla.org/docs/Web/CSS/user-select)
+        #[link_name = "get userSelect"]
+        pub safe fn user_select(this: &CSSStyleProperties) -> String;
+
+        /// [`user-select`](https://developer.mozilla.org/docs/Web/CSS/user-select)
+        #[link_name = "set userSelect"]
+        pub safe fn set_user_select(this: &CSSStyleProperties, value: &str);
+
+        /// [`vector-effect`](https://developer.mozilla.org/docs/Web/CSS/vector-effect)
+        #[link_name = "get vectorEffect"]
+        pub safe fn vector_effect(this: &CSSStyleProperties) -> String;
+
+        /// [`vector-effect`](https://developer.mozilla.org/docs/Web/CSS/vector-effect)
+        #[link_name = "set vectorEffect"]
+        pub safe fn set_vector_effect(this: &CSSStyleProperties, value: &str);
+
+        /// [`vertical-align`](https://developer.mozilla.org/docs/Web/CSS/vertical-align)
+        #[link_name = "get verticalAlign"]
+        pub safe fn vertical_align(this: &CSSStyleProperties) -> String;
+
+        /// [`vertical-align`](https://developer.mozilla.org/docs/Web/CSS/vertical-align)
+        #[link_name = "set verticalAlign"]
+        pub safe fn set_vertical_align(this: &CSSStyleProperties, value: &str);
+
+        /// [`view-timeline`](https://developer.mozilla.org/docs/Web/CSS/view-timeline)
+        #[link_name = "get viewTimeline"]
+        pub safe fn view_timeline(this: &CSSStyleProperties) -> String;
+
+        /// [`view-timeline`](https://developer.mozilla.org/docs/Web/CSS/view-timeline)
+        #[link_name = "set viewTimeline"]
+        pub safe fn set_view_timeline(this: &CSSStyleProperties, value: &str);
+
+        /// [`view-timeline-axis`](https://developer.mozilla.org/docs/Web/CSS/view-timeline-axis)
+        #[link_name = "get viewTimelineAxis"]
+        pub safe fn view_timeline_axis(this: &CSSStyleProperties) -> String;
+
+        /// [`view-timeline-axis`](https://developer.mozilla.org/docs/Web/CSS/view-timeline-axis)
+        #[link_name = "set viewTimelineAxis"]
+        pub safe fn set_view_timeline_axis(this: &CSSStyleProperties, value: &str);
+
+        /// [`view-timeline-inset`](https://developer.mozilla.org/docs/Web/CSS/view-timeline-inset)
+        #[link_name = "get viewTimelineInset"]
+        pub safe fn view_timeline_inset(this: &CSSStyleProperties) -> String;
+
+        /// [`view-timeline-inset`](https://developer.mozilla.org/docs/Web/CSS/view-timeline-inset)
+        #[link_name = "set viewTimelineInset"]
+        pub safe fn set_view_timeline_inset(this: &CSSStyleProperties, value: &str);
+
+        /// [`view-timeline-name`](https://developer.mozilla.org/docs/Web/CSS/view-timeline-name)
+        #[link_name = "get viewTimelineName"]
+        pub safe fn view_timeline_name(this: &CSSStyleProperties) -> String;
+
+        /// [`view-timeline-name`](https://developer.mozilla.org/docs/Web/CSS/view-timeline-name)
+        #[link_name = "set viewTimelineName"]
+        pub safe fn set_view_timeline_name(this: &CSSStyleProperties, value: &str);
+
+        /// [`view-transition-class`](https://developer.mozilla.org/docs/Web/CSS/view-transition-class)
+        #[link_name = "get viewTransitionClass"]
+        pub safe fn view_transition_class(this: &CSSStyleProperties) -> String;
+
+        /// [`view-transition-class`](https://developer.mozilla.org/docs/Web/CSS/view-transition-class)
+        #[link_name = "set viewTransitionClass"]
+        pub safe fn set_view_transition_class(this: &CSSStyleProperties, value: &str);
+
+        /// [`view-transition-name`](https://developer.mozilla.org/docs/Web/CSS/view-transition-name)
+        #[link_name = "get viewTransitionName"]
+        pub safe fn view_transition_name(this: &CSSStyleProperties) -> String;
+
+        /// [`view-transition-name`](https://developer.mozilla.org/docs/Web/CSS/view-transition-name)
+        #[link_name = "set viewTransitionName"]
+        pub safe fn set_view_transition_name(this: &CSSStyleProperties, value: &str);
+
+        /// [`visibility`](https://developer.mozilla.org/docs/Web/CSS/visibility)
+        #[link_name = "get visibility"]
+        pub safe fn visibility(this: &CSSStyleProperties) -> String;
+
+        /// [`visibility`](https://developer.mozilla.org/docs/Web/CSS/visibility)
+        #[link_name = "set visibility"]
+        pub safe fn set_visibility(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-align-content`](https://developer.mozilla.org/docs/Web/CSS/-webkit-align-content)
+        #[link_name = "get webkitAlignContent"]
+        pub safe fn webkit_align_content(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-align-content`](https://developer.mozilla.org/docs/Web/CSS/-webkit-align-content)
+        #[link_name = "set webkitAlignContent"]
+        pub safe fn set_webkit_align_content(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-align-items`](https://developer.mozilla.org/docs/Web/CSS/-webkit-align-items)
+        #[link_name = "get webkitAlignItems"]
+        pub safe fn webkit_align_items(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-align-items`](https://developer.mozilla.org/docs/Web/CSS/-webkit-align-items)
+        #[link_name = "set webkitAlignItems"]
+        pub safe fn set_webkit_align_items(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-align-self`](https://developer.mozilla.org/docs/Web/CSS/-webkit-align-self)
+        #[link_name = "get webkitAlignSelf"]
+        pub safe fn webkit_align_self(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-align-self`](https://developer.mozilla.org/docs/Web/CSS/-webkit-align-self)
+        #[link_name = "set webkitAlignSelf"]
+        pub safe fn set_webkit_align_self(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-animation`](https://developer.mozilla.org/docs/Web/CSS/-webkit-animation)
+        #[link_name = "get webkitAnimation"]
+        pub safe fn webkit_animation(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-animation`](https://developer.mozilla.org/docs/Web/CSS/-webkit-animation)
+        #[link_name = "set webkitAnimation"]
+        pub safe fn set_webkit_animation(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-animation-delay`](https://developer.mozilla.org/docs/Web/CSS/-webkit-animation-delay)
+        #[link_name = "get webkitAnimationDelay"]
+        pub safe fn webkit_animation_delay(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-animation-delay`](https://developer.mozilla.org/docs/Web/CSS/-webkit-animation-delay)
+        #[link_name = "set webkitAnimationDelay"]
+        pub safe fn set_webkit_animation_delay(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-animation-direction`](https://developer.mozilla.org/docs/Web/CSS/-webkit-animation-direction)
+        #[link_name = "get webkitAnimationDirection"]
+        pub safe fn webkit_animation_direction(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-animation-direction`](https://developer.mozilla.org/docs/Web/CSS/-webkit-animation-direction)
+        #[link_name = "set webkitAnimationDirection"]
+        pub safe fn set_webkit_animation_direction(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-animation-duration`](https://developer.mozilla.org/docs/Web/CSS/-webkit-animation-duration)
+        #[link_name = "get webkitAnimationDuration"]
+        pub safe fn webkit_animation_duration(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-animation-duration`](https://developer.mozilla.org/docs/Web/CSS/-webkit-animation-duration)
+        #[link_name = "set webkitAnimationDuration"]
+        pub safe fn set_webkit_animation_duration(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-animation-fill-mode`](https://developer.mozilla.org/docs/Web/CSS/-webkit-animation-fill-mode)
+        #[link_name = "get webkitAnimationFillMode"]
+        pub safe fn webkit_animation_fill_mode(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-animation-fill-mode`](https://developer.mozilla.org/docs/Web/CSS/-webkit-animation-fill-mode)
+        #[link_name = "set webkitAnimationFillMode"]
+        pub safe fn set_webkit_animation_fill_mode(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-animation-iteration-count`](https://developer.mozilla.org/docs/Web/CSS/-webkit-animation-iteration-count)
+        #[link_name = "get webkitAnimationIterationCount"]
+        pub safe fn webkit_animation_iteration_count(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-animation-iteration-count`](https://developer.mozilla.org/docs/Web/CSS/-webkit-animation-iteration-count)
+        #[link_name = "set webkitAnimationIterationCount"]
+        pub safe fn set_webkit_animation_iteration_count(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-animation-name`](https://developer.mozilla.org/docs/Web/CSS/-webkit-animation-name)
+        #[link_name = "get webkitAnimationName"]
+        pub safe fn webkit_animation_name(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-animation-name`](https://developer.mozilla.org/docs/Web/CSS/-webkit-animation-name)
+        #[link_name = "set webkitAnimationName"]
+        pub safe fn set_webkit_animation_name(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-animation-play-state`](https://developer.mozilla.org/docs/Web/CSS/-webkit-animation-play-state)
+        #[link_name = "get webkitAnimationPlayState"]
+        pub safe fn webkit_animation_play_state(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-animation-play-state`](https://developer.mozilla.org/docs/Web/CSS/-webkit-animation-play-state)
+        #[link_name = "set webkitAnimationPlayState"]
+        pub safe fn set_webkit_animation_play_state(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-animation-timing-function`](https://developer.mozilla.org/docs/Web/CSS/-webkit-animation-timing-function)
+        #[link_name = "get webkitAnimationTimingFunction"]
+        pub safe fn webkit_animation_timing_function(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-animation-timing-function`](https://developer.mozilla.org/docs/Web/CSS/-webkit-animation-timing-function)
+        #[link_name = "set webkitAnimationTimingFunction"]
+        pub safe fn set_webkit_animation_timing_function(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-appearance`](https://developer.mozilla.org/docs/Web/CSS/-webkit-appearance)
+        #[link_name = "get webkitAppearance"]
+        pub safe fn webkit_appearance(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-appearance`](https://developer.mozilla.org/docs/Web/CSS/-webkit-appearance)
+        #[link_name = "set webkitAppearance"]
+        pub safe fn set_webkit_appearance(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-backface-visibility`](https://developer.mozilla.org/docs/Web/CSS/-webkit-backface-visibility)
+        #[link_name = "get webkitBackfaceVisibility"]
+        pub safe fn webkit_backface_visibility(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-backface-visibility`](https://developer.mozilla.org/docs/Web/CSS/-webkit-backface-visibility)
+        #[link_name = "set webkitBackfaceVisibility"]
+        pub safe fn set_webkit_backface_visibility(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-background-clip`](https://developer.mozilla.org/docs/Web/CSS/-webkit-background-clip)
+        #[link_name = "get webkitBackgroundClip"]
+        pub safe fn webkit_background_clip(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-background-clip`](https://developer.mozilla.org/docs/Web/CSS/-webkit-background-clip)
+        #[link_name = "set webkitBackgroundClip"]
+        pub safe fn set_webkit_background_clip(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-background-origin`](https://developer.mozilla.org/docs/Web/CSS/-webkit-background-origin)
+        #[link_name = "get webkitBackgroundOrigin"]
+        pub safe fn webkit_background_origin(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-background-origin`](https://developer.mozilla.org/docs/Web/CSS/-webkit-background-origin)
+        #[link_name = "set webkitBackgroundOrigin"]
+        pub safe fn set_webkit_background_origin(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-background-size`](https://developer.mozilla.org/docs/Web/CSS/-webkit-background-size)
+        #[link_name = "get webkitBackgroundSize"]
+        pub safe fn webkit_background_size(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-background-size`](https://developer.mozilla.org/docs/Web/CSS/-webkit-background-size)
+        #[link_name = "set webkitBackgroundSize"]
+        pub safe fn set_webkit_background_size(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-border-bottom-left-radius`](https://developer.mozilla.org/docs/Web/CSS/-webkit-border-bottom-left-radius)
+        #[link_name = "get webkitBorderBottomLeftRadius"]
+        pub safe fn webkit_border_bottom_left_radius(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-border-bottom-left-radius`](https://developer.mozilla.org/docs/Web/CSS/-webkit-border-bottom-left-radius)
+        #[link_name = "set webkitBorderBottomLeftRadius"]
+        pub safe fn set_webkit_border_bottom_left_radius(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-border-bottom-right-radius`](https://developer.mozilla.org/docs/Web/CSS/-webkit-border-bottom-right-radius)
+        #[link_name = "get webkitBorderBottomRightRadius"]
+        pub safe fn webkit_border_bottom_right_radius(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-border-bottom-right-radius`](https://developer.mozilla.org/docs/Web/CSS/-webkit-border-bottom-right-radius)
+        #[link_name = "set webkitBorderBottomRightRadius"]
+        pub safe fn set_webkit_border_bottom_right_radius(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-border-radius`](https://developer.mozilla.org/docs/Web/CSS/-webkit-border-radius)
+        #[link_name = "get webkitBorderRadius"]
+        pub safe fn webkit_border_radius(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-border-radius`](https://developer.mozilla.org/docs/Web/CSS/-webkit-border-radius)
+        #[link_name = "set webkitBorderRadius"]
+        pub safe fn set_webkit_border_radius(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-border-top-left-radius`](https://developer.mozilla.org/docs/Web/CSS/-webkit-border-top-left-radius)
+        #[link_name = "get webkitBorderTopLeftRadius"]
+        pub safe fn webkit_border_top_left_radius(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-border-top-left-radius`](https://developer.mozilla.org/docs/Web/CSS/-webkit-border-top-left-radius)
+        #[link_name = "set webkitBorderTopLeftRadius"]
+        pub safe fn set_webkit_border_top_left_radius(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-border-top-right-radius`](https://developer.mozilla.org/docs/Web/CSS/-webkit-border-top-right-radius)
+        #[link_name = "get webkitBorderTopRightRadius"]
+        pub safe fn webkit_border_top_right_radius(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-border-top-right-radius`](https://developer.mozilla.org/docs/Web/CSS/-webkit-border-top-right-radius)
+        #[link_name = "set webkitBorderTopRightRadius"]
+        pub safe fn set_webkit_border_top_right_radius(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-box-align`](https://developer.mozilla.org/docs/Web/CSS/-webkit-box-align)
+        #[link_name = "get webkitBoxAlign"]
+        pub safe fn webkit_box_align(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-box-align`](https://developer.mozilla.org/docs/Web/CSS/-webkit-box-align)
+        #[link_name = "set webkitBoxAlign"]
+        pub safe fn set_webkit_box_align(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-box-flex`](https://developer.mozilla.org/docs/Web/CSS/-webkit-box-flex)
+        #[link_name = "get webkitBoxFlex"]
+        pub safe fn webkit_box_flex(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-box-flex`](https://developer.mozilla.org/docs/Web/CSS/-webkit-box-flex)
+        #[link_name = "set webkitBoxFlex"]
+        pub safe fn set_webkit_box_flex(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-box-ordinal-group`](https://developer.mozilla.org/docs/Web/CSS/-webkit-box-ordinal-group)
+        #[link_name = "get webkitBoxOrdinalGroup"]
+        pub safe fn webkit_box_ordinal_group(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-box-ordinal-group`](https://developer.mozilla.org/docs/Web/CSS/-webkit-box-ordinal-group)
+        #[link_name = "set webkitBoxOrdinalGroup"]
+        pub safe fn set_webkit_box_ordinal_group(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-box-orient`](https://developer.mozilla.org/docs/Web/CSS/-webkit-box-orient)
+        #[link_name = "get webkitBoxOrient"]
+        pub safe fn webkit_box_orient(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-box-orient`](https://developer.mozilla.org/docs/Web/CSS/-webkit-box-orient)
+        #[link_name = "set webkitBoxOrient"]
+        pub safe fn set_webkit_box_orient(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-box-pack`](https://developer.mozilla.org/docs/Web/CSS/-webkit-box-pack)
+        #[link_name = "get webkitBoxPack"]
+        pub safe fn webkit_box_pack(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-box-pack`](https://developer.mozilla.org/docs/Web/CSS/-webkit-box-pack)
+        #[link_name = "set webkitBoxPack"]
+        pub safe fn set_webkit_box_pack(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-box-shadow`](https://developer.mozilla.org/docs/Web/CSS/-webkit-box-shadow)
+        #[link_name = "get webkitBoxShadow"]
+        pub safe fn webkit_box_shadow(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-box-shadow`](https://developer.mozilla.org/docs/Web/CSS/-webkit-box-shadow)
+        #[link_name = "set webkitBoxShadow"]
+        pub safe fn set_webkit_box_shadow(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-box-sizing`](https://developer.mozilla.org/docs/Web/CSS/-webkit-box-sizing)
+        #[link_name = "get webkitBoxSizing"]
+        pub safe fn webkit_box_sizing(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-box-sizing`](https://developer.mozilla.org/docs/Web/CSS/-webkit-box-sizing)
+        #[link_name = "set webkitBoxSizing"]
+        pub safe fn set_webkit_box_sizing(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-filter`](https://developer.mozilla.org/docs/Web/CSS/-webkit-filter)
+        #[link_name = "get webkitFilter"]
+        pub safe fn webkit_filter(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-filter`](https://developer.mozilla.org/docs/Web/CSS/-webkit-filter)
+        #[link_name = "set webkitFilter"]
+        pub safe fn set_webkit_filter(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-flex`](https://developer.mozilla.org/docs/Web/CSS/-webkit-flex)
+        #[link_name = "get webkitFlex"]
+        pub safe fn webkit_flex(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-flex`](https://developer.mozilla.org/docs/Web/CSS/-webkit-flex)
+        #[link_name = "set webkitFlex"]
+        pub safe fn set_webkit_flex(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-flex-basis`](https://developer.mozilla.org/docs/Web/CSS/-webkit-flex-basis)
+        #[link_name = "get webkitFlexBasis"]
+        pub safe fn webkit_flex_basis(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-flex-basis`](https://developer.mozilla.org/docs/Web/CSS/-webkit-flex-basis)
+        #[link_name = "set webkitFlexBasis"]
+        pub safe fn set_webkit_flex_basis(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-flex-direction`](https://developer.mozilla.org/docs/Web/CSS/-webkit-flex-direction)
+        #[link_name = "get webkitFlexDirection"]
+        pub safe fn webkit_flex_direction(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-flex-direction`](https://developer.mozilla.org/docs/Web/CSS/-webkit-flex-direction)
+        #[link_name = "set webkitFlexDirection"]
+        pub safe fn set_webkit_flex_direction(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-flex-flow`](https://developer.mozilla.org/docs/Web/CSS/-webkit-flex-flow)
+        #[link_name = "get webkitFlexFlow"]
+        pub safe fn webkit_flex_flow(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-flex-flow`](https://developer.mozilla.org/docs/Web/CSS/-webkit-flex-flow)
+        #[link_name = "set webkitFlexFlow"]
+        pub safe fn set_webkit_flex_flow(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-flex-grow`](https://developer.mozilla.org/docs/Web/CSS/-webkit-flex-grow)
+        #[link_name = "get webkitFlexGrow"]
+        pub safe fn webkit_flex_grow(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-flex-grow`](https://developer.mozilla.org/docs/Web/CSS/-webkit-flex-grow)
+        #[link_name = "set webkitFlexGrow"]
+        pub safe fn set_webkit_flex_grow(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-flex-shrink`](https://developer.mozilla.org/docs/Web/CSS/-webkit-flex-shrink)
+        #[link_name = "get webkitFlexShrink"]
+        pub safe fn webkit_flex_shrink(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-flex-shrink`](https://developer.mozilla.org/docs/Web/CSS/-webkit-flex-shrink)
+        #[link_name = "set webkitFlexShrink"]
+        pub safe fn set_webkit_flex_shrink(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-flex-wrap`](https://developer.mozilla.org/docs/Web/CSS/-webkit-flex-wrap)
+        #[link_name = "get webkitFlexWrap"]
+        pub safe fn webkit_flex_wrap(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-flex-wrap`](https://developer.mozilla.org/docs/Web/CSS/-webkit-flex-wrap)
+        #[link_name = "set webkitFlexWrap"]
+        pub safe fn set_webkit_flex_wrap(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-justify-content`](https://developer.mozilla.org/docs/Web/CSS/-webkit-justify-content)
+        #[link_name = "get webkitJustifyContent"]
+        pub safe fn webkit_justify_content(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-justify-content`](https://developer.mozilla.org/docs/Web/CSS/-webkit-justify-content)
+        #[link_name = "set webkitJustifyContent"]
+        pub safe fn set_webkit_justify_content(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-line-clamp`](https://developer.mozilla.org/docs/Web/CSS/-webkit-line-clamp)
+        #[link_name = "get webkitLineClamp"]
+        pub safe fn webkit_line_clamp(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-line-clamp`](https://developer.mozilla.org/docs/Web/CSS/-webkit-line-clamp)
+        #[link_name = "set webkitLineClamp"]
+        pub safe fn set_webkit_line_clamp(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-mask`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask)
+        #[link_name = "get webkitMask"]
+        pub safe fn webkit_mask(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-mask`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask)
+        #[link_name = "set webkitMask"]
+        pub safe fn set_webkit_mask(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-mask-box-image`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask-box-image)
+        #[link_name = "get webkitMaskBoxImage"]
+        pub safe fn webkit_mask_box_image(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-mask-box-image`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask-box-image)
+        #[link_name = "set webkitMaskBoxImage"]
+        pub safe fn set_webkit_mask_box_image(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-mask-box-image-outset`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask-box-image-outset)
+        #[link_name = "get webkitMaskBoxImageOutset"]
+        pub safe fn webkit_mask_box_image_outset(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-mask-box-image-outset`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask-box-image-outset)
+        #[link_name = "set webkitMaskBoxImageOutset"]
+        pub safe fn set_webkit_mask_box_image_outset(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-mask-box-image-repeat`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask-box-image-repeat)
+        #[link_name = "get webkitMaskBoxImageRepeat"]
+        pub safe fn webkit_mask_box_image_repeat(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-mask-box-image-repeat`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask-box-image-repeat)
+        #[link_name = "set webkitMaskBoxImageRepeat"]
+        pub safe fn set_webkit_mask_box_image_repeat(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-mask-box-image-slice`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask-box-image-slice)
+        #[link_name = "get webkitMaskBoxImageSlice"]
+        pub safe fn webkit_mask_box_image_slice(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-mask-box-image-slice`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask-box-image-slice)
+        #[link_name = "set webkitMaskBoxImageSlice"]
+        pub safe fn set_webkit_mask_box_image_slice(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-mask-box-image-source`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask-box-image-source)
+        #[link_name = "get webkitMaskBoxImageSource"]
+        pub safe fn webkit_mask_box_image_source(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-mask-box-image-source`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask-box-image-source)
+        #[link_name = "set webkitMaskBoxImageSource"]
+        pub safe fn set_webkit_mask_box_image_source(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-mask-box-image-width`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask-box-image-width)
+        #[link_name = "get webkitMaskBoxImageWidth"]
+        pub safe fn webkit_mask_box_image_width(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-mask-box-image-width`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask-box-image-width)
+        #[link_name = "set webkitMaskBoxImageWidth"]
+        pub safe fn set_webkit_mask_box_image_width(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-mask-clip`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask-clip)
+        #[link_name = "get webkitMaskClip"]
+        pub safe fn webkit_mask_clip(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-mask-clip`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask-clip)
+        #[link_name = "set webkitMaskClip"]
+        pub safe fn set_webkit_mask_clip(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-mask-composite`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask-composite)
+        #[link_name = "get webkitMaskComposite"]
+        pub safe fn webkit_mask_composite(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-mask-composite`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask-composite)
+        #[link_name = "set webkitMaskComposite"]
+        pub safe fn set_webkit_mask_composite(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-mask-image`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask-image)
+        #[link_name = "get webkitMaskImage"]
+        pub safe fn webkit_mask_image(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-mask-image`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask-image)
+        #[link_name = "set webkitMaskImage"]
+        pub safe fn set_webkit_mask_image(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-mask-origin`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask-origin)
+        #[link_name = "get webkitMaskOrigin"]
+        pub safe fn webkit_mask_origin(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-mask-origin`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask-origin)
+        #[link_name = "set webkitMaskOrigin"]
+        pub safe fn set_webkit_mask_origin(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-mask-position`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask-position)
+        #[link_name = "get webkitMaskPosition"]
+        pub safe fn webkit_mask_position(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-mask-position`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask-position)
+        #[link_name = "set webkitMaskPosition"]
+        pub safe fn set_webkit_mask_position(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-mask-repeat`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask-repeat)
+        #[link_name = "get webkitMaskRepeat"]
+        pub safe fn webkit_mask_repeat(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-mask-repeat`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask-repeat)
+        #[link_name = "set webkitMaskRepeat"]
+        pub safe fn set_webkit_mask_repeat(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-mask-size`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask-size)
+        #[link_name = "get webkitMaskSize"]
+        pub safe fn webkit_mask_size(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-mask-size`](https://developer.mozilla.org/docs/Web/CSS/-webkit-mask-size)
+        #[link_name = "set webkitMaskSize"]
+        pub safe fn set_webkit_mask_size(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-order`](https://developer.mozilla.org/docs/Web/CSS/-webkit-order)
+        #[link_name = "get webkitOrder"]
+        pub safe fn webkit_order(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-order`](https://developer.mozilla.org/docs/Web/CSS/-webkit-order)
+        #[link_name = "set webkitOrder"]
+        pub safe fn set_webkit_order(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-perspective`](https://developer.mozilla.org/docs/Web/CSS/-webkit-perspective)
+        #[link_name = "get webkitPerspective"]
+        pub safe fn webkit_perspective(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-perspective`](https://developer.mozilla.org/docs/Web/CSS/-webkit-perspective)
+        #[link_name = "set webkitPerspective"]
+        pub safe fn set_webkit_perspective(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-perspective-origin`](https://developer.mozilla.org/docs/Web/CSS/-webkit-perspective-origin)
+        #[link_name = "get webkitPerspectiveOrigin"]
+        pub safe fn webkit_perspective_origin(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-perspective-origin`](https://developer.mozilla.org/docs/Web/CSS/-webkit-perspective-origin)
+        #[link_name = "set webkitPerspectiveOrigin"]
+        pub safe fn set_webkit_perspective_origin(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-text-fill-color`](https://developer.mozilla.org/docs/Web/CSS/-webkit-text-fill-color)
+        #[link_name = "get webkitTextFillColor"]
+        pub safe fn webkit_text_fill_color(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-text-fill-color`](https://developer.mozilla.org/docs/Web/CSS/-webkit-text-fill-color)
+        #[link_name = "set webkitTextFillColor"]
+        pub safe fn set_webkit_text_fill_color(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-text-size-adjust`](https://developer.mozilla.org/docs/Web/CSS/-webkit-text-size-adjust)
+        #[link_name = "get webkitTextSizeAdjust"]
+        pub safe fn webkit_text_size_adjust(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-text-size-adjust`](https://developer.mozilla.org/docs/Web/CSS/-webkit-text-size-adjust)
+        #[link_name = "set webkitTextSizeAdjust"]
+        pub safe fn set_webkit_text_size_adjust(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-text-stroke`](https://developer.mozilla.org/docs/Web/CSS/-webkit-text-stroke)
+        #[link_name = "get webkitTextStroke"]
+        pub safe fn webkit_text_stroke(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-text-stroke`](https://developer.mozilla.org/docs/Web/CSS/-webkit-text-stroke)
+        #[link_name = "set webkitTextStroke"]
+        pub safe fn set_webkit_text_stroke(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-text-stroke-color`](https://developer.mozilla.org/docs/Web/CSS/-webkit-text-stroke-color)
+        #[link_name = "get webkitTextStrokeColor"]
+        pub safe fn webkit_text_stroke_color(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-text-stroke-color`](https://developer.mozilla.org/docs/Web/CSS/-webkit-text-stroke-color)
+        #[link_name = "set webkitTextStrokeColor"]
+        pub safe fn set_webkit_text_stroke_color(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-text-stroke-width`](https://developer.mozilla.org/docs/Web/CSS/-webkit-text-stroke-width)
+        #[link_name = "get webkitTextStrokeWidth"]
+        pub safe fn webkit_text_stroke_width(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-text-stroke-width`](https://developer.mozilla.org/docs/Web/CSS/-webkit-text-stroke-width)
+        #[link_name = "set webkitTextStrokeWidth"]
+        pub safe fn set_webkit_text_stroke_width(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-transform`](https://developer.mozilla.org/docs/Web/CSS/-webkit-transform)
+        #[link_name = "get webkitTransform"]
+        pub safe fn webkit_transform(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-transform`](https://developer.mozilla.org/docs/Web/CSS/-webkit-transform)
+        #[link_name = "set webkitTransform"]
+        pub safe fn set_webkit_transform(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-transform-origin`](https://developer.mozilla.org/docs/Web/CSS/-webkit-transform-origin)
+        #[link_name = "get webkitTransformOrigin"]
+        pub safe fn webkit_transform_origin(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-transform-origin`](https://developer.mozilla.org/docs/Web/CSS/-webkit-transform-origin)
+        #[link_name = "set webkitTransformOrigin"]
+        pub safe fn set_webkit_transform_origin(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-transform-style`](https://developer.mozilla.org/docs/Web/CSS/-webkit-transform-style)
+        #[link_name = "get webkitTransformStyle"]
+        pub safe fn webkit_transform_style(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-transform-style`](https://developer.mozilla.org/docs/Web/CSS/-webkit-transform-style)
+        #[link_name = "set webkitTransformStyle"]
+        pub safe fn set_webkit_transform_style(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-transition`](https://developer.mozilla.org/docs/Web/CSS/-webkit-transition)
+        #[link_name = "get webkitTransition"]
+        pub safe fn webkit_transition(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-transition`](https://developer.mozilla.org/docs/Web/CSS/-webkit-transition)
+        #[link_name = "set webkitTransition"]
+        pub safe fn set_webkit_transition(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-transition-delay`](https://developer.mozilla.org/docs/Web/CSS/-webkit-transition-delay)
+        #[link_name = "get webkitTransitionDelay"]
+        pub safe fn webkit_transition_delay(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-transition-delay`](https://developer.mozilla.org/docs/Web/CSS/-webkit-transition-delay)
+        #[link_name = "set webkitTransitionDelay"]
+        pub safe fn set_webkit_transition_delay(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-transition-duration`](https://developer.mozilla.org/docs/Web/CSS/-webkit-transition-duration)
+        #[link_name = "get webkitTransitionDuration"]
+        pub safe fn webkit_transition_duration(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-transition-duration`](https://developer.mozilla.org/docs/Web/CSS/-webkit-transition-duration)
+        #[link_name = "set webkitTransitionDuration"]
+        pub safe fn set_webkit_transition_duration(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-transition-property`](https://developer.mozilla.org/docs/Web/CSS/-webkit-transition-property)
+        #[link_name = "get webkitTransitionProperty"]
+        pub safe fn webkit_transition_property(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-transition-property`](https://developer.mozilla.org/docs/Web/CSS/-webkit-transition-property)
+        #[link_name = "set webkitTransitionProperty"]
+        pub safe fn set_webkit_transition_property(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-transition-timing-function`](https://developer.mozilla.org/docs/Web/CSS/-webkit-transition-timing-function)
+        #[link_name = "get webkitTransitionTimingFunction"]
+        pub safe fn webkit_transition_timing_function(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-transition-timing-function`](https://developer.mozilla.org/docs/Web/CSS/-webkit-transition-timing-function)
+        #[link_name = "set webkitTransitionTimingFunction"]
+        pub safe fn set_webkit_transition_timing_function(this: &CSSStyleProperties, value: &str);
+
+        /// [`-webkit-user-select`](https://developer.mozilla.org/docs/Web/CSS/-webkit-user-select)
+        #[link_name = "get webkitUserSelect"]
+        pub safe fn webkit_user_select(this: &CSSStyleProperties) -> String;
+
+        /// [`-webkit-user-select`](https://developer.mozilla.org/docs/Web/CSS/-webkit-user-select)
+        #[link_name = "set webkitUserSelect"]
+        pub safe fn set_webkit_user_select(this: &CSSStyleProperties, value: &str);
+
+        /// [`white-space`](https://developer.mozilla.org/docs/Web/CSS/white-space)
+        #[link_name = "get whiteSpace"]
+        pub safe fn white_space(this: &CSSStyleProperties) -> String;
+
+        /// [`white-space`](https://developer.mozilla.org/docs/Web/CSS/white-space)
+        #[link_name = "set whiteSpace"]
+        pub safe fn set_white_space(this: &CSSStyleProperties, value: &str);
+
+        /// [`white-space-collapse`](https://developer.mozilla.org/docs/Web/CSS/white-space-collapse)
+        #[link_name = "get whiteSpaceCollapse"]
+        pub safe fn white_space_collapse(this: &CSSStyleProperties) -> String;
+
+        /// [`white-space-collapse`](https://developer.mozilla.org/docs/Web/CSS/white-space-collapse)
+        #[link_name = "set whiteSpaceCollapse"]
+        pub safe fn set_white_space_collapse(this: &CSSStyleProperties, value: &str);
+
+        /// [`widows`](https://developer.mozilla.org/docs/Web/CSS/widows)
+        #[link_name = "get widows"]
+        pub safe fn widows(this: &CSSStyleProperties) -> String;
+
+        /// [`widows`](https://developer.mozilla.org/docs/Web/CSS/widows)
+        #[link_name = "set widows"]
+        pub safe fn set_widows(this: &CSSStyleProperties, value: &str);
+
+        /// [`width`](https://developer.mozilla.org/docs/Web/CSS/width)
+        #[link_name = "get width"]
+        pub safe fn width(this: &CSSStyleProperties) -> String;
+
+        /// [`width`](https://developer.mozilla.org/docs/Web/CSS/width)
+        #[link_name = "set width"]
+        pub safe fn set_width(this: &CSSStyleProperties, value: &str);
+
+        /// [`will-change`](https://developer.mozilla.org/docs/Web/CSS/will-change)
+        #[link_name = "get willChange"]
+        pub safe fn will_change(this: &CSSStyleProperties) -> String;
+
+        /// [`will-change`](https://developer.mozilla.org/docs/Web/CSS/will-change)
+        #[link_name = "set willChange"]
+        pub safe fn set_will_change(this: &CSSStyleProperties, value: &str);
+
+        /// [`word-break`](https://developer.mozilla.org/docs/Web/CSS/word-break)
+        #[link_name = "get wordBreak"]
+        pub safe fn word_break(this: &CSSStyleProperties) -> String;
+
+        /// [`word-break`](https://developer.mozilla.org/docs/Web/CSS/word-break)
+        #[link_name = "set wordBreak"]
+        pub safe fn set_word_break(this: &CSSStyleProperties, value: &str);
+
+        /// [`word-spacing`](https://developer.mozilla.org/docs/Web/CSS/word-spacing)
+        #[link_name = "get wordSpacing"]
+        pub safe fn word_spacing(this: &CSSStyleProperties) -> String;
+
+        /// [`word-spacing`](https://developer.mozilla.org/docs/Web/CSS/word-spacing)
+        #[link_name = "set wordSpacing"]
+        pub safe fn set_word_spacing(this: &CSSStyleProperties, value: &str);
+
+        /// [`word-wrap`](https://developer.mozilla.org/docs/Web/CSS/word-wrap)
+        #[link_name = "get wordWrap"]
+        pub safe fn word_wrap(this: &CSSStyleProperties) -> String;
+
+        /// [`word-wrap`](https://developer.mozilla.org/docs/Web/CSS/word-wrap)
+        #[link_name = "set wordWrap"]
+        pub safe fn set_word_wrap(this: &CSSStyleProperties, value: &str);
+
+        /// [`writing-mode`](https://developer.mozilla.org/docs/Web/CSS/writing-mode)
+        #[link_name = "get writingMode"]
+        pub safe fn writing_mode(this: &CSSStyleProperties) -> String;
+
+        /// [`writing-mode`](https://developer.mozilla.org/docs/Web/CSS/writing-mode)
+        #[link_name = "set writingMode"]
+        pub safe fn set_writing_mode(this: &CSSStyleProperties, value: &str);
+
+        /// [`x`](https://developer.mozilla.org/docs/Web/CSS/x)
+        #[link_name = "get x"]
+        pub safe fn x(this: &CSSStyleProperties) -> String;
+
+        /// [`x`](https://developer.mozilla.org/docs/Web/CSS/x)
+        #[link_name = "set x"]
+        pub safe fn set_x(this: &CSSStyleProperties, value: &str);
+
+        /// [`y`](https://developer.mozilla.org/docs/Web/CSS/y)
+        #[link_name = "get y"]
+        pub safe fn y(this: &CSSStyleProperties) -> String;
+
+        /// [`y`](https://developer.mozilla.org/docs/Web/CSS/y)
+        #[link_name = "set y"]
+        pub safe fn set_y(this: &CSSStyleProperties, value: &str);
+
+        /// [`z-index`](https://developer.mozilla.org/docs/Web/CSS/z-index)
+        #[link_name = "get zIndex"]
+        pub safe fn z_index(this: &CSSStyleProperties) -> String;
+
+        /// [`z-index`](https://developer.mozilla.org/docs/Web/CSS/z-index)
+        #[link_name = "set zIndex"]
+        pub safe fn set_z_index(this: &CSSStyleProperties, value: &str);
+
+        /// [`zoom`](https://developer.mozilla.org/docs/Web/CSS/zoom)
+        #[link_name = "get zoom"]
+        pub safe fn zoom(this: &CSSStyleProperties) -> String;
+
+        /// [`zoom`](https://developer.mozilla.org/docs/Web/CSS/zoom)
+        #[link_name = "set zoom"]
+        pub safe fn set_zoom(this: &CSSStyleProperties, value: &str);
     }
 }
 

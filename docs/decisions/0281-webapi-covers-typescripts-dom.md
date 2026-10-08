@@ -90,3 +90,10 @@ so nothing said when it fell behind.
 - **A dictionary a function gives and another takes is one struct**, the
   result's, which owns what it holds, taken by value: `CookieStoreGetOptions`.
   Members: 89.2% of 8,488.
+- **Each CSS property of a style is a getter and a setter of its text**,
+  `css_style_properties::set_background_color(style, "red")`, from the
+  names TypeScript lists, as CSSOM says each property has one and WebIDL
+  can't list them; each documented by its CSS page.
+- **The measure reads each function's link name** in its type's module, not
+  its MDN link, so a binding documented otherwise counts; both gave the
+  same numbers. Members: 95.5%.
