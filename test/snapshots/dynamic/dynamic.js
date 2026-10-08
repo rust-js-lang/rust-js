@@ -629,10 +629,15 @@ export function report() {
   }
   let object$31 = new Map();
   object$31.set("b", { TAG: "Number", _0: $jsonInt(1) });
-  const tmp$4 = { TAG: "Bool", _0: true };
   let object$32 = new Map();
   object$32.set("c", "Null");
-  object$31.set("a", { TAG: "Array", _0: [tmp$4, { TAG: "Object", _0: object$32 }] });
+  object$31.set("a", {
+    TAG: "Array",
+    _0: [
+      { TAG: "Bool", _0: true },
+      { TAG: "Object", _0: object$32 },
+    ],
+  });
   let v$1 = { TAG: "Object", _0: object$31 };
   out += `${$jsonValueText(v$1, true)}\n`;
   const obj = $jsonValueAs(v$1, "Object");
