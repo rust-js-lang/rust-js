@@ -5,6 +5,8 @@ mod drops;
 mod fmt_failures;
 mod mutation;
 mod naming;
+
+pub(super) use naming::renamed_in;
 mod type_facts;
 mod validation;
 

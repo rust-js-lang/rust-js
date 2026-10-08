@@ -168,7 +168,7 @@ pub(super) fn name_imports(
 /// What a module's `use`s rename, by their new names: `use …::Link as
 /// NextLink` is next/link's `Link` by `NextLink`, and a `static`'s is camel
 /// case, as its own name is.
-fn renamed_in(tcx: TyCtxt<'_>, module: LocalModId) -> HashMap<DefId, String> {
+pub(in crate::lower) fn renamed_in(tcx: TyCtxt<'_>, module: LocalModId) -> HashMap<DefId, String> {
     tcx.hir_module_items(module)
         .free_items()
         .filter_map(|id| match tcx.hir_item(id).kind {

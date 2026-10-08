@@ -81,6 +81,8 @@ pub struct Lowered {
 pub struct ImportRequest {
     pub symbol: js::Symbol,
     pub export: String,
+    /// The name it's imported by, as the importer's `use .. as` names it.
+    pub local: String,
     pub path: Vec<String>,
 }
 

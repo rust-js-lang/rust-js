@@ -48,7 +48,7 @@ fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], mut names: Has
     let replacements: HashMap<_, _> = imports
         .iter()
         .map(|request| {
-            let alias = fresh_in(&mut names, &request.export);
+            let alias = fresh_in(&mut names, &request.local);
             grouped
                 .entry(request.path.clone())
                 .or_default()

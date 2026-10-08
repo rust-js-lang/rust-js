@@ -82,4 +82,28 @@ export const mutations: Mutation[] = [
     replace: "            false => info.name.clone(),",
     tests: ["test/compiler.test.ts","-t","re-exported from it"],
   },
+  {
+    name: "default-exported-by-name-too",
+    breaks: "a module's default export another imports is exported by its name too, `export const Memoized`",
+    file: "src/lower/pipeline.rs",
+    find: "    called_from_elsewhere.retain(|id| !defaulted.contains(id));\n",
+    replace: "\n",
+    tests: ["test/declarations.test.ts","-t","default export is imported as one"],
+  },
+  {
+    name: "default-imported-by-name",
+    breaks: "a module's default export is imported by its name, `import { Memoized as Label }`",
+    file: "src/lower/pipeline.rs",
+    find: "export: if default.is_some() {",
+    replace: "export: if false {",
+    tests: ["test/declarations.test.ts","-t","default export is imported as one"],
+  },
+  {
+    name: "default-import-unrenamed",
+    breaks: "a default import is named as its item is, `import Memoized`, not as the importer's `use .. as Label` names it",
+    file: "src/lower/pipeline.rs",
+    find: ".then(|| renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone()));",
+    replace: ".then(|| name.clone());",
+    tests: ["test/declarations.test.ts","-t","default export is imported as one"],
+  },
 ];

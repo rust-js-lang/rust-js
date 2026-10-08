@@ -651,6 +651,51 @@ js::export_default!(Memoized);
   expect(renderToStaticMarkup(createElement(lib.default, { text: "hi" }))).toBe("<b>hi</b>");
 });
 
+// A module's default export, imported by another of its crate, is its
+// default import, named as the `use` names it, as react.dev's CodeDiagram
+// has `import CodeBlock from './CodeBlock'`, which exports nothing else.
+test("a module's default export is imported as one, by its use's name", async () => {
+  buildReact();
+  const dir = fixture("default-import");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
+  writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case, non_upper_case_globals)]
+mod label;
+
+use label::Memoized as Label;
+use react::{JSX, jsx};
+
+pub fn Page() -> JSX::Element {
+    jsx! { <main><Label text="hi" /></main> }
+}
+`);
+  writeFileSync(join(dir, "label.rs"), `use react::{JSX, MemoExoticComponent, jsx, memo};
+
+pub struct LabelProps<'a> {
+    pub text: &'a str,
+}
+
+fn Label(LabelProps { text }: LabelProps) -> JSX::Element {
+    jsx! { <b>{text}</b> }
+}
+
+thread_local! {
+    pub(crate) static Memoized: MemoExoticComponent<LabelProps<'static>> = memo(Label);
+}
+
+js::export_default!(Memoized);
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const page = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(page).toContain('import Label from "./label.jsx";');
+  expect(page).toContain('<Label text="hi" />');
+  const label = readFileSync(join(dir, "label.jsx"), "utf8");
+  expect(label).toContain("const Memoized = memo(Label);");
+  expect(label).not.toContain("export const Memoized");
+  const { renderToStaticMarkup } = await import("react-dom/server");
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(lib.Page())).toBe("<main><b>hi</b></main>");
+});
+
 // TypeScript prints them (ADR 0207), through @rust-js/typescript, which a
 // crate without it is told to add, its build failing.
 test("declarations where @rust-js/typescript isn't say to add it", () => {

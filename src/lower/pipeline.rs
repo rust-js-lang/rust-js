@@ -1,6 +1,6 @@
 //! Orchestrate analyzed crate facts, function emission, reachability and symbolic module assembly.
 
-use super::analysis::{AnalyzedCrate, analyze_crate, is_thread_local};
+use super::analysis::{AnalyzedCrate, analyze_crate, is_thread_local, renamed_in};
 use super::bindings::Export;
 use super::{Body, CrateFacts, FnCx, FnInfo, Locals, const_js, eval_const, module_file, module_symbol, static_value};
 use crate::js::{self, Expr, Prop, StmtKind};
@@ -65,6 +65,22 @@ pub fn lower_crate<'tcx>(
         pretty_debug,
         format_options,
     } = analyze_crate(tcx, all_bodies, dependencies, export_library)?;
+    // Each module's default export, which a module of the crate imports as
+    // its default, not by a name of its own (ADR 0251).
+    let defaults: HashMap<LocalModId, DefId> = (modules.iter())
+        .filter_map(|&module| {
+            super::bindings::default_exports(tcx, module)
+                .into_iter()
+                .filter_map(|(item, _)| item)
+                .find(|item| {
+                    item.as_local()
+                        .is_some_and(|local| tcx.parent_module_from_def_id(local) == module)
+                })
+                .map(|item| (module, item))
+        })
+        .collect();
+    let defaulted: HashSet<DefId> = defaults.values().copied().collect();
+    called_from_elsewhere.retain(|id| !defaulted.contains(id));
     // A library exports what its consumers can reach (ADR 0100).
     if export_library {
         called_from_elsewhere.extend(fns.keys().copied().filter(|&id| super::library::reachable(tcx, id)));
@@ -360,6 +376,9 @@ pub fn lower_crate<'tcx>(
     }
 
     for &(_, id) in pass.references.iter() {
+        if defaulted.contains(&id) {
+            continue;
+        }
         let info = &fns[&id];
         if let Some(owner) = &info.owner {
             if let Some(ns) = pass
@@ -377,13 +396,16 @@ pub fn lower_crate<'tcx>(
             f.export = true;
         }
     }
-    let mut targets: HashMap<LocalModId, HashSet<(LocalModId, String)>> = HashMap::new();
+    // What each module imports of another: its item's name, and the
+    // module's default's, by what the importer's `use` names it.
+    let mut targets: HashMap<LocalModId, HashSet<(LocalModId, String, Option<String>)>> = HashMap::new();
     for &(from, id) in &pass.references {
         let info = &fns[&id];
-        targets
-            .entry(from)
-            .or_default()
-            .insert((info.module, info.owner.as_ref().unwrap_or(&info.name).clone()));
+        let name = info.owner.as_ref().unwrap_or(&info.name).clone();
+        let default = defaulted
+            .contains(&id)
+            .then(|| renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone()));
+        targets.entry(from).or_default().insert((info.module, name, default));
     }
     let lowered = modules
         .into_iter()
@@ -479,12 +501,17 @@ pub fn lower_crate<'tcx>(
                 jsx: pass.jsx.contains(&module),
             };
             let mut imports: Vec<_> = targets.remove(&module).unwrap_or_default().into_iter().collect();
-            imports.sort_by(|(a, an), (b, bn)| (&paths[a], an).cmp(&(&paths[b], bn)));
+            imports.sort_by(|(a, an, _), (b, bn, _)| (&paths[a], an).cmp(&(&paths[b], bn)));
             let candidates: Vec<_> = imports
                 .into_iter()
-                .map(|(target, export)| ImportRequest {
-                    symbol: module_symbol(target, &export),
-                    export,
+                .map(|(target, name, default)| ImportRequest {
+                    symbol: module_symbol(target, &name),
+                    export: if default.is_some() {
+                        "default".to_string()
+                    } else {
+                        name.clone()
+                    },
+                    local: default.unwrap_or(name),
                     path: paths[&target].clone(),
                 })
                 .collect();

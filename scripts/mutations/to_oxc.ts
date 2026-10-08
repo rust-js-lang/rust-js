@@ -122,4 +122,12 @@ export const mutations: Mutation[] = [
     replace: "    if pattern.contains(['\\u{2028}', '\\u{2029}']) {",
     tests: ["test/compiler.test.ts","-t","RegExp of a pattern"],
   },
+  {
+    name: "default-import-braced",
+    breaks: "a default import is printed as a named one, `import { default as Label }`",
+    file: "src/to_oxc.rs",
+    find: "                (Some(default), true) => default.clone(),",
+    replace: "                (Some(default), true) => format!(\"{{ default as {default} }}\"),",
+    tests: ["test/declarations.test.ts","-t","default export is imported as one"],
+  },
 ];

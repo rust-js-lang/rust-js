@@ -166,9 +166,13 @@ pub fn emit(
     if !module.imports.is_empty() {
         code.push('\n');
         for import in &module.imports {
+            let default = (import.named.iter())
+                .find(|(export, _)| export == "default")
+                .map(|(_, local)| local);
             let named: Vec<_> = import
                 .named
                 .iter()
+                .filter(|(export, _)| export != "default")
                 .map(|(export, local)| {
                     if export == local {
                         export.clone()
@@ -177,7 +181,12 @@ pub fn emit(
                     }
                 })
                 .collect();
-            code.push_str(&format!("import {{ {} }} from {:?};\n", named.join(", "), import.from));
+            let clause = match (default, named.is_empty()) {
+                (Some(default), true) => default.clone(),
+                (Some(default), false) => format!("{default}, {{ {} }}", named.join(", ")),
+                (None, _) => format!("{{ {} }}", named.join(", ")),
+            };
+            code.push_str(&format!("import {clause} from {:?};\n", import.from));
         }
     }
     // What it re-exports, its `pub use` (ADR 0240), after what it imports.
