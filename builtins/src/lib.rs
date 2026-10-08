@@ -410,6 +410,11 @@ pub mod string {
         #[link_name = "get length"]
         pub safe fn length(this: &str) -> u32;
 
+        /// [`text.charAt(index)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/charAt):
+        /// its UTF-16 code unit at `index`, half of an emoji, or `""` past its end.
+        #[link_name = "charAt"]
+        pub safe fn char_at(this: &str, index: u32) -> String;
+
         /// [`text.slice(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/slice):
         /// from `start` to before `end`, each counted from the end if negative.
         #[link_name = "slice"]

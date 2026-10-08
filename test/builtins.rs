@@ -33,6 +33,11 @@ pub fn parts(text: &str, part: &str) -> (Vec<String>, Vec<i32>, u32) {
     (parts, at, string::length(text))
 }
 
+/// Each UTF-16 code unit of `text`, by JS's `charAt`: an emoji's two halves.
+pub fn units(text: &str) -> Vec<String> {
+    (0..string::length(text)).map(|i| string::char_at(text, i)).collect()
+}
+
 /// A JS object of these keys and values, as an API taking a dictionary wants.
 pub fn attributes(label: &str, level: u32) -> &'static js::JsObject {
     js::object::from_entries(vec![("aria-label".to_string(), label.to_string()), ("aria-level".to_string(), level.to_string())])
