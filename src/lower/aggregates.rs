@@ -209,19 +209,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(assembled(shape, tag, items))
     }
 
-    /// `value`, if it does something, made first, in a `const` of its own;
-    /// an object made here each of its values, so it stays one, as a
-    /// flattened struct's is taken apart where it's given (ADR 0213).
+    /// `value`, if it does something, made first, in a `const` of its own.
+    /// A flattened struct's values are made each in its place already, by
+    /// `operands_named` (ADR 0213).
     fn made_first(&mut self, name: &str, value: &mut Expr, out: &mut Vec<Stmt>) {
-        if let js::ExprKind::Object(props) = &mut value.kind {
-            for prop in props {
-                let (Prop::Field(key, value) | Prop::Getter(key, value)) = prop else {
-                    continue;
-                };
-                let key = key.clone();
-                self.made_first(&key, value, out);
-            }
-        } else if value.has_effects() {
+        if value.has_effects() {
             let fresh = self.fresh(name);
             let made = std::mem::replace(value, Expr::var(&fresh));
             let span = made.span;
