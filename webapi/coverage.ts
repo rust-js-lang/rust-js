@@ -81,7 +81,7 @@ export async function typescript(): Promise<Map<string, Members>> {
 
 /** What src/lib.rs binds: each module function or method, by the JS its
  * link name says, `get x` and `set x` are `x`, `new X` the constructor,
- * `X.y` the static `y`, or its own name; and each constant, a member and
+ * `X.y` and `get X.y` the static `y`, or its own name; and each constant, a member and
  * a static of its name. */
 function webapi(): { bound: Set<string>; types: Set<string>; parents: Map<string, string> } {
   const text = readFileSync(lib, "utf8");
@@ -109,10 +109,12 @@ function webapi(): { bound: Set<string>; types: Set<string>; parents: Map<string
     if (type && constant) for (const m of [constant, `static:${constant}`]) bound.add(`${type}.${m}`);
     if (type && fn) {
       const js = link ?? fn;
+      // `get Notification.permission`, a static attribute, is a static too.
+      const plain = js.replace(/^(get|set) /, "");
       const member =
         js.startsWith("new ") ? "constructor"
-        : /^[A-Z][\w.]*\.\w+$/.test(js) ? `static:${js.split(".").pop()}`
-        : js.replace(/^(get|set) /, "");
+        : /^[A-Z][\w.]*\.\w+$/.test(plain) ? `static:${plain.split(".").pop()}`
+        : plain;
       bound.add(`${type}.${member}`);
     }
     if (fn) link = undefined;

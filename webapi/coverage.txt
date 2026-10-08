@@ -1,6 +1,6 @@
 # The webapi crate against TypeScript's DOM (@types/web): bun test test/webapi-coverage.test.ts
 # classes: 699 of 701 (99.7%)
-# members: 8234 of 8419 (97.8%)
+# members: 8240 of 8419 (97.9%)
 AbortController.abort
 AbortController.constructor
 AbortController.signal
@@ -3512,6 +3512,7 @@ MediaSource.readyState
 MediaSource.removeSourceBuffer
 MediaSource.setLiveSeekableRange
 MediaSource.sourceBuffers
+MediaSource.static:canConstructInDedicatedWorker
 MediaSource.static:isTypeSupported
 MediaStream.active
 MediaStream.addTrack
@@ -3810,6 +3811,8 @@ Notification.onerror
 Notification.onshow
 Notification.requireInteraction
 Notification.silent
+Notification.static:maxActions
+Notification.static:permission
 Notification.static:requestPermission
 Notification.tag
 Notification.title
@@ -4027,6 +4030,7 @@ PerformanceNavigationTiming.unloadEventStart
 PerformanceObserver.constructor
 PerformanceObserver.disconnect
 PerformanceObserver.observe
+PerformanceObserver.static:supportedEntryTypes
 PerformanceObserver.takeRecords
 PerformanceObserverEntryList.getEntries
 PerformanceObserverEntryList.getEntriesByName
@@ -4145,6 +4149,7 @@ PublicKeyCredential.static:signalUnknownCredential
 PublicKeyCredential.toJSON
 PushManager.getSubscription
 PushManager.permissionState
+PushManager.static:supportedContentEncodings
 PushManager.subscribe
 PushSubscription.endpoint
 PushSubscription.expirationTime
@@ -4442,6 +4447,7 @@ Response.json
 Response.ok
 Response.redirected
 Response.static:error
+Response.static:json
 Response.static:redirect
 Response.status
 Response.statusText

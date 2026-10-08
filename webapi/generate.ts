@@ -765,8 +765,19 @@ function functionsOf(i: Interface): Fn[] {
         fns.push({ name: v.name, jsName: `new ${jsName(i)}`, params: v.params, result: `&'static ${typeName(i.name)}`, doc: [`[MDN](${mdn(i.name, i.name)})`] });
       }
     } else if (m.type === "attribute") {
-      if (m.special === "static" || i.isNamespace) {
-        skip(m.special || "namespace attribute");
+      // A static attribute is a function of the class's module, read at
+      // each call: `notification::permission()`, `Notification.permission`.
+      if (m.special === "static") {
+        const result = rustType(m.idlType!, "result");
+        if (typeof result === "string") {
+          fns.push({ name: snake(m.name!), jsName: `get ${jsName(i)}.${m.name}`, params: [], result: orNull(result, m.idlType!), doc: [`[MDN](${mdn(i.name, m.name)})`] });
+        } else {
+          skip(result.skip);
+        }
+        continue;
+      }
+      if (i.isNamespace) {
+        skip("namespace attribute");
         continue;
       }
       const doc = [`[MDN](${mdn(i.name, m.name)})`];
@@ -812,13 +823,9 @@ function functionsOf(i: Interface): Fn[] {
         skip("unnamed");
         continue;
       }
-      // A static method is the class's, `URL.createObjectURL(blob)`: unless
-      // an instance's method has its name, `Response.json`, which keeps it.
+      // A static method is the class's, `URL.createObjectURL(blob)`, in its
+      // module, beside an instance's method of its name, `Response.json`.
       const isStatic = m.special === "static";
-      if (isStatic && i.members.some(({ member: o }) => o.type === "operation" && o.name === m.name && o.special !== "static")) {
-        skip("static clash");
-        continue;
-      }
       const result = rustType(m.idlType!, "result");
       const sig = signatures(m.arguments ?? []);
       if (typeof result !== "string" || "skip" in sig) {
@@ -860,14 +867,16 @@ function functionsOf(i: Interface): Fn[] {
     });
   }
 
-  // The first of each name wins: later overloads and clashes are skipped.
+  // The first of each name wins: later overloads and clashes are skipped,
+  // of a method's in the type's `impl` and of a module's in its module.
   const seen = new Set<string>();
   return fns.filter((f) => {
-    if (seen.has(f.name)) {
+    const key = `${f.params[0]?.startsWith("this:") ? "impl" : "mod"} ${f.name}`;
+    if (seen.has(key)) {
       skip("overload or clash");
       return false;
     }
-    seen.add(f.name);
+    seen.add(key);
     return true;
   });
 }

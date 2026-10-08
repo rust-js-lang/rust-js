@@ -149,3 +149,9 @@ pub fn samples(buffer: &webapi::AudioBuffer, svg: &webapi::SVGSVGElement) -> (f3
 pub fn texts(url: &webapi::URL, list: &webapi::DOMTokenList) -> (String, String) {
     (url.to_string(), list.to_string())
 }
+
+/// A static attribute, read at each call, and a static method an instance's
+/// has the name of, each its class's: `Notification.permission`, `Response.json`.
+pub fn statics_read() -> (String, &'static webapi::Response) {
+    (webapi::notification::permission(), webapi::response::json(vec![1, 2]))
+}

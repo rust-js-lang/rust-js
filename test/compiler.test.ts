@@ -842,6 +842,8 @@ test("the webapi crate's bindings become plain JS", async () => {
   expect(js).toContain('const data = buffer.getChannelData(0);\n  const point = svg.createSVGPoint();\n  point.x = 2;\n  const face = new FontFace("Mono", new Uint8Array(4));');
   // A stringifier's `toString()`.
   expect(js).toContain("return [url.toString(), list.toString()];");
+  // A static attribute and a static method beside an instance's of its name.
+  expect(js).toContain("return [Notification.permission, Response.json([1, 2])];");
   const { round_trip, iterated, samples, texts } = await import(join(target, "web_forms.js"));
   expect(texts(new URL("https://example.com/a"), { toString: () => "a b" })).toEqual(["https://example.com/a", "a b"]);
   (globalThis as any).FontFace = class { constructor(public family: string) {} };

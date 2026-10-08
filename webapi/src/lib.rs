@@ -33295,6 +33295,22 @@ pub mod response {
     pub fn new_with_body_and_init(body: impl IntoBodyInit, init: ResponseInit<'_>) -> &'static Response {
         unreachable!()
     }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/json)
+    #[cfg_attr(rust_js, rust_js::link_name = "Response.json")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn json<D>(data: D) -> &'static Response {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/json)
+    #[cfg_attr(rust_js, rust_js::link_name = "Response.json")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn json_with_init<D>(data: D, init: ResponseInit<'_>) -> &'static Response {
+        unreachable!()
+    }
 }
 
 impl Response {
@@ -65871,6 +65887,10 @@ pub mod media_source {
         #[link_name = "new MediaSource"]
         pub safe fn new() -> &'static MediaSource;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSource/canConstructInDedicatedWorker)
+        #[link_name = "get MediaSource.canConstructInDedicatedWorker"]
+        pub safe fn can_construct_in_dedicated_worker() -> bool;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSource/isTypeSupported)
         #[link_name = "MediaSource.isTypeSupported"]
         pub safe fn is_type_supported(type_: &str) -> bool;
@@ -67664,6 +67684,10 @@ pub mod notification {
         #[link_name = "new Notification"]
         pub safe fn new_with_options(title: &str, options: NotificationOptions<'_>) -> &'static Notification;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/permission)
+        #[link_name = "get Notification.permission"]
+        pub safe fn permission() -> String;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/requestPermission)
         #[link_name = "Notification.requestPermission"]
         pub safe fn request_permission() -> Promise<String>;
@@ -67671,6 +67695,10 @@ pub mod notification {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/requestPermission)
         #[link_name = "Notification.requestPermission"]
         pub safe fn request_permission_with_deprecated_callback(deprecated_callback: Box<dyn FnMut(&str)>) -> Promise<String>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/maxActions)
+        #[link_name = "get Notification.maxActions"]
+        pub safe fn max_actions() -> u32;
 
         /// Treats `this` as `Notification` without checking that it is one.
         #[link_name = "this"]
@@ -70443,6 +70471,10 @@ pub mod performance_observer {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceObserver/PerformanceObserver)
         #[link_name = "new PerformanceObserver"]
         pub safe fn new(callback: Box<dyn FnMut(&PerformanceObserverEntryList, &PerformanceObserver, PerformanceObserverCallbackOptions)>) -> &'static PerformanceObserver;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceObserver/supportedEntryTypes)
+        #[link_name = "get PerformanceObserver.supportedEntryTypes"]
+        pub safe fn supported_entry_types() -> &'static [String];
     }
 }
 
@@ -71642,6 +71674,16 @@ impl PublicKeyCredential {
 /// [`PushManager`](https://developer.mozilla.org/docs/Web/API/PushManager)
 #[cfg_attr(rust_js, rust_js::types = "PushManager")]
 pub struct PushManager(PhantomData<JsObject>);
+
+pub mod push_manager {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PushManager/supportedContentEncodings)
+        #[link_name = "get PushManager.supportedContentEncodings"]
+        pub safe fn supported_content_encodings() -> &'static [String];
+    }
+}
 
 impl PushManager {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PushManager/subscribe)

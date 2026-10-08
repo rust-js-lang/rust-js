@@ -122,3 +122,8 @@ so nothing said when it fell behind.
   member it flattens to. 97.7%.
 - **A stringifier is `to_string()`**, JS's `toString()`: of `stringifier;`
   and of a `stringifier attribute`, `url.to_string()` its `href`. 97.8%.
+- **A static attribute is a function of its class's module**,
+  `notification::permission()`, read at each call (ADR 0024); **a static
+  method beside an instance's of its name is its module's too**,
+  `response::json(data)` beside `response.json()`, as a method and a
+  module function don't clash. 97.9%.
