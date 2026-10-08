@@ -1045,6 +1045,43 @@ pub fn next_frame(then: &'static dyn Fn(f64)) -> u32 {
   }
 });
 
+// ADR 0269: what every JS global scope has, a window's, a worker's or Node's,
+// `fetch` and `queueMicrotask`, is called bare, as react.dev's errors page
+// fetches in Next.js's `getStaticProps`, where there's no `window`.
+test("the global scope's functions are called bare", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("global-scope");
+  writeFileSync(join(dir, "lib.rs"), `use js::Promise;
+use webapi::{Response, global};
+
+pub fn codes(url: &str) -> Promise<&'static Response> {
+    global::fetch(url)
+}
+
+pub fn later(then: &'static dyn Fn()) {
+    global::queue_microtask(Box::new(move || then()));
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return fetch(url);");
+  expect(js).toContain("queueMicrotask(");
+  expect(js).not.toContain("window");
+  const fetched: string[] = [];
+  const previous = globalThis.fetch;
+  globalThis.fetch = ((url: string) => (fetched.push(url), Promise.resolve(new Response("{}")))) as typeof fetch;
+  try {
+    const { codes, later } = await import(join(dir, "lib.js"));
+    await codes("https://example.com/codes.json");
+    const ran: number[] = [];
+    later(() => ran.push(1));
+    await Promise.resolve();
+    expect([fetched, ran]).toEqual([["https://example.com/codes.json"], [1]]);
+  } finally {
+    globalThis.fetch = previous;
+  }
+});
+
 // ADR 0225: a JS value of unknown shape is a `js::Unknown`, as TypeScript's
 // `unknown` and ReScript's are, which `classify` tells by `typeof`, and
 // whose properties are read and set by name, as `obj[key]` is.

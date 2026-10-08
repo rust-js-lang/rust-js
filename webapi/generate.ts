@@ -181,6 +181,8 @@ type Interface = {
   legacyNamespace?: string;
   /** A `namespace`: functions, and no type. */
   isNamespace?: boolean;
+  /** The global scope's: functions called bare, `fetch(url)` (ADR 0269). */
+  isGlobal?: boolean;
 };
 const interfaces = new Map<string, Interface>();
 const namespaces = new Map<string, Interface>();
@@ -212,6 +214,20 @@ for (const [target, names] of includes) {
   const i = interfaces.get(target);
   for (const name of names) i?.members.push(...(mixins.get(name) ?? []).map((member) => ({ member, from: target })));
 }
+// What every JS global scope has, a window's, a worker's or Node's: its
+// functions, `fetch` and `queueMicrotask`, called bare, where a window's
+// are `window.fetch` (ADR 0269). Not its timers, whose handler here is
+// text to run, which the builtins crate's take as closures (ADR 0102).
+const TIMERS = ["setTimeout", "setInterval", "clearTimeout", "clearInterval"];
+const globalScope: Interface = {
+  name: "WindowOrWorkerGlobalScope",
+  members: (mixins.get("WindowOrWorkerGlobalScope") ?? [])
+    .filter((member) => member.type === "operation" && !TIMERS.includes(member.name ?? ""))
+    .map((member) => ({ member, from: "WindowOrWorkerGlobalScope" })),
+  constructible: false,
+  isNamespace: true,
+  isGlobal: true,
+};
 const missing = INTERFACES.filter((name) => !interfaces.has(name));
 if (missing.length) throw new Error(`not in ${SPECS.join(", ")}: ${missing.join(", ")}`);
 
@@ -510,7 +526,7 @@ function functionsOf(i: Interface): Fn[] {
   const fns: Fn[] = [];
   // A namespace's functions are called on it: `WebAssembly.compile(bytes)`.
   const self = i.isNamespace ? [] : [`this: &${typeName(i.name)}`];
-  const member = (name: string) => (i.isNamespace ? `${i.name}.${name}` : name);
+  const member = (name: string) => (i.isNamespace && !i.isGlobal ? `${i.name}.${name}` : name);
   // A result that may be `null` is an `Option`: `None` in Rust (ADR 0030).
   const nullable = (t: IdlType) => t.nullable || typedefs.get(t.idlType as string)?.nullable;
   const orNull = (rust: string, t: IdlType) => (nullable(t) ? `Option<${rust}>` : rust);
@@ -870,6 +886,10 @@ for (const name of NAMESPACES) {
   line(`/// The [\`${name}\`](${mdn(name)}) namespace.`);
   module(snake(name), functionsOf(namespaces.get(name)!));
 }
+
+line();
+line("/// What every JS global scope has, a window's, a worker's or Node's, called bare: `fetch(url)`.");
+module("global", functionsOf(globalScope));
 
 // The dictionaries results use, as plain structs: JS objects (ADR 0020).
 for (const [name, fields] of usedDictionaries) {

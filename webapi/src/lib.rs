@@ -11988,6 +11988,56 @@ pub mod web_assembly {
     }
 }
 
+/// What every JS global scope has, a window's, a worker's or Node's, called bare: `fetch(url)`.
+
+pub mod global {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/btoa)
+        pub safe fn btoa(data: &str) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/atob)
+        pub safe fn atob(data: &str) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/queueMicrotask)
+        #[link_name = "queueMicrotask"]
+        pub safe fn queue_microtask(callback: Box<dyn FnMut()>);
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/reportError)
+    #[cfg_attr(rust_js, rust_js::link_name = "reportError")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn report_error<E>(e: E) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/structuredClone)
+    #[cfg_attr(rust_js, rust_js::link_name = "structuredClone")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn structured_clone<V: StructuredClone>(value: V) -> Option<&'static Unknown> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/fetch)
+    #[cfg_attr(rust_js, rust_js::link_name = "fetch")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn fetch(input: impl IntoRequestInfo) -> Promise<&'static Response> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/fetch)
+    #[cfg_attr(rust_js, rust_js::link_name = "fetch")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn fetch_with_init(input: impl IntoRequestInfo, init: RequestInit<'_>) -> Promise<&'static Response> {
+        unreachable!()
+    }
+}
+
 /// The `WebAssemblyInstantiatedSource` dictionary: a JS object with these fields.
 pub struct WebAssemblyInstantiatedSource {
     pub module: &'static WebAssemblyModule,
