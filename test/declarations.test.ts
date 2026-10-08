@@ -268,6 +268,17 @@ pub fn settled(s: Settled) -> u32 {
         Settled::Pending => 0,
     }
 }
+
+#[rust_js::tag = "kind"]
+pub enum Light {
+    #[rust_js::name = "on"]
+    On,
+    Off,
+}
+
+pub fn lit(light: Light) -> bool {
+    matches!(light, Light::On)
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
@@ -300,6 +311,8 @@ pub fn settled(s: Settled) -> u32 {
     "export function count(items: Items<number>): number;",
     'export type Shape = "Empty" | {\n    TAG: "Circle";\n    _0: number;\n} | {\n    TAG: "Rect";\n    w: number;\n    h: number;\n};',
     'export type Settled = {\n    status: "fulfilled";\n    value: number;\n} | {\n    status: "pending";\n};',
+    // A tagged enum's variants are objects of its tag, those of no fields too.
+    'export type Light = {\n    kind: "on";\n} | {\n    kind: "Off";\n};',
   ]) {
     expect(declarations).toContain(line);
   }

@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "        \"get []\" => return JsForm::GetIndex,\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "-t", "unknown JS value"],
+    tests: ["test/format.test.ts", "-t", "unknown JS value"],
   },
   {
     name: "assoc-this-not-method",

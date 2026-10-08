@@ -81,3 +81,6 @@ if (s.status === "fulfilled") { .. }   // match s { Settled::Fulfilled { value }
   `TAG`, as one made at run time does: it wrote the Rust name.
 - `TAG` stays the default; nothing without the attribute changes, but its
   `.d.ts`, which is now the union, not `any`.
+- A tagged enum whose variants have no fields is declared as JS has it,
+  `{ kind: "on" } | { kind: "Off" }`. (Amended: it was declared as an
+  untagged one's names, `"on" | "Off"`.)

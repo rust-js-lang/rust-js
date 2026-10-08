@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/calls.rs",
     find: "            Expr::member(this, name.clone())",
     replace: "            Expr::index(this, key.clone())",
-    tests: ["test/compiler.test.ts", "-t", "unknown JS value"],
+    tests: ["test/format.test.ts", "-t", "unknown JS value"],
   },
   {
     name: "unfollowed-drops-taken",

@@ -528,10 +528,10 @@ impl<'tcx> Declarations<'_, 'tcx> {
     fn enumeration(&mut self, def_id: DefId) -> Value {
         let adt = self.tcx.adt_def(def_id);
         let untagged = is_untagged(self.tcx, def_id);
-        let union = match adt.variants().iter().all(|v| v.fields.is_empty()) {
+        let union = match untagged {
             // `export type Size = string | number;` of an untagged enum, its
             // payloads' union (ADR 0214).
-            _ if untagged => {
+            true => {
                 let args = ty::GenericArgs::identity_for_item(self.tcx, def_id);
                 let types: Vec<Value> = (adt.variants().iter())
                     .filter_map(|v| v.fields.iter().next())
@@ -539,15 +539,10 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     .collect();
                 json!({ "kind": "union", "types": types })
             }
-            true => json!({
-                "kind": "union",
-                "types": (adt.variants().iter())
-                    .map(|v| json!({ "kind": "literal", "value": variant_name(self.tcx, v) }))
-                    .collect::<Vec<_>>(),
-            }),
             // `{ TAG: "Circle"; _0: number } | "Empty"`, each variant as rust-js
-            // makes it (ADR 0033), as ReScript's genType declares one; of a
-            // discriminated union, each an object of its tag (ADR 0284).
+            // makes it (ADR 0033), as ReScript's genType declares one, one of
+            // no fields its name; of a discriminated union, each an object of
+            // its tag, one of no fields too (ADR 0284).
             false => {
                 let args = ty::GenericArgs::identity_for_item(self.tcx, def_id);
                 let key = tag_key(self.tcx, def_id);

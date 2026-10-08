@@ -45,11 +45,11 @@ export const mutations: Mutation[] = [
     tests,
   },
   {
-    name: "declared-unit-enum-any",
-    breaks: "a unit-only enum is `any` to TypeScript, which takes any string for it",
+    name: "declared-tagged-unit-variant-named",
+    breaks: "a tagged enum's variant of no fields is declared its name, where JS has an object of its tag",
     file: "src/lower/declarations.rs",
-    find: "        let union = match adt.variants().iter().all(|v| v.fields.is_empty()) {",
-    replace: "        let union = match false {",
+    find: "                        if v.fields.is_empty() && !tagged {",
+    replace: "                        if v.fields.is_empty() {",
     tests,
   },
   {
@@ -134,10 +134,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "untagged-declared-any",
-    breaks: "an untagged enum is declared `any`, not TS's union of its payloads",
+    breaks: "an untagged enum is declared as a tagged one's objects, not TS's union of its payloads",
     file: "src/lower/declarations.rs",
-    find: "            _ if untagged => {\n",
-    replace: "            _ if false => {\n",
+    find: "        let union = match untagged {",
+    replace: "        let union = match false {",
     tests: ["test/declarations.test.ts", "-t", "type what a module exports"],
   },
   {
