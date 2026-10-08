@@ -54,8 +54,8 @@ so nothing said when it fell behind.
 ## Consequences
 
 - `@types/web` is a dependency of the generator's package, pinned.
-- MDN links are the measure's key: a binding written without one isn't
-  counted.
+- A binding counts by its link name in its type's module (by its MDN link,
+  at first: see Since).
 - Generating every class makes src/lib.rs about three times its size.
 
 ## Since
