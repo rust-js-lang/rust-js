@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "        \"this\" => return JsForm::This,",
     replace: "        \"this\" => return JsForm::Call(\"clone\".to_string()),",
-    tests: ["test/webapi-events.test.ts", "-t", "dispatch and remove by identity"],
+    tests: ["test/webapi-events.test.ts", "-t", "emit direct JavaScript"],
   },
   {
     name: "nullable-param-unchecked",

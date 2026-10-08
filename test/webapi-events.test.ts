@@ -17,7 +17,8 @@ test("event methods and reusable listeners emit direct JavaScript", () => {
   const js = compileEvents();
   expect(js).toContain('button.addEventListener("click", (e) => {\n    globalThis.record(e.clientX);\n  });');
   expect(js).toContain('document.addEventListener("keydown", (e) => {');
-  expect(js).toContain('button.addEventListener("click", listener);\n  button.removeEventListener("click", listener);');
+  // A shared callback is the function itself, made once, not a copy of it.
+  expect(js).toContain('const listener = (e) => {\n    globalThis.record(e.clientX);\n  };\n  button.addEventListener("click", listener);\n  button.removeEventListener("click", listener);');
   expect(js).toContain('button.removeEventListener("click", listener, true);');
   expect(js).not.toMatch(/unreachable|\.add_event_listener|\.client_x|\.prevent_default/);
 });
