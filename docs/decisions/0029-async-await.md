@@ -116,10 +116,15 @@ still runs. `test/async.rs` and the countdown example pin this down.
   `js::promise(f())`: in JS the call's promise itself, as an `async fn`'s
   call is one already.
 - Not yet: `async` functions in traits, `IntoFuture` for your own types,
-  streams, and joining several futures (`Promise.all`).
+  and streams. Several futures are joined by the js crate's
+  `promise::all` (ADR 0283), `Promise.all`.
 - A pattern parameter, `(a, b)` or `Context { params, .. }`, Rust gives
   the future as `__arg0`, taken apart in its body. Its JS takes it apart
   where it's given, `([a, b])` or `({ params })`, as a plain `fn`'s does,
   where the body's first statements only read its parts and nothing else
   reads it: as react.dev's errors page's `getStaticProps` takes Next.js's
   context. (Amended: it was `param`, read part by part.)
+- An awaited reference given to a generic `&T`, `same(text().await)`, is
+  reborrowed by rustc inside the `.await`, `&*loop {..}` its arm: still
+  `await`, as a reborrow is the reference itself in JS. (Amended: it was
+  rejected, as a call of `IntoFuture::into_future`.)

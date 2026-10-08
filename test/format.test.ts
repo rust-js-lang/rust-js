@@ -508,3 +508,28 @@ pub fn constants() -> (Settled, Settled) {
   expect([lib.same({ status: "measured", values: [1] }, { status: "measured", values: [1] }), lib.same({ status: "measured", values: [NaN] }, { status: "measured", values: [NaN] })])
     .toEqual([true, false]);
 });
+
+// ADR 0029: an awaited reference given to a generic `&T` is awaited, though
+// rustc reborrows it inside the `.await`.
+test("an awaited reference given to a generic function is awaited", async () => {
+  const dir = fixture("await-generic");
+  writeFileSync(join(dir, "lib.rs"), `use js::Promise;
+
+#[cfg_attr(rust_js, rust_js::link_name = "node:timers/promises#setTimeout")]
+#[allow(unused_variables)]
+fn later(ms: u32, value: &str) -> Promise<&'static str> {
+    unreachable!()
+}
+
+fn same<T: ?Sized>(x: &T) -> &T {
+    x
+}
+
+pub async fn passed(text: &str) -> String {
+    same(later(0, text).await).to_string()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("return same(await setTimeout(0, text));");
+  expect(await (await import(join(dir, "lib.js"))).passed("text")).toBe("text");
+});

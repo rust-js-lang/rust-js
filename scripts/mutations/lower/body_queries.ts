@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "await-reborrow-unseen",
+    breaks: "an awaited reference given to a generic `&T`, which rustc reborrows inside the `.await`, is rejected",
+    file: "src/lower/body_queries.rs",
+    find: "        {\n            body = strip(thir, arg);\n        }",
+    replace: "        {\n            let _ = arg;\n        }",
+    tests: ["test/format.test.ts", "-t", "an awaited reference given to a generic function is awaited"],
+  },
+  {
+    name: "await-arm-scope-unseen",
+    breaks: "`.await`'s loop, in its arm's scope, isn't seen, so each `.await` is rejected",
+    file: "src/lower/body_queries.rs",
+    find: "        let mut body = strip(thir, thir[*arm].body);",
+    replace: "        let mut body = thir[*arm].body;",
+    tests: ["test/format.test.ts", "-t", "an awaited reference given to a generic function is awaited"],
+  },
+  {
     name: "never-loop-value",
     breaks: "a `loop` that never ends, used as a value, is rejected",
     file: "src/lower/body_queries.rs",

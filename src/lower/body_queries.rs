@@ -136,8 +136,15 @@ impl<'a, 'tcx> BodyQuery<'a, 'tcx> {
         };
         let (into_future, _) = fn_def(thir[strip(thir, fun)].ty)?;
         let [arm] = &arms[..] else { return None };
-        let is_loop = matches!(thir[strip(thir, thir[*arm].body)].kind, ExprKind::Loop { .. })
-            || matches!(thir[thir[*arm].body].kind, ExprKind::Scope { value, .. } if matches!(thir[value].kind, ExprKind::Loop { .. }));
+        let mut body = strip(thir, thir[*arm].body);
+        // Given to a generic `&T`, what's awaited is reborrowed, `&*loop {..}`:
+        // rustc adjusts the arm, not the match.
+        if let ExprKind::Borrow { arg, .. } = thir[body].kind
+            && let ExprKind::Deref { arg } = thir[strip(thir, arg)].kind
+        {
+            body = strip(thir, arg);
+        }
+        let is_loop = matches!(thir[body].kind, ExprKind::Loop { .. });
         (self.tcx.is_lang_item(into_future, LangItem::IntoFutureIntoFuture) && is_loop).then(|| args[0])
     }
 
