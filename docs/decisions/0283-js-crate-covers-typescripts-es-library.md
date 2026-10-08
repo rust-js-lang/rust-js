@@ -110,3 +110,7 @@ its own for, as TypeScript's ES2024 libs declare them; a test measures it.**
   `all2` to `all4`, a tuple of promises to a promise of a tuple. A
   rejection's reason is a `JsError`, as `settle`'s is, where TypeScript has
   `any` and ReScript `exn`. 89.6%.
+- **The measure counts what it missed**: a constructor interface in
+  `namespace Intl` ends at its own brace, a `new` after its doc comment is
+  one, and an interface's members are those of what it extends too
+  (`Intl.Locale`'s `region` is `LocaleOptions`'). 87.8% of 689.

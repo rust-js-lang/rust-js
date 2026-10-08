@@ -42,6 +42,7 @@ async function typescript(): Promise<Map<string, Set<string>>> {
     .map((f) => join(libs, f));
   const session = await open(files);
   const interfaces = new Map<string, Set<string>>();
+  const heritage = new Map<string, string[]>();
   const constructors = new Map<string, { statics: Set<string>; ctor: boolean } | string>();
   const functions = new Set<string>();
   const named = (m: any) => (m.kind === "method" || m.kind === "property") && /^[A-Za-z_$][\w$]*$/.test(m.name);
@@ -52,11 +53,14 @@ async function typescript(): Promise<Map<string, Set<string>>> {
         const set = interfaces.get(name) ?? new Set<string>();
         for (const m of d.members) if (named(m)) set.add(m.name);
         interfaces.set(name, set);
+        // What it extends, by its name in the namespace it's in.
+        const parents = d.extends.filter((e: any) => e.kind === "reference").map((e: any) => prefix + e.name);
+        heritage.set(name, [...(heritage.get(name) ?? []), ...parents]);
       } else if (d.kind === "const") {
         if (d.type.kind === "reference") constructors.set(name, prefix + d.type.name);
         else if (d.type.kind === "object") {
           const statics = new Set<string>(d.type.members.filter(named).map((m: any) => m.name));
-          const ctor = d.type.members.some((m: any) => m.kind === "other" && /^new\s*[(<]/.test(m.text));
+          const ctor = d.type.members.some((m: any) => m.kind === "other" && /^new\s*[(<]/.test(m.text.replace(/\/\*[\s\S]*?\*\//g, "").trim()));
           constructors.set(name, { statics, ctor });
         }
       } else if (d.kind === "function") {
@@ -80,11 +84,17 @@ async function typescript(): Promise<Map<string, Set<string>>> {
       const owner = [...text.slice(0, m.index).matchAll(/interface (\w+)/g)].at(-1)?.[1];
       if (owner) deprecated.add(`${owner}.${m[1] ?? m[2]}`);
     }
-    for (const m of text.matchAll(/interface (\w+Constructor)\s*(?:<[^>]*>)?\s*\{([\s\S]*?)\n\}/g)) {
-      if (/^\s*new\s*[(<]/m.test(m[2])) ctorText.set(m[1], true);
+    // An interface ends at the brace indented as it is: one in `namespace Intl` too.
+    for (const m of text.matchAll(/^( *)interface (\w+Constructor)\s*(?:<[^>]*>)?\s*\{([\s\S]*?)\n\1\}/gm)) {
+      if (/^\s*new\s*[(<]/m.test(m[3])) ctorText.set(m[2], true);
     }
   }
   await session.close();
+  // An interface's members are its own and those of what it extends:
+  // `Intl.Locale`'s `region` is its `LocaleOptions`'.
+  const inherited = (name: string, seen = new Set<string>()): string[] =>
+    (heritage.get(name) ?? []).flatMap((p) => (seen.has(p) ? [] : (seen.add(p), [...(interfaces.get(p) ?? []), ...inherited(p, seen)])));
+  for (const name of interfaces.keys()) for (const m of inherited(name)) interfaces.get(name)!.add(m);
   const out = new Map<string, Set<string>>();
   for (const name of SCOPE) {
     const members = new Set<string>();
