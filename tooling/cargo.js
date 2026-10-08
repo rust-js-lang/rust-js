@@ -123,12 +123,14 @@ export async function planCargoLibraries({ manifestPath, toolchain, target, pack
  * the selected package's, or the manifest's own package's. `react` is the
  * React release the react crate is checked for (ADR 0043), or its latest.
  * With `inSource`, each module's JS is written beside its Rust too, as a
- * project commits it (`writeInSource`), and `js` and `crates` are those.
+ * project commits it (`writeInSource`), and `js` and `crates` are those;
+ * `routes` are directories where a file is a route, which get no
+ * declarations.
  * `files` is every module's JS, where it's served from.
- * @param {{ manifestPath: string, toolchain: string, compiler: string, packageName?: string, features?: string[], noDefaultFeatures?: boolean, offline?: boolean, react?: string, inSource?: boolean }} options
+ * @param {{ manifestPath: string, toolchain: string, compiler: string, packageName?: string, features?: string[], noDefaultFeatures?: boolean, offline?: boolean, react?: string, inSource?: boolean, routes?: string[] }} options
  * @returns {Promise<{ js: string, crates: Map<string, { js: string, manifest: string }>, files: string[] }>}
  */
-export async function checkCargo({ manifestPath, toolchain, compiler, packageName, features = [], noDefaultFeatures = false, offline = false, react, inSource = false }) {
+export async function checkCargo({ manifestPath, toolchain, compiler, packageName, features = [], noDefaultFeatures = false, offline = false, react, inSource = false, routes = [] }) {
   if (!exactToolchain(toolchain)) throw new Error("Cargo builds require an exact toolchain pin");
   const manifest = resolve(manifestPath);
   const args = [`+${toolchain}`, "check", "--message-format=json", "--target", "wasm32-unknown-unknown", "--manifest-path", manifest];
@@ -173,7 +175,7 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
   if (!js) throw new Error(`rust-js compiled no library of ${packageName ?? manifest}`);
   const manifests = [...crates.values()].map(({ manifest }) => JSON.parse(readFileSync(manifest, "utf8")));
   if (!inSource) return { js, crates, files: manifests.flatMap(({ modules }) => modules.map((module) => module.file)) };
-  const moved = writeInSource(manifests, ledger);
+  const moved = writeInSource(manifests, ledger, routes);
   for (const entry of crates.values()) entry.js = moved.get(entry.js);
   return { js: moved.get(js), crates, files: [...moved.values()] };
 }
@@ -194,9 +196,13 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
  * build's. Where each JS went.
  * @param {{ library: { name: string }, modules: { file: string, map?: string, types?: string, source: string, module: string[] }[] }[]} manifests
  * @param {string} ledger
+ * @param {string[]} [routes] directories where each file is a route,
+ * Next.js's `pages/`: a module's there gets no declarations, which
+ * Turbopack would take as a route of its own (ADR 0276).
  * @returns {Map<string, string>}
  */
-export function writeInSource(manifests, ledger) {
+export function writeInSource(manifests, ledger, routes = []) {
+  const routed = (file) => routes.some((dir) => !relative(resolve(dir), file).startsWith(".."));
   const moved = new Map();
   // `mod root { .. }` of a `[lib] path = "src/root.rs"` is where the root
   // is, and two crates' inline `mod helper` of `sources/alpha.rs` and
@@ -241,7 +247,7 @@ export function writeInSource(manifests, ledger) {
       writes.set(to, Buffer.from(relocated(readFileSync(file, "utf8"), file, to, moved)));
       files.push(to);
       // Its declarations, `Tag.d.ts` beside `Tag.jsx` (ADR 0196).
-      if (types && existsSync(types)) {
+      if (types && existsSync(types) && !routed(to)) {
         const typesTo = to.replace(/\.jsx?$/, ".d.ts");
         writes.set(typesTo, readFileSync(types));
         files.push(typesTo);

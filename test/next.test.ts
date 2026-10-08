@@ -65,7 +65,8 @@ function app(name: string): string {
     if (entry !== ".cache") symlinkSync(realpathSync(join(example, "node_modules", entry)), join(dir, "node_modules", entry));
   }
   const cargo = join(dir, "Cargo.toml");
-  writeFileSync(cargo, readFileSync(cargo, "utf8").replaceAll('path = "../../', `path = "${root}/`));
+  // With declarations, as react.dev has them (ADR 0196).
+  writeFileSync(cargo, readFileSync(cargo, "utf8").replaceAll('path = "../../', `path = "${root}/`) + "\n[package.metadata.rust-js]\ndeclarations = true\n");
   const page = join(dir, "app/page.rs");
   writeFileSync(page, readFileSync(page, "utf8")
     .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod counter;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n\nuse next::image::Image;")
@@ -248,6 +249,9 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   const aboutJsx = readFileSync(join(dir, "app/about/page.jsx"), "utf8");
   expect([aboutJsx.includes('import Image from "next/legacy/image";'), aboutJsx.includes('<Image src="/next.svg" layout="fill" objectFit="cover" alt="Next.js logo" />')]).toEqual([true, true]);
   expect([aboutHtml.includes('alt="Next.js logo"'), aboutHtml.includes("object-fit:cover")]).toEqual([true, true]);
+  // A page's module has no declarations beside it, which Turbopack would
+  // take as a page of its own; another module has (ADR 0276).
+  expect([existsSync(join(dir, "pages/codes/[code].d.ts")), existsSync(join(dir, "app/linked.d.ts"))]).toEqual([false, true]);
   // The Pages Router's page, built for each path but the one not found.
   const built = (path: string) => existsSync(join(dir, `.next/server/pages/codes/${path}.html`));
   expect([built("0"), built("1"), built("2")]).toEqual([false, true, true]);

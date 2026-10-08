@@ -36,7 +36,10 @@ export async function run({ app, command, args, rustJs, log = (line) => process.
   // beside its Rust (ADR 0041), or an error, rustc's.
   async function compile() {
     try {
-      await builder.checkCargo({ manifestPath, packageName, inSource: true });
+      // A Pages Router route's directory gets no declarations, which
+      // Turbopack would take as routes (ADR 0276).
+      const routes = [join(app, "pages"), join(app, "src/pages")];
+      await builder.checkCargo({ manifestPath, packageName, inSource: true, routes });
       return true;
     } catch (error) {
       log(error instanceof Error ? error.message : String(error));
