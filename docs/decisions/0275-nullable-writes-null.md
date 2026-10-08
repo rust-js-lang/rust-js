@@ -23,6 +23,10 @@ made: its `None` is `null`.**
 
 - `None` is `null`, and a `Some(..)` or a constant is its value.
 - An `Option` that may be `None` is `value ?? null`.
+- One chosen by a `match` or an `if` whose arms are each `Some(..)` or
+  `None` is its conditional with `null` for each `None`: `code ? errorCodes[code]
+  : null`, as the errors page writes it, and `code || null` where it gives
+  what it tests (`a ? a : b` is `a || b` wherever it's printed).
 - Another such field's value, read or bound by a pattern and not set again,
   is `null` or a value already, as it is: `{ code, message }` of one
   destructured.

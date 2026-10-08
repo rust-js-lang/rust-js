@@ -178,4 +178,12 @@ export const mutations: Mutation[] = [
     replace: "        ExprKind::Binary(op @ (Op::And | Op::Or), a, b) if false => js::Expr {\n",
     tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
   },
+  {
+    name: "same-test-and-value-conditional",
+    breaks: "`code ? code : null`, not `code || null`",
+    file: "src/to_oxc.rs",
+    find: "                if js::same_path(&tested(test), then) && !matches!(els.kind, ExprKind::Undefined) =>\n",
+    replace: "                if false && js::same_path(&tested(test), then) && !matches!(els.kind, ExprKind::Undefined) =>\n",
+    tests: ["test/compiler.test.ts", "-t", "nullable field's None is null"],
+  },
 ];

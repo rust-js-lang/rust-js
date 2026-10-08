@@ -143,4 +143,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/compiler.test.ts", "-t", "nullable field's None is null"],
   },
+  {
+    name: "nullable-conditional-coalesced",
+    breaks: "a `match` of `Some` or `None` given to a nullable field is `(c ? v : undefined) ?? null`",
+    file: "src/lower/aggregates.rs",
+    find: "            js::ExprKind::Cond(..) if self.made_some_or_none(e) => nulled(value),\n",
+    replace: "",
+    tests: ["test/compiler.test.ts", "-t", "nullable field's None is null"],
+  },
+  {
+    name: "nullable-match-unseen",
+    breaks: "a `match` whose arms are each `Some` or `None` isn't seen as one",
+    file: "src/lower/aggregates.rs",
+    find: "            thir::ExprKind::Match { arms, .. } => arms.iter().all(",
+    replace: "            thir::ExprKind::Match { arms, .. } => arms.is_empty() && arms.iter().all(",
+    tests: ["test/compiler.test.ts", "-t", "nullable field's None is null"],
+  },
 ];

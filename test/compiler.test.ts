@@ -1304,6 +1304,17 @@ pub fn passed(Props { code, message, .. }: Props) -> Props {
     Props { code, message, title: None }
 }
 
+pub fn chosen(code: Option<&str>) -> Props {
+    Props {
+        code: match code {
+            Some(code) if !code.is_empty() => Some(code.to_string()),
+            _ => None,
+        },
+        message: None,
+        title: None,
+    }
+}
+
 pub fn moved(p: Props) -> Props {
     Props { code: p.code, message: Some(p.title.unwrap_or_default()), title: None }
 }
@@ -1313,10 +1324,13 @@ pub fn moved(p: Props) -> Props {
   expect(js).toContain('return { code: null, message: "m", title: undefined };');
   expect(js).toContain("return { code: code ?? null, message: null, title: undefined };");
   expect(js).toContain("return { code, message, title: undefined };");
+  // A conditional of \`Some\` or \`None\` is one of the value or \`null\`.
+  expect(js).toContain("return { code: code || null, message: null, title: undefined };");
   expect(js).toContain('return { code: p.code, message: p.title ?? "", title: undefined };');
   const lib = await import(join(dir, "lib.js"));
   expect([lib.given(undefined), lib.given("1")]).toEqual([{ code: null, message: null, title: undefined }, { code: "1", message: null, title: undefined }]);
   expect(JSON.stringify(lib.passed(lib.given(undefined)))).toBe('{"code":null,"message":null}');
+  expect([lib.chosen("1").code, lib.chosen("").code, lib.chosen(undefined).code]).toEqual(["1", null, null]);
 });
 
 // ADR 0277: \`let n = n;\`, a variable shadowed by its own value, is \`n\`

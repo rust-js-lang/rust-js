@@ -268,7 +268,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match value.kind {
             js::ExprKind::Undefined => Expr::null(),
             _ if other_field || value.is_constant() => value,
+            // `c ? v : undefined` of arms each `Some(..)` or `None`: `c ? v :
+            // null`, its `undefined` the `None`'s alone.
+            js::ExprKind::Cond(..) if self.made_some_or_none(e) => nulled(value),
             _ => Expr::bin(js::Op::Coalesce, value, Expr::null()),
+        }
+    }
+
+    /// Is `e` an `Option` made where it's given, `Some(..)` or `None`, in
+    /// each arm of what chooses it?
+    fn made_some_or_none(&self, e: ExprId) -> bool {
+        match &self.thir[self.strip(e)].kind {
+            thir::ExprKind::Adt(made) => made.fields.len() <= 1 && self.option_of(self.thir[e].ty).is_some(),
+            thir::ExprKind::Match { arms, .. } => arms.iter().all(|&arm| self.made_some_or_none(self.thir[arm].body)),
+            thir::ExprKind::If {
+                then,
+                else_opt: Some(els),
+                ..
+            } => self.made_some_or_none(*then) && self.made_some_or_none(*els),
+            thir::ExprKind::Block { block } => self.thir[*block].expr.is_some_and(|e| self.made_some_or_none(e)),
+            _ => false,
         }
     }
 
@@ -408,5 +427,14 @@ fn spill_name(field: &str) -> String {
     match field.starts_with(|c: char| c.is_alphabetic() || c == '_') {
         true => field.to_string(),
         false => "tmp".to_string(),
+    }
+}
+
+/// `c ? v : undefined` with `null` for each `undefined` it gives.
+fn nulled(value: Expr) -> Expr {
+    match value.kind {
+        js::ExprKind::Undefined => Expr::null(),
+        js::ExprKind::Cond(test, then, els) => Expr::cond(*test, nulled(*then), nulled(*els)),
+        _ => value,
     }
 }

@@ -857,6 +857,12 @@ impl<'a> Cx<'a> {
                     Err(op) => Expression::new_logical_expression(sp, l, op, r, b),
                 }
             }
+            // `a ? a : b` is `a || b`: `a` where it's truthy, else `b`.
+            ExprKind::Cond(test, then, els)
+                if js::same_path(&tested(test), then) && !matches!(els.kind, ExprKind::Undefined) =>
+            {
+                Expression::new_logical_expression(sp, self.expr(then), LogicalOperator::Or, self.expr(els), b)
+            }
             ExprKind::Cond(test, then, els) => {
                 Expression::new_conditional_expression(sp, self.test(test), self.expr(then), self.expr(els), b)
             }
