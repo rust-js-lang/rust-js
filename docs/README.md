@@ -7,7 +7,8 @@ sentence, borrowed from ReScript:
 > language and JS disagree, pick the JS behavior that keeps the output small
 > and readable, and write that choice down.
 
-This folder is where we write those choices down.
+This folder is where we write those choices down. How a disagreement is
+decided, by what the program can observe: [0262](decisions/0262-when-rust-and-js-disagree.md).
 
 For what Rust does under rust-js today, read
 [How Rust behaves in rust-js](semantics.md). The decisions below record why,
@@ -352,6 +353,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0259 A module's constant element, and an image's title](decisions/0259-constant-elements.md)
 - [0260 A binding's callback parameter, and IntersectionObserver](decisions/0260-webapi-callbacks.md)
 - [0261 Defaults that do nothing don't move what's made beside them](decisions/0261-defaults-made-in-place.md)
+- [0262 When Rust and JS disagree, what the program can observe decides](decisions/0262-when-rust-and-js-disagree.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)
