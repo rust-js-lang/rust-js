@@ -82,6 +82,7 @@ pub fn emit(
     let body = ArenaVec::from_iter_in(
         namespaces
             .chain(consts)
+            .chain(cx.stmts(&module.statements))
             .chain(module.functions.iter().map(|f| cx.function(f))),
         b,
     );

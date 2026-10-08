@@ -1898,6 +1898,45 @@ test("a module of only pub uses is a file of re-exports", async () => {
   expect(index.helper()).toBe(1);
 });
 
+// ADR 0267: what a module runs when it's loaded, `js::on_load!`, is its
+// JS's own statements, as react.dev's Page prefetches CodeBlock with a bare
+// `import()`: rustc checks them as a function's body nothing calls.
+test("js::on_load! is what the module runs when it's loaded", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("on-load");
+  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
+    #[link_name = "globalThis.loaded"]
+    safe fn loaded(what: &str);
+}
+
+fn which() -> usize {
+    1
+}
+
+js::on_load! {
+    loaded("module");
+    loaded(["first", "second"][which()]);
+}
+
+pub fn ready() -> u32 {
+    1
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('\nglobalThis.loaded("module");\n');
+  expect(js).toContain('import { $index } from "@rust-js/runtime";');
+  expect(js).not.toContain("on_load");
+  const seen: string[] = [];
+  (globalThis as any).loaded = (what: string) => seen.push(what);
+  try {
+    const { ready } = await import(join(dir, "lib.js"));
+    expect([seen, ready()]).toEqual([["module", "second"], 1]);
+  } finally {
+    delete (globalThis as any).loaded;
+  }
+});
+
 // ADR 0266: text is falsy in JS only where it's empty, so text an option
 // keeps where it isn't, `filter(|s| !s.is_empty())`, then another's or a
 // default, is JS's `||`: `meta.title || route?.title || ""`, as react.dev's

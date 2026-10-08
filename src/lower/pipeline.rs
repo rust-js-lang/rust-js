@@ -21,6 +21,8 @@ struct Pass {
     runtime: HashMap<LocalModId, HashSet<Helper>>,
     jsx: HashSet<LocalModId>,
     caches: HashMap<LocalModId, Vec<String>>,
+    /// What each module runs when it's loaded, `js::on_load!`'s (ADR 0267).
+    statements: HashMap<LocalModId, Vec<js::Stmt>>,
     /// `thread_local!`s' values, made from their lowered `init`s.
     local_consts: HashMap<LocalModId, Vec<js::Const>>,
     /// Which items each module uses from another, and which JS imports.
@@ -365,6 +367,9 @@ pub fn lower_crate<'tcx>(
                             }),
                         }
                     }
+                    None if super::bindings::is_on_load(tcx, def_id) => {
+                        pass.statements.entry(module).or_default().extend(lowered.function.body)
+                    }
                     None => pass.functions.entry(module).or_default().push(lowered.function),
                 }
                 pass.runtime.entry(module).or_default().extend(lowered.runtime);
@@ -493,6 +498,7 @@ pub fn lower_crate<'tcx>(
                 reexports,
                 namespaces: pass.namespaces.remove(&module).unwrap_or_default(),
                 consts: const_items.remove(&module).unwrap_or_default(),
+                statements: pass.statements.remove(&module).unwrap_or_default(),
                 functions: pass.functions.remove(&module).unwrap_or_default(),
                 caches: pass.caches.remove(&module).unwrap_or_default(),
                 default_export: default_export.map(|function| super::bindings::fn_name(tcx, function)),

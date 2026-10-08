@@ -106,4 +106,12 @@ export const mutations: Mutation[] = [
     replace: ".then(|| name.clone());",
     tests: ["test/declarations.test.ts","-t","default export is imported as one"],
   },
+  {
+    name: "on-load-a-function",
+    breaks: "`js::on_load!`'s body is a function nothing calls, `function on_load()`, not what the module runs when it's loaded",
+    file: "src/lower/pipeline.rs",
+    find: "None if super::bindings::is_on_load(tcx, def_id) =>",
+    replace: "None if false && super::bindings::is_on_load(tcx, def_id) =>",
+    tests: ["test/compiler.test.ts", "-t", "js::on_load!"],
+  },
 ];

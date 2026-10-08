@@ -25,6 +25,22 @@ macro_rules! import {
     };
 }
 
+/// What the module runs when it's loaded, its JS's own statements, as a
+/// prefetch of what it imports later: `js::on_load! { prefetch(); }` (ADR
+/// 0267). rustc checks them as a function's body, which nothing calls.
+#[macro_export]
+macro_rules! on_load {
+    ($($body:tt)*) => {
+        const _: () = {
+            #[cfg_attr(rust_js, rust_js::on_load)]
+            #[allow(dead_code)]
+            fn on_load() {
+                $($body)*
+            }
+        };
+    };
+}
+
 /// The module's directive, the first statement of its JS: `"use client";`
 /// of a React component a Next.js Server Component renders, written
 /// `js::directive!("use client");` (ADR 0192).

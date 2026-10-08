@@ -253,6 +253,14 @@ pub(super) fn marks<'tcx>(
     })
 }
 
+/// Is `def_id` a `js::on_load!`'s function, whose body is what its module
+/// runs when it's loaded (ADR 0267)?
+pub(super) fn is_on_load(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    (tcx.get_attrs_by_path(def_id, &[Symbol::intern("rust_js"), Symbol::intern("on_load")]))
+        .next()
+        .is_some()
+}
+
 /// Is `def_id` a `js::import!`'s, `js::camel_case!`'s, `js::directive!`'s
 /// or `js::export_default!`'s `const _`, which is rust-js's to read, and
 /// has nothing to write?

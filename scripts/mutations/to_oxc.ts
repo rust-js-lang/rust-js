@@ -138,4 +138,12 @@ export const mutations: Mutation[] = [
     replace: "                    let key = if true || js_identifier(field) {",
     tests: ["test/jsx.test.ts", "-t", "hyphenated name is quoted"],
   },
+  {
+    name: "load-statements-unprinted",
+    breaks: "what a module runs when it's loaded is left out of its JS",
+    file: "src/to_oxc.rs",
+    find: "            .chain(cx.stmts(&module.statements))\n",
+    replace: "",
+    tests: ["test/compiler.test.ts", "-t", "js::on_load!"],
+  },
 ];

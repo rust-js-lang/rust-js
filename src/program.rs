@@ -30,6 +30,8 @@ pub struct LoweredModule {
     pub reexports: Vec<LoweredImport>,
     pub namespaces: Vec<js::Namespace>,
     pub consts: Vec<js::Const>,
+    /// What it runs when it's loaded, `js::on_load!`'s (ADR 0267).
+    pub statements: Vec<js::Stmt>,
     pub functions: Vec<js::Function>,
     pub caches: Vec<String>,
     /// The function it exports as its default too (ADR 0192).

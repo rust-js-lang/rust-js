@@ -44,6 +44,9 @@ pub struct Module {
     pub namespaces: Vec<Namespace>,
     /// `const` items, with the values rustc computed (ADR 0031).
     pub consts: Vec<Const>,
+    /// What it runs when it's loaded, `js::on_load!`'s, after its `const`s
+    /// (ADR 0267).
+    pub statements: Vec<Stmt>,
     pub functions: Vec<Function>,
     /// Lazy trait dictionary caches. `var` without an initializer is cycle-safe.
     pub caches: Vec<String>,
@@ -66,6 +69,7 @@ impl Module {
         for constant in &self.consts {
             constant.value.visit_vars(&mut read);
         }
+        visit_stmts(&self.statements, &mut read);
         vars
     }
 }

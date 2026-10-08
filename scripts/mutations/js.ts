@@ -67,4 +67,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/compiler.test.ts", "-t", "combinators.report matches"],
   },
+  {
+    name: "load-statements-unread",
+    breaks: "the helpers what a module runs when it's loaded reads, `$index`, aren't imported",
+    file: "src/js.rs",
+    find: "        visit_stmts(&self.statements, &mut read);\n",
+    replace: "",
+    tests: ["test/compiler.test.ts", "-t", "js::on_load!"],
+  },
 ];

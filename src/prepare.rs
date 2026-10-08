@@ -14,6 +14,7 @@ pub fn module(module: &mut js::Module) {
     for constant in &mut module.consts {
         expr(&mut constant.value);
     }
+    block(&mut module.statements);
 }
 
 fn block(body: &mut [Stmt]) {
