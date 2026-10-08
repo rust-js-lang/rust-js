@@ -1,0 +1,16 @@
+# The js crate against TypeScript's ES2024 library, where Rust has no type of its own: bun test test/builtins-coverage.test.ts
+# members: 14 of 691 (2.0%)
+ArrayBuffer.byteLength
+Error.message
+JSON.static:parse
+JSON.static:stringify
+Promise.then
+RegExp.constructor
+RegExp.test
+Uint8Array.buffer
+Uint8Array.constructor
+Uint8Array.length
+globalThis.decodeURI
+globalThis.decodeURIComponent
+globalThis.encodeURI
+globalThis.encodeURIComponent
