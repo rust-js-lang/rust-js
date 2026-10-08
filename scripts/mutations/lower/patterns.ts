@@ -606,4 +606,20 @@ export const mutations: Mutation[] = [
     replace: "if let Some(other) = self.untagged_alike(pat.ty, variant).filter(|_| false) {",
     tests: ["test/diagnostics.test.ts", "-t", "one kind, matched"],
   },
+  {
+    name: "as-deref-matched-spilled",
+    breaks: "`match code.as_deref()` is `const match = code`, not `code` where it is",
+    file: "src/lower/patterns.rs",
+    find: "        if !as_is && !matches!(self.std_fn(fun), Some(Std::Pointee)) {\n",
+    replace: "        if !as_is {\n",
+    tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
+  },
+  {
+    name: "as-deref-not-conditional",
+    breaks: "`match code.as_deref()` of two arms is `if`/`else`, not `code ? .. : ..`",
+    file: "src/lower/patterns.rs",
+    find: "        let place = self.matched_place(scrutinee).is_some();\n",
+    replace: "        let place = self.stable_place(scrutinee).is_some();\n",
+    tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
+  },
 ];

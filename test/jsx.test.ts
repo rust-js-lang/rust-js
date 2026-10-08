@@ -754,6 +754,13 @@ pub fn heading(code: Option<&str>) -> String {
     };
     shown
 }
+pub fn titled(code: Option<String>) -> String {
+    let named = match code.as_deref() {
+        Some(code) if !code.is_empty() => format!("Error #{code}"),
+        _ => "Errors".to_string(),
+    };
+    named
+}
 pub fn both(a: bool, text: &str) -> u32 {
     if a && !text.is_empty() { 1 } else { 0 }
 }
@@ -777,6 +784,8 @@ pub fn positive(n: Option<i32>) -> i32 {
   expect(jsx).toContain("const shown = code ? `Error #${code}` : \"Errors\";");
   expect(jsx).toContain("export function empty(text) {\n  return !text;\n}");
   expect(jsx).toContain("  if (a && text) {");
+  // Of \`as_deref()\`, the option itself, matched where it is (ADR 0211).
+  expect(jsx).toContain("const named = code ? `Error #${code}` : \"Errors\";");
   // A filter of another test, or a default, is that test.
   expect(jsx).toContain("return n != null && n > 0 ? n : 1;");
   const { Example, title } = await import(join(dir, "lib.jsx"));

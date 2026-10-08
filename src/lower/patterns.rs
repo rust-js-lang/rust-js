@@ -1,6 +1,7 @@
 //! Bindings, destructuring and match/let-chain evaluation regions.
 
 use super::fn_def;
+use super::recognition::Std;
 use super::{
     Binding, Dest, Evaluation, FnCx, Num, R, Shape, Var, bindings, camel_case, const_js, drops, fresh_in, js_ident,
     ordering_value, recognition::is_non_zero, std_impls, variant_field, without_refs,
@@ -624,31 +625,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A tuple of stable places (`match (a, b)`) is used without building
     /// the array. Anything else is computed once into a `const` named `base`,
     /// which is stable: no Rust variable can move or change it.
+    /// The stable place a `match` of `e` tests where it is: `e`'s own, or
+    /// that of what a binding gives back as it is, `kind_of(&children)` or
+    /// `classify(value)`, the node itself, or `o.as_deref()` of an
+    /// `Option`, the option itself (ADR 0211). What's bound of it names it.
+    pub(super) fn matched_place(&self, e: ExprId) -> Option<Expr> {
+        if let Some(place) = self.stable_place(e) {
+            return Some(place);
+        }
+        let ExprKind::Call { fun, ref args, .. } = self.thir[self.strip(e)].kind else {
+            return None;
+        };
+        let [arg] = args[..] else { return None };
+        let as_is = fn_def(self.thir[fun].ty).is_some_and(|(def_id, _)| {
+            bindings::is_binding(self.tcx, def_id)
+                && matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::This)
+        });
+        if !as_is && !matches!(self.std_fn(fun), Some(Std::Pointee)) {
+            return None;
+        }
+        let arg = match self.thir[self.strip(arg)].kind {
+            ExprKind::Borrow { arg, .. } => arg,
+            _ => arg,
+        };
+        self.stable_place(arg)
+    }
+
     pub(super) fn subject(&mut self, e: ExprId, base: &str, out: &mut Vec<Stmt>) -> R<(Expr, bool)> {
         // A `&mut` in a variable, which names its place (ADR 0099): a handle on
         // it, as every `&mut` to a value JS can't change in place is matched.
         if self.is_cell(self.thir[e].ty) && !self.is_cell_value(e) && self.place(e).is_some() {
             return Ok((self.read(e, out)?, false));
         }
-        if let Some(place) = self.stable_place(e) {
+        if let Some(place) = self.matched_place(e) {
             return Ok((place, true));
-        }
-        // What a binding gives back as it is, `kind_of(&children)` or
-        // `classify(value)`, is its argument's place: the node itself,
-        // matched, and what's bound of it names it.
-        if let ExprKind::Call { fun, ref args, .. } = self.thir[self.strip(e)].kind
-            && let [arg] = args[..]
-            && let Some((def_id, _)) = fn_def(self.thir[fun].ty)
-            && bindings::is_binding(self.tcx, def_id)
-            && matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::This)
-        {
-            let arg = match self.thir[self.strip(arg)].kind {
-                ExprKind::Borrow { arg, .. } => arg,
-                _ => arg,
-            };
-            if let Some(place) = self.stable_place(arg) {
-                return Ok((place, true));
-            }
         }
         // `&mut x`: the place, which its `ref mut` bindings name, as a `&x`
         // one is; of a temporary, `&mut Some(3)`, a `let` of it (ADR 0099).
@@ -1367,7 +1377,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Tested where it is, or, of what isn't a place, read once: a name
         // no Rust one has, which the test is read for.
         const SUBJECT: &str = "$subject";
-        let (subject, value) = match self.stable_place(scrutinee) {
+        let (subject, value) = match self.matched_place(scrutinee) {
             Some(place) => (place, None),
             None => (Expr::var(SUBJECT), Some(self.expr(scrutinee, out)?)),
         };
@@ -1458,7 +1468,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn is_conditional_match(&self, scrutinee: ExprId, arms: &[ArmId]) -> bool {
         // What an arm binds is named where it is, so only a place's: read
         // only, owning nothing (`binds_in_place` checks the rest as it binds).
-        let place = self.stable_place(scrutinee).is_some();
+        let place = self.matched_place(scrutinee).is_some();
         let in_place = |pat: &Pat<'tcx>| {
             let mut in_place = true;
             pat.walk_always(|p| {
