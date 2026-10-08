@@ -427,7 +427,7 @@ impl Jsx<'_> {
             *value = match trees.as_slice() {
                 [TokenTree::Token(star, spacing), rest @ ..] if star.kind == TokenKind::Star && !rest.is_empty() => {
                     let reference = bind(TokenStream::new(rest.to_vec()), span);
-                    let mut read = vec![TokenTree::Token(star.clone(), *spacing)];
+                    let mut read = vec![TokenTree::Token(*star, *spacing)];
                     read.extend(reference.iter().cloned());
                     TokenStream::new(read)
                 }
