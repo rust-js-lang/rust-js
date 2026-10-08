@@ -120,6 +120,18 @@ pub struct Event(PhantomData<JsObject>);
 pub mod event {
     use super::*;
 
+    /// `Event.NONE`
+    pub const NONE: u16 = 0;
+
+    /// `Event.CAPTURING_PHASE`
+    pub const CAPTURING_PHASE: u16 = 1;
+
+    /// `Event.AT_TARGET`
+    pub const AT_TARGET: u16 = 2;
+
+    /// `Event.BUBBLING_PHASE`
+    pub const BUBBLING_PHASE: u16 = 3;
+
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/Event)
         #[link_name = "new Event"]
@@ -144,6 +156,10 @@ pub mod event {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/currentTarget)
         #[link_name = "get currentTarget"]
         pub safe fn current_target(this: &Event) -> Option<&'static EventTarget>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/composedPath)
+        #[link_name = "composedPath"]
+        pub safe fn composed_path(this: &Event) -> Vec<&'static EventTarget>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/eventPhase)
         #[link_name = "get eventPhase"]
@@ -230,6 +246,60 @@ impl Deref for Node {
 
 pub mod node {
     use super::*;
+
+    /// `Node.ELEMENT_NODE`
+    pub const ELEMENT_NODE: u16 = 1;
+
+    /// `Node.ATTRIBUTE_NODE`
+    pub const ATTRIBUTE_NODE: u16 = 2;
+
+    /// `Node.TEXT_NODE`
+    pub const TEXT_NODE: u16 = 3;
+
+    /// `Node.CDATA_SECTION_NODE`
+    pub const CDATA_SECTION_NODE: u16 = 4;
+
+    /// `Node.ENTITY_REFERENCE_NODE`
+    pub const ENTITY_REFERENCE_NODE: u16 = 5;
+
+    /// `Node.ENTITY_NODE`
+    pub const ENTITY_NODE: u16 = 6;
+
+    /// `Node.PROCESSING_INSTRUCTION_NODE`
+    pub const PROCESSING_INSTRUCTION_NODE: u16 = 7;
+
+    /// `Node.COMMENT_NODE`
+    pub const COMMENT_NODE: u16 = 8;
+
+    /// `Node.DOCUMENT_NODE`
+    pub const DOCUMENT_NODE: u16 = 9;
+
+    /// `Node.DOCUMENT_TYPE_NODE`
+    pub const DOCUMENT_TYPE_NODE: u16 = 10;
+
+    /// `Node.DOCUMENT_FRAGMENT_NODE`
+    pub const DOCUMENT_FRAGMENT_NODE: u16 = 11;
+
+    /// `Node.NOTATION_NODE`
+    pub const NOTATION_NODE: u16 = 12;
+
+    /// `Node.DOCUMENT_POSITION_DISCONNECTED`
+    pub const DOCUMENT_POSITION_DISCONNECTED: u16 = 0x01;
+
+    /// `Node.DOCUMENT_POSITION_PRECEDING`
+    pub const DOCUMENT_POSITION_PRECEDING: u16 = 0x02;
+
+    /// `Node.DOCUMENT_POSITION_FOLLOWING`
+    pub const DOCUMENT_POSITION_FOLLOWING: u16 = 0x04;
+
+    /// `Node.DOCUMENT_POSITION_CONTAINS`
+    pub const DOCUMENT_POSITION_CONTAINS: u16 = 0x08;
+
+    /// `Node.DOCUMENT_POSITION_CONTAINED_BY`
+    pub const DOCUMENT_POSITION_CONTAINED_BY: u16 = 0x10;
+
+    /// `Node.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC`
+    pub const DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC: u16 = 0x20;
 
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Node/nodeType)
@@ -495,6 +565,14 @@ pub mod text {
         #[link_name = "get assignedSlot"]
         pub safe fn assigned_slot(this: &Text) -> Option<&'static HTMLSlotElement>;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Text/getBoxQuads)
+        #[link_name = "getBoxQuads"]
+        pub safe fn get_box_quads(this: &Text) -> Vec<&'static DOMQuad>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Text/getBoxQuads)
+        #[link_name = "getBoxQuads"]
+        pub safe fn get_box_quads_with_options(this: &Text, options: BoxQuadOptions<'_>) -> Vec<&'static DOMQuad>;
+
         /// Treats `this` as `Text` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static Text;
@@ -680,6 +758,10 @@ pub mod element {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/attributes)
         #[link_name = "get attributes"]
         pub safe fn attributes(this: &Element) -> &'static NamedNodeMap;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/getAttributeNames)
+        #[link_name = "getAttributeNames"]
+        pub safe fn get_attribute_names(this: &Element) -> Vec<String>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/getAttribute)
         #[link_name = "getAttribute"]
@@ -1014,6 +1096,14 @@ pub mod element {
         #[link_name = "set ariaColSpan"]
         pub safe fn set_aria_col_span(this: &Element, value: &str);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaControlsElements)
+        #[link_name = "get ariaControlsElements"]
+        pub safe fn aria_controls_elements(this: &Element) -> Option<&'static [&'static Element]>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaControlsElements)
+        #[link_name = "set ariaControlsElements"]
+        pub safe fn set_aria_controls_elements(this: &Element, value: &[&Element]);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaCurrent)
         #[link_name = "get ariaCurrent"]
         pub safe fn aria_current(this: &Element) -> Option<String>;
@@ -1021,6 +1111,14 @@ pub mod element {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaCurrent)
         #[link_name = "set ariaCurrent"]
         pub safe fn set_aria_current(this: &Element, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaDescribedByElements)
+        #[link_name = "get ariaDescribedByElements"]
+        pub safe fn aria_described_by_elements(this: &Element) -> Option<&'static [&'static Element]>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaDescribedByElements)
+        #[link_name = "set ariaDescribedByElements"]
+        pub safe fn set_aria_described_by_elements(this: &Element, value: &[&Element]);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaDescription)
         #[link_name = "get ariaDescription"]
@@ -1030,6 +1128,14 @@ pub mod element {
         #[link_name = "set ariaDescription"]
         pub safe fn set_aria_description(this: &Element, value: &str);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaDetailsElements)
+        #[link_name = "get ariaDetailsElements"]
+        pub safe fn aria_details_elements(this: &Element) -> Option<&'static [&'static Element]>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaDetailsElements)
+        #[link_name = "set ariaDetailsElements"]
+        pub safe fn set_aria_details_elements(this: &Element, value: &[&Element]);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaDisabled)
         #[link_name = "get ariaDisabled"]
         pub safe fn aria_disabled(this: &Element) -> Option<String>;
@@ -1038,6 +1144,14 @@ pub mod element {
         #[link_name = "set ariaDisabled"]
         pub safe fn set_aria_disabled(this: &Element, value: &str);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaErrorMessageElements)
+        #[link_name = "get ariaErrorMessageElements"]
+        pub safe fn aria_error_message_elements(this: &Element) -> Option<&'static [&'static Element]>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaErrorMessageElements)
+        #[link_name = "set ariaErrorMessageElements"]
+        pub safe fn set_aria_error_message_elements(this: &Element, value: &[&Element]);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaExpanded)
         #[link_name = "get ariaExpanded"]
         pub safe fn aria_expanded(this: &Element) -> Option<String>;
@@ -1045,6 +1159,14 @@ pub mod element {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaExpanded)
         #[link_name = "set ariaExpanded"]
         pub safe fn set_aria_expanded(this: &Element, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaFlowToElements)
+        #[link_name = "get ariaFlowToElements"]
+        pub safe fn aria_flow_to_elements(this: &Element) -> Option<&'static [&'static Element]>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaFlowToElements)
+        #[link_name = "set ariaFlowToElements"]
+        pub safe fn set_aria_flow_to_elements(this: &Element, value: &[&Element]);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaHasPopup)
         #[link_name = "get ariaHasPopup"]
@@ -1085,6 +1207,14 @@ pub mod element {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaLabel)
         #[link_name = "set ariaLabel"]
         pub safe fn set_aria_label(this: &Element, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaLabelledByElements)
+        #[link_name = "get ariaLabelledByElements"]
+        pub safe fn aria_labelled_by_elements(this: &Element) -> Option<&'static [&'static Element]>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaLabelledByElements)
+        #[link_name = "set ariaLabelledByElements"]
+        pub safe fn set_aria_labelled_by_elements(this: &Element, value: &[&Element]);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaLevel)
         #[link_name = "get ariaLevel"]
@@ -1133,6 +1263,14 @@ pub mod element {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaOrientation)
         #[link_name = "set ariaOrientation"]
         pub safe fn set_aria_orientation(this: &Element, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaOwnsElements)
+        #[link_name = "get ariaOwnsElements"]
+        pub safe fn aria_owns_elements(this: &Element) -> Option<&'static [&'static Element]>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaOwnsElements)
+        #[link_name = "set ariaOwnsElements"]
+        pub safe fn set_aria_owns_elements(this: &Element, value: &[&Element]);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaPlaceholder)
         #[link_name = "get ariaPlaceholder"]
@@ -1281,6 +1419,14 @@ pub mod element {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/animate)
         pub safe fn animate(this: &Element, keyframes: &dyn core::any::Any) -> &'static Animation;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/getAnimations)
+        #[link_name = "getAnimations"]
+        pub safe fn get_animations(this: &Element) -> Vec<&'static Animation>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/getAnimations)
+        #[link_name = "getAnimations"]
+        pub safe fn get_animations_with_options(this: &Element, options: GetAnimationsOptions<'_>) -> Vec<&'static Animation>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/children)
         #[link_name = "get children"]
         pub safe fn children(this: &Element) -> &'static HTMLCollection;
@@ -1323,6 +1469,14 @@ pub mod element {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/assignedSlot)
         #[link_name = "get assignedSlot"]
         pub safe fn assigned_slot(this: &Element) -> Option<&'static HTMLSlotElement>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/getBoxQuads)
+        #[link_name = "getBoxQuads"]
+        pub safe fn get_box_quads(this: &Element) -> Vec<&'static DOMQuad>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/getBoxQuads)
+        #[link_name = "getBoxQuads"]
+        pub safe fn get_box_quads_with_options(this: &Element, options: BoxQuadOptions<'_>) -> Vec<&'static DOMQuad>;
 
         /// Treats `this` as `Element` without checking that it is one.
         #[link_name = "this"]
@@ -1890,6 +2044,10 @@ pub mod document {
         #[link_name = "elementFromPoint"]
         pub safe fn element_from_point(this: &Document, x: f64, y: f64) -> Option<&'static Element>;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/elementsFromPoint)
+        #[link_name = "elementsFromPoint"]
+        pub safe fn elements_from_point(this: &Document, x: f64, y: f64) -> Vec<&'static Element>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/caretPositionFromPoint)
         #[link_name = "caretPositionFromPoint"]
         pub safe fn caret_position_from_point(this: &Document, x: f64, y: f64) -> Option<&'static CaretPosition>;
@@ -1913,6 +2071,10 @@ pub mod document {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/fullscreenElement)
         #[link_name = "get fullscreenElement"]
         pub safe fn fullscreen_element(this: &Document) -> Option<&'static Element>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/getAnimations)
+        #[link_name = "getAnimations"]
+        pub safe fn get_animations(this: &Document) -> Vec<&'static Animation>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/pictureInPictureElement)
         #[link_name = "get pictureInPictureElement"]
@@ -1972,6 +2134,14 @@ pub mod document {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/evaluate)
         pub safe fn evaluate(this: &Document, expression: &str, context_node: &Node) -> &'static XPathResult;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/getBoxQuads)
+        #[link_name = "getBoxQuads"]
+        pub safe fn get_box_quads(this: &Document) -> Vec<&'static DOMQuad>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/getBoxQuads)
+        #[link_name = "getBoxQuads"]
+        pub safe fn get_box_quads_with_options(this: &Document, options: BoxQuadOptions<'_>) -> Vec<&'static DOMQuad>;
 
         /// Treats `this` as `Document` without checking that it is one.
         #[link_name = "this"]
@@ -2320,6 +2490,10 @@ pub mod abort_signal {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AbortSignal/abort)
         #[link_name = "AbortSignal.abort"]
         pub safe fn abort() -> &'static AbortSignal;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AbortSignal/timeout)
+        #[link_name = "AbortSignal.timeout"]
+        pub safe fn timeout(milliseconds: f64) -> &'static AbortSignal;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AbortSignal/any)
         #[link_name = "AbortSignal.any"]
@@ -3466,6 +3640,10 @@ pub mod html_input_element {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/webkitdirectory)
         #[link_name = "set webkitdirectory"]
         pub safe fn set_webkitdirectory(this: &HTMLInputElement, value: bool);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/webkitEntries)
+        #[link_name = "get webkitEntries"]
+        pub safe fn webkit_entries(this: &HTMLInputElement) -> &'static [&'static FileSystemEntry];
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/accept)
         #[link_name = "get accept"]
@@ -6717,6 +6895,18 @@ impl Deref for HTMLTrackElement {
 pub mod html_track_element {
     use super::*;
 
+    /// `HTMLTrackElement.NONE`
+    pub const NONE: u16 = 0;
+
+    /// `HTMLTrackElement.LOADING`
+    pub const LOADING: u16 = 1;
+
+    /// `HTMLTrackElement.LOADED`
+    pub const LOADED: u16 = 2;
+
+    /// `HTMLTrackElement.ERROR`
+    pub const ERROR: u16 = 3;
+
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTrackElement/kind)
         #[link_name = "get kind"]
@@ -6787,6 +6977,33 @@ impl Deref for HTMLMediaElement {
 
 pub mod html_media_element {
     use super::*;
+
+    /// `HTMLMediaElement.NETWORK_EMPTY`
+    pub const NETWORK_EMPTY: u16 = 0;
+
+    /// `HTMLMediaElement.NETWORK_IDLE`
+    pub const NETWORK_IDLE: u16 = 1;
+
+    /// `HTMLMediaElement.NETWORK_LOADING`
+    pub const NETWORK_LOADING: u16 = 2;
+
+    /// `HTMLMediaElement.NETWORK_NO_SOURCE`
+    pub const NETWORK_NO_SOURCE: u16 = 3;
+
+    /// `HTMLMediaElement.HAVE_NOTHING`
+    pub const HAVE_NOTHING: u16 = 0;
+
+    /// `HTMLMediaElement.HAVE_METADATA`
+    pub const HAVE_METADATA: u16 = 1;
+
+    /// `HTMLMediaElement.HAVE_CURRENT_DATA`
+    pub const HAVE_CURRENT_DATA: u16 = 2;
+
+    /// `HTMLMediaElement.HAVE_FUTURE_DATA`
+    pub const HAVE_FUTURE_DATA: u16 = 3;
+
+    /// `HTMLMediaElement.HAVE_ENOUGH_DATA`
+    pub const HAVE_ENOUGH_DATA: u16 = 4;
 
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/sinkId)
@@ -7997,6 +8214,22 @@ pub mod html_slot_element {
         #[link_name = "set name"]
         pub safe fn set_name(this: &HTMLSlotElement, value: &str);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSlotElement/assignedNodes)
+        #[link_name = "assignedNodes"]
+        pub safe fn assigned_nodes(this: &HTMLSlotElement) -> Vec<&'static Node>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSlotElement/assignedNodes)
+        #[link_name = "assignedNodes"]
+        pub safe fn assigned_nodes_with_options(this: &HTMLSlotElement, options: AssignedNodesOptions) -> Vec<&'static Node>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSlotElement/assignedElements)
+        #[link_name = "assignedElements"]
+        pub safe fn assigned_elements(this: &HTMLSlotElement) -> Vec<&'static Element>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSlotElement/assignedElements)
+        #[link_name = "assignedElements"]
+        pub safe fn assigned_elements_with_options(this: &HTMLSlotElement, options: AssignedNodesOptions) -> Vec<&'static Element>;
+
         /// Treats `this` as `HTMLSlotElement` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLSlotElement;
@@ -8784,6 +9017,10 @@ pub mod data_transfer {
         #[link_name = "setDragImage"]
         pub safe fn set_drag_image(this: &DataTransfer, image: &Element, x: i32, y: i32);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DataTransfer/types)
+        #[link_name = "get types"]
+        pub safe fn types(this: &DataTransfer) -> &'static [String];
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/DataTransfer/getData)
         #[link_name = "getData"]
         pub safe fn get_data(this: &DataTransfer, format: &str) -> String;
@@ -8921,6 +9158,10 @@ pub mod message_event {
         #[link_name = "get lastEventId"]
         pub safe fn last_event_id(this: &MessageEvent) -> String;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/ports)
+        #[link_name = "get ports"]
+        pub safe fn ports(this: &MessageEvent) -> &'static [&'static MessagePort];
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/initMessageEvent)
         #[link_name = "initMessageEvent"]
         pub safe fn init_message_event(this: &MessageEvent, type_: &str);
@@ -9051,6 +9292,10 @@ pub mod performance {
         #[link_name = "get eventCounts"]
         pub safe fn event_counts(this: &Performance) -> &'static EventCounts;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/interactionCount)
+        #[link_name = "get interactionCount"]
+        pub safe fn interaction_count(this: &Performance) -> f64;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/timing)
         #[link_name = "get timing"]
         pub safe fn timing(this: &Performance) -> &'static PerformanceTiming;
@@ -9058,6 +9303,22 @@ pub mod performance {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/navigation)
         #[link_name = "get navigation"]
         pub safe fn navigation(this: &Performance) -> &'static PerformanceNavigation;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/getEntries)
+        #[link_name = "getEntries"]
+        pub safe fn get_entries(this: &Performance) -> Vec<&'static PerformanceEntry>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/getEntriesByType)
+        #[link_name = "getEntriesByType"]
+        pub safe fn get_entries_by_type(this: &Performance, type_: &str) -> Vec<&'static PerformanceEntry>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/getEntriesByName)
+        #[link_name = "getEntriesByName"]
+        pub safe fn get_entries_by_name(this: &Performance, name: &str) -> Vec<&'static PerformanceEntry>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/getEntriesByName)
+        #[link_name = "getEntriesByName"]
+        pub safe fn get_entries_by_name_with_type(this: &Performance, name: &str, type_: &str) -> Vec<&'static PerformanceEntry>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/clearResourceTimings)
         #[link_name = "clearResourceTimings"]
@@ -9408,6 +9669,18 @@ impl Deref for KeyboardEvent {
 pub mod keyboard_event {
     use super::*;
 
+    /// `KeyboardEvent.DOM_KEY_LOCATION_STANDARD`
+    pub const DOM_KEY_LOCATION_STANDARD: u32 = 0x00;
+
+    /// `KeyboardEvent.DOM_KEY_LOCATION_LEFT`
+    pub const DOM_KEY_LOCATION_LEFT: u32 = 0x01;
+
+    /// `KeyboardEvent.DOM_KEY_LOCATION_RIGHT`
+    pub const DOM_KEY_LOCATION_RIGHT: u32 = 0x02;
+
+    /// `KeyboardEvent.DOM_KEY_LOCATION_NUMPAD`
+    pub const DOM_KEY_LOCATION_NUMPAD: u32 = 0x03;
+
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/KeyboardEvent)
         #[link_name = "new KeyboardEvent"]
@@ -9552,6 +9825,10 @@ pub mod input_event {
         #[link_name = "get dataTransfer"]
         pub safe fn data_transfer(this: &InputEvent) -> Option<&'static DataTransfer>;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/InputEvent/getTargetRanges)
+        #[link_name = "getTargetRanges"]
+        pub safe fn get_target_ranges(this: &InputEvent) -> Vec<&'static StaticRange>;
+
         /// Treats `this` as `InputEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static InputEvent;
@@ -9573,6 +9850,15 @@ impl Deref for WheelEvent {
 
 pub mod wheel_event {
     use super::*;
+
+    /// `WheelEvent.DOM_DELTA_PIXEL`
+    pub const DOM_DELTA_PIXEL: u32 = 0x00;
+
+    /// `WheelEvent.DOM_DELTA_LINE`
+    pub const DOM_DELTA_LINE: u32 = 0x01;
+
+    /// `WheelEvent.DOM_DELTA_PAGE`
+    pub const DOM_DELTA_PAGE: u32 = 0x02;
 
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WheelEvent/WheelEvent)
@@ -9885,6 +10171,14 @@ pub mod pointer_event {
         #[link_name = "get height"]
         pub safe fn height(this: &PointerEvent) -> f64;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/pressure)
+        #[link_name = "get pressure"]
+        pub safe fn pressure(this: &PointerEvent) -> f32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/tangentialPressure)
+        #[link_name = "get tangentialPressure"]
+        pub safe fn tangential_pressure(this: &PointerEvent) -> f32;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/tiltX)
         #[link_name = "get tiltX"]
         pub safe fn tilt_x(this: &PointerEvent) -> i32;
@@ -9916,6 +10210,14 @@ pub mod pointer_event {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/persistentDeviceId)
         #[link_name = "get persistentDeviceId"]
         pub safe fn persistent_device_id(this: &PointerEvent) -> i32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/getCoalescedEvents)
+        #[link_name = "getCoalescedEvents"]
+        pub safe fn get_coalesced_events(this: &PointerEvent) -> Vec<&'static PointerEvent>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/getPredictedEvents)
+        #[link_name = "getPredictedEvents"]
+        pub safe fn get_predicted_events(this: &PointerEvent) -> Vec<&'static PointerEvent>;
 
         /// Treats `this` as `PointerEvent` without checking that it is one.
         #[link_name = "this"]
@@ -10262,6 +10564,10 @@ pub mod intersection_observer {
         #[link_name = "get scrollMargin"]
         pub safe fn scroll_margin(this: &IntersectionObserver) -> String;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IntersectionObserver/thresholds)
+        #[link_name = "get thresholds"]
+        pub safe fn thresholds(this: &IntersectionObserver) -> &'static [f64];
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/IntersectionObserver/delay)
         #[link_name = "get delay"]
         pub safe fn delay(this: &IntersectionObserver) -> i32;
@@ -10278,6 +10584,10 @@ pub mod intersection_observer {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/IntersectionObserver/disconnect)
         pub safe fn disconnect(this: &IntersectionObserver);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IntersectionObserver/takeRecords)
+        #[link_name = "takeRecords"]
+        pub safe fn take_records(this: &IntersectionObserver) -> Vec<&'static IntersectionObserverEntry>;
     }
 }
 
@@ -10351,6 +10661,10 @@ pub mod headers {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Headers/get)
         pub safe fn get(this: &Headers, name: &str) -> Option<String>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Headers/getSetCookie)
+        #[link_name = "getSetCookie"]
+        pub safe fn get_set_cookie(this: &Headers) -> Vec<String>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Headers/has)
         pub safe fn has(this: &Headers, name: &str) -> bool;
@@ -10690,6 +11004,9 @@ pub mod readable_stream {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStream/pipeTo)
         #[link_name = "pipeTo"]
         pub safe fn pipe_to_with_options(this: &ReadableStream, destination: &WritableStream, options: StreamPipeOptions<'_>) -> Promise<()>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStream/tee)
+        pub safe fn tee(this: &ReadableStream) -> Vec<&'static ReadableStream>;
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStream/cancel)
@@ -10745,6 +11062,30 @@ pub mod touch {
         #[link_name = "get pageY"]
         pub safe fn page_y(this: &Touch) -> f64;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Touch/radiusX)
+        #[link_name = "get radiusX"]
+        pub safe fn radius_x(this: &Touch) -> f32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Touch/radiusY)
+        #[link_name = "get radiusY"]
+        pub safe fn radius_y(this: &Touch) -> f32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Touch/rotationAngle)
+        #[link_name = "get rotationAngle"]
+        pub safe fn rotation_angle(this: &Touch) -> f32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Touch/force)
+        #[link_name = "get force"]
+        pub safe fn force(this: &Touch) -> f32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Touch/altitudeAngle)
+        #[link_name = "get altitudeAngle"]
+        pub safe fn altitude_angle(this: &Touch) -> f32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Touch/azimuthAngle)
+        #[link_name = "get azimuthAngle"]
+        pub safe fn azimuth_angle(this: &Touch) -> f32;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Touch/touchType)
         #[link_name = "get touchType"]
         pub safe fn touch_type(this: &Touch) -> String;
@@ -10786,6 +11127,10 @@ pub mod text_encoder {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/TextEncoder/encode)
         #[link_name = "encode"]
         pub safe fn encode_with_input(this: &TextEncoder, input: &str) -> &'static Uint8Array;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextEncoder/encodeInto)
+        #[link_name = "encodeInto"]
+        pub safe fn encode_into(this: &TextEncoder, source: &str, destination: &Uint8Array) -> TextEncoderEncodeIntoResult;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/TextEncoder/encoding)
         #[link_name = "get encoding"]
@@ -10853,6 +11198,20 @@ pub struct WebAssemblyModule(PhantomData<JsObject>);
 
 pub mod web_assembly_module {
     use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Module/exports)
+        #[link_name = "Module.exports"]
+        pub safe fn exports(module_object: &WebAssemblyModule) -> Vec<ModuleExportDescriptor>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Module/imports)
+        #[link_name = "Module.imports"]
+        pub safe fn imports(module_object: &WebAssemblyModule) -> Vec<ModuleImportDescriptor>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Module/customSections)
+        #[link_name = "Module.customSections"]
+        pub safe fn custom_sections(module_object: &WebAssemblyModule, section_name: &str) -> Vec<&'static ArrayBuffer>;
+    }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Module/Module)
     #[cfg_attr(rust_js, rust_js::link_name = "new WebAssembly.Module")]
@@ -10949,12 +11308,28 @@ pub mod blob {
         #[link_name = "new Blob"]
         pub safe fn new_with_blob_parts_and_options(blob_parts: &[BlobPart<'_>], options: BlobPropertyBag<'_>) -> &'static Blob;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Blob/size)
+        #[link_name = "get size"]
+        pub safe fn size(this: &Blob) -> f64;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Blob/type)
         #[link_name = "get type"]
         pub safe fn type_(this: &Blob) -> String;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Blob/slice)
         pub safe fn slice(this: &Blob) -> &'static Blob;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Blob/slice)
+        #[link_name = "slice"]
+        pub safe fn slice_with_start(this: &Blob, start: f64) -> &'static Blob;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Blob/slice)
+        #[link_name = "slice"]
+        pub safe fn slice_with_start_and_end(this: &Blob, start: f64, end: f64) -> &'static Blob;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Blob/slice)
+        #[link_name = "slice"]
+        pub safe fn slice_with_start_and_end_and_content_type(this: &Blob, start: f64, end: f64, content_type: &str) -> &'static Blob;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Blob/stream)
         pub safe fn stream(this: &Blob) -> &'static ReadableStream;
@@ -11007,6 +11382,10 @@ pub mod file {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/File/name)
         #[link_name = "get name"]
         pub safe fn name(this: &File) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/File/lastModified)
+        #[link_name = "get lastModified"]
+        pub safe fn last_modified(this: &File) -> f64;
 
         /// Treats `this` as `File` without checking that it is one.
         #[link_name = "this"]
@@ -11239,6 +11618,10 @@ pub mod navigator {
         #[link_name = "get mediaSession"]
         pub safe fn media_session(this: &Navigator) -> &'static MediaSession;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/getGamepads)
+        #[link_name = "getGamepads"]
+        pub safe fn get_gamepads(this: &Navigator) -> Vec<Option<&'static Gamepad>>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/mediaDevices)
         #[link_name = "get mediaDevices"]
         pub safe fn media_devices(this: &Navigator) -> &'static MediaDevices;
@@ -11307,6 +11690,10 @@ pub mod navigator {
         #[link_name = "get language"]
         pub safe fn language(this: &Navigator) -> String;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/languages)
+        #[link_name = "get languages"]
+        pub safe fn languages(this: &Navigator) -> &'static [String];
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/onLine)
         #[link_name = "get onLine"]
         pub safe fn on_line(this: &Navigator) -> bool;
@@ -11339,9 +11726,17 @@ pub mod navigator {
         #[link_name = "get pdfViewerEnabled"]
         pub safe fn pdf_viewer_enabled(this: &Navigator) -> bool;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/hardwareConcurrency)
+        #[link_name = "get hardwareConcurrency"]
+        pub safe fn hardware_concurrency(this: &Navigator) -> f64;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/setAppBadge)
         #[link_name = "setAppBadge"]
         pub safe fn set_app_badge(this: &Navigator) -> Promise<()>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/setAppBadge)
+        #[link_name = "setAppBadge"]
+        pub safe fn set_app_badge_with_contents(this: &Navigator, contents: f64) -> Promise<()>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/clearAppBadge)
         #[link_name = "clearAppBadge"]
@@ -11382,6 +11777,13 @@ pub mod clipboard {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Clipboard/read)
+        pub safe fn read(this: &Clipboard) -> Promise<Vec<&'static ClipboardItem>>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Clipboard/read)
+        #[link_name = "read"]
+        pub safe fn read_with_formats(this: &Clipboard, formats: ClipboardUnsanitizedFormats<'_>) -> Promise<Vec<&'static ClipboardItem>>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Clipboard/readText)
         #[link_name = "readText"]
         pub safe fn read_text(this: &Clipboard) -> Promise<String>;
@@ -11410,6 +11812,10 @@ pub mod clipboard_item {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ClipboardItem/presentationStyle)
         #[link_name = "get presentationStyle"]
         pub safe fn presentation_style(this: &ClipboardItem) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ClipboardItem/types)
+        #[link_name = "get types"]
+        pub safe fn types(this: &ClipboardItem) -> &'static [String];
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ClipboardItem/getType)
         #[link_name = "getType"]
@@ -11574,6 +11980,10 @@ pub mod svg_geometry_element {
         #[link_name = "isPointInStroke"]
         pub safe fn is_point_in_stroke_with_point(this: &SVGGeometryElement, point: DOMPointInit) -> bool;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGGeometryElement/getTotalLength)
+        #[link_name = "getTotalLength"]
+        pub safe fn get_total_length(this: &SVGGeometryElement) -> f32;
+
         /// Treats `this` as `SVGGeometryElement` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGGeometryElement;
@@ -11609,6 +12019,14 @@ pub mod svgsvg_element {
         #[link_name = "animationsPaused"]
         pub safe fn animations_paused(this: &SVGSVGElement) -> bool;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/getCurrentTime)
+        #[link_name = "getCurrentTime"]
+        pub safe fn get_current_time(this: &SVGSVGElement) -> f32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/setCurrentTime)
+        #[link_name = "setCurrentTime"]
+        pub safe fn set_current_time(this: &SVGSVGElement, seconds: f32);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/x)
         #[link_name = "get x"]
         pub safe fn x(this: &SVGSVGElement) -> &'static SVGAnimatedLength;
@@ -11624,6 +12042,14 @@ pub mod svgsvg_element {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/height)
         #[link_name = "get height"]
         pub safe fn height(this: &SVGSVGElement) -> &'static SVGAnimatedLength;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/currentScale)
+        #[link_name = "get currentScale"]
+        pub safe fn current_scale(this: &SVGSVGElement) -> f32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/currentScale)
+        #[link_name = "set currentScale"]
+        pub safe fn set_current_scale(this: &SVGSVGElement, value: f32);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/deselectAll)
         #[link_name = "deselectAll"]
@@ -12022,6 +12448,14 @@ pub mod svg_path_element {
         #[link_name = "get pathLength"]
         pub safe fn path_length(this: &SVGPathElement) -> &'static SVGAnimatedNumber;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGPathElement/getTotalLength)
+        #[link_name = "getTotalLength"]
+        pub safe fn get_total_length(this: &SVGPathElement) -> f32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGPathElement/getPointAtLength)
+        #[link_name = "getPointAtLength"]
+        pub safe fn get_point_at_length(this: &SVGPathElement, distance: f32) -> &'static DOMPoint;
+
         /// Treats `this` as `SVGPathElement` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static SVGPathElement;
@@ -12266,6 +12700,15 @@ impl Deref for SVGTextContentElement {
 pub mod svg_text_content_element {
     use super::*;
 
+    /// `SVGTextContentElement.LENGTHADJUST_UNKNOWN`
+    pub const LENGTHADJUST_UNKNOWN: u16 = 0;
+
+    /// `SVGTextContentElement.LENGTHADJUST_SPACING`
+    pub const LENGTHADJUST_SPACING: u16 = 1;
+
+    /// `SVGTextContentElement.LENGTHADJUST_SPACINGANDGLYPHS`
+    pub const LENGTHADJUST_SPACINGANDGLYPHS: u16 = 2;
+
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTextContentElement/textLength)
         #[link_name = "get textLength"]
@@ -12278,6 +12721,18 @@ pub mod svg_text_content_element {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTextContentElement/getNumberOfChars)
         #[link_name = "getNumberOfChars"]
         pub safe fn get_number_of_chars(this: &SVGTextContentElement) -> i32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTextContentElement/getComputedTextLength)
+        #[link_name = "getComputedTextLength"]
+        pub safe fn get_computed_text_length(this: &SVGTextContentElement) -> f32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTextContentElement/getSubStringLength)
+        #[link_name = "getSubStringLength"]
+        pub safe fn get_sub_string_length(this: &SVGTextContentElement, charnum: u32, nchars: u32) -> f32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTextContentElement/getRotationOfChar)
+        #[link_name = "getRotationOfChar"]
+        pub safe fn get_rotation_of_char(this: &SVGTextContentElement, charnum: u32) -> f32;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTextContentElement/getCharNumAtPosition)
         #[link_name = "getCharNumAtPosition"]
@@ -12401,6 +12856,24 @@ impl Deref for SVGTextPathElement {
 
 pub mod svg_text_path_element {
     use super::*;
+
+    /// `SVGTextPathElement.TEXTPATH_METHODTYPE_UNKNOWN`
+    pub const TEXTPATH_METHODTYPE_UNKNOWN: u16 = 0;
+
+    /// `SVGTextPathElement.TEXTPATH_METHODTYPE_ALIGN`
+    pub const TEXTPATH_METHODTYPE_ALIGN: u16 = 1;
+
+    /// `SVGTextPathElement.TEXTPATH_METHODTYPE_STRETCH`
+    pub const TEXTPATH_METHODTYPE_STRETCH: u16 = 2;
+
+    /// `SVGTextPathElement.TEXTPATH_SPACINGTYPE_UNKNOWN`
+    pub const TEXTPATH_SPACINGTYPE_UNKNOWN: u16 = 0;
+
+    /// `SVGTextPathElement.TEXTPATH_SPACINGTYPE_AUTO`
+    pub const TEXTPATH_SPACINGTYPE_AUTO: u16 = 1;
+
+    /// `SVGTextPathElement.TEXTPATH_SPACINGTYPE_EXACT`
+    pub const TEXTPATH_SPACINGTYPE_EXACT: u16 = 2;
 
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTextPathElement/startOffset)
@@ -12535,6 +13008,27 @@ impl Deref for SVGMarkerElement {
 pub mod svg_marker_element {
     use super::*;
 
+    /// `SVGMarkerElement.SVG_MARKERUNITS_UNKNOWN`
+    pub const SVG_MARKERUNITS_UNKNOWN: u16 = 0;
+
+    /// `SVGMarkerElement.SVG_MARKERUNITS_USERSPACEONUSE`
+    pub const SVG_MARKERUNITS_USERSPACEONUSE: u16 = 1;
+
+    /// `SVGMarkerElement.SVG_MARKERUNITS_STROKEWIDTH`
+    pub const SVG_MARKERUNITS_STROKEWIDTH: u16 = 2;
+
+    /// `SVGMarkerElement.SVG_MARKER_ORIENT_UNKNOWN`
+    pub const SVG_MARKER_ORIENT_UNKNOWN: u16 = 0;
+
+    /// `SVGMarkerElement.SVG_MARKER_ORIENT_AUTO`
+    pub const SVG_MARKER_ORIENT_AUTO: u16 = 1;
+
+    /// `SVGMarkerElement.SVG_MARKER_ORIENT_ANGLE`
+    pub const SVG_MARKER_ORIENT_ANGLE: u16 = 2;
+
+    /// `SVGMarkerElement.SVG_MARKER_ORIENT_AUTO_START_REVERSE`
+    pub const SVG_MARKER_ORIENT_AUTO_START_REVERSE: u16 = 3;
+
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGMarkerElement/refX)
         #[link_name = "get refX"]
@@ -12609,6 +13103,18 @@ impl Deref for SVGGradientElement {
 
 pub mod svg_gradient_element {
     use super::*;
+
+    /// `SVGGradientElement.SVG_SPREADMETHOD_UNKNOWN`
+    pub const SVG_SPREADMETHOD_UNKNOWN: u16 = 0;
+
+    /// `SVGGradientElement.SVG_SPREADMETHOD_PAD`
+    pub const SVG_SPREADMETHOD_PAD: u16 = 1;
+
+    /// `SVGGradientElement.SVG_SPREADMETHOD_REFLECT`
+    pub const SVG_SPREADMETHOD_REFLECT: u16 = 2;
+
+    /// `SVGGradientElement.SVG_SPREADMETHOD_REPEAT`
+    pub const SVG_SPREADMETHOD_REPEAT: u16 = 3;
 
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGGradientElement/gradientUnits)
@@ -13020,13 +13526,33 @@ pub mod svg_animation_element {
         #[link_name = "get targetElement"]
         pub safe fn target_element(this: &SVGAnimationElement) -> Option<&'static SVGElement>;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimationElement/getStartTime)
+        #[link_name = "getStartTime"]
+        pub safe fn get_start_time(this: &SVGAnimationElement) -> f32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimationElement/getCurrentTime)
+        #[link_name = "getCurrentTime"]
+        pub safe fn get_current_time(this: &SVGAnimationElement) -> f32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimationElement/getSimpleDuration)
+        #[link_name = "getSimpleDuration"]
+        pub safe fn get_simple_duration(this: &SVGAnimationElement) -> f32;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimationElement/beginElement)
         #[link_name = "beginElement"]
         pub safe fn begin_element(this: &SVGAnimationElement);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimationElement/beginElementAt)
+        #[link_name = "beginElementAt"]
+        pub safe fn begin_element_at(this: &SVGAnimationElement, offset: f32);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimationElement/endElement)
         #[link_name = "endElement"]
         pub safe fn end_element(this: &SVGAnimationElement);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimationElement/endElementAt)
+        #[link_name = "endElementAt"]
+        pub safe fn end_element_at(this: &SVGAnimationElement, offset: f32);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimationElement/requiredExtensions)
         #[link_name = "get requiredExtensions"]
@@ -13224,6 +13750,57 @@ impl Deref for SVGFEBlendElement {
 pub mod svgfe_blend_element {
     use super::*;
 
+    /// `SVGFEBlendElement.SVG_FEBLEND_MODE_UNKNOWN`
+    pub const SVG_FEBLEND_MODE_UNKNOWN: u16 = 0;
+
+    /// `SVGFEBlendElement.SVG_FEBLEND_MODE_NORMAL`
+    pub const SVG_FEBLEND_MODE_NORMAL: u16 = 1;
+
+    /// `SVGFEBlendElement.SVG_FEBLEND_MODE_MULTIPLY`
+    pub const SVG_FEBLEND_MODE_MULTIPLY: u16 = 2;
+
+    /// `SVGFEBlendElement.SVG_FEBLEND_MODE_SCREEN`
+    pub const SVG_FEBLEND_MODE_SCREEN: u16 = 3;
+
+    /// `SVGFEBlendElement.SVG_FEBLEND_MODE_DARKEN`
+    pub const SVG_FEBLEND_MODE_DARKEN: u16 = 4;
+
+    /// `SVGFEBlendElement.SVG_FEBLEND_MODE_LIGHTEN`
+    pub const SVG_FEBLEND_MODE_LIGHTEN: u16 = 5;
+
+    /// `SVGFEBlendElement.SVG_FEBLEND_MODE_OVERLAY`
+    pub const SVG_FEBLEND_MODE_OVERLAY: u16 = 6;
+
+    /// `SVGFEBlendElement.SVG_FEBLEND_MODE_COLOR_DODGE`
+    pub const SVG_FEBLEND_MODE_COLOR_DODGE: u16 = 7;
+
+    /// `SVGFEBlendElement.SVG_FEBLEND_MODE_COLOR_BURN`
+    pub const SVG_FEBLEND_MODE_COLOR_BURN: u16 = 8;
+
+    /// `SVGFEBlendElement.SVG_FEBLEND_MODE_HARD_LIGHT`
+    pub const SVG_FEBLEND_MODE_HARD_LIGHT: u16 = 9;
+
+    /// `SVGFEBlendElement.SVG_FEBLEND_MODE_SOFT_LIGHT`
+    pub const SVG_FEBLEND_MODE_SOFT_LIGHT: u16 = 10;
+
+    /// `SVGFEBlendElement.SVG_FEBLEND_MODE_DIFFERENCE`
+    pub const SVG_FEBLEND_MODE_DIFFERENCE: u16 = 11;
+
+    /// `SVGFEBlendElement.SVG_FEBLEND_MODE_EXCLUSION`
+    pub const SVG_FEBLEND_MODE_EXCLUSION: u16 = 12;
+
+    /// `SVGFEBlendElement.SVG_FEBLEND_MODE_HUE`
+    pub const SVG_FEBLEND_MODE_HUE: u16 = 13;
+
+    /// `SVGFEBlendElement.SVG_FEBLEND_MODE_SATURATION`
+    pub const SVG_FEBLEND_MODE_SATURATION: u16 = 14;
+
+    /// `SVGFEBlendElement.SVG_FEBLEND_MODE_COLOR`
+    pub const SVG_FEBLEND_MODE_COLOR: u16 = 15;
+
+    /// `SVGFEBlendElement.SVG_FEBLEND_MODE_LUMINOSITY`
+    pub const SVG_FEBLEND_MODE_LUMINOSITY: u16 = 16;
+
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGFEBlendElement/in1)
         #[link_name = "get in1"]
@@ -13278,6 +13855,21 @@ impl Deref for SVGFEColorMatrixElement {
 
 pub mod svgfe_color_matrix_element {
     use super::*;
+
+    /// `SVGFEColorMatrixElement.SVG_FECOLORMATRIX_TYPE_UNKNOWN`
+    pub const SVG_FECOLORMATRIX_TYPE_UNKNOWN: u16 = 0;
+
+    /// `SVGFEColorMatrixElement.SVG_FECOLORMATRIX_TYPE_MATRIX`
+    pub const SVG_FECOLORMATRIX_TYPE_MATRIX: u16 = 1;
+
+    /// `SVGFEColorMatrixElement.SVG_FECOLORMATRIX_TYPE_SATURATE`
+    pub const SVG_FECOLORMATRIX_TYPE_SATURATE: u16 = 2;
+
+    /// `SVGFEColorMatrixElement.SVG_FECOLORMATRIX_TYPE_HUEROTATE`
+    pub const SVG_FECOLORMATRIX_TYPE_HUEROTATE: u16 = 3;
+
+    /// `SVGFEColorMatrixElement.SVG_FECOLORMATRIX_TYPE_LUMINANCETOALPHA`
+    pub const SVG_FECOLORMATRIX_TYPE_LUMINANCETOALPHA: u16 = 4;
 
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGFEColorMatrixElement/in1)
@@ -13380,6 +13972,24 @@ impl Deref for SVGComponentTransferFunctionElement {
 
 pub mod svg_component_transfer_function_element {
     use super::*;
+
+    /// `SVGComponentTransferFunctionElement.SVG_FECOMPONENTTRANSFER_TYPE_UNKNOWN`
+    pub const SVG_FECOMPONENTTRANSFER_TYPE_UNKNOWN: u16 = 0;
+
+    /// `SVGComponentTransferFunctionElement.SVG_FECOMPONENTTRANSFER_TYPE_IDENTITY`
+    pub const SVG_FECOMPONENTTRANSFER_TYPE_IDENTITY: u16 = 1;
+
+    /// `SVGComponentTransferFunctionElement.SVG_FECOMPONENTTRANSFER_TYPE_TABLE`
+    pub const SVG_FECOMPONENTTRANSFER_TYPE_TABLE: u16 = 2;
+
+    /// `SVGComponentTransferFunctionElement.SVG_FECOMPONENTTRANSFER_TYPE_DISCRETE`
+    pub const SVG_FECOMPONENTTRANSFER_TYPE_DISCRETE: u16 = 3;
+
+    /// `SVGComponentTransferFunctionElement.SVG_FECOMPONENTTRANSFER_TYPE_LINEAR`
+    pub const SVG_FECOMPONENTTRANSFER_TYPE_LINEAR: u16 = 4;
+
+    /// `SVGComponentTransferFunctionElement.SVG_FECOMPONENTTRANSFER_TYPE_GAMMA`
+    pub const SVG_FECOMPONENTTRANSFER_TYPE_GAMMA: u16 = 5;
 
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGComponentTransferFunctionElement/type)
@@ -13524,6 +14134,27 @@ impl Deref for SVGFECompositeElement {
 pub mod svgfe_composite_element {
     use super::*;
 
+    /// `SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_UNKNOWN`
+    pub const SVG_FECOMPOSITE_OPERATOR_UNKNOWN: u16 = 0;
+
+    /// `SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_OVER`
+    pub const SVG_FECOMPOSITE_OPERATOR_OVER: u16 = 1;
+
+    /// `SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_IN`
+    pub const SVG_FECOMPOSITE_OPERATOR_IN: u16 = 2;
+
+    /// `SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_OUT`
+    pub const SVG_FECOMPOSITE_OPERATOR_OUT: u16 = 3;
+
+    /// `SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_ATOP`
+    pub const SVG_FECOMPOSITE_OPERATOR_ATOP: u16 = 4;
+
+    /// `SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_XOR`
+    pub const SVG_FECOMPOSITE_OPERATOR_XOR: u16 = 5;
+
+    /// `SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_ARITHMETIC`
+    pub const SVG_FECOMPOSITE_OPERATOR_ARITHMETIC: u16 = 6;
+
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGFECompositeElement/in1)
         #[link_name = "get in1"]
@@ -13594,6 +14225,18 @@ impl Deref for SVGFEConvolveMatrixElement {
 
 pub mod svgfe_convolve_matrix_element {
     use super::*;
+
+    /// `SVGFEConvolveMatrixElement.SVG_EDGEMODE_UNKNOWN`
+    pub const SVG_EDGEMODE_UNKNOWN: u16 = 0;
+
+    /// `SVGFEConvolveMatrixElement.SVG_EDGEMODE_DUPLICATE`
+    pub const SVG_EDGEMODE_DUPLICATE: u16 = 1;
+
+    /// `SVGFEConvolveMatrixElement.SVG_EDGEMODE_WRAP`
+    pub const SVG_EDGEMODE_WRAP: u16 = 2;
+
+    /// `SVGFEConvolveMatrixElement.SVG_EDGEMODE_NONE`
+    pub const SVG_EDGEMODE_NONE: u16 = 3;
 
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGFEConvolveMatrixElement/in1)
@@ -13749,6 +14392,21 @@ impl Deref for SVGFEDisplacementMapElement {
 pub mod svgfe_displacement_map_element {
     use super::*;
 
+    /// `SVGFEDisplacementMapElement.SVG_CHANNEL_UNKNOWN`
+    pub const SVG_CHANNEL_UNKNOWN: u16 = 0;
+
+    /// `SVGFEDisplacementMapElement.SVG_CHANNEL_R`
+    pub const SVG_CHANNEL_R: u16 = 1;
+
+    /// `SVGFEDisplacementMapElement.SVG_CHANNEL_G`
+    pub const SVG_CHANNEL_G: u16 = 2;
+
+    /// `SVGFEDisplacementMapElement.SVG_CHANNEL_B`
+    pub const SVG_CHANNEL_B: u16 = 3;
+
+    /// `SVGFEDisplacementMapElement.SVG_CHANNEL_A`
+    pub const SVG_CHANNEL_A: u16 = 4;
+
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGFEDisplacementMapElement/in1)
         #[link_name = "get in1"]
@@ -13832,6 +14490,10 @@ pub mod svgfe_drop_shadow_element {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGFEDropShadowElement/stdDeviationY)
         #[link_name = "get stdDeviationY"]
         pub safe fn std_deviation_y(this: &SVGFEDropShadowElement) -> &'static SVGAnimatedNumber;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGFEDropShadowElement/setStdDeviation)
+        #[link_name = "setStdDeviation"]
+        pub safe fn set_std_deviation(this: &SVGFEDropShadowElement, std_deviation_x: f32, std_deviation_y: f32);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGFEDropShadowElement/x)
         #[link_name = "get x"]
@@ -13918,6 +14580,18 @@ impl Deref for SVGFEGaussianBlurElement {
 pub mod svgfe_gaussian_blur_element {
     use super::*;
 
+    /// `SVGFEGaussianBlurElement.SVG_EDGEMODE_UNKNOWN`
+    pub const SVG_EDGEMODE_UNKNOWN: u16 = 0;
+
+    /// `SVGFEGaussianBlurElement.SVG_EDGEMODE_DUPLICATE`
+    pub const SVG_EDGEMODE_DUPLICATE: u16 = 1;
+
+    /// `SVGFEGaussianBlurElement.SVG_EDGEMODE_WRAP`
+    pub const SVG_EDGEMODE_WRAP: u16 = 2;
+
+    /// `SVGFEGaussianBlurElement.SVG_EDGEMODE_NONE`
+    pub const SVG_EDGEMODE_NONE: u16 = 3;
+
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGFEGaussianBlurElement/in1)
         #[link_name = "get in1"]
@@ -13934,6 +14608,10 @@ pub mod svgfe_gaussian_blur_element {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGFEGaussianBlurElement/edgeMode)
         #[link_name = "get edgeMode"]
         pub safe fn edge_mode(this: &SVGFEGaussianBlurElement) -> &'static SVGAnimatedEnumeration;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGFEGaussianBlurElement/setStdDeviation)
+        #[link_name = "setStdDeviation"]
+        pub safe fn set_std_deviation(this: &SVGFEGaussianBlurElement, std_deviation_x: f32, std_deviation_y: f32);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGFEGaussianBlurElement/x)
         #[link_name = "get x"]
@@ -14101,6 +14779,15 @@ impl Deref for SVGFEMorphologyElement {
 
 pub mod svgfe_morphology_element {
     use super::*;
+
+    /// `SVGFEMorphologyElement.SVG_MORPHOLOGY_OPERATOR_UNKNOWN`
+    pub const SVG_MORPHOLOGY_OPERATOR_UNKNOWN: u16 = 0;
+
+    /// `SVGFEMorphologyElement.SVG_MORPHOLOGY_OPERATOR_ERODE`
+    pub const SVG_MORPHOLOGY_OPERATOR_ERODE: u16 = 1;
+
+    /// `SVGFEMorphologyElement.SVG_MORPHOLOGY_OPERATOR_DILATE`
+    pub const SVG_MORPHOLOGY_OPERATOR_DILATE: u16 = 2;
 
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGFEMorphologyElement/in1)
@@ -14329,6 +15016,24 @@ impl Deref for SVGFETurbulenceElement {
 
 pub mod svgfe_turbulence_element {
     use super::*;
+
+    /// `SVGFETurbulenceElement.SVG_TURBULENCE_TYPE_UNKNOWN`
+    pub const SVG_TURBULENCE_TYPE_UNKNOWN: u16 = 0;
+
+    /// `SVGFETurbulenceElement.SVG_TURBULENCE_TYPE_FRACTALNOISE`
+    pub const SVG_TURBULENCE_TYPE_FRACTALNOISE: u16 = 1;
+
+    /// `SVGFETurbulenceElement.SVG_TURBULENCE_TYPE_TURBULENCE`
+    pub const SVG_TURBULENCE_TYPE_TURBULENCE: u16 = 2;
+
+    /// `SVGFETurbulenceElement.SVG_STITCHTYPE_UNKNOWN`
+    pub const SVG_STITCHTYPE_UNKNOWN: u16 = 0;
+
+    /// `SVGFETurbulenceElement.SVG_STITCHTYPE_STITCH`
+    pub const SVG_STITCHTYPE_STITCH: u16 = 1;
+
+    /// `SVGFETurbulenceElement.SVG_STITCHTYPE_NOSTITCH`
+    pub const SVG_STITCHTYPE_NOSTITCH: u16 = 2;
 
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGFETurbulenceElement/baseFrequencyX)
@@ -14806,6 +15511,14 @@ pub mod animation_effect {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationEffect/getTiming)
+        #[link_name = "getTiming"]
+        pub safe fn get_timing(this: &AnimationEffect) -> EffectTiming;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationEffect/getComputedTiming)
+        #[link_name = "getComputedTiming"]
+        pub safe fn get_computed_timing(this: &AnimationEffect) -> ComputedEffectTiming;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationEffect/updateTiming)
         #[link_name = "updateTiming"]
         pub safe fn update_timing(this: &AnimationEffect);
@@ -14906,6 +15619,10 @@ pub mod audio_buffer {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBuffer/sampleRate)
+        #[link_name = "get sampleRate"]
+        pub safe fn sample_rate(this: &AudioBuffer) -> f32;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBuffer/length)
         #[link_name = "get length"]
         pub safe fn length(this: &AudioBuffer) -> u32;
@@ -15008,6 +15725,10 @@ pub mod audio_context {
         #[link_name = "get outputLatency"]
         pub safe fn output_latency(this: &AudioContext) -> f64;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioContext/getOutputTimestamp)
+        #[link_name = "getOutputTimestamp"]
+        pub safe fn get_output_timestamp(this: &AudioContext) -> AudioTimestamp;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioContext/resume)
         pub safe fn resume(this: &AudioContext) -> Promise<()>;
 
@@ -15047,6 +15768,10 @@ pub mod audio_data {
         #[link_name = "get format"]
         pub safe fn format(this: &AudioData) -> Option<String>;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioData/sampleRate)
+        #[link_name = "get sampleRate"]
+        pub safe fn sample_rate(this: &AudioData) -> f32;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioData/numberOfFrames)
         #[link_name = "get numberOfFrames"]
         pub safe fn number_of_frames(this: &AudioData) -> u32;
@@ -15054,6 +15779,14 @@ pub mod audio_data {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioData/numberOfChannels)
         #[link_name = "get numberOfChannels"]
         pub safe fn number_of_channels(this: &AudioData) -> u32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioData/duration)
+        #[link_name = "get duration"]
+        pub safe fn duration(this: &AudioData) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioData/timestamp)
+        #[link_name = "get timestamp"]
+        pub safe fn timestamp(this: &AudioData) -> f64;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioData/allocationSize)
         #[link_name = "allocationSize"]
@@ -15114,6 +15847,10 @@ pub mod audio_decoder {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioDecoder/close)
         pub safe fn close(this: &AudioDecoder);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioDecoder/isConfigSupported)
+        #[link_name = "AudioDecoder.isConfigSupported"]
+        pub safe fn is_config_supported(config: AudioDecoderConfig<'_>) -> Promise<AudioDecoderSupport>;
 
         /// Treats `this` as `AudioDecoder` without checking that it is one.
         #[link_name = "this"]
@@ -15188,6 +15925,10 @@ pub mod audio_encoder {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioEncoder/close)
         pub safe fn close(this: &AudioEncoder);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioEncoder/isConfigSupported)
+        #[link_name = "AudioEncoder.isConfigSupported"]
+        pub safe fn is_config_supported(config: AudioEncoderConfig<'_>) -> Promise<AudioEncoderSupport>;
+
         /// Treats `this` as `AudioEncoder` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static AudioEncoder;
@@ -15237,6 +15978,14 @@ pub mod audio_listener {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioListener/upZ)
         #[link_name = "get upZ"]
         pub safe fn up_z(this: &AudioListener) -> &'static AudioParam;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioListener/setPosition)
+        #[link_name = "setPosition"]
+        pub safe fn set_position(this: &AudioListener, x: f32, y: f32, z: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioListener/setOrientation)
+        #[link_name = "setOrientation"]
+        pub safe fn set_orientation(this: &AudioListener, x: f32, y: f32, z: f32, x_up: f32, y_up: f32, z_up: f32);
     }
 }
 
@@ -15353,6 +16102,14 @@ pub mod audio_param {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioParam/value)
+        #[link_name = "get value"]
+        pub safe fn value(this: &AudioParam) -> f32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioParam/value)
+        #[link_name = "set value"]
+        pub safe fn set_value(this: &AudioParam, value: f32);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioParam/automationRate)
         #[link_name = "get automationRate"]
         pub safe fn automation_rate(this: &AudioParam) -> String;
@@ -15360,6 +16117,38 @@ pub mod audio_param {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioParam/automationRate)
         #[link_name = "set automationRate"]
         pub safe fn set_automation_rate(this: &AudioParam, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioParam/defaultValue)
+        #[link_name = "get defaultValue"]
+        pub safe fn default_value(this: &AudioParam) -> f32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioParam/minValue)
+        #[link_name = "get minValue"]
+        pub safe fn min_value(this: &AudioParam) -> f32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioParam/maxValue)
+        #[link_name = "get maxValue"]
+        pub safe fn max_value(this: &AudioParam) -> f32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioParam/setValueAtTime)
+        #[link_name = "setValueAtTime"]
+        pub safe fn set_value_at_time(this: &AudioParam, value: f32, start_time: f64) -> &'static AudioParam;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioParam/linearRampToValueAtTime)
+        #[link_name = "linearRampToValueAtTime"]
+        pub safe fn linear_ramp_to_value_at_time(this: &AudioParam, value: f32, end_time: f64) -> &'static AudioParam;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioParam/exponentialRampToValueAtTime)
+        #[link_name = "exponentialRampToValueAtTime"]
+        pub safe fn exponential_ramp_to_value_at_time(this: &AudioParam, value: f32, end_time: f64) -> &'static AudioParam;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioParam/setTargetAtTime)
+        #[link_name = "setTargetAtTime"]
+        pub safe fn set_target_at_time(this: &AudioParam, target: f32, start_time: f64, time_constant: f32) -> &'static AudioParam;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioParam/setValueCurveAtTime)
+        #[link_name = "setValueCurveAtTime"]
+        pub safe fn set_value_curve_at_time(this: &AudioParam, values: &[f32], start_time: f64, duration: f64) -> &'static AudioParam;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioParam/cancelScheduledValues)
         #[link_name = "cancelScheduledValues"]
@@ -15557,6 +16346,10 @@ pub mod authenticator_attestation_response {
         #[link_name = "get attestationObject"]
         pub safe fn attestation_object(this: &AuthenticatorAttestationResponse) -> &'static ArrayBuffer;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AuthenticatorAttestationResponse/getTransports)
+        #[link_name = "getTransports"]
+        pub safe fn get_transports(this: &AuthenticatorAttestationResponse) -> Vec<String>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AuthenticatorAttestationResponse/getAuthenticatorData)
         #[link_name = "getAuthenticatorData"]
         pub safe fn get_authenticator_data(this: &AuthenticatorAttestationResponse) -> &'static ArrayBuffer;
@@ -15624,6 +16417,10 @@ pub mod base_audio_context {
         #[link_name = "get destination"]
         pub safe fn destination(this: &BaseAudioContext) -> &'static AudioDestinationNode;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/BaseAudioContext/sampleRate)
+        #[link_name = "get sampleRate"]
+        pub safe fn sample_rate(this: &BaseAudioContext) -> f32;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/BaseAudioContext/currentTime)
         #[link_name = "get currentTime"]
         pub safe fn current_time(this: &BaseAudioContext) -> f64;
@@ -15647,6 +16444,10 @@ pub mod base_audio_context {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/BaseAudioContext/createBiquadFilter)
         #[link_name = "createBiquadFilter"]
         pub safe fn create_biquad_filter(this: &BaseAudioContext) -> &'static BiquadFilterNode;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/BaseAudioContext/createBuffer)
+        #[link_name = "createBuffer"]
+        pub safe fn create_buffer(this: &BaseAudioContext, number_of_channels: u32, length: u32, sample_rate: f32) -> &'static AudioBuffer;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/BaseAudioContext/createBufferSource)
         #[link_name = "createBufferSource"]
@@ -15703,6 +16504,14 @@ pub mod base_audio_context {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/BaseAudioContext/createPanner)
         #[link_name = "createPanner"]
         pub safe fn create_panner(this: &BaseAudioContext) -> &'static PannerNode;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/BaseAudioContext/createPeriodicWave)
+        #[link_name = "createPeriodicWave"]
+        pub safe fn create_periodic_wave(this: &BaseAudioContext, real: &[f32], imag: &[f32]) -> &'static PeriodicWave;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/BaseAudioContext/createPeriodicWave)
+        #[link_name = "createPeriodicWave"]
+        pub safe fn create_periodic_wave_with_constraints(this: &BaseAudioContext, real: &[f32], imag: &[f32], constraints: PeriodicWaveConstraints) -> &'static PeriodicWave;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/BaseAudioContext/createScriptProcessor)
         #[link_name = "createScriptProcessor"]
@@ -16016,6 +16825,10 @@ pub mod css_container_rule {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSContainerRule/containerQuery)
         #[link_name = "get containerQuery"]
         pub safe fn container_query(this: &CSSContainerRule) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSContainerRule/conditions)
+        #[link_name = "get conditions"]
+        pub safe fn conditions(this: &CSSContainerRule) -> &'static [CSSContainerCondition];
 
         /// Treats `this` as `CSSContainerRule` without checking that it is one.
         #[link_name = "this"]
@@ -16588,6 +17401,10 @@ pub mod css_layer_statement_rule {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSLayerStatementRule/nameList)
+        #[link_name = "get nameList"]
+        pub safe fn name_list(this: &CSSLayerStatementRule) -> &'static [String];
+
         /// Treats `this` as `CSSLayerStatementRule` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &CSSRule) -> &'static CSSLayerStatementRule;
@@ -16963,6 +17780,10 @@ pub mod css_numeric_value {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSNumericValue/toSum)
         #[link_name = "toSum"]
         pub safe fn to_sum(this: &CSSNumericValue, units: &str) -> &'static CSSMathSum;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSNumericValue/type)
+        #[link_name = "type"]
+        pub safe fn type_(this: &CSSNumericValue) -> CSSNumericType;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSNumericValue/parse)
         #[link_name = "CSSNumericValue.parse"]
@@ -17654,6 +18475,45 @@ pub struct CSSRule(PhantomData<JsObject>);
 pub mod css_rule {
     use super::*;
 
+    /// `CSSRule.SUPPORTS_RULE`
+    pub const SUPPORTS_RULE: u16 = 12;
+
+    /// `CSSRule.KEYFRAMES_RULE`
+    pub const KEYFRAMES_RULE: u16 = 7;
+
+    /// `CSSRule.KEYFRAME_RULE`
+    pub const KEYFRAME_RULE: u16 = 8;
+
+    /// `CSSRule.COUNTER_STYLE_RULE`
+    pub const COUNTER_STYLE_RULE: u16 = 11;
+
+    /// `CSSRule.STYLE_RULE`
+    pub const STYLE_RULE: u16 = 1;
+
+    /// `CSSRule.CHARSET_RULE`
+    pub const CHARSET_RULE: u16 = 2;
+
+    /// `CSSRule.IMPORT_RULE`
+    pub const IMPORT_RULE: u16 = 3;
+
+    /// `CSSRule.MEDIA_RULE`
+    pub const MEDIA_RULE: u16 = 4;
+
+    /// `CSSRule.FONT_FACE_RULE`
+    pub const FONT_FACE_RULE: u16 = 5;
+
+    /// `CSSRule.PAGE_RULE`
+    pub const PAGE_RULE: u16 = 6;
+
+    /// `CSSRule.MARGIN_RULE`
+    pub const MARGIN_RULE: u16 = 9;
+
+    /// `CSSRule.NAMESPACE_RULE`
+    pub const NAMESPACE_RULE: u16 = 10;
+
+    /// `CSSRule.FONT_FEATURE_VALUES_RULE`
+    pub const FONT_FEATURE_VALUES_RULE: u16 = 14;
+
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSRule/cssText)
         #[link_name = "get cssText"]
@@ -18032,6 +18892,10 @@ pub mod css_style_value {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleValue/parse)
         #[link_name = "CSSStyleValue.parse"]
         pub safe fn parse(property: &str, css_text: &str) -> &'static CSSStyleValue;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleValue/parseAll)
+        #[link_name = "CSSStyleValue.parseAll"]
+        pub safe fn parse_all(property: &str, css_text: &str) -> Vec<&'static CSSStyleValue>;
     }
 }
 
@@ -18294,6 +19158,10 @@ pub mod css_view_transition_rule {
         #[link_name = "get navigation"]
         pub safe fn navigation(this: &CSSViewTransitionRule) -> String;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSViewTransitionRule/types)
+        #[link_name = "get types"]
+        pub safe fn types(this: &CSSViewTransitionRule) -> &'static [String];
+
         /// Treats `this` as `CSSViewTransitionRule` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &CSSRule) -> &'static CSSViewTransitionRule;
@@ -18308,9 +19176,32 @@ pub mod cache {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Cache/matchAll)
+        #[link_name = "matchAll"]
+        pub safe fn match_all(this: &Cache) -> Promise<&'static [&'static Response]>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Cache/addAll)
         #[link_name = "addAll"]
         pub safe fn add_all(this: &Cache, requests: &[RequestInfo<'_>]) -> Promise<()>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Cache/keys)
+        pub safe fn keys(this: &Cache) -> Promise<&'static [&'static Request]>;
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Cache/matchAll)
+    #[cfg_attr(rust_js, rust_js::link_name = "matchAll")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn match_all_with_request(this: &Cache, request: impl IntoRequestInfo) -> Promise<&'static [&'static Response]> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Cache/matchAll)
+    #[cfg_attr(rust_js, rust_js::link_name = "matchAll")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn match_all_with_request_and_options(this: &Cache, request: impl IntoRequestInfo, options: CacheQueryOptions) -> Promise<&'static [&'static Response]> {
+        unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Cache/add)
@@ -18344,6 +19235,22 @@ pub mod cache {
     pub fn delete_with_options(this: &Cache, request: impl IntoRequestInfo, options: CacheQueryOptions) -> Promise<bool> {
         unreachable!()
     }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Cache/keys)
+    #[cfg_attr(rust_js, rust_js::link_name = "keys")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn keys_with_request(this: &Cache, request: impl IntoRequestInfo) -> Promise<&'static [&'static Request]> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Cache/keys)
+    #[cfg_attr(rust_js, rust_js::link_name = "keys")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn keys_with_request_and_options(this: &Cache, request: impl IntoRequestInfo, options: CacheQueryOptions) -> Promise<&'static [&'static Request]> {
+        unreachable!()
+    }
 }
 
 /// [`CacheStorage`](https://developer.mozilla.org/docs/Web/API/CacheStorage)
@@ -18362,6 +19269,9 @@ pub mod cache_storage {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CacheStorage/delete)
         pub safe fn delete(this: &CacheStorage, cache_name: &str) -> Promise<bool>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CacheStorage/keys)
+        pub safe fn keys(this: &CacheStorage) -> Promise<Vec<String>>;
     }
 }
 
@@ -18439,6 +19349,10 @@ pub mod canvas_rendering_context2_d {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/canvas)
         #[link_name = "get canvas"]
         pub safe fn canvas(this: &CanvasRenderingContext2D) -> &'static HTMLCanvasElement;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/getContextAttributes)
+        #[link_name = "getContextAttributes"]
+        pub safe fn get_context_attributes(this: &CanvasRenderingContext2D) -> CanvasRenderingContext2DSettings;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/save)
         pub safe fn save(this: &CanvasRenderingContext2D);
@@ -18733,6 +19647,10 @@ pub mod canvas_rendering_context2_d {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/setLineDash)
         #[link_name = "setLineDash"]
         pub safe fn set_line_dash(this: &CanvasRenderingContext2D, segments: &[f64]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/getLineDash)
+        #[link_name = "getLineDash"]
+        pub safe fn get_line_dash(this: &CanvasRenderingContext2D) -> Vec<f64>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/lineDashOffset)
         #[link_name = "get lineDashOffset"]
@@ -19244,6 +20162,14 @@ pub mod cookie_change_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieChangeEvent/changed)
+        #[link_name = "get changed"]
+        pub safe fn changed(this: &CookieChangeEvent) -> &'static [CookieListItem];
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieChangeEvent/deleted)
+        #[link_name = "get deleted"]
+        pub safe fn deleted(this: &CookieChangeEvent) -> &'static [CookieListItem];
+
         /// Treats `this` as `CookieChangeEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static CookieChangeEvent;
@@ -19267,6 +20193,21 @@ pub mod cookie_store {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieStore/get)
+        pub safe fn get(this: &CookieStore, name: &str) -> Promise<CookieListItem>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieStore/get)
+        #[link_name = "get"]
+        pub safe fn get_with_options(this: &CookieStore, options: CookieStoreGetOptions<'_>) -> Promise<CookieListItem>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieStore/getAll)
+        #[link_name = "getAll"]
+        pub safe fn get_all(this: &CookieStore, name: &str) -> Promise<Vec<CookieListItem>>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieStore/getAll)
+        #[link_name = "getAll"]
+        pub safe fn get_all_with_options(this: &CookieStore, options: CookieStoreGetOptions<'_>) -> Promise<Vec<CookieListItem>>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieStore/set)
         pub safe fn set(this: &CookieStore, name: &str, value: &str) -> Promise<()>;
 
@@ -19514,6 +20455,81 @@ pub struct DOMException(PhantomData<JsObject>);
 
 pub mod dom_exception {
     use super::*;
+
+    /// `DOMException.INDEX_SIZE_ERR`
+    pub const INDEX_SIZE_ERR: u16 = 1;
+
+    /// `DOMException.DOMSTRING_SIZE_ERR`
+    pub const DOMSTRING_SIZE_ERR: u16 = 2;
+
+    /// `DOMException.HIERARCHY_REQUEST_ERR`
+    pub const HIERARCHY_REQUEST_ERR: u16 = 3;
+
+    /// `DOMException.WRONG_DOCUMENT_ERR`
+    pub const WRONG_DOCUMENT_ERR: u16 = 4;
+
+    /// `DOMException.INVALID_CHARACTER_ERR`
+    pub const INVALID_CHARACTER_ERR: u16 = 5;
+
+    /// `DOMException.NO_DATA_ALLOWED_ERR`
+    pub const NO_DATA_ALLOWED_ERR: u16 = 6;
+
+    /// `DOMException.NO_MODIFICATION_ALLOWED_ERR`
+    pub const NO_MODIFICATION_ALLOWED_ERR: u16 = 7;
+
+    /// `DOMException.NOT_FOUND_ERR`
+    pub const NOT_FOUND_ERR: u16 = 8;
+
+    /// `DOMException.NOT_SUPPORTED_ERR`
+    pub const NOT_SUPPORTED_ERR: u16 = 9;
+
+    /// `DOMException.INUSE_ATTRIBUTE_ERR`
+    pub const INUSE_ATTRIBUTE_ERR: u16 = 10;
+
+    /// `DOMException.INVALID_STATE_ERR`
+    pub const INVALID_STATE_ERR: u16 = 11;
+
+    /// `DOMException.SYNTAX_ERR`
+    pub const SYNTAX_ERR: u16 = 12;
+
+    /// `DOMException.INVALID_MODIFICATION_ERR`
+    pub const INVALID_MODIFICATION_ERR: u16 = 13;
+
+    /// `DOMException.NAMESPACE_ERR`
+    pub const NAMESPACE_ERR: u16 = 14;
+
+    /// `DOMException.INVALID_ACCESS_ERR`
+    pub const INVALID_ACCESS_ERR: u16 = 15;
+
+    /// `DOMException.VALIDATION_ERR`
+    pub const VALIDATION_ERR: u16 = 16;
+
+    /// `DOMException.TYPE_MISMATCH_ERR`
+    pub const TYPE_MISMATCH_ERR: u16 = 17;
+
+    /// `DOMException.SECURITY_ERR`
+    pub const SECURITY_ERR: u16 = 18;
+
+    /// `DOMException.NETWORK_ERR`
+    pub const NETWORK_ERR: u16 = 19;
+
+    /// `DOMException.ABORT_ERR`
+    pub const ABORT_ERR: u16 = 20;
+
+    /// `DOMException.URL_MISMATCH_ERR`
+    pub const URL_MISMATCH_ERR: u16 = 21;
+
+    /// `DOMException.QUOTA_EXCEEDED_ERR`
+    pub const QUOTA_EXCEEDED_ERR: u16 = 22;
+
+    /// `DOMException.TIMEOUT_ERR`
+    pub const TIMEOUT_ERR: u16 = 23;
+
+    /// `DOMException.INVALID_NODE_TYPE_ERR`
+    pub const INVALID_NODE_TYPE_ERR: u16 = 24;
+
+    /// `DOMException.DATA_CLONE_ERR`
+    pub const DATA_CLONE_ERR: u16 = 25;
 
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMException/name)
@@ -20884,6 +21900,10 @@ pub mod dynamics_compressor_node {
         #[link_name = "get ratio"]
         pub safe fn ratio(this: &DynamicsCompressorNode) -> &'static AudioParam;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DynamicsCompressorNode/reduction)
+        #[link_name = "get reduction"]
+        pub safe fn reduction(this: &DynamicsCompressorNode) -> f32;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/DynamicsCompressorNode/attack)
         #[link_name = "get attack"]
         pub safe fn attack(this: &DynamicsCompressorNode) -> &'static AudioParam;
@@ -21054,6 +22074,14 @@ pub mod element_internals {
         #[link_name = "set ariaColSpan"]
         pub safe fn set_aria_col_span(this: &ElementInternals, value: &str);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaControlsElements)
+        #[link_name = "get ariaControlsElements"]
+        pub safe fn aria_controls_elements(this: &ElementInternals) -> Option<&'static [&'static Element]>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaControlsElements)
+        #[link_name = "set ariaControlsElements"]
+        pub safe fn set_aria_controls_elements(this: &ElementInternals, value: &[&Element]);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaCurrent)
         #[link_name = "get ariaCurrent"]
         pub safe fn aria_current(this: &ElementInternals) -> Option<String>;
@@ -21061,6 +22089,14 @@ pub mod element_internals {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaCurrent)
         #[link_name = "set ariaCurrent"]
         pub safe fn set_aria_current(this: &ElementInternals, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaDescribedByElements)
+        #[link_name = "get ariaDescribedByElements"]
+        pub safe fn aria_described_by_elements(this: &ElementInternals) -> Option<&'static [&'static Element]>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaDescribedByElements)
+        #[link_name = "set ariaDescribedByElements"]
+        pub safe fn set_aria_described_by_elements(this: &ElementInternals, value: &[&Element]);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaDescription)
         #[link_name = "get ariaDescription"]
@@ -21070,6 +22106,14 @@ pub mod element_internals {
         #[link_name = "set ariaDescription"]
         pub safe fn set_aria_description(this: &ElementInternals, value: &str);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaDetailsElements)
+        #[link_name = "get ariaDetailsElements"]
+        pub safe fn aria_details_elements(this: &ElementInternals) -> Option<&'static [&'static Element]>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaDetailsElements)
+        #[link_name = "set ariaDetailsElements"]
+        pub safe fn set_aria_details_elements(this: &ElementInternals, value: &[&Element]);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaDisabled)
         #[link_name = "get ariaDisabled"]
         pub safe fn aria_disabled(this: &ElementInternals) -> Option<String>;
@@ -21078,6 +22122,14 @@ pub mod element_internals {
         #[link_name = "set ariaDisabled"]
         pub safe fn set_aria_disabled(this: &ElementInternals, value: &str);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaErrorMessageElements)
+        #[link_name = "get ariaErrorMessageElements"]
+        pub safe fn aria_error_message_elements(this: &ElementInternals) -> Option<&'static [&'static Element]>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaErrorMessageElements)
+        #[link_name = "set ariaErrorMessageElements"]
+        pub safe fn set_aria_error_message_elements(this: &ElementInternals, value: &[&Element]);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaExpanded)
         #[link_name = "get ariaExpanded"]
         pub safe fn aria_expanded(this: &ElementInternals) -> Option<String>;
@@ -21085,6 +22137,14 @@ pub mod element_internals {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaExpanded)
         #[link_name = "set ariaExpanded"]
         pub safe fn set_aria_expanded(this: &ElementInternals, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaFlowToElements)
+        #[link_name = "get ariaFlowToElements"]
+        pub safe fn aria_flow_to_elements(this: &ElementInternals) -> Option<&'static [&'static Element]>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaFlowToElements)
+        #[link_name = "set ariaFlowToElements"]
+        pub safe fn set_aria_flow_to_elements(this: &ElementInternals, value: &[&Element]);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaHasPopup)
         #[link_name = "get ariaHasPopup"]
@@ -21125,6 +22185,14 @@ pub mod element_internals {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaLabel)
         #[link_name = "set ariaLabel"]
         pub safe fn set_aria_label(this: &ElementInternals, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaLabelledByElements)
+        #[link_name = "get ariaLabelledByElements"]
+        pub safe fn aria_labelled_by_elements(this: &ElementInternals) -> Option<&'static [&'static Element]>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaLabelledByElements)
+        #[link_name = "set ariaLabelledByElements"]
+        pub safe fn set_aria_labelled_by_elements(this: &ElementInternals, value: &[&Element]);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaLevel)
         #[link_name = "get ariaLevel"]
@@ -21173,6 +22241,14 @@ pub mod element_internals {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaOrientation)
         #[link_name = "set ariaOrientation"]
         pub safe fn set_aria_orientation(this: &ElementInternals, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaOwnsElements)
+        #[link_name = "get ariaOwnsElements"]
+        pub safe fn aria_owns_elements(this: &ElementInternals) -> Option<&'static [&'static Element]>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaOwnsElements)
+        #[link_name = "set ariaOwnsElements"]
+        pub safe fn set_aria_owns_elements(this: &ElementInternals, value: &[&Element]);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaPlaceholder)
         #[link_name = "get ariaPlaceholder"]
@@ -21348,6 +22424,14 @@ pub mod encoded_audio_chunk {
         #[link_name = "get type"]
         pub safe fn type_(this: &EncodedAudioChunk) -> String;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/EncodedAudioChunk/timestamp)
+        #[link_name = "get timestamp"]
+        pub safe fn timestamp(this: &EncodedAudioChunk) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/EncodedAudioChunk/duration)
+        #[link_name = "get duration"]
+        pub safe fn duration(this: &EncodedAudioChunk) -> Option<f64>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/EncodedAudioChunk/byteLength)
         #[link_name = "get byteLength"]
         pub safe fn byte_length(this: &EncodedAudioChunk) -> u32;
@@ -21373,6 +22457,14 @@ pub mod encoded_video_chunk {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/EncodedVideoChunk/type)
         #[link_name = "get type"]
         pub safe fn type_(this: &EncodedVideoChunk) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/EncodedVideoChunk/timestamp)
+        #[link_name = "get timestamp"]
+        pub safe fn timestamp(this: &EncodedVideoChunk) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/EncodedVideoChunk/duration)
+        #[link_name = "get duration"]
+        pub safe fn duration(this: &EncodedVideoChunk) -> Option<f64>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/EncodedVideoChunk/byteLength)
         #[link_name = "get byteLength"]
@@ -21459,6 +22551,15 @@ impl Deref for EventSource {
 pub mod event_source {
     use super::*;
 
+    /// `EventSource.CONNECTING`
+    pub const CONNECTING: u16 = 0;
+
+    /// `EventSource.OPEN`
+    pub const OPEN: u16 = 1;
+
+    /// `EventSource.CLOSED`
+    pub const CLOSED: u16 = 2;
+
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/EventSource/EventSource)
         #[link_name = "new EventSource"]
@@ -21539,6 +22640,15 @@ impl Deref for FileReader {
 
 pub mod file_reader {
     use super::*;
+
+    /// `FileReader.EMPTY`
+    pub const EMPTY: u16 = 0;
+
+    /// `FileReader.LOADING`
+    pub const LOADING: u16 = 1;
+
+    /// `FileReader.DONE`
+    pub const DONE: u16 = 2;
 
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/FileReader)
@@ -21707,6 +22817,9 @@ pub mod file_system_directory_handle {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystemDirectoryHandle/removeEntry)
         #[link_name = "removeEntry"]
         pub safe fn remove_entry_with_options(this: &FileSystemDirectoryHandle, name: &str, options: FileSystemRemoveOptions) -> Promise<()>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystemDirectoryHandle/resolve)
+        pub safe fn resolve(this: &FileSystemDirectoryHandle, possible_descendant: &FileSystemHandle) -> Promise<Vec<String>>;
 
         /// Treats `this` as `FileSystemDirectoryHandle` without checking that it is one.
         #[link_name = "this"]
@@ -21878,6 +22991,12 @@ pub mod file_system_writable_file_stream {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystemWritableFileStream/seek)
+        pub safe fn seek(this: &FileSystemWritableFileStream, position: f64) -> Promise<()>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystemWritableFileStream/truncate)
+        pub safe fn truncate(this: &FileSystemWritableFileStream, size: f64) -> Promise<()>;
+
         /// Treats `this` as `FileSystemWritableFileStream` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &WritableStream) -> &'static FileSystemWritableFileStream;
@@ -22018,6 +23137,13 @@ pub mod font_face_set {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/load)
+        pub safe fn load(this: &FontFaceSet, font: &str) -> Promise<Vec<&'static FontFace>>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/load)
+        #[link_name = "load"]
+        pub safe fn load_with_text(this: &FontFaceSet, font: &str, text: &str) -> Promise<Vec<&'static FontFace>>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/check)
         pub safe fn check(this: &FontFaceSet, font: &str) -> bool;
 
@@ -22056,6 +23182,10 @@ pub mod font_face_set_load_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSetLoadEvent/fontfaces)
+        #[link_name = "get fontfaces"]
+        pub safe fn fontfaces(this: &FontFaceSetLoadEvent) -> &'static [&'static FontFace];
+
         /// Treats `this` as `FontFaceSetLoadEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static FontFaceSetLoadEvent;
@@ -22235,6 +23365,10 @@ pub mod gpu_buffer {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUBuffer/size)
+        #[link_name = "get size"]
+        pub safe fn size(this: &GPUBuffer) -> f64;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUBuffer/usage)
         #[link_name = "get usage"]
         pub safe fn usage(this: &GPUBuffer) -> u32;
@@ -22247,9 +23381,25 @@ pub mod gpu_buffer {
         #[link_name = "mapAsync"]
         pub safe fn map_async(this: &GPUBuffer, mode: u32) -> Promise<()>;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUBuffer/mapAsync)
+        #[link_name = "mapAsync"]
+        pub safe fn map_async_with_offset(this: &GPUBuffer, mode: u32, offset: f64) -> Promise<()>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUBuffer/mapAsync)
+        #[link_name = "mapAsync"]
+        pub safe fn map_async_with_offset_and_size(this: &GPUBuffer, mode: u32, offset: f64, size: f64) -> Promise<()>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUBuffer/getMappedRange)
         #[link_name = "getMappedRange"]
         pub safe fn get_mapped_range(this: &GPUBuffer) -> &'static ArrayBuffer;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUBuffer/getMappedRange)
+        #[link_name = "getMappedRange"]
+        pub safe fn get_mapped_range_with_offset(this: &GPUBuffer, offset: f64) -> &'static ArrayBuffer;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUBuffer/getMappedRange)
+        #[link_name = "getMappedRange"]
+        pub safe fn get_mapped_range_with_offset_and_size(this: &GPUBuffer, offset: f64, size: f64) -> &'static ArrayBuffer;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUBuffer/unmap)
         pub safe fn unmap(this: &GPUBuffer);
@@ -22329,9 +23479,33 @@ pub mod gpu_command_encoder {
         #[link_name = "copyBufferToBuffer"]
         pub safe fn copy_buffer_to_buffer(this: &GPUCommandEncoder, source: &GPUBuffer, destination: &GPUBuffer);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoder/copyBufferToBuffer)
+        #[link_name = "copyBufferToBuffer"]
+        pub safe fn copy_buffer_to_buffer_with_size(this: &GPUCommandEncoder, source: &GPUBuffer, destination: &GPUBuffer, size: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoder/copyBufferToBuffer)
+        #[link_name = "copyBufferToBuffer"]
+        pub safe fn copy_buffer_to_buffer_with_f64_and_destination_and_destination_offset(this: &GPUCommandEncoder, source: &GPUBuffer, source_offset: f64, destination: &GPUBuffer, destination_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoder/copyBufferToBuffer)
+        #[link_name = "copyBufferToBuffer"]
+        pub safe fn copy_buffer_to_buffer_with_f64_and_destination_and_destination_offset_and_size(this: &GPUCommandEncoder, source: &GPUBuffer, source_offset: f64, destination: &GPUBuffer, destination_offset: f64, size: f64);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoder/clearBuffer)
         #[link_name = "clearBuffer"]
         pub safe fn clear_buffer(this: &GPUCommandEncoder, buffer: &GPUBuffer);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoder/clearBuffer)
+        #[link_name = "clearBuffer"]
+        pub safe fn clear_buffer_with_offset(this: &GPUCommandEncoder, buffer: &GPUBuffer, offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoder/clearBuffer)
+        #[link_name = "clearBuffer"]
+        pub safe fn clear_buffer_with_offset_and_size(this: &GPUCommandEncoder, buffer: &GPUBuffer, offset: f64, size: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoder/resolveQuerySet)
+        #[link_name = "resolveQuerySet"]
+        pub safe fn resolve_query_set(this: &GPUCommandEncoder, query_set: &GPUQuerySet, first_query: u32, query_count: u32, destination: &GPUBuffer, destination_offset: f64);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoder/finish)
         pub safe fn finish(this: &GPUCommandEncoder) -> &'static GPUCommandBuffer;
@@ -22390,6 +23564,16 @@ pub mod gpu_command_encoder {
 #[cfg_attr(rust_js, rust_js::types = "GPUCompilationInfo")]
 pub struct GPUCompilationInfo(PhantomData<JsObject>);
 
+pub mod gpu_compilation_info {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCompilationInfo/messages)
+        #[link_name = "get messages"]
+        pub safe fn messages(this: &GPUCompilationInfo) -> &'static [&'static GPUCompilationMessage];
+    }
+}
+
 /// [`GPUCompilationMessage`](https://developer.mozilla.org/docs/Web/API/GPUCompilationMessage)
 #[cfg_attr(rust_js, rust_js::types = "GPUCompilationMessage")]
 pub struct GPUCompilationMessage(PhantomData<JsObject>);
@@ -22405,6 +23589,22 @@ pub mod gpu_compilation_message {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCompilationMessage/type)
         #[link_name = "get type"]
         pub safe fn type_(this: &GPUCompilationMessage) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCompilationMessage/lineNum)
+        #[link_name = "get lineNum"]
+        pub safe fn line_num(this: &GPUCompilationMessage) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCompilationMessage/linePos)
+        #[link_name = "get linePos"]
+        pub safe fn line_pos(this: &GPUCompilationMessage) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCompilationMessage/offset)
+        #[link_name = "get offset"]
+        pub safe fn offset(this: &GPUCompilationMessage) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCompilationMessage/length)
+        #[link_name = "get length"]
+        pub safe fn length(this: &GPUCompilationMessage) -> f64;
     }
 }
 
@@ -22431,6 +23631,10 @@ pub mod gpu_compute_pass_encoder {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUComputePassEncoder/dispatchWorkgroups)
         #[link_name = "dispatchWorkgroups"]
         pub safe fn dispatch_workgroups_with_workgroup_count_y_and_workgroup_count_z(this: &GPUComputePassEncoder, workgroup_count_x: u32, workgroup_count_y: u32, workgroup_count_z: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUComputePassEncoder/dispatchWorkgroupsIndirect)
+        #[link_name = "dispatchWorkgroupsIndirect"]
+        pub safe fn dispatch_workgroups_indirect(this: &GPUComputePassEncoder, indirect_buffer: &GPUBuffer, indirect_offset: f64);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUComputePassEncoder/end)
         pub safe fn end(this: &GPUComputePassEncoder);
@@ -22811,6 +24015,30 @@ pub mod gpu_queue {
         pub safe fn set_label(this: &GPUQueue, value: &str);
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUQueue/writeBuffer)
+    #[cfg_attr(rust_js, rust_js::link_name = "writeBuffer")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn write_buffer(this: &GPUQueue, buffer: &GPUBuffer, buffer_offset: f64, data: impl IntoAllowSharedBufferSource) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUQueue/writeBuffer)
+    #[cfg_attr(rust_js, rust_js::link_name = "writeBuffer")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn write_buffer_with_data_offset(this: &GPUQueue, buffer: &GPUBuffer, buffer_offset: f64, data: impl IntoAllowSharedBufferSource, data_offset: f64) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUQueue/writeBuffer)
+    #[cfg_attr(rust_js, rust_js::link_name = "writeBuffer")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn write_buffer_with_data_offset_and_size(this: &GPUQueue, buffer: &GPUBuffer, buffer_offset: f64, data: impl IntoAllowSharedBufferSource, data_offset: f64, size: f64) {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUQueue/writeTexture)
     #[cfg_attr(rust_js, rust_js::link_name = "writeTexture")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -22897,9 +24125,25 @@ pub mod gpu_render_bundle_encoder {
         #[link_name = "setIndexBuffer"]
         pub safe fn set_index_buffer(this: &GPURenderBundleEncoder, buffer: &GPUBuffer, index_format: &str);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/setIndexBuffer)
+        #[link_name = "setIndexBuffer"]
+        pub safe fn set_index_buffer_with_offset(this: &GPURenderBundleEncoder, buffer: &GPUBuffer, index_format: &str, offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/setIndexBuffer)
+        #[link_name = "setIndexBuffer"]
+        pub safe fn set_index_buffer_with_offset_and_size(this: &GPURenderBundleEncoder, buffer: &GPUBuffer, index_format: &str, offset: f64, size: f64);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/setVertexBuffer)
         #[link_name = "setVertexBuffer"]
         pub safe fn set_vertex_buffer(this: &GPURenderBundleEncoder, slot: u32, buffer: &GPUBuffer);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/setVertexBuffer)
+        #[link_name = "setVertexBuffer"]
+        pub safe fn set_vertex_buffer_with_offset(this: &GPURenderBundleEncoder, slot: u32, buffer: &GPUBuffer, offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/setVertexBuffer)
+        #[link_name = "setVertexBuffer"]
+        pub safe fn set_vertex_buffer_with_offset_and_size(this: &GPURenderBundleEncoder, slot: u32, buffer: &GPUBuffer, offset: f64, size: f64);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/draw)
         pub safe fn draw(this: &GPURenderBundleEncoder, vertex_count: u32);
@@ -22935,6 +24179,14 @@ pub mod gpu_render_bundle_encoder {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/drawIndexed)
         #[link_name = "drawIndexed"]
         pub safe fn draw_indexed_with_instance_count_and_first_index_and_base_vertex_and_first_instance(this: &GPURenderBundleEncoder, index_count: u32, instance_count: u32, first_index: u32, base_vertex: i32, first_instance: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/drawIndirect)
+        #[link_name = "drawIndirect"]
+        pub safe fn draw_indirect(this: &GPURenderBundleEncoder, indirect_buffer: &GPUBuffer, indirect_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/drawIndexedIndirect)
+        #[link_name = "drawIndexedIndirect"]
+        pub safe fn draw_indexed_indirect(this: &GPURenderBundleEncoder, indirect_buffer: &GPUBuffer, indirect_offset: f64);
     }
 }
 
@@ -22946,6 +24198,10 @@ pub mod gpu_render_pass_encoder {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/setViewport)
+        #[link_name = "setViewport"]
+        pub safe fn set_viewport(this: &GPURenderPassEncoder, x: f32, y: f32, width: f32, height: f32, min_depth: f32, max_depth: f32);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/setScissorRect)
         #[link_name = "setScissorRect"]
         pub safe fn set_scissor_rect(this: &GPURenderPassEncoder, x: u32, y: u32, width: u32, height: u32);
@@ -23005,9 +24261,25 @@ pub mod gpu_render_pass_encoder {
         #[link_name = "setIndexBuffer"]
         pub safe fn set_index_buffer(this: &GPURenderPassEncoder, buffer: &GPUBuffer, index_format: &str);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/setIndexBuffer)
+        #[link_name = "setIndexBuffer"]
+        pub safe fn set_index_buffer_with_offset(this: &GPURenderPassEncoder, buffer: &GPUBuffer, index_format: &str, offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/setIndexBuffer)
+        #[link_name = "setIndexBuffer"]
+        pub safe fn set_index_buffer_with_offset_and_size(this: &GPURenderPassEncoder, buffer: &GPUBuffer, index_format: &str, offset: f64, size: f64);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/setVertexBuffer)
         #[link_name = "setVertexBuffer"]
         pub safe fn set_vertex_buffer(this: &GPURenderPassEncoder, slot: u32, buffer: &GPUBuffer);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/setVertexBuffer)
+        #[link_name = "setVertexBuffer"]
+        pub safe fn set_vertex_buffer_with_offset(this: &GPURenderPassEncoder, slot: u32, buffer: &GPUBuffer, offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/setVertexBuffer)
+        #[link_name = "setVertexBuffer"]
+        pub safe fn set_vertex_buffer_with_offset_and_size(this: &GPURenderPassEncoder, slot: u32, buffer: &GPUBuffer, offset: f64, size: f64);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/draw)
         pub safe fn draw(this: &GPURenderPassEncoder, vertex_count: u32);
@@ -23043,6 +24315,14 @@ pub mod gpu_render_pass_encoder {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/drawIndexed)
         #[link_name = "drawIndexed"]
         pub safe fn draw_indexed_with_instance_count_and_first_index_and_base_vertex_and_first_instance(this: &GPURenderPassEncoder, index_count: u32, instance_count: u32, first_index: u32, base_vertex: i32, first_instance: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/drawIndirect)
+        #[link_name = "drawIndirect"]
+        pub safe fn draw_indirect(this: &GPURenderPassEncoder, indirect_buffer: &GPUBuffer, indirect_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/drawIndexedIndirect)
+        #[link_name = "drawIndexedIndirect"]
+        pub safe fn draw_indexed_indirect(this: &GPURenderPassEncoder, indirect_buffer: &GPUBuffer, indirect_offset: f64);
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/setBlendConstant)
@@ -23200,6 +24480,14 @@ pub mod gpu_supported_limits {
         #[link_name = "get maxUniformBuffersPerShaderStage"]
         pub safe fn max_uniform_buffers_per_shader_stage(this: &GPUSupportedLimits) -> u32;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxUniformBufferBindingSize)
+        #[link_name = "get maxUniformBufferBindingSize"]
+        pub safe fn max_uniform_buffer_binding_size(this: &GPUSupportedLimits) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxStorageBufferBindingSize)
+        #[link_name = "get maxStorageBufferBindingSize"]
+        pub safe fn max_storage_buffer_binding_size(this: &GPUSupportedLimits) -> f64;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/minUniformBufferOffsetAlignment)
         #[link_name = "get minUniformBufferOffsetAlignment"]
         pub safe fn min_uniform_buffer_offset_alignment(this: &GPUSupportedLimits) -> u32;
@@ -23211,6 +24499,10 @@ pub mod gpu_supported_limits {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxVertexBuffers)
         #[link_name = "get maxVertexBuffers"]
         pub safe fn max_vertex_buffers(this: &GPUSupportedLimits) -> u32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxBufferSize)
+        #[link_name = "get maxBufferSize"]
+        pub safe fn max_buffer_size(this: &GPUSupportedLimits) -> f64;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxVertexAttributes)
         #[link_name = "get maxVertexAttributes"]
@@ -23442,6 +24734,14 @@ pub mod gamepad {
         #[link_name = "get mapping"]
         pub safe fn mapping(this: &Gamepad) -> String;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Gamepad/axes)
+        #[link_name = "get axes"]
+        pub safe fn axes(this: &Gamepad) -> &'static [f64];
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Gamepad/buttons)
+        #[link_name = "get buttons"]
+        pub safe fn buttons(this: &Gamepad) -> &'static [&'static GamepadButton];
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Gamepad/vibrationActuator)
         #[link_name = "get vibrationActuator"]
         pub safe fn vibration_actuator(this: &Gamepad) -> &'static GamepadHapticActuator;
@@ -23610,6 +24910,10 @@ pub mod geolocation_position {
         #[link_name = "get coords"]
         pub safe fn coords(this: &GeolocationPosition) -> &'static GeolocationCoordinates;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GeolocationPosition/timestamp)
+        #[link_name = "get timestamp"]
+        pub safe fn timestamp(this: &GeolocationPosition) -> f64;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GeolocationPosition/toJSON)
         #[link_name = "toJSON"]
         pub safe fn to_json(this: &GeolocationPosition) -> &'static JsObject;
@@ -23622,6 +24926,15 @@ pub struct GeolocationPositionError(PhantomData<JsObject>);
 
 pub mod geolocation_position_error {
     use super::*;
+
+    /// `GeolocationPositionError.PERMISSION_DENIED`
+    pub const PERMISSION_DENIED: u16 = 1;
+
+    /// `GeolocationPositionError.POSITION_UNAVAILABLE`
+    pub const POSITION_UNAVAILABLE: u16 = 2;
+
+    /// `GeolocationPositionError.TIMEOUT`
+    pub const TIMEOUT: u16 = 3;
 
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GeolocationPositionError/code)
@@ -24205,6 +25518,20 @@ pub mod highlight {
 #[cfg_attr(rust_js, rust_js::types = "HighlightRegistry")]
 pub struct HighlightRegistry(PhantomData<JsObject>);
 
+pub mod highlight_registry {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HighlightRegistry/highlightsFromPoint)
+        #[link_name = "highlightsFromPoint"]
+        pub safe fn highlights_from_point(this: &HighlightRegistry, x: f32, y: f32) -> Vec<HighlightHitResult>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HighlightRegistry/highlightsFromPoint)
+        #[link_name = "highlightsFromPoint"]
+        pub safe fn highlights_from_point_with_options(this: &HighlightRegistry, x: f32, y: f32, options: HighlightsFromPointOptions<'_>) -> Vec<HighlightHitResult>;
+    }
+}
+
 /// [`IDBCursor`](https://developer.mozilla.org/docs/Web/API/IDBCursor)
 #[cfg_attr(rust_js, rust_js::types = "IDBCursor")]
 pub struct IDBCursor(PhantomData<JsObject>);
@@ -24313,6 +25640,10 @@ pub mod idb_database {
         #[link_name = "get name"]
         pub safe fn name(this: &IDBDatabase) -> String;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBDatabase/version)
+        #[link_name = "get version"]
+        pub safe fn version(this: &IDBDatabase) -> f64;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBDatabase/objectStoreNames)
         #[link_name = "get objectStoreNames"]
         pub safe fn object_store_names(this: &IDBDatabase) -> &'static DOMStringList;
@@ -24373,9 +25704,16 @@ pub mod idb_factory {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBFactory/open)
         pub safe fn open(this: &IDBFactory, name: &str) -> &'static IDBOpenDBRequest;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBFactory/open)
+        #[link_name = "open"]
+        pub safe fn open_with_version(this: &IDBFactory, name: &str, version: f64) -> &'static IDBOpenDBRequest;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBFactory/deleteDatabase)
         #[link_name = "deleteDatabase"]
         pub safe fn delete_database(this: &IDBFactory, name: &str) -> &'static IDBOpenDBRequest;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBFactory/databases)
+        pub safe fn databases(this: &IDBFactory) -> Promise<Vec<IDBDatabaseInfo>>;
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBFactory/cmp)
@@ -24965,6 +26303,14 @@ pub mod idb_version_change_event {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBVersionChangeEvent/oldVersion)
+        #[link_name = "get oldVersion"]
+        pub safe fn old_version(this: &IDBVersionChangeEvent) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBVersionChangeEvent/newVersion)
+        #[link_name = "get newVersion"]
+        pub safe fn new_version(this: &IDBVersionChangeEvent) -> Option<f64>;
+
         /// Treats `this` as `IDBVersionChangeEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static IDBVersionChangeEvent;
@@ -25062,6 +26408,10 @@ pub mod image_capture {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageCapture/takePhoto)
         #[link_name = "takePhoto"]
         pub safe fn take_photo_with_photo_settings(this: &ImageCapture, photo_settings: PhotoSettings<'_>) -> Promise<&'static Blob>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageCapture/getPhotoCapabilities)
+        #[link_name = "getPhotoCapabilities"]
+        pub safe fn get_photo_capabilities(this: &ImageCapture) -> Promise<PhotoCapabilities>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageCapture/grabFrame)
         #[link_name = "grabFrame"]
@@ -25166,6 +26516,10 @@ pub mod image_track {
         #[link_name = "get frameCount"]
         pub safe fn frame_count(this: &ImageTrack) -> u32;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageTrack/repetitionCount)
+        #[link_name = "get repetitionCount"]
+        pub safe fn repetition_count(this: &ImageTrack) -> f32;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageTrack/selected)
         #[link_name = "get selected"]
         pub safe fn selected(this: &ImageTrack) -> bool;
@@ -25219,6 +26573,10 @@ pub mod input_device_info {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/InputDeviceInfo/getCapabilities)
+        #[link_name = "getCapabilities"]
+        pub safe fn get_capabilities(this: &InputDeviceInfo) -> MediaTrackCapabilities;
+
         /// Treats `this` as `InputDeviceInfo` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &MediaDeviceInfo) -> &'static InputDeviceInfo;
@@ -25273,6 +26631,10 @@ pub mod keyframe_effect {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyframeEffect/composite)
         #[link_name = "set composite"]
         pub safe fn set_composite(this: &KeyframeEffect, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyframeEffect/getKeyframes)
+        #[link_name = "getKeyframes"]
+        pub safe fn get_keyframes(this: &KeyframeEffect) -> Vec<&'static JsObject>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyframeEffect/setKeyframes)
         #[link_name = "setKeyframes"]
@@ -25371,6 +26733,9 @@ pub mod lock_manager {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/LockManager/request)
         #[link_name = "request"]
         pub safe fn request_with_lock_options_and_callback(this: &LockManager, name: &str, options: LockOptions<'_>, callback: Box<dyn FnMut(Option<&Lock>) -> Promise<Option<&'static Unknown>>>) -> Promise<Option<&'static Unknown>>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/LockManager/query)
+        pub safe fn query(this: &LockManager) -> Promise<LockManagerSnapshot>;
     }
 }
 
@@ -25654,6 +27019,20 @@ pub mod math_ml_element {
 #[cfg_attr(rust_js, rust_js::types = "MediaCapabilities")]
 pub struct MediaCapabilities(PhantomData<JsObject>);
 
+pub mod media_capabilities {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaCapabilities/decodingInfo)
+        #[link_name = "decodingInfo"]
+        pub safe fn decoding_info(this: &MediaCapabilities, configuration: MediaDecodingConfiguration<'_>) -> Promise<MediaCapabilitiesDecodingInfo>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaCapabilities/encodingInfo)
+        #[link_name = "encodingInfo"]
+        pub safe fn encoding_info(this: &MediaCapabilities, configuration: MediaEncodingConfiguration<'_>) -> Promise<MediaCapabilitiesEncodingInfo>;
+    }
+}
+
 /// [`MediaDeviceInfo`](https://developer.mozilla.org/docs/Web/API/MediaDeviceInfo)
 #[cfg_attr(rust_js, rust_js::types = "MediaDeviceInfo")]
 pub struct MediaDeviceInfo(PhantomData<JsObject>);
@@ -25708,6 +27087,14 @@ pub mod media_devices {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaDevices/getDisplayMedia)
         #[link_name = "getDisplayMedia"]
         pub safe fn get_display_media_with_options(this: &MediaDevices, options: DisplayMediaStreamOptions<'_>) -> Promise<&'static MediaStream>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaDevices/enumerateDevices)
+        #[link_name = "enumerateDevices"]
+        pub safe fn enumerate_devices(this: &MediaDevices) -> Promise<Vec<&'static MediaDeviceInfo>>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaDevices/getSupportedConstraints)
+        #[link_name = "getSupportedConstraints"]
+        pub safe fn get_supported_constraints(this: &MediaDevices) -> MediaTrackSupportedConstraints;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaDevices/getUserMedia)
         #[link_name = "getUserMedia"]
@@ -25787,6 +27174,18 @@ pub struct MediaError(PhantomData<JsObject>);
 
 pub mod media_error {
     use super::*;
+
+    /// `MediaError.MEDIA_ERR_ABORTED`
+    pub const MEDIA_ERR_ABORTED: u16 = 1;
+
+    /// `MediaError.MEDIA_ERR_NETWORK`
+    pub const MEDIA_ERR_NETWORK: u16 = 2;
+
+    /// `MediaError.MEDIA_ERR_DECODE`
+    pub const MEDIA_ERR_DECODE: u16 = 3;
+
+    /// `MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED`
+    pub const MEDIA_ERR_SRC_NOT_SUPPORTED: u16 = 4;
 
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaError/code)
@@ -26032,6 +27431,14 @@ pub mod media_metadata {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaMetadata/album)
         #[link_name = "set album"]
         pub safe fn set_album(this: &MediaMetadata, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaMetadata/artwork)
+        #[link_name = "get artwork"]
+        pub safe fn artwork(this: &MediaMetadata) -> &'static [&'static JsObject];
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaMetadata/artwork)
+        #[link_name = "set artwork"]
+        pub safe fn set_artwork(this: &MediaMetadata, value: &[&dyn core::any::Any]);
     }
 }
 
@@ -26244,6 +27651,18 @@ pub mod media_stream {
         #[link_name = "get id"]
         pub safe fn id(this: &MediaStream) -> String;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStream/getAudioTracks)
+        #[link_name = "getAudioTracks"]
+        pub safe fn get_audio_tracks(this: &MediaStream) -> Vec<&'static MediaStreamTrack>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStream/getVideoTracks)
+        #[link_name = "getVideoTracks"]
+        pub safe fn get_video_tracks(this: &MediaStream) -> Vec<&'static MediaStreamTrack>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStream/getTracks)
+        #[link_name = "getTracks"]
+        pub safe fn get_tracks(this: &MediaStream) -> Vec<&'static MediaStreamTrack>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStream/getTrackById)
         #[link_name = "getTrackById"]
         pub safe fn get_track_by_id(this: &MediaStream, track_id: &str) -> Option<&'static MediaStreamTrack>;
@@ -26381,6 +27800,14 @@ pub mod media_stream_track {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack/stop)
         pub safe fn stop(this: &MediaStreamTrack);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack/getCapabilities)
+        #[link_name = "getCapabilities"]
+        pub safe fn get_capabilities(this: &MediaStreamTrack) -> MediaTrackCapabilities;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack/getSettings)
+        #[link_name = "getSettings"]
+        pub safe fn get_settings(this: &MediaStreamTrack) -> MediaTrackSettings;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack/applyConstraints)
         #[link_name = "applyConstraints"]
@@ -26550,6 +27977,10 @@ pub mod mutation_observer {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MutationObserver/disconnect)
         pub safe fn disconnect(this: &MutationObserver);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MutationObserver/takeRecords)
+        #[link_name = "takeRecords"]
+        pub safe fn take_records(this: &MutationObserver) -> Vec<&'static MutationRecord>;
     }
 }
 
@@ -26738,6 +28169,9 @@ pub mod navigation {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/entries)
+        pub safe fn entries(this: &Navigation) -> Vec<&'static NavigationHistoryEntry>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/currentEntry)
         #[link_name = "get currentEntry"]
         pub safe fn current_entry(this: &Navigation) -> Option<&'static NavigationHistoryEntry>;
@@ -26757,6 +28191,26 @@ pub mod navigation {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/canGoForward)
         #[link_name = "get canGoForward"]
         pub safe fn can_go_forward(this: &Navigation) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/navigate)
+        pub safe fn navigate(this: &Navigation, url: &str) -> NavigationResult;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/navigate)
+        #[link_name = "navigate"]
+        pub safe fn navigate_with_options(this: &Navigation, url: &str, options: NavigationNavigateOptions<'_>) -> NavigationResult;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/reload)
+        pub safe fn reload(this: &Navigation) -> NavigationResult;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/traverseTo)
+        #[link_name = "traverseTo"]
+        pub safe fn traverse_to(this: &Navigation, key: &str) -> NavigationResult;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/back)
+        pub safe fn back(this: &Navigation) -> NavigationResult;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/forward)
+        pub safe fn forward(this: &Navigation) -> NavigationResult;
 
         /// Treats `this` as `Navigation` without checking that it is one.
         #[link_name = "this"]
@@ -26841,6 +28295,10 @@ pub mod navigation_destination {
         #[link_name = "get id"]
         pub safe fn id(this: &NavigationDestination) -> String;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationDestination/index)
+        #[link_name = "get index"]
+        pub safe fn index(this: &NavigationDestination) -> f64;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationDestination/sameDocument)
         #[link_name = "get sameDocument"]
         pub safe fn same_document(this: &NavigationDestination) -> bool;
@@ -26879,6 +28337,10 @@ pub mod navigation_history_entry {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationHistoryEntry/id)
         #[link_name = "get id"]
         pub safe fn id(this: &NavigationHistoryEntry) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationHistoryEntry/index)
+        #[link_name = "get index"]
+        pub safe fn index(this: &NavigationHistoryEntry) -> f64;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationHistoryEntry/sameDocument)
         #[link_name = "get sameDocument"]
@@ -26932,6 +28394,10 @@ pub mod navigation_preload_manager {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationPreloadManager/setHeaderValue)
         #[link_name = "setHeaderValue"]
         pub safe fn set_header_value(this: &NavigationPreloadManager, value: &str) -> Promise<()>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationPreloadManager/getState)
+        #[link_name = "getState"]
+        pub safe fn get_state(this: &NavigationPreloadManager) -> Promise<NavigationPreloadState>;
     }
 }
 
@@ -27171,6 +28637,26 @@ pub mod offscreen_canvas {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvas/OffscreenCanvas)
+        #[link_name = "new OffscreenCanvas"]
+        pub safe fn new(width: f64, height: f64) -> &'static OffscreenCanvas;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvas/width)
+        #[link_name = "get width"]
+        pub safe fn width(this: &OffscreenCanvas) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvas/width)
+        #[link_name = "set width"]
+        pub safe fn set_width(this: &OffscreenCanvas, value: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvas/height)
+        #[link_name = "get height"]
+        pub safe fn height(this: &OffscreenCanvas) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvas/height)
+        #[link_name = "set height"]
+        pub safe fn set_height(this: &OffscreenCanvas, value: f64);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvas/transferToImageBitmap)
         #[link_name = "transferToImageBitmap"]
         pub safe fn transfer_to_image_bitmap(this: &OffscreenCanvas) -> &'static ImageBitmap;
@@ -27200,6 +28686,10 @@ pub mod offscreen_canvas_rendering_context2_d {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/canvas)
         #[link_name = "get canvas"]
         pub safe fn canvas(this: &OffscreenCanvasRenderingContext2D) -> &'static OffscreenCanvas;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/getContextAttributes)
+        #[link_name = "getContextAttributes"]
+        pub safe fn get_context_attributes(this: &OffscreenCanvasRenderingContext2D) -> CanvasRenderingContext2DSettings;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/save)
         pub safe fn save(this: &OffscreenCanvasRenderingContext2D);
@@ -27486,6 +28976,10 @@ pub mod offscreen_canvas_rendering_context2_d {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/setLineDash)
         #[link_name = "setLineDash"]
         pub safe fn set_line_dash(this: &OffscreenCanvasRenderingContext2D, segments: &[f64]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/getLineDash)
+        #[link_name = "getLineDash"]
+        pub safe fn get_line_dash(this: &OffscreenCanvasRenderingContext2D) -> Vec<f64>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/lineDashOffset)
         #[link_name = "get lineDashOffset"]
@@ -28004,6 +29498,14 @@ pub mod panner_node {
         #[link_name = "set coneOuterGain"]
         pub safe fn set_cone_outer_gain(this: &PannerNode, value: f64);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PannerNode/setPosition)
+        #[link_name = "setPosition"]
+        pub safe fn set_position(this: &PannerNode, x: f32, y: f32, z: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PannerNode/setOrientation)
+        #[link_name = "setOrientation"]
+        pub safe fn set_orientation(this: &PannerNode, x: f32, y: f32, z: f32);
+
         /// Treats `this` as `PannerNode` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static PannerNode;
@@ -28324,6 +29826,10 @@ pub mod performance_event_timing {
         #[link_name = "get target"]
         pub safe fn target(this: &PerformanceEventTiming) -> Option<&'static Node>;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceEventTiming/interactionId)
+        #[link_name = "get interactionId"]
+        pub safe fn interaction_id(this: &PerformanceEventTiming) -> f64;
+
         /// Treats `this` as `PerformanceEventTiming` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &PerformanceEntry) -> &'static PerformanceEventTiming;
@@ -28390,6 +29896,18 @@ pub struct PerformanceNavigation(PhantomData<JsObject>);
 
 pub mod performance_navigation {
     use super::*;
+
+    /// `PerformanceNavigation.TYPE_NAVIGATE`
+    pub const TYPE_NAVIGATE: u16 = 0;
+
+    /// `PerformanceNavigation.TYPE_RELOAD`
+    pub const TYPE_RELOAD: u16 = 1;
+
+    /// `PerformanceNavigation.TYPE_BACK_FORWARD`
+    pub const TYPE_BACK_FORWARD: u16 = 2;
+
+    /// `PerformanceNavigation.TYPE_RESERVED`
+    pub const TYPE_RESERVED: u16 = 255;
 
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceNavigation/type)
@@ -28486,12 +30004,38 @@ pub mod performance_observer {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceObserver/disconnect)
         pub safe fn disconnect(this: &PerformanceObserver);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceObserver/takeRecords)
+        #[link_name = "takeRecords"]
+        pub safe fn take_records(this: &PerformanceObserver) -> Vec<&'static PerformanceEntry>;
     }
 }
 
 /// [`PerformanceObserverEntryList`](https://developer.mozilla.org/docs/Web/API/PerformanceObserverEntryList)
 #[cfg_attr(rust_js, rust_js::types = "PerformanceObserverEntryList")]
 pub struct PerformanceObserverEntryList(PhantomData<JsObject>);
+
+pub mod performance_observer_entry_list {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceObserverEntryList/getEntries)
+        #[link_name = "getEntries"]
+        pub safe fn get_entries(this: &PerformanceObserverEntryList) -> Vec<&'static PerformanceEntry>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceObserverEntryList/getEntriesByType)
+        #[link_name = "getEntriesByType"]
+        pub safe fn get_entries_by_type(this: &PerformanceObserverEntryList, type_: &str) -> Vec<&'static PerformanceEntry>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceObserverEntryList/getEntriesByName)
+        #[link_name = "getEntriesByName"]
+        pub safe fn get_entries_by_name(this: &PerformanceObserverEntryList, name: &str) -> Vec<&'static PerformanceEntry>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceObserverEntryList/getEntriesByName)
+        #[link_name = "getEntriesByName"]
+        pub safe fn get_entries_by_name_with_type(this: &PerformanceObserverEntryList, name: &str, type_: &str) -> Vec<&'static PerformanceEntry>;
+    }
+}
 
 /// [`PerformancePaintTiming`](https://developer.mozilla.org/docs/Web/API/PerformancePaintTiming)
 #[cfg_attr(rust_js, rust_js::types = "PerformancePaintTiming")]
@@ -28541,6 +30085,10 @@ pub mod performance_resource_timing {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceResourceTiming/serverTiming)
+        #[link_name = "get serverTiming"]
+        pub safe fn server_timing(this: &PerformanceResourceTiming) -> &'static [&'static PerformanceServerTiming];
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceResourceTiming/initiatorType)
         #[link_name = "get initiatorType"]
         pub safe fn initiator_type(this: &PerformanceResourceTiming) -> String;
@@ -28609,6 +30157,18 @@ pub mod performance_resource_timing {
         #[link_name = "get responseEnd"]
         pub safe fn response_end(this: &PerformanceResourceTiming) -> f64;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceResourceTiming/transferSize)
+        #[link_name = "get transferSize"]
+        pub safe fn transfer_size(this: &PerformanceResourceTiming) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceResourceTiming/encodedBodySize)
+        #[link_name = "get encodedBodySize"]
+        pub safe fn encoded_body_size(this: &PerformanceResourceTiming) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceResourceTiming/decodedBodySize)
+        #[link_name = "get decodedBodySize"]
+        pub safe fn decoded_body_size(this: &PerformanceResourceTiming) -> f64;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceResourceTiming/responseStatus)
         #[link_name = "get responseStatus"]
         pub safe fn response_status(this: &PerformanceResourceTiming) -> u16;
@@ -28657,6 +30217,90 @@ pub mod performance_timing {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/navigationStart)
+        #[link_name = "get navigationStart"]
+        pub safe fn navigation_start(this: &PerformanceTiming) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/unloadEventStart)
+        #[link_name = "get unloadEventStart"]
+        pub safe fn unload_event_start(this: &PerformanceTiming) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/unloadEventEnd)
+        #[link_name = "get unloadEventEnd"]
+        pub safe fn unload_event_end(this: &PerformanceTiming) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/redirectStart)
+        #[link_name = "get redirectStart"]
+        pub safe fn redirect_start(this: &PerformanceTiming) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/redirectEnd)
+        #[link_name = "get redirectEnd"]
+        pub safe fn redirect_end(this: &PerformanceTiming) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/fetchStart)
+        #[link_name = "get fetchStart"]
+        pub safe fn fetch_start(this: &PerformanceTiming) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/domainLookupStart)
+        #[link_name = "get domainLookupStart"]
+        pub safe fn domain_lookup_start(this: &PerformanceTiming) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/domainLookupEnd)
+        #[link_name = "get domainLookupEnd"]
+        pub safe fn domain_lookup_end(this: &PerformanceTiming) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/connectStart)
+        #[link_name = "get connectStart"]
+        pub safe fn connect_start(this: &PerformanceTiming) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/connectEnd)
+        #[link_name = "get connectEnd"]
+        pub safe fn connect_end(this: &PerformanceTiming) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/secureConnectionStart)
+        #[link_name = "get secureConnectionStart"]
+        pub safe fn secure_connection_start(this: &PerformanceTiming) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/requestStart)
+        #[link_name = "get requestStart"]
+        pub safe fn request_start(this: &PerformanceTiming) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/responseStart)
+        #[link_name = "get responseStart"]
+        pub safe fn response_start(this: &PerformanceTiming) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/responseEnd)
+        #[link_name = "get responseEnd"]
+        pub safe fn response_end(this: &PerformanceTiming) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/domLoading)
+        #[link_name = "get domLoading"]
+        pub safe fn dom_loading(this: &PerformanceTiming) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/domInteractive)
+        #[link_name = "get domInteractive"]
+        pub safe fn dom_interactive(this: &PerformanceTiming) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/domContentLoadedEventStart)
+        #[link_name = "get domContentLoadedEventStart"]
+        pub safe fn dom_content_loaded_event_start(this: &PerformanceTiming) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/domContentLoadedEventEnd)
+        #[link_name = "get domContentLoadedEventEnd"]
+        pub safe fn dom_content_loaded_event_end(this: &PerformanceTiming) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/domComplete)
+        #[link_name = "get domComplete"]
+        pub safe fn dom_complete(this: &PerformanceTiming) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/loadEventStart)
+        #[link_name = "get loadEventStart"]
+        pub safe fn load_event_start(this: &PerformanceTiming) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/loadEventEnd)
+        #[link_name = "get loadEventEnd"]
+        pub safe fn load_event_end(this: &PerformanceTiming) -> f64;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/toJSON)
         #[link_name = "toJSON"]
         pub safe fn to_json(this: &PerformanceTiming) -> &'static JsObject;
@@ -28898,6 +30542,10 @@ pub mod processing_instruction {
         #[link_name = "hasAttributes"]
         pub safe fn has_attributes(this: &ProcessingInstruction) -> bool;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ProcessingInstruction/getAttributeNames)
+        #[link_name = "getAttributeNames"]
+        pub safe fn get_attribute_names(this: &ProcessingInstruction) -> Vec<String>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ProcessingInstruction/getAttribute)
         #[link_name = "getAttribute"]
         pub safe fn get_attribute(this: &ProcessingInstruction, name: &str) -> Option<String>;
@@ -29055,6 +30703,14 @@ pub mod public_key_credential {
         #[link_name = "PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable"]
         pub safe fn is_user_verifying_platform_authenticator_available() -> Promise<bool>;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PublicKeyCredential/parseCreationOptionsFromJSON)
+        #[link_name = "PublicKeyCredential.parseCreationOptionsFromJSON"]
+        pub safe fn parse_creation_options_from_json(options: PublicKeyCredentialCreationOptionsJSON<'_>) -> PublicKeyCredentialCreationOptions;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PublicKeyCredential/parseRequestOptionsFromJSON)
+        #[link_name = "PublicKeyCredential.parseRequestOptionsFromJSON"]
+        pub safe fn parse_request_options_from_json(options: PublicKeyCredentialRequestOptionsJSON<'_>) -> PublicKeyCredentialRequestOptions;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/PublicKeyCredential/signalUnknownCredential)
         #[link_name = "PublicKeyCredential.signalUnknownCredential"]
         pub safe fn signal_unknown_credential(options: UnknownCredentialOptions<'_>) -> Promise<()>;
@@ -29114,6 +30770,10 @@ pub mod push_subscription {
         #[link_name = "get endpoint"]
         pub safe fn endpoint(this: &PushSubscription) -> String;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PushSubscription/expirationTime)
+        #[link_name = "get expirationTime"]
+        pub safe fn expiration_time(this: &PushSubscription) -> Option<f64>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/PushSubscription/options)
         #[link_name = "get options"]
         pub safe fn options(this: &PushSubscription) -> &'static PushSubscriptionOptions;
@@ -29124,6 +30784,10 @@ pub mod push_subscription {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/PushSubscription/unsubscribe)
         pub safe fn unsubscribe(this: &PushSubscription) -> Promise<bool>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PushSubscription/toJSON)
+        #[link_name = "toJSON"]
+        pub safe fn to_json(this: &PushSubscription) -> PushSubscriptionJSON;
     }
 }
 
@@ -29148,6 +30812,20 @@ pub mod push_subscription_options {
 /// [`RTCCertificate`](https://developer.mozilla.org/docs/Web/API/RTCCertificate)
 #[cfg_attr(rust_js, rust_js::types = "RTCCertificate")]
 pub struct RTCCertificate(PhantomData<JsObject>);
+
+pub mod rtc_certificate {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCCertificate/expires)
+        #[link_name = "get expires"]
+        pub safe fn expires(this: &RTCCertificate) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCCertificate/getFingerprints)
+        #[link_name = "getFingerprints"]
+        pub safe fn get_fingerprints(this: &RTCCertificate) -> Vec<RTCDtlsFingerprint>;
+    }
+}
 
 /// [`RTCDTMFSender`](https://developer.mozilla.org/docs/Web/API/RTCDTMFSender)
 #[cfg_attr(rust_js, rust_js::types = "RTCDTMFSender")]
@@ -29364,6 +31042,10 @@ pub mod rtc_dtls_transport {
         #[link_name = "get state"]
         pub safe fn state(this: &RTCDtlsTransport) -> String;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDtlsTransport/getRemoteCertificates)
+        #[link_name = "getRemoteCertificates"]
+        pub safe fn get_remote_certificates(this: &RTCDtlsTransport) -> Vec<&'static ArrayBuffer>;
+
         /// Treats `this` as `RTCDtlsTransport` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static RTCDtlsTransport;
@@ -29385,6 +31067,10 @@ pub mod rtc_encoded_audio_frame {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCEncodedAudioFrame/data)
         #[link_name = "set data"]
         pub safe fn set_data(this: &RTCEncodedAudioFrame, value: &ArrayBuffer);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCEncodedAudioFrame/getMetadata)
+        #[link_name = "getMetadata"]
+        pub safe fn get_metadata(this: &RTCEncodedAudioFrame) -> RTCEncodedAudioFrameMetadata;
     }
 }
 
@@ -29407,6 +31093,10 @@ pub mod rtc_encoded_video_frame {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCEncodedVideoFrame/data)
         #[link_name = "set data"]
         pub safe fn set_data(this: &RTCEncodedVideoFrame, value: &ArrayBuffer);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCEncodedVideoFrame/getMetadata)
+        #[link_name = "getMetadata"]
+        pub safe fn get_metadata(this: &RTCEncodedVideoFrame) -> RTCEncodedVideoFrameMetadata;
     }
 }
 
@@ -29705,6 +31395,18 @@ pub mod rtc_peer_connection {
         #[link_name = "RTCPeerConnection.generateCertificate"]
         pub safe fn generate_certificate(keygen_algorithm: &dyn core::any::Any) -> Promise<&'static RTCCertificate>;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/getSenders)
+        #[link_name = "getSenders"]
+        pub safe fn get_senders(this: &RTCPeerConnection) -> Vec<&'static RTCRtpSender>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/getReceivers)
+        #[link_name = "getReceivers"]
+        pub safe fn get_receivers(this: &RTCPeerConnection) -> Vec<&'static RTCRtpReceiver>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/getTransceivers)
+        #[link_name = "getTransceivers"]
+        pub safe fn get_transceivers(this: &RTCPeerConnection) -> Vec<&'static RTCRtpTransceiver>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/addTrack)
         #[link_name = "addTrack"]
         pub safe fn add_track(this: &RTCPeerConnection, track: &MediaStreamTrack, streams: &MediaStream) -> &'static RTCRtpSender;
@@ -29841,9 +31543,21 @@ pub mod rtc_rtp_receiver {
         #[link_name = "get transport"]
         pub safe fn transport(this: &RTCRtpReceiver) -> Option<&'static RTCDtlsTransport>;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpReceiver/getCapabilities)
+        #[link_name = "RTCRtpReceiver.getCapabilities"]
+        pub safe fn get_capabilities(kind: &str) -> Option<RTCRtpCapabilities>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpReceiver/getParameters)
         #[link_name = "getParameters"]
         pub safe fn get_parameters(this: &RTCRtpReceiver) -> RTCRtpReceiveParameters;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpReceiver/getContributingSources)
+        #[link_name = "getContributingSources"]
+        pub safe fn get_contributing_sources(this: &RTCRtpReceiver) -> Vec<RTCRtpContributingSource>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpReceiver/getSynchronizationSources)
+        #[link_name = "getSynchronizationSources"]
+        pub safe fn get_synchronization_sources(this: &RTCRtpReceiver) -> Vec<RTCRtpSynchronizationSource>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpReceiver/getStats)
         #[link_name = "getStats"]
@@ -29882,6 +31596,10 @@ pub mod rtc_rtp_sender {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpSender/transport)
         #[link_name = "get transport"]
         pub safe fn transport(this: &RTCRtpSender) -> Option<&'static RTCDtlsTransport>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpSender/getCapabilities)
+        #[link_name = "RTCRtpSender.getCapabilities"]
+        pub safe fn get_capabilities(kind: &str) -> Option<RTCRtpCapabilities>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpSender/setParameters)
         #[link_name = "setParameters"]
@@ -30036,6 +31754,10 @@ pub mod rtc_track_event {
         #[link_name = "get track"]
         pub safe fn track(this: &RTCTrackEvent) -> &'static MediaStreamTrack;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCTrackEvent/streams)
+        #[link_name = "get streams"]
+        pub safe fn streams(this: &RTCTrackEvent) -> &'static [&'static MediaStream];
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCTrackEvent/transceiver)
         #[link_name = "get transceiver"]
         pub safe fn transceiver(this: &RTCTrackEvent) -> &'static RTCRtpTransceiver;
@@ -30092,6 +31814,18 @@ impl Deref for Range {
 
 pub mod range {
     use super::*;
+
+    /// `Range.START_TO_START`
+    pub const START_TO_START: u16 = 0;
+
+    /// `Range.START_TO_END`
+    pub const START_TO_END: u16 = 1;
+
+    /// `Range.END_TO_END`
+    pub const END_TO_END: u16 = 2;
+
+    /// `Range.END_TO_START`
+    pub const END_TO_START: u16 = 3;
 
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/Range)
@@ -30249,6 +31983,13 @@ pub mod readable_stream_byob_reader {
         #[link_name = "new ReadableStreamBYOBReader"]
         pub safe fn new(stream: &ReadableStream) -> &'static ReadableStreamBYOBReader;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamBYOBReader/read)
+        pub safe fn read(this: &ReadableStreamBYOBReader, view: &Uint8Array) -> Promise<ReadableStreamReadResult>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamBYOBReader/read)
+        #[link_name = "read"]
+        pub safe fn read_with_options(this: &ReadableStreamBYOBReader, view: &Uint8Array, options: ReadableStreamBYOBReaderReadOptions) -> Promise<ReadableStreamReadResult>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamBYOBReader/releaseLock)
         #[link_name = "releaseLock"]
         pub safe fn release_lock(this: &ReadableStreamBYOBReader);
@@ -30281,6 +32022,9 @@ pub mod readable_stream_byob_request {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamBYOBRequest/view)
         #[link_name = "get view"]
         pub safe fn view(this: &ReadableStreamBYOBRequest) -> Option<&'static Uint8Array>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamBYOBRequest/respond)
+        pub safe fn respond(this: &ReadableStreamBYOBRequest, bytes_written: f64);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamBYOBRequest/respondWithNewView)
         #[link_name = "respondWithNewView"]
@@ -30338,6 +32082,9 @@ pub mod readable_stream_default_reader {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamDefaultReader/ReadableStreamDefaultReader)
         #[link_name = "new ReadableStreamDefaultReader"]
         pub safe fn new(stream: &ReadableStream) -> &'static ReadableStreamDefaultReader;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamDefaultReader/read)
+        pub safe fn read(this: &ReadableStreamDefaultReader) -> Promise<ReadableStreamReadResult>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamDefaultReader/releaseLock)
         #[link_name = "releaseLock"]
@@ -30415,6 +32162,10 @@ pub mod reporting_observer {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ReportingObserver/disconnect)
         pub safe fn disconnect(this: &ReportingObserver);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ReportingObserver/takeRecords)
+        #[link_name = "takeRecords"]
+        pub safe fn take_records(this: &ReportingObserver) -> Vec<Report>;
     }
 }
 
@@ -30456,6 +32207,18 @@ pub mod resize_observer_entry {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ResizeObserverEntry/contentRect)
         #[link_name = "get contentRect"]
         pub safe fn content_rect(this: &ResizeObserverEntry) -> &'static DOMRectReadOnly;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ResizeObserverEntry/borderBoxSize)
+        #[link_name = "get borderBoxSize"]
+        pub safe fn border_box_size(this: &ResizeObserverEntry) -> &'static [&'static ResizeObserverSize];
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ResizeObserverEntry/contentBoxSize)
+        #[link_name = "get contentBoxSize"]
+        pub safe fn content_box_size(this: &ResizeObserverEntry) -> &'static [&'static ResizeObserverSize];
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ResizeObserverEntry/devicePixelContentBoxSize)
+        #[link_name = "get devicePixelContentBoxSize"]
+        pub safe fn device_pixel_content_box_size(this: &ResizeObserverEntry) -> &'static [&'static ResizeObserverSize];
     }
 }
 
@@ -30484,10 +32247,41 @@ pub struct SVGAngle(PhantomData<JsObject>);
 pub mod svg_angle {
     use super::*;
 
+    /// `SVGAngle.SVG_ANGLETYPE_UNKNOWN`
+    pub const SVG_ANGLETYPE_UNKNOWN: u16 = 0;
+
+    /// `SVGAngle.SVG_ANGLETYPE_UNSPECIFIED`
+    pub const SVG_ANGLETYPE_UNSPECIFIED: u16 = 1;
+
+    /// `SVGAngle.SVG_ANGLETYPE_DEG`
+    pub const SVG_ANGLETYPE_DEG: u16 = 2;
+
+    /// `SVGAngle.SVG_ANGLETYPE_RAD`
+    pub const SVG_ANGLETYPE_RAD: u16 = 3;
+
+    /// `SVGAngle.SVG_ANGLETYPE_GRAD`
+    pub const SVG_ANGLETYPE_GRAD: u16 = 4;
+
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAngle/unitType)
         #[link_name = "get unitType"]
         pub safe fn unit_type(this: &SVGAngle) -> u16;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAngle/value)
+        #[link_name = "get value"]
+        pub safe fn value(this: &SVGAngle) -> f32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAngle/value)
+        #[link_name = "set value"]
+        pub safe fn set_value(this: &SVGAngle, value: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAngle/valueInSpecifiedUnits)
+        #[link_name = "get valueInSpecifiedUnits"]
+        pub safe fn value_in_specified_units(this: &SVGAngle) -> f32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAngle/valueInSpecifiedUnits)
+        #[link_name = "set valueInSpecifiedUnits"]
+        pub safe fn set_value_in_specified_units(this: &SVGAngle, value: f32);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAngle/valueAsString)
         #[link_name = "get valueAsString"]
@@ -30496,6 +32290,10 @@ pub mod svg_angle {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAngle/valueAsString)
         #[link_name = "set valueAsString"]
         pub safe fn set_value_as_string(this: &SVGAngle, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAngle/newValueSpecifiedUnits)
+        #[link_name = "newValueSpecifiedUnits"]
+        pub safe fn new_value_specified_units(this: &SVGAngle, unit_type: u16, value_in_specified_units: f32);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAngle/convertToSpecifiedUnits)
         #[link_name = "convertToSpecifiedUnits"]
@@ -30627,6 +32425,24 @@ pub mod svg_animated_length_list {
 #[cfg_attr(rust_js, rust_js::types = "SVGAnimatedNumber")]
 pub struct SVGAnimatedNumber(PhantomData<JsObject>);
 
+pub mod svg_animated_number {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimatedNumber/baseVal)
+        #[link_name = "get baseVal"]
+        pub safe fn base_val(this: &SVGAnimatedNumber) -> f32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimatedNumber/baseVal)
+        #[link_name = "set baseVal"]
+        pub safe fn set_base_val(this: &SVGAnimatedNumber, value: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimatedNumber/animVal)
+        #[link_name = "get animVal"]
+        pub safe fn anim_val(this: &SVGAnimatedNumber) -> f32;
+    }
+}
+
 /// [`SVGAnimatedNumberList`](https://developer.mozilla.org/docs/Web/API/SVGAnimatedNumberList)
 #[cfg_attr(rust_js, rust_js::types = "SVGAnimatedNumberList")]
 pub struct SVGAnimatedNumberList(PhantomData<JsObject>);
@@ -30710,10 +32526,59 @@ pub struct SVGLength(PhantomData<JsObject>);
 pub mod svg_length {
     use super::*;
 
+    /// `SVGLength.SVG_LENGTHTYPE_UNKNOWN`
+    pub const SVG_LENGTHTYPE_UNKNOWN: u16 = 0;
+
+    /// `SVGLength.SVG_LENGTHTYPE_NUMBER`
+    pub const SVG_LENGTHTYPE_NUMBER: u16 = 1;
+
+    /// `SVGLength.SVG_LENGTHTYPE_PERCENTAGE`
+    pub const SVG_LENGTHTYPE_PERCENTAGE: u16 = 2;
+
+    /// `SVGLength.SVG_LENGTHTYPE_EMS`
+    pub const SVG_LENGTHTYPE_EMS: u16 = 3;
+
+    /// `SVGLength.SVG_LENGTHTYPE_EXS`
+    pub const SVG_LENGTHTYPE_EXS: u16 = 4;
+
+    /// `SVGLength.SVG_LENGTHTYPE_PX`
+    pub const SVG_LENGTHTYPE_PX: u16 = 5;
+
+    /// `SVGLength.SVG_LENGTHTYPE_CM`
+    pub const SVG_LENGTHTYPE_CM: u16 = 6;
+
+    /// `SVGLength.SVG_LENGTHTYPE_MM`
+    pub const SVG_LENGTHTYPE_MM: u16 = 7;
+
+    /// `SVGLength.SVG_LENGTHTYPE_IN`
+    pub const SVG_LENGTHTYPE_IN: u16 = 8;
+
+    /// `SVGLength.SVG_LENGTHTYPE_PT`
+    pub const SVG_LENGTHTYPE_PT: u16 = 9;
+
+    /// `SVGLength.SVG_LENGTHTYPE_PC`
+    pub const SVG_LENGTHTYPE_PC: u16 = 10;
+
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGLength/unitType)
         #[link_name = "get unitType"]
         pub safe fn unit_type(this: &SVGLength) -> u16;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGLength/value)
+        #[link_name = "get value"]
+        pub safe fn value(this: &SVGLength) -> f32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGLength/value)
+        #[link_name = "set value"]
+        pub safe fn set_value(this: &SVGLength, value: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGLength/valueInSpecifiedUnits)
+        #[link_name = "get valueInSpecifiedUnits"]
+        pub safe fn value_in_specified_units(this: &SVGLength) -> f32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGLength/valueInSpecifiedUnits)
+        #[link_name = "set valueInSpecifiedUnits"]
+        pub safe fn set_value_in_specified_units(this: &SVGLength, value: f32);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGLength/valueAsString)
         #[link_name = "get valueAsString"]
@@ -30722,6 +32587,10 @@ pub mod svg_length {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGLength/valueAsString)
         #[link_name = "set valueAsString"]
         pub safe fn set_value_as_string(this: &SVGLength, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGLength/newValueSpecifiedUnits)
+        #[link_name = "newValueSpecifiedUnits"]
+        pub safe fn new_value_specified_units(this: &SVGLength, unit_type: u16, value_in_specified_units: f32);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGLength/convertToSpecifiedUnits)
         #[link_name = "convertToSpecifiedUnits"]
@@ -30776,6 +32645,20 @@ pub mod svg_length_list {
 /// [`SVGNumber`](https://developer.mozilla.org/docs/Web/API/SVGNumber)
 #[cfg_attr(rust_js, rust_js::types = "SVGNumber")]
 pub struct SVGNumber(PhantomData<JsObject>);
+
+pub mod svg_number {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGNumber/value)
+        #[link_name = "get value"]
+        pub safe fn value(this: &SVGNumber) -> f32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGNumber/value)
+        #[link_name = "set value"]
+        pub safe fn set_value(this: &SVGNumber, value: f32);
+    }
+}
 
 /// [`SVGNumberList`](https://developer.mozilla.org/docs/Web/API/SVGNumberList)
 #[cfg_attr(rust_js, rust_js::types = "SVGNumberList")]
@@ -30849,6 +32732,48 @@ pub struct SVGPreserveAspectRatio(PhantomData<JsObject>);
 pub mod svg_preserve_aspect_ratio {
     use super::*;
 
+    /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_UNKNOWN`
+    pub const SVG_PRESERVEASPECTRATIO_UNKNOWN: u16 = 0;
+
+    /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_NONE`
+    pub const SVG_PRESERVEASPECTRATIO_NONE: u16 = 1;
+
+    /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMINYMIN`
+    pub const SVG_PRESERVEASPECTRATIO_XMINYMIN: u16 = 2;
+
+    /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMIDYMIN`
+    pub const SVG_PRESERVEASPECTRATIO_XMIDYMIN: u16 = 3;
+
+    /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMAXYMIN`
+    pub const SVG_PRESERVEASPECTRATIO_XMAXYMIN: u16 = 4;
+
+    /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMINYMID`
+    pub const SVG_PRESERVEASPECTRATIO_XMINYMID: u16 = 5;
+
+    /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMIDYMID`
+    pub const SVG_PRESERVEASPECTRATIO_XMIDYMID: u16 = 6;
+
+    /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMAXYMID`
+    pub const SVG_PRESERVEASPECTRATIO_XMAXYMID: u16 = 7;
+
+    /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMINYMAX`
+    pub const SVG_PRESERVEASPECTRATIO_XMINYMAX: u16 = 8;
+
+    /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMIDYMAX`
+    pub const SVG_PRESERVEASPECTRATIO_XMIDYMAX: u16 = 9;
+
+    /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMAXYMAX`
+    pub const SVG_PRESERVEASPECTRATIO_XMAXYMAX: u16 = 10;
+
+    /// `SVGPreserveAspectRatio.SVG_MEETORSLICE_UNKNOWN`
+    pub const SVG_MEETORSLICE_UNKNOWN: u16 = 0;
+
+    /// `SVGPreserveAspectRatio.SVG_MEETORSLICE_MEET`
+    pub const SVG_MEETORSLICE_MEET: u16 = 1;
+
+    /// `SVGPreserveAspectRatio.SVG_MEETORSLICE_SLICE`
+    pub const SVG_MEETORSLICE_SLICE: u16 = 2;
+
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGPreserveAspectRatio/align)
         #[link_name = "get align"]
@@ -30919,10 +32844,35 @@ pub struct SVGTransform(PhantomData<JsObject>);
 pub mod svg_transform {
     use super::*;
 
+    /// `SVGTransform.SVG_TRANSFORM_UNKNOWN`
+    pub const SVG_TRANSFORM_UNKNOWN: u16 = 0;
+
+    /// `SVGTransform.SVG_TRANSFORM_MATRIX`
+    pub const SVG_TRANSFORM_MATRIX: u16 = 1;
+
+    /// `SVGTransform.SVG_TRANSFORM_TRANSLATE`
+    pub const SVG_TRANSFORM_TRANSLATE: u16 = 2;
+
+    /// `SVGTransform.SVG_TRANSFORM_SCALE`
+    pub const SVG_TRANSFORM_SCALE: u16 = 3;
+
+    /// `SVGTransform.SVG_TRANSFORM_ROTATE`
+    pub const SVG_TRANSFORM_ROTATE: u16 = 4;
+
+    /// `SVGTransform.SVG_TRANSFORM_SKEWX`
+    pub const SVG_TRANSFORM_SKEWX: u16 = 5;
+
+    /// `SVGTransform.SVG_TRANSFORM_SKEWY`
+    pub const SVG_TRANSFORM_SKEWY: u16 = 6;
+
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTransform/type)
         #[link_name = "get type"]
         pub safe fn type_(this: &SVGTransform) -> u16;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTransform/angle)
+        #[link_name = "get angle"]
+        pub safe fn angle(this: &SVGTransform) -> f32;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTransform/setMatrix)
         #[link_name = "setMatrix"]
@@ -30931,6 +32881,26 @@ pub mod svg_transform {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTransform/setMatrix)
         #[link_name = "setMatrix"]
         pub safe fn set_matrix_with_matrix(this: &SVGTransform, matrix: DOMMatrix2DInit);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTransform/setTranslate)
+        #[link_name = "setTranslate"]
+        pub safe fn set_translate(this: &SVGTransform, tx: f32, ty: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTransform/setScale)
+        #[link_name = "setScale"]
+        pub safe fn set_scale(this: &SVGTransform, sx: f32, sy: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTransform/setRotate)
+        #[link_name = "setRotate"]
+        pub safe fn set_rotate(this: &SVGTransform, angle: f32, cx: f32, cy: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTransform/setSkewX)
+        #[link_name = "setSkewX"]
+        pub safe fn set_skew_x(this: &SVGTransform, angle: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTransform/setSkewY)
+        #[link_name = "setSkewY"]
+        pub safe fn set_skew_y(this: &SVGTransform, angle: f32);
     }
 }
 
@@ -30992,6 +32962,18 @@ pub mod svg_transform_list {
 /// [`SVGUnitTypes`](https://developer.mozilla.org/docs/Web/API/SVGUnitTypes)
 #[cfg_attr(rust_js, rust_js::types = "SVGUnitTypes")]
 pub struct SVGUnitTypes(PhantomData<JsObject>);
+
+pub mod svg_unit_types {
+
+    /// `SVGUnitTypes.SVG_UNIT_TYPE_UNKNOWN`
+    pub const SVG_UNIT_TYPE_UNKNOWN: u16 = 0;
+
+    /// `SVGUnitTypes.SVG_UNIT_TYPE_USERSPACEONUSE`
+    pub const SVG_UNIT_TYPE_USERSPACEONUSE: u16 = 1;
+
+    /// `SVGUnitTypes.SVG_UNIT_TYPE_OBJECTBOUNDINGBOX`
+    pub const SVG_UNIT_TYPE_OBJECTBOUNDINGBOX: u16 = 2;
+}
 
 /// [`Sanitizer`](https://developer.mozilla.org/docs/Web/API/Sanitizer)
 #[cfg_attr(rust_js, rust_js::types = "Sanitizer")]
@@ -31372,6 +33354,14 @@ pub mod selection {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/empty)
         pub safe fn empty(this: &Selection);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/getComposedRanges)
+        #[link_name = "getComposedRanges"]
+        pub safe fn get_composed_ranges(this: &Selection) -> Vec<&'static StaticRange>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/getComposedRanges)
+        #[link_name = "getComposedRanges"]
+        pub safe fn get_composed_ranges_with_options(this: &Selection, options: GetComposedRangesOptions<'_>) -> Vec<&'static StaticRange>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/collapse)
         pub safe fn collapse(this: &Selection, node: &Node);
 
@@ -31456,6 +33446,10 @@ pub mod serial {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Serial/getPorts)
+        #[link_name = "getPorts"]
+        pub safe fn get_ports(this: &Serial) -> Promise<Vec<&'static SerialPort>>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Serial/requestPort)
         #[link_name = "requestPort"]
         pub safe fn request_port(this: &Serial) -> Promise<&'static SerialPort>;
@@ -31499,6 +33493,10 @@ pub mod serial_port {
         #[link_name = "get writable"]
         pub safe fn writable(this: &SerialPort) -> Option<&'static WritableStream>;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SerialPort/getInfo)
+        #[link_name = "getInfo"]
+        pub safe fn get_info(this: &SerialPort) -> SerialPortInfo;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SerialPort/open)
         pub safe fn open(this: &SerialPort, options: SerialOptions<'_>) -> Promise<()>;
 
@@ -31509,6 +33507,10 @@ pub mod serial_port {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SerialPort/setSignals)
         #[link_name = "setSignals"]
         pub safe fn set_signals_with_signals(this: &SerialPort, signals: SerialOutputSignals) -> Promise<()>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SerialPort/getSignals)
+        #[link_name = "getSignals"]
+        pub safe fn get_signals(this: &SerialPort) -> Promise<SerialInputSignals>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SerialPort/close)
         pub safe fn close(this: &SerialPort) -> Promise<()>;
@@ -31593,6 +33595,10 @@ pub mod service_worker_container {
         #[link_name = "register"]
         pub safe fn register_with_options(this: &ServiceWorkerContainer, script_url: &str, options: RegistrationOptions<'_>) -> Promise<&'static ServiceWorkerRegistration>;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerContainer/getRegistrations)
+        #[link_name = "getRegistrations"]
+        pub safe fn get_registrations(this: &ServiceWorkerContainer) -> Promise<&'static [&'static ServiceWorkerRegistration]>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerContainer/startMessages)
         #[link_name = "startMessages"]
         pub safe fn start_messages(this: &ServiceWorkerContainer);
@@ -31661,6 +33667,14 @@ pub mod service_worker_registration {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerRegistration/showNotification)
         #[link_name = "showNotification"]
         pub safe fn show_notification_with_options(this: &ServiceWorkerRegistration, title: &str, options: NotificationOptions<'_>) -> Promise<()>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerRegistration/getNotifications)
+        #[link_name = "getNotifications"]
+        pub safe fn get_notifications(this: &ServiceWorkerRegistration) -> Promise<Vec<&'static Notification>>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerRegistration/getNotifications)
+        #[link_name = "getNotifications"]
+        pub safe fn get_notifications_with_filter(this: &ServiceWorkerRegistration, filter: GetNotificationOptions<'_>) -> Promise<Vec<&'static Notification>>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerRegistration/pushManager)
         #[link_name = "get pushManager"]
@@ -31744,6 +33758,10 @@ pub mod shadow_root {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/fullscreenElement)
         #[link_name = "get fullscreenElement"]
         pub safe fn fullscreen_element(this: &ShadowRoot) -> Option<&'static Element>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/getAnimations)
+        #[link_name = "getAnimations"]
+        pub safe fn get_animations(this: &ShadowRoot) -> Vec<&'static Animation>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/pictureInPictureElement)
         #[link_name = "get pictureInPictureElement"]
@@ -31929,6 +33947,10 @@ pub mod speech_recognition_alternative {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionAlternative/transcript)
         #[link_name = "get transcript"]
         pub safe fn transcript(this: &SpeechRecognitionAlternative) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionAlternative/confidence)
+        #[link_name = "get confidence"]
+        pub safe fn confidence(this: &SpeechRecognitionAlternative) -> f32;
     }
 }
 
@@ -32073,6 +34095,10 @@ pub mod speech_synthesis {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesis/resume)
         pub safe fn resume(this: &SpeechSynthesis);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesis/getVoices)
+        #[link_name = "getVoices"]
+        pub safe fn get_voices(this: &SpeechSynthesis) -> Vec<&'static SpeechSynthesisVoice>;
+
         /// Treats `this` as `SpeechSynthesis` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static SpeechSynthesis;
@@ -32135,6 +34161,10 @@ pub mod speech_synthesis_event {
         #[link_name = "get charLength"]
         pub safe fn char_length(this: &SpeechSynthesisEvent) -> u32;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisEvent/elapsedTime)
+        #[link_name = "get elapsedTime"]
+        pub safe fn elapsed_time(this: &SpeechSynthesisEvent) -> f32;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisEvent/name)
         #[link_name = "get name"]
         pub safe fn name(this: &SpeechSynthesisEvent) -> String;
@@ -32185,6 +34215,30 @@ pub mod speech_synthesis_utterance {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/voice)
         #[link_name = "set voice"]
         pub safe fn set_voice(this: &SpeechSynthesisUtterance, value: &SpeechSynthesisVoice);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/volume)
+        #[link_name = "get volume"]
+        pub safe fn volume(this: &SpeechSynthesisUtterance) -> f32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/volume)
+        #[link_name = "set volume"]
+        pub safe fn set_volume(this: &SpeechSynthesisUtterance, value: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/rate)
+        #[link_name = "get rate"]
+        pub safe fn rate(this: &SpeechSynthesisUtterance) -> f32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/rate)
+        #[link_name = "set rate"]
+        pub safe fn set_rate(this: &SpeechSynthesisUtterance, value: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/pitch)
+        #[link_name = "get pitch"]
+        pub safe fn pitch(this: &SpeechSynthesisUtterance) -> f32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/pitch)
+        #[link_name = "set pitch"]
+        pub safe fn set_pitch(this: &SpeechSynthesisUtterance, value: f32);
 
         /// Treats `this` as `SpeechSynthesisUtterance` without checking that it is one.
         #[link_name = "this"]
@@ -32376,6 +34430,9 @@ pub mod storage_manager {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageManager/persist)
         pub safe fn persist(this: &StorageManager) -> Promise<bool>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageManager/estimate)
+        pub safe fn estimate(this: &StorageManager) -> Promise<StorageEstimate>;
     }
 }
 
@@ -32432,6 +34489,10 @@ pub mod style_property_map_read_only {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/StylePropertyMapReadOnly/getAll)
+        #[link_name = "getAll"]
+        pub safe fn get_all(this: &StylePropertyMapReadOnly, property: &str) -> Vec<&'static CSSStyleValue>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/StylePropertyMapReadOnly/has)
         pub safe fn has(this: &StylePropertyMapReadOnly, property: &str) -> bool;
 
@@ -33204,6 +35265,9 @@ pub mod url_pattern {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/URLPattern/test)
         pub safe fn test(this: &URLPattern) -> bool;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/URLPattern/exec)
+        pub safe fn exec(this: &URLPattern) -> Option<URLPatternResult>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/URLPattern/protocol)
         #[link_name = "get protocol"]
         pub safe fn protocol(this: &URLPattern) -> String;
@@ -33256,6 +35320,22 @@ pub mod url_pattern {
     pub fn test_with_input_and_base_url(this: &URLPattern, input: impl IntoURLPatternInput, base_url: &str) -> bool {
         unreachable!()
     }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/URLPattern/exec)
+    #[cfg_attr(rust_js, rust_js::link_name = "exec")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn exec_with_input(this: &URLPattern, input: impl IntoURLPatternInput) -> Option<URLPatternResult> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/URLPattern/exec)
+    #[cfg_attr(rust_js, rust_js::link_name = "exec")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn exec_with_input_and_base_url(this: &URLPattern, input: impl IntoURLPatternInput, base_url: &str) -> Option<URLPatternResult> {
+        unreachable!()
+    }
 }
 
 /// [`URLSearchParams`](https://developer.mozilla.org/docs/Web/API/URLSearchParams)
@@ -33286,6 +35366,10 @@ pub mod url_search_params {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/get)
         pub safe fn get(this: &URLSearchParams, name: &str) -> Option<String>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/getAll)
+        #[link_name = "getAll"]
+        pub safe fn get_all(this: &URLSearchParams, name: &str) -> Vec<String>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/has)
         pub safe fn has(this: &URLSearchParams, name: &str) -> bool;
@@ -33629,6 +35713,10 @@ pub mod video_decoder {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoDecoder/close)
         pub safe fn close(this: &VideoDecoder);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoDecoder/isConfigSupported)
+        #[link_name = "VideoDecoder.isConfigSupported"]
+        pub safe fn is_config_supported(config: VideoDecoderConfig<'_>) -> Promise<VideoDecoderSupport>;
+
         /// Treats `this` as `VideoDecoder` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static VideoDecoder;
@@ -33679,6 +35767,10 @@ pub mod video_encoder {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoEncoder/close)
         pub safe fn close(this: &VideoEncoder);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoEncoder/isConfigSupported)
+        #[link_name = "VideoEncoder.isConfigSupported"]
+        pub safe fn is_config_supported(config: VideoEncoderConfig<'_>) -> Promise<VideoEncoderSupport>;
+
         /// Treats `this` as `VideoEncoder` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static VideoEncoder;
@@ -33720,6 +35812,14 @@ pub mod video_frame {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoFrame/displayHeight)
         #[link_name = "get displayHeight"]
         pub safe fn display_height(this: &VideoFrame) -> u32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoFrame/duration)
+        #[link_name = "get duration"]
+        pub safe fn duration(this: &VideoFrame) -> Option<f64>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoFrame/timestamp)
+        #[link_name = "get timestamp"]
+        pub safe fn timestamp(this: &VideoFrame) -> f64;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoFrame/colorSpace)
         #[link_name = "get colorSpace"]
@@ -33980,6 +36080,1689 @@ pub struct WebGL2RenderingContext(PhantomData<JsObject>);
 pub mod web_gl_2_rendering_context {
     use super::*;
 
+    /// `WebGL2RenderingContext.DEPTH_BUFFER_BIT`
+    pub const DEPTH_BUFFER_BIT: u32 = 0x00000100;
+
+    /// `WebGL2RenderingContext.STENCIL_BUFFER_BIT`
+    pub const STENCIL_BUFFER_BIT: u32 = 0x00000400;
+
+    /// `WebGL2RenderingContext.COLOR_BUFFER_BIT`
+    pub const COLOR_BUFFER_BIT: u32 = 0x00004000;
+
+    /// `WebGL2RenderingContext.POINTS`
+    pub const POINTS: u32 = 0x0000;
+
+    /// `WebGL2RenderingContext.LINES`
+    pub const LINES: u32 = 0x0001;
+
+    /// `WebGL2RenderingContext.LINE_LOOP`
+    pub const LINE_LOOP: u32 = 0x0002;
+
+    /// `WebGL2RenderingContext.LINE_STRIP`
+    pub const LINE_STRIP: u32 = 0x0003;
+
+    /// `WebGL2RenderingContext.TRIANGLES`
+    pub const TRIANGLES: u32 = 0x0004;
+
+    /// `WebGL2RenderingContext.TRIANGLE_STRIP`
+    pub const TRIANGLE_STRIP: u32 = 0x0005;
+
+    /// `WebGL2RenderingContext.TRIANGLE_FAN`
+    pub const TRIANGLE_FAN: u32 = 0x0006;
+
+    /// `WebGL2RenderingContext.ZERO`
+    pub const ZERO: u32 = 0;
+
+    /// `WebGL2RenderingContext.ONE`
+    pub const ONE: u32 = 1;
+
+    /// `WebGL2RenderingContext.SRC_COLOR`
+    pub const SRC_COLOR: u32 = 0x0300;
+
+    /// `WebGL2RenderingContext.ONE_MINUS_SRC_COLOR`
+    pub const ONE_MINUS_SRC_COLOR: u32 = 0x0301;
+
+    /// `WebGL2RenderingContext.SRC_ALPHA`
+    pub const SRC_ALPHA: u32 = 0x0302;
+
+    /// `WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA`
+    pub const ONE_MINUS_SRC_ALPHA: u32 = 0x0303;
+
+    /// `WebGL2RenderingContext.DST_ALPHA`
+    pub const DST_ALPHA: u32 = 0x0304;
+
+    /// `WebGL2RenderingContext.ONE_MINUS_DST_ALPHA`
+    pub const ONE_MINUS_DST_ALPHA: u32 = 0x0305;
+
+    /// `WebGL2RenderingContext.DST_COLOR`
+    pub const DST_COLOR: u32 = 0x0306;
+
+    /// `WebGL2RenderingContext.ONE_MINUS_DST_COLOR`
+    pub const ONE_MINUS_DST_COLOR: u32 = 0x0307;
+
+    /// `WebGL2RenderingContext.SRC_ALPHA_SATURATE`
+    pub const SRC_ALPHA_SATURATE: u32 = 0x0308;
+
+    /// `WebGL2RenderingContext.FUNC_ADD`
+    pub const FUNC_ADD: u32 = 0x8006;
+
+    /// `WebGL2RenderingContext.BLEND_EQUATION`
+    pub const BLEND_EQUATION: u32 = 0x8009;
+
+    /// `WebGL2RenderingContext.BLEND_EQUATION_RGB`
+    pub const BLEND_EQUATION_RGB: u32 = 0x8009;
+
+    /// `WebGL2RenderingContext.BLEND_EQUATION_ALPHA`
+    pub const BLEND_EQUATION_ALPHA: u32 = 0x883D;
+
+    /// `WebGL2RenderingContext.FUNC_SUBTRACT`
+    pub const FUNC_SUBTRACT: u32 = 0x800A;
+
+    /// `WebGL2RenderingContext.FUNC_REVERSE_SUBTRACT`
+    pub const FUNC_REVERSE_SUBTRACT: u32 = 0x800B;
+
+    /// `WebGL2RenderingContext.BLEND_DST_RGB`
+    pub const BLEND_DST_RGB: u32 = 0x80C8;
+
+    /// `WebGL2RenderingContext.BLEND_SRC_RGB`
+    pub const BLEND_SRC_RGB: u32 = 0x80C9;
+
+    /// `WebGL2RenderingContext.BLEND_DST_ALPHA`
+    pub const BLEND_DST_ALPHA: u32 = 0x80CA;
+
+    /// `WebGL2RenderingContext.BLEND_SRC_ALPHA`
+    pub const BLEND_SRC_ALPHA: u32 = 0x80CB;
+
+    /// `WebGL2RenderingContext.CONSTANT_COLOR`
+    pub const CONSTANT_COLOR: u32 = 0x8001;
+
+    /// `WebGL2RenderingContext.ONE_MINUS_CONSTANT_COLOR`
+    pub const ONE_MINUS_CONSTANT_COLOR: u32 = 0x8002;
+
+    /// `WebGL2RenderingContext.CONSTANT_ALPHA`
+    pub const CONSTANT_ALPHA: u32 = 0x8003;
+
+    /// `WebGL2RenderingContext.ONE_MINUS_CONSTANT_ALPHA`
+    pub const ONE_MINUS_CONSTANT_ALPHA: u32 = 0x8004;
+
+    /// `WebGL2RenderingContext.BLEND_COLOR`
+    pub const BLEND_COLOR: u32 = 0x8005;
+
+    /// `WebGL2RenderingContext.ARRAY_BUFFER`
+    pub const ARRAY_BUFFER: u32 = 0x8892;
+
+    /// `WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER`
+    pub const ELEMENT_ARRAY_BUFFER: u32 = 0x8893;
+
+    /// `WebGL2RenderingContext.ARRAY_BUFFER_BINDING`
+    pub const ARRAY_BUFFER_BINDING: u32 = 0x8894;
+
+    /// `WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER_BINDING`
+    pub const ELEMENT_ARRAY_BUFFER_BINDING: u32 = 0x8895;
+
+    /// `WebGL2RenderingContext.STREAM_DRAW`
+    pub const STREAM_DRAW: u32 = 0x88E0;
+
+    /// `WebGL2RenderingContext.STATIC_DRAW`
+    pub const STATIC_DRAW: u32 = 0x88E4;
+
+    /// `WebGL2RenderingContext.DYNAMIC_DRAW`
+    pub const DYNAMIC_DRAW: u32 = 0x88E8;
+
+    /// `WebGL2RenderingContext.BUFFER_SIZE`
+    pub const BUFFER_SIZE: u32 = 0x8764;
+
+    /// `WebGL2RenderingContext.BUFFER_USAGE`
+    pub const BUFFER_USAGE: u32 = 0x8765;
+
+    /// `WebGL2RenderingContext.CURRENT_VERTEX_ATTRIB`
+    pub const CURRENT_VERTEX_ATTRIB: u32 = 0x8626;
+
+    /// `WebGL2RenderingContext.FRONT`
+    pub const FRONT: u32 = 0x0404;
+
+    /// `WebGL2RenderingContext.BACK`
+    pub const BACK: u32 = 0x0405;
+
+    /// `WebGL2RenderingContext.FRONT_AND_BACK`
+    pub const FRONT_AND_BACK: u32 = 0x0408;
+
+    /// `WebGL2RenderingContext.CULL_FACE`
+    pub const CULL_FACE: u32 = 0x0B44;
+
+    /// `WebGL2RenderingContext.BLEND`
+    pub const BLEND: u32 = 0x0BE2;
+
+    /// `WebGL2RenderingContext.DITHER`
+    pub const DITHER: u32 = 0x0BD0;
+
+    /// `WebGL2RenderingContext.STENCIL_TEST`
+    pub const STENCIL_TEST: u32 = 0x0B90;
+
+    /// `WebGL2RenderingContext.DEPTH_TEST`
+    pub const DEPTH_TEST: u32 = 0x0B71;
+
+    /// `WebGL2RenderingContext.SCISSOR_TEST`
+    pub const SCISSOR_TEST: u32 = 0x0C11;
+
+    /// `WebGL2RenderingContext.POLYGON_OFFSET_FILL`
+    pub const POLYGON_OFFSET_FILL: u32 = 0x8037;
+
+    /// `WebGL2RenderingContext.SAMPLE_ALPHA_TO_COVERAGE`
+    pub const SAMPLE_ALPHA_TO_COVERAGE: u32 = 0x809E;
+
+    /// `WebGL2RenderingContext.SAMPLE_COVERAGE`
+    pub const SAMPLE_COVERAGE: u32 = 0x80A0;
+
+    /// `WebGL2RenderingContext.NO_ERROR`
+    pub const NO_ERROR: u32 = 0;
+
+    /// `WebGL2RenderingContext.INVALID_ENUM`
+    pub const INVALID_ENUM: u32 = 0x0500;
+
+    /// `WebGL2RenderingContext.INVALID_VALUE`
+    pub const INVALID_VALUE: u32 = 0x0501;
+
+    /// `WebGL2RenderingContext.INVALID_OPERATION`
+    pub const INVALID_OPERATION: u32 = 0x0502;
+
+    /// `WebGL2RenderingContext.OUT_OF_MEMORY`
+    pub const OUT_OF_MEMORY: u32 = 0x0505;
+
+    /// `WebGL2RenderingContext.CW`
+    pub const CW: u32 = 0x0900;
+
+    /// `WebGL2RenderingContext.CCW`
+    pub const CCW: u32 = 0x0901;
+
+    /// `WebGL2RenderingContext.LINE_WIDTH`
+    pub const LINE_WIDTH: u32 = 0x0B21;
+
+    /// `WebGL2RenderingContext.ALIASED_POINT_SIZE_RANGE`
+    pub const ALIASED_POINT_SIZE_RANGE: u32 = 0x846D;
+
+    /// `WebGL2RenderingContext.ALIASED_LINE_WIDTH_RANGE`
+    pub const ALIASED_LINE_WIDTH_RANGE: u32 = 0x846E;
+
+    /// `WebGL2RenderingContext.CULL_FACE_MODE`
+    pub const CULL_FACE_MODE: u32 = 0x0B45;
+
+    /// `WebGL2RenderingContext.FRONT_FACE`
+    pub const FRONT_FACE: u32 = 0x0B46;
+
+    /// `WebGL2RenderingContext.DEPTH_RANGE`
+    pub const DEPTH_RANGE: u32 = 0x0B70;
+
+    /// `WebGL2RenderingContext.DEPTH_WRITEMASK`
+    pub const DEPTH_WRITEMASK: u32 = 0x0B72;
+
+    /// `WebGL2RenderingContext.DEPTH_CLEAR_VALUE`
+    pub const DEPTH_CLEAR_VALUE: u32 = 0x0B73;
+
+    /// `WebGL2RenderingContext.DEPTH_FUNC`
+    pub const DEPTH_FUNC: u32 = 0x0B74;
+
+    /// `WebGL2RenderingContext.STENCIL_CLEAR_VALUE`
+    pub const STENCIL_CLEAR_VALUE: u32 = 0x0B91;
+
+    /// `WebGL2RenderingContext.STENCIL_FUNC`
+    pub const STENCIL_FUNC: u32 = 0x0B92;
+
+    /// `WebGL2RenderingContext.STENCIL_FAIL`
+    pub const STENCIL_FAIL: u32 = 0x0B94;
+
+    /// `WebGL2RenderingContext.STENCIL_PASS_DEPTH_FAIL`
+    pub const STENCIL_PASS_DEPTH_FAIL: u32 = 0x0B95;
+
+    /// `WebGL2RenderingContext.STENCIL_PASS_DEPTH_PASS`
+    pub const STENCIL_PASS_DEPTH_PASS: u32 = 0x0B96;
+
+    /// `WebGL2RenderingContext.STENCIL_REF`
+    pub const STENCIL_REF: u32 = 0x0B97;
+
+    /// `WebGL2RenderingContext.STENCIL_VALUE_MASK`
+    pub const STENCIL_VALUE_MASK: u32 = 0x0B93;
+
+    /// `WebGL2RenderingContext.STENCIL_WRITEMASK`
+    pub const STENCIL_WRITEMASK: u32 = 0x0B98;
+
+    /// `WebGL2RenderingContext.STENCIL_BACK_FUNC`
+    pub const STENCIL_BACK_FUNC: u32 = 0x8800;
+
+    /// `WebGL2RenderingContext.STENCIL_BACK_FAIL`
+    pub const STENCIL_BACK_FAIL: u32 = 0x8801;
+
+    /// `WebGL2RenderingContext.STENCIL_BACK_PASS_DEPTH_FAIL`
+    pub const STENCIL_BACK_PASS_DEPTH_FAIL: u32 = 0x8802;
+
+    /// `WebGL2RenderingContext.STENCIL_BACK_PASS_DEPTH_PASS`
+    pub const STENCIL_BACK_PASS_DEPTH_PASS: u32 = 0x8803;
+
+    /// `WebGL2RenderingContext.STENCIL_BACK_REF`
+    pub const STENCIL_BACK_REF: u32 = 0x8CA3;
+
+    /// `WebGL2RenderingContext.STENCIL_BACK_VALUE_MASK`
+    pub const STENCIL_BACK_VALUE_MASK: u32 = 0x8CA4;
+
+    /// `WebGL2RenderingContext.STENCIL_BACK_WRITEMASK`
+    pub const STENCIL_BACK_WRITEMASK: u32 = 0x8CA5;
+
+    /// `WebGL2RenderingContext.VIEWPORT`
+    pub const VIEWPORT: u32 = 0x0BA2;
+
+    /// `WebGL2RenderingContext.SCISSOR_BOX`
+    pub const SCISSOR_BOX: u32 = 0x0C10;
+
+    /// `WebGL2RenderingContext.COLOR_CLEAR_VALUE`
+    pub const COLOR_CLEAR_VALUE: u32 = 0x0C22;
+
+    /// `WebGL2RenderingContext.COLOR_WRITEMASK`
+    pub const COLOR_WRITEMASK: u32 = 0x0C23;
+
+    /// `WebGL2RenderingContext.UNPACK_ALIGNMENT`
+    pub const UNPACK_ALIGNMENT: u32 = 0x0CF5;
+
+    /// `WebGL2RenderingContext.PACK_ALIGNMENT`
+    pub const PACK_ALIGNMENT: u32 = 0x0D05;
+
+    /// `WebGL2RenderingContext.MAX_TEXTURE_SIZE`
+    pub const MAX_TEXTURE_SIZE: u32 = 0x0D33;
+
+    /// `WebGL2RenderingContext.MAX_VIEWPORT_DIMS`
+    pub const MAX_VIEWPORT_DIMS: u32 = 0x0D3A;
+
+    /// `WebGL2RenderingContext.SUBPIXEL_BITS`
+    pub const SUBPIXEL_BITS: u32 = 0x0D50;
+
+    /// `WebGL2RenderingContext.RED_BITS`
+    pub const RED_BITS: u32 = 0x0D52;
+
+    /// `WebGL2RenderingContext.GREEN_BITS`
+    pub const GREEN_BITS: u32 = 0x0D53;
+
+    /// `WebGL2RenderingContext.BLUE_BITS`
+    pub const BLUE_BITS: u32 = 0x0D54;
+
+    /// `WebGL2RenderingContext.ALPHA_BITS`
+    pub const ALPHA_BITS: u32 = 0x0D55;
+
+    /// `WebGL2RenderingContext.DEPTH_BITS`
+    pub const DEPTH_BITS: u32 = 0x0D56;
+
+    /// `WebGL2RenderingContext.STENCIL_BITS`
+    pub const STENCIL_BITS: u32 = 0x0D57;
+
+    /// `WebGL2RenderingContext.POLYGON_OFFSET_UNITS`
+    pub const POLYGON_OFFSET_UNITS: u32 = 0x2A00;
+
+    /// `WebGL2RenderingContext.POLYGON_OFFSET_FACTOR`
+    pub const POLYGON_OFFSET_FACTOR: u32 = 0x8038;
+
+    /// `WebGL2RenderingContext.TEXTURE_BINDING_2D`
+    pub const TEXTURE_BINDING_2D: u32 = 0x8069;
+
+    /// `WebGL2RenderingContext.SAMPLE_BUFFERS`
+    pub const SAMPLE_BUFFERS: u32 = 0x80A8;
+
+    /// `WebGL2RenderingContext.SAMPLES`
+    pub const SAMPLES: u32 = 0x80A9;
+
+    /// `WebGL2RenderingContext.SAMPLE_COVERAGE_VALUE`
+    pub const SAMPLE_COVERAGE_VALUE: u32 = 0x80AA;
+
+    /// `WebGL2RenderingContext.SAMPLE_COVERAGE_INVERT`
+    pub const SAMPLE_COVERAGE_INVERT: u32 = 0x80AB;
+
+    /// `WebGL2RenderingContext.COMPRESSED_TEXTURE_FORMATS`
+    pub const COMPRESSED_TEXTURE_FORMATS: u32 = 0x86A3;
+
+    /// `WebGL2RenderingContext.DONT_CARE`
+    pub const DONT_CARE: u32 = 0x1100;
+
+    /// `WebGL2RenderingContext.FASTEST`
+    pub const FASTEST: u32 = 0x1101;
+
+    /// `WebGL2RenderingContext.NICEST`
+    pub const NICEST: u32 = 0x1102;
+
+    /// `WebGL2RenderingContext.GENERATE_MIPMAP_HINT`
+    pub const GENERATE_MIPMAP_HINT: u32 = 0x8192;
+
+    /// `WebGL2RenderingContext.BYTE`
+    pub const BYTE: u32 = 0x1400;
+
+    /// `WebGL2RenderingContext.UNSIGNED_BYTE`
+    pub const UNSIGNED_BYTE: u32 = 0x1401;
+
+    /// `WebGL2RenderingContext.SHORT`
+    pub const SHORT: u32 = 0x1402;
+
+    /// `WebGL2RenderingContext.UNSIGNED_SHORT`
+    pub const UNSIGNED_SHORT: u32 = 0x1403;
+
+    /// `WebGL2RenderingContext.INT`
+    pub const INT: u32 = 0x1404;
+
+    /// `WebGL2RenderingContext.UNSIGNED_INT`
+    pub const UNSIGNED_INT: u32 = 0x1405;
+
+    /// `WebGL2RenderingContext.FLOAT`
+    pub const FLOAT: u32 = 0x1406;
+
+    /// `WebGL2RenderingContext.DEPTH_COMPONENT`
+    pub const DEPTH_COMPONENT: u32 = 0x1902;
+
+    /// `WebGL2RenderingContext.ALPHA`
+    pub const ALPHA: u32 = 0x1906;
+
+    /// `WebGL2RenderingContext.RGB`
+    pub const RGB: u32 = 0x1907;
+
+    /// `WebGL2RenderingContext.RGBA`
+    pub const RGBA: u32 = 0x1908;
+
+    /// `WebGL2RenderingContext.LUMINANCE`
+    pub const LUMINANCE: u32 = 0x1909;
+
+    /// `WebGL2RenderingContext.LUMINANCE_ALPHA`
+    pub const LUMINANCE_ALPHA: u32 = 0x190A;
+
+    /// `WebGL2RenderingContext.UNSIGNED_SHORT_4_4_4_4`
+    pub const UNSIGNED_SHORT_4_4_4_4: u32 = 0x8033;
+
+    /// `WebGL2RenderingContext.UNSIGNED_SHORT_5_5_5_1`
+    pub const UNSIGNED_SHORT_5_5_5_1: u32 = 0x8034;
+
+    /// `WebGL2RenderingContext.UNSIGNED_SHORT_5_6_5`
+    pub const UNSIGNED_SHORT_5_6_5: u32 = 0x8363;
+
+    /// `WebGL2RenderingContext.FRAGMENT_SHADER`
+    pub const FRAGMENT_SHADER: u32 = 0x8B30;
+
+    /// `WebGL2RenderingContext.VERTEX_SHADER`
+    pub const VERTEX_SHADER: u32 = 0x8B31;
+
+    /// `WebGL2RenderingContext.MAX_VERTEX_ATTRIBS`
+    pub const MAX_VERTEX_ATTRIBS: u32 = 0x8869;
+
+    /// `WebGL2RenderingContext.MAX_VERTEX_UNIFORM_VECTORS`
+    pub const MAX_VERTEX_UNIFORM_VECTORS: u32 = 0x8DFB;
+
+    /// `WebGL2RenderingContext.MAX_VARYING_VECTORS`
+    pub const MAX_VARYING_VECTORS: u32 = 0x8DFC;
+
+    /// `WebGL2RenderingContext.MAX_COMBINED_TEXTURE_IMAGE_UNITS`
+    pub const MAX_COMBINED_TEXTURE_IMAGE_UNITS: u32 = 0x8B4D;
+
+    /// `WebGL2RenderingContext.MAX_VERTEX_TEXTURE_IMAGE_UNITS`
+    pub const MAX_VERTEX_TEXTURE_IMAGE_UNITS: u32 = 0x8B4C;
+
+    /// `WebGL2RenderingContext.MAX_TEXTURE_IMAGE_UNITS`
+    pub const MAX_TEXTURE_IMAGE_UNITS: u32 = 0x8872;
+
+    /// `WebGL2RenderingContext.MAX_FRAGMENT_UNIFORM_VECTORS`
+    pub const MAX_FRAGMENT_UNIFORM_VECTORS: u32 = 0x8DFD;
+
+    /// `WebGL2RenderingContext.SHADER_TYPE`
+    pub const SHADER_TYPE: u32 = 0x8B4F;
+
+    /// `WebGL2RenderingContext.DELETE_STATUS`
+    pub const DELETE_STATUS: u32 = 0x8B80;
+
+    /// `WebGL2RenderingContext.LINK_STATUS`
+    pub const LINK_STATUS: u32 = 0x8B82;
+
+    /// `WebGL2RenderingContext.VALIDATE_STATUS`
+    pub const VALIDATE_STATUS: u32 = 0x8B83;
+
+    /// `WebGL2RenderingContext.ATTACHED_SHADERS`
+    pub const ATTACHED_SHADERS: u32 = 0x8B85;
+
+    /// `WebGL2RenderingContext.ACTIVE_UNIFORMS`
+    pub const ACTIVE_UNIFORMS: u32 = 0x8B86;
+
+    /// `WebGL2RenderingContext.ACTIVE_ATTRIBUTES`
+    pub const ACTIVE_ATTRIBUTES: u32 = 0x8B89;
+
+    /// `WebGL2RenderingContext.SHADING_LANGUAGE_VERSION`
+    pub const SHADING_LANGUAGE_VERSION: u32 = 0x8B8C;
+
+    /// `WebGL2RenderingContext.CURRENT_PROGRAM`
+    pub const CURRENT_PROGRAM: u32 = 0x8B8D;
+
+    /// `WebGL2RenderingContext.NEVER`
+    pub const NEVER: u32 = 0x0200;
+
+    /// `WebGL2RenderingContext.LESS`
+    pub const LESS: u32 = 0x0201;
+
+    /// `WebGL2RenderingContext.EQUAL`
+    pub const EQUAL: u32 = 0x0202;
+
+    /// `WebGL2RenderingContext.LEQUAL`
+    pub const LEQUAL: u32 = 0x0203;
+
+    /// `WebGL2RenderingContext.GREATER`
+    pub const GREATER: u32 = 0x0204;
+
+    /// `WebGL2RenderingContext.NOTEQUAL`
+    pub const NOTEQUAL: u32 = 0x0205;
+
+    /// `WebGL2RenderingContext.GEQUAL`
+    pub const GEQUAL: u32 = 0x0206;
+
+    /// `WebGL2RenderingContext.ALWAYS`
+    pub const ALWAYS: u32 = 0x0207;
+
+    /// `WebGL2RenderingContext.KEEP`
+    pub const KEEP: u32 = 0x1E00;
+
+    /// `WebGL2RenderingContext.REPLACE`
+    pub const REPLACE: u32 = 0x1E01;
+
+    /// `WebGL2RenderingContext.INCR`
+    pub const INCR: u32 = 0x1E02;
+
+    /// `WebGL2RenderingContext.DECR`
+    pub const DECR: u32 = 0x1E03;
+
+    /// `WebGL2RenderingContext.INVERT`
+    pub const INVERT: u32 = 0x150A;
+
+    /// `WebGL2RenderingContext.INCR_WRAP`
+    pub const INCR_WRAP: u32 = 0x8507;
+
+    /// `WebGL2RenderingContext.DECR_WRAP`
+    pub const DECR_WRAP: u32 = 0x8508;
+
+    /// `WebGL2RenderingContext.VENDOR`
+    pub const VENDOR: u32 = 0x1F00;
+
+    /// `WebGL2RenderingContext.RENDERER`
+    pub const RENDERER: u32 = 0x1F01;
+
+    /// `WebGL2RenderingContext.VERSION`
+    pub const VERSION: u32 = 0x1F02;
+
+    /// `WebGL2RenderingContext.NEAREST`
+    pub const NEAREST: u32 = 0x2600;
+
+    /// `WebGL2RenderingContext.LINEAR`
+    pub const LINEAR: u32 = 0x2601;
+
+    /// `WebGL2RenderingContext.NEAREST_MIPMAP_NEAREST`
+    pub const NEAREST_MIPMAP_NEAREST: u32 = 0x2700;
+
+    /// `WebGL2RenderingContext.LINEAR_MIPMAP_NEAREST`
+    pub const LINEAR_MIPMAP_NEAREST: u32 = 0x2701;
+
+    /// `WebGL2RenderingContext.NEAREST_MIPMAP_LINEAR`
+    pub const NEAREST_MIPMAP_LINEAR: u32 = 0x2702;
+
+    /// `WebGL2RenderingContext.LINEAR_MIPMAP_LINEAR`
+    pub const LINEAR_MIPMAP_LINEAR: u32 = 0x2703;
+
+    /// `WebGL2RenderingContext.TEXTURE_MAG_FILTER`
+    pub const TEXTURE_MAG_FILTER: u32 = 0x2800;
+
+    /// `WebGL2RenderingContext.TEXTURE_MIN_FILTER`
+    pub const TEXTURE_MIN_FILTER: u32 = 0x2801;
+
+    /// `WebGL2RenderingContext.TEXTURE_WRAP_S`
+    pub const TEXTURE_WRAP_S: u32 = 0x2802;
+
+    /// `WebGL2RenderingContext.TEXTURE_WRAP_T`
+    pub const TEXTURE_WRAP_T: u32 = 0x2803;
+
+    /// `WebGL2RenderingContext.TEXTURE_2D`
+    pub const TEXTURE_2D: u32 = 0x0DE1;
+
+    /// `WebGL2RenderingContext.TEXTURE`
+    pub const TEXTURE: u32 = 0x1702;
+
+    /// `WebGL2RenderingContext.TEXTURE_CUBE_MAP`
+    pub const TEXTURE_CUBE_MAP: u32 = 0x8513;
+
+    /// `WebGL2RenderingContext.TEXTURE_BINDING_CUBE_MAP`
+    pub const TEXTURE_BINDING_CUBE_MAP: u32 = 0x8514;
+
+    /// `WebGL2RenderingContext.TEXTURE_CUBE_MAP_POSITIVE_X`
+    pub const TEXTURE_CUBE_MAP_POSITIVE_X: u32 = 0x8515;
+
+    /// `WebGL2RenderingContext.TEXTURE_CUBE_MAP_NEGATIVE_X`
+    pub const TEXTURE_CUBE_MAP_NEGATIVE_X: u32 = 0x8516;
+
+    /// `WebGL2RenderingContext.TEXTURE_CUBE_MAP_POSITIVE_Y`
+    pub const TEXTURE_CUBE_MAP_POSITIVE_Y: u32 = 0x8517;
+
+    /// `WebGL2RenderingContext.TEXTURE_CUBE_MAP_NEGATIVE_Y`
+    pub const TEXTURE_CUBE_MAP_NEGATIVE_Y: u32 = 0x8518;
+
+    /// `WebGL2RenderingContext.TEXTURE_CUBE_MAP_POSITIVE_Z`
+    pub const TEXTURE_CUBE_MAP_POSITIVE_Z: u32 = 0x8519;
+
+    /// `WebGL2RenderingContext.TEXTURE_CUBE_MAP_NEGATIVE_Z`
+    pub const TEXTURE_CUBE_MAP_NEGATIVE_Z: u32 = 0x851A;
+
+    /// `WebGL2RenderingContext.MAX_CUBE_MAP_TEXTURE_SIZE`
+    pub const MAX_CUBE_MAP_TEXTURE_SIZE: u32 = 0x851C;
+
+    /// `WebGL2RenderingContext.TEXTURE0`
+    pub const TEXTURE0: u32 = 0x84C0;
+
+    /// `WebGL2RenderingContext.TEXTURE1`
+    pub const TEXTURE1: u32 = 0x84C1;
+
+    /// `WebGL2RenderingContext.TEXTURE2`
+    pub const TEXTURE2: u32 = 0x84C2;
+
+    /// `WebGL2RenderingContext.TEXTURE3`
+    pub const TEXTURE3: u32 = 0x84C3;
+
+    /// `WebGL2RenderingContext.TEXTURE4`
+    pub const TEXTURE4: u32 = 0x84C4;
+
+    /// `WebGL2RenderingContext.TEXTURE5`
+    pub const TEXTURE5: u32 = 0x84C5;
+
+    /// `WebGL2RenderingContext.TEXTURE6`
+    pub const TEXTURE6: u32 = 0x84C6;
+
+    /// `WebGL2RenderingContext.TEXTURE7`
+    pub const TEXTURE7: u32 = 0x84C7;
+
+    /// `WebGL2RenderingContext.TEXTURE8`
+    pub const TEXTURE8: u32 = 0x84C8;
+
+    /// `WebGL2RenderingContext.TEXTURE9`
+    pub const TEXTURE9: u32 = 0x84C9;
+
+    /// `WebGL2RenderingContext.TEXTURE10`
+    pub const TEXTURE10: u32 = 0x84CA;
+
+    /// `WebGL2RenderingContext.TEXTURE11`
+    pub const TEXTURE11: u32 = 0x84CB;
+
+    /// `WebGL2RenderingContext.TEXTURE12`
+    pub const TEXTURE12: u32 = 0x84CC;
+
+    /// `WebGL2RenderingContext.TEXTURE13`
+    pub const TEXTURE13: u32 = 0x84CD;
+
+    /// `WebGL2RenderingContext.TEXTURE14`
+    pub const TEXTURE14: u32 = 0x84CE;
+
+    /// `WebGL2RenderingContext.TEXTURE15`
+    pub const TEXTURE15: u32 = 0x84CF;
+
+    /// `WebGL2RenderingContext.TEXTURE16`
+    pub const TEXTURE16: u32 = 0x84D0;
+
+    /// `WebGL2RenderingContext.TEXTURE17`
+    pub const TEXTURE17: u32 = 0x84D1;
+
+    /// `WebGL2RenderingContext.TEXTURE18`
+    pub const TEXTURE18: u32 = 0x84D2;
+
+    /// `WebGL2RenderingContext.TEXTURE19`
+    pub const TEXTURE19: u32 = 0x84D3;
+
+    /// `WebGL2RenderingContext.TEXTURE20`
+    pub const TEXTURE20: u32 = 0x84D4;
+
+    /// `WebGL2RenderingContext.TEXTURE21`
+    pub const TEXTURE21: u32 = 0x84D5;
+
+    /// `WebGL2RenderingContext.TEXTURE22`
+    pub const TEXTURE22: u32 = 0x84D6;
+
+    /// `WebGL2RenderingContext.TEXTURE23`
+    pub const TEXTURE23: u32 = 0x84D7;
+
+    /// `WebGL2RenderingContext.TEXTURE24`
+    pub const TEXTURE24: u32 = 0x84D8;
+
+    /// `WebGL2RenderingContext.TEXTURE25`
+    pub const TEXTURE25: u32 = 0x84D9;
+
+    /// `WebGL2RenderingContext.TEXTURE26`
+    pub const TEXTURE26: u32 = 0x84DA;
+
+    /// `WebGL2RenderingContext.TEXTURE27`
+    pub const TEXTURE27: u32 = 0x84DB;
+
+    /// `WebGL2RenderingContext.TEXTURE28`
+    pub const TEXTURE28: u32 = 0x84DC;
+
+    /// `WebGL2RenderingContext.TEXTURE29`
+    pub const TEXTURE29: u32 = 0x84DD;
+
+    /// `WebGL2RenderingContext.TEXTURE30`
+    pub const TEXTURE30: u32 = 0x84DE;
+
+    /// `WebGL2RenderingContext.TEXTURE31`
+    pub const TEXTURE31: u32 = 0x84DF;
+
+    /// `WebGL2RenderingContext.ACTIVE_TEXTURE`
+    pub const ACTIVE_TEXTURE: u32 = 0x84E0;
+
+    /// `WebGL2RenderingContext.REPEAT`
+    pub const REPEAT: u32 = 0x2901;
+
+    /// `WebGL2RenderingContext.CLAMP_TO_EDGE`
+    pub const CLAMP_TO_EDGE: u32 = 0x812F;
+
+    /// `WebGL2RenderingContext.MIRRORED_REPEAT`
+    pub const MIRRORED_REPEAT: u32 = 0x8370;
+
+    /// `WebGL2RenderingContext.FLOAT_VEC2`
+    pub const FLOAT_VEC2: u32 = 0x8B50;
+
+    /// `WebGL2RenderingContext.FLOAT_VEC3`
+    pub const FLOAT_VEC3: u32 = 0x8B51;
+
+    /// `WebGL2RenderingContext.FLOAT_VEC4`
+    pub const FLOAT_VEC4: u32 = 0x8B52;
+
+    /// `WebGL2RenderingContext.INT_VEC2`
+    pub const INT_VEC2: u32 = 0x8B53;
+
+    /// `WebGL2RenderingContext.INT_VEC3`
+    pub const INT_VEC3: u32 = 0x8B54;
+
+    /// `WebGL2RenderingContext.INT_VEC4`
+    pub const INT_VEC4: u32 = 0x8B55;
+
+    /// `WebGL2RenderingContext.BOOL`
+    pub const BOOL: u32 = 0x8B56;
+
+    /// `WebGL2RenderingContext.BOOL_VEC2`
+    pub const BOOL_VEC2: u32 = 0x8B57;
+
+    /// `WebGL2RenderingContext.BOOL_VEC3`
+    pub const BOOL_VEC3: u32 = 0x8B58;
+
+    /// `WebGL2RenderingContext.BOOL_VEC4`
+    pub const BOOL_VEC4: u32 = 0x8B59;
+
+    /// `WebGL2RenderingContext.FLOAT_MAT2`
+    pub const FLOAT_MAT2: u32 = 0x8B5A;
+
+    /// `WebGL2RenderingContext.FLOAT_MAT3`
+    pub const FLOAT_MAT3: u32 = 0x8B5B;
+
+    /// `WebGL2RenderingContext.FLOAT_MAT4`
+    pub const FLOAT_MAT4: u32 = 0x8B5C;
+
+    /// `WebGL2RenderingContext.SAMPLER_2D`
+    pub const SAMPLER_2D: u32 = 0x8B5E;
+
+    /// `WebGL2RenderingContext.SAMPLER_CUBE`
+    pub const SAMPLER_CUBE: u32 = 0x8B60;
+
+    /// `WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_ENABLED`
+    pub const VERTEX_ATTRIB_ARRAY_ENABLED: u32 = 0x8622;
+
+    /// `WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_SIZE`
+    pub const VERTEX_ATTRIB_ARRAY_SIZE: u32 = 0x8623;
+
+    /// `WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_STRIDE`
+    pub const VERTEX_ATTRIB_ARRAY_STRIDE: u32 = 0x8624;
+
+    /// `WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_TYPE`
+    pub const VERTEX_ATTRIB_ARRAY_TYPE: u32 = 0x8625;
+
+    /// `WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_NORMALIZED`
+    pub const VERTEX_ATTRIB_ARRAY_NORMALIZED: u32 = 0x886A;
+
+    /// `WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_POINTER`
+    pub const VERTEX_ATTRIB_ARRAY_POINTER: u32 = 0x8645;
+
+    /// `WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_BUFFER_BINDING`
+    pub const VERTEX_ATTRIB_ARRAY_BUFFER_BINDING: u32 = 0x889F;
+
+    /// `WebGL2RenderingContext.IMPLEMENTATION_COLOR_READ_TYPE`
+    pub const IMPLEMENTATION_COLOR_READ_TYPE: u32 = 0x8B9A;
+
+    /// `WebGL2RenderingContext.IMPLEMENTATION_COLOR_READ_FORMAT`
+    pub const IMPLEMENTATION_COLOR_READ_FORMAT: u32 = 0x8B9B;
+
+    /// `WebGL2RenderingContext.COMPILE_STATUS`
+    pub const COMPILE_STATUS: u32 = 0x8B81;
+
+    /// `WebGL2RenderingContext.LOW_FLOAT`
+    pub const LOW_FLOAT: u32 = 0x8DF0;
+
+    /// `WebGL2RenderingContext.MEDIUM_FLOAT`
+    pub const MEDIUM_FLOAT: u32 = 0x8DF1;
+
+    /// `WebGL2RenderingContext.HIGH_FLOAT`
+    pub const HIGH_FLOAT: u32 = 0x8DF2;
+
+    /// `WebGL2RenderingContext.LOW_INT`
+    pub const LOW_INT: u32 = 0x8DF3;
+
+    /// `WebGL2RenderingContext.MEDIUM_INT`
+    pub const MEDIUM_INT: u32 = 0x8DF4;
+
+    /// `WebGL2RenderingContext.HIGH_INT`
+    pub const HIGH_INT: u32 = 0x8DF5;
+
+    /// `WebGL2RenderingContext.FRAMEBUFFER`
+    pub const FRAMEBUFFER: u32 = 0x8D40;
+
+    /// `WebGL2RenderingContext.RENDERBUFFER`
+    pub const RENDERBUFFER: u32 = 0x8D41;
+
+    /// `WebGL2RenderingContext.RGBA4`
+    pub const RGBA4: u32 = 0x8056;
+
+    /// `WebGL2RenderingContext.RGB5_A1`
+    pub const RGB5_A1: u32 = 0x8057;
+
+    /// `WebGL2RenderingContext.RGBA8`
+    pub const RGBA8: u32 = 0x8058;
+
+    /// `WebGL2RenderingContext.RGB565`
+    pub const RGB565: u32 = 0x8D62;
+
+    /// `WebGL2RenderingContext.DEPTH_COMPONENT16`
+    pub const DEPTH_COMPONENT16: u32 = 0x81A5;
+
+    /// `WebGL2RenderingContext.STENCIL_INDEX8`
+    pub const STENCIL_INDEX8: u32 = 0x8D48;
+
+    /// `WebGL2RenderingContext.DEPTH_STENCIL`
+    pub const DEPTH_STENCIL: u32 = 0x84F9;
+
+    /// `WebGL2RenderingContext.RENDERBUFFER_WIDTH`
+    pub const RENDERBUFFER_WIDTH: u32 = 0x8D42;
+
+    /// `WebGL2RenderingContext.RENDERBUFFER_HEIGHT`
+    pub const RENDERBUFFER_HEIGHT: u32 = 0x8D43;
+
+    /// `WebGL2RenderingContext.RENDERBUFFER_INTERNAL_FORMAT`
+    pub const RENDERBUFFER_INTERNAL_FORMAT: u32 = 0x8D44;
+
+    /// `WebGL2RenderingContext.RENDERBUFFER_RED_SIZE`
+    pub const RENDERBUFFER_RED_SIZE: u32 = 0x8D50;
+
+    /// `WebGL2RenderingContext.RENDERBUFFER_GREEN_SIZE`
+    pub const RENDERBUFFER_GREEN_SIZE: u32 = 0x8D51;
+
+    /// `WebGL2RenderingContext.RENDERBUFFER_BLUE_SIZE`
+    pub const RENDERBUFFER_BLUE_SIZE: u32 = 0x8D52;
+
+    /// `WebGL2RenderingContext.RENDERBUFFER_ALPHA_SIZE`
+    pub const RENDERBUFFER_ALPHA_SIZE: u32 = 0x8D53;
+
+    /// `WebGL2RenderingContext.RENDERBUFFER_DEPTH_SIZE`
+    pub const RENDERBUFFER_DEPTH_SIZE: u32 = 0x8D54;
+
+    /// `WebGL2RenderingContext.RENDERBUFFER_STENCIL_SIZE`
+    pub const RENDERBUFFER_STENCIL_SIZE: u32 = 0x8D55;
+
+    /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE`
+    pub const FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE: u32 = 0x8CD0;
+
+    /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME`
+    pub const FRAMEBUFFER_ATTACHMENT_OBJECT_NAME: u32 = 0x8CD1;
+
+    /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL`
+    pub const FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL: u32 = 0x8CD2;
+
+    /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE`
+    pub const FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE: u32 = 0x8CD3;
+
+    /// `WebGL2RenderingContext.COLOR_ATTACHMENT0`
+    pub const COLOR_ATTACHMENT0: u32 = 0x8CE0;
+
+    /// `WebGL2RenderingContext.DEPTH_ATTACHMENT`
+    pub const DEPTH_ATTACHMENT: u32 = 0x8D00;
+
+    /// `WebGL2RenderingContext.STENCIL_ATTACHMENT`
+    pub const STENCIL_ATTACHMENT: u32 = 0x8D20;
+
+    /// `WebGL2RenderingContext.DEPTH_STENCIL_ATTACHMENT`
+    pub const DEPTH_STENCIL_ATTACHMENT: u32 = 0x821A;
+
+    /// `WebGL2RenderingContext.NONE`
+    pub const NONE: u32 = 0;
+
+    /// `WebGL2RenderingContext.FRAMEBUFFER_COMPLETE`
+    pub const FRAMEBUFFER_COMPLETE: u32 = 0x8CD5;
+
+    /// `WebGL2RenderingContext.FRAMEBUFFER_INCOMPLETE_ATTACHMENT`
+    pub const FRAMEBUFFER_INCOMPLETE_ATTACHMENT: u32 = 0x8CD6;
+
+    /// `WebGL2RenderingContext.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT`
+    pub const FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: u32 = 0x8CD7;
+
+    /// `WebGL2RenderingContext.FRAMEBUFFER_INCOMPLETE_DIMENSIONS`
+    pub const FRAMEBUFFER_INCOMPLETE_DIMENSIONS: u32 = 0x8CD9;
+
+    /// `WebGL2RenderingContext.FRAMEBUFFER_UNSUPPORTED`
+    pub const FRAMEBUFFER_UNSUPPORTED: u32 = 0x8CDD;
+
+    /// `WebGL2RenderingContext.FRAMEBUFFER_BINDING`
+    pub const FRAMEBUFFER_BINDING: u32 = 0x8CA6;
+
+    /// `WebGL2RenderingContext.RENDERBUFFER_BINDING`
+    pub const RENDERBUFFER_BINDING: u32 = 0x8CA7;
+
+    /// `WebGL2RenderingContext.MAX_RENDERBUFFER_SIZE`
+    pub const MAX_RENDERBUFFER_SIZE: u32 = 0x84E8;
+
+    /// `WebGL2RenderingContext.INVALID_FRAMEBUFFER_OPERATION`
+    pub const INVALID_FRAMEBUFFER_OPERATION: u32 = 0x0506;
+
+    /// `WebGL2RenderingContext.UNPACK_FLIP_Y_WEBGL`
+    pub const UNPACK_FLIP_Y_WEBGL: u32 = 0x9240;
+
+    /// `WebGL2RenderingContext.UNPACK_PREMULTIPLY_ALPHA_WEBGL`
+    pub const UNPACK_PREMULTIPLY_ALPHA_WEBGL: u32 = 0x9241;
+
+    /// `WebGL2RenderingContext.CONTEXT_LOST_WEBGL`
+    pub const CONTEXT_LOST_WEBGL: u32 = 0x9242;
+
+    /// `WebGL2RenderingContext.UNPACK_COLORSPACE_CONVERSION_WEBGL`
+    pub const UNPACK_COLORSPACE_CONVERSION_WEBGL: u32 = 0x9243;
+
+    /// `WebGL2RenderingContext.BROWSER_DEFAULT_WEBGL`
+    pub const BROWSER_DEFAULT_WEBGL: u32 = 0x9244;
+
+    /// `WebGL2RenderingContext.READ_BUFFER`
+    pub const READ_BUFFER: u32 = 0x0C02;
+
+    /// `WebGL2RenderingContext.UNPACK_ROW_LENGTH`
+    pub const UNPACK_ROW_LENGTH: u32 = 0x0CF2;
+
+    /// `WebGL2RenderingContext.UNPACK_SKIP_ROWS`
+    pub const UNPACK_SKIP_ROWS: u32 = 0x0CF3;
+
+    /// `WebGL2RenderingContext.UNPACK_SKIP_PIXELS`
+    pub const UNPACK_SKIP_PIXELS: u32 = 0x0CF4;
+
+    /// `WebGL2RenderingContext.PACK_ROW_LENGTH`
+    pub const PACK_ROW_LENGTH: u32 = 0x0D02;
+
+    /// `WebGL2RenderingContext.PACK_SKIP_ROWS`
+    pub const PACK_SKIP_ROWS: u32 = 0x0D03;
+
+    /// `WebGL2RenderingContext.PACK_SKIP_PIXELS`
+    pub const PACK_SKIP_PIXELS: u32 = 0x0D04;
+
+    /// `WebGL2RenderingContext.COLOR`
+    pub const COLOR: u32 = 0x1800;
+
+    /// `WebGL2RenderingContext.DEPTH`
+    pub const DEPTH: u32 = 0x1801;
+
+    /// `WebGL2RenderingContext.STENCIL`
+    pub const STENCIL: u32 = 0x1802;
+
+    /// `WebGL2RenderingContext.RED`
+    pub const RED: u32 = 0x1903;
+
+    /// `WebGL2RenderingContext.RGB8`
+    pub const RGB8: u32 = 0x8051;
+
+    /// `WebGL2RenderingContext.RGB10_A2`
+    pub const RGB10_A2: u32 = 0x8059;
+
+    /// `WebGL2RenderingContext.TEXTURE_BINDING_3D`
+    pub const TEXTURE_BINDING_3D: u32 = 0x806A;
+
+    /// `WebGL2RenderingContext.UNPACK_SKIP_IMAGES`
+    pub const UNPACK_SKIP_IMAGES: u32 = 0x806D;
+
+    /// `WebGL2RenderingContext.UNPACK_IMAGE_HEIGHT`
+    pub const UNPACK_IMAGE_HEIGHT: u32 = 0x806E;
+
+    /// `WebGL2RenderingContext.TEXTURE_3D`
+    pub const TEXTURE_3D: u32 = 0x806F;
+
+    /// `WebGL2RenderingContext.TEXTURE_WRAP_R`
+    pub const TEXTURE_WRAP_R: u32 = 0x8072;
+
+    /// `WebGL2RenderingContext.MAX_3D_TEXTURE_SIZE`
+    pub const MAX_3D_TEXTURE_SIZE: u32 = 0x8073;
+
+    /// `WebGL2RenderingContext.UNSIGNED_INT_2_10_10_10_REV`
+    pub const UNSIGNED_INT_2_10_10_10_REV: u32 = 0x8368;
+
+    /// `WebGL2RenderingContext.MAX_ELEMENTS_VERTICES`
+    pub const MAX_ELEMENTS_VERTICES: u32 = 0x80E8;
+
+    /// `WebGL2RenderingContext.MAX_ELEMENTS_INDICES`
+    pub const MAX_ELEMENTS_INDICES: u32 = 0x80E9;
+
+    /// `WebGL2RenderingContext.TEXTURE_MIN_LOD`
+    pub const TEXTURE_MIN_LOD: u32 = 0x813A;
+
+    /// `WebGL2RenderingContext.TEXTURE_MAX_LOD`
+    pub const TEXTURE_MAX_LOD: u32 = 0x813B;
+
+    /// `WebGL2RenderingContext.TEXTURE_BASE_LEVEL`
+    pub const TEXTURE_BASE_LEVEL: u32 = 0x813C;
+
+    /// `WebGL2RenderingContext.TEXTURE_MAX_LEVEL`
+    pub const TEXTURE_MAX_LEVEL: u32 = 0x813D;
+
+    /// `WebGL2RenderingContext.MIN`
+    pub const MIN: u32 = 0x8007;
+
+    /// `WebGL2RenderingContext.MAX`
+    pub const MAX: u32 = 0x8008;
+
+    /// `WebGL2RenderingContext.DEPTH_COMPONENT24`
+    pub const DEPTH_COMPONENT24: u32 = 0x81A6;
+
+    /// `WebGL2RenderingContext.MAX_TEXTURE_LOD_BIAS`
+    pub const MAX_TEXTURE_LOD_BIAS: u32 = 0x84FD;
+
+    /// `WebGL2RenderingContext.TEXTURE_COMPARE_MODE`
+    pub const TEXTURE_COMPARE_MODE: u32 = 0x884C;
+
+    /// `WebGL2RenderingContext.TEXTURE_COMPARE_FUNC`
+    pub const TEXTURE_COMPARE_FUNC: u32 = 0x884D;
+
+    /// `WebGL2RenderingContext.CURRENT_QUERY`
+    pub const CURRENT_QUERY: u32 = 0x8865;
+
+    /// `WebGL2RenderingContext.QUERY_RESULT`
+    pub const QUERY_RESULT: u32 = 0x8866;
+
+    /// `WebGL2RenderingContext.QUERY_RESULT_AVAILABLE`
+    pub const QUERY_RESULT_AVAILABLE: u32 = 0x8867;
+
+    /// `WebGL2RenderingContext.STREAM_READ`
+    pub const STREAM_READ: u32 = 0x88E1;
+
+    /// `WebGL2RenderingContext.STREAM_COPY`
+    pub const STREAM_COPY: u32 = 0x88E2;
+
+    /// `WebGL2RenderingContext.STATIC_READ`
+    pub const STATIC_READ: u32 = 0x88E5;
+
+    /// `WebGL2RenderingContext.STATIC_COPY`
+    pub const STATIC_COPY: u32 = 0x88E6;
+
+    /// `WebGL2RenderingContext.DYNAMIC_READ`
+    pub const DYNAMIC_READ: u32 = 0x88E9;
+
+    /// `WebGL2RenderingContext.DYNAMIC_COPY`
+    pub const DYNAMIC_COPY: u32 = 0x88EA;
+
+    /// `WebGL2RenderingContext.MAX_DRAW_BUFFERS`
+    pub const MAX_DRAW_BUFFERS: u32 = 0x8824;
+
+    /// `WebGL2RenderingContext.DRAW_BUFFER0`
+    pub const DRAW_BUFFER0: u32 = 0x8825;
+
+    /// `WebGL2RenderingContext.DRAW_BUFFER1`
+    pub const DRAW_BUFFER1: u32 = 0x8826;
+
+    /// `WebGL2RenderingContext.DRAW_BUFFER2`
+    pub const DRAW_BUFFER2: u32 = 0x8827;
+
+    /// `WebGL2RenderingContext.DRAW_BUFFER3`
+    pub const DRAW_BUFFER3: u32 = 0x8828;
+
+    /// `WebGL2RenderingContext.DRAW_BUFFER4`
+    pub const DRAW_BUFFER4: u32 = 0x8829;
+
+    /// `WebGL2RenderingContext.DRAW_BUFFER5`
+    pub const DRAW_BUFFER5: u32 = 0x882A;
+
+    /// `WebGL2RenderingContext.DRAW_BUFFER6`
+    pub const DRAW_BUFFER6: u32 = 0x882B;
+
+    /// `WebGL2RenderingContext.DRAW_BUFFER7`
+    pub const DRAW_BUFFER7: u32 = 0x882C;
+
+    /// `WebGL2RenderingContext.DRAW_BUFFER8`
+    pub const DRAW_BUFFER8: u32 = 0x882D;
+
+    /// `WebGL2RenderingContext.DRAW_BUFFER9`
+    pub const DRAW_BUFFER9: u32 = 0x882E;
+
+    /// `WebGL2RenderingContext.DRAW_BUFFER10`
+    pub const DRAW_BUFFER10: u32 = 0x882F;
+
+    /// `WebGL2RenderingContext.DRAW_BUFFER11`
+    pub const DRAW_BUFFER11: u32 = 0x8830;
+
+    /// `WebGL2RenderingContext.DRAW_BUFFER12`
+    pub const DRAW_BUFFER12: u32 = 0x8831;
+
+    /// `WebGL2RenderingContext.DRAW_BUFFER13`
+    pub const DRAW_BUFFER13: u32 = 0x8832;
+
+    /// `WebGL2RenderingContext.DRAW_BUFFER14`
+    pub const DRAW_BUFFER14: u32 = 0x8833;
+
+    /// `WebGL2RenderingContext.DRAW_BUFFER15`
+    pub const DRAW_BUFFER15: u32 = 0x8834;
+
+    /// `WebGL2RenderingContext.MAX_FRAGMENT_UNIFORM_COMPONENTS`
+    pub const MAX_FRAGMENT_UNIFORM_COMPONENTS: u32 = 0x8B49;
+
+    /// `WebGL2RenderingContext.MAX_VERTEX_UNIFORM_COMPONENTS`
+    pub const MAX_VERTEX_UNIFORM_COMPONENTS: u32 = 0x8B4A;
+
+    /// `WebGL2RenderingContext.SAMPLER_3D`
+    pub const SAMPLER_3D: u32 = 0x8B5F;
+
+    /// `WebGL2RenderingContext.SAMPLER_2D_SHADOW`
+    pub const SAMPLER_2D_SHADOW: u32 = 0x8B62;
+
+    /// `WebGL2RenderingContext.FRAGMENT_SHADER_DERIVATIVE_HINT`
+    pub const FRAGMENT_SHADER_DERIVATIVE_HINT: u32 = 0x8B8B;
+
+    /// `WebGL2RenderingContext.PIXEL_PACK_BUFFER`
+    pub const PIXEL_PACK_BUFFER: u32 = 0x88EB;
+
+    /// `WebGL2RenderingContext.PIXEL_UNPACK_BUFFER`
+    pub const PIXEL_UNPACK_BUFFER: u32 = 0x88EC;
+
+    /// `WebGL2RenderingContext.PIXEL_PACK_BUFFER_BINDING`
+    pub const PIXEL_PACK_BUFFER_BINDING: u32 = 0x88ED;
+
+    /// `WebGL2RenderingContext.PIXEL_UNPACK_BUFFER_BINDING`
+    pub const PIXEL_UNPACK_BUFFER_BINDING: u32 = 0x88EF;
+
+    /// `WebGL2RenderingContext.FLOAT_MAT2x3`
+    #[allow(non_upper_case_globals)]
+    pub const FLOAT_MAT2x3: u32 = 0x8B65;
+
+    /// `WebGL2RenderingContext.FLOAT_MAT2x4`
+    #[allow(non_upper_case_globals)]
+    pub const FLOAT_MAT2x4: u32 = 0x8B66;
+
+    /// `WebGL2RenderingContext.FLOAT_MAT3x2`
+    #[allow(non_upper_case_globals)]
+    pub const FLOAT_MAT3x2: u32 = 0x8B67;
+
+    /// `WebGL2RenderingContext.FLOAT_MAT3x4`
+    #[allow(non_upper_case_globals)]
+    pub const FLOAT_MAT3x4: u32 = 0x8B68;
+
+    /// `WebGL2RenderingContext.FLOAT_MAT4x2`
+    #[allow(non_upper_case_globals)]
+    pub const FLOAT_MAT4x2: u32 = 0x8B69;
+
+    /// `WebGL2RenderingContext.FLOAT_MAT4x3`
+    #[allow(non_upper_case_globals)]
+    pub const FLOAT_MAT4x3: u32 = 0x8B6A;
+
+    /// `WebGL2RenderingContext.SRGB`
+    pub const SRGB: u32 = 0x8C40;
+
+    /// `WebGL2RenderingContext.SRGB8`
+    pub const SRGB8: u32 = 0x8C41;
+
+    /// `WebGL2RenderingContext.SRGB8_ALPHA8`
+    pub const SRGB8_ALPHA8: u32 = 0x8C43;
+
+    /// `WebGL2RenderingContext.COMPARE_REF_TO_TEXTURE`
+    pub const COMPARE_REF_TO_TEXTURE: u32 = 0x884E;
+
+    /// `WebGL2RenderingContext.RGBA32F`
+    pub const RGBA32F: u32 = 0x8814;
+
+    /// `WebGL2RenderingContext.RGB32F`
+    pub const RGB32F: u32 = 0x8815;
+
+    /// `WebGL2RenderingContext.RGBA16F`
+    pub const RGBA16F: u32 = 0x881A;
+
+    /// `WebGL2RenderingContext.RGB16F`
+    pub const RGB16F: u32 = 0x881B;
+
+    /// `WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_INTEGER`
+    pub const VERTEX_ATTRIB_ARRAY_INTEGER: u32 = 0x88FD;
+
+    /// `WebGL2RenderingContext.MAX_ARRAY_TEXTURE_LAYERS`
+    pub const MAX_ARRAY_TEXTURE_LAYERS: u32 = 0x88FF;
+
+    /// `WebGL2RenderingContext.MIN_PROGRAM_TEXEL_OFFSET`
+    pub const MIN_PROGRAM_TEXEL_OFFSET: u32 = 0x8904;
+
+    /// `WebGL2RenderingContext.MAX_PROGRAM_TEXEL_OFFSET`
+    pub const MAX_PROGRAM_TEXEL_OFFSET: u32 = 0x8905;
+
+    /// `WebGL2RenderingContext.MAX_VARYING_COMPONENTS`
+    pub const MAX_VARYING_COMPONENTS: u32 = 0x8B4B;
+
+    /// `WebGL2RenderingContext.TEXTURE_2D_ARRAY`
+    pub const TEXTURE_2D_ARRAY: u32 = 0x8C1A;
+
+    /// `WebGL2RenderingContext.TEXTURE_BINDING_2D_ARRAY`
+    pub const TEXTURE_BINDING_2D_ARRAY: u32 = 0x8C1D;
+
+    /// `WebGL2RenderingContext.R11F_G11F_B10F`
+    pub const R11F_G11F_B10F: u32 = 0x8C3A;
+
+    /// `WebGL2RenderingContext.UNSIGNED_INT_10F_11F_11F_REV`
+    pub const UNSIGNED_INT_10F_11F_11F_REV: u32 = 0x8C3B;
+
+    /// `WebGL2RenderingContext.RGB9_E5`
+    pub const RGB9_E5: u32 = 0x8C3D;
+
+    /// `WebGL2RenderingContext.UNSIGNED_INT_5_9_9_9_REV`
+    pub const UNSIGNED_INT_5_9_9_9_REV: u32 = 0x8C3E;
+
+    /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_BUFFER_MODE`
+    pub const TRANSFORM_FEEDBACK_BUFFER_MODE: u32 = 0x8C7F;
+
+    /// `WebGL2RenderingContext.MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS`
+    pub const MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS: u32 = 0x8C80;
+
+    /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_VARYINGS`
+    pub const TRANSFORM_FEEDBACK_VARYINGS: u32 = 0x8C83;
+
+    /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_BUFFER_START`
+    pub const TRANSFORM_FEEDBACK_BUFFER_START: u32 = 0x8C84;
+
+    /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_BUFFER_SIZE`
+    pub const TRANSFORM_FEEDBACK_BUFFER_SIZE: u32 = 0x8C85;
+
+    /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN`
+    pub const TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN: u32 = 0x8C88;
+
+    /// `WebGL2RenderingContext.RASTERIZER_DISCARD`
+    pub const RASTERIZER_DISCARD: u32 = 0x8C89;
+
+    /// `WebGL2RenderingContext.MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS`
+    pub const MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS: u32 = 0x8C8A;
+
+    /// `WebGL2RenderingContext.MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS`
+    pub const MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS: u32 = 0x8C8B;
+
+    /// `WebGL2RenderingContext.INTERLEAVED_ATTRIBS`
+    pub const INTERLEAVED_ATTRIBS: u32 = 0x8C8C;
+
+    /// `WebGL2RenderingContext.SEPARATE_ATTRIBS`
+    pub const SEPARATE_ATTRIBS: u32 = 0x8C8D;
+
+    /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_BUFFER`
+    pub const TRANSFORM_FEEDBACK_BUFFER: u32 = 0x8C8E;
+
+    /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_BUFFER_BINDING`
+    pub const TRANSFORM_FEEDBACK_BUFFER_BINDING: u32 = 0x8C8F;
+
+    /// `WebGL2RenderingContext.RGBA32UI`
+    pub const RGBA32UI: u32 = 0x8D70;
+
+    /// `WebGL2RenderingContext.RGB32UI`
+    pub const RGB32UI: u32 = 0x8D71;
+
+    /// `WebGL2RenderingContext.RGBA16UI`
+    pub const RGBA16UI: u32 = 0x8D76;
+
+    /// `WebGL2RenderingContext.RGB16UI`
+    pub const RGB16UI: u32 = 0x8D77;
+
+    /// `WebGL2RenderingContext.RGBA8UI`
+    pub const RGBA8UI: u32 = 0x8D7C;
+
+    /// `WebGL2RenderingContext.RGB8UI`
+    pub const RGB8UI: u32 = 0x8D7D;
+
+    /// `WebGL2RenderingContext.RGBA32I`
+    pub const RGBA32I: u32 = 0x8D82;
+
+    /// `WebGL2RenderingContext.RGB32I`
+    pub const RGB32I: u32 = 0x8D83;
+
+    /// `WebGL2RenderingContext.RGBA16I`
+    pub const RGBA16I: u32 = 0x8D88;
+
+    /// `WebGL2RenderingContext.RGB16I`
+    pub const RGB16I: u32 = 0x8D89;
+
+    /// `WebGL2RenderingContext.RGBA8I`
+    pub const RGBA8I: u32 = 0x8D8E;
+
+    /// `WebGL2RenderingContext.RGB8I`
+    pub const RGB8I: u32 = 0x8D8F;
+
+    /// `WebGL2RenderingContext.RED_INTEGER`
+    pub const RED_INTEGER: u32 = 0x8D94;
+
+    /// `WebGL2RenderingContext.RGB_INTEGER`
+    pub const RGB_INTEGER: u32 = 0x8D98;
+
+    /// `WebGL2RenderingContext.RGBA_INTEGER`
+    pub const RGBA_INTEGER: u32 = 0x8D99;
+
+    /// `WebGL2RenderingContext.SAMPLER_2D_ARRAY`
+    pub const SAMPLER_2D_ARRAY: u32 = 0x8DC1;
+
+    /// `WebGL2RenderingContext.SAMPLER_2D_ARRAY_SHADOW`
+    pub const SAMPLER_2D_ARRAY_SHADOW: u32 = 0x8DC4;
+
+    /// `WebGL2RenderingContext.SAMPLER_CUBE_SHADOW`
+    pub const SAMPLER_CUBE_SHADOW: u32 = 0x8DC5;
+
+    /// `WebGL2RenderingContext.UNSIGNED_INT_VEC2`
+    pub const UNSIGNED_INT_VEC2: u32 = 0x8DC6;
+
+    /// `WebGL2RenderingContext.UNSIGNED_INT_VEC3`
+    pub const UNSIGNED_INT_VEC3: u32 = 0x8DC7;
+
+    /// `WebGL2RenderingContext.UNSIGNED_INT_VEC4`
+    pub const UNSIGNED_INT_VEC4: u32 = 0x8DC8;
+
+    /// `WebGL2RenderingContext.INT_SAMPLER_2D`
+    pub const INT_SAMPLER_2D: u32 = 0x8DCA;
+
+    /// `WebGL2RenderingContext.INT_SAMPLER_3D`
+    pub const INT_SAMPLER_3D: u32 = 0x8DCB;
+
+    /// `WebGL2RenderingContext.INT_SAMPLER_CUBE`
+    pub const INT_SAMPLER_CUBE: u32 = 0x8DCC;
+
+    /// `WebGL2RenderingContext.INT_SAMPLER_2D_ARRAY`
+    pub const INT_SAMPLER_2D_ARRAY: u32 = 0x8DCF;
+
+    /// `WebGL2RenderingContext.UNSIGNED_INT_SAMPLER_2D`
+    pub const UNSIGNED_INT_SAMPLER_2D: u32 = 0x8DD2;
+
+    /// `WebGL2RenderingContext.UNSIGNED_INT_SAMPLER_3D`
+    pub const UNSIGNED_INT_SAMPLER_3D: u32 = 0x8DD3;
+
+    /// `WebGL2RenderingContext.UNSIGNED_INT_SAMPLER_CUBE`
+    pub const UNSIGNED_INT_SAMPLER_CUBE: u32 = 0x8DD4;
+
+    /// `WebGL2RenderingContext.UNSIGNED_INT_SAMPLER_2D_ARRAY`
+    pub const UNSIGNED_INT_SAMPLER_2D_ARRAY: u32 = 0x8DD7;
+
+    /// `WebGL2RenderingContext.DEPTH_COMPONENT32F`
+    pub const DEPTH_COMPONENT32F: u32 = 0x8CAC;
+
+    /// `WebGL2RenderingContext.DEPTH32F_STENCIL8`
+    pub const DEPTH32F_STENCIL8: u32 = 0x8CAD;
+
+    /// `WebGL2RenderingContext.FLOAT_32_UNSIGNED_INT_24_8_REV`
+    pub const FLOAT_32_UNSIGNED_INT_24_8_REV: u32 = 0x8DAD;
+
+    /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING`
+    pub const FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING: u32 = 0x8210;
+
+    /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE`
+    pub const FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE: u32 = 0x8211;
+
+    /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_RED_SIZE`
+    pub const FRAMEBUFFER_ATTACHMENT_RED_SIZE: u32 = 0x8212;
+
+    /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_GREEN_SIZE`
+    pub const FRAMEBUFFER_ATTACHMENT_GREEN_SIZE: u32 = 0x8213;
+
+    /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_BLUE_SIZE`
+    pub const FRAMEBUFFER_ATTACHMENT_BLUE_SIZE: u32 = 0x8214;
+
+    /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE`
+    pub const FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE: u32 = 0x8215;
+
+    /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE`
+    pub const FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE: u32 = 0x8216;
+
+    /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE`
+    pub const FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE: u32 = 0x8217;
+
+    /// `WebGL2RenderingContext.FRAMEBUFFER_DEFAULT`
+    pub const FRAMEBUFFER_DEFAULT: u32 = 0x8218;
+
+    /// `WebGL2RenderingContext.UNSIGNED_INT_24_8`
+    pub const UNSIGNED_INT_24_8: u32 = 0x84FA;
+
+    /// `WebGL2RenderingContext.DEPTH24_STENCIL8`
+    pub const DEPTH24_STENCIL8: u32 = 0x88F0;
+
+    /// `WebGL2RenderingContext.UNSIGNED_NORMALIZED`
+    pub const UNSIGNED_NORMALIZED: u32 = 0x8C17;
+
+    /// `WebGL2RenderingContext.DRAW_FRAMEBUFFER_BINDING`
+    pub const DRAW_FRAMEBUFFER_BINDING: u32 = 0x8CA6;
+
+    /// `WebGL2RenderingContext.READ_FRAMEBUFFER`
+    pub const READ_FRAMEBUFFER: u32 = 0x8CA8;
+
+    /// `WebGL2RenderingContext.DRAW_FRAMEBUFFER`
+    pub const DRAW_FRAMEBUFFER: u32 = 0x8CA9;
+
+    /// `WebGL2RenderingContext.READ_FRAMEBUFFER_BINDING`
+    pub const READ_FRAMEBUFFER_BINDING: u32 = 0x8CAA;
+
+    /// `WebGL2RenderingContext.RENDERBUFFER_SAMPLES`
+    pub const RENDERBUFFER_SAMPLES: u32 = 0x8CAB;
+
+    /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER`
+    pub const FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER: u32 = 0x8CD4;
+
+    /// `WebGL2RenderingContext.MAX_COLOR_ATTACHMENTS`
+    pub const MAX_COLOR_ATTACHMENTS: u32 = 0x8CDF;
+
+    /// `WebGL2RenderingContext.COLOR_ATTACHMENT1`
+    pub const COLOR_ATTACHMENT1: u32 = 0x8CE1;
+
+    /// `WebGL2RenderingContext.COLOR_ATTACHMENT2`
+    pub const COLOR_ATTACHMENT2: u32 = 0x8CE2;
+
+    /// `WebGL2RenderingContext.COLOR_ATTACHMENT3`
+    pub const COLOR_ATTACHMENT3: u32 = 0x8CE3;
+
+    /// `WebGL2RenderingContext.COLOR_ATTACHMENT4`
+    pub const COLOR_ATTACHMENT4: u32 = 0x8CE4;
+
+    /// `WebGL2RenderingContext.COLOR_ATTACHMENT5`
+    pub const COLOR_ATTACHMENT5: u32 = 0x8CE5;
+
+    /// `WebGL2RenderingContext.COLOR_ATTACHMENT6`
+    pub const COLOR_ATTACHMENT6: u32 = 0x8CE6;
+
+    /// `WebGL2RenderingContext.COLOR_ATTACHMENT7`
+    pub const COLOR_ATTACHMENT7: u32 = 0x8CE7;
+
+    /// `WebGL2RenderingContext.COLOR_ATTACHMENT8`
+    pub const COLOR_ATTACHMENT8: u32 = 0x8CE8;
+
+    /// `WebGL2RenderingContext.COLOR_ATTACHMENT9`
+    pub const COLOR_ATTACHMENT9: u32 = 0x8CE9;
+
+    /// `WebGL2RenderingContext.COLOR_ATTACHMENT10`
+    pub const COLOR_ATTACHMENT10: u32 = 0x8CEA;
+
+    /// `WebGL2RenderingContext.COLOR_ATTACHMENT11`
+    pub const COLOR_ATTACHMENT11: u32 = 0x8CEB;
+
+    /// `WebGL2RenderingContext.COLOR_ATTACHMENT12`
+    pub const COLOR_ATTACHMENT12: u32 = 0x8CEC;
+
+    /// `WebGL2RenderingContext.COLOR_ATTACHMENT13`
+    pub const COLOR_ATTACHMENT13: u32 = 0x8CED;
+
+    /// `WebGL2RenderingContext.COLOR_ATTACHMENT14`
+    pub const COLOR_ATTACHMENT14: u32 = 0x8CEE;
+
+    /// `WebGL2RenderingContext.COLOR_ATTACHMENT15`
+    pub const COLOR_ATTACHMENT15: u32 = 0x8CEF;
+
+    /// `WebGL2RenderingContext.FRAMEBUFFER_INCOMPLETE_MULTISAMPLE`
+    pub const FRAMEBUFFER_INCOMPLETE_MULTISAMPLE: u32 = 0x8D56;
+
+    /// `WebGL2RenderingContext.MAX_SAMPLES`
+    pub const MAX_SAMPLES: u32 = 0x8D57;
+
+    /// `WebGL2RenderingContext.HALF_FLOAT`
+    pub const HALF_FLOAT: u32 = 0x140B;
+
+    /// `WebGL2RenderingContext.RG`
+    pub const RG: u32 = 0x8227;
+
+    /// `WebGL2RenderingContext.RG_INTEGER`
+    pub const RG_INTEGER: u32 = 0x8228;
+
+    /// `WebGL2RenderingContext.R8`
+    pub const R8: u32 = 0x8229;
+
+    /// `WebGL2RenderingContext.RG8`
+    pub const RG8: u32 = 0x822B;
+
+    /// `WebGL2RenderingContext.R16F`
+    pub const R16F: u32 = 0x822D;
+
+    /// `WebGL2RenderingContext.R32F`
+    pub const R32F: u32 = 0x822E;
+
+    /// `WebGL2RenderingContext.RG16F`
+    pub const RG16F: u32 = 0x822F;
+
+    /// `WebGL2RenderingContext.RG32F`
+    pub const RG32F: u32 = 0x8230;
+
+    /// `WebGL2RenderingContext.R8I`
+    pub const R8I: u32 = 0x8231;
+
+    /// `WebGL2RenderingContext.R8UI`
+    pub const R8UI: u32 = 0x8232;
+
+    /// `WebGL2RenderingContext.R16I`
+    pub const R16I: u32 = 0x8233;
+
+    /// `WebGL2RenderingContext.R16UI`
+    pub const R16UI: u32 = 0x8234;
+
+    /// `WebGL2RenderingContext.R32I`
+    pub const R32I: u32 = 0x8235;
+
+    /// `WebGL2RenderingContext.R32UI`
+    pub const R32UI: u32 = 0x8236;
+
+    /// `WebGL2RenderingContext.RG8I`
+    pub const RG8I: u32 = 0x8237;
+
+    /// `WebGL2RenderingContext.RG8UI`
+    pub const RG8UI: u32 = 0x8238;
+
+    /// `WebGL2RenderingContext.RG16I`
+    pub const RG16I: u32 = 0x8239;
+
+    /// `WebGL2RenderingContext.RG16UI`
+    pub const RG16UI: u32 = 0x823A;
+
+    /// `WebGL2RenderingContext.RG32I`
+    pub const RG32I: u32 = 0x823B;
+
+    /// `WebGL2RenderingContext.RG32UI`
+    pub const RG32UI: u32 = 0x823C;
+
+    /// `WebGL2RenderingContext.VERTEX_ARRAY_BINDING`
+    pub const VERTEX_ARRAY_BINDING: u32 = 0x85B5;
+
+    /// `WebGL2RenderingContext.R8_SNORM`
+    pub const R8_SNORM: u32 = 0x8F94;
+
+    /// `WebGL2RenderingContext.RG8_SNORM`
+    pub const RG8_SNORM: u32 = 0x8F95;
+
+    /// `WebGL2RenderingContext.RGB8_SNORM`
+    pub const RGB8_SNORM: u32 = 0x8F96;
+
+    /// `WebGL2RenderingContext.RGBA8_SNORM`
+    pub const RGBA8_SNORM: u32 = 0x8F97;
+
+    /// `WebGL2RenderingContext.SIGNED_NORMALIZED`
+    pub const SIGNED_NORMALIZED: u32 = 0x8F9C;
+
+    /// `WebGL2RenderingContext.COPY_READ_BUFFER`
+    pub const COPY_READ_BUFFER: u32 = 0x8F36;
+
+    /// `WebGL2RenderingContext.COPY_WRITE_BUFFER`
+    pub const COPY_WRITE_BUFFER: u32 = 0x8F37;
+
+    /// `WebGL2RenderingContext.COPY_READ_BUFFER_BINDING`
+    pub const COPY_READ_BUFFER_BINDING: u32 = 0x8F36;
+
+    /// `WebGL2RenderingContext.COPY_WRITE_BUFFER_BINDING`
+    pub const COPY_WRITE_BUFFER_BINDING: u32 = 0x8F37;
+
+    /// `WebGL2RenderingContext.UNIFORM_BUFFER`
+    pub const UNIFORM_BUFFER: u32 = 0x8A11;
+
+    /// `WebGL2RenderingContext.UNIFORM_BUFFER_BINDING`
+    pub const UNIFORM_BUFFER_BINDING: u32 = 0x8A28;
+
+    /// `WebGL2RenderingContext.UNIFORM_BUFFER_START`
+    pub const UNIFORM_BUFFER_START: u32 = 0x8A29;
+
+    /// `WebGL2RenderingContext.UNIFORM_BUFFER_SIZE`
+    pub const UNIFORM_BUFFER_SIZE: u32 = 0x8A2A;
+
+    /// `WebGL2RenderingContext.MAX_VERTEX_UNIFORM_BLOCKS`
+    pub const MAX_VERTEX_UNIFORM_BLOCKS: u32 = 0x8A2B;
+
+    /// `WebGL2RenderingContext.MAX_FRAGMENT_UNIFORM_BLOCKS`
+    pub const MAX_FRAGMENT_UNIFORM_BLOCKS: u32 = 0x8A2D;
+
+    /// `WebGL2RenderingContext.MAX_COMBINED_UNIFORM_BLOCKS`
+    pub const MAX_COMBINED_UNIFORM_BLOCKS: u32 = 0x8A2E;
+
+    /// `WebGL2RenderingContext.MAX_UNIFORM_BUFFER_BINDINGS`
+    pub const MAX_UNIFORM_BUFFER_BINDINGS: u32 = 0x8A2F;
+
+    /// `WebGL2RenderingContext.MAX_UNIFORM_BLOCK_SIZE`
+    pub const MAX_UNIFORM_BLOCK_SIZE: u32 = 0x8A30;
+
+    /// `WebGL2RenderingContext.MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS`
+    pub const MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS: u32 = 0x8A31;
+
+    /// `WebGL2RenderingContext.MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS`
+    pub const MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS: u32 = 0x8A33;
+
+    /// `WebGL2RenderingContext.UNIFORM_BUFFER_OFFSET_ALIGNMENT`
+    pub const UNIFORM_BUFFER_OFFSET_ALIGNMENT: u32 = 0x8A34;
+
+    /// `WebGL2RenderingContext.ACTIVE_UNIFORM_BLOCKS`
+    pub const ACTIVE_UNIFORM_BLOCKS: u32 = 0x8A36;
+
+    /// `WebGL2RenderingContext.UNIFORM_TYPE`
+    pub const UNIFORM_TYPE: u32 = 0x8A37;
+
+    /// `WebGL2RenderingContext.UNIFORM_SIZE`
+    pub const UNIFORM_SIZE: u32 = 0x8A38;
+
+    /// `WebGL2RenderingContext.UNIFORM_BLOCK_INDEX`
+    pub const UNIFORM_BLOCK_INDEX: u32 = 0x8A3A;
+
+    /// `WebGL2RenderingContext.UNIFORM_OFFSET`
+    pub const UNIFORM_OFFSET: u32 = 0x8A3B;
+
+    /// `WebGL2RenderingContext.UNIFORM_ARRAY_STRIDE`
+    pub const UNIFORM_ARRAY_STRIDE: u32 = 0x8A3C;
+
+    /// `WebGL2RenderingContext.UNIFORM_MATRIX_STRIDE`
+    pub const UNIFORM_MATRIX_STRIDE: u32 = 0x8A3D;
+
+    /// `WebGL2RenderingContext.UNIFORM_IS_ROW_MAJOR`
+    pub const UNIFORM_IS_ROW_MAJOR: u32 = 0x8A3E;
+
+    /// `WebGL2RenderingContext.UNIFORM_BLOCK_BINDING`
+    pub const UNIFORM_BLOCK_BINDING: u32 = 0x8A3F;
+
+    /// `WebGL2RenderingContext.UNIFORM_BLOCK_DATA_SIZE`
+    pub const UNIFORM_BLOCK_DATA_SIZE: u32 = 0x8A40;
+
+    /// `WebGL2RenderingContext.UNIFORM_BLOCK_ACTIVE_UNIFORMS`
+    pub const UNIFORM_BLOCK_ACTIVE_UNIFORMS: u32 = 0x8A42;
+
+    /// `WebGL2RenderingContext.UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES`
+    pub const UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES: u32 = 0x8A43;
+
+    /// `WebGL2RenderingContext.UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER`
+    pub const UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER: u32 = 0x8A44;
+
+    /// `WebGL2RenderingContext.UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER`
+    pub const UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER: u32 = 0x8A46;
+
+    /// `WebGL2RenderingContext.INVALID_INDEX`
+    pub const INVALID_INDEX: u32 = 0xFFFFFFFF;
+
+    /// `WebGL2RenderingContext.MAX_VERTEX_OUTPUT_COMPONENTS`
+    pub const MAX_VERTEX_OUTPUT_COMPONENTS: u32 = 0x9122;
+
+    /// `WebGL2RenderingContext.MAX_FRAGMENT_INPUT_COMPONENTS`
+    pub const MAX_FRAGMENT_INPUT_COMPONENTS: u32 = 0x9125;
+
+    /// `WebGL2RenderingContext.MAX_SERVER_WAIT_TIMEOUT`
+    pub const MAX_SERVER_WAIT_TIMEOUT: u32 = 0x9111;
+
+    /// `WebGL2RenderingContext.OBJECT_TYPE`
+    pub const OBJECT_TYPE: u32 = 0x9112;
+
+    /// `WebGL2RenderingContext.SYNC_CONDITION`
+    pub const SYNC_CONDITION: u32 = 0x9113;
+
+    /// `WebGL2RenderingContext.SYNC_STATUS`
+    pub const SYNC_STATUS: u32 = 0x9114;
+
+    /// `WebGL2RenderingContext.SYNC_FLAGS`
+    pub const SYNC_FLAGS: u32 = 0x9115;
+
+    /// `WebGL2RenderingContext.SYNC_FENCE`
+    pub const SYNC_FENCE: u32 = 0x9116;
+
+    /// `WebGL2RenderingContext.SYNC_GPU_COMMANDS_COMPLETE`
+    pub const SYNC_GPU_COMMANDS_COMPLETE: u32 = 0x9117;
+
+    /// `WebGL2RenderingContext.UNSIGNALED`
+    pub const UNSIGNALED: u32 = 0x9118;
+
+    /// `WebGL2RenderingContext.SIGNALED`
+    pub const SIGNALED: u32 = 0x9119;
+
+    /// `WebGL2RenderingContext.ALREADY_SIGNALED`
+    pub const ALREADY_SIGNALED: u32 = 0x911A;
+
+    /// `WebGL2RenderingContext.TIMEOUT_EXPIRED`
+    pub const TIMEOUT_EXPIRED: u32 = 0x911B;
+
+    /// `WebGL2RenderingContext.CONDITION_SATISFIED`
+    pub const CONDITION_SATISFIED: u32 = 0x911C;
+
+    /// `WebGL2RenderingContext.WAIT_FAILED`
+    pub const WAIT_FAILED: u32 = 0x911D;
+
+    /// `WebGL2RenderingContext.SYNC_FLUSH_COMMANDS_BIT`
+    pub const SYNC_FLUSH_COMMANDS_BIT: u32 = 0x00000001;
+
+    /// `WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_DIVISOR`
+    pub const VERTEX_ATTRIB_ARRAY_DIVISOR: u32 = 0x88FE;
+
+    /// `WebGL2RenderingContext.ANY_SAMPLES_PASSED`
+    pub const ANY_SAMPLES_PASSED: u32 = 0x8C2F;
+
+    /// `WebGL2RenderingContext.ANY_SAMPLES_PASSED_CONSERVATIVE`
+    pub const ANY_SAMPLES_PASSED_CONSERVATIVE: u32 = 0x8D6A;
+
+    /// `WebGL2RenderingContext.SAMPLER_BINDING`
+    pub const SAMPLER_BINDING: u32 = 0x8919;
+
+    /// `WebGL2RenderingContext.RGB10_A2UI`
+    pub const RGB10_A2UI: u32 = 0x906F;
+
+    /// `WebGL2RenderingContext.INT_2_10_10_10_REV`
+    pub const INT_2_10_10_10_REV: u32 = 0x8D9F;
+
+    /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK`
+    pub const TRANSFORM_FEEDBACK: u32 = 0x8E22;
+
+    /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_PAUSED`
+    pub const TRANSFORM_FEEDBACK_PAUSED: u32 = 0x8E23;
+
+    /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_ACTIVE`
+    pub const TRANSFORM_FEEDBACK_ACTIVE: u32 = 0x8E24;
+
+    /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_BINDING`
+    pub const TRANSFORM_FEEDBACK_BINDING: u32 = 0x8E25;
+
+    /// `WebGL2RenderingContext.TEXTURE_IMMUTABLE_FORMAT`
+    pub const TEXTURE_IMMUTABLE_FORMAT: u32 = 0x912F;
+
+    /// `WebGL2RenderingContext.MAX_ELEMENT_INDEX`
+    pub const MAX_ELEMENT_INDEX: u32 = 0x8D6B;
+
+    /// `WebGL2RenderingContext.TEXTURE_IMMUTABLE_LEVELS`
+    pub const TEXTURE_IMMUTABLE_LEVELS: u32 = 0x82DF;
+
+    /// `WebGL2RenderingContext.TIMEOUT_IGNORED`
+    pub const TIMEOUT_IGNORED: f64 = -1.0;
+
+    /// `WebGL2RenderingContext.MAX_CLIENT_WAIT_TIMEOUT_WEBGL`
+    pub const MAX_CLIENT_WAIT_TIMEOUT_WEBGL: u32 = 0x9247;
+
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/drawingBufferWidth)
         #[link_name = "get drawingBufferWidth"]
@@ -34005,9 +37788,17 @@ pub mod web_gl_2_rendering_context {
         #[link_name = "set unpackColorSpace"]
         pub safe fn set_unpack_color_space(this: &WebGL2RenderingContext, value: &str);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getContextAttributes)
+        #[link_name = "getContextAttributes"]
+        pub safe fn get_context_attributes(this: &WebGL2RenderingContext) -> Option<WebGLContextAttributes>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/isContextLost)
         #[link_name = "isContextLost"]
         pub safe fn is_context_lost(this: &WebGL2RenderingContext) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getSupportedExtensions)
+        #[link_name = "getSupportedExtensions"]
+        pub safe fn get_supported_extensions(this: &WebGL2RenderingContext) -> Option<Vec<String>>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getExtension)
         #[link_name = "getExtension"]
@@ -34041,6 +37832,10 @@ pub mod web_gl_2_rendering_context {
         #[link_name = "bindTexture"]
         pub safe fn bind_texture(this: &WebGL2RenderingContext, target: u32, texture: &WebGLTexture);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/blendColor)
+        #[link_name = "blendColor"]
+        pub safe fn blend_color(this: &WebGL2RenderingContext, red: f32, green: f32, blue: f32, alpha: f32);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/blendEquation)
         #[link_name = "blendEquation"]
         pub safe fn blend_equation(this: &WebGL2RenderingContext, mode: u32);
@@ -34063,6 +37858,14 @@ pub mod web_gl_2_rendering_context {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/clear)
         pub safe fn clear(this: &WebGL2RenderingContext, mask: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/clearColor)
+        #[link_name = "clearColor"]
+        pub safe fn clear_color(this: &WebGL2RenderingContext, red: f32, green: f32, blue: f32, alpha: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/clearDepth)
+        #[link_name = "clearDepth"]
+        pub safe fn clear_depth(this: &WebGL2RenderingContext, depth: f32);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/clearStencil)
         #[link_name = "clearStencil"]
@@ -34144,6 +37947,10 @@ pub mod web_gl_2_rendering_context {
         #[link_name = "depthMask"]
         pub safe fn depth_mask(this: &WebGL2RenderingContext, flag: bool);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/depthRange)
+        #[link_name = "depthRange"]
+        pub safe fn depth_range(this: &WebGL2RenderingContext, z_near: f32, z_far: f32);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/detachShader)
         #[link_name = "detachShader"]
         pub safe fn detach_shader(this: &WebGL2RenderingContext, program: &WebGLProgram, shader: &WebGLShader);
@@ -34158,6 +37965,10 @@ pub mod web_gl_2_rendering_context {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/drawArrays)
         #[link_name = "drawArrays"]
         pub safe fn draw_arrays(this: &WebGL2RenderingContext, mode: u32, first: i32, count: i32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/drawElements)
+        #[link_name = "drawElements"]
+        pub safe fn draw_elements(this: &WebGL2RenderingContext, mode: u32, count: i32, type_: u32, offset: f64);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/enable)
         pub safe fn enable(this: &WebGL2RenderingContext, cap: u32);
@@ -34195,6 +38006,10 @@ pub mod web_gl_2_rendering_context {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getActiveUniform)
         #[link_name = "getActiveUniform"]
         pub safe fn get_active_uniform(this: &WebGL2RenderingContext, program: &WebGLProgram, index: u32) -> Option<&'static WebGLActiveInfo>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getAttachedShaders)
+        #[link_name = "getAttachedShaders"]
+        pub safe fn get_attached_shaders(this: &WebGL2RenderingContext, program: &WebGLProgram) -> Option<Vec<&'static WebGLShader>>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getAttribLocation)
         #[link_name = "getAttribLocation"]
@@ -34260,6 +38075,10 @@ pub mod web_gl_2_rendering_context {
         #[link_name = "getVertexAttrib"]
         pub safe fn get_vertex_attrib(this: &WebGL2RenderingContext, index: u32, pname: u32) -> Option<&'static Unknown>;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getVertexAttribOffset)
+        #[link_name = "getVertexAttribOffset"]
+        pub safe fn get_vertex_attrib_offset(this: &WebGL2RenderingContext, index: u32, pname: u32) -> f64;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/hint)
         pub safe fn hint(this: &WebGL2RenderingContext, target: u32, mode: u32);
 
@@ -34291,6 +38110,10 @@ pub mod web_gl_2_rendering_context {
         #[link_name = "isTexture"]
         pub safe fn is_texture(this: &WebGL2RenderingContext, texture: &WebGLTexture) -> bool;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/lineWidth)
+        #[link_name = "lineWidth"]
+        pub safe fn line_width(this: &WebGL2RenderingContext, width: f32);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/linkProgram)
         #[link_name = "linkProgram"]
         pub safe fn link_program(this: &WebGL2RenderingContext, program: &WebGLProgram);
@@ -34299,9 +38122,17 @@ pub mod web_gl_2_rendering_context {
         #[link_name = "pixelStorei"]
         pub safe fn pixel_storei(this: &WebGL2RenderingContext, pname: u32, param: i32);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/polygonOffset)
+        #[link_name = "polygonOffset"]
+        pub safe fn polygon_offset(this: &WebGL2RenderingContext, factor: f32, units: f32);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/renderbufferStorage)
         #[link_name = "renderbufferStorage"]
         pub safe fn renderbuffer_storage(this: &WebGL2RenderingContext, target: u32, internalformat: u32, width: i32, height: i32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/sampleCoverage)
+        #[link_name = "sampleCoverage"]
+        pub safe fn sample_coverage(this: &WebGL2RenderingContext, value: f32, invert: bool);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/scissor)
         pub safe fn scissor(this: &WebGL2RenderingContext, x: i32, y: i32, width: i32, height: i32);
@@ -34334,9 +38165,25 @@ pub mod web_gl_2_rendering_context {
         #[link_name = "stencilOpSeparate"]
         pub safe fn stencil_op_separate(this: &WebGL2RenderingContext, face: u32, fail: u32, zfail: u32, zpass: u32);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texParameterf)
+        #[link_name = "texParameterf"]
+        pub safe fn tex_parameterf(this: &WebGL2RenderingContext, target: u32, pname: u32, param: f32);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texParameteri)
         #[link_name = "texParameteri"]
         pub safe fn tex_parameteri(this: &WebGL2RenderingContext, target: u32, pname: u32, param: i32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform1f)
+        pub safe fn uniform1f(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, x: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform2f)
+        pub safe fn uniform2f(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, x: f32, y: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform3f)
+        pub safe fn uniform3f(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, x: f32, y: f32, z: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform4f)
+        pub safe fn uniform4f(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, x: f32, y: f32, z: f32, w: f32);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform1i)
         pub safe fn uniform1i(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, x: i32);
@@ -34358,8 +38205,60 @@ pub mod web_gl_2_rendering_context {
         #[link_name = "validateProgram"]
         pub safe fn validate_program(this: &WebGL2RenderingContext, program: &WebGLProgram);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/vertexAttrib1f)
+        #[link_name = "vertexAttrib1f"]
+        pub safe fn vertex_attrib1f(this: &WebGL2RenderingContext, index: u32, x: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/vertexAttrib2f)
+        #[link_name = "vertexAttrib2f"]
+        pub safe fn vertex_attrib2f(this: &WebGL2RenderingContext, index: u32, x: f32, y: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/vertexAttrib3f)
+        #[link_name = "vertexAttrib3f"]
+        pub safe fn vertex_attrib3f(this: &WebGL2RenderingContext, index: u32, x: f32, y: f32, z: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/vertexAttrib4f)
+        #[link_name = "vertexAttrib4f"]
+        pub safe fn vertex_attrib4f(this: &WebGL2RenderingContext, index: u32, x: f32, y: f32, z: f32, w: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/vertexAttrib1fv)
+        #[link_name = "vertexAttrib1fv"]
+        pub safe fn vertex_attrib1fv(this: &WebGL2RenderingContext, index: u32, values: &[f32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/vertexAttrib2fv)
+        #[link_name = "vertexAttrib2fv"]
+        pub safe fn vertex_attrib2fv(this: &WebGL2RenderingContext, index: u32, values: &[f32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/vertexAttrib3fv)
+        #[link_name = "vertexAttrib3fv"]
+        pub safe fn vertex_attrib3fv(this: &WebGL2RenderingContext, index: u32, values: &[f32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/vertexAttrib4fv)
+        #[link_name = "vertexAttrib4fv"]
+        pub safe fn vertex_attrib4fv(this: &WebGL2RenderingContext, index: u32, values: &[f32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/vertexAttribPointer)
+        #[link_name = "vertexAttribPointer"]
+        pub safe fn vertex_attrib_pointer(this: &WebGL2RenderingContext, index: u32, size: i32, type_: u32, normalized: bool, stride: i32, offset: f64);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/viewport)
         pub safe fn viewport(this: &WebGL2RenderingContext, x: i32, y: i32, width: i32, height: i32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/copyBufferSubData)
+        #[link_name = "copyBufferSubData"]
+        pub safe fn copy_buffer_sub_data(this: &WebGL2RenderingContext, read_target: u32, write_target: u32, read_offset: f64, write_offset: f64, size: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getBufferSubData)
+        #[link_name = "getBufferSubData"]
+        pub safe fn get_buffer_sub_data(this: &WebGL2RenderingContext, target: u32, src_byte_offset: f64, dst_buffer: &Uint8Array);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getBufferSubData)
+        #[link_name = "getBufferSubData"]
+        pub safe fn get_buffer_sub_data_with_dst_offset(this: &WebGL2RenderingContext, target: u32, src_byte_offset: f64, dst_buffer: &Uint8Array, dst_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getBufferSubData)
+        #[link_name = "getBufferSubData"]
+        pub safe fn get_buffer_sub_data_with_dst_offset_and_length(this: &WebGL2RenderingContext, target: u32, src_byte_offset: f64, dst_buffer: &Uint8Array, dst_offset: f64, length: u32);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/blitFramebuffer)
         #[link_name = "blitFramebuffer"]
@@ -34399,11 +38298,27 @@ pub mod web_gl_2_rendering_context {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texImage3D)
         #[link_name = "texImage3D"]
+        pub safe fn tex_image3_d(this: &WebGL2RenderingContext, target: u32, level: i32, internalformat: i32, width: i32, height: i32, depth: i32, border: i32, format: u32, type_: u32, pbo_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texImage3D)
+        #[link_name = "texImage3D"]
         pub safe fn tex_image3_d_with_uint8_array(this: &WebGL2RenderingContext, target: u32, level: i32, internalformat: i32, width: i32, height: i32, depth: i32, border: i32, format: u32, type_: u32, src_data: &Uint8Array);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texImage3D)
+        #[link_name = "texImage3D"]
+        pub safe fn tex_image3_d_with_uint8_array_and_src_offset(this: &WebGL2RenderingContext, target: u32, level: i32, internalformat: i32, width: i32, height: i32, depth: i32, border: i32, format: u32, type_: u32, src_data: &Uint8Array, src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texSubImage3D)
+        #[link_name = "texSubImage3D"]
+        pub safe fn tex_sub_image3_d(this: &WebGL2RenderingContext, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, type_: u32, pbo_offset: f64);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texSubImage3D)
         #[link_name = "texSubImage3D"]
         pub safe fn tex_sub_image3_d_with_uint8_array(this: &WebGL2RenderingContext, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, type_: u32, src_data: &Uint8Array);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texSubImage3D)
+        #[link_name = "texSubImage3D"]
+        pub safe fn tex_sub_image3_d_with_uint8_array_and_src_offset(this: &WebGL2RenderingContext, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, type_: u32, src_data: &Uint8Array, src_offset: f64);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/copyTexSubImage3D)
         #[link_name = "copyTexSubImage3D"]
@@ -34411,11 +38326,35 @@ pub mod web_gl_2_rendering_context {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexImage3D)
         #[link_name = "compressedTexImage3D"]
+        pub safe fn compressed_tex_image3_d(this: &WebGL2RenderingContext, target: u32, level: i32, internalformat: u32, width: i32, height: i32, depth: i32, border: i32, image_size: i32, offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexImage3D)
+        #[link_name = "compressedTexImage3D"]
         pub safe fn compressed_tex_image3_d_with_uint8_array(this: &WebGL2RenderingContext, target: u32, level: i32, internalformat: u32, width: i32, height: i32, depth: i32, border: i32, src_data: &Uint8Array);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexImage3D)
+        #[link_name = "compressedTexImage3D"]
+        pub safe fn compressed_tex_image3_d_with_uint8_array_and_src_offset(this: &WebGL2RenderingContext, target: u32, level: i32, internalformat: u32, width: i32, height: i32, depth: i32, border: i32, src_data: &Uint8Array, src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexImage3D)
+        #[link_name = "compressedTexImage3D"]
+        pub safe fn compressed_tex_image3_d_with_uint8_array_and_src_offset_and_src_length_override(this: &WebGL2RenderingContext, target: u32, level: i32, internalformat: u32, width: i32, height: i32, depth: i32, border: i32, src_data: &Uint8Array, src_offset: f64, src_length_override: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexSubImage3D)
+        #[link_name = "compressedTexSubImage3D"]
+        pub safe fn compressed_tex_sub_image3_d(this: &WebGL2RenderingContext, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, image_size: i32, offset: f64);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexSubImage3D)
         #[link_name = "compressedTexSubImage3D"]
         pub safe fn compressed_tex_sub_image3_d_with_uint8_array(this: &WebGL2RenderingContext, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, src_data: &Uint8Array);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexSubImage3D)
+        #[link_name = "compressedTexSubImage3D"]
+        pub safe fn compressed_tex_sub_image3_d_with_uint8_array_and_src_offset(this: &WebGL2RenderingContext, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, src_data: &Uint8Array, src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexSubImage3D)
+        #[link_name = "compressedTexSubImage3D"]
+        pub safe fn compressed_tex_sub_image3_d_with_uint8_array_and_src_offset_and_src_length_override(this: &WebGL2RenderingContext, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, src_data: &Uint8Array, src_offset: f64, src_length_override: u32);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getFragDataLocation)
         #[link_name = "getFragDataLocation"]
@@ -34436,14 +38375,118 @@ pub mod web_gl_2_rendering_context {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform1uiv)
         pub safe fn uniform1uiv(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[u32]);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform1uiv)
+        #[link_name = "uniform1uiv"]
+        pub safe fn uniform1uiv_with_src_offset(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[u32], src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform1uiv)
+        #[link_name = "uniform1uiv"]
+        pub safe fn uniform1uiv_with_src_offset_and_src_length(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[u32], src_offset: f64, src_length: u32);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform2uiv)
         pub safe fn uniform2uiv(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[u32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform2uiv)
+        #[link_name = "uniform2uiv"]
+        pub safe fn uniform2uiv_with_src_offset(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[u32], src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform2uiv)
+        #[link_name = "uniform2uiv"]
+        pub safe fn uniform2uiv_with_src_offset_and_src_length(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[u32], src_offset: f64, src_length: u32);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform3uiv)
         pub safe fn uniform3uiv(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[u32]);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform3uiv)
+        #[link_name = "uniform3uiv"]
+        pub safe fn uniform3uiv_with_src_offset(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[u32], src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform3uiv)
+        #[link_name = "uniform3uiv"]
+        pub safe fn uniform3uiv_with_src_offset_and_src_length(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[u32], src_offset: f64, src_length: u32);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform4uiv)
         pub safe fn uniform4uiv(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[u32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform4uiv)
+        #[link_name = "uniform4uiv"]
+        pub safe fn uniform4uiv_with_src_offset(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[u32], src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform4uiv)
+        #[link_name = "uniform4uiv"]
+        pub safe fn uniform4uiv_with_src_offset_and_src_length(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[u32], src_offset: f64, src_length: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix3x2fv)
+        #[link_name = "uniformMatrix3x2fv"]
+        pub safe fn uniform_matrix3x2fv(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, transpose: bool, data: &[f32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix3x2fv)
+        #[link_name = "uniformMatrix3x2fv"]
+        pub safe fn uniform_matrix3x2fv_with_src_offset(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix3x2fv)
+        #[link_name = "uniformMatrix3x2fv"]
+        pub safe fn uniform_matrix3x2fv_with_src_offset_and_src_length(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64, src_length: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix4x2fv)
+        #[link_name = "uniformMatrix4x2fv"]
+        pub safe fn uniform_matrix4x2fv(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, transpose: bool, data: &[f32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix4x2fv)
+        #[link_name = "uniformMatrix4x2fv"]
+        pub safe fn uniform_matrix4x2fv_with_src_offset(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix4x2fv)
+        #[link_name = "uniformMatrix4x2fv"]
+        pub safe fn uniform_matrix4x2fv_with_src_offset_and_src_length(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64, src_length: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix2x3fv)
+        #[link_name = "uniformMatrix2x3fv"]
+        pub safe fn uniform_matrix2x3fv(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, transpose: bool, data: &[f32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix2x3fv)
+        #[link_name = "uniformMatrix2x3fv"]
+        pub safe fn uniform_matrix2x3fv_with_src_offset(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix2x3fv)
+        #[link_name = "uniformMatrix2x3fv"]
+        pub safe fn uniform_matrix2x3fv_with_src_offset_and_src_length(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64, src_length: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix4x3fv)
+        #[link_name = "uniformMatrix4x3fv"]
+        pub safe fn uniform_matrix4x3fv(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, transpose: bool, data: &[f32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix4x3fv)
+        #[link_name = "uniformMatrix4x3fv"]
+        pub safe fn uniform_matrix4x3fv_with_src_offset(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix4x3fv)
+        #[link_name = "uniformMatrix4x3fv"]
+        pub safe fn uniform_matrix4x3fv_with_src_offset_and_src_length(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64, src_length: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix2x4fv)
+        #[link_name = "uniformMatrix2x4fv"]
+        pub safe fn uniform_matrix2x4fv(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, transpose: bool, data: &[f32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix2x4fv)
+        #[link_name = "uniformMatrix2x4fv"]
+        pub safe fn uniform_matrix2x4fv_with_src_offset(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix2x4fv)
+        #[link_name = "uniformMatrix2x4fv"]
+        pub safe fn uniform_matrix2x4fv_with_src_offset_and_src_length(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64, src_length: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix3x4fv)
+        #[link_name = "uniformMatrix3x4fv"]
+        pub safe fn uniform_matrix3x4fv(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, transpose: bool, data: &[f32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix3x4fv)
+        #[link_name = "uniformMatrix3x4fv"]
+        pub safe fn uniform_matrix3x4fv_with_src_offset(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix3x4fv)
+        #[link_name = "uniformMatrix3x4fv"]
+        pub safe fn uniform_matrix3x4fv_with_src_offset_and_src_length(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64, src_length: u32);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/vertexAttribI4i)
         #[link_name = "vertexAttribI4i"]
@@ -34461,6 +38504,10 @@ pub mod web_gl_2_rendering_context {
         #[link_name = "vertexAttribI4uiv"]
         pub safe fn vertex_attrib_i_4uiv(this: &WebGL2RenderingContext, index: u32, values: &[u32]);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/vertexAttribIPointer)
+        #[link_name = "vertexAttribIPointer"]
+        pub safe fn vertex_attrib_i_pointer(this: &WebGL2RenderingContext, index: u32, size: i32, type_: u32, stride: i32, offset: f64);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/vertexAttribDivisor)
         #[link_name = "vertexAttribDivisor"]
         pub safe fn vertex_attrib_divisor(this: &WebGL2RenderingContext, index: u32, divisor: u32);
@@ -34469,17 +38516,45 @@ pub mod web_gl_2_rendering_context {
         #[link_name = "drawArraysInstanced"]
         pub safe fn draw_arrays_instanced(this: &WebGL2RenderingContext, mode: u32, first: i32, count: i32, instance_count: i32);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/drawElementsInstanced)
+        #[link_name = "drawElementsInstanced"]
+        pub safe fn draw_elements_instanced(this: &WebGL2RenderingContext, mode: u32, count: i32, type_: u32, offset: f64, instance_count: i32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/drawRangeElements)
+        #[link_name = "drawRangeElements"]
+        pub safe fn draw_range_elements(this: &WebGL2RenderingContext, mode: u32, start: u32, end: u32, count: i32, type_: u32, offset: f64);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/drawBuffers)
         #[link_name = "drawBuffers"]
         pub safe fn draw_buffers(this: &WebGL2RenderingContext, buffers: &[u32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/clearBufferfv)
+        #[link_name = "clearBufferfv"]
+        pub safe fn clear_bufferfv(this: &WebGL2RenderingContext, buffer: u32, drawbuffer: i32, values: &[f32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/clearBufferfv)
+        #[link_name = "clearBufferfv"]
+        pub safe fn clear_bufferfv_with_src_offset(this: &WebGL2RenderingContext, buffer: u32, drawbuffer: i32, values: &[f32], src_offset: f64);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/clearBufferiv)
         #[link_name = "clearBufferiv"]
         pub safe fn clear_bufferiv(this: &WebGL2RenderingContext, buffer: u32, drawbuffer: i32, values: &[i32]);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/clearBufferiv)
+        #[link_name = "clearBufferiv"]
+        pub safe fn clear_bufferiv_with_src_offset(this: &WebGL2RenderingContext, buffer: u32, drawbuffer: i32, values: &[i32], src_offset: f64);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/clearBufferuiv)
         #[link_name = "clearBufferuiv"]
         pub safe fn clear_bufferuiv(this: &WebGL2RenderingContext, buffer: u32, drawbuffer: i32, values: &[u32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/clearBufferuiv)
+        #[link_name = "clearBufferuiv"]
+        pub safe fn clear_bufferuiv_with_src_offset(this: &WebGL2RenderingContext, buffer: u32, drawbuffer: i32, values: &[u32], src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/clearBufferfi)
+        #[link_name = "clearBufferfi"]
+        pub safe fn clear_bufferfi(this: &WebGL2RenderingContext, buffer: u32, drawbuffer: i32, depth: f32, stencil: i32);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/createQuery)
         #[link_name = "createQuery"]
@@ -34529,6 +38604,10 @@ pub mod web_gl_2_rendering_context {
         #[link_name = "samplerParameteri"]
         pub safe fn sampler_parameteri(this: &WebGL2RenderingContext, sampler: &WebGLSampler, pname: u32, param: i32);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/samplerParameterf)
+        #[link_name = "samplerParameterf"]
+        pub safe fn sampler_parameterf(this: &WebGL2RenderingContext, sampler: &WebGLSampler, pname: u32, param: f32);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getSamplerParameter)
         #[link_name = "getSamplerParameter"]
         pub safe fn get_sampler_parameter(this: &WebGL2RenderingContext, sampler: &WebGLSampler, pname: u32) -> Option<&'static Unknown>;
@@ -34544,6 +38623,14 @@ pub mod web_gl_2_rendering_context {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/deleteSync)
         #[link_name = "deleteSync"]
         pub safe fn delete_sync(this: &WebGL2RenderingContext, sync: &WebGLSync);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/clientWaitSync)
+        #[link_name = "clientWaitSync"]
+        pub safe fn client_wait_sync(this: &WebGL2RenderingContext, sync: &WebGLSync, flags: u32, timeout: f64) -> u32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/waitSync)
+        #[link_name = "waitSync"]
+        pub safe fn wait_sync(this: &WebGL2RenderingContext, sync: &WebGLSync, flags: u32, timeout: f64);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getSyncParameter)
         #[link_name = "getSyncParameter"]
@@ -34593,9 +38680,17 @@ pub mod web_gl_2_rendering_context {
         #[link_name = "bindBufferBase"]
         pub safe fn bind_buffer_base(this: &WebGL2RenderingContext, target: u32, index: u32, buffer: &WebGLBuffer);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bindBufferRange)
+        #[link_name = "bindBufferRange"]
+        pub safe fn bind_buffer_range(this: &WebGL2RenderingContext, target: u32, index: u32, buffer: &WebGLBuffer, offset: f64, size: f64);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getIndexedParameter)
         #[link_name = "getIndexedParameter"]
         pub safe fn get_indexed_parameter(this: &WebGL2RenderingContext, target: u32, index: u32) -> Option<&'static Unknown>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getUniformIndices)
+        #[link_name = "getUniformIndices"]
+        pub safe fn get_uniform_indices(this: &WebGL2RenderingContext, program: &WebGLProgram, uniform_names: &[&str]) -> Option<Vec<u32>>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getActiveUniforms)
         #[link_name = "getActiveUniforms"]
@@ -34633,6 +38728,26 @@ pub mod web_gl_2_rendering_context {
         #[link_name = "bindVertexArray"]
         pub safe fn bind_vertex_array(this: &WebGL2RenderingContext, array: &WebGLVertexArrayObject);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bufferData)
+        #[link_name = "bufferData"]
+        pub safe fn buffer_data(this: &WebGL2RenderingContext, target: u32, size: f64, usage: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bufferData)
+        #[link_name = "bufferData"]
+        pub safe fn buffer_data_with_uint8_array_and_src_offset(this: &WebGL2RenderingContext, target: u32, src_data: &Uint8Array, usage: u32, src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bufferData)
+        #[link_name = "bufferData"]
+        pub safe fn buffer_data_with_uint8_array_and_src_offset_and_length(this: &WebGL2RenderingContext, target: u32, src_data: &Uint8Array, usage: u32, src_offset: f64, length: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bufferSubData)
+        #[link_name = "bufferSubData"]
+        pub safe fn buffer_sub_data_with_uint8_array_and_src_offset(this: &WebGL2RenderingContext, target: u32, dst_byte_offset: f64, src_data: &Uint8Array, src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bufferSubData)
+        #[link_name = "bufferSubData"]
+        pub safe fn buffer_sub_data_with_uint8_array_and_src_offset_and_length(this: &WebGL2RenderingContext, target: u32, dst_byte_offset: f64, src_data: &Uint8Array, src_offset: f64, length: u32);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texImage2D)
         #[link_name = "texImage2D"]
         pub safe fn tex_image2_d(this: &WebGL2RenderingContext, target: u32, level: i32, internalformat: i32, width: i32, height: i32, border: i32, format: u32, type_: u32, pixels: &Uint8Array);
@@ -34641,29 +38756,189 @@ pub mod web_gl_2_rendering_context {
         #[link_name = "texSubImage2D"]
         pub safe fn tex_sub_image2_d(this: &WebGL2RenderingContext, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, type_: u32, pixels: &Uint8Array);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texImage2D)
+        #[link_name = "texImage2D"]
+        pub safe fn tex_image2_d_with_f64(this: &WebGL2RenderingContext, target: u32, level: i32, internalformat: i32, width: i32, height: i32, border: i32, format: u32, type_: u32, pbo_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texImage2D)
+        #[link_name = "texImage2D"]
+        pub safe fn tex_image2_d_with_src_offset(this: &WebGL2RenderingContext, target: u32, level: i32, internalformat: i32, width: i32, height: i32, border: i32, format: u32, type_: u32, src_data: &Uint8Array, src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texSubImage2D)
+        #[link_name = "texSubImage2D"]
+        pub safe fn tex_sub_image2_d_with_f64(this: &WebGL2RenderingContext, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, type_: u32, pbo_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texSubImage2D)
+        #[link_name = "texSubImage2D"]
+        pub safe fn tex_sub_image2_d_with_src_offset(this: &WebGL2RenderingContext, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, type_: u32, src_data: &Uint8Array, src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexImage2D)
+        #[link_name = "compressedTexImage2D"]
+        pub safe fn compressed_tex_image2_d(this: &WebGL2RenderingContext, target: u32, level: i32, internalformat: u32, width: i32, height: i32, border: i32, image_size: i32, offset: f64);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexImage2D)
         #[link_name = "compressedTexImage2D"]
         pub safe fn compressed_tex_image2_d_with_uint8_array(this: &WebGL2RenderingContext, target: u32, level: i32, internalformat: u32, width: i32, height: i32, border: i32, src_data: &Uint8Array);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexImage2D)
+        #[link_name = "compressedTexImage2D"]
+        pub safe fn compressed_tex_image2_d_with_uint8_array_and_src_offset(this: &WebGL2RenderingContext, target: u32, level: i32, internalformat: u32, width: i32, height: i32, border: i32, src_data: &Uint8Array, src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexImage2D)
+        #[link_name = "compressedTexImage2D"]
+        pub safe fn compressed_tex_image2_d_with_uint8_array_and_src_offset_and_src_length_override(this: &WebGL2RenderingContext, target: u32, level: i32, internalformat: u32, width: i32, height: i32, border: i32, src_data: &Uint8Array, src_offset: f64, src_length_override: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexSubImage2D)
+        #[link_name = "compressedTexSubImage2D"]
+        pub safe fn compressed_tex_sub_image2_d(this: &WebGL2RenderingContext, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, image_size: i32, offset: f64);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexSubImage2D)
         #[link_name = "compressedTexSubImage2D"]
         pub safe fn compressed_tex_sub_image2_d_with_uint8_array(this: &WebGL2RenderingContext, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, src_data: &Uint8Array);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexSubImage2D)
+        #[link_name = "compressedTexSubImage2D"]
+        pub safe fn compressed_tex_sub_image2_d_with_uint8_array_and_src_offset(this: &WebGL2RenderingContext, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, src_data: &Uint8Array, src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexSubImage2D)
+        #[link_name = "compressedTexSubImage2D"]
+        pub safe fn compressed_tex_sub_image2_d_with_uint8_array_and_src_offset_and_src_length_override(this: &WebGL2RenderingContext, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, src_data: &Uint8Array, src_offset: f64, src_length_override: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform1fv)
+        pub safe fn uniform1fv(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[f32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform1fv)
+        #[link_name = "uniform1fv"]
+        pub safe fn uniform1fv_with_src_offset(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[f32], src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform1fv)
+        #[link_name = "uniform1fv"]
+        pub safe fn uniform1fv_with_src_offset_and_src_length(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[f32], src_offset: f64, src_length: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform2fv)
+        pub safe fn uniform2fv(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[f32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform2fv)
+        #[link_name = "uniform2fv"]
+        pub safe fn uniform2fv_with_src_offset(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[f32], src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform2fv)
+        #[link_name = "uniform2fv"]
+        pub safe fn uniform2fv_with_src_offset_and_src_length(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[f32], src_offset: f64, src_length: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform3fv)
+        pub safe fn uniform3fv(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[f32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform3fv)
+        #[link_name = "uniform3fv"]
+        pub safe fn uniform3fv_with_src_offset(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[f32], src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform3fv)
+        #[link_name = "uniform3fv"]
+        pub safe fn uniform3fv_with_src_offset_and_src_length(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[f32], src_offset: f64, src_length: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform4fv)
+        pub safe fn uniform4fv(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[f32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform4fv)
+        #[link_name = "uniform4fv"]
+        pub safe fn uniform4fv_with_src_offset(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[f32], src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform4fv)
+        #[link_name = "uniform4fv"]
+        pub safe fn uniform4fv_with_src_offset_and_src_length(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[f32], src_offset: f64, src_length: u32);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform1iv)
         pub safe fn uniform1iv(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[i32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform1iv)
+        #[link_name = "uniform1iv"]
+        pub safe fn uniform1iv_with_src_offset(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[i32], src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform1iv)
+        #[link_name = "uniform1iv"]
+        pub safe fn uniform1iv_with_src_offset_and_src_length(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[i32], src_offset: f64, src_length: u32);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform2iv)
         pub safe fn uniform2iv(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[i32]);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform2iv)
+        #[link_name = "uniform2iv"]
+        pub safe fn uniform2iv_with_src_offset(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[i32], src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform2iv)
+        #[link_name = "uniform2iv"]
+        pub safe fn uniform2iv_with_src_offset_and_src_length(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[i32], src_offset: f64, src_length: u32);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform3iv)
         pub safe fn uniform3iv(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[i32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform3iv)
+        #[link_name = "uniform3iv"]
+        pub safe fn uniform3iv_with_src_offset(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[i32], src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform3iv)
+        #[link_name = "uniform3iv"]
+        pub safe fn uniform3iv_with_src_offset_and_src_length(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[i32], src_offset: f64, src_length: u32);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform4iv)
         pub safe fn uniform4iv(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[i32]);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform4iv)
+        #[link_name = "uniform4iv"]
+        pub safe fn uniform4iv_with_src_offset(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[i32], src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform4iv)
+        #[link_name = "uniform4iv"]
+        pub safe fn uniform4iv_with_src_offset_and_src_length(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, data: &[i32], src_offset: f64, src_length: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix2fv)
+        #[link_name = "uniformMatrix2fv"]
+        pub safe fn uniform_matrix2fv(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, transpose: bool, data: &[f32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix2fv)
+        #[link_name = "uniformMatrix2fv"]
+        pub safe fn uniform_matrix2fv_with_src_offset(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix2fv)
+        #[link_name = "uniformMatrix2fv"]
+        pub safe fn uniform_matrix2fv_with_src_offset_and_src_length(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64, src_length: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix3fv)
+        #[link_name = "uniformMatrix3fv"]
+        pub safe fn uniform_matrix3fv(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, transpose: bool, data: &[f32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix3fv)
+        #[link_name = "uniformMatrix3fv"]
+        pub safe fn uniform_matrix3fv_with_src_offset(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix3fv)
+        #[link_name = "uniformMatrix3fv"]
+        pub safe fn uniform_matrix3fv_with_src_offset_and_src_length(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64, src_length: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix4fv)
+        #[link_name = "uniformMatrix4fv"]
+        pub safe fn uniform_matrix4fv(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, transpose: bool, data: &[f32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix4fv)
+        #[link_name = "uniformMatrix4fv"]
+        pub safe fn uniform_matrix4fv_with_src_offset(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix4fv)
+        #[link_name = "uniformMatrix4fv"]
+        pub safe fn uniform_matrix4fv_with_src_offset_and_src_length(this: &WebGL2RenderingContext, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64, src_length: u32);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/readPixels)
         #[link_name = "readPixels"]
         pub safe fn read_pixels(this: &WebGL2RenderingContext, x: i32, y: i32, width: i32, height: i32, format: u32, type_: u32, dst_data: &Uint8Array);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/readPixels)
+        #[link_name = "readPixels"]
+        pub safe fn read_pixels_with_f64(this: &WebGL2RenderingContext, x: i32, y: i32, width: i32, height: i32, format: u32, type_: u32, offset: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/readPixels)
+        #[link_name = "readPixels"]
+        pub safe fn read_pixels_with_dst_offset(this: &WebGL2RenderingContext, x: i32, y: i32, width: i32, height: i32, format: u32, type_: u32, dst_data: &Uint8Array, dst_offset: f64);
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texImage3D)
@@ -34687,6 +38962,14 @@ pub mod web_gl_2_rendering_context {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn buffer_data_with_allow_shared_buffer_source(this: &WebGL2RenderingContext, target: u32, src_data: impl IntoAllowSharedBufferSource, usage: u32) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bufferSubData)
+    #[cfg_attr(rust_js, rust_js::link_name = "bufferSubData")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn buffer_sub_data(this: &WebGL2RenderingContext, target: u32, dst_byte_offset: f64, src_data: impl IntoAllowSharedBufferSource) {
         unreachable!()
     }
 
@@ -34799,6 +39082,897 @@ pub struct WebGLRenderingContext(PhantomData<JsObject>);
 pub mod web_gl_rendering_context {
     use super::*;
 
+    /// `WebGLRenderingContext.DEPTH_BUFFER_BIT`
+    pub const DEPTH_BUFFER_BIT: u32 = 0x00000100;
+
+    /// `WebGLRenderingContext.STENCIL_BUFFER_BIT`
+    pub const STENCIL_BUFFER_BIT: u32 = 0x00000400;
+
+    /// `WebGLRenderingContext.COLOR_BUFFER_BIT`
+    pub const COLOR_BUFFER_BIT: u32 = 0x00004000;
+
+    /// `WebGLRenderingContext.POINTS`
+    pub const POINTS: u32 = 0x0000;
+
+    /// `WebGLRenderingContext.LINES`
+    pub const LINES: u32 = 0x0001;
+
+    /// `WebGLRenderingContext.LINE_LOOP`
+    pub const LINE_LOOP: u32 = 0x0002;
+
+    /// `WebGLRenderingContext.LINE_STRIP`
+    pub const LINE_STRIP: u32 = 0x0003;
+
+    /// `WebGLRenderingContext.TRIANGLES`
+    pub const TRIANGLES: u32 = 0x0004;
+
+    /// `WebGLRenderingContext.TRIANGLE_STRIP`
+    pub const TRIANGLE_STRIP: u32 = 0x0005;
+
+    /// `WebGLRenderingContext.TRIANGLE_FAN`
+    pub const TRIANGLE_FAN: u32 = 0x0006;
+
+    /// `WebGLRenderingContext.ZERO`
+    pub const ZERO: u32 = 0;
+
+    /// `WebGLRenderingContext.ONE`
+    pub const ONE: u32 = 1;
+
+    /// `WebGLRenderingContext.SRC_COLOR`
+    pub const SRC_COLOR: u32 = 0x0300;
+
+    /// `WebGLRenderingContext.ONE_MINUS_SRC_COLOR`
+    pub const ONE_MINUS_SRC_COLOR: u32 = 0x0301;
+
+    /// `WebGLRenderingContext.SRC_ALPHA`
+    pub const SRC_ALPHA: u32 = 0x0302;
+
+    /// `WebGLRenderingContext.ONE_MINUS_SRC_ALPHA`
+    pub const ONE_MINUS_SRC_ALPHA: u32 = 0x0303;
+
+    /// `WebGLRenderingContext.DST_ALPHA`
+    pub const DST_ALPHA: u32 = 0x0304;
+
+    /// `WebGLRenderingContext.ONE_MINUS_DST_ALPHA`
+    pub const ONE_MINUS_DST_ALPHA: u32 = 0x0305;
+
+    /// `WebGLRenderingContext.DST_COLOR`
+    pub const DST_COLOR: u32 = 0x0306;
+
+    /// `WebGLRenderingContext.ONE_MINUS_DST_COLOR`
+    pub const ONE_MINUS_DST_COLOR: u32 = 0x0307;
+
+    /// `WebGLRenderingContext.SRC_ALPHA_SATURATE`
+    pub const SRC_ALPHA_SATURATE: u32 = 0x0308;
+
+    /// `WebGLRenderingContext.FUNC_ADD`
+    pub const FUNC_ADD: u32 = 0x8006;
+
+    /// `WebGLRenderingContext.BLEND_EQUATION`
+    pub const BLEND_EQUATION: u32 = 0x8009;
+
+    /// `WebGLRenderingContext.BLEND_EQUATION_RGB`
+    pub const BLEND_EQUATION_RGB: u32 = 0x8009;
+
+    /// `WebGLRenderingContext.BLEND_EQUATION_ALPHA`
+    pub const BLEND_EQUATION_ALPHA: u32 = 0x883D;
+
+    /// `WebGLRenderingContext.FUNC_SUBTRACT`
+    pub const FUNC_SUBTRACT: u32 = 0x800A;
+
+    /// `WebGLRenderingContext.FUNC_REVERSE_SUBTRACT`
+    pub const FUNC_REVERSE_SUBTRACT: u32 = 0x800B;
+
+    /// `WebGLRenderingContext.BLEND_DST_RGB`
+    pub const BLEND_DST_RGB: u32 = 0x80C8;
+
+    /// `WebGLRenderingContext.BLEND_SRC_RGB`
+    pub const BLEND_SRC_RGB: u32 = 0x80C9;
+
+    /// `WebGLRenderingContext.BLEND_DST_ALPHA`
+    pub const BLEND_DST_ALPHA: u32 = 0x80CA;
+
+    /// `WebGLRenderingContext.BLEND_SRC_ALPHA`
+    pub const BLEND_SRC_ALPHA: u32 = 0x80CB;
+
+    /// `WebGLRenderingContext.CONSTANT_COLOR`
+    pub const CONSTANT_COLOR: u32 = 0x8001;
+
+    /// `WebGLRenderingContext.ONE_MINUS_CONSTANT_COLOR`
+    pub const ONE_MINUS_CONSTANT_COLOR: u32 = 0x8002;
+
+    /// `WebGLRenderingContext.CONSTANT_ALPHA`
+    pub const CONSTANT_ALPHA: u32 = 0x8003;
+
+    /// `WebGLRenderingContext.ONE_MINUS_CONSTANT_ALPHA`
+    pub const ONE_MINUS_CONSTANT_ALPHA: u32 = 0x8004;
+
+    /// `WebGLRenderingContext.BLEND_COLOR`
+    pub const BLEND_COLOR: u32 = 0x8005;
+
+    /// `WebGLRenderingContext.ARRAY_BUFFER`
+    pub const ARRAY_BUFFER: u32 = 0x8892;
+
+    /// `WebGLRenderingContext.ELEMENT_ARRAY_BUFFER`
+    pub const ELEMENT_ARRAY_BUFFER: u32 = 0x8893;
+
+    /// `WebGLRenderingContext.ARRAY_BUFFER_BINDING`
+    pub const ARRAY_BUFFER_BINDING: u32 = 0x8894;
+
+    /// `WebGLRenderingContext.ELEMENT_ARRAY_BUFFER_BINDING`
+    pub const ELEMENT_ARRAY_BUFFER_BINDING: u32 = 0x8895;
+
+    /// `WebGLRenderingContext.STREAM_DRAW`
+    pub const STREAM_DRAW: u32 = 0x88E0;
+
+    /// `WebGLRenderingContext.STATIC_DRAW`
+    pub const STATIC_DRAW: u32 = 0x88E4;
+
+    /// `WebGLRenderingContext.DYNAMIC_DRAW`
+    pub const DYNAMIC_DRAW: u32 = 0x88E8;
+
+    /// `WebGLRenderingContext.BUFFER_SIZE`
+    pub const BUFFER_SIZE: u32 = 0x8764;
+
+    /// `WebGLRenderingContext.BUFFER_USAGE`
+    pub const BUFFER_USAGE: u32 = 0x8765;
+
+    /// `WebGLRenderingContext.CURRENT_VERTEX_ATTRIB`
+    pub const CURRENT_VERTEX_ATTRIB: u32 = 0x8626;
+
+    /// `WebGLRenderingContext.FRONT`
+    pub const FRONT: u32 = 0x0404;
+
+    /// `WebGLRenderingContext.BACK`
+    pub const BACK: u32 = 0x0405;
+
+    /// `WebGLRenderingContext.FRONT_AND_BACK`
+    pub const FRONT_AND_BACK: u32 = 0x0408;
+
+    /// `WebGLRenderingContext.CULL_FACE`
+    pub const CULL_FACE: u32 = 0x0B44;
+
+    /// `WebGLRenderingContext.BLEND`
+    pub const BLEND: u32 = 0x0BE2;
+
+    /// `WebGLRenderingContext.DITHER`
+    pub const DITHER: u32 = 0x0BD0;
+
+    /// `WebGLRenderingContext.STENCIL_TEST`
+    pub const STENCIL_TEST: u32 = 0x0B90;
+
+    /// `WebGLRenderingContext.DEPTH_TEST`
+    pub const DEPTH_TEST: u32 = 0x0B71;
+
+    /// `WebGLRenderingContext.SCISSOR_TEST`
+    pub const SCISSOR_TEST: u32 = 0x0C11;
+
+    /// `WebGLRenderingContext.POLYGON_OFFSET_FILL`
+    pub const POLYGON_OFFSET_FILL: u32 = 0x8037;
+
+    /// `WebGLRenderingContext.SAMPLE_ALPHA_TO_COVERAGE`
+    pub const SAMPLE_ALPHA_TO_COVERAGE: u32 = 0x809E;
+
+    /// `WebGLRenderingContext.SAMPLE_COVERAGE`
+    pub const SAMPLE_COVERAGE: u32 = 0x80A0;
+
+    /// `WebGLRenderingContext.NO_ERROR`
+    pub const NO_ERROR: u32 = 0;
+
+    /// `WebGLRenderingContext.INVALID_ENUM`
+    pub const INVALID_ENUM: u32 = 0x0500;
+
+    /// `WebGLRenderingContext.INVALID_VALUE`
+    pub const INVALID_VALUE: u32 = 0x0501;
+
+    /// `WebGLRenderingContext.INVALID_OPERATION`
+    pub const INVALID_OPERATION: u32 = 0x0502;
+
+    /// `WebGLRenderingContext.OUT_OF_MEMORY`
+    pub const OUT_OF_MEMORY: u32 = 0x0505;
+
+    /// `WebGLRenderingContext.CW`
+    pub const CW: u32 = 0x0900;
+
+    /// `WebGLRenderingContext.CCW`
+    pub const CCW: u32 = 0x0901;
+
+    /// `WebGLRenderingContext.LINE_WIDTH`
+    pub const LINE_WIDTH: u32 = 0x0B21;
+
+    /// `WebGLRenderingContext.ALIASED_POINT_SIZE_RANGE`
+    pub const ALIASED_POINT_SIZE_RANGE: u32 = 0x846D;
+
+    /// `WebGLRenderingContext.ALIASED_LINE_WIDTH_RANGE`
+    pub const ALIASED_LINE_WIDTH_RANGE: u32 = 0x846E;
+
+    /// `WebGLRenderingContext.CULL_FACE_MODE`
+    pub const CULL_FACE_MODE: u32 = 0x0B45;
+
+    /// `WebGLRenderingContext.FRONT_FACE`
+    pub const FRONT_FACE: u32 = 0x0B46;
+
+    /// `WebGLRenderingContext.DEPTH_RANGE`
+    pub const DEPTH_RANGE: u32 = 0x0B70;
+
+    /// `WebGLRenderingContext.DEPTH_WRITEMASK`
+    pub const DEPTH_WRITEMASK: u32 = 0x0B72;
+
+    /// `WebGLRenderingContext.DEPTH_CLEAR_VALUE`
+    pub const DEPTH_CLEAR_VALUE: u32 = 0x0B73;
+
+    /// `WebGLRenderingContext.DEPTH_FUNC`
+    pub const DEPTH_FUNC: u32 = 0x0B74;
+
+    /// `WebGLRenderingContext.STENCIL_CLEAR_VALUE`
+    pub const STENCIL_CLEAR_VALUE: u32 = 0x0B91;
+
+    /// `WebGLRenderingContext.STENCIL_FUNC`
+    pub const STENCIL_FUNC: u32 = 0x0B92;
+
+    /// `WebGLRenderingContext.STENCIL_FAIL`
+    pub const STENCIL_FAIL: u32 = 0x0B94;
+
+    /// `WebGLRenderingContext.STENCIL_PASS_DEPTH_FAIL`
+    pub const STENCIL_PASS_DEPTH_FAIL: u32 = 0x0B95;
+
+    /// `WebGLRenderingContext.STENCIL_PASS_DEPTH_PASS`
+    pub const STENCIL_PASS_DEPTH_PASS: u32 = 0x0B96;
+
+    /// `WebGLRenderingContext.STENCIL_REF`
+    pub const STENCIL_REF: u32 = 0x0B97;
+
+    /// `WebGLRenderingContext.STENCIL_VALUE_MASK`
+    pub const STENCIL_VALUE_MASK: u32 = 0x0B93;
+
+    /// `WebGLRenderingContext.STENCIL_WRITEMASK`
+    pub const STENCIL_WRITEMASK: u32 = 0x0B98;
+
+    /// `WebGLRenderingContext.STENCIL_BACK_FUNC`
+    pub const STENCIL_BACK_FUNC: u32 = 0x8800;
+
+    /// `WebGLRenderingContext.STENCIL_BACK_FAIL`
+    pub const STENCIL_BACK_FAIL: u32 = 0x8801;
+
+    /// `WebGLRenderingContext.STENCIL_BACK_PASS_DEPTH_FAIL`
+    pub const STENCIL_BACK_PASS_DEPTH_FAIL: u32 = 0x8802;
+
+    /// `WebGLRenderingContext.STENCIL_BACK_PASS_DEPTH_PASS`
+    pub const STENCIL_BACK_PASS_DEPTH_PASS: u32 = 0x8803;
+
+    /// `WebGLRenderingContext.STENCIL_BACK_REF`
+    pub const STENCIL_BACK_REF: u32 = 0x8CA3;
+
+    /// `WebGLRenderingContext.STENCIL_BACK_VALUE_MASK`
+    pub const STENCIL_BACK_VALUE_MASK: u32 = 0x8CA4;
+
+    /// `WebGLRenderingContext.STENCIL_BACK_WRITEMASK`
+    pub const STENCIL_BACK_WRITEMASK: u32 = 0x8CA5;
+
+    /// `WebGLRenderingContext.VIEWPORT`
+    pub const VIEWPORT: u32 = 0x0BA2;
+
+    /// `WebGLRenderingContext.SCISSOR_BOX`
+    pub const SCISSOR_BOX: u32 = 0x0C10;
+
+    /// `WebGLRenderingContext.COLOR_CLEAR_VALUE`
+    pub const COLOR_CLEAR_VALUE: u32 = 0x0C22;
+
+    /// `WebGLRenderingContext.COLOR_WRITEMASK`
+    pub const COLOR_WRITEMASK: u32 = 0x0C23;
+
+    /// `WebGLRenderingContext.UNPACK_ALIGNMENT`
+    pub const UNPACK_ALIGNMENT: u32 = 0x0CF5;
+
+    /// `WebGLRenderingContext.PACK_ALIGNMENT`
+    pub const PACK_ALIGNMENT: u32 = 0x0D05;
+
+    /// `WebGLRenderingContext.MAX_TEXTURE_SIZE`
+    pub const MAX_TEXTURE_SIZE: u32 = 0x0D33;
+
+    /// `WebGLRenderingContext.MAX_VIEWPORT_DIMS`
+    pub const MAX_VIEWPORT_DIMS: u32 = 0x0D3A;
+
+    /// `WebGLRenderingContext.SUBPIXEL_BITS`
+    pub const SUBPIXEL_BITS: u32 = 0x0D50;
+
+    /// `WebGLRenderingContext.RED_BITS`
+    pub const RED_BITS: u32 = 0x0D52;
+
+    /// `WebGLRenderingContext.GREEN_BITS`
+    pub const GREEN_BITS: u32 = 0x0D53;
+
+    /// `WebGLRenderingContext.BLUE_BITS`
+    pub const BLUE_BITS: u32 = 0x0D54;
+
+    /// `WebGLRenderingContext.ALPHA_BITS`
+    pub const ALPHA_BITS: u32 = 0x0D55;
+
+    /// `WebGLRenderingContext.DEPTH_BITS`
+    pub const DEPTH_BITS: u32 = 0x0D56;
+
+    /// `WebGLRenderingContext.STENCIL_BITS`
+    pub const STENCIL_BITS: u32 = 0x0D57;
+
+    /// `WebGLRenderingContext.POLYGON_OFFSET_UNITS`
+    pub const POLYGON_OFFSET_UNITS: u32 = 0x2A00;
+
+    /// `WebGLRenderingContext.POLYGON_OFFSET_FACTOR`
+    pub const POLYGON_OFFSET_FACTOR: u32 = 0x8038;
+
+    /// `WebGLRenderingContext.TEXTURE_BINDING_2D`
+    pub const TEXTURE_BINDING_2D: u32 = 0x8069;
+
+    /// `WebGLRenderingContext.SAMPLE_BUFFERS`
+    pub const SAMPLE_BUFFERS: u32 = 0x80A8;
+
+    /// `WebGLRenderingContext.SAMPLES`
+    pub const SAMPLES: u32 = 0x80A9;
+
+    /// `WebGLRenderingContext.SAMPLE_COVERAGE_VALUE`
+    pub const SAMPLE_COVERAGE_VALUE: u32 = 0x80AA;
+
+    /// `WebGLRenderingContext.SAMPLE_COVERAGE_INVERT`
+    pub const SAMPLE_COVERAGE_INVERT: u32 = 0x80AB;
+
+    /// `WebGLRenderingContext.COMPRESSED_TEXTURE_FORMATS`
+    pub const COMPRESSED_TEXTURE_FORMATS: u32 = 0x86A3;
+
+    /// `WebGLRenderingContext.DONT_CARE`
+    pub const DONT_CARE: u32 = 0x1100;
+
+    /// `WebGLRenderingContext.FASTEST`
+    pub const FASTEST: u32 = 0x1101;
+
+    /// `WebGLRenderingContext.NICEST`
+    pub const NICEST: u32 = 0x1102;
+
+    /// `WebGLRenderingContext.GENERATE_MIPMAP_HINT`
+    pub const GENERATE_MIPMAP_HINT: u32 = 0x8192;
+
+    /// `WebGLRenderingContext.BYTE`
+    pub const BYTE: u32 = 0x1400;
+
+    /// `WebGLRenderingContext.UNSIGNED_BYTE`
+    pub const UNSIGNED_BYTE: u32 = 0x1401;
+
+    /// `WebGLRenderingContext.SHORT`
+    pub const SHORT: u32 = 0x1402;
+
+    /// `WebGLRenderingContext.UNSIGNED_SHORT`
+    pub const UNSIGNED_SHORT: u32 = 0x1403;
+
+    /// `WebGLRenderingContext.INT`
+    pub const INT: u32 = 0x1404;
+
+    /// `WebGLRenderingContext.UNSIGNED_INT`
+    pub const UNSIGNED_INT: u32 = 0x1405;
+
+    /// `WebGLRenderingContext.FLOAT`
+    pub const FLOAT: u32 = 0x1406;
+
+    /// `WebGLRenderingContext.DEPTH_COMPONENT`
+    pub const DEPTH_COMPONENT: u32 = 0x1902;
+
+    /// `WebGLRenderingContext.ALPHA`
+    pub const ALPHA: u32 = 0x1906;
+
+    /// `WebGLRenderingContext.RGB`
+    pub const RGB: u32 = 0x1907;
+
+    /// `WebGLRenderingContext.RGBA`
+    pub const RGBA: u32 = 0x1908;
+
+    /// `WebGLRenderingContext.LUMINANCE`
+    pub const LUMINANCE: u32 = 0x1909;
+
+    /// `WebGLRenderingContext.LUMINANCE_ALPHA`
+    pub const LUMINANCE_ALPHA: u32 = 0x190A;
+
+    /// `WebGLRenderingContext.UNSIGNED_SHORT_4_4_4_4`
+    pub const UNSIGNED_SHORT_4_4_4_4: u32 = 0x8033;
+
+    /// `WebGLRenderingContext.UNSIGNED_SHORT_5_5_5_1`
+    pub const UNSIGNED_SHORT_5_5_5_1: u32 = 0x8034;
+
+    /// `WebGLRenderingContext.UNSIGNED_SHORT_5_6_5`
+    pub const UNSIGNED_SHORT_5_6_5: u32 = 0x8363;
+
+    /// `WebGLRenderingContext.FRAGMENT_SHADER`
+    pub const FRAGMENT_SHADER: u32 = 0x8B30;
+
+    /// `WebGLRenderingContext.VERTEX_SHADER`
+    pub const VERTEX_SHADER: u32 = 0x8B31;
+
+    /// `WebGLRenderingContext.MAX_VERTEX_ATTRIBS`
+    pub const MAX_VERTEX_ATTRIBS: u32 = 0x8869;
+
+    /// `WebGLRenderingContext.MAX_VERTEX_UNIFORM_VECTORS`
+    pub const MAX_VERTEX_UNIFORM_VECTORS: u32 = 0x8DFB;
+
+    /// `WebGLRenderingContext.MAX_VARYING_VECTORS`
+    pub const MAX_VARYING_VECTORS: u32 = 0x8DFC;
+
+    /// `WebGLRenderingContext.MAX_COMBINED_TEXTURE_IMAGE_UNITS`
+    pub const MAX_COMBINED_TEXTURE_IMAGE_UNITS: u32 = 0x8B4D;
+
+    /// `WebGLRenderingContext.MAX_VERTEX_TEXTURE_IMAGE_UNITS`
+    pub const MAX_VERTEX_TEXTURE_IMAGE_UNITS: u32 = 0x8B4C;
+
+    /// `WebGLRenderingContext.MAX_TEXTURE_IMAGE_UNITS`
+    pub const MAX_TEXTURE_IMAGE_UNITS: u32 = 0x8872;
+
+    /// `WebGLRenderingContext.MAX_FRAGMENT_UNIFORM_VECTORS`
+    pub const MAX_FRAGMENT_UNIFORM_VECTORS: u32 = 0x8DFD;
+
+    /// `WebGLRenderingContext.SHADER_TYPE`
+    pub const SHADER_TYPE: u32 = 0x8B4F;
+
+    /// `WebGLRenderingContext.DELETE_STATUS`
+    pub const DELETE_STATUS: u32 = 0x8B80;
+
+    /// `WebGLRenderingContext.LINK_STATUS`
+    pub const LINK_STATUS: u32 = 0x8B82;
+
+    /// `WebGLRenderingContext.VALIDATE_STATUS`
+    pub const VALIDATE_STATUS: u32 = 0x8B83;
+
+    /// `WebGLRenderingContext.ATTACHED_SHADERS`
+    pub const ATTACHED_SHADERS: u32 = 0x8B85;
+
+    /// `WebGLRenderingContext.ACTIVE_UNIFORMS`
+    pub const ACTIVE_UNIFORMS: u32 = 0x8B86;
+
+    /// `WebGLRenderingContext.ACTIVE_ATTRIBUTES`
+    pub const ACTIVE_ATTRIBUTES: u32 = 0x8B89;
+
+    /// `WebGLRenderingContext.SHADING_LANGUAGE_VERSION`
+    pub const SHADING_LANGUAGE_VERSION: u32 = 0x8B8C;
+
+    /// `WebGLRenderingContext.CURRENT_PROGRAM`
+    pub const CURRENT_PROGRAM: u32 = 0x8B8D;
+
+    /// `WebGLRenderingContext.NEVER`
+    pub const NEVER: u32 = 0x0200;
+
+    /// `WebGLRenderingContext.LESS`
+    pub const LESS: u32 = 0x0201;
+
+    /// `WebGLRenderingContext.EQUAL`
+    pub const EQUAL: u32 = 0x0202;
+
+    /// `WebGLRenderingContext.LEQUAL`
+    pub const LEQUAL: u32 = 0x0203;
+
+    /// `WebGLRenderingContext.GREATER`
+    pub const GREATER: u32 = 0x0204;
+
+    /// `WebGLRenderingContext.NOTEQUAL`
+    pub const NOTEQUAL: u32 = 0x0205;
+
+    /// `WebGLRenderingContext.GEQUAL`
+    pub const GEQUAL: u32 = 0x0206;
+
+    /// `WebGLRenderingContext.ALWAYS`
+    pub const ALWAYS: u32 = 0x0207;
+
+    /// `WebGLRenderingContext.KEEP`
+    pub const KEEP: u32 = 0x1E00;
+
+    /// `WebGLRenderingContext.REPLACE`
+    pub const REPLACE: u32 = 0x1E01;
+
+    /// `WebGLRenderingContext.INCR`
+    pub const INCR: u32 = 0x1E02;
+
+    /// `WebGLRenderingContext.DECR`
+    pub const DECR: u32 = 0x1E03;
+
+    /// `WebGLRenderingContext.INVERT`
+    pub const INVERT: u32 = 0x150A;
+
+    /// `WebGLRenderingContext.INCR_WRAP`
+    pub const INCR_WRAP: u32 = 0x8507;
+
+    /// `WebGLRenderingContext.DECR_WRAP`
+    pub const DECR_WRAP: u32 = 0x8508;
+
+    /// `WebGLRenderingContext.VENDOR`
+    pub const VENDOR: u32 = 0x1F00;
+
+    /// `WebGLRenderingContext.RENDERER`
+    pub const RENDERER: u32 = 0x1F01;
+
+    /// `WebGLRenderingContext.VERSION`
+    pub const VERSION: u32 = 0x1F02;
+
+    /// `WebGLRenderingContext.NEAREST`
+    pub const NEAREST: u32 = 0x2600;
+
+    /// `WebGLRenderingContext.LINEAR`
+    pub const LINEAR: u32 = 0x2601;
+
+    /// `WebGLRenderingContext.NEAREST_MIPMAP_NEAREST`
+    pub const NEAREST_MIPMAP_NEAREST: u32 = 0x2700;
+
+    /// `WebGLRenderingContext.LINEAR_MIPMAP_NEAREST`
+    pub const LINEAR_MIPMAP_NEAREST: u32 = 0x2701;
+
+    /// `WebGLRenderingContext.NEAREST_MIPMAP_LINEAR`
+    pub const NEAREST_MIPMAP_LINEAR: u32 = 0x2702;
+
+    /// `WebGLRenderingContext.LINEAR_MIPMAP_LINEAR`
+    pub const LINEAR_MIPMAP_LINEAR: u32 = 0x2703;
+
+    /// `WebGLRenderingContext.TEXTURE_MAG_FILTER`
+    pub const TEXTURE_MAG_FILTER: u32 = 0x2800;
+
+    /// `WebGLRenderingContext.TEXTURE_MIN_FILTER`
+    pub const TEXTURE_MIN_FILTER: u32 = 0x2801;
+
+    /// `WebGLRenderingContext.TEXTURE_WRAP_S`
+    pub const TEXTURE_WRAP_S: u32 = 0x2802;
+
+    /// `WebGLRenderingContext.TEXTURE_WRAP_T`
+    pub const TEXTURE_WRAP_T: u32 = 0x2803;
+
+    /// `WebGLRenderingContext.TEXTURE_2D`
+    pub const TEXTURE_2D: u32 = 0x0DE1;
+
+    /// `WebGLRenderingContext.TEXTURE`
+    pub const TEXTURE: u32 = 0x1702;
+
+    /// `WebGLRenderingContext.TEXTURE_CUBE_MAP`
+    pub const TEXTURE_CUBE_MAP: u32 = 0x8513;
+
+    /// `WebGLRenderingContext.TEXTURE_BINDING_CUBE_MAP`
+    pub const TEXTURE_BINDING_CUBE_MAP: u32 = 0x8514;
+
+    /// `WebGLRenderingContext.TEXTURE_CUBE_MAP_POSITIVE_X`
+    pub const TEXTURE_CUBE_MAP_POSITIVE_X: u32 = 0x8515;
+
+    /// `WebGLRenderingContext.TEXTURE_CUBE_MAP_NEGATIVE_X`
+    pub const TEXTURE_CUBE_MAP_NEGATIVE_X: u32 = 0x8516;
+
+    /// `WebGLRenderingContext.TEXTURE_CUBE_MAP_POSITIVE_Y`
+    pub const TEXTURE_CUBE_MAP_POSITIVE_Y: u32 = 0x8517;
+
+    /// `WebGLRenderingContext.TEXTURE_CUBE_MAP_NEGATIVE_Y`
+    pub const TEXTURE_CUBE_MAP_NEGATIVE_Y: u32 = 0x8518;
+
+    /// `WebGLRenderingContext.TEXTURE_CUBE_MAP_POSITIVE_Z`
+    pub const TEXTURE_CUBE_MAP_POSITIVE_Z: u32 = 0x8519;
+
+    /// `WebGLRenderingContext.TEXTURE_CUBE_MAP_NEGATIVE_Z`
+    pub const TEXTURE_CUBE_MAP_NEGATIVE_Z: u32 = 0x851A;
+
+    /// `WebGLRenderingContext.MAX_CUBE_MAP_TEXTURE_SIZE`
+    pub const MAX_CUBE_MAP_TEXTURE_SIZE: u32 = 0x851C;
+
+    /// `WebGLRenderingContext.TEXTURE0`
+    pub const TEXTURE0: u32 = 0x84C0;
+
+    /// `WebGLRenderingContext.TEXTURE1`
+    pub const TEXTURE1: u32 = 0x84C1;
+
+    /// `WebGLRenderingContext.TEXTURE2`
+    pub const TEXTURE2: u32 = 0x84C2;
+
+    /// `WebGLRenderingContext.TEXTURE3`
+    pub const TEXTURE3: u32 = 0x84C3;
+
+    /// `WebGLRenderingContext.TEXTURE4`
+    pub const TEXTURE4: u32 = 0x84C4;
+
+    /// `WebGLRenderingContext.TEXTURE5`
+    pub const TEXTURE5: u32 = 0x84C5;
+
+    /// `WebGLRenderingContext.TEXTURE6`
+    pub const TEXTURE6: u32 = 0x84C6;
+
+    /// `WebGLRenderingContext.TEXTURE7`
+    pub const TEXTURE7: u32 = 0x84C7;
+
+    /// `WebGLRenderingContext.TEXTURE8`
+    pub const TEXTURE8: u32 = 0x84C8;
+
+    /// `WebGLRenderingContext.TEXTURE9`
+    pub const TEXTURE9: u32 = 0x84C9;
+
+    /// `WebGLRenderingContext.TEXTURE10`
+    pub const TEXTURE10: u32 = 0x84CA;
+
+    /// `WebGLRenderingContext.TEXTURE11`
+    pub const TEXTURE11: u32 = 0x84CB;
+
+    /// `WebGLRenderingContext.TEXTURE12`
+    pub const TEXTURE12: u32 = 0x84CC;
+
+    /// `WebGLRenderingContext.TEXTURE13`
+    pub const TEXTURE13: u32 = 0x84CD;
+
+    /// `WebGLRenderingContext.TEXTURE14`
+    pub const TEXTURE14: u32 = 0x84CE;
+
+    /// `WebGLRenderingContext.TEXTURE15`
+    pub const TEXTURE15: u32 = 0x84CF;
+
+    /// `WebGLRenderingContext.TEXTURE16`
+    pub const TEXTURE16: u32 = 0x84D0;
+
+    /// `WebGLRenderingContext.TEXTURE17`
+    pub const TEXTURE17: u32 = 0x84D1;
+
+    /// `WebGLRenderingContext.TEXTURE18`
+    pub const TEXTURE18: u32 = 0x84D2;
+
+    /// `WebGLRenderingContext.TEXTURE19`
+    pub const TEXTURE19: u32 = 0x84D3;
+
+    /// `WebGLRenderingContext.TEXTURE20`
+    pub const TEXTURE20: u32 = 0x84D4;
+
+    /// `WebGLRenderingContext.TEXTURE21`
+    pub const TEXTURE21: u32 = 0x84D5;
+
+    /// `WebGLRenderingContext.TEXTURE22`
+    pub const TEXTURE22: u32 = 0x84D6;
+
+    /// `WebGLRenderingContext.TEXTURE23`
+    pub const TEXTURE23: u32 = 0x84D7;
+
+    /// `WebGLRenderingContext.TEXTURE24`
+    pub const TEXTURE24: u32 = 0x84D8;
+
+    /// `WebGLRenderingContext.TEXTURE25`
+    pub const TEXTURE25: u32 = 0x84D9;
+
+    /// `WebGLRenderingContext.TEXTURE26`
+    pub const TEXTURE26: u32 = 0x84DA;
+
+    /// `WebGLRenderingContext.TEXTURE27`
+    pub const TEXTURE27: u32 = 0x84DB;
+
+    /// `WebGLRenderingContext.TEXTURE28`
+    pub const TEXTURE28: u32 = 0x84DC;
+
+    /// `WebGLRenderingContext.TEXTURE29`
+    pub const TEXTURE29: u32 = 0x84DD;
+
+    /// `WebGLRenderingContext.TEXTURE30`
+    pub const TEXTURE30: u32 = 0x84DE;
+
+    /// `WebGLRenderingContext.TEXTURE31`
+    pub const TEXTURE31: u32 = 0x84DF;
+
+    /// `WebGLRenderingContext.ACTIVE_TEXTURE`
+    pub const ACTIVE_TEXTURE: u32 = 0x84E0;
+
+    /// `WebGLRenderingContext.REPEAT`
+    pub const REPEAT: u32 = 0x2901;
+
+    /// `WebGLRenderingContext.CLAMP_TO_EDGE`
+    pub const CLAMP_TO_EDGE: u32 = 0x812F;
+
+    /// `WebGLRenderingContext.MIRRORED_REPEAT`
+    pub const MIRRORED_REPEAT: u32 = 0x8370;
+
+    /// `WebGLRenderingContext.FLOAT_VEC2`
+    pub const FLOAT_VEC2: u32 = 0x8B50;
+
+    /// `WebGLRenderingContext.FLOAT_VEC3`
+    pub const FLOAT_VEC3: u32 = 0x8B51;
+
+    /// `WebGLRenderingContext.FLOAT_VEC4`
+    pub const FLOAT_VEC4: u32 = 0x8B52;
+
+    /// `WebGLRenderingContext.INT_VEC2`
+    pub const INT_VEC2: u32 = 0x8B53;
+
+    /// `WebGLRenderingContext.INT_VEC3`
+    pub const INT_VEC3: u32 = 0x8B54;
+
+    /// `WebGLRenderingContext.INT_VEC4`
+    pub const INT_VEC4: u32 = 0x8B55;
+
+    /// `WebGLRenderingContext.BOOL`
+    pub const BOOL: u32 = 0x8B56;
+
+    /// `WebGLRenderingContext.BOOL_VEC2`
+    pub const BOOL_VEC2: u32 = 0x8B57;
+
+    /// `WebGLRenderingContext.BOOL_VEC3`
+    pub const BOOL_VEC3: u32 = 0x8B58;
+
+    /// `WebGLRenderingContext.BOOL_VEC4`
+    pub const BOOL_VEC4: u32 = 0x8B59;
+
+    /// `WebGLRenderingContext.FLOAT_MAT2`
+    pub const FLOAT_MAT2: u32 = 0x8B5A;
+
+    /// `WebGLRenderingContext.FLOAT_MAT3`
+    pub const FLOAT_MAT3: u32 = 0x8B5B;
+
+    /// `WebGLRenderingContext.FLOAT_MAT4`
+    pub const FLOAT_MAT4: u32 = 0x8B5C;
+
+    /// `WebGLRenderingContext.SAMPLER_2D`
+    pub const SAMPLER_2D: u32 = 0x8B5E;
+
+    /// `WebGLRenderingContext.SAMPLER_CUBE`
+    pub const SAMPLER_CUBE: u32 = 0x8B60;
+
+    /// `WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_ENABLED`
+    pub const VERTEX_ATTRIB_ARRAY_ENABLED: u32 = 0x8622;
+
+    /// `WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_SIZE`
+    pub const VERTEX_ATTRIB_ARRAY_SIZE: u32 = 0x8623;
+
+    /// `WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_STRIDE`
+    pub const VERTEX_ATTRIB_ARRAY_STRIDE: u32 = 0x8624;
+
+    /// `WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_TYPE`
+    pub const VERTEX_ATTRIB_ARRAY_TYPE: u32 = 0x8625;
+
+    /// `WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_NORMALIZED`
+    pub const VERTEX_ATTRIB_ARRAY_NORMALIZED: u32 = 0x886A;
+
+    /// `WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_POINTER`
+    pub const VERTEX_ATTRIB_ARRAY_POINTER: u32 = 0x8645;
+
+    /// `WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_BUFFER_BINDING`
+    pub const VERTEX_ATTRIB_ARRAY_BUFFER_BINDING: u32 = 0x889F;
+
+    /// `WebGLRenderingContext.IMPLEMENTATION_COLOR_READ_TYPE`
+    pub const IMPLEMENTATION_COLOR_READ_TYPE: u32 = 0x8B9A;
+
+    /// `WebGLRenderingContext.IMPLEMENTATION_COLOR_READ_FORMAT`
+    pub const IMPLEMENTATION_COLOR_READ_FORMAT: u32 = 0x8B9B;
+
+    /// `WebGLRenderingContext.COMPILE_STATUS`
+    pub const COMPILE_STATUS: u32 = 0x8B81;
+
+    /// `WebGLRenderingContext.LOW_FLOAT`
+    pub const LOW_FLOAT: u32 = 0x8DF0;
+
+    /// `WebGLRenderingContext.MEDIUM_FLOAT`
+    pub const MEDIUM_FLOAT: u32 = 0x8DF1;
+
+    /// `WebGLRenderingContext.HIGH_FLOAT`
+    pub const HIGH_FLOAT: u32 = 0x8DF2;
+
+    /// `WebGLRenderingContext.LOW_INT`
+    pub const LOW_INT: u32 = 0x8DF3;
+
+    /// `WebGLRenderingContext.MEDIUM_INT`
+    pub const MEDIUM_INT: u32 = 0x8DF4;
+
+    /// `WebGLRenderingContext.HIGH_INT`
+    pub const HIGH_INT: u32 = 0x8DF5;
+
+    /// `WebGLRenderingContext.FRAMEBUFFER`
+    pub const FRAMEBUFFER: u32 = 0x8D40;
+
+    /// `WebGLRenderingContext.RENDERBUFFER`
+    pub const RENDERBUFFER: u32 = 0x8D41;
+
+    /// `WebGLRenderingContext.RGBA4`
+    pub const RGBA4: u32 = 0x8056;
+
+    /// `WebGLRenderingContext.RGB5_A1`
+    pub const RGB5_A1: u32 = 0x8057;
+
+    /// `WebGLRenderingContext.RGBA8`
+    pub const RGBA8: u32 = 0x8058;
+
+    /// `WebGLRenderingContext.RGB565`
+    pub const RGB565: u32 = 0x8D62;
+
+    /// `WebGLRenderingContext.DEPTH_COMPONENT16`
+    pub const DEPTH_COMPONENT16: u32 = 0x81A5;
+
+    /// `WebGLRenderingContext.STENCIL_INDEX8`
+    pub const STENCIL_INDEX8: u32 = 0x8D48;
+
+    /// `WebGLRenderingContext.DEPTH_STENCIL`
+    pub const DEPTH_STENCIL: u32 = 0x84F9;
+
+    /// `WebGLRenderingContext.RENDERBUFFER_WIDTH`
+    pub const RENDERBUFFER_WIDTH: u32 = 0x8D42;
+
+    /// `WebGLRenderingContext.RENDERBUFFER_HEIGHT`
+    pub const RENDERBUFFER_HEIGHT: u32 = 0x8D43;
+
+    /// `WebGLRenderingContext.RENDERBUFFER_INTERNAL_FORMAT`
+    pub const RENDERBUFFER_INTERNAL_FORMAT: u32 = 0x8D44;
+
+    /// `WebGLRenderingContext.RENDERBUFFER_RED_SIZE`
+    pub const RENDERBUFFER_RED_SIZE: u32 = 0x8D50;
+
+    /// `WebGLRenderingContext.RENDERBUFFER_GREEN_SIZE`
+    pub const RENDERBUFFER_GREEN_SIZE: u32 = 0x8D51;
+
+    /// `WebGLRenderingContext.RENDERBUFFER_BLUE_SIZE`
+    pub const RENDERBUFFER_BLUE_SIZE: u32 = 0x8D52;
+
+    /// `WebGLRenderingContext.RENDERBUFFER_ALPHA_SIZE`
+    pub const RENDERBUFFER_ALPHA_SIZE: u32 = 0x8D53;
+
+    /// `WebGLRenderingContext.RENDERBUFFER_DEPTH_SIZE`
+    pub const RENDERBUFFER_DEPTH_SIZE: u32 = 0x8D54;
+
+    /// `WebGLRenderingContext.RENDERBUFFER_STENCIL_SIZE`
+    pub const RENDERBUFFER_STENCIL_SIZE: u32 = 0x8D55;
+
+    /// `WebGLRenderingContext.FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE`
+    pub const FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE: u32 = 0x8CD0;
+
+    /// `WebGLRenderingContext.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME`
+    pub const FRAMEBUFFER_ATTACHMENT_OBJECT_NAME: u32 = 0x8CD1;
+
+    /// `WebGLRenderingContext.FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL`
+    pub const FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL: u32 = 0x8CD2;
+
+    /// `WebGLRenderingContext.FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE`
+    pub const FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE: u32 = 0x8CD3;
+
+    /// `WebGLRenderingContext.COLOR_ATTACHMENT0`
+    pub const COLOR_ATTACHMENT0: u32 = 0x8CE0;
+
+    /// `WebGLRenderingContext.DEPTH_ATTACHMENT`
+    pub const DEPTH_ATTACHMENT: u32 = 0x8D00;
+
+    /// `WebGLRenderingContext.STENCIL_ATTACHMENT`
+    pub const STENCIL_ATTACHMENT: u32 = 0x8D20;
+
+    /// `WebGLRenderingContext.DEPTH_STENCIL_ATTACHMENT`
+    pub const DEPTH_STENCIL_ATTACHMENT: u32 = 0x821A;
+
+    /// `WebGLRenderingContext.NONE`
+    pub const NONE: u32 = 0;
+
+    /// `WebGLRenderingContext.FRAMEBUFFER_COMPLETE`
+    pub const FRAMEBUFFER_COMPLETE: u32 = 0x8CD5;
+
+    /// `WebGLRenderingContext.FRAMEBUFFER_INCOMPLETE_ATTACHMENT`
+    pub const FRAMEBUFFER_INCOMPLETE_ATTACHMENT: u32 = 0x8CD6;
+
+    /// `WebGLRenderingContext.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT`
+    pub const FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: u32 = 0x8CD7;
+
+    /// `WebGLRenderingContext.FRAMEBUFFER_INCOMPLETE_DIMENSIONS`
+    pub const FRAMEBUFFER_INCOMPLETE_DIMENSIONS: u32 = 0x8CD9;
+
+    /// `WebGLRenderingContext.FRAMEBUFFER_UNSUPPORTED`
+    pub const FRAMEBUFFER_UNSUPPORTED: u32 = 0x8CDD;
+
+    /// `WebGLRenderingContext.FRAMEBUFFER_BINDING`
+    pub const FRAMEBUFFER_BINDING: u32 = 0x8CA6;
+
+    /// `WebGLRenderingContext.RENDERBUFFER_BINDING`
+    pub const RENDERBUFFER_BINDING: u32 = 0x8CA7;
+
+    /// `WebGLRenderingContext.MAX_RENDERBUFFER_SIZE`
+    pub const MAX_RENDERBUFFER_SIZE: u32 = 0x84E8;
+
+    /// `WebGLRenderingContext.INVALID_FRAMEBUFFER_OPERATION`
+    pub const INVALID_FRAMEBUFFER_OPERATION: u32 = 0x0506;
+
+    /// `WebGLRenderingContext.UNPACK_FLIP_Y_WEBGL`
+    pub const UNPACK_FLIP_Y_WEBGL: u32 = 0x9240;
+
+    /// `WebGLRenderingContext.UNPACK_PREMULTIPLY_ALPHA_WEBGL`
+    pub const UNPACK_PREMULTIPLY_ALPHA_WEBGL: u32 = 0x9241;
+
+    /// `WebGLRenderingContext.CONTEXT_LOST_WEBGL`
+    pub const CONTEXT_LOST_WEBGL: u32 = 0x9242;
+
+    /// `WebGLRenderingContext.UNPACK_COLORSPACE_CONVERSION_WEBGL`
+    pub const UNPACK_COLORSPACE_CONVERSION_WEBGL: u32 = 0x9243;
+
+    /// `WebGLRenderingContext.BROWSER_DEFAULT_WEBGL`
+    pub const BROWSER_DEFAULT_WEBGL: u32 = 0x9244;
+
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/drawingBufferWidth)
         #[link_name = "get drawingBufferWidth"]
@@ -34824,9 +39998,17 @@ pub mod web_gl_rendering_context {
         #[link_name = "set unpackColorSpace"]
         pub safe fn set_unpack_color_space(this: &WebGLRenderingContext, value: &str);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/getContextAttributes)
+        #[link_name = "getContextAttributes"]
+        pub safe fn get_context_attributes(this: &WebGLRenderingContext) -> Option<WebGLContextAttributes>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/isContextLost)
         #[link_name = "isContextLost"]
         pub safe fn is_context_lost(this: &WebGLRenderingContext) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/getSupportedExtensions)
+        #[link_name = "getSupportedExtensions"]
+        pub safe fn get_supported_extensions(this: &WebGLRenderingContext) -> Option<Vec<String>>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/getExtension)
         #[link_name = "getExtension"]
@@ -34860,6 +40042,10 @@ pub mod web_gl_rendering_context {
         #[link_name = "bindTexture"]
         pub safe fn bind_texture(this: &WebGLRenderingContext, target: u32, texture: &WebGLTexture);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/blendColor)
+        #[link_name = "blendColor"]
+        pub safe fn blend_color(this: &WebGLRenderingContext, red: f32, green: f32, blue: f32, alpha: f32);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/blendEquation)
         #[link_name = "blendEquation"]
         pub safe fn blend_equation(this: &WebGLRenderingContext, mode: u32);
@@ -34882,6 +40068,14 @@ pub mod web_gl_rendering_context {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/clear)
         pub safe fn clear(this: &WebGLRenderingContext, mask: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/clearColor)
+        #[link_name = "clearColor"]
+        pub safe fn clear_color(this: &WebGLRenderingContext, red: f32, green: f32, blue: f32, alpha: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/clearDepth)
+        #[link_name = "clearDepth"]
+        pub safe fn clear_depth(this: &WebGLRenderingContext, depth: f32);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/clearStencil)
         #[link_name = "clearStencil"]
@@ -34963,6 +40157,10 @@ pub mod web_gl_rendering_context {
         #[link_name = "depthMask"]
         pub safe fn depth_mask(this: &WebGLRenderingContext, flag: bool);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/depthRange)
+        #[link_name = "depthRange"]
+        pub safe fn depth_range(this: &WebGLRenderingContext, z_near: f32, z_far: f32);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/detachShader)
         #[link_name = "detachShader"]
         pub safe fn detach_shader(this: &WebGLRenderingContext, program: &WebGLProgram, shader: &WebGLShader);
@@ -34977,6 +40175,10 @@ pub mod web_gl_rendering_context {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/drawArrays)
         #[link_name = "drawArrays"]
         pub safe fn draw_arrays(this: &WebGLRenderingContext, mode: u32, first: i32, count: i32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/drawElements)
+        #[link_name = "drawElements"]
+        pub safe fn draw_elements(this: &WebGLRenderingContext, mode: u32, count: i32, type_: u32, offset: f64);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/enable)
         pub safe fn enable(this: &WebGLRenderingContext, cap: u32);
@@ -35014,6 +40216,10 @@ pub mod web_gl_rendering_context {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/getActiveUniform)
         #[link_name = "getActiveUniform"]
         pub safe fn get_active_uniform(this: &WebGLRenderingContext, program: &WebGLProgram, index: u32) -> Option<&'static WebGLActiveInfo>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/getAttachedShaders)
+        #[link_name = "getAttachedShaders"]
+        pub safe fn get_attached_shaders(this: &WebGLRenderingContext, program: &WebGLProgram) -> Option<Vec<&'static WebGLShader>>;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/getAttribLocation)
         #[link_name = "getAttribLocation"]
@@ -35079,6 +40285,10 @@ pub mod web_gl_rendering_context {
         #[link_name = "getVertexAttrib"]
         pub safe fn get_vertex_attrib(this: &WebGLRenderingContext, index: u32, pname: u32) -> Option<&'static Unknown>;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/getVertexAttribOffset)
+        #[link_name = "getVertexAttribOffset"]
+        pub safe fn get_vertex_attrib_offset(this: &WebGLRenderingContext, index: u32, pname: u32) -> f64;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/hint)
         pub safe fn hint(this: &WebGLRenderingContext, target: u32, mode: u32);
 
@@ -35110,6 +40320,10 @@ pub mod web_gl_rendering_context {
         #[link_name = "isTexture"]
         pub safe fn is_texture(this: &WebGLRenderingContext, texture: &WebGLTexture) -> bool;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/lineWidth)
+        #[link_name = "lineWidth"]
+        pub safe fn line_width(this: &WebGLRenderingContext, width: f32);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/linkProgram)
         #[link_name = "linkProgram"]
         pub safe fn link_program(this: &WebGLRenderingContext, program: &WebGLProgram);
@@ -35118,9 +40332,17 @@ pub mod web_gl_rendering_context {
         #[link_name = "pixelStorei"]
         pub safe fn pixel_storei(this: &WebGLRenderingContext, pname: u32, param: i32);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/polygonOffset)
+        #[link_name = "polygonOffset"]
+        pub safe fn polygon_offset(this: &WebGLRenderingContext, factor: f32, units: f32);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/renderbufferStorage)
         #[link_name = "renderbufferStorage"]
         pub safe fn renderbuffer_storage(this: &WebGLRenderingContext, target: u32, internalformat: u32, width: i32, height: i32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/sampleCoverage)
+        #[link_name = "sampleCoverage"]
+        pub safe fn sample_coverage(this: &WebGLRenderingContext, value: f32, invert: bool);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/scissor)
         pub safe fn scissor(this: &WebGLRenderingContext, x: i32, y: i32, width: i32, height: i32);
@@ -35153,9 +40375,25 @@ pub mod web_gl_rendering_context {
         #[link_name = "stencilOpSeparate"]
         pub safe fn stencil_op_separate(this: &WebGLRenderingContext, face: u32, fail: u32, zfail: u32, zpass: u32);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/texParameterf)
+        #[link_name = "texParameterf"]
+        pub safe fn tex_parameterf(this: &WebGLRenderingContext, target: u32, pname: u32, param: f32);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/texParameteri)
         #[link_name = "texParameteri"]
         pub safe fn tex_parameteri(this: &WebGLRenderingContext, target: u32, pname: u32, param: i32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform1f)
+        pub safe fn uniform1f(this: &WebGLRenderingContext, location: &WebGLUniformLocation, x: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform2f)
+        pub safe fn uniform2f(this: &WebGLRenderingContext, location: &WebGLUniformLocation, x: f32, y: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform3f)
+        pub safe fn uniform3f(this: &WebGLRenderingContext, location: &WebGLUniformLocation, x: f32, y: f32, z: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform4f)
+        pub safe fn uniform4f(this: &WebGLRenderingContext, location: &WebGLUniformLocation, x: f32, y: f32, z: f32, w: f32);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform1i)
         pub safe fn uniform1i(this: &WebGLRenderingContext, location: &WebGLUniformLocation, x: i32);
@@ -35177,8 +40415,48 @@ pub mod web_gl_rendering_context {
         #[link_name = "validateProgram"]
         pub safe fn validate_program(this: &WebGLRenderingContext, program: &WebGLProgram);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/vertexAttrib1f)
+        #[link_name = "vertexAttrib1f"]
+        pub safe fn vertex_attrib1f(this: &WebGLRenderingContext, index: u32, x: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/vertexAttrib2f)
+        #[link_name = "vertexAttrib2f"]
+        pub safe fn vertex_attrib2f(this: &WebGLRenderingContext, index: u32, x: f32, y: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/vertexAttrib3f)
+        #[link_name = "vertexAttrib3f"]
+        pub safe fn vertex_attrib3f(this: &WebGLRenderingContext, index: u32, x: f32, y: f32, z: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/vertexAttrib4f)
+        #[link_name = "vertexAttrib4f"]
+        pub safe fn vertex_attrib4f(this: &WebGLRenderingContext, index: u32, x: f32, y: f32, z: f32, w: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/vertexAttrib1fv)
+        #[link_name = "vertexAttrib1fv"]
+        pub safe fn vertex_attrib1fv(this: &WebGLRenderingContext, index: u32, values: &[f32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/vertexAttrib2fv)
+        #[link_name = "vertexAttrib2fv"]
+        pub safe fn vertex_attrib2fv(this: &WebGLRenderingContext, index: u32, values: &[f32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/vertexAttrib3fv)
+        #[link_name = "vertexAttrib3fv"]
+        pub safe fn vertex_attrib3fv(this: &WebGLRenderingContext, index: u32, values: &[f32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/vertexAttrib4fv)
+        #[link_name = "vertexAttrib4fv"]
+        pub safe fn vertex_attrib4fv(this: &WebGLRenderingContext, index: u32, values: &[f32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/vertexAttribPointer)
+        #[link_name = "vertexAttribPointer"]
+        pub safe fn vertex_attrib_pointer(this: &WebGLRenderingContext, index: u32, size: i32, type_: u32, normalized: bool, stride: i32, offset: f64);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/viewport)
         pub safe fn viewport(this: &WebGLRenderingContext, x: i32, y: i32, width: i32, height: i32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/bufferData)
+        #[link_name = "bufferData"]
+        pub safe fn buffer_data(this: &WebGLRenderingContext, target: u32, size: f64, usage: u32);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/compressedTexImage2D)
         #[link_name = "compressedTexImage2D"]
@@ -35200,6 +40478,18 @@ pub mod web_gl_rendering_context {
         #[link_name = "texSubImage2D"]
         pub safe fn tex_sub_image2_d(this: &WebGLRenderingContext, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, type_: u32, pixels: &Uint8Array);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform1fv)
+        pub safe fn uniform1fv(this: &WebGLRenderingContext, location: &WebGLUniformLocation, v: &[f32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform2fv)
+        pub safe fn uniform2fv(this: &WebGLRenderingContext, location: &WebGLUniformLocation, v: &[f32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform3fv)
+        pub safe fn uniform3fv(this: &WebGLRenderingContext, location: &WebGLUniformLocation, v: &[f32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform4fv)
+        pub safe fn uniform4fv(this: &WebGLRenderingContext, location: &WebGLUniformLocation, v: &[f32]);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform1iv)
         pub safe fn uniform1iv(this: &WebGLRenderingContext, location: &WebGLUniformLocation, v: &[i32]);
 
@@ -35211,6 +40501,18 @@ pub mod web_gl_rendering_context {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform4iv)
         pub safe fn uniform4iv(this: &WebGLRenderingContext, location: &WebGLUniformLocation, v: &[i32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniformMatrix2fv)
+        #[link_name = "uniformMatrix2fv"]
+        pub safe fn uniform_matrix2fv(this: &WebGLRenderingContext, location: &WebGLUniformLocation, transpose: bool, value: &[f32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniformMatrix3fv)
+        #[link_name = "uniformMatrix3fv"]
+        pub safe fn uniform_matrix3fv(this: &WebGLRenderingContext, location: &WebGLUniformLocation, transpose: bool, value: &[f32]);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniformMatrix4fv)
+        #[link_name = "uniformMatrix4fv"]
+        pub safe fn uniform_matrix4fv(this: &WebGLRenderingContext, location: &WebGLUniformLocation, transpose: bool, value: &[f32]);
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/bufferData)
@@ -35218,6 +40520,14 @@ pub mod web_gl_rendering_context {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn buffer_data_with_allow_shared_buffer_source(this: &WebGLRenderingContext, target: u32, data: impl IntoAllowSharedBufferSource, usage: u32) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/bufferSubData)
+    #[cfg_attr(rust_js, rust_js::link_name = "bufferSubData")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn buffer_sub_data(this: &WebGLRenderingContext, target: u32, offset: f64, data: impl IntoAllowSharedBufferSource) {
         unreachable!()
     }
 
@@ -35304,6 +40614,18 @@ impl Deref for WebSocket {
 pub mod web_socket {
     use super::*;
 
+    /// `WebSocket.CONNECTING`
+    pub const CONNECTING: u16 = 0;
+
+    /// `WebSocket.OPEN`
+    pub const OPEN: u16 = 1;
+
+    /// `WebSocket.CLOSING`
+    pub const CLOSING: u16 = 2;
+
+    /// `WebSocket.CLOSED`
+    pub const CLOSED: u16 = 3;
+
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/url)
         #[link_name = "get url"]
@@ -35312,6 +40634,10 @@ pub mod web_socket {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/readyState)
         #[link_name = "get readyState"]
         pub safe fn ready_state(this: &WebSocket) -> u16;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/bufferedAmount)
+        #[link_name = "get bufferedAmount"]
+        pub safe fn buffered_amount(this: &WebSocket) -> f64;
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/extensions)
         #[link_name = "get extensions"]
@@ -35362,6 +40688,10 @@ pub mod web_transport {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransport/getStats)
+        #[link_name = "getStats"]
+        pub safe fn get_stats(this: &WebTransport) -> Promise<WebTransportConnectionStats>;
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransport/ready)
         #[link_name = "get ready"]
         pub safe fn ready(this: &WebTransport) -> Promise<()>;
@@ -35515,6 +40845,10 @@ pub mod web_transport_receive_stream {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportReceiveStream/getStats)
+        #[link_name = "getStats"]
+        pub safe fn get_stats(this: &WebTransportReceiveStream) -> Promise<WebTransportReceiveStreamStats>;
+
         /// Treats `this` as `WebTransportReceiveStream` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &ReadableStream) -> &'static WebTransportReceiveStream;
@@ -35538,6 +40872,18 @@ pub mod web_transport_send_stream {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportSendStream/sendOrder)
+        #[link_name = "get sendOrder"]
+        pub safe fn send_order(this: &WebTransportSendStream) -> f64;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportSendStream/sendOrder)
+        #[link_name = "set sendOrder"]
+        pub safe fn set_send_order(this: &WebTransportSendStream, value: f64);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportSendStream/getStats)
+        #[link_name = "getStats"]
+        pub safe fn get_stats(this: &WebTransportSendStream) -> Promise<WebTransportSendStreamStats>;
+
         /// Treats `this` as `WebTransportSendStream` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &WritableStream) -> &'static WebTransportSendStream;
@@ -35767,6 +41113,21 @@ impl Deref for XMLHttpRequest {
 pub mod xml_http_request {
     use super::*;
 
+    /// `XMLHttpRequest.UNSENT`
+    pub const UNSENT: u16 = 0;
+
+    /// `XMLHttpRequest.OPENED`
+    pub const OPENED: u16 = 1;
+
+    /// `XMLHttpRequest.HEADERS_RECEIVED`
+    pub const HEADERS_RECEIVED: u16 = 2;
+
+    /// `XMLHttpRequest.LOADING`
+    pub const LOADING: u16 = 3;
+
+    /// `XMLHttpRequest.DONE`
+    pub const DONE: u16 = 4;
+
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequest/XMLHttpRequest)
         #[link_name = "new XMLHttpRequest"]
@@ -35995,6 +41356,36 @@ pub struct XPathResult(PhantomData<JsObject>);
 
 pub mod x_path_result {
     use super::*;
+
+    /// `XPathResult.ANY_TYPE`
+    pub const ANY_TYPE: u16 = 0;
+
+    /// `XPathResult.NUMBER_TYPE`
+    pub const NUMBER_TYPE: u16 = 1;
+
+    /// `XPathResult.STRING_TYPE`
+    pub const STRING_TYPE: u16 = 2;
+
+    /// `XPathResult.BOOLEAN_TYPE`
+    pub const BOOLEAN_TYPE: u16 = 3;
+
+    /// `XPathResult.UNORDERED_NODE_ITERATOR_TYPE`
+    pub const UNORDERED_NODE_ITERATOR_TYPE: u16 = 4;
+
+    /// `XPathResult.ORDERED_NODE_ITERATOR_TYPE`
+    pub const ORDERED_NODE_ITERATOR_TYPE: u16 = 5;
+
+    /// `XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE`
+    pub const UNORDERED_NODE_SNAPSHOT_TYPE: u16 = 6;
+
+    /// `XPathResult.ORDERED_NODE_SNAPSHOT_TYPE`
+    pub const ORDERED_NODE_SNAPSHOT_TYPE: u16 = 7;
+
+    /// `XPathResult.ANY_UNORDERED_NODE_TYPE`
+    pub const ANY_UNORDERED_NODE_TYPE: u16 = 8;
+
+    /// `XPathResult.FIRST_ORDERED_NODE_TYPE`
+    pub const FIRST_ORDERED_NODE_TYPE: u16 = 9;
 
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/XPathResult/resultType)
@@ -36258,21 +41649,592 @@ pub mod global {
     }
 }
 
-/// The `ImageDecodeResult` dictionary: a JS object with these fields.
+/// The `TextEncoderEncodeIntoResult` dictionary: a JS object with these fields, a `None` one not there.
+pub struct TextEncoderEncodeIntoResult {
+    pub read: Option<f64>,
+    pub written: Option<f64>,
+}
+
+/// The `ModuleExportDescriptor` dictionary: a JS object with these fields, a `None` one not there.
+pub struct ModuleExportDescriptor {
+    pub name: String,
+    pub kind: String,
+}
+
+/// The `ModuleImportDescriptor` dictionary: a JS object with these fields, a `None` one not there.
+pub struct ModuleImportDescriptor {
+    pub module: String,
+    pub name: String,
+    pub kind: String,
+}
+
+/// The `EffectTiming` dictionary: a JS object with these fields, a `None` one not there.
+pub struct EffectTiming {
+    pub fill: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "iterationStart")]
+    pub iteration_start: Option<f64>,
+    pub iterations: Option<f64>,
+    pub direction: Option<String>,
+    pub easing: Option<String>,
+}
+
+/// The `ComputedEffectTiming` dictionary: a JS object with these fields, a `None` one not there.
+pub struct ComputedEffectTiming {
+    pub fill: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "iterationStart")]
+    pub iteration_start: Option<f64>,
+    pub iterations: Option<f64>,
+    pub direction: Option<String>,
+    pub easing: Option<String>,
+    pub progress: Option<Option<f64>>,
+    #[cfg_attr(rust_js, rust_js::name = "currentIteration")]
+    pub current_iteration: Option<Option<f64>>,
+}
+
+/// The `AudioTimestamp` dictionary: a JS object with these fields, a `None` one not there.
+pub struct AudioTimestamp {
+    #[cfg_attr(rust_js, rust_js::name = "contextTime")]
+    pub context_time: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "performanceTime")]
+    pub performance_time: Option<f64>,
+}
+
+/// The `AudioDecoderSupport` dictionary: a JS object with these fields, a `None` one not there.
+pub struct AudioDecoderSupport {
+    pub supported: Option<bool>,
+}
+
+/// The `AudioEncoderSupport` dictionary: a JS object with these fields, a `None` one not there.
+pub struct AudioEncoderSupport {
+    pub supported: Option<bool>,
+}
+
+/// The `CSSContainerCondition` dictionary: a JS object with these fields, a `None` one not there.
+pub struct CSSContainerCondition {
+    pub name: String,
+    pub query: String,
+}
+
+/// The `CSSNumericType` dictionary: a JS object with these fields, a `None` one not there.
+pub struct CSSNumericType {
+    pub length: Option<i32>,
+    pub angle: Option<i32>,
+    pub time: Option<i32>,
+    pub frequency: Option<i32>,
+    pub resolution: Option<i32>,
+    pub flex: Option<i32>,
+    pub percent: Option<i32>,
+    #[cfg_attr(rust_js, rust_js::name = "percentHint")]
+    pub percent_hint: Option<String>,
+}
+
+/// The `CanvasRenderingContext2DSettings` dictionary: a JS object with these fields, a `None` one not there.
+pub struct CanvasRenderingContext2DSettings {
+    pub alpha: Option<bool>,
+    pub desynchronized: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "colorSpace")]
+    pub color_space: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "colorType")]
+    pub color_type: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "willReadFrequently")]
+    pub will_read_frequently: Option<bool>,
+}
+
+/// The `CookieListItem` dictionary: a JS object with these fields, a `None` one not there.
+pub struct CookieListItem {
+    pub name: Option<String>,
+    pub value: Option<String>,
+}
+
+/// The `HighlightHitResult` dictionary: a JS object with these fields, a `None` one not there.
+pub struct HighlightHitResult {
+    pub highlight: Option<&'static Highlight>,
+    pub ranges: Option<Vec<&'static AbstractRange>>,
+}
+
+/// The `IDBDatabaseInfo` dictionary: a JS object with these fields, a `None` one not there.
+pub struct IDBDatabaseInfo {
+    pub name: Option<String>,
+    pub version: Option<f64>,
+}
+
+/// The `PhotoCapabilities` dictionary: a JS object with these fields, a `None` one not there.
+pub struct PhotoCapabilities {
+    #[cfg_attr(rust_js, rust_js::name = "redEyeReduction")]
+    pub red_eye_reduction: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "imageHeight")]
+    pub image_height: Option<MediaSettingsRange>,
+    #[cfg_attr(rust_js, rust_js::name = "imageWidth")]
+    pub image_width: Option<MediaSettingsRange>,
+    #[cfg_attr(rust_js, rust_js::name = "fillLightMode")]
+    pub fill_light_mode: Option<Vec<String>>,
+}
+
+/// The `MediaSettingsRange` dictionary: a JS object with these fields, a `None` one not there.
+pub struct MediaSettingsRange {
+    pub max: Option<f64>,
+    pub min: Option<f64>,
+    pub step: Option<f64>,
+}
+
+/// The `ImageDecodeResult` dictionary: a JS object with these fields, a `None` one not there.
 pub struct ImageDecodeResult {
     pub image: &'static VideoFrame,
     pub complete: bool,
 }
 
-/// The `AuthenticationExtensionsClientOutputs` dictionary: a JS object with these fields.
+/// The `MediaTrackCapabilities` dictionary: a JS object with these fields, a `None` one not there.
+pub struct MediaTrackCapabilities {
+    pub width: Option<ULongRange>,
+    pub height: Option<ULongRange>,
+    #[cfg_attr(rust_js, rust_js::name = "aspectRatio")]
+    pub aspect_ratio: Option<DoubleRange>,
+    #[cfg_attr(rust_js, rust_js::name = "frameRate")]
+    pub frame_rate: Option<DoubleRange>,
+    #[cfg_attr(rust_js, rust_js::name = "facingMode")]
+    pub facing_mode: Option<Vec<String>>,
+    #[cfg_attr(rust_js, rust_js::name = "resizeMode")]
+    pub resize_mode: Option<Vec<String>>,
+    #[cfg_attr(rust_js, rust_js::name = "sampleRate")]
+    pub sample_rate: Option<ULongRange>,
+    #[cfg_attr(rust_js, rust_js::name = "sampleSize")]
+    pub sample_size: Option<ULongRange>,
+    #[cfg_attr(rust_js, rust_js::name = "autoGainControl")]
+    pub auto_gain_control: Option<Vec<bool>>,
+    #[cfg_attr(rust_js, rust_js::name = "noiseSuppression")]
+    pub noise_suppression: Option<Vec<bool>>,
+    pub latency: Option<DoubleRange>,
+    #[cfg_attr(rust_js, rust_js::name = "channelCount")]
+    pub channel_count: Option<ULongRange>,
+    #[cfg_attr(rust_js, rust_js::name = "deviceId")]
+    pub device_id: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "groupId")]
+    pub group_id: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "backgroundBlur")]
+    pub background_blur: Option<Vec<bool>>,
+}
+
+/// The `ULongRange` dictionary: a JS object with these fields, a `None` one not there.
+pub struct ULongRange {
+    pub max: Option<u32>,
+    pub min: Option<u32>,
+}
+
+/// The `DoubleRange` dictionary: a JS object with these fields, a `None` one not there.
+pub struct DoubleRange {
+    pub max: Option<f64>,
+    pub min: Option<f64>,
+}
+
+/// The `LockManagerSnapshot` dictionary: a JS object with these fields, a `None` one not there.
+pub struct LockManagerSnapshot {
+    pub held: Option<Vec<LockInfo>>,
+    pub pending: Option<Vec<LockInfo>>,
+}
+
+/// The `LockInfo` dictionary: a JS object with these fields, a `None` one not there.
+pub struct LockInfo {
+    pub name: Option<String>,
+    pub mode: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "clientId")]
+    pub client_id: Option<String>,
+}
+
+/// The `MediaCapabilitiesDecodingInfo` dictionary: a JS object with these fields, a `None` one not there.
+pub struct MediaCapabilitiesDecodingInfo {
+    pub supported: bool,
+    pub smooth: bool,
+    #[cfg_attr(rust_js, rust_js::name = "powerEfficient")]
+    pub power_efficient: bool,
+    #[cfg_attr(rust_js, rust_js::name = "keySystemAccess")]
+    pub key_system_access: Option<&'static MediaKeySystemAccess>,
+}
+
+/// The `MediaCapabilitiesEncodingInfo` dictionary: a JS object with these fields, a `None` one not there.
+pub struct MediaCapabilitiesEncodingInfo {
+    pub supported: bool,
+    pub smooth: bool,
+    #[cfg_attr(rust_js, rust_js::name = "powerEfficient")]
+    pub power_efficient: bool,
+}
+
+/// The `MediaTrackSupportedConstraints` dictionary: a JS object with these fields, a `None` one not there.
+pub struct MediaTrackSupportedConstraints {
+    pub width: Option<bool>,
+    pub height: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "aspectRatio")]
+    pub aspect_ratio: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "frameRate")]
+    pub frame_rate: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "facingMode")]
+    pub facing_mode: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "resizeMode")]
+    pub resize_mode: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "sampleRate")]
+    pub sample_rate: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "sampleSize")]
+    pub sample_size: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "echoCancellation")]
+    pub echo_cancellation: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "autoGainControl")]
+    pub auto_gain_control: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "noiseSuppression")]
+    pub noise_suppression: Option<bool>,
+    pub latency: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "channelCount")]
+    pub channel_count: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "deviceId")]
+    pub device_id: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "groupId")]
+    pub group_id: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "backgroundBlur")]
+    pub background_blur: Option<bool>,
+}
+
+/// The `MediaTrackSettings` dictionary: a JS object with these fields, a `None` one not there.
+pub struct MediaTrackSettings {
+    pub width: Option<u32>,
+    pub height: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "aspectRatio")]
+    pub aspect_ratio: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "frameRate")]
+    pub frame_rate: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "facingMode")]
+    pub facing_mode: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "resizeMode")]
+    pub resize_mode: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "sampleRate")]
+    pub sample_rate: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "sampleSize")]
+    pub sample_size: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "autoGainControl")]
+    pub auto_gain_control: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "noiseSuppression")]
+    pub noise_suppression: Option<bool>,
+    pub latency: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "channelCount")]
+    pub channel_count: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "deviceId")]
+    pub device_id: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "groupId")]
+    pub group_id: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "backgroundBlur")]
+    pub background_blur: Option<bool>,
+}
+
+/// The `NavigationResult` dictionary: a JS object with these fields, a `None` one not there.
+pub struct NavigationResult {
+    pub committed: Option<Promise<&'static NavigationHistoryEntry>>,
+    pub finished: Option<Promise<&'static NavigationHistoryEntry>>,
+}
+
+/// The `NavigationPreloadState` dictionary: a JS object with these fields, a `None` one not there.
+pub struct NavigationPreloadState {
+    pub enabled: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "headerValue")]
+    pub header_value: Option<String>,
+}
+
+/// The `AuthenticationExtensionsClientOutputs` dictionary: a JS object with these fields, a `None` one not there.
 pub struct AuthenticationExtensionsClientOutputs {
 }
 
-/// The `RTCRtpReceiveParameters` dictionary: a JS object with these fields.
+/// The `PublicKeyCredentialCreationOptions` dictionary: a JS object with these fields, a `None` one not there.
+pub struct PublicKeyCredentialCreationOptions {
+    pub user: PublicKeyCredentialUserEntity,
+    pub timeout: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "excludeCredentials")]
+    pub exclude_credentials: Option<Vec<PublicKeyCredentialDescriptor>>,
+    pub hints: Option<Vec<String>>,
+    pub attestation: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "attestationFormats")]
+    pub attestation_formats: Option<Vec<String>>,
+    pub extensions: Option<AuthenticationExtensionsClientInputs>,
+}
+
+/// The `PublicKeyCredentialUserEntity` dictionary: a JS object with these fields, a `None` one not there.
+pub struct PublicKeyCredentialUserEntity {
+    pub name: String,
+    #[cfg_attr(rust_js, rust_js::name = "displayName")]
+    pub display_name: String,
+}
+
+/// The `PublicKeyCredentialDescriptor` dictionary: a JS object with these fields, a `None` one not there.
+pub struct PublicKeyCredentialDescriptor {
+    #[cfg_attr(rust_js, rust_js::name = "type")]
+    pub type_: String,
+    pub transports: Option<Vec<String>>,
+}
+
+/// The `AuthenticationExtensionsClientInputs` dictionary: a JS object with these fields, a `None` one not there.
+pub struct AuthenticationExtensionsClientInputs {
+}
+
+/// The `PublicKeyCredentialRequestOptions` dictionary: a JS object with these fields, a `None` one not there.
+pub struct PublicKeyCredentialRequestOptions {
+    pub timeout: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "rpId")]
+    pub rp_id: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "allowCredentials")]
+    pub allow_credentials: Option<Vec<PublicKeyCredentialDescriptor>>,
+    #[cfg_attr(rust_js, rust_js::name = "userVerification")]
+    pub user_verification: Option<String>,
+    pub hints: Option<Vec<String>>,
+    pub extensions: Option<AuthenticationExtensionsClientInputs>,
+}
+
+/// The `PushSubscriptionJSON` dictionary: a JS object with these fields, a `None` one not there.
+pub struct PushSubscriptionJSON {
+    pub endpoint: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "expirationTime")]
+    pub expiration_time: Option<Option<f64>>,
+}
+
+/// The `RTCDtlsFingerprint` dictionary: a JS object with these fields, a `None` one not there.
+pub struct RTCDtlsFingerprint {
+    pub algorithm: Option<String>,
+    pub value: Option<String>,
+}
+
+/// The `RTCEncodedAudioFrameMetadata` dictionary: a JS object with these fields, a `None` one not there.
+pub struct RTCEncodedAudioFrameMetadata {
+    #[cfg_attr(rust_js, rust_js::name = "synchronizationSource")]
+    pub synchronization_source: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "payloadType")]
+    pub payload_type: Option<u8>,
+    #[cfg_attr(rust_js, rust_js::name = "contributingSources")]
+    pub contributing_sources: Option<Vec<u32>>,
+    #[cfg_attr(rust_js, rust_js::name = "rtpTimestamp")]
+    pub rtp_timestamp: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "receiveTime")]
+    pub receive_time: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "captureTime")]
+    pub capture_time: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "senderCaptureTimeOffset")]
+    pub sender_capture_time_offset: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "mimeType")]
+    pub mime_type: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "sequenceNumber")]
+    pub sequence_number: Option<i16>,
+    #[cfg_attr(rust_js, rust_js::name = "audioLevel")]
+    pub audio_level: Option<f64>,
+}
+
+/// The `RTCEncodedVideoFrameMetadata` dictionary: a JS object with these fields, a `None` one not there.
+pub struct RTCEncodedVideoFrameMetadata {
+    #[cfg_attr(rust_js, rust_js::name = "synchronizationSource")]
+    pub synchronization_source: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "payloadType")]
+    pub payload_type: Option<u8>,
+    #[cfg_attr(rust_js, rust_js::name = "contributingSources")]
+    pub contributing_sources: Option<Vec<u32>>,
+    #[cfg_attr(rust_js, rust_js::name = "rtpTimestamp")]
+    pub rtp_timestamp: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "receiveTime")]
+    pub receive_time: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "captureTime")]
+    pub capture_time: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "senderCaptureTimeOffset")]
+    pub sender_capture_time_offset: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "mimeType")]
+    pub mime_type: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "frameId")]
+    pub frame_id: Option<f64>,
+    pub dependencies: Option<Vec<f64>>,
+    pub width: Option<u16>,
+    pub height: Option<u16>,
+    #[cfg_attr(rust_js, rust_js::name = "spatialIndex")]
+    pub spatial_index: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "temporalIndex")]
+    pub temporal_index: Option<u32>,
+    pub timestamp: Option<f64>,
+}
+
+/// The `RTCRtpCapabilities` dictionary: a JS object with these fields, a `None` one not there.
+pub struct RTCRtpCapabilities {
+    #[cfg_attr(rust_js, rust_js::name = "headerExtensions")]
+    pub header_extensions: Vec<RTCRtpHeaderExtensionCapability>,
+}
+
+/// The `RTCRtpHeaderExtensionCapability` dictionary: a JS object with these fields, a `None` one not there.
+pub struct RTCRtpHeaderExtensionCapability {
+    pub uri: String,
+}
+
+/// The `RTCRtpReceiveParameters` dictionary: a JS object with these fields, a `None` one not there.
 pub struct RTCRtpReceiveParameters {
 }
 
-/// The `WebAssemblyInstantiatedSource` dictionary: a JS object with these fields.
+/// The `RTCRtpContributingSource` dictionary: a JS object with these fields, a `None` one not there.
+pub struct RTCRtpContributingSource {
+    pub timestamp: f64,
+    pub source: u32,
+    #[cfg_attr(rust_js, rust_js::name = "audioLevel")]
+    pub audio_level: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "rtpTimestamp")]
+    pub rtp_timestamp: u32,
+}
+
+/// The `RTCRtpSynchronizationSource` dictionary: a JS object with these fields, a `None` one not there.
+pub struct RTCRtpSynchronizationSource {
+    pub timestamp: f64,
+    pub source: u32,
+    #[cfg_attr(rust_js, rust_js::name = "audioLevel")]
+    pub audio_level: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "rtpTimestamp")]
+    pub rtp_timestamp: u32,
+}
+
+/// The `ReadableStreamReadResult` dictionary: a JS object with these fields, a `None` one not there.
+pub struct ReadableStreamReadResult {
+    pub value: Option<Option<&'static Unknown>>,
+    pub done: Option<bool>,
+}
+
+/// The `Report` dictionary: a JS object with these fields, a `None` one not there.
+pub struct Report {
+    #[cfg_attr(rust_js, rust_js::name = "type")]
+    pub type_: Option<String>,
+    pub url: Option<String>,
+    pub body: Option<Option<ReportBody>>,
+}
+
+/// The `ReportBody` dictionary: a JS object with these fields, a `None` one not there.
+pub struct ReportBody {
+}
+
+/// The `SerialPortInfo` dictionary: a JS object with these fields, a `None` one not there.
+pub struct SerialPortInfo {
+    #[cfg_attr(rust_js, rust_js::name = "usbVendorId")]
+    pub usb_vendor_id: Option<u16>,
+    #[cfg_attr(rust_js, rust_js::name = "usbProductId")]
+    pub usb_product_id: Option<u16>,
+}
+
+/// The `SerialInputSignals` dictionary: a JS object with these fields, a `None` one not there.
+pub struct SerialInputSignals {
+    #[cfg_attr(rust_js, rust_js::name = "dataCarrierDetect")]
+    pub data_carrier_detect: bool,
+    #[cfg_attr(rust_js, rust_js::name = "clearToSend")]
+    pub clear_to_send: bool,
+    #[cfg_attr(rust_js, rust_js::name = "ringIndicator")]
+    pub ring_indicator: bool,
+    #[cfg_attr(rust_js, rust_js::name = "dataSetReady")]
+    pub data_set_ready: bool,
+}
+
+/// The `StorageEstimate` dictionary: a JS object with these fields, a `None` one not there.
+pub struct StorageEstimate {
+    pub usage: Option<f64>,
+    pub quota: Option<f64>,
+}
+
+/// The `URLPatternResult` dictionary: a JS object with these fields, a `None` one not there.
+pub struct URLPatternResult {
+    pub protocol: Option<URLPatternComponentResult>,
+    pub username: Option<URLPatternComponentResult>,
+    pub password: Option<URLPatternComponentResult>,
+    pub hostname: Option<URLPatternComponentResult>,
+    pub port: Option<URLPatternComponentResult>,
+    pub pathname: Option<URLPatternComponentResult>,
+    pub search: Option<URLPatternComponentResult>,
+    pub hash: Option<URLPatternComponentResult>,
+}
+
+/// The `URLPatternComponentResult` dictionary: a JS object with these fields, a `None` one not there.
+pub struct URLPatternComponentResult {
+    pub input: Option<String>,
+}
+
+/// The `VideoDecoderSupport` dictionary: a JS object with these fields, a `None` one not there.
+pub struct VideoDecoderSupport {
+    pub supported: Option<bool>,
+}
+
+/// The `VideoEncoderSupport` dictionary: a JS object with these fields, a `None` one not there.
+pub struct VideoEncoderSupport {
+    pub supported: Option<bool>,
+}
+
+/// The `WebGLContextAttributes` dictionary: a JS object with these fields, a `None` one not there.
+pub struct WebGLContextAttributes {
+    pub alpha: Option<bool>,
+    pub depth: Option<bool>,
+    pub stencil: Option<bool>,
+    pub antialias: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "premultipliedAlpha")]
+    pub premultiplied_alpha: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "preserveDrawingBuffer")]
+    pub preserve_drawing_buffer: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "powerPreference")]
+    pub power_preference: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "failIfMajorPerformanceCaveat")]
+    pub fail_if_major_performance_caveat: Option<bool>,
+    pub desynchronized: Option<bool>,
+}
+
+/// The `WebTransportConnectionStats` dictionary: a JS object with these fields, a `None` one not there.
+pub struct WebTransportConnectionStats {
+    #[cfg_attr(rust_js, rust_js::name = "bytesSent")]
+    pub bytes_sent: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "bytesSentOverhead")]
+    pub bytes_sent_overhead: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "bytesAcknowledged")]
+    pub bytes_acknowledged: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "packetsSent")]
+    pub packets_sent: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "bytesLost")]
+    pub bytes_lost: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "packetsLost")]
+    pub packets_lost: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "bytesReceived")]
+    pub bytes_received: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "packetsReceived")]
+    pub packets_received: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "smoothedRtt")]
+    pub smoothed_rtt: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "rttVariation")]
+    pub rtt_variation: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "minRtt")]
+    pub min_rtt: Option<f64>,
+    pub datagrams: WebTransportDatagramStats,
+    #[cfg_attr(rust_js, rust_js::name = "estimatedSendRate")]
+    pub estimated_send_rate: Option<Option<f64>>,
+    #[cfg_attr(rust_js, rust_js::name = "atSendCapacity")]
+    pub at_send_capacity: Option<bool>,
+}
+
+/// The `WebTransportDatagramStats` dictionary: a JS object with these fields, a `None` one not there.
+pub struct WebTransportDatagramStats {
+    #[cfg_attr(rust_js, rust_js::name = "droppedIncoming")]
+    pub dropped_incoming: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "expiredIncoming")]
+    pub expired_incoming: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "expiredOutgoing")]
+    pub expired_outgoing: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "lostOutgoing")]
+    pub lost_outgoing: Option<f64>,
+}
+
+/// The `WebTransportReceiveStreamStats` dictionary: a JS object with these fields, a `None` one not there.
+pub struct WebTransportReceiveStreamStats {
+    #[cfg_attr(rust_js, rust_js::name = "bytesReceived")]
+    pub bytes_received: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "bytesRead")]
+    pub bytes_read: Option<f64>,
+}
+
+/// The `WebTransportSendStreamStats` dictionary: a JS object with these fields, a `None` one not there.
+pub struct WebTransportSendStreamStats {
+    #[cfg_attr(rust_js, rust_js::name = "bytesWritten")]
+    pub bytes_written: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "bytesSent")]
+    pub bytes_sent: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "bytesAcknowledged")]
+    pub bytes_acknowledged: Option<f64>,
+}
+
+/// The `WebAssemblyInstantiatedSource` dictionary: a JS object with these fields, a `None` one not there.
 pub struct WebAssemblyInstantiatedSource {
     pub module: &'static WebAssemblyModule,
     pub instance: &'static WebAssemblyInstance,
@@ -36330,11 +42292,18 @@ pub struct AnimationEventInit<'a> {
     pub pseudo_element: Option<&'a str>,
 }
 
+/// The [`AssignedNodesOptions`](https://developer.mozilla.org/docs/Web/API/AssignedNodesOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct AssignedNodesOptions {
+    pub flatten: Option<bool>,
+}
+
 /// The [`AudioConfiguration`](https://developer.mozilla.org/docs/Web/API/AudioConfiguration) dictionary: a JS object of these fields, a `None` one not given.
 pub struct AudioConfiguration<'a> {
     #[cfg_attr(rust_js, rust_js::name = "contentType")]
     pub content_type: &'a str,
     pub channels: Option<&'a str>,
+    pub bitrate: Option<f64>,
     pub samplerate: Option<u32>,
     #[cfg_attr(rust_js, rust_js::name = "spatialRendering")]
     pub spatial_rendering: Option<bool>,
@@ -36368,6 +42337,7 @@ pub struct AudioEncoderConfig<'a> {
     pub sample_rate: u32,
     #[cfg_attr(rust_js, rust_js::name = "numberOfChannels")]
     pub number_of_channels: u32,
+    pub bitrate: Option<f64>,
     #[cfg_attr(rust_js, rust_js::name = "bitrateMode")]
     pub bitrate_mode: Option<&'a str>,
 }
@@ -36391,6 +42361,15 @@ pub struct BlobPropertyBag<'a> {
     #[cfg_attr(rust_js, rust_js::name = "type")]
     pub type_: Option<&'a str>,
     pub endings: Option<&'a str>,
+}
+
+/// The [`BoxQuadOptions`](https://developer.mozilla.org/docs/Web/API/BoxQuadOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct BoxQuadOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "box")]
+    pub box_: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "relativeTo")]
+    pub relative_to: Option<GeometryNode<'a>>,
 }
 
 /// The [`CacheQueryOptions`](https://developer.mozilla.org/docs/Web/API/CacheQueryOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -36434,6 +42413,12 @@ pub struct ClipboardEventInit<'a> {
     pub composed: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "clipboardData")]
     pub clipboard_data: Option<&'a DataTransfer>,
+}
+
+/// The [`ClipboardUnsanitizedFormats`](https://developer.mozilla.org/docs/Web/API/ClipboardUnsanitizedFormats) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct ClipboardUnsanitizedFormats<'a> {
+    pub unsanitized: Option<&'a [&'a str]>,
 }
 
 /// The [`CloseWatcherOptions`](https://developer.mozilla.org/docs/Web/API/CloseWatcherOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -36521,6 +42506,8 @@ pub struct CookieInit<'a> {
     #[cfg_attr(rust_js, rust_js::name = "sameSite")]
     pub same_site: Option<&'a str>,
     pub partitioned: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "maxAge")]
+    pub max_age: Option<f64>,
 }
 
 /// The [`CookieStoreDeleteOptions`](https://developer.mozilla.org/docs/Web/API/CookieStoreDeleteOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -36604,6 +42591,8 @@ pub struct DisplayMediaStreamOptions<'a> {
 /// The [`DocumentPictureInPictureOptions`](https://developer.mozilla.org/docs/Web/API/DocumentPictureInPictureOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct DocumentPictureInPictureOptions {
+    pub width: Option<f64>,
+    pub height: Option<f64>,
     #[cfg_attr(rust_js, rust_js::name = "disallowReturnToOpener")]
     pub disallow_return_to_opener: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "preferInitialWindowPlacement")]
@@ -36788,6 +42777,8 @@ pub struct FilePropertyBag<'a> {
     #[cfg_attr(rust_js, rust_js::name = "type")]
     pub type_: Option<&'a str>,
     pub endings: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "lastModified")]
+    pub last_modified: Option<f64>,
 }
 
 /// The [`FileSystemCreateWritableOptions`](https://developer.mozilla.org/docs/Web/API/FileSystemCreateWritableOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -36864,6 +42855,9 @@ pub struct FullscreenOptions<'a> {
 /// The [`GamepadEffectParameters`](https://developer.mozilla.org/docs/Web/API/GamepadEffectParameters) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct GamepadEffectParameters {
+    pub duration: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "startDelay")]
+    pub start_delay: Option<f64>,
     #[cfg_attr(rust_js, rust_js::name = "strongMagnitude")]
     pub strong_magnitude: Option<f64>,
     #[cfg_attr(rust_js, rust_js::name = "weakMagnitude")]
@@ -36874,6 +42868,21 @@ pub struct GamepadEffectParameters {
     pub right_trigger: Option<f64>,
 }
 
+/// The [`GetAnimationsOptions`](https://developer.mozilla.org/docs/Web/API/GetAnimationsOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct GetAnimationsOptions<'a> {
+    pub subtree: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "pseudoElement")]
+    pub pseudo_element: Option<&'a str>,
+}
+
+/// The [`GetComposedRangesOptions`](https://developer.mozilla.org/docs/Web/API/GetComposedRangesOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct GetComposedRangesOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "shadowRoots")]
+    pub shadow_roots: Option<&'a [&'a ShadowRoot]>,
+}
+
 /// The [`GetHTMLOptions`](https://developer.mozilla.org/docs/Web/API/GetHTMLOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct GetHTMLOptions<'a> {
@@ -36881,6 +42890,12 @@ pub struct GetHTMLOptions<'a> {
     pub serializable_shadow_roots: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "shadowRoots")]
     pub shadow_roots: Option<&'a [&'a ShadowRoot]>,
+}
+
+/// The [`GetNotificationOptions`](https://developer.mozilla.org/docs/Web/API/GetNotificationOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct GetNotificationOptions<'a> {
+    pub tag: Option<&'a str>,
 }
 
 /// The [`GetRootNodeOptions`](https://developer.mozilla.org/docs/Web/API/GetRootNodeOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -36938,6 +42953,8 @@ pub struct GPUBlendState<'a> {
 /// The [`GPUBufferBinding`](https://developer.mozilla.org/docs/Web/API/GPUBufferBinding) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUBufferBinding<'a> {
     pub buffer: &'a GPUBuffer,
+    pub offset: Option<f64>,
+    pub size: Option<f64>,
 }
 
 /// The [`GPUBufferBindingLayout`](https://developer.mozilla.org/docs/Web/API/GPUBufferBindingLayout) dictionary: a JS object of these fields, a `None` one not given.
@@ -36947,11 +42964,14 @@ pub struct GPUBufferBindingLayout<'a> {
     pub type_: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "hasDynamicOffset")]
     pub has_dynamic_offset: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "minBindingSize")]
+    pub min_binding_size: Option<f64>,
 }
 
 /// The [`GPUBufferDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUBufferDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUBufferDescriptor<'a> {
     pub label: Option<&'a str>,
+    pub size: f64,
     pub usage: u32,
     #[cfg_attr(rust_js, rust_js::name = "mappedAtCreation")]
     pub mapped_at_creation: Option<bool>,
@@ -37069,6 +43089,10 @@ pub struct GPUDepthStencilState<'a> {
     pub stencil_write_mask: Option<u32>,
     #[cfg_attr(rust_js, rust_js::name = "depthBias")]
     pub depth_bias: Option<i32>,
+    #[cfg_attr(rust_js, rust_js::name = "depthBiasSlopeScale")]
+    pub depth_bias_slope_scale: Option<f32>,
+    #[cfg_attr(rust_js, rust_js::name = "depthBiasClamp")]
+    pub depth_bias_clamp: Option<f32>,
 }
 
 /// The [`GPUDeviceDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUDeviceDescriptor) dictionary: a JS object of these fields, a `None` one not given.
@@ -37212,6 +43236,8 @@ pub struct GPURenderPassColorAttachment<'a> {
 /// The [`GPURenderPassDepthStencilAttachment`](https://developer.mozilla.org/docs/Web/API/GPURenderPassDepthStencilAttachment) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPURenderPassDepthStencilAttachment<'a> {
     pub view: GPUTextureOrGPUTextureView<'a>,
+    #[cfg_attr(rust_js, rust_js::name = "depthClearValue")]
+    pub depth_clear_value: Option<f32>,
     #[cfg_attr(rust_js, rust_js::name = "depthLoadOp")]
     pub depth_load_op: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "depthStoreOp")]
@@ -37239,6 +43265,8 @@ pub struct GPURenderPassDescriptor<'a> {
     pub occlusion_query_set: Option<&'a GPUQuerySet>,
     #[cfg_attr(rust_js, rust_js::name = "timestampWrites")]
     pub timestamp_writes: Option<GPURenderPassTimestampWrites<'a>>,
+    #[cfg_attr(rust_js, rust_js::name = "maxDrawCount")]
+    pub max_draw_count: Option<f64>,
 }
 
 /// The [`GPURenderPassTimestampWrites`](https://developer.mozilla.org/docs/Web/API/GPURenderPassTimestampWrites) dictionary: a JS object of these fields, a `None` one not given.
@@ -37299,6 +43327,10 @@ pub struct GPUSamplerDescriptor<'a> {
     pub min_filter: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "mipmapFilter")]
     pub mipmap_filter: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "lodMinClamp")]
+    pub lod_min_clamp: Option<f32>,
+    #[cfg_attr(rust_js, rust_js::name = "lodMaxClamp")]
+    pub lod_max_clamp: Option<f32>,
     pub compare: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "maxAnisotropy")]
     pub max_anisotropy: Option<u16>,
@@ -37341,6 +43373,7 @@ pub struct GPUStorageTextureBindingLayout<'a> {
 
 /// The [`GPUTexelCopyBufferInfo`](https://developer.mozilla.org/docs/Web/API/GPUTexelCopyBufferInfo) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUTexelCopyBufferInfo<'a> {
+    pub offset: Option<f64>,
     #[cfg_attr(rust_js, rust_js::name = "bytesPerRow")]
     pub bytes_per_row: Option<u32>,
     #[cfg_attr(rust_js, rust_js::name = "rowsPerImage")]
@@ -37351,6 +43384,7 @@ pub struct GPUTexelCopyBufferInfo<'a> {
 /// The [`GPUTexelCopyBufferLayout`](https://developer.mozilla.org/docs/Web/API/GPUTexelCopyBufferLayout) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct GPUTexelCopyBufferLayout {
+    pub offset: Option<f64>,
     #[cfg_attr(rust_js, rust_js::name = "bytesPerRow")]
     pub bytes_per_row: Option<u32>,
     #[cfg_attr(rust_js, rust_js::name = "rowsPerImage")]
@@ -37415,12 +43449,15 @@ pub struct GPUTextureViewDescriptor<'a> {
 /// The [`GPUVertexAttribute`](https://developer.mozilla.org/docs/Web/API/GPUVertexAttribute) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUVertexAttribute<'a> {
     pub format: &'a str,
+    pub offset: f64,
     #[cfg_attr(rust_js, rust_js::name = "shaderLocation")]
     pub shader_location: u32,
 }
 
 /// The [`GPUVertexBufferLayout`](https://developer.mozilla.org/docs/Web/API/GPUVertexBufferLayout) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUVertexBufferLayout<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "arrayStride")]
+    pub array_stride: f64,
     #[cfg_attr(rust_js, rust_js::name = "stepMode")]
     pub step_mode: Option<&'a str>,
     pub attributes: &'a [GPUVertexAttribute<'a>],
@@ -37444,6 +43481,13 @@ pub struct HashChangeEventInit<'a> {
     pub old_url: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "newURL")]
     pub new_url: Option<&'a str>,
+}
+
+/// The [`HighlightsFromPointOptions`](https://developer.mozilla.org/docs/Web/API/HighlightsFromPointOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct HighlightsFromPointOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "shadowRoots")]
+    pub shadow_roots: Option<&'a [&'a ShadowRoot]>,
 }
 
 /// The [`IDBIndexParameters`](https://developer.mozilla.org/docs/Web/API/IDBIndexParameters) dictionary: a JS object of these fields, a `None` one not given.
@@ -38020,6 +44064,7 @@ pub struct NotificationOptions<'a> {
     pub icon: Option<&'a str>,
     pub badge: Option<&'a str>,
     pub vibrate: Option<VibratePattern<'a>>,
+    pub timestamp: Option<f64>,
     pub renotify: Option<bool>,
     pub silent: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "requireInteraction")]
@@ -38120,6 +44165,13 @@ pub struct PerformanceObserverInit<'a> {
     pub buffered: Option<bool>,
 }
 
+/// The [`PeriodicWaveConstraints`](https://developer.mozilla.org/docs/Web/API/PeriodicWaveConstraints) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct PeriodicWaveConstraints {
+    #[cfg_attr(rust_js, rust_js::name = "disableNormalization")]
+    pub disable_normalization: Option<bool>,
+}
+
 /// The [`PhotoSettings`](https://developer.mozilla.org/docs/Web/API/PhotoSettings) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct PhotoSettings<'a> {
@@ -38191,6 +44243,9 @@ pub struct PointerEventInit<'a> {
     pub pointer_id: Option<i32>,
     pub width: Option<f64>,
     pub height: Option<f64>,
+    pub pressure: Option<f32>,
+    #[cfg_attr(rust_js, rust_js::name = "tangentialPressure")]
+    pub tangential_pressure: Option<f32>,
     #[cfg_attr(rust_js, rust_js::name = "tiltX")]
     pub tilt_x: Option<i32>,
     #[cfg_attr(rust_js, rust_js::name = "tiltY")]
@@ -38339,6 +44394,12 @@ pub struct QueuingStrategy {
 pub struct QueuingStrategyInit {
     #[cfg_attr(rust_js, rust_js::name = "highWaterMark")]
     pub high_water_mark: f64,
+}
+
+/// The [`ReadableStreamBYOBReaderReadOptions`](https://developer.mozilla.org/docs/Web/API/ReadableStreamBYOBReaderReadOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct ReadableStreamBYOBReaderReadOptions {
+    pub min: Option<f64>,
 }
 
 /// The [`ReadableWritablePair`](https://developer.mozilla.org/docs/Web/API/ReadableWritablePair) dictionary: a JS object of these fields, a `None` one not given.
@@ -38597,6 +44658,7 @@ pub struct SanitizerProcessingInstruction<'a> {
 pub struct SchedulerPostTaskOptions<'a> {
     pub signal: Option<&'a AbortSignal>,
     pub priority: Option<&'a str>,
+    pub delay: Option<f64>,
 }
 
 /// The [`ScrollIntoViewOptions`](https://developer.mozilla.org/docs/Web/API/ScrollIntoViewOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -38869,6 +44931,13 @@ pub struct TouchInit<'a> {
     pub page_x: Option<f64>,
     #[cfg_attr(rust_js, rust_js::name = "pageY")]
     pub page_y: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "radiusX")]
+    pub radius_x: Option<f32>,
+    #[cfg_attr(rust_js, rust_js::name = "radiusY")]
+    pub radius_y: Option<f32>,
+    #[cfg_attr(rust_js, rust_js::name = "rotationAngle")]
+    pub rotation_angle: Option<f32>,
+    pub force: Option<f32>,
     #[cfg_attr(rust_js, rust_js::name = "altitudeAngle")]
     pub altitude_angle: Option<f64>,
     #[cfg_attr(rust_js, rust_js::name = "azimuthAngle")]
@@ -38974,6 +45043,7 @@ pub struct VideoConfiguration<'a> {
     pub content_type: &'a str,
     pub width: u32,
     pub height: u32,
+    pub bitrate: f64,
     pub framerate: f64,
     #[cfg_attr(rust_js, rust_js::name = "hasAlphaChannel")]
     pub has_alpha_channel: Option<bool>,
@@ -39020,6 +45090,7 @@ pub struct VideoEncoderConfig<'a> {
     pub display_width: Option<u32>,
     #[cfg_attr(rust_js, rust_js::name = "displayHeight")]
     pub display_height: Option<u32>,
+    pub bitrate: Option<f64>,
     pub framerate: Option<f64>,
     #[cfg_attr(rust_js, rust_js::name = "hardwareAcceleration")]
     pub hardware_acceleration: Option<&'a str>,
@@ -39092,6 +45163,8 @@ pub struct WebTransportCloseInfo<'a> {
 /// The [`WebTransportSendStreamOptions`](https://developer.mozilla.org/docs/Web/API/WebTransportSendStreamOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct WebTransportSendStreamOptions {
+    #[cfg_attr(rust_js, rust_js::name = "sendOrder")]
+    pub send_order: Option<f64>,
     #[cfg_attr(rust_js, rust_js::name = "waitUntilAvailable")]
     pub wait_until_available: Option<bool>,
 }
@@ -39181,6 +45254,8 @@ pub struct WorkletOptions<'a> {
 pub struct WriteParams<'a> {
     #[cfg_attr(rust_js, rust_js::name = "type")]
     pub type_: &'a str,
+    pub size: Option<f64>,
+    pub position: Option<f64>,
     pub data: Option<Uint8ArrayOrArrayBufferOrBlobOrStr<'a>>,
 }
 

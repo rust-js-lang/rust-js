@@ -66,3 +66,18 @@ pub fn statics(blob: &webapi::Blob) -> (bool, String) {
     webapi::url::revoke_object_url(&url);
     (webapi::html_script_element::supports("importmap"), url)
 }
+
+/// What a function gives, of each WebIDL type: a sequence is a `Vec`, a
+/// frozen array a slice, a `long long` an `f64` (a JS number), a `float` an
+/// `f32`, a dictionary a struct of `Option`s, and a constant a `const`.
+pub fn kinds(
+    el: &webapi::Element,
+    blob: &webapi::Blob,
+    param: &webapi::AudioParam,
+    bytes: &js::Uint8Array,
+) -> (Vec<String>, usize, f64, f32, u16, Option<f64>) {
+    let names = element::get_attribute_names(el);
+    let languages = webapi::navigator::languages(webapi::navigator);
+    let into = text_encoder::encode_into(text_encoder::new(), "hi", bytes);
+    (names, languages.len(), webapi::blob::size(blob), webapi::audio_param::value(param), node::ELEMENT_NODE, into.written)
+}

@@ -51,4 +51,11 @@ export function statics(blob) {
   URL.revokeObjectURL(url);
   return [HTMLScriptElement.supports("importmap"), url];
 }
+
+export function kinds(el, blob, param, bytes) {
+  const names = el.getAttributeNames();
+  const languages = navigator.languages;
+  const into = new TextEncoder().encodeInto("hi", bytes);
+  return [names, languages.length, blob.size, param.value, 1, into.written];
+}
 //# sourceMappingURL=web_forms.js.map

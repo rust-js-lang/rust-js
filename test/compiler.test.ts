@@ -826,6 +826,8 @@ test("the webapi crate's bindings become plain JS", async () => {
   expect(js).toContain('const canvas = document.createElement("canvas");\n  canvas.width = 320;\n  canvas.height = 200;\n  return [canvas.width, canvas.height];');
   // A static method is the class's: `URL.createObjectURL(blob)`.
   expect(js).toContain('const url = URL.createObjectURL(blob);\n  URL.revokeObjectURL(url);\n  return [HTMLScriptElement.supports("importmap"), url];');
+  // Each WebIDL type a function gives, as it is: a constant is its value.
+  expect(js).toContain("const names = el.getAttributeNames();\n  const languages = navigator.languages;\n  const into = new TextEncoder().encodeInto(\"hi\", bytes);\n  return [names, languages.length, blob.size, param.value, 1, into.written];");
   const { round_trip } = await import(join(target, "web_forms.js"));
   // "é" is two bytes in UTF-8.
   expect(round_trip("héllo")).toEqual([6, "héllo"]);

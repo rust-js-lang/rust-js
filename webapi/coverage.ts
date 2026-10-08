@@ -73,6 +73,14 @@ function webapi(): { bound: Set<string>; types: Set<string> } {
   const text = readFileSync(lib, "utf8");
   const lines = text.split("\n");
   const bound = new Set<string>();
+  // A module's constants, `pub const ELEMENT_NODE`: the class's member and
+  // static of the name, `Node.ELEMENT_NODE`, by the struct before it.
+  let struct = "";
+  for (const l of lines) {
+    struct = l.match(/^pub struct (\w+)/)?.[1] ?? struct;
+    const c = l.match(/^\s+pub const (\w+):/)?.[1];
+    if (c) for (const member of [c, `static:${c}`]) bound.add(`${struct}.${member}`);
+  }
   for (let i = 0; i < lines.length; i++) {
     const mdn = lines[i].match(/developer\.mozilla\.org\/docs\/Web\/API\/(\w+)\/(\w+)/);
     if (!mdn) continue;

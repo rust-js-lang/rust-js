@@ -255,6 +255,27 @@ const globalScope: Interface = {
 const missing = INTERFACES.filter((name) => !interfaces.has(name));
 if (missing.length) throw new Error(`not in ${SPECS.join(", ")}: ${missing.join(", ")}`);
 
+// The dictionaries a function takes, through a union, a sequence or another
+// dictionary: each a struct that borrows, which a result can't be, so one a
+// function gives too is left out of the result, not the parameter.
+const takenDictionaries = new Set<string>();
+const takes = (t: IdlType | undefined): void => {
+  if (!t) return;
+  if (Array.isArray(t.idlType)) return t.idlType.forEach(takes);
+  const name = t.idlType as string;
+  const aliased = typedefs.get(name);
+  if (aliased) return takes(aliased);
+  const d = dictionaries.get(name);
+  if (!d || takenDictionaries.has(name)) return;
+  takenDictionaries.add(name);
+  for (let p: Def | undefined = d; p; p = p.inheritance ? dictionaries.get(p.inheritance) : undefined) {
+    for (const m of p.members ?? []) takes(m.idlType);
+  }
+};
+for (const i of interfaces.values()) {
+  for (const { member } of i.members) for (const a of member.arguments ?? []) takes(a.idlType);
+}
+
 // ── Names ───────────────────────────────────────────────────────────────
 
 /** `HTMLInputElement` → `["HTML", "Input", "Element"]`, `innerHTML` → `["inner", "HTML"]`. */
@@ -294,6 +315,9 @@ const STRINGS = new Set(["DOMString", "USVString", "CSSOMString", "ByteString"])
 const NUMBERS: Record<string, string> = {
   boolean: "bool", byte: "i8", octet: "u8", short: "i16", "unsigned short": "u16",
   long: "i32", "unsigned long": "u32", double: "f64", "unrestricted double": "f64",
+  // A `long long` is a JS number, not a `BigInt` an `i64` would be, so
+  // exact to 2^53 (ADR 0281); a `float`, one an `f32` holds.
+  "long long": "f64", "unsigned long long": "f64", float: "f32", "unrestricted float": "f32",
 };
 
 type Position = "param" | "result";
@@ -317,9 +341,18 @@ function rustType(t: IdlType, at: Position): string | { skip: string } {
   }
   // A sequence a function takes is a slice, a JS array of its items as
   // they are (ADR 0219): `new Blob([text, "!"])` of `&[BlobPart]`.
-  if (t.generic === "sequence" && at === "param") {
+  if ((t.generic === "sequence" || t.generic === "FrozenArray") && at === "param") {
     const item = paramType((t.idlType as IdlType[])[0]);
-    return item ? `&[${item}]` : { skip: "sequence" };
+    return item ? `&[${item}]` : { skip: t.generic };
+  }
+  // One a function gives is a `Vec`, a new array each time; a frozen
+  // array, the same one, which JS won't change, a slice of it.
+  if ((t.generic === "sequence" || t.generic === "FrozenArray") && at === "result") {
+    const inner = (t.idlType as IdlType[])[0];
+    const item = rustType(inner, "result");
+    if (typeof item !== "string") return item;
+    const each = inner.nullable ? `Option<${item}>` : item;
+    return t.generic === "sequence" ? `Vec<${each}>` : `&'static [${each}]`;
   }
   if (t.generic) return { skip: t.generic };
   const name = t.idlType as string;
@@ -360,27 +393,34 @@ function rustType(t: IdlType, at: Position): string | { skip: string } {
   return { skip: name };
 }
 
-/** The fields of each dictionary a result uses, as `(name, type)`. */
-const usedDictionaries = new Map<string, [string, string][]>();
+/** A field of a dictionary: its Rust and JS names, and type. */
+type Field = { rust: string; js: string; type: string; optional: boolean };
+
+/** The fields of each dictionary a result uses. */
+const usedDictionaries = new Map<string, Field[]>();
 
 /**
  * A dictionary a function returns is a Rust struct, which rust-js makes a
- * plain JS object (ADR 0020): its fields are read as they are. Only when
- * every field is required, of a supported type, and named the same in Rust.
+ * plain JS object (ADR 0020): its fields are read as they are, an optional
+ * one an `Option`, a field Rust can't take left out.
  */
 function dictionaryType(d: Def): string | { skip: string } {
-  const fields: [string, string][] = [];
-  for (const m of (d.members ?? []) as Member[]) {
-    const rust = rustType(m.idlType!, "result");
-    if (d.inheritance || !m.required || snake(m.name!) !== m.name || typeof rust !== "string") return { skip: d.name };
-    fields.push([m.name!, rust]);
-  }
+  if (usedDictionaries.has(d.name)) return typeName(d.name);
+  // One a function takes is a struct that borrows, which a result can't be.
+  if (takenDictionaries.has(d.name) || paramDictionaries.has(d.name)) return { skip: `${d.name} as a parameter too` };
+  // Its own name first, for a field of its own type.
+  const fields: Field[] = [];
   usedDictionaries.set(d.name, fields);
+  for (const m of dictionaryMembers(d)) {
+    const rust = rustType(m.idlType!, "result");
+    if (typeof rust !== "string") continue;
+    fields.push({ rust: snake(m.name!), js: m.name!, type: m.idlType!.nullable ? `Option<${rust}>` : rust, optional: !m.required });
+  }
+  // One of no fields Rust can take is an empty struct: the function gives it,
+  // and nothing of it is read.
   return typeName(d.name);
 }
 
-/** A field of a dictionary a function takes: its Rust and JS names, and type. */
-type Field = { rust: string; js: string; type: string; optional: boolean };
 
 /** The fields of each dictionary a function takes, and whether they borrow. */
 const paramDictionaries = new Map<string, { fields: Field[]; borrows: boolean }>();
@@ -546,6 +586,9 @@ function mdn(iface: string, member?: string) {
   return `https://developer.mozilla.org/docs/Web/${page}${member ? `/${member}` : ""}`;
 }
 
+/** Each interface's constants, by name: their Rust. */
+const constantsOf = new Map<string, Map<string, string>>();
+
 function functionsOf(i: Interface): Fn[] {
   const fns: Fn[] = [];
   // A namespace's functions are called on it: `WebAssembly.compile(bytes)`.
@@ -597,6 +640,22 @@ function functionsOf(i: Interface): Fn[] {
   });
 
   for (const [index, { member: m }] of i.members.entries()) {
+    // A constant is a Rust one, its value written where it's read, as a
+    // `const`'s is (ADR 0031): `node::ELEMENT_NODE`.
+    if (m.type === "const") {
+      const rust = rustType(m.idlType!, "result");
+      const value = (m as unknown as { value?: { type: string; value: string } }).value;
+      const own = constantsOf.get(i.name) ?? new Map<string, string>();
+      if (typeof rust !== "string" || value?.type !== "number") skip("constant");
+      else if (!own.has(m.name!)) {
+        const literal = rust.startsWith("f") && !/[.xe]/i.test(value.value) ? `${value.value}.0` : value.value;
+        // As WebIDL names it, `FLOAT_MAT2x3` too.
+        const allow = /[a-z]/.test(m.name!) ? "    #[allow(non_upper_case_globals)]\n" : "";
+        own.set(m.name!, `    /// \`${jsName(i)}.${m.name}\`\n${allow}    pub const ${m.name}: ${rust} = ${literal};`);
+      }
+      constantsOf.set(i.name, own);
+      continue;
+    }
     if (m.type === "constructor") {
       // `[HTMLConstructor]` is on an element's constructor now, where it was
       // on its interface: only a custom element's class calls it, and `new`
@@ -862,14 +921,18 @@ function generic(f: Fn): string {
 }
 
 /** `pub mod <name> { .. }`, holding a type's or a namespace's functions. */
-function module(name: string, all: Fn[], typed: string[] = []) {
-  if (all.length === 0) return;
+function module(name: string, all: Fn[], typed: string[] = [], constants: string[] = []) {
+  if (all.length === 0 && constants.length === 0) return;
   count += all.length;
   const fns = all.filter((f) => !f.params.some((p) => p.endsWith(`: ${ANY}`) || unionParam(p)));
   typed = [...all.filter((f) => !fns.includes(f)).map(generic), ...typed];
   line();
   line(`pub mod ${name} {`);
-  line(`    use super::*;`);
+  if (all.length > 0 || typed.length > 0) line(`    use super::*;`);
+  for (const c of constants) {
+    line();
+    line(c);
+  }
   if (fns.length > 0) {
   line();
   line(`    unsafe extern "Rust" {`);
@@ -911,7 +974,8 @@ for (const name of INTERFACES) {
     line(`    }`);
     line(`}`);
   }
-  module(snake(qualified(name)), [...functionsOf(i), ...(EXTRA[name] ?? [])], TYPED[name] ?? []);
+  const fns = [...functionsOf(i), ...(EXTRA[name] ?? [])];
+  module(snake(qualified(name)), fns, TYPED[name] ?? [], [...(constantsOf.get(name)?.values() ?? [])]);
 }
 
 for (const name of NAMESPACES) {
@@ -927,9 +991,12 @@ module("global", functionsOf(globalScope));
 // The dictionaries results use, as plain structs: JS objects (ADR 0020).
 for (const [name, fields] of usedDictionaries) {
   line();
-  line(`/// The \`${name}\` dictionary: a JS object with these fields.`);
+  line(`/// The \`${name}\` dictionary: a JS object with these fields, a \`None\` one not there.`);
   line(`pub struct ${typeName(name)} {`);
-  for (const [field, type] of fields) line(`    pub ${field}: ${type},`);
+  for (const f of fields) {
+    if (f.rust !== f.js) line(`    #[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(f.js)})]`);
+    line(`    pub ${f.rust}: ${f.optional ? `Option<${f.type}>` : f.type},`);
+  }
   line(`}`);
 }
 

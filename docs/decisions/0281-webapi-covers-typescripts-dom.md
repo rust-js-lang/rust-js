@@ -66,3 +66,14 @@ so nothing said when it fell behind.
   TypeScript has, not one it leaves out as an experiment. Members went from
   13.5% to 46.6%; no function was renamed or lost. A keyword's `_` is
   dropped before a form's suffix: `continue_with_key`.
+- **The WebIDL types it skipped**: a sequence a function gives is a `Vec`,
+  a new array each time; a frozen array a slice, `&'static [String]`, the
+  same array, which JS won't let change. A `long long` is an `f64`: WebIDL
+  makes it a JS number, which an `i64`, a `BigInt` (ADR 0086), isn't, so
+  it's exact to 2^53, as JS's is (case C would be a `BigInt` the browser
+  rejects). A `float` is an `f32`. A dictionary a function gives has its
+  optional fields as `Option`s, renamed ones by their JS names, and its
+  parent's; one a function also takes is the parameter's struct, which
+  borrows, so not the result's. A constant is a Rust `const`,
+  `node::ELEMENT_NODE`, its value written where it's read (ADR 0031).
+  Members: 46.6% to 75.0%.
