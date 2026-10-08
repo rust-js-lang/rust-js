@@ -99,3 +99,11 @@ Two things came with it:
 - `filter_map`, `flat_map`, `zip`, `chain` and more came with ADR 0062.
 - Not yet: `peekable`, `next()` on a held iterator, ranges in variables,
   and `binary_search`.
+
+## Since
+
+- `for c in text.chars()` is `for (const c of text)`: JS steps through a
+  string by code point, as `Array.from` does, and a string can't change
+  while the loop runs, so the copy shows nothing (case A). A `chars()`
+  passed on or collected is still `Array.from(text)`. Found porting
+  react.dev's `createFileMap`.

@@ -392,6 +392,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 Expr::call(Expr::member((**items).clone(), "entries"), vec![])
             }
+            // A string's characters, `Array.from(text)`, are the string's, which
+            // JS steps through by them: nothing changes it as the loop runs.
+            js::ExprKind::Call(ref callee, ref args)
+                if self.recognition().is_str_chars(self.thir[f.head].ty)
+                    && let [text] = args.as_slice()
+                    && let js::ExprKind::Member(ref array, ref from) = callee.kind
+                    && matches!(&array.kind, js::ExprKind::Var(name) if name == "Array")
+                    && from == "from" =>
+            {
+                text.clone()
+            }
             _ => it,
         });
         // What it hasn't reached when it leaves early is dropped, in order:

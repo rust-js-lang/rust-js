@@ -57,7 +57,7 @@ export const Id = {
 
 export function fnv1a(text) {
   let hash = 14695981039346656037n;
-  for (const c of Array.from(text)) {
+  for (const c of text) {
     hash = hash ^ BigInt(c.codePointAt(0));
     hash = BigInt.asUintN(64, hash * 1099511628211n);
   }

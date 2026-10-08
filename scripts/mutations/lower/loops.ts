@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "chars-loop-copied",
+    breaks: "`for c in text.chars()` loops over `Array.from(text)`, a copy, instead of the string",
+    file: "src/lower/loops.rs",
+    find: "                if self.recognition().is_str_chars(self.thir[f.head].ty)",
+    replace: "                if false && self.recognition().is_str_chars(self.thir[f.head].ty)",
+    tests: ["test/format.test.ts", "-t", "a loop over a string's characters"],
+  },
+  {
     name: "while-condition-statements",
     breaks: "a `while` condition's statements are put in the loop, after its test",
     file: "src/lower/loops.rs",

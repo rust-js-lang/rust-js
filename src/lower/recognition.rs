@@ -1113,8 +1113,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // Theirs first: `push` and `pop` keep a heap's order, and a deque's
         // `remove` is an `Option` (ADR 0068).
         let peekable = self.is_peekable(owner);
-        let chars = matches!(owner.kind(), ty::Adt(adt, _) if tcx.crate_name(adt.did().krate) == sym::core
-            && tcx.item_name(adt.did()).as_str() == "Chars");
+        let chars = self.is_str_chars(owner);
         let own = match name.as_str() {
             "send" if self.channel_end(owner) == Some(ChannelEnd::Sender) => Some(Std::Channel(ChannelOp::Send)),
             "recv" if self.channel_end(owner) == Some(ChannelEnd::Receiver) => Some(Std::Channel(ChannelOp::Recv)),
@@ -1493,6 +1492,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             || ["VecDeque", "BinaryHeap"]
                 .into_iter()
                 .any(|name| self.is_std_adt(ty, Symbol::intern(name)))
+    }
+
+    /// `std::str::Chars`, what a string's `chars()` gives.
+    pub(super) fn is_str_chars(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate) == sym::core
+            && self.tcx.item_name(adt.did()).as_str() == "Chars")
     }
 
     /// `js::JsError`, what a JS function threw: the builtins crate's.

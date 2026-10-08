@@ -260,3 +260,24 @@ test("an else of nothing is left out", async () => {
   (await import(join(dir, "lib.js"))).picked(true, out);
   expect(out).toEqual([1]);
 });
+
+// A loop over a string's characters is over the string, which JS steps
+// through by them, `for (const char of text)`, as react.dev's createFileMap
+// reads a meta string: no `Array.from` first, as nothing changes it.
+test("a loop over a string's characters is over the string", async () => {
+  const dir = fixture("chars-loop");
+  writeFileSync(join(dir, "lib.rs"), `pub fn braces(text: &str) -> u32 {
+    let mut n = 0;
+    for char in text.chars() {
+        if char == '{' {
+            n += 1;
+        }
+    }
+    n
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  for (const char of text) {");
+  expect((await import(join(dir, "lib.js"))).braces("{a}{😀}")).toBe(2);
+});
