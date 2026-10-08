@@ -77,4 +77,17 @@ export function styled(el) {
   style.backgroundColor = "red";
   return style.webkitLineClamp;
 }
+
+export function iterables(nodes, headers, ranges) {
+  let count = 0;
+  nodes.forEach((_node, _i, _list) => {
+    count = (count + 1) | 0;
+  });
+  const seen = 0;
+  let seen$1 = seen;
+  headers.forEach((_value, _name, _headers) => {
+    seen$1 = (seen$1 + 1) >>> 0;
+  });
+  return [seen, headers.get("a"), ranges.has("x"), ranges.size];
+}
 //# sourceMappingURL=web_forms.js.map

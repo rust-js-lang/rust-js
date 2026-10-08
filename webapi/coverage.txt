@@ -1,6 +1,6 @@
 # The webapi crate against TypeScript's DOM (@types/web): bun test test/webapi-coverage.test.ts
 # classes: 699 of 701 (99.7%)
-# members: 8109 of 8488 (95.5%)
+# members: 8129 of 8488 (95.8%)
 AbortController.abort
 AbortController.constructor
 AbortController.signal
@@ -148,6 +148,7 @@ AudioParam.setTargetAtTime
 AudioParam.setValueAtTime
 AudioParam.setValueCurveAtTime
 AudioParam.value
+AudioParamMap.forEach
 AudioProcessingEvent.constructor
 AudioProcessingEvent.inputBuffer
 AudioProcessingEvent.outputBuffer
@@ -289,6 +290,7 @@ CSSMatrixComponent.constructor
 CSSMatrixComponent.matrix
 CSSNamespaceRule.namespaceURI
 CSSNamespaceRule.prefix
+CSSNumericArray.forEach
 CSSNumericArray.length
 CSSNumericValue.add
 CSSNumericValue.div
@@ -962,6 +964,7 @@ CSSStyleValue.static:parseAll
 CSSTransformComponent.is2D
 CSSTransformComponent.toMatrix
 CSSTransformValue.constructor
+CSSTransformValue.forEach
 CSSTransformValue.is2D
 CSSTransformValue.length
 CSSTransformValue.toMatrix
@@ -1156,6 +1159,7 @@ CustomElementRegistry.upgrade
 CustomEvent.constructor
 CustomEvent.detail
 CustomEvent.initCustomEvent
+CustomStateSet.forEach
 DOMException.ABORT_ERR
 DOMException.DATA_CLONE_ERR
 DOMException.DOMSTRING_SIZE_ERR
@@ -1310,6 +1314,7 @@ DOMStringList.item
 DOMStringList.length
 DOMTokenList.add
 DOMTokenList.contains
+DOMTokenList.forEach
 DOMTokenList.item
 DOMTokenList.length
 DOMTokenList.remove
@@ -1847,6 +1852,7 @@ Event.stopPropagation
 Event.target
 Event.timeStamp
 Event.type
+EventCounts.forEach
 EventSource.CLOSED
 EventSource.CONNECTING
 EventSource.OPEN
@@ -1936,6 +1942,7 @@ FontFace.unicodeRange
 FontFace.variationSettings
 FontFace.weight
 FontFaceSet.check
+FontFaceSet.forEach
 FontFaceSet.load
 FontFaceSet.onloading
 FontFaceSet.onloadingdone
@@ -2096,6 +2103,7 @@ GPURenderPipeline.label
 GPUSampler.label
 GPUShaderModule.getCompilationInfo
 GPUShaderModule.label
+GPUSupportedFeatures.forEach
 GPUSupportedLimits.maxBindGroups
 GPUSupportedLimits.maxBindGroupsPlusVertexBuffers
 GPUSupportedLimits.maxBindingsPerBindGroup
@@ -2991,13 +2999,16 @@ HashChangeEvent.oldURL
 Headers.append
 Headers.constructor
 Headers.delete
+Headers.forEach
 Headers.get
 Headers.getSetCookie
 Headers.has
 Headers.set
 Highlight.constructor
+Highlight.forEach
 Highlight.priority
 Highlight.type
+HighlightRegistry.forEach
 HighlightRegistry.highlightsFromPoint
 History.back
 History.forward
@@ -3212,9 +3223,11 @@ MIDIAccess.sysexEnabled
 MIDIConnectionEvent.constructor
 MIDIConnectionEvent.port
 MIDIInput.onmidimessage
+MIDIInputMap.forEach
 MIDIMessageEvent.constructor
 MIDIMessageEvent.data
 MIDIOutput.send
+MIDIOutputMap.forEach
 MIDIPort.close
 MIDIPort.connection
 MIDIPort.id
@@ -3373,6 +3386,7 @@ MediaKeySession.onmessage
 MediaKeySession.remove
 MediaKeySession.sessionId
 MediaKeySession.update
+MediaKeyStatusMap.forEach
 MediaKeyStatusMap.has
 MediaKeyStatusMap.size
 MediaKeySystemAccess.createMediaKeys
@@ -3714,6 +3728,7 @@ NodeIterator.previousNode
 NodeIterator.referenceNode
 NodeIterator.root
 NodeIterator.whatToShow
+NodeList.forEach
 NodeList.item
 NodeList.length
 Notification.actions
@@ -4230,6 +4245,7 @@ RTCSessionDescription.constructor
 RTCSessionDescription.sdp
 RTCSessionDescription.toJSON
 RTCSessionDescription.type
+RTCStatsReport.forEach
 RTCTrackEvent.constructor
 RTCTrackEvent.receiver
 RTCTrackEvent.streams
@@ -5355,6 +5371,7 @@ StylePropertyMap.append
 StylePropertyMap.clear
 StylePropertyMap.delete
 StylePropertyMap.set
+StylePropertyMapReadOnly.forEach
 StylePropertyMapReadOnly.getAll
 StylePropertyMapReadOnly.has
 StylePropertyMapReadOnly.size
@@ -5536,6 +5553,7 @@ URLPattern.username
 URLSearchParams.append
 URLSearchParams.constructor
 URLSearchParams.delete
+URLSearchParams.forEach
 URLSearchParams.get
 URLSearchParams.getAll
 URLSearchParams.has
@@ -5630,6 +5648,7 @@ ViewTransition.ready
 ViewTransition.skipTransition
 ViewTransition.types
 ViewTransition.updateCallbackDone
+ViewTransitionTypeSet.forEach
 VisualViewport.height
 VisualViewport.offsetLeft
 VisualViewport.offsetTop
@@ -5640,6 +5659,7 @@ VisualViewport.pageLeft
 VisualViewport.pageTop
 VisualViewport.scale
 VisualViewport.width
+WGSLLanguageFeatures.forEach
 WakeLock.request
 WakeLockSentinel.onrelease
 WakeLockSentinel.release

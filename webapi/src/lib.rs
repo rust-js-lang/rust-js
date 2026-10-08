@@ -3372,6 +3372,10 @@ pub mod dom_token_list {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMTokenList/value)
         #[link_name = "set value"]
         pub safe fn set_value(this: &DOMTokenList, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMTokenList/forEach)
+        #[link_name = "forEach"]
+        pub safe fn for_each(this: &DOMTokenList, callback: Box<dyn FnMut(&str, u32, &DOMTokenList)>);
     }
 }
 
@@ -3389,6 +3393,10 @@ pub mod node_list {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/NodeList/length)
         #[link_name = "get length"]
         pub safe fn length(this: &NodeList) -> u32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/NodeList/forEach)
+        #[link_name = "forEach"]
+        pub safe fn for_each(this: &NodeList, callback: Box<dyn FnMut(&Node, u32, &NodeList)>);
     }
 }
 
@@ -18204,6 +18212,10 @@ pub mod headers {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Headers/set)
         pub safe fn set(this: &Headers, name: &str, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Headers/forEach)
+        #[link_name = "forEach"]
+        pub safe fn for_each(this: &Headers, callback: Box<dyn FnMut(&str, &str, &Headers)>);
     }
 }
 
@@ -24900,6 +24912,26 @@ pub mod audio_param {
 #[cfg_attr(rust_js, rust_js::types = "AudioParamMap")]
 pub struct AudioParamMap(PhantomData<JsObject>);
 
+pub mod audio_param_map {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioParamMap/forEach)
+        #[link_name = "forEach"]
+        pub safe fn for_each(this: &AudioParamMap, callback: Box<dyn FnMut(&AudioParam, &str, &AudioParamMap)>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioParamMap/get)
+        pub safe fn get(this: &AudioParamMap, key: &str) -> Option<&'static AudioParam>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioParamMap/has)
+        pub safe fn has(this: &AudioParamMap, key: &str) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioParamMap/size)
+        #[link_name = "get size"]
+        pub safe fn size(this: &AudioParamMap) -> u32;
+    }
+}
+
 /// [`AudioProcessingEvent`](https://developer.mozilla.org/docs/Web/API/AudioProcessingEvent)
 #[cfg_attr(rust_js, rust_js::types = "AudioProcessingEvent")]
 pub struct AudioProcessingEvent(PhantomData<JsObject>);
@@ -26624,6 +26656,10 @@ pub mod css_numeric_array {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSNumericArray/forEach)
+        #[link_name = "forEach"]
+        pub safe fn for_each(this: &CSSNumericArray, callback: Box<dyn FnMut(&CSSNumericValue, u32, &CSSNumericArray)>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSNumericArray/length)
         #[link_name = "get length"]
         pub safe fn length(this: &CSSNumericArray) -> u32;
@@ -27877,6 +27913,10 @@ pub mod css_transform_value {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTransformValue/CSSTransformValue)
         #[link_name = "new CSSTransformValue"]
         pub safe fn new(transforms: &[&CSSTransformComponent]) -> &'static CSSTransformValue;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTransformValue/forEach)
+        #[link_name = "forEach"]
+        pub safe fn for_each(this: &CSSTransformValue, callback: Box<dyn FnMut(&CSSTransformComponent, u32, &CSSTransformValue)>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTransformValue/length)
         #[link_name = "get length"]
@@ -29480,6 +29520,32 @@ pub mod custom_event {
 /// [`CustomStateSet`](https://developer.mozilla.org/docs/Web/API/CustomStateSet)
 #[cfg_attr(rust_js, rust_js::types = "CustomStateSet")]
 pub struct CustomStateSet(PhantomData<JsObject>);
+
+pub mod custom_state_set {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomStateSet/forEach)
+        #[link_name = "forEach"]
+        pub safe fn for_each(this: &CustomStateSet, callback: Box<dyn FnMut(&str, &str, &CustomStateSet)>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomStateSet/has)
+        pub safe fn has(this: &CustomStateSet, value: &str) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomStateSet/size)
+        #[link_name = "get size"]
+        pub safe fn size(this: &CustomStateSet) -> u32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomStateSet/add)
+        pub safe fn add(this: &CustomStateSet, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomStateSet/delete)
+        pub safe fn delete(this: &CustomStateSet, key: &str) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomStateSet/clear)
+        pub safe fn clear(this: &CustomStateSet);
+    }
+}
 
 /// [`DOMException`](https://developer.mozilla.org/docs/Web/API/DOMException)
 #[cfg_attr(rust_js, rust_js::types = "DOMException")]
@@ -31644,6 +31710,26 @@ pub mod error_event {
 #[cfg_attr(rust_js, rust_js::types = "EventCounts")]
 pub struct EventCounts(PhantomData<JsObject>);
 
+pub mod event_counts {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/EventCounts/forEach)
+        #[link_name = "forEach"]
+        pub safe fn for_each(this: &EventCounts, callback: Box<dyn FnMut(f64, &str, &EventCounts)>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/EventCounts/get)
+        pub safe fn get(this: &EventCounts, key: &str) -> Option<f64>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/EventCounts/has)
+        pub safe fn has(this: &EventCounts, key: &str) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/EventCounts/size)
+        #[link_name = "get size"]
+        pub safe fn size(this: &EventCounts) -> u32;
+    }
+}
+
 /// [`EventSource`](https://developer.mozilla.org/docs/Web/API/EventSource)
 #[cfg_attr(rust_js, rust_js::types = "EventSource")]
 pub struct EventSource(PhantomData<JsObject>);
@@ -32343,6 +32429,26 @@ pub mod font_face_set {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/forEach)
+        #[link_name = "forEach"]
+        pub safe fn for_each(this: &FontFaceSet, callback: Box<dyn FnMut(&FontFace, &FontFace, &FontFaceSet)>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/has)
+        pub safe fn has(this: &FontFaceSet, value: &FontFace) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/size)
+        #[link_name = "get size"]
+        pub safe fn size(this: &FontFaceSet) -> u32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/add)
+        pub safe fn add(this: &FontFaceSet, value: &FontFace);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/delete)
+        pub safe fn delete(this: &FontFaceSet, key: &FontFace) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/clear)
+        pub safe fn clear(this: &FontFaceSet);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/onloading)
         #[link_name = "get onloading"]
         pub safe fn onloading(this: &FontFaceSet) -> Option<&'static JsObject>;
@@ -33670,6 +33776,23 @@ pub mod gpu_shader_module {
 #[cfg_attr(rust_js, rust_js::types = "GPUSupportedFeatures")]
 pub struct GPUSupportedFeatures(PhantomData<JsObject>);
 
+pub mod gpu_supported_features {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedFeatures/forEach)
+        #[link_name = "forEach"]
+        pub safe fn for_each(this: &GPUSupportedFeatures, callback: Box<dyn FnMut(&str, &str, &GPUSupportedFeatures)>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedFeatures/has)
+        pub safe fn has(this: &GPUSupportedFeatures, value: &str) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedFeatures/size)
+        #[link_name = "get size"]
+        pub safe fn size(this: &GPUSupportedFeatures) -> u32;
+    }
+}
+
 /// [`GPUSupportedLimits`](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits)
 #[cfg_attr(rust_js, rust_js::types = "GPUSupportedLimits")]
 pub struct GPUSupportedLimits(PhantomData<JsObject>);
@@ -34965,6 +35088,26 @@ pub mod highlight {
         #[link_name = "new Highlight"]
         pub safe fn new(initial_ranges: &AbstractRange) -> &'static Highlight;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Highlight/forEach)
+        #[link_name = "forEach"]
+        pub safe fn for_each(this: &Highlight, callback: Box<dyn FnMut(&AbstractRange, &AbstractRange, &Highlight)>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Highlight/has)
+        pub safe fn has(this: &Highlight, value: &AbstractRange) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Highlight/size)
+        #[link_name = "get size"]
+        pub safe fn size(this: &Highlight) -> u32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Highlight/add)
+        pub safe fn add(this: &Highlight, value: &AbstractRange);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Highlight/delete)
+        pub safe fn delete(this: &Highlight, key: &AbstractRange) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Highlight/clear)
+        pub safe fn clear(this: &Highlight);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Highlight/priority)
         #[link_name = "get priority"]
         pub safe fn priority(this: &Highlight) -> i32;
@@ -34991,6 +35134,29 @@ pub mod highlight_registry {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HighlightRegistry/forEach)
+        #[link_name = "forEach"]
+        pub safe fn for_each(this: &HighlightRegistry, callback: Box<dyn FnMut(&Highlight, &str, &HighlightRegistry)>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HighlightRegistry/get)
+        pub safe fn get(this: &HighlightRegistry, key: &str) -> Option<&'static Highlight>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HighlightRegistry/has)
+        pub safe fn has(this: &HighlightRegistry, key: &str) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HighlightRegistry/size)
+        #[link_name = "get size"]
+        pub safe fn size(this: &HighlightRegistry) -> u32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HighlightRegistry/set)
+        pub safe fn set(this: &HighlightRegistry, key: &str, value: &Highlight);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HighlightRegistry/delete)
+        pub safe fn delete(this: &HighlightRegistry, key: &str) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HighlightRegistry/clear)
+        pub safe fn clear(this: &HighlightRegistry);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/HighlightRegistry/highlightsFromPoint)
         #[link_name = "highlightsFromPoint"]
         pub safe fn highlights_from_point(this: &HighlightRegistry, x: f32, y: f32) -> Vec<HighlightHitResult>;
@@ -36458,6 +36624,26 @@ pub mod midi_input {
 #[cfg_attr(rust_js, rust_js::types = "MIDIInputMap")]
 pub struct MIDIInputMap(PhantomData<JsObject>);
 
+pub mod midi_input_map {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIInputMap/forEach)
+        #[link_name = "forEach"]
+        pub safe fn for_each(this: &MIDIInputMap, callback: Box<dyn FnMut(&MIDIInput, &str, &MIDIInputMap)>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIInputMap/get)
+        pub safe fn get(this: &MIDIInputMap, key: &str) -> Option<&'static MIDIInput>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIInputMap/has)
+        pub safe fn has(this: &MIDIInputMap, key: &str) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIInputMap/size)
+        #[link_name = "get size"]
+        pub safe fn size(this: &MIDIInputMap) -> u32;
+    }
+}
+
 /// [`MIDIMessageEvent`](https://developer.mozilla.org/docs/Web/API/MIDIMessageEvent)
 #[cfg_attr(rust_js, rust_js::types = "MIDIMessageEvent")]
 pub struct MIDIMessageEvent(PhantomData<JsObject>);
@@ -36526,6 +36712,26 @@ pub mod midi_output {
 /// [`MIDIOutputMap`](https://developer.mozilla.org/docs/Web/API/MIDIOutputMap)
 #[cfg_attr(rust_js, rust_js::types = "MIDIOutputMap")]
 pub struct MIDIOutputMap(PhantomData<JsObject>);
+
+pub mod midi_output_map {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIOutputMap/forEach)
+        #[link_name = "forEach"]
+        pub safe fn for_each(this: &MIDIOutputMap, callback: Box<dyn FnMut(&MIDIOutput, &str, &MIDIOutputMap)>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIOutputMap/get)
+        pub safe fn get(this: &MIDIOutputMap, key: &str) -> Option<&'static MIDIOutput>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIOutputMap/has)
+        pub safe fn has(this: &MIDIOutputMap, key: &str) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIOutputMap/size)
+        #[link_name = "get size"]
+        pub safe fn size(this: &MIDIOutputMap) -> u32;
+    }
+}
 
 /// [`MIDIPort`](https://developer.mozilla.org/docs/Web/API/MIDIPort)
 #[cfg_attr(rust_js, rust_js::types = "MIDIPort")]
@@ -37891,6 +38097,10 @@ pub mod media_key_status_map {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeyStatusMap/forEach)
+        #[link_name = "forEach"]
+        pub safe fn for_each(this: &MediaKeyStatusMap, callback: Box<dyn FnMut(&str, BufferSource<'_>, &MediaKeyStatusMap)>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeyStatusMap/size)
         #[link_name = "get size"]
         pub safe fn size(this: &MediaKeyStatusMap) -> u32;
@@ -43118,6 +43328,26 @@ pub mod rtc_session_description {
 #[cfg_attr(rust_js, rust_js::types = "RTCStatsReport")]
 pub struct RTCStatsReport(PhantomData<JsObject>);
 
+pub mod rtc_stats_report {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCStatsReport/forEach)
+        #[link_name = "forEach"]
+        pub safe fn for_each(this: &RTCStatsReport, callback: Box<dyn FnMut(&dyn core::any::Any, &str, &RTCStatsReport)>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCStatsReport/get)
+        pub safe fn get(this: &RTCStatsReport, key: &str) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCStatsReport/has)
+        pub safe fn has(this: &RTCStatsReport, key: &str) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCStatsReport/size)
+        #[link_name = "get size"]
+        pub safe fn size(this: &RTCStatsReport) -> u32;
+    }
+}
+
 /// [`RTCTrackEvent`](https://developer.mozilla.org/docs/Web/API/RTCTrackEvent)
 #[cfg_attr(rust_js, rust_js::types = "RTCTrackEvent")]
 pub struct RTCTrackEvent(PhantomData<JsObject>);
@@ -46215,6 +46445,10 @@ pub mod style_property_map_read_only {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/StylePropertyMapReadOnly/forEach)
+        #[link_name = "forEach"]
+        pub safe fn for_each(this: &StylePropertyMapReadOnly, callback: Box<dyn FnMut(&[&CSSStyleValue], &str, &StylePropertyMapReadOnly)>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/StylePropertyMapReadOnly/getAll)
         #[link_name = "getAll"]
         pub safe fn get_all(this: &StylePropertyMapReadOnly, property: &str) -> Vec<&'static CSSStyleValue>;
@@ -47216,6 +47450,10 @@ pub mod url_search_params {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/sort)
         pub safe fn sort(this: &URLSearchParams);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/forEach)
+        #[link_name = "forEach"]
+        pub safe fn for_each(this: &URLSearchParams, callback: Box<dyn FnMut(&str, &str, &URLSearchParams)>);
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/URLSearchParams)
@@ -47855,6 +48093,32 @@ pub mod view_transition {
 #[cfg_attr(rust_js, rust_js::types = "ViewTransitionTypeSet")]
 pub struct ViewTransitionTypeSet(PhantomData<JsObject>);
 
+pub mod view_transition_type_set {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ViewTransitionTypeSet/forEach)
+        #[link_name = "forEach"]
+        pub safe fn for_each(this: &ViewTransitionTypeSet, callback: Box<dyn FnMut(&str, &str, &ViewTransitionTypeSet)>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ViewTransitionTypeSet/has)
+        pub safe fn has(this: &ViewTransitionTypeSet, value: &str) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ViewTransitionTypeSet/size)
+        #[link_name = "get size"]
+        pub safe fn size(this: &ViewTransitionTypeSet) -> u32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ViewTransitionTypeSet/add)
+        pub safe fn add(this: &ViewTransitionTypeSet, value: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ViewTransitionTypeSet/delete)
+        pub safe fn delete(this: &ViewTransitionTypeSet, key: &str) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ViewTransitionTypeSet/clear)
+        pub safe fn clear(this: &ViewTransitionTypeSet);
+    }
+}
+
 /// [`VisualViewport`](https://developer.mozilla.org/docs/Web/API/VisualViewport)
 #[cfg_attr(rust_js, rust_js::types = "VisualViewport")]
 pub struct VisualViewport(PhantomData<JsObject>);
@@ -47936,6 +48200,23 @@ pub mod visual_viewport {
 /// [`WGSLLanguageFeatures`](https://developer.mozilla.org/docs/Web/API/WGSLLanguageFeatures)
 #[cfg_attr(rust_js, rust_js::types = "WGSLLanguageFeatures")]
 pub struct WGSLLanguageFeatures(PhantomData<JsObject>);
+
+pub mod wgsl_language_features {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WGSLLanguageFeatures/forEach)
+        #[link_name = "forEach"]
+        pub safe fn for_each(this: &WGSLLanguageFeatures, callback: Box<dyn FnMut(&str, &str, &WGSLLanguageFeatures)>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WGSLLanguageFeatures/has)
+        pub safe fn has(this: &WGSLLanguageFeatures, value: &str) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WGSLLanguageFeatures/size)
+        #[link_name = "get size"]
+        pub safe fn size(this: &WGSLLanguageFeatures) -> u32;
+    }
+}
 
 /// [`WakeLock`](https://developer.mozilla.org/docs/Web/API/WakeLock)
 #[cfg_attr(rust_js, rust_js::types = "WakeLock")]
@@ -62918,6 +63199,42 @@ impl<'a> FileSystemWriteChunkType<'a> {
     }
 }
 
+/// `File | string`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum FormDataEntryValue<'a> {
+    File(&'a File),
+    Str(&'a str),
+}
+
+impl<'a> From<&'a File> for FormDataEntryValue<'a> {
+    fn from(value: &'a File) -> Self {
+        FormDataEntryValue::File(value)
+    }
+}
+
+impl<'a> From<&'a str> for FormDataEntryValue<'a> {
+    fn from(value: &'a str) -> Self {
+        FormDataEntryValue::Str(value)
+    }
+}
+
+/// What a `File | string` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `File | string`")]
+#[cfg_attr(rust_js, rust_js::types = "File | string")]
+pub trait IntoFormDataEntryValue: sealed::Sealed {}
+impl IntoFormDataEntryValue for &File {}
+impl IntoFormDataEntryValue for &str {}
+impl IntoFormDataEntryValue for FormDataEntryValue<'_> {}
+
+impl<'a> FormDataEntryValue<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoFormDataEntryValue + 'a) -> FormDataEntryValue<'a> {
+        unreachable!()
+    }
+}
+
 /// `Text | Element | Document`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum GeometryNode<'a> {
@@ -68181,6 +68498,7 @@ mod sealed {
     impl Sealed for EventListenerOptionsOrBool {}
     impl Sealed for FileOrStrOrFormData<'_> {}
     impl Sealed for FileSystemWriteChunkType<'_> {}
+    impl Sealed for FormDataEntryValue<'_> {}
     impl Sealed for GPUBindingResource<'_> {}
     impl Sealed for GPUBufferBinding<'_> {}
     impl Sealed for GPUColor<'_> {}

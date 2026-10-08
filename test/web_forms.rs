@@ -108,3 +108,17 @@ pub fn styled(el: &webapi::HTMLElement) -> String {
     webapi::css_style_properties::set_background_color(style, "red");
     webapi::css_style_properties::webkit_line_clamp(style)
 }
+
+/// What an iterable, a maplike or a setlike declares: `forEach` of each
+/// item, and a map's `get`, `has` and `size`.
+pub fn iterables(nodes: &webapi::NodeList, headers: &webapi::Headers, ranges: &webapi::HighlightRegistry) -> (u32, Option<String>, bool, u32) {
+    let mut count = 0;
+    webapi::node_list::for_each(nodes, Box::new(move |_node: &webapi::Node, _i: u32, _list: &webapi::NodeList| {
+        count += 1;
+    }));
+    let mut seen = 0;
+    webapi::headers::for_each(headers, Box::new(move |_value: &str, _name: &str, _headers: &webapi::Headers| {
+        seen += 1;
+    }));
+    (seen, webapi::headers::get(headers, "a"), webapi::highlight_registry::has(ranges, "x"), webapi::highlight_registry::size(ranges))
+}

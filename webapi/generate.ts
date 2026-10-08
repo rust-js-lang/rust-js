@@ -186,7 +186,9 @@ for (const [spec, defs] of Object.entries(all)) {
     const kept = (m: Member) =>
       m.type === "constructor"
         ? !!ts?.ctor
-        : !!m.name && (d.type === "interface mixin" ? anyClassHas.has(m.name) : !!ts && (m.special === "static" ? ts.statics : ts.members).has(m.name));
+        : m.type === "iterable" || m.type === "maplike" || m.type === "setlike"
+          ? !!ts?.members.has("forEach")
+          : !!m.name && (d.type === "interface mixin" ? anyClassHas.has(m.name) : !!ts && (m.special === "static" ? ts.statics : ts.members).has(m.name));
     for (const m of d.members ?? []) if (!kept(m)) leftOut.add(m);
   }
 }
@@ -659,6 +661,45 @@ function functionsOf(i: Interface): Fn[] {
         own.set(m.name!, `    /// \`${jsName(i)}.${m.name}\`\n${allow}    pub const ${m.name}: ${rust} = ${literal};`);
       }
       constantsOf.set(i.name, own);
+      continue;
+    }
+    // An iterable, a maplike or a setlike: `forEach` of each item, given
+    // what JS gives it, an array's `(value, index, list)` or a map's
+    // `(value, key, map)`, and a map's or a set's own methods. Not yet
+    // `keys`, `values` nor `entries`, JS iterators (ADR 0281).
+    if (m.type === "iterable" || m.type === "maplike" || m.type === "setlike") {
+      const declared = m as unknown as { idlType: IdlType[]; readonly?: boolean; async?: boolean };
+      if (declared.async || i.isNamespace) {
+        skip("async iterable");
+        continue;
+      }
+      const [key, value] = declared.idlType.length === 2 ? declared.idlType : [undefined, declared.idlType[0]];
+      const own = `&${typeName(i.name)}`;
+      const v = paramType(value);
+      const k = m.type === "setlike" ? v : key ? paramType(key) : "u32";
+      const result = rustType(value, "result");
+      if (!v || !k || typeof result !== "string") {
+        skip(m.type);
+        continue;
+      }
+      const doc = (name: string) => [`[MDN](${mdn(i.name, name)})`];
+      const add = (name: string, jsName: string, params: string[], result: string) =>
+        fns.push({ name, jsName, params: [...self, ...params], result, doc: doc(jsName.replace(/^get /, "")) });
+      add("for_each", "forEach", [`callback: Box<dyn FnMut(${v}, ${k}, ${own})>`], "()");
+      if (m.type === "maplike") {
+        add("get", "get", [`key: ${k}`], `Option<${result}>`);
+        add("has", "has", [`key: ${k}`], "bool");
+      }
+      if (m.type === "setlike") add("has", "has", [`value: ${v}`], "bool");
+      if (m.type !== "iterable") {
+        add("size", "get size", [], "u32");
+        if (!declared.readonly) {
+          if (m.type === "maplike") add("set", "set", [`key: ${k}`, `value: ${v}`], "()");
+          if (m.type === "setlike") add("add", "add", [`value: ${v}`], "()");
+          add("delete", "delete", [`key: ${k}`], "bool");
+          add("clear", "clear", [], "()");
+        }
+      }
       continue;
     }
     if (m.type === "constructor") {

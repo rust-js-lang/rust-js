@@ -97,3 +97,8 @@ so nothing said when it fell behind.
 - **The measure reads each function's link name** in its type's module, not
   its MDN link, so a binding documented otherwise counts; both gave the
   same numbers. Members: 95.5%.
+- **An iterable, a maplike and a setlike give `for_each`**, of what JS gives
+  its callback, an array's `(value, index, list)` or a map's `(value, key,
+  map)`, and a map's or a set's `get`, `has`, `size`, and where it can
+  change, `set` or `add`, `delete` and `clear`. Not yet `keys`, `values` and
+  `entries`, which give JS iterators the js crate has no type of. 95.8%.
