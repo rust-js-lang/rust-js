@@ -18,3 +18,6 @@ node_modules/
 /.vscode
 # What rustc writes of a long type's name, beside where it runs.
 /*.long-type-*.txt
+
+# A binding crate checked on its own, `cargo check` in next/ say.
+/*/target
