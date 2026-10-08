@@ -273,6 +273,7 @@ test("async code becomes async functions and await", async () => {
   expect(await asyncs.sum(2, 3)).toBe(10);
   expect(await asyncs.countdown(4)).toBe(4);
   expect(await asyncs.swap([1, 2])).toEqual([2, 1]);
+  expect([await asyncs.given({ params: 4 }), await asyncs.given({})]).toEqual([5, 1]);
   expect(await asyncs.blocks(5)).toBe(26);
   expect(await asyncs.held()).toBe(5);
   // The listener heard the first ping, and was gone for the second.
@@ -322,7 +323,9 @@ test("async code becomes async functions and await", async () => {
   expect(js).toContain("export async function sum(a, b) {\n  return ((await double(a)) + (await double(b))) >>> 0;\n}");
   // Parameters are the body's variables: no `let x = x`.
   expect(js).toContain("export async function countdown(n) {\n  let steps = 0;");
-  expect(js).toContain("export async function swap(param) {\n  const a = param[0];");
+  // What's taken apart is taken apart where it's given, as a plain \`fn\` takes it.
+  expect(js).toContain("export async function swap([a, b]) {\n  return [await setTimeout(0, b), a];");
+  expect(js).toContain("export async function given({ params }) {\n");
   // An `async` block is an async arrow, called; an `async` closure, an async arrow.
   expect(js).toContain("const block = (async () => ((await double(x)) + 1) >>> 0");
   expect(js).toContain("const add = async (y) => ((await setTimeout(0, y)) + x) >>> 0;");

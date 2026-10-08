@@ -19,10 +19,12 @@ export async function countdown(n) {
   return steps;
 }
 
-export async function swap(param) {
-  const a = param[0];
-  const b = param[1];
+export async function swap([a, b]) {
   return [await setTimeout(0, b), a];
+}
+
+export async function given({ params }) {
+  return ((await setTimeout(0, params ?? 0)) + 1) >>> 0;
 }
 
 export async function blocks(x) {

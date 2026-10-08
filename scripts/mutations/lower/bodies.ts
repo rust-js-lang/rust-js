@@ -98,4 +98,28 @@ export const mutations: Mutation[] = [
     replace: "            && gives_unit\n            && false\n",
     tests: ["test/compiler.test.ts", "-t", "only spawns an async block"],
   },
+  {
+    name: "async-param-taken-apart-in-body",
+    breaks: "an `async fn`'s pattern parameter is `param`, taken apart in its body, not `({ params })`",
+    file: "src/lower/bodies.rs",
+    find: "            taken_apart_where_given(&mut params, &mut lowered);\n",
+    replace: "",
+    tests: ["test/compiler.test.ts", "-t", "async code becomes async functions"],
+  },
+  {
+    name: "async-tuple-param-unlifted",
+    breaks: "an `async fn`'s tuple parameter is `param`, `const a = param[0];`, not `([a, b])`",
+    file: "src/lower/bodies.rs",
+    find: "        let pattern = if reads.iter().all(|(at, _)| at.is_ok()) {\n",
+    replace: "        let pattern = if false {\n",
+    tests: ["test/compiler.test.ts", "-t", "async code becomes async functions"],
+  },
+  {
+    name: "async-struct-param-unlifted",
+    breaks: "an `async fn`'s struct parameter is `param`, `const params = param.params;`, not `({ params })`",
+    file: "src/lower/bodies.rs",
+    find: "        } else if reads.iter().all(|(at, _)| at.is_err()) {\n",
+    replace: "        } else if false {\n",
+    tests: ["test/compiler.test.ts", "-t", "async code becomes async functions"],
+  },
 ];

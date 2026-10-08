@@ -39,6 +39,17 @@ pub async fn swap((a, b): (u32, u32)) -> (u32, u32) {
     (later(0, b).await, a)
 }
 
+pub struct Context {
+    pub params: Option<u32>,
+    pub locale: Option<String>,
+}
+
+/// A struct taken apart where it's given, as Next.js's `getStaticProps`
+/// takes its context.
+pub async fn given(Context { params, .. }: Context) -> u32 {
+    later(0, params.unwrap_or(0)).await + 1
+}
+
 /// An `async` block, and an `async` closure.
 pub async fn blocks(x: u32) -> u32 {
     let block = async move { double(x).await + 1 };

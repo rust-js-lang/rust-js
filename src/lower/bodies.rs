@@ -96,6 +96,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if is_async && self.owned_mark() > mark {
             return Err(self.unsupported(span, "an `async` function that owns a value with a destructor"));
         }
+        let mut params = params;
+        if is_async {
+            taken_apart_where_given(&mut params, &mut lowered);
+        }
         self.close_scope(mark, lowered, span, out)?;
         Ok((params, is_async))
     }
@@ -680,5 +684,61 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => false,
         }
+    }
+}
+
+/// An `async fn`'s parameter its body takes apart first, `const a =
+/// param[0];` or `const a = param.a;`, as Rust gives a pattern's parameter to
+/// the future it returns (ADR 0029), taken apart where it's given instead,
+/// `([a, b])` or `({ a })`, as a plain `fn`'s is: the same reads, of what
+/// nothing else reads.
+fn taken_apart_where_given(params: &mut [js::Pattern], body: &mut Vec<Stmt>) {
+    for param in params.iter_mut() {
+        let js::Pattern::Name(name) = param else { continue };
+        let read = |stmt: &Stmt| match &stmt.kind {
+            StmtKind::Const(var, value) => match &value.kind {
+                js::ExprKind::Member(object, field) if matches!(&object.kind, js::ExprKind::Var(v) if v == name) => {
+                    Some((Err(field.clone()), var.clone()))
+                }
+                js::ExprKind::Index(object, index)
+                    if matches!(&object.kind, js::ExprKind::Var(v) if v == name)
+                        && let Some(i) = index.as_int().and_then(|i| usize::try_from(i).ok()) =>
+                {
+                    Some((Ok(i), var.clone()))
+                }
+                _ => None,
+            },
+            _ => None,
+        };
+        let reads: Vec<_> = body.iter().map_while(read).collect();
+        if reads.is_empty() || js::mentions_in(&body[reads.len()..], name) > 0 {
+            continue;
+        }
+        let pattern = if reads.iter().all(|(at, _)| at.is_ok()) {
+            let mut items = Vec::new();
+            for (at, var) in &reads {
+                let i = *at.as_ref().expect("an index");
+                if items.len() <= i {
+                    items.resize(i + 1, None);
+                }
+                if items[i].is_some() {
+                    break;
+                }
+                items[i] = Some(var.clone());
+            }
+            js::Pattern::Array(items)
+        } else if reads.iter().all(|(at, _)| at.is_err()) {
+            let fields = reads
+                .iter()
+                .map(|(at, var)| (at.clone().expect_err("a field"), var.clone(), None));
+            js::Pattern::Object(fields.collect(), None)
+        } else {
+            continue;
+        };
+        if pattern.names().len() != reads.len() {
+            continue;
+        }
+        *param = pattern;
+        body.drain(..reads.len());
     }
 }

@@ -117,3 +117,9 @@ still runs. `test/async.rs` and the countdown example pin this down.
   call is one already.
 - Not yet: `async` functions in traits, `IntoFuture` for your own types,
   streams, and joining several futures (`Promise.all`).
+- A pattern parameter, `(a, b)` or `Context { params, .. }`, Rust gives
+  the future as `__arg0`, taken apart in its body. Its JS takes it apart
+  where it's given, `([a, b])` or `({ params })`, as a plain `fn`'s does,
+  where the body's first statements only read its parts and nothing else
+  reads it: as react.dev's errors page's `getStaticProps` takes Next.js's
+  context. (Amended: it was `param`, read part by part.)
