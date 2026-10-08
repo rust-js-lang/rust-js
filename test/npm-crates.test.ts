@@ -38,7 +38,7 @@ test("builtins, webapi, react and next are npm packages of their crates, which a
     // React's own, the library it binds, and what its build script reads.
     ["react", { ...crates, react: ">=18.0.0", "react-dom": ">=18.0.0" }, ["build.rs", "src/attributes.rs", "src/children.rs", "src/dom.rs", "src/elements.rs", "src/event.rs", "src/lib.rs", "versions.json"]],
     // Next.js's, the library it binds, and React's crate, which it uses.
-    ["next", { "@rust-js/builtins": crates["@rust-js/builtins"], "@rust-js/react": `~${cargo("react").package.version}`, next: ">=16.0.0" }, ["src/image.rs", "src/lib.rs", "src/link.rs", "src/navigation.rs", "src/router.rs"]],
+    ["next", { "@rust-js/builtins": crates["@rust-js/builtins"], "@rust-js/react": `~${cargo("react").package.version}`, next: ">=16.0.0" }, ["src/image.rs", "src/legacy.rs", "src/legacy/image.rs", "src/lib.rs", "src/link.rs", "src/navigation.rs", "src/router.rs"]],
   ] as const) {
     const dir = unpacked(name);
     const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));

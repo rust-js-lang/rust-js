@@ -13,13 +13,13 @@ const about = `#![allow(non_snake_case)]
 use next::legacy::image::Image;
 use next::link::Link;
 use react::attributes::AnchorHTMLAttributes;
-use react::{JSX, jsx};
+use react::{CSSProperties, JSX, jsx};
 
 pub fn About() -> JSX::Element {
     jsx! {
         <main>
             <h1>{"About, in Rust"}</h1>
-            <div className="logo">
+            <div className="logo" style={CSSProperties::new().position("relative").width(100).height(20)}>
                 <Image src="/next.svg" layout={Some("fill")} objectFit={Some("cover")} alt={Some("Next.js logo")} {..Default::default()} />
             </div>
             <HomeLink className="home" {..Default::default()} />
