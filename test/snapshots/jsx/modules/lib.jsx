@@ -2,7 +2,7 @@
 
 import { $range } from "@rust-js/runtime";
 
-import { Card } from "./card.jsx";
+import { Card } from "./ui/card.jsx";
 
 export function App() {
   const items = $range(0, 3).map((n) => <li key={n}>{n}</li>);

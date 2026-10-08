@@ -69,7 +69,7 @@ pub(crate) fn Card(p: Props) -> JSX::Element {
   run(args);
   snapshot(dir, "modules");
   const code = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(code).toContain('import { Card } from "./card.jsx";');
+  expect(code).toContain('import { Card } from "./ui/card.jsx";');
   expect(code).toContain('<Card title="Numbers">');
   const result = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(result.App())).toBe('<section><h1>Numbers</h1><ul class="list"><li>0</li><li>1</li><li>2</li></ul></section><p data-state="ready">done</p>');
