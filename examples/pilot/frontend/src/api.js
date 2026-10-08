@@ -50,22 +50,7 @@ async function call(url, init, ok) {
 }
 
 function get(signal) {
-  return {
-    method: undefined,
-    headers: undefined,
-    body: undefined,
-    referrer: undefined,
-    referrerPolicy: undefined,
-    mode: undefined,
-    credentials: undefined,
-    cache: undefined,
-    redirect: undefined,
-    integrity: undefined,
-    keepalive: undefined,
-    signal,
-    duplex: undefined,
-    priority: undefined,
-  };
+  return { signal };
 }
 
 export async function contacts(query, signal) {
@@ -106,22 +91,7 @@ export async function create(new$) {
     "JSON of a model",
     $debugJsonError,
   );
-  const init = {
-    method: "POST",
-    headers: json,
-    body,
-    referrer: undefined,
-    referrerPolicy: undefined,
-    mode: undefined,
-    credentials: undefined,
-    cache: undefined,
-    redirect: undefined,
-    integrity: undefined,
-    keepalive: undefined,
-    signal: undefined,
-    duplex: undefined,
-    priority: undefined,
-  };
+  const init = { method: "POST", headers: json, body };
   const result = await call("/api/contacts", init, 201);
   if (result.TAG === "Err") {
     return result;

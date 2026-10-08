@@ -35,12 +35,7 @@ export function use_route() {
   const [current, setCurrent] = useState(hash());
   useEffect(() => {
     const controller = new AbortController();
-    const options = {
-      capture: undefined,
-      passive: undefined,
-      once: undefined,
-      signal: controller.signal,
-    };
+    const options = { signal: controller.signal };
     window.addEventListener(
       "hashchange",
       () => {

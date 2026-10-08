@@ -9,8 +9,7 @@ import { Failure, create } from "./api.js";
 import { go } from "./route.js";
 
 function message(errors, field) {
-  const error = errors.find((error) => error.field === field);
-  return error?.message;
+  return errors.find((error) => error.field === field)?.message;
 }
 
 export function NewContactForm() {
@@ -24,7 +23,7 @@ export function NewContactForm() {
     const result = $parseInt($trim(age), 0, 4294967295);
     const parsed = result.TAG === "Ok" ? result._0 : undefined;
     const new$ = { name, email, age: parsed ?? 0 };
-    let found = validate(new$);
+    const found = validate(new$);
     if (parsed == null) {
       $retain(found, (error) => error.field !== "age");
       found.push({ field: "age", message: `${$debugStr(age)} isn't a whole number` });

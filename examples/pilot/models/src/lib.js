@@ -13,12 +13,12 @@ export const Problem = {
 export const MAX_NAME = 40;
 
 export function validate(contact) {
-  let errors = [];
-  let fail = (field, message) => {
+  const errors = [];
+  const fail = (field, message) => {
     errors.push({ field, message });
   };
   const name = $trim(contact.name);
-  if (name.length === 0) {
+  if (!name) {
     fail("name", "a name is required");
   } else if (Array.from(name).length > MAX_NAME) {
     fail("name", `a name is at most ${MAX_NAME} characters`);
@@ -36,7 +36,7 @@ export function is_email(text) {
   const match = $splitOnce(text, "@");
   if (match != null) {
     return (
-      match[0].length !== 0 &&
+      !!match[0] &&
       !match[1].includes("@") &&
       match[1].includes(".") &&
       !match[1].startsWith(".") &&
@@ -49,7 +49,7 @@ export function is_email(text) {
 export function matches(contact, query) {
   const query$1 = $trim(query).toLowerCase();
   return (
-    query$1.length === 0 ||
+    !query$1 ||
     contact.name.toLowerCase().includes(query$1) ||
     contact.email.toLowerCase().includes(query$1)
   );
