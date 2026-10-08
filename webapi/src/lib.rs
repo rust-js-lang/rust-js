@@ -72499,7 +72499,6 @@ impl PublicKeyCredential {
 pub struct PushManager(PhantomData<JsObject>);
 
 pub mod push_manager {
-    use super::*;
 
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/PushManager/supportedContentEncodings)
@@ -96459,7 +96458,7 @@ impl<'a> BlobPart<'a> {
     }
 }
 
-/// `string | number`: each variant's value is the member itself (ADR 0215).
+/// `BluetoothServiceUUID`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum BluetoothServiceUUID<'a> {
     Str(&'a str),
@@ -96478,9 +96477,9 @@ impl<'a> From<u32> for BluetoothServiceUUID<'a> {
     }
 }
 
-/// What a `string | number` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | number`")]
-#[cfg_attr(rust_js, rust_js::types = "string | number")]
+/// What a `BluetoothServiceUUID` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `BluetoothServiceUUID`")]
+#[cfg_attr(rust_js, rust_js::types = "BluetoothServiceUUID")]
 pub trait IntoBluetoothServiceUUID: sealed::Sealed {}
 impl IntoBluetoothServiceUUID for &str {}
 impl IntoBluetoothServiceUUID for u32 {}
@@ -97396,7 +97395,7 @@ impl<'a> BufferSourceOrStr<'a> {
     }
 }
 
-/// `HTMLImageElement | SVGImageElement | HTMLVideoElement | HTMLCanvasElement | ImageBitmap | OffscreenCanvas | VideoFrame`: each variant's value is the member itself (ADR 0215).
+/// `CanvasImageSource`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum CanvasImageSource<'a> {
     HTMLImageElement(&'a HTMLImageElement),
@@ -97450,9 +97449,9 @@ impl<'a> From<&'a VideoFrame> for CanvasImageSource<'a> {
     }
 }
 
-/// What a `HTMLImageElement | SVGImageElement | HTMLVideoElement | HTMLCanvasElement | ImageBitmap | OffscreenCanvas | VideoFrame` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `HTMLImageElement | SVGImageElement | HTMLVideoElement | HTMLCanvasElement | ImageBitmap | OffscreenCanvas | VideoFrame`")]
-#[cfg_attr(rust_js, rust_js::types = "HTMLImageElement | SVGImageElement | HTMLVideoElement | HTMLCanvasElement | ImageBitmap | OffscreenCanvas | VideoFrame")]
+/// What a `CanvasImageSource` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `CanvasImageSource`")]
+#[cfg_attr(rust_js, rust_js::types = "CanvasImageSource")]
 pub trait IntoCanvasImageSource: sealed::Sealed {}
 impl IntoCanvasImageSource for &HTMLImageElement {}
 impl IntoCanvasImageSource for &SVGImageElement {}
@@ -97472,7 +97471,7 @@ impl<'a> CanvasImageSource<'a> {
     }
 }
 
-/// `number | CSSNumericValue`: each variant's value is the member itself (ADR 0215).
+/// `CSSNumberish`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum CSSNumberish<'a> {
     Number(f64),
@@ -97545,9 +97544,9 @@ impl<'a> From<&'a CSSUnitValue> for CSSNumberish<'a> {
     }
 }
 
-/// What a `number | CSSNumericValue` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `number | CSSNumericValue`")]
-#[cfg_attr(rust_js, rust_js::types = "number | CSSNumericValue")]
+/// What a `CSSNumberish` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `CSSNumberish`")]
+#[cfg_attr(rust_js, rust_js::types = "CSSNumberish")]
 pub trait IntoCSSNumberish: sealed::Sealed {}
 impl IntoCSSNumberish for f64 {}
 impl IntoCSSNumberish for &CSSNumericValue {}
@@ -97670,7 +97669,7 @@ impl<'a> CSSNumericValueOrCSSKeywordValue<'a> {
     }
 }
 
-/// `CSSNumericValue | string | CSSKeywordValue`: each variant's value is the member itself (ADR 0215).
+/// `CSSPerspectiveValue`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum CSSPerspectiveValue<'a> {
     CSSNumericValue(&'a CSSNumericValue),
@@ -97750,9 +97749,9 @@ impl<'a> From<&'a CSSKeywordValue> for CSSPerspectiveValue<'a> {
     }
 }
 
-/// What a `CSSNumericValue | string | CSSKeywordValue` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `CSSNumericValue | string | CSSKeywordValue`")]
-#[cfg_attr(rust_js, rust_js::types = "CSSNumericValue | string | CSSKeywordValue")]
+/// What a `CSSPerspectiveValue` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `CSSPerspectiveValue`")]
+#[cfg_attr(rust_js, rust_js::types = "CSSPerspectiveValue")]
 pub trait IntoCSSPerspectiveValue: sealed::Sealed {}
 impl IntoCSSPerspectiveValue for &CSSNumericValue {}
 impl IntoCSSPerspectiveValue for &CSSMathClamp {}
@@ -97911,7 +97910,7 @@ impl<'a> CSSStyleValueOrStr<'a> {
     }
 }
 
-/// `string | CSSVariableReferenceValue`: each variant's value is the member itself (ADR 0215).
+/// `CSSUnparsedSegment`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum CSSUnparsedSegment<'a> {
     Str(&'a str),
@@ -97930,9 +97929,9 @@ impl<'a> From<&'a CSSVariableReferenceValue> for CSSUnparsedSegment<'a> {
     }
 }
 
-/// What a `string | CSSVariableReferenceValue` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | CSSVariableReferenceValue`")]
-#[cfg_attr(rust_js, rust_js::types = "string | CSSVariableReferenceValue")]
+/// What a `CSSUnparsedSegment` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `CSSUnparsedSegment`")]
+#[cfg_attr(rust_js, rust_js::types = "CSSUnparsedSegment")]
 pub trait IntoCSSUnparsedSegment: sealed::Sealed {}
 impl IntoCSSUnparsedSegment for &str {}
 impl IntoCSSUnparsedSegment for &CSSVariableReferenceValue {}
@@ -102025,7 +102024,7 @@ impl<'a> FileSystemWriteChunkType<'a> {
     }
 }
 
-/// `Float32Array | List`: each variant's value is the member itself (ADR 0215).
+/// `Float32List`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum Float32List<'a> {
     Float32Array(&'a Float32Array),
@@ -102044,9 +102043,9 @@ impl<'a> From<&'a [f32]> for Float32List<'a> {
     }
 }
 
-/// What a `Float32Array | List` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Float32Array | List`")]
-#[cfg_attr(rust_js, rust_js::types = "Float32Array | List")]
+/// What a `Float32List` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Float32List`")]
+#[cfg_attr(rust_js, rust_js::types = "Float32List")]
 pub trait IntoFloat32List: sealed::Sealed {}
 impl IntoFloat32List for &Float32Array {}
 impl IntoFloat32List for &[f32] {}
@@ -102061,7 +102060,7 @@ impl<'a> Float32List<'a> {
     }
 }
 
-/// `File | string`: each variant's value is the member itself (ADR 0215).
+/// `FormDataEntryValue`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum FormDataEntryValue<'a> {
     File(&'a File),
@@ -102080,9 +102079,9 @@ impl<'a> From<&'a str> for FormDataEntryValue<'a> {
     }
 }
 
-/// What a `File | string` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `File | string`")]
-#[cfg_attr(rust_js, rust_js::types = "File | string")]
+/// What a `FormDataEntryValue` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `FormDataEntryValue`")]
+#[cfg_attr(rust_js, rust_js::types = "FormDataEntryValue")]
 pub trait IntoFormDataEntryValue: sealed::Sealed {}
 impl IntoFormDataEntryValue for &File {}
 impl IntoFormDataEntryValue for &str {}
@@ -103163,7 +103162,7 @@ impl<'a> GeometryNode<'a> {
     }
 }
 
-/// `GPUSampler | GPUTexture | GPUTextureView | GPUBuffer | GPUBufferBinding | GPUExternalTexture`: each variant's value is the member itself (ADR 0215).
+/// `GPUBindingResource`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum GPUBindingResource<'a> {
     GPUSampler(&'a GPUSampler),
@@ -103210,9 +103209,9 @@ impl<'a> From<&'a GPUExternalTexture> for GPUBindingResource<'a> {
     }
 }
 
-/// What a `GPUSampler | GPUTexture | GPUTextureView | GPUBuffer | GPUBufferBinding | GPUExternalTexture` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `GPUSampler | GPUTexture | GPUTextureView | GPUBuffer | GPUBufferBinding | GPUExternalTexture`")]
-#[cfg_attr(rust_js, rust_js::types = "GPUSampler | GPUTexture | GPUTextureView | GPUBuffer | GPUBufferBinding | GPUExternalTexture")]
+/// What a `GPUBindingResource` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `GPUBindingResource`")]
+#[cfg_attr(rust_js, rust_js::types = "GPUBindingResource")]
 pub trait IntoGPUBindingResource: sealed::Sealed {}
 impl IntoGPUBindingResource for &GPUSampler {}
 impl IntoGPUBindingResource for &GPUTexture {}
@@ -103231,7 +103230,7 @@ impl<'a> GPUBindingResource<'a> {
     }
 }
 
-/// `List | GPUColorDict`: each variant's value is the member itself (ADR 0215).
+/// `GPUColor`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum GPUColor<'a> {
     List(&'a [f64]),
@@ -103250,9 +103249,9 @@ impl<'a> From<GPUColorDict> for GPUColor<'a> {
     }
 }
 
-/// What a `List | GPUColorDict` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `List | GPUColorDict`")]
-#[cfg_attr(rust_js, rust_js::types = "List | GPUColorDict")]
+/// What a `GPUColor` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `GPUColor`")]
+#[cfg_attr(rust_js, rust_js::types = "GPUColor")]
 pub trait IntoGPUColor: sealed::Sealed {}
 impl IntoGPUColor for &[f64] {}
 impl IntoGPUColor for GPUColorDict {}
@@ -103267,7 +103266,7 @@ impl<'a> GPUColor<'a> {
     }
 }
 
-/// `ImageBitmap | ImageData | HTMLImageElement | HTMLVideoElement | VideoFrame | HTMLCanvasElement | OffscreenCanvas`: each variant's value is the member itself (ADR 0215).
+/// `GPUCopyExternalImageSource`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum GPUCopyExternalImageSource<'a> {
     ImageBitmap(&'a ImageBitmap),
@@ -103321,9 +103320,9 @@ impl<'a> From<&'a OffscreenCanvas> for GPUCopyExternalImageSource<'a> {
     }
 }
 
-/// What a `ImageBitmap | ImageData | HTMLImageElement | HTMLVideoElement | VideoFrame | HTMLCanvasElement | OffscreenCanvas` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `ImageBitmap | ImageData | HTMLImageElement | HTMLVideoElement | VideoFrame | HTMLCanvasElement | OffscreenCanvas`")]
-#[cfg_attr(rust_js, rust_js::types = "ImageBitmap | ImageData | HTMLImageElement | HTMLVideoElement | VideoFrame | HTMLCanvasElement | OffscreenCanvas")]
+/// What a `GPUCopyExternalImageSource` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `GPUCopyExternalImageSource`")]
+#[cfg_attr(rust_js, rust_js::types = "GPUCopyExternalImageSource")]
 pub trait IntoGPUCopyExternalImageSource: sealed::Sealed {}
 impl IntoGPUCopyExternalImageSource for &ImageBitmap {}
 impl IntoGPUCopyExternalImageSource for &ImageData {}
@@ -103343,7 +103342,7 @@ impl<'a> GPUCopyExternalImageSource<'a> {
     }
 }
 
-/// `List | GPUExtent3DDict`: each variant's value is the member itself (ADR 0215).
+/// `GPUExtent3D`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum GPUExtent3D<'a> {
     List(&'a [u32]),
@@ -103362,9 +103361,9 @@ impl<'a> From<GPUExtent3DDict> for GPUExtent3D<'a> {
     }
 }
 
-/// What a `List | GPUExtent3DDict` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `List | GPUExtent3DDict`")]
-#[cfg_attr(rust_js, rust_js::types = "List | GPUExtent3DDict")]
+/// What a `GPUExtent3D` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `GPUExtent3D`")]
+#[cfg_attr(rust_js, rust_js::types = "GPUExtent3D")]
 pub trait IntoGPUExtent3D: sealed::Sealed {}
 impl IntoGPUExtent3D for &[u32] {}
 impl IntoGPUExtent3D for GPUExtent3DDict {}
@@ -103379,7 +103378,7 @@ impl<'a> GPUExtent3D<'a> {
     }
 }
 
-/// `List | GPUOrigin2DDict`: each variant's value is the member itself (ADR 0215).
+/// `GPUOrigin2D`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum GPUOrigin2D<'a> {
     List(&'a [u32]),
@@ -103398,9 +103397,9 @@ impl<'a> From<GPUOrigin2DDict> for GPUOrigin2D<'a> {
     }
 }
 
-/// What a `List | GPUOrigin2DDict` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `List | GPUOrigin2DDict`")]
-#[cfg_attr(rust_js, rust_js::types = "List | GPUOrigin2DDict")]
+/// What a `GPUOrigin2D` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `GPUOrigin2D`")]
+#[cfg_attr(rust_js, rust_js::types = "GPUOrigin2D")]
 pub trait IntoGPUOrigin2D: sealed::Sealed {}
 impl IntoGPUOrigin2D for &[u32] {}
 impl IntoGPUOrigin2D for GPUOrigin2DDict {}
@@ -103415,7 +103414,7 @@ impl<'a> GPUOrigin2D<'a> {
     }
 }
 
-/// `List | GPUOrigin3DDict`: each variant's value is the member itself (ADR 0215).
+/// `GPUOrigin3D`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum GPUOrigin3D<'a> {
     List(&'a [u32]),
@@ -103434,9 +103433,9 @@ impl<'a> From<GPUOrigin3DDict> for GPUOrigin3D<'a> {
     }
 }
 
-/// What a `List | GPUOrigin3DDict` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `List | GPUOrigin3DDict`")]
-#[cfg_attr(rust_js, rust_js::types = "List | GPUOrigin3DDict")]
+/// What a `GPUOrigin3D` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `GPUOrigin3D`")]
+#[cfg_attr(rust_js, rust_js::types = "GPUOrigin3D")]
 pub trait IntoGPUOrigin3D: sealed::Sealed {}
 impl IntoGPUOrigin3D for &[u32] {}
 impl IntoGPUOrigin3D for GPUOrigin3DDict {}
@@ -105186,7 +105185,7 @@ impl<'a> HTMLOptionElementOrHTMLOptGroupElement<'a> {
     }
 }
 
-/// `HTMLScriptElement | SVGScriptElement`: each variant's value is the member itself (ADR 0215).
+/// `HTMLOrSVGScriptElement`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum HTMLOrSVGScriptElement<'a> {
     HTMLScriptElement(&'a HTMLScriptElement),
@@ -105205,9 +105204,9 @@ impl<'a> From<&'a SVGScriptElement> for HTMLOrSVGScriptElement<'a> {
     }
 }
 
-/// What a `HTMLScriptElement | SVGScriptElement` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `HTMLScriptElement | SVGScriptElement`")]
-#[cfg_attr(rust_js, rust_js::types = "HTMLScriptElement | SVGScriptElement")]
+/// What a `HTMLOrSVGScriptElement` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `HTMLOrSVGScriptElement`")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLOrSVGScriptElement")]
 pub trait IntoHTMLOrSVGScriptElement: sealed::Sealed {}
 impl IntoHTMLOrSVGScriptElement for &HTMLScriptElement {}
 impl IntoHTMLOrSVGScriptElement for &SVGScriptElement {}
@@ -105345,7 +105344,7 @@ impl<'a> IDBObjectStoreOrIDBIndexOrIDBCursor<'a> {
     }
 }
 
-/// `HTMLImageElement | SVGImageElement | HTMLVideoElement | HTMLCanvasElement | ImageBitmap | OffscreenCanvas | VideoFrame | Blob | ImageData`: each variant's value is the member itself (ADR 0215).
+/// `ImageBitmapSource`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum ImageBitmapSource<'a> {
     HTMLImageElement(&'a HTMLImageElement),
@@ -105419,9 +105418,9 @@ impl<'a> From<&'a ImageData> for ImageBitmapSource<'a> {
     }
 }
 
-/// What a `HTMLImageElement | SVGImageElement | HTMLVideoElement | HTMLCanvasElement | ImageBitmap | OffscreenCanvas | VideoFrame | Blob | ImageData` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `HTMLImageElement | SVGImageElement | HTMLVideoElement | HTMLCanvasElement | ImageBitmap | OffscreenCanvas | VideoFrame | Blob | ImageData`")]
-#[cfg_attr(rust_js, rust_js::types = "HTMLImageElement | SVGImageElement | HTMLVideoElement | HTMLCanvasElement | ImageBitmap | OffscreenCanvas | VideoFrame | Blob | ImageData")]
+/// What a `ImageBitmapSource` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `ImageBitmapSource`")]
+#[cfg_attr(rust_js, rust_js::types = "ImageBitmapSource")]
 pub trait IntoImageBitmapSource: sealed::Sealed {}
 impl IntoImageBitmapSource for &HTMLImageElement {}
 impl IntoImageBitmapSource for &SVGImageElement {}
@@ -105591,7 +105590,7 @@ impl<'a> ImageBufferSource<'a> {
     }
 }
 
-/// `Int32Array | List`: each variant's value is the member itself (ADR 0215).
+/// `Int32List`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum Int32List<'a> {
     Int32Array(&'a Int32Array),
@@ -105610,9 +105609,9 @@ impl<'a> From<&'a [i32]> for Int32List<'a> {
     }
 }
 
-/// What a `Int32Array | List` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Int32Array | List`")]
-#[cfg_attr(rust_js, rust_js::types = "Int32Array | List")]
+/// What a `Int32List` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Int32List`")]
+#[cfg_attr(rust_js, rust_js::types = "Int32List")]
 pub trait IntoInt32List: sealed::Sealed {}
 impl IntoInt32List for &Int32Array {}
 impl IntoInt32List for &[i32] {}
@@ -105627,7 +105626,7 @@ impl<'a> Int32List<'a> {
     }
 }
 
-/// `number | string`: each variant's value is the member itself (ADR 0215).
+/// `LineAndPositionSetting`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum LineAndPositionSetting<'a> {
     Number(f64),
@@ -105646,9 +105645,9 @@ impl<'a> From<&'a str> for LineAndPositionSetting<'a> {
     }
 }
 
-/// What a `number | string` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `number | string`")]
-#[cfg_attr(rust_js, rust_js::types = "number | string")]
+/// What a `LineAndPositionSetting` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `LineAndPositionSetting`")]
+#[cfg_attr(rust_js, rust_js::types = "LineAndPositionSetting")]
 pub trait IntoLineAndPositionSetting: sealed::Sealed {}
 impl IntoLineAndPositionSetting for f64 {}
 impl IntoLineAndPositionSetting for &str {}
@@ -105771,7 +105770,7 @@ impl<'a> MediaListOrStr<'a> {
     }
 }
 
-/// `MediaStream | MediaSource | Blob`: each variant's value is the member itself (ADR 0215).
+/// `MediaProvider`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum MediaProvider<'a> {
     MediaStream(&'a MediaStream),
@@ -105803,9 +105802,9 @@ impl<'a> From<&'a File> for MediaProvider<'a> {
     }
 }
 
-/// What a `MediaStream | MediaSource | Blob` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `MediaStream | MediaSource | Blob`")]
-#[cfg_attr(rust_js, rust_js::types = "MediaStream | MediaSource | Blob")]
+/// What a `MediaProvider` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `MediaProvider`")]
+#[cfg_attr(rust_js, rust_js::types = "MediaProvider")]
 pub trait IntoMediaProvider: sealed::Sealed {}
 impl IntoMediaProvider for &MediaStream {}
 impl IntoMediaProvider for &MediaSource {}
@@ -105865,7 +105864,7 @@ impl<'a> MediaStreamTrackOrStr<'a> {
     }
 }
 
-/// `Window | MessagePort | ServiceWorker`: each variant's value is the member itself (ADR 0215).
+/// `MessageEventSource`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum MessageEventSource<'a> {
     Window(&'a Window),
@@ -105891,9 +105890,9 @@ impl<'a> From<&'a ServiceWorker> for MessageEventSource<'a> {
     }
 }
 
-/// What a `Window | MessagePort | ServiceWorker` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Window | MessagePort | ServiceWorker`")]
-#[cfg_attr(rust_js, rust_js::types = "Window | MessagePort | ServiceWorker")]
+/// What a `MessageEventSource` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `MessageEventSource`")]
+#[cfg_attr(rust_js, rust_js::types = "MessageEventSource")]
 pub trait IntoMessageEventSource: sealed::Sealed {}
 impl IntoMessageEventSource for &Window {}
 impl IntoMessageEventSource for &MessagePort {}
@@ -107261,7 +107260,7 @@ impl<'a> NumberOrStr<'a> {
     }
 }
 
-/// `OffscreenCanvasRenderingContext2D | ImageBitmapRenderingContext | WebGLRenderingContext | WebGL2RenderingContext | GPUCanvasContext`: each variant's value is the member itself (ADR 0215).
+/// `OffscreenRenderingContext`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum OffscreenRenderingContext<'a> {
     OffscreenCanvasRenderingContext2D(&'a OffscreenCanvasRenderingContext2D),
@@ -107301,9 +107300,9 @@ impl<'a> From<&'a GPUCanvasContext> for OffscreenRenderingContext<'a> {
     }
 }
 
-/// What a `OffscreenCanvasRenderingContext2D | ImageBitmapRenderingContext | WebGLRenderingContext | WebGL2RenderingContext | GPUCanvasContext` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `OffscreenCanvasRenderingContext2D | ImageBitmapRenderingContext | WebGLRenderingContext | WebGL2RenderingContext | GPUCanvasContext`")]
-#[cfg_attr(rust_js, rust_js::types = "OffscreenCanvasRenderingContext2D | ImageBitmapRenderingContext | WebGLRenderingContext | WebGL2RenderingContext | GPUCanvasContext")]
+/// What a `OffscreenRenderingContext` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `OffscreenRenderingContext`")]
+#[cfg_attr(rust_js, rust_js::types = "OffscreenRenderingContext")]
 pub trait IntoOffscreenRenderingContext: sealed::Sealed {}
 impl IntoOffscreenRenderingContext for &OffscreenCanvasRenderingContext2D {}
 impl IntoOffscreenRenderingContext for &ImageBitmapRenderingContext {}
@@ -108401,7 +108400,7 @@ impl<'a> RadioNodeListOrElement<'a> {
     }
 }
 
-/// `ReadableStreamDefaultReader | ReadableStreamBYOBReader`: each variant's value is the member itself (ADR 0215).
+/// `ReadableStreamReader`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum ReadableStreamReader<'a> {
     ReadableStreamDefaultReader(&'a ReadableStreamDefaultReader),
@@ -108420,9 +108419,9 @@ impl<'a> From<&'a ReadableStreamBYOBReader> for ReadableStreamReader<'a> {
     }
 }
 
-/// What a `ReadableStreamDefaultReader | ReadableStreamBYOBReader` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `ReadableStreamDefaultReader | ReadableStreamBYOBReader`")]
-#[cfg_attr(rust_js, rust_js::types = "ReadableStreamDefaultReader | ReadableStreamBYOBReader")]
+/// What a `ReadableStreamReader` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `ReadableStreamReader`")]
+#[cfg_attr(rust_js, rust_js::types = "ReadableStreamReader")]
 pub trait IntoReadableStreamReader: sealed::Sealed {}
 impl IntoReadableStreamReader for &ReadableStreamDefaultReader {}
 impl IntoReadableStreamReader for &ReadableStreamBYOBReader {}
@@ -108437,7 +108436,7 @@ impl<'a> ReadableStreamReader<'a> {
     }
 }
 
-/// `CanvasRenderingContext2D | ImageBitmapRenderingContext | WebGLRenderingContext | WebGL2RenderingContext | GPUCanvasContext`: each variant's value is the member itself (ADR 0215).
+/// `RenderingContext`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum RenderingContext<'a> {
     CanvasRenderingContext2D(&'a CanvasRenderingContext2D),
@@ -108477,9 +108476,9 @@ impl<'a> From<&'a GPUCanvasContext> for RenderingContext<'a> {
     }
 }
 
-/// What a `CanvasRenderingContext2D | ImageBitmapRenderingContext | WebGLRenderingContext | WebGL2RenderingContext | GPUCanvasContext` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `CanvasRenderingContext2D | ImageBitmapRenderingContext | WebGLRenderingContext | WebGL2RenderingContext | GPUCanvasContext`")]
-#[cfg_attr(rust_js, rust_js::types = "CanvasRenderingContext2D | ImageBitmapRenderingContext | WebGLRenderingContext | WebGL2RenderingContext | GPUCanvasContext")]
+/// What a `RenderingContext` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `RenderingContext`")]
+#[cfg_attr(rust_js, rust_js::types = "RenderingContext")]
 pub trait IntoRenderingContext: sealed::Sealed {}
 impl IntoRenderingContext for &CanvasRenderingContext2D {}
 impl IntoRenderingContext for &ImageBitmapRenderingContext {}
@@ -108497,7 +108496,7 @@ impl<'a> RenderingContext<'a> {
     }
 }
 
-/// `Request | string`: each variant's value is the member itself (ADR 0215).
+/// `RequestInfo`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum RequestInfo<'a> {
     Request(&'a Request),
@@ -108516,9 +108515,9 @@ impl<'a> From<&'a str> for RequestInfo<'a> {
     }
 }
 
-/// What a `Request | string` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Request | string`")]
-#[cfg_attr(rust_js, rust_js::types = "Request | string")]
+/// What a `RequestInfo` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `RequestInfo`")]
+#[cfg_attr(rust_js, rust_js::types = "RequestInfo")]
 pub trait IntoRequestInfo: sealed::Sealed {}
 impl IntoRequestInfo for &Request {}
 impl IntoRequestInfo for &str {}
@@ -108533,7 +108532,7 @@ impl<'a> RequestInfo<'a> {
     }
 }
 
-/// `string | SanitizerAttributeNamespace`: each variant's value is the member itself (ADR 0215).
+/// `SanitizerAttribute`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum SanitizerAttribute<'a> {
     Str(&'a str),
@@ -108552,9 +108551,9 @@ impl<'a> From<SanitizerAttributeNamespace> for SanitizerAttribute<'a> {
     }
 }
 
-/// What a `string | SanitizerAttributeNamespace` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | SanitizerAttributeNamespace`")]
-#[cfg_attr(rust_js, rust_js::types = "string | SanitizerAttributeNamespace")]
+/// What a `SanitizerAttribute` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `SanitizerAttribute`")]
+#[cfg_attr(rust_js, rust_js::types = "SanitizerAttribute")]
 pub trait IntoSanitizerAttribute: sealed::Sealed {}
 impl IntoSanitizerAttribute for &str {}
 impl IntoSanitizerAttribute for SanitizerAttributeNamespace {}
@@ -108605,7 +108604,7 @@ impl<'a> SanitizerConfigOrStr<'a> {
     }
 }
 
-/// `string | SanitizerElementNamespace`: each variant's value is the member itself (ADR 0215).
+/// `SanitizerElement`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum SanitizerElement<'a> {
     Str(&'a str),
@@ -108624,9 +108623,9 @@ impl<'a> From<SanitizerElementNamespace> for SanitizerElement<'a> {
     }
 }
 
-/// What a `string | SanitizerElementNamespace` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | SanitizerElementNamespace`")]
-#[cfg_attr(rust_js, rust_js::types = "string | SanitizerElementNamespace")]
+/// What a `SanitizerElement` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `SanitizerElement`")]
+#[cfg_attr(rust_js, rust_js::types = "SanitizerElement")]
 pub trait IntoSanitizerElement: sealed::Sealed {}
 impl IntoSanitizerElement for &str {}
 impl IntoSanitizerElement for SanitizerElementNamespace {}
@@ -108641,7 +108640,7 @@ impl<'a> SanitizerElement<'a> {
     }
 }
 
-/// `string | SanitizerElementNamespaceWithAttributes`: each variant's value is the member itself (ADR 0215).
+/// `SanitizerElementWithAttributes`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum SanitizerElementWithAttributes<'a> {
     Str(&'a str),
@@ -108660,9 +108659,9 @@ impl<'a> From<SanitizerElementNamespaceWithAttributes> for SanitizerElementWithA
     }
 }
 
-/// What a `string | SanitizerElementNamespaceWithAttributes` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | SanitizerElementNamespaceWithAttributes`")]
-#[cfg_attr(rust_js, rust_js::types = "string | SanitizerElementNamespaceWithAttributes")]
+/// What a `SanitizerElementWithAttributes` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `SanitizerElementWithAttributes`")]
+#[cfg_attr(rust_js, rust_js::types = "SanitizerElementWithAttributes")]
 pub trait IntoSanitizerElementWithAttributes: sealed::Sealed {}
 impl IntoSanitizerElementWithAttributes for &str {}
 impl IntoSanitizerElementWithAttributes for SanitizerElementNamespaceWithAttributes {}
@@ -108721,7 +108720,7 @@ impl<'a> SanitizerOrSanitizerConfigOrStr<'a> {
     }
 }
 
-/// `string | SanitizerProcessingInstruction`: each variant's value is the member itself (ADR 0215).
+/// `SanitizerPI`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum SanitizerPI<'a> {
     Str(&'a str),
@@ -108740,9 +108739,9 @@ impl<'a> From<SanitizerProcessingInstruction> for SanitizerPI<'a> {
     }
 }
 
-/// What a `string | SanitizerProcessingInstruction` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | SanitizerProcessingInstruction`")]
-#[cfg_attr(rust_js, rust_js::types = "string | SanitizerProcessingInstruction")]
+/// What a `SanitizerPI` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `SanitizerPI`")]
+#[cfg_attr(rust_js, rust_js::types = "SanitizerPI")]
 pub trait IntoSanitizerPI: sealed::Sealed {}
 impl IntoSanitizerPI for &str {}
 impl IntoSanitizerPI for SanitizerProcessingInstruction {}
@@ -109221,7 +109220,7 @@ impl<'a> StrOrTaskSignal<'a> {
     }
 }
 
-/// `ImageBitmap | ImageData | HTMLImageElement | HTMLCanvasElement | HTMLVideoElement | OffscreenCanvas | VideoFrame`: each variant's value is the member itself (ADR 0215).
+/// `TexImageSource`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum TexImageSource<'a> {
     ImageBitmap(&'a ImageBitmap),
@@ -109275,9 +109274,9 @@ impl<'a> From<&'a VideoFrame> for TexImageSource<'a> {
     }
 }
 
-/// What a `ImageBitmap | ImageData | HTMLImageElement | HTMLCanvasElement | HTMLVideoElement | OffscreenCanvas | VideoFrame` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `ImageBitmap | ImageData | HTMLImageElement | HTMLCanvasElement | HTMLVideoElement | OffscreenCanvas | VideoFrame`")]
-#[cfg_attr(rust_js, rust_js::types = "ImageBitmap | ImageData | HTMLImageElement | HTMLCanvasElement | HTMLVideoElement | OffscreenCanvas | VideoFrame")]
+/// What a `TexImageSource` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `TexImageSource`")]
+#[cfg_attr(rust_js, rust_js::types = "TexImageSource")]
 pub trait IntoTexImageSource: sealed::Sealed {}
 impl IntoTexImageSource for &ImageBitmap {}
 impl IntoTexImageSource for &ImageData {}
@@ -109333,7 +109332,7 @@ impl<'a> TogglePopoverOptionsOrBool<'a> {
     }
 }
 
-/// `Uint32Array | List`: each variant's value is the member itself (ADR 0215).
+/// `Uint32List`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum Uint32List<'a> {
     Uint32Array(&'a Uint32Array),
@@ -109352,9 +109351,9 @@ impl<'a> From<&'a [u32]> for Uint32List<'a> {
     }
 }
 
-/// What a `Uint32Array | List` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Uint32Array | List`")]
-#[cfg_attr(rust_js, rust_js::types = "Uint32Array | List")]
+/// What a `Uint32List` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Uint32List`")]
+#[cfg_attr(rust_js, rust_js::types = "Uint32List")]
 pub trait IntoUint32List: sealed::Sealed {}
 impl IntoUint32List for &Uint32Array {}
 impl IntoUint32List for &[u32] {}
@@ -109369,7 +109368,7 @@ impl<'a> Uint32List<'a> {
     }
 }
 
-/// `string | URLPatternInit`: each variant's value is the member itself (ADR 0215).
+/// `URLPatternInput`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum URLPatternInput<'a> {
     Str(&'a str),
@@ -109388,9 +109387,9 @@ impl<'a> From<URLPatternInit> for URLPatternInput<'a> {
     }
 }
 
-/// What a `string | URLPatternInit` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | URLPatternInit`")]
-#[cfg_attr(rust_js, rust_js::types = "string | URLPatternInit")]
+/// What a `URLPatternInput` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `URLPatternInput`")]
+#[cfg_attr(rust_js, rust_js::types = "URLPatternInput")]
 pub trait IntoURLPatternInput: sealed::Sealed {}
 impl IntoURLPatternInput for &str {}
 impl IntoURLPatternInput for URLPatternInit {}
@@ -109405,7 +109404,7 @@ impl<'a> URLPatternInput<'a> {
     }
 }
 
-/// `number | List`: each variant's value is the member itself (ADR 0215).
+/// `VibratePattern`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum VibratePattern<'a> {
     Number(u32),
@@ -109424,9 +109423,9 @@ impl<'a> From<&'a [u32]> for VibratePattern<'a> {
     }
 }
 
-/// What a `number | List` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `number | List`")]
-#[cfg_attr(rust_js, rust_js::types = "number | List")]
+/// What a `VibratePattern` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `VibratePattern`")]
+#[cfg_attr(rust_js, rust_js::types = "VibratePattern")]
 pub trait IntoVibratePattern: sealed::Sealed {}
 impl IntoVibratePattern for u32 {}
 impl IntoVibratePattern for &[u32] {}

@@ -7,6 +7,8 @@
 // A member is generated only if rust-js supports all of its types; the rest
 // are counted and skipped, and rerunning after rust-js grows picks them up.
 
+import { readFileSync } from "node:fs";
+
 import idl from "@webref/idl";
 import { typescript } from "./coverage";
 import webref from "@webref/idl/package.json" with { type: "json" };
@@ -536,7 +538,7 @@ function tsName(rust: string): string {
 }
 
 /** A WebIDL union as an untagged enum (ADR 0215): a variant per kind. */
-type Union = { name: string; variants: { name: string; type: string; ts: string }[]; borrows: boolean };
+type Union = { name: string; variants: { name: string; type: string; ts: string }[]; borrows: boolean; ts: string };
 const unions = new Map<string, Union>();
 
 /**
@@ -558,7 +560,28 @@ function unionOf(t: IdlType): Union | null {
   if (variants.length < 2) return null;
   const typedef = !t.union && !t.generic && typedefs.has(t.idlType as string) ? (t.idlType as string) : undefined;
   const name = typedef ? typeName(typedef) : memberNames(t).join("Or");
-  return { name, variants, borrows: variants.some((v) => v.type.includes("'a")) };
+  return { name, variants, borrows: variants.some((v) => v.type.includes("'a")), ts: tsOf(t).join(" | ") };
+}
+
+// The types TypeScript's DOM declares by name, `BodyInit`.
+const tsAliases = new Set(
+  [...readFileSync(new URL("./node_modules/@types/web/index.d.ts", import.meta.url), "utf8").matchAll(/^(?:type|interface) (\w+)\b/gm)].map((m) => m[1]),
+);
+
+/** How TypeScript writes a union: a typedef of one by its name, `BodyInit`,
+ * where TypeScript's DOM has it and Rust takes each of its members, else
+ * its members, `string | BufferSource`: `HeadersInit` would take a record
+ * Rust doesn't. */
+function tsOf(t: IdlType): string[] {
+  if (t.union) return [...new Set((t.idlType as IdlType[]).flatMap(tsOf))];
+  const name = t.idlType as string;
+  const aliased = !t.generic && typedefs.get(name);
+  if (aliased && isUnion(aliased)) {
+    const taken = flatMembers(aliased).every((member) => typeof rustType(member, "param") === "string");
+    return taken && tsAliases.has(name) ? [name] : tsOf(aliased);
+  }
+  const rust = rustType(t, "param");
+  return typeof rust === "string" ? [tsName(rust)] : [];
 }
 
 /** A union's members as it's written, for its name: a typedef's its own,
@@ -645,6 +668,7 @@ const ERROR_ARG: Union = {
   name: "EventOrStr",
   variants: [{ name: "Event", type: "&'a Event", ts: "Event" }, { name: "Str", type: "&'a str", ts: "string" }],
   borrows: true,
+  ts: "Event | string",
 };
 
 /** What `for..of` gives of `i`: an iterable's value, or its key and value,
@@ -1158,8 +1182,11 @@ function module(name: string, all: Fn[], typed: string[] = [], constants: string
   typed = [...all.filter((f) => !fns.includes(f)).map(generic), ...typed];
   line();
   line(`pub mod ${name} {`);
-  // The crate's types, where its functions name one: `supports(type_: &str)` names none.
-  const named = [...all.flatMap((f) => [...f.params, f.result]), ...typed].some((t) => /\b[A-Z]\w*/.test(t.replace(/\/\/\/.*$/gm, "")));
+  // The crate's types, where its functions name one: `supports(type_: &str)`
+  // names none, nor `supported_content_encodings() -> &'static [String]`,
+  // whose `String` is the prelude's.
+  const named = [...all.flatMap((f) => [...f.params, f.result]), ...typed]
+    .some((t) => /\b(?!(?:String|Vec|Option|Box)\b)[A-Z]\w*/.test(t.replace(/\/\/\/.*$/gm, "")));
   if (named) line(`    use super::*;`);
   for (const c of constants) {
     line();
@@ -1322,7 +1349,7 @@ for (const union of [...unions.values()].sort((a, b) => a.name.localeCompare(b.n
   const elided = (type: string) => type.replace(/&'a /g, "&").replace(/'a\b/g, "'_");
   const members: string[] = [];
   line();
-  line(`/// \`${union.variants.map((v) => v.ts).join(" | ")}\`: each variant's value is the member itself (ADR 0215).`);
+  line(`/// \`${union.ts}\`: each variant's value is the member itself (ADR 0215).`);
   line(`#[cfg_attr(rust_js, rust_js::untagged)]`);
   line(`pub enum ${union.name}${lifetime} {`);
   for (const v of union.variants) line(`    ${v.name}(${v.type}),`);
@@ -1341,7 +1368,7 @@ for (const union of [...unions.values()].sort((a, b) => a.name.localeCompare(b.n
       line(`}`);
     }
   }
-  const ts = union.variants.map((v) => v.ts).join(" | ");
+  const ts = union.ts;
   const own = `${union.name}${union.borrows ? "<'_>" : ""}`;
   line();
   line(`/// What a \`${ts}\` parameter takes: each member as it is, and the enum (ADR 0229).`);

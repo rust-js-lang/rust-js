@@ -172,3 +172,11 @@ so nothing said when it fell behind.
   - a few interfaces and dictionaries not yet in the crate:
     `DeviceMotionEventAcceleration`, `RTCIceCandidatePair`,
     `NavigationUpdateCurrentEntryOptions`, `AudioTrackList`.
+- **A union is declared to TypeScript as TypeScript writes it**: a typedef
+  of one by its name where TypeScript's DOM has it and Rust takes each of
+  its members, `Float32List`, `CanvasImageSource`; else its members. So
+  `BodyInit` is spelled out, its `Float16Array` one Rust has no type of: a
+  TypeScript caller can't give the enum what it can't tell apart. (Amended:
+  each was its members, `Float32Array | List` of `Float32List`, a name no
+  TypeScript has.) A module's `use super::*` is left out where it names
+  only the prelude's types, `String`: it was a warning in every app.

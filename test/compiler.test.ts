@@ -953,7 +953,7 @@ pub fn named() -> &'static webapi::Element {
 test("a union parameter takes each member as it is", async () => {
   const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("union-parameters");
-  const source = `use webapi::{Blob, BodyInit, Element, IntoBodyInit, Response, response, window};
+  const source = `use webapi::{Blob, BodyInit, Element, IntoBodyInit, IntoFloat32List, Response, response, window};
 
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum UploadBody<'a> {
@@ -1017,6 +1017,11 @@ pub fn kind<'a>(body: impl IntoBodyInit + 'a) -> String {
     }
 }
 
+pub fn count<'a>(values: impl IntoFloat32List + 'a) -> u32 {
+    let _ = values;
+    0
+}
+
 pub fn page(el: &Element, blob: &Blob, url: &str) -> (&'static Response, js::Promise<&'static Response>) {
     el.before("text");
     (response::new_with_body(blob), window.fetch(url))
@@ -1025,8 +1030,11 @@ pub fn page(el: &Element, blob: &Blob, url: &str) -> (&'static Response, js::Pro
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
   writeFileSync(join(dir, "lib.rs"), source);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
-  // To TypeScript, the trait is the union.
-  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export function kind(body: ReadableStream | Blob | Uint8Array | ArrayBuffer | FormData | URLSearchParams | string): string;");
+  // To TypeScript, the trait is the union: by TypeScript's own name for it,
+  // `Float32List`, where Rust takes each of its members; else each member,
+  // `BodyInit`'s, whose `Float16Array` Rust has no type of.
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export function count(values: Float32List): number;");
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export function kind(body: ReadableStream | Blob | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | FormData | URLSearchParams | string): string;");
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('globalThis.upload("hello");\n  globalThis.upload(blob);\n  globalThis.upload(body);\n  globalThis.upload(maybe);');
   // Of webapi's union, a binding crate's trait, no dictionary: `kind(body)`.
