@@ -1292,6 +1292,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let place = self.stable_place(scrutinee);
         let subject = place.clone().unwrap_or_else(|| Expr::var(SUBJECT));
         let mut table: Option<Expr> = None;
+        let mut own_names = 0;
         for &arm in arms {
             let arm = &self.thir[arm];
             if arm.guard.is_some() {
@@ -1309,6 +1310,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             if !bindings.is_empty() || !same_place(tested, &subject) {
                 return Ok(None);
+            }
+            // `Kind::Note => "note"`: the variant's own name, which it is
+            // (ADR 0264).
+            if let ExprKind::Literal { lit, neg: false } = self.thir[self.strip(arm.body)].kind
+                && let LitKind::Str(text, _) = lit.node
+                && text.as_str() == name.as_str()
+            {
+                own_names += 1;
+                continue;
             }
             let body = match self.thir[self.strip(arm.body)].kind {
                 ExprKind::Borrow {
@@ -1328,12 +1338,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             table = Some(*of);
         }
-        let Some(table) = table else { return Ok(None) };
-        let key = match place {
-            Some(place) => place,
-            None => self.expr(scrutinee, out)?,
+        let key = |this: &mut Self, out: &mut Vec<Stmt>| match place {
+            Some(place) => Ok(place),
+            None => this.expr(scrutinee, out),
         };
-        Ok(Some(Expr::index(table, key)))
+        // Each variant's own name: what's matched.
+        if own_names == arms.len() {
+            return Ok(Some(key(self, out)?));
+        }
+        let Some(table) = table.filter(|_| own_names == 0) else {
+            return Ok(None);
+        };
+        Ok(Some(Expr::index(table, key(self, out)?)))
     }
 
     pub(super) fn match_conditional(

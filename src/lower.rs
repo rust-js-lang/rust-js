@@ -527,6 +527,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ExprKind::Match { .. } if let Some(for_loop) = self.body_query().as_for(e) => {
                 self.lower_for(for_loop, span, out)
             }
+            // A table read by what's matched, or what's matched itself, as a
+            // value it gives or returns (ADRs 0233, 0264).
+            ExprKind::Match {
+                scrutinee, ref arms, ..
+            } if !matches!(dest, Dest::Discard)
+                && self.body_query().as_await(e).is_none()
+                && self.body_query().as_question(e).is_none()
+                && !self.is_matches(arms)
+                && let Some(value) = self.match_index(scrutinee, arms, out)? =>
+            {
+                match dest {
+                    Dest::Return => out.push(StmtKind::Return(Some(value)).at(span)),
+                    Dest::Assign(name) => out.push(StmtKind::Assign(Expr::var(name), value).at(span)),
+                    Dest::Discard => unreachable!("a value is wanted"),
+                }
+                Ok(())
+            }
             ExprKind::Match {
                 scrutinee, ref arms, ..
             } if self.body_query().as_await(e).is_none()

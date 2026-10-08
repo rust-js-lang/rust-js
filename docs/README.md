@@ -355,6 +355,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0261 Defaults that do nothing don't move what's made beside them](decisions/0261-defaults-made-in-place.md)
 - [0262 When Rust and JS disagree, what the program can observe decides](decisions/0262-when-rust-and-js-disagree.md)
 - [0263 next/router's withRouter, and a flattened struct taken apart](decisions/0263-with-router.md)
+- [0264 A variant's own name is the variant](decisions/0264-enum-own-names.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

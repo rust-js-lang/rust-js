@@ -346,4 +346,12 @@ export const mutations: Mutation[] = [
     replace: "let settled = evaluated.value.is_constant()",
     tests: ["test/jsx.test.ts", "-t", "flattened prop made by a call"],
   },
+  {
+    name: "returned-match-index-statements",
+    breaks: "a `match` returned, giving each variant its own name, is a conditional of returns",
+    file: "src/lower.rs",
+    find: "} if !matches!(dest, Dest::Discard)",
+    replace: "} if false && !matches!(dest, Dest::Discard)",
+    tests: ["test/compiler.test.ts", "-t", "enum's own names"],
+  },
 ];

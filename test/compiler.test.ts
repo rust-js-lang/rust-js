@@ -1898,6 +1898,53 @@ test("a module of only pub uses is a file of re-exports", async () => {
   expect(index.helper()).toBe(1);
 });
 
+// ADR 0264: a fieldless variant is its name (ADR 0013), so a `match` giving
+// each variant its own name is what's matched, and a function that gives
+// back what it's given, its argument: `/images/og-${section}.png`, as
+// react.dev's Page writes it. One giving another name is a conditional.
+test("an enum's own names are the enum", async () => {
+  const dir = fixture("enum-names");
+  writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy, PartialEq)]
+pub enum Section {
+    #[cfg_attr(rust_js, rust_js::name = "learn")]
+    Learn,
+    #[cfg_attr(rust_js, rust_js::name = "blog")]
+    Blog,
+}
+
+impl Section {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Section::Learn => "learn",
+            Section::Blog => "blog",
+        }
+    }
+
+    pub fn heading(self) -> &'static str {
+        match self {
+            Section::Learn => "learn",
+            Section::Blog => "news",
+        }
+    }
+}
+
+pub fn image(section: Section) -> String {
+    format!("/images/og-{}.png", section.as_str())
+}
+
+pub fn title(section: Section) -> String {
+    format!("{} page", section.heading())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("as_str(section) {\n    return section;\n  }");
+  expect(js).toContain("return `/images/og-${section}.png`;");
+  expect(js).toContain("Section.heading(section)");
+  const { image, title } = await import(join(dir, "lib.js"));
+  expect([image("learn"), image("blog"), title("learn"), title("blog")]).toEqual(["/images/og-learn.png", "/images/og-blog.png", "learn page", "news page"]);
+});
+
 // ADR 0238: a `String` kept for good, `.leak()`, is the string itself, as
 // react.dev's Page gives Seo the image it makes for a component's
 // `'static` props: JS frees nothing itself.

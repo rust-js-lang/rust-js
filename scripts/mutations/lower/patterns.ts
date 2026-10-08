@@ -582,4 +582,12 @@ export const mutations: Mutation[] = [
     replace: "                    while let Some((_, nested, _)) = flattened.next_if(|_| false) {",
     tests: ["test/jsx.test.ts", "-t", "flattened struct's pattern"],
   },
+  {
+    name: "own-name-arm-conditional",
+    breaks: "a `match` giving each variant its own name is a conditional, `if (section === \"learn\") return \"learn\"`, not `section`",
+    file: "src/lower/patterns.rs",
+    find: "&& text.as_str() == name.as_str()",
+    replace: "&& false",
+    tests: ["test/compiler.test.ts", "-t", "enum's own names"],
+  },
 ];

@@ -17,7 +17,7 @@ use crate::runtime::Helper;
 use rustc_ast::{LitKind, Mutability};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::find_attr;
-use rustc_middle::thir::{ExprId, ExprKind};
+use rustc_middle::thir::{ExprId, ExprKind, PatKind};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
@@ -146,6 +146,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             discarded,
             span,
         } = call;
+        // A function giving each variant its own name gives what it's given,
+        // `section.as_str()` is `section` (ADR 0264).
+        if let [arg] = args
+            && self.gives_own_name(def_id)
+        {
+            return Ok(Some(self.expr(*arg, out)?));
+        }
         // A prop `jsx!` isn't given: none, which JSX leaves out (ADR 0213).
         if is_omitted(self.tcx, def_id) {
             return Ok(Some(Expr::undefined()));
@@ -1092,5 +1099,61 @@ fn keyed(this: Expr, key: Expr) -> Expr {
             Expr::member(this, name.clone())
         }
         _ => Expr::index(this, key),
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Is `def_id` the crate's function, of no type parameters, whose body is
+    /// a `match` of its one parameter, a fieldless enum, giving each variant
+    /// its own name, `Section::Learn => "learn"`? A variant is its name in JS
+    /// (ADR 0013), so it gives back what it's given (ADR 0264).
+    fn gives_own_name(&self, def_id: DefId) -> bool {
+        let Some(body) = self.krate.bodies.get(&def_id) else {
+            return false;
+        };
+        if self.tcx.generics_of(def_id).count() != 0 {
+            return false;
+        }
+        let thir = &body.thir;
+        let [param] = &thir.params.raw[..] else { return false };
+        let Some(PatKind::Binding {
+            var, subpattern: None, ..
+        }) = param.pat.as_deref().map(|pat| &pat.kind)
+        else {
+            return false;
+        };
+        let ty::Adt(adt, _) = param.ty.kind() else { return false };
+        if !adt.is_enum() || adt.variants().iter().any(|variant| !variant.fields.is_empty()) {
+            return false;
+        }
+        let strip = |e| super::body_queries::strip(thir, e);
+        let mut value = strip(body.expr);
+        if let ExprKind::Block { block } = thir[value].kind {
+            let block = &thir[block];
+            let (true, Some(expr)) = (block.stmts.is_empty(), block.expr) else {
+                return false;
+            };
+            value = strip(expr);
+        }
+        let ExprKind::Match {
+            scrutinee, ref arms, ..
+        } = thir[value].kind
+        else {
+            return false;
+        };
+        if !matches!(thir[strip(scrutinee)].kind, ExprKind::VarRef { id } if id == *var)
+            || arms.len() != adt.variants().len()
+        {
+            return false;
+        }
+        arms.iter().all(|&arm| {
+            let arm = &thir[arm];
+            arm.guard.is_none()
+                && matches!(arm.pattern.kind, PatKind::Variant { variant_index, ref subpatterns, .. }
+                    if subpatterns.is_empty()
+                        && matches!(thir[strip(arm.body)].kind, ExprKind::Literal { lit, neg: false }
+                            if matches!(lit.node, LitKind::Str(text, _)
+                                if text.as_str() == super::bindings::variant_name(self.tcx, adt.variant(variant_index)))))
+        })
     }
 }
