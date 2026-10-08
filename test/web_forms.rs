@@ -2,7 +2,7 @@
 //! check in the generated JS.
 
 use js::uint8_array;
-use webapi::{Event, document, element, event, event_target, html_input_element, node, text_decoder, text_encoder, window};
+use webapi::{Event, EventTargetExt, document, element, event, html_input_element, node, text_decoder, text_encoder, window};
 
 pub fn forms() -> String {
     let input = html_input_element::unchecked_from(document::create_element_named(document, "input"));
@@ -11,8 +11,8 @@ pub fn forms() -> String {
     element::append(app, input);
     element::append(app, "!");
     let ping: &Event = event::new("ping");
-    event_target::add_event_listener_named(app, "ping", Box::new(|e| event::prevent_default(e)));
-    let _ = event_target::dispatch_event(window, ping);
+    app.add_event_listener_named("ping", |e| e.prevent_default());
+    let _ = window.dispatch_event(ping);
     node::text_content(app).unwrap() + &html_input_element::value(input)
 }
 
@@ -44,7 +44,7 @@ pub fn copied(text: &str, items: &[&webapi::ClipboardItem]) -> (&'static webapi:
 /// A frame's window, a message's sender, and the page's clock:
 /// `frame.contentWindow`, `e.source` and `window.performance.now()`.
 pub fn from_frame(frame: &webapi::HTMLIFrameElement, e: &Event) -> (bool, f64) {
-    let sender = webapi::message_event::source(webapi::message_event::unchecked_from(e));
+    let sender = webapi::message_event::unchecked_from(e).source();
     let window_of = webapi::html_i_frame_element::content_window(frame);
     (js::object::is(&sender, &window_of), webapi::performance::now(window::performance(window)))
 }
@@ -88,7 +88,7 @@ pub fn handlers(button: &webapi::HTMLButtonElement) -> bool {
     webapi::html_element::set_onclick(
         button,
         Some(Box::new(|e: &webapi::PointerEvent| {
-            event::prevent_default(e);
+            e.prevent_default();
         })),
     );
     let set = webapi::html_element::onclick(button).is_some();

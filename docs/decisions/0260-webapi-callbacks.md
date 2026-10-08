@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0024](0024-web-crate.md) and
 [0219](0219-webapi-sequences.md).
+Amended by [0282](0282-event-listener-methods.md): event listener methods
+take closures directly; other WebIDL callbacks retain their existing forms.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

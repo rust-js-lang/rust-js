@@ -48,7 +48,7 @@ pub fn ResultFrame(ResultFrameProps { program, on_outcome }: ResultFrameProps) -
                     Box::new(move |e| {
                         let from_frame = match frame.current() {
                             Some(frame) => object::is(
-                                &message_event::source(message_event::unchecked_from(e)),
+                                &message_event::unchecked_from(e).source(),
                                 &html_i_frame_element::content_window(frame),
                             ),
                             None => false,

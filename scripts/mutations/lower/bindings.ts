@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "event-method-receiver-lost",
+    breaks: "an event's metadata-backed method loses its self receiver",
+    file: "src/lower/bindings.rs",
+    find: "        DefKind::AssocFn => tcx.associated_item(def_id).is_method() || named_this(),",
+    replace: "        DefKind::AssocFn => named_this(),",
+    tests: ["test/webapi-events.test.ts", "-t", "emit direct JavaScript"],
+  },
+  {
+    name: "listener-identity-cloned",
+    breaks: "an identity binding clones its function instead of retaining the same listener",
+    file: "src/lower/bindings.rs",
+    find: "        \"this\" => return JsForm::This,",
+    replace: "        \"this\" => return JsForm::Call(\"clone\".to_string()),",
+    tests: ["test/webapi-events.test.ts", "-t", "dispatch and remove by identity"],
+  },
+  {
     name: "nullable-param-unchecked",
     breaks: "`#[rust_js::nullable(n)]` naming no `Option` parameter is accepted",
     file: "src/lower/bindings.rs",

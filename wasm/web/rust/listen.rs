@@ -1,11 +1,10 @@
 // Listening to the DOM from an effect, whose cleanup stops it.
 
-use webapi::{AbortController, AddEventListenerOptions, Event, EventTarget, abort_controller, event_target};
+use webapi::{AbortController, AddEventListenerOptions, Event, EventTarget, EventTargetExt, abort_controller};
 
 /// `target.addEventListener(type, f, { signal })`: until `controller` aborts.
 pub fn listen(target: &EventTarget, type_: &str, f: Box<dyn FnMut(&Event)>, controller: &AbortController) {
-    event_target::add_event_listener_named_with_options(
-        target,
+    target.add_event_listener_named_with_options(
         type_,
         f,
         AddEventListenerOptions {

@@ -68,7 +68,7 @@ export async function typescript(): Promise<Map<string, Members>> {
   return out;
 }
 
-/** What src/lib.rs binds: each function of a type's module, by the JS its
+/** What src/lib.rs binds: each module function or method, by the JS its
  * link name says, `get x` and `set x` are `x`, `new X` the constructor,
  * `X.y` the static `y`, or its own name; and each constant, a member and
  * a static of its name. */
@@ -88,9 +88,12 @@ function webapi(): { bound: Set<string>; types: Set<string> } {
       named = "";
     }
     if (/^pub mod /.test(l)) type = struct;
+    const impl = l.match(/^impl (\w+) \{$/)?.[1];
+    if (impl) type = impl;
+    if (l === "pub trait EventTargetExt: IsA<EventTarget> {") type = "EventTarget";
     if (l === "}") type = "";
     link = l.match(/link_name = "([^"]+)"/)?.[1] ?? link;
-    const fn = l.match(/^\s+pub (?:safe )?fn (\w+)/)?.[1];
+    const fn = l.match(/^\s+(?:pub (?:safe )?)?fn (\w+)/)?.[1];
     const constant = l.match(/^\s+pub const (\w+):/)?.[1];
     if (type && constant) for (const m of [constant, `static:${constant}`]) bound.add(`${type}.${m}`);
     if (type && fn) {

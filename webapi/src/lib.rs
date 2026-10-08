@@ -7,6 +7,8 @@
 //! The JS language's own types, `Promise` and `ArrayBuffer` say, are the js crate's (ADR 0102).
 //! Each event's name and each tag is a type too (ADR 0223), from `@webref/events` 1.27.0
 //! and `@webref/elements` 2.9.0: `events::Click`, whose value is `"click"`.
+//! Import `EventTargetExt` for `button.add_event_listener(Click, |e| ..)` (ADR 0282).
+//! Events also have methods: `e.client_x()`, `e.key()`, `e.prevent_default()`.
 
 // Many Rust functions call the same JS name: a form per optional argument
 // (`new`, `new_with_body`), and methods of the same name on different
@@ -48,69 +50,18 @@ pub mod event_target {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/EventTarget)
         #[link_name = "new EventTarget"]
         pub safe fn new() -> &'static EventTarget;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener)
-        #[link_name = "addEventListener"]
-        pub safe fn add_event_listener_named(this: &EventTarget, type_: &str, callback: Box<dyn FnMut(&Event)>);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/removeEventListener)
-        #[link_name = "removeEventListener"]
-        pub safe fn remove_event_listener_named(this: &EventTarget, type_: &str, callback: Box<dyn FnMut(&Event)>);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/dispatchEvent)
-        #[link_name = "dispatchEvent"]
-        pub safe fn dispatch_event(this: &EventTarget, event: &Event) -> bool;
     }
+}
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener)
-    #[cfg_attr(rust_js, rust_js::link_name = "addEventListener")]
+impl EventTarget {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/dispatchEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "dispatchEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn add_event_listener_named_with_options(this: &EventTarget, type_: &str, callback: Box<dyn FnMut(&Event)>, options: impl IntoAddEventListenerOptionsOrBool) {
+    pub fn dispatch_event(&self, event: &Event) -> bool {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/removeEventListener)
-    #[cfg_attr(rust_js, rust_js::link_name = "removeEventListener")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn remove_event_listener_named_with_options(this: &EventTarget, type_: &str, callback: Box<dyn FnMut(&Event)>, options: impl IntoEventListenerOptionsOrBool) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener): `listener` for each event of a name here,
-    /// given the event the name is on this target (ADR 0223): a button's `Click` is a
-    /// `PointerEvent`. One the data doesn't know is `add_event_listener_named`'s.
-    #[cfg_attr(rust_js, rust_js::link_name = "addEventListener")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn add_event_listener<T: Listen<E>, E>(this: &T, event: E, listener: Box<dyn FnMut(&<T as Listen<E>>::Event)>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener)
-    #[cfg_attr(rust_js, rust_js::link_name = "addEventListener")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn add_event_listener_with_options<T: Listen<E>, E>(this: &T, event: E, listener: Box<dyn FnMut(&<T as Listen<E>>::Event)>, options: AddEventListenerOptionsOrBool<'_>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/removeEventListener)
-    #[cfg_attr(rust_js, rust_js::link_name = "removeEventListener")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn remove_event_listener<T: Listen<E>, E>(this: &T, event: E, listener: Box<dyn FnMut(&<T as Listen<E>>::Event)>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/removeEventListener)
-    #[cfg_attr(rust_js, rust_js::link_name = "removeEventListener")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn remove_event_listener_with_options<T: Listen<E>, E>(this: &T, event: E, listener: Box<dyn FnMut(&<T as Listen<E>>::Event)>, options: EventListenerOptionsOrBool) {
-        unreachable!()
-    }
 }
 
 /// [`Event`](https://developer.mozilla.org/docs/Web/API/Event)
@@ -140,95 +91,186 @@ pub mod event {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/Event)
         #[link_name = "new Event"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: EventInit) -> &'static Event;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/type)
-        #[link_name = "get type"]
-        pub safe fn type_(this: &Event) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/target)
-        #[link_name = "get target"]
-        pub safe fn target(this: &Event) -> Option<&'static EventTarget>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/srcElement)
-        #[link_name = "get srcElement"]
-        pub safe fn src_element(this: &Event) -> Option<&'static EventTarget>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/currentTarget)
-        #[link_name = "get currentTarget"]
-        pub safe fn current_target(this: &Event) -> Option<&'static EventTarget>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/composedPath)
-        #[link_name = "composedPath"]
-        pub safe fn composed_path(this: &Event) -> Vec<&'static EventTarget>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/eventPhase)
-        #[link_name = "get eventPhase"]
-        pub safe fn event_phase(this: &Event) -> u16;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/stopPropagation)
-        #[link_name = "stopPropagation"]
-        pub safe fn stop_propagation(this: &Event);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/cancelBubble)
-        #[link_name = "get cancelBubble"]
-        pub safe fn cancel_bubble(this: &Event) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/cancelBubble)
-        #[link_name = "set cancelBubble"]
-        pub safe fn set_cancel_bubble(this: &Event, value: bool);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/stopImmediatePropagation)
-        #[link_name = "stopImmediatePropagation"]
-        pub safe fn stop_immediate_propagation(this: &Event);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/bubbles)
-        #[link_name = "get bubbles"]
-        pub safe fn bubbles(this: &Event) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/cancelable)
-        #[link_name = "get cancelable"]
-        pub safe fn cancelable(this: &Event) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/returnValue)
-        #[link_name = "get returnValue"]
-        pub safe fn return_value(this: &Event) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/returnValue)
-        #[link_name = "set returnValue"]
-        pub safe fn set_return_value(this: &Event, value: bool);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/preventDefault)
-        #[link_name = "preventDefault"]
-        pub safe fn prevent_default(this: &Event);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/defaultPrevented)
-        #[link_name = "get defaultPrevented"]
-        pub safe fn default_prevented(this: &Event) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/composed)
-        #[link_name = "get composed"]
-        pub safe fn composed(this: &Event) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/isTrusted)
-        #[link_name = "get isTrusted"]
-        pub safe fn is_trusted(this: &Event) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/timeStamp)
-        #[link_name = "get timeStamp"]
-        pub safe fn time_stamp(this: &Event) -> f64;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/initEvent)
-        #[link_name = "initEvent"]
-        pub safe fn init_event(this: &Event, type_: &str);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/initEvent)
-        #[link_name = "initEvent"]
-        pub safe fn init_event_with_bubbles(this: &Event, type_: &str, bubbles: bool);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/initEvent)
-        #[link_name = "initEvent"]
-        pub safe fn init_event_with_bubbles_and_cancelable(this: &Event, type_: &str, bubbles: bool, cancelable: bool);
     }
+}
+
+impl Event {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/type)
+    #[cfg_attr(rust_js, rust_js::link_name = "get type")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn type_(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/target)
+    #[cfg_attr(rust_js, rust_js::link_name = "get target")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn target(&self) -> Option<&'static EventTarget> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/srcElement)
+    #[cfg_attr(rust_js, rust_js::link_name = "get srcElement")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn src_element(&self) -> Option<&'static EventTarget> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/currentTarget)
+    #[cfg_attr(rust_js, rust_js::link_name = "get currentTarget")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn current_target(&self) -> Option<&'static EventTarget> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/composedPath)
+    #[cfg_attr(rust_js, rust_js::link_name = "composedPath")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn composed_path(&self) -> Vec<&'static EventTarget> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/eventPhase)
+    #[cfg_attr(rust_js, rust_js::link_name = "get eventPhase")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn event_phase(&self) -> u16 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/stopPropagation)
+    #[cfg_attr(rust_js, rust_js::link_name = "stopPropagation")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn stop_propagation(&self) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/cancelBubble)
+    #[cfg_attr(rust_js, rust_js::link_name = "get cancelBubble")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn cancel_bubble(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/cancelBubble)
+    #[cfg_attr(rust_js, rust_js::link_name = "set cancelBubble")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_cancel_bubble(&self, value: bool) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/stopImmediatePropagation)
+    #[cfg_attr(rust_js, rust_js::link_name = "stopImmediatePropagation")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn stop_immediate_propagation(&self) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/bubbles)
+    #[cfg_attr(rust_js, rust_js::link_name = "get bubbles")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn bubbles(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/cancelable)
+    #[cfg_attr(rust_js, rust_js::link_name = "get cancelable")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn cancelable(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/returnValue)
+    #[cfg_attr(rust_js, rust_js::link_name = "get returnValue")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn return_value(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/returnValue)
+    #[cfg_attr(rust_js, rust_js::link_name = "set returnValue")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_return_value(&self, value: bool) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/preventDefault)
+    #[cfg_attr(rust_js, rust_js::link_name = "preventDefault")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn prevent_default(&self) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/defaultPrevented)
+    #[cfg_attr(rust_js, rust_js::link_name = "get defaultPrevented")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn default_prevented(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/composed)
+    #[cfg_attr(rust_js, rust_js::link_name = "get composed")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn composed(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/isTrusted)
+    #[cfg_attr(rust_js, rust_js::link_name = "get isTrusted")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn is_trusted(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/timeStamp)
+    #[cfg_attr(rust_js, rust_js::link_name = "get timeStamp")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn time_stamp(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/initEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_event(&self, type_: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/initEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_event_with_bubbles(&self, type_: &str, bubbles: bool) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/initEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_event_with_bubbles_and_cancelable(&self, type_: &str, bubbles: bool, cancelable: bool) {
+        unreachable!()
+    }
+
 }
 
 /// [`Node`](https://developer.mozilla.org/docs/Web/API/Node)
@@ -12271,14 +12313,21 @@ pub mod drag_event {
         #[link_name = "new DragEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: DragEventInit<'_>) -> &'static DragEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DragEvent/dataTransfer)
-        #[link_name = "get dataTransfer"]
-        pub safe fn data_transfer(this: &DragEvent) -> Option<&'static DataTransfer>;
-
         /// Treats `this` as `DragEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static DragEvent;
     }
+}
+
+impl DragEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DragEvent/dataTransfer)
+    #[cfg_attr(rust_js, rust_js::link_name = "get dataTransfer")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn data_transfer(&self) -> Option<&'static DataTransfer> {
+        unreachable!()
+    }
+
 }
 
 /// [`ToggleEvent`](https://developer.mozilla.org/docs/Web/API/ToggleEvent)
@@ -12306,22 +12355,37 @@ pub mod toggle_event {
         #[link_name = "new ToggleEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: ToggleEventInit<'_>) -> &'static ToggleEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ToggleEvent/oldState)
-        #[link_name = "get oldState"]
-        pub safe fn old_state(this: &ToggleEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ToggleEvent/newState)
-        #[link_name = "get newState"]
-        pub safe fn new_state(this: &ToggleEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ToggleEvent/source)
-        #[link_name = "get source"]
-        pub safe fn source(this: &ToggleEvent) -> Option<&'static Element>;
-
         /// Treats `this` as `ToggleEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static ToggleEvent;
     }
+}
+
+impl ToggleEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ToggleEvent/oldState)
+    #[cfg_attr(rust_js, rust_js::link_name = "get oldState")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn old_state(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ToggleEvent/newState)
+    #[cfg_attr(rust_js, rust_js::link_name = "get newState")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_state(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ToggleEvent/source)
+    #[cfg_attr(rust_js, rust_js::link_name = "get source")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn source(&self) -> Option<&'static Element> {
+        unreachable!()
+    }
+
 }
 
 /// [`MessageEvent`](https://developer.mozilla.org/docs/Web/API/MessageEvent)
@@ -12349,49 +12413,42 @@ pub mod message_event {
         #[link_name = "new MessageEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: MessageEventInit<'_>) -> &'static MessageEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/data)
-        #[link_name = "get data"]
-        pub safe fn data(this: &MessageEvent) -> Option<&'static Unknown>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/origin)
-        #[link_name = "get origin"]
-        pub safe fn origin(this: &MessageEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/lastEventId)
-        #[link_name = "get lastEventId"]
-        pub safe fn last_event_id(this: &MessageEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/ports)
-        #[link_name = "get ports"]
-        pub safe fn ports(this: &MessageEvent) -> &'static [&'static MessagePort];
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/initMessageEvent)
-        #[link_name = "initMessageEvent"]
-        pub safe fn init_message_event(this: &MessageEvent, type_: &str);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/initMessageEvent)
-        #[link_name = "initMessageEvent"]
-        pub safe fn init_message_event_with_bubbles(this: &MessageEvent, type_: &str, bubbles: bool);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/initMessageEvent)
-        #[link_name = "initMessageEvent"]
-        pub safe fn init_message_event_with_bubbles_and_cancelable(this: &MessageEvent, type_: &str, bubbles: bool, cancelable: bool);
-
         /// Treats `this` as `MessageEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static MessageEvent;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/source): what sent it, a window,
-        /// a `MessagePort` or a `ServiceWorker`, as an object: `js::object::is` tells which.
-        #[link_name = "get source"]
-        pub safe fn source(this: &MessageEvent) -> Option<&'static JsObject>;
     }
+}
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/initMessageEvent)
-    #[cfg_attr(rust_js, rust_js::link_name = "initMessageEvent")]
+impl MessageEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/data)
+    #[cfg_attr(rust_js, rust_js::link_name = "get data")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_message_event_with_bubbles_and_cancelable_and_data<D>(this: &MessageEvent, type_: &str, bubbles: bool, cancelable: bool, data: D) {
+    pub fn data(&self) -> Option<&'static Unknown> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/origin)
+    #[cfg_attr(rust_js, rust_js::link_name = "get origin")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn origin(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/lastEventId)
+    #[cfg_attr(rust_js, rust_js::link_name = "get lastEventId")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn last_event_id(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/ports)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ports")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ports(&self) -> &'static [&'static MessagePort] {
         unreachable!()
     }
 
@@ -12399,7 +12456,7 @@ pub mod message_event {
     #[cfg_attr(rust_js, rust_js::link_name = "initMessageEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_message_event_with_bubbles_and_cancelable_and_data_and_origin<D>(this: &MessageEvent, type_: &str, bubbles: bool, cancelable: bool, data: D, origin: &str) {
+    pub fn init_message_event(&self, type_: &str) {
         unreachable!()
     }
 
@@ -12407,7 +12464,7 @@ pub mod message_event {
     #[cfg_attr(rust_js, rust_js::link_name = "initMessageEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_message_event_with_bubbles_and_cancelable_and_data_and_origin_and_last_event_id<D>(this: &MessageEvent, type_: &str, bubbles: bool, cancelable: bool, data: D, origin: &str, last_event_id: &str) {
+    pub fn init_message_event_with_bubbles(&self, type_: &str, bubbles: bool) {
         unreachable!()
     }
 
@@ -12415,7 +12472,7 @@ pub mod message_event {
     #[cfg_attr(rust_js, rust_js::link_name = "initMessageEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_message_event_with_bubbles_and_cancelable_and_data_and_origin_and_last_event_id_and_source<D>(this: &MessageEvent, type_: &str, bubbles: bool, cancelable: bool, data: D, origin: &str, last_event_id: &str, source: impl IntoMessageEventSource) {
+    pub fn init_message_event_with_bubbles_and_cancelable(&self, type_: &str, bubbles: bool, cancelable: bool) {
         unreachable!()
     }
 
@@ -12423,9 +12480,51 @@ pub mod message_event {
     #[cfg_attr(rust_js, rust_js::link_name = "initMessageEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_message_event_with_bubbles_and_cancelable_and_data_and_origin_and_last_event_id_and_source_and_ports<D>(this: &MessageEvent, type_: &str, bubbles: bool, cancelable: bool, data: D, origin: &str, last_event_id: &str, source: impl IntoMessageEventSource, ports: &[&MessagePort]) {
+    pub fn init_message_event_with_bubbles_and_cancelable_and_data<D>(&self, type_: &str, bubbles: bool, cancelable: bool, data: D) {
         unreachable!()
     }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/initMessageEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initMessageEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_message_event_with_bubbles_and_cancelable_and_data_and_origin<D>(&self, type_: &str, bubbles: bool, cancelable: bool, data: D, origin: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/initMessageEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initMessageEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_message_event_with_bubbles_and_cancelable_and_data_and_origin_and_last_event_id<D>(&self, type_: &str, bubbles: bool, cancelable: bool, data: D, origin: &str, last_event_id: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/initMessageEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initMessageEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_message_event_with_bubbles_and_cancelable_and_data_and_origin_and_last_event_id_and_source<D>(&self, type_: &str, bubbles: bool, cancelable: bool, data: D, origin: &str, last_event_id: &str, source: impl IntoMessageEventSource) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/initMessageEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initMessageEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_message_event_with_bubbles_and_cancelable_and_data_and_origin_and_last_event_id_and_source_and_ports<D>(&self, type_: &str, bubbles: bool, cancelable: bool, data: D, origin: &str, last_event_id: &str, source: impl IntoMessageEventSource, ports: &[&MessagePort]) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/source): what sent it, a window,
+    /// a `MessagePort` or a `ServiceWorker`, as an object: `js::object::is` tells which.
+    #[cfg_attr(rust_js, rust_js::link_name = "get source")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn source(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
 }
 
 /// [`SubmitEvent`](https://developer.mozilla.org/docs/Web/API/SubmitEvent)
@@ -12453,14 +12552,21 @@ pub mod submit_event {
         #[link_name = "new SubmitEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: SubmitEventInit<'_>) -> &'static SubmitEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SubmitEvent/submitter)
-        #[link_name = "get submitter"]
-        pub safe fn submitter(this: &SubmitEvent) -> Option<&'static HTMLElement>;
-
         /// Treats `this` as `SubmitEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static SubmitEvent;
     }
+}
+
+impl SubmitEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SubmitEvent/submitter)
+    #[cfg_attr(rust_js, rust_js::link_name = "get submitter")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn submitter(&self) -> Option<&'static HTMLElement> {
+        unreachable!()
+    }
+
 }
 
 /// [`Performance`](https://developer.mozilla.org/docs/Web/API/Performance)
@@ -12613,42 +12719,77 @@ pub mod ui_event {
         #[link_name = "new UIEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: UIEventInit<'_>) -> &'static UIEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/view)
-        #[link_name = "get view"]
-        pub safe fn view(this: &UIEvent) -> Option<&'static Window>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/detail)
-        #[link_name = "get detail"]
-        pub safe fn detail(this: &UIEvent) -> i32;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/initUIEvent)
-        #[link_name = "initUIEvent"]
-        pub safe fn init_ui_event(this: &UIEvent, type_arg: &str);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/initUIEvent)
-        #[link_name = "initUIEvent"]
-        pub safe fn init_ui_event_with_bubbles_arg(this: &UIEvent, type_arg: &str, bubbles_arg: bool);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/initUIEvent)
-        #[link_name = "initUIEvent"]
-        pub safe fn init_ui_event_with_bubbles_arg_and_cancelable_arg(this: &UIEvent, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/initUIEvent)
-        #[link_name = "initUIEvent"]
-        pub safe fn init_ui_event_with_bubbles_arg_and_cancelable_arg_and_view_arg(this: &UIEvent, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/initUIEvent)
-        #[link_name = "initUIEvent"]
-        pub safe fn init_ui_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_detail_arg(this: &UIEvent, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, detail_arg: i32);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/which)
-        #[link_name = "get which"]
-        pub safe fn which(this: &UIEvent) -> u32;
-
         /// Treats `this` as `UIEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static UIEvent;
     }
+}
+
+impl UIEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/view)
+    #[cfg_attr(rust_js, rust_js::link_name = "get view")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn view(&self) -> Option<&'static Window> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/detail)
+    #[cfg_attr(rust_js, rust_js::link_name = "get detail")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn detail(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/initUIEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initUIEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_ui_event(&self, type_arg: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/initUIEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initUIEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_ui_event_with_bubbles_arg(&self, type_arg: &str, bubbles_arg: bool) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/initUIEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initUIEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_ui_event_with_bubbles_arg_and_cancelable_arg(&self, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/initUIEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initUIEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_ui_event_with_bubbles_arg_and_cancelable_arg_and_view_arg(&self, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/initUIEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initUIEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_ui_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_detail_arg(&self, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, detail_arg: i32) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/which)
+    #[cfg_attr(rust_js, rust_js::link_name = "get which")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn which(&self) -> u32 {
+        unreachable!()
+    }
+
 }
 
 /// [`FocusEvent`](https://developer.mozilla.org/docs/Web/API/FocusEvent)
@@ -12676,14 +12817,21 @@ pub mod focus_event {
         #[link_name = "new FocusEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: FocusEventInit<'_>) -> &'static FocusEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/FocusEvent/relatedTarget)
-        #[link_name = "get relatedTarget"]
-        pub safe fn related_target(this: &FocusEvent) -> Option<&'static EventTarget>;
-
         /// Treats `this` as `FocusEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static FocusEvent;
     }
+}
+
+impl FocusEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FocusEvent/relatedTarget)
+    #[cfg_attr(rust_js, rust_js::link_name = "get relatedTarget")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn related_target(&self) -> Option<&'static EventTarget> {
+        unreachable!()
+    }
+
 }
 
 /// [`MouseEvent`](https://developer.mozilla.org/docs/Web/API/MouseEvent)
@@ -12703,14 +12851,6 @@ pub mod mouse_event {
     use super::*;
 
     unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/movementX)
-        #[link_name = "get movementX"]
-        pub safe fn movement_x(this: &MouseEvent) -> f64;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/movementY)
-        #[link_name = "get movementY"]
-        pub safe fn movement_y(this: &MouseEvent) -> f64;
-
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/MouseEvent)
         #[link_name = "new MouseEvent"]
         pub safe fn new(type_: &str) -> &'static MouseEvent;
@@ -12719,150 +12859,309 @@ pub mod mouse_event {
         #[link_name = "new MouseEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: MouseEventInit<'_>) -> &'static MouseEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/screenX)
-        #[link_name = "get screenX"]
-        pub safe fn screen_x(this: &MouseEvent) -> i32;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/screenY)
-        #[link_name = "get screenY"]
-        pub safe fn screen_y(this: &MouseEvent) -> i32;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/clientX)
-        #[link_name = "get clientX"]
-        pub safe fn client_x(this: &MouseEvent) -> i32;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/clientY)
-        #[link_name = "get clientY"]
-        pub safe fn client_y(this: &MouseEvent) -> i32;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/layerX)
-        #[link_name = "get layerX"]
-        pub safe fn layer_x(this: &MouseEvent) -> i32;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/layerY)
-        #[link_name = "get layerY"]
-        pub safe fn layer_y(this: &MouseEvent) -> i32;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/ctrlKey)
-        #[link_name = "get ctrlKey"]
-        pub safe fn ctrl_key(this: &MouseEvent) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/shiftKey)
-        #[link_name = "get shiftKey"]
-        pub safe fn shift_key(this: &MouseEvent) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/altKey)
-        #[link_name = "get altKey"]
-        pub safe fn alt_key(this: &MouseEvent) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/metaKey)
-        #[link_name = "get metaKey"]
-        pub safe fn meta_key(this: &MouseEvent) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/button)
-        #[link_name = "get button"]
-        pub safe fn button(this: &MouseEvent) -> i16;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/buttons)
-        #[link_name = "get buttons"]
-        pub safe fn buttons(this: &MouseEvent) -> u16;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/relatedTarget)
-        #[link_name = "get relatedTarget"]
-        pub safe fn related_target(this: &MouseEvent) -> Option<&'static EventTarget>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/getModifierState)
-        #[link_name = "getModifierState"]
-        pub safe fn get_modifier_state(this: &MouseEvent, key_arg: &str) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
-        #[link_name = "initMouseEvent"]
-        pub safe fn init_mouse_event(this: &MouseEvent, type_arg: &str);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
-        #[link_name = "initMouseEvent"]
-        pub safe fn init_mouse_event_with_bubbles_arg(this: &MouseEvent, type_arg: &str, bubbles_arg: bool);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
-        #[link_name = "initMouseEvent"]
-        pub safe fn init_mouse_event_with_bubbles_arg_and_cancelable_arg(this: &MouseEvent, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
-        #[link_name = "initMouseEvent"]
-        pub safe fn init_mouse_event_with_bubbles_arg_and_cancelable_arg_and_view_arg(this: &MouseEvent, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
-        #[link_name = "initMouseEvent"]
-        pub safe fn init_mouse_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_detail_arg(this: &MouseEvent, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, detail_arg: i32);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
-        #[link_name = "initMouseEvent"]
-        pub safe fn init_mouse_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_detail_arg_and_screen_x_arg(this: &MouseEvent, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, detail_arg: i32, screen_x_arg: i32);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
-        #[link_name = "initMouseEvent"]
-        pub safe fn init_mouse_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_detail_arg_and_screen_x_arg_and_screen_y_arg(this: &MouseEvent, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, detail_arg: i32, screen_x_arg: i32, screen_y_arg: i32);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
-        #[link_name = "initMouseEvent"]
-        pub safe fn init_mouse_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_detail_arg_and_screen_x_arg_and_screen_y_arg_and_client_x_arg(this: &MouseEvent, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, detail_arg: i32, screen_x_arg: i32, screen_y_arg: i32, client_x_arg: i32);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
-        #[link_name = "initMouseEvent"]
-        pub safe fn init_mouse_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_detail_arg_and_screen_x_arg_and_screen_y_arg_and_client_x_arg_and_client_y_arg(this: &MouseEvent, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, detail_arg: i32, screen_x_arg: i32, screen_y_arg: i32, client_x_arg: i32, client_y_arg: i32);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
-        #[link_name = "initMouseEvent"]
-        pub safe fn init_mouse_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_detail_arg_and_screen_x_arg_and_screen_y_arg_and_client_x_arg_and_client_y_arg_and_ctrl_key_arg(this: &MouseEvent, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, detail_arg: i32, screen_x_arg: i32, screen_y_arg: i32, client_x_arg: i32, client_y_arg: i32, ctrl_key_arg: bool);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
-        #[link_name = "initMouseEvent"]
-        pub safe fn init_mouse_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_detail_arg_and_screen_x_arg_and_screen_y_arg_and_client_x_arg_and_client_y_arg_and_ctrl_key_arg_and_alt_key_arg(this: &MouseEvent, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, detail_arg: i32, screen_x_arg: i32, screen_y_arg: i32, client_x_arg: i32, client_y_arg: i32, ctrl_key_arg: bool, alt_key_arg: bool);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
-        #[link_name = "initMouseEvent"]
-        pub safe fn init_mouse_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_detail_arg_and_screen_x_arg_and_screen_y_arg_and_client_x_arg_and_client_y_arg_and_ctrl_key_arg_and_alt_key_arg_and_shift_key_arg(this: &MouseEvent, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, detail_arg: i32, screen_x_arg: i32, screen_y_arg: i32, client_x_arg: i32, client_y_arg: i32, ctrl_key_arg: bool, alt_key_arg: bool, shift_key_arg: bool);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
-        #[link_name = "initMouseEvent"]
-        pub safe fn init_mouse_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_detail_arg_and_screen_x_arg_and_screen_y_arg_and_client_x_arg_and_client_y_arg_and_ctrl_key_arg_and_alt_key_arg_and_shift_key_arg_and_meta_key_arg(this: &MouseEvent, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, detail_arg: i32, screen_x_arg: i32, screen_y_arg: i32, client_x_arg: i32, client_y_arg: i32, ctrl_key_arg: bool, alt_key_arg: bool, shift_key_arg: bool, meta_key_arg: bool);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
-        #[link_name = "initMouseEvent"]
-        pub safe fn init_mouse_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_detail_arg_and_screen_x_arg_and_screen_y_arg_and_client_x_arg_and_client_y_arg_and_ctrl_key_arg_and_alt_key_arg_and_shift_key_arg_and_meta_key_arg_and_button_arg(this: &MouseEvent, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, detail_arg: i32, screen_x_arg: i32, screen_y_arg: i32, client_x_arg: i32, client_y_arg: i32, ctrl_key_arg: bool, alt_key_arg: bool, shift_key_arg: bool, meta_key_arg: bool, button_arg: i16);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
-        #[link_name = "initMouseEvent"]
-        pub safe fn init_mouse_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_detail_arg_and_screen_x_arg_and_screen_y_arg_and_client_x_arg_and_client_y_arg_and_ctrl_key_arg_and_alt_key_arg_and_shift_key_arg_and_meta_key_arg_and_button_arg_and_related_target_arg(this: &MouseEvent, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, detail_arg: i32, screen_x_arg: i32, screen_y_arg: i32, client_x_arg: i32, client_y_arg: i32, ctrl_key_arg: bool, alt_key_arg: bool, shift_key_arg: bool, meta_key_arg: bool, button_arg: i16, related_target_arg: &EventTarget);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/pageX)
-        #[link_name = "get pageX"]
-        pub safe fn page_x(this: &MouseEvent) -> f64;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/pageY)
-        #[link_name = "get pageY"]
-        pub safe fn page_y(this: &MouseEvent) -> f64;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/x)
-        #[link_name = "get x"]
-        pub safe fn x(this: &MouseEvent) -> f64;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/y)
-        #[link_name = "get y"]
-        pub safe fn y(this: &MouseEvent) -> f64;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/offsetX)
-        #[link_name = "get offsetX"]
-        pub safe fn offset_x(this: &MouseEvent) -> f64;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/offsetY)
-        #[link_name = "get offsetY"]
-        pub safe fn offset_y(this: &MouseEvent) -> f64;
-
         /// Treats `this` as `MouseEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static MouseEvent;
     }
+}
+
+impl MouseEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/movementX)
+    #[cfg_attr(rust_js, rust_js::link_name = "get movementX")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn movement_x(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/movementY)
+    #[cfg_attr(rust_js, rust_js::link_name = "get movementY")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn movement_y(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/screenX)
+    #[cfg_attr(rust_js, rust_js::link_name = "get screenX")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn screen_x(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/screenY)
+    #[cfg_attr(rust_js, rust_js::link_name = "get screenY")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn screen_y(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/clientX)
+    #[cfg_attr(rust_js, rust_js::link_name = "get clientX")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn client_x(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/clientY)
+    #[cfg_attr(rust_js, rust_js::link_name = "get clientY")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn client_y(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/layerX)
+    #[cfg_attr(rust_js, rust_js::link_name = "get layerX")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn layer_x(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/layerY)
+    #[cfg_attr(rust_js, rust_js::link_name = "get layerY")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn layer_y(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/ctrlKey)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ctrlKey")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ctrl_key(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/shiftKey)
+    #[cfg_attr(rust_js, rust_js::link_name = "get shiftKey")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn shift_key(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/altKey)
+    #[cfg_attr(rust_js, rust_js::link_name = "get altKey")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn alt_key(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/metaKey)
+    #[cfg_attr(rust_js, rust_js::link_name = "get metaKey")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn meta_key(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/button)
+    #[cfg_attr(rust_js, rust_js::link_name = "get button")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn button(&self) -> i16 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/buttons)
+    #[cfg_attr(rust_js, rust_js::link_name = "get buttons")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn buttons(&self) -> u16 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/relatedTarget)
+    #[cfg_attr(rust_js, rust_js::link_name = "get relatedTarget")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn related_target(&self) -> Option<&'static EventTarget> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/getModifierState)
+    #[cfg_attr(rust_js, rust_js::link_name = "getModifierState")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_modifier_state(&self, key_arg: &str) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initMouseEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_mouse_event(&self, type_arg: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initMouseEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_mouse_event_with_bubbles_arg(&self, type_arg: &str, bubbles_arg: bool) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initMouseEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_mouse_event_with_bubbles_arg_and_cancelable_arg(&self, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initMouseEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_mouse_event_with_bubbles_arg_and_cancelable_arg_and_view_arg(&self, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initMouseEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_mouse_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_detail_arg(&self, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, detail_arg: i32) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initMouseEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_mouse_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_detail_arg_and_screen_x_arg(&self, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, detail_arg: i32, screen_x_arg: i32) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initMouseEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_mouse_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_detail_arg_and_screen_x_arg_and_screen_y_arg(&self, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, detail_arg: i32, screen_x_arg: i32, screen_y_arg: i32) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initMouseEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_mouse_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_detail_arg_and_screen_x_arg_and_screen_y_arg_and_client_x_arg(&self, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, detail_arg: i32, screen_x_arg: i32, screen_y_arg: i32, client_x_arg: i32) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initMouseEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_mouse_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_detail_arg_and_screen_x_arg_and_screen_y_arg_and_client_x_arg_and_client_y_arg(&self, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, detail_arg: i32, screen_x_arg: i32, screen_y_arg: i32, client_x_arg: i32, client_y_arg: i32) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initMouseEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_mouse_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_detail_arg_and_screen_x_arg_and_screen_y_arg_and_client_x_arg_and_client_y_arg_and_ctrl_key_arg(&self, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, detail_arg: i32, screen_x_arg: i32, screen_y_arg: i32, client_x_arg: i32, client_y_arg: i32, ctrl_key_arg: bool) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initMouseEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_mouse_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_detail_arg_and_screen_x_arg_and_screen_y_arg_and_client_x_arg_and_client_y_arg_and_ctrl_key_arg_and_alt_key_arg(&self, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, detail_arg: i32, screen_x_arg: i32, screen_y_arg: i32, client_x_arg: i32, client_y_arg: i32, ctrl_key_arg: bool, alt_key_arg: bool) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initMouseEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_mouse_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_detail_arg_and_screen_x_arg_and_screen_y_arg_and_client_x_arg_and_client_y_arg_and_ctrl_key_arg_and_alt_key_arg_and_shift_key_arg(&self, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, detail_arg: i32, screen_x_arg: i32, screen_y_arg: i32, client_x_arg: i32, client_y_arg: i32, ctrl_key_arg: bool, alt_key_arg: bool, shift_key_arg: bool) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initMouseEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_mouse_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_detail_arg_and_screen_x_arg_and_screen_y_arg_and_client_x_arg_and_client_y_arg_and_ctrl_key_arg_and_alt_key_arg_and_shift_key_arg_and_meta_key_arg(&self, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, detail_arg: i32, screen_x_arg: i32, screen_y_arg: i32, client_x_arg: i32, client_y_arg: i32, ctrl_key_arg: bool, alt_key_arg: bool, shift_key_arg: bool, meta_key_arg: bool) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initMouseEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_mouse_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_detail_arg_and_screen_x_arg_and_screen_y_arg_and_client_x_arg_and_client_y_arg_and_ctrl_key_arg_and_alt_key_arg_and_shift_key_arg_and_meta_key_arg_and_button_arg(&self, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, detail_arg: i32, screen_x_arg: i32, screen_y_arg: i32, client_x_arg: i32, client_y_arg: i32, ctrl_key_arg: bool, alt_key_arg: bool, shift_key_arg: bool, meta_key_arg: bool, button_arg: i16) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initMouseEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_mouse_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_detail_arg_and_screen_x_arg_and_screen_y_arg_and_client_x_arg_and_client_y_arg_and_ctrl_key_arg_and_alt_key_arg_and_shift_key_arg_and_meta_key_arg_and_button_arg_and_related_target_arg(&self, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, detail_arg: i32, screen_x_arg: i32, screen_y_arg: i32, client_x_arg: i32, client_y_arg: i32, ctrl_key_arg: bool, alt_key_arg: bool, shift_key_arg: bool, meta_key_arg: bool, button_arg: i16, related_target_arg: &EventTarget) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/pageX)
+    #[cfg_attr(rust_js, rust_js::link_name = "get pageX")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn page_x(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/pageY)
+    #[cfg_attr(rust_js, rust_js::link_name = "get pageY")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn page_y(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/x)
+    #[cfg_attr(rust_js, rust_js::link_name = "get x")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn x(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/y)
+    #[cfg_attr(rust_js, rust_js::link_name = "get y")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn y(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/offsetX)
+    #[cfg_attr(rust_js, rust_js::link_name = "get offsetX")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn offset_x(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/offsetY)
+    #[cfg_attr(rust_js, rust_js::link_name = "get offsetY")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn offset_y(&self) -> f64 {
+        unreachable!()
+    }
+
 }
 
 /// [`KeyboardEvent`](https://developer.mozilla.org/docs/Web/API/KeyboardEvent)
@@ -12902,98 +13201,189 @@ pub mod keyboard_event {
         #[link_name = "new KeyboardEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: KeyboardEventInit<'_>) -> &'static KeyboardEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/key)
-        #[link_name = "get key"]
-        pub safe fn key(this: &KeyboardEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/code)
-        #[link_name = "get code"]
-        pub safe fn code(this: &KeyboardEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/location)
-        #[link_name = "get location"]
-        pub safe fn location(this: &KeyboardEvent) -> u32;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/ctrlKey)
-        #[link_name = "get ctrlKey"]
-        pub safe fn ctrl_key(this: &KeyboardEvent) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/shiftKey)
-        #[link_name = "get shiftKey"]
-        pub safe fn shift_key(this: &KeyboardEvent) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/altKey)
-        #[link_name = "get altKey"]
-        pub safe fn alt_key(this: &KeyboardEvent) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/metaKey)
-        #[link_name = "get metaKey"]
-        pub safe fn meta_key(this: &KeyboardEvent) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/repeat)
-        #[link_name = "get repeat"]
-        pub safe fn repeat(this: &KeyboardEvent) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/isComposing)
-        #[link_name = "get isComposing"]
-        pub safe fn is_composing(this: &KeyboardEvent) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/getModifierState)
-        #[link_name = "getModifierState"]
-        pub safe fn get_modifier_state(this: &KeyboardEvent, key_arg: &str) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/initKeyboardEvent)
-        #[link_name = "initKeyboardEvent"]
-        pub safe fn init_keyboard_event(this: &KeyboardEvent, type_arg: &str);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/initKeyboardEvent)
-        #[link_name = "initKeyboardEvent"]
-        pub safe fn init_keyboard_event_with_bubbles_arg(this: &KeyboardEvent, type_arg: &str, bubbles_arg: bool);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/initKeyboardEvent)
-        #[link_name = "initKeyboardEvent"]
-        pub safe fn init_keyboard_event_with_bubbles_arg_and_cancelable_arg(this: &KeyboardEvent, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/initKeyboardEvent)
-        #[link_name = "initKeyboardEvent"]
-        pub safe fn init_keyboard_event_with_bubbles_arg_and_cancelable_arg_and_view_arg(this: &KeyboardEvent, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/initKeyboardEvent)
-        #[link_name = "initKeyboardEvent"]
-        pub safe fn init_keyboard_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_key_arg(this: &KeyboardEvent, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, key_arg: &str);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/initKeyboardEvent)
-        #[link_name = "initKeyboardEvent"]
-        pub safe fn init_keyboard_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_key_arg_and_location_arg(this: &KeyboardEvent, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, key_arg: &str, location_arg: u32);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/initKeyboardEvent)
-        #[link_name = "initKeyboardEvent"]
-        pub safe fn init_keyboard_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_key_arg_and_location_arg_and_ctrl_key(this: &KeyboardEvent, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, key_arg: &str, location_arg: u32, ctrl_key: bool);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/initKeyboardEvent)
-        #[link_name = "initKeyboardEvent"]
-        pub safe fn init_keyboard_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_key_arg_and_location_arg_and_ctrl_key_and_alt_key(this: &KeyboardEvent, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, key_arg: &str, location_arg: u32, ctrl_key: bool, alt_key: bool);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/initKeyboardEvent)
-        #[link_name = "initKeyboardEvent"]
-        pub safe fn init_keyboard_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_key_arg_and_location_arg_and_ctrl_key_and_alt_key_and_shift_key(this: &KeyboardEvent, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, key_arg: &str, location_arg: u32, ctrl_key: bool, alt_key: bool, shift_key: bool);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/initKeyboardEvent)
-        #[link_name = "initKeyboardEvent"]
-        pub safe fn init_keyboard_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_key_arg_and_location_arg_and_ctrl_key_and_alt_key_and_shift_key_and_meta_key(this: &KeyboardEvent, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, key_arg: &str, location_arg: u32, ctrl_key: bool, alt_key: bool, shift_key: bool, meta_key: bool);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/charCode)
-        #[link_name = "get charCode"]
-        pub safe fn char_code(this: &KeyboardEvent) -> u32;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/keyCode)
-        #[link_name = "get keyCode"]
-        pub safe fn key_code(this: &KeyboardEvent) -> u32;
-
         /// Treats `this` as `KeyboardEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static KeyboardEvent;
     }
+}
+
+impl KeyboardEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/key)
+    #[cfg_attr(rust_js, rust_js::link_name = "get key")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn key(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/code)
+    #[cfg_attr(rust_js, rust_js::link_name = "get code")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn code(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/location)
+    #[cfg_attr(rust_js, rust_js::link_name = "get location")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn location(&self) -> u32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/ctrlKey)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ctrlKey")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ctrl_key(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/shiftKey)
+    #[cfg_attr(rust_js, rust_js::link_name = "get shiftKey")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn shift_key(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/altKey)
+    #[cfg_attr(rust_js, rust_js::link_name = "get altKey")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn alt_key(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/metaKey)
+    #[cfg_attr(rust_js, rust_js::link_name = "get metaKey")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn meta_key(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/repeat)
+    #[cfg_attr(rust_js, rust_js::link_name = "get repeat")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn repeat(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/isComposing)
+    #[cfg_attr(rust_js, rust_js::link_name = "get isComposing")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn is_composing(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/getModifierState)
+    #[cfg_attr(rust_js, rust_js::link_name = "getModifierState")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_modifier_state(&self, key_arg: &str) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/initKeyboardEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initKeyboardEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_keyboard_event(&self, type_arg: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/initKeyboardEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initKeyboardEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_keyboard_event_with_bubbles_arg(&self, type_arg: &str, bubbles_arg: bool) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/initKeyboardEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initKeyboardEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_keyboard_event_with_bubbles_arg_and_cancelable_arg(&self, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/initKeyboardEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initKeyboardEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_keyboard_event_with_bubbles_arg_and_cancelable_arg_and_view_arg(&self, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/initKeyboardEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initKeyboardEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_keyboard_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_key_arg(&self, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, key_arg: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/initKeyboardEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initKeyboardEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_keyboard_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_key_arg_and_location_arg(&self, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, key_arg: &str, location_arg: u32) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/initKeyboardEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initKeyboardEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_keyboard_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_key_arg_and_location_arg_and_ctrl_key(&self, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, key_arg: &str, location_arg: u32, ctrl_key: bool) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/initKeyboardEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initKeyboardEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_keyboard_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_key_arg_and_location_arg_and_ctrl_key_and_alt_key(&self, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, key_arg: &str, location_arg: u32, ctrl_key: bool, alt_key: bool) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/initKeyboardEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initKeyboardEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_keyboard_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_key_arg_and_location_arg_and_ctrl_key_and_alt_key_and_shift_key(&self, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, key_arg: &str, location_arg: u32, ctrl_key: bool, alt_key: bool, shift_key: bool) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/initKeyboardEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initKeyboardEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_keyboard_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_key_arg_and_location_arg_and_ctrl_key_and_alt_key_and_shift_key_and_meta_key(&self, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, key_arg: &str, location_arg: u32, ctrl_key: bool, alt_key: bool, shift_key: bool, meta_key: bool) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/charCode)
+    #[cfg_attr(rust_js, rust_js::link_name = "get charCode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn char_code(&self) -> u32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/keyCode)
+    #[cfg_attr(rust_js, rust_js::link_name = "get keyCode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn key_code(&self) -> u32 {
+        unreachable!()
+    }
+
 }
 
 /// [`InputEvent`](https://developer.mozilla.org/docs/Web/API/InputEvent)
@@ -13021,30 +13411,53 @@ pub mod input_event {
         #[link_name = "new InputEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: InputEventInit<'_>) -> &'static InputEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/InputEvent/data)
-        #[link_name = "get data"]
-        pub safe fn data(this: &InputEvent) -> Option<String>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/InputEvent/isComposing)
-        #[link_name = "get isComposing"]
-        pub safe fn is_composing(this: &InputEvent) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/InputEvent/inputType)
-        #[link_name = "get inputType"]
-        pub safe fn input_type(this: &InputEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/InputEvent/dataTransfer)
-        #[link_name = "get dataTransfer"]
-        pub safe fn data_transfer(this: &InputEvent) -> Option<&'static DataTransfer>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/InputEvent/getTargetRanges)
-        #[link_name = "getTargetRanges"]
-        pub safe fn get_target_ranges(this: &InputEvent) -> Vec<&'static StaticRange>;
-
         /// Treats `this` as `InputEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static InputEvent;
     }
+}
+
+impl InputEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/InputEvent/data)
+    #[cfg_attr(rust_js, rust_js::link_name = "get data")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn data(&self) -> Option<String> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/InputEvent/isComposing)
+    #[cfg_attr(rust_js, rust_js::link_name = "get isComposing")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn is_composing(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/InputEvent/inputType)
+    #[cfg_attr(rust_js, rust_js::link_name = "get inputType")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn input_type(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/InputEvent/dataTransfer)
+    #[cfg_attr(rust_js, rust_js::link_name = "get dataTransfer")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn data_transfer(&self) -> Option<&'static DataTransfer> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/InputEvent/getTargetRanges)
+    #[cfg_attr(rust_js, rust_js::link_name = "getTargetRanges")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_target_ranges(&self) -> Vec<&'static StaticRange> {
+        unreachable!()
+    }
+
 }
 
 /// [`WheelEvent`](https://developer.mozilla.org/docs/Web/API/WheelEvent)
@@ -13081,30 +13494,53 @@ pub mod wheel_event {
         #[link_name = "new WheelEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: WheelEventInit<'_>) -> &'static WheelEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/WheelEvent/deltaX)
-        #[link_name = "get deltaX"]
-        pub safe fn delta_x(this: &WheelEvent) -> f64;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/WheelEvent/deltaY)
-        #[link_name = "get deltaY"]
-        pub safe fn delta_y(this: &WheelEvent) -> f64;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/WheelEvent/deltaZ)
-        #[link_name = "get deltaZ"]
-        pub safe fn delta_z(this: &WheelEvent) -> f64;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/WheelEvent/deltaMode)
-        #[link_name = "get deltaMode"]
-        pub safe fn delta_mode(this: &WheelEvent) -> u32;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/WheelEvent/momentum)
-        #[link_name = "get momentum"]
-        pub safe fn momentum(this: &WheelEvent) -> bool;
-
         /// Treats `this` as `WheelEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static WheelEvent;
     }
+}
+
+impl WheelEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WheelEvent/deltaX)
+    #[cfg_attr(rust_js, rust_js::link_name = "get deltaX")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn delta_x(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WheelEvent/deltaY)
+    #[cfg_attr(rust_js, rust_js::link_name = "get deltaY")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn delta_y(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WheelEvent/deltaZ)
+    #[cfg_attr(rust_js, rust_js::link_name = "get deltaZ")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn delta_z(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WheelEvent/deltaMode)
+    #[cfg_attr(rust_js, rust_js::link_name = "get deltaMode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn delta_mode(&self) -> u32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WheelEvent/momentum)
+    #[cfg_attr(rust_js, rust_js::link_name = "get momentum")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn momentum(&self) -> bool {
+        unreachable!()
+    }
+
 }
 
 /// [`CompositionEvent`](https://developer.mozilla.org/docs/Web/API/CompositionEvent)
@@ -13132,34 +13568,61 @@ pub mod composition_event {
         #[link_name = "new CompositionEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: CompositionEventInit<'_>) -> &'static CompositionEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CompositionEvent/data)
-        #[link_name = "get data"]
-        pub safe fn data(this: &CompositionEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CompositionEvent/initCompositionEvent)
-        #[link_name = "initCompositionEvent"]
-        pub safe fn init_composition_event(this: &CompositionEvent, type_arg: &str);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CompositionEvent/initCompositionEvent)
-        #[link_name = "initCompositionEvent"]
-        pub safe fn init_composition_event_with_bubbles_arg(this: &CompositionEvent, type_arg: &str, bubbles_arg: bool);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CompositionEvent/initCompositionEvent)
-        #[link_name = "initCompositionEvent"]
-        pub safe fn init_composition_event_with_bubbles_arg_and_cancelable_arg(this: &CompositionEvent, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CompositionEvent/initCompositionEvent)
-        #[link_name = "initCompositionEvent"]
-        pub safe fn init_composition_event_with_bubbles_arg_and_cancelable_arg_and_view_arg(this: &CompositionEvent, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CompositionEvent/initCompositionEvent)
-        #[link_name = "initCompositionEvent"]
-        pub safe fn init_composition_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_data_arg(this: &CompositionEvent, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, data_arg: &str);
-
         /// Treats `this` as `CompositionEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static CompositionEvent;
     }
+}
+
+impl CompositionEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CompositionEvent/data)
+    #[cfg_attr(rust_js, rust_js::link_name = "get data")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn data(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CompositionEvent/initCompositionEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initCompositionEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_composition_event(&self, type_arg: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CompositionEvent/initCompositionEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initCompositionEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_composition_event_with_bubbles_arg(&self, type_arg: &str, bubbles_arg: bool) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CompositionEvent/initCompositionEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initCompositionEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_composition_event_with_bubbles_arg_and_cancelable_arg(&self, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CompositionEvent/initCompositionEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initCompositionEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_composition_event_with_bubbles_arg_and_cancelable_arg_and_view_arg(&self, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CompositionEvent/initCompositionEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initCompositionEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_composition_event_with_bubbles_arg_and_cancelable_arg_and_view_arg_and_data_arg(&self, type_arg: &str, bubbles_arg: bool, cancelable_arg: bool, view_arg: &Window, data_arg: &str) {
+        unreachable!()
+    }
+
 }
 
 /// [`TouchEvent`](https://developer.mozilla.org/docs/Web/API/TouchEvent)
@@ -13187,42 +13650,77 @@ pub mod touch_event {
         #[link_name = "new TouchEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: TouchEventInit<'_>) -> &'static TouchEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchEvent/touches)
-        #[link_name = "get touches"]
-        pub safe fn touches(this: &TouchEvent) -> &'static TouchList;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchEvent/targetTouches)
-        #[link_name = "get targetTouches"]
-        pub safe fn target_touches(this: &TouchEvent) -> &'static TouchList;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchEvent/changedTouches)
-        #[link_name = "get changedTouches"]
-        pub safe fn changed_touches(this: &TouchEvent) -> &'static TouchList;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchEvent/altKey)
-        #[link_name = "get altKey"]
-        pub safe fn alt_key(this: &TouchEvent) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchEvent/metaKey)
-        #[link_name = "get metaKey"]
-        pub safe fn meta_key(this: &TouchEvent) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchEvent/ctrlKey)
-        #[link_name = "get ctrlKey"]
-        pub safe fn ctrl_key(this: &TouchEvent) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchEvent/shiftKey)
-        #[link_name = "get shiftKey"]
-        pub safe fn shift_key(this: &TouchEvent) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchEvent/getModifierState)
-        #[link_name = "getModifierState"]
-        pub safe fn get_modifier_state(this: &TouchEvent, key_arg: &str) -> bool;
-
         /// Treats `this` as `TouchEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static TouchEvent;
     }
+}
+
+impl TouchEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchEvent/touches)
+    #[cfg_attr(rust_js, rust_js::link_name = "get touches")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn touches(&self) -> &'static TouchList {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchEvent/targetTouches)
+    #[cfg_attr(rust_js, rust_js::link_name = "get targetTouches")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn target_touches(&self) -> &'static TouchList {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchEvent/changedTouches)
+    #[cfg_attr(rust_js, rust_js::link_name = "get changedTouches")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn changed_touches(&self) -> &'static TouchList {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchEvent/altKey)
+    #[cfg_attr(rust_js, rust_js::link_name = "get altKey")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn alt_key(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchEvent/metaKey)
+    #[cfg_attr(rust_js, rust_js::link_name = "get metaKey")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn meta_key(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchEvent/ctrlKey)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ctrlKey")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ctrl_key(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchEvent/shiftKey)
+    #[cfg_attr(rust_js, rust_js::link_name = "get shiftKey")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn shift_key(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchEvent/getModifierState)
+    #[cfg_attr(rust_js, rust_js::link_name = "getModifierState")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_modifier_state(&self, key_arg: &str) -> bool {
+        unreachable!()
+    }
+
 }
 
 /// [`AnimationEvent`](https://developer.mozilla.org/docs/Web/API/AnimationEvent)
@@ -13250,22 +13748,37 @@ pub mod animation_event {
         #[link_name = "new AnimationEvent"]
         pub safe fn new_with_animation_event_init_dict(type_: &str, animation_event_init_dict: AnimationEventInit<'_>) -> &'static AnimationEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationEvent/animationName)
-        #[link_name = "get animationName"]
-        pub safe fn animation_name(this: &AnimationEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationEvent/elapsedTime)
-        #[link_name = "get elapsedTime"]
-        pub safe fn elapsed_time(this: &AnimationEvent) -> f64;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationEvent/pseudoElement)
-        #[link_name = "get pseudoElement"]
-        pub safe fn pseudo_element(this: &AnimationEvent) -> String;
-
         /// Treats `this` as `AnimationEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static AnimationEvent;
     }
+}
+
+impl AnimationEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationEvent/animationName)
+    #[cfg_attr(rust_js, rust_js::link_name = "get animationName")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn animation_name(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationEvent/elapsedTime)
+    #[cfg_attr(rust_js, rust_js::link_name = "get elapsedTime")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn elapsed_time(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationEvent/pseudoElement)
+    #[cfg_attr(rust_js, rust_js::link_name = "get pseudoElement")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn pseudo_element(&self) -> String {
+        unreachable!()
+    }
+
 }
 
 /// [`TransitionEvent`](https://developer.mozilla.org/docs/Web/API/TransitionEvent)
@@ -13293,22 +13806,37 @@ pub mod transition_event {
         #[link_name = "new TransitionEvent"]
         pub safe fn new_with_transition_event_init_dict(type_: &str, transition_event_init_dict: TransitionEventInit<'_>) -> &'static TransitionEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TransitionEvent/propertyName)
-        #[link_name = "get propertyName"]
-        pub safe fn property_name(this: &TransitionEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TransitionEvent/elapsedTime)
-        #[link_name = "get elapsedTime"]
-        pub safe fn elapsed_time(this: &TransitionEvent) -> f64;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TransitionEvent/pseudoElement)
-        #[link_name = "get pseudoElement"]
-        pub safe fn pseudo_element(this: &TransitionEvent) -> String;
-
         /// Treats `this` as `TransitionEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static TransitionEvent;
     }
+}
+
+impl TransitionEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TransitionEvent/propertyName)
+    #[cfg_attr(rust_js, rust_js::link_name = "get propertyName")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn property_name(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TransitionEvent/elapsedTime)
+    #[cfg_attr(rust_js, rust_js::link_name = "get elapsedTime")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn elapsed_time(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TransitionEvent/pseudoElement)
+    #[cfg_attr(rust_js, rust_js::link_name = "get pseudoElement")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn pseudo_element(&self) -> String {
+        unreachable!()
+    }
+
 }
 
 /// [`ClipboardEvent`](https://developer.mozilla.org/docs/Web/API/ClipboardEvent)
@@ -13336,14 +13864,21 @@ pub mod clipboard_event {
         #[link_name = "new ClipboardEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: ClipboardEventInit<'_>) -> &'static ClipboardEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ClipboardEvent/clipboardData)
-        #[link_name = "get clipboardData"]
-        pub safe fn clipboard_data(this: &ClipboardEvent) -> Option<&'static DataTransfer>;
-
         /// Treats `this` as `ClipboardEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static ClipboardEvent;
     }
+}
+
+impl ClipboardEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ClipboardEvent/clipboardData)
+    #[cfg_attr(rust_js, rust_js::link_name = "get clipboardData")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn clipboard_data(&self) -> Option<&'static DataTransfer> {
+        unreachable!()
+    }
+
 }
 
 /// [`PointerEvent`](https://developer.mozilla.org/docs/Web/API/PointerEvent)
@@ -13371,70 +13906,133 @@ pub mod pointer_event {
         #[link_name = "new PointerEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: PointerEventInit<'_>) -> &'static PointerEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/pointerId)
-        #[link_name = "get pointerId"]
-        pub safe fn pointer_id(this: &PointerEvent) -> i32;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/width)
-        #[link_name = "get width"]
-        pub safe fn width(this: &PointerEvent) -> f64;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/height)
-        #[link_name = "get height"]
-        pub safe fn height(this: &PointerEvent) -> f64;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/pressure)
-        #[link_name = "get pressure"]
-        pub safe fn pressure(this: &PointerEvent) -> f32;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/tangentialPressure)
-        #[link_name = "get tangentialPressure"]
-        pub safe fn tangential_pressure(this: &PointerEvent) -> f32;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/tiltX)
-        #[link_name = "get tiltX"]
-        pub safe fn tilt_x(this: &PointerEvent) -> i32;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/tiltY)
-        #[link_name = "get tiltY"]
-        pub safe fn tilt_y(this: &PointerEvent) -> i32;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/twist)
-        #[link_name = "get twist"]
-        pub safe fn twist(this: &PointerEvent) -> i32;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/altitudeAngle)
-        #[link_name = "get altitudeAngle"]
-        pub safe fn altitude_angle(this: &PointerEvent) -> f64;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/azimuthAngle)
-        #[link_name = "get azimuthAngle"]
-        pub safe fn azimuth_angle(this: &PointerEvent) -> f64;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/pointerType)
-        #[link_name = "get pointerType"]
-        pub safe fn pointer_type(this: &PointerEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/isPrimary)
-        #[link_name = "get isPrimary"]
-        pub safe fn is_primary(this: &PointerEvent) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/persistentDeviceId)
-        #[link_name = "get persistentDeviceId"]
-        pub safe fn persistent_device_id(this: &PointerEvent) -> i32;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/getCoalescedEvents)
-        #[link_name = "getCoalescedEvents"]
-        pub safe fn get_coalesced_events(this: &PointerEvent) -> Vec<&'static PointerEvent>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/getPredictedEvents)
-        #[link_name = "getPredictedEvents"]
-        pub safe fn get_predicted_events(this: &PointerEvent) -> Vec<&'static PointerEvent>;
-
         /// Treats `this` as `PointerEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static PointerEvent;
     }
+}
+
+impl PointerEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/pointerId)
+    #[cfg_attr(rust_js, rust_js::link_name = "get pointerId")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn pointer_id(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/width)
+    #[cfg_attr(rust_js, rust_js::link_name = "get width")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn width(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/height)
+    #[cfg_attr(rust_js, rust_js::link_name = "get height")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn height(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/pressure)
+    #[cfg_attr(rust_js, rust_js::link_name = "get pressure")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn pressure(&self) -> f32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/tangentialPressure)
+    #[cfg_attr(rust_js, rust_js::link_name = "get tangentialPressure")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn tangential_pressure(&self) -> f32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/tiltX)
+    #[cfg_attr(rust_js, rust_js::link_name = "get tiltX")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn tilt_x(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/tiltY)
+    #[cfg_attr(rust_js, rust_js::link_name = "get tiltY")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn tilt_y(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/twist)
+    #[cfg_attr(rust_js, rust_js::link_name = "get twist")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn twist(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/altitudeAngle)
+    #[cfg_attr(rust_js, rust_js::link_name = "get altitudeAngle")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn altitude_angle(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/azimuthAngle)
+    #[cfg_attr(rust_js, rust_js::link_name = "get azimuthAngle")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn azimuth_angle(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/pointerType)
+    #[cfg_attr(rust_js, rust_js::link_name = "get pointerType")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn pointer_type(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/isPrimary)
+    #[cfg_attr(rust_js, rust_js::link_name = "get isPrimary")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn is_primary(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/persistentDeviceId)
+    #[cfg_attr(rust_js, rust_js::link_name = "get persistentDeviceId")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn persistent_device_id(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/getCoalescedEvents)
+    #[cfg_attr(rust_js, rust_js::link_name = "getCoalescedEvents")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_coalesced_events(&self) -> Vec<&'static PointerEvent> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/getPredictedEvents)
+    #[cfg_attr(rust_js, rust_js::link_name = "getPredictedEvents")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_predicted_events(&self) -> Vec<&'static PointerEvent> {
+        unreachable!()
+    }
+
 }
 
 /// [`CSSStyleDeclaration`](https://developer.mozilla.org/docs/Web/API/CSSStyleDeclaration)
@@ -18067,18 +18665,29 @@ pub mod media_query_list_event {
         #[link_name = "new MediaQueryListEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: MediaQueryListEventInit<'_>) -> &'static MediaQueryListEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaQueryListEvent/media)
-        #[link_name = "get media"]
-        pub safe fn media(this: &MediaQueryListEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaQueryListEvent/matches)
-        #[link_name = "get matches"]
-        pub safe fn matches(this: &MediaQueryListEvent) -> bool;
-
         /// Treats `this` as `MediaQueryListEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static MediaQueryListEvent;
     }
+}
+
+impl MediaQueryListEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaQueryListEvent/media)
+    #[cfg_attr(rust_js, rust_js::link_name = "get media")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn media(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaQueryListEvent/matches)
+    #[cfg_attr(rust_js, rust_js::link_name = "get matches")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn matches(&self) -> bool {
+        unreachable!()
+    }
+
 }
 
 /// [`IntersectionObserver`](https://developer.mozilla.org/docs/Web/API/IntersectionObserver)
@@ -24953,22 +25562,37 @@ pub mod audio_processing_event {
         #[link_name = "new AudioProcessingEvent"]
         pub safe fn new(type_: &str, event_init_dict: AudioProcessingEventInit<'_>) -> &'static AudioProcessingEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioProcessingEvent/playbackTime)
-        #[link_name = "get playbackTime"]
-        pub safe fn playback_time(this: &AudioProcessingEvent) -> f64;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioProcessingEvent/inputBuffer)
-        #[link_name = "get inputBuffer"]
-        pub safe fn input_buffer(this: &AudioProcessingEvent) -> &'static AudioBuffer;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioProcessingEvent/outputBuffer)
-        #[link_name = "get outputBuffer"]
-        pub safe fn output_buffer(this: &AudioProcessingEvent) -> &'static AudioBuffer;
-
         /// Treats `this` as `AudioProcessingEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static AudioProcessingEvent;
     }
+}
+
+impl AudioProcessingEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioProcessingEvent/playbackTime)
+    #[cfg_attr(rust_js, rust_js::link_name = "get playbackTime")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn playback_time(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioProcessingEvent/inputBuffer)
+    #[cfg_attr(rust_js, rust_js::link_name = "get inputBuffer")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn input_buffer(&self) -> &'static AudioBuffer {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioProcessingEvent/outputBuffer)
+    #[cfg_attr(rust_js, rust_js::link_name = "get outputBuffer")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn output_buffer(&self) -> &'static AudioBuffer {
+        unreachable!()
+    }
+
 }
 
 /// [`AudioScheduledSourceNode`](https://developer.mozilla.org/docs/Web/API/AudioScheduledSourceNode)
@@ -25379,18 +26003,29 @@ pub mod before_unload_event {
     use super::*;
 
     unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/BeforeUnloadEvent/returnValue)
-        #[link_name = "get returnValue"]
-        pub safe fn return_value(this: &BeforeUnloadEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/BeforeUnloadEvent/returnValue)
-        #[link_name = "set returnValue"]
-        pub safe fn set_return_value(this: &BeforeUnloadEvent, value: &str);
-
         /// Treats `this` as `BeforeUnloadEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static BeforeUnloadEvent;
     }
+}
+
+impl BeforeUnloadEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/BeforeUnloadEvent/returnValue)
+    #[cfg_attr(rust_js, rust_js::link_name = "get returnValue")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn return_value(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/BeforeUnloadEvent/returnValue)
+    #[cfg_attr(rust_js, rust_js::link_name = "set returnValue")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_return_value(&self, value: &str) {
+        unreachable!()
+    }
+
 }
 
 /// [`BiquadFilterNode`](https://developer.mozilla.org/docs/Web/API/BiquadFilterNode)
@@ -25469,18 +26104,29 @@ pub mod blob_event {
         #[link_name = "new BlobEvent"]
         pub safe fn new(type_: &str, event_init_dict: BlobEventInit<'_>) -> &'static BlobEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/BlobEvent/data)
-        #[link_name = "get data"]
-        pub safe fn data(this: &BlobEvent) -> &'static Blob;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/BlobEvent/timecode)
-        #[link_name = "get timecode"]
-        pub safe fn timecode(this: &BlobEvent) -> f64;
-
         /// Treats `this` as `BlobEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static BlobEvent;
     }
+}
+
+impl BlobEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/BlobEvent/data)
+    #[cfg_attr(rust_js, rust_js::link_name = "get data")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn data(&self) -> &'static Blob {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/BlobEvent/timecode)
+    #[cfg_attr(rust_js, rust_js::link_name = "get timecode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn timecode(&self) -> f64 {
+        unreachable!()
+    }
+
 }
 
 /// [`BroadcastChannel`](https://developer.mozilla.org/docs/Web/API/BroadcastChannel)
@@ -28941,22 +29587,37 @@ pub mod close_event {
         #[link_name = "new CloseEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: CloseEventInit<'_>) -> &'static CloseEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseEvent/wasClean)
-        #[link_name = "get wasClean"]
-        pub safe fn was_clean(this: &CloseEvent) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseEvent/code)
-        #[link_name = "get code"]
-        pub safe fn code(this: &CloseEvent) -> u16;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseEvent/reason)
-        #[link_name = "get reason"]
-        pub safe fn reason(this: &CloseEvent) -> String;
-
         /// Treats `this` as `CloseEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static CloseEvent;
     }
+}
+
+impl CloseEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseEvent/wasClean)
+    #[cfg_attr(rust_js, rust_js::link_name = "get wasClean")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn was_clean(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseEvent/code)
+    #[cfg_attr(rust_js, rust_js::link_name = "get code")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn code(&self) -> u16 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseEvent/reason)
+    #[cfg_attr(rust_js, rust_js::link_name = "get reason")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn reason(&self) -> String {
+        unreachable!()
+    }
+
 }
 
 /// [`CloseWatcher`](https://developer.mozilla.org/docs/Web/API/CloseWatcher)
@@ -29043,18 +29704,29 @@ pub mod command_event {
         #[link_name = "new CommandEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: CommandEventInit<'_>) -> &'static CommandEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CommandEvent/source)
-        #[link_name = "get source"]
-        pub safe fn source(this: &CommandEvent) -> Option<&'static Element>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CommandEvent/command)
-        #[link_name = "get command"]
-        pub safe fn command(this: &CommandEvent) -> String;
-
         /// Treats `this` as `CommandEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static CommandEvent;
     }
+}
+
+impl CommandEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CommandEvent/source)
+    #[cfg_attr(rust_js, rust_js::link_name = "get source")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn source(&self) -> Option<&'static Element> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CommandEvent/command)
+    #[cfg_attr(rust_js, rust_js::link_name = "get command")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn command(&self) -> String {
+        unreachable!()
+    }
+
 }
 
 /// [`CompressionStream`](https://developer.mozilla.org/docs/Web/API/CompressionStream)
@@ -29139,14 +29811,21 @@ pub mod content_visibility_auto_state_change_event {
         #[link_name = "new ContentVisibilityAutoStateChangeEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: ContentVisibilityAutoStateChangeEventInit) -> &'static ContentVisibilityAutoStateChangeEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ContentVisibilityAutoStateChangeEvent/skipped)
-        #[link_name = "get skipped"]
-        pub safe fn skipped(this: &ContentVisibilityAutoStateChangeEvent) -> bool;
-
         /// Treats `this` as `ContentVisibilityAutoStateChangeEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static ContentVisibilityAutoStateChangeEvent;
     }
+}
+
+impl ContentVisibilityAutoStateChangeEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ContentVisibilityAutoStateChangeEvent/skipped)
+    #[cfg_attr(rust_js, rust_js::link_name = "get skipped")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn skipped(&self) -> bool {
+        unreachable!()
+    }
+
 }
 
 /// [`ConvolverNode`](https://developer.mozilla.org/docs/Web/API/ConvolverNode)
@@ -29221,18 +29900,29 @@ pub mod cookie_change_event {
         #[link_name = "new CookieChangeEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: CookieChangeEventInit<'_>) -> &'static CookieChangeEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieChangeEvent/changed)
-        #[link_name = "get changed"]
-        pub safe fn changed(this: &CookieChangeEvent) -> &'static [CookieListItem];
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieChangeEvent/deleted)
-        #[link_name = "get deleted"]
-        pub safe fn deleted(this: &CookieChangeEvent) -> &'static [CookieListItem];
-
         /// Treats `this` as `CookieChangeEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static CookieChangeEvent;
     }
+}
+
+impl CookieChangeEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieChangeEvent/changed)
+    #[cfg_attr(rust_js, rust_js::link_name = "get changed")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn changed(&self) -> &'static [CookieListItem] {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieChangeEvent/deleted)
+    #[cfg_attr(rust_js, rust_js::link_name = "get deleted")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn deleted(&self) -> &'static [CookieListItem] {
+        unreachable!()
+    }
+
 }
 
 /// [`CookieStore`](https://developer.mozilla.org/docs/Web/API/CookieStore)
@@ -29487,34 +30177,53 @@ pub mod custom_event {
         #[link_name = "new CustomEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: CustomEventInit) -> &'static CustomEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomEvent/detail)
-        #[link_name = "get detail"]
-        pub safe fn detail(this: &CustomEvent) -> Option<&'static Unknown>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomEvent/initCustomEvent)
-        #[link_name = "initCustomEvent"]
-        pub safe fn init_custom_event(this: &CustomEvent, type_: &str);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomEvent/initCustomEvent)
-        #[link_name = "initCustomEvent"]
-        pub safe fn init_custom_event_with_bubbles(this: &CustomEvent, type_: &str, bubbles: bool);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomEvent/initCustomEvent)
-        #[link_name = "initCustomEvent"]
-        pub safe fn init_custom_event_with_bubbles_and_cancelable(this: &CustomEvent, type_: &str, bubbles: bool, cancelable: bool);
-
         /// Treats `this` as `CustomEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static CustomEvent;
+    }
+}
+
+impl CustomEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomEvent/detail)
+    #[cfg_attr(rust_js, rust_js::link_name = "get detail")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn detail(&self) -> Option<&'static Unknown> {
+        unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomEvent/initCustomEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "initCustomEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_custom_event_with_bubbles_and_cancelable_and_detail<D>(this: &CustomEvent, type_: &str, bubbles: bool, cancelable: bool, detail: D) {
+    pub fn init_custom_event(&self, type_: &str) {
         unreachable!()
     }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomEvent/initCustomEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initCustomEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_custom_event_with_bubbles(&self, type_: &str, bubbles: bool) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomEvent/initCustomEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initCustomEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_custom_event_with_bubbles_and_cancelable(&self, type_: &str, bubbles: bool, cancelable: bool) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomEvent/initCustomEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initCustomEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_custom_event_with_bubbles_and_cancelable_and_detail<D>(&self, type_: &str, bubbles: bool, cancelable: bool, detail: D) {
+        unreachable!()
+    }
+
 }
 
 /// [`CustomStateSet`](https://developer.mozilla.org/docs/Web/API/CustomStateSet)
@@ -30770,14 +31479,21 @@ pub mod device_motion_event {
         #[link_name = "new DeviceMotionEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: DeviceMotionEventInit) -> &'static DeviceMotionEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceMotionEvent/interval)
-        #[link_name = "get interval"]
-        pub safe fn interval(this: &DeviceMotionEvent) -> f64;
-
         /// Treats `this` as `DeviceMotionEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static DeviceMotionEvent;
     }
+}
+
+impl DeviceMotionEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceMotionEvent/interval)
+    #[cfg_attr(rust_js, rust_js::link_name = "get interval")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn interval(&self) -> f64 {
+        unreachable!()
+    }
+
 }
 
 /// [`DeviceOrientationEvent`](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEvent)
@@ -30805,26 +31521,45 @@ pub mod device_orientation_event {
         #[link_name = "new DeviceOrientationEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: DeviceOrientationEventInit) -> &'static DeviceOrientationEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEvent/alpha)
-        #[link_name = "get alpha"]
-        pub safe fn alpha(this: &DeviceOrientationEvent) -> Option<f64>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEvent/beta)
-        #[link_name = "get beta"]
-        pub safe fn beta(this: &DeviceOrientationEvent) -> Option<f64>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEvent/gamma)
-        #[link_name = "get gamma"]
-        pub safe fn gamma(this: &DeviceOrientationEvent) -> Option<f64>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEvent/absolute)
-        #[link_name = "get absolute"]
-        pub safe fn absolute(this: &DeviceOrientationEvent) -> bool;
-
         /// Treats `this` as `DeviceOrientationEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static DeviceOrientationEvent;
     }
+}
+
+impl DeviceOrientationEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEvent/alpha)
+    #[cfg_attr(rust_js, rust_js::link_name = "get alpha")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn alpha(&self) -> Option<f64> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEvent/beta)
+    #[cfg_attr(rust_js, rust_js::link_name = "get beta")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn beta(&self) -> Option<f64> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEvent/gamma)
+    #[cfg_attr(rust_js, rust_js::link_name = "get gamma")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn gamma(&self) -> Option<f64> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEvent/absolute)
+    #[cfg_attr(rust_js, rust_js::link_name = "get absolute")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn absolute(&self) -> bool {
+        unreachable!()
+    }
+
 }
 
 /// [`DigitalCredential`](https://developer.mozilla.org/docs/Web/API/DigitalCredential)
@@ -30927,14 +31662,21 @@ pub mod document_picture_in_picture_event {
         #[link_name = "new DocumentPictureInPictureEvent"]
         pub safe fn new(type_: &str, event_init_dict: DocumentPictureInPictureEventInit<'_>) -> &'static DocumentPictureInPictureEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentPictureInPictureEvent/window)
-        #[link_name = "get window"]
-        pub safe fn window(this: &DocumentPictureInPictureEvent) -> &'static Window;
-
         /// Treats `this` as `DocumentPictureInPictureEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static DocumentPictureInPictureEvent;
     }
+}
+
+impl DocumentPictureInPictureEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentPictureInPictureEvent/window)
+    #[cfg_attr(rust_js, rust_js::link_name = "get window")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn window(&self) -> &'static Window {
+        unreachable!()
+    }
+
 }
 
 /// [`DocumentTimeline`](https://developer.mozilla.org/docs/Web/API/DocumentTimeline)
@@ -31680,30 +32422,53 @@ pub mod error_event {
         #[link_name = "new ErrorEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: ErrorEventInit<'_>) -> &'static ErrorEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ErrorEvent/message)
-        #[link_name = "get message"]
-        pub safe fn message(this: &ErrorEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ErrorEvent/filename)
-        #[link_name = "get filename"]
-        pub safe fn filename(this: &ErrorEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ErrorEvent/lineno)
-        #[link_name = "get lineno"]
-        pub safe fn lineno(this: &ErrorEvent) -> u32;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ErrorEvent/colno)
-        #[link_name = "get colno"]
-        pub safe fn colno(this: &ErrorEvent) -> u32;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ErrorEvent/error)
-        #[link_name = "get error"]
-        pub safe fn error(this: &ErrorEvent) -> Option<&'static Unknown>;
-
         /// Treats `this` as `ErrorEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static ErrorEvent;
     }
+}
+
+impl ErrorEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ErrorEvent/message)
+    #[cfg_attr(rust_js, rust_js::link_name = "get message")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn message(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ErrorEvent/filename)
+    #[cfg_attr(rust_js, rust_js::link_name = "get filename")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn filename(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ErrorEvent/lineno)
+    #[cfg_attr(rust_js, rust_js::link_name = "get lineno")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn lineno(&self) -> u32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ErrorEvent/colno)
+    #[cfg_attr(rust_js, rust_js::link_name = "get colno")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn colno(&self) -> u32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ErrorEvent/error)
+    #[cfg_attr(rust_js, rust_js::link_name = "get error")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn error(&self) -> Option<&'static Unknown> {
+        unreachable!()
+    }
+
 }
 
 /// [`EventCounts`](https://developer.mozilla.org/docs/Web/API/EventCounts)
@@ -32529,14 +33294,21 @@ pub mod font_face_set_load_event {
         #[link_name = "new FontFaceSetLoadEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: FontFaceSetLoadEventInit<'_>) -> &'static FontFaceSetLoadEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSetLoadEvent/fontfaces)
-        #[link_name = "get fontfaces"]
-        pub safe fn fontfaces(this: &FontFaceSetLoadEvent) -> &'static [&'static FontFace];
-
         /// Treats `this` as `FontFaceSetLoadEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static FontFaceSetLoadEvent;
     }
+}
+
+impl FontFaceSetLoadEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSetLoadEvent/fontfaces)
+    #[cfg_attr(rust_js, rust_js::link_name = "get fontfaces")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn fontfaces(&self) -> &'static [&'static FontFace] {
+        unreachable!()
+    }
+
 }
 
 /// [`FormDataEvent`](https://developer.mozilla.org/docs/Web/API/FormDataEvent)
@@ -32560,14 +33332,21 @@ pub mod form_data_event {
         #[link_name = "new FormDataEvent"]
         pub safe fn new(type_: &str, event_init_dict: FormDataEventInit<'_>) -> &'static FormDataEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/FormDataEvent/formData)
-        #[link_name = "get formData"]
-        pub safe fn form_data(this: &FormDataEvent) -> &'static FormData;
-
         /// Treats `this` as `FormDataEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static FormDataEvent;
     }
+}
+
+impl FormDataEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FormDataEvent/formData)
+    #[cfg_attr(rust_js, rust_js::link_name = "get formData")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn form_data(&self) -> &'static FormData {
+        unreachable!()
+    }
+
 }
 
 /// [`FragmentDirective`](https://developer.mozilla.org/docs/Web/API/FragmentDirective)
@@ -34043,14 +34822,21 @@ pub mod gpu_uncaptured_error_event {
         #[link_name = "new GPUUncapturedErrorEvent"]
         pub safe fn new(type_: &str, gpu_uncaptured_error_event_init_dict: GPUUncapturedErrorEventInit<'_>) -> &'static GPUUncapturedErrorEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUUncapturedErrorEvent/error)
-        #[link_name = "get error"]
-        pub safe fn error(this: &GPUUncapturedErrorEvent) -> &'static GPUError;
-
         /// Treats `this` as `GPUUncapturedErrorEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static GPUUncapturedErrorEvent;
     }
+}
+
+impl GPUUncapturedErrorEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUUncapturedErrorEvent/error)
+    #[cfg_attr(rust_js, rust_js::link_name = "get error")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn error(&self) -> &'static GPUError {
+        unreachable!()
+    }
+
 }
 
 /// [`GPUValidationError`](https://developer.mozilla.org/docs/Web/API/GPUValidationError)
@@ -34204,14 +34990,21 @@ pub mod gamepad_event {
         #[link_name = "new GamepadEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: GamepadEventInit<'_>) -> &'static GamepadEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/GamepadEvent/gamepad)
-        #[link_name = "get gamepad"]
-        pub safe fn gamepad(this: &GamepadEvent) -> &'static Gamepad;
-
         /// Treats `this` as `GamepadEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static GamepadEvent;
     }
+}
+
+impl GamepadEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GamepadEvent/gamepad)
+    #[cfg_attr(rust_js, rust_js::link_name = "get gamepad")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn gamepad(&self) -> &'static Gamepad {
+        unreachable!()
+    }
+
 }
 
 /// [`GamepadHapticActuator`](https://developer.mozilla.org/docs/Web/API/GamepadHapticActuator)
@@ -35062,18 +35855,29 @@ pub mod hash_change_event {
         #[link_name = "new HashChangeEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: HashChangeEventInit<'_>) -> &'static HashChangeEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/HashChangeEvent/oldURL)
-        #[link_name = "get oldURL"]
-        pub safe fn old_url(this: &HashChangeEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/HashChangeEvent/newURL)
-        #[link_name = "get newURL"]
-        pub safe fn new_url(this: &HashChangeEvent) -> String;
-
         /// Treats `this` as `HashChangeEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static HashChangeEvent;
     }
+}
+
+impl HashChangeEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HashChangeEvent/oldURL)
+    #[cfg_attr(rust_js, rust_js::link_name = "get oldURL")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn old_url(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HashChangeEvent/newURL)
+    #[cfg_attr(rust_js, rust_js::link_name = "get newURL")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_url(&self) -> String {
+        unreachable!()
+    }
+
 }
 
 /// [`Highlight`](https://developer.mozilla.org/docs/Web/API/Highlight)
@@ -36045,18 +36849,29 @@ pub mod idb_version_change_event {
         #[link_name = "new IDBVersionChangeEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: IDBVersionChangeEventInit) -> &'static IDBVersionChangeEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBVersionChangeEvent/oldVersion)
-        #[link_name = "get oldVersion"]
-        pub safe fn old_version(this: &IDBVersionChangeEvent) -> f64;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBVersionChangeEvent/newVersion)
-        #[link_name = "get newVersion"]
-        pub safe fn new_version(this: &IDBVersionChangeEvent) -> Option<f64>;
-
         /// Treats `this` as `IDBVersionChangeEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static IDBVersionChangeEvent;
     }
+}
+
+impl IDBVersionChangeEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBVersionChangeEvent/oldVersion)
+    #[cfg_attr(rust_js, rust_js::link_name = "get oldVersion")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn old_version(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBVersionChangeEvent/newVersion)
+    #[cfg_attr(rust_js, rust_js::link_name = "get newVersion")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_version(&self) -> Option<f64> {
+        unreachable!()
+    }
+
 }
 
 /// [`IIRFilterNode`](https://developer.mozilla.org/docs/Web/API/IIRFilterNode)
@@ -36578,14 +37393,21 @@ pub mod midi_connection_event {
         #[link_name = "new MIDIConnectionEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: MIDIConnectionEventInit<'_>) -> &'static MIDIConnectionEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIConnectionEvent/port)
-        #[link_name = "get port"]
-        pub safe fn port(this: &MIDIConnectionEvent) -> Option<&'static MIDIPort>;
-
         /// Treats `this` as `MIDIConnectionEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static MIDIConnectionEvent;
     }
+}
+
+impl MIDIConnectionEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIConnectionEvent/port)
+    #[cfg_attr(rust_js, rust_js::link_name = "get port")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn port(&self) -> Option<&'static MIDIPort> {
+        unreachable!()
+    }
+
 }
 
 /// [`MIDIInput`](https://developer.mozilla.org/docs/Web/API/MIDIInput)
@@ -36669,14 +37491,21 @@ pub mod midi_message_event {
         #[link_name = "new MIDIMessageEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: MIDIMessageEventInit<'_>) -> &'static MIDIMessageEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIMessageEvent/data)
-        #[link_name = "get data"]
-        pub safe fn data(this: &MIDIMessageEvent) -> Option<&'static Uint8Array>;
-
         /// Treats `this` as `MIDIMessageEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static MIDIMessageEvent;
     }
+}
+
+impl MIDIMessageEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIMessageEvent/data)
+    #[cfg_attr(rust_js, rust_js::link_name = "get data")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn data(&self) -> Option<&'static Uint8Array> {
+        unreachable!()
+    }
+
 }
 
 /// [`MIDIOutput`](https://developer.mozilla.org/docs/Web/API/MIDIOutput)
@@ -37928,18 +38757,29 @@ pub mod media_encrypted_event {
         #[link_name = "new MediaEncryptedEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: MediaEncryptedEventInit<'_>) -> &'static MediaEncryptedEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaEncryptedEvent/initDataType)
-        #[link_name = "get initDataType"]
-        pub safe fn init_data_type(this: &MediaEncryptedEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaEncryptedEvent/initData)
-        #[link_name = "get initData"]
-        pub safe fn init_data(this: &MediaEncryptedEvent) -> Option<&'static ArrayBuffer>;
-
         /// Treats `this` as `MediaEncryptedEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static MediaEncryptedEvent;
     }
+}
+
+impl MediaEncryptedEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaEncryptedEvent/initDataType)
+    #[cfg_attr(rust_js, rust_js::link_name = "get initDataType")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_data_type(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaEncryptedEvent/initData)
+    #[cfg_attr(rust_js, rust_js::link_name = "get initData")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_data(&self) -> Option<&'static ArrayBuffer> {
+        unreachable!()
+    }
+
 }
 
 /// [`MediaError`](https://developer.mozilla.org/docs/Web/API/MediaError)
@@ -37993,18 +38833,29 @@ pub mod media_key_message_event {
         #[link_name = "new MediaKeyMessageEvent"]
         pub safe fn new(type_: &str, event_init_dict: MediaKeyMessageEventInit<'_>) -> &'static MediaKeyMessageEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeyMessageEvent/messageType)
-        #[link_name = "get messageType"]
-        pub safe fn message_type(this: &MediaKeyMessageEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeyMessageEvent/message)
-        #[link_name = "get message"]
-        pub safe fn message(this: &MediaKeyMessageEvent) -> &'static ArrayBuffer;
-
         /// Treats `this` as `MediaKeyMessageEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static MediaKeyMessageEvent;
     }
+}
+
+impl MediaKeyMessageEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeyMessageEvent/messageType)
+    #[cfg_attr(rust_js, rust_js::link_name = "get messageType")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn message_type(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeyMessageEvent/message)
+    #[cfg_attr(rust_js, rust_js::link_name = "get message")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn message(&self) -> &'static ArrayBuffer {
+        unreachable!()
+    }
+
 }
 
 /// [`MediaKeySession`](https://developer.mozilla.org/docs/Web/API/MediaKeySession)
@@ -38814,14 +39665,21 @@ pub mod media_stream_track_event {
         #[link_name = "new MediaStreamTrackEvent"]
         pub safe fn new(type_: &str, event_init_dict: MediaStreamTrackEventInit<'_>) -> &'static MediaStreamTrackEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrackEvent/track)
-        #[link_name = "get track"]
-        pub safe fn track(this: &MediaStreamTrackEvent) -> &'static MediaStreamTrack;
-
         /// Treats `this` as `MediaStreamTrackEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static MediaStreamTrackEvent;
     }
+}
+
+impl MediaStreamTrackEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrackEvent/track)
+    #[cfg_attr(rust_js, rust_js::link_name = "get track")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn track(&self) -> &'static MediaStreamTrack {
+        unreachable!()
+    }
+
 }
 
 /// [`MessageChannel`](https://developer.mozilla.org/docs/Web/API/MessageChannel)
@@ -39093,64 +39951,125 @@ pub mod navigate_event {
         #[link_name = "new NavigateEvent"]
         pub safe fn new(type_: &str, event_init_dict: NavigateEventInit<'_>) -> &'static NavigateEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/navigationType)
-        #[link_name = "get navigationType"]
-        pub safe fn navigation_type(this: &NavigateEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/destination)
-        #[link_name = "get destination"]
-        pub safe fn destination(this: &NavigateEvent) -> &'static NavigationDestination;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/canIntercept)
-        #[link_name = "get canIntercept"]
-        pub safe fn can_intercept(this: &NavigateEvent) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/userInitiated)
-        #[link_name = "get userInitiated"]
-        pub safe fn user_initiated(this: &NavigateEvent) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/hashChange)
-        #[link_name = "get hashChange"]
-        pub safe fn hash_change(this: &NavigateEvent) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/signal)
-        #[link_name = "get signal"]
-        pub safe fn signal(this: &NavigateEvent) -> &'static AbortSignal;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/formData)
-        #[link_name = "get formData"]
-        pub safe fn form_data(this: &NavigateEvent) -> Option<&'static FormData>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/downloadRequest)
-        #[link_name = "get downloadRequest"]
-        pub safe fn download_request(this: &NavigateEvent) -> Option<String>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/info)
-        #[link_name = "get info"]
-        pub safe fn info(this: &NavigateEvent) -> Option<&'static Unknown>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/hasUAVisualTransition)
-        #[link_name = "get hasUAVisualTransition"]
-        pub safe fn has_ua_visual_transition(this: &NavigateEvent) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/sourceElement)
-        #[link_name = "get sourceElement"]
-        pub safe fn source_element(this: &NavigateEvent) -> Option<&'static Element>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/intercept)
-        pub safe fn intercept(this: &NavigateEvent);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/intercept)
-        #[link_name = "intercept"]
-        pub safe fn intercept_with_options(this: &NavigateEvent, options: NavigationInterceptOptions<'_>);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/scroll)
-        pub safe fn scroll(this: &NavigateEvent);
-
         /// Treats `this` as `NavigateEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static NavigateEvent;
     }
+}
+
+impl NavigateEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/navigationType)
+    #[cfg_attr(rust_js, rust_js::link_name = "get navigationType")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn navigation_type(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/destination)
+    #[cfg_attr(rust_js, rust_js::link_name = "get destination")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn destination(&self) -> &'static NavigationDestination {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/canIntercept)
+    #[cfg_attr(rust_js, rust_js::link_name = "get canIntercept")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn can_intercept(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/userInitiated)
+    #[cfg_attr(rust_js, rust_js::link_name = "get userInitiated")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn user_initiated(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/hashChange)
+    #[cfg_attr(rust_js, rust_js::link_name = "get hashChange")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn hash_change(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/signal)
+    #[cfg_attr(rust_js, rust_js::link_name = "get signal")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn signal(&self) -> &'static AbortSignal {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/formData)
+    #[cfg_attr(rust_js, rust_js::link_name = "get formData")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn form_data(&self) -> Option<&'static FormData> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/downloadRequest)
+    #[cfg_attr(rust_js, rust_js::link_name = "get downloadRequest")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn download_request(&self) -> Option<String> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/info)
+    #[cfg_attr(rust_js, rust_js::link_name = "get info")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn info(&self) -> Option<&'static Unknown> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/hasUAVisualTransition)
+    #[cfg_attr(rust_js, rust_js::link_name = "get hasUAVisualTransition")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn has_ua_visual_transition(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/sourceElement)
+    #[cfg_attr(rust_js, rust_js::link_name = "get sourceElement")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn source_element(&self) -> Option<&'static Element> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/intercept)
+    #[cfg_attr(rust_js, rust_js::link_name = "intercept")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn intercept(&self) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/intercept)
+    #[cfg_attr(rust_js, rust_js::link_name = "intercept")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn intercept_with_options(&self, options: NavigationInterceptOptions<'_>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/scroll)
+    #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll(&self) {
+        unreachable!()
+    }
+
 }
 
 /// [`Navigation`](https://developer.mozilla.org/docs/Web/API/Navigation)
@@ -39298,18 +40217,29 @@ pub mod navigation_current_entry_change_event {
         #[link_name = "new NavigationCurrentEntryChangeEvent"]
         pub safe fn new(type_: &str, event_init_dict: NavigationCurrentEntryChangeEventInit<'_>) -> &'static NavigationCurrentEntryChangeEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationCurrentEntryChangeEvent/navigationType)
-        #[link_name = "get navigationType"]
-        pub safe fn navigation_type(this: &NavigationCurrentEntryChangeEvent) -> Option<String>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationCurrentEntryChangeEvent/from)
-        #[link_name = "get from"]
-        pub safe fn from(this: &NavigationCurrentEntryChangeEvent) -> &'static NavigationHistoryEntry;
-
         /// Treats `this` as `NavigationCurrentEntryChangeEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static NavigationCurrentEntryChangeEvent;
     }
+}
+
+impl NavigationCurrentEntryChangeEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationCurrentEntryChangeEvent/navigationType)
+    #[cfg_attr(rust_js, rust_js::link_name = "get navigationType")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn navigation_type(&self) -> Option<String> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationCurrentEntryChangeEvent/from)
+    #[cfg_attr(rust_js, rust_js::link_name = "get from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn from(&self) -> &'static NavigationHistoryEntry {
+        unreachable!()
+    }
+
 }
 
 /// [`NavigationDestination`](https://developer.mozilla.org/docs/Web/API/NavigationDestination)
@@ -39667,14 +40597,21 @@ pub mod offline_audio_completion_event {
         #[link_name = "new OfflineAudioCompletionEvent"]
         pub safe fn new(type_: &str, event_init_dict: OfflineAudioCompletionEventInit<'_>) -> &'static OfflineAudioCompletionEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/OfflineAudioCompletionEvent/renderedBuffer)
-        #[link_name = "get renderedBuffer"]
-        pub safe fn rendered_buffer(this: &OfflineAudioCompletionEvent) -> &'static AudioBuffer;
-
         /// Treats `this` as `OfflineAudioCompletionEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static OfflineAudioCompletionEvent;
     }
+}
+
+impl OfflineAudioCompletionEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/OfflineAudioCompletionEvent/renderedBuffer)
+    #[cfg_attr(rust_js, rust_js::link_name = "get renderedBuffer")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn rendered_buffer(&self) -> &'static AudioBuffer {
+        unreachable!()
+    }
+
 }
 
 /// [`OfflineAudioContext`](https://developer.mozilla.org/docs/Web/API/OfflineAudioContext)
@@ -40454,14 +41391,21 @@ pub mod page_reveal_event {
         #[link_name = "new PageRevealEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: PageRevealEventInit<'_>) -> &'static PageRevealEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PageRevealEvent/viewTransition)
-        #[link_name = "get viewTransition"]
-        pub safe fn view_transition(this: &PageRevealEvent) -> Option<&'static ViewTransition>;
-
         /// Treats `this` as `PageRevealEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static PageRevealEvent;
     }
+}
+
+impl PageRevealEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PageRevealEvent/viewTransition)
+    #[cfg_attr(rust_js, rust_js::link_name = "get viewTransition")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn view_transition(&self) -> Option<&'static ViewTransition> {
+        unreachable!()
+    }
+
 }
 
 /// [`PageSwapEvent`](https://developer.mozilla.org/docs/Web/API/PageSwapEvent)
@@ -40489,18 +41433,29 @@ pub mod page_swap_event {
         #[link_name = "new PageSwapEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: PageSwapEventInit<'_>) -> &'static PageSwapEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PageSwapEvent/activation)
-        #[link_name = "get activation"]
-        pub safe fn activation(this: &PageSwapEvent) -> Option<&'static NavigationActivation>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PageSwapEvent/viewTransition)
-        #[link_name = "get viewTransition"]
-        pub safe fn view_transition(this: &PageSwapEvent) -> Option<&'static ViewTransition>;
-
         /// Treats `this` as `PageSwapEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static PageSwapEvent;
     }
+}
+
+impl PageSwapEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PageSwapEvent/activation)
+    #[cfg_attr(rust_js, rust_js::link_name = "get activation")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn activation(&self) -> Option<&'static NavigationActivation> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PageSwapEvent/viewTransition)
+    #[cfg_attr(rust_js, rust_js::link_name = "get viewTransition")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn view_transition(&self) -> Option<&'static ViewTransition> {
+        unreachable!()
+    }
+
 }
 
 /// [`PageTransitionEvent`](https://developer.mozilla.org/docs/Web/API/PageTransitionEvent)
@@ -40528,14 +41483,21 @@ pub mod page_transition_event {
         #[link_name = "new PageTransitionEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: PageTransitionEventInit) -> &'static PageTransitionEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PageTransitionEvent/persisted)
-        #[link_name = "get persisted"]
-        pub safe fn persisted(this: &PageTransitionEvent) -> bool;
-
         /// Treats `this` as `PageTransitionEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static PageTransitionEvent;
     }
+}
+
+impl PageTransitionEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PageTransitionEvent/persisted)
+    #[cfg_attr(rust_js, rust_js::link_name = "get persisted")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn persisted(&self) -> bool {
+        unreachable!()
+    }
+
 }
 
 /// [`PannerNode`](https://developer.mozilla.org/docs/Web/API/PannerNode)
@@ -40773,18 +41735,29 @@ pub mod payment_method_change_event {
         #[link_name = "new PaymentMethodChangeEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: PaymentMethodChangeEventInit<'_>) -> &'static PaymentMethodChangeEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentMethodChangeEvent/methodName)
-        #[link_name = "get methodName"]
-        pub safe fn method_name(this: &PaymentMethodChangeEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentMethodChangeEvent/methodDetails)
-        #[link_name = "get methodDetails"]
-        pub safe fn method_details(this: &PaymentMethodChangeEvent) -> Option<&'static JsObject>;
-
         /// Treats `this` as `PaymentMethodChangeEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static PaymentMethodChangeEvent;
     }
+}
+
+impl PaymentMethodChangeEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentMethodChangeEvent/methodName)
+    #[cfg_attr(rust_js, rust_js::link_name = "get methodName")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn method_name(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentMethodChangeEvent/methodDetails)
+    #[cfg_attr(rust_js, rust_js::link_name = "get methodDetails")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn method_details(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
 }
 
 /// [`PaymentRequest`](https://developer.mozilla.org/docs/Web/API/PaymentRequest)
@@ -40896,14 +41869,21 @@ pub mod payment_request_update_event {
         #[link_name = "new PaymentRequestUpdateEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: PaymentRequestUpdateEventInit) -> &'static PaymentRequestUpdateEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequestUpdateEvent/updateWith)
-        #[link_name = "updateWith"]
-        pub safe fn update_with(this: &PaymentRequestUpdateEvent, details_promise: Promise<PaymentDetailsUpdate>);
-
         /// Treats `this` as `PaymentRequestUpdateEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static PaymentRequestUpdateEvent;
     }
+}
+
+impl PaymentRequestUpdateEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequestUpdateEvent/updateWith)
+    #[cfg_attr(rust_js, rust_js::link_name = "updateWith")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn update_with(&self, details_promise: Promise<PaymentDetailsUpdate>) {
+        unreachable!()
+    }
+
 }
 
 /// [`PaymentResponse`](https://developer.mozilla.org/docs/Web/API/PaymentResponse)
@@ -41632,14 +42612,21 @@ pub mod picture_in_picture_event {
         #[link_name = "new PictureInPictureEvent"]
         pub safe fn new(type_: &str, event_init_dict: PictureInPictureEventInit<'_>) -> &'static PictureInPictureEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PictureInPictureEvent/pictureInPictureWindow)
-        #[link_name = "get pictureInPictureWindow"]
-        pub safe fn picture_in_picture_window(this: &PictureInPictureEvent) -> &'static PictureInPictureWindow;
-
         /// Treats `this` as `PictureInPictureEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static PictureInPictureEvent;
     }
+}
+
+impl PictureInPictureEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PictureInPictureEvent/pictureInPictureWindow)
+    #[cfg_attr(rust_js, rust_js::link_name = "get pictureInPictureWindow")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn picture_in_picture_window(&self) -> &'static PictureInPictureWindow {
+        unreachable!()
+    }
+
 }
 
 /// [`PictureInPictureWindow`](https://developer.mozilla.org/docs/Web/API/PictureInPictureWindow)
@@ -41764,18 +42751,29 @@ pub mod pop_state_event {
         #[link_name = "new PopStateEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: PopStateEventInit) -> &'static PopStateEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PopStateEvent/state)
-        #[link_name = "get state"]
-        pub safe fn state(this: &PopStateEvent) -> Option<&'static Unknown>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PopStateEvent/hasUAVisualTransition)
-        #[link_name = "get hasUAVisualTransition"]
-        pub safe fn has_ua_visual_transition(this: &PopStateEvent) -> bool;
-
         /// Treats `this` as `PopStateEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static PopStateEvent;
     }
+}
+
+impl PopStateEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PopStateEvent/state)
+    #[cfg_attr(rust_js, rust_js::link_name = "get state")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn state(&self) -> Option<&'static Unknown> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PopStateEvent/hasUAVisualTransition)
+    #[cfg_attr(rust_js, rust_js::link_name = "get hasUAVisualTransition")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn has_ua_visual_transition(&self) -> bool {
+        unreachable!()
+    }
+
 }
 
 /// [`ProcessingInstruction`](https://developer.mozilla.org/docs/Web/API/ProcessingInstruction)
@@ -41874,22 +42872,37 @@ pub mod progress_event {
         #[link_name = "new ProgressEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: ProgressEventInit) -> &'static ProgressEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ProgressEvent/lengthComputable)
-        #[link_name = "get lengthComputable"]
-        pub safe fn length_computable(this: &ProgressEvent) -> bool;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ProgressEvent/loaded)
-        #[link_name = "get loaded"]
-        pub safe fn loaded(this: &ProgressEvent) -> f64;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/ProgressEvent/total)
-        #[link_name = "get total"]
-        pub safe fn total(this: &ProgressEvent) -> f64;
-
         /// Treats `this` as `ProgressEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static ProgressEvent;
     }
+}
+
+impl ProgressEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ProgressEvent/lengthComputable)
+    #[cfg_attr(rust_js, rust_js::link_name = "get lengthComputable")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn length_computable(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ProgressEvent/loaded)
+    #[cfg_attr(rust_js, rust_js::link_name = "get loaded")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn loaded(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ProgressEvent/total)
+    #[cfg_attr(rust_js, rust_js::link_name = "get total")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn total(&self) -> f64 {
+        unreachable!()
+    }
+
 }
 
 /// [`PromiseRejectionEvent`](https://developer.mozilla.org/docs/Web/API/PromiseRejectionEvent)
@@ -41913,18 +42926,29 @@ pub mod promise_rejection_event {
         #[link_name = "new PromiseRejectionEvent"]
         pub safe fn new(type_: &str, event_init_dict: PromiseRejectionEventInit) -> &'static PromiseRejectionEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PromiseRejectionEvent/promise)
-        #[link_name = "get promise"]
-        pub safe fn promise(this: &PromiseRejectionEvent) -> &'static JsObject;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/PromiseRejectionEvent/reason)
-        #[link_name = "get reason"]
-        pub safe fn reason(this: &PromiseRejectionEvent) -> Option<&'static Unknown>;
-
         /// Treats `this` as `PromiseRejectionEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static PromiseRejectionEvent;
     }
+}
+
+impl PromiseRejectionEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PromiseRejectionEvent/promise)
+    #[cfg_attr(rust_js, rust_js::link_name = "get promise")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn promise(&self) -> &'static JsObject {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PromiseRejectionEvent/reason)
+    #[cfg_attr(rust_js, rust_js::link_name = "get reason")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn reason(&self) -> Option<&'static Unknown> {
+        unreachable!()
+    }
+
 }
 
 /// [`PublicKeyCredential`](https://developer.mozilla.org/docs/Web/API/PublicKeyCredential)
@@ -42173,14 +43197,21 @@ pub mod rtcdtmf_tone_change_event {
         #[link_name = "new RTCDTMFToneChangeEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: RTCDTMFToneChangeEventInit<'_>) -> &'static RTCDTMFToneChangeEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDTMFToneChangeEvent/tone)
-        #[link_name = "get tone"]
-        pub safe fn tone(this: &RTCDTMFToneChangeEvent) -> String;
-
         /// Treats `this` as `RTCDTMFToneChangeEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static RTCDTMFToneChangeEvent;
     }
+}
+
+impl RTCDTMFToneChangeEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDTMFToneChangeEvent/tone)
+    #[cfg_attr(rust_js, rust_js::link_name = "get tone")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn tone(&self) -> String {
+        unreachable!()
+    }
+
 }
 
 /// [`RTCDataChannel`](https://developer.mozilla.org/docs/Web/API/RTCDataChannel)
@@ -42351,14 +43382,21 @@ pub mod rtc_data_channel_event {
         #[link_name = "new RTCDataChannelEvent"]
         pub safe fn new(type_: &str, event_init_dict: RTCDataChannelEventInit<'_>) -> &'static RTCDataChannelEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannelEvent/channel)
-        #[link_name = "get channel"]
-        pub safe fn channel(this: &RTCDataChannelEvent) -> &'static RTCDataChannel;
-
         /// Treats `this` as `RTCDataChannelEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static RTCDataChannelEvent;
     }
+}
+
+impl RTCDataChannelEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannelEvent/channel)
+    #[cfg_attr(rust_js, rust_js::link_name = "get channel")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn channel(&self) -> &'static RTCDataChannel {
+        unreachable!()
+    }
+
 }
 
 /// [`RTCDtlsTransport`](https://developer.mozilla.org/docs/Web/API/RTCDtlsTransport)
@@ -42550,14 +43588,21 @@ pub mod rtc_error_event {
         #[link_name = "new RTCErrorEvent"]
         pub safe fn new(type_: &str, event_init_dict: RTCErrorEventInit<'_>) -> &'static RTCErrorEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCErrorEvent/error)
-        #[link_name = "get error"]
-        pub safe fn error(this: &RTCErrorEvent) -> &'static RTCError;
-
         /// Treats `this` as `RTCErrorEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static RTCErrorEvent;
     }
+}
+
+impl RTCErrorEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCErrorEvent/error)
+    #[cfg_attr(rust_js, rust_js::link_name = "get error")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn error(&self) -> &'static RTCError {
+        unreachable!()
+    }
+
 }
 
 /// [`RTCIceCandidate`](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate)
@@ -43016,30 +44061,53 @@ pub mod rtc_peer_connection_ice_error_event {
         #[link_name = "new RTCPeerConnectionIceErrorEvent"]
         pub safe fn new(type_: &str, event_init_dict: RTCPeerConnectionIceErrorEventInit<'_>) -> &'static RTCPeerConnectionIceErrorEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceErrorEvent/address)
-        #[link_name = "get address"]
-        pub safe fn address(this: &RTCPeerConnectionIceErrorEvent) -> Option<String>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceErrorEvent/port)
-        #[link_name = "get port"]
-        pub safe fn port(this: &RTCPeerConnectionIceErrorEvent) -> Option<u16>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceErrorEvent/url)
-        #[link_name = "get url"]
-        pub safe fn url(this: &RTCPeerConnectionIceErrorEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceErrorEvent/errorCode)
-        #[link_name = "get errorCode"]
-        pub safe fn error_code(this: &RTCPeerConnectionIceErrorEvent) -> u16;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceErrorEvent/errorText)
-        #[link_name = "get errorText"]
-        pub safe fn error_text(this: &RTCPeerConnectionIceErrorEvent) -> String;
-
         /// Treats `this` as `RTCPeerConnectionIceErrorEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static RTCPeerConnectionIceErrorEvent;
     }
+}
+
+impl RTCPeerConnectionIceErrorEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceErrorEvent/address)
+    #[cfg_attr(rust_js, rust_js::link_name = "get address")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn address(&self) -> Option<String> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceErrorEvent/port)
+    #[cfg_attr(rust_js, rust_js::link_name = "get port")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn port(&self) -> Option<u16> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceErrorEvent/url)
+    #[cfg_attr(rust_js, rust_js::link_name = "get url")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn url(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceErrorEvent/errorCode)
+    #[cfg_attr(rust_js, rust_js::link_name = "get errorCode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn error_code(&self) -> u16 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceErrorEvent/errorText)
+    #[cfg_attr(rust_js, rust_js::link_name = "get errorText")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn error_text(&self) -> String {
+        unreachable!()
+    }
+
 }
 
 /// [`RTCPeerConnectionIceEvent`](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceEvent)
@@ -43067,14 +44135,21 @@ pub mod rtc_peer_connection_ice_event {
         #[link_name = "new RTCPeerConnectionIceEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: RTCPeerConnectionIceEventInit<'_>) -> &'static RTCPeerConnectionIceEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceEvent/candidate)
-        #[link_name = "get candidate"]
-        pub safe fn candidate(this: &RTCPeerConnectionIceEvent) -> Option<&'static RTCIceCandidate>;
-
         /// Treats `this` as `RTCPeerConnectionIceEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static RTCPeerConnectionIceEvent;
     }
+}
+
+impl RTCPeerConnectionIceEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceEvent/candidate)
+    #[cfg_attr(rust_js, rust_js::link_name = "get candidate")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn candidate(&self) -> Option<&'static RTCIceCandidate> {
+        unreachable!()
+    }
+
 }
 
 /// [`RTCRtpReceiver`](https://developer.mozilla.org/docs/Web/API/RTCRtpReceiver)
@@ -43369,26 +44444,45 @@ pub mod rtc_track_event {
         #[link_name = "new RTCTrackEvent"]
         pub safe fn new(type_: &str, event_init_dict: RTCTrackEventInit<'_>) -> &'static RTCTrackEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCTrackEvent/receiver)
-        #[link_name = "get receiver"]
-        pub safe fn receiver(this: &RTCTrackEvent) -> &'static RTCRtpReceiver;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCTrackEvent/track)
-        #[link_name = "get track"]
-        pub safe fn track(this: &RTCTrackEvent) -> &'static MediaStreamTrack;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCTrackEvent/streams)
-        #[link_name = "get streams"]
-        pub safe fn streams(this: &RTCTrackEvent) -> &'static [&'static MediaStream];
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCTrackEvent/transceiver)
-        #[link_name = "get transceiver"]
-        pub safe fn transceiver(this: &RTCTrackEvent) -> &'static RTCRtpTransceiver;
-
         /// Treats `this` as `RTCTrackEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static RTCTrackEvent;
     }
+}
+
+impl RTCTrackEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCTrackEvent/receiver)
+    #[cfg_attr(rust_js, rust_js::link_name = "get receiver")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn receiver(&self) -> &'static RTCRtpReceiver {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCTrackEvent/track)
+    #[cfg_attr(rust_js, rust_js::link_name = "get track")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn track(&self) -> &'static MediaStreamTrack {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCTrackEvent/streams)
+    #[cfg_attr(rust_js, rust_js::link_name = "get streams")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn streams(&self) -> &'static [&'static MediaStream] {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCTrackEvent/transceiver)
+    #[cfg_attr(rust_js, rust_js::link_name = "get transceiver")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn transceiver(&self) -> &'static RTCRtpTransceiver {
+        unreachable!()
+    }
+
 }
 
 /// [`RadioNodeList`](https://developer.mozilla.org/docs/Web/API/RadioNodeList)
@@ -44940,58 +46034,109 @@ pub mod security_policy_violation_event {
         #[link_name = "new SecurityPolicyViolationEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: SecurityPolicyViolationEventInit<'_>) -> &'static SecurityPolicyViolationEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/documentURI)
-        #[link_name = "get documentURI"]
-        pub safe fn document_uri(this: &SecurityPolicyViolationEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/referrer)
-        #[link_name = "get referrer"]
-        pub safe fn referrer(this: &SecurityPolicyViolationEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/blockedURI)
-        #[link_name = "get blockedURI"]
-        pub safe fn blocked_uri(this: &SecurityPolicyViolationEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/effectiveDirective)
-        #[link_name = "get effectiveDirective"]
-        pub safe fn effective_directive(this: &SecurityPolicyViolationEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/violatedDirective)
-        #[link_name = "get violatedDirective"]
-        pub safe fn violated_directive(this: &SecurityPolicyViolationEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/originalPolicy)
-        #[link_name = "get originalPolicy"]
-        pub safe fn original_policy(this: &SecurityPolicyViolationEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/sourceFile)
-        #[link_name = "get sourceFile"]
-        pub safe fn source_file(this: &SecurityPolicyViolationEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/sample)
-        #[link_name = "get sample"]
-        pub safe fn sample(this: &SecurityPolicyViolationEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/disposition)
-        #[link_name = "get disposition"]
-        pub safe fn disposition(this: &SecurityPolicyViolationEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/statusCode)
-        #[link_name = "get statusCode"]
-        pub safe fn status_code(this: &SecurityPolicyViolationEvent) -> u16;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/lineNumber)
-        #[link_name = "get lineNumber"]
-        pub safe fn line_number(this: &SecurityPolicyViolationEvent) -> u32;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/columnNumber)
-        #[link_name = "get columnNumber"]
-        pub safe fn column_number(this: &SecurityPolicyViolationEvent) -> u32;
-
         /// Treats `this` as `SecurityPolicyViolationEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static SecurityPolicyViolationEvent;
     }
+}
+
+impl SecurityPolicyViolationEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/documentURI)
+    #[cfg_attr(rust_js, rust_js::link_name = "get documentURI")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn document_uri(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/referrer)
+    #[cfg_attr(rust_js, rust_js::link_name = "get referrer")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn referrer(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/blockedURI)
+    #[cfg_attr(rust_js, rust_js::link_name = "get blockedURI")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn blocked_uri(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/effectiveDirective)
+    #[cfg_attr(rust_js, rust_js::link_name = "get effectiveDirective")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn effective_directive(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/violatedDirective)
+    #[cfg_attr(rust_js, rust_js::link_name = "get violatedDirective")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn violated_directive(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/originalPolicy)
+    #[cfg_attr(rust_js, rust_js::link_name = "get originalPolicy")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn original_policy(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/sourceFile)
+    #[cfg_attr(rust_js, rust_js::link_name = "get sourceFile")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn source_file(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/sample)
+    #[cfg_attr(rust_js, rust_js::link_name = "get sample")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn sample(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/disposition)
+    #[cfg_attr(rust_js, rust_js::link_name = "get disposition")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn disposition(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/statusCode)
+    #[cfg_attr(rust_js, rust_js::link_name = "get statusCode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn status_code(&self) -> u16 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/lineNumber)
+    #[cfg_attr(rust_js, rust_js::link_name = "get lineNumber")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn line_number(&self) -> u32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/columnNumber)
+    #[cfg_attr(rust_js, rust_js::link_name = "get columnNumber")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn column_number(&self) -> u32 {
+        unreachable!()
+    }
+
 }
 
 /// [`Selection`](https://developer.mozilla.org/docs/Web/API/Selection)
@@ -45827,18 +46972,29 @@ pub mod speech_recognition_error_event {
         #[link_name = "new SpeechRecognitionErrorEvent"]
         pub safe fn new(type_: &str, event_init_dict: SpeechRecognitionErrorEventInit<'_>) -> &'static SpeechRecognitionErrorEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionErrorEvent/error)
-        #[link_name = "get error"]
-        pub safe fn error(this: &SpeechRecognitionErrorEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionErrorEvent/message)
-        #[link_name = "get message"]
-        pub safe fn message(this: &SpeechRecognitionErrorEvent) -> String;
-
         /// Treats `this` as `SpeechRecognitionErrorEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static SpeechRecognitionErrorEvent;
     }
+}
+
+impl SpeechRecognitionErrorEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionErrorEvent/error)
+    #[cfg_attr(rust_js, rust_js::link_name = "get error")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn error(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionErrorEvent/message)
+    #[cfg_attr(rust_js, rust_js::link_name = "get message")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn message(&self) -> String {
+        unreachable!()
+    }
+
 }
 
 /// [`SpeechRecognitionEvent`](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionEvent)
@@ -45862,18 +47018,29 @@ pub mod speech_recognition_event {
         #[link_name = "new SpeechRecognitionEvent"]
         pub safe fn new(type_: &str, event_init_dict: SpeechRecognitionEventInit<'_>) -> &'static SpeechRecognitionEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionEvent/resultIndex)
-        #[link_name = "get resultIndex"]
-        pub safe fn result_index(this: &SpeechRecognitionEvent) -> u32;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionEvent/results)
-        #[link_name = "get results"]
-        pub safe fn results(this: &SpeechRecognitionEvent) -> &'static SpeechRecognitionResultList;
-
         /// Treats `this` as `SpeechRecognitionEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static SpeechRecognitionEvent;
     }
+}
+
+impl SpeechRecognitionEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionEvent/resultIndex)
+    #[cfg_attr(rust_js, rust_js::link_name = "get resultIndex")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn result_index(&self) -> u32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionEvent/results)
+    #[cfg_attr(rust_js, rust_js::link_name = "get results")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn results(&self) -> &'static SpeechRecognitionResultList {
+        unreachable!()
+    }
+
 }
 
 /// [`SpeechRecognitionResult`](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionResult)
@@ -45995,14 +47162,21 @@ pub mod speech_synthesis_error_event {
         #[link_name = "new SpeechSynthesisErrorEvent"]
         pub safe fn new(type_: &str, event_init_dict: SpeechSynthesisErrorEventInit<'_>) -> &'static SpeechSynthesisErrorEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisErrorEvent/error)
-        #[link_name = "get error"]
-        pub safe fn error(this: &SpeechSynthesisErrorEvent) -> String;
-
         /// Treats `this` as `SpeechSynthesisErrorEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static SpeechSynthesisErrorEvent;
     }
+}
+
+impl SpeechSynthesisErrorEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisErrorEvent/error)
+    #[cfg_attr(rust_js, rust_js::link_name = "get error")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn error(&self) -> String {
+        unreachable!()
+    }
+
 }
 
 /// [`SpeechSynthesisEvent`](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisEvent)
@@ -46026,30 +47200,53 @@ pub mod speech_synthesis_event {
         #[link_name = "new SpeechSynthesisEvent"]
         pub safe fn new(type_: &str, event_init_dict: SpeechSynthesisEventInit<'_>) -> &'static SpeechSynthesisEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisEvent/utterance)
-        #[link_name = "get utterance"]
-        pub safe fn utterance(this: &SpeechSynthesisEvent) -> &'static SpeechSynthesisUtterance;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisEvent/charIndex)
-        #[link_name = "get charIndex"]
-        pub safe fn char_index(this: &SpeechSynthesisEvent) -> u32;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisEvent/charLength)
-        #[link_name = "get charLength"]
-        pub safe fn char_length(this: &SpeechSynthesisEvent) -> u32;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisEvent/elapsedTime)
-        #[link_name = "get elapsedTime"]
-        pub safe fn elapsed_time(this: &SpeechSynthesisEvent) -> f32;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisEvent/name)
-        #[link_name = "get name"]
-        pub safe fn name(this: &SpeechSynthesisEvent) -> String;
-
         /// Treats `this` as `SpeechSynthesisEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static SpeechSynthesisEvent;
     }
+}
+
+impl SpeechSynthesisEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisEvent/utterance)
+    #[cfg_attr(rust_js, rust_js::link_name = "get utterance")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn utterance(&self) -> &'static SpeechSynthesisUtterance {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisEvent/charIndex)
+    #[cfg_attr(rust_js, rust_js::link_name = "get charIndex")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn char_index(&self) -> u32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisEvent/charLength)
+    #[cfg_attr(rust_js, rust_js::link_name = "get charLength")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn char_length(&self) -> u32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisEvent/elapsedTime)
+    #[cfg_attr(rust_js, rust_js::link_name = "get elapsedTime")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn elapsed_time(&self) -> f32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisEvent/name)
+    #[cfg_attr(rust_js, rust_js::link_name = "get name")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn name(&self) -> String {
+        unreachable!()
+    }
+
 }
 
 /// [`SpeechSynthesisUtterance`](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance)
@@ -46311,62 +47508,117 @@ pub mod storage_event {
         #[link_name = "new StorageEvent"]
         pub safe fn new_with_event_init_dict(type_: &str, event_init_dict: StorageEventInit<'_>) -> &'static StorageEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/key)
-        #[link_name = "get key"]
-        pub safe fn key(this: &StorageEvent) -> Option<String>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/oldValue)
-        #[link_name = "get oldValue"]
-        pub safe fn old_value(this: &StorageEvent) -> Option<String>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/newValue)
-        #[link_name = "get newValue"]
-        pub safe fn new_value(this: &StorageEvent) -> Option<String>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/url)
-        #[link_name = "get url"]
-        pub safe fn url(this: &StorageEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/storageArea)
-        #[link_name = "get storageArea"]
-        pub safe fn storage_area(this: &StorageEvent) -> Option<&'static Storage>;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/initStorageEvent)
-        #[link_name = "initStorageEvent"]
-        pub safe fn init_storage_event(this: &StorageEvent, type_: &str);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/initStorageEvent)
-        #[link_name = "initStorageEvent"]
-        pub safe fn init_storage_event_with_bubbles(this: &StorageEvent, type_: &str, bubbles: bool);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/initStorageEvent)
-        #[link_name = "initStorageEvent"]
-        pub safe fn init_storage_event_with_bubbles_and_cancelable(this: &StorageEvent, type_: &str, bubbles: bool, cancelable: bool);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/initStorageEvent)
-        #[link_name = "initStorageEvent"]
-        pub safe fn init_storage_event_with_bubbles_and_cancelable_and_key(this: &StorageEvent, type_: &str, bubbles: bool, cancelable: bool, key: &str);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/initStorageEvent)
-        #[link_name = "initStorageEvent"]
-        pub safe fn init_storage_event_with_bubbles_and_cancelable_and_key_and_old_value(this: &StorageEvent, type_: &str, bubbles: bool, cancelable: bool, key: &str, old_value: &str);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/initStorageEvent)
-        #[link_name = "initStorageEvent"]
-        pub safe fn init_storage_event_with_bubbles_and_cancelable_and_key_and_old_value_and_new_value(this: &StorageEvent, type_: &str, bubbles: bool, cancelable: bool, key: &str, old_value: &str, new_value: &str);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/initStorageEvent)
-        #[link_name = "initStorageEvent"]
-        pub safe fn init_storage_event_with_bubbles_and_cancelable_and_key_and_old_value_and_new_value_and_url(this: &StorageEvent, type_: &str, bubbles: bool, cancelable: bool, key: &str, old_value: &str, new_value: &str, url: &str);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/initStorageEvent)
-        #[link_name = "initStorageEvent"]
-        pub safe fn init_storage_event_with_bubbles_and_cancelable_and_key_and_old_value_and_new_value_and_url_and_storage_area(this: &StorageEvent, type_: &str, bubbles: bool, cancelable: bool, key: &str, old_value: &str, new_value: &str, url: &str, storage_area: &Storage);
-
         /// Treats `this` as `StorageEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static StorageEvent;
     }
+}
+
+impl StorageEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/key)
+    #[cfg_attr(rust_js, rust_js::link_name = "get key")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn key(&self) -> Option<String> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/oldValue)
+    #[cfg_attr(rust_js, rust_js::link_name = "get oldValue")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn old_value(&self) -> Option<String> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/newValue)
+    #[cfg_attr(rust_js, rust_js::link_name = "get newValue")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_value(&self) -> Option<String> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/url)
+    #[cfg_attr(rust_js, rust_js::link_name = "get url")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn url(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/storageArea)
+    #[cfg_attr(rust_js, rust_js::link_name = "get storageArea")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn storage_area(&self) -> Option<&'static Storage> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/initStorageEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initStorageEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_storage_event(&self, type_: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/initStorageEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initStorageEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_storage_event_with_bubbles(&self, type_: &str, bubbles: bool) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/initStorageEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initStorageEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_storage_event_with_bubbles_and_cancelable(&self, type_: &str, bubbles: bool, cancelable: bool) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/initStorageEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initStorageEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_storage_event_with_bubbles_and_cancelable_and_key(&self, type_: &str, bubbles: bool, cancelable: bool, key: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/initStorageEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initStorageEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_storage_event_with_bubbles_and_cancelable_and_key_and_old_value(&self, type_: &str, bubbles: bool, cancelable: bool, key: &str, old_value: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/initStorageEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initStorageEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_storage_event_with_bubbles_and_cancelable_and_key_and_old_value_and_new_value(&self, type_: &str, bubbles: bool, cancelable: bool, key: &str, old_value: &str, new_value: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/initStorageEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initStorageEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_storage_event_with_bubbles_and_cancelable_and_key_and_old_value_and_new_value_and_url(&self, type_: &str, bubbles: bool, cancelable: bool, key: &str, old_value: &str, new_value: &str, url: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/initStorageEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initStorageEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_storage_event_with_bubbles_and_cancelable_and_key_and_old_value_and_new_value_and_url_and_storage_area(&self, type_: &str, bubbles: bool, cancelable: bool, key: &str, old_value: &str, new_value: &str, url: &str, storage_area: &Storage) {
+        unreachable!()
+    }
+
 }
 
 /// [`StorageManager`](https://developer.mozilla.org/docs/Web/API/StorageManager)
@@ -46655,14 +47907,21 @@ pub mod task_priority_change_event {
         #[link_name = "new TaskPriorityChangeEvent"]
         pub safe fn new(type_: &str, priority_change_event_init_dict: TaskPriorityChangeEventInit<'_>) -> &'static TaskPriorityChangeEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TaskPriorityChangeEvent/previousPriority)
-        #[link_name = "get previousPriority"]
-        pub safe fn previous_priority(this: &TaskPriorityChangeEvent) -> String;
-
         /// Treats `this` as `TaskPriorityChangeEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static TaskPriorityChangeEvent;
     }
+}
+
+impl TaskPriorityChangeEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TaskPriorityChangeEvent/previousPriority)
+    #[cfg_attr(rust_js, rust_js::link_name = "get previousPriority")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn previous_priority(&self) -> String {
+        unreachable!()
+    }
+
 }
 
 /// [`TaskSignal`](https://developer.mozilla.org/docs/Web/API/TaskSignal)
@@ -46794,34 +48053,61 @@ pub mod text_event {
     use super::*;
 
     unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextEvent/data)
-        #[link_name = "get data"]
-        pub safe fn data(this: &TextEvent) -> String;
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextEvent/initTextEvent)
-        #[link_name = "initTextEvent"]
-        pub safe fn init_text_event(this: &TextEvent, type_: &str);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextEvent/initTextEvent)
-        #[link_name = "initTextEvent"]
-        pub safe fn init_text_event_with_bubbles(this: &TextEvent, type_: &str, bubbles: bool);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextEvent/initTextEvent)
-        #[link_name = "initTextEvent"]
-        pub safe fn init_text_event_with_bubbles_and_cancelable(this: &TextEvent, type_: &str, bubbles: bool, cancelable: bool);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextEvent/initTextEvent)
-        #[link_name = "initTextEvent"]
-        pub safe fn init_text_event_with_bubbles_and_cancelable_and_view(this: &TextEvent, type_: &str, bubbles: bool, cancelable: bool, view: &Window);
-
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextEvent/initTextEvent)
-        #[link_name = "initTextEvent"]
-        pub safe fn init_text_event_with_bubbles_and_cancelable_and_view_and_data(this: &TextEvent, type_: &str, bubbles: bool, cancelable: bool, view: &Window, data: &str);
-
         /// Treats `this` as `TextEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static TextEvent;
     }
+}
+
+impl TextEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TextEvent/data)
+    #[cfg_attr(rust_js, rust_js::link_name = "get data")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn data(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TextEvent/initTextEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initTextEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_text_event(&self, type_: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TextEvent/initTextEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initTextEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_text_event_with_bubbles(&self, type_: &str, bubbles: bool) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TextEvent/initTextEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initTextEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_text_event_with_bubbles_and_cancelable(&self, type_: &str, bubbles: bool, cancelable: bool) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TextEvent/initTextEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initTextEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_text_event_with_bubbles_and_cancelable_and_view(&self, type_: &str, bubbles: bool, cancelable: bool, view: &Window) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TextEvent/initTextEvent)
+    #[cfg_attr(rust_js, rust_js::link_name = "initTextEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn init_text_event_with_bubbles_and_cancelable_and_view_and_data(&self, type_: &str, bubbles: bool, cancelable: bool, view: &Window, data: &str) {
+        unreachable!()
+    }
+
 }
 
 /// [`TextMetrics`](https://developer.mozilla.org/docs/Web/API/TextMetrics)
@@ -51301,14 +52587,21 @@ pub mod web_gl_context_event {
         #[link_name = "new WebGLContextEvent"]
         pub safe fn new_with_event_init(type_: &str, event_init: WebGLContextEventInit<'_>) -> &'static WebGLContextEvent;
 
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLContextEvent/statusMessage)
-        #[link_name = "get statusMessage"]
-        pub safe fn status_message(this: &WebGLContextEvent) -> String;
-
         /// Treats `this` as `WebGLContextEvent` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &Event) -> &'static WebGLContextEvent;
     }
+}
+
+impl WebGLContextEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLContextEvent/statusMessage)
+    #[cfg_attr(rust_js, rust_js::link_name = "get statusMessage")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn status_message(&self) -> String {
+        unreachable!()
+    }
+
 }
 
 /// [`WebGLFramebuffer`](https://developer.mozilla.org/docs/Web/API/WebGLFramebuffer)
@@ -54070,6 +55363,85 @@ pub mod global {
     pub fn structured_clone<V: StructuredClone>(value: V) -> Option<&'static Unknown> {
         unreachable!()
     }
+}
+
+/// Event listener methods. Import this trait to keep the receiver's event map (ADR 0282).
+pub trait EventTargetExt: IsA<EventTarget> {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener). The event type comes from this receiver.
+    #[cfg_attr(rust_js, rust_js::link_name = "addEventListener")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn add_event_listener<E>(&self, event: E, listener: impl FnMut(&<Self as Listen<E>>::Event) + 'static) where Self: Listen<E> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/removeEventListener). The event type comes from this receiver.
+    #[cfg_attr(rust_js, rust_js::link_name = "removeEventListener")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn remove_event_listener<E>(&self, event: E, listener: impl FnMut(&<Self as Listen<E>>::Event) + 'static) where Self: Listen<E> {
+        unreachable!()
+    }
+
+    /// A custom name, with the base Event.
+    #[cfg_attr(rust_js, rust_js::link_name = "addEventListener")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn add_event_listener_named(&self, name: &str, listener: impl FnMut(&Event) + 'static) {
+        unreachable!()
+    }
+
+    /// A custom name, with the base Event.
+    #[cfg_attr(rust_js, rust_js::link_name = "removeEventListener")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn remove_event_listener_named(&self, name: &str, listener: impl FnMut(&Event) + 'static) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener). The event type comes from this receiver.
+    #[cfg_attr(rust_js, rust_js::link_name = "addEventListener")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn add_event_listener_with_options<E>(&self, event: E, listener: impl FnMut(&<Self as Listen<E>>::Event) + 'static, options: impl IntoAddEventListenerOptionsOrBool) where Self: Listen<E> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/removeEventListener). The event type comes from this receiver.
+    #[cfg_attr(rust_js, rust_js::link_name = "removeEventListener")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn remove_event_listener_with_options<E>(&self, event: E, listener: impl FnMut(&<Self as Listen<E>>::Event) + 'static, options: impl IntoEventListenerOptionsOrBool) where Self: Listen<E> {
+        unreachable!()
+    }
+
+    /// A custom name, with the base Event.
+    #[cfg_attr(rust_js, rust_js::link_name = "addEventListener")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn add_event_listener_named_with_options(&self, name: &str, listener: impl FnMut(&Event) + 'static, options: impl IntoAddEventListenerOptionsOrBool) {
+        unreachable!()
+    }
+
+    /// A custom name, with the base Event.
+    #[cfg_attr(rust_js, rust_js::link_name = "removeEventListener")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn remove_event_listener_named_with_options(&self, name: &str, listener: impl FnMut(&Event) + 'static, options: impl IntoEventListenerOptionsOrBool) {
+        unreachable!()
+    }
+
+}
+impl<T: IsA<EventTarget>> EventTargetExt for T {}
+
+/// A shared JavaScript callback, reusable by add_event_listener/remove_event_listener.
+/// The function itself, never a wrapper. For shared mutable state, capture a Cell or RefCell.
+/// Specify the event when inference needs it: listener::<PointerEvent>(|e| ..).
+#[cfg_attr(rust_js, rust_js::link_name = "this")]
+// rust-js writes its JS: the body never runs, nor reads a parameter.
+#[allow(unused_variables)]
+pub fn listener<E>(this: impl Fn(&E) + 'static) -> &'static dyn Fn(&E) {
+    unreachable!()
 }
 
 /// The `SanitizerConfig` dictionary: a JS object with these fields, a `None` one not there.

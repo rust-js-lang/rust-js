@@ -898,16 +898,10 @@ for (const names of [eventNames, tagNames, svgTagNames]) {
 
 // The typed forms of the `_named` operations: generic, so Rust functions
 // whose JS is the operation's, not extern ones.
-const typed = (doc: string[], js: string, signature: string) =>
-  [...doc.map((d) => `    /// ${d}`), `    #[cfg_attr(rust_js, rust_js::link_name = ${JSON.stringify(js)})]`, "    // rust-js writes its JS: the body never runs, nor reads a parameter.", "    #[allow(unused_variables)]", `    pub fn ${signature} {`, `        unreachable!()`, `    }`].join("\n");
-const listener = "Box<dyn FnMut(&<T as Listen<E>>::Event)>";
+const typed = (doc: string[], js: string, signature: string, visibility = "pub ") =>
+  [...doc.map((d) => `    /// ${d}`), `    #[cfg_attr(rust_js, rust_js::link_name = ${JSON.stringify(js)})]`, "    // rust-js writes its JS: the body never runs, nor reads a parameter.", "    #[allow(unused_variables)]", `    ${visibility}fn ${signature} {`, `        unreachable!()`, `    }`].join("\n");
+const listener = "impl FnMut(&<Self as Listen<E>>::Event) + 'static";
 const TYPED: Record<string, string[]> = {
-  EventTarget: [
-    typed([`[MDN](${mdn("EventTarget", "addEventListener")}): \`listener\` for each event of a name here,`, "given the event the name is on this target (ADR 0223): a button's `Click` is a", "`PointerEvent`. One the data doesn't know is `add_event_listener_named`'s."], "addEventListener", `add_event_listener<T: Listen<E>, E>(this: &T, event: E, listener: ${listener})`),
-    typed([`[MDN](${mdn("EventTarget", "addEventListener")})`], "addEventListener", `add_event_listener_with_options<T: Listen<E>, E>(this: &T, event: E, listener: ${listener}, options: AddEventListenerOptionsOrBool<'_>)`),
-    typed([`[MDN](${mdn("EventTarget", "removeEventListener")})`], "removeEventListener", `remove_event_listener<T: Listen<E>, E>(this: &T, event: E, listener: ${listener})`),
-    typed([`[MDN](${mdn("EventTarget", "removeEventListener")})`], "removeEventListener", `remove_event_listener_with_options<T: Listen<E>, E>(this: &T, event: E, listener: ${listener}, options: EventListenerOptionsOrBool)`),
-  ],
   Document: [
     typed([`[MDN](${mdn("Document", "createElement")}): the element a tag is (ADR 0223),`, "`create_element(document, Button)` an `HTMLButtonElement`. Another name is", "`create_element_named`'s, an `Element`."], "createElement", `create_element<T: Tag>(this: &Document, tag: T) -> &'static <T as Tag>::Element`),
     typed([`[MDN](${mdn("Document", "createElementNS")}): the SVG element a tag is,`, "`create_element_ns(document, namespaces::Svg, svg_tags::Circle)` an `SVGCircleElement`.", "Another is `create_element_ns_named`'s, an `Element`."], "createElementNS", `create_element_ns<T: SVGTag>(this: &Document, namespace: namespaces::Svg, tag: T) -> &'static <T as SVGTag>::Element`),
@@ -926,6 +920,8 @@ line(`//! goes wherever an \`&Element\` or \`&Node\` is expected. See ADR 0024.`
 line(`//! The JS language's own types, \`Promise\` and \`ArrayBuffer\` say, are the js crate's (ADR 0102).`);
 line(`//! Each event's name and each tag is a type too (ADR 0223), from \`@webref/events\` ${eventsPackage.version}`);
 line(`//! and \`@webref/elements\` ${elementsPackage.version}: \`events::Click\`, whose value is \`"click"\`.`);
+line(`//! Import \`EventTargetExt\` for \`button.add_event_listener(Click, |e| ..)\` (ADR 0282).`);
+line(`//! Events also have methods: \`e.client_x()\`, \`e.key()\`, \`e.prevent_default()\`.`);
 line();
 line(`// Many Rust functions call the same JS name: a form per optional argument
 // (\`new\`, \`new_with_body\`), and methods of the same name on different
@@ -975,6 +971,7 @@ function generic(f: Fn): string {
   return [
     ...f.doc.map((d) => `    /// ${d}`),
     `    #[cfg_attr(rust_js, rust_js::link_name = ${JSON.stringify(f.jsName)})]`,
+    ...(f.nullable ? [`    #[cfg_attr(rust_js, rust_js::nullable(${f.nullable.join(", ")}))]`] : []),
     "    // rust-js writes its JS: the body never runs, nor reads a parameter.",
     "    #[allow(unused_variables)]",
     `    pub fn ${f.name}${names.length > 0 ? `<${names.join(", ")}>` : ""}(${params.join(", ")})${result} {`,
@@ -1057,9 +1054,25 @@ for (const name of INTERFACES) {
     line(`    }`);
     line(`}`);
   }
-  const fns = [...functionsOf(i), ...(EXTRA[name] ?? [])];
+  const fns = [...functionsOf(i), ...(EXTRA[name] ?? [])].filter((f) =>
+    name !== "EventTarget" || !["addEventListener", "removeEventListener"].includes(f.jsName),
+  );
   if (name === "CSSStyleProperties") fns.push(...cssProperties(fns));
-  module(snake(qualified(name)), fns, TYPED[name] ?? [], [...(constantsOf.get(name)?.values() ?? [])]);
+  // Event accessors and operations: PointerEvent inherits MouseEvent's
+  // client_x through Deref. One spelling per operation: only constructors
+  // and casts remain in these modules, alongside their constants.
+  const methods = name === "EventTarget" || name === "Event" || chain(name).includes("Event")
+    ? fns.filter((f) => f.params[0] === `this: &${type}` && f.jsName !== "this") : [];
+  module(snake(qualified(name)), fns.filter((f) => !methods.includes(f)), TYPED[name] ?? [], [...(constantsOf.get(name)?.values() ?? [])]);
+  if (methods.length > 0) {
+    line();
+    line(`impl ${type} {`);
+    for (const f of methods) {
+      line(generic({ ...f, params: ["&self", ...f.params.slice(1)] }));
+      line();
+    }
+    line("}");
+  }
 }
 
 for (const name of NAMESPACES) {
@@ -1071,6 +1084,39 @@ for (const name of NAMESPACES) {
 line();
 line("/// What every JS global scope has, a window's, a worker's or Node's, called bare: `fetch(url)`.");
 module("global", functionsOf(globalScope));
+
+// Typed methods need the concrete receiver, not a Deref-erased EventTarget.
+// One extension trait supplies them to every target without copying the map.
+line();
+line("/// Event listener methods. Import this trait to keep the receiver's event map (ADR 0282).");
+line("pub trait EventTargetExt: IsA<EventTarget> {");
+for (const options of [false, true]) {
+  const suffix = options ? "_with_options" : "";
+  const addOptions = options ? ", options: impl IntoAddEventListenerOptionsOrBool" : "";
+  const removeOptions = options ? ", options: impl IntoEventListenerOptionsOrBool" : "";
+  for (const [name, js, callback, extra] of [
+    [`add_event_listener${suffix}`, "addEventListener", listener, addOptions],
+    [`remove_event_listener${suffix}`, "removeEventListener", listener, removeOptions],
+  ]) {
+    line(typed([`[MDN](${mdn("EventTarget", js)}). The event type comes from this receiver.`], js,
+      `${name}<E>(&self, event: E, listener: ${callback}${extra}) where Self: Listen<E>`, ""));
+    line();
+  }
+  for (const [name, js, extra] of [
+    ["add", "addEventListener", addOptions], ["remove", "removeEventListener", removeOptions],
+  ]) {
+    line(typed(["A custom name, with the base Event."], js,
+      `${name}_event_listener_named${suffix}(&self, name: &str, listener: impl FnMut(&Event) + 'static${extra})`, ""));
+    line();
+  }
+}
+line("}");
+line("impl<T: IsA<EventTarget>> EventTargetExt for T {}");
+line();
+line(typed(["A shared JavaScript callback, reusable by add_event_listener/remove_event_listener.",
+  "The function itself, never a wrapper. For shared mutable state, capture a Cell or RefCell.",
+  "Specify the event when inference needs it: listener::<PointerEvent>(|e| ..)."], "this",
+  "listener<E>(this: impl Fn(&E) + 'static) -> &'static dyn Fn(&E)").replaceAll(/^    /gm, ""));
 
 // The dictionaries results use, as plain structs: JS objects (ADR 0020).
 for (const [name, fields] of usedDictionaries) {

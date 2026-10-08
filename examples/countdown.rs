@@ -7,7 +7,7 @@ use std::rc::Rc;
 use js::{Promise, spawn};
 use webapi::events::Click;
 use webapi::tags::{Button, Div, Output};
-use webapi::{Element, document, element, event_target, node};
+use webapi::{EventTargetExt, Element, document, element, node};
 
 unsafe extern "Rust" {
     #[link_name = "setTimeout"]
@@ -38,7 +38,7 @@ pub fn main() {
     let output = document::create_element(document, Output);
     // One countdown at a time.
     let running = Rc::new(Cell::new(false));
-    event_target::add_event_listener(start, Click, Box::new(move |_| {
+    start.add_event_listener(Click, move |_| {
         if running.get() {
             return;
         }
@@ -48,7 +48,7 @@ pub fn main() {
             count_down(output, 3).await;
             running.set(false);
         }));
-    }));
+    });
     element::append(app, start);
     element::append(app, output);
 }

@@ -373,6 +373,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0279 A callback that passes on what it's given is the function](decisions/0279-callbacks-passed-on.md)
 - [0280 A field that's `undefined` is no key](decisions/0280-undefined-fields-left-out.md)
 - [0281 The webapi crate covers TypeScript's DOM, and a test holds it](decisions/0281-webapi-covers-typescripts-dom.md)
+- [0282 One method API for event listeners](decisions/0282-event-listener-methods.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

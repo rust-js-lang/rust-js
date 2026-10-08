@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0024](0024-web-crate.md), [0102](0102-js-and-webapi.md)
 and [0013](0013-fieldless-enums.md).
+Amended by [0282](0282-event-listener-methods.md): listener registration and
+removal are methods, with direct closures and shared callbacks for reuse.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

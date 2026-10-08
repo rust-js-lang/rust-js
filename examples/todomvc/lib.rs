@@ -17,7 +17,7 @@ use react::dom::client::create_root;
 use react::event::{ChangeEvent, KeyboardEvent};
 use react::{JSX, jsx, use_effect, use_reducer_with, use_state};
 use webapi::events::Hashchange;
-use webapi::{AddEventListenerOptions, abort_controller, document, event_target, location, window};
+use webapi::{AddEventListenerOptions, EventTargetExt, abort_controller, document, location, window};
 
 /// The route's filter, and a render each time the hash changes.
 fn use_filter() -> Filter {
@@ -30,12 +30,7 @@ fn use_filter() -> Filter {
                 signal: Some(abort_controller::signal(controller)),
                 ..Default::default()
             };
-            event_target::add_event_listener_with_options(
-                window,
-                Hashchange,
-                Box::new(move |_| set_current.set(hash())),
-                options.into(),
-            );
+            window.add_event_listener_with_options(Hashchange, move |_| set_current.set(hash()), options);
             move || abort_controller::abort(controller)
         },
         (),

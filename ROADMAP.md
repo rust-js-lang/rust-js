@@ -193,6 +193,9 @@ pilot. No delivery dates are assigned yet.
   binding as a value and a package's component as a JSX tag are fixed, and
   options objects (`RequestInit`, listener options) and the JS language's
   globals are the `webapi` and `js` crates' ([ADR 0102](docs/decisions/0102-js-and-webapi.md));
+  event operations now have one method API with direct closures and shared
+  callback identity ([ADR 0282](docs/decisions/0282-event-listener-methods.md),
+  [typing and browser tests](test/webapi-events.test.ts));
   `str::bytes()` iteration ([ADR 0126](docs/decisions/0126-byte-strings.md)) and `Result::as_ref`, worked around there, are fixed. Demonstrate error
   recovery, Fast Refresh, source-level debugging, and a deployed production
   bundle. Record any remaining limitations in the supported contract.

@@ -2685,7 +2685,7 @@ pub fn Field(FieldProps { on_click, on_change, on_any, on_same }: FieldProps) ->
 test("JSX onSubmit gets a SubmitEvent, of its submitter", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::event::{FormEvent, FormEventHandler, InvalidEvent, SubmitEventHandler};
-use react::webapi::{HTMLFormElement, html_element, submit_event};
+use react::webapi::{HTMLFormElement, html_element};
 use react::{JSX, jsx};
 pub struct FormProps {
     pub on_send: fn(String),
@@ -2702,7 +2702,7 @@ pub fn Form(FormProps { on_send, on_reset, on_submitted }: FormProps) -> JSX::El
             onSubmit={move |e| {
                 e.prevent_default();
                 let by = e.submitter().map(|b| html_element::title(b)).unwrap_or_default();
-                on_send(format!("{by} {}", submit_event::submitter(e.native_event()).is_some()));
+                on_send(format!("{by} {}", e.native_event().submitter().is_some()));
             }}
             onReset={on_reset} />
     }
@@ -2723,7 +2723,7 @@ pub fn Form(FormProps { on_send, on_reset, on_submitted }: FormProps) -> JSX::El
 test("JSX onInput gets an InputEvent, as @types/react types it", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::event::InputEventHandler;
-use react::webapi::{HTMLInputElement, html_input_element, input_event};
+use react::webapi::{HTMLInputElement, html_input_element};
 use react::{JSX, jsx};
 pub struct FieldProps {
     pub on_read: fn(String),
@@ -2736,7 +2736,7 @@ pub fn Field(FieldProps { on_read, on_typed }: FieldProps) -> JSX::Element {
             onInput={move |e| on_read(format!(
                 "{} {} {}",
                 e.data().unwrap_or_default(),
-                input_event::input_type(e.native_event()),
+                e.native_event().input_type(),
                 html_input_element::value(e.current_target()),
             ))}
             onChange={move |e| on_read(e.value())} />
@@ -2757,15 +2757,14 @@ pub fn Field(FieldProps { on_read, on_typed }: FieldProps) -> JSX::Element {
 // `PointerEvent`, a wheel's a `WheelEvent`, so its own fields are read.
 test("JSX native_event is the DOM event of its kind", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::webapi::{mouse_event, pointer_event, wheel_event};
 use react::{JSX, jsx};
 pub struct PadProps { pub on_read: fn(String) }
 pub fn Pad(PadProps { on_read }: PadProps) -> JSX::Element {
     jsx! {
         <div
-            onClick={move |e| on_read(mouse_event::client_x(e.native_event()).to_string())}
-            onPointerDown={move |e| on_read(pointer_event::pointer_type(e.native_event()))}
-            onWheel={move |e| on_read(wheel_event::delta_y(e.native_event()).to_string())} />
+            onClick={move |e| on_read(e.native_event().client_x().to_string())}
+            onPointerDown={move |e| on_read(e.native_event().pointer_type())}
+            onWheel={move |e| on_read(e.native_event().delta_y().to_string())} />
     }
 }
 `);

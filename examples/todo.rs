@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 use webapi::events::Keydown;
 use webapi::{
-    Element, document, element, event_target, html_element, html_input_element, keyboard_event, node,
+    Element, EventTargetExt, document, element, html_element, html_input_element, node,
     css_style_declaration,
 };
 
@@ -54,10 +54,10 @@ fn text(tag: &str, s: &str) -> &'static Element {
 /// When `event` fires on `target`, apply `change` to the state and draw it again.
 fn on(target: &'static Element, event: &str, state: &Shared, view: View, change: Box<dyn Fn(&mut State)>) {
     let state = state.clone();
-    event_target::add_event_listener_named(target, event, Box::new(move |_| {
+    target.add_event_listener_named(event, move |_| {
         change(&mut state.borrow_mut());
         render(&state, view);
-    }));
+    });
 }
 
 fn add(s: &mut State, title: &str) {
@@ -130,15 +130,15 @@ pub fn main() {
     let input = html_input_element::unchecked_from(create("input"));
     html_input_element::set_placeholder(input, "What needs to be done?");
     let adding = state.clone();
-    event_target::add_event_listener(input, Keydown, Box::new(move |e| {
+    input.add_event_listener(Keydown, move |e| {
         let title = html_input_element::value(input);
         let title = title.trim();
-        if keyboard_event::key(e) == "Enter" && !title.is_empty() {
+        if e.key() == "Enter" && !title.is_empty() {
             add(&mut adding.borrow_mut(), title);
             html_input_element::set_value(input, "");
             render(&adding, view);
         }
-    }));
+    });
 
     // Which todos to show, and clearing the completed ones.
     let footer = create("p");
@@ -197,7 +197,7 @@ mod tests {
     fn type_in(app: &Element, title: &str, key: &str) {
         let field = input(app);
         html_input_element::set_value(field, title);
-        event_target::dispatch_event(field, keyboard_event("keydown", &KeyboardEventInit { key: key.to_string() }));
+        field.dispatch_event(keyboard_event("keydown", &KeyboardEventInit { key: key.to_string() }));
     }
 
     fn titles(app: &Element) -> Vec<String> {

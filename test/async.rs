@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use js::{JsObject, Promise, Uint8Array, array_buffer, spawn, uint8_array};
 use webapi::{
-    AddEventListenerOptions, RequestInit, abort_controller, event, event_target, response, web_assembly,
+    AddEventListenerOptions, EventTargetExt, RequestInit, abort_controller, event, event_target, response, web_assembly,
     web_assembly_instance, window,
 };
 
@@ -99,10 +99,10 @@ pub fn listen_until_aborted() -> u32 {
     let controller = abort_controller::new();
     let counted = Rc::clone(&count);
     let options = AddEventListenerOptions { signal: Some(abort_controller::signal(controller)), ..Default::default() };
-    event_target::add_event_listener_named_with_options(target, "ping", Box::new(move |_| *counted.borrow_mut() += 1), options);
-    let _ = event_target::dispatch_event(target, event::new("ping"));
+    target.add_event_listener_named_with_options("ping", move |_| *counted.borrow_mut() += 1, options);
+    let _ = target.dispatch_event(event::new("ping"));
     abort_controller::abort(controller);
-    let _ = event_target::dispatch_event(target, event::new("ping"));
+    let _ = target.dispatch_event(event::new("ping"));
     *count.borrow()
 }
 
