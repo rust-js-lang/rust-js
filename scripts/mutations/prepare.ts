@@ -50,4 +50,28 @@ export const mutations: Mutation[] = [
     replace: "    if !matches!(null.kind, ExprKind::Null) {\n",
     tests: ["test/compiler.test.ts", "-t", "only read and set is the module's let"],
   },
+  {
+    name: "shadow-kept",
+    breaks: "`let text = text.clone()` is `const text$1 = text`, not `text`",
+    file: "src/prepare.rs",
+    find: "        shadows(&mut function.body);\n",
+    replace: "",
+    tests: ["test/compiler.test.ts", "-t", "shadowed by its own value"],
+  },
+  {
+    name: "alias-of-another-name",
+    breaks: "`let kept = text` is `text`, not the name written",
+    file: "src/prepare.rs",
+    find: "                        && alias\n                            .strip_prefix(of.as_str())\n                            .and_then(|rest| rest.strip_prefix('$'))\n                            .is_some_and(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()))\n",
+    replace: "                        && !alias.is_empty()\n",
+    tests: ["test/compiler.test.ts", "-t", "shadowed by its own value"],
+  },
+  {
+    name: "shadow-in-loop-aliased",
+    breaks: "a shadow a loop sets again is the variable, a closure of each turn reading the last",
+    file: "src/prepare.rs",
+    find: "(sets.is_empty() || !looped && sets.iter().all(|&set| set < at))",
+    replace: "(sets.is_empty() || sets.iter().all(|&set| set < at))",
+    tests: ["test/compiler.test.ts", "-t", "shadowed by its own value"],
+  },
 ];

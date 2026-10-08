@@ -368,6 +368,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0274 Next.js's getStaticProps and getStaticPaths, typed as next types them](decisions/0274-next-data-fetching.md)
 - [0275 A nullable field's `None` is `null`](decisions/0275-nullable-writes-null.md)
 - [0276 A Pages Router route gets no declarations beside it](decisions/0276-no-declarations-in-routes.md)
+- [0277 A variable shadowed by its own value is the variable](decisions/0277-shadow-aliases.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

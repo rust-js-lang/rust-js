@@ -4,12 +4,15 @@
 //! oxfmt lays them out where they are (ADR 0218). The printer only lays out
 //! the result.
 
+use std::collections::HashSet;
+
 use crate::js::{self, Expr, ExprKind, JsxTag, Prop, Stmt, StmtKind};
 
 pub fn module(module: &mut js::Module) {
     let methods = module.namespaces.iter_mut().flat_map(|n| n.methods.iter_mut());
     for function in module.functions.iter_mut().chain(methods) {
         block(&mut function.body);
+        shadows(&mut function.body);
     }
     for constant in &mut module.consts {
         expr(&mut constant.value);
@@ -162,6 +165,118 @@ fn coalescing(stmt: &Stmt) -> Option<StmtKind> {
         target.clone(),
         Expr::bin(js::Op::Coalesce, target.clone(), value.clone()),
     ))
+}
+
+/// `const n$1 = n;`, Rust's `let n = n;`, a variable shadowed by its own
+/// value, is `n` itself: `<Type />` for `let Type = from_unknown(Type)`,
+/// `content` for `let content = content.clone()`. Only where `n` holds
+/// that value wherever `n$1` is read: nothing sets `n` after it, nor in a
+/// closure, nor where a loop runs it again.
+fn shadows(body: &mut Vec<Stmt>) {
+    while let Some((alias, of)) = shadow(body) {
+        js::each_expr_mut(body, &mut |e| {
+            if matches!(&e.kind, ExprKind::Var(name) if *name == alias) {
+                e.kind = ExprKind::Var(of.clone());
+            }
+        });
+        js::each_block_mut(body, &mut |stmts| {
+            stmts.retain(|s| {
+                !matches!(&s.kind, StmtKind::Const(name, value)
+                if *name == alias && matches!(&value.kind, ExprKind::Var(v) if *v == of))
+            });
+        });
+    }
+}
+
+/// A `const n$1 = n;` that `shadows` makes `n`, and `n`.
+fn shadow(body: &[Stmt]) -> Option<(String, String)> {
+    // What closures set, and what their parameters are named, which a
+    // name read in them would mean instead.
+    let mut in_closures = HashSet::new();
+    let mut copy = body.to_vec();
+    js::each_expr_mut(&mut copy, &mut |e| {
+        if let ExprKind::Arrow(params, stmts) | ExprKind::AsyncArrow(params, stmts) = &mut e.kind {
+            in_closures.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
+            js::statement_lists(stmts, &mut |list| {
+                in_closures.extend(list.iter().filter_map(|s| match &s.kind {
+                    StmtKind::Assign(target, _) => match &target.kind {
+                        ExprKind::Var(name) => Some(name.clone()),
+                        _ => None,
+                    },
+                    _ => None,
+                }));
+            });
+        }
+    });
+    let mut walk = Walk::default();
+    walk.stmts(body, false);
+    walk.shadows.into_iter().find_map(|(at, looped, alias, of)| {
+        let sets: Vec<usize> = walk
+            .sets
+            .iter()
+            .filter(|(_, name)| *name == of)
+            .map(|&(set, _)| set)
+            .collect();
+        let kept = !in_closures.contains(&of) && (sets.is_empty() || !looped && sets.iter().all(|&set| set < at));
+        kept.then_some((alias, of))
+    })
+}
+
+/// The function's statements in order, outside its closures: each
+/// `const n$1 = n;`, where, and whether in a loop, and each variable set.
+#[derive(Default)]
+struct Walk {
+    at: usize,
+    shadows: Vec<(usize, bool, String, String)>,
+    sets: Vec<(usize, String)>,
+}
+
+impl Walk {
+    fn stmts(&mut self, stmts: &[Stmt], looped: bool) {
+        for stmt in stmts {
+            self.at += 1;
+            match &stmt.kind {
+                StmtKind::Const(alias, value) => {
+                    if let ExprKind::Var(of) = &value.kind
+                        && alias
+                            .strip_prefix(of.as_str())
+                            .and_then(|rest| rest.strip_prefix('$'))
+                            .is_some_and(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()))
+                    {
+                        self.shadows.push((self.at, looped, alias.clone(), of.clone()));
+                    }
+                }
+                StmtKind::Assign(target, _) => {
+                    if let ExprKind::Var(name) = &target.kind {
+                        self.sets.push((self.at, name.clone()));
+                    }
+                }
+                StmtKind::If(_, a, b) => {
+                    self.stmts(a, looped);
+                    if let Some(b) = b {
+                        self.stmts(b, looped);
+                    }
+                }
+                StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } => self.stmts(body, true),
+                StmtKind::For { name, body, .. } => {
+                    self.sets.push((self.at, name.clone()));
+                    self.stmts(body, true);
+                }
+                StmtKind::Labeled(_, body) => self.stmts(body, looped),
+                StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                    self.stmts(a, looped);
+                    self.stmts(b, looped);
+                }
+                StmtKind::Let(..)
+                | StmtKind::Destructure { .. }
+                | StmtKind::Expr(_)
+                | StmtKind::Break(_)
+                | StmtKind::Continue(_)
+                | StmtKind::Return(_)
+                | StmtKind::Throw(_) => {}
+            }
+        }
+    }
 }
 
 fn expr(e: &mut Expr) {

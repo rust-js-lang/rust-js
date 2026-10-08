@@ -787,8 +787,8 @@ test("the counter's JS is plain DOM code", async () => {
   expect(js).toContain("b.textContent = label;");
   expect(js).toContain("const count = { value: 0 };");
   expect(js).toContain('b.addEventListener("click", () => {');
-  expect(js).toContain("count$1.value = (count$1.value + by) | 0;");
-  expect(js).toContain("output.textContent = String(count$1.value);");
+  expect(js).toContain("count.value = (count.value + by) | 0;");
+  expect(js).toContain("output.textContent = String(count.value);");
   expect(js).toContain("app.append(output);");
 });
 
@@ -1317,6 +1317,49 @@ pub fn moved(p: Props) -> Props {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.given(undefined), lib.given("1")]).toEqual([{ code: null, message: null, title: undefined }, { code: "1", message: null, title: undefined }]);
   expect(JSON.stringify(lib.passed(lib.given(undefined)))).toBe('{"code":null,"message":null}');
+});
+
+// ADR 0277: \`let n = n;\`, a variable shadowed by its own value, is \`n\`
+// itself where nothing sets \`n\` while the new one is read: no \`n$1\`, as
+// react.dev's errors page has \`<Type />\` of \`let Type = from_unknown(Type)\`.
+// One of another name is the name written; one a loop sets again keeps its own.
+test("a variable shadowed by its own value is the variable", async () => {
+  const dir = fixture("shadows");
+  writeFileSync(join(dir, "lib.rs"), `pub fn captured(text: String) -> Box<dyn Fn() -> String> {
+    let text = text.clone();
+    Box::new(move || text.clone())
+}
+pub fn kept(text: String) -> String {
+    let kept = text;
+    kept + "!"
+}
+pub fn before(flag: bool) -> u32 {
+    let mut n = 1;
+    if flag {
+        n = 2;
+    }
+    let n = n;
+    n + 1
+}
+pub fn looped() -> u32 {
+    let mut fs: Vec<Box<dyn Fn() -> u32>> = Vec::new();
+    let mut n = 0;
+    while n < 2 {
+        n += 1;
+        let n = n;
+        fs.push(Box::new(move || n));
+    }
+    fs[0]()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function captured(text) {\n  return () => text;\n}");
+  expect(js).toContain("  const kept$1 = text;\n");
+  expect(js).toContain("  return (n + 1) >>> 0;\n");
+  expect(js).toContain("    const n$1 = n;\n    fs.push(() => n$1);");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.captured("a")(), lib.kept("b"), lib.before(true), lib.before(false), lib.looped()]).toEqual(["a", "b!", 3, 2, 1]);
 });
 
 // ADR 0272: Node's modules, as @types/node types them, are the JS a person

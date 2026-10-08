@@ -13,10 +13,9 @@ function text(tag, s) {
 }
 
 function on(target, event, state, view, change) {
-  const state$1 = state;
   target.addEventListener(event, () => {
-    change(state$1.value);
-    render(state$1, view);
+    change(state.value);
+    render(state, view);
   });
 }
 

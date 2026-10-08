@@ -10,10 +10,9 @@ function button(label) {
 
 function stepper(label, by, count, output) {
   const b = button(label);
-  const count$1 = count;
   b.addEventListener("click", () => {
-    count$1.value = (count$1.value + by) | 0;
-    output.textContent = String(count$1.value);
+    count.value = (count.value + by) | 0;
+    output.textContent = String(count.value);
   });
   return b;
 }

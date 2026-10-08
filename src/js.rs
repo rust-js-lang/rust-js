@@ -83,6 +83,94 @@ pub(crate) fn same_path(a: &Expr, b: &Expr) -> bool {
     }
 }
 
+/// Each list of statements in `stmts`, itself first, then each nested one,
+/// a closure's body too: for a pass that changes them.
+pub fn each_block_mut(stmts: &mut Vec<Stmt>, f: &mut dyn FnMut(&mut Vec<Stmt>)) {
+    statement_lists(stmts, f);
+    each_expr_mut(stmts, &mut |e| {
+        if let ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) = &mut e.kind {
+            statement_lists(body, f);
+        }
+    });
+}
+
+/// `stmts`, and each list nested in its statements, not in its closures.
+pub fn statement_lists(stmts: &mut Vec<Stmt>, f: &mut dyn FnMut(&mut Vec<Stmt>)) {
+    f(stmts);
+    for stmt in stmts.iter_mut() {
+        match &mut stmt.kind {
+            StmtKind::If(_, a, b) => {
+                statement_lists(a, f);
+                if let Some(b) = b {
+                    statement_lists(b, f);
+                }
+            }
+            StmtKind::While { body, .. }
+            | StmtKind::ForOf { body, .. }
+            | StmtKind::For { body, .. }
+            | StmtKind::Labeled(_, body) => statement_lists(body, f),
+            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                statement_lists(a, f);
+                statement_lists(b, f);
+            }
+            StmtKind::Const(..)
+            | StmtKind::Let(..)
+            | StmtKind::Destructure { .. }
+            | StmtKind::Assign(..)
+            | StmtKind::Expr(_)
+            | StmtKind::Break(_)
+            | StmtKind::Continue(_)
+            | StmtKind::Return(_)
+            | StmtKind::Throw(_) => {}
+        }
+    }
+}
+
+/// Each expression in `stmts`, outermost first, nested ones too, in
+/// closures' bodies, JSX and templates: for a pass that changes them.
+pub fn each_expr_mut(stmts: &mut [Stmt], f: &mut dyn FnMut(&mut Expr)) {
+    for stmt in stmts {
+        match &mut stmt.kind {
+            StmtKind::Const(_, e)
+            | StmtKind::Let(_, Some(e))
+            | StmtKind::Destructure { value: e, .. }
+            | StmtKind::Expr(e)
+            | StmtKind::Return(Some(e))
+            | StmtKind::Throw(e) => e.each_mut(f),
+            StmtKind::Assign(a, b) => {
+                a.each_mut(f);
+                b.each_mut(f);
+            }
+            StmtKind::If(test, a, b) => {
+                test.each_mut(f);
+                each_expr_mut(a, f);
+                if let Some(b) = b {
+                    each_expr_mut(b, f);
+                }
+            }
+            StmtKind::While { cond, body, .. } => {
+                cond.each_mut(f);
+                each_expr_mut(body, f);
+            }
+            StmtKind::ForOf { iterable, body, .. } => {
+                iterable.each_mut(f);
+                each_expr_mut(body, f);
+            }
+            StmtKind::For { start, test, body, .. } => {
+                start.each_mut(f);
+                test.each_mut(f);
+                each_expr_mut(body, f);
+            }
+            StmtKind::Labeled(_, body) => each_expr_mut(body, f),
+            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                each_expr_mut(a, f);
+                each_expr_mut(b, f);
+            }
+            StmtKind::Let(_, None) | StmtKind::Break(_) | StmtKind::Continue(_) | StmtKind::Return(None) => {}
+        }
+    }
+}
+
 /// How many times `stmts` name the variable `name`, read or written.
 pub fn mentions_in(stmts: &[Stmt], name: &str) -> usize {
     let mut count = 0;
@@ -678,6 +766,58 @@ impl Expr {
                 (props.iter()).all(|prop| matches!(prop, Prop::Field(_, value) if value.is_made_of_constants()))
             }
             _ => self.is_constant(),
+        }
+    }
+
+    /// This, then each expression in it, as `each_expr_mut` goes.
+    pub fn each_mut(&mut self, f: &mut dyn FnMut(&mut Expr)) {
+        f(self);
+        let props = |props: &mut [Prop], f: &mut dyn FnMut(&mut Expr)| {
+            for prop in props {
+                let (Prop::Field(_, value) | Prop::Spread(value) | Prop::Getter(_, value)) = prop;
+                value.each_mut(f);
+            }
+        };
+        match &mut self.kind {
+            ExprKind::Member(a, _)
+            | ExprKind::OptionalMember(a, _)
+            | ExprKind::Unary(_, a)
+            | ExprKind::Await(a)
+            | ExprKind::Spread(a)
+            | ExprKind::Handle(a) => a.each_mut(f),
+            ExprKind::Index(a, b) | ExprKind::Binary(_, a, b) | ExprKind::Pair(a, b) => {
+                a.each_mut(f);
+                b.each_mut(f);
+            }
+            ExprKind::Cond(a, b, c) => {
+                a.each_mut(f);
+                b.each_mut(f);
+                c.each_mut(f);
+            }
+            ExprKind::Call(callee, args) | ExprKind::OptionalCall(callee, args) | ExprKind::New(callee, args) => {
+                callee.each_mut(f);
+                args.iter_mut().for_each(|a| a.each_mut(f));
+            }
+            ExprKind::Array(items) | ExprKind::Template(_, items) => items.iter_mut().for_each(|a| a.each_mut(f)),
+            ExprKind::Object(fields) => props(fields, f),
+            ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => each_expr_mut(body, f),
+            ExprKind::Jsx(jsx) => {
+                if let JsxTag::Component(tag) = &mut jsx.tag {
+                    tag.each_mut(f);
+                }
+                props(&mut jsx.props, f);
+                jsx.children.iter_mut().for_each(|c| c.each_mut(f));
+            }
+            ExprKind::Var(_)
+            | ExprKind::Num(_)
+            | ExprKind::BigInt(_)
+            | ExprKind::BigUint(_)
+            | ExprKind::Bool(_)
+            | ExprKind::Str(_)
+            | ExprKind::Undefined
+            | ExprKind::Null
+            | ExprKind::Symbol(_)
+            | ExprKind::Regex(_) => {}
         }
     }
 
