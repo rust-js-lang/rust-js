@@ -10,4 +10,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/jsx.test.ts"],
   },
+  {
+    name: "try-kept-as-helper",
+    breaks: "a `match` of what a JS call threw is `$try` and its `TAG`, not JS's `try`",
+    file: "src/prepare.rs",
+    find: "    try_catches(body);\n",
+    replace: "",
+    tests: ["test/compiler.test.ts", "-t", "a JS error is shown"],
+  },
+  {
+    name: "try-with-error-read",
+    breaks: "an `Err` that reads the error is a `catch` with none, `match` undefined there",
+    file: "src/prepare.rs",
+    find: "        || js::mentions_in(failed, result) > 0\n",
+    replace: "",
+    tests: ["test/compiler.test.ts", "-t", "a JS error is shown"],
+  },
+  {
+    name: "try-around-more",
+    breaks: "an `Ok` that gives something else, `\"parsed\"`, is `return JSON.parse(text)` in the `try`",
+    file: "src/prepare.rs",
+    find: "        StmtKind::Return(Some(e)) if of_result(e, \"_0\") => StmtKind::Return(Some(call.clone())),\n",
+    replace: "        StmtKind::Return(Some(_)) => StmtKind::Return(Some(call.clone())),\n",
+    tests: ["test/compiler.test.ts", "-t", "a JS error is shown"],
+  },
 ];

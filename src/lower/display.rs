@@ -351,7 +351,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let written = Expr::call(Expr::var("$fmtWritten"), vec![Expr::var(&error), Expr::var(&name)]);
             out.push(StmtKind::Let(name.clone(), Some(Expr::str(""))).at(js::Span::NONE));
             out.push(
-                StmtKind::TryCatch(body_out, error, vec![StmtKind::Throw(written).at(js::Span::NONE)])
+                StmtKind::TryCatch(body_out, Some(error), vec![StmtKind::Throw(written).at(js::Span::NONE)])
                     .at(js::Span::NONE),
             );
             out.push(StmtKind::Return(Some(Expr::var(&name))).at(js::Span::NONE));

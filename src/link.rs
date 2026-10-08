@@ -183,7 +183,9 @@ fn block(body: &mut [Stmt], visitor: &mut Visitor<'_>) {
             }
             StmtKind::TryCatch(body, error, handler) => {
                 block(body, visitor);
-                visitor.name(error);
+                if let Some(error) = error {
+                    visitor.name(error);
+                }
                 block(handler, visitor);
             }
             StmtKind::Return(None) | StmtKind::Break(_) | StmtKind::Continue(_) => {}

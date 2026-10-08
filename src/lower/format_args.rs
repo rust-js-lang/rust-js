@@ -412,7 +412,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec![Expr::var(&caught), Expr::var(&text), Expr::bool(error)],
             );
             out.push(StmtKind::Let(text.clone(), Some(Expr::str(""))).at(js_span));
-            out.push(StmtKind::TryCatch(body, caught, vec![StmtKind::Expr(failed).at(js_span)]).at(js_span));
+            out.push(StmtKind::TryCatch(body, Some(caught), vec![StmtKind::Expr(failed).at(js_span)]).at(js_span));
             return Ok(Expr::call(
                 Expr::var(if error { "$eprint" } else { "$print" }),
                 vec![Expr::var(&text)],

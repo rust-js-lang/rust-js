@@ -744,7 +744,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         StmtKind::Throw(Expr::var(&caught)).at(js_span),
                     ];
                     let body = std::mem::take(&mut written);
-                    written.push(StmtKind::TryCatch(body, caught, handler).at(js_span));
+                    written.push(StmtKind::TryCatch(body, Some(caught), handler).at(js_span));
                 }
             } else {
                 // Else where `+=` would write: a map's slot, or what a call's cell

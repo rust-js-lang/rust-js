@@ -61,6 +61,12 @@ const match = $try(() => JSON.parse(json));   // { TAG: "Ok", _0: .. } or { TAG:
   builtins crate's metadata has but no JS, is recognized. A width or other
   option for it is an error, as for a `&dyn Debug`. (Amended: `{:?}` of one
   was refused, so an `unwrap()` of a catching binding was too.)
+- **A `match` of one whose `Ok` only keeps the value and whose `Err` reads
+  no error is JS's `try`**: `try { mdx = readFileSync(..); } catch { mdx =
+  .. }`, as react.dev's errors page reads its Markdown, and `return` in
+  place of the assignment. Only the call is in the `try`, as only it was in
+  `$try`. One whose `Ok` does more, or whose `Err` reads the error, is
+  still `$try` and its `TAG`. (Amended: every one was.)
 - **`.clone()` of a type that's never changed in place is the value itself**,
   since nothing can tell the two apart (ADR 0020). A `Result`, a `String`, most
   enums: one object serves as both.

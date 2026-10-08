@@ -1211,6 +1211,39 @@ test("a JS error is shown as JS shows it", async () => {
 pub fn parsed(text: &str) -> Option<&'static Unknown> {
     json::parse(text).unwrap()
 }
+pub fn kept(text: &str) -> Option<&'static Unknown> {
+    let value = match json::parse(text) {
+        Ok(value) => value,
+        Err(_) => {
+            eprintln!("invalid");
+            None
+        }
+    };
+    value
+}
+pub fn valid(text: &str) -> bool {
+    match json::parse(text) {
+        Ok(_) => true,
+        Err(_) => false,
+    }
+}
+pub fn told(text: &str) -> String {
+    let told = match json::parse(text) {
+        Ok(_) => String::new(),
+        Err(error) => format!("{error:?}"),
+    };
+    told
+}
+pub fn kept_or_told(text: &str) -> Option<&'static Unknown> {
+    let value = match json::parse(text) {
+        Ok(value) => value,
+        Err(error) => {
+            eprintln!("{error:?}");
+            None
+        }
+    };
+    value
+}
 pub fn shown(text: &str) -> String {
     match json::parse(text) {
         Ok(_) => "parsed".to_string(),
@@ -1219,9 +1252,18 @@ pub fn shown(text: &str) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("return String(match._0);");
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return String(match._0);");
+  // A \`match\` of what it threw, whose \`Ok\` only keeps the value and
+  // whose \`Err\` reads no error, is JS's \`try\` (ADR 0035).
+  expect(js).toContain('  let value;\n  try {\n    value = JSON.parse(text);\n  } catch {\n    console.error("invalid");\n    value = undefined;\n  }');
   const lib = await import(join(dir, "lib.js"));
   expect(lib.parsed("[1]")).toEqual([1]);
+  expect([lib.kept("[1]"), lib.kept("{")]).toEqual([[1], undefined]);
+  // One whose \`Err\` reads the error keeps it, \`$try\`'s.
+  expect([lib.kept_or_told("[1]"), lib.kept_or_told("{")]).toEqual([[1], undefined]);
+  expect([lib.told("1"), lib.told("{").startsWith("SyntaxError")]).toEqual(["", true]);
+  expect([lib.valid("[1]"), lib.valid("{")]).toEqual([true, false]);
   expect(() => lib.parsed("{")).toThrow("called `Result::unwrap()` on an `Err` value: SyntaxError");
   expect([lib.shown("{").startsWith("SyntaxError: "), lib.shown("1")]).toEqual([true, "parsed"]);
 });
@@ -1289,7 +1331,8 @@ pub fn here() -> String {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('import { readFileSync } from "fs";');
-  expect(js).toContain('readFileSync(path, "utf8")');
+  // A \`match\` of what it threw is JS's \`try\`, as the page has it (ADR 0035).
+  expect(js).toContain('export function read(path) {\n  try {\n    return readFileSync(path, "utf8");\n  } catch {\n    return "missing";\n  }\n}');
   expect(js).toContain("return process.cwd();");
   writeFileSync(join(dir, "note.md"), "# Note");
   const { read, here } = await import(join(dir, "lib.js"));

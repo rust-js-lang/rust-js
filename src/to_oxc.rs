@@ -613,18 +613,11 @@ impl<'a> Cx<'a> {
                 b,
             ),
             StmtKind::TryCatch(body, error, handler) => {
-                let param = CatchParameter::new(
-                    SPAN,
-                    BindingPattern::new_binding_identifier(SPAN, self.name(error), b),
-                    None,
-                    b,
-                );
-                let clause = CatchClause::boxed(
-                    SPAN,
-                    Some(param),
-                    BlockStatement::boxed(SPAN, self.stmts(handler), b),
-                    b,
-                );
+                let param = error.as_ref().map(|error| {
+                    let name = BindingPattern::new_binding_identifier(SPAN, self.name(error), b);
+                    CatchParameter::new(SPAN, name, None, b)
+                });
+                let clause = CatchClause::boxed(SPAN, param, BlockStatement::boxed(SPAN, self.stmts(handler), b), b);
                 Statement::new_try_statement(
                     sp,
                     BlockStatement::boxed(SPAN, self.stmts(body), b),

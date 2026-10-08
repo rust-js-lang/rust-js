@@ -277,8 +277,9 @@ pub enum StmtKind {
     /// however it's left (ADR 0098).
     Try(Vec<Stmt>, Vec<Stmt>),
     /// `try { .. } catch (error) { .. }`: a writer's `fmt::Error`, given
-    /// what it wrote, or taken as a `fmt::Result` (ADR 0187).
-    TryCatch(Vec<Stmt>, String, Vec<Stmt>),
+    /// what it wrote, or taken as a `fmt::Result` (ADR 0187); or `catch {
+    /// .. }`, what a JS call threw, unread (ADR 0035).
+    TryCatch(Vec<Stmt>, Option<String>, Vec<Stmt>),
     Break(Option<String>),
     Continue(Option<String>),
     Return(Option<Expr>),
