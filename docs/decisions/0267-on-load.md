@@ -45,3 +45,15 @@ import("../MDX/CodeBlock/CodeBlock");
 - **It's tested**: a compiler test's module calls a JS function when it's
   loaded, through a helper; mutations write a function of it, leave its
   statements out, and its helper unimported.
+
+## Amendment: link module-load statements
+
+Module-load statements participate in both linker walks: reserving their
+bindings (including nested closure parameters), then resolving cross-module
+symbols. They are module roots just like functions and constants. Omitting
+them let an unresolved symbol reach the printer and could let an import
+alias collide with a top-level local.
+
+`test/link.test.ts` executes an on-load body that calls another Rust module
+through a closure and binds a local with the imported function's name.
+Mutations omit symbol resolution or binding reservation independently.

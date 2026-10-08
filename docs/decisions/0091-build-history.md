@@ -48,3 +48,16 @@ an older one are the same bytes ([research](../research/compiler-testing.md)).
   `test/manifest.test.ts`; the Vite plugin's rebuilds in `test/vite.test.ts`.
 - Once rust-js builds a crate's modules one by one, the test should say
   which files each edit rebuilds, as Kotlin's do.
+
+## Amendment: declarations belong to build history too
+
+Generated `.d.ts` files follow the same ownership rules as JS and source
+maps. Native artifact planning and the WASI host remove an obsolete
+declaration only inside the output directory, when the current build neither
+reads nor writes it and its bytes still match the previous manifest's
+fingerprint. Ordinary `.ts` files and edited declarations remain untouched.
+This covers removed modules and turning `declarations` off (ADR 0196).
+
+`test/publication.test.ts` applies the ownership cases to both publishers
+and checks a native build with declarations enabled, then disabled. The
+native cleanup mutation restores the obsolete-declaration bug.

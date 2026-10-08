@@ -1,7 +1,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildCompiler, compiler, fixture, run } from "./support";
+import { buildCompiler, buildWebapi, compiler, fixture, run, target } from "./support";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -112,4 +112,44 @@ test("a string that spells a helper's name doesn't import it", () => {
   expect(code).toContain(`import { $bigLeadingZeros } from "@rust-js/runtime";`);
   expect(code).toContain(`"$bigTrailingZeros and $bigCountOnes"`);
   expect(code).toContain(`console.log("$bigCountOnes")`);
+});
+
+// Module-load bodies are linked with functions and constants, including the
+// names they bind at module scope (ADRs 0069, 0267).
+test("module-load statements resolve imports around their local bindings", async () => {
+  buildWebapi();
+  const dir = fixture("link-on-load");
+  writeFileSync(join(dir, "lib.rs"), `
+    mod util { pub fn value(n: u32) -> u32 { n + 1 } }
+    unsafe extern "Rust" {
+      #[link_name = "globalThis.auditSeed"]
+      safe fn seed() -> u32;
+      #[link_name = "globalThis.auditLoaded"]
+      safe fn loaded(n: u32);
+    }
+    js::on_load! {
+      let value = seed();
+      loaded(value);
+      let read = |value: u32| util::value(value);
+      loaded(read(value));
+    }
+    pub fn ready() -> u32 { util::value(1) }
+  `);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"),
+    "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const code = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(code).toContain('import { value as value$1 } from "./util.js";');
+  expect(code).not.toContain("\0");
+  const seen: number[] = [];
+  const globals = globalThis as typeof globalThis & { auditSeed?: () => number; auditLoaded?: (n: number) => void };
+  globals.auditSeed = () => 3;
+  globals.auditLoaded = n => seen.push(n);
+  try {
+    const generated = await import(join(dir, "lib.js"));
+    expect(seen).toEqual([3, 4]);
+    expect(generated.ready()).toBe(2);
+  } finally {
+    delete globals.auditSeed;
+    delete globals.auditLoaded;
+  }
 });

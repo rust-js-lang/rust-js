@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "obsolete-declarations-kept",
+    breaks: "obsolete generated declarations remain after a module is removed or declarations are disabled",
+    file: "src/output.rs",
+    find: '|| old.to_string_lossy().ends_with(".d.ts");',
+    replace: '|| false;',
+    tests: ["test/publication.test.ts", "-t", "declaration"],
+  },
+  {
     name: "should-panic-takes-any-throw",
     breaks: "a `#[should_panic]` test passes when the JS throws a `TypeError`, not only when it panics",
     file: "src/output.rs",
