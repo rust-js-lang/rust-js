@@ -52,4 +52,46 @@ impl NextRouter {
     pub fn reload(&self) {
         unreachable!()
     }
+
+    /// What it emits as it goes to another route, `router.events`.
+    #[cfg_attr(rust_js, rust_js::link_name = "get events")]
+    pub fn events(&self) -> &'static MittEmitter {
+        unreachable!()
+    }
+}
+
+/// [`router.events`](https://nextjs.org/docs/pages/api-reference/functions/use-router#routerevents),
+/// Next.js's emitter, `mitt`'s.
+pub struct MittEmitter(PhantomData<JsObject>);
+
+/// An event of [`MittEmitter`]'s, as @types' `RouterEvent`: each whose
+/// handler is given the URL it goes to first. `routeChangeError`'s is
+/// given its error first, so isn't one.
+#[derive(Clone, Copy)]
+pub enum RouterEvent {
+    #[cfg_attr(rust_js, rust_js::name = "routeChangeStart")]
+    RouteChangeStart,
+    #[cfg_attr(rust_js, rust_js::name = "beforeHistoryChange")]
+    BeforeHistoryChange,
+    #[cfg_attr(rust_js, rust_js::name = "routeChangeComplete")]
+    RouteChangeComplete,
+    #[cfg_attr(rust_js, rust_js::name = "hashChangeStart")]
+    HashChangeStart,
+    #[cfg_attr(rust_js, rust_js::name = "hashChangeComplete")]
+    HashChangeComplete,
+}
+
+impl MittEmitter {
+    /// `events.on(type, handler)`: `handler` of each `type` of event, given
+    /// the URL, until [`off`](Self::off) is given the same function.
+    #[cfg_attr(rust_js, rust_js::link_name = "on")]
+    pub fn on(&self, r#type: RouterEvent, handler: &'static dyn Fn(&str)) {
+        unreachable!()
+    }
+
+    /// `events.off(type, handler)`: `handler` of no more of them.
+    #[cfg_attr(rust_js, rust_js::link_name = "off")]
+    pub fn off(&self, r#type: RouterEvent, handler: &'static dyn Fn(&str)) {
+        unreachable!()
+    }
 }

@@ -75,7 +75,7 @@ function app(name: string): string {
   // rendered, as this app's routes are the App Router's.
   // A link of a ref and passHref, as react.dev's SidebarLink has it.
   writeFileSync(join(dir, "app/linked.rs"), linked);
-  writeFileSync(join(dir, "app/route_path.rs"), "pub fn route_path() -> String {\n    next::router::use_router().as_path().to_string()\n}\n");
+  writeFileSync(join(dir, "app/route_path.rs"), "pub fn route_path() -> String {\n    next::router::use_router().as_path().to_string()\n}\n\n" + routeEvents);
   mkdirSync(join(dir, "app/about"));
   writeFileSync(join(dir, "app/about/page.rs"), about);
   return dir;
@@ -100,6 +100,23 @@ fn label(home: bool) -> &'static str {
 pub fn Linked() -> JSX::Element {
     let anchor = use_ref::<Option<&'static HTMLAnchorElement>>(None);
     jsx! { <Link href="/" ref={Some(anchor)} title={Some("Home")} className={Some(classes(true))} passHref={Some(true)}>{label(true)}</Link> }
+}
+`;
+
+// A handler of the router's events, given on and taken off by the same
+// function, as react.dev's usePendingRoute has them.
+const routeEvents = `pub fn use_route_events() {
+    let events = next::router::use_router().events();
+    react::use_effect(
+        move || {
+            let started: &'static dyn Fn(&str) = Box::leak(Box::new(|url: &str| {
+                let _ = url.len();
+            }));
+            events.on(next::router::RouterEvent::RouteChangeStart, started);
+            move || events.off(next::router::RouterEvent::RouteChangeStart, started)
+        },
+        (events,),
+    );
 }
 `;
 
@@ -144,6 +161,7 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   expect(readFileSync(join(dir, "app/linked.jsx"), "utf8")).toContain('<Link href="/" ref={anchor} title="Home" className={classes(true)} passHref>\n      {label(true)}');
   const routePath = readFileSync(join(dir, "app/route_path.js"), "utf8");
   expect([routePath.includes('import { useRouter } from "next/router";'), routePath.includes("return useRouter().asPath;")]).toEqual([true, true]);
+  expect([routePath.includes("const events = useRouter().events;"), routePath.includes('events.on("routeChangeStart", started);'), routePath.includes('events.off("routeChangeStart", started)')]).toEqual([true, true, true]);
   // The Server Component's page is rendered at build time, the counter in it.
   expect(readFileSync(join(dir, ".next/server/app/index.html"), "utf8")).toContain("Count <!-- -->0");
   const aboutHtml = readFileSync(join(dir, ".next/server/app/about.html"), "utf8");
