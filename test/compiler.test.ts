@@ -1223,6 +1223,47 @@ pub fn shown(text: &str) -> String {
   expect([lib.shown("{").startsWith("SyntaxError: "), lib.shown("1")]).toEqual([true, "parsed"]);
 });
 
+// ADR 0275: a \`#[rust_js::nullable]\` field is TypeScript's \`T | null\`: its
+// \`None\` is \`null\`, as Next.js's \`getStaticProps\` gives react.dev's errors
+// page its \`errorCode\`, which JSON has no \`undefined\` for. Another such
+// field's value is one already, passed on as it is.
+test("a nullable field's None is null", async () => {
+  const dir = fixture("nullable-null");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Props {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub code: Option<String>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub message: Option<String>,
+    pub title: Option<String>,
+}
+
+pub fn none() -> Props {
+    Props { code: None, message: Some("m".to_string()), title: None }
+}
+
+pub fn given(code: Option<String>) -> Props {
+    Props { code, message: None, title: None }
+}
+
+pub fn passed(Props { code, message, .. }: Props) -> Props {
+    Props { code, message, title: None }
+}
+
+pub fn moved(p: Props) -> Props {
+    Props { code: p.code, message: Some(p.title.unwrap_or_default()), title: None }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('return { code: null, message: "m", title: undefined };');
+  expect(js).toContain("return { code: code ?? null, message: null, title: undefined };");
+  expect(js).toContain("return { code, message, title: undefined };");
+  expect(js).toContain('return { code: p.code, message: p.title ?? "", title: undefined };');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.given(undefined), lib.given("1")]).toEqual([{ code: null, message: null, title: undefined }, { code: "1", message: null, title: undefined }]);
+  expect(JSON.stringify(lib.passed(lib.given(undefined)))).toBe('{"code":null,"message":null}');
+});
+
 // ADR 0272: Node's modules, as @types/node types them, are the JS a person
 // writes in Node: an import of `fs`'s, and `process`, a global, as
 // react.dev's errors page reads its Markdown in `getStaticProps`.

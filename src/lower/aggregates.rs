@@ -191,6 +191,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.update_moved(fru.base, out)?;
         }
         let mut given: HashMap<usize, Expr> = adt.fields.iter().map(|f| f.name.as_usize()).zip(values).collect();
+        // A `#[rust_js::nullable]` field is TypeScript's `T | null` (ADR
+        // 0275): its `None` is `null`.
+        for field in &adt.fields {
+            if bindings::is_nullable(self.tcx, &variant.fields[field.name])
+                && let Some(value) = given.get_mut(&field.name.as_usize())
+            {
+                let made = std::mem::replace(value, Expr::undefined());
+                *value = self.nullable(made, field.expr);
+            }
+        }
 
         let tag = adt.adt_def.is_enum().then(|| bindings::variant_name(self.tcx, variant));
         let shape = match tag {
@@ -234,6 +244,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             });
         }
         Ok(assembled(shape, tag, items))
+    }
+
+    /// `value`, given to a `#[rust_js::nullable]` field: `null` if it's `None`,
+    /// `value ?? null` if it may be, but as it is if it's `Some`, or another
+    /// such field's, `null` or a value already (ADR 0275).
+    fn nullable(&self, value: Expr, e: ExprId) -> Expr {
+        let e = self.strip(e);
+        let other_field = match self.thir[e].kind {
+            thir::ExprKind::VarRef { id } => super::body_queries::nullable_bindings(self.tcx, self.thir).contains(&id),
+            thir::ExprKind::Field {
+                lhs,
+                variant_index,
+                name,
+            } => match self.thir[lhs].ty.peel_refs().kind() {
+                ty::Adt(adt, _) => bindings::is_nullable(self.tcx, &adt.variant(variant_index).fields[name]),
+                _ => false,
+            },
+            // `Some(..)`, never `None`.
+            thir::ExprKind::Adt(ref made) => made.fields.len() == 1,
+            _ => false,
+        };
+        match value.kind {
+            js::ExprKind::Undefined => Expr::null(),
+            _ if other_field || value.is_constant() => value,
+            _ => Expr::bin(js::Op::Coalesce, value, Expr::null()),
+        }
     }
 
     /// `value`, if it does something, made first, in a `const` of its own.

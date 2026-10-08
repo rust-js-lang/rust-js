@@ -101,7 +101,7 @@ export default Tag;
   JS's `= []`, takes `undefined` and not `null`. One marked
   `#[rust_js::nullable]` takes `null` too, `?: T | null`, where the data has
   it: react.dev's errors page gives its `ErrorDecoderContext` `{ errorMessage:
-  string | null }`.
+  string | null }`. Its `None` is `null` when it's made (ADR 0275).
 - **A function only `js::export_default!` exports is declared, not exported
   by its name**, `declare function Recap(props: RecapProps): ReactNode;`
   before `export default Recap;`, as its JS has it. (Amended: it wasn't

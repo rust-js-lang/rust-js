@@ -3,8 +3,8 @@
 
 use super::fn_def;
 use super::recognition::{StdItem, is_std_def, is_std_method};
-use rustc_hir::HirId;
 use rustc_hir::attrs::lang_items::LangItem;
+use rustc_hir::{BindingMode, ByRef, HirId, Mutability};
 use rustc_middle::middle::region;
 use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::{self, ExprId, ExprKind, LocalVarId, Pat, PatKind, Thir};
@@ -218,6 +218,49 @@ impl BodyFacts {
         }
         facts
     }
+}
+
+/// The locals a `#[rust_js::nullable]` field is bound to, by value and not
+/// set again: `T | null` already, as JS has the field (ADR 0275).
+pub(super) fn nullable_bindings<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<LocalVarId> {
+    let mut found = HashSet::new();
+    let mut bound = |pat: &Pat<'tcx>| {
+        let (variant, subpatterns) = match (&pat.kind, pat.ty.kind()) {
+            (PatKind::Leaf { subpatterns }, ty::Adt(adt, _)) => (adt.non_enum_variant(), subpatterns),
+            (
+                PatKind::Variant {
+                    adt_def,
+                    variant_index,
+                    subpatterns,
+                    ..
+                },
+                _,
+            ) => (adt_def.variant(*variant_index), subpatterns),
+            _ => return,
+        };
+        for field in subpatterns {
+            if super::bindings::is_nullable(tcx, &variant.fields[field.field])
+                && let PatKind::Binding {
+                    var,
+                    mode: BindingMode(ByRef::No, Mutability::Not),
+                    subpattern: None,
+                    ..
+                } = field.pattern.kind
+            {
+                found.insert(var);
+            }
+        }
+    };
+    let params = thir.params.iter().filter_map(|param| param.pat.as_deref());
+    let lets = thir.stmts.iter().filter_map(|stmt| match &stmt.kind {
+        thir::StmtKind::Let { pattern, .. } => Some(&**pattern),
+        thir::StmtKind::Expr { .. } => None,
+    });
+    let arms = thir.arms.iter().map(|arm| &*arm.pattern);
+    for pat in params.chain(lets).chain(arms) {
+        pat.walk_always(&mut bound);
+    }
+    found
 }
 
 /// Skip THIR's wrapper nodes that don't change meaning.

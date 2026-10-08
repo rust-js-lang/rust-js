@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "        ExprKind::NamedConst { def_id, .. } => {\n            false && own(def_id)\n",
     tests: ["test/jsx.test.ts", "-t", "ElementType, rendered as a tag"],
   },
+  {
+    name: "nullable-params-unseen",
+    breaks: "a parameter's pattern binding a `#[rust_js::nullable]` field isn't one, `code ?? null`",
+    file: "src/lower/body_queries.rs",
+    find: "    let params = thir.params.iter().filter_map(|param| param.pat.as_deref());\n",
+    replace: "    let params = thir.params.iter().filter_map(|param| param.pat.as_deref()).filter(|_| false);\n",
+    tests: ["test/compiler.test.ts", "-t", "nullable field's None is null"],
+  },
 ];
