@@ -304,3 +304,31 @@ pub fn nan(xs: Vec<f64>) -> bool {
   expect(lib.hidden([], "b")).toEqual([false, false]);
   expect(lib.nan([NaN])).toBe(false);
 });
+
+// A binding's parameter it names `#[rust_js::nullable(..)]` is `T | null`,
+// as a field is (ADR 0275): its `None` is `null`, `JSON.stringify(value,
+// null, 2)` as react.dev's Sandpack template writes it.
+test("a binding's nullable parameter's None is null", async () => {
+  const dir = fixture("nullable-param");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "JSON.stringify")]
+#[cfg_attr(rust_js, rust_js::nullable(replacer))]
+#[allow(unused_variables)]
+fn stringify(value: &[u32], replacer: Option<&[&str]>, space: u32) -> String {
+    unreachable!()
+}
+
+pub fn plain(items: &[u32]) -> String {
+    stringify(items, None, 2)
+}
+
+pub fn given(items: &[u32], keys: Option<&[&str]>) -> String {
+    stringify(items, keys, 2)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return JSON.stringify(items, null, 2);");
+  expect(js).toContain("return JSON.stringify(items, keys ?? null, 2);");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.plain([1, 2]), lib.given([3], undefined)]).toEqual(["[\n  1,\n  2\n]", "[\n  3\n]"]);
+});

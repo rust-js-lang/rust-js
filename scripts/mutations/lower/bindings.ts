@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "nullable-param-unchecked",
+    breaks: "`#[rust_js::nullable(n)]` naming no `Option` parameter is accepted",
+    file: "src/lower/bindings.rs",
+    find: "                if !at.is_some_and(",
+    replace: "                if false && !at.is_some_and(",
+    tests: ["test/diagnostics.test.ts", "-t", "nullable parameter"],
+  },
+  {
     name: "get-index-unread",
     breaks: "`js::get(value, key)`'s `get []` is a method of that name, not `value[key]`",
     file: "src/lower/bindings.rs",

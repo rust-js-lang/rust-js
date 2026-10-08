@@ -1,6 +1,6 @@
 //! Calls to local functions, JavaScript bindings, closures and standard operations.
 
-use super::bindings::{JsForm, is_binding, is_method, is_omitted, is_variadic, js_form};
+use super::bindings::{JsForm, is_binding, is_method, is_omitted, is_variadic, js_form, nullable_params};
 use super::combinators::Comb;
 use super::combinators::StepOp;
 use super::display::append_written;
@@ -254,6 +254,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             for (value, &arg) in values.iter_mut().zip(args) {
                 if matches!(self.thir[self.strip(arg)].kind, ExprKind::Tuple { ref fields } if fields.is_empty()) {
                     *value = Expr::array(Vec::new());
+                }
+            }
+            // A parameter it names `#[rust_js::nullable(..)]` is `T | null`:
+            // its `None` is `null` (ADR 0275).
+            let nullable = nullable_params(self.tcx, def_id);
+            if !nullable.is_empty() {
+                let idents = self.tcx.fn_arg_idents(def_id);
+                for ((value, &arg), ident) in values.iter_mut().zip(args).zip(idents) {
+                    if ident.is_some_and(|ident| nullable.contains(&ident.name)) {
+                        let given = std::mem::replace(value, Expr::undefined());
+                        *value = self.nullable(given, arg);
+                    }
                 }
             }
             let mut args = values;

@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "nullable-param-undefined",
+    breaks: "a binding's `#[rust_js::nullable(replacer)]` parameter given `None` is `undefined`, not `null`",
+    file: "src/lower/calls.rs",
+    find: "            if !nullable.is_empty() {",
+    replace: "            if false && !nullable.is_empty() {",
+    tests: ["test/format.test.ts", "-t", "nullable parameter"],
+  },
+  {
     name: "named-key-indexed",
     breaks: "`js::set(value, \"name\", ..)` is `value[\"name\"]`, where a person writes `value.name`",
     file: "src/lower/calls.rs",

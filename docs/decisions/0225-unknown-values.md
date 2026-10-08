@@ -172,3 +172,13 @@ value.name = "new";
   JSON gave, with no `value != null` before it.
 - **`js::dict::new()` is `{}`**, a dictionary of nothing to fill with `set`,
   as react.dev's createFileMap makes Sandpack's files.
+- **`json::stringify_with(&value, replacer, space)` is `JSON.stringify`**
+  of a value whose JS is its JSON, `js::JsonText`: strings, `bool`s,
+  numbers to 32 bits and floats, arrays, `Vec`s, `Dict`s and `Option`s of
+  them, `Json`, and a struct whose `unsafe impl JsonText` vouches its fields
+  are, as `StructuredClone` is. A 64-bit integer isn't: it's a `BigInt`,
+  which `JSON.stringify` throws on. So a struct literal is written as JS
+  writes an object's, `JSON.stringify({ name: "react.dev", .. }, null, 2)`,
+  as react.dev's Sandpack template writes its package.json. Case A for what
+  it takes; a NaN is `null`, as JS writes it, case B: JSON has no NaN and
+  Rust no JSON of its own without serde (ADR 0077).

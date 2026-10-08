@@ -271,6 +271,31 @@ tuples! {
     (A, B, C, D, E, F)
 }
 
+/// A value whose JS is its JSON, as [`json::stringify_with`] writes it:
+/// strings, `bool`s and numbers to 32 bits and floats (a NaN or an infinity
+/// is `null`), and arrays, tuples, `Vec`s and `Dict`s of them, `Json`, and
+/// an `Option` of one, whose `None` is left out of an object and `null` in
+/// an array. Not a 64-bit integer, a `BigInt`, which `JSON.stringify`
+/// throws on. A struct is one as its fields are: unsafe to implement, as its
+/// `impl` vouches they are, `unsafe impl JsonText for Package {}`.
+pub unsafe trait JsonText {}
+
+macro_rules! json_text {
+    ($($t:ty),* $(,)?) => {
+        $(unsafe impl JsonText for $t {})*
+    };
+}
+
+json_text!(bool, i8, i16, i32, isize, u8, u16, u32, usize, f32, f64, str, String, Json<'_>);
+
+unsafe impl<T: JsonText + ?Sized> JsonText for &T {}
+unsafe impl<T: JsonText + ?Sized> JsonText for Box<T> {}
+unsafe impl<T: JsonText> JsonText for [T] {}
+unsafe impl<T: JsonText, const N: usize> JsonText for [T; N] {}
+unsafe impl<T: JsonText> JsonText for Vec<T> {}
+unsafe impl<T: JsonText> JsonText for Dict<T> {}
+unsafe impl<T: JsonText + Defined> JsonText for Option<T> {}
+
 /// A plain JS object of `T`s by their names (ADR 0225), as ReScript's `dict`
 /// and TypeScript's `Record<string, T>` are: a JSON object, or a
 /// dictionary an API takes. [`dict::get`] reads one by its key.
@@ -618,6 +643,17 @@ pub mod json {
         /// escaped, which is a JS string literal too.
         #[link_name = "JSON.stringify"]
         pub safe fn stringify(text: &str) -> String;
+    }
+
+    /// [`JSON.stringify(value, replacer, space)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify):
+    /// `value`'s JSON, each level indented by `space` spaces, up to 10, or
+    /// on one line of 0. An object has only the properties `replacer` names,
+    /// if it names any.
+    #[cfg_attr(rust_js, rust_js::link_name = "JSON.stringify")]
+    #[cfg_attr(rust_js, rust_js::nullable(replacer))]
+    #[allow(unused_variables)]
+    pub fn stringify_with<T: JsonText + ?Sized>(value: &T, replacer: Option<&[&str]>, space: u32) -> String {
+        unreachable!()
     }
 }
 

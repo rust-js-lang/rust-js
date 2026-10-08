@@ -1281,6 +1281,48 @@ pub fn shown(text: &str) -> String {
   expect([lib.shown("{").startsWith("SyntaxError: "), lib.shown("1")]).toEqual([true, "parsed"]);
 });
 
+// A struct whose JS is its JSON, `unsafe impl JsonText`, is written by
+// `JSON.stringify`, indented, as react.dev's Sandpack template writes its
+// package.json: `JSON.stringify({ .. }, null, 2)`.
+test("a struct whose JS is its JSON is stringified as it is", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("json-text");
+  writeFileSync(join(dir, "lib.rs"), `use js::{JsonText, json};
+pub struct Dependencies {
+    pub react: &'static str,
+    #[cfg_attr(rust_js, rust_js::name = "react-dom")]
+    pub react_dom: &'static str,
+}
+pub struct Package {
+    pub name: &'static str,
+    pub version: Option<&'static str>,
+    pub files: Vec<String>,
+    pub dependencies: Dependencies,
+}
+unsafe impl JsonText for Dependencies {}
+unsafe impl JsonText for Package {}
+pub fn manifest(version: Option<&'static str>) -> String {
+    json::stringify_with(
+        &Package {
+            name: "react.dev",
+            version,
+            files: vec!["a.js".to_string()],
+            dependencies: Dependencies { react: "19", react_dom: "19" },
+        },
+        None,
+        2,
+    )
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('dependencies: { react: "19", "react-dom": "19" },\n    },\n    null,\n    2,\n  );');
+  const lib = await import(join(dir, "lib.js"));
+  const want = { name: "react.dev", files: ["a.js"], dependencies: { react: "19", "react-dom": "19" } };
+  expect(lib.manifest(undefined)).toBe(JSON.stringify(want, null, 2));
+  expect(JSON.parse(lib.manifest("1")).version).toBe("1");
+});
+
 // ADR 0275: a `#[rust_js::nullable]` field is TypeScript's `T | null`: its
 // `None` is `null`, as Next.js's `getStaticProps` gives react.dev's errors
 // page its `errorCode`, which JSON has no `undefined` for. Another such

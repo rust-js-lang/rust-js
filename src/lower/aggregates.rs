@@ -249,7 +249,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `value`, given to a `#[rust_js::nullable]` field: `null` if it's `None`,
     /// `value ?? null` if it may be, but as it is if it's `Some`, or another
     /// such field's, `null` or a value already (ADR 0275).
-    fn nullable(&self, value: Expr, e: ExprId) -> Expr {
+    pub(super) fn nullable(&self, value: Expr, e: ExprId) -> Expr {
         let e = self.strip(e);
         let other_field = match self.thir[e].kind {
             thir::ExprKind::VarRef { id } => super::body_queries::nullable_bindings(self.tcx, self.thir).contains(&id),

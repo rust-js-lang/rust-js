@@ -1,6 +1,7 @@
 //! Decode the binding language independently of call lowering.
 
 use rustc_ast::LitKind;
+use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::{ExprKind, ItemKind, Stmt, StmtKind};
 use rustc_middle::ty::{self, FieldDef, Ty, TyCtxt, VariantDef};
@@ -25,6 +26,26 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
                     "rust-js: a binding needs one `#[rust_js::link_name = \"...\"]` on a function or method",
                 );
                 valid = false;
+            }
+        }
+        // What `#[rust_js::nullable(..)]` names is a parameter of its own,
+        // an `Option`, whose `None` can be `null`.
+        if matches!(tcx.def_kind(def), DefKind::Fn | DefKind::AssocFn) {
+            let idents = tcx.fn_arg_idents(def.to_def_id());
+            let inputs = tcx.fn_sig(def).skip_binder().skip_binder().inputs();
+            for name in nullable_params(tcx, def.to_def_id()) {
+                let at = idents
+                    .iter()
+                    .position(|ident| ident.is_some_and(|ident| ident.name == name));
+                if !at.is_some_and(
+                    |i| matches!(inputs[i].kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option)),
+                ) {
+                    let message = format!(
+                        "rust-js: `#[rust_js::nullable({name})]` names no parameter of this function that's an `Option`"
+                    );
+                    tcx.dcx().span_err(tcx.def_span(def), message);
+                    valid = false;
+                }
             }
         }
         // Two fields that are one JS property would overwrite each other.
@@ -329,6 +350,19 @@ pub(super) fn is_omitted(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 pub(super) fn is_nullable(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("nullable")];
     tcx.get_attrs_by_path(field.did, &path).next().is_some()
+}
+
+/// The parameters a binding names `#[rust_js::nullable(..)]`, each
+/// `T | null` as a nullable field is (ADR 0275). On the function, since a
+/// parameter's own attributes are kept neither in an `extern` block nor
+/// in another crate's metadata.
+pub(super) fn nullable_params(tcx: TyCtxt<'_>, def_id: DefId) -> Vec<Symbol> {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("nullable")];
+    tcx.get_attrs_by_path(def_id, &path)
+        .filter_map(|attr| attr.meta_item_list())
+        .flatten()
+        .filter_map(|item| item.ident().map(|ident| ident.name))
+        .collect()
 }
 
 /// A props field's default, `#[rust_js::default]` (ADR 0212): `Some(None)`

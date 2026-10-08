@@ -50,3 +50,15 @@ Its declaration stays `?: T | null`: a TypeScript caller may leave it out.
 - **It's tested**: a compiler test makes one of `None`, of an `Option`, of
   a `Some`, and of another's field, and its JSON keeps each; mutations make
   each `undefined` or `?? null`.
+
+## Since
+
+- **A binding's parameter is nullable too, `#[rust_js::nullable(replacer)]`
+  on its function**, naming it: its `None` is `null`, an `Option` that may
+  be `None` is `value ?? null`, as a field's is. On the function, as a
+  parameter's own attributes are dropped in an `extern` block and aren't in
+  a crate's metadata. A name that isn't a parameter, or one that isn't an
+  `Option`, is an error. `json::stringify_with(&value, None, 2)` is
+  `JSON.stringify(value, null, 2)`, as react.dev's Sandpack template
+  writes it. Case A: rust-js reads `null` and `undefined` alike as `None`,
+  and `JSON.stringify` takes either as no replacer.
