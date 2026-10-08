@@ -31,9 +31,9 @@ function main() {
   console.log(
     `${Delayed.total(moved, { clone: (value) => value }, { borrow: (value) => value })} ${Delayed.total(moved, { clone: (value) => value }, { borrow: (value) => value })}`,
   );
-  let it = $iter(v);
+  const it = $iter(v);
   $next(it);
-  let copy = $iter(it.items.slice(it.at));
+  const copy = $iter(it.items.slice(it.at));
   $next(it);
   const arg = $next(copy);
   const arg$1 = $next(it);
@@ -41,7 +41,7 @@ function main() {
   console.log(
     `${arg == null ? "None" : `Some(${arg})`} ${arg$1 == null ? "None" : `Some(${arg$1})`} ${arg$2 == null ? "None" : `Some(${arg$2})`}`,
   );
-  let a = $iter([7, 8, 9]);
+  const a = $iter([7, 8, 9]);
   $next(a);
   const b = a.items.slice(a.at);
   const arg$3 = b.slice();
@@ -52,7 +52,7 @@ function main() {
   const rows = [[1], [2]];
   const again = rows.map((item) => item.slice());
   for (const item of rows) {
-    let row = item;
+    const row = item;
     row.push(0);
     $print(`[${row.map((item) => String(item)).join(", ")}] `);
   }

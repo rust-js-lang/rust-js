@@ -122,7 +122,7 @@ export function consumers(n) {
 }
 
 export function vecs(n) {
-  let v = [1, 1, 2, 3, 3, 3, 4];
+  const v = [1, 1, 2, 3, 3, 3, 4];
   const has = v.includes(n);
   $dedup(v);
   $insertAt(v, 1, 50);
@@ -136,7 +136,7 @@ export function vecs(n) {
 }
 
 export function panics(i) {
-  let v = [1, 2];
+  const v = [1, 2];
   return $removeAt(v, i);
 }
 

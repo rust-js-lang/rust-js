@@ -2,7 +2,7 @@
 
 export function by_reference(a, b) {
   let total = 0;
-  let add = (x) => {
+  const add = (x) => {
     total = (total + x) | 0;
   };
   add(a);
@@ -12,16 +12,16 @@ export function by_reference(a, b) {
 
 export function move_copies(n) {
   let n$1 = n;
-  let n$2 = n$1;
+  const n$2 = n$1;
   const get = () => n$2;
   n$1 = (n$1 + 100) | 0;
   return (Math.imul(get(), 1000) + n$1) | 0;
 }
 
 export function own_state(start) {
-  let count = start;
+  const count = start;
   let count$1 = count;
-  let next = () => {
+  const next = () => {
     count$1 = (count$1 + 1) | 0;
     return count$1;
   };
@@ -31,12 +31,12 @@ export function own_state(start) {
 }
 
 export function fresh_copy_each_time(times) {
-  let n = 0;
+  const n = 0;
   let total = 0;
   let i = 0;
   while (i < times) {
     let n$1 = n;
-    let bump = () => {
+    const bump = () => {
       n$1 = (n$1 + 1) | 0;
       return n$1;
     };
@@ -47,9 +47,9 @@ export function fresh_copy_each_time(times) {
 }
 
 export function struct_copy(x) {
-  let p = { x, y: 0 };
+  const p = { x, y: 0 };
   let x$1 = p.x;
-  let shift = () => {
+  const shift = () => {
     x$1 = (x$1 + 1) | 0;
     return x$1;
   };

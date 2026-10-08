@@ -38,7 +38,7 @@ function main() {
   console.log(
     `${arg == null ? "None" : `Some((${arg[0]}, ${arg[1]}))`} ${arg$1 == null ? "None" : `Some((${arg$1[0]}, ${arg$1[1]}))`}`,
   );
-  let log = [];
+  const log = [];
   outer: {
     log.push("start");
     inner: {

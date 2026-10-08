@@ -47,7 +47,7 @@ export const Lexer = {
     return w;
   },
   tokens(lexer) {
-    let out = [];
+    const out = [];
     while (true) {
       const c = $next(lexer.chars);
       if (c != null) {
@@ -88,8 +88,8 @@ export const Lexer = {
 };
 
 export function pairs(v) {
-  let it = $iter(v);
-  let out = [];
+  const it = $iter(v);
+  const out = [];
   while (true) {
     const value = $next(it);
     const value$1 = $next(it);
@@ -104,7 +104,7 @@ export function pairs(v) {
 }
 
 export function capitalize(s) {
-  let chars = $iter(Array.from(s));
+  const chars = $iter(Array.from(s));
   const match = $next(chars);
   if (match != null) {
     return match.toUpperCase() + $restStr(chars);
@@ -122,7 +122,7 @@ export function report() {
   const arg$2 = pairs([]);
   out += `([${arg$1[0].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}], [${arg$1[1].map((item) => String(item)).join(", ")}]) ([${arg$2[0].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}], [${arg$2[1].map((item) => String(item)).join(", ")}])\n`;
   out += `${capitalize("hello")} ${capitalize("ßig")} ${$debugStr(capitalize(""))}\n`;
-  let words = $iter("one two three four".split(" "));
+  const words = $iter("one two three four".split(" "));
   const first = $next(words);
   const rest = $rest(words);
   out += `${first == null ? "None" : `Some(${$debugStr(first)})`} [${rest.map((item) => $debugStr(item)).join(", ")}]\n`;

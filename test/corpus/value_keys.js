@@ -11,12 +11,12 @@ import {
 } from "@rust-js/runtime";
 
 function main() {
-  let seen = new $KeySet();
+  const seen = new $KeySet();
   console.log(`${$add(seen, [1, 2])} ${$add(seen, [1, 2])} ${$add(seen, [2, 1])}`);
   console.log(`${seen.size} ${seen.has([1, 2])} ${seen.has([3, 3])}`);
   seen.delete([1, 2]);
   console.log(`${seen.size} ${seen.has([1, 2])}`);
-  let walls = new $KeyMap();
+  const walls = new $KeyMap();
   walls.set({ x: 1, y: 2 }, "stone");
   walls.set({ x: 1, y: 2 }, "brick");
   const arg = walls.size;
@@ -33,7 +33,7 @@ function main() {
       .map(([key, value]) => `${pointDebug_fmt(key)}: ${$debugStr(value)}`)
       .join(", ")}}`,
   );
-  let counts = new $KeyMap();
+  const counts = new $KeyMap();
   for (const shape of [
     { TAG: "Circle", _0: 2 },
     "Dot",
@@ -52,7 +52,7 @@ function main() {
   console.log(
     `${arg$3} ${arg$4 == null ? "None" : `Some(${arg$4})`} ${arg$5 == null ? "None" : `Some(${arg$5})`} ${arg$6 == null ? "None" : `Some(${arg$6})`} ${arg$7 == null ? "None" : `Some(${arg$7})`}`,
   );
-  let byParent = new Map();
+  const byParent = new Map();
   $orInsertWith(byParent, undefined, () => []).push("root");
   $orInsertWith(byParent, 1, () => []).push("leaf");
   $orInsertWith(byParent, undefined, () => []).push("other root");
@@ -63,7 +63,7 @@ function main() {
     `${arg$8 == null ? "None" : `Some([${arg$8.map((item) => $debugStr(item)).join(", ")}])`} ${arg$9 == null ? "None" : `Some([${arg$9.map((item) => $debugStr(item)).join(", ")}])`} ${arg$10 == null ? "None" : `Some([${arg$10.map((item) => $debugStr(item)).join(", ")}])`}`,
   );
   const ann = { owner: "ann", id: BigInt.asUintN(64, 1n << 40n), at: { x: 0, y: 0 } };
-  let balances = new $KeyMap([[{ ...ann, at: { ...ann.at } }, 10]]);
+  const balances = new $KeyMap([[{ ...ann, at: { ...ann.at } }, 10]]);
   const current$1 = $unwrap(balances.get(ann));
   balances.set(ann, (current$1 + 5) | 0);
   const id = BigInt.asUintN(64, 1n << 41n);
@@ -74,8 +74,8 @@ function main() {
   console.log(
     `${arg$11 == null ? "None" : `Some(${arg$11})`} ${arg$12 == null ? "None" : `Some(${arg$12})`}`,
   );
-  let p = { x: 5, y: 5 };
-  let marks = new $KeySet();
+  const p = { x: 5, y: 5 };
+  const marks = new $KeySet();
   marks.add({ ...p });
   p.x = 6;
   console.log(
@@ -85,7 +85,7 @@ function main() {
   );
   const copy = new $KeyMap(Array.from(walls).map(([key, value]) => [{ ...key }, value]));
   for (const item of walls) {
-    let key = { ...item[0] };
+    const key = { ...item[0] };
     key.x = (key.x + 100) | 0;
     console.log(`${pointDebug_fmt(key)} ${item[1]}`);
   }

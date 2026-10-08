@@ -77,7 +77,7 @@ function main() {
   console.log(
     `${uuidDebug_fmt(id)} ${name} ${text} [${items.map((item) => String(item)).join(", ")}] ${boxed} ${shared}`,
   );
-  let labelled = [[{ name: "pear" }], [{ name: "fig" }]];
+  const labelled = [[{ name: "pear" }], [{ name: "fig" }]];
   labelled.sort((a, b) => labelledOrd_cmp(a, b, tagBorrowStr()));
   console.log(`${$index(labelled, 0)[0].name} ${$index(labelled, 1)[0].name}`);
 }

@@ -31,7 +31,7 @@ function main() {
   x = lhs$2;
   y = lhs$3;
   console.log(`${a} ${b} ${c} ${d} ${e} ${x} ${y}`);
-  let slots = [0, 0, 0, 0];
+  const slots = [0, 0, 0, 0];
   const tmp$1 = [9, 10, 11, 12];
   slots[0] = tmp$1[0];
   slots[3] = tmp$1[3];

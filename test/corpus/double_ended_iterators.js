@@ -3,7 +3,7 @@
 import { $exactLen, $iterator } from "@rust-js/runtime";
 
 function main() {
-  let s = { low: 0, high: 5 };
+  const s = { low: 0, high: 5 };
   const arg = spanIterator_next(s);
   const arg$1 = spanDoubleEndedIterator_next_back(s);
   console.log(
@@ -11,7 +11,7 @@ function main() {
   );
   const backwards = $iterator({ low: 1, high: 4 }, spanDoubleEndedIterator_next_back).toArray();
   console.log(`[${backwards.map((item) => String(item)).join(", ")}]`);
-  let both = { low: 10, high: 14 };
+  const both = { low: 10, high: 14 };
   const arg$2 = spanDoubleEndedIterator_next_back(both);
   const arg$3 = spanIterator_next(both);
   console.log(

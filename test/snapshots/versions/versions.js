@@ -28,7 +28,7 @@ import {
 var $dogDescribe, $catDescribe, $tLabeled;
 
 function largest(items, TPartialOrd, TCopy) {
-  let it = $iter(items);
+  const it = $iter(items);
   const value = $nextSome(it);
   if (value == null) {
     return undefined;
@@ -52,7 +52,7 @@ export function tour() {
     out += `${p.impl.name(p.value)} ${p.impl.describe(p.value)} ${p.impl.shout(p.value)}\n`;
   }
   out += `${tLabeled_label(42, { fmt: String })} ${tLabeled_label("hi", { fmt: (value) => value })} ${tLabeled_label(2.5, { fmt: $displayF64 })}\n`;
-  let vs = [
+  const vs = [
     { major: 1, minor: 2, patch: 3 },
     { major: 1, minor: 0, patch: 9 },
     { major: 0, minor: 0, patch: 0 },
@@ -80,11 +80,11 @@ export function tour() {
     acc.value = (acc.value + x) >>> 0;
     return acc.value;
   });
-  let v = $range(1, 8 + 1);
+  const v = $range(1, 8 + 1);
   const tail = $splitOff(v, 5);
   const drained = $drain(v, 1, 3);
   out += `[${running.map((item) => String(item)).join(", ")}] [${v.map((item) => String(item)).join(", ")}] [${tail.map((item) => String(item)).join(", ")}] [${drained.map((item) => String(item)).join(", ")}]\n`;
-  let fs = [2.5, -1, 3.25, 0];
+  const fs = [2.5, -1, 3.25, 0];
   fs.sort((a, b) => $totalCmp(a, b));
   const total = fs.reduce((a, b) => a + b, -0);
   const arg$3 = $fromDigit(7, 10);
@@ -117,7 +117,7 @@ export function edges() {
     }
     return acc.value;
   });
-  let fs = [NaN, 1, -0, 0, -Infinity, -1, Infinity];
+  const fs = [NaN, 1, -0, 0, -Infinity, -1, Infinity];
   fs.sort((a, b) => $totalCmp(a, b));
   const digits = [
     [0, 1],
@@ -131,7 +131,7 @@ export function edges() {
 }
 
 export function panics(i) {
-  let v = [1, 2, 3];
+  const v = [1, 2, 3];
   if (i === 0) {
     return $splitOff(v, 4);
   }

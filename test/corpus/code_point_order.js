@@ -28,10 +28,10 @@ function main() {
     }`,
   );
   console.log(`${$cmp(crab, bang) > 0 ? crab : bang} ${$cmp(crab, bang) > 0 ? bang : crab}`);
-  let sorted = words.slice();
+  const sorted = words.slice();
   sorted.sort($cmp);
   console.log(`[${sorted.map((item) => $debugStr(item)).join(", ")}]`);
-  let byKey = words.slice();
+  const byKey = words.slice();
   const key = (w) => w;
   byKey.sort((a, b) => $cmp(key(a), key(b)));
   console.log(`[${byKey.map((item) => $debugStr(item)).join(", ")}]`);
@@ -57,7 +57,7 @@ function main() {
       .map(([key, value]) => `${$debugStr(key)}: ${value}`)
       .join(", ")}}`,
   );
-  let pairs = [
+  const pairs = [
     [crab, 1],
     [bang, 2],
     ["a", 3],
@@ -79,7 +79,7 @@ function main() {
   const wide = c >= "a" && $cmp(c, "￿") <= 0;
   const match = "q";
   console.log(`${private$} ${ascii} ${wide} ${match >= "a" && match <= "z"}`);
-  let chars = Array.from("b！🦀�a");
+  const chars = Array.from("b！🦀�a");
   chars.sort($cmp);
   console.log(`[${chars.map((item) => $debugStr(item, "'")).join(", ")}]`);
   console.log(`${crab > "z"} ${"m" < crab} ${"apple" < "banana"}`);

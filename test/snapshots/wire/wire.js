@@ -24,10 +24,10 @@ export function sample() {
     paid: true,
     cache: 99,
   };
-  let counts = new Map();
+  const counts = new Map();
   counts.set("x", 1);
   counts.set("a", 2);
-  let byId = new Map();
+  const byId = new Map();
   byId.set(10, true);
   byId.set(2, false);
   return {

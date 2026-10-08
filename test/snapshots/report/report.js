@@ -70,7 +70,7 @@ function grade(score, age) {
 
 export function table(input) {
   let out = "";
-  let rows = [];
+  const rows = [];
   for (const [i, line] of $lines(input)
     .map((x, i) => [i, x])
     .slice(1)) {
@@ -86,7 +86,7 @@ export function table(input) {
   for (const r of rows) {
     out += `${$pad(capitalize(r.name), 8, "<")}|${String(r.score).padStart(6)}|${$pad(grade(r.score, r.age), 7, "^")}|${r.team.toUpperCase()}\n`;
   }
-  let byTeam = new Map();
+  const byTeam = new Map();
   for (const r$1 of rows) {
     $orInsertWith(byTeam, r$1.team, () => []).push(r$1);
   }

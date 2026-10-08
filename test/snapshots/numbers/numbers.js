@@ -35,7 +35,7 @@ export const Vec2 = {
 export function vectors() {
   const a = Vec2.new(3, 4);
   const b = Vec2.new(1, -2);
-  let c = vec2Add_add(
+  const c = vec2Add_add(
     vec2Sub_sub(vec2Add_add({ ...a }, vec2MulF64_mul({ ...b }, 2)), vec2Neg_neg({ ...a })),
     { x: 0, y: 0 },
   );
@@ -71,7 +71,7 @@ export function gcd(a, b) {
 }
 
 export function grids(n) {
-  let m = Array.from({ length: n }, () => new Array(n).fill(0));
+  const m = Array.from({ length: n }, () => new Array(n).fill(0));
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < n; j++) {
       const value = ((Math.imul(i, n) >>> 0) + j) >>> 0;
@@ -79,7 +79,7 @@ export function grids(n) {
       items[$at(items, j)] = value;
     }
   }
-  let t = Array.from({ length: n }, () => new Array(n).fill(0));
+  const t = Array.from({ length: n }, () => new Array(n).fill(0));
   for (const [i$1, row] of m.entries()) {
     for (const [j$1, v] of row.entries()) {
       const items$1 = $index(t, j$1);
@@ -87,7 +87,7 @@ export function grids(n) {
     }
   }
   const cell = { hits: 0 };
-  let cells = Array.from({ length: 3 }, () => ({ ...cell }));
+  const cells = Array.from({ length: 3 }, () => ({ ...cell }));
   $index(cells, 1).hits = ($index(cells, 1).hits + 5) >>> 0;
   const flags = new Array(n).fill(1);
   return [t, flags, `[${cells.map((item) => cell2Debug_fmt(item)).join(", ")}]`];

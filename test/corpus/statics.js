@@ -22,7 +22,7 @@ const COMPUTED = -42;
 const WORDS = ["one", "two"];
 
 function moved(dx) {
-  let p = { ...ORIGIN };
+  const p = { ...ORIGIN };
   p.x = (p.x + dx) | 0;
   return p;
 }

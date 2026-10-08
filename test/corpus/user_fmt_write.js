@@ -11,11 +11,11 @@ function describe(out, p) {
 }
 
 function main() {
-  let c = { text: "", bytes: 0 };
+  const c = { text: "", bytes: 0 };
   collectorWrite_write_str(c, `1 and ${$debugStr("two")}`);
   describe(c, { x: 3, y: -4 });
   console.log(`${$debugStr(c.text)} ${c.bytes}`);
-  let s = [""];
+  const s = [""];
   shoutingWrite_write_str(s, "hi 5");
   shoutingWrite_write_char(s, "x");
   shoutingWrite_write_str(s, "\n");

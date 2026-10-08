@@ -3,7 +3,7 @@
 import { $debugStr, $rotateRight } from "@rust-js/runtime";
 
 function main() {
-  let q = Array.from("ab");
+  const q = Array.from("ab");
   $rotateRight(q, 1, "n");
   console.log(`[${q.map((item) => $debugStr(item, "'")).join(", ")}]`);
   $rotateRight(q, 3, "n");

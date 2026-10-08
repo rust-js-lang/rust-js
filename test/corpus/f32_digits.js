@@ -12,7 +12,7 @@ function main() {
     power = Math.fround(power * 2);
   }
   let seed = 20261001;
-  let next = () => {
+  const next = () => {
     seed = ((Math.imul(seed, 1664525) >>> 0) + 1013904223) >>> 0;
     return seed;
   };

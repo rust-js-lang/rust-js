@@ -59,7 +59,7 @@ function main() {
       ")",
     )} ${$pretty("(", [String(arg$2[0])], ")")}`,
   );
-  let map = new Map();
+  const map = new Map();
   map.set("k", [1]);
   const failed = { TAG: "Err", _0: "bad" };
   console.log(

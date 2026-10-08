@@ -49,7 +49,7 @@ function main() {
       ["Less", "Equal", "Greater"][$cmp(a, b) + 1]
     }`,
   );
-  let v = [a, b, 0n, 1n * 1000000000n];
+  const v = [a, b, 0n, 1n * 1000000000n];
   v.sort($cmp);
   console.log(`[${v.map((item) => $debugDuration(item)).join(", ")}]`);
   const set = new Set([a, b, 1500000n * 1000n]);

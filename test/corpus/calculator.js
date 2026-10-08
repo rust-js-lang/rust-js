@@ -115,7 +115,7 @@ const Parser = {
       const value = Parser.peek(parser);
       if (value === "LParen") {
         Parser.next(parser);
-        let args = [];
+        const args = [];
         if (Parser.peek(parser) !== "RParen") {
           const result$1 = Parser.expr(parser);
           if (result$1.TAG === "Err") {
@@ -165,12 +165,12 @@ const Parser = {
 
 const Calculator = {
   new() {
-    let functions = new Map();
+    const functions = new Map();
     functions.set("max", [2, (a) => $f64Max($index(a, 0), $index(a, 1))]);
     functions.set("min", [2, (a) => $f64Min($index(a, 0), $index(a, 1))]);
     functions.set("sqrt", [1, (a) => Math.sqrt($index(a, 0))]);
     functions.set("abs", [1, (a) => Math.abs($index(a, 0))]);
-    let vars = new Map();
+    const vars = new Map();
     vars.set("pi", 3.141592653589793);
     return { vars, functions };
   },
@@ -251,7 +251,7 @@ const Calculator = {
     const value = tokens;
     if (value.length >= 2 && value[0].TAG === "Ident" && value[1] === "Assign") {
       const name = value[0]._0;
-      let parser = { tokens: $slice(tokens, 2).slice(), at: 0 };
+      const parser = { tokens: $slice(tokens, 2).slice(), at: 0 };
       const result$1 = Parser.expr(parser);
       if (result$1.TAG === "Err") {
         return result$1;
@@ -264,7 +264,7 @@ const Calculator = {
       calculator.vars.set(name, value$1);
       return { TAG: "Ok", _0: undefined };
     }
-    let parser$1 = { tokens, at: 0 };
+    const parser$1 = { tokens, at: 0 };
     const result$3 = Parser.expr(parser$1);
     if (result$3.TAG === "Err") {
       return result$3;
@@ -298,8 +298,8 @@ function number(chars) {
 }
 
 function tokenize(source) {
-  let tokens = [];
-  let chars = $iter(Array.from(source));
+  const tokens = [];
+  const chars = $iter(Array.from(source));
   while (true) {
     const value = $peek(chars);
     if (value != null) {
@@ -354,7 +354,7 @@ function tokenize(source) {
 }
 
 function main() {
-  let calc = Calculator.new();
+  const calc = Calculator.new();
   const lines = [
     "1 + 2 * 3",
     "(1 + 2) * 3",
@@ -381,7 +381,7 @@ function main() {
       console.log(`${line} !! ${calcErrorDisplay_fmt(match._0)}`);
     }
   }
-  let names = Array.from(calc.vars.keys());
+  const names = Array.from(calc.vars.keys());
   names.sort($cmp);
   console.log(`${names.join(", ")}`);
 }

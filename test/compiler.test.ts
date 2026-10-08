@@ -323,7 +323,7 @@ test("async code becomes async functions and await", async () => {
   expect(js).toContain("export async function sum(a, b) {\n  return ((await double(a)) + (await double(b))) >>> 0;\n}");
   // Parameters are the body's variables: no `let x = x`.
   expect(js).toContain("export async function countdown(n) {\n  let steps = 0;");
-  // What's taken apart is taken apart where it's given, as a plain \`fn\` takes it.
+  // What's taken apart is taken apart where it's given, as a plain `fn` takes it.
   expect(js).toContain("export async function swap([a, b]) {\n  return [await setTimeout(0, b), a];");
   expect(js).toContain("export async function given({ params }) {\n");
   // An `async` block is an async arrow, called; an `async` closure, an async arrow.
@@ -402,7 +402,7 @@ test("the playground is Rust components, compiled to the JS main.ts starts", asy
   expect(compiler).toContain('  const ok = started.TAG === "Ok" && started._0 === 0;');
   expect(compiler).toContain("    if (entry instanceof Directory) {");
   // The file tree: sorted with a comparator, a copy of the tree's entries.
-  expect(await read("tree.js")).toContain("  let entries = tree.slice();\n  entries.sort((a, b) => {");
+  expect(await read("tree.js")).toContain("  const entries = tree.slice();\n  entries.sort((a, b) => {");
   // The browser links named and namespace imports as real ES modules.
   const programs = await read("programs.js");
   expect(programs).toContain('type="importmap"');
@@ -714,7 +714,7 @@ test("constants are the values rustc computed, by name", async () => {
   // A `const` inside a function goes beside it.
   expect(js).toContain("const STEP = 3;");
   // Each use is a value of its own: copied where it's changed.
-  expect(js).toContain("  let p = { ...ORIGIN };\n");
+  expect(js).toContain("  const p = { ...ORIGIN };\n");
   expect(js).toContain("  return [{ ...p }, { ...ORIGIN }];");
   // A known divisor needs no check for zero.
   expect(js).toContain("  return (SIZE / 1024) >>> 0;");
@@ -764,10 +764,10 @@ test("structs and tuples are plain objects and arrays", async () => {
   expect(structs.classify([5, 5])).toBe(2);
 
   // `Point` is Copy and changed in place in this crate, so reading one copies it...
-  expect(js).toContain("let b = { ...a };");
+  expect(js).toContain("const b = { ...a };");
   expect(js).toContain("origin: { ...a },");
   // ...but `Rect` isn't Copy: assigning it moves it, with no copy.
-  expect(js).toContain("let s = r;");
+  expect(js).toContain("const s = r;");
   // Returning a variable hands it over.
   expect(js).toContain("return p;");
   // The tuple `(u32, u32)` is never changed in place, so it is taken apart as it is.
@@ -1128,7 +1128,7 @@ pub fn tick() {
   expect(js).toContain("COUNT = (COUNT + 1) >>> 0;");
   expect(js).not.toContain("COUNT.value");
   expect(js).not.toContain("LOG.value");
-  // One made by a \`const { .. }\` is too, by its own name.
+  // One made by a `const { .. }` is too, by its own name.
   expect(js).not.toContain("__RUST_STD_INTERNAL_INIT");
   expect(js).toContain("let SEEN;\n");
   expect(js).toContain("  SEEN ??= n;\n");
@@ -1264,13 +1264,13 @@ pub fn shown(text: &str) -> String {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("return String(match._0);");
-  // A \`match\` of what it threw, whose \`Ok\` only keeps the value and
-  // whose \`Err\` reads no error, is JS's \`try\` (ADR 0035).
+  // A `match` of what it threw, whose `Ok` only keeps the value and
+  // whose `Err` reads no error, is JS's `try` (ADR 0035).
   expect(js).toContain('  let value;\n  try {\n    value = JSON.parse(text);\n  } catch {\n    console.error("invalid");\n    value = undefined;\n  }');
   const lib = await import(join(dir, "lib.js"));
   expect(lib.parsed("[1]")).toEqual([1]);
   expect([lib.kept("[1]"), lib.kept("{")]).toEqual([[1], undefined]);
-  // One whose \`Err\` reads the error keeps it, \`$try\`'s.
+  // One whose `Err` reads the error keeps it, `$try`'s.
   expect([lib.kept_or_told("[1]"), lib.kept_or_told("{")]).toEqual([[1], undefined]);
   expect([lib.told("1"), lib.told("{").startsWith("SyntaxError")]).toEqual(["", true]);
   expect([lib.valid("[1]"), lib.valid("{")]).toEqual([true, false]);
@@ -1278,9 +1278,9 @@ pub fn shown(text: &str) -> String {
   expect([lib.shown("{").startsWith("SyntaxError: "), lib.shown("1")]).toEqual([true, "parsed"]);
 });
 
-// ADR 0275: a \`#[rust_js::nullable]\` field is TypeScript's \`T | null\`: its
-// \`None\` is \`null\`, as Next.js's \`getStaticProps\` gives react.dev's errors
-// page its \`errorCode\`, which JSON has no \`undefined\` for. Another such
+// ADR 0275: a `#[rust_js::nullable]` field is TypeScript's `T | null`: its
+// `None` is `null`, as Next.js's `getStaticProps` gives react.dev's errors
+// page its `errorCode`, which JSON has no `undefined` for. Another such
 // field's value is one already, passed on as it is.
 test("a nullable field's None is null", async () => {
   const dir = fixture("nullable-null");
@@ -1324,7 +1324,7 @@ pub fn moved(p: Props) -> Props {
   expect(js).toContain('return { code: null, message: "m", title: undefined };');
   expect(js).toContain("return { code: code ?? null, message: null, title: undefined };");
   expect(js).toContain("return { code, message, title: undefined };");
-  // A conditional of \`Some\` or \`None\` is one of the value or \`null\`.
+  // A conditional of `Some` or `None` is one of the value or `null`.
   expect(js).toContain("return { code: code || null, message: null, title: undefined };");
   expect(js).toContain('return { code: p.code, message: p.title ?? "", title: undefined };');
   const lib = await import(join(dir, "lib.js"));
@@ -1333,9 +1333,9 @@ pub fn moved(p: Props) -> Props {
   expect([lib.chosen("1").code, lib.chosen("").code, lib.chosen(undefined).code]).toEqual(["1", null, null]);
 });
 
-// ADR 0277: \`let n = n;\`, a variable shadowed by its own value, is \`n\`
-// itself where nothing sets \`n\` while the new one is read: no \`n$1\`, as
-// react.dev's errors page has \`<Type />\` of \`let Type = from_unknown(Type)\`.
+// ADR 0277: `let n = n;`, a variable shadowed by its own value, is `n`
+// itself where nothing sets `n` while the new one is read: no `n$1`, as
+// react.dev's errors page has `<Type />` of `let Type = from_unknown(Type)`.
 // One of another name is the name written; one a loop sets again keeps its own.
 test("a variable shadowed by its own value is the variable", async () => {
   const dir = fixture("shadows");
@@ -1398,7 +1398,7 @@ pub fn here() -> String {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('import { readFileSync } from "fs";');
-  // A \`match\` of what it threw is JS's \`try\`, as the page has it (ADR 0035).
+  // A `match` of what it threw is JS's `try`, as the page has it (ADR 0035).
   expect(js).toContain('export function read(path) {\n  try {\n    return readFileSync(path, "utf8");\n  } catch {\n    return "missing";\n  }\n}');
   expect(js).toContain("return process.cwd();");
   writeFileSync(join(dir, "note.md"), "# Note");
@@ -1587,7 +1587,7 @@ pub fn is_three(n: u32) -> bool {
   expect(js).toContain('export function is_code(value) {\n  return value.mdxName === "inlineCode";\n}');
   expect(js).toContain('export function is_text(value) {\n  return value === "inlineCode";\n}');
   expect(js).toContain('export function kind_is(value) {\n  return value === "inlineCode";\n}');
-  // An array is never \`null\`: \`Array.isArray\` alone says it.
+  // An array is never `null`: `Array.isArray` alone says it.
   expect(js).toContain("export function listed(value) {\n  if (Array.isArray(value)) {");
   expect(js).toContain('export function is_string(value) {\n  return typeof value.mdxName === "string";\n}');
   const lib = await import(join(dir, "lib.js"));
@@ -1929,9 +1929,9 @@ pub fn both(h: Holder<bool>) -> (Holder<bool>, Holder<bool>) {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = await Bun.file(join(dir, "lib.js")).text();
-  expect(js).toContain("export function bumped(p) {\n  let q = { ...p };");
+  expect(js).toContain("export function bumped(p) {\n  const q = { ...p };");
   expect(js).toContain("export function twice(p) {\n  const q = p;");
-  expect(js).toContain("export function both(h) {\n  let g = { ...h };");
+  expect(js).toContain("export function both(h) {\n  const g = { ...h };");
   const module = await import(join(dir, "lib.js"));
   expect(module.bumped({ a: 1, b: 2 })).toEqual([{ a: 1, b: 2 }, { a: 2, b: 2 }]);
   expect(module.twice({ a: true, b: false })).toEqual([{ a: true, b: false }, { a: true, b: false }]);
@@ -1963,7 +1963,7 @@ test("std trait impls are direct calls, and a clone copies only what changes", a
   expect(js).toContain("const both = twice(copy.tracked, trackedClone());");
   expect(js).toContain("export function twice(x, TClone) {\n  return [TClone.clone(x), TClone.clone(x)];");
   // Derived: written in place, copying only the `Vec` that's pushed to.
-  expect(js).toContain("  let t = { ...s, tags: s.tags.slice() };");
+  expect(js).toContain("  const t = { ...s, tags: s.tags.slice() };");
   expect(js).toContain("  const dot = \"Dot\";");
   // `From`, once per argument type, and `into()` is the same call.
   expect(js).toContain("const b = metersFromU32_from(3);");
@@ -2187,7 +2187,7 @@ test("the lexer's JS steps through its source with $next and $peek", async () =>
   expect(js).toContain("return { chars: $iter(Array.from(src)), line: 1 };");
   expect(js).toContain("const value = $peek(lexer.chars);");
   expect(js).toContain('} else if (c === "/" && $nextIf(lexer.chars, (item) => item === "/") != null) {');
-  expect(js).toContain("let it = $iter(v);");
+  expect(js).toContain("const it = $iter(v);");
   expect(js).toContain("const rest = $rest(it);");
   expect(js).toContain("return match.toUpperCase() + $restStr(chars);");
 });

@@ -72,7 +72,7 @@ function until_zero(it) {
 }
 
 function main() {
-  let it = $iter([1, 2, 3, 4, 5]);
+  const it = $iter([1, 2, 3, 4, 5]);
   skip(it, 2);
   const arg = first(it);
   console.log(
@@ -80,27 +80,27 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
-  let c = [5];
+  const c = [5];
   skip($iterator(c, countdownIterator_next), 1);
   const arg$1 = first($iterator(c, countdownIterator_next));
   const arg$2 = countdownIterator_next(c);
   console.log(
     `${arg$1 == null ? "None" : `Some(${arg$1})`} ${arg$2 == null ? "None" : `Some(${arg$2})`}`,
   );
-  let chars = $iter(Array.from("12+345"));
+  const chars = $iter(Array.from("12+345"));
   const a = number(chars);
   $next(chars);
   console.log(`${a} ${number(chars)}`);
-  let words = $iter(Array.from("hello big world"));
+  const words = $iter(Array.from("hello big world"));
   const [x, y] = [word(words), word(words)];
   console.log(`${x} ${y} ${word(words)}`);
-  let lazy = $successors(1, (n) => Math.imul(n, 2) >>> 0).map((n) => (n + 1) >>> 0);
+  const lazy = $successors(1, (n) => Math.imul(n, 2) >>> 0).map((n) => (n + 1) >>> 0);
   const a$1 = take2(lazy);
   const arg$3 = $next(lazy);
   console.log(
     `[${a$1.map((item) => String(item)).join(", ")}] ${arg$3 == null ? "None" : `Some(${arg$3})`}`,
   );
-  let v = $iter([1, 2, 0, 3, 4, 0, 5]);
+  const v = $iter([1, 2, 0, 3, 4, 0, 5]);
   const s1 = until_zero(v);
   const s2 = until_zero(v);
   const arg$4 = $next(v);

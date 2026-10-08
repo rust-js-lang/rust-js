@@ -11,7 +11,7 @@ export const Counter = {
     counter.count = (counter.count + counter.step) >>> 0;
   },
   ticked(counter, times) {
-    let next = { count: counter.count, step: counter.step };
+    const next = { count: counter.count, step: counter.step };
     for (let i = 0; i < times; i++) {
       Counter.tick(next);
     }
@@ -48,7 +48,7 @@ export function counted(step, times) {
 }
 
 export function ticking(step) {
-  let counter = Counter.new(step);
+  const counter = Counter.new(step);
   Counter.tick(counter);
   Counter.tick(counter);
   return Counter.value(counter);

@@ -49,7 +49,7 @@ export function mut_counter(n) {
 }
 
 export function evens(n) {
-  let v = [];
+  const v = [];
   for (let i = 0; i < n; i++) {
     if (i % 2 === 0) {
       v.push(i);
@@ -59,13 +59,13 @@ export function evens(n) {
 }
 
 export function keep_over(limit) {
-  let v = [5, 1, 8, 3, 9, 2];
+  const v = [5, 1, 8, 3, 9, 2];
   $retain(v, (x) => x > limit);
   return v;
 }
 
 export function lengths(n) {
-  let v = evens(n);
+  const v = evens(n);
   const before = v.length;
   v.length = 0;
   return [before, v.length === 0];
@@ -114,7 +114,7 @@ function toggle(todos, id) {
 }
 
 export function toggled(n) {
-  let todos = [];
+  const todos = [];
   for (let id = 0; id < n; id++) {
     todos.push({ id, done: id % 3 === 0 });
   }
@@ -164,7 +164,7 @@ export function words(s) {
 }
 
 export function indexed(i) {
-  let v = [10, 20, 30];
+  const v = [10, 20, 30];
   const read = $index(v, i);
   v[$at(v, i)] = (read + 1) >>> 0;
   v[$at(v, 0)] = (v[$at(v, 0)] + 5) >>> 0;
@@ -174,7 +174,7 @@ export function indexed(i) {
 }
 
 export function element_fields(i) {
-  let cells = [{ hits: 0 }, { hits: 0 }];
+  const cells = [{ hits: 0 }, { hits: 0 }];
   $index(cells, i).hits = ($index(cells, i).hits + 1) >>> 0;
   const before = { ...$index(cells, i) };
   const r = $index(cells, i);
@@ -183,25 +183,25 @@ export function element_fields(i) {
 }
 
 export function arrays(i) {
-  let a = [1, 2, 3];
+  const a = [1, 2, 3];
   const b = a.slice();
   a[$at(a, i)] = 9;
   return [$index(a, i), $index(b, i)];
 }
 
 export function word_counts(text) {
-  let counts = new Map();
+  const counts = new Map();
   for (const word of text.split(" ")) {
     const current = $orInsert(counts, word, 0);
     counts.set(word, (current + 1) >>> 0);
   }
-  let all = Array.from(counts);
+  const all = Array.from(counts);
   all.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
   return all;
 }
 
 export function map_basics(n) {
-  let m = new Map();
+  const m = new Map();
   m.set("a", n);
   const old = $insert(m, "a", (n + 1) >>> 0);
   m.set("b", 3);
@@ -224,11 +224,11 @@ export function map_basics(n) {
 }
 
 export function set_basics(n) {
-  let s = new Set([3, 1, 2]);
+  const s = new Set([3, 1, 2]);
   const new$ = $add(s, n);
   const again = $add(s, n);
   const gone = s.delete(1);
-  let items = Array.from(s);
+  const items = Array.from(s);
   items.sort((a, b) => a - b);
   const one = new Map([["k", n]]);
   return [
@@ -244,7 +244,7 @@ export function set_basics(n) {
 }
 
 export function grouped(n) {
-  let groups = new Map();
+  const groups = new Map();
   for (let i = 1; i < n; i++) {
     const key = i % 3;
     $orInsertWith(groups, key, () => []).push(i);
@@ -254,18 +254,18 @@ export function grouped(n) {
   if (zero != null) {
     zero.push(99);
   }
-  let all = Array.from(copy);
+  const all = Array.from(copy);
   all.sort((a, b) => $cmp(a[0], b[0]) || $cmpItems(a[1], b[1], $cmp));
   return all;
 }
 
 export function sorted_maps(text) {
-  let counts = new Map();
+  const counts = new Map();
   for (const word of text.split(" ")) {
     const current = $orInsert(counts, word, 0);
     counts.set(word, (current + 1) >>> 0);
   }
-  let order = [];
+  const order = [];
   for (const [word$1, n] of $sortedEntries(counts, $cmp)) {
     order.push(`${word$1}=${n}`);
   }

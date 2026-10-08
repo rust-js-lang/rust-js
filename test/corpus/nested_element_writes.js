@@ -3,7 +3,7 @@
 import { $at, $index } from "@rust-js/runtime";
 
 function main() {
-  let grid = [
+  const grid = [
     [0, 0, 0],
     [0, 0, 0],
   ];
@@ -13,7 +13,7 @@ function main() {
   console.log(
     `[${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${row.map((item) => String(item)).join(", ")}]`,
   );
-  let rows = [
+  const rows = [
     [0, 0],
     [0, 0],
   ];
@@ -21,13 +21,13 @@ function main() {
   console.log(
     `[${rows.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
   );
-  let cells = [[{ value: 1 }, { value: 2 }]];
+  const cells = [[{ value: 1 }, { value: 2 }]];
   cells[0][1].value = Math.imul(cells[0][1].value, 10);
   console.log(
     `[${cells.map((item) => `[${item.map((item) => cellDebug_fmt(item)).join(", ")}]`).join(", ")}]`,
   );
   const i = 1;
-  let deep = [
+  const deep = [
     [
       [0, 0],
       [0, 0],

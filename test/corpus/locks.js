@@ -3,7 +3,7 @@
 import { $at, $byteLen, $debugStr, $displayF64 } from "@rust-js/runtime";
 
 function record(stats, name) {
-  let s = stats.value;
+  const s = stats.value;
   s.hits = (s.hits + 1) >>> 0;
   s.names.push(name);
 }

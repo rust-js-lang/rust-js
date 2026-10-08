@@ -116,13 +116,13 @@ function price(v) {
 }
 
 export function tree() {
-  let shop = new Map();
+  const shop = new Map();
   shop.set("name", { TAG: "Str", _0: 'corner "shop"' });
   shop.set("open", { TAG: "Bool", _0: true });
   shop.set("qty", { TAG: "Num", _0: 3 });
-  let apple = new Map();
+  const apple = new Map();
   apple.set("price", { TAG: "Num", _0: 0.5 });
-  let pear = new Map();
+  const pear = new Map();
   pear.set("price", { TAG: "Num", _0: 1.25 });
   pear.set("tags", { TAG: "List", _0: [{ TAG: "Str", _0: "ripe" }, "Null"] });
   shop.set("items", {
@@ -197,7 +197,7 @@ export function boxes() {
     text = out.value;
     n = count$2.value;
   }
-  let stats = { hits: 1, last: undefined };
+  const stats = { hits: 1, last: undefined };
   const count$3 = { value: stats.hits };
   bump(count$3, 4);
   stats.hits = count$3.value;
@@ -207,7 +207,7 @@ export function boxes() {
   const slot$1 = { value: stats.last };
   settle(slot$1);
   stats.last = slot$1.value;
-  let counts = [1, 2, 3];
+  const counts = [1, 2, 3];
   const count$4 = { value: $index(counts, 1) };
   bump(count$4, 40);
   counts[$at(counts, 1)] = count$4.value;

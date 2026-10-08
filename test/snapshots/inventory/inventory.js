@@ -56,7 +56,7 @@ function classify(n) {
 }
 
 export function report() {
-  let store = { stock: new Map(), revenue: 0, log: [] };
+  const store = { stock: new Map(), revenue: 0, log: [] };
   const events = [
     { TAG: "Restock", item: "apple", qty: 10 },
     { TAG: "Restock", item: "pear", qty: 3 },
@@ -86,7 +86,7 @@ export function report() {
   }
   out += `${storeDisplay_fmt(store)}\n[${store.log.map((item) => $debugStr(item)).join(", ")}]\n`;
   const half = discount(50);
-  let prices = [3.5, 1.25, 9, 0.75];
+  const prices = [3.5, 1.25, 9, 0.75];
   prices.sort((a, b) => $unwrap($partialCmp(b, a)));
   const cheap = prices.map((p) => half(p));
   const arg = events.filter((e) => e.TAG === "Sale").length;
@@ -101,8 +101,8 @@ export function report() {
     out += `${classify(n)} `;
   }
   out += `total=${counter.value} again=${counter.value}\n`;
-  let stack = [1, 2, 3];
-  let popped = [];
+  const stack = [1, 2, 3];
+  const popped = [];
   while (true) {
     const top = stack.pop();
     if (top != null) {
@@ -124,7 +124,7 @@ export function report() {
 }
 
 export function tallies(words) {
-  let counts = new Map();
+  const counts = new Map();
   const one = 1;
   for (const w of words) {
     const current = $orInsert(counts, w, 0);
@@ -135,7 +135,7 @@ export function tallies(words) {
       counts.set("b", n);
     }
   }
-  let all = Array.from(counts);
+  const all = Array.from(counts);
   all.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
   return all;
 }
@@ -179,7 +179,7 @@ function revenueRule_check(revenue, store) {
 
 function storeDisplay_fmt(store) {
   let f = "";
-  let items = Array.from(store.stock);
+  const items = Array.from(store.stock);
   items.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
   for (const [name, qty] of items) {
     f += `${name}=${qty} `;

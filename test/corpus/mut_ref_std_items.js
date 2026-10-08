@@ -16,12 +16,12 @@ function process_or_insert_default(map, key) {
 }
 
 function main() {
-  let map = new Map();
+  const map = new Map();
   map.set(22, "Hello, world");
   console.log(`${process_or_insert_default(map, 22)} ${process_or_insert_default(map, 66)}`);
   const arg = map.get(66);
   console.log(`${arg == null ? "None" : `Some(${$debugStr(arg)})`}`);
-  let m = new Map();
+  const m = new Map();
   m.set(1, 5);
   const match = m.get(1);
   if (match != null) {
@@ -35,7 +35,7 @@ function main() {
   const arg$1 = m.get(1);
   console.log(`${arg$1 == null ? "None" : `Some(${arg$1})`}`);
   let [a, b] = [1, 2];
-  let refs = [
+  const refs = [
     {
       get value() {
         return a;

@@ -28,7 +28,7 @@ function main() {
   stringShout_shout(self$4);
   name = self$4.value;
   console.log(`${name}`);
-  let counts = [1, 2];
+  const counts = [1, 2];
   const self$5 = { value: $index(counts, 1) };
   i32Bump_bump(self$5);
   counts[$at(counts, 1)] = self$5.value;

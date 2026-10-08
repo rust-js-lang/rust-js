@@ -22,7 +22,7 @@ function main() {
     `[(${String(arg$1[0]).padStart(3)}, ${$pad("()", 3, ">")})] [Some(${$debugStr("ab")})] [[${[-1, 2].map((item) => $zeroPad(String(item), 6)).join(", ")}]] [${String(true).padEnd(5)}]`,
   );
   console.log(`[${$pretty("Some(", ["7".padStart(5)], ")")}]`);
-  let m = new Map();
+  const m = new Map();
   m.set(1, 2.5);
   const arg$2 = { TAG: "Ok", _0: 3 };
   console.log(

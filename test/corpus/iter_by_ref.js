@@ -3,7 +3,7 @@
 import { $debugStr, $iter, $iterator, $rest } from "@rust-js/runtime";
 
 function split_number(text) {
-  let cs = $iter(Array.from(text).map((x, i) => [i, x]));
+  const cs = $iter(Array.from(text).map((x, i) => [i, x]));
   let digits = "";
   for (const [, c] of cs) {
     if (c === "e") {
@@ -18,7 +18,7 @@ function split_number(text) {
 }
 
 function split_mut(text) {
-  let cs = $iter(Array.from(text));
+  const cs = $iter(Array.from(text));
   let head = "";
   for (const c of cs) {
     if (c === ":") {
@@ -40,7 +40,7 @@ function main() {
   console.log(`(${$debugStr(arg$2[0])}, ${arg$2[1]}) (${$debugStr(arg$3[0])}, ${arg$3[1]})`);
   const names = $iterator({ inner: { at: 0 }, bits: 3 }, equalNamesIterator_next).toArray();
   console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
-  let all = { at: 0 };
+  const all = { at: 0 };
   for (const [n] of $iterator(all, namesIterator_next)) {
     if (n === "B") {
       break;

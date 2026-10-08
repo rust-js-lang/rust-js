@@ -17,10 +17,10 @@ function held(h, TClone) {
 
 function main() {
   const a = { x: 1, y: 2 };
-  let b = { ...a };
+  const b = { ...a };
   b.x = 10;
   console.log(`${pointDebug_fmt(a)} ${pointDebug_fmt(b)}`);
-  let grid = [
+  const grid = [
     [0, 0, 0],
     [0, 0, 0],
   ];
@@ -30,7 +30,7 @@ function main() {
     `[${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${row.map((item) => String(item)).join(", ")}]`,
   );
   const shape = { name: "tri", points: [{ ...a }, { ...b }] };
-  let copy = { ...shape, points: shape.points.map((item) => ({ ...item })) };
+  const copy = { ...shape, points: shape.points.map((item) => ({ ...item })) };
   copy.name += "-copy";
   $index(copy.points, 0).y = -1;
   copy.points.push({ x: 0, y: 0 });
@@ -39,7 +39,7 @@ function main() {
   const arg = $eq(a, { x: 1, y: 2 });
   console.log(`${pointDebug_fmt(a)} ${pointDebug_fmt(c)} ${arg}`);
   const item = { ...a };
-  let points = Array.from({ length: 3 }, () => ({ ...item }));
+  const points = Array.from({ length: 3 }, () => ({ ...item }));
   for (const p of points) {
     p.y = Math.imul(p.y, 3);
   }
@@ -48,7 +48,7 @@ function main() {
   console.log(
     `[${points.map((item) => pointDebug_fmt(item)).join(", ")}] ${pointDebug_fmt(first)}`,
   );
-  let nested = [[1, 2], [3]];
+  const nested = [[1, 2], [3]];
   const snapshot = nested.map((item) => item.slice());
   $index(nested, 0).push(9);
   const items = $index(nested, 1);
@@ -57,11 +57,11 @@ function main() {
     `[${nested.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${snapshot.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
   );
   const tagged = { n: 1, unit: undefined };
-  let copy$1 = duplicate(tagged, { clone: (value) => value });
+  const copy$1 = duplicate(tagged, { clone: (value) => value });
   copy$1.n = (copy$1.n + 1) | 0;
   console.log(`${tagged.n} ${copy$1.n}`);
   const holder = { item: 1 };
-  let copy$2 = held(holder, { clone: (value) => value });
+  const copy$2 = held(holder, { clone: (value) => value });
   copy$2.item = (copy$2.item + 1) >>> 0;
   console.log(`${holder.item} ${copy$2.item}`);
   const points$1 = [
@@ -74,7 +74,7 @@ function main() {
       p.x = (p.x + 10) | 0;
       return p;
     });
-  let copied = points$1.map((item) => ({ ...item }));
+  const copied = points$1.map((item) => ({ ...item }));
   copied[0].y = 0;
   console.log(
     `[${points$1.map((item) => pointDebug_fmt(item)).join(", ")}] [${moved$1.map((item) => pointDebug_fmt(item)).join(", ")}] [${copied.map((item) => pointDebug_fmt(item)).join(", ")}]`,

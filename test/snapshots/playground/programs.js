@@ -13,7 +13,7 @@ export function resolve(from, specifier) {
   if (!specifier.startsWith(".")) {
     return specifier;
   }
-  let parts = from.split("/");
+  const parts = from.split("/");
   parts.pop();
   for (const part of specifier.split("/")) {
     if (part === "..") {
@@ -28,7 +28,7 @@ export function resolve(from, specifier) {
 export function link(files) {
   const imports = /^import ([^;]+?) from "([^"]+)";/gm;
   const sourceMap = /^\/\/# sourceMappingURL=.*$/m;
-  let entries = [];
+  const entries = [];
   for (const [path, code] of files) {
     const from = path;
     const body = code.replace(imports, (_, names, specifier) => {
@@ -47,7 +47,7 @@ export function link(files) {
 }
 
 export function prepare(files, modules, styles, rootFile, test, run) {
-  let sources = Array.from(files)
+  const sources = Array.from(files)
     .map(([path, code]) => [path, code])
     .map(([path, code]) => {
       const match = path.endsWith(".jsx");
@@ -75,7 +75,7 @@ export function prepare(files, modules, styles, rootFile, test, run) {
     return "Nothing";
   }
   const cssImports = /^import "([^"]+\.css)"(;)/gm;
-  let css = [];
+  const css = [];
   for (const item of sources) {
     for (const [, specifier] of Array.from(item[1].matchAll(cssImports))) {
       const value = styles.find(([name]) => name === specifier);
@@ -93,7 +93,7 @@ export function prepare(files, modules, styles, rootFile, test, run) {
   }
   const look = css.length === 0 ? FRAME_STYLE : `<style>\n${css.join("")}</style>`;
   const imports = /^import (?:[^;]+? from )?"([^"]+)";/gm;
-  let external = [];
+  const external = [];
   for (const [path, code] of sources) {
     for (const [, specifier$1] of Array.from(code.matchAll(imports))) {
       const target = resolve(path, specifier$1);

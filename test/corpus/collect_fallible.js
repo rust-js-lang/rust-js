@@ -35,7 +35,7 @@ function main() {
   console.log(
     `${arg$2 == null ? "None" : `Some([${arg$2.map((item) => String(item)).join(", ")}])`} ${arg$3 == null ? "None" : `Some([${arg$3.map((item) => String(item)).join(", ")}])`}`,
   );
-  let seen = [];
+  const seen = [];
   const r = $collectResults(
     [1, -2, 3].values().map((n) => {
       seen.push(n);

@@ -2,19 +2,19 @@
 
 function main() {
   const tmp = { a: 10, b: { c: 20 } };
-  let x = tmp;
+  const x = tmp;
   const b = { ...tmp.b };
   x.b.c = 30;
   console.log(`${x.a} ${x.b.c} ${b.c}`);
   const match = { a: 1, b: { c: 2 } };
-  let y = match;
+  const y = match;
   const inner = { ...match.b };
   y.b.c = 9;
   console.log(`${y.b.c} ${inner.c}`);
   const tmp$1 = { a: 5, b: { c: 6 } };
   const whole = tmp$1;
   const part = { ...tmp$1.b };
-  let moved = whole;
+  const moved = whole;
   moved.b.c = 7;
   console.log(`${moved.b.c} ${part.c}`);
 }

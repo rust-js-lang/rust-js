@@ -13,11 +13,11 @@ const Counter = {
 };
 
 function main() {
-  let v = [1, 2, 3];
+  const v = [1, 2, 3];
   const arg = v.length;
   const arg$1 = v.pop();
   console.log(`${arg} ${arg$1 == null ? "None" : `Some(${arg$1})`} ${v.length}`);
-  let c = { n: 0 };
+  const c = { n: 0 };
   const arg$2 = Counter.get(c);
   const arg$3 = Counter.bump(c);
   const arg$4 = Counter.get(c);
@@ -25,7 +25,7 @@ function main() {
   console.log(
     `${arg$2} ${arg$3 == null ? "None" : `Some(${arg$3})`} ${arg$4} ${arg$5 == null ? "None" : `Some(${arg$5})`}`,
   );
-  let words = ["a"];
+  const words = ["a"];
   const arg$6 = words.join(",");
   const arg$7 = words.pop();
   const line = `${arg$6}|${arg$7 == null ? "None" : `Some(${$debugStr(arg$7)})`}|${words.length}`;

@@ -6,13 +6,13 @@ function main() {
   const names = ["a", "b"];
   const owned = names.map((s) => s + "!");
   console.log(`[${owned.map((item) => $debugStr(item)).join(", ")}]`);
-  let counts = [1, 2, 3];
+  const counts = [1, 2, 3];
   for (let i = 0; i < counts.length; i++) {
     counts[i] = Math.imul(counts[i], 10);
   }
   const total = counts.reduce((a, b) => (a + b) | 0, 0);
   console.log(`[${counts.map((item) => String(item)).join(", ")}] ${total}`);
-  let points = [{ x: 1 }, { x: 2 }];
+  const points = [{ x: 1 }, { x: 2 }];
   for (const p of points) {
     p.x = (p.x + 1) | 0;
   }
@@ -20,7 +20,7 @@ function main() {
     p$1.x = Math.imul(p$1.x, 2);
   }
   console.log(`[${points.map((item) => pointDebug_fmt(item)).join(", ")}]`);
-  let seen = [];
+  const seen = [];
   for (const n of counts) {
     seen.push((n + 1) | 0);
   }

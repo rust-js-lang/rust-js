@@ -12,14 +12,14 @@ function main() {
   console.log(
     `(${arg[0]}, ${arg[1] == null ? "None" : `Some(${arg[1]})`}) (${arg$1[0]}, ${arg$1[1] == null ? "None" : `Some(${arg$1[1]})`})`,
   );
-  let indexed = { inner: [2], at: 0 };
+  const indexed = { inner: [2], at: 0 };
   const arg$2 = indexedIterator_size_hint(indexed);
   const arg$3 = indexedIterator_next(indexed);
   console.log(
     `(${arg$2[0]}, ${arg$2[1] == null ? "None" : `Some(${arg$2[1]})`}) ${arg$3 == null ? "None" : `Some((${arg$3[0]}, ${arg$3[1]}))`}`,
   );
   const v = [1, 2, 3];
-  let it = $iter(v);
+  const it = $iter(v);
   $next(it);
   const len = it.items.length - it.at;
   const arg$4 = [len, len];
@@ -33,7 +33,7 @@ function main() {
   console.log(
     `(${arg$6[0]}, ${arg$6[1] == null ? "None" : `Some(${arg$6[1]})`}) (${arg$7[0]}, ${arg$7[1] == null ? "None" : `Some(${arg$7[1]})`})`,
   );
-  let stepped = $iter(v);
+  const stepped = $iter(v);
   $next(stepped);
   const arg$8 = hint(v);
   const arg$9 = hint(stepped);

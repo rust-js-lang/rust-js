@@ -6,7 +6,7 @@ var $numbersSecond;
 
 function main() {
   const skipOne = (v) => {
-    let it = $iter(v);
+    const it = $iter(v);
     $next(it);
     return $rest(it).map((x) => Math.imul(x, 10) >>> 0);
   };
@@ -31,7 +31,7 @@ function numbersSecond() {
       items: numbersSecond_items,
       second: (self) => {
         const items = numbersSecond_items(self);
-        let it = $iter(items);
+        const it = $iter(items);
         $next(it);
         return $next(it) ?? 0;
       },

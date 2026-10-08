@@ -45,7 +45,7 @@ function main() {
   const arg$6 = Math.abs(d) | 0;
   const arg$7 = $checked(d * $unwrap(2), -2147483648, 2147483647);
   console.log(`${arg$6} ${arg$7 == null ? "None" : `Some(${arg$7})`}`);
-  let v = [$unwrap(9), a, $unwrap(1)];
+  const v = [$unwrap(9), a, $unwrap(1)];
   v.sort((a, b) => a - b);
   console.log(`[${v.map((item) => String(item)).join(", ")}] 8`);
   for (const n of v) {

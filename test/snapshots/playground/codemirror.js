@@ -17,7 +17,7 @@ const JS_OUTPUT = output(javascript());
 const PLAIN_OUTPUT = output(undefined);
 
 function output(language) {
-  let extensions = [basicSetup];
+  const extensions = [basicSetup];
   if (language != null) {
     extensions.push(language);
   }

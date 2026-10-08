@@ -6,7 +6,7 @@ function main() {
     n = (n + 1) | 0;
     return n;
   };
-  let g = f;
+  const g = f;
   g();
   console.log(`${g()}`);
   const k = 41;

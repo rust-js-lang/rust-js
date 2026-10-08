@@ -92,13 +92,13 @@ function main() {
       console.log(`${p[0]} ${p[1]}`);
     }
   }
-  let grid = [1, 2, 3];
+  const grid = [1, 2, 3];
   if (true) {
     grid[0] = (grid[0] + 10) | 0;
     grid[2] = Math.imul(grid[2], 2);
   }
   console.log(`[${grid.map((item) => String(item)).join(", ")}]`);
-  let names = ["x", "y"];
+  const names = ["x", "y"];
   const value = names;
   if (value.length >= 1) {
     value[0] = value[0] + "!";

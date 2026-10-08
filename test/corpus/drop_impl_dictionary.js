@@ -32,7 +32,7 @@ function main() {
     })}`,
   );
   console.log(`${taken([8], wrapTake())}`);
-  let wrapped = [["replaced"]];
+  const wrapped = [["replaced"]];
   try {
     wrapReset_reset(wrapped, loudDefault(), loudDrop_drop);
     console.log("reset");

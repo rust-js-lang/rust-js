@@ -30,7 +30,7 @@ function main() {
       .map((item) => (item == null ? "None" : `Some(${item})`))
       .join(", ")}]`,
   );
-  let seen = [];
+  const seen = [];
   const squares = numbers.map((n) => {
     seen.push(n);
     return Math.imul(n, n);

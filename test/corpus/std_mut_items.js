@@ -22,7 +22,7 @@ function peek(o) {
 }
 
 function main() {
-  let scores = [1, 2, 3];
+  const scores = [1, 2, 3];
   $mutItems(scores).forEach((s) => {
     s.value = Math.imul(s.value, 10);
   });
@@ -35,12 +35,12 @@ function main() {
     item[1].value = (item[1].value + (item[0] | 0)) | 0;
   }
   console.log(`[${scores.map((item) => String(item)).join(", ")}]`);
-  let names = ["ann", "bo"];
+  const names = ["ann", "bo"];
   $mutItems(names).forEach((n) => {
     n.value += "!";
   });
   console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
-  let stock = new Map([
+  const stock = new Map([
     ["apples", 3],
     ["pears", 0],
   ]);
@@ -52,10 +52,10 @@ function main() {
       item$1[1].value = Math.imul(item$1[1].value, 2);
     }
   }
-  let sorted = Array.from(stock).map(([k, v]) => [k, v]);
+  const sorted = Array.from(stock).map(([k, v]) => [k, v]);
   sorted.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
   console.log(`[${sorted.map((item) => `(${$debugStr(item[0])}, ${item[1]})`).join(", ")}]`);
-  let ordered = new Map([
+  const ordered = new Map([
     [2, 0.5],
     [1, 1.5],
   ]);
@@ -65,7 +65,7 @@ function main() {
   for (const item$2 of $mutEntries(ordered, $sortedEntries(ordered, $cmp))) {
     item$2[1].value = item$2[1].value + 0.25;
   }
-  let visited = [];
+  const visited = [];
   for (const item$3 of $mutEntries(ordered, $sortedEntries(ordered, $cmp))) {
     visited.push(item$3[0]);
     item$3[1].value = item$3[1].value - 0.5;
@@ -78,14 +78,14 @@ function main() {
         ", ",
       )}} [${visited.map((item) => String(item)).join(", ")}] [${halves.map((item) => $debugF64(item)).join(", ")}]`,
   );
-  let counts = new Map();
+  const counts = new Map();
   counts.set("a", 1);
   const a = $mutGet(counts, "a");
   if (a != null) {
     a.value = (a.value + 1) | 0;
     bump(a);
   }
-  let row = [5, 6];
+  const row = [5, 6];
   const last = $unwrap($mutAt(row, -1));
   last.value = 60;
   bump($unwrap($mutAt(row, 0)));
@@ -107,7 +107,7 @@ function main() {
   } else {
     found = 0;
   }
-  let cells = [1, 2, 3];
+  const cells = [1, 2, 3];
   const refs = $mutItems(cells).filter((c) => c.value !== 2);
   for (const r$1 of refs) {
     r$1.value = -r$1.value | 0;

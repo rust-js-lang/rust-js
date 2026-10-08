@@ -62,7 +62,7 @@ function main() {
     console.log(`got ${n}`);
   }
   const e = { name: "a", note: $some(undefined) };
-  let f = { ...e };
+  const f = { ...e };
   f.note = "n";
   console.log(`${entryDebug_fmt(e)} ${entryDebug_fmt(f)} ${$eq(e, f)}`);
   const value$1 = () => {};
@@ -74,7 +74,7 @@ function main() {
   console.log(
     `${tmp == null ? "None" : "Some(())"} ${arg$2 == null ? "None" : "Some(())"} ${arg$3 == null ? "None" : "Some(())"}`,
   );
-  let grid = [1, 2];
+  const grid = [1, 2];
   const kept = grid == null || grid.$someNone !== undefined ? grid : grid.slice();
   if (grid != null && $someValue(grid) != null) {
     const cells = $someValue(grid);
@@ -110,7 +110,7 @@ function main() {
   const items$1 = [];
   const arg$7 = $someAt(items$1, items$1.length - 1);
   console.log(`${tmp$5 == null ? "None" : "Some(())"} ${arg$7 == null ? "None" : "Some(())"}`);
-  let stack = [$some(undefined), undefined];
+  const stack = [$some(undefined), undefined];
   while (true) {
     const top = $pop(stack);
     if (top != null) {

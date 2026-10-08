@@ -55,7 +55,7 @@ function main() {
   console.log(
     `${r.start}..${r.end} [${v.map((item) => String(item)).join(", ")}] ${Math.max(0, r.end - r.start)} ${!(r.start < r.end)} ${!(5 < 5)} ${Math.max(0, 2 - 5)}`,
   );
-  let steps = { start: 0, end: 4 };
+  const steps = { start: 0, end: 4 };
   const first = $rangeNext(steps);
   const last = $rangeNextBack(steps);
   console.log(
@@ -106,11 +106,11 @@ function main() {
   console.log(`${1 === 1 && 4 === 4} ${!(1 === 1 && 4 === 5)} ${2 === 2}`);
   const big = $bigRange(1n, 4n).reduce((a, b) => BigInt.asUintN(64, a + b), 0n);
   console.log(`${big}`);
-  let a = { start: 0, end: 3 };
+  const a = { start: 0, end: 3 };
   $rangeNext(a);
   const b = { start: a.start, end: a.end };
   $rangeNext(a);
-  let ids$1 = { start: 100 };
+  const ids$1 = { start: 100 };
   const [firstId, secondId] = [$rangeFromNext(ids$1), $rangeFromNext(ids$1)];
   console.log(
     `${a.start}..${a.end} ${b.start}..${b.end} ${firstId == null ? "None" : `Some(${firstId})`} ${secondId == null ? "None" : `Some(${secondId})`} ${ids$1.start}.. ${$range(0, 5).length}`,
@@ -137,7 +137,7 @@ function main() {
       { fmt: (value) => `${value.start}..${value.end}` },
     )} ${shown_twice({ end: 2 }, { clone: (value) => value }, { fmt: (value) => `..=${value.end}` })}`,
   );
-  let numbers = [1, 2, 3, 4, 5];
+  const numbers = [1, 2, 3, 4, 5];
   const cut = { start: 1, end: 3 };
   const gone = $drain(numbers, cut.start, cut.end);
   console.log(

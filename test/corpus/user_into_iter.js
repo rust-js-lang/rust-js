@@ -16,7 +16,7 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
-  let it = [1];
+  const it = [1];
   const arg = countIterator_next(it);
   console.log(
     `${arg == null ? "None" : `Some(${arg})`} [${$iterator(it, countIterator_next)

@@ -13,7 +13,7 @@ const Point = {
 };
 
 function main() {
-  let t = { point: { x: 1, y: 2 }, reads: { value: 0 } };
+  const t = { point: { x: 1, y: 2 }, reads: { value: 0 } };
   console.log(
     `${Point.sum(trackedDeref_deref(t))} ${trackedDeref_deref(t).x} ${pointDebug_fmt({ ...trackedDeref_deref(t) })}`,
   );
@@ -26,7 +26,7 @@ function main() {
   console.log(
     `${Point.sum(trackedDeref_deref(outerDeref_deref(outer)))} ${trackedDeref_deref(outerDeref_deref(outer)).x} ${outerDeref_deref(outer).reads.value}`,
   );
-  let grid = { cells: Array.from({ length: 4 }, () => ({ x: 0, y: 0 })), width: 2 };
+  const grid = { cells: Array.from({ length: 4 }, () => ({ x: 0, y: 0 })), width: 2 };
   gridIndexMut_usize__usize__index_mut(grid, [1, 0]).x = 7;
   Point.shift(gridIndexMut_usize__usize__index_mut(grid, [0, 1]), 3);
   console.log(

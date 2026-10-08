@@ -3,7 +3,7 @@
 import { $cmp, $rsplitOnce } from "@rust-js/runtime";
 
 export function buildTree(paths) {
-  let tree = [];
+  const tree = [];
   for (const path of paths) {
     let folder = tree;
     let name;
@@ -39,7 +39,7 @@ export function inOrder(tree, first) {
     return name;
   };
   const isFirst = (entry) => entry.TAG === "File" && entry._0 === first;
-  let entries = tree.slice();
+  const entries = tree.slice();
   entries.sort((a, b) => {
     if (isFirst(a[1])) {
       return -1;

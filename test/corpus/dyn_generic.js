@@ -25,7 +25,7 @@ function two(c, CCounter) {
 }
 
 function main() {
-  let square = [3];
+  const square = [3];
   const shape = { value: square, impl: squareShape() };
   console.log(
     `${$displayF64(
@@ -68,7 +68,7 @@ function main() {
   );
   const shown = { value: 5, impl: { fmt: String } };
   console.log(`${shout(shown, { fmt: (value) => value.impl.fmt(value.value) })}`);
-  let up = [0];
+  const up = [0];
   const counter = { value: up, impl: upCounter() };
   const result = two(
     { value: counter },

@@ -159,7 +159,7 @@ function main() {
   } else {
     size = "wider";
   }
-  let values = [max, 0n, big, 1n];
+  const values = [max, 0n, big, 1n];
   values.sort($cmp);
   console.log(
     `${size} [${values.map((item) => String(item)).join(", ")}] ${$slice(values, 0, 3).reduce((a, b) => BigInt.asUintN(128, a + b), 0n)}`,

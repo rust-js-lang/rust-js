@@ -9,7 +9,7 @@ function main() {
   const owned = moneySum_sum(prices);
   const borrowed = moneySumMoney_sum(prices);
   console.log(`${moneyDebug_fmt(owned)} ${moneyDebug_fmt(borrowed)}`);
-  let cart = cartFromIterator_std__string__String__Money__from_iter(
+  const cart = cartFromIterator_std__string__String__Money__from_iter(
     [
       ["tea", 250n],
       ["cake", 199n],

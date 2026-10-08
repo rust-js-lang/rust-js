@@ -106,7 +106,7 @@ function main() {
       noisyDrop_drop(shape.b);
     }
   }
-  let again = pair("ra", "rb", 4);
+  const again = pair("ra", "rb", 4);
   let again$a$live = true;
   try {
     again$a$live = false;

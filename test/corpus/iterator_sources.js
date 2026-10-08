@@ -106,8 +106,8 @@ function main() {
   console.log(
     `[${chained.map((item) => String(item)).join(", ")}] [${zipped.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] [${labelled.map((item) => `(${$debugStr(item[0], "'")}, ${item[1]})`).join(", ")}]`,
   );
-  let fours = $repeating(4);
-  let bigger = $iterator([0], counterIterator_next).map((n) => (n + 100) >>> 0);
+  const fours = $repeating(4);
+  const bigger = $iterator([0], counterIterator_next).map((n) => (n + 100) >>> 0);
   const [a, b] = [$next(fours), $next(bigger)];
   const rest = bigger.toArray();
   console.log(
@@ -121,7 +121,7 @@ function main() {
       .map((item) => (item == null ? "None" : `Some(${item})`))
       .join(", ")}]`,
   );
-  let rows = $repeating([0], (value) => value.slice())
+  const rows = $repeating([0], (value) => value.slice())
     .take(2)
     .toArray();
   $index(rows, 0).push(1);

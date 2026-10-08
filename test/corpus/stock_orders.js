@@ -52,7 +52,7 @@ const Inventory = {
     if (order.length === 0) {
       return { TAG: "Err", _0: "EmptyOrder" };
     }
-    let lines = [];
+    const lines = [];
     for (const [sku, quantity] of order) {
       const match = Inventory.reserve(inventory, sku, quantity);
       if (match.TAG === "Ok") {
@@ -71,7 +71,7 @@ const Inventory = {
     return { TAG: "Ok", _0: lines };
   },
   by_category(inventory) {
-    let groups = new Map();
+    const groups = new Map();
     for (const item of Array.from(inventory.items.values())) {
       $orInsertWith(groups, item.category, () => []).push(item);
     }
@@ -83,7 +83,7 @@ const Inventory = {
     return groups;
   },
   low_stock(inventory, below) {
-    let skus = Array.from(inventory.items.values())
+    const skus = Array.from(inventory.items.values())
       .filter((item) => item.stock < below)
       .map((item) => item.sku);
     skus.sort($cmp);
@@ -130,7 +130,7 @@ function parse_order(text) {
 }
 
 function main() {
-  let inventory = Inventory.new([
+  const inventory = Inventory.new([
     { sku: "HAM-1", name: "Hammer", category: "Tools", price_cents: 1299, stock: 10 },
     { sku: "SAW-2", name: "Saw", category: "Tools", price_cents: 2450, stock: 3 },
     { sku: "RAK-1", name: "Rake", category: "Garden", price_cents: 1899, stock: 5 },
@@ -149,7 +149,7 @@ function main() {
       );
     }
   }
-  let queue = [
+  const queue = [
     "ham-1 x 2, saw-2 x1",
     "rak-1 x 9",
     "",
@@ -157,7 +157,7 @@ function main() {
     "hos-9x2,ham-1x1",
     "zzz-0 x1",
   ];
-  let totals = [];
+  const totals = [];
   while (true) {
     const text = queue.shift();
     if (text != null) {
@@ -202,8 +202,8 @@ function main() {
   console.log(
     `orders: ${tmp}, mean ${$toFixed(mean, 2)}, max ${arg == null ? "None" : `Some(${$debugStr(arg)})`}`,
   );
-  let seen = new Set();
-  let names = Array.from(inventory.items.values()).map((item) => item.name.toLowerCase());
+  const seen = new Set();
+  const names = Array.from(inventory.items.values()).map((item) => item.name.toLowerCase());
   const key = (name) => [$byteLen(name), name];
   names.sort((a, b) => {
     const left = key(a);
@@ -212,7 +212,7 @@ function main() {
   });
   $retain(names, (name) => $add(seen, $unwrap(Array.from(name)[0])));
   console.log(`first letters: ${names.join(",")}`);
-  let prices = Array.from(inventory.items.values()).map((item) => item.price_cents);
+  const prices = Array.from(inventory.items.values()).map((item) => item.price_cents);
   prices.sort((a, b) => a - b);
   $dedup(prices);
   const arg$1 = $binarySearch(prices, 1899);
@@ -224,7 +224,7 @@ function main() {
     ["KNF-4", 6],
     ["SAW-2", 2],
   ]);
-  let restocked = Array.from(inventory.items)
+  const restocked = Array.from(inventory.items)
     .map(([sku, item$1]) => {
       const value = restock.get(sku);
       if (value == null) {

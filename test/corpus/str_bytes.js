@@ -12,7 +12,7 @@ function fnv1a(text) {
 }
 
 function leading_number(line) {
-  let bytes = $iter(Array.from(new TextEncoder().encode(line)));
+  const bytes = $iter(Array.from(new TextEncoder().encode(line)));
   let value = undefined;
   while (true) {
     const value$1 = $peek(bytes);
@@ -67,7 +67,7 @@ function main() {
   console.log(
     `${arg$4 == null ? "None" : `Some(${arg$4})`} ${arg$5 == null ? "None" : `Some(${arg$5})`} ${arg$6 == null ? "None" : `Some(${arg$6})`}`,
   );
-  let rest = $iter(Array.from(new TextEncoder().encode("abc")));
+  const rest = $iter(Array.from(new TextEncoder().encode("abc")));
   $next(rest);
   const before = rest.items.length - rest.at;
   const next = $next(rest);

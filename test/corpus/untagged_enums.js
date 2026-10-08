@@ -33,7 +33,7 @@ function describe(value) {
 }
 
 function main() {
-  let values = [
+  const values = [
     { x: 1, y: 2 },
     "hi",
     "there",
@@ -64,12 +64,12 @@ function main() {
   console.log(
     `[${counts.map((item) => valueDebug_fmt(item)).join(", ")}] ${texts} ${first == null ? "None" : `Some(${valueDebug_fmt(first)})`} ${arg$2}`,
   );
-  let list = [1];
+  const list = [1];
   const kept = Array.isArray(list) ? list.slice() : list;
   if (Array.isArray(list)) {
     list.push(2);
   }
-  let spot = { x: 1 };
+  const spot = { x: 1 };
   const copied = typeof spot === "object" ? { ...spot } : spot;
   if (typeof spot === "object") {
     spot.x = 9;

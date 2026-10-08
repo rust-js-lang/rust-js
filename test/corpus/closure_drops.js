@@ -106,7 +106,7 @@ function main() {
       let r$live = true;
       try {
         r$live = false;
-        let r$1 = r;
+        const r$1 = r;
         r$live = false;
         const take = () => {
           noisyDrop_drop(r$1);

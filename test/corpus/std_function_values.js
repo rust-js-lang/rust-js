@@ -60,7 +60,7 @@ function main() {
   console.log(
     `[${(missing ?? []).map((item) => String(item)).join(", ")}] ${$debugStr(text ?? "")} ${(table ?? new Map()).size}`,
   );
-  let groups = new Map();
+  const groups = new Map();
   for (let n = 1; n < 6; n++) {
     const key = n % 2 === 0;
     $orInsertWith(groups, key, () => []).push(n);
@@ -76,7 +76,7 @@ function main() {
   const lowest = [5n, -2n, 8n].reduce((a, b) => $bigMin(a, b), 9223372036854775807n);
   const widest = [1.5, 0.25].reduce($f64Max, 0);
   const distances = [-7n, 4n].map((n$1) => BigInt.asIntN(64, $bigAbs(n$1)));
-  let sorted = [3, 1, 2];
+  const sorted = [3, 1, 2];
   sorted.sort((a, b) => $cmp(a, b));
   console.log(
     `${highest} ${lowest} ${$displayF64(widest)} [${sorted.map((item) => String(item)).join(", ")}] [${distances.map((item) => String(item)).join(", ")}]`,

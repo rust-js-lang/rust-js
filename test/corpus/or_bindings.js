@@ -76,7 +76,7 @@ function main() {
   }
   const r$2 = { TAG: "Err", _0: 9 };
   console.log(`${r$2._0}`);
-  let grown = shapes.map((item) =>
+  const grown = shapes.map((item) =>
     item.TAG === "Circle"
       ? { ...item }
       : item.TAG === "Sphere"

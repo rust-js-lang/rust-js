@@ -65,7 +65,7 @@ export function fnv1a(text) {
 }
 
 export function balances(entries) {
-  let totals = new Map();
+  const totals = new Map();
   for (const [account, cents] of entries) {
     const value = cents;
     const current = $orInsert(totals, account, 0n);
@@ -122,7 +122,7 @@ export function report() {
   const arg$9 = $unwrapErr($tryFromInt(300n, 0, 255));
   const arg$10 = low === $unwrapErr($tryFromInt(300n, 0, 255));
   out += `${$debugParseError(low, "TryFromIntError")} ${low} ${arg$9} ${arg$10}\n`;
-  let stamps = [1700000000000n, -5n, 0n, 9223372036854775807n, -9223372036854775808n];
+  const stamps = [1700000000000n, -5n, 0n, 9223372036854775807n, -9223372036854775808n];
   stamps.sort($cmp);
   const total = stamps
     .slice(1)

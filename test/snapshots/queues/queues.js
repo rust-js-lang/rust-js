@@ -56,13 +56,13 @@ function first_even_square(v) {
 }
 
 export function dijkstra(edges, n, src) {
-  let adj = Array.from({ length: n }, () => []);
+  const adj = Array.from({ length: n }, () => []);
   for (const [a, b, w] of edges) {
     $index(adj, a).push([b, w]);
     $index(adj, b).push([a, w]);
   }
-  let dist = new Array(n).fill(undefined);
-  let heap = [];
+  const dist = new Array(n).fill(undefined);
+  const heap = [];
   dist[$at(dist, src)] = 0;
   $heapPush(heap, [[0, src]], (a, b) => $cmp(b[0][0], a[0][0]) || $cmp(b[0][1], a[0][1]));
   while (true) {
@@ -88,9 +88,9 @@ export function dijkstra(edges, n, src) {
 }
 
 export function bfs_order(n, edges) {
-  let seen = new Array(n).fill(false);
-  let q = [];
-  let order = [];
+  const seen = new Array(n).fill(false);
+  const q = [];
+  const order = [];
   q.push(0);
   seen[$at(seen, 0)] = true;
   while (true) {
@@ -112,7 +112,7 @@ export function bfs_order(n, edges) {
 
 export function heaps() {
   let out = "";
-  let h = [];
+  const h = [];
   for (const [i, pri] of [3, 1, 3, 5, 1, 3, 2, 5, 0].entries()) {
     $heapPush(h, { pri, name: String.fromCharCode((97 + (i & 255)) & 255) }, taskOrd_cmp);
     out += `${$debugStr(h.map((t) => t.name).join(""))}\n`;
@@ -134,14 +134,14 @@ export function heaps() {
   const arg = collected;
   const arg$1 = $heapSorted(from, $cmp);
   out += `${sorted} [${from.map((item) => String(item)).join(", ")}] [${arg.map((item) => String(item)).join(", ")}] [${arg$1.map((item) => String(item)).join(", ")}]\n`;
-  let empty = [];
+  const empty = [];
   const arg$2 = $heapPop(empty, $cmp);
   out += `${arg$2 == null ? "None" : `Some(${arg$2})`} ${empty[0] == null ? "None" : `Some(${empty[0]})`} ${empty.length === 0}\n`;
   return out;
 }
 
 export function deques() {
-  let d = [3, 4];
+  const d = [3, 4];
   d.unshift(2);
   d.push(5);
   d.unshift(1);
@@ -157,7 +157,7 @@ export function deques() {
 export function reverses(a, b) {
   const x = [[a, 1]];
   const y = [[b, 2]];
-  let v = [a, b, 7, 1];
+  const v = [a, b, 7, 1];
   const key = (k) => [k];
   v.sort((a, b) => {
     const left = key(a);
@@ -175,7 +175,7 @@ export function reverses(a, b) {
 
 export function report() {
   let out = "";
-  let s = Stack.new({ clone: (value) => value }, { fmt: (value) => $debugStr(value) });
+  const s = Stack.new({ clone: (value) => value }, { fmt: (value) => $debugStr(value) });
   for (const w of ["a", "b", "c"]) {
     Stack.push(s, w, { clone: (value) => value }, { fmt: (value) => $debugStr(value) });
   }
@@ -214,12 +214,12 @@ export function report() {
   ])
     .map((item) => String(item))
     .join(", ")}]\n`;
-  let words = new Map();
+  const words = new Map();
   for (const w$1 of "the quick brown fox jumps over the lazy dog".split(" ")) {
     const key = Array.from(w$1).length;
     $orInsertWith(words, key, () => []).push(w$1);
   }
-  let lens = Array.from(words.keys());
+  const lens = Array.from(words.keys());
   lens.sort((a, b) => $cmp(b, a));
   const arg$5 = $unwrap(words.get(5), "no entry found for key");
   out += `[${lens.map((item) => String(item)).join(", ")}] [${arg$5.map((item) => $debugStr(item)).join(", ")}]\n`;

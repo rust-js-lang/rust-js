@@ -23,7 +23,7 @@ function square(x) {
 
 function main() {
   let count = 0;
-  let tick = () => {
+  const tick = () => {
     count = (count + 1) | 0;
   };
   call(tick);

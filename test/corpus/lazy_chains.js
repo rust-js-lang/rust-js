@@ -131,7 +131,7 @@ function main() {
   console.log(`[${joined.map((item) => String(item)).join(", ")}]`);
   const arg$5 = $next(v.values().map((x) => noisy("next", x)));
   console.log(`${arg$5 == null ? "None" : `Some(${arg$5})`}`);
-  let stepped = v.values().map((x) => noisy("stepped", x));
+  const stepped = v.values().map((x) => noisy("stepped", x));
   const arg$6 = $next(stepped);
   console.log(`${arg$6 == null ? "None" : `Some(${arg$6})`}`);
   const arg$7 = $next(stepped);

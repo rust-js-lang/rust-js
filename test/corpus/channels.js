@@ -23,7 +23,7 @@ function produce(tx) {
 }
 
 function drain(rx) {
-  let names = [];
+  const names = [];
   while (true) {
     const job = $recv(rx);
     if (job.TAG === "Ok") {

@@ -46,7 +46,7 @@ export function module_name(path) {
 }
 
 export function parts(path) {
-  let kept = [];
+  const kept = [];
   let empty = 0;
   for (const part of path.split("/")) {
     if (!part) {

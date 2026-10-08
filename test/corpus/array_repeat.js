@@ -14,13 +14,13 @@ function main() {
     `${zeros.length} ${zeros.map((b) => b).reduce((a, b) => (a + b) >>> 0, 0)} [${flags.map((item) => String(item)).join(", ")}]`,
   );
   const item = [0, 0, 0];
-  let grid = Array.from({ length: 4 }, () => item.slice());
+  const grid = Array.from({ length: 4 }, () => item.slice());
   grid[1][2] = 7;
   console.log(
     `[${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
   );
   const item$1 = { x: 1 };
-  let points = Array.from({ length: 3 }, () => ({ ...item$1 }));
+  const points = Array.from({ length: 3 }, () => ({ ...item$1 }));
   points[0].x = 5;
   console.log(`[${points.map((item) => pDebug_fmt(item)).join(", ")}]`);
   const once = new Array(3).fill(made("once", 4));
@@ -28,10 +28,10 @@ function main() {
   console.log(`[${once.map((item) => String(item)).join(", ")}] ${none.length}`);
   const options = [2, 2];
   console.log(`[${options.map((item) => (item == null ? "None" : `Some(${item})`)).join(", ")}]`);
-  let row = [0, 0, 0];
+  const row = [0, 0, 0];
   row[1] = 5;
   const item$2 = [0, 0, 0];
-  let pair = Array.from({ length: 2 }, () => item$2.slice());
+  const pair = Array.from({ length: 2 }, () => item$2.slice());
   pair[0][1] = 5;
   console.log(
     `[${row.map((item) => String(item)).join(", ")}] [${pair.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,

@@ -3,7 +3,7 @@
 import { $KeyMap, $KeySet, $debugStr, $orInsert } from "@rust-js/runtime";
 
 function counts(items) {
-  let map = new $KeyMap();
+  const map = new $KeyMap();
   for (const item of items) {
     const current = $orInsert(map, item, 0);
     map.set(item, (current + 1) >>> 0);
@@ -13,7 +13,7 @@ function counts(items) {
 
 function main() {
   const v = (major, minor, label) => ({ major, minor, label });
-  let released = new $KeyMap();
+  const released = new $KeyMap();
   released.set(v(1, 0, "a"), "first");
   released.set(v(1, 0, "b"), "same numbers, another label");
   released.set(v(1, 0, "a"), "first, again");
@@ -41,7 +41,7 @@ function main() {
   const bytes = new $KeySet([[1], [1], [2]]);
   const letters = new $KeySet([["a"]]);
   console.log(`${bytes.size} ${letters.has(["a"])}`);
-  let byVersion = new $KeyMap();
+  const byVersion = new $KeyMap();
   for (const version of [v(0, 1, "x"), v(0, 1, "x"), v(0, 1, "y")]) {
     const current = $orInsert(byVersion, version, 0);
     byVersion.set(version, (current + 1) >>> 0);

@@ -60,7 +60,7 @@ function main() {
   console.log(
     `${taken == null ? "None" : `Some(${taken})`} ${a == null ? "None" : `Some(${a})`} ${old$2 == null ? "None" : `Some(${old$2})`} ${b == null ? "None" : `Some(${b})`} ${first == null ? "None" : `Some(${$debugStr(first)})`} ${second == null ? "None" : `Some(${$debugStr(second)})`} ${slot == null ? "None" : `Some(${$debugStr(slot)})`}`,
   );
-  let stack = { head: undefined };
+  const stack = { head: undefined };
   Stack.push(stack, 1);
   Stack.push(stack, 2);
   const arg = Stack.pop(stack);
@@ -112,11 +112,11 @@ function main() {
   const cell = { value: [1] };
   cell.value.push(2);
   console.log(`[${cell.value.map((item) => String(item)).join(", ")}] 5`);
-  let front = [1];
-  let back = [2, 3];
+  const front = [1];
+  const back = [2, 3];
   $append(front, back);
-  let queue = [9];
-  let more = [8, 7];
+  const queue = [9];
+  const more = [8, 7];
   $append(queue, more);
   console.log(
     `[${front.map((item) => String(item)).join(", ")}] [${back.map((item) => String(item)).join(", ")}] [${queue.map((item) => String(item)).join(", ")}] [${more.map((item) => String(item)).join(", ")}]`,
@@ -128,7 +128,7 @@ function main() {
   console.log(
     `${secretDebug_fmt([4])} ${pairDebug_fmt([5, "six"])} ${bagDebug_fmt([[1, 2]])} ${bagDebug_fmt([[]])}`,
   );
-  let table = new Map();
+  const table = new Map();
   table.set("k", 7);
   console.log(
     `${lettersDebug_fmt([["a", "b"]])} ${tableDebug_fmt([table])} ${tableDebug_fmt([new Map()])}`,

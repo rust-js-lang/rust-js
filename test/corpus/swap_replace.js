@@ -12,7 +12,7 @@ function main() {
   a = b;
   b = t;
   console.log(`${a} ${b}`);
-  let pair = { left: [1, 2], right: [3], label: "p" };
+  const pair = { left: [1, 2], right: [3], label: "p" };
   const t$1 = pair.left;
   pair.left = pair.right;
   pair.right = t$1;

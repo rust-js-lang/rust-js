@@ -33,7 +33,7 @@ function main() {
     value = (value + 1) | 0;
     console.log(`${value}`);
   }
-  let match = [1, 2];
+  const match = [1, 2];
   match[0] = (match[0] + 10) | 0;
   match[1] = (match[1] + 20) | 0;
   console.log(`${match[0]} ${match[1]}`);

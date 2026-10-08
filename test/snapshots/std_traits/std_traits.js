@@ -55,7 +55,7 @@ export function defaults() {
 }
 
 export function vec_clones() {
-  let v = [1, 2];
+  const v = [1, 2];
   const w = v.slice();
   v.push(3);
   return [v.length, w.length];
@@ -63,7 +63,7 @@ export function vec_clones() {
 
 export function struct_clones() {
   const s = { size: 1, tags: ["a"], mode: "On" };
-  let t = { ...s, tags: s.tags.slice() };
+  const t = { ...s, tags: s.tags.slice() };
   t.tags.push("b");
   t.size = 2;
   return [s.tags.length, t.tags.length, s.size, t.size];
@@ -97,7 +97,7 @@ export function enum_clones() {
   let b;
   const match = a.TAG === "Poly" ? { ...a, _0: a._0.slice() } : a;
   if (match.TAG === "Poly") {
-    let p = match._0;
+    const p = match._0;
     p.push(2);
     b = { TAG: "Poly", _0: p };
   } else {
@@ -232,7 +232,7 @@ export function iterations() {
   for (const x of $iterator({ n: 3 }, countdownIterator_next)) {
     total$1 = (total$1 + x) >>> 0;
   }
-  let c = { n: 2 };
+  const c = { n: 2 };
   const first = countdownIterator_next(c) ?? 0;
   return [
     total$1,
@@ -289,7 +289,7 @@ export function in_order(a, b, TPartialOrd) {
 export function orderings() {
   const a = { major: 1, minor: 2 };
   const b = { major: 1, minor: 10 };
-  let all = [b, { major: 0, minor: 9 }, a];
+  const all = [b, { major: 0, minor: 9 }, a];
   all.sort((a, b) => $cmp(a.major, b.major) || $cmp(a.minor, b.minor));
   const tmp = ($cmp(a.major, b.major) || $cmp(a.minor, b.minor)) < 0;
   const tmp$1 = $eq(($cmp(a.major, b.major) || $cmp(a.minor, b.minor)) > 0 ? a : b, b);
@@ -317,21 +317,21 @@ export function partial_orderings() {
 }
 
 export function more_orderings() {
-  let words = [["pear"], ["fig"], ["apple"], ["kiwi"]];
+  const words = [["pear"], ["fig"], ["apple"], ["kiwi"]];
   words.sort(wordOrd_cmp);
-  let priorities = ["High", "Low", "Mid"];
+  const priorities = ["High", "Low", "Mid"];
   priorities.sort((a, b) => $cmpIn(["Low", "Mid", "High"], a, b));
-  let lists = [
+  const lists = [
     [2, 1],
     [1, 5, 0],
     [1, 5],
   ];
   lists.sort((a, b) => $cmpItems(a, b, $cmp));
-  let sizes = words.map((w) => Array.from(w[0]).length);
+  const sizes = words.map((w) => Array.from(w[0]).length);
   for (const list of lists) {
     sizes.push(list.length);
   }
-  let byKey = [
+  const byKey = [
     { major: 2, minor: 0 },
     { major: 1, minor: 5 },
   ];

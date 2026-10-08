@@ -13,20 +13,20 @@ function value(log) {
 }
 
 function main() {
-  let items = [
+  const items = [
     { name: "a", count: 1 },
     { name: "b", count: 2 },
   ];
   $unwrap(items.at(-1)).count = 9;
   const item = $unwrap(items[1]);
   item.count = (item.count + 1) >>> 0;
-  let log = [];
+  const log = [];
   const value$1 = value(log);
   pick(items, log).count = value$1;
   console.log(
     `[${items.map((item) => itemDebug_fmt(item)).join(", ")}] [${log.map((item) => $debugStr(item)).join(", ")}]`,
   );
-  let stock = new Map();
+  const stock = new Map();
   stock.set("pen", { name: "pen", count: 3 });
   const item$1 = $unwrap(stock.get("pen"));
   item$1.count = Math.imul(item$1.count, 4) >>> 0;

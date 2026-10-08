@@ -3,22 +3,22 @@
 import { $at, $debugF64, $debugStr, $sliceEnd } from "@rust-js/runtime";
 
 function main() {
-  let ints = [1, 2, 3];
+  const ints = [1, 2, 3];
   for (let i = 0; i < ints.length; i++) {
     ints[i] = (ints[i] + 22) | 0;
   }
   console.log(`[${ints.map((item) => String(item)).join(", ")}]`);
-  let halves = [1.5, 2.5];
+  const halves = [1.5, 2.5];
   for (let i$1 = 0; i$1 < halves.length; i$1++) {
     halves[i$1] = halves[i$1] * 2;
   }
   console.log(`[${halves.map((item) => $debugF64(item)).join(", ")}]`);
-  let counts = [1, 2];
+  const counts = [1, 2];
   for (let i$2 = 0; i$2 < counts.length; i$2++) {
     counts[i$2] = (counts[i$2] * 200) & 255;
   }
   console.log(`[${counts.map((item) => String(item)).join(", ")}]`);
-  let words = ["a", "b"];
+  const words = ["a", "b"];
   for (let i$3 = 0; i$3 < words.length; i$3++) {
     words[i$3] = words[i$3] + "!";
   }
@@ -28,7 +28,7 @@ function main() {
     ints[i$4] = 0;
   }
   console.log(`[${ints.map((item) => String(item)).join(", ")}]`);
-  let ns = [1, 2, 3, 4];
+  const ns = [1, 2, 3, 4];
   const end$1 = $sliceEnd(ns, 1, 3);
   for (let i$5 = 1; i$5 < end$1; i$5++) {
     ns[i$5] = -ns[i$5] | 0;
@@ -38,7 +38,7 @@ function main() {
     ns[i$6] = 9;
   }
   console.log(`[${ns.map((item) => String(item)).join(", ")}]`);
-  let v = [1, 2, 3, 4, 5];
+  const v = [1, 2, 3, 4, 5];
   for (let i$7 = 0; i$7 < v.length; i$7++) {
     if (v[i$7] % 2 === 0) {
       continue;
@@ -49,8 +49,8 @@ function main() {
     }
   }
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
-  let a = [1, 2];
-  let b = [10, 20];
+  const a = [1, 2];
+  const b = [10, 20];
   let cur = a;
   const items = cur;
   for (let i$8 = 0; i$8 < items.length; i$8++) {
@@ -66,7 +66,7 @@ function main() {
     [1, 2],
     [10, 20],
   ];
-  let h = { list: a$1 };
+  const h = { list: a$1 };
   const items$1 = h.list;
   for (let i$9 = 0; i$9 < items$1.length; i$9++) {
     h.list = b$1;

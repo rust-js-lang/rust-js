@@ -3,7 +3,7 @@
 import { $debugStr, $fromU32, $index, $unwrap } from "@rust-js/runtime";
 
 function decode(bytes) {
-  let out = [];
+  const out = [];
   let i = 0;
   while (i < bytes.length) {
     const b = $index(bytes, i);

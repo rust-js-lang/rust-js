@@ -180,7 +180,7 @@ function main() {
   const got = result$1;
   got.value = (got.value + 1) | 0;
   console.log(`${u} ${w}`);
-  let v = [1, 2];
+  const v = [1, 2];
   const cell = first(v);
   cell.value = 9;
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);

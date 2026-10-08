@@ -5,7 +5,7 @@ import { $debugStr, $someValue } from "@rust-js/runtime";
 var $countSource, $wordsSource, $countLabeled, $wordsLabeled;
 
 function drain(s, SSource) {
-  let out = [];
+  const out = [];
   while (true) {
     const x = SSource.next_item(s);
     if (x != null) {
@@ -53,7 +53,7 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
-  let source = { value: { n: 2 }, impl: countSource() };
+  const source = { value: { n: 2 }, impl: countSource() };
   const arg = source.impl.next_item(source);
   const arg$1 = source.impl.next_item(source);
   console.log(

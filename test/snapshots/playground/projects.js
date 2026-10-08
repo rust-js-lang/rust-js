@@ -26,7 +26,7 @@ export const Project = {
     return undefined;
   },
   keeping(project, live) {
-    let files = copy(project.files);
+    const files = copy(project.files);
     if (live != null) {
       for (const file of files) {
         if (file.path === project.current) {
@@ -40,7 +40,7 @@ export const Project = {
     return { root: project.root, files: Project.keeping(project, live), current: path };
   },
   adding(project, path, live) {
-    let files = Project.keeping(project, live);
+    const files = Project.keeping(project, live);
     files.push({ path, state: sourceState("") });
     return { root: project.root, files, current: path };
   },

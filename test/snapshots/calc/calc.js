@@ -15,7 +15,7 @@ import {
 
 export function tokenize(src) {
   const chars = Array.from(src);
-  let out = [];
+  const out = [];
   let i = 0;
   while (i < chars.length) {
     const c = $index(chars, i);
@@ -59,8 +59,8 @@ function prec(op) {
 }
 
 export function to_rpn(tokens) {
-  let out = [];
-  let stack = [];
+  const out = [];
+  const stack = [];
   for (const t of tokens) {
     if (t.TAG === "Num") {
       out.push(t);
@@ -111,7 +111,7 @@ export function eval$(src) {
     return result;
   }
   const rpn = to_rpn(result._0);
-  let st = [];
+  const st = [];
   for (const t of rpn) {
     if (t.TAG === "Num") {
       st.push(t._0);
@@ -151,13 +151,13 @@ export function eval$(src) {
 }
 
 export function word_freq(text) {
-  let m = new Map();
+  const m = new Map();
   for (const w of $splitBy(text, (c) => !/^[\p{Alphabetic}\p{N}]$/u.test(c)).filter((w) => !!w)) {
     const key = w.toLowerCase();
     const current = $orInsert(m, key, 0);
     m.set(key, (current + 1) >>> 0);
   }
-  let v = Array.from(m);
+  const v = Array.from(m);
   v.sort((a, b) => $cmp(b[1], a[1]) || $cmp(a[0], b[0]));
   return v;
 }
@@ -181,7 +181,7 @@ export function caesar(s, k) {
 }
 
 export function first_dup(s) {
-  let seen = new Set();
+  const seen = new Set();
   for (const [i, c] of Array.from(s).entries()) {
     if (!$add(seen, c)) {
       return [i, c];

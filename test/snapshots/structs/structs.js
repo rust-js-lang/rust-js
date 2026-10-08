@@ -15,13 +15,13 @@ export function area(r) {
 }
 
 export function moved(x, y, dx) {
-  let p = point(x, y);
+  const p = point(x, y);
   p.x = (p.x + dx) | 0;
   return p;
 }
 
 export function grow(w, h, by) {
-  let r = rect(0, 0, w, h);
+  const r = rect(0, 0, w, h);
   r.size[0] = (r.size[0] + by) >>> 0;
   r.size[1] = Math.imul(r.size[1], 2) >>> 0;
   r.origin = point(-1, -1);
@@ -30,7 +30,7 @@ export function grow(w, h, by) {
 
 export function copies_are_separate(x) {
   const a = point(x, 0);
-  let b = { ...a };
+  const b = { ...a };
   b.x = (b.x + 1) | 0;
   return [a.x, b.x];
 }
@@ -49,7 +49,7 @@ export function caller_keeps_its_point(y) {
 export function moves_share_nothing(x) {
   const a = point(x, x);
   const r = { origin: { ...a }, size: [1, 1] };
-  let s = r;
+  const s = r;
   s.origin.x = 0;
   return [a.x, s.origin.x];
 }
@@ -57,7 +57,7 @@ export function moves_share_nothing(x) {
 export function bound_before_move(x) {
   const r = rect(x, x, 1, 1);
   const before = r.origin.x;
-  let s = r;
+  const s = r;
   s.origin.x = 0;
   return [before, s.origin.x];
 }
@@ -68,7 +68,7 @@ function origin_of(r) {
 
 export function returned_copy_is_separate(x) {
   const r = rect(x, x, 1, 1);
-  let p = origin_of(r);
+  const p = origin_of(r);
   p.x = (p.x + 1) | 0;
   return [r.origin.x, p.x];
 }
@@ -81,7 +81,7 @@ export function option_copy_is_separate(x) {
   const m = { at: point(x, 0) };
   const option = marked(m);
   const fallback = point(0, 0);
-  let p = option ?? fallback;
+  const p = option ?? fallback;
   p.x = (p.x + 1) | 0;
   let kept;
   if (m.at != null) {
@@ -95,7 +95,7 @@ export function option_copy_is_separate(x) {
 
 export function deref_copy_is_separate(x) {
   const points = [point(x, 0)];
-  let p = { ...$unwrap(points[0]) };
+  const p = { ...$unwrap(points[0]) };
   p.x = (p.x + 1) | 0;
   return [$unwrap(points[0]).x, p.x];
 }

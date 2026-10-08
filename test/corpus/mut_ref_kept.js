@@ -22,7 +22,7 @@ function go(t, TBump) {
 }
 
 function main() {
-  let g = [[1, 2, 3]];
+  const g = [[1, 2, 3]];
   const cell = gridIndexMutUsize_index_mut(g, 1);
   cell.value = 20;
   const cell$1 = gridIndexMutUsize_index_mut(g, 2);
@@ -30,7 +30,7 @@ function main() {
   console.log(
     `${gridIndexUsize_index(g, 0)} ${gridIndexUsize_index(g, 1)} ${gridIndexUsize_index(g, 2)}`,
   );
-  let c = { n: 1 };
+  const c = { n: 1 };
   const cell$2 = Counter.get_mut(c);
   cell$2.value = (cell$2.value + 41) | 0;
   const n = Counter.get_mut(c);

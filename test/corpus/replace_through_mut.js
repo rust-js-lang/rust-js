@@ -44,15 +44,15 @@ function origin(p) {
 }
 
 function through_ref_mut() {
-  let a = { x: 1, y: 0 };
+  const a = { x: 1, y: 0 };
   const cur = a;
   $assign(cur, { x: 2, y: 3 });
   return (a.x + a.y) | 0;
 }
 
 function through_ref_mut_variable() {
-  let a = { x: 1, y: 0 };
-  let cur = a;
+  const a = { x: 1, y: 0 };
+  const cur = a;
   $assign(cur, { x: 4, y: 5 });
   return (a.x + a.y) | 0;
 }
@@ -94,7 +94,7 @@ function zero(t) {
 }
 
 function main() {
-  let c = { n: 3, label: "a", items: [1, 2] };
+  const c = { n: 3, label: "a", items: [1, 2] };
   const kept = { ...c, items: c.items.slice() };
   Counter.reset(c);
   console.log(`${counterDebug_fmt(c)} ${counterDebug_fmt(kept)}`);
@@ -102,30 +102,30 @@ function main() {
   console.log(`${counterDebug_fmt(c)}`);
   const old = replace_with(c, 7);
   console.log(`${counterDebug_fmt(old)} ${counterDebug_fmt(c)}`);
-  let d = { n: 1, label: "", items: [] };
+  const d = { n: 1, label: "", items: [] };
   swap_two(c, d);
   console.log(`${counterDebug_fmt(c)} ${counterDebug_fmt(d)}`);
-  let row = [
+  const row = [
     { n: 0, label: "", items: [] },
     { n: 2, label: "", items: [] },
   ];
   Counter.restart($index(row, 1), 6);
   console.log(`[${row.map((item) => counterDebug_fmt(item)).join(", ")}]`);
-  let items = [4, 5];
+  const items = [4, 5];
   console.log(
     `[${take_all(items)
       .map((item) => String(item))
       .join(", ")}] [${items.map((item) => String(item)).join(", ")}]`,
   );
   const a = { x: 1, y: 2 };
-  let b = { ...a };
+  const b = { ...a };
   origin(b);
   console.log(`${pDebug_fmt(a)} ${pDebug_fmt(b)}`);
   console.log(`${through_ref_mut()}`);
   console.log(`${through_ref_mut_variable()}`);
   const first = { x: 3 };
-  let second = { ...first };
-  let third = { x: 5 };
+  const second = { ...first };
+  const third = { x: 5 };
   swap_points(second, third);
   console.log(`${qDebug_fmt(first)} ${qDebug_fmt(second)} ${qDebug_fmt(third)}`);
   let l = "Off";
@@ -145,7 +145,7 @@ function main() {
   l = l$2.value;
   const arg = $eq(l, { TAG: "On", level: 9 });
   console.log(`${lightDebug_fmt(l)} ${arg}`);
-  let lights = ["Off", { TAG: "On", level: 1 }];
+  const lights = ["Off", { TAG: "On", level: 1 }];
   for (let i = 0; i < lights.length; i++) {
     const self$2 = { value: lights[i] };
     Light.toggle(self$2);
@@ -155,14 +155,14 @@ function main() {
   brighter(l$3);
   lights[$at(lights, 0)] = l$3.value;
   console.log(`[${lights.map((item) => lightDebug_fmt(item)).join(", ")}]`);
-  let s = { TAG: "Circle", r: 1.5 };
+  const s = { TAG: "Circle", r: 1.5 };
   flip(s);
   const arg$1 = $eq(s, { TAG: "Square", side: 3 });
   console.log(`${shapeDebug_fmt(s)} ${arg$1}`);
   flip(s);
   const arg$2 = $eq(s, { TAG: "Circle", r: 3 });
   console.log(`${shapeDebug_fmt(s)} ${arg$2}`);
-  let v = [1, 2, 3];
+  const v = [1, 2, 3];
   refill(v);
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
   let name = "pen";
@@ -171,7 +171,7 @@ function main() {
   shout(s$1);
   name = s$1.value;
   console.log(`${name} ${copy}`);
-  let t = [5, "five"];
+  const t = [5, "five"];
   zero(t);
   console.log(`(${t[0]}, ${$debugStr(t[1])})`);
 }

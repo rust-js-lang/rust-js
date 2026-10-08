@@ -27,7 +27,7 @@ function main() {
   bump(n$1);
   x = n$1.value;
   console.log(`${x}`);
-  let v = [1, 2, 3];
+  const v = [1, 2, 3];
   let i = 0;
   const at = $at(v, i);
   i = 2;
@@ -43,19 +43,19 @@ function main() {
     o = (o + 1) >>> 0;
   }
   console.log(`${o == null ? "None" : `Some(${o})`}`);
-  let pt = { x: 1, y: 2 };
+  const pt = { x: 1, y: 2 };
   pt.x = Math.imul(pt.x, 10);
   console.log(`${pt.x} ${pt.y}`);
-  let a = { count: 1 };
-  let b = { count: 10 };
+  const a = { count: 1 };
+  const b = { count: 10 };
   let cur = a;
   const o$1 = cur;
   cur = b;
   o$1.count = (o$1.count + 1) | 0;
   cur.count = (cur.count + 5) | 0;
   console.log(`${a.count} ${b.count}`);
-  let xs = [1, 2];
-  let ys = [10, 20];
+  const xs = [1, 2];
+  const ys = [10, 20];
   let list = xs;
   const o$2 = list;
   const at$1 = $at(list, 0);
@@ -70,7 +70,7 @@ function main() {
     [10, 20],
   ];
   let [na, nb] = [{ count: 1 }, { count: 10 }];
-  let h = { list: xs$1, node: na };
+  const h = { list: xs$1, node: na };
   const o$3 = h.list;
   const at$2 = $at(h.list, 0);
   const o$4 = h.node;
@@ -86,7 +86,7 @@ function main() {
     [1, 2],
     [10, 20],
   ];
-  let refs = [xs$2];
+  const refs = [xs$2];
   const o$5 = refs[0];
   const at$3 = $at(refs[0], 0);
   refs[0] = ys$2;
@@ -106,13 +106,13 @@ function main() {
   console.log(
     `[${xs$3.map((item) => String(item)).join(", ")}] [${ys$3.map((item) => String(item)).join(", ")}]`,
   );
-  let nodes = [{ count: 1 }, { count: 2 }];
+  const nodes = [{ count: 1 }, { count: 2 }];
   let j = 1;
   const item = $index(nodes, j);
   j = 0;
   item.count = Math.imul(item.count, 7);
   console.log(`${$index(nodes, 0).count} ${$index(nodes, 1).count} ${j}`);
-  let grid = [
+  const grid = [
     [1, 2],
     [3, 4],
   ];

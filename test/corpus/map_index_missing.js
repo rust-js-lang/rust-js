@@ -3,7 +3,7 @@
 import { $unwrap } from "@rust-js/runtime";
 
 function main() {
-  let stock = new Map();
+  const stock = new Map();
   stock.set("pen", 3);
   console.log(`${$unwrap(stock.get("pen"), "no entry found for key")}`);
   console.log(`${$unwrap(stock.get("ink"), "no entry found for key")}`);

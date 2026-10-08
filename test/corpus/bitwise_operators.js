@@ -24,7 +24,7 @@ function main() {
     `${flagsDebug_fmt(flagsNot_not([rw[0]]))} ${flagsDebug_fmt(flagsShlU8_shl([READ[0]], 2))} ${flagsDebug_fmt(flagsShrU32_shr([RUN[0]], 1))}`,
   );
   console.log(`${flagsDebug_fmt(refFlagsBitOr_bitor([READ[0]], [RUN[0]]))}`);
-  let f = [READ[0]];
+  const f = [READ[0]];
   flagsBitOrAssign_bitor_assign(f, [RUN[0]]);
   console.log(`${flagsDebug_fmt(f)}`);
   flagsBitAndAssign_bitand_assign(f, [RUN[0]]);
@@ -35,9 +35,9 @@ function main() {
   console.log(`${flagsDebug_fmt(f)}`);
   flagsShlAssignU8_shl_assign(f, 2);
   console.log(`${flagsDebug_fmt(f)}`);
-  let all = [[READ[0]], [WRITE[0]]];
+  const all = [[READ[0]], [WRITE[0]]];
   flagsBitOrAssign_bitor_assign(all[1], [RUN[0]]);
-  let user = [[READ[0]], "ann"];
+  const user = [[READ[0]], "ann"];
   flagsBitOrAssign_bitor_assign(user[0], [WRITE[0]]);
   console.log(
     `[${all.map((item) => flagsDebug_fmt(item)).join(", ")}] ${flagsDebug_fmt(user[0])} ${user[1]}`,

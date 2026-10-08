@@ -77,7 +77,7 @@ function main() {
   const arg$2 = exchanged$2 ? { TAG: "Ok", _0: previous$12 } : { TAG: "Err", _0: previous$12 };
   console.log(`${arg$2.TAG === "Ok" ? `Ok(${arg$2._0})` : `Err(${arg$2._0})`} ${NEXT_ID.value}`);
   console.log(`${hit()} ${hit()} ${HITS.value}`);
-  let seen = [];
+  const seen = [];
   const local = { value: 5 };
   order(seen, "load");
   const operand = Math.imul(local.value, 2) >>> 0;

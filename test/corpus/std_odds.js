@@ -9,7 +9,7 @@ function greet(err) {
 
 function table(rows) {
   const stdout = undefined;
-  let out = undefined;
+  const out = undefined;
   for (let row = 0; row < rows; row++) {
     $print(`${Math.imul(row, row) >>> 0} `);
   }
@@ -36,7 +36,7 @@ function main() {
   );
   console.log("alloc::vec::Vec<core::option::Option<&str>>");
   console.log("(u8, f64) [i64; 2]");
-  let out = undefined;
+  const out = undefined;
   console.log("hello world");
   $print("no newline, ");
   console.log("then one");

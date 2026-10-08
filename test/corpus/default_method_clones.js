@@ -7,7 +7,7 @@ function main() {
   const c = sTr().a(n, { clone: (value) => value });
   console.log(`${n.item} ${c.item}`);
   const h = { item: [1] };
-  let c$1 = sTr().b(h, { clone: (value) => value });
+  const c$1 = sTr().b(h, { clone: (value) => value });
   c$1.item.push(2);
   console.log(
     `[${h.item.map((item) => String(item)).join(", ")}] [${c$1.item.map((item) => String(item)).join(", ")}]`,

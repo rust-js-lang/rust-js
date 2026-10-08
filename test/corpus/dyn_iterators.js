@@ -47,20 +47,20 @@ function main() {
       .join(", ")}]`,
   );
   console.log(`${numbers(false).reduce((a, b) => (a + b) >>> 0, 0)}`);
-  let it = $iter(v);
+  const it = $iter(v);
   const arg$1 = first_two(Iterator.from(it));
   console.log(
     `(${arg$1[0] == null ? "None" : `Some(${arg$1[0]})`}, ${arg$1[1] == null ? "None" : `Some(${arg$1[1]})`})`,
   );
   console.log(`${total(Iterator.from(it))}`);
-  let rest = $iter(v);
+  const rest = $iter(v);
   $next(rest);
   console.log(
     `[${doubled(Iterator.from(rest))
       .map((item) => String(item))
       .join(", ")}]`,
   );
-  let boxed = Iterator.from(v);
+  const boxed = Iterator.from(v);
   const arg$2 = $next(boxed);
   console.log(`${arg$2 == null ? "None" : `Some(${arg$2})`}`);
   for (const n of boxed) {

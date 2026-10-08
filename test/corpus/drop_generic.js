@@ -59,7 +59,7 @@ function main() {
       consume({ a: ["p"], b: 1 }, (pair) => {
         noisyDrop_drop(pair.a);
       });
-      let wrapper = { inner: ["w1"] };
+      const wrapper = { inner: ["w1"] };
       try {
         Wrapper.replace(wrapper, ["w2"], noisyDrop_drop);
         console.log(`${shown(["s"], noisyDisplay(), noisyDrop_drop)} ${shown(7, { fmt: String })}`);

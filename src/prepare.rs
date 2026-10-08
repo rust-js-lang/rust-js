@@ -13,6 +13,7 @@ pub fn module(module: &mut js::Module) {
     for function in module.functions.iter_mut().chain(methods) {
         block(&mut function.body);
         shadows(&mut function.body);
+        constants(&mut function.body);
     }
     for constant in &mut module.consts {
         expr(&mut constant.value);
@@ -165,6 +166,42 @@ fn coalescing(stmt: &Stmt) -> Option<StmtKind> {
         target.clone(),
         Expr::bin(js::Op::Coalesce, target.clone(), value.clone()),
     ))
+}
+
+/// `let list = [];` that nothing sets again, only changes in place, is
+/// `const list = [];`, as JS writes it (ADR 0278). A variable a `&mut`'s
+/// handle sets is set.
+fn constants(body: &mut Vec<Stmt>) {
+    let mut set = HashSet::new();
+    js::each_block_mut(body, &mut |stmts| {
+        for stmt in stmts.iter() {
+            if let StmtKind::Assign(target, _) = &stmt.kind {
+                set.extend(root(target));
+            }
+        }
+    });
+    js::each_expr_mut(body, &mut |e| {
+        if let ExprKind::Handle(place) | ExprKind::Pair(place, _) = &e.kind {
+            set.extend(root(place));
+        }
+    });
+    js::each_block_mut(body, &mut |stmts| {
+        for stmt in stmts.iter_mut() {
+            if let StmtKind::Let(name, Some(value)) = &stmt.kind
+                && !set.contains(name)
+            {
+                stmt.kind = StmtKind::Const(name.clone(), value.clone());
+            }
+        }
+    });
+}
+
+/// The variable a place is, `x`: `x.a = 1` sets none.
+fn root(place: &Expr) -> Option<String> {
+    match &place.kind {
+        ExprKind::Var(name) => Some(name.clone()),
+        _ => None,
+    }
 }
 
 /// `const n$1 = n;`, Rust's `let n = n;`, a variable shadowed by its own

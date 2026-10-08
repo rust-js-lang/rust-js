@@ -3,7 +3,7 @@
 import { $cmp, $eq, $maxBy } from "@rust-js/runtime";
 
 function main() {
-  let a = 1;
+  const a = 1;
   console.log(`${a === 1}`);
   let [b, c] = [2, 2];
   let p = {
@@ -57,7 +57,7 @@ function main() {
   v.value = (v.value + 1) | 0;
   console.log(`${m}`);
   let [i, j, k] = [3, 1, 2];
-  let refs = [
+  const refs = [
     {
       get value() {
         return i;

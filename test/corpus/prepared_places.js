@@ -13,7 +13,7 @@ function value(log) {
 }
 
 function slots(take) {
-  let map = new Map();
+  const map = new Map();
   map.set(0, 1);
   let n = map.get(0);
   if (n != null) {
@@ -39,8 +39,8 @@ function slots(take) {
 function main() {
   slots(false);
   slots(true);
-  let map = new Map();
-  let log = [];
+  const map = new Map();
+  const log = [];
   const value$1 = value(log);
   const key$1 = key(log);
   const current = $orInsert(map, key$1, 10);

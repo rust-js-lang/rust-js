@@ -3,15 +3,15 @@
 import { $at, $index } from "@rust-js/runtime";
 
 function main() {
-  let log = [];
-  let grid = [
+  const log = [];
+  const grid = [
     [1, 2],
     [3, 4],
   ];
-  let ps = [{ x: 1 }, { x: 2 }];
-  let arr = [{ x: 5 }, { x: 6 }];
-  let v = [10, 20, 30];
-  let at = (i) => {
+  const ps = [{ x: 1 }, { x: 2 }];
+  const arr = [{ x: 5 }, { x: 6 }];
+  const v = [10, 20, 30];
+  const at = (i) => {
     log.push(i);
     return i;
   };

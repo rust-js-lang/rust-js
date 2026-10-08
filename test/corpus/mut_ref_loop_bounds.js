@@ -3,7 +3,7 @@
 import { $sliceEnd } from "@rust-js/runtime";
 
 function main() {
-  let v = [1, 2, 3, 4];
+  const v = [1, 2, 3, 4];
   const end = $sliceEnd(v, 3, 9);
   for (let i = 3; i < end; i++) {
     v[i] = 0;

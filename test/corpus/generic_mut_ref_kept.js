@@ -5,7 +5,7 @@ import { $at, $debugStr, $eq } from "@rust-js/runtime";
 var $cSlot;
 
 function to_refs(list) {
-  let result = [];
+  const result = [];
   while (true) {
     const o = list;
     result.push({
@@ -49,7 +49,7 @@ function first(v) {
 }
 
 function main() {
-  let list = { value: 1, next: { value: 2, next: undefined } };
+  const list = { value: 1, next: { value: 2, next: undefined } };
   const refs = to_refs(list);
   console.log(
     `[${refs.map((item) => String(item.value)).join(", ")}] ${$eq(refs, [{ value: 1 }, { value: 2 }])}`,
@@ -126,7 +126,7 @@ function main() {
   const r = result$2;
   r.value = Math.imul(r.value, 2);
   console.log(`${a} ${b}`);
-  let s = ["x", "y"];
+  const s = ["x", "y"];
   const result$3 = pick(
     false,
     {
@@ -191,18 +191,18 @@ function main() {
   const e = result$5.value;
   e.n = Math.imul(e.n, 10);
   console.log(`${cDebug_fmt(c)} ${cDebug_fmt(d)}`);
-  let v = [{ n: 3 }];
+  const v = [{ n: 3 }];
   const item = first(v).value;
   item.n = (item.n + 1) | 0;
-  let w = [4, 5];
+  const w = [4, 5];
   const cell = first(w);
   cell.value = (cell.value + 1) | 0;
   console.log(
     `[${v.map((item) => cDebug_fmt(item)).join(", ")}] [${w.map((item) => String(item)).join(", ")}]`,
   );
-  let checked = { value: [0] };
+  const checked = { value: [0] };
   checkedDerefMut_deref_mut(checked).value.push(1);
-  let count = { value: 1 };
+  const count = { value: 1 };
   const cell$1 = checkedDerefMut_deref_mut(count);
   cell$1.value = (cell$1.value + 1) | 0;
   console.log(
@@ -210,7 +210,7 @@ function main() {
       .map((item) => String(item))
       .join(", ")}] ${checkedDeref_deref(count)}`,
   );
-  let k = { n: 1 };
+  const k = { n: 1 };
   const match$1 = cSlot_slot(k);
   if (match$1 != null) {
     match$1.value = (match$1.value + 1) | 0;

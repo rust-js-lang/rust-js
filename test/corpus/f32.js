@@ -78,7 +78,7 @@ function main() {
   console.log(
     `${$displayF32(temps.reduce((a, b) => Math.fround(a + b), -0))} ${$displayF32(temps.reduce((a, b) => Math.fround(a * b), 1))}`,
   );
-  let sorted = temps.slice();
+  const sorted = temps.slice();
   sorted.sort((a, b) => $unwrap($partialCmp(a, b)));
   console.log(`[${sorted.map((item) => $debugF32(item)).join(", ")}]`);
   console.log(

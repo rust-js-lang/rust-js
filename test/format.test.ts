@@ -164,3 +164,42 @@ test("the formatter uses the compiler it's given", () => {
   expect(p.exitCode, p.stderr.toString()).toBe(0);
   expect(existsSync(mark)).toBe(true);
 });
+
+// ADR 0278: a `let mut` nothing sets again, only changed in place, is a
+// `const`, as react.dev's toCommaSeparatedList has `const list = []`; one
+// set again stays a `let`.
+test("a variable nothing sets again is a const", async () => {
+  const dir = fixture("consts-of-lets");
+  writeFileSync(join(dir, "lib.rs"), `pub fn pushed() -> Vec<u32> {
+    let mut list = Vec::new();
+    list.push(1);
+    list
+}
+pub fn counted() -> u32 {
+    let mut n = 0;
+    n += 1;
+    n
+}
+pub fn later(flag: bool) -> u32 {
+    let n;
+    if flag { n = 1 } else { n = 2 }
+    n
+}
+fn bump(n: &mut u32) {
+    *n += 1;
+}
+pub fn handled() -> u32 {
+    let mut n = 0;
+    bump(&mut n);
+    n
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  const list = [];\n  list.push(1);");
+  expect(js).toContain("  let n = 0;\n  n = (n + 1) >>> 0;");
+  expect(js).toContain("  let n;\n  if (flag) {");
+  expect(js).toContain("  let n = 0;\n  const n$1 = { value: n };");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.pushed(), lib.counted(), lib.later(true), lib.later(false), lib.handled()]).toEqual([[1], 1, 1, 2, 1]);
+});

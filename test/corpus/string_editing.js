@@ -56,7 +56,7 @@ function main() {
   t = s$1.value;
   const last = result;
   console.log(`${last == null ? "None" : `Some(${$debugStr(last, "'")})`} ${$debugStr(t)}`);
-  let words = ["one", "two"];
+  const words = ["one", "two"];
   words[$at(words, 1)] = $insertStr(words[$at(words, 1)], 0, "2");
   words[$at(words, 0)] = $strTruncate(words[$at(words, 0)], 1);
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}]`);

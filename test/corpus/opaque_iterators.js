@@ -30,7 +30,7 @@ function main() {
   console.log(
     `${arg$5 == null ? "None" : `Some(${arg$5})`} ${arg$6} ${arg$7 == null ? "None" : `Some(${arg$7})`}`,
   );
-  let kept = $iter(tens(v));
+  const kept = $iter(tens(v));
   const arg$8 = $next(kept);
   const arg$9 = $next(kept);
   console.log(

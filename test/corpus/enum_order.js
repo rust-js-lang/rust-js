@@ -13,7 +13,7 @@ function main() {
       $cmpIn(["One", "Two", "Max"], "One", "Two") < 0
     }`,
   );
-  let levels = ["High", "Below", "Low"];
+  const levels = ["High", "Below", "Low"];
   levels.sort((a, b) => $cmpIn(["Below", "Low", "High"], a, b));
   const arg = $maxBy(levels, (a, b) => $cmpIn(["Below", "Low", "High"], a, b));
   const arg$1 = $cmpIn(["Below", "Low", "High"], "Low", "High");

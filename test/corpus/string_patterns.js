@@ -97,7 +97,7 @@ function main() {
   console.log(`${$debugStr($trimMatches(" a1 ", (c) => c === " " || /^[0-9]$/.test(c)))}`);
   let total = 0;
   for (const part of $splitTerminator("k=v;x=y", ";")) {
-    let kv = $iter($splitN(part, 2, "="));
+    const kv = $iter($splitN(part, 2, "="));
     total = (total + (($byteLen($unwrap($next(kv))) + $byteLen($next(kv) ?? "")) >>> 0)) >>> 0;
   }
   console.log(`${total}`);

@@ -67,7 +67,7 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
-  let ring = Ring.new(2);
+  const ring = Ring.new(2);
   for (let x = 1; x <= 5; x++) {
     Ring.push(ring, x, 2);
   }

@@ -13,7 +13,7 @@ function three(a, b, c) {
 }
 
 function main() {
-  let log = [];
+  const log = [];
   const sum = (note(log, "a", 1) + Math.imul(note(log, "b", 2), note(log, "c", 3))) | 0;
   console.log(`sum ${sum}`);
   const args = three(note(log, "x", 1), note(log, "y", 2), note(log, "z", 3));

@@ -17,8 +17,8 @@ function sum(it) {
 }
 
 function pairs(it) {
-  let it$1 = Iterator.from(it);
-  let out = [];
+  const it$1 = Iterator.from(it);
+  const out = [];
   while (true) {
     const value = $next(it$1);
     const value$1 = $next(it$1);
@@ -34,7 +34,7 @@ function pairs(it) {
 function after_first(it) {
   it = Iterator.from(it);
   const first = $next(it);
-  let rest = [];
+  const rest = [];
   for (const x of Iterator.from(it)) {
     rest.push(Math.imul(x, 10) >>> 0);
   }

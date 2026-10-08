@@ -57,39 +57,39 @@ export function backwards(s) {
 }
 
 export function sorted_copy(v) {
-  let copy = v.slice();
+  const copy = v.slice();
   copy.sort((a, b) => a - b);
   return [v, copy];
 }
 
 export function sorted(v) {
-  let w = v.slice();
+  const w = v.slice();
   w.sort((a, b) => a - b);
   return w;
 }
 
 export function descending(v) {
-  let w = v.slice();
+  const w = v.slice();
   w.sort((a, b) => $cmp(b, a));
   return w;
 }
 
 export function by_last_digit(v) {
-  let w = v.slice();
+  const w = v.slice();
   const key = (x) => (x % 10) | 0;
   w.sort((a, b) => $cmp(key(a), key(b)));
   return w;
 }
 
 export function sorted_words(words) {
-  let w = words.map((s) => s);
+  const w = words.map((s) => s);
   w.sort($cmp);
   w.reverse();
   return w;
 }
 
 export function by_length_then_name(words) {
-  let w = words.map((s) => s);
+  const w = words.map((s) => s);
   w.sort((a, b) => $cmp(!a, !b) || $cmp(a, b));
   return w;
 }

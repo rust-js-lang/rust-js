@@ -23,7 +23,7 @@ function use_it(c) {
 }
 
 function main() {
-  let c = { n: 1 };
+  const c = { n: 1 };
   let n = 5;
   console.log(
     `${use_it({ value: c, impl: cCounter() })} ${use_it({
@@ -61,9 +61,9 @@ function main() {
   const receiver = up(s);
   receiver.impl.bump(receiver);
   console.log(`${s.impl.name(s.value)} ${n}`);
-  let boxed = { value: 7, impl: i32Counter() };
+  const boxed = { value: 7, impl: i32Counter() };
   boxed.impl.bump(boxed);
-  let list = [
+  const list = [
     { value: { n: 0 }, impl: cCounter() },
     { value: 1, impl: i32Counter() },
   ];

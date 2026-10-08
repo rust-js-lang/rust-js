@@ -779,12 +779,12 @@ pub fn positive(n: Option<i32>) -> i32 {
   expect(jsx).not.toContain("const className");
   // Text kept where it isn't empty, or a default, is `||` (ADR 0266).
   expect(jsx).toContain('return name || "Error";');
-  // Text that isn't empty is JS's truthy text: \`code ? .. : ..\`, as
+  // Text that isn't empty is JS's truthy text: `code ? .. : ..`, as
   // react.dev's errors page titles itself (ADR 0266).
   expect(jsx).toContain("const shown = code ? `Error #${code}` : \"Errors\";");
   expect(jsx).toContain("export function empty(text) {\n  return !text;\n}");
   expect(jsx).toContain("  if (a && text) {");
-  // Of \`as_deref()\`, the option itself, matched where it is (ADR 0211).
+  // Of `as_deref()`, the option itself, matched where it is (ADR 0211).
   expect(jsx).toContain("const named = code ? `Error #${code}` : \"Errors\";");
   // A filter of another test, or a default, is that test.
   expect(jsx).toContain("return n != null && n > 0 ? n : 1;");

@@ -21,7 +21,7 @@ function say(text, tone) {
 }
 
 function appended(rows, label, value) {
-  let next = rows.map(([l, v]) => [l, v]);
+  const next = rows.map(([l, v]) => [l, v]);
   next.push([label, value]);
   return next;
 }

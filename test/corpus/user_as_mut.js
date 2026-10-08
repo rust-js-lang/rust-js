@@ -5,7 +5,7 @@ import { $at, $mutItems, $swap } from "@rust-js/runtime";
 var $stackBorrow_i32_;
 
 function main() {
-  let stack = { items: [3, 1, 2] };
+  const stack = { items: [3, 1, 2] };
   const items = stackAsMut_i32__as_mut(stack);
   items[$at(items, 0)] = 9;
   console.log(`[${stack.items.map((item) => String(item)).join(", ")}]`);
@@ -18,7 +18,7 @@ function main() {
   console.log(
     `[${stack.items.map((item) => String(item)).join(", ")}] ${stackBorrow_i32__borrow(stack).length}`,
   );
-  let grid = [[0, 0, 0, 0]];
+  const grid = [[0, 0, 0, 0]];
   for (const item of $mutItems(gridAsMut_u8__as_mut(grid)).entries()) {
     item[1].value = ((item[0] & 255) * 2) & 255;
   }

@@ -18,11 +18,11 @@ import {
 } from "@rust-js/runtime";
 
 function main() {
-  let v = [1, 2];
+  const v = [1, 2];
   $extend(v, [3, 4]);
   const tail = [5, 6];
   $extend(v, $slice(tail, 1));
-  let words = ["a"];
+  const words = ["a"];
   const more = ["b", "c"];
   $extend(words, more);
   words[$at(words, 1)] = words[$at(words, 1)] + "!";
@@ -30,13 +30,13 @@ function main() {
     `[${v.map((item) => String(item)).join(", ")}] [${words.map((item) => $debugStr(item)).join(", ")}] [${more.map((item) => $debugStr(item)).join(", ")}]`,
   );
   const origin = [{ x: 1 }];
-  let grown = [{ x: 0 }];
+  const grown = [{ x: 0 }];
   $extend(
     grown,
     origin.map((item) => ({ ...item })),
   );
   $index(grown, 1).x = 7;
-  let copied = origin.map((item) => ({ ...item }));
+  const copied = origin.map((item) => ({ ...item }));
   $index(copied, 0).x = 9;
   console.log(
     `[${origin.map((item) => pointDebug_fmt(item)).join(", ")}] [${grown.map((item) => pointDebug_fmt(item)).join(", ")}] [${copied.map((item) => pointDebug_fmt(item)).join(", ")}]`,
@@ -72,12 +72,12 @@ function main() {
   console.log(
     `${found.TAG === "Ok" ? `Ok(${found._0})` : `Err(${found._0})`} ${byKey.TAG === "Ok" ? `Ok(${byKey._0})` : `Err(${byKey._0})`} ${reversed.TAG === "Ok" ? `Ok(${reversed._0})` : `Err(${reversed._0})`} ${heavy.TAG === "Ok" ? `Ok(${heavy._0})` : `Err(${heavy._0})`}`,
   );
-  let q = [1, 2, 3, 4, 5];
+  const q = [1, 2, 3, 4, 5];
   $rotateLeft(q, 2, "n");
   console.log(`[${q.map((item) => String(item)).join(", ")}]`);
   $rotateRight(q, 3, "n");
   console.log(`[${q.map((item) => String(item)).join(", ")}]`);
-  let r = ["a", "b", "c"];
+  const r = ["a", "b", "c"];
   $rotateLeft(r, 1, "mid");
   $rotateRight(r, 2, "k");
   console.log(`[${r.map((item) => $debugStr(item, "'")).join(", ")}]`);
