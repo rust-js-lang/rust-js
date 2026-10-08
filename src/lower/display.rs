@@ -3,6 +3,7 @@
 //! and an `Ok` `fmt::Result` is nothing at all; an `Err`, which chrono's
 //! formatting returns, is thrown, with what was written before it (ADR 0187).
 
+use super::bindings;
 use super::fn_def;
 use super::format_spec::{Options, Radix};
 use super::recognition::{ChannelError, FormatterQuery, Std};
@@ -1166,7 +1167,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && representation::is_fieldless_enum(*adt)
             && self.is_derived_impl(debug, ty)
         {
-            return Ok(value);
+            return Ok(self.variant_debug(*adt, value));
         }
         // The crate's own, hand-written or derived.
         if self.has_user_impl(debug, ty) {
@@ -1326,10 +1327,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && !self.krate.foreign.in_library(adt.did())
                     && self.recognition().derives(std_item(self.tcx, StdItem::Debug), ty) =>
             {
-                Ok(value)
+                Ok(self.variant_debug(*adt, value))
             }
             _ => Err(self.unsupported(span, &format!("`{{:?}}` of a `{ty}`"))),
         }
+    }
+
+    /// A fieldless enum's derived `{:?}`, its variant's Rust name: the value
+    /// itself, its name (ADR 0013), but where `rust_js::name` gave one
+    /// another, whose Rust name a table of them gives,
+    /// `{ "best fit": "BestFit", lookup: "Lookup" }[fit]`; of a tagged
+    /// one's tag (ADR 0284).
+    fn variant_debug(&self, adt: ty::AdtDef<'tcx>, value: Expr) -> Expr {
+        let value = match bindings::declared_tag(self.tcx, adt.did()) {
+            Some(key) => Expr::member(value, key),
+            None => value,
+        };
+        let names: Vec<(String, String)> = adt
+            .variants()
+            .iter()
+            .map(|v| (bindings::variant_name(self.tcx, v), v.name.to_string()))
+            .collect();
+        if names.iter().all(|(js, rust)| js == rust) {
+            return value;
+        }
+        let table = names
+            .into_iter()
+            .map(|(js, rust)| js::Prop::Field(js, Expr::str(rust)))
+            .collect();
+        Expr::index(Expr::object(table), value)
     }
 
     /// A sequence's `{:?}`: `"[" + items.map((item) => ..).join(", ") + "]"`.

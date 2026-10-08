@@ -533,3 +533,36 @@ pub async fn passed(text: &str) -> String {
   expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("return same(await setTimeout(0, text));");
   expect(await (await import(join(dir, "lib.js"))).passed("text")).toBe("text");
 });
+
+// ADR 0060: a fieldless enum's derived `{:?}` is its Rust name, though a
+// variant's JS is another, `rust_js::name`'s, of the crate's or another's.
+test("a renamed variant is shown by its Rust name", async () => {
+  const dir = fixture("debug-renamed");
+  writeFileSync(join(dir, "lib.rs"), `use js::intl::LocaleMatcher;
+
+#[derive(Clone, Copy, Debug)]
+pub enum Fit {
+    #[cfg_attr(rust_js, rust_js::name = "best fit")]
+    BestFit,
+    Lookup,
+}
+
+#[cfg_attr(rust_js, rust_js::tag = "kind")]
+#[derive(Clone, Copy, Debug)]
+pub enum Light {
+    #[cfg_attr(rust_js, rust_js::name = "on")]
+    On,
+    Off,
+}
+
+pub fn shown(best: bool) -> (String, String, String) {
+    let fit = if best { Fit::BestFit } else { Fit::Lookup };
+    let matcher = if best { LocaleMatcher::BestFit } else { LocaleMatcher::Lookup };
+    let light = if best { Light::On } else { Light::Off };
+    (format!("{fit:?}"), format!("{matcher:?}"), format!("{light:?}"))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.shown(true), lib.shown(false)]).toEqual([["BestFit", "BestFit", "On"], ["Lookup", "Lookup", "Off"]]);
+});

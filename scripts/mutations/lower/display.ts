@@ -3,6 +3,38 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "renamed-variant-debug-local",
+    breaks: "the crate's fieldless enum's `{:?}` is a renamed variant's JS name, not its Rust one",
+    file: "src/lower/display.rs",
+    find: "            return Ok(self.variant_debug(*adt, value));",
+    replace: "            return Ok(value);",
+    tests: ["test/format.test.ts", "-t", "a renamed variant is shown by its Rust name"],
+  },
+  {
+    name: "renamed-variant-debug-foreign",
+    breaks: "another crate's fieldless enum's `{:?}` is a renamed variant's JS name, not its Rust one",
+    file: "src/lower/display.rs",
+    find: "                Ok(self.variant_debug(*adt, value))",
+    replace: "                Ok(value)",
+    tests: ["test/format.test.ts", "-t", "a renamed variant is shown by its Rust name"],
+  },
+  {
+    name: "renamed-variant-debug-tag-unread",
+    breaks: "a tagged fieldless enum's `{:?}` looks its object up, not its tag",
+    file: "src/lower/display.rs",
+    find: "            Some(key) => Expr::member(value, key),",
+    replace: "            Some(_) => value,",
+    tests: ["test/format.test.ts", "-t", "a renamed variant is shown by its Rust name"],
+  },
+  {
+    name: "renamed-variant-debug-no-table",
+    breaks: "a renamed variant's `{:?}` is its JS name, the table never made",
+    file: "src/lower/display.rs",
+    find: "        if names.iter().all(|(js, rust)| js == rust) {",
+    replace: "        if true {",
+    tests: ["test/format.test.ts", "-t", "a renamed variant is shown by its Rust name"],
+  },
+  {
     name: "debug-without-cells",
     breaks: "`{:?}` of a `Vec<&mut i32>` shows each cell, not what it points at",
     file: "src/lower/display.rs",

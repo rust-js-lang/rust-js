@@ -85,3 +85,8 @@ function, derived or not.**
 - A `Debug` impl's function can be called from JS: `pointDebug_fmt(p)`.
 - The two-pass lowering (ADR 0049) also decides which derived `Debug`
   impls are used, from the first pass's references.
+- A fieldless enum's derived `{:?}` is the value itself, its variant's
+  name (ADR 0013), unless `rust_js::name` gave a variant another: then a
+  table of them gives the Rust one, `{ "best fit": "BestFit", lookup:
+  "Lookup" }[fit]`, of a tagged enum's tag (ADR 0284). (Amended: it was
+  the JS name.)
