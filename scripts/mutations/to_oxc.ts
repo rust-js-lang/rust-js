@@ -3,6 +3,30 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "keyed-field-assigned-dotted",
+    breaks: "`files.two_d = Some(3)` of a field named `2d` is `files.2d = 3`, which doesn't parse",
+    file: "src/to_oxc.rs",
+    find: "by its key.\n            ExprKind::Member(object, property) if !member_name(property) => {",
+    replace: "by its key.\n            ExprKind::Member(object, property) if false && !member_name(property) => {",
+    tests: ["test/format.test.ts", "-t", "isn't a name is read by its key"],
+  },
+  {
+    name: "keyed-field-read-dotted",
+    breaks: "a field named `worker-bundle` is read `files.worker-bundle`, a subtraction",
+    file: "src/to_oxc.rs",
+    find: "a subtraction.\n            ExprKind::Member(object, property) if !member_name(property) => {",
+    replace: "a subtraction.\n            ExprKind::Member(object, property) if false && !member_name(property) => {",
+    tests: ["test/format.test.ts", "-t", "isn't a name is read by its key"],
+  },
+  {
+    name: "keyed-field-chained-dotted",
+    breaks: "an optional read of a field named `worker-bundle` is `files?.worker-bundle`",
+    file: "src/to_oxc.rs",
+    find: "            ExprKind::OptionalMember(object, property) if !member_name(property) => {",
+    replace: "            ExprKind::OptionalMember(object, property) if false && !member_name(property) => {",
+    tests: ["test/format.test.ts", "-t", "isn't a name is read by its key"],
+  },
+  {
     name: "lines-escaped",
     breaks: "a string written across lines is a template literal of `\\n`s",
     file: "src/to_oxc.rs",

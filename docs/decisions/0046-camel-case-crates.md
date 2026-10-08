@@ -92,3 +92,11 @@ have no underscores.
   `firstName`.
 - Names that come from another crate are that crate's choice: a
   `camel_case` crate can call one that isn't.
+
+## Since
+
+- **A field whose name isn't a JS name is read and written by its key**,
+  `files["worker-bundle"]` and `files?.["worker-bundle"]`, as react.dev's
+  RSC template reads its `RSC_SOURCE_FILES`: it was printed
+  `files.worker-bundle`, a subtraction, and `files.2d = 3` didn't parse.
+  An object literal quoted such a key already. Case N.

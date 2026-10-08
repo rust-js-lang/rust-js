@@ -25,12 +25,12 @@ use oxc_allocator::{Allocator, ArenaBox, ArenaVec};
 use oxc_ast::ast::{
     Argument, ArrayExpressionElement, ArrowFunctionBody, AssignmentTarget, BindingIdentifier, BindingPattern,
     BindingProperty, BindingRestElement, BlockStatement, CallExpression, CatchClause, CatchParameter, ChainElement,
-    Declaration, Expression, ForStatementInit, ForStatementLeft, FormalParameter, FormalParameterKind,
-    FormalParameters, FunctionBody, FunctionType, IdentifierName, JSXAttributeItem, JSXAttributeName,
-    JSXAttributeValue, JSXChild, JSXClosingElement, JSXClosingFragment, JSXElementName, JSXExpression, JSXIdentifier,
-    JSXMemberExpressionObject, JSXOpeningElement, JSXOpeningFragment, LabelIdentifier, ObjectPropertyKind, Program,
-    PropertyKey, PropertyKind, SimpleAssignmentTarget, Statement, StaticMemberExpression, TemplateElement,
-    TemplateElementValue, VariableDeclarationKind, VariableDeclarator,
+    ComputedMemberExpression, Declaration, Expression, ForStatementInit, ForStatementLeft, FormalParameter,
+    FormalParameterKind, FormalParameters, FunctionBody, FunctionType, IdentifierName, JSXAttributeItem,
+    JSXAttributeName, JSXAttributeValue, JSXChild, JSXClosingElement, JSXClosingFragment, JSXElementName,
+    JSXExpression, JSXIdentifier, JSXMemberExpressionObject, JSXOpeningElement, JSXOpeningFragment, LabelIdentifier,
+    ObjectPropertyKind, Program, PropertyKey, PropertyKind, SimpleAssignmentTarget, Statement, StaticMemberExpression,
+    TemplateElement, TemplateElementValue, VariableDeclarationKind, VariableDeclarator,
 };
 use oxc_ast::builder::AstBuilder;
 use oxc_codegen::{Codegen, CodegenOptions, IndentChar};
@@ -726,6 +726,11 @@ impl<'a> Cx<'a> {
         let sp = span(e.span);
         match &e.kind {
             ExprKind::Var(name) => AssignmentTarget::new_assignment_target_identifier(sp, self.name(name), b),
+            // A property that isn't a JS name, `files["2d"]`, by its key.
+            ExprKind::Member(object, property) if !member_name(property) => {
+                let key = Expression::new_string_literal(SPAN, self.name(property), None, b);
+                AssignmentTarget::new_computed_member_expression(sp, self.expr(object), key, false, b)
+            }
             ExprKind::Member(object, property) => AssignmentTarget::new_static_member_expression(
                 sp,
                 self.expr(object),
@@ -782,6 +787,17 @@ impl<'a> Cx<'a> {
             ExprKind::Null => Expression::new_null_literal(sp, b),
             ExprKind::Symbol(_) => unreachable!("linking resolves every module symbol before emission"),
             ExprKind::Var(name) => Expression::new_identifier(sp, self.name(name), b),
+            // A property that isn't a JS name, `files["worker-bundle"]`, by its
+            // key: `files.worker-bundle` would be a subtraction.
+            ExprKind::Member(object, property) if !member_name(property) => {
+                let key = Expression::new_string_literal(SPAN, self.name(property), None, b);
+                Expression::new_computed_member_expression(sp, self.expr(object), key, false, b)
+            }
+            ExprKind::OptionalMember(object, property) if !member_name(property) => {
+                let key = Expression::new_string_literal(SPAN, self.name(property), None, b);
+                let member = ComputedMemberExpression::boxed(sp, self.expr(object), key, true, b);
+                Expression::new_chain_expression(sp, ChainElement::ComputedMemberExpression(member), b)
+            }
             ExprKind::Member(object, property) => {
                 // `5.toString()` would read `5.` as a number: `(5).toString()`.
                 // A number is printed as its digits (`number`), so oxc can't
@@ -1375,6 +1391,12 @@ fn leaves(stmts: &[js::Stmt]) -> bool {
 }
 
 /// Is `name` a JS name, which a key may be as it is?
+/// Whether `.property` can be written as it is: a JS name, or a path of
+/// them, `target.value`, which lowering writes as one.
+fn member_name(property: &str) -> bool {
+    property.split('.').all(js_identifier)
+}
+
 fn js_identifier(name: &str) -> bool {
     name.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_' || c == '$')
         && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '$')

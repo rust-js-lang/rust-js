@@ -370,3 +370,44 @@ test("a string written across lines keeps its lines", async () => {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.page(), lib.cooked(), lib.escaped(), lib.continued()]).toEqual(['<div>\n  `${x}` \\ "q"\n</div>', "a\nb", "a\nb", "a\nb"]);
 });
+
+// A field whose JS name isn't a name, `#[rust_js::name = "worker-bundle"]`,
+// is read and written by its key, `files["worker-bundle"]`, as react.dev's
+// RSC template reads it: `files.worker-bundle` would be a subtraction.
+test("a field named what isn't a name is read by its key", async () => {
+  const dir = fixture("keyed-field");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Files {
+    #[cfg_attr(rust_js, rust_js::name = "worker-bundle")]
+    pub worker_bundle: String,
+    #[cfg_attr(rust_js, rust_js::name = "2d")]
+    pub two_d: Option<u32>,
+}
+
+pub fn bundle(files: &Files) -> String {
+    files.worker_bundle.clone()
+}
+
+pub fn set(files: &mut Files, to: u32) -> Option<u32> {
+    files.two_d = Some(to);
+    files.two_d
+}
+
+pub fn made() -> Files {
+    Files { worker_bundle: "w".to_string(), two_d: None }
+}
+
+pub fn maybe(files: Option<&Files>) -> Option<String> {
+    files.map(|files| files.worker_bundle.clone())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('return files["worker-bundle"];');
+  expect(js).toContain('files["2d"] = to;');
+  expect(js).toContain('return files?.["worker-bundle"];');
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.bundle({ "worker-bundle": "w" })).toBe("w");
+  const files = lib.made();
+  expect([lib.set(files, 3), files["2d"]]).toEqual([3, 3]);
+  expect([lib.maybe(files), lib.maybe(undefined)]).toEqual(["w", undefined]);
+});
