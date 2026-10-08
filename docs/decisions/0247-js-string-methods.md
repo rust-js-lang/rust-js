@@ -20,7 +20,7 @@ quite. Each ported component declared JS's methods it used itself.
 **The builtins crate's `string` module has JS's string methods, named as
 ReScript's standard library names them: one function for each form,
 `slice` and `slice_to_end`, `substring` and `substring_to_end`,
-`index_of` and `index_of_from`, `last_index_of`, `char_at`, `trim`, `trim_start`,
+`index_of` and `index_of_from`, `last_index_of`, `char_at`, `replace`, `trim`, `trim_start`,
 `trim_end`, and `length`.**
 
 ```rust

@@ -453,6 +453,12 @@ pub mod string {
         #[link_name = "lastIndexOf"]
         pub safe fn last_index_of(this: &str, search: &str) -> i32;
 
+        /// [`text.replace(pattern, replacement)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/replace):
+        /// its first `pattern` replaced, where Rust's `str::replace` replaces each;
+        /// `        /// [`text.trim()`]` in `replacement` is the match.
+        #[link_name = "replace"]
+        pub safe fn replace(this: &str, pattern: &str, replacement: &str) -> String;
+
         /// [`text.trim()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/trim):
         /// without JS's white space and line ends at either end, which aren't
         /// Rust's `trim`'s quite: JS's has U+FEFF, Rust's U+0085.

@@ -33,6 +33,12 @@ pub fn parts(text: &str, part: &str) -> (Vec<String>, Vec<i32>, u32) {
     (parts, at, string::length(text))
 }
 
+/// JS's `replace` of a string: the first match only, where Rust's
+/// `str::replace` replaces each.
+pub fn replaced_first(text: &str, from: &str, to: &str) -> String {
+    string::replace(text, from, to)
+}
+
 /// Each UTF-16 code unit of `text`, by JS's `charAt`: an emoji's two halves.
 pub fn units(text: &str) -> Vec<String> {
     (0..string::length(text)).map(|i| string::char_at(text, i)).collect()

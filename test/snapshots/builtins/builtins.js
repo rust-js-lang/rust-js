@@ -24,6 +24,10 @@ export function parts(text, part) {
   return [parts$1, at, text.length];
 }
 
+export function replaced_first(text, from, to) {
+  return text.replace(from, to);
+}
+
 export function units(text) {
   return $range(0, text.length).map((i) => text.charAt(i));
 }
