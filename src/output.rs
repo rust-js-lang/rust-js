@@ -503,7 +503,8 @@ impl OutputPlan {
                     let old = absolute(&file.file)?;
                     let generated = ["js", "jsx", "map"]
                         .iter()
-                        .any(|ext| old.extension().is_some_and(|e| e == *ext));
+                        .any(|ext| old.extension().is_some_and(|e| e == *ext))
+                        || old.to_string_lossy().ends_with(".d.ts");
                     if generated
                         && old.starts_with(parent_dir(&output))
                         && !sources.contains(&old)

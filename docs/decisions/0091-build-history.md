@@ -48,3 +48,10 @@ an older one are the same bytes ([research](../research/compiler-testing.md)).
   `test/manifest.test.ts`; the Vite plugin's rebuilds in `test/vite.test.ts`.
 - Once rust-js builds a crate's modules one by one, the test should say
   which files each edit rebuilds, as Kotlin's do.
+- **A declaration is a build's file too** (ADR 0196): an older build's
+  `.d.ts`, of a module taken away or with `declarations` turned off, goes
+  as its JS does, where it's in the output's directory, this build neither
+  writes nor reads it, and it's as it was written. A `.ts` of a person's,
+  or a declaration they edited, stays. `test/publication.test.ts` holds the
+  native compiler and the WASI host to it. (Amended: they were left behind,
+  and the next manifest no longer listed them, so nothing would remove them.)

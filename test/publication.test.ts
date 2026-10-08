@@ -11,7 +11,7 @@ import { existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from 
 import { join } from "node:path";
 
 import { commit, fingerprint, publishArtifacts } from "../tooling/publish.js";
-import { buildCompiler, compiler, fixture } from "./support";
+import { buildCompiler, compiler, fixture, run } from "./support";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -29,6 +29,12 @@ type Case = {
 
 const cases: Case[] = [
   { name: "an artifact this build doesn't write", file: "out/old.js", kept: false },
+  { name: "an obsolete declaration", file: "out/old.d.ts", kept: false },
+  { name: "a declaration this build reads", file: "out/helper.d.ts", read: true, kept: true },
+  { name: "a declaration alias this build reads", file: "out/alias.d.ts", read: true, alias: true, kept: true },
+  { name: "an edited declaration", file: "out/edited.d.ts", edited: true, kept: true },
+  { name: "a declaration outside the output directory", file: "elsewhere/old.d.ts", kept: true },
+  { name: "ordinary TypeScript", file: "out/manual.ts", kept: true },
   { name: "an older map", file: "out/old.js.map", kept: false },
   { name: "one this build reads", file: "out/helper.js", read: true, kept: true },
   { name: "a path to what this build reads", file: "out/alias.js", read: true, alias: true, kept: true },
@@ -46,12 +52,13 @@ function setUp(c: Case, host: string) {
   const output = join(dir, "out", "lib.js");
   const manifest = join(dir, "out", "lib.manifest.json");
   const file = join(dir, c.file);
-  const helper = join(dir, "out", "helper.js");
+  const helperName = c.file.endsWith(".d.ts") ? "helper.d.ts" : "helper.js";
+  const helper = join(dir, "out", helperName);
   writeFileSync(helper, "export const helper = 1;\n");
   if (c.alias) symlinkSync(helper, file);
-  else if (c.file !== "out/helper.js") writeFileSync(file, `written by an older build: ${c.name}\n`);
+  else if (c.file !== `out/${helperName}`) writeFileSync(file, `written by an older build: ${c.name}\n`);
   const text = readFileSync(file);
-  const read = c.read ? "pub const HELPER: &str = include_str!(\"out/helper.js\");\n" : "";
+  const read = c.read ? `pub const HELPER: &str = include_str!("out/${helperName}");\n` : "";
   writeFileSync(input, `${read}pub fn answer() -> i32 { 42 }\n`);
   const older = {
     version: 1,
@@ -109,4 +116,31 @@ console.log(missing);`], { stdout: "pipe" });
   writeFileSync(stop, "");
   for (let chunk; !(chunk = await reader.read()).done;) said += new TextDecoder().decode(chunk.value);
   expect([readFileSync(file, "utf8"), Number(said.replace("looking", "").trim())]).toEqual(["2000", 0]);
+});
+
+// Turning declarations off must leave the same owned output as a clean build,
+// while preserving a declaration someone edited (ADRs 0091, 0196).
+test("native: removing modules and disabling declarations cleans up generated declarations", () => {
+  const dir = fixture("declarations-history");
+  const config = join(dir, "Cargo.toml");
+  const input = join(dir, "lib.rs"), output = join(dir, "lib.js"), manifest = join(dir, "manifest.json");
+  writeFileSync(config, '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n[package.metadata.rust-js]\ndeclarations = true\n');
+  writeFileSync(input, 'pub mod old { pub fn removed() -> u32 { 7 } } pub mod edited { pub fn value() -> u32 { 8 } } pub fn ready() -> u32 { 1 }');
+  run([compiler, input, "-o", output, "--manifest", manifest]);
+  const rootTypes = join(dir, "lib.d.ts"), oldTypes = join(dir, "old.d.ts"), editedTypes = join(dir, "edited.d.ts");
+  for (const file of [rootTypes, oldTypes, editedTypes]) expect(existsSync(file)).toBe(true);
+  writeFileSync(input, 'pub mod edited { pub fn value() -> u32 { 8 } } pub fn ready() -> u32 { 1 }');
+  run([compiler, input, "-o", output, "--manifest", manifest]);
+  expect(existsSync(rootTypes)).toBe(true);
+  expect(existsSync(oldTypes)).toBe(false);
+  expect(existsSync(editedTypes)).toBe(true);
+  writeFileSync(editedTypes, "// user edit\n");
+  writeFileSync(config, readFileSync(config, "utf8").replace("declarations = true", "declarations = false"));
+  writeFileSync(input, 'pub fn ready() -> u32 { 1 }');
+  run([compiler, input, "-o", output, "--manifest", manifest]);
+  expect(existsSync(rootTypes)).toBe(false);
+  expect(existsSync(oldTypes)).toBe(false);
+  expect(readFileSync(editedTypes, "utf8")).toBe("// user edit\n");
+  const result = JSON.parse(readFileSync(manifest, "utf8"));
+  expect(result.artifacts.some((artifact: { file: string }) => artifact.file.endsWith(".d.ts"))).toBe(false);
 });

@@ -96,6 +96,7 @@ fn visit(module: &mut LoweredModule, visitor: &mut Visitor<'_>) {
         visitor.name(&constant.name);
         expr(&mut constant.value, visitor);
     }
+    block(&mut module.statements, visitor);
     for cache in &mut module.caches {
         visitor.name(cache);
     }

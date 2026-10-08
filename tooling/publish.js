@@ -29,7 +29,7 @@ function staleArtifacts(previous, manifest, writes) {
   return (previous?.artifacts ?? []).filter(({ file, hash }) => {
     if (!existsSync(file)) return false;
     const path = real(file);
-    return [".js", ".jsx", ".map"].includes(extname(path))
+    return ([".js", ".jsx", ".map"].includes(extname(path)) || path.endsWith(".d.ts"))
       && path.startsWith(outputDir + sep)
       && !kept.has(path)
       && fingerprint(readFileSync(path)) === hash;
