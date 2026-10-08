@@ -848,7 +848,12 @@ test("the webapi crate's bindings become plain JS", async () => {
   expect(js).toContain('button.onerror = (e) => typeof e === "string";\n  window.onbeforeunload = () => undefined;\n  return button.onerror != null;');
   // `[Symbol.iterator]`, `Iterator.from(list)`.
   expect(js).toContain("const count = Iterator.from(list).toArray().length;\n  const names = Iterator.from(headers)\n    .map(([name]) => name)\n    .toArray();");
-  const { round_trip, iterated, samples, texts, on_errors, listed } = await import(join(target, "web_forms.js"));
+  const { round_trip, iterated, samples, texts, on_errors, listed, unions_read } = await import(join(target, "web_forms.js"));
+  // A union a function gives, read as the member JS gives.
+  const form = new FormData();
+  form.set("name", "Ada");
+  expect(unions_read({ result: "text" }, form)).toEqual([true, "Ada"]);
+  expect(unions_read({ result: new ArrayBuffer(1) }, new FormData())).toEqual([false, undefined]);
   expect(listed([1, 2, 3], new Headers({ a: "1", b: "2" }))).toEqual([3, ["a", "b"]]);
   (globalThis as any).window = {};
   const button: any = {};

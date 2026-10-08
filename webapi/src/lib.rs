@@ -3368,6 +3368,14 @@ impl Document {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/currentScript)
+    #[cfg_attr(rust_js, rust_js::link_name = "get currentScript")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn current_script(&self) -> Option<HTMLOrSVGScriptElement<'static>> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/open)
     #[cfg_attr(rust_js, rust_js::link_name = "open")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -6299,6 +6307,14 @@ impl HTMLElement {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_dir(&self, value: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/hidden)
+    #[cfg_attr(rust_js, rust_js::link_name = "get hidden")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn hidden(&self) -> Option<BoolOrNumberOrStr<'static>> {
         unreachable!()
     }
 
@@ -13438,6 +13454,22 @@ impl HTMLCanvasElement {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCanvasElement/getContext)
+    #[cfg_attr(rust_js, rust_js::link_name = "getContext")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_context(&self, context_id: &str) -> Option<RenderingContext<'static>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCanvasElement/getContext)
+    #[cfg_attr(rust_js, rust_js::link_name = "getContext")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_context_with_options<O>(&self, context_id: &str, options: O) -> Option<RenderingContext<'static>> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCanvasElement/toDataURL)
     #[cfg_attr(rust_js, rust_js::link_name = "toDataURL")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -16329,6 +16361,14 @@ impl HTMLMediaElement {
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/srcObject)
+    #[cfg_attr(rust_js, rust_js::link_name = "get srcObject")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn src_object(&self) -> Option<MediaProvider<'static>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/srcObject)
     #[cfg_attr(rust_js, rust_js::link_name = "set srcObject")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
@@ -18529,6 +18569,14 @@ impl Window {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn document_picture_in_picture(&self) -> &'static DocumentPictureInPicture {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/event)
+    #[cfg_attr(rust_js, rust_js::link_name = "get event")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn event(&self) -> Option<&'static Event> {
         unreachable!()
     }
 
@@ -32897,6 +32945,14 @@ pub mod intersection_observer {
 }
 
 impl IntersectionObserver {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/IntersectionObserver/root)
+    #[cfg_attr(rust_js, rust_js::link_name = "get root")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn root(&self) -> Option<ElementOrDocument<'static>> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IntersectionObserver/rootMargin)
     #[cfg_attr(rust_js, rust_js::link_name = "get rootMargin")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -33608,6 +33664,10 @@ pub mod form_data {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/FormData)
         #[link_name = "new FormData"]
         pub safe fn new_with_form_and_submitter(form: &HTMLFormElement, submitter: &HTMLElement) -> &'static FormData;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &FormData) -> Box<dyn Iterator<Item = (String, FormDataEntryValue<'static>)>>;
     }
 }
 
@@ -33644,6 +33704,22 @@ impl FormData {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/get)
+    #[cfg_attr(rust_js, rust_js::link_name = "get")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get(&self, name: &str) -> Option<FormDataEntryValue<'static>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/getAll)
+    #[cfg_attr(rust_js, rust_js::link_name = "getAll")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_all(&self, name: &str) -> Vec<FormDataEntryValue<'static>> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/has)
     #[cfg_attr(rust_js, rust_js::link_name = "has")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -33676,20 +33752,35 @@ impl FormData {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/get): a text field's value.
-    /// A file field's value is a `File`, which this doesn't bind.
-    #[cfg_attr(rust_js, rust_js::link_name = "get")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/forEach)
+    #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get(&self, name: &str) -> Option<String> {
+    pub fn for_each(&self, callback: Box<dyn FnMut(FormDataEntryValue<'_>, &str, &FormData)>) {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/getAll): every text value of a field.
-    #[cfg_attr(rust_js, rust_js::link_name = "getAll")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/keys)
+    #[cfg_attr(rust_js, rust_js::link_name = "keys")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_all(&self, name: &str) -> Vec<String> {
+    pub fn keys(&self) -> Box<dyn Iterator<Item = String>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/values)
+    #[cfg_attr(rust_js, rust_js::link_name = "values")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn values(&self) -> Box<dyn Iterator<Item = FormDataEntryValue<'static>>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/entries)
+    #[cfg_attr(rust_js, rust_js::link_name = "entries")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (String, FormDataEntryValue<'static>)>> {
         unreachable!()
     }
 
@@ -33739,6 +33830,22 @@ impl ReadableStream {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn cancel_with_reason<R>(&self, reason: R) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStream/getReader)
+    #[cfg_attr(rust_js, rust_js::link_name = "getReader")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_reader(&self) -> ReadableStreamReader<'static> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStream/getReader)
+    #[cfg_attr(rust_js, rust_js::link_name = "getReader")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_reader_with_options(&self, options: ReadableStreamGetReaderOptions<'_>) -> ReadableStreamReader<'static> {
         unreachable!()
     }
 
@@ -42823,10 +42930,26 @@ pub mod animation {
 
 impl Animation {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/startTime)
+    #[cfg_attr(rust_js, rust_js::link_name = "get startTime")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn start_time(&self) -> Option<CSSNumberish<'static>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/startTime)
     #[cfg_attr(rust_js, rust_js::link_name = "set startTime")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_start_time(&self, value: impl IntoCSSNumberish) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/currentTime)
+    #[cfg_attr(rust_js, rust_js::link_name = "get currentTime")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn current_time(&self) -> Option<CSSNumberish<'static>> {
         unreachable!()
     }
 
@@ -43137,9 +43260,47 @@ pub mod animation_playback_event {
     }
 }
 
+impl AnimationPlaybackEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationPlaybackEvent/currentTime)
+    #[cfg_attr(rust_js, rust_js::link_name = "get currentTime")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn current_time(&self) -> Option<CSSNumberish<'static>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationPlaybackEvent/timelineTime)
+    #[cfg_attr(rust_js, rust_js::link_name = "get timelineTime")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn timeline_time(&self) -> Option<CSSNumberish<'static>> {
+        unreachable!()
+    }
+
+}
+
 /// [`AnimationTimeline`](https://developer.mozilla.org/docs/Web/API/AnimationTimeline)
 #[cfg_attr(rust_js, rust_js::types = "AnimationTimeline")]
 pub struct AnimationTimeline(PhantomData<JsObject>);
+
+impl AnimationTimeline {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationTimeline/currentTime)
+    #[cfg_attr(rust_js, rust_js::link_name = "get currentTime")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn current_time(&self) -> Option<CSSNumberish<'static>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationTimeline/duration)
+    #[cfg_attr(rust_js, rust_js::link_name = "get duration")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn duration(&self) -> Option<CSSNumberish<'static>> {
+        unreachable!()
+    }
+
+}
 
 /// [`Attr`](https://developer.mozilla.org/docs/Web/API/Attr)
 #[cfg_attr(rust_js, rust_js::types = "Attr")]
@@ -47262,6 +47423,14 @@ pub mod css_perspective {
 
 impl CSSPerspective {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSPerspective/length)
+    #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn length(&self) -> CSSPerspectiveValue<'static> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSPerspective/length)
     #[cfg_attr(rust_js, rust_js::link_name = "set length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
@@ -48042,6 +48211,14 @@ pub mod css_rotate {
 
 impl CSSRotate {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSRotate/x)
+    #[cfg_attr(rust_js, rust_js::link_name = "get x")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn x(&self) -> CSSNumberish<'static> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSRotate/x)
     #[cfg_attr(rust_js, rust_js::link_name = "set x")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
@@ -48050,10 +48227,26 @@ impl CSSRotate {
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSRotate/y)
+    #[cfg_attr(rust_js, rust_js::link_name = "get y")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn y(&self) -> CSSNumberish<'static> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSRotate/y)
     #[cfg_attr(rust_js, rust_js::link_name = "set y")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_y(&self, value: impl IntoCSSNumberish) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSRotate/z)
+    #[cfg_attr(rust_js, rust_js::link_name = "get z")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn z(&self) -> CSSNumberish<'static> {
         unreachable!()
     }
 
@@ -48246,6 +48439,14 @@ pub mod css_scale {
 
 impl CSSScale {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSScale/x)
+    #[cfg_attr(rust_js, rust_js::link_name = "get x")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn x(&self) -> CSSNumberish<'static> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSScale/x)
     #[cfg_attr(rust_js, rust_js::link_name = "set x")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
@@ -48254,10 +48455,26 @@ impl CSSScale {
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSScale/y)
+    #[cfg_attr(rust_js, rust_js::link_name = "get y")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn y(&self) -> CSSNumberish<'static> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSScale/y)
     #[cfg_attr(rust_js, rust_js::link_name = "set y")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_y(&self, value: impl IntoCSSNumberish) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSScale/z)
+    #[cfg_attr(rust_js, rust_js::link_name = "get z")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn z(&self) -> CSSNumberish<'static> {
         unreachable!()
     }
 
@@ -49066,6 +49283,10 @@ pub mod css_unparsed_value {
         #[link_name = "new CSSUnparsedValue"]
         pub safe fn new(members: &[CSSUnparsedSegment<'_>]) -> &'static CSSUnparsedValue;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSUnparsedValue/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &CSSUnparsedValue) -> Box<dyn Iterator<Item = CSSUnparsedSegment<'static>>>;
+
         /// Treats `this` as `CSSUnparsedValue` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &CSSStyleValue) -> &'static CSSUnparsedValue;
@@ -49073,6 +49294,38 @@ pub mod css_unparsed_value {
 }
 
 impl CSSUnparsedValue {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSUnparsedValue/forEach)
+    #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn for_each(&self, callback: Box<dyn FnMut(CSSUnparsedSegment<'_>, u32, &CSSUnparsedValue)>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSUnparsedValue/keys)
+    #[cfg_attr(rust_js, rust_js::link_name = "keys")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn keys(&self) -> Box<dyn Iterator<Item = u32>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSUnparsedValue/values)
+    #[cfg_attr(rust_js, rust_js::link_name = "values")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn values(&self) -> Box<dyn Iterator<Item = CSSUnparsedSegment<'static>>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSUnparsedValue/entries)
+    #[cfg_attr(rust_js, rust_js::link_name = "entries")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (u32, CSSUnparsedSegment<'static>)>> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSUnparsedValue/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -49175,6 +49428,22 @@ impl CSSViewTransitionRule {
 pub struct Cache(PhantomData<JsObject>);
 
 impl Cache {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Cache/match)
+    #[cfg_attr(rust_js, rust_js::link_name = "match")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn match_(&self, request: impl IntoRequestInfo) -> Promise<Option<&'static Response>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Cache/match)
+    #[cfg_attr(rust_js, rust_js::link_name = "match")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn match_with_options(&self, request: impl IntoRequestInfo, options: CacheQueryOptions) -> Promise<Option<&'static Response>> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Cache/matchAll)
     #[cfg_attr(rust_js, rust_js::link_name = "matchAll")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -49270,6 +49539,22 @@ impl Cache {
 pub struct CacheStorage(PhantomData<JsObject>);
 
 impl CacheStorage {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CacheStorage/match)
+    #[cfg_attr(rust_js, rust_js::link_name = "match")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn match_(&self, request: impl IntoRequestInfo) -> Promise<Option<&'static Response>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CacheStorage/match)
+    #[cfg_attr(rust_js, rust_js::link_name = "match")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn match_with_options(&self, request: impl IntoRequestInfo, options: MultiCacheQueryOptions<'_>) -> Promise<Option<&'static Response>> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CacheStorage/has)
     #[cfg_attr(rust_js, rust_js::link_name = "has")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -49566,10 +49851,26 @@ impl CanvasRenderingContext2D {
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/strokeStyle)
+    #[cfg_attr(rust_js, rust_js::link_name = "get strokeStyle")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn stroke_style(&self) -> StrOrCanvasGradientOrCanvasPattern<'static> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/strokeStyle)
     #[cfg_attr(rust_js, rust_js::link_name = "set strokeStyle")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_stroke_style(&self, value: impl IntoStrOrCanvasGradientOrCanvasPattern) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/fillStyle)
+    #[cfg_attr(rust_js, rust_js::link_name = "get fillStyle")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn fill_style(&self) -> StrOrCanvasGradientOrCanvasPattern<'static> {
         unreachable!()
     }
 
@@ -55439,6 +55740,14 @@ impl FileReader {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/result)
+    #[cfg_attr(rust_js, rust_js::link_name = "get result")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn result(&self) -> Option<StrOrArrayBuffer<'static>> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/error)
     #[cfg_attr(rust_js, rust_js::link_name = "get error")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -56856,6 +57165,14 @@ impl GPUBuffer {
 pub struct GPUCanvasContext(PhantomData<JsObject>);
 
 impl GPUCanvasContext {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCanvasContext/canvas)
+    #[cfg_attr(rust_js, rust_js::link_name = "get canvas")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn canvas(&self) -> HTMLCanvasElementOrOffscreenCanvas<'static> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCanvasContext/configure)
     #[cfg_attr(rust_js, rust_js::link_name = "configure")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -59472,6 +59789,30 @@ impl HTMLAllCollection {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAllCollection/namedItem)
+    #[cfg_attr(rust_js, rust_js::link_name = "namedItem")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn named_item(&self, name: &str) -> Option<HTMLCollectionOrElement<'static>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAllCollection/item)
+    #[cfg_attr(rust_js, rust_js::link_name = "item")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn item(&self) -> Option<HTMLCollectionOrElement<'static>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAllCollection/item)
+    #[cfg_attr(rust_js, rust_js::link_name = "item")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn item_with_name_or_index(&self, name_or_index: &str) -> Option<HTMLCollectionOrElement<'static>> {
+        unreachable!()
+    }
+
 }
 
 /// [`HTMLDirectoryElement`](https://developer.mozilla.org/docs/Web/API/HTMLDirectoryElement)
@@ -59615,6 +59956,17 @@ pub mod html_form_controls_collection {
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &HTMLCollection) -> &'static HTMLFormControlsCollection;
     }
+}
+
+impl HTMLFormControlsCollection {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFormControlsCollection/namedItem)
+    #[cfg_attr(rust_js, rust_js::link_name = "namedItem")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn named_item(&self, name: &str) -> Option<RadioNodeListOrElement<'static>> {
+        unreachable!()
+    }
+
 }
 
 /// [`HTMLFrameElement`](https://developer.mozilla.org/docs/Web/API/HTMLFrameElement)
@@ -60881,6 +61233,14 @@ impl HighlightRegistry {
 pub struct IDBCursor(PhantomData<JsObject>);
 
 impl IDBCursor {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBCursor/source)
+    #[cfg_attr(rust_js, rust_js::link_name = "get source")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn source(&self) -> IDBObjectStoreOrIDBIndex<'static> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBCursor/direction)
     #[cfg_attr(rust_js, rust_js::link_name = "get direction")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -61879,6 +62239,14 @@ impl IDBRequest {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBRequest/source)
+    #[cfg_attr(rust_js, rust_js::link_name = "get source")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn source(&self) -> Option<IDBObjectStoreOrIDBIndexOrIDBCursor<'static>> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBRequest/transaction)
     #[cfg_attr(rust_js, rust_js::link_name = "get transaction")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -62219,6 +62587,14 @@ impl ImageBitmap {
 pub struct ImageBitmapRenderingContext(PhantomData<JsObject>);
 
 impl ImageBitmapRenderingContext {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageBitmapRenderingContext/canvas)
+    #[cfg_attr(rust_js, rust_js::link_name = "get canvas")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn canvas(&self) -> HTMLCanvasElementOrOffscreenCanvas<'static> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageBitmapRenderingContext/transferFromImageBitmap)
     #[cfg_attr(rust_js, rust_js::link_name = "transferFromImageBitmap")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -65632,6 +66008,14 @@ impl MediaKeyStatusMap {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeyStatusMap/get)
+    #[cfg_attr(rust_js, rust_js::link_name = "get")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get(&self, key_id: impl IntoBufferSource) -> Option<String> {
+        unreachable!()
+    }
+
 }
 
 /// [`MediaKeySystemAccess`](https://developer.mozilla.org/docs/Web/API/MediaKeySystemAccess)
@@ -68381,6 +68765,22 @@ impl OffscreenCanvas {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvas/getContext)
+    #[cfg_attr(rust_js, rust_js::link_name = "getContext")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_context(&self, context_id: &str) -> Option<OffscreenRenderingContext<'static>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvas/getContext)
+    #[cfg_attr(rust_js, rust_js::link_name = "getContext")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_context_with_options<O>(&self, context_id: &str, options: O) -> Option<OffscreenRenderingContext<'static>> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvas/transferToImageBitmap)
     #[cfg_attr(rust_js, rust_js::link_name = "transferToImageBitmap")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -68623,10 +69023,26 @@ impl OffscreenCanvasRenderingContext2D {
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/strokeStyle)
+    #[cfg_attr(rust_js, rust_js::link_name = "get strokeStyle")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn stroke_style(&self) -> StrOrCanvasGradientOrCanvasPattern<'static> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/strokeStyle)
     #[cfg_attr(rust_js, rust_js::link_name = "set strokeStyle")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_stroke_style(&self, value: impl IntoStrOrCanvasGradientOrCanvasPattern) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/fillStyle)
+    #[cfg_attr(rust_js, rust_js::link_name = "get fillStyle")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn fill_style(&self) -> StrOrCanvasGradientOrCanvasPattern<'static> {
         unreachable!()
     }
 
@@ -77501,6 +77917,22 @@ impl ServiceWorkerContainer {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerContainer/getRegistration)
+    #[cfg_attr(rust_js, rust_js::link_name = "getRegistration")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_registration(&self) -> Promise<Option<&'static ServiceWorkerRegistration>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerContainer/getRegistration)
+    #[cfg_attr(rust_js, rust_js::link_name = "getRegistration")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_registration_with_client_url(&self, client_url: &str) -> Promise<Option<&'static ServiceWorkerRegistration>> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerContainer/getRegistrations)
     #[cfg_attr(rust_js, rust_js::link_name = "getRegistrations")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -79333,6 +79765,14 @@ impl StylePropertyMapReadOnly {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StylePropertyMapReadOnly/get)
+    #[cfg_attr(rust_js, rust_js::link_name = "get")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get(&self, property: &str) -> Option<&'static CSSStyleValue> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StylePropertyMapReadOnly/getAll)
     #[cfg_attr(rust_js, rust_js::link_name = "getAll")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -79377,6 +79817,14 @@ impl StyleSheet {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn href(&self) -> Option<String> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StyleSheet/ownerNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ownerNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn owner_node(&self) -> Option<ElementOrProcessingInstruction<'static>> {
         unreachable!()
     }
 
@@ -81034,6 +81482,14 @@ impl VTTCue {
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VTTCue/line)
+    #[cfg_attr(rust_js, rust_js::link_name = "get line")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn line(&self) -> LineAndPositionSetting<'static> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/VTTCue/line)
     #[cfg_attr(rust_js, rust_js::link_name = "set line")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
@@ -81054,6 +81510,14 @@ impl VTTCue {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_line_align(&self, value: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/VTTCue/position)
+    #[cfg_attr(rust_js, rust_js::link_name = "get position")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn position(&self) -> LineAndPositionSetting<'static> {
         unreachable!()
     }
 
@@ -84075,6 +84539,14 @@ pub mod web_gl_2_rendering_context {
 }
 
 impl WebGL2RenderingContext {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/canvas)
+    #[cfg_attr(rust_js, rust_js::link_name = "get canvas")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn canvas(&self) -> HTMLCanvasElementOrOffscreenCanvas<'static> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/drawingBufferWidth)
     #[cfg_attr(rust_js, rust_js::link_name = "get drawingBufferWidth")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -87549,6 +88021,14 @@ pub mod web_gl_rendering_context {
 }
 
 impl WebGLRenderingContext {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/canvas)
+    #[cfg_attr(rust_js, rust_js::link_name = "get canvas")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn canvas(&self) -> HTMLCanvasElementOrOffscreenCanvas<'static> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/drawingBufferWidth)
     #[cfg_attr(rust_js, rust_js::link_name = "get drawingBufferWidth")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -90648,6 +91128,29 @@ pub struct SanitizerConfig {
     pub javascript_ur_ls: Option<bool>,
 }
 
+/// The `SanitizerElementNamespaceWithAttributes` dictionary: a JS object with these fields, a `None` one not there.
+pub struct SanitizerElementNamespaceWithAttributes {
+    pub name: String,
+    pub namespace: Option<Option<String>>,
+}
+
+/// The `SanitizerAttributeNamespace` dictionary: a JS object with these fields, a `None` one not there.
+pub struct SanitizerAttributeNamespace {
+    pub name: String,
+    pub namespace: Option<Option<String>>,
+}
+
+/// The `SanitizerElementNamespace` dictionary: a JS object with these fields, a `None` one not there.
+pub struct SanitizerElementNamespace {
+    pub name: String,
+    pub namespace: Option<Option<String>>,
+}
+
+/// The `SanitizerProcessingInstruction` dictionary: a JS object with these fields, a `None` one not there.
+pub struct SanitizerProcessingInstruction {
+    pub target: String,
+}
+
 /// The `TextEncoderEncodeIntoResult` dictionary: a JS object with these fields, a `None` one not there.
 #[derive(Default)]
 pub struct TextEncoderEncodeIntoResult {
@@ -90904,6 +91407,8 @@ pub struct MediaTrackCapabilities {
     pub sample_rate: Option<ULongRange>,
     #[cfg_attr(rust_js, rust_js::name = "sampleSize")]
     pub sample_size: Option<ULongRange>,
+    #[cfg_attr(rust_js, rust_js::name = "echoCancellation")]
+    pub echo_cancellation: Option<Vec<BoolOrStr<'static>>>,
     #[cfg_attr(rust_js, rust_js::name = "autoGainControl")]
     pub auto_gain_control: Option<Vec<bool>>,
     #[cfg_attr(rust_js, rust_js::name = "noiseSuppression")]
@@ -91050,6 +91555,45 @@ pub struct MediaTrackConstraints {
     pub advanced: Option<Vec<MediaTrackConstraintSet>>,
 }
 
+/// The `ConstrainULongRange` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct ConstrainULongRange {
+    pub max: Option<u32>,
+    pub min: Option<u32>,
+    pub exact: Option<u32>,
+    pub ideal: Option<u32>,
+}
+
+/// The `ConstrainDoubleRange` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct ConstrainDoubleRange {
+    pub max: Option<f64>,
+    pub min: Option<f64>,
+    pub exact: Option<f64>,
+    pub ideal: Option<f64>,
+}
+
+/// The `ConstrainDOMStringParameters` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct ConstrainDOMStringParameters {
+    pub exact: Option<StrOrList<'static>>,
+    pub ideal: Option<StrOrList<'static>>,
+}
+
+/// The `ConstrainBooleanOrDOMStringParameters` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct ConstrainBooleanOrDOMStringParameters {
+    pub exact: Option<BoolOrStr<'static>>,
+    pub ideal: Option<BoolOrStr<'static>>,
+}
+
+/// The `ConstrainBooleanParameters` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct ConstrainBooleanParameters {
+    pub exact: Option<bool>,
+    pub ideal: Option<bool>,
+}
+
 /// The `MediaTrackConstraintSet` dictionary: a JS object with these fields, a `None` one not there.
 #[derive(Default)]
 pub struct MediaTrackConstraintSet {
@@ -91106,6 +91650,8 @@ pub struct MediaTrackSettings {
     pub sample_rate: Option<u32>,
     #[cfg_attr(rust_js, rust_js::name = "sampleSize")]
     pub sample_size: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "echoCancellation")]
+    pub echo_cancellation: Option<BoolOrStr<'static>>,
     #[cfg_attr(rust_js, rust_js::name = "autoGainControl")]
     pub auto_gain_control: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "noiseSuppression")]
@@ -91365,8 +91911,8 @@ pub struct RTCConfiguration {
 }
 
 /// The `RTCIceServer` dictionary: a JS object with these fields, a `None` one not there.
-#[derive(Default)]
 pub struct RTCIceServer {
+    pub urls: StrOrList<'static>,
     pub username: Option<String>,
     pub credential: Option<String>,
 }
@@ -91503,29 +92049,6 @@ pub struct Report {
 pub struct ReportBody {
 }
 
-/// The `SanitizerElementNamespaceWithAttributes` dictionary: a JS object with these fields, a `None` one not there.
-pub struct SanitizerElementNamespaceWithAttributes {
-    pub name: String,
-    pub namespace: Option<Option<String>>,
-}
-
-/// The `SanitizerElementNamespace` dictionary: a JS object with these fields, a `None` one not there.
-pub struct SanitizerElementNamespace {
-    pub name: String,
-    pub namespace: Option<Option<String>>,
-}
-
-/// The `SanitizerProcessingInstruction` dictionary: a JS object with these fields, a `None` one not there.
-pub struct SanitizerProcessingInstruction {
-    pub target: String,
-}
-
-/// The `SanitizerAttributeNamespace` dictionary: a JS object with these fields, a `None` one not there.
-pub struct SanitizerAttributeNamespace {
-    pub name: String,
-    pub namespace: Option<Option<String>>,
-}
-
 /// The `SerialPortInfo` dictionary: a JS object with these fields, a `None` one not there.
 #[derive(Default)]
 pub struct SerialPortInfo {
@@ -91533,6 +92056,8 @@ pub struct SerialPortInfo {
     pub usb_vendor_id: Option<u16>,
     #[cfg_attr(rust_js, rust_js::name = "usbProductId")]
     pub usb_product_id: Option<u16>,
+    #[cfg_attr(rust_js, rust_js::name = "bluetoothServiceClassId")]
+    pub bluetooth_service_class_id: Option<BluetoothServiceUUID<'static>>,
 }
 
 /// The `SerialInputSignals` dictionary: a JS object with these fields, a `None` one not there.
@@ -91552,6 +92077,15 @@ pub struct SerialInputSignals {
 pub struct StorageEstimate {
     pub usage: Option<f64>,
     pub quota: Option<f64>,
+}
+
+/// The `CryptoKeyPair` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct CryptoKeyPair {
+    #[cfg_attr(rust_js, rust_js::name = "publicKey")]
+    pub public_key: Option<&'static CryptoKey>,
+    #[cfg_attr(rust_js, rust_js::name = "privateKey")]
+    pub private_key: Option<&'static CryptoKey>,
 }
 
 /// The `JsonWebKey` dictionary: a JS object with these fields, a `None` one not there.
@@ -93828,6 +94362,19 @@ pub struct MouseEventInit<'a> {
     pub related_target: Option<&'a EventTarget>,
 }
 
+/// The [`MultiCacheQueryOptions`](https://developer.mozilla.org/docs/Web/API/MultiCacheQueryOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct MultiCacheQueryOptions<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "ignoreSearch")]
+    pub ignore_search: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "ignoreMethod")]
+    pub ignore_method: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "ignoreVary")]
+    pub ignore_vary: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "cacheName")]
+    pub cache_name: Option<&'a str>,
+}
+
 /// The [`MutationObserverInit`](https://developer.mozilla.org/docs/Web/API/MutationObserverInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct MutationObserverInit<'a> {
@@ -94388,6 +94935,12 @@ pub struct QueuingStrategyInit {
 #[derive(Default)]
 pub struct ReadableStreamBYOBReaderReadOptions {
     pub min: Option<f64>,
+}
+
+/// The [`ReadableStreamGetReaderOptions`](https://developer.mozilla.org/docs/Web/API/ReadableStreamGetReaderOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct ReadableStreamGetReaderOptions<'a> {
+    pub mode: Option<&'a str>,
 }
 
 /// The [`ReadableWritablePair`](https://developer.mozilla.org/docs/Web/API/ReadableWritablePair) dictionary: a JS object of these fields, a `None` one not given.
@@ -96188,6 +96741,42 @@ impl<'a> BoolOrScrollIntoViewOptions<'a> {
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
     #[allow(unused_variables)]
     pub fn of(this: impl IntoBoolOrScrollIntoViewOptions + 'a) -> BoolOrScrollIntoViewOptions<'a> {
+        unreachable!()
+    }
+}
+
+/// `boolean | string`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum BoolOrStr<'a> {
+    Bool(bool),
+    Str(&'a str),
+}
+
+impl<'a> From<bool> for BoolOrStr<'a> {
+    fn from(value: bool) -> Self {
+        BoolOrStr::Bool(value)
+    }
+}
+
+impl<'a> From<&'a str> for BoolOrStr<'a> {
+    fn from(value: &'a str) -> Self {
+        BoolOrStr::Str(value)
+    }
+}
+
+/// What a `boolean | string` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `boolean | string`")]
+#[cfg_attr(rust_js, rust_js::types = "boolean | string")]
+pub trait IntoBoolOrStr: sealed::Sealed {}
+impl IntoBoolOrStr for bool {}
+impl IntoBoolOrStr for &str {}
+impl IntoBoolOrStr for BoolOrStr<'_> {}
+
+impl<'a> BoolOrStr<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoBoolOrStr + 'a) -> BoolOrStr<'a> {
         unreachable!()
     }
 }
@@ -102890,6 +103479,1064 @@ impl<'a> HTMLCanvasElementOrOffscreenCanvas<'a> {
     }
 }
 
+/// `HTMLCollection | Element`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum HTMLCollectionOrElement<'a> {
+    HTMLCollection(&'a HTMLCollection),
+    Element(&'a Element),
+}
+
+impl<'a> From<&'a HTMLCollection> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLCollection) -> Self {
+        HTMLCollectionOrElement::HTMLCollection(value)
+    }
+}
+
+impl<'a> From<&'a HTMLFormControlsCollection> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLFormControlsCollection) -> Self {
+        HTMLCollectionOrElement::HTMLCollection(value)
+    }
+}
+
+impl<'a> From<&'a HTMLOptionsCollection> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLOptionsCollection) -> Self {
+        HTMLCollectionOrElement::HTMLCollection(value)
+    }
+}
+
+impl<'a> From<&'a Element> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a Element) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLAnchorElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLAnchorElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLButtonElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLButtonElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDivElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLDivElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLFormElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLFormElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLHeadingElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLHeadingElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLImageElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLImageElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLInputElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLInputElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLLabelElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLLabelElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLLIElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLLIElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLOListElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLOListElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLOptionElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLOptionElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLOutputElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLOutputElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLParagraphElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLParagraphElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLSelectElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLSelectElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLSpanElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLSpanElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTextAreaElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLTextAreaElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLUListElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLUListElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTableElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLTableElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTableSectionElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLTableSectionElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTableRowElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLTableRowElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTableCellElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLTableCellElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLIFrameElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLIFrameElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLCanvasElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLCanvasElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDetailsElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLDetailsElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLHtmlElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLHtmlElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLHeadElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLHeadElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTitleElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLTitleElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLBaseElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLBaseElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLLinkElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLLinkElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMetaElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLMetaElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLStyleElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLStyleElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLBodyElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLBodyElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLHRElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLHRElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLPreElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLPreElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLQuoteElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLQuoteElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMenuElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLMenuElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDListElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLDListElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDataElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLDataElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTimeElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLTimeElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLBRElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLBRElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLModElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLModElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLPictureElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLPictureElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLSourceElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLSourceElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLEmbedElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLEmbedElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLObjectElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLObjectElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLVideoElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLVideoElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLAudioElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLAudioElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTrackElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLTrackElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMediaElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLMediaElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMapElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLMapElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLAreaElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLAreaElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTableCaptionElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLTableCaptionElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTableColElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLTableColElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDataListElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLDataListElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLOptGroupElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLOptGroupElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLProgressElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLProgressElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMeterElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLMeterElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLFieldSetElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLFieldSetElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLLegendElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLLegendElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLSelectedContentElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLSelectedContentElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDialogElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLDialogElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLScriptElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLScriptElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTemplateElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLTemplateElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLSlotElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLSlotElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGGraphicsElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGGraphicsElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGGeometryElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGGeometryElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGSVGElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGSVGElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGGElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGGElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGDefsElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGDefsElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGSymbolElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGSymbolElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGUseElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGUseElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGSwitchElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGSwitchElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGTitleElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGTitleElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGDescElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGDescElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGMetadataElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGMetadataElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGStyleElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGStyleElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGScriptElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGScriptElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGPathElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGPathElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGRectElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGRectElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGCircleElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGCircleElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGEllipseElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGEllipseElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGLineElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGLineElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGPolylineElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGPolylineElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGPolygonElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGPolygonElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGTextContentElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGTextContentElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGTextPositioningElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGTextPositioningElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGTextElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGTextElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGTSpanElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGTSpanElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGTextPathElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGTextPathElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGImageElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGImageElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGForeignObjectElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGForeignObjectElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGMarkerElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGMarkerElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGGradientElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGGradientElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGLinearGradientElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGLinearGradientElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGRadialGradientElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGRadialGradientElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGStopElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGStopElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGPatternElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGPatternElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGAElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGAElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGViewElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGViewElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGAnimationElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGAnimationElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGAnimateElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGAnimateElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGSetElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGSetElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGAnimateMotionElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGAnimateMotionElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGMPathElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGMPathElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGAnimateTransformElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGAnimateTransformElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFilterElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGFilterElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEBlendElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGFEBlendElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEColorMatrixElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGFEColorMatrixElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEComponentTransferElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGFEComponentTransferElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGComponentTransferFunctionElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGComponentTransferFunctionElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEFuncRElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGFEFuncRElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEFuncGElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGFEFuncGElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEFuncBElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGFEFuncBElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEFuncAElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGFEFuncAElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFECompositeElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGFECompositeElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEConvolveMatrixElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGFEConvolveMatrixElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEDiffuseLightingElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGFEDiffuseLightingElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEDisplacementMapElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGFEDisplacementMapElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEDropShadowElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGFEDropShadowElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEFloodElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGFEFloodElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEGaussianBlurElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGFEGaussianBlurElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEImageElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGFEImageElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEMergeElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGFEMergeElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEMergeNodeElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGFEMergeNodeElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEMorphologyElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGFEMorphologyElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEOffsetElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGFEOffsetElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFESpecularLightingElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGFESpecularLightingElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFETileElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGFETileElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFETurbulenceElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGFETurbulenceElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEDistantLightElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGFEDistantLightElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEPointLightElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGFEPointLightElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFESpotLightElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGFESpotLightElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGClipPathElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGClipPathElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGMaskElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a SVGMaskElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDirectoryElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLDirectoryElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLFontElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLFontElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLFrameElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLFrameElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLFrameSetElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLFrameSetElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMarqueeElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLMarqueeElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLParamElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLParamElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLUnknownElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a HTMLUnknownElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a MathMLElement> for HTMLCollectionOrElement<'a> {
+    fn from(value: &'a MathMLElement) -> Self {
+        HTMLCollectionOrElement::Element(value)
+    }
+}
+
+/// What a `HTMLCollection | Element` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `HTMLCollection | Element`")]
+#[cfg_attr(rust_js, rust_js::types = "HTMLCollection | Element")]
+pub trait IntoHTMLCollectionOrElement: sealed::Sealed {}
+impl IntoHTMLCollectionOrElement for &HTMLCollection {}
+impl IntoHTMLCollectionOrElement for &HTMLFormControlsCollection {}
+impl IntoHTMLCollectionOrElement for &HTMLOptionsCollection {}
+impl IntoHTMLCollectionOrElement for &Element {}
+impl IntoHTMLCollectionOrElement for &HTMLElement {}
+impl IntoHTMLCollectionOrElement for &HTMLAnchorElement {}
+impl IntoHTMLCollectionOrElement for &HTMLButtonElement {}
+impl IntoHTMLCollectionOrElement for &HTMLDivElement {}
+impl IntoHTMLCollectionOrElement for &HTMLFormElement {}
+impl IntoHTMLCollectionOrElement for &HTMLHeadingElement {}
+impl IntoHTMLCollectionOrElement for &HTMLImageElement {}
+impl IntoHTMLCollectionOrElement for &HTMLInputElement {}
+impl IntoHTMLCollectionOrElement for &HTMLLabelElement {}
+impl IntoHTMLCollectionOrElement for &HTMLLIElement {}
+impl IntoHTMLCollectionOrElement for &HTMLOListElement {}
+impl IntoHTMLCollectionOrElement for &HTMLOptionElement {}
+impl IntoHTMLCollectionOrElement for &HTMLOutputElement {}
+impl IntoHTMLCollectionOrElement for &HTMLParagraphElement {}
+impl IntoHTMLCollectionOrElement for &HTMLSelectElement {}
+impl IntoHTMLCollectionOrElement for &HTMLSpanElement {}
+impl IntoHTMLCollectionOrElement for &HTMLTextAreaElement {}
+impl IntoHTMLCollectionOrElement for &HTMLUListElement {}
+impl IntoHTMLCollectionOrElement for &HTMLTableElement {}
+impl IntoHTMLCollectionOrElement for &HTMLTableSectionElement {}
+impl IntoHTMLCollectionOrElement for &HTMLTableRowElement {}
+impl IntoHTMLCollectionOrElement for &HTMLTableCellElement {}
+impl IntoHTMLCollectionOrElement for &HTMLIFrameElement {}
+impl IntoHTMLCollectionOrElement for &HTMLCanvasElement {}
+impl IntoHTMLCollectionOrElement for &HTMLDetailsElement {}
+impl IntoHTMLCollectionOrElement for &HTMLHtmlElement {}
+impl IntoHTMLCollectionOrElement for &HTMLHeadElement {}
+impl IntoHTMLCollectionOrElement for &HTMLTitleElement {}
+impl IntoHTMLCollectionOrElement for &HTMLBaseElement {}
+impl IntoHTMLCollectionOrElement for &HTMLLinkElement {}
+impl IntoHTMLCollectionOrElement for &HTMLMetaElement {}
+impl IntoHTMLCollectionOrElement for &HTMLStyleElement {}
+impl IntoHTMLCollectionOrElement for &HTMLBodyElement {}
+impl IntoHTMLCollectionOrElement for &HTMLHRElement {}
+impl IntoHTMLCollectionOrElement for &HTMLPreElement {}
+impl IntoHTMLCollectionOrElement for &HTMLQuoteElement {}
+impl IntoHTMLCollectionOrElement for &HTMLMenuElement {}
+impl IntoHTMLCollectionOrElement for &HTMLDListElement {}
+impl IntoHTMLCollectionOrElement for &HTMLDataElement {}
+impl IntoHTMLCollectionOrElement for &HTMLTimeElement {}
+impl IntoHTMLCollectionOrElement for &HTMLBRElement {}
+impl IntoHTMLCollectionOrElement for &HTMLModElement {}
+impl IntoHTMLCollectionOrElement for &HTMLPictureElement {}
+impl IntoHTMLCollectionOrElement for &HTMLSourceElement {}
+impl IntoHTMLCollectionOrElement for &HTMLEmbedElement {}
+impl IntoHTMLCollectionOrElement for &HTMLObjectElement {}
+impl IntoHTMLCollectionOrElement for &HTMLVideoElement {}
+impl IntoHTMLCollectionOrElement for &HTMLAudioElement {}
+impl IntoHTMLCollectionOrElement for &HTMLTrackElement {}
+impl IntoHTMLCollectionOrElement for &HTMLMediaElement {}
+impl IntoHTMLCollectionOrElement for &HTMLMapElement {}
+impl IntoHTMLCollectionOrElement for &HTMLAreaElement {}
+impl IntoHTMLCollectionOrElement for &HTMLTableCaptionElement {}
+impl IntoHTMLCollectionOrElement for &HTMLTableColElement {}
+impl IntoHTMLCollectionOrElement for &HTMLDataListElement {}
+impl IntoHTMLCollectionOrElement for &HTMLOptGroupElement {}
+impl IntoHTMLCollectionOrElement for &HTMLProgressElement {}
+impl IntoHTMLCollectionOrElement for &HTMLMeterElement {}
+impl IntoHTMLCollectionOrElement for &HTMLFieldSetElement {}
+impl IntoHTMLCollectionOrElement for &HTMLLegendElement {}
+impl IntoHTMLCollectionOrElement for &HTMLSelectedContentElement {}
+impl IntoHTMLCollectionOrElement for &HTMLDialogElement {}
+impl IntoHTMLCollectionOrElement for &HTMLScriptElement {}
+impl IntoHTMLCollectionOrElement for &HTMLTemplateElement {}
+impl IntoHTMLCollectionOrElement for &HTMLSlotElement {}
+impl IntoHTMLCollectionOrElement for &SVGElement {}
+impl IntoHTMLCollectionOrElement for &SVGGraphicsElement {}
+impl IntoHTMLCollectionOrElement for &SVGGeometryElement {}
+impl IntoHTMLCollectionOrElement for &SVGSVGElement {}
+impl IntoHTMLCollectionOrElement for &SVGGElement {}
+impl IntoHTMLCollectionOrElement for &SVGDefsElement {}
+impl IntoHTMLCollectionOrElement for &SVGSymbolElement {}
+impl IntoHTMLCollectionOrElement for &SVGUseElement {}
+impl IntoHTMLCollectionOrElement for &SVGSwitchElement {}
+impl IntoHTMLCollectionOrElement for &SVGTitleElement {}
+impl IntoHTMLCollectionOrElement for &SVGDescElement {}
+impl IntoHTMLCollectionOrElement for &SVGMetadataElement {}
+impl IntoHTMLCollectionOrElement for &SVGStyleElement {}
+impl IntoHTMLCollectionOrElement for &SVGScriptElement {}
+impl IntoHTMLCollectionOrElement for &SVGPathElement {}
+impl IntoHTMLCollectionOrElement for &SVGRectElement {}
+impl IntoHTMLCollectionOrElement for &SVGCircleElement {}
+impl IntoHTMLCollectionOrElement for &SVGEllipseElement {}
+impl IntoHTMLCollectionOrElement for &SVGLineElement {}
+impl IntoHTMLCollectionOrElement for &SVGPolylineElement {}
+impl IntoHTMLCollectionOrElement for &SVGPolygonElement {}
+impl IntoHTMLCollectionOrElement for &SVGTextContentElement {}
+impl IntoHTMLCollectionOrElement for &SVGTextPositioningElement {}
+impl IntoHTMLCollectionOrElement for &SVGTextElement {}
+impl IntoHTMLCollectionOrElement for &SVGTSpanElement {}
+impl IntoHTMLCollectionOrElement for &SVGTextPathElement {}
+impl IntoHTMLCollectionOrElement for &SVGImageElement {}
+impl IntoHTMLCollectionOrElement for &SVGForeignObjectElement {}
+impl IntoHTMLCollectionOrElement for &SVGMarkerElement {}
+impl IntoHTMLCollectionOrElement for &SVGGradientElement {}
+impl IntoHTMLCollectionOrElement for &SVGLinearGradientElement {}
+impl IntoHTMLCollectionOrElement for &SVGRadialGradientElement {}
+impl IntoHTMLCollectionOrElement for &SVGStopElement {}
+impl IntoHTMLCollectionOrElement for &SVGPatternElement {}
+impl IntoHTMLCollectionOrElement for &SVGAElement {}
+impl IntoHTMLCollectionOrElement for &SVGViewElement {}
+impl IntoHTMLCollectionOrElement for &SVGAnimationElement {}
+impl IntoHTMLCollectionOrElement for &SVGAnimateElement {}
+impl IntoHTMLCollectionOrElement for &SVGSetElement {}
+impl IntoHTMLCollectionOrElement for &SVGAnimateMotionElement {}
+impl IntoHTMLCollectionOrElement for &SVGMPathElement {}
+impl IntoHTMLCollectionOrElement for &SVGAnimateTransformElement {}
+impl IntoHTMLCollectionOrElement for &SVGFilterElement {}
+impl IntoHTMLCollectionOrElement for &SVGFEBlendElement {}
+impl IntoHTMLCollectionOrElement for &SVGFEColorMatrixElement {}
+impl IntoHTMLCollectionOrElement for &SVGFEComponentTransferElement {}
+impl IntoHTMLCollectionOrElement for &SVGComponentTransferFunctionElement {}
+impl IntoHTMLCollectionOrElement for &SVGFEFuncRElement {}
+impl IntoHTMLCollectionOrElement for &SVGFEFuncGElement {}
+impl IntoHTMLCollectionOrElement for &SVGFEFuncBElement {}
+impl IntoHTMLCollectionOrElement for &SVGFEFuncAElement {}
+impl IntoHTMLCollectionOrElement for &SVGFECompositeElement {}
+impl IntoHTMLCollectionOrElement for &SVGFEConvolveMatrixElement {}
+impl IntoHTMLCollectionOrElement for &SVGFEDiffuseLightingElement {}
+impl IntoHTMLCollectionOrElement for &SVGFEDisplacementMapElement {}
+impl IntoHTMLCollectionOrElement for &SVGFEDropShadowElement {}
+impl IntoHTMLCollectionOrElement for &SVGFEFloodElement {}
+impl IntoHTMLCollectionOrElement for &SVGFEGaussianBlurElement {}
+impl IntoHTMLCollectionOrElement for &SVGFEImageElement {}
+impl IntoHTMLCollectionOrElement for &SVGFEMergeElement {}
+impl IntoHTMLCollectionOrElement for &SVGFEMergeNodeElement {}
+impl IntoHTMLCollectionOrElement for &SVGFEMorphologyElement {}
+impl IntoHTMLCollectionOrElement for &SVGFEOffsetElement {}
+impl IntoHTMLCollectionOrElement for &SVGFESpecularLightingElement {}
+impl IntoHTMLCollectionOrElement for &SVGFETileElement {}
+impl IntoHTMLCollectionOrElement for &SVGFETurbulenceElement {}
+impl IntoHTMLCollectionOrElement for &SVGFEDistantLightElement {}
+impl IntoHTMLCollectionOrElement for &SVGFEPointLightElement {}
+impl IntoHTMLCollectionOrElement for &SVGFESpotLightElement {}
+impl IntoHTMLCollectionOrElement for &SVGClipPathElement {}
+impl IntoHTMLCollectionOrElement for &SVGMaskElement {}
+impl IntoHTMLCollectionOrElement for &HTMLDirectoryElement {}
+impl IntoHTMLCollectionOrElement for &HTMLFontElement {}
+impl IntoHTMLCollectionOrElement for &HTMLFrameElement {}
+impl IntoHTMLCollectionOrElement for &HTMLFrameSetElement {}
+impl IntoHTMLCollectionOrElement for &HTMLMarqueeElement {}
+impl IntoHTMLCollectionOrElement for &HTMLParamElement {}
+impl IntoHTMLCollectionOrElement for &HTMLUnknownElement {}
+impl IntoHTMLCollectionOrElement for &MathMLElement {}
+impl IntoHTMLCollectionOrElement for HTMLCollectionOrElement<'_> {}
+
+impl<'a> HTMLCollectionOrElement<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoHTMLCollectionOrElement + 'a) -> HTMLCollectionOrElement<'a> {
+        unreachable!()
+    }
+}
+
 /// `HTMLElement | number`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum HTMLElementOrNumber<'a> {
@@ -105534,6 +107181,66 @@ impl<'a> NumberOrStr<'a> {
     }
 }
 
+/// `OffscreenCanvasRenderingContext2D | ImageBitmapRenderingContext | WebGLRenderingContext | WebGL2RenderingContext | GPUCanvasContext`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum OffscreenRenderingContext<'a> {
+    OffscreenCanvasRenderingContext2D(&'a OffscreenCanvasRenderingContext2D),
+    ImageBitmapRenderingContext(&'a ImageBitmapRenderingContext),
+    WebGLRenderingContext(&'a WebGLRenderingContext),
+    WebGL2RenderingContext(&'a WebGL2RenderingContext),
+    GPUCanvasContext(&'a GPUCanvasContext),
+}
+
+impl<'a> From<&'a OffscreenCanvasRenderingContext2D> for OffscreenRenderingContext<'a> {
+    fn from(value: &'a OffscreenCanvasRenderingContext2D) -> Self {
+        OffscreenRenderingContext::OffscreenCanvasRenderingContext2D(value)
+    }
+}
+
+impl<'a> From<&'a ImageBitmapRenderingContext> for OffscreenRenderingContext<'a> {
+    fn from(value: &'a ImageBitmapRenderingContext) -> Self {
+        OffscreenRenderingContext::ImageBitmapRenderingContext(value)
+    }
+}
+
+impl<'a> From<&'a WebGLRenderingContext> for OffscreenRenderingContext<'a> {
+    fn from(value: &'a WebGLRenderingContext) -> Self {
+        OffscreenRenderingContext::WebGLRenderingContext(value)
+    }
+}
+
+impl<'a> From<&'a WebGL2RenderingContext> for OffscreenRenderingContext<'a> {
+    fn from(value: &'a WebGL2RenderingContext) -> Self {
+        OffscreenRenderingContext::WebGL2RenderingContext(value)
+    }
+}
+
+impl<'a> From<&'a GPUCanvasContext> for OffscreenRenderingContext<'a> {
+    fn from(value: &'a GPUCanvasContext) -> Self {
+        OffscreenRenderingContext::GPUCanvasContext(value)
+    }
+}
+
+/// What a `OffscreenCanvasRenderingContext2D | ImageBitmapRenderingContext | WebGLRenderingContext | WebGL2RenderingContext | GPUCanvasContext` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `OffscreenCanvasRenderingContext2D | ImageBitmapRenderingContext | WebGLRenderingContext | WebGL2RenderingContext | GPUCanvasContext`")]
+#[cfg_attr(rust_js, rust_js::types = "OffscreenCanvasRenderingContext2D | ImageBitmapRenderingContext | WebGLRenderingContext | WebGL2RenderingContext | GPUCanvasContext")]
+pub trait IntoOffscreenRenderingContext: sealed::Sealed {}
+impl IntoOffscreenRenderingContext for &OffscreenCanvasRenderingContext2D {}
+impl IntoOffscreenRenderingContext for &ImageBitmapRenderingContext {}
+impl IntoOffscreenRenderingContext for &WebGLRenderingContext {}
+impl IntoOffscreenRenderingContext for &WebGL2RenderingContext {}
+impl IntoOffscreenRenderingContext for &GPUCanvasContext {}
+impl IntoOffscreenRenderingContext for OffscreenRenderingContext<'_> {}
+
+impl<'a> OffscreenRenderingContext<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoOffscreenRenderingContext + 'a) -> OffscreenRenderingContext<'a> {
+        unreachable!()
+    }
+}
+
 /// `Path2D | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum Path2DOrStr<'a> {
@@ -105566,6 +107273,1146 @@ impl<'a> Path2DOrStr<'a> {
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
     #[allow(unused_variables)]
     pub fn of(this: impl IntoPath2DOrStr + 'a) -> Path2DOrStr<'a> {
+        unreachable!()
+    }
+}
+
+/// `RadioNodeList | Element`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum RadioNodeListOrElement<'a> {
+    RadioNodeList(&'a RadioNodeList),
+    Element(&'a Element),
+}
+
+impl<'a> From<&'a RadioNodeList> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a RadioNodeList) -> Self {
+        RadioNodeListOrElement::RadioNodeList(value)
+    }
+}
+
+impl<'a> From<&'a Element> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a Element) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLAnchorElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLAnchorElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLButtonElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLButtonElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDivElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLDivElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLFormElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLFormElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLHeadingElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLHeadingElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLImageElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLImageElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLInputElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLInputElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLLabelElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLLabelElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLLIElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLLIElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLOListElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLOListElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLOptionElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLOptionElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLOutputElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLOutputElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLParagraphElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLParagraphElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLSelectElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLSelectElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLSpanElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLSpanElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTextAreaElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLTextAreaElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLUListElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLUListElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTableElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLTableElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTableSectionElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLTableSectionElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTableRowElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLTableRowElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTableCellElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLTableCellElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLIFrameElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLIFrameElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLCanvasElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLCanvasElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDetailsElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLDetailsElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLHtmlElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLHtmlElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLHeadElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLHeadElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTitleElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLTitleElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLBaseElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLBaseElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLLinkElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLLinkElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMetaElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLMetaElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLStyleElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLStyleElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLBodyElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLBodyElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLHRElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLHRElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLPreElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLPreElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLQuoteElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLQuoteElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMenuElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLMenuElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDListElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLDListElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDataElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLDataElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTimeElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLTimeElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLBRElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLBRElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLModElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLModElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLPictureElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLPictureElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLSourceElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLSourceElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLEmbedElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLEmbedElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLObjectElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLObjectElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLVideoElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLVideoElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLAudioElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLAudioElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTrackElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLTrackElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMediaElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLMediaElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMapElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLMapElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLAreaElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLAreaElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTableCaptionElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLTableCaptionElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTableColElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLTableColElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDataListElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLDataListElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLOptGroupElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLOptGroupElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLProgressElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLProgressElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMeterElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLMeterElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLFieldSetElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLFieldSetElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLLegendElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLLegendElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLSelectedContentElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLSelectedContentElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDialogElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLDialogElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLScriptElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLScriptElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLTemplateElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLTemplateElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLSlotElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLSlotElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGGraphicsElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGGraphicsElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGGeometryElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGGeometryElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGSVGElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGSVGElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGGElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGGElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGDefsElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGDefsElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGSymbolElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGSymbolElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGUseElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGUseElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGSwitchElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGSwitchElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGTitleElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGTitleElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGDescElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGDescElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGMetadataElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGMetadataElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGStyleElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGStyleElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGScriptElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGScriptElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGPathElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGPathElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGRectElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGRectElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGCircleElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGCircleElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGEllipseElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGEllipseElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGLineElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGLineElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGPolylineElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGPolylineElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGPolygonElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGPolygonElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGTextContentElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGTextContentElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGTextPositioningElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGTextPositioningElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGTextElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGTextElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGTSpanElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGTSpanElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGTextPathElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGTextPathElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGImageElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGImageElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGForeignObjectElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGForeignObjectElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGMarkerElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGMarkerElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGGradientElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGGradientElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGLinearGradientElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGLinearGradientElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGRadialGradientElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGRadialGradientElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGStopElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGStopElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGPatternElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGPatternElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGAElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGAElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGViewElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGViewElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGAnimationElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGAnimationElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGAnimateElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGAnimateElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGSetElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGSetElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGAnimateMotionElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGAnimateMotionElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGMPathElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGMPathElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGAnimateTransformElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGAnimateTransformElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFilterElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGFilterElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEBlendElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGFEBlendElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEColorMatrixElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGFEColorMatrixElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEComponentTransferElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGFEComponentTransferElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGComponentTransferFunctionElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGComponentTransferFunctionElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEFuncRElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGFEFuncRElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEFuncGElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGFEFuncGElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEFuncBElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGFEFuncBElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEFuncAElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGFEFuncAElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFECompositeElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGFECompositeElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEConvolveMatrixElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGFEConvolveMatrixElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEDiffuseLightingElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGFEDiffuseLightingElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEDisplacementMapElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGFEDisplacementMapElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEDropShadowElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGFEDropShadowElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEFloodElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGFEFloodElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEGaussianBlurElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGFEGaussianBlurElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEImageElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGFEImageElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEMergeElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGFEMergeElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEMergeNodeElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGFEMergeNodeElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEMorphologyElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGFEMorphologyElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEOffsetElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGFEOffsetElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFESpecularLightingElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGFESpecularLightingElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFETileElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGFETileElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFETurbulenceElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGFETurbulenceElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEDistantLightElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGFEDistantLightElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFEPointLightElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGFEPointLightElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGFESpotLightElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGFESpotLightElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGClipPathElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGClipPathElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a SVGMaskElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a SVGMaskElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLDirectoryElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLDirectoryElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLFontElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLFontElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLFrameElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLFrameElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLFrameSetElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLFrameSetElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLMarqueeElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLMarqueeElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLParamElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLParamElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a HTMLUnknownElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a HTMLUnknownElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+impl<'a> From<&'a MathMLElement> for RadioNodeListOrElement<'a> {
+    fn from(value: &'a MathMLElement) -> Self {
+        RadioNodeListOrElement::Element(value)
+    }
+}
+
+/// What a `RadioNodeList | Element` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `RadioNodeList | Element`")]
+#[cfg_attr(rust_js, rust_js::types = "RadioNodeList | Element")]
+pub trait IntoRadioNodeListOrElement: sealed::Sealed {}
+impl IntoRadioNodeListOrElement for &RadioNodeList {}
+impl IntoRadioNodeListOrElement for &Element {}
+impl IntoRadioNodeListOrElement for &HTMLElement {}
+impl IntoRadioNodeListOrElement for &HTMLAnchorElement {}
+impl IntoRadioNodeListOrElement for &HTMLButtonElement {}
+impl IntoRadioNodeListOrElement for &HTMLDivElement {}
+impl IntoRadioNodeListOrElement for &HTMLFormElement {}
+impl IntoRadioNodeListOrElement for &HTMLHeadingElement {}
+impl IntoRadioNodeListOrElement for &HTMLImageElement {}
+impl IntoRadioNodeListOrElement for &HTMLInputElement {}
+impl IntoRadioNodeListOrElement for &HTMLLabelElement {}
+impl IntoRadioNodeListOrElement for &HTMLLIElement {}
+impl IntoRadioNodeListOrElement for &HTMLOListElement {}
+impl IntoRadioNodeListOrElement for &HTMLOptionElement {}
+impl IntoRadioNodeListOrElement for &HTMLOutputElement {}
+impl IntoRadioNodeListOrElement for &HTMLParagraphElement {}
+impl IntoRadioNodeListOrElement for &HTMLSelectElement {}
+impl IntoRadioNodeListOrElement for &HTMLSpanElement {}
+impl IntoRadioNodeListOrElement for &HTMLTextAreaElement {}
+impl IntoRadioNodeListOrElement for &HTMLUListElement {}
+impl IntoRadioNodeListOrElement for &HTMLTableElement {}
+impl IntoRadioNodeListOrElement for &HTMLTableSectionElement {}
+impl IntoRadioNodeListOrElement for &HTMLTableRowElement {}
+impl IntoRadioNodeListOrElement for &HTMLTableCellElement {}
+impl IntoRadioNodeListOrElement for &HTMLIFrameElement {}
+impl IntoRadioNodeListOrElement for &HTMLCanvasElement {}
+impl IntoRadioNodeListOrElement for &HTMLDetailsElement {}
+impl IntoRadioNodeListOrElement for &HTMLHtmlElement {}
+impl IntoRadioNodeListOrElement for &HTMLHeadElement {}
+impl IntoRadioNodeListOrElement for &HTMLTitleElement {}
+impl IntoRadioNodeListOrElement for &HTMLBaseElement {}
+impl IntoRadioNodeListOrElement for &HTMLLinkElement {}
+impl IntoRadioNodeListOrElement for &HTMLMetaElement {}
+impl IntoRadioNodeListOrElement for &HTMLStyleElement {}
+impl IntoRadioNodeListOrElement for &HTMLBodyElement {}
+impl IntoRadioNodeListOrElement for &HTMLHRElement {}
+impl IntoRadioNodeListOrElement for &HTMLPreElement {}
+impl IntoRadioNodeListOrElement for &HTMLQuoteElement {}
+impl IntoRadioNodeListOrElement for &HTMLMenuElement {}
+impl IntoRadioNodeListOrElement for &HTMLDListElement {}
+impl IntoRadioNodeListOrElement for &HTMLDataElement {}
+impl IntoRadioNodeListOrElement for &HTMLTimeElement {}
+impl IntoRadioNodeListOrElement for &HTMLBRElement {}
+impl IntoRadioNodeListOrElement for &HTMLModElement {}
+impl IntoRadioNodeListOrElement for &HTMLPictureElement {}
+impl IntoRadioNodeListOrElement for &HTMLSourceElement {}
+impl IntoRadioNodeListOrElement for &HTMLEmbedElement {}
+impl IntoRadioNodeListOrElement for &HTMLObjectElement {}
+impl IntoRadioNodeListOrElement for &HTMLVideoElement {}
+impl IntoRadioNodeListOrElement for &HTMLAudioElement {}
+impl IntoRadioNodeListOrElement for &HTMLTrackElement {}
+impl IntoRadioNodeListOrElement for &HTMLMediaElement {}
+impl IntoRadioNodeListOrElement for &HTMLMapElement {}
+impl IntoRadioNodeListOrElement for &HTMLAreaElement {}
+impl IntoRadioNodeListOrElement for &HTMLTableCaptionElement {}
+impl IntoRadioNodeListOrElement for &HTMLTableColElement {}
+impl IntoRadioNodeListOrElement for &HTMLDataListElement {}
+impl IntoRadioNodeListOrElement for &HTMLOptGroupElement {}
+impl IntoRadioNodeListOrElement for &HTMLProgressElement {}
+impl IntoRadioNodeListOrElement for &HTMLMeterElement {}
+impl IntoRadioNodeListOrElement for &HTMLFieldSetElement {}
+impl IntoRadioNodeListOrElement for &HTMLLegendElement {}
+impl IntoRadioNodeListOrElement for &HTMLSelectedContentElement {}
+impl IntoRadioNodeListOrElement for &HTMLDialogElement {}
+impl IntoRadioNodeListOrElement for &HTMLScriptElement {}
+impl IntoRadioNodeListOrElement for &HTMLTemplateElement {}
+impl IntoRadioNodeListOrElement for &HTMLSlotElement {}
+impl IntoRadioNodeListOrElement for &SVGElement {}
+impl IntoRadioNodeListOrElement for &SVGGraphicsElement {}
+impl IntoRadioNodeListOrElement for &SVGGeometryElement {}
+impl IntoRadioNodeListOrElement for &SVGSVGElement {}
+impl IntoRadioNodeListOrElement for &SVGGElement {}
+impl IntoRadioNodeListOrElement for &SVGDefsElement {}
+impl IntoRadioNodeListOrElement for &SVGSymbolElement {}
+impl IntoRadioNodeListOrElement for &SVGUseElement {}
+impl IntoRadioNodeListOrElement for &SVGSwitchElement {}
+impl IntoRadioNodeListOrElement for &SVGTitleElement {}
+impl IntoRadioNodeListOrElement for &SVGDescElement {}
+impl IntoRadioNodeListOrElement for &SVGMetadataElement {}
+impl IntoRadioNodeListOrElement for &SVGStyleElement {}
+impl IntoRadioNodeListOrElement for &SVGScriptElement {}
+impl IntoRadioNodeListOrElement for &SVGPathElement {}
+impl IntoRadioNodeListOrElement for &SVGRectElement {}
+impl IntoRadioNodeListOrElement for &SVGCircleElement {}
+impl IntoRadioNodeListOrElement for &SVGEllipseElement {}
+impl IntoRadioNodeListOrElement for &SVGLineElement {}
+impl IntoRadioNodeListOrElement for &SVGPolylineElement {}
+impl IntoRadioNodeListOrElement for &SVGPolygonElement {}
+impl IntoRadioNodeListOrElement for &SVGTextContentElement {}
+impl IntoRadioNodeListOrElement for &SVGTextPositioningElement {}
+impl IntoRadioNodeListOrElement for &SVGTextElement {}
+impl IntoRadioNodeListOrElement for &SVGTSpanElement {}
+impl IntoRadioNodeListOrElement for &SVGTextPathElement {}
+impl IntoRadioNodeListOrElement for &SVGImageElement {}
+impl IntoRadioNodeListOrElement for &SVGForeignObjectElement {}
+impl IntoRadioNodeListOrElement for &SVGMarkerElement {}
+impl IntoRadioNodeListOrElement for &SVGGradientElement {}
+impl IntoRadioNodeListOrElement for &SVGLinearGradientElement {}
+impl IntoRadioNodeListOrElement for &SVGRadialGradientElement {}
+impl IntoRadioNodeListOrElement for &SVGStopElement {}
+impl IntoRadioNodeListOrElement for &SVGPatternElement {}
+impl IntoRadioNodeListOrElement for &SVGAElement {}
+impl IntoRadioNodeListOrElement for &SVGViewElement {}
+impl IntoRadioNodeListOrElement for &SVGAnimationElement {}
+impl IntoRadioNodeListOrElement for &SVGAnimateElement {}
+impl IntoRadioNodeListOrElement for &SVGSetElement {}
+impl IntoRadioNodeListOrElement for &SVGAnimateMotionElement {}
+impl IntoRadioNodeListOrElement for &SVGMPathElement {}
+impl IntoRadioNodeListOrElement for &SVGAnimateTransformElement {}
+impl IntoRadioNodeListOrElement for &SVGFilterElement {}
+impl IntoRadioNodeListOrElement for &SVGFEBlendElement {}
+impl IntoRadioNodeListOrElement for &SVGFEColorMatrixElement {}
+impl IntoRadioNodeListOrElement for &SVGFEComponentTransferElement {}
+impl IntoRadioNodeListOrElement for &SVGComponentTransferFunctionElement {}
+impl IntoRadioNodeListOrElement for &SVGFEFuncRElement {}
+impl IntoRadioNodeListOrElement for &SVGFEFuncGElement {}
+impl IntoRadioNodeListOrElement for &SVGFEFuncBElement {}
+impl IntoRadioNodeListOrElement for &SVGFEFuncAElement {}
+impl IntoRadioNodeListOrElement for &SVGFECompositeElement {}
+impl IntoRadioNodeListOrElement for &SVGFEConvolveMatrixElement {}
+impl IntoRadioNodeListOrElement for &SVGFEDiffuseLightingElement {}
+impl IntoRadioNodeListOrElement for &SVGFEDisplacementMapElement {}
+impl IntoRadioNodeListOrElement for &SVGFEDropShadowElement {}
+impl IntoRadioNodeListOrElement for &SVGFEFloodElement {}
+impl IntoRadioNodeListOrElement for &SVGFEGaussianBlurElement {}
+impl IntoRadioNodeListOrElement for &SVGFEImageElement {}
+impl IntoRadioNodeListOrElement for &SVGFEMergeElement {}
+impl IntoRadioNodeListOrElement for &SVGFEMergeNodeElement {}
+impl IntoRadioNodeListOrElement for &SVGFEMorphologyElement {}
+impl IntoRadioNodeListOrElement for &SVGFEOffsetElement {}
+impl IntoRadioNodeListOrElement for &SVGFESpecularLightingElement {}
+impl IntoRadioNodeListOrElement for &SVGFETileElement {}
+impl IntoRadioNodeListOrElement for &SVGFETurbulenceElement {}
+impl IntoRadioNodeListOrElement for &SVGFEDistantLightElement {}
+impl IntoRadioNodeListOrElement for &SVGFEPointLightElement {}
+impl IntoRadioNodeListOrElement for &SVGFESpotLightElement {}
+impl IntoRadioNodeListOrElement for &SVGClipPathElement {}
+impl IntoRadioNodeListOrElement for &SVGMaskElement {}
+impl IntoRadioNodeListOrElement for &HTMLDirectoryElement {}
+impl IntoRadioNodeListOrElement for &HTMLFontElement {}
+impl IntoRadioNodeListOrElement for &HTMLFrameElement {}
+impl IntoRadioNodeListOrElement for &HTMLFrameSetElement {}
+impl IntoRadioNodeListOrElement for &HTMLMarqueeElement {}
+impl IntoRadioNodeListOrElement for &HTMLParamElement {}
+impl IntoRadioNodeListOrElement for &HTMLUnknownElement {}
+impl IntoRadioNodeListOrElement for &MathMLElement {}
+impl IntoRadioNodeListOrElement for RadioNodeListOrElement<'_> {}
+
+impl<'a> RadioNodeListOrElement<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoRadioNodeListOrElement + 'a) -> RadioNodeListOrElement<'a> {
+        unreachable!()
+    }
+}
+
+/// `ReadableStreamDefaultReader | ReadableStreamBYOBReader`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum ReadableStreamReader<'a> {
+    ReadableStreamDefaultReader(&'a ReadableStreamDefaultReader),
+    ReadableStreamBYOBReader(&'a ReadableStreamBYOBReader),
+}
+
+impl<'a> From<&'a ReadableStreamDefaultReader> for ReadableStreamReader<'a> {
+    fn from(value: &'a ReadableStreamDefaultReader) -> Self {
+        ReadableStreamReader::ReadableStreamDefaultReader(value)
+    }
+}
+
+impl<'a> From<&'a ReadableStreamBYOBReader> for ReadableStreamReader<'a> {
+    fn from(value: &'a ReadableStreamBYOBReader) -> Self {
+        ReadableStreamReader::ReadableStreamBYOBReader(value)
+    }
+}
+
+/// What a `ReadableStreamDefaultReader | ReadableStreamBYOBReader` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `ReadableStreamDefaultReader | ReadableStreamBYOBReader`")]
+#[cfg_attr(rust_js, rust_js::types = "ReadableStreamDefaultReader | ReadableStreamBYOBReader")]
+pub trait IntoReadableStreamReader: sealed::Sealed {}
+impl IntoReadableStreamReader for &ReadableStreamDefaultReader {}
+impl IntoReadableStreamReader for &ReadableStreamBYOBReader {}
+impl IntoReadableStreamReader for ReadableStreamReader<'_> {}
+
+impl<'a> ReadableStreamReader<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoReadableStreamReader + 'a) -> ReadableStreamReader<'a> {
+        unreachable!()
+    }
+}
+
+/// `CanvasRenderingContext2D | ImageBitmapRenderingContext | WebGLRenderingContext | WebGL2RenderingContext | GPUCanvasContext`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum RenderingContext<'a> {
+    CanvasRenderingContext2D(&'a CanvasRenderingContext2D),
+    ImageBitmapRenderingContext(&'a ImageBitmapRenderingContext),
+    WebGLRenderingContext(&'a WebGLRenderingContext),
+    WebGL2RenderingContext(&'a WebGL2RenderingContext),
+    GPUCanvasContext(&'a GPUCanvasContext),
+}
+
+impl<'a> From<&'a CanvasRenderingContext2D> for RenderingContext<'a> {
+    fn from(value: &'a CanvasRenderingContext2D) -> Self {
+        RenderingContext::CanvasRenderingContext2D(value)
+    }
+}
+
+impl<'a> From<&'a ImageBitmapRenderingContext> for RenderingContext<'a> {
+    fn from(value: &'a ImageBitmapRenderingContext) -> Self {
+        RenderingContext::ImageBitmapRenderingContext(value)
+    }
+}
+
+impl<'a> From<&'a WebGLRenderingContext> for RenderingContext<'a> {
+    fn from(value: &'a WebGLRenderingContext) -> Self {
+        RenderingContext::WebGLRenderingContext(value)
+    }
+}
+
+impl<'a> From<&'a WebGL2RenderingContext> for RenderingContext<'a> {
+    fn from(value: &'a WebGL2RenderingContext) -> Self {
+        RenderingContext::WebGL2RenderingContext(value)
+    }
+}
+
+impl<'a> From<&'a GPUCanvasContext> for RenderingContext<'a> {
+    fn from(value: &'a GPUCanvasContext) -> Self {
+        RenderingContext::GPUCanvasContext(value)
+    }
+}
+
+/// What a `CanvasRenderingContext2D | ImageBitmapRenderingContext | WebGLRenderingContext | WebGL2RenderingContext | GPUCanvasContext` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `CanvasRenderingContext2D | ImageBitmapRenderingContext | WebGLRenderingContext | WebGL2RenderingContext | GPUCanvasContext`")]
+#[cfg_attr(rust_js, rust_js::types = "CanvasRenderingContext2D | ImageBitmapRenderingContext | WebGLRenderingContext | WebGL2RenderingContext | GPUCanvasContext")]
+pub trait IntoRenderingContext: sealed::Sealed {}
+impl IntoRenderingContext for &CanvasRenderingContext2D {}
+impl IntoRenderingContext for &ImageBitmapRenderingContext {}
+impl IntoRenderingContext for &WebGLRenderingContext {}
+impl IntoRenderingContext for &WebGL2RenderingContext {}
+impl IntoRenderingContext for &GPUCanvasContext {}
+impl IntoRenderingContext for RenderingContext<'_> {}
+
+impl<'a> RenderingContext<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoRenderingContext + 'a) -> RenderingContext<'a> {
         unreachable!()
     }
 }
@@ -106584,6 +109431,7 @@ mod sealed {
     impl Sealed for &CanvasCaptureMediaStreamTrack {}
     impl Sealed for &CanvasGradient {}
     impl Sealed for &CanvasPattern {}
+    impl Sealed for &CanvasRenderingContext2D {}
     impl Sealed for &CharacterData {}
     impl Sealed for &ClipboardEvent {}
     impl Sealed for &CloseEvent {}
@@ -106612,6 +109460,7 @@ mod sealed {
     impl Sealed for &FormData {}
     impl Sealed for &FormDataEvent {}
     impl Sealed for &GPUBuffer {}
+    impl Sealed for &GPUCanvasContext {}
     impl Sealed for &GPUExternalTexture {}
     impl Sealed for &GPUPipelineLayout {}
     impl Sealed for &GPUSampler {}
@@ -106627,6 +109476,7 @@ mod sealed {
     impl Sealed for &HTMLBodyElement {}
     impl Sealed for &HTMLButtonElement {}
     impl Sealed for &HTMLCanvasElement {}
+    impl Sealed for &HTMLCollection {}
     impl Sealed for &HTMLDListElement {}
     impl Sealed for &HTMLDataElement {}
     impl Sealed for &HTMLDataListElement {}
@@ -106638,6 +109488,7 @@ mod sealed {
     impl Sealed for &HTMLEmbedElement {}
     impl Sealed for &HTMLFieldSetElement {}
     impl Sealed for &HTMLFontElement {}
+    impl Sealed for &HTMLFormControlsCollection {}
     impl Sealed for &HTMLFormElement {}
     impl Sealed for &HTMLFrameElement {}
     impl Sealed for &HTMLFrameSetElement {}
@@ -106663,6 +109514,7 @@ mod sealed {
     impl Sealed for &HTMLObjectElement {}
     impl Sealed for &HTMLOptGroupElement {}
     impl Sealed for &HTMLOptionElement {}
+    impl Sealed for &HTMLOptionsCollection {}
     impl Sealed for &HTMLOutputElement {}
     impl Sealed for &HTMLParagraphElement {}
     impl Sealed for &HTMLParamElement {}
@@ -106698,6 +109550,7 @@ mod sealed {
     impl Sealed for &IDBObjectStore {}
     impl Sealed for &IDBVersionChangeEvent {}
     impl Sealed for &ImageBitmap {}
+    impl Sealed for &ImageBitmapRenderingContext {}
     impl Sealed for &ImageData {}
     impl Sealed for &InputEvent {}
     impl Sealed for &Int16Array {}
@@ -106723,6 +109576,7 @@ mod sealed {
     impl Sealed for &Node {}
     impl Sealed for &OfflineAudioCompletionEvent {}
     impl Sealed for &OffscreenCanvas {}
+    impl Sealed for &OffscreenCanvasRenderingContext2D {}
     impl Sealed for &PageRevealEvent {}
     impl Sealed for &PageSwapEvent {}
     impl Sealed for &PageTransitionEvent {}
@@ -106741,7 +109595,10 @@ mod sealed {
     impl Sealed for &RTCPeerConnectionIceErrorEvent {}
     impl Sealed for &RTCPeerConnectionIceEvent {}
     impl Sealed for &RTCTrackEvent {}
+    impl Sealed for &RadioNodeList {}
     impl Sealed for &ReadableStream {}
+    impl Sealed for &ReadableStreamBYOBReader {}
+    impl Sealed for &ReadableStreamDefaultReader {}
     impl Sealed for &Request {}
     impl Sealed for &SVGAElement {}
     impl Sealed for &SVGAnimateElement {}
@@ -106840,7 +109697,9 @@ mod sealed {
     impl Sealed for &Uint8Array {}
     impl Sealed for &Uint8ClampedArray {}
     impl Sealed for &VideoFrame {}
+    impl Sealed for &WebGL2RenderingContext {}
     impl Sealed for &WebGLContextEvent {}
+    impl Sealed for &WebGLRenderingContext {}
     impl Sealed for &WebTransportReceiveStream {}
     impl Sealed for &WheelEvent {}
     impl Sealed for &Window {}
@@ -106867,6 +109726,7 @@ mod sealed {
     impl Sealed for BoolOrMediaTrackConstraints {}
     impl Sealed for BoolOrNumberOrStr<'_> {}
     impl Sealed for BoolOrScrollIntoViewOptions<'_> {}
+    impl Sealed for BoolOrStr<'_> {}
     impl Sealed for Box<dyn FnMut() -> Promise<Option<&'static Unknown>>> {}
     impl Sealed for BufferSource<'_> {}
     impl Sealed for BufferSourceOrBlobOrStr<'_> {}
@@ -106906,6 +109766,7 @@ mod sealed {
     impl Sealed for GPUTextureOrGPUTextureView<'_> {}
     impl Sealed for GeometryNode<'_> {}
     impl Sealed for HTMLCanvasElementOrOffscreenCanvas<'_> {}
+    impl Sealed for HTMLCollectionOrElement<'_> {}
     impl Sealed for HTMLElementOrNumber<'_> {}
     impl Sealed for HTMLOptionElementOrHTMLOptGroupElement<'_> {}
     impl Sealed for HTMLOrSVGScriptElement<'_> {}
@@ -106934,8 +109795,12 @@ mod sealed {
     impl Sealed for NumberOrKeyframeEffectOptions<'_> {}
     impl Sealed for NumberOrList<'_> {}
     impl Sealed for NumberOrStr<'_> {}
+    impl Sealed for OffscreenRenderingContext<'_> {}
     impl Sealed for Path2DOrStr<'_> {}
     impl Sealed for PerformanceMeasureOptions<'_> {}
+    impl Sealed for RadioNodeListOrElement<'_> {}
+    impl Sealed for ReadableStreamReader<'_> {}
+    impl Sealed for RenderingContext<'_> {}
     impl Sealed for RequestInfo<'_> {}
     impl Sealed for SanitizerAttribute<'_> {}
     impl Sealed for SanitizerAttributeNamespace {}

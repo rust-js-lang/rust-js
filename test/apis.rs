@@ -16,7 +16,7 @@ use react::{
     use_layout_effect, use_optimistic, use_reducer_with, use_ref, use_state, use_sync_external_store, use_transition,
 };
 use js::Promise;
-use webapi::FormData;
+use webapi::{FormData, FormDataEntryValue};
 
 unsafe extern "Rust" {
     /// The test's own JS: a promise, a store, and where things are logged.
@@ -71,7 +71,10 @@ pub fn Store() -> JSX::Element {
 
 /// A form with an action, its state, an optimistic value, and its status.
 fn submit(previous: &String, data: &'static FormData) -> String {
-    let name = data.get("name").unwrap_or(String::new());
+    let name = match data.get("name") {
+        Some(FormDataEntryValue::Str(text)) => text.to_string(),
+        _ => String::new(),
+    };
     format!("{previous}{name};")
 }
 

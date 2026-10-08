@@ -103,4 +103,46 @@ export function iterated(headers, list) {
   const keys = headers.keys();
   return [names, long, $next(keys)];
 }
+
+export function samples(buffer, svg) {
+  const data = buffer.getChannelData(0);
+  const point = svg.createSVGPoint();
+  point.x = 2;
+  const face = new FontFace("Mono", new Uint8Array(4));
+  return [data[0] ?? 0, point.x, face];
+}
+
+export function texts(url, list) {
+  return [url.toString(), list.toString()];
+}
+
+export function statics_read() {
+  return [Notification.permission, Response.json([1, 2])];
+}
+
+export function on_errors(button) {
+  button.onerror = (e) => typeof e === "string";
+  window.onbeforeunload = () => undefined;
+  return button.onerror != null;
+}
+
+export function listed(list, headers) {
+  const count = Iterator.from(list).toArray().length;
+  const names = Iterator.from(headers)
+    .map(([name]) => name)
+    .toArray();
+  return [count, names];
+}
+
+export function unions_read(reader, data) {
+  const text = typeof reader.result === "string";
+  let name;
+  const match$1 = data.get("name");
+  if (typeof match$1 === "string") {
+    name = match$1;
+  } else {
+    name = undefined;
+  }
+  return [text, name];
+}
 //# sourceMappingURL=web_forms.js.map

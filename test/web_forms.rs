@@ -172,3 +172,15 @@ pub fn listed(list: &webapi::NodeList, headers: &webapi::Headers) -> (usize, Vec
     let names = webapi::headers::iter(headers).map(|(name, _)| name).collect();
     (count, names)
 }
+
+/// A union a function gives is the enum a parameter of it takes, read as
+/// the member JS gives: `reader.result`, text or an `ArrayBuffer`, and a
+/// form's field, text or a `File`.
+pub fn unions_read(reader: &webapi::FileReader, data: &webapi::FormData) -> (bool, Option<String>) {
+    let text = matches!(reader.result(), Some(webapi::StrOrArrayBuffer::Str(_)));
+    let name = match data.get("name") {
+        Some(webapi::FormDataEntryValue::Str(name)) => Some(name.to_string()),
+        _ => None,
+    };
+    (text, name)
+}

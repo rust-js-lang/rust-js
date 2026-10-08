@@ -92,8 +92,9 @@ const defined = new Set(Object.values(await idl.parseAll() as Record<string, { t
 INTERFACES.push(...[...typescriptDom.keys()].filter((name) => defined.has(name) && !INTERFACES.includes(name)).sort());
 const known = new Set(INTERFACES);
 
-// Members written by hand, for results the generator can't type: a union
-// with an interface it doesn't bind.
+// Members written by hand, in place of what's generated of their name. A
+// message's sender is a union JS can't tell apart by `instanceof`: a
+// frame's window is another realm's, no `Window` of this one's.
 const EXTRA: Record<string, Fn[]> = {
   MessageEvent: [
     {
@@ -105,25 +106,6 @@ const EXTRA: Record<string, Fn[]> = {
         "[MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/source): what sent it, a window,",
         "a `MessagePort` or a `ServiceWorker`, as an object: `js::object::is` tells which.",
       ],
-    },
-  ],
-  FormData: [
-    {
-      name: "get",
-      jsName: "get",
-      params: ["this: &FormData", "name: &str"],
-      result: "Option<String>",
-      doc: [
-        "[MDN](https://developer.mozilla.org/docs/Web/API/FormData/get): a text field's value.",
-        "A file field's value is a `File`, which this doesn't bind.",
-      ],
-    },
-    {
-      name: "get_all",
-      jsName: "getAll",
-      params: ["this: &FormData", "name: &str"],
-      result: "Vec<String>",
-      doc: ["[MDN](https://developer.mozilla.org/docs/Web/API/FormData/getAll): every text value of a field."],
     },
   ],
 };
@@ -354,6 +336,7 @@ const CLONED = new Set(["postMessage.message", "pushState.data", "replaceState.d
 
 /** The Rust type for a (non-union) WebIDL type, or why there isn't one. */
 function rustType(t: IdlType, at: Position): string | { skip: string } {
+  if (at === "result" && isUnion(t)) return resultUnion(t);
   if (t.union) return { skip: "union" };
   // A promise a function returns is `.await`ed in Rust (ADR 0029). One it
   // takes is passed as it is: `compile_streaming(window.fetch(..))`.
@@ -581,6 +564,36 @@ function memberNames(t: IdlType): string[] {
   if (!t.generic && typedefs.has(name) && isUnion(t)) return alternatives(t).length ? [typeName(name)] : [];
   const rust = rustType(t, "param");
   return typeof rust === "string" ? [variantName(rust)] : [];
+}
+
+/** A union's members, through the typedefs of unions in it. */
+function flatMembers(t: IdlType): IdlType[] {
+  if (t.union) return (t.idlType as IdlType[]).flatMap(flatMembers);
+  const aliased = !t.generic && typedefs.get(t.idlType as string);
+  return aliased && isUnion(aliased) ? flatMembers(aliased) : [t];
+}
+
+/**
+ * A union a function gives: the enum a parameter of it takes (ADR 0215),
+ * of `'static` borrows, `StrOrArrayBuffer<'static>`, read as the member
+ * JS gives is. Only where Rust takes each member and JS tells each apart:
+ * a member left out, or two of one kind, would be misread. `undefined`
+ * among them is `None`: `Promise<Option<&Response>>` of `Cache.match`.
+ */
+function resultUnion(t: IdlType): string | { skip: string } {
+  const members = flatMembers(t);
+  const defined = members.filter((m) => m.idlType !== "undefined");
+  const option = (rust: string) => (defined.length < members.length ? `Option<${rust}>` : rust);
+  if (defined.length === 1) {
+    const one = rustType(defined[0], "result");
+    return typeof one === "string" ? option(one) : one;
+  }
+  const union = unionOf(t);
+  if (!union || union.variants.length !== defined.length || union.variants.some((v) => kindOf(v.type.replace(/'a /g, "")) === "object")) {
+    return { skip: "union" };
+  }
+  unions.set(union.name, union);
+  return option(union.borrows ? `${union.name}<'static>` : union.name);
 }
 
 /**
@@ -1188,7 +1201,9 @@ for (const name of INTERFACES) {
     line(`    }`);
     line(`}`);
   }
-  const fns = [...functionsOf(i), ...(EXTRA[name] ?? [])].filter((f) =>
+  // What's written by hand is bound in place of what's generated of its name.
+  const extra = EXTRA[name] ?? [];
+  const fns = [...functionsOf(i).filter((f) => !extra.some((e) => e.name === f.name)), ...extra].filter((f) =>
     name !== "EventTarget" || !["addEventListener", "removeEventListener"].includes(f.jsName),
   );
   if (name === "CSSStyleProperties") fns.push(...cssProperties(fns));

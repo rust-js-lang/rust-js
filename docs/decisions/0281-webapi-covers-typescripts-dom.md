@@ -137,3 +137,12 @@ so nothing said when it fell behind.
   0140) of an iterable's values or entries, or of an indexed collection's
   items, its getter's type. A method would be a member call,
   `list.from()`. 98.4%.
+- **A union a function gives is its enum**, the one a parameter of it
+  takes, of `'static` borrows: `reader.result()` is an
+  `Option<StrOrArrayBuffer<'static>>`, read as the member JS gives, and
+  `undefined` among them `None`, `Cache.match`'s `Option<&Response>`. Only
+  where Rust takes each member and JS tells each apart; a member left out,
+  or two of one kind, would be misread. `FormData.get` is typed so,
+  `FormDataEntryValue`, where a hand binding gave text alone; a message's
+  sender stays an object, a frame's window being another realm's, which
+  `instanceof Window` isn't. 98.8%.

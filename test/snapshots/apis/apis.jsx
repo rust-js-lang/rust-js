@@ -68,7 +68,13 @@ export function Store() {
 }
 
 function submit(previous, data) {
-  const name = data.get("name") ?? "";
+  let name;
+  const match = data.get("name");
+  if (typeof match === "string") {
+    name = match;
+  } else {
+    name = "";
+  }
   return `${previous}${name};`;
 }
 

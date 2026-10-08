@@ -1,6 +1,6 @@
 # The webapi crate against TypeScript's DOM (@types/web): bun test test/webapi-coverage.test.ts
 # classes: 699 of 701 (99.7%)
-# members: 8286 of 8419 (98.4%)
+# members: 8321 of 8419 (98.8%)
 AbortController.abort
 AbortController.constructor
 AbortController.signal
@@ -58,6 +58,10 @@ AnimationEvent.constructor
 AnimationEvent.elapsedTime
 AnimationEvent.pseudoElement
 AnimationPlaybackEvent.constructor
+AnimationPlaybackEvent.currentTime
+AnimationPlaybackEvent.timelineTime
+AnimationTimeline.currentTime
+AnimationTimeline.duration
 Attr.localName
 Attr.name
 Attr.namespaceURI
@@ -1019,8 +1023,13 @@ CSSTranslate.z
 CSSUnitValue.constructor
 CSSUnitValue.unit
 CSSUnitValue.value
+CSSUnparsedValue.[Symbol.iterator]
 CSSUnparsedValue.constructor
+CSSUnparsedValue.entries
+CSSUnparsedValue.forEach
+CSSUnparsedValue.keys
 CSSUnparsedValue.length
+CSSUnparsedValue.values
 CSSVariableReferenceValue.constructor
 CSSVariableReferenceValue.fallback
 CSSVariableReferenceValue.variable
@@ -1030,11 +1039,13 @@ Cache.add
 Cache.addAll
 Cache.delete
 Cache.keys
+Cache.match
 Cache.matchAll
 Cache.put
 CacheStorage.delete
 CacheStorage.has
 CacheStorage.keys
+CacheStorage.match
 CacheStorage.open
 CanvasCaptureMediaStreamTrack.canvas
 CanvasCaptureMediaStreamTrack.requestFrame
@@ -1452,6 +1463,7 @@ Document.createProcessingInstruction
 Document.createRange
 Document.createTextNode
 Document.createTreeWalker
+Document.currentScript
 Document.customElementRegistry
 Document.defaultView
 Document.designMode
@@ -1956,6 +1968,7 @@ FileReader.readAsBinaryString
 FileReader.readAsDataURL
 FileReader.readAsText
 FileReader.readyState
+FileReader.result
 FileReader.static:DONE
 FileReader.static:EMPTY
 FileReader.static:LOADING
@@ -2011,13 +2024,18 @@ FontFaceSet.ready
 FontFaceSet.status
 FontFaceSetLoadEvent.constructor
 FontFaceSetLoadEvent.fontfaces
+FormData.[Symbol.iterator]
 FormData.append
 FormData.constructor
 FormData.delete
+FormData.entries
+FormData.forEach
 FormData.get
 FormData.getAll
 FormData.has
+FormData.keys
 FormData.set
+FormData.values
 FormDataEvent.constructor
 FormDataEvent.formData
 GPU.getPreferredCanvasFormat
@@ -2044,6 +2062,7 @@ GPUBuffer.mapState
 GPUBuffer.size
 GPUBuffer.unmap
 GPUBuffer.usage
+GPUCanvasContext.canvas
 GPUCanvasContext.configure
 GPUCanvasContext.getConfiguration
 GPUCanvasContext.getCurrentTexture
@@ -2254,7 +2273,9 @@ GeolocationPositionError.static:PERMISSION_DENIED
 GeolocationPositionError.static:POSITION_UNAVAILABLE
 GeolocationPositionError.static:TIMEOUT
 HTMLAllCollection.[Symbol.iterator]
+HTMLAllCollection.item
 HTMLAllCollection.length
+HTMLAllCollection.namedItem
 HTMLAnchorElement.charset
 HTMLAnchorElement.coords
 HTMLAnchorElement.download
@@ -2354,6 +2375,7 @@ HTMLButtonElement.validity
 HTMLButtonElement.value
 HTMLButtonElement.willValidate
 HTMLCanvasElement.captureStream
+HTMLCanvasElement.getContext
 HTMLCanvasElement.height
 HTMLCanvasElement.toBlob
 HTMLCanvasElement.toDataURL
@@ -3106,6 +3128,7 @@ IDBCursor.direction
 IDBCursor.key
 IDBCursor.primaryKey
 IDBCursor.request
+IDBCursor.source
 IDBCursor.update
 IDBCursorWithValue.value
 IDBDatabase.close
@@ -3170,6 +3193,7 @@ IDBRequest.onerror
 IDBRequest.onsuccess
 IDBRequest.readyState
 IDBRequest.result
+IDBRequest.source
 IDBRequest.transaction
 IDBTransaction.abort
 IDBTransaction.commit
@@ -3192,6 +3216,7 @@ IdleDeadline.timeRemaining
 ImageBitmap.close
 ImageBitmap.height
 ImageBitmap.width
+ImageBitmapRenderingContext.canvas
 ImageBitmapRenderingContext.transferFromImageBitmap
 ImageCapture.constructor
 ImageCapture.getPhotoCapabilities
@@ -3230,6 +3255,7 @@ InputEvent.isComposing
 IntersectionObserver.constructor
 IntersectionObserver.disconnect
 IntersectionObserver.observe
+IntersectionObserver.root
 IntersectionObserver.rootMargin
 IntersectionObserver.scrollMargin
 IntersectionObserver.takeRecords
@@ -3470,6 +3496,7 @@ MediaKeySession.remove
 MediaKeySession.sessionId
 MediaKeySession.update
 MediaKeyStatusMap.forEach
+MediaKeyStatusMap.get
 MediaKeyStatusMap.has
 MediaKeyStatusMap.size
 MediaKeySystemAccess.createMediaKeys
@@ -3852,6 +3879,7 @@ OfflineAudioContext.startRendering
 OfflineAudioContext.suspend
 OffscreenCanvas.constructor
 OffscreenCanvas.convertToBlob
+OffscreenCanvas.getContext
 OffscreenCanvas.height
 OffscreenCanvas.oncontextlost
 OffscreenCanvas.oncontextrestored
@@ -4397,6 +4425,7 @@ ReadableByteStreamController.enqueue
 ReadableByteStreamController.error
 ReadableStream.cancel
 ReadableStream.constructor
+ReadableStream.getReader
 ReadableStream.locked
 ReadableStream.pipeThrough
 ReadableStream.pipeTo
@@ -5378,6 +5407,7 @@ ServiceWorker.postMessage
 ServiceWorker.scriptURL
 ServiceWorker.state
 ServiceWorkerContainer.controller
+ServiceWorkerContainer.getRegistration
 ServiceWorkerContainer.getRegistrations
 ServiceWorkerContainer.oncontrollerchange
 ServiceWorkerContainer.onmessage
@@ -5514,6 +5544,7 @@ StylePropertyMap.set
 StylePropertyMapReadOnly.[Symbol.iterator]
 StylePropertyMapReadOnly.entries
 StylePropertyMapReadOnly.forEach
+StylePropertyMapReadOnly.get
 StylePropertyMapReadOnly.getAll
 StylePropertyMapReadOnly.has
 StylePropertyMapReadOnly.keys
@@ -5521,6 +5552,7 @@ StylePropertyMapReadOnly.size
 StylePropertyMapReadOnly.values
 StyleSheet.disabled
 StyleSheet.href
+StyleSheet.ownerNode
 StyleSheet.parentStyleSheet
 StyleSheet.title
 StyleSheet.type
@@ -6403,6 +6435,7 @@ WebGL2RenderingContext.blendFuncSeparate
 WebGL2RenderingContext.blitFramebuffer
 WebGL2RenderingContext.bufferData
 WebGL2RenderingContext.bufferSubData
+WebGL2RenderingContext.canvas
 WebGL2RenderingContext.checkFramebufferStatus
 WebGL2RenderingContext.clear
 WebGL2RenderingContext.clearBufferfi
@@ -7484,6 +7517,7 @@ WebGLRenderingContext.blendFunc
 WebGLRenderingContext.blendFuncSeparate
 WebGLRenderingContext.bufferData
 WebGLRenderingContext.bufferSubData
+WebGLRenderingContext.canvas
 WebGLRenderingContext.checkFramebufferStatus
 WebGLRenderingContext.clear
 WebGLRenderingContext.clearColor
@@ -7989,6 +8023,7 @@ Window.customElements
 Window.devicePixelRatio
 Window.document
 Window.documentPictureInPicture
+Window.event
 Window.external
 Window.fetch
 Window.focus
