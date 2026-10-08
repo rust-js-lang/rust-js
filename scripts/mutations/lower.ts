@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower.rs",
     find: "            let tag = tag.map(|(key, name)| Prop::Field(key, Expr::str(name)));",
     replace: "            let tag = tag.map(|(_, name)| Prop::Field(\"TAG\".into(), Expr::str(name)));",
-    tests: ["test/format.test.ts","-t","discriminated union"],
+    tests: ["test/lowering.test.ts","-t","discriminated union"],
   },
   {
     name: "raw-lines-escaped",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower.rs",
     find: "                StrStyle::Raw(_) => true,",
     replace: "                StrStyle::Raw(_) => false,",
-    tests: ["test/format.test.ts", "-t", "a string written across lines"],
+    tests: ["test/lowering.test.ts", "-t", "a string written across lines"],
   },
   {
     name: "continued-line-kept",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower.rs",
     find: ".is_ok_and(|code| code.match_indices('\\n').any(|(i, _)| !code[..i].ends_with('\\\\'))),",
     replace: ".is_ok_and(|code| code.contains('\\n')),",
-    tests: ["test/format.test.ts", "-t", "a string written across lines"],
+    tests: ["test/lowering.test.ts", "-t", "a string written across lines"],
   },
   {
     name: "walks-unkeyed",

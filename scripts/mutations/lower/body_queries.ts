@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries.rs",
     find: "        {\n            body = strip(thir, arg);\n        }",
     replace: "        {\n            let _ = arg;\n        }",
-    tests: ["test/format.test.ts", "-t", "an awaited reference given to a generic function is awaited"],
+    tests: ["test/lowering.test.ts", "-t", "an awaited reference given to a generic function is awaited"],
   },
   {
     name: "await-arm-scope-unseen",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries.rs",
     find: "        let mut body = strip(thir, thir[*arm].body);",
     replace: "        let mut body = thir[*arm].body;",
-    tests: ["test/format.test.ts", "-t", "an awaited reference given to a generic function is awaited"],
+    tests: ["test/lowering.test.ts", "-t", "an awaited reference given to a generic function is awaited"],
   },
   {
     name: "never-loop-value",

@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/aggregates.rs",
     find: "                    !bindings::has_flatten(self.tcx, ty) && !self.contains_mutated(ty)",
     replace: "                    false",
-    tests: ["test/format.test.ts","-t","a struct updated from one it owns"],
+    tests: ["test/lowering.test.ts","-t","a struct updated from one it owns"],
   },
   {
     name: "owned-update-mutated-spread",

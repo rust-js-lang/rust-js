@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display.rs",
     find: "            return Ok(self.variant_debug(*adt, value));",
     replace: "            return Ok(value);",
-    tests: ["test/format.test.ts", "-t", "a renamed variant is shown by its Rust name"],
+    tests: ["test/lowering.test.ts", "-t", "a renamed variant is shown by its Rust name"],
   },
   {
     name: "renamed-variant-debug-foreign",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display.rs",
     find: "                Ok(self.variant_debug(*adt, value))",
     replace: "                Ok(value)",
-    tests: ["test/format.test.ts", "-t", "a renamed variant is shown by its Rust name"],
+    tests: ["test/lowering.test.ts", "-t", "a renamed variant is shown by its Rust name"],
   },
   {
     name: "renamed-variant-debug-tag-unread",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display.rs",
     find: "            Some(key) => Expr::member(value, key),",
     replace: "            Some(_) => value,",
-    tests: ["test/format.test.ts", "-t", "a renamed variant is shown by its Rust name"],
+    tests: ["test/lowering.test.ts", "-t", "a renamed variant is shown by its Rust name"],
   },
   {
     name: "renamed-variant-debug-no-table",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display.rs",
     find: "        if names.iter().all(|(js, rust)| js == rust) {",
     replace: "        if true {",
-    tests: ["test/format.test.ts", "-t", "a renamed variant is shown by its Rust name"],
+    tests: ["test/lowering.test.ts", "-t", "a renamed variant is shown by its Rust name"],
   },
   {
     name: "debug-without-cells",

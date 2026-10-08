@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "        constants(&mut function.body);\n",
     replace: "",
-    tests: ["test/format.test.ts", "-t", "nothing sets again is a const"],
+    tests: ["test/lowering.test.ts", "-t", "nothing sets again is a const"],
   },
   {
     name: "set-let-made-const",
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "                set.extend(root(target));\n",
     replace: "",
-    tests: ["test/format.test.ts", "-t", "nothing sets again is a const"],
+    tests: ["test/lowering.test.ts", "-t", "nothing sets again is a const"],
   },
   {
     name: "empty-else-kept",
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "            && els.as_ref().is_some_and(Vec::is_empty)\n",
     replace: "            && els.as_ref().is_some_and(|_| false)\n",
-    tests: ["test/format.test.ts", "-t", "else of nothing"],
+    tests: ["test/lowering.test.ts", "-t", "else of nothing"],
   },
   {
     name: "undefined-fields-kept",

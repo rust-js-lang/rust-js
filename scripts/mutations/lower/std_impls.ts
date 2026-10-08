@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_impls.rs",
     find: "                    let key = super::bindings::tag_key(self.tcx, adt.did());",
     replace: "                    let key = String::from(\"TAG\");",
-    tests: ["test/format.test.ts","-t","discriminated union"],
+    tests: ["test/lowering.test.ts","-t","discriminated union"],
   },
   {
     name: "library-recursive-clone-inline",

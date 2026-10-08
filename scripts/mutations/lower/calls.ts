@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/calls.rs",
     find: "            ExprKind::RawBorrow { arg, .. } => arg,",
     replace: "            ExprKind::RawBorrow { arg, .. } if false => arg,",
-    tests: ["test/format.test.ts", "-t", "ptr::eq of JS objects is whether they're one"],
+    tests: ["test/lowering.test.ts", "-t", "ptr::eq of JS objects is whether they're one"],
   },
   {
     name: "static-getter-call-unsupported",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/calls.rs",
     find: "                (JsForm::Get(name), None) if args.is_empty() => self.js_ref(&name).or_at(fun_span),",
     replace: "                (JsForm::Get(name), None) if false => self.js_ref(&name).or_at(fun_span),",
-    tests: ["test/format.test.ts", "-t", "a binding reads a static property"],
+    tests: ["test/lowering.test.ts", "-t", "a binding reads a static property"],
   },
   {
     name: "nullable-param-undefined",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/calls.rs",
     find: "            if !nullable.is_empty() {",
     replace: "            if false && !nullable.is_empty() {",
-    tests: ["test/format.test.ts", "-t", "nullable parameter"],
+    tests: ["test/lowering.test.ts", "-t", "nullable parameter"],
   },
   {
     name: "named-key-indexed",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/calls.rs",
     find: "            Expr::member(this, name.clone())",
     replace: "            Expr::index(this, key.clone())",
-    tests: ["test/format.test.ts", "-t", "unknown JS value"],
+    tests: ["test/lowering.test.ts", "-t", "unknown JS value"],
   },
   {
     name: "unfollowed-drops-taken",

@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "by its key.\n            ExprKind::Member(object, property) if !member_name(property) => {",
     replace: "by its key.\n            ExprKind::Member(object, property) if false && !member_name(property) => {",
-    tests: ["test/format.test.ts", "-t", "isn't a name is read by its key"],
+    tests: ["test/lowering.test.ts", "-t", "isn't a name is read by its key"],
   },
   {
     name: "keyed-field-read-dotted",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "a subtraction.\n            ExprKind::Member(object, property) if !member_name(property) => {",
     replace: "a subtraction.\n            ExprKind::Member(object, property) if false && !member_name(property) => {",
-    tests: ["test/format.test.ts", "-t", "isn't a name is read by its key"],
+    tests: ["test/lowering.test.ts", "-t", "isn't a name is read by its key"],
   },
   {
     name: "keyed-field-chained-dotted",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "            ExprKind::OptionalMember(object, property) if !member_name(property) => {",
     replace: "            ExprKind::OptionalMember(object, property) if false && !member_name(property) => {",
-    tests: ["test/format.test.ts", "-t", "isn't a name is read by its key"],
+    tests: ["test/lowering.test.ts", "-t", "isn't a name is read by its key"],
   },
   {
     name: "lines-escaped",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "            '\\n' if lines => raw.push('\\n'),",
     replace: "            '\\n' if lines => raw.push_str(\"\\\\n\"),",
-    tests: ["test/format.test.ts", "-t", "a string written across lines"],
+    tests: ["test/lowering.test.ts", "-t", "a string written across lines"],
   },
   {
     name: "runtime-binding-own-import",

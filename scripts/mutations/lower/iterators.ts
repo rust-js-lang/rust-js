@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators.rs",
     find: "                        .is_some_and(|item| self.eq_is_identity(item))\n                    && let Some(value)",
     replace: "                        .is_some()\n                    && let Some(value)",
-    tests: ["test/format.test.ts", "-t", "whether any item equals a value"],
+    tests: ["test/lowering.test.ts", "-t", "whether any item equals a value"],
   },
   {
     name: "any-equal-some",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators.rs",
     find: "                    && let Some(value) = sought(&test)",
     replace: "                    && let Some(value) = sought(&test).filter(|_| false)",
-    tests: ["test/format.test.ts", "-t", "whether any item equals a value"],
+    tests: ["test/lowering.test.ts", "-t", "whether any item equals a value"],
   },
   {
     name: "boxed-find-unboxed",
@@ -419,7 +419,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators.rs",
     find: "                        Err(f) => (items, self.passed_on(args[1], f)),\n",
     replace: "                        Err(f) => (items, f),\n",
-    tests: ["test/format.test.ts", "-t", "only passes its arguments"],
+    tests: ["test/lowering.test.ts", "-t", "only passes its arguments"],
   },
   {
     name: "binding-passed-as-callback",
@@ -427,7 +427,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators.rs",
     find: "            _ => def_id.is_local() && !super::bindings::is_binding(self.tcx, def_id),\n",
     replace: "            _ => def_id.is_local(),\n",
-    tests: ["test/format.test.ts", "-t", "only passes its arguments"],
+    tests: ["test/lowering.test.ts", "-t", "only passes its arguments"],
   },
   {
     name: "generic-callback-kept",
@@ -435,7 +435,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators.rs",
     find: "                    ty::Closure(..) | ty::Param(_) => true,\n",
     replace: "                    ty::Closure(..) => true,\n",
-    tests: ["test/format.test.ts", "-t", "only passes its arguments"],
+    tests: ["test/lowering.test.ts", "-t", "only passes its arguments"],
   },
   {
     name: "boxed-dyn-fn-not-rust",

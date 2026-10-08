@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/loops.rs",
     find: "                if self.recognition().is_str_chars(self.thir[f.head].ty)",
     replace: "                if false && self.recognition().is_str_chars(self.thir[f.head].ty)",
-    tests: ["test/format.test.ts", "-t", "a loop over a string's characters"],
+    tests: ["test/lowering.test.ts", "-t", "a loop over a string's characters"],
   },
   {
     name: "while-condition-statements",

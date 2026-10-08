@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition.rs",
     find: '        if diagnostic("ptr_eq") {',
     replace: "        if false {",
-    tests: ["test/format.test.ts", "-t", "ptr::eq of JS objects is whether they're one"],
+    tests: ["test/lowering.test.ts", "-t", "ptr::eq of JS objects is whether they're one"],
   },
   {
     name: "array-map-unknown",

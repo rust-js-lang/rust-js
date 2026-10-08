@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "        Some(key) => js::Expr::object(vec![js::Prop::Field(key, name)]),",
     replace: "        Some(_) => name,",
-    tests: ["test/format.test.ts","-t","discriminated union"],
+    tests: ["test/lowering.test.ts","-t","discriminated union"],
   },
   {
     name: "tagged-tuple-variant-accepted",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "        \"get []\" => return JsForm::GetIndex,\n",
     replace: "",
-    tests: ["test/format.test.ts", "-t", "unknown JS value"],
+    tests: ["test/lowering.test.ts", "-t", "unknown JS value"],
   },
   {
     name: "assoc-this-not-method",

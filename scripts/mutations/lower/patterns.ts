@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "                    let unit = variant.fields.is_empty() && bindings::declared_tag(self.tcx, adt_def.did()).is_none();",
     replace: "                    let unit = variant.fields.is_empty();",
-    tests: ["test/format.test.ts","-t","discriminated union"],
+    tests: ["test/lowering.test.ts","-t","discriminated union"],
   },
   {
     name: "tagged-variant-test-tag",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "                    let key = bindings::tag_key(self.tcx, adt_def.did());",
     replace: "                    let key = String::from(\"TAG\");",
-    tests: ["test/format.test.ts","-t","discriminated union"],
+    tests: ["test/lowering.test.ts","-t","discriminated union"],
   },
   {
     name: "guard-statements",

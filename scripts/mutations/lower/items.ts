@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/items.rs",
     find: "            (JsForm::Get(name), None) if values.is_empty() => self.js_ref(&name),",
     replace: "            (JsForm::Get(name), None) if false => self.js_ref(&name),",
-    tests: ["test/format.test.ts", "-t", "a binding reads a static property"],
+    tests: ["test/lowering.test.ts", "-t", "a binding reads a static property"],
   },
   {
     name: "binding-value-bare",

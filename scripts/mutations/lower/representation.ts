@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/representation.rs",
     find: "                    super::bindings::tag_key(tcx, adt.did()),",
     replace: "                    \"TAG\".to_string(),",
-    tests: ["test/format.test.ts","-t","discriminated union"],
+    tests: ["test/lowering.test.ts","-t","discriminated union"],
   },
   {
     name: "named-unit-const-undefined",

@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "        if super::bindings::is_on_load(tcx, def_id) {",
     replace: "        if false {",
-    tests: ["test/format.test.ts", "-t", "on_load bodies that bind one name"],
+    tests: ["test/lowering.test.ts", "-t", "on_load bodies that bind one name"],
   },
   {
     name: "on-load-names-of-any-module",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: ".filter(|(id, _)| super::bindings::is_on_load(tcx, *id) && fns[id].module == module);",
     replace: ".filter(|(id, _)| super::bindings::is_on_load(tcx, *id));",
-    tests: ["test/format.test.ts", "-t", "on_load bodies that bind one name"],
+    tests: ["test/lowering.test.ts", "-t", "on_load bodies that bind one name"],
   },
   {
     name: "on-load-destructured-names-unreserved",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "        StmtKind::Destructure { pattern, .. } => pattern.names().into_iter().map(str::to_owned).collect(),\n",
     replace: "",
-    tests: ["test/format.test.ts", "-t", "on_load bodies that bind one name"],
+    tests: ["test/lowering.test.ts", "-t", "on_load bodies that bind one name"],
   },
   {
     name: "library-codec-unused",
