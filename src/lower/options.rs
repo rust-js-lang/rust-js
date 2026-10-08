@@ -1,6 +1,7 @@
 //! An `Option`'s or a `Result`'s method, and `bool::then` (ADRs 0030, 0062).
 
 use super::calls::Call;
+use super::patterns::same_place;
 use super::recognition::Std;
 use super::{FnCx, R};
 use crate::js;
@@ -129,6 +130,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if self.boxed_payload(generic_args.type_at(0)) {
                     let default = self.some(default);
                     self.some_value(Expr::bin(Op::Coalesce, option, default))
+                } else if self.is_string_like(generic_args.type_at(0))
+                    && let Some(text) = text_or(&option)
+                {
+                    Expr::bin(Op::Or, text, default)
                 } else if let Some((kept, value)) = filtered(&option) {
                     Expr::cond(kept, value, default)
                 } else {
@@ -349,6 +354,35 @@ pub(super) fn some_literal(inner: Expr) -> Expr {
 /// what's in one: `value.$someNone !== undefined`.
 pub(super) fn is_some_box(value: Expr) -> Expr {
     Expr::bin(Op::Ne, Expr::member(value, "$someNone"), Expr::undefined())
+}
+
+/// Text kept where it isn't empty, `filter(|s| !s.is_empty())`, `x != null &&
+/// x.length !== 0 ? x : undefined`, or `a || ` such text: `E` whose `E || d`
+/// is the option's `?? d`, as JS's text is falsy only where it's empty
+/// (ADR 0266). Its type says it's text: an empty array is truthy.
+pub(super) fn text_or(option: &Expr) -> Option<Expr> {
+    if let js::ExprKind::Binary(Op::Or, first, rest) = &option.kind {
+        return Some(Expr::bin(Op::Or, (**first).clone(), text_or(rest)?));
+    }
+    let js::ExprKind::Cond(test, value, none) = &option.kind else {
+        return None;
+    };
+    let js::ExprKind::Binary(Op::And, present, kept) = &test.kind else {
+        return None;
+    };
+    let (js::ExprKind::Binary(Op::LooseNe, tested, null), js::ExprKind::Binary(Op::Ne, length, zero)) =
+        (&present.kind, &kept.kind)
+    else {
+        return None;
+    };
+    let js::ExprKind::Member(text, key) = &length.kind else {
+        return None;
+    };
+    let shaped = matches!(none.kind, js::ExprKind::Undefined)
+        && matches!(null.kind, js::ExprKind::Null)
+        && matches!(zero.kind, js::ExprKind::Num(n) if n == 0.0)
+        && key == "length";
+    (shaped && value.reads_same() && same_place(tested, value) && same_place(text, value)).then(|| (**value).clone())
 }
 
 /// A `filter`'s `Option`, `x != null && keep ? x : undefined` of a

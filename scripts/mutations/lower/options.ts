@@ -72,4 +72,28 @@ export const mutations: Mutation[] = [
       "field of what never changes in place"
     ]
   },
+  {
+    name: "kept-text-default-coalesced",
+    breaks: "text kept where it isn't empty, or a default, is a conditional and `??`, not `title || \"\"`",
+    file: "src/lower/options.rs",
+    find: "&& let Some(text) = text_or(&option)",
+    replace: "&& let Some(text) = text_or(&option).filter(|_| false)",
+    tests: ["test/compiler.test.ts", "-t", "text kept where it isn't empty"],
+  },
+  {
+    name: "kept-array-or",
+    breaks: "an array kept where it isn't empty, or a default, is `list || [1]`, which keeps an empty one, as JS's `[]` is truthy",
+    file: "src/lower/options.rs",
+    find: "} else if self.is_string_like(generic_args.type_at(0))",
+    replace: "} else if true",
+    tests: ["test/compiler.test.ts", "-t", "text kept where it isn't empty"],
+  },
+  {
+    name: "text-or-chain-unread",
+    breaks: "`a || ` kept text, or a default, is `(a || ..) ?? \"\"`, not one `||` chain",
+    file: "src/lower/options.rs",
+    find: "return Some(Expr::bin(Op::Or, (**first).clone(), text_or(rest)?));",
+    replace: "return None;",
+    tests: ["test/compiler.test.ts", "-t", "text kept where it isn't empty"],
+  },
 ];

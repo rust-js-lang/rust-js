@@ -754,7 +754,8 @@ pub fn title(name: Option<&str>) -> String {
   expect(jsx).toContain('<span>{expanded ? "Hide" : "Show"}</span>');
   expect(jsx).not.toContain("const children");
   expect(jsx).not.toContain("const className");
-  expect(jsx).toContain('return name != null && name.length !== 0 ? name : "Error";');
+  // Text kept where it isn't empty, or a default, is `||` (ADR 0266).
+  expect(jsx).toContain('return name || "Error";');
   const { Example, title } = await import(join(dir, "lib.jsx"));
   expect(["e", "", undefined].map((e) => renderToStaticMarkup(createElement(() => Example(e))))).toEqual([
     '<div><h5 class="title">Example</h5><p>e</p><button class="button"><span>Show</span></button></div>',

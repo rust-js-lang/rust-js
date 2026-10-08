@@ -505,6 +505,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .collect();
             return Ok(Expr::array(items));
         }
+        // Text kept where it isn't empty, or another: `title || other` (ADR 0266).
+        if comb == Comb::Or
+            && self.option_of(subject_ty).is_some_and(|text| self.is_string_like(text))
+            && let Some(text) = super::options::text_or(&subject)
+        {
+            let other = values.remove(0);
+            let other = if other.has_effects() {
+                self.spill("fallback", other, out)
+            } else {
+                other
+            };
+            return Ok(Expr::bin(Op::Or, text, other));
+        }
         // The subject is read more than once.
         let subject = if subject.reads_same() {
             subject

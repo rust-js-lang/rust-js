@@ -1900,13 +1900,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// Are two of a pattern's places the same one, as `s._0` of `Circle(r)` and
 /// of `Sphere(r)` is? Only what such places are made of is compared, the
 /// rest taken as different, which a choice of places stays right for.
-fn same_place(a: &Expr, b: &Expr) -> bool {
+pub(super) fn same_place(a: &Expr, b: &Expr) -> bool {
     use js::ExprKind as K;
     match (&a.kind, &b.kind) {
         (K::Var(x), K::Var(y)) | (K::Str(x), K::Str(y)) => x == y,
         (K::Num(x), K::Num(y)) => x == y,
         (K::BigInt(x), K::BigInt(y)) => x == y,
-        (K::Member(x, m), K::Member(y, n)) => m == n && same_place(x, y),
+        (K::Member(x, m), K::Member(y, n)) | (K::OptionalMember(x, m), K::OptionalMember(y, n)) => {
+            m == n && same_place(x, y)
+        }
         (K::Index(x, i), K::Index(y, j)) => same_place(x, y) && same_place(i, j),
         (K::Binary(op, x, i), K::Binary(other, y, j)) => op == other && same_place(x, y) && same_place(i, j),
         (K::Call(f, xs), K::Call(g, ys)) => {

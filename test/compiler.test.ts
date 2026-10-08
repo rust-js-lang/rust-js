@@ -1898,6 +1898,39 @@ test("a module of only pub uses is a file of re-exports", async () => {
   expect(index.helper()).toBe(1);
 });
 
+// ADR 0266: text is falsy in JS only where it's empty, so text an option
+// keeps where it isn't, `filter(|s| !s.is_empty())`, then another's or a
+// default, is JS's `||`: `meta.title || route?.title || ""`, as react.dev's
+// Page writes it. An array, which is truthy empty, isn't.
+test("text kept where it isn't empty, or another, is ||", async () => {
+  const dir = fixture("text-or");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Meta<'a> {
+    pub title: Option<&'a str>,
+}
+
+pub struct Route {
+    pub title: String,
+}
+
+pub fn title<'a>(meta: &Meta<'a>, route: Option<&'a Route>) -> &'a str {
+    (meta.title.filter(|title| !title.is_empty()))
+        .or(route.map(|route| route.title.as_str()).filter(|title| !title.is_empty()))
+        .unwrap_or("")
+}
+
+pub fn items(list: Option<Vec<u32>>) -> Vec<u32> {
+    list.filter(|list| !list.is_empty()).unwrap_or(vec![1])
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('return meta.title || route?.title || "";');
+  expect(js).not.toContain("list ||");
+  const { title, items } = await import(join(dir, "lib.js"));
+  expect([title({ title: "" }, { title: "R" }), title({}, undefined), title({ title: "M" }, { title: "R" }), title({ title: "" }, { title: "" })]).toEqual(["R", "", "M", ""]);
+  expect([items([]), items([2]), items(undefined)]).toEqual([[1], [2], [1]]);
+});
+
 // ADR 0264: a fieldless variant is its name (ADR 0013), so a `match` giving
 // each variant its own name is what's matched, and a function that gives
 // back what it's given, its argument: `/images/og-${section}.png`, as
