@@ -34,6 +34,8 @@ for (const [name, source, message, crate] of [
   // number is its value, so a place's address isn't JS's (ADR 0285).
   ["ptr::eq of a Rust struct", "#[derive(Clone, Copy)]\npub struct P { pub x: u32 }\npub fn f(a: &P, b: &P) -> bool { std::ptr::eq(a, b) }", "`std::ptr::eq` of a `P`"],
   ["ptr::eq of a number", "pub fn f(a: &u32, b: &u32) -> bool { std::ptr::eq(a, b) }", "`std::ptr::eq` of a `u32`"],
+  // `replacen` of the first is JS's `replace`; of another count, none (ADR 0034).
+  ["replacen of more than one", 'pub fn f(s: &str) -> String { s.replacen("a", "b", 2) }', "`replacen` of a count other than 1"],
   // A JS error is the string JS shows of it, `String(error)` (ADR 0271).
   ["a width for a JsError", 'pub fn f(e: &js::JsError) -> String { format!("{:>9?}", e) }', "options for a", "js"],
   ["a width for a serde_json Value", 'pub fn f(v: &serde_json::Value) -> String { format!("{:>9}", v) }', "options for a", "serde"],

@@ -23,7 +23,7 @@ count: Rust's `len()` and `&s[a..b]` count UTF-8 bytes, and JS's `length` and
 | Rust | JS |
 |---|---|
 | `s.starts_with(p)`, `s.ends_with(p)`, `s.contains(p)` | `s.startsWith(p)`, `s.endsWith(p)`, `s.includes(p)` |
-| `s.replace(a, b)` | `s.replaceAll(a, b)` |
+| `s.replace(a, b)`, `s.replacen(a, b, 1)` | `s.replaceAll(a, b)`, `s.replace(a, b)`: `b` the text it is, a `$` of it doubled, `"$$&"`, or of one not written out a function's, `() => b`, as JS reads `$&` in a string as what's matched. (Amended: `b` was given as it is, so `"$&"` was the match; `replacen` was an error.) Another count of `replacen` is an error still. |
 | `s.to_uppercase()`, `s.to_lowercase()` | `s.toUpperCase()`, `s.toLowerCase()` |
 | `s.trim_start()`, `s.trim_end()`, `s.repeat(n)` | `$trimStart(s)`, `$trimEnd(s)`, `s.repeat(n)`: Unicode's White_Space (ADR 0183). (Amended: it was `s.trimStart()`, `s.trimEnd()`.) |
 | `s.strip_prefix(p)`, `s.strip_suffix(p)` | `$stripPrefix(s, p)`, `$stripSuffix(s, p)`: an `Option` (ADR 0030) |

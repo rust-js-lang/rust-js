@@ -578,7 +578,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Concat => Expr::bin(Op::Add, arg(), arg()),
             Std::Method(name) => {
                 let this = arg();
-                let rest: Vec<Expr> = (1..args.len()).map(|_| arg()).collect();
+                let mut rest: Vec<Expr> = (1..args.len()).map(|_| arg()).collect();
+                // `replacen`'s count: of one, the first, JS's `replace`.
+                if name == "replace" {
+                    if !matches!(rest[2].kind, js::ExprKind::Num(n) if n == 1.0) {
+                        return Err(self.tcx.dcx().span_err(
+                            span,
+                            "rust-js does not support `replacen` of a count other than 1 yet: `replace` replaces each, `replacen(p, r, 1)` the first",
+                        ));
+                    }
+                    rest.truncate(2);
+                }
                 // A pattern that may be empty, which Rust matches at each
                 // char's boundary and JS between UTF-16 units (ADR 0063).
                 let may_be_empty = matches!(name, "replaceAll" | "split")
@@ -588,6 +598,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.runtime.insert(Helper::EmptyPattern);
                     let helper = if name == "split" { "$split" } else { "$replace" };
                     return Ok(Some(Expr::call(Expr::var(helper), [vec![this], rest].concat())));
+                }
+                if matches!(name, "replaceAll" | "replace") {
+                    rest[1] = replacement(rest[1].clone());
                 }
                 Expr::call(Expr::member(this, name), rest)
             }
@@ -639,5 +652,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => return Ok(None),
         }))
+    }
+}
+
+/// A replacement as the text it is, as Rust's is: JS reads `$&` and `$1` in
+/// a string as what's matched, so a `$` written out is doubled, and one not
+/// written out is a function's, `() => r`, whose text JS takes as it is
+/// (ADR 0034).
+fn replacement(to: Expr) -> Expr {
+    match &to.kind {
+        js::ExprKind::Str(text) => Expr::str(text.replace('$', "$$")),
+        _ => Expr::arrow(Vec::new(), vec![js::StmtKind::Return(Some(to)).at(js::Span::NONE)]),
     }
 }

@@ -1276,8 +1276,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "len_utf8" if owner.is_char() => Std::Text(TextOp::CharLen { utf16: false }),
             "len_utf16" if owner.is_char() => Std::Text(TextOp::CharLen { utf16: true }),
             // Methods taking a pattern: only a string or a `char` one.
-            "starts_with" | "ends_with" | "contains" | "replace" | "split" | "strip_prefix" | "strip_suffix"
-            | "split_once" | "rsplit_once" | "find" | "rfind"
+            "starts_with" | "ends_with" | "contains" | "replace" | "replacen" | "split" | "strip_prefix"
+            | "strip_suffix" | "split_once" | "rsplit_once" | "find" | "rfind"
                 if owner.is_str() && !self_ty.is_some_and(|p| self.is_string_like(p)) =>
             {
                 return None;
@@ -1316,6 +1316,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "ends_with" if owner.is_str() => Std::Method("endsWith"),
             "contains" if owner.is_str() => Std::Method("includes"),
             "replace" if owner.is_str() => Std::Method("replaceAll"),
+            // `replacen(p, r, 1)`: JS's `replace`, of the first (ADR 0034).
+            "replacen" if owner.is_str() => Std::Method("replace"),
             "split" if owner.is_str() => Std::Method("split"),
             "strip_prefix" if owner.is_str() => Std::StripPrefix,
             "strip_suffix" if owner.is_str() => Std::StripSuffix,

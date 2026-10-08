@@ -3,6 +3,38 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "replacen-any-count",
+    breaks: "`replacen(p, r, 2)` is JS's `replace`, of the first only",
+    file: "src/lower/text.rs",
+    find: "                    if !matches!(rest[2].kind, js::ExprKind::Num(n) if n == 1.0) {",
+    replace: "                    if false {",
+    tests: ["test/diagnostics.test.ts", "-t", "replacen"],
+  },
+  {
+    name: "replacen-count-given",
+    breaks: "`replacen`'s count is given to JS's `replace`, which takes none",
+    file: "src/lower/text.rs",
+    find: "                    rest.truncate(2);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "a replacement is the text it is"],
+  },
+  {
+    name: "replacement-read-as-pattern",
+    breaks: "a replacement's `$&` is what's matched, as JS reads a string's, not the text Rust has",
+    file: "src/lower/text.rs",
+    find: '                if matches!(name, "replaceAll" | "replace") {\n                    rest[1] = replacement(rest[1].clone());',
+    replace: '                if false {\n                    rest[1] = replacement(rest[1].clone());',
+    tests: ["test/lowering.test.ts", "-t", "a replacement is the text it is"],
+  },
+  {
+    name: "replacement-literal-as-function",
+    breaks: "a replacement written out is a function's, `() => 'b'`, where a person writes `'b'`",
+    file: "src/lower/text.rs",
+    find: "        js::ExprKind::Str(text) => Expr::str(text.replace('$', \"$$\")),\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "a replacement is the text it is"],
+  },
+  {
     name: "as-bytes-utf16",
     breaks: "`s.as_bytes()` is each UTF-16 unit, `é` one byte where UTF-8 has two",
     file: "src/lower/text.rs",

@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "replacen-unrecognized",
+    breaks: "`replacen(p, r, 1)` is a call rust-js doesn't support, where it's JS's `replace`",
+    file: "src/lower/recognition.rs",
+    find: '            "replacen" if owner.is_str() => Std::Method("replace"),\n',
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "a replacement is the text it is"],
+  },
+  {
     name: "ptr-eq-unrecognized",
     breaks: "`std::ptr::eq` of JS objects is rejected as a call rust-js doesn't support",
     file: "src/lower/recognition.rs",

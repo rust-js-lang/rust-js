@@ -570,3 +570,47 @@ pub mod other {
     delete globals.onLoadSeen;
   }
 });
+
+// ADR 0034: a replacement is the text it is, as Rust's is: JS reads `$&` and
+// `$1` in a string as what's matched, so one with a `$` doubles it, and one
+// not written out is a function's, `() => t`. `replacen(.., 1)` is JS's
+// `replace`, of the first.
+test("a replacement is the text it is, and replacen's one is the first", async () => {
+  const dir = fixture("replacements");
+  writeFileSync(join(dir, "lib.rs"), `pub fn all(s: &str, t: &str) -> String {
+    s.replace("a", t)
+}
+
+pub fn dollar(s: &str) -> String {
+    s.replace("a", "$&!")
+}
+
+pub fn plain(s: &str) -> String {
+    s.replace("a", "b")
+}
+
+pub fn first(s: &str) -> String {
+    s.replacen("export default ", "let App = ", 1)
+}
+
+pub fn first_of(s: &str, t: &str) -> String {
+    s.replacen("a", t, 1)
+}
+
+pub fn by(s: &str, p: &str, t: &str) -> String {
+    s.replace(p, t)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('return s.replaceAll("a", () => t);');
+  expect(js).toContain('return s.replaceAll("a", "$$&!");');
+  expect(js).toContain('return s.replaceAll("a", "b");');
+  expect(js).toContain('return s.replace("export default ", "let App = ");');
+  expect(js).toContain('return s.replace("a", () => t);');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.all("xa", "$&$&"), lib.dollar("ba"), lib.plain("aa"), lib.first("export default A; export default B"), lib.first_of("aa", "$1")])
+    .toEqual(["x$&$&", "b$&!", "bb", "let App = A; export default B", "$1a"]);
+  // A pattern that may be empty is the runtime's (ADR 0063), its replacement as it is too.
+  expect([lib.by("xa", "a", "$&"), lib.by("ab", "", "$")]).toEqual(["x$&", "$a$b$"]);
+});
