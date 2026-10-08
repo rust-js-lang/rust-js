@@ -162,4 +162,12 @@ export const mutations: Mutation[] = [
     replace: "if false && star.kind == TokenKind::Star && !rest.is_empty() =>",
     tests: ["test/jsx.test.ts", "-t", "updated from a reference are spread"],
   },
+  {
+    name: "pure-key-captured",
+    breaks: "a key that does nothing, a variable, is captured in order with the props, `const match = described(label)`",
+    file: "src/jsx_syntax/parser.rs",
+    find: ".position(|(name, value, _)| name == \"key\" && !does_nothing(value))",
+    replace: ".position(|(name, value, _)| name == \"key\" && (true || !does_nothing(value)))",
+    tests: ["test/jsx.test.ts", "-t", "key that does nothing"],
+  },
 ];

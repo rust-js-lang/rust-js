@@ -2995,3 +2995,35 @@ pub fn List(items: &'static [ItemProps<'static>]) -> JSX::Element {
   const { List } = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(List([{ label: "a" }, { label: "" }, { label: "b" }]))).toBe("<ul><li>a</li><li>b</li></ul>");
 });
+
+// A key or ref that does nothing, a variable or `Some` of one, is given
+// where JSX puts it with nothing captured in order, as react.dev's
+// SidebarLink gives next/link its `ref={ref}` before its classes, which
+// `cn` makes.
+test("a key that does nothing needs nothing captured", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+
+pub struct TagProps<'a> {
+    pub label: &'a str,
+}
+
+pub fn Tag(TagProps { label }: TagProps) -> JSX::Element {
+    jsx! { <i>{label}</i> }
+}
+
+fn described(label: &str) -> &'static str {
+    if label.is_empty() { "none" } else { "some" }
+}
+
+pub fn Tags(labels: Vec<&'static str>) -> JSX::Element {
+    jsx! { <p>{labels.into_iter().map(|label| jsx! { <Tag key={label} label={described(label)} /> }).collect::<Vec<_>>()}</p> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("<Tag label={described(label)} key={label} />");
+  expect(jsx).not.toContain("const match");
+  const { Tags } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(Tags(["a", ""]))).toBe("<p><i>some</i><i>none</i></p>");
+});

@@ -396,12 +396,16 @@ impl Jsx<'_> {
         // Capture only when the separate key or spread would change that
         // order. Ordinary components must stay ordinary JSX expressions.
         // `{..base}` is Rust's struct update, evaluated last, as Rust's is.
+        // A key or ref that does nothing, read where it's moved to, is read
+        // the same: only one that might do something is captured (ADR 0254).
         let capture = attrs
             .iter()
-            .position(|(name, _, _)| name == "key")
+            .position(|(name, value, _)| name == "key" && !does_nothing(value))
             .is_some_and(|at| at + 1 != attrs.len() || spread.is_some() || has_children)
             || (spread.is_some() && has_children && !struct_update)
-            || attrs.iter().any(|(name, _, _)| name == "ref");
+            || attrs
+                .iter()
+                .any(|(name, value, _)| name == "ref" && !does_nothing(value));
         // Evaluate attributes in written order, including `key`, before
         // constructing props. The match bindings cannot capture user names:
         // every user expression is in the scrutinee, outside their scope.
@@ -1018,4 +1022,32 @@ pub(super) fn props_companion(sess: &Session, item: &ast::Item, props: &HashSet<
             None
         }
     }
+}
+
+/// Does an attribute's value, as written, do nothing, so it's read the same
+/// wherever it's read: a literal, a variable or a path, a field of one,
+/// `&` or `*` of one, or a constructor of such, `Some(anchor)`. A call, a
+/// method's, a macro's or an index, might do something.
+fn does_nothing(value: &TokenStream) -> bool {
+    let trees: Vec<&TokenTree> = value.iter().collect();
+    trees.iter().enumerate().all(|(i, tree)| match tree {
+        TokenTree::Token(token, _) => matches!(
+            token.kind,
+            TokenKind::Ident(..)
+                | TokenKind::Literal(_)
+                | TokenKind::Dot
+                | TokenKind::PathSep
+                | TokenKind::And
+                | TokenKind::Star
+        ),
+        // A constructor's arguments, of a capitalized name: `Some(x)`.
+        TokenTree::Delimited(_, _, Delimiter::Parenthesis, inner) => {
+            matches!(i.checked_sub(1).map(|at| trees[at]), Some(TokenTree::Token(token, _))
+                if matches!(token.kind, TokenKind::Ident(name, _) if name.as_str().starts_with(char::is_uppercase)))
+                && does_nothing(inner)
+        }
+        // A brace's one expression, as `{x}` is written.
+        TokenTree::Delimited(_, _, Delimiter::Brace | Delimiter::Invisible(_), inner) => does_nothing(inner),
+        _ => false,
+    })
 }
