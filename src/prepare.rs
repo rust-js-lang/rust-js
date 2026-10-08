@@ -12,7 +12,14 @@ pub fn module(module: &mut js::Module) {
     let methods = module.namespaces.iter_mut().flat_map(|n| n.methods.iter_mut());
     for function in module.functions.iter_mut().chain(methods) {
         block(&mut function.body);
-        shadows(&mut function.body);
+        shadows(&mut function.body, None);
+        // A closure's own parameter, shadowed in it: nothing outside it sets one.
+        js::each_expr_mut(&mut function.body, &mut |e| {
+            if let ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) = &mut e.kind {
+                let own: HashSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
+                shadows(body, Some(&own));
+            }
+        });
         constants(&mut function.body);
     }
     for constant in &mut module.consts {
@@ -214,9 +221,10 @@ fn root(place: &Expr) -> Option<String> {
 /// value, is `n` itself: `<Type />` for `let Type = from_unknown(Type)`,
 /// `content` for `let content = content.clone()`. Only where `n` holds
 /// that value wherever `n$1` is read: nothing sets `n` after it, nor in a
-/// closure, nor where a loop runs it again.
-fn shadows(body: &mut Vec<Stmt>) {
-    while let Some((alias, of)) = shadow(body) {
+/// closure, nor where a loop runs it again. In a closure, `own` are its
+/// parameters, the only ones aliased: what's outside it, it doesn't see set.
+fn shadows(body: &mut Vec<Stmt>, own: Option<&HashSet<String>>) {
+    while let Some((alias, of)) = shadow(body, own) {
         js::each_expr_mut(body, &mut |e| {
             if matches!(&e.kind, ExprKind::Var(name) if *name == alias) {
                 e.kind = ExprKind::Var(of.clone());
@@ -232,7 +240,7 @@ fn shadows(body: &mut Vec<Stmt>) {
 }
 
 /// A `const n$1 = n;` that `shadows` makes `n`, and `n`.
-fn shadow(body: &[Stmt]) -> Option<(String, String)> {
+fn shadow(body: &[Stmt], own: Option<&HashSet<String>>) -> Option<(String, String)> {
     // What closures set, and what their parameters are named, which a
     // name read in them would mean instead.
     let mut in_closures = HashSet::new();
@@ -261,7 +269,8 @@ fn shadow(body: &[Stmt]) -> Option<(String, String)> {
             .map(|&(set, _)| set)
             .collect();
         let kept = !in_closures.contains(&of) && (sets.is_empty() || !looped && sets.iter().all(|&set| set < at));
-        kept.then_some((alias, of))
+        let owned = own.is_none_or(|own| own.contains(&of));
+        (kept && owned).then_some((alias, of))
     })
 }
 

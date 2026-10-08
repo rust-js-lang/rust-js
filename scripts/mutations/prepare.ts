@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
     name: "shadow-kept",
     breaks: "`let text = text.clone()` is `const text$1 = text`, not `text`",
     file: "src/prepare.rs",
-    find: "        shadows(&mut function.body);\n",
+    find: "        shadows(&mut function.body, None);\n",
     replace: "",
     tests: ["test/compiler.test.ts", "-t", "shadowed by its own value"],
   },
@@ -113,5 +113,13 @@ export const mutations: Mutation[] = [
     find: "            if !props.iter().any(|p| matches!(p, Prop::Spread(_))) {\n",
     replace: "            if true {\n",
     tests: ["test/compiler.test.ts", "-t", "literal None is left out"],
+  },
+  {
+    name: "closure-shadow-kept",
+    breaks: "a closure's parameter shadowed by its own value is `const item$1 = item`",
+    file: "src/prepare.rs",
+    find: "                shadows(body, Some(&own));\n",
+    replace: "",
+    tests: ["test/compiler.test.ts", "-t", "shadowed by its own value"],
   },
 ];

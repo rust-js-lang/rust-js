@@ -38,3 +38,10 @@ another name, `let kept = text;`, keeps the name written.
 - **It's tested**: a compiler test shadows a captured string and a number
   set before, and keeps one of another name and one a loop sets again,
   whose closures each read their own turn's; mutations alias each.
+
+## Since
+
+- **A closure's own parameter shadowed in it is the parameter too**,
+  `(total, item) => total + item.length` of `let item = item.as_str();`,
+  as react.dev's createFileMap casts each snippet it's given. Only its
+  parameters: nothing outside the closure sets them.

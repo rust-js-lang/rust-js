@@ -1357,6 +1357,12 @@ pub fn before(flag: bool) -> u32 {
     let n = n;
     n + 1
 }
+pub fn summed(items: &[String]) -> usize {
+    items.iter().fold(0, |total, item| {
+        let item = item.as_str();
+        total + item.len()
+    })
+}
 pub fn looped() -> u32 {
     let mut fs: Vec<Box<dyn Fn() -> u32>> = Vec::new();
     let mut n = 0;
@@ -1374,8 +1380,11 @@ pub fn looped() -> u32 {
   expect(js).toContain("  const kept$1 = text;\n");
   expect(js).toContain("  return (n + 1) >>> 0;\n");
   expect(js).toContain("    const n$1 = n;\n    fs.push(() => n$1);");
+  // In a closure too, of its own parameter, as react.dev's createFileMap
+  // casts each snippet it's given.
+  expect(js).toContain("return items.reduce((total, item) => (total + $byteLen(item)) >>> 0, 0);");
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.captured("a")(), lib.kept("b"), lib.before(true), lib.before(false), lib.looped()]).toEqual(["a", "b!", 3, 2, 1]);
+  expect([lib.captured("a")(), lib.kept("b"), lib.before(true), lib.before(false), lib.looped(), lib.summed(["ab", "c"])]).toEqual(["a", "b!", 3, 2, 1, 3]);
 });
 
 // ADR 0272: Node's modules, as @types/node types them, are the JS a person
