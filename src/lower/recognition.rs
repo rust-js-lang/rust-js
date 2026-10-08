@@ -1210,7 +1210,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "new" if adt("Rc") || adt("Arc") => Std::Same,
             // Kept for good, a `&'static` of it: in JS, which frees nothing
             // itself, the value itself.
-            "leak" if adt("Vec") || owner.is_box() => Std::Same,
+            "leak" if adt("Vec") || string || owner.is_box() => Std::Same,
             "new" if adt("Cell") || adt("RefCell") || adt("Atomic") || adt("Mutex") || adt("RwLock") => Std::CellNew,
             // On one thread a lock is never contested: always `Ok` (ADR 0025).
             "lock" if adt("Mutex") => Std::Lock,

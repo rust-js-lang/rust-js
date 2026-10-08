@@ -1898,6 +1898,22 @@ test("a module of only pub uses is a file of re-exports", async () => {
   expect(index.helper()).toBe(1);
 });
 
+// ADR 0238: a `String` kept for good, `.leak()`, is the string itself, as
+// react.dev's Page gives Seo the image it makes for a component's
+// `'static` props: JS frees nothing itself.
+test("a leaked String is the string", async () => {
+  const dir = fixture("string-leak");
+  writeFileSync(join(dir, "lib.rs"), `pub fn named(n: u32) -> &'static str {
+    format!("item-{n}").leak()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return `item-${n}`;");
+  const { named } = await import(join(dir, "lib.js"));
+  expect(named(3)).toBe("item-3");
+});
+
 // A struct taken apart through a shared reference is JS's destructuring,
 // `const { errorMessage, errorCode } = useErrorDecoderParams();`, as
 // react.dev's ErrorDecoder has it: what's borrowed can't change while it

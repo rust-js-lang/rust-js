@@ -631,8 +631,16 @@ export const mutations: Mutation[] = [
     name: "leak-unknown",
     breaks: "`Vec::leak(v)` and `Box::leak(b)` are refused, where they're the value itself",
     file: "src/lower/recognition.rs",
-    find: "            \"leak\" if adt(\"Vec\") || owner.is_box() => Std::Same,\n",
+    find: "            \"leak\" if adt(\"Vec\") || string || owner.is_box() => Std::Same,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^leak"],
+  },
+  {
+    name: "string-leak-unknown",
+    breaks: "a `String` kept for good, `.leak()`, is a call rust-js doesn't support",
+    file: "src/lower/recognition.rs",
+    find: "            \"leak\" if adt(\"Vec\") || string || owner.is_box() => Std::Same,",
+    replace: "            \"leak\" if adt(\"Vec\") || owner.is_box() => Std::Same,",
+    tests: ["test/compiler.test.ts", "-t", "leaked String"],
   },
 ];

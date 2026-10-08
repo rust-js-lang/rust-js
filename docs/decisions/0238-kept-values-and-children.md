@@ -54,3 +54,12 @@ const refs = useRef(kept.map(() => createRef()));
 - **It's tested**: the corpus's `leak` runs both leaks beside native Rust;
   a JSX test keeps a component's children from `Children.forEach`, each
   with a `createRef`, and renders them.
+
+## Since
+
+- **A `String` kept for good, `.leak()`, is the string**, as react.dev's
+  Page gives Seo the image it makes, its props `'static`. Its `&mut str`
+  is a `&str`: nothing writes a `str` in place (ADR 0157), so a write
+  through it is refused, as the corpus's `leaked_string_written` is. A
+  compiler test leaks one; mutations leave `leak` unknown, and its
+  `&mut str` a cell.

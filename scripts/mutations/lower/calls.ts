@@ -238,4 +238,12 @@ export const mutations: Mutation[] = [
     replace: "                js::Pattern::Array(items) if false => Some(",
     tests: ["test/compiler.test.ts", "-t", "taken apart through a reference"],
   },
+  {
+    name: "leaked-text-a-cell",
+    breaks: "a leaked `String`'s `&mut str` is taken for a cell, and refused as a value",
+    file: "src/lower/calls.rs",
+    find: "            && !self.is_item_call(fun)\n            && !leaked_text\n",
+    replace: "            && !self.is_item_call(fun)\n",
+    tests: ["test/compiler.test.ts", "-t", "leaked String"],
+  },
 ];
