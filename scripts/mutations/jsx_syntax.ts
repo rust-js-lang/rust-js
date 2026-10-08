@@ -68,4 +68,12 @@ export const mutations: Mutation[] = [
     replace: "TokenTree::Delimited(*dspan, *spacing, *delim, inner.clone())",
     tests: ["test/jsx.test.ts", "-t", "constant element is rendered"],
   },
+  {
+    name: "props-lifetimes-unsaid",
+    breaks: "no props struct says its `'static` form, so a `thread_local!` component's companion has no `react::Lifetimes` of its props",
+    file: "src/jsx_syntax.rs",
+    find: "if item.kind.ident().is_some_and(|ident| props.contains(ident.as_str())) {",
+    replace: "if false && item.kind.ident().is_some_and(|ident| props.contains(ident.as_str())) {",
+    tests: ["test/jsx.test.ts", "-t", "thread_local component takes props"],
+  },
 ];

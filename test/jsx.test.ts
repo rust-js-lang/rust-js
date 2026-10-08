@@ -3033,6 +3033,38 @@ pub fn List(items: &'static [ItemProps<'static>]) -> JSX::Element {
   expect(renderToStaticMarkup(List([{ label: "a" }, { label: "" }, { label: "b" }]))).toBe("<ul><li>a</li><li>b</li></ul>");
 });
 
+// A component a `thread_local!` holds, `memo`'s, typed with its props'
+// `'static` form, given props that borrow what the caller made: JS frees
+// nothing, so they're alive while it renders, as react.dev's Page gives Seo
+// the image it makes (ADR 0265).
+test("a thread_local component takes props borrowing the caller's", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, MemoExoticComponent, jsx, memo};
+
+pub struct LabelProps<'a> {
+    pub text: &'a str,
+}
+
+fn Label(LabelProps { text }: LabelProps) -> JSX::Element {
+    jsx! { <b>{text}</b> }
+}
+
+thread_local! {
+    pub static Memoized: MemoExoticComponent<LabelProps<'static>> = memo(Label);
+}
+
+pub fn greet(name: &str) -> JSX::Element {
+    let text = format!("Hi {name}");
+    jsx! { <Memoized text={&text} /> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("return <Memoized text={text} />;");
+  const { greet } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(greet("Ann"))).toBe("<b>Hi Ann</b>");
+});
+
 // Props a flattened struct holds, taken apart with the rest: its fields are
 // the props' own in JS, `{ title, frame }`, as written, as next/router's
 // `withRouter` gives react.dev's Seo its props and the router.

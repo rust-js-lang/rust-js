@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "trait-of-no-items-impl",
     breaks: "an impl of a trait of no items, `unsafe impl Sync`, `impl FusedIterator`, is rejected, though it runs nothing",
     file: "src/lower/recognition.rs",
-    find: "        || tcx.associated_item_def_ids(id).is_empty()\n",
+    find: "        || (tcx.associated_item_def_ids(id).iter()).all(|&item| matches!(tcx.def_kind(item), DefKind::AssocTy))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "marker_traits|fused_iterator"],
   },
@@ -642,5 +642,13 @@ export const mutations: Mutation[] = [
     find: "            \"leak\" if adt(\"Vec\") || string || owner.is_box() => Std::Same,",
     replace: "            \"leak\" if adt(\"Vec\") || owner.is_box() => Std::Same,",
     tests: ["test/compiler.test.ts", "-t", "leaked String"],
+  },
+  {
+    name: "type-only-trait-refused",
+    breaks: "an impl of a trait of types only, react's `Lifetimes`, which runs nothing, is refused as a user implementation",
+    file: "src/lower/recognition.rs",
+    find: "(tcx.associated_item_def_ids(id).iter()).all(|&item| matches!(tcx.def_kind(item), DefKind::AssocTy))",
+    replace: "tcx.associated_item_def_ids(id).is_empty()",
+    tests: ["test/jsx.test.ts", "-t", "thread_local component takes props"],
   },
 ];

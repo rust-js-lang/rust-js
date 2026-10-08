@@ -750,7 +750,11 @@ pub(super) fn component(sess: &Session, item: &ast::Item, built: &HashSet<String
     } else {
         format!("{props} {{ $($field: $value,)* $(..$base)? }}")
     };
-    let call = |target: &str, value: &str| format!("#[rust_js::jsx] ::react::component({target}, {value})");
+    // A `thread_local!`'s takes props of any lifetime, as its props' companion
+    // says their `'static` form (ADR 0265).
+    let held = matches!(item.kind, ItemKind::Static(_)) && companion && props != "::react::ProviderProps";
+    let function = if held { "static_component" } else { "component" };
+    let call = |target: &str, value: &str| format!("#[rust_js::jsx] ::react::{function}({target}, {value})");
     let arm = |prefix: &str, body: &str| format!("({prefix} {pattern}) => {{ {body} }}");
     let mut arms = vec![arm("", &call(&target, &value))];
     let ref_value = match companion {
@@ -1019,6 +1023,62 @@ pub(super) fn props_companion(sess: &Session, item: &ast::Item, props: &HashSet<
             Some(companion)
         }
         Ok(None) => None,
+        Err(e) => {
+            e.emit();
+            None
+        }
+    }
+}
+
+/// A props struct's `'static` form, `impl ::react::Lifetimes for P<'a> { type
+/// Static = P<'static>; }`, which a component a `thread_local!` holds is
+/// typed with, so it takes props of any lifetime (ADR 0265).
+pub(super) fn props_lifetimes(sess: &Session, item: &ast::Item) -> Option<Box<ast::Item>> {
+    let ItemKind::Struct(ident, generics, _) = &item.kind else {
+        return None;
+    };
+    let snippet = |span: Span| sess.source_map().span_to_snippet(span).ok();
+    let (mut params, mut args, mut statics) = (Vec::new(), Vec::new(), Vec::new());
+    for param in &generics.params {
+        let name = param.ident.as_str().to_string();
+        let bounds = (param.bounds.iter().map(|bound| snippet(bound.span()))).collect::<Option<Vec<_>>>()?;
+        let bounded = match bounds.is_empty() {
+            true => name.clone(),
+            false => format!("{name}: {}", bounds.join(" + ")),
+        };
+        match &param.kind {
+            ast::GenericParamKind::Lifetime => {
+                params.push(bounded);
+                statics.push("'static".to_string());
+            }
+            ast::GenericParamKind::Type { .. } => {
+                params.push(bounded);
+                statics.push(name.clone());
+            }
+            ast::GenericParamKind::Const { ty, .. } => {
+                params.push(format!("const {name}: {}", snippet(ty.span)?));
+                statics.push(name.clone());
+            }
+        }
+        args.push(name);
+    }
+    let wheres = match generics.where_clause.predicates.is_empty() {
+        true => String::new(),
+        false => snippet(generics.where_clause.span)?,
+    };
+    let source = format!(
+        "impl<{}> ::react::Lifetimes for {ident}<{}> {wheres} {{ type Static = {ident}<{}>; }}",
+        params.join(", "),
+        args.join(", "),
+        statics.join(", ")
+    );
+    let mut parser = Parser::new(
+        &sess.psess,
+        template(sess, source, item.span),
+        Some("JSX props lifetimes"),
+    );
+    match parser.parse_item(ForceCollect::No, AllowConstBlockItems::No) {
+        Ok(item) => item,
         Err(e) => {
             e.emit();
             None

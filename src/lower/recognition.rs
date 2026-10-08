@@ -2548,8 +2548,10 @@ pub(super) fn implementable(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'
         // and runs nothing. An auto trait, as `Send`, `Sync`, `Unpin` or
         // `UnwindSafe`; `FusedIterator`, a promise that `next` stays `None`,
         // which `fuse()` is without (ADR 0055); a binding crate's marker of
-        // what its bindings take, react's `Key` of a list's key.
-        || tcx.associated_item_def_ids(id).is_empty()
+        // what its bindings take, react's `Key` of a list's key. Or of types
+        // only, which rustc works out: react's `Lifetimes`, a props type's
+        // `'static` form (ADR 0265).
+        || (tcx.associated_item_def_ids(id).iter()).all(|&item| matches!(tcx.def_kind(item), DefKind::AssocTy))
         // Run where rustc drops a value (ADR 0098).
         || tcx.is_lang_item(id, LangItem::Drop)
 }

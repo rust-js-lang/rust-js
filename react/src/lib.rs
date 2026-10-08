@@ -1039,6 +1039,23 @@ pub fn component<P, M>(component: impl ComponentType<P, M>, props: P) -> Element
     unreachable!()
 }
 
+/// A props type's own form with every lifetime `'static`, which a component
+/// a `thread_local!` holds is typed with: `jsx!`'s companion of each props
+/// struct says it (ADR 0265).
+#[doc(hidden)]
+pub trait Lifetimes {
+    type Static;
+}
+
+/// A component a `thread_local!` holds, `memo`'s, `lazy`'s, `forwardRef`'s
+/// or a library's function's, given props of any lifetime: JS frees nothing,
+/// so what they borrow is alive while it renders (ADR 0265).
+#[cfg_attr(rust_js, rust_js::link_name = "<*>")]
+#[doc(hidden)]
+pub fn static_component<P: Lifetimes, M>(component: impl ComponentType<P::Static, M>, props: P) -> Element {
+    unreachable!()
+}
+
 /// A JSX component: a function from its props to an [`Element`], or
 /// one with no props, or one made by [`memo`], [`lazy`] or [`forward_ref`].
 /// `M` only tells them apart.

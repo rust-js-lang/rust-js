@@ -178,4 +178,20 @@ export const mutations: Mutation[] = [
     replace: "                \"MemoExoticComponent\" | \"LazyExoticComponent\" | \"ForwardRefExoticComponent\" => {",
     tests: ["test/next.test.ts", "-t", "rust-js-next build"],
   },
+  {
+    name: "held-component-static-props",
+    breaks: "a `thread_local!` component takes only `'static` props, so a caller's borrowed `text` doesn't live long enough",
+    file: "src/jsx_syntax/parser.rs",
+    find: "    let held = matches!(item.kind, ItemKind::Static(_)) && companion",
+    replace: "    let held = false && matches!(item.kind, ItemKind::Static(_)) && companion",
+    tests: ["test/jsx.test.ts", "-t", "thread_local component takes props"],
+  },
+  {
+    name: "props-lifetimes-kept",
+    breaks: "a props struct's `'static` form keeps its lifetimes, `LabelProps<'a>`, so a `thread_local!` component's caller still borrows for good",
+    file: "src/jsx_syntax/parser.rs",
+    find: "                statics.push(\"'static\".to_string());",
+    replace: "                statics.push(name.clone());",
+    tests: ["test/jsx.test.ts", "-t", "thread_local component takes props"],
+  },
 ];

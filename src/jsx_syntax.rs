@@ -284,6 +284,11 @@ impl Expand<'_> {
                 if let Some(ident) = companion.kind.ident() {
                     built.insert(ident.as_str().to_string());
                 }
+                // A component's props, whose `'static` form a `thread_local!`'s
+                // is typed with (ADR 0265).
+                if item.kind.ident().is_some_and(|ident| props.contains(ident.as_str())) {
+                    companions.extend(parser::props_lifetimes(self.sess, item));
+                }
                 companions.push(companion);
             }
         }
