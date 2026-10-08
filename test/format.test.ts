@@ -240,3 +240,23 @@ pub fn parsed(xs: &[String]) -> Vec<f64> {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.doubled([1, 2]), lib.rendered([5, 6], (x: number, i: number) => x + i), lib.parsed(["1.5", "2"])]).toEqual([[2, 4], [5, 7], [1.5, 2]]);
 });
+
+// An `else` of nothing, of only comments in Rust, which rust-js doesn't
+// carry, is no `else`, as react.dev's _app has one.
+test("an else of nothing is left out", async () => {
+  const dir = fixture("empty-else");
+  writeFileSync(join(dir, "lib.rs"), `pub fn picked(flag: bool, out: &mut Vec<u32>) {
+    if flag {
+        out.push(1);
+    } else {
+        // Nothing to do.
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  if (flag) {\n    out.push(1);\n  }\n}");
+  const out: number[] = [];
+  (await import(join(dir, "lib.js"))).picked(true, out);
+  expect(out).toEqual([1]);
+});

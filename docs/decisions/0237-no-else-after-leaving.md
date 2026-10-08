@@ -51,3 +51,8 @@ return child;
 - **It's tested**: a compiler test writes and runs an `else if` chain that
   returns, a branch that leaves by an inner `if`, and one that doesn't;
   the corpus runs every changed program beside native Rust.
+
+## Since
+
+- **An `else` of nothing is no `else`**: one of only comments in Rust,
+  which rust-js doesn't carry, as react.dev's _app has, is left out.

@@ -27,6 +27,12 @@ fn block(body: &mut Vec<Stmt>) {
         if let Some(coalesced) = coalescing(stmt) {
             stmt.kind = coalesced;
         }
+        // `else {}`, of nothing but Rust's comments, is no `else`.
+        if let StmtKind::If(_, _, els) = &mut stmt.kind
+            && els.as_ref().is_some_and(Vec::is_empty)
+        {
+            *els = None;
+        }
     }
     for stmt in body {
         match &mut stmt.kind {

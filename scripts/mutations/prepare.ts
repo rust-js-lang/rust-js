@@ -90,4 +90,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/format.test.ts", "-t", "nothing sets again is a const"],
   },
+  {
+    name: "empty-else-kept",
+    breaks: "an `else` of nothing is `else {}`",
+    file: "src/prepare.rs",
+    find: "            && els.as_ref().is_some_and(Vec::is_empty)\n",
+    replace: "            && els.as_ref().is_some_and(|_| false)\n",
+    tests: ["test/format.test.ts", "-t", "else of nothing"],
+  },
 ];
