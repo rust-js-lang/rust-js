@@ -1765,6 +1765,35 @@ test("js::directive! and js::export_default! make a module a Next.js route", asy
 // A JS module's namespace, `#*.Root`, whose bindings a Rust module holds,
 // is imported by that module's name, as react.dev's BrandMenu has
 // `import * as ContextMenu` and `<ContextMenu.Root>`.
+// A closure that only spawns an async block is an async arrow, as
+// react.dev's BrandMenu writes `onSelect={async () => { await
+// navigator.clipboard.writeText(..) }}`: it starts the same, and gives
+// back a promise where nothing reads its `()` (ADR 0257).
+test("a closure that only spawns an async block is an async arrow", async () => {
+  const dir = fixture("spawning-closure");
+  writeFileSync(join(dir, "copy.js"), "export const copied = [];\nexport async function copy(text) { copied.push(text); }\n");
+  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
+    #[link_name = "./copy.js#copy"]
+    safe fn copy(text: &str) -> js::Promise<()>;
+}
+
+pub fn handler() -> Box<dyn Fn()> {
+    Box::new(|| {
+        js::spawn(Box::new(async {
+            copy("#58C4DC").await;
+        }))
+    })
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('return async () => {\n    await copy("#58C4DC");\n  };');
+  const lib = await import(join(dir, "lib.js"));
+  const { copied } = await import(join(dir, "copy.js"));
+  lib.handler()();
+  expect(copied).toEqual(["#58C4DC"]);
+});
+
 test("a namespace import is named as the module of its bindings", async () => {
   const dir = fixture("namespace-module");
   writeFileSync(join(dir, "menu.js"), "export function Root() { return 1; }\nexport function Item() { return 2; }\n");

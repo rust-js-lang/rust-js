@@ -90,4 +90,12 @@ export const mutations: Mutation[] = [
     replace: "                    } => name.as_str() == \"__\",\n",
     tests: ["test/jsx.test.ts", "-t", "async event handler"],
   },
+  {
+    name: "spawning-closure-iife",
+    breaks: "a closure that only spawns an async block is an arrow of an async IIFE, `() => { (async () => { .. })(); }`",
+    file: "src/lower/bodies.rs",
+    find: "            && gives_unit\n",
+    replace: "            && gives_unit\n            && false\n",
+    tests: ["test/compiler.test.ts", "-t", "only spawns an async block"],
+  },
 ];

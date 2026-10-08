@@ -347,6 +347,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0254 A key or ref that does nothing is captured in no order](decisions/0254-pure-key-ref.md)
 - [0255 next/router's events](decisions/0255-next-router-events.md)
 - [0256 A namespace import is named as the module of its bindings](decisions/0256-namespace-import-names.md)
+- [0257 A closure that only spawns an async block is an async arrow](decisions/0257-spawning-closure-async-arrow.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

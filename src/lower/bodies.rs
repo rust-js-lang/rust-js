@@ -505,6 +505,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if is_async && self.owned_mark() > mark {
             return Err(self.unsupported(span, "an `async` closure that owns a value with a destructor"));
         }
+        let gives_unit = self.thir[body.expr].ty.is_unit();
         self.close_scope(mark, lowered, span, &mut stmts)?;
         self.leave_body(enclosing)?;
         self.give_flags(flags);
@@ -513,6 +514,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Some(var) => self.captures.insert(path, var),
                 None => self.captures.remove(&path),
             };
+        }
+        // A closure of `()` that only spawns an async block is that block's
+        // async arrow: it starts the same, and gives back a promise where
+        // nothing reads its `()` (ADR 0257).
+        if !block
+            && !is_async
+            && gives_unit
+            && let [
+                js::Stmt {
+                    kind: StmtKind::Expr(call),
+                    ..
+                },
+            ] = stmts.as_slice()
+            && let js::ExprKind::Call(callee, args) = &call.kind
+            && args.is_empty()
+            && let js::ExprKind::AsyncArrow(inner, spawned) = &callee.kind
+            && inner.is_empty()
+        {
+            return Ok(Expr::async_arrow(params, spawned.clone()));
         }
         Ok(match (block, is_async) {
             (true, _) => Expr::call(Expr::async_arrow(params, stmts), Vec::new()),
