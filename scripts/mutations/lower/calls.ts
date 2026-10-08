@@ -254,4 +254,12 @@ export const mutations: Mutation[] = [
     replace: "&& false && self.gives_own_name(def_id)",
     tests: ["test/compiler.test.ts", "-t", "enum's own names"],
   },
+  {
+    name: "in-reversed",
+    breaks: "`js::has(value, key)` asks `value in key`, not `key in value`",
+    file: "src/lower/calls.rs",
+    find: "Expr::bin(Op::In, args.remove(0), this)",
+    replace: "Expr::bin(Op::In, this, args.remove(0))",
+    tests: ["test/compiler.test.ts", "-t", "string functions are JS's"],
+  },
 ];

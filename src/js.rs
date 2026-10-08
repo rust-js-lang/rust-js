@@ -417,6 +417,8 @@ pub enum Op {
     LooseNe,
     /// `x instanceof C`: a `#[link_name = "instanceof C"]` binding.
     InstanceOf,
+    /// `key in x`: a `#[link_name = "in []"]` binding.
+    In,
     Lt,
     Le,
     Gt,

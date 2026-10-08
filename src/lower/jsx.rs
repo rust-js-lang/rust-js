@@ -774,7 +774,7 @@ fn is_boolean(test: &Expr) -> bool {
     match &test.kind {
         K::Bool(_) | K::Unary(js::UnaryOp::Not, _) => true,
         K::Binary(
-            Op::Eq | Op::Ne | Op::LooseEq | Op::LooseNe | Op::Lt | Op::Le | Op::Gt | Op::Ge | Op::InstanceOf,
+            Op::Eq | Op::Ne | Op::LooseEq | Op::LooseNe | Op::Lt | Op::Le | Op::Gt | Op::Ge | Op::InstanceOf | Op::In,
             _,
             _,
         ) => true,

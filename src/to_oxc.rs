@@ -1224,6 +1224,7 @@ fn binary_op(op: Op) -> Result<BinaryOperator, LogicalOperator> {
         Op::LooseEq => BinaryOperator::Equality,
         Op::LooseNe => BinaryOperator::Inequality,
         Op::InstanceOf => BinaryOperator::Instanceof,
+        Op::In => BinaryOperator::In,
         Op::Lt => BinaryOperator::LessThan,
         Op::Le => BinaryOperator::LessEqualThan,
         Op::Gt => BinaryOperator::GreaterThan,

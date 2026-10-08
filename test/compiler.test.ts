@@ -476,6 +476,8 @@ test("the builtins crate's string functions are JS's string methods", () => {
   const js = readFileSync(join(target, "builtins.js"), "utf8");
   expect(js).toContain('return [text.split(","), text.split(/[,;]/)];');
   expect(js).toContain("JSON.parse(text, hidden)");
+  expect(js).toContain("return key in value;");
+  expect([builtins.holds({ a: 1 }, "a"), builtins.holds({}, "toString"), builtins.holds({}, "b")]).toEqual([true, true, false]);
   for (const call of ["text.slice(1, -1)", "text.slice(-2)", "text.substring(1, 3)", "text.substring(1)", "text.trim()", "text.trimStart()", "text.trimEnd()", 'text.indexOf(part)', "text.indexOf(part, 2)", "text.lastIndexOf(part)", "text.length", "text.charAt(i)", "text.replace(from, to)"]) {
     expect(js).toContain(call);
   }

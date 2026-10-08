@@ -9,6 +9,12 @@ pub fn revived(text: &str) -> Option<&'static Unknown> {
     json::parse_with(text, Box::new(hidden)).ok().flatten()
 }
 
+/// Whether `value` has a property of the name, its own or its prototype's,
+/// as react.dev's errors page asks of its MDX components.
+pub fn holds(value: &Unknown, key: &str) -> bool {
+    js::has(value, key)
+}
+
 fn hidden(key: &str, value: Option<&'static Unknown>) -> Option<&'static Unknown> {
     if key == "secret" { None } else { value }
 }

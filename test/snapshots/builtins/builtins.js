@@ -7,6 +7,10 @@ export function revived(text) {
   return $someValue(result.TAG === "Ok" ? $some(result._0) : undefined);
 }
 
+export function holds(value, key) {
+  return key in value;
+}
+
 function hidden(key, value) {
   if (key === "secret") {
     return undefined;

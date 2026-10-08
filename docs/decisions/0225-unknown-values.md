@@ -148,3 +148,6 @@ value.name = "new";
   part given to the reviver with its key, innermost first, made what it
   gives, as react.dev's errors page revives its elements from JSON. The
   builtins test leaves out each property a reviver gives none of.
+- **`js::has(value, key)` is `key in value`**, JS's `in`: whether an object
+  has a property of the name, its own or its prototype's, as the errors
+  page asks of its MDX components. A binding's `in []` is that operator.

@@ -147,6 +147,14 @@ pub fn get(this: &Unknown, key: &str) -> Option<&'static Unknown> {
     unreachable!()
 }
 
+/// `key in value`: whether an object has a property of that name, its own
+/// or its prototype's, as JS's `in` asks.
+#[cfg_attr(rust_js, rust_js::link_name = "in []")]
+#[allow(unused_variables)]
+pub fn has(this: &Unknown, key: &str) -> bool {
+    unreachable!()
+}
+
 /// `value[key] = to`: `to` as JS has it, a string or a number, or an
 /// object.
 #[cfg_attr(rust_js, rust_js::link_name = "set []")]

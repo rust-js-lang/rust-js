@@ -117,6 +117,8 @@ pub(super) enum JsForm {
     InstanceOf(String),
     /// `get []`: `this[key]`, a property by a name given (ADR 0225).
     GetIndex,
+    /// `in []`: `key in this`, whether it has a property by a name given.
+    In,
     /// `set []`: `this[key] = value`.
     SetIndex,
 }
@@ -128,6 +130,7 @@ pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "this()" => return JsForm::CallThis,
         "prop" => return JsForm::Prop(None),
         "get []" => return JsForm::GetIndex,
+        "in []" => return JsForm::In,
         "set []" => return JsForm::SetIndex,
         _ => {}
     }
