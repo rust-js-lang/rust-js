@@ -125,9 +125,9 @@ unsafe extern "Rust" {
 /// What was thrown: an `Error`'s message, or that it's no `Error`.
 pub async fn thrown() -> (String, String) {
     let error = js::decode_uri_component("%E0%A4%A").unwrap_err();
-    let first = if js::js_error::is_error(error) { js::js_error::message(error) } else { "not an Error".to_string() };
+    let first = if error.is_error() { error.message() } else { "not an Error".to_string() };
     let rejected = rejected("no").await.unwrap_err();
-    let second = if js::js_error::is_error(rejected) { js::js_error::message(rejected) } else { "not an Error".to_string() };
+    let second = if rejected.is_error() { rejected.message() } else { "not an Error".to_string() };
     (first, second)
 }
 

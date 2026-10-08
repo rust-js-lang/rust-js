@@ -68,10 +68,18 @@ async function typescript(): Promise<Map<string, Set<string>>> {
   };
   for (const f of files) walk((await session.read(f)).declarations, "");
   // A constructor interface's construct signatures aren't members the model
-  // names: read them from its text.
+  // names: read them from its text. And what TypeScript marks
+  // `@deprecated`, "a legacy feature for browser compatibility", `RegExp.$1`,
+  // by the interface it's in: not counted.
   const ctorText = new Map<string, boolean>();
+  const deprecated = new Set<string>();
   for (const f of files) {
     const text = readFileSync(f, "utf8");
+    const comment = /\/\*\*(?:(?!\*\/)[\s\S])*?@deprecated(?:(?!\*\/)[\s\S])*\*\/\s*(?:readonly\s+)?(?:"([^"]+)"|([A-Za-z_$][\w$]*))/g;
+    for (const m of text.matchAll(comment)) {
+      const owner = [...text.slice(0, m.index).matchAll(/interface (\w+)/g)].at(-1)?.[1];
+      if (owner) deprecated.add(`${owner}.${m[1] ?? m[2]}`);
+    }
     for (const m of text.matchAll(/interface (\w+Constructor)\s*(?:<[^>]*>)?\s*\{([\s\S]*?)\n\}/g)) {
       if (/^\s*new\s*[(<]/m.test(m[2])) ctorText.set(m[1], true);
     }
@@ -82,9 +90,11 @@ async function typescript(): Promise<Map<string, Set<string>>> {
     const members = new Set<string>();
     const ctor = constructors.get(name);
     const own = ctor === name;
-    if (!own) for (const m of interfaces.get(name) ?? []) members.add(m);
+    const local = name.split(".").pop()!;
+    if (!own) for (const m of interfaces.get(name) ?? []) if (!deprecated.has(`${local}.${m}`)) members.add(m);
     if (typeof ctor === "string") {
-      for (const m of interfaces.get(ctor) ?? []) if (m !== "prototype") members.add(own ? `static:${m}` : `static:${m}`);
+      const of = ctor.split(".").pop()!;
+      for (const m of interfaces.get(ctor) ?? []) if (m !== "prototype" && !deprecated.has(`${of}.${m}`)) members.add(`static:${m}`);
       if (!own && ctorText.get(ctor.split(".").pop()!)) members.add("constructor");
     } else if (ctor) {
       for (const m of ctor.statics) if (m !== "prototype") members.add(`static:${m}`);
@@ -131,7 +141,8 @@ function bindings(): Set<string> {
         if (owner) bound.add(`${classes.get(owner)}.static:${constant}`);
       }
       link = l.match(/link_name = "([^"]+)"/)?.[1] ?? link;
-      const fn = l.match(/^\s*pub (?:safe )?fn (\w+)(?:<[^(]*>)?\((.*)/);
+      // A function, or an extern static, `Symbol.iterator`, of no receiver.
+      const fn = l.match(/^\s*pub (?:safe )?fn (\w+)(?:<[^(]*>)?\((.*)/) ?? l.match(/^\s*pub safe static (\w+)()/);
       if (fn) {
         const js = link ?? fn[1];
         const receiver = /^\s*&?(?:mut )?self\b/.test(fn[2]) || /^self\b/.test(fn[2])

@@ -25,7 +25,7 @@ spawn(Box::new(async move {                            // runs, unawaited
   `settle(p)` makes its `.await` a `Result`, and one a binding declares as
   `Promise<Result<T, &JsError>>` is one already ([ADR 0035](../docs/decisions/0035-results-and-throwing-js.md)).
 - `JsError` is what JS threw; `js_error::to_string(e)` is `String(e)`, and
-  `js_error::is_error(e)` and `js_error::message(e)` are an `Error`'s.
+  `e.is_error()` and `e.message()` are an `Error`'s.
 - `RegExp` is there for what Rust would use `regex` for: `reg_exp::new(r"^\d+$", "")`,
   and `reg_exp::replace(text, pattern, "$1")`. A replacer closure, and `matchAll`,
   are a program's own bindings, typed for its pattern's groups.

@@ -77,3 +77,25 @@ its own for, as TypeScript's ES2024 libs declare them; a test measures it.**
   `builtins/typed_arrays.ts`, which writes `src/typed_arrays.rs`; a test
   holds the file to it. `uint8_array::new(buffer)` is `new_with_buffer`, as
   `new(length)` is the length's. 78.6%.
+- **Checked against ReScript's Stdlib and TypeScript's libs, and adapted:**
+  - `Date`: ReScript gives a part as an `int` both ways, which an invalid
+    date's `NaN` makes unsound; here what a date gives is an `f64` and
+    what it's given an `i32`. Its constructor of each arity,
+    `makeWithYMD`, is `date::new_with_ymd`; its setters of several parts,
+    `setHoursMS`, are `set_hours_m_s`; `Date.UTC` likewise. Its
+    `toISOString` is a `string` that throws; here a `Result`.
+  - Typed arrays: ReScript has one `TypedArray.t<'a>`, so an `Int8Array`
+    is an `Int32Array`; here each is its own type, as TypeScript's are.
+    From ReScript, each callback's `_with_index` form, a comparator that
+    gives an `Ordering` (-1, 0 or 1 in JS, ADR 0057), `copy`,
+    `slice_to_end`, `subarray_to_end`, `fill_range` and `index_of_from`.
+  - `RegExp`'s members are methods, its match a `RegExpMatch` with
+    `full_match()` and `get(i)`, and `reg_exp::escape`, as ReScript's.
+  - `Error`'s `name`, `cause` and `stack`, `js_error::new`; `Symbol`, its
+    registry and its well-known symbols as statics; the global functions.
+  - `WeakMap`, `WeakSet`, `WeakRef` and `FinalizationRegistry`, whose keys
+    are `WeakKey`s: JS throws on a string as one, so Rust doesn't take
+    one, and a struct is one as its `unsafe impl` says.
+- **What TypeScript marks `@deprecated` isn't counted**: `RegExp.$1` and
+  the rest of Annex B's legacy, by the interface it's on (`String.sub` is,
+  `Atomics.sub` isn't). 88.1% of 675.

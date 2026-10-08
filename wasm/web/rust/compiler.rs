@@ -424,8 +424,8 @@ pub async fn compile(loaded: &Loaded, sources: &HashMap<String, String>, root_fi
         Ok(code) => code.to_string(),
         Err(e) => format!(
             "trap ({})",
-            if js_error::is_error(e) {
-                js_error::message(e)
+            if e.is_error() {
+                e.message()
             } else {
                 js_error::to_string(e)
             }

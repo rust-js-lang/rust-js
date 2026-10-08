@@ -526,7 +526,7 @@ pub fn joined(text: &str) -> String {
 
 // One JS can't parse throws as it's made, not as the module is read.
 pub fn unparsed() -> bool {
-    reg_exp::test(reg_exp::new("(", ""), "(")
+    reg_exp::new("(", "").test("(")
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
@@ -1296,6 +1296,52 @@ pub fn shown(text: &str) -> String {
   expect([lib.shown("{").startsWith("SyntaxError: "), lib.shown("1")]).toEqual([true, "parsed"]);
 });
 
+// ADR 0283: a regular expression's match, an `Error`'s parts, symbols, the
+// global functions and the weak collections are the js crate's, each a
+// method or a function of the JS it names; a weak key is an object.
+test("RegExp, Error, Symbol, weak collections and globals are JS's", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("js-objects");
+  writeFileSync(join(dir, "lib.rs"), `use js::{WeakKey, dict, js_error, parse_int, reg_exp, symbol, weak_map, weak_ref};
+pub fn matched(text: &str) -> Option<(String, u32, String, bool)> {
+    let pattern = reg_exp::new(r"(?<word>[a-z]+)(\\d)", "g");
+    let m = pattern.exec(text)?;
+    let word = m.groups().and_then(|groups| dict::get(groups, "word").cloned()).unwrap_or_default();
+    Some((m.get(2).unwrap_or_default(), m.index(), word + &m.full_match(), pattern.global()))
+}
+pub fn errors() -> (String, String, f64) {
+    let e = js_error::new("boom");
+    (e.name(), e.message(), parse_int("42px", 10))
+}
+pub fn symbols() -> (bool, Option<String>, Option<String>) {
+    let a = symbol::for_("app");
+    (js::object::is(a, symbol::for_("app")), symbol::key_for(a), symbol::new("local").description())
+}
+pub struct State {
+    pub n: u32,
+}
+unsafe impl WeakKey for State {}
+pub fn weak(state: &'static State) -> (Option<u32>, bool) {
+    let seen = weak_map::new::<State, u32>();
+    seen.set(state, state.n);
+    let r = weak_ref::new(state);
+    (seen.get(state), r.deref().is_some())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const m = pattern.exec(text);");
+  expect(js).toContain('const e = new Error("boom");');
+  expect(js).toContain('const a = Symbol.for("app");');
+  expect(js).toContain("const seen = new WeakMap();\n  seen.set(state, state.n);\n  const r = new WeakRef(state);");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.matched("ab cd7")).toEqual(["7", 3, "cdcd7", true]);
+  expect(lib.matched("none")).toBe(undefined);
+  expect(lib.errors()).toEqual(["Error", "boom", 42]);
+  expect(lib.symbols()).toEqual([true, "app", "local"]);
+  expect(lib.weak({ n: 5 })).toEqual([5, true]);
+});
+
 // ADR 0283: JS's typed arrays are the js crate's, each element a Rust number
 // of its kind, a `BigInt64Array`'s an `i64`, the `BigInt` rust-js makes one.
 test("typed arrays and their buffers are JS's", async () => {
@@ -1306,7 +1352,9 @@ pub fn floats() -> (f64, Option<f64>, u32, String) {
     let a = float64_array::from(&[1.5, -2.0, 3.25]);
     a.set_index(1, 4.0);
     let doubled = a.map(|x| x * 2.0);
-    (doubled.reduce(|sum, x| sum + x, 0.0), a.at(-1), float64_array::BYTES_PER_ELEMENT, a.join("|"))
+    let sorted = a.to_sorted_by(|x, y| y.partial_cmp(&x).unwrap());
+    let shifted = sorted.map_with_index(|x, i| x + i as f64);
+    (doubled.reduce(|sum, x| sum + x, 0.0), a.at(-1), float64_array::BYTES_PER_ELEMENT, shifted.slice_to_end(1).join("|"))
 }
 pub fn bytes() -> (u32, u32, i8, Vec<u8>) {
     let buffer = array_buffer::new(8);
@@ -1327,7 +1375,7 @@ pub fn bigs() -> (i64, bool) {
   expect(js).toContain("const signed = Int8Array.of(1, -1, 127);");
   expect(js).toContain("view.setInt16(0, -2, true);");
   const lib = await import(join(dir, "lib.js"));
-  expect(lib.floats()).toEqual([17.5, 3.25, 8, "1.5|4|3.25"]);
+  expect(lib.floats()).toEqual([17.5, 3.25, 8, "4.25|3.5"]);
   expect(lib.bytes()).toEqual([8, 8, -1, [254, 255]]);
   expect(lib.bigs()).toEqual([2n, true]);
 });
@@ -1340,7 +1388,8 @@ test("a Date is JS's, its members methods", async () => {
   writeFileSync(join(dir, "lib.rs"), `use js::{Date, date};
 pub fn moment(time: f64) -> (f64, f64, f64, String) {
     let d = date::new_with_time(time);
-    d.set_utc_hours(12.0);
+    d.set_utc_hours(12);
+    d.set_utc_minutes_s(30, 15);
     (d.get_utc_full_year(), d.get_utc_month(), d.get_time(), d.to_iso_string().unwrap())
 }
 pub fn invalid() -> (bool, bool, Option<String>) {
@@ -1348,7 +1397,7 @@ pub fn invalid() -> (bool, bool, Option<String>) {
     (d.get_time().is_nan(), d.to_iso_string().is_err(), d.to_json())
 }
 pub fn utc() -> f64 {
-    date::utc(2026.0, 9.0, 8.0, 0.0, 0.0, 0.0, 0.0)
+    date::utc_ymd(2026, 9, 8)
 }
 pub fn now_is_recent(d: &Date) -> bool {
     date::now() - d.get_time() < 60_000.0
@@ -1356,11 +1405,11 @@ pub fn now_is_recent(d: &Date) -> bool {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("const d = new Date(time);\n  d.setUTCHours(12);");
-  expect(js).toContain("return Date.UTC(2026, 9, 8, 0, 0, 0, 0);");
+  expect(js).toContain("const d = new Date(time);\n  d.setUTCHours(12);\n  d.setUTCMinutes(30, 15);");
+  expect(js).toContain("return Date.UTC(2026, 9, 8);");
   expect(js).toContain("return Date.now() - d.getTime() < 60000;");
   const lib = await import(join(dir, "lib.js"));
-  expect(lib.moment(0)).toEqual([1970, 0, 43_200_000, "1970-01-01T12:00:00.000Z"]);
+  expect(lib.moment(0)).toEqual([1970, 0, 45_015_000, "1970-01-01T12:30:15.000Z"]);
   expect(lib.invalid()).toEqual([true, true, null]);
   expect(lib.utc()).toBe(Date.UTC(2026, 9, 8));
   expect(lib.now_is_recent(new Date())).toBe(true);

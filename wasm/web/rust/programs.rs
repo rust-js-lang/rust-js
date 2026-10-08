@@ -223,7 +223,7 @@ pub fn prepare(
     } else {
         sources
             .iter()
-            .any(|(path, code)| path == root_file && reg_exp::test(has_main, code))
+            .any(|(path, code)| path == root_file && has_main.test(code))
     };
     if !runnable {
         return Prepared::Nothing;

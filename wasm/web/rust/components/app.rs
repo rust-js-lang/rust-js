@@ -258,7 +258,7 @@ pub fn App() -> JSX::Element {
             return;
         }
         let module_path = reg_exp::new(r"^([a-z_][a-z0-9_]*/)*[a-z_][a-z0-9_]*\.rs$", "");
-        if !reg_exp::test(module_path, &path) {
+        if !module_path.test(&path) {
             let text = format!("\"{path}\" isn't a Rust module file name, like math.rs or geometry/shape.rs.");
             set_status.set(say(text, Tone::Bad));
             return;

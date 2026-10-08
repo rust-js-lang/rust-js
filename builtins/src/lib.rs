@@ -10,13 +10,19 @@
 // A JS method of several forms, `slice` and `slice_to_end`, is one link
 // name of several Rust signatures, as the webapi crate's are.
 #![allow(clashing_extern_declarations)]
+// A binding's parameters are its JS function's: its body never runs.
+#![allow(unused_variables)]
 
 use core::marker::PhantomData;
 
 pub mod date;
 pub use date::Date;
+pub mod symbol;
+pub use symbol::Symbol;
 mod typed_arrays;
 pub use typed_arrays::*;
+mod weak;
+pub use weak::*;
 
 /// `import "./App.css";` in the module's JS, for what a module does when
 /// it's loaded, as a bundler's CSS does (ADRs 0039 and 0110): written where
@@ -462,6 +468,27 @@ unsafe extern "Rust" {
     /// what `encode_uri` made, or the `URIError` of what it can't have.
     #[link_name = "decodeURI"]
     pub safe fn decode_uri(text: &str) -> Result<String, &'static JsError>;
+
+    /// [`parseInt(text, radix)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/parseInt):
+    /// the integer `text` starts with, in base `radix`, `NaN` of none: `"4x"` is 4,
+    /// where Rust's `str::parse` is an `Err`.
+    #[link_name = "parseInt"]
+    pub safe fn parse_int(text: &str, radix: u32) -> f64;
+
+    /// [`parseFloat(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/parseFloat):
+    /// the number `text` starts with, `NaN` of none.
+    #[link_name = "parseFloat"]
+    pub safe fn parse_float(text: &str) -> f64;
+
+    /// [`isNaN(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/isNaN):
+    /// whether `value` is NaN, as `f64::is_nan` says.
+    #[link_name = "isNaN"]
+    pub safe fn is_nan(value: f64) -> bool;
+
+    /// [`isFinite(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/isFinite):
+    /// whether `value` is neither NaN nor infinite, as `f64::is_finite` says.
+    #[link_name = "isFinite"]
+    pub safe fn is_finite(value: f64) -> bool;
 }
 
 /// What `set_timeout` gives, to clear it with: a number in a browser, an
@@ -502,6 +529,134 @@ unsafe extern "Rust" {
 /// where it matched, so its Rust type is the pattern's.
 pub struct RegExp(PhantomData<JsObject>);
 
+impl RegExp {
+    /// [`regexp.test(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp/test): whether it matches `text`, from its `last_index` of a `g` or `y` pattern.
+    #[cfg_attr(rust_js, rust_js::link_name = "test")]
+    pub fn test(&self, text: &str) -> bool {
+        unreachable!()
+    }
+
+    /// [`regexp.exec(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec): its match in `text`, from its `last_index` of a `g` or `y` pattern.
+    #[cfg_attr(rust_js, rust_js::link_name = "exec")]
+    pub fn exec(&self, text: &str) -> Option<&'static RegExpMatch> {
+        unreachable!()
+    }
+
+    /// [`regexp.source`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp/source): its pattern.
+    #[cfg_attr(rust_js, rust_js::link_name = "get source")]
+    pub fn source(&self) -> String {
+        unreachable!()
+    }
+
+    /// [`regexp.flags`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp/flags): its flags, `"gm"`.
+    #[cfg_attr(rust_js, rust_js::link_name = "get flags")]
+    pub fn flags(&self) -> String {
+        unreachable!()
+    }
+
+    /// [`regexp.lastIndex`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp/lastIndex): where its next match starts, of a `g` or `y` pattern.
+    #[cfg_attr(rust_js, rust_js::link_name = "get lastIndex")]
+    pub fn last_index(&self) -> u32 {
+        unreachable!()
+    }
+
+    /// [`regexp.lastIndex = index`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp/lastIndex): where its next match starts.
+    #[cfg_attr(rust_js, rust_js::link_name = "set lastIndex")]
+    pub fn set_last_index(&self, index: u32) {
+        unreachable!()
+    }
+
+    /// [`regexp.global`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp/global): whether it has the `g` flag.
+    #[cfg_attr(rust_js, rust_js::link_name = "get global")]
+    pub fn global(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [`regexp.ignoreCase`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp/ignoreCase): whether it has the `i` flag.
+    #[cfg_attr(rust_js, rust_js::link_name = "get ignoreCase")]
+    pub fn ignore_case(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [`regexp.multiline`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp/multiline): whether it has the `m` flag.
+    #[cfg_attr(rust_js, rust_js::link_name = "get multiline")]
+    pub fn multiline(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [`regexp.dotAll`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp/dotAll): whether it has the `s` flag.
+    #[cfg_attr(rust_js, rust_js::link_name = "get dotAll")]
+    pub fn dot_all(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [`regexp.unicode`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp/unicode): whether it has the `u` flag.
+    #[cfg_attr(rust_js, rust_js::link_name = "get unicode")]
+    pub fn unicode(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [`regexp.unicodeSets`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp/unicodeSets): whether it has the `v` flag.
+    #[cfg_attr(rust_js, rust_js::link_name = "get unicodeSets")]
+    pub fn unicode_sets(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [`regexp.sticky`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp/sticky): whether it has the `y` flag.
+    #[cfg_attr(rust_js, rust_js::link_name = "get sticky")]
+    pub fn sticky(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [`regexp.hasIndices`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp/hasIndices): whether it has the `d` flag.
+    #[cfg_attr(rust_js, rust_js::link_name = "get hasIndices")]
+    pub fn has_indices(&self) -> bool {
+        unreachable!()
+    }
+}
+
+/// What [`exec`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec) finds: the match, its groups, where it is.
+pub struct RegExpMatch(PhantomData<JsObject>);
+
+impl RegExpMatch {
+    /// `m[0]`: what matched, ReScript's `fullMatch`.
+    #[cfg_attr(rust_js, rust_js::link_name = "get 0")]
+    pub fn full_match(&self) -> String {
+        unreachable!()
+    }
+
+    /// `m[i]`: the match, 0, or its group `i`, `None` of one that matched nothing.
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    pub fn get(&self, i: u32) -> Option<String> {
+        unreachable!()
+    }
+
+    /// `m.length`: the match and its groups, how many.
+    #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    pub fn length(&self) -> u32 {
+        unreachable!()
+    }
+
+    /// `m.index`: where in the text it is.
+    #[cfg_attr(rust_js, rust_js::link_name = "get index")]
+    pub fn index(&self) -> u32 {
+        unreachable!()
+    }
+
+    /// `m.input`: the text it's in.
+    #[cfg_attr(rust_js, rust_js::link_name = "get input")]
+    pub fn input(&self) -> String {
+        unreachable!()
+    }
+
+    /// `m.groups`: its named groups, each by its name.
+    #[cfg_attr(rust_js, rust_js::link_name = "get groups")]
+    pub fn groups(&self) -> Option<&'static Dict<String>> {
+        unreachable!()
+    }
+}
+
+
 pub mod reg_exp {
     use super::*;
 
@@ -512,8 +667,10 @@ pub mod reg_exp {
         #[link_name = "new RegExp"]
         pub safe fn new(pattern: &str, flags: &str) -> &'static RegExp;
 
-        #[link_name = "test"]
-        pub safe fn test(this: &RegExp, text: &str) -> bool;
+        /// [`RegExp.escape(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp/escape):
+        /// `text` as a pattern that matches it as it is, as ReScript's Stdlib has it (ES2025).
+        #[link_name = "RegExp.escape"]
+        pub safe fn escape(text: &str) -> String;
 
         /// [`text.replace(pattern, with)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/replace):
         /// the first match, or with the `g` flag each, replaced with `with`,
@@ -675,6 +832,44 @@ impl core::fmt::Debug for JsError {
     }
 }
 
+impl JsError {
+    /// `e instanceof Error`: what was thrown is an
+    /// [`Error`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error),
+    /// which has a `message`. A promise may be rejected with anything.
+    #[cfg_attr(rust_js, rust_js::link_name = "instanceof Error")]
+    pub fn is_error(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [`e.message`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error/message):
+    /// an `Error`'s message, without its name, as `is_error()` says it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "get message")]
+    pub fn message(&self) -> String {
+        unreachable!()
+    }
+
+    /// [`e.name`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error/name):
+    /// its kind, `"TypeError"`, of an `Error`.
+    #[cfg_attr(rust_js, rust_js::link_name = "get name")]
+    pub fn name(&self) -> String {
+        unreachable!()
+    }
+
+    /// [`e.cause`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error/cause):
+    /// what caused it, of any shape, `None` of none.
+    #[cfg_attr(rust_js, rust_js::link_name = "get cause")]
+    pub fn cause(&self) -> Option<&'static Unknown> {
+        unreachable!()
+    }
+
+    /// [`e.stack`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error/stack):
+    /// where it was made, as the runtime writes it, `None` where it has none.
+    #[cfg_attr(rust_js, rust_js::link_name = "get stack")]
+    pub fn stack(&self) -> Option<String> {
+        unreachable!()
+    }
+}
+
 pub mod js_error {
     use super::*;
 
@@ -683,16 +878,10 @@ pub mod js_error {
         #[link_name = "String"]
         pub safe fn to_string(error: &JsError) -> String;
 
-        /// `e instanceof Error`: what was thrown is an
-        /// [`Error`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error),
-        /// which has a `message`. A promise may be rejected with anything.
-        #[link_name = "instanceof Error"]
-        pub safe fn is_error(this: &JsError) -> bool;
-
-        /// [`e.message`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error/message):
-        /// an `Error`'s message, without its name, as `is_error(e)` says it is one.
-        #[link_name = "get message"]
-        pub safe fn message(this: &JsError) -> String;
+        /// [`new Error(message)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error/Error):
+        /// an `Error` of `message`, to reject a promise with.
+        #[link_name = "new Error"]
+        pub safe fn new(message: &str) -> &'static JsError;
     }
 }
 
@@ -729,3 +918,26 @@ pub mod object {
         unreachable!()
     }
 }
+
+// The crate's objects, which JS holds weakly; a symbol of its own too.
+unsafe impl WeakKey for JsObject {}
+unsafe impl WeakKey for RegExp {}
+unsafe impl WeakKey for JsError {}
+unsafe impl WeakKey for Date {}
+unsafe impl WeakKey for Symbol {}
+unsafe impl WeakKey for ArrayBuffer {}
+unsafe impl WeakKey for SharedArrayBuffer {}
+unsafe impl WeakKey for DataView {}
+unsafe impl WeakKey for Int8Array {}
+unsafe impl WeakKey for Uint8Array {}
+unsafe impl WeakKey for Uint8ClampedArray {}
+unsafe impl WeakKey for Int16Array {}
+unsafe impl WeakKey for Uint16Array {}
+unsafe impl WeakKey for Int32Array {}
+unsafe impl WeakKey for Uint32Array {}
+unsafe impl WeakKey for Float32Array {}
+unsafe impl WeakKey for Float64Array {}
+unsafe impl WeakKey for BigInt64Array {}
+unsafe impl WeakKey for BigUint64Array {}
+unsafe impl<T> WeakKey for Dict<T> {}
+unsafe impl<T> WeakKey for Promise<T> {}
