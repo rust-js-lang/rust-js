@@ -182,6 +182,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (option, present) = match fused {
                     Some((kept, value)) => (value, kept),
                     None => {
+                        // A property of what's in it, `o.map(|e| e.id)`, is `o?.id`,
+                        // which reads `o` once, as a `const` of it would.
+                        if let (Some(Some(js::Pattern::Name(p))), Some(b)) = (&param, &body)
+                            && !self.boxed_payload(generic_args.type_at(0))
+                            && !self.boxed_payload(mapped)
+                            && let Some(chain) = optional_chain(&option, b, p)
+                        {
+                            return Ok(Some(chain));
+                        }
                         // Read twice: a variable, or a field of a plain Rust value,
                         // `p.title`, as it is; a getter's, in a `const` first.
                         let option = match &option.kind {
@@ -377,6 +386,18 @@ pub(super) fn text_or(option: &Expr) -> Option<Expr> {
     let tested = truthy_of(test)?;
     let shaped = matches!(none.kind, js::ExprKind::Undefined);
     (shaped && value.reads_same() && same_place(tested, value)).then(|| (**value).clone())
+}
+
+/// `body`, a property chain of `param`, `param.a.b`, as one of `option`
+/// that ends where it's `None`: `option?.a.b`.
+fn optional_chain(option: &Expr, body: &Expr, param: &str) -> Option<Expr> {
+    let js::ExprKind::Member(of, field) = &body.kind else {
+        return None;
+    };
+    match &of.kind {
+        js::ExprKind::Var(name) if name == param => Some(Expr::optional_member(option.clone(), field.clone())),
+        _ => Some(Expr::member(optional_chain(option, of, param)?, field.clone())),
+    }
 }
 
 /// `x` of `!!x`.

@@ -114,3 +114,6 @@ const app = $unwrap(document.getElementById("app"), "the page has an #app");
 - **`if x.is_none() { x = Some(e) }` is `x ??= e`**: the same test, and `e`
   made only where `x` is none, as react.dev's errors page caches the codes
   it fetched, `cachedErrorCodes ||= ..`.
+- **A property of what's in it, `o.map(|e| e.id)`, is `o?.id`**, reading
+  `o` once as a `const` of a getter's would: `ref.current?.offsetHeight`,
+  as react.dev's SocialBanner has it.

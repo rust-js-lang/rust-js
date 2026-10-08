@@ -85,11 +85,11 @@ export function report() {
   const arg$3 = $jsonGet($jsonIndex(v, "list"), 5);
   const arg$4 = $jsonGet($jsonIndex(v, "list"), 0);
   out += `${arg$1 == null ? "None" : `Some(${$debugJsonValue(arg$1)})`} ${arg$2 == null ? "None" : `Some(${$debugJsonValue(arg$2)})`} ${arg$3 == null ? "None" : `Some(${$debugJsonValue(arg$3)})`} ${arg$4 == null ? "None" : `Some(${$debugJsonValue(arg$4)})`}\n`;
-  const tmp = $jsonValueAs($jsonIndex(v, "name"), "String");
-  const tmp$1 = $jsonValueAs($jsonIndex(v, "flag"), "Bool");
-  const tmp$2 = $jsonValueF64($jsonIndex(v, "f"));
-  const a = $jsonValueAs($jsonIndex(v, "list"), "Array");
-  out += `${tmp == null ? "None" : `Some(${$debugStr(tmp)})`} ${tmp$1 == null ? "None" : `Some(${tmp$1})`} ${tmp$2 == null ? "None" : `Some(${$debugF64(tmp$2)})`} ${a?.length == null ? "None" : `Some(${a?.length})`}\n`;
+  const arg$5 = $jsonValueAs($jsonIndex(v, "name"), "String");
+  const arg$6 = $jsonValueAs($jsonIndex(v, "flag"), "Bool");
+  const arg$7 = $jsonValueF64($jsonIndex(v, "f"));
+  const arg$8 = $jsonValueAs($jsonIndex(v, "list"), "Array")?.length;
+  out += `${arg$5 == null ? "None" : `Some(${$debugStr(arg$5)})`} ${arg$6 == null ? "None" : `Some(${arg$6})`} ${arg$7 == null ? "None" : `Some(${$debugF64(arg$7)})`} ${arg$8 == null ? "None" : `Some(${arg$8})`}\n`;
   out += `${$jsonValueEq($jsonIndex(v, "name"), "n", "String")} ${$jsonValueEq($jsonIndex($jsonIndex(v, "list"), 0), 1, "i64")} ${$jsonValueEq($jsonIndex(v, "f"), 2.5, "f64")} ${$jsonValueEq($jsonIndex(v, "flag"), true, "Bool")} ${$jsonValueEq($jsonIndex($jsonIndex(v, "list"), 0), 1, "f64")} ${$jsonValueEq($jsonIndex(v, "f"), 2, "i64")}\n`;
   out += `${v.TAG === "Object"} ${$jsonIndex(v, "list").TAG === "Array"} ${$jsonIndex(v, "missing") === "Null"}\n`;
   const object = new Map();
@@ -140,12 +140,12 @@ export function report() {
   );
   const k = { TAG: "Object", _0: object$2 };
   out += `${$jsonValueText(k, false)}\n`;
-  const tmp$3 = { TAG: "Number", _0: $jsonInt(1) };
+  const tmp = { TAG: "Number", _0: $jsonInt(1) };
   const object$3 = new Map();
   object$3.set("a", "Null");
   const e$3 = {
     name: "e",
-    data: { TAG: "Array", _0: [tmp$3, { TAG: "Object", _0: object$3 }] },
+    data: { TAG: "Array", _0: [tmp, { TAG: "Object", _0: object$3 }] },
     meta: new Map(),
   };
   const text = $unwrapOk(
@@ -169,13 +169,13 @@ export function report() {
   object$4.set("a", { TAG: "String", _0: "x" });
   object$4.set("b", { TAG: "Number", _0: $jsonInt(2) });
   object$4.set("c", { TAG: "Array", _0: [$jsonFloat(1.5), $jsonFloat(2)] });
-  const arg$5 = $eq(o, { TAG: "Object", _0: object$4 });
-  out += `${$jsonValueText(o, false)} ${arg$5}\n`;
+  const arg$9 = $eq(o, { TAG: "Object", _0: object$4 });
+  out += `${$jsonValueText(o, false)} ${arg$9}\n`;
   const tv = $unwrapOk($toJsonValue(e$3, recordSerialize_serialize), undefined, $debugJsonError);
   out += `${$jsonValueText(tv, false)}\n`;
   out += `${$jsonValueText($jsonFloat(NaN), false)}\n`;
-  const arg$6 = $jsonNumberOfF64(1.5);
-  out += `${arg$6 == null ? "None" : `Some(${$debugJsonNumber(arg$6)})`}\n`;
+  const arg$10 = $jsonNumberOfF64(1.5);
+  out += `${arg$10 == null ? "None" : `Some(${$debugJsonNumber(arg$10)})`}\n`;
   const object$5 = new Map();
   object$5.set("name", { TAG: "String", _0: "a" });
   object$5.set("age", { TAG: "Number", _0: $jsonInt(3) });
@@ -679,12 +679,12 @@ export function report() {
   ]) {
     const match$45 = $fromJson(text$1, messageDeserialize_deserialize);
     if (match$45.TAG === "Ok") {
-      const arg$7 = $unwrapOk(
+      const arg$11 = $unwrapOk(
         $toJson(match$45._0, messageSerialize_serialize, false),
         undefined,
         $debugJsonError,
       );
-      out += `ok ${messageDebug_fmt(match$45._0)} -> ${arg$7}\n`;
+      out += `ok ${messageDebug_fmt(match$45._0)} -> ${arg$11}\n`;
     } else {
       out += `err ${$displayJsonError(match$45._0)}\n`;
     }
@@ -692,12 +692,12 @@ export function report() {
   for (const text$2 of ['{"id":1,"x":true,"y":[null]}', '{"id":2}']) {
     const match$46 = $fromJson(text$2, openDeserialize_deserialize);
     if (match$46.TAG === "Ok") {
-      const arg$8 = $unwrapOk(
+      const arg$12 = $unwrapOk(
         $toJson(match$46._0, openSerialize_serialize, false),
         undefined,
         $debugJsonError,
       );
-      out += `ok ${openDebug_fmt(match$46._0)} -> ${arg$8}\n`;
+      out += `ok ${openDebug_fmt(match$46._0)} -> ${arg$12}\n`;
     } else {
       out += `err ${$displayJsonError(match$46._0)}\n`;
     }

@@ -291,17 +291,18 @@ export function orderings() {
   const b = { major: 1, minor: 10 };
   const all = [b, { major: 0, minor: 9 }, a];
   all.sort((a, b) => $cmp(a.major, b.major) || $cmp(a.minor, b.minor));
-  const tmp = ($cmp(a.major, b.major) || $cmp(a.minor, b.minor)) < 0;
-  const tmp$1 = $eq(($cmp(a.major, b.major) || $cmp(a.minor, b.minor)) > 0 ? a : b, b);
-  const tmp$2 = ($cmp(a.major, b.major) || $cmp(a.minor, b.minor)) === -1;
-  const v = largest(
-    all,
-    { cmp: (a, b) => $cmp(a.major, b.major) || $cmp(a.minor, b.minor) },
-    { copy: (value) => ({ ...value }) },
-  );
-  const tmp$3 = v?.minor ?? 0;
-  const v$1 = $minBy(all, (a, b) => $cmp(a.major, b.major) || $cmp(a.minor, b.minor));
-  return [tmp, tmp$1, tmp$2, tmp$3, v$1?.minor ?? 0, all.map((v) => v.minor)];
+  return [
+    ($cmp(a.major, b.major) || $cmp(a.minor, b.minor)) < 0,
+    $eq(($cmp(a.major, b.major) || $cmp(a.minor, b.minor)) > 0 ? a : b, b),
+    ($cmp(a.major, b.major) || $cmp(a.minor, b.minor)) === -1,
+    largest(
+      all,
+      { cmp: (a, b) => $cmp(a.major, b.major) || $cmp(a.minor, b.minor) },
+      { copy: (value) => ({ ...value }) },
+    )?.minor ?? 0,
+    $minBy(all, (a, b) => $cmp(a.major, b.major) || $cmp(a.minor, b.minor))?.minor ?? 0,
+    all.map((v) => v.minor),
+  ];
 }
 
 export function partial_orderings() {

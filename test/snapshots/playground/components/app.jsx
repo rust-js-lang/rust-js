@@ -80,10 +80,7 @@ export function App() {
       cancelled.value = true;
     };
   }, []);
-  const live = () => {
-    const view = source.current;
-    return view?.state;
-  };
+  const live = () => source.current?.state;
   const run = (files, loaded, rootJs, test) => {
     const n = (runs.current + 1) >>> 0;
     runs.current = n;

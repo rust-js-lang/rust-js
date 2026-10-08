@@ -117,8 +117,7 @@ export function heaps() {
     $heapPush(h, { pri, name: String.fromCharCode((97 + (i & 255)) & 255) }, taskOrd_cmp);
     out += `${$debugStr(h.map((t) => t.name).join(""))}\n`;
   }
-  const t = h[0];
-  out += `peek ${t?.name == null ? "None" : `Some(${$debugStr(t?.name, "'")})`} len ${h.length}\n`;
+  out += `peek ${h[0]?.name == null ? "None" : `Some(${$debugStr(h[0]?.name, "'")})`} len ${h.length}\n`;
   let popped = "";
   for (let i$1 = 0; i$1 < 4; i$1++) {
     popped += $unwrap($heapPop(h, taskOrd_cmp)).name;

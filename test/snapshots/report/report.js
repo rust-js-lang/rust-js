@@ -94,12 +94,12 @@ export function table(input) {
     const total = members.map((r) => r.score).reduce((a, b) => (a + b) >>> 0, 0);
     const avg = total / members.length;
     const key = (r) => [r.score, [r.age]];
-    const r$2 = $maxBy(members, (a, b) => {
-      const left = key(a);
-      const right = key(b);
-      return $cmp(left[0], right[0]) || $cmp(right[1][0], left[1][0]);
-    });
-    const best = r$2?.name ?? "-";
+    const best =
+      $maxBy(members, (a, b) => {
+        const left = key(a);
+        const right = key(b);
+        return $cmp(left[0], right[0]) || $cmp(right[1][0], left[1][0]);
+      })?.name ?? "-";
     out += `${$pad(team, 6, ">")}: n=${members.length} avg=${$toFixed(avg, 1).padStart(6)} best=${best}\n`;
   }
   const ages = rows.map((r) => r.age);

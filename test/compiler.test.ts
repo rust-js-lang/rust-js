@@ -1429,6 +1429,24 @@ pub fn restore() {
   }
 });
 
+// ADR 0030: a getter's option mapped to a property of what's in it,
+// `o.map(|e| e.id)`, is `o?.id`, which reads `o` once, as a `const` of it
+// would, as react.dev's SocialBanner has `ref.current?.offsetHeight`.
+test("a getter's option mapped to a property is an optional chain", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("getter-chain");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{Element, element};
+
+pub fn first_id(parent: &Element) -> Option<String> {
+    element::first_element_child(parent).map(|child| element::id(child))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("return parent.firstElementChild?.id;");
+  const { first_id } = await import(join(dir, "lib.js"));
+  expect([first_id({ firstElementChild: { id: "a" } }), first_id({ firstElementChild: null })]).toEqual(["a", undefined]);
+});
+
 // ADR 0214: an untagged enum only made, never told apart, may have variants
 // of one kind, as Next.js's `getStaticProps` gives `{ props }` or
 // `{ notFound: true }`, react.dev's errors page's: each is its payload.

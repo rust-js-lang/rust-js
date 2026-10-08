@@ -120,4 +120,12 @@ export const mutations: Mutation[] = [
     replace: "        _ => None?,\n",
     tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
   },
+  {
+    name: "getter-option-chain-spilled",
+    breaks: "`first_element_child(p).map(|c| id(c))` is `const child = ..; child?.id`, not `p.firstElementChild?.id`",
+    file: "src/lower/options.rs",
+    find: "                            && let Some(chain) = optional_chain(&option, b, p)\n",
+    replace: "                            && let Some(chain) = optional_chain(&option, b, p).filter(|_| false)\n",
+    tests: ["test/compiler.test.ts", "-t", "mapped to a property is an optional chain"],
+  },
 ];
