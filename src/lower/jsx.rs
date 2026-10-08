@@ -525,7 +525,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         matches!(self.thir[self.strip(child)].kind, ExprKind::Call { fun, ref args, .. }
             if args.first().is_some_and(|&receiver| self.thir[receiver].ty.is_bool())
                 && super::fn_def(self.thir[fun].ty)
-                    .is_some_and(|(def_id, _)| matches!(self.tcx.item_name(def_id).as_str(), "then" | "then_some")))
+                    .is_some_and(|(def_id, _)| self.recognition().is_bool_then(def_id)))
     }
 
     /// Is `child` a call of an `Option` of a JS object, `variant.icon.map(..)`?

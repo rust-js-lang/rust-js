@@ -148,7 +148,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let module = self.tcx.parent_module_from_def_id(adt.did().expect_local());
             let named = (self.tcx.hir_module_free_items(module))
                 .map(|id| id.owner_id.to_def_id())
-                .find(|&id| matches!(self.tcx.def_kind(id), DefKind::Const { .. }) && self.tcx.item_name(id) == name);
+                .find(|&id| {
+                    matches!(self.tcx.def_kind(id), DefKind::Const { .. }) && self.tcx.item_ident(id).name == name
+                });
             let Some(def_id) = named else {
                 self.unsupported(span, "a props field's default that names no `const` beside its struct");
                 return None;
