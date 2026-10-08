@@ -1296,6 +1296,40 @@ pub fn shown(text: &str) -> String {
   expect([lib.shown("{").startsWith("SyntaxError: "), lib.shown("1")]).toEqual([true, "parsed"]);
 });
 
+// ADR 0283: JS's `Date` is the js crate's, a type with its members as
+// methods and its constructors and statics a module's, each the JS it names.
+test("a Date is JS's, its members methods", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("js-date");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Date, date};
+pub fn moment(time: f64) -> (f64, f64, f64, String) {
+    let d = date::new_with_time(time);
+    d.set_utc_hours(12.0);
+    (d.get_utc_full_year(), d.get_utc_month(), d.get_time(), d.to_iso_string().unwrap())
+}
+pub fn invalid() -> (bool, bool, Option<String>) {
+    let d = date::new_with_text("not a date");
+    (d.get_time().is_nan(), d.to_iso_string().is_err(), d.to_json())
+}
+pub fn utc() -> f64 {
+    date::utc(2026.0, 9.0, 8.0, 0.0, 0.0, 0.0, 0.0)
+}
+pub fn now_is_recent(d: &Date) -> bool {
+    date::now() - d.get_time() < 60_000.0
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const d = new Date(time);\n  d.setUTCHours(12);");
+  expect(js).toContain("return Date.UTC(2026, 9, 8, 0, 0, 0, 0);");
+  expect(js).toContain("return Date.now() - d.getTime() < 60000;");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.moment(0)).toEqual([1970, 0, 43_200_000, "1970-01-01T12:00:00.000Z"]);
+  expect(lib.invalid()).toEqual([true, true, null]);
+  expect(lib.utc()).toBe(Date.UTC(2026, 9, 8));
+  expect(lib.now_is_recent(new Date())).toBe(true);
+});
+
 // A struct whose JS is its JSON, `unsafe impl JsonText`, is written by
 // `JSON.stringify`, indented, as react.dev's Sandpack template writes its
 // package.json: `JSON.stringify({ .. }, null, 2)`.

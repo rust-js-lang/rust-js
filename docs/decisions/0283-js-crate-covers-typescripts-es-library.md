@@ -60,3 +60,11 @@ its own for, as TypeScript's ES2024 libs declare them; a test measures it.**
 - `typescript-es`, TypeScript 5.9.3, is a dev dependency beside TypeScript 7,
   which ships no lib files.
 - At first 14 of 691 members, 2.0%.
+
+## Since
+
+- **`Date`**, all 47 of its members: `date::new_with_time(ms)`,
+  `d.set_utc_hours(12.0)`, `date::now()`, `date::utc(..)`, numbers `f64`s as
+  an invalid date's are `NaN`, and `to_iso_string()` a `Result` of the
+  `RangeError` an invalid date throws. The crate's files beyond `lib.rs` are
+  listed for its packages (`tooling/resources.js`). 8.8%.

@@ -13,6 +13,9 @@
 
 use core::marker::PhantomData;
 
+pub mod date;
+pub use date::Date;
+
 /// `import "./App.css";` in the module's JS, for what a module does when
 /// it's loaded, as a bundler's CSS does (ADRs 0039 and 0110): written where
 /// it's needed, `js::import!("./App.css");`, as stable Rust has no inner

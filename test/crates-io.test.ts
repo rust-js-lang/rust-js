@@ -34,7 +34,7 @@ test("the binding crates package for crates.io, each at its version", () => {
       .map((file) => file.slice(`${name}-${versions[name]}/`.length))
       .filter((file) => !["Cargo.lock", "Cargo.toml", "Cargo.toml.orig", ".cargo_vcs_info.json"].includes(file))
       .sort();
-  expect(listed("rust-js-builtins")).toEqual(["README.md", "src/lib.rs"]);
+  expect(listed("rust-js-builtins")).toEqual(["README.md", "src/date.rs", "src/lib.rs"]);
   expect(listed("rust-js-webapi")).toEqual(["README.md", "src/lib.rs"]);
   expect(versionOf("react")).toBe(versionOf("."));
   expect(listed("rust-js-react")).toEqual(["README.md", "build.rs", "src/attributes.rs", "src/children.rs", "src/dom.rs", "src/elements.rs", "src/event.rs", "src/lib.rs", "versions.json"]);
