@@ -17,7 +17,7 @@ use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::rc::Rc;
 
-use js::{JsError, JsObject, Promise, Uint8Array, array_buffer, js_error, number, uint8_array};
+use js::{JsError, JsObject, Promise, Uint8Array, js_error, number, uint8_array};
 use webapi::{
     Response, WebAssemblyInstance, WebAssemblyMemory, WebAssemblyModule, performance, text_decoder, text_encoder,
     web_assembly, window,
@@ -201,7 +201,7 @@ async fn load_sysroot(start: f64, stat: Stat) -> HashMap<String, &'static WasiFi
     let mut size = 0;
     for download in downloads {
         let entry = download.await;
-        size += uint8_array::length(file_data(entry.1));
+        size += file_data(entry.1).length();
         entries.push(entry);
     }
     stat(
@@ -218,7 +218,7 @@ async fn load_sysroot(start: f64, stat: Stat) -> HashMap<String, &'static WasiFi
 
 async fn load_sysroot_file(name: String) -> (String, &'static WasiFile) {
     let response = window.fetch(format!("./sysroot/{name}").as_str()).await;
-    let bytes = uint8_array::new(response.array_buffer().await);
+    let bytes = uint8_array::new_with_buffer(response.array_buffer().await);
     (name, new_file(bytes, &FileOptions { readonly: true }))
 }
 
@@ -243,13 +243,9 @@ async fn load_binding_crate(name: &str, start: f64, stat: Stat) -> &'static Wasi
         .await;
     stat(
         format!("download {name} crate"),
-        format!(
-            "{} ({})",
-            ms(performance.now() - start),
-            mb(array_buffer::byte_length(bytes) as f64)
-        ),
+        format!("{} ({})", ms(performance.now() - start), mb(bytes.byte_length() as f64)),
     );
-    new_file(uint8_array::new(bytes), &FileOptions { readonly: true })
+    new_file(uint8_array::new_with_buffer(bytes), &FileOptions { readonly: true })
 }
 
 async fn load_examples() -> Vec<Example> {
@@ -448,6 +444,6 @@ pub async fn compile(loaded: &Loaded, sources: &HashMap<String, String>, root_fi
         stderr: stderr.borrow().join("\n"),
         instantiate: t1 - t0,
         run: t2 - t1,
-        memory: array_buffer::byte_length(memory),
+        memory: memory.byte_length(),
     }
 }

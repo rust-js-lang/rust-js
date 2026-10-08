@@ -15,6 +15,8 @@ use core::marker::PhantomData;
 
 pub mod date;
 pub use date::Date;
+mod typed_arrays;
+pub use typed_arrays::*;
 
 /// `import "./App.css";` in the module's JS, for what a module does when
 /// it's loaded, as a bundler's CSS does (ADRs 0039 and 0110): written where
@@ -238,7 +240,7 @@ macro_rules! cloned {
 }
 
 cloned!(bool, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize, f32, f64, char, str, String);
-cloned!(Unknown, ArrayBuffer, Uint8Array, Json<'_>);
+cloned!(Unknown, ArrayBuffer, Json<'_>);
 
 unsafe impl<T: StructuredClone + ?Sized> StructuredClone for &T {}
 unsafe impl<T: Defined + ?Sized> Defined for &T {}
@@ -725,40 +727,5 @@ pub mod object {
     #[allow(unused_variables)]
     pub fn is<A: ?Sized, B: ?Sized>(a: &A, b: &B) -> bool {
         unreachable!()
-    }
-}
-
-/// A JS [`ArrayBuffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer):
-/// raw bytes, as `response.array_buffer()` gives them.
-pub struct ArrayBuffer(PhantomData<JsObject>);
-
-pub mod array_buffer {
-    use super::*;
-
-    unsafe extern "Rust" {
-        #[link_name = "get byteLength"]
-        pub safe fn byte_length(this: &ArrayBuffer) -> u32;
-    }
-}
-
-/// A JS [`Uint8Array`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array):
-/// a view of the bytes in an `ArrayBuffer`, as `response.bytes()` gives them.
-pub struct Uint8Array(PhantomData<JsObject>);
-
-pub mod uint8_array {
-    use super::*;
-
-    unsafe extern "Rust" {
-        /// A view of all of `buffer`.
-        #[link_name = "new Uint8Array"]
-        pub safe fn new(buffer: &ArrayBuffer) -> &'static Uint8Array;
-
-        /// How many bytes it views.
-        #[link_name = "get length"]
-        pub safe fn length(this: &Uint8Array) -> u32;
-
-        /// The buffer it views.
-        #[link_name = "get buffer"]
-        pub safe fn buffer(this: &Uint8Array) -> &'static ArrayBuffer;
     }
 }

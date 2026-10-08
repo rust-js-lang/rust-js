@@ -101,7 +101,8 @@ async function typescript(): Promise<Map<string, Set<string>>> {
 /** What src binds: each function by its link name and receiver. `new X`
  * is X's constructor; `X.y`, `Intl.X.y`, X's static `y`; a method of an
  * `impl X`, or one taking `this: &X`, X's member, `get y` and `set y` its
- * `y`; any other name a global function's. */
+ * `y`; any other name a global function's. A constant of a class's module,
+ * `int8_array::BYTES_PER_ELEMENT`, is its static. */
 function bindings(): Set<string> {
   const bound = new Set<string>();
   const files = readdirSync(src, { recursive: true }).map(String).filter((f) => f.endsWith(".rs"));
@@ -118,9 +119,17 @@ function bindings(): Set<string> {
   for (const f of files) {
     let depth = 0;
     const impls: { type: string; depth: number }[] = [];
+    const modules: { name: string; depth: number }[] = [];
+    const snake = (s: string) => s.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
     let link: string | undefined;
     for (const l of readFileSync(join(src, f), "utf8").split("\n")) {
       const impl = l.match(/^\s*impl(?:<[^>]*>)? (\w+)(?:<[^>]*>)? \{/)?.[1];
+      const module = l.match(/^\s*pub mod (\w+) \{/)?.[1];
+      const constant = l.match(/^\s*pub const (\w+):/)?.[1];
+      if (constant && modules.length) {
+        const owner = [...classes.keys()].find((s) => snake(s) === modules.at(-1)!.name);
+        if (owner) bound.add(`${classes.get(owner)}.static:${constant}`);
+      }
       link = l.match(/link_name = "([^"]+)"/)?.[1] ?? link;
       const fn = l.match(/^\s*pub (?:safe )?fn (\w+)(?:<[^(]*>)?\((.*)/);
       if (fn) {
@@ -143,9 +152,11 @@ function bindings(): Set<string> {
         else if (c === "}") {
           depth--;
           while (impls.length && impls.at(-1)!.depth > depth) impls.pop();
+          while (modules.length && modules.at(-1)!.depth > depth) modules.pop();
         }
       }
       if (impl) impls.push({ type: impl, depth });
+      if (module) modules.push({ name: module, depth });
     }
   }
   return bound;

@@ -22,3 +22,15 @@ test("the js crate binds what it bound of TypeScript's ES library", async () => 
   // And what's new is in the baseline, blessed.
   expect(render(now)).toBe(readFileSync(baseline, "utf8"));
 }, 60_000);
+
+// The typed arrays are one shape over eleven element types, written once in
+// builtins/typed_arrays.ts: what's committed is what it writes.
+test("the typed arrays are what their template writes", () => {
+  const file = join(root, "builtins/src/typed_arrays.rs");
+  const committed = readFileSync(file, "utf8");
+  const p = Bun.spawnSync([process.execPath, join(root, "builtins/typed_arrays.ts")], { cwd: root });
+  expect(p.exitCode).toBe(0);
+  const written = readFileSync(file, "utf8");
+  writeFileSync(file, committed);
+  expect(written).toBe(committed);
+});

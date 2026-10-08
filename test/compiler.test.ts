@@ -1296,6 +1296,42 @@ pub fn shown(text: &str) -> String {
   expect([lib.shown("{").startsWith("SyntaxError: "), lib.shown("1")]).toEqual([true, "parsed"]);
 });
 
+// ADR 0283: JS's typed arrays are the js crate's, each element a Rust number
+// of its kind, a `BigInt64Array`'s an `i64`, the `BigInt` rust-js makes one.
+test("typed arrays and their buffers are JS's", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("js-typed-arrays");
+  writeFileSync(join(dir, "lib.rs"), `use js::{array_buffer, big_int64_array, data_view, float64_array, int8_array, uint8_array};
+pub fn floats() -> (f64, Option<f64>, u32, String) {
+    let a = float64_array::from(&[1.5, -2.0, 3.25]);
+    a.set_index(1, 4.0);
+    let doubled = a.map(|x| x * 2.0);
+    (doubled.reduce(|sum, x| sum + x, 0.0), a.at(-1), float64_array::BYTES_PER_ELEMENT, a.join("|"))
+}
+pub fn bytes() -> (u32, u32, i8, Vec<u8>) {
+    let buffer = array_buffer::new(8);
+    let view = data_view::new(&buffer);
+    view.set_int16(0, -2, true);
+    let bytes = uint8_array::new_with_buffer(&buffer);
+    let signed = int8_array::of(&[1, -1, 127]);
+    (buffer.byte_length(), bytes.length(), signed.get(1).unwrap_or(0), bytes.subarray(0, 2).values().collect())
+}
+pub fn bigs() -> (i64, bool) {
+    let a = big_int64_array::from(&[1, -2, 3]);
+    (a.reduce(|sum, x| sum + x, 0), a.includes(-2))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const a = Float64Array.from([1.5, -2, 3.25]);\n  a[1] = 4;");
+  expect(js).toContain("const signed = Int8Array.of(1, -1, 127);");
+  expect(js).toContain("view.setInt16(0, -2, true);");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.floats()).toEqual([17.5, 3.25, 8, "1.5|4|3.25"]);
+  expect(lib.bytes()).toEqual([8, 8, -1, [254, 255]]);
+  expect(lib.bigs()).toEqual([2n, true]);
+});
+
 // ADR 0283: JS's `Date` is the js crate's, a type with its members as
 // methods and its constructors and statics a module's, each the JS it names.
 test("a Date is JS's, its members methods", async () => {

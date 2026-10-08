@@ -60,7 +60,7 @@ pub fn kind(src: Src) -> String {
         Src::Flag(f) => format!("flag {f}"),
         Src::Names(names) => format!("names {}", names.join("+")),
         Src::Pattern(_) => "pattern".to_string(),
-        Src::Bytes(b) => format!("bytes {}", js::array_buffer::byte_length(b)),
+        Src::Bytes(b) => format!("bytes {}", b.byte_length()),
         Src::Step(f) => format!("step {}", f(1.0)),
     }
 }

@@ -22,7 +22,7 @@ pub fn forms() -> String {
 pub fn round_trip(text: &str) -> (u32, String) {
     let bytes = text_encoder::new().encode_with_input(text);
     let back = text_decoder::new_with_label("utf-8").decode_with_input(bytes);
-    (uint8_array::length(bytes), back)
+    (bytes.length(), back)
 }
 
 /// A `BodyInit` of a `Blob`, and a `RequestInfo` of a URL: each the value

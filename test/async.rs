@@ -4,7 +4,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use js::{JsObject, Promise, Uint8Array, array_buffer, spawn, uint8_array};
+use js::{JsObject, Promise, Uint8Array, spawn, uint8_array};
 use webapi::{AddEventListenerOptions, EventTargetExt, RequestInit, abort_controller, event, event_target, web_assembly, window};
 
 unsafe extern "Rust" {
@@ -109,8 +109,8 @@ pub async fn load_bytes(url: &str) -> (u32, u32, u32) {
     let copy = response.clone();
     let bytes = response.bytes().await;
     let buffer = copy.array_buffer().await;
-    let view = uint8_array::new(buffer);
-    (uint8_array::length(bytes), array_buffer::byte_length(buffer), uint8_array::length(view))
+    let view = uint8_array::new_with_buffer(buffer);
+    (bytes.length(), buffer.byte_length(), view.length())
 }
 
 /// What a WebAssembly module imports: `{ env: { double } }`. The module
@@ -143,6 +143,6 @@ pub async fn run_wasm(bytes: &Uint8Array, a: i32, b: i32) -> i32 {
 /// The other `instantiate`: from bytes, to a `{ module, instance }` dictionary.
 pub async fn instantiate_bytes(bytes: &Uint8Array) -> bool {
     let imports = Imports { env: Env { double: Box::new(|x| x) } };
-    let source = web_assembly::instantiate_with_import_object(uint8_array::buffer(bytes), &imports).await;
+    let source = web_assembly::instantiate_with_import_object(bytes.buffer(), &imports).await;
     web_assembly::validate(bytes) && wasm_add(source.instance.exports(), 1, 2) == 3
 }

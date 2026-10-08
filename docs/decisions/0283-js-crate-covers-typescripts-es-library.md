@@ -68,3 +68,12 @@ its own for, as TypeScript's ES2024 libs declare them; a test measures it.**
   an invalid date's are `NaN`, and `to_iso_string()` a `Result` of the
   `RangeError` an invalid date throws. The crate's files beyond `lib.rs` are
   listed for its packages (`tooling/resources.js`). 8.8%.
+- **The typed arrays, `ArrayBuffer`, `SharedArrayBuffer` and `DataView`**,
+  every member: each element a Rust number of its kind, a `BigInt64Array`'s
+  an `i64` (ADR 0086); `a.get(i)` and `a.set_index(i, x)` are `a[i]` and
+  `a[i] = x`; a callback takes the element, `a.map(|x| x * 2.0)`, its index
+  an `enumerate()` of `values()` away; `keys`, `values` and `entries` are
+  JS iterators (ADR 0140). The eleven are one shape, written once in
+  `builtins/typed_arrays.ts`, which writes `src/typed_arrays.rs`; a test
+  holds the file to it. `uint8_array::new(buffer)` is `new_with_buffer`, as
+  `new(length)` is the length's. 78.6%.
