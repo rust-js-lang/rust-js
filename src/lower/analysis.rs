@@ -295,6 +295,21 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             modules.push(module);
         }
     }
+    // And each that re-exports another's function, `pub use`, a file of
+    // its `export .. from` though it has nothing of its own (ADR 0240).
+    let mut all_modules = Vec::new();
+    tcx.hir_for_each_module(|module| all_modules.push(module));
+    for module in all_modules {
+        let reexports = tcx.hir_module_free_items(module).any(|id| {
+            let item = tcx.hir_item(id);
+            matches!(item.kind, rustc_hir::ItemKind::Use(path, rustc_hir::UseKind::Single(_))
+                if tcx.visibility(item.owner_id).is_public()
+                    && matches!(path.res.value_ns, Some(rustc_hir::def::Res::Def(DefKind::Fn, _))))
+        });
+        if reexports && seen_modules.insert(module) {
+            modules.push(module);
+        }
+    }
 
     // The crate's own names first: an export is what its consumers and JS
     // call it by. An import is named around every one of them.

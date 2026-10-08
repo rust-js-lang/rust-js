@@ -36,6 +36,9 @@ export { helper, other as renamed } from "./inner.js";
 - **The `.d.ts` is TypeScript's**, printed by its factory through
   @rust-js/typescript's new `export-from` kind, and read back the same way.
 
+- **A module of nothing but them is a file of them**, as react.dev's
+  Sidebar/index is. (Amended: it had no file.)
+
 ## Why
 
 - **It's the JS a person writes**: no wrapper, no local, the function as it

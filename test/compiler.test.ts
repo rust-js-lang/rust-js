@@ -1773,6 +1773,19 @@ test("a pub use of another module's function is re-exported from it", async () =
   expect([lib.helper(), lib.renamed(), lib.own()]).toEqual([1, 2, 3]);
 });
 
+// A module of re-exports only is a file of them, as react.dev's
+// Sidebar/index is `export {SidebarLink} from './SidebarLink'`.
+test("a module of only pub uses is a file of re-exports", async () => {
+  const dir = fixture("reexports-only");
+  writeFileSync(join(dir, "lib.rs"), "mod index;\nmod inner;\n\npub fn own() -> u32 {\n    index::helper() + 1\n}\n");
+  writeFileSync(join(dir, "index.rs"), "pub use super::inner::helper;\n");
+  writeFileSync(join(dir, "inner.rs"), "pub fn helper() -> u32 {\n    1\n}\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(readFileSync(join(dir, "index.js"), "utf8")).toContain('export { helper } from "./inner.js";');
+  const index = await import(join(dir, "index.js"));
+  expect(index.helper()).toBe(1);
+});
+
 // A struct taken apart through a shared reference is JS's destructuring,
 // `const { errorMessage, errorCode } = useErrorDecoderParams();`, as
 // react.dev's ErrorDecoder has it: what's borrowed can't change while it

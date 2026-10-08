@@ -50,4 +50,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/compiler.test.ts", "-t", "untagged enum"],
   },
+  {
+    name: "reexport-only-module-unwritten",
+    breaks: "a module of only `pub use`s, Sidebar/index, gets no file, and what imports it finds nothing",
+    file: "src/lower/analysis.rs",
+    find: "if reexports && seen_modules.insert(module)",
+    replace: "if false && reexports && seen_modules.insert(module)",
+    tests: ["test/compiler.test.ts", "-t", "only pub uses"],
+  },
 ];
