@@ -397,4 +397,28 @@ export const mutations: Mutation[] = [
     replace: "                None => match Err::<(Expr, Expr), Expr>(next()) {\n",
     tests: ["test/compiler.test.ts", "-t", "iterators are array methods"],
   },
+  {
+    name: "callback-kept-as-arrow",
+    breaks: "`xs.map((x) => double(x))`, not `xs.map(double)`",
+    file: "src/lower/iterators.rs",
+    find: "                        Err(f) => (items, self.passed_on(args[1], f)),\n",
+    replace: "                        Err(f) => (items, f),\n",
+    tests: ["test/format.test.ts", "-t", "only passes its arguments"],
+  },
+  {
+    name: "binding-passed-as-callback",
+    breaks: "`xs.map((x) => parseFloat(x))` is `xs.map(parseFloat)`, which gives it the index too",
+    file: "src/lower/iterators.rs",
+    find: "            _ => def_id.is_local() && !super::bindings::is_binding(self.tcx, def_id),\n",
+    replace: "            _ => def_id.is_local(),\n",
+    tests: ["test/format.test.ts", "-t", "only passes its arguments"],
+  },
+  {
+    name: "generic-callback-kept",
+    breaks: "an `impl Fn` called with what it's given is `(x, i) => f(x, i)`, not `f`",
+    file: "src/lower/iterators.rs",
+    find: "matches!(thir[args[0]].ty.peel_refs().kind(), ty::Closure(..) | ty::Param(_))",
+    replace: "matches!(thir[args[0]].ty.peel_refs().kind(), ty::Closure(..))",
+    tests: ["test/format.test.ts", "-t", "only passes its arguments"],
+  },
 ];

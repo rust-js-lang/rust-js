@@ -203,3 +203,40 @@ pub fn handled() -> u32 {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.pushed(), lib.counted(), lib.later(true), lib.later(false), lib.handled()]).toEqual([[1], 1, 1, 2, 1]);
 });
+
+// ADR 0279: a callback that only passes what it's given on, `(x) => double(x)`,
+// is the function itself, `xs.map(double)`, as react.dev's
+// toCommaSeparatedList has `array.map(renderCallback)`, where it's Rust's, which
+// takes no more than it's given: a JS function's, `parseFloat`, may read
+// the index too.
+test("a callback that only passes its arguments on is the function", async () => {
+  const dir = fixture("eta");
+  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
+    #[link_name = "parseFloat"]
+    safe fn parse_float(text: &str) -> f64;
+}
+
+fn double(x: &u32) -> u32 {
+    x * 2
+}
+
+pub fn doubled(xs: &[u32]) -> Vec<u32> {
+    xs.iter().map(|x| double(x)).collect()
+}
+
+pub fn rendered(xs: &[u32], f: impl Fn(&u32, usize) -> u32) -> Vec<u32> {
+    xs.iter().enumerate().map(|(i, x)| f(x, i)).collect()
+}
+
+pub fn parsed(xs: &[String]) -> Vec<f64> {
+    xs.iter().map(|x| parse_float(x)).collect()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return xs.map(double);");
+  expect(js).toContain("return xs.map(f);");
+  expect(js).toContain("return xs.map((x) => parseFloat(x));");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.doubled([1, 2]), lib.rendered([5, 6], (x: number, i: number) => x + i), lib.parsed(["1.5", "2"])]).toEqual([[2, 4], [5, 7], [1.5, 2]]);
+});

@@ -370,6 +370,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0276 A Pages Router route gets no declarations beside it](decisions/0276-no-declarations-in-routes.md)
 - [0277 A variable shadowed by its own value is the variable](decisions/0277-shadow-aliases.md)
 - [0278 A variable nothing sets again is a `const`](decisions/0278-unset-lets-are-consts.md)
+- [0279 A callback that passes on what it's given is the function](decisions/0279-callbacks-passed-on.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

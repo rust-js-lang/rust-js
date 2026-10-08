@@ -895,8 +895,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         (items, self.dropping_discarded(test, item, false, span, out)?)
                     }
                     None => match indexed_callback(&items, name, next()) {
-                        Ok((source, f)) => (source, f),
-                        Err(f) => (items, f),
+                        Ok((source, f)) => (source, self.passed_on(args[1], f)),
+                        Err(f) => (items, self.passed_on(args[1], f)),
                     },
                 };
                 if boxed && name == "find" {
@@ -1197,6 +1197,80 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let items = self.expr(receiver, out)?;
         Ok(Expr::member(items, "length"))
+    }
+
+    /// `f`, the JS of closure `e` given to an array method, `(x, i) => g(x,
+    /// i)`, which passes on what it's given, in order: `g` itself, where `g`
+    /// is Rust's, a function of the crate or a closure, which takes no more
+    /// than it's given, so the index and the array the method gives it too
+    /// change nothing (ADR 0279). A JS function's, `parseFloat`'s, might.
+    fn passed_on(&self, e: ExprId, f: Expr) -> Expr {
+        let js::ExprKind::Arrow(params, body) = &f.kind else {
+            return f;
+        };
+        let [
+            Stmt {
+                kind: StmtKind::Return(Some(call)),
+                ..
+            },
+        ] = &body[..]
+        else {
+            return f;
+        };
+        let js::ExprKind::Call(callee, args) = &call.kind else {
+            return f;
+        };
+        let js::ExprKind::Var(g) = &callee.kind else { return f };
+        let names: Vec<&str> = params
+            .iter()
+            .filter_map(|p| match p {
+                js::Pattern::Name(name) => Some(name.as_str()),
+                _ => None,
+            })
+            .collect();
+        let passed = names.len() == params.len()
+            && args.len() == names.len()
+            && !names.contains(&g.as_str())
+            && args
+                .iter()
+                .zip(&names)
+                .all(|(a, n)| matches!(&a.kind, js::ExprKind::Var(v) if v == n));
+        if !passed || !self.calls_rust(e) {
+            return f;
+        }
+        Expr {
+            kind: js::ExprKind::Var(g.clone()),
+            span: f.span,
+        }
+    }
+
+    /// Does closure `e` call a function of the crate, or a closure, a generic
+    /// `impl Fn`'s too, whose JS takes the arguments Rust gives it alone?
+    fn calls_rust(&self, e: ExprId) -> bool {
+        let ExprKind::Closure(ref closure) = self.thir[self.strip(e)].kind else {
+            return false;
+        };
+        let body = self.krate.closures[&closure.closure_id];
+        let thir = &body.thir;
+        let mut call = super::body_queries::strip(thir, body.expr);
+        if let ExprKind::Block { block } = thir[call].kind
+            && thir[block].stmts.is_empty()
+            && let Some(value) = thir[block].expr
+        {
+            call = super::body_queries::strip(thir, value);
+        }
+        let ExprKind::Call { fun, ref args, .. } = thir[call].kind else {
+            return false;
+        };
+        let Some((def_id, _)) = fn_def(thir[fun].ty) else {
+            return false;
+        };
+        match self.tcx.trait_of_assoc(def_id) {
+            Some(fn_trait) if self.tcx.fn_trait_kind_from_def_id(fn_trait).is_some() => {
+                matches!(thir[args[0]].ty.peel_refs().kind(), ty::Closure(..) | ty::Param(_))
+            }
+            _ => def_id.is_local() && !super::bindings::is_binding(self.tcx, def_id),
+        }
     }
 
     /// Does `e` name one that knows where it is: a `Peekable`, or a local
