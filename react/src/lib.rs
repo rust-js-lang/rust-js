@@ -1123,10 +1123,11 @@ unsafe impl<T> js::Defined for Element<T> {}
 impl ElementType {
     /// A JS value as what JSX renders, a tag's name or a component, as
     /// react.dev's errors page reads one from JSON: the value itself,
-    /// unchecked.
+    /// unchecked. Or one that may be none, as TypeScript's `any` may be:
+    /// `undefined` is React's to refuse when it renders.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
     #[allow(unused_variables)]
-    pub fn from_unknown(this: &Unknown) -> ElementType {
+    pub fn from_unknown<'a>(this: impl Into<Option<&'a Unknown>>) -> ElementType {
         unreachable!()
     }
 }

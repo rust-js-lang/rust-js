@@ -3097,6 +3097,13 @@ pub fn revived(r#type: &'static Unknown, key: &'static Unknown, props: &'static 
     jsx! { <Type key={key} {...props} /> }
 }
 
+// A type that may be none, as JSON's may, shadowed as what JSX renders:
+// the variable itself (ADR 0277).
+pub fn retyped(Type: Option<&'static Unknown>) -> JSX::Element {
+    let Type = ElementType::from_unknown(Type);
+    jsx! { <Type /> }
+}
+
 // Props that may be none, \`undefined\`, which JS spreads as nothing, as a
 // JSON element may have none.
 pub fn maybe(props: Option<&'static Unknown>) -> JSX::Element {
@@ -3117,6 +3124,9 @@ pub fn kept(wrapped: bool) -> &'static Unknown {
   expect(renderToStaticMarkup(revived("wrapper", 0, { children: "plain" }))).toBe("plain");
   expect(revived("b", 7, {}).key).toBe("7");
   expect(jsx).toContain("return <b {...props} />;");
+  expect(jsx).toContain("export function retyped(Type) {\n  return <Type />;\n}");
+  const { retyped } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(retyped("hr"))).toBe("<hr/>");
   const { maybe } = await import(join(dir, "lib.jsx"));
   expect([renderToStaticMarkup(maybe(undefined)), renderToStaticMarkup(maybe({ title: "t" }))]).toEqual(["<b></b>", '<b title="t"></b>']);
   const { kept } = await import(join(dir, "lib.jsx"));

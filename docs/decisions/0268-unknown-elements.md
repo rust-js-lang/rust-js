@@ -62,3 +62,8 @@ return <Type key={key} {...props} />;
 - **Props that may be none are spread too**, an `Option` of a JS value:
   `{...props}`, which JS spreads as nothing where it's `undefined`, as a JSON
   element may have no props.
+- **A type that may be none is one too**: `ElementType::from_unknown` takes
+  an `Option` of a value, as TypeScript's `any` may be `undefined`, React's
+  to refuse when it renders. `let Type = ElementType::from_unknown(Type);`
+  is `Type` itself (ADR 0277): `<Type key={key} {...props} />`, as the
+  errors page has it.
