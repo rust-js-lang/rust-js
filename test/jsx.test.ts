@@ -3068,6 +3068,12 @@ pub fn revived(r#type: &'static Unknown, key: &'static Unknown, props: &'static 
     jsx! { <Type key={key} {...props} /> }
 }
 
+// Props that may be none, \`undefined\`, which JS spreads as nothing, as a
+// JSON element may have none.
+pub fn maybe(props: Option<&'static Unknown>) -> JSX::Element {
+    jsx! { <b {...props} /> }
+}
+
 // An element, or React's \`Fragment\`, as a JS value of any shape, as a JSON
 // reviver gives one.
 pub fn kept(wrapped: bool) -> &'static Unknown {
@@ -3081,6 +3087,9 @@ pub fn kept(wrapped: bool) -> &'static Unknown {
   expect(renderToStaticMarkup(revived("b", "k", { children: "bold", title: "t" }))).toBe('<b title="t">bold</b>');
   expect(renderToStaticMarkup(revived("wrapper", 0, { children: "plain" }))).toBe("plain");
   expect(revived("b", 7, {}).key).toBe("7");
+  expect(jsx).toContain("return <b {...props} />;");
+  const { maybe } = await import(join(dir, "lib.jsx"));
+  expect([renderToStaticMarkup(maybe(undefined)), renderToStaticMarkup(maybe({ title: "t" }))]).toEqual(["<b></b>", '<b title="t"></b>']);
   const { kept } = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(kept(false))).toBe("<b>kept</b>");
   expect(kept(true)).toBe((await import("react")).Fragment);

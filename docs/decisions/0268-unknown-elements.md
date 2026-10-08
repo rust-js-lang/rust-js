@@ -59,3 +59,6 @@ return <Type key={key} {...props} />;
 - **An element and an element's type are JS values of any shape too**,
   `js::Defined`, as a reviver gives `Fragment` or the element it made:
   `js::unknown_of(jsx! { <b /> })` is the element itself.
+- **Props that may be none are spread too**, an `Option` of a JS value:
+  `{...props}`, which JS spreads as nothing where it's `undefined`, as a JSON
+  element may have no props.
