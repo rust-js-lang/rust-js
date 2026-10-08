@@ -451,6 +451,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A call of one of std's functions rust-js knows (ADR 0023), `known`.
+    /// `std::ptr::eq(a, b)` of JS objects, `webapi::Element`s say: whether
+    /// they're one, `a === b` (ADR 0285). Of a Rust value it's an error:
+    /// an unchanged copy is the one JS object it was copied from, and a
+    /// number is its value, so a place's address isn't anything of JS's.
+    fn ptr_eq(&mut self, of: Ty<'tcx>, args: &[ExprId], span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+        if !self.is_js_object(of) {
+            return Err(self.tcx.dcx().span_err(
+                span,
+                format!(
+                    "`std::ptr::eq` of a `{of}`: rust-js shares a copy no one changes and writes a number as its value, so where a Rust value is has no JS counterpart; compare the values, or references to JS objects"
+                ),
+            ));
+        }
+        let a = self.expr(self.pointed_to(args[0]), out)?;
+        let b = self.expr(self.pointed_to(args[1]), out)?;
+        Ok(Expr::bin(Op::Eq, a, b))
+    }
+
+    /// What an argument rustc made a raw pointer of is: `r` of `&raw const
+    /// *r`, its `&T` given as a `*const T`, the JS object `r` is.
+    fn pointed_to(&self, arg: ExprId) -> ExprId {
+        match self.thir[self.strip(arg)].kind {
+            ExprKind::RawBorrow { arg, .. } => arg,
+            _ => arg,
+        }
+    }
+
     fn std_call(&mut self, known: Std, call: Call<'_, 'tcx>, out: &mut Vec<Stmt>) -> R<Expr> {
         let Call {
             fun,
@@ -460,6 +487,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             discarded,
             span,
         } = call;
+        if known == Std::PtrEq {
+            return self.ptr_eq(generic_args.type_at(0), args, span, out);
+        }
         // One that takes a value with a destructor, or changes a place that
         // holds one, must keep or give back what it takes: these do. Another
         // might drop it, which JS wouldn't (ADR 0098). A value whose drops
@@ -984,6 +1014,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::AtomicCompareExchange
             | Std::LocalWith
             | Std::LocalBorrow => unreachable!("lowered by cell_call"),
+            Std::PtrEq => unreachable!("lowered by ptr_eq"),
             Std::ToBig
             | Std::Duration(_)
             | Std::SliceToArray { .. }

@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "ptr-eq-of-any-type",
+    breaks: "`std::ptr::eq` of a Rust value is `===`, true of two unchanged copies that Rust holds apart",
+    file: "src/lower/calls.rs",
+    find: "        if !self.is_js_object(of) {",
+    replace: "        if false {",
+    tests: ["test/diagnostics.test.ts", "-t", "ptr::eq"],
+  },
+  {
+    name: "ptr-eq-raw-borrow-kept",
+    breaks: "`std::ptr::eq`'s `&T` coerced to `*const T` is lowered as a raw borrow, which rust-js rejects",
+    file: "src/lower/calls.rs",
+    find: "            ExprKind::RawBorrow { arg, .. } => arg,",
+    replace: "            ExprKind::RawBorrow { arg, .. } if false => arg,",
+    tests: ["test/format.test.ts", "-t", "ptr::eq of JS objects is whether they're one"],
+  },
+  {
     name: "static-getter-call-unsupported",
     breaks: "a call of a `get X.y` binding without a receiver, a class's static property, is rejected",
     file: "src/lower/calls.rs",

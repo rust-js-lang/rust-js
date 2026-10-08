@@ -30,6 +30,10 @@ for (const [name, source, message, crate] of [
   // A placeholder's options are given to what shows the value (ADR 0058), but a
   // `&dyn Debug` is the string it shows already, and serde_json's `fmt`s are rust-js's.
   ["a width for a dyn Debug", 'pub fn f(v: u8) -> String { let d: &dyn std::fmt::Debug = &v; format!("{:5?}", d) }', "options for a"],
+  // `ptr::eq` of a Rust value: an unchanged copy is one JS object, and a
+  // number is its value, so a place's address isn't JS's (ADR 0285).
+  ["ptr::eq of a Rust struct", "#[derive(Clone, Copy)]\npub struct P { pub x: u32 }\npub fn f(a: &P, b: &P) -> bool { std::ptr::eq(a, b) }", "`std::ptr::eq` of a `P`"],
+  ["ptr::eq of a number", "pub fn f(a: &u32, b: &u32) -> bool { std::ptr::eq(a, b) }", "`std::ptr::eq` of a `u32`"],
   // A JS error is the string JS shows of it, `String(error)` (ADR 0271).
   ["a width for a JsError", 'pub fn f(e: &js::JsError) -> String { format!("{:>9?}", e) }', "options for a", "js"],
   ["a width for a serde_json Value", 'pub fn f(v: &serde_json::Value) -> String { format!("{:>9}", v) }', "options for a", "serde"],

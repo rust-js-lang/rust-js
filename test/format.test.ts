@@ -589,3 +589,25 @@ pub fn reader() -> fn() -> f64 {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.read(), lib.reader()()]).toEqual([Math.PI * 2, Math.PI]);
 });
+
+// ADR 0285: `std::ptr::eq` of JS objects is whether they're one, `===`.
+test("ptr::eq of JS objects is whether they're one", async () => {
+  const dir = fixture("ptr-eq");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Date, date};
+
+pub fn same(a: &Date, b: &Date) -> bool {
+    std::ptr::eq(a, b)
+}
+
+pub fn made() -> (bool, bool) {
+    let a = date::new_with_time(0.0);
+    let b = date::new_with_time(0.0);
+    (core::ptr::eq(a, a), std::ptr::eq(a as *const Date, b))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("return a === b;");
+  const lib = await import(join(dir, "lib.js"));
+  const d = new Date(0);
+  expect([lib.same(d, d), lib.same(d, new Date(0)), ...lib.made()]).toEqual([true, false, true, false]);
+});

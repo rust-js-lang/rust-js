@@ -329,6 +329,8 @@ pub(super) enum Std {
     Cmp,
     /// `a.max(b)` (true) or `a.min(b)` (false) of two numbers.
     MaxOf(bool),
+    /// `std::ptr::eq(a, b)`: of JS objects, whether they're one (ADR 0285).
+    PtrEq,
     /// An operator on references to numbers, `x % 10` with `x: &i32`,
     /// which rustc writes as a call of the operator's trait.
     Operator(BinOp),
@@ -479,6 +481,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         if diagnostic("mem_swap") {
             return Some(Some(Std::Swap));
+        }
+        if diagnostic("ptr_eq") {
+            return Some(Some(Std::PtrEq));
         }
         if diagnostic("mem_replace") {
             return Some(Some(Std::Replace));

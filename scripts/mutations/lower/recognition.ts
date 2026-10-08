@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "ptr-eq-unrecognized",
+    breaks: "`std::ptr::eq` of JS objects is rejected as a call rust-js doesn't support",
+    file: "src/lower/recognition.rs",
+    find: '        if diagnostic("ptr_eq") {',
+    replace: "        if false {",
+    tests: ["test/format.test.ts", "-t", "ptr::eq of JS objects is whether they're one"],
+  },
+  {
     name: "array-map-unknown",
     breaks: "`[T; N]::map` is refused, where it's an array's own `map`",
     file: "src/lower/recognition.rs",
