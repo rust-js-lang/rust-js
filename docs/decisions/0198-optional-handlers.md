@@ -44,3 +44,13 @@ no handler, `undefined`, does what one that calls nothing does.
 - **It's the JS a person writes**, and it's exact for an event: a JSX test
   finds the handler the element is given is the one its caller gave, and
   none where none is given.
+
+## Since
+
+- **A handler that calls a function with nothing is the function**,
+  `onClick={onClear}` of `move |_| on_clear()`, as react.dev's ClearButton
+  has it: React gives it the event, which a function of the crate, a
+  closure, or a `dyn Fn` has no parameter for. A binding's JS function,
+  `alert`, keeps its arrow, as the event would change what it does. Case
+  B: a JS caller's function given as a `dyn Fn()` that reads an optional
+  parameter would get the event, as the original's would.

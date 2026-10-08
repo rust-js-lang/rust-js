@@ -280,7 +280,7 @@ export function App() {
               <button
                 id="new-file"
                 className="mx-2 mt-1.5 block cursor-pointer text-muted"
-                onClick={() => newFile()}
+                onClick={newFile}
               >
                 + New file
               </button>

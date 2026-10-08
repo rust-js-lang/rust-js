@@ -72,7 +72,7 @@ export function Todos() {
             }
           }}
         />
-        <button className="add" onClick={() => add()}>
+        <button className="add" onClick={add}>
           Add
         </button>
         <ul>{items}</ul>

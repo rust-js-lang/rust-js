@@ -627,6 +627,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
             _ => return Err(self.unsupported(span, "this JSX attribute binding's signature")),
         };
+        let value_id = value;
         let mut element = self.expr(args[0], out)?;
         if let js::ExprKind::Object(_) = element.kind {
             return self.object_field(element, name, value, out);
@@ -701,14 +702,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if event {
             let spilled = match (&value.kind, out.last().map(|s| &s.kind)) {
                 (js::ExprKind::Var(var), Some(StmtKind::Const(declared, arrow))) if var == declared => {
-                    passed_handler(arrow)
+                    passed_handler(arrow, self.calls_rust(value_id, true))
                 }
                 _ => None,
             };
             if let Some(handler) = spilled {
                 out.pop();
                 value = handler;
-            } else if let Some(handler) = passed_handler(&value) {
+            } else if let Some(handler) = passed_handler(&value, self.calls_rust(value_id, true)) {
                 value = handler;
             }
         }
@@ -732,11 +733,28 @@ fn jsx_tree(value: &Expr) -> bool {
 }
 
 /// `f` of `(e) => { if (f != null) { f(e); } }`: a handler that calls
-/// another, if there is one, with what it's given (ADR 0198).
-fn passed_handler(value: &Expr) -> Option<Expr> {
+/// another, if there is one, with what it's given (ADR 0198). And of `() =>
+/// f()`, one that calls another with nothing, which React gives the event
+/// a Rust function has no parameter for.
+fn passed_handler(value: &Expr, calls_rust: bool) -> Option<Expr> {
     let js::ExprKind::Arrow(params, body) = &value.kind else {
         return None;
     };
+    if calls_rust
+        && let [
+            Stmt {
+                kind: StmtKind::Expr(call) | StmtKind::Return(Some(call)),
+                ..
+            },
+        ] = body.as_slice()
+        && let js::ExprKind::Call(callee, args) = &call.kind
+        && args.is_empty()
+        && let js::ExprKind::Var(f) = &callee.kind
+        && params.len() <= 1
+        && !params.iter().any(|p| p.names().contains(&f.as_str()))
+    {
+        return Some((**callee).clone());
+    }
     let [js::Pattern::Name(param)] = params.as_slice() else {
         return None;
     };

@@ -1235,7 +1235,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .iter()
                 .zip(&names)
                 .all(|(a, n)| matches!(&a.kind, js::ExprKind::Var(v) if v == n));
-        if !passed || !self.calls_rust(e) {
+        if !passed || !self.calls_rust(e, false) {
             return f;
         }
         Expr {
@@ -1245,8 +1245,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Does closure `e` call a function of the crate, or a closure, a generic
-    /// `impl Fn`'s too, whose JS takes the arguments Rust gives it alone?
-    fn calls_rust(&self, e: ExprId) -> bool {
+    /// `impl Fn`'s too, whose JS takes the arguments Rust gives it alone? And,
+    /// `dyn_fn`, a `dyn Fn`, a prop's, a JS caller's function as its type says.
+    pub(super) fn calls_rust(&self, e: ExprId, dyn_fn: bool) -> bool {
         let ExprKind::Closure(ref closure) = self.thir[self.strip(e)].kind else {
             return false;
         };
@@ -1267,7 +1268,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         match self.tcx.trait_of_assoc(def_id) {
             Some(fn_trait) if self.tcx.fn_trait_kind_from_def_id(fn_trait).is_some() => {
-                matches!(thir[args[0]].ty.peel_refs().kind(), ty::Closure(..) | ty::Param(_))
+                match thir[args[0]].ty.peel_refs().kind() {
+                    ty::Closure(..) | ty::Param(_) => true,
+                    ty::Dynamic(..) => dyn_fn,
+                    ty::Adt(adt, args) if adt.is_box() => dyn_fn && matches!(args.type_at(0).kind(), ty::Dynamic(..)),
+                    _ => false,
+                }
             }
             _ => def_id.is_local() && !super::bindings::is_binding(self.tcx, def_id),
         }

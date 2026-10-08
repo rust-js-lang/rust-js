@@ -362,4 +362,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "JS values of any shape"],
   },
+  {
+    name: "handler-of-binding-passed",
+    breaks: "`onClick={() => alert()}` is `onClick={alert}`, which shows the event",
+    file: "src/lower/jsx.rs",
+    find: "    if calls_rust\n",
+    replace: "    if true\n",
+    tests: ["test/jsx.test.ts", "-t", "calls a function with nothing"],
+  },
+  {
+    name: "handler-calling-nothing-kept",
+    breaks: "`onClick={() => onClear()}`, not `onClick={onClear}`",
+    file: "src/lower/jsx.rs",
+    find: "        && args.is_empty()\n",
+    replace: "        && args.is_empty()\n        && false\n",
+    tests: ["test/jsx.test.ts", "-t", "calls a function with nothing"],
+  },
 ];

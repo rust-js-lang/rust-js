@@ -417,8 +417,16 @@ export const mutations: Mutation[] = [
     name: "generic-callback-kept",
     breaks: "an `impl Fn` called with what it's given is `(x, i) => f(x, i)`, not `f`",
     file: "src/lower/iterators.rs",
-    find: "matches!(thir[args[0]].ty.peel_refs().kind(), ty::Closure(..) | ty::Param(_))",
-    replace: "matches!(thir[args[0]].ty.peel_refs().kind(), ty::Closure(..))",
+    find: "                    ty::Closure(..) | ty::Param(_) => true,\n",
+    replace: "                    ty::Closure(..) => true,\n",
     tests: ["test/format.test.ts", "-t", "only passes its arguments"],
+  },
+  {
+    name: "boxed-dyn-fn-not-rust",
+    breaks: "a `Box<dyn Fn()>` prop's call isn't a Rust function's, `() => onClear()` kept",
+    file: "src/lower/iterators.rs",
+    find: "                    ty::Adt(adt, args) if adt.is_box() => dyn_fn && matches!(args.type_at(0).kind(), ty::Dynamic(..)),\n",
+    replace: "",
+    tests: ["test/jsx.test.ts", "-t", "calls a function with nothing"],
   },
 ];

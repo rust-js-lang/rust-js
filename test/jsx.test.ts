@@ -2608,6 +2608,35 @@ pub fn Button<C: ReactNode>(ButtonProps { children, on_click }: ButtonProps<C>) 
   expect([Button({ children: "b", on_click: handler }).props.onClick === handler, Button({ children: "b" }).props.onClick]).toEqual([true, undefined]);
 });
 
+// A handler that only calls a function with nothing, `move |_| on_clear()`,
+// is the function, `onClick={onClear}`, as react.dev's ClearButton has it
+// (ADR 0198): React gives it the event, which a Rust function has no
+// parameter for.
+test("JSX passes a handler that calls a function with nothing as the function", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+pub struct ClearProps { pub on_clear: Box<dyn Fn()> }
+pub fn Clear(ClearProps { on_clear }: ClearProps) -> JSX::Element {
+    jsx! { <button onClick={move |_| on_clear()}>{"Clear"}</button> }
+}
+unsafe extern "Rust" {
+    #[link_name = "alert"]
+    safe fn alert();
+}
+pub fn Alert() -> JSX::Element {
+    jsx! { <button onClick={move |_| alert()}>{"Alert"}</button> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("<button onClick={onClear}>Clear</button>");
+  // A binding's JS function keeps its arrow: `alert(event)` would show it.
+  expect(jsx).toContain("<button onClick={() => alert()}>Alert</button>");
+  const { Clear } = await import(join(dir, "lib.jsx"));
+  const handler = () => {};
+  expect(Clear({ on_clear: handler }).props.onClick).toBe(handler);
+});
+
 // A handler prop is named as @types/react names it, `MouseEventHandler<T>`:
 // `onClick?: MouseEventHandler<HTMLButtonElement>`, an `EventHandler` of
 // its event, the element's, or any's by default.
