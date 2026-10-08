@@ -33,5 +33,6 @@ export function Next({ total, next }) {
 
 - **It's the JS a person writes.**
 - **It's tested**: a JSX test takes apart the props of a component
-  generic in its callback, and calls it; the corpus runs as before. A
+  generic in its callback, beside a type changed in place, which a type
+  parameter could otherwise be, and calls it; the corpus runs as before. A
   mutation keeps them whole.

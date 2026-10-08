@@ -2877,6 +2877,18 @@ pub struct NextProps<F: Fn() + Copy + 'static> {
 pub fn Next<F: Fn() + Copy + 'static>(NextProps { total, next }: NextProps<F>) -> JSX::Element {
     jsx! { <button onClick={move |_| next()}>{total}</button> }
 }
+
+// A type changed in place, as react.dev's ChallengeContents is, which a
+// type parameter could be but for its bound.
+pub struct Tally {
+    pub n: u32,
+}
+
+pub fn counted() -> u32 {
+    let mut tally = Tally { n: 1 };
+    tally.n += 1;
+    tally.n
+}
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
