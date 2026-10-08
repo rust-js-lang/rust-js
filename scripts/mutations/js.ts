@@ -83,4 +83,12 @@ export const mutations: Mutation[] = [
     replace: "        if false && let (UnaryOp::Not, ExprKind::Unary(UnaryOp::Not, inner)) = (op, &arg.kind)\n",
     tests: ["test/compiler.test.ts", "-t", "tested as JS tests it"],
   },
+  {
+    name: "is-array-tested-for-null",
+    breaks: "`value != null && Array.isArray(value)` says what `Array.isArray(value)` does",
+    file: "src/js.rs",
+    find: "            && is_array == \"isArray\"\n",
+    replace: "            && is_array == \"isArrayNot\"\n",
+    tests: ["test/compiler.test.ts", "-t", "matches! of a kind's literal"],
+  },
 ];

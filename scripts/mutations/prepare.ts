@@ -34,4 +34,20 @@ export const mutations: Mutation[] = [
     replace: "        StmtKind::Return(Some(_)) => StmtKind::Return(Some(call.clone())),\n",
     tests: ["test/compiler.test.ts", "-t", "a JS error is shown"],
   },
+  {
+    name: "coalescing-if",
+    breaks: "`if (SEEN == null) { SEEN = n; }`, not `SEEN ??= n`",
+    file: "src/prepare.rs",
+    find: "        if let Some(coalesced) = coalescing(stmt) {\n",
+    replace: "        if let Some(coalesced) = coalescing(stmt).filter(|_| false) {\n",
+    tests: ["test/compiler.test.ts", "-t", "only read and set is the module's let"],
+  },
+  {
+    name: "coalescing-another",
+    breaks: "`if (SEEN == null) { other = n; }` is `other ??= n`, set where `SEEN` isn't none",
+    file: "src/prepare.rs",
+    find: "    if !matches!(null.kind, ExprKind::Null) || !js::same_path(tested, target) {\n",
+    replace: "    if !matches!(null.kind, ExprKind::Null) {\n",
+    tests: ["test/compiler.test.ts", "-t", "only read and set is the module's let"],
+  },
 ];

@@ -162,4 +162,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/compiler.test.ts", "-t", "only read and set is the module's let"],
   },
+  {
+    name: "coalesce-assign-spelled-out",
+    breaks: "`SEEN = SEEN ?? n`, not `SEEN ??= n`",
+    file: "src/to_oxc.rs",
+    find: "                    Op::Coalesce => Some(AssignmentOperator::LogicalNullish),\n",
+    replace: "",
+    tests: ["test/compiler.test.ts", "-t", "only read and set is the module's let"],
+  },
 ];

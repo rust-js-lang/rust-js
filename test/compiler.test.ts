@@ -1079,6 +1079,14 @@ pub fn seen(n: u32) -> u32 {
     SEEN.get().unwrap_or(0)
 }
 
+pub fn unseen(n: u32) -> u32 {
+    let mut other = None;
+    if SEEN.get().is_none() {
+        other = Some(n);
+    }
+    other.unwrap_or(0)
+}
+
 pub fn bump() -> u32 {
     COUNT.set(COUNT.get() + 1);
     COUNT.get()
@@ -1123,9 +1131,11 @@ pub fn tick() {
   // One made by a \`const { .. }\` is too, by its own name.
   expect(js).not.toContain("__RUST_STD_INTERNAL_INIT");
   expect(js).toContain("let SEEN;\n");
-  expect(js).toContain("  if (SEEN == null) {\n    SEEN = n;\n  }");
+  expect(js).toContain("  SEEN ??= n;\n");
   const { seen } = await import(join(dir, "lib.js"));
   expect([seen(3), seen(4)]).toEqual([3, 3]);
+  const { unseen } = await import(join(dir, "lib.js"));
+  expect(unseen(5)).toBe(0);
   const { bump, note, shared, ticked } = await import(join(dir, "lib.js"));
   expect([bump(), bump(), note("a"), note("b"), shared(), shared(), ticked()]).toEqual([1, 2, 1, 2, 2, 4, 1]);
 });
@@ -1492,6 +1502,15 @@ pub fn is_text(value: Option<&Unknown>) -> bool {
 pub fn kind_is(value: &Unknown) -> bool {
     matches!(classify(value), Kind::String("inlineCode"))
 }
+pub fn listed(value: Option<&Unknown>) -> u32 {
+    if let Some(value) = value
+        && matches!(classify(value), Kind::Array(_))
+    {
+        1
+    } else {
+        0
+    }
+}
 pub fn is_string(value: &Unknown) -> bool {
     matches!(js::get(value, "mdxName").map(classify), Some(Kind::String(_)))
 }
@@ -1511,6 +1530,8 @@ pub fn is_three(n: u32) -> bool {
   expect(js).toContain('export function is_code(value) {\n  return value.mdxName === "inlineCode";\n}');
   expect(js).toContain('export function is_text(value) {\n  return value === "inlineCode";\n}');
   expect(js).toContain('export function kind_is(value) {\n  return value === "inlineCode";\n}');
+  // An array is never \`null\`: \`Array.isArray\` alone says it.
+  expect(js).toContain("export function listed(value) {\n  if (Array.isArray(value)) {");
   expect(js).toContain('export function is_string(value) {\n  return typeof value.mdxName === "string";\n}');
   const lib = await import(join(dir, "lib.js"));
   const values = [{ mdxName: "inlineCode" }, { mdxName: "pre" }, { mdxName: null }, {}, { mdxName: 5 }];
@@ -1519,6 +1540,7 @@ pub fn is_three(n: u32) -> bool {
   expect(["inlineCode", "pre", 5, null, undefined].map((v) => lib.is_text(v))).toEqual([true, false, false, false, false]);
   expect(["inlineCode", "pre", 5, {}].map((v) => lib.kind_is(v))).toEqual([true, false, false, false]);
   expect([lib.is_three(3), lib.is_three(4)]).toEqual([true, false]);
+  expect([[1], undefined, null, "a"].map((v) => lib.listed(v))).toEqual([1, 0, 0, 0]);
 });
 
 // What's never nullish is a `js::Unknown` too, as any value is TypeScript's

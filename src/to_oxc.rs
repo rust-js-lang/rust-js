@@ -571,6 +571,7 @@ impl<'a> Cx<'a> {
                     Op::Mul => Some(AssignmentOperator::Multiplication),
                     Op::Div => Some(AssignmentOperator::Division),
                     Op::Rem => Some(AssignmentOperator::Remainder),
+                    Op::Coalesce => Some(AssignmentOperator::LogicalNullish),
                     _ => None,
                 };
                 let (operator, value) = match &value.kind {

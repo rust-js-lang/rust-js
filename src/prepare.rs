@@ -19,6 +19,11 @@ pub fn module(module: &mut js::Module) {
 
 fn block(body: &mut Vec<Stmt>) {
     try_catches(body);
+    for stmt in body.iter_mut() {
+        if let Some(coalesced) = coalescing(stmt) {
+            stmt.kind = coalesced;
+        }
+    }
     for stmt in body {
         match &mut stmt.kind {
             StmtKind::Const(_, e)
@@ -130,6 +135,33 @@ fn try_catch(made: &Stmt, tested: &Stmt, rest: &[Stmt]) -> Option<StmtKind> {
         _ => return None,
     };
     Some(StmtKind::TryCatch(vec![body.at(*span)], None, failed.clone()))
+}
+
+/// `if (x == null) { x = e; }` is `x = x ?? e`, printed `x ??= e`: the
+/// same test, and `e` made only where it's none.
+fn coalescing(stmt: &Stmt) -> Option<StmtKind> {
+    let StmtKind::If(test, then, None) = &stmt.kind else {
+        return None;
+    };
+    let ExprKind::Binary(js::Op::LooseEq, tested, null) = &test.kind else {
+        return None;
+    };
+    let [
+        Stmt {
+            kind: StmtKind::Assign(target, value),
+            ..
+        },
+    ] = then.as_slice()
+    else {
+        return None;
+    };
+    if !matches!(null.kind, ExprKind::Null) || !js::same_path(tested, target) {
+        return None;
+    }
+    Some(StmtKind::Assign(
+        target.clone(),
+        Expr::bin(js::Op::Coalesce, target.clone(), value.clone()),
+    ))
 }
 
 fn expr(e: &mut Expr) {

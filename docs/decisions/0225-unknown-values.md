@@ -167,3 +167,6 @@ value.name = "new";
   object, `{ children }`, as the page makes a wrapper's props. It takes any
   `'static` value, kept as long as JS has it, as a `Box::leak` keeps one.
   (Amended: it took a `Copy` one.)
+- **An array is never `null`**: `if let Some(v) = value && matches!(classify(v),
+  Kind::Array(_))` is `Array.isArray(value)`, as the errors page asks of what
+  JSON gave, with no `value != null` before it.
