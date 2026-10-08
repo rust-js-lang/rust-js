@@ -14,9 +14,8 @@ export function Plain(reference) {
 
 export function App(reference) {
   globalThis.record(1);
-  const match = reference;
-  const match$1 = globalThis.record(2);
-  return <INPUT label={match$1} ref={match} />;
+  const match = globalThis.record(2);
+  return <INPUT label={match} ref={reference} />;
 }
 
 export function Normal(p) {
@@ -26,7 +25,6 @@ export function Normal(p) {
 export function Ordinary(reference) {
   const match = globalThis.record(3);
   globalThis.record(4);
-  const match$1 = reference;
-  return <Normal title={match} ref={match$1} />;
+  return <Normal title={match} ref={reference} />;
 }
 //# sourceMappingURL=lib.jsx.map

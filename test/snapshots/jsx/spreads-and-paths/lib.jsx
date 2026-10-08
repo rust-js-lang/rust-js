@@ -8,12 +8,12 @@ export function App() {
   const attrs = { title: "spread", className: "card" };
   const props = { title: "panel", children: <i>old</i> };
   const Selected = Empty;
-  const props$1 = { ...attrs };
-  const match = <b>new</b>;
   return (
     <Fragment key="group">
-      <div title="named" {...props$1} />
-      <Card title={props.title}>{match}</Card>
+      <div title="named" {...attrs} />
+      <Card title={props.title}>
+        <b>new</b>
+      </Card>
       <Card title="dot">
         <i />
       </Card>

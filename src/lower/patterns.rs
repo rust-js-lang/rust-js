@@ -656,7 +656,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Some(place) => place,
                 None => {
                     let value = self.expr(f, out)?;
-                    if value.is_constant() || (used_once && !value.has_effects()) {
+                    // One that reads only variables that never change, `Some(anchor)`
+                    // of jsx!'s captured `ref`, reads the same where it's used (ADR 0252).
+                    if value.is_constant() || (used_once && !value.has_effects()) || self.reads_unchanging(&value, out)
+                    {
                         value
                     } else {
                         self.spill(base, value, out)

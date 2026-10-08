@@ -120,17 +120,13 @@ function main() {
   console.log(`found ${found}`);
   console.log(`tail ${tail(6)}`);
   const noisy$3 = make(7);
-  let match;
   let noisy$4;
-  let match$1;
   try {
-    match = noisy$3;
     noisy$4 = [7];
     try {
-      match$1 = noisy$4;
-      if (!$eq(match, match$1)) {
+      if (!$eq(noisy$3, noisy$4)) {
         const kind = "Eq";
-        $assertFailed(kind, noisyDebug_fmt(match), noisyDebug_fmt(match$1));
+        $assertFailed(kind, noisyDebug_fmt(noisy$3), noisyDebug_fmt(noisy$4));
       }
     } finally {
       noisyDrop_drop(noisy$4);

@@ -68,16 +68,31 @@ function app(name: string): string {
   writeFileSync(cargo, readFileSync(cargo, "utf8").replaceAll('path = "../../', `path = "${root}/`));
   const page = join(dir, "app/page.rs");
   writeFileSync(page, readFileSync(page, "utf8")
-    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod counter;\nmod route_path;\n\nuse next::image::Image;")
+    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod counter;\nmod linked;\nmod route_path;\n\nuse next::image::Image;")
     .replace('{" file."}\n                    </h1>', '{" file."}\n                    </h1>\n                    <counter::Counter />'));
   writeFileSync(join(dir, "app/counter.rs"), counter("Count "));
   // The Pages Router's route, as react.dev's pages read it: compiled, not
   // rendered, as this app's routes are the App Router's.
+  // A link of a ref and passHref, as react.dev's SidebarLink has it.
+  writeFileSync(join(dir, "app/linked.rs"), linked);
   writeFileSync(join(dir, "app/route_path.rs"), "pub fn route_path() -> String {\n    next::router::use_router().as_path().to_string()\n}\n");
   mkdirSync(join(dir, "app/about"));
   writeFileSync(join(dir, "app/about/page.rs"), about);
   return dir;
 }
+
+const linked = `#![allow(non_snake_case)]
+js::directive!("use client");
+
+use next::link::Link;
+use react::webapi::HTMLAnchorElement;
+use react::{JSX, jsx, use_ref};
+
+pub fn Linked() -> JSX::Element {
+    let anchor = use_ref::<Option<&'static HTMLAnchorElement>>(None);
+    jsx! { <Link href="/" ref={Some(anchor)} title={Some("Home")} passHref={Some(true)}>{"Home"}</Link> }
+}
+`;
 
 function counter(label: string): string {
   return `#![allow(non_snake_case)]
@@ -117,6 +132,7 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   expect(statements("app/page.jsx")[0]).not.toBe('"use client";');
   expect(readFileSync(join(dir, "app/page.jsx"), "utf8")).toContain("export default Home;");
   expect(readFileSync(join(dir, "app/about/page.jsx"), "utf8")).toContain('import Link from "next/link";');
+  expect(readFileSync(join(dir, "app/linked.jsx"), "utf8")).toContain('<Link href="/" ref={anchor} title="Home" passHref>');
   const routePath = readFileSync(join(dir, "app/route_path.js"), "utf8");
   expect([routePath.includes('import { useRouter } from "next/router";'), routePath.includes("return useRouter().asPath;")]).toEqual([true, true]);
   // The Server Component's page is rendered at build time, the counter in it.

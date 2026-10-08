@@ -343,6 +343,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0250 Props updated from a reference are a spread](decisions/0250-reference-base-spread.md)
 - [0251 A module's default export is imported as its default](decisions/0251-default-imports.md)
 - [0252 A one-armed match's value is its body's](decisions/0252-one-arm-match-value.md)
+- [0253 next/link takes a ref and passHref](decisions/0253-next-link-ref.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

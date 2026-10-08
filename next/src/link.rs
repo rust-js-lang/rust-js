@@ -2,7 +2,8 @@
 //! an `<a>` that goes to another route without loading the page again.
 
 use react::attributes::AnchorHTMLAttributes;
-use react::{JSX, ReactNode};
+use react::webapi::HTMLAnchorElement;
+use react::{JSX, ReactNode, RefObject};
 
 /// `<Link href="/about" {..Default::default()}>{"About"}</Link>`.
 #[cfg_attr(rust_js, rust_js::link_name = "next/link#default")]
@@ -31,6 +32,11 @@ pub struct LinkProps<'a, C> {
     pub scroll: Option<bool>,
     /// Load the route ahead, as the link is seen: in production only.
     pub prefetch: Option<bool>,
+    /// Send `href` to its child, as a child that isn't an `<a>` needs: `false`.
+    #[cfg_attr(rust_js, rust_js::name = "passHref")]
+    pub pass_href: Option<bool>,
+    /// Its `<a>`, as React's `RefAttributes<HTMLAnchorElement>` holds it.
+    pub r#ref: Option<RefObject<Option<&'static HTMLAnchorElement>>>,
     /// The `<a>`'s classes.
     #[cfg_attr(rust_js, rust_js::name = "className")]
     pub class_name: Option<&'a str>,

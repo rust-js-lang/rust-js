@@ -142,7 +142,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `value` reads only variables that never change, so it's the
     /// same read before or after anything else: a `useState` value, a
     /// parameter, and elements of them.
-    fn reads_unchanging(&self, value: &Expr, out: &[Stmt]) -> bool {
+    pub(super) fn reads_unchanging(&self, value: &Expr, out: &[Stmt]) -> bool {
         let mut vars = Vec::new();
         value.visit_vars(&mut |var| vars.push(var));
         value.reads_only_vars() && vars.into_iter().all(|var| self.reads_alike(&Expr::var(var), out))

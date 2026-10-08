@@ -550,4 +550,12 @@ export const mutations: Mutation[] = [
     replace: "                } if false => Some((i, Some((name, var, false)))),",
     tests: ["test/compiler.test.ts","-t","taken apart through a reference"],
   },
+  {
+    name: "unchanging-part-spilled",
+    breaks: "a captured part that reads only variables that never change, a ref's `Some(anchor)`, is made into a `const` of its own, `const match = anchor`",
+    file: "src/lower/patterns.rs",
+    find: " || self.reads_unchanging(&value, out)\n",
+    replace: "\n",
+    tests: ["test/next.test.ts", "-t", "rust-js-next build"],
+  },
 ];
