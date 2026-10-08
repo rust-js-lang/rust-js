@@ -45,4 +45,10 @@ export function canvas_size() {
   canvas.height = 200;
   return [canvas.width, canvas.height];
 }
+
+export function statics(blob) {
+  const url = URL.createObjectURL(blob);
+  URL.revokeObjectURL(url);
+  return [HTMLScriptElement.supports("importmap"), url];
+}
 //# sourceMappingURL=web_forms.js.map

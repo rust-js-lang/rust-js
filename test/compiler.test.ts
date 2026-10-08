@@ -983,7 +983,7 @@ pub fn page(el: &Element, blob: &Blob, url: &str) -> (&'static Response, js::Pro
   writeFileSync(join(dir, "lib.rs"), source);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
   // To TypeScript, the trait is the union.
-  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export function kind(body: ReadableStream | Blob | Uint8Array | ArrayBuffer | FormData | string): string;");
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export function kind(body: ReadableStream | Blob | Uint8Array | ArrayBuffer | FormData | URLSearchParams | string): string;");
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('globalThis.upload("hello");\n  globalThis.upload(blob);\n  globalThis.upload(body);\n  globalThis.upload(maybe);');
   // Of webapi's union, a binding crate's trait, no dictionary: `kind(body)`.

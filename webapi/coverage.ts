@@ -7,7 +7,7 @@ import { readFileSync } from "node:fs";
 
 import { open } from "@rust-js/typescript";
 
-type Members = { members: Set<string>; statics: Set<string>; ctor: boolean; extends: string[] };
+export type Members = { members: Set<string>; statics: Set<string>; ctor: boolean; extends: string[] };
 
 export type Coverage = {
   /** Every member of TypeScript's classes, `Element.append`. */
@@ -25,7 +25,7 @@ const lib = new URL("./src/lib.rs", import.meta.url).pathname;
 /** TypeScript's classes and their members: their own, their mixins'
  * (`ParentNode`'s), not their parent class's, which they have by `Deref`;
  * their statics, `static:supports`, and a constructor. */
-async function typescript(): Promise<Map<string, Members>> {
+export async function typescript(): Promise<Map<string, Members>> {
   const session = await open([dom]);
   const { declarations } = await session.read(dom);
   await session.close();

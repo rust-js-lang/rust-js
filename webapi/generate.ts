@@ -8,6 +8,7 @@
 // are counted and skipped, and rerunning after rust-js grows picks them up.
 
 import idl from "@webref/idl";
+import { typescript } from "./coverage";
 import webref from "@webref/idl/package.json" with { type: "json" };
 import webrefEvents from "@webref/events";
 import eventsPackage from "@webref/events/package.json" with { type: "json" };
@@ -83,6 +84,12 @@ const INTERFACES = [
   "SVGFEOffsetElement", "SVGFESpecularLightingElement", "SVGFETileElement", "SVGFETurbulenceElement",
   "SVGFEDistantLightElement", "SVGFEPointLightElement", "SVGFESpotLightElement", "SVGClipPathElement", "SVGMaskElement",
 ];
+// And every other class TypeScript's DOM has (`@types/web`), from whichever
+// spec WebIDL has it in (ADR 0281).
+const typescriptDom = await typescript();
+const defined = new Set(Object.values(await idl.parseAll() as Record<string, { type: string; name: string; partial?: boolean }[]>)
+  .flat().filter((d) => d.type === "interface" && !d.partial).map((d) => d.name));
+INTERFACES.push(...[...typescriptDom.keys()].filter((name) => defined.has(name) && !INTERFACES.includes(name)).sort());
 const known = new Set(INTERFACES);
 
 // Members written by hand, for results the generator can't type: a union
@@ -163,7 +170,24 @@ type Def = {
 };
 
 const all = await idl.parseAll() as Record<string, Def[]>;
-const read: Def[] = SPECS.flatMap((spec) => all[spec]);
+const anyClassHas = new Set([...typescriptDom.values()].flatMap((c) => [...c.members]));
+// Every spec's: what the specs above have, as they have it, and of the
+// others' members those TypeScript's DOM has, not one it leaves out as
+// still an experiment (ADR 0281).
+// (webidl2's definitions are objects with getters: the members left out
+// are marked, not the definitions copied.)
+const read: Def[] = Object.values(all).flat();
+const leftOut = new WeakSet<Member>();
+for (const [spec, defs] of Object.entries(all)) {
+  if (SPECS.includes(spec)) continue;
+  for (const d of defs) {
+    const ts = d.type === "interface" ? typescriptDom.get(d.name) : undefined;
+    // A mixin's, as a class that includes it has them.
+    const kept = (m: Member) =>
+      !!m.name && (d.type === "interface mixin" ? anyClassHas.has(m.name) : !!ts && (m.special === "static" ? ts.statics : ts.members).has(m.name));
+    for (const m of d.members ?? []) if (!kept(m)) leftOut.add(m);
+  }
+}
 const everywhere: Def[] = Object.values(all).flat();
 
 // Names that are strings (enums) or other types (typedefs), from any spec.
@@ -198,14 +222,14 @@ for (const d of read) {
       i.constructible = !(d.extAttrs ?? []).some((a) => a.name === "HTMLConstructor");
       i.legacyNamespace = (d.extAttrs ?? []).find((a) => a.name === "LegacyNamespace")?.rhs?.value;
     }
-    i.members.push(...(d.members ?? []).map((member) => ({ member, from: d.name })));
+    i.members.push(...(d.members ?? []).filter((m) => !leftOut.has(m)).map((member) => ({ member, from: d.name })));
     interfaces.set(d.name, i);
   } else if (d.type === "namespace" && NAMESPACES.includes(d.name)) {
     const n = namespaces.get(d.name) ?? { name: d.name, members: [], constructible: false, isNamespace: true };
     n.members.push(...(d.members ?? []).map((member) => ({ member, from: d.name })));
     namespaces.set(d.name, n);
   } else if (d.type === "interface mixin") {
-    mixins.set(d.name, [...(mixins.get(d.name) ?? []), ...(d.members ?? [])]);
+    mixins.set(d.name, [...(mixins.get(d.name) ?? []), ...(d.members ?? []).filter((m) => !leftOut.has(m))]);
   } else if (d.type === "includes") {
     includes.set(d.target!, [...(includes.get(d.target!) ?? []), d.includes!]);
   }
@@ -561,7 +585,8 @@ function functionsOf(i: Interface): Fn[] {
       if (!type) break;
       words.push(snakeWords(a.name));
       params.push(`${snake(a.name)}: ${type}`);
-      forms.push({ name: `${base}_with_${[...lead, ...words].join("_and_")}`, params: [...params] });
+      // A keyword's `_` isn't needed before more: `continue_with_key`.
+      forms.push({ name: `${base.replace(/_$/, "")}_with_${[...lead, ...words].join("_and_")}`, params: [...params] });
     }
     return forms;
   };
@@ -638,7 +663,7 @@ function functionsOf(i: Interface): Fn[] {
             !firstRequired[j] ? [snake(a.name)] : key(firstRequired[j]) !== key(a) ? [suffix(sig.types[j])] : [],
           );
       const name = NAMED[`${i.name}.${m.name}`] ?? snake(m.name);
-      const base = lead.length > 0 ? `${name}_with_${lead.join("_and_")}` : name;
+      const base = lead.length > 0 ? `${name.replace(/_$/, "")}_with_${lead.join("_and_")}` : name;
       for (const v of [requiredForm(base, sig), ...optionalForms(name, lead, sig, m.arguments ?? [])]) {
         const jsName = isStatic ? `${i.name}.${m.name}` : member(m.name);
         fns.push({ name: v.name, jsName, params: isStatic ? v.params : [...self, ...v.params], result: orNull(result, m.idlType!), doc });

@@ -57,3 +57,12 @@ so nothing said when it fell behind.
 - MDN links are the measure's key: a binding written without one isn't
   counted.
 - Generating every class makes src/lib.rs about three times its size.
+
+## Since
+
+- **Every class TypeScript's DOM has is generated**, 699 of its 701 (the
+  two WebIDL doesn't define), from whichever spec has it. The specs the
+  crate read before give all their members; the others give those
+  TypeScript has, not one it leaves out as an experiment. Members went from
+  13.5% to 46.6%; no function was renamed or lost. A keyword's `_` is
+  dropped before a form's suffix: `continue_with_key`.
