@@ -1647,6 +1647,23 @@ pub fn Linky(LinkyProps { anchor, label }: LinkyProps) -> JSX::Element {
 pub fn Linked() -> JSX::Element {
     jsx! { <Linky label={note("l")} target={Some(note("t"))} /> }
 }
+// A prop made before one made by statements is read first, named as its
+// field is.
+pub fn Looped() -> JSX::Element {
+    jsx! {
+        <ButtonLink
+            href={note("h")}
+            label={Some({
+                let mut n = 0;
+                while n < 2 {
+                    n += 1;
+                }
+                if n == 2 { "two" } else { "other" }
+            })}>
+            {"L"}
+        </ButtonLink>
+    }
+}
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
@@ -1654,6 +1671,7 @@ pub fn Linked() -> JSX::Element {
   expect(jsx).toContain('<ButtonLink href="/b" className="c">');
   const { App, Noted, Linked, Sized, Forward } = await import(join(dir, "lib.jsx"));
   expect(jsx).toContain("<ButtonLink href={href} {...props}>");
+  expect(jsx).toContain('export function Looped() {\n  const href = note("h");\n  let n = 0;');
   const { createElement } = await import("react");
   expect(renderToStaticMarkup(createElement(Forward, { href: "/f", target: "_t", id: "i" }))).toBe('<a href="/f" data-size="md" target="_t" id="i">F</a>');
   const logged: string[] = [];
