@@ -461,6 +461,20 @@ test("the builtins crate's json::stringify and reg_exp::replace are JS's", () =>
   expect(builtins.replaced("2026-09-30", "(\\d+)-(\\d+)-(\\d+)", "", "$3/$2/$1")).toBe("30/09/2026");
 });
 
+// JS's string methods (ADR 0247), as JS has them: by UTF-16 indexes, so an
+// emoji is two, and a negative index of `slice` counts from the end.
+test("the builtins crate's string functions are JS's string methods", () => {
+  const text = " 😀ab ab ";
+  const [parts, at, length] = builtins.parts(text, "ab");
+  expect(parts).toEqual([text.slice(1, -1), text.slice(-2), text.substring(1, 3), text.substring(1), text.trim(), text.trimStart(), text.trimEnd()]);
+  expect(at).toEqual([text.indexOf("ab"), text.indexOf("ab", 2), text.lastIndexOf("ab")]);
+  expect(length).toBe(text.length);
+  const js = readFileSync(join(target, "builtins.js"), "utf8");
+  for (const call of ["text.slice(1, -1)", "text.slice(-2)", "text.substring(1, 3)", "text.substring(1)", "text.trim()", "text.trimStart()", "text.trimEnd()", 'text.indexOf(part)', "text.indexOf(part, 2)", "text.lastIndexOf(part)", "text.length"]) {
+    expect(js).toContain(call);
+  }
+});
+
 // A RegExp of a pattern and flags written as they are is a literal, as JS
 // writes one, `/%s/g` (ADR 0243); one JS can't parse is made as it was,
 // to throw when it runs.

@@ -1,7 +1,7 @@
 //! The builtins crate (ADR 0102) as a program calls it: each function is the
 //! JS global or method it names. For the test in compiler.test.ts.
 
-use js::{json, reg_exp};
+use js::{json, reg_exp, string};
 
 /// A string's JSON text, which is a JS string literal too.
 pub fn quoted(text: &str) -> String {
@@ -11,6 +11,26 @@ pub fn quoted(text: &str) -> String {
 /// `pattern`'s matches replaced with `with`, in which `$1` is the first group.
 pub fn replaced(text: &str, pattern: &str, flags: &str, with: &str) -> String {
     reg_exp::replace(text, reg_exp::new(pattern, flags), with)
+}
+
+/// JS's string methods, by JS's indexes, UTF-16's, as react.dev's code
+/// reads its strings: each part of `text`, and where `part` is in it.
+pub fn parts(text: &str, part: &str) -> (Vec<String>, Vec<i32>, u32) {
+    let parts = vec![
+        string::slice(text, 1, -1),
+        string::slice_to_end(text, -2),
+        string::substring(text, 1, 3),
+        string::substring_to_end(text, 1),
+        string::trim(text),
+        string::trim_start(text),
+        string::trim_end(text),
+    ];
+    let at = vec![
+        string::index_of(text, part),
+        string::index_of_from(text, part, 2),
+        string::last_index_of(text, part),
+    ];
+    (parts, at, string::length(text))
 }
 
 /// A JS object of these keys and values, as an API taking a dictionary wants.
