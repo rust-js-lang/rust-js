@@ -1,6 +1,6 @@
 # The webapi crate against TypeScript's DOM (@types/web): bun test test/webapi-coverage.test.ts
 # classes: 699 of 701 (99.7%)
-# members: 8160 of 8488 (96.1%)
+# members: 8184 of 8488 (96.4%)
 AbortController.abort
 AbortController.constructor
 AbortController.signal
@@ -298,8 +298,11 @@ CSSMatrixComponent.constructor
 CSSMatrixComponent.matrix
 CSSNamespaceRule.namespaceURI
 CSSNamespaceRule.prefix
+CSSNumericArray.entries
 CSSNumericArray.forEach
+CSSNumericArray.keys
 CSSNumericArray.length
+CSSNumericArray.values
 CSSNumericValue.add
 CSSNumericValue.div
 CSSNumericValue.equals
@@ -988,10 +991,13 @@ CSSStyleValue.static:parseAll
 CSSTransformComponent.is2D
 CSSTransformComponent.toMatrix
 CSSTransformValue.constructor
+CSSTransformValue.entries
 CSSTransformValue.forEach
 CSSTransformValue.is2D
+CSSTransformValue.keys
 CSSTransformValue.length
 CSSTransformValue.toMatrix
+CSSTransformValue.values
 CSSTransition.transitionProperty
 CSSTranslate.constructor
 CSSTranslate.x
@@ -1338,14 +1344,17 @@ DOMStringList.item
 DOMStringList.length
 DOMTokenList.add
 DOMTokenList.contains
+DOMTokenList.entries
 DOMTokenList.forEach
 DOMTokenList.item
+DOMTokenList.keys
 DOMTokenList.length
 DOMTokenList.remove
 DOMTokenList.replace
 DOMTokenList.supports
 DOMTokenList.toggle
 DOMTokenList.value
+DOMTokenList.values
 DataTransfer.clearData
 DataTransfer.constructor
 DataTransfer.dropEffect
@@ -3028,11 +3037,14 @@ HashChangeEvent.oldURL
 Headers.append
 Headers.constructor
 Headers.delete
+Headers.entries
 Headers.forEach
 Headers.get
 Headers.getSetCookie
 Headers.has
+Headers.keys
 Headers.set
+Headers.values
 Highlight.constructor
 Highlight.forEach
 Highlight.priority
@@ -3757,9 +3769,12 @@ NodeIterator.previousNode
 NodeIterator.referenceNode
 NodeIterator.root
 NodeIterator.whatToShow
+NodeList.entries
 NodeList.forEach
 NodeList.item
+NodeList.keys
 NodeList.length
+NodeList.values
 Notification.actions
 Notification.body
 Notification.close
@@ -4280,9 +4295,12 @@ RTCTrackEvent.receiver
 RTCTrackEvent.streams
 RTCTrackEvent.track
 RTCTrackEvent.transceiver
+RadioNodeList.entries
 RadioNodeList.forEach
 RadioNodeList.item
+RadioNodeList.keys
 RadioNodeList.value
+RadioNodeList.values
 Range.END_TO_END
 Range.END_TO_START
 Range.START_TO_END
@@ -5402,10 +5420,13 @@ StylePropertyMap.append
 StylePropertyMap.clear
 StylePropertyMap.delete
 StylePropertyMap.set
+StylePropertyMapReadOnly.entries
 StylePropertyMapReadOnly.forEach
 StylePropertyMapReadOnly.getAll
 StylePropertyMapReadOnly.has
+StylePropertyMapReadOnly.keys
 StylePropertyMapReadOnly.size
+StylePropertyMapReadOnly.values
 StyleSheet.disabled
 StyleSheet.href
 StyleSheet.parentStyleSheet
@@ -5584,13 +5605,16 @@ URLPattern.username
 URLSearchParams.append
 URLSearchParams.constructor
 URLSearchParams.delete
+URLSearchParams.entries
 URLSearchParams.forEach
 URLSearchParams.get
 URLSearchParams.getAll
 URLSearchParams.has
+URLSearchParams.keys
 URLSearchParams.set
 URLSearchParams.size
 URLSearchParams.sort
+URLSearchParams.values
 UserActivation.hasBeenActive
 UserActivation.isActive
 VTTCue.align

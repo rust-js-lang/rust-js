@@ -119,3 +119,16 @@ pub fn iterables(nodes: &webapi::NodeList, headers: &webapi::Headers, ranges: &w
     }));
     (seen, headers.get("a"), ranges.has("x"), ranges.size())
 }
+
+/// What an iterable gives, `keys()`, `values()` and `entries()`: JS
+/// iterators, each a `Box<dyn Iterator>` (ADR 0140), stepped by `for`,
+/// adapted lazily by JS's iterator helpers, or stepped by `next()`.
+pub fn iterated(headers: &webapi::Headers, list: &webapi::DOMTokenList) -> (Vec<String>, usize, Option<String>) {
+    let mut names = Vec::new();
+    for (name, value) in headers.entries() {
+        names.push(format!("{name}={value}"));
+    }
+    let long = list.values().filter(|token| token.len() > 3).count();
+    let mut keys = headers.keys();
+    (names, long, keys.next())
+}

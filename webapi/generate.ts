@@ -665,8 +665,10 @@ function functionsOf(i: Interface): Fn[] {
     }
     // An iterable, a maplike or a setlike: `forEach` of each item, given
     // what JS gives it, an array's `(value, index, list)` or a map's
-    // `(value, key, map)`, and a map's or a set's own methods. Not yet
-    // `keys`, `values` nor `entries`, JS iterators (ADR 0281).
+    // `(value, key, map)`, and a map's or a set's own methods; and its
+    // `keys`, `values` and `entries`, JS iterators, each a
+    // `Box<dyn Iterator>`, which rust-js steps, adapts and loops over as
+    // the JS iterator it is (ADR 0140).
     if (m.type === "iterable" || m.type === "maplike" || m.type === "setlike") {
       const declared = m as unknown as { idlType: IdlType[]; readonly?: boolean; async?: boolean };
       if (declared.async || i.isNamespace) {
@@ -686,6 +688,13 @@ function functionsOf(i: Interface): Fn[] {
       const add = (name: string, jsName: string, params: string[], result: string) =>
         fns.push({ name, jsName, params: [...self, ...params], result, doc: doc(jsName.replace(/^get /, "")) });
       add("for_each", "forEach", [`callback: Box<dyn FnMut(${v}, ${k}, ${own})>`], "()");
+      const keyResult = m.type === "setlike" ? result : key ? rustType(key, "result") : "u32";
+      if (typeof keyResult === "string") {
+        const iterator = (item: string) => `Box<dyn Iterator<Item = ${item}>>`;
+        add("keys", "keys", [], iterator(keyResult));
+        add("values", "values", [], iterator(result));
+        add("entries", "entries", [], iterator(`(${keyResult}, ${result})`));
+      }
       if (m.type === "maplike") {
         add("get", "get", [`key: ${k}`], `Option<${result}>`);
         add("has", "has", [`key: ${k}`], "bool");

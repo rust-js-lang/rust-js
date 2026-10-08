@@ -5919,6 +5919,30 @@ impl DOMTokenList {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMTokenList/keys)
+    #[cfg_attr(rust_js, rust_js::link_name = "keys")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn keys(&self) -> Box<dyn Iterator<Item = u32>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMTokenList/values)
+    #[cfg_attr(rust_js, rust_js::link_name = "values")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn values(&self) -> Box<dyn Iterator<Item = String>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMTokenList/entries)
+    #[cfg_attr(rust_js, rust_js::link_name = "entries")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (u32, String)>> {
+        unreachable!()
+    }
+
 }
 
 /// [`NodeList`](https://developer.mozilla.org/docs/Web/API/NodeList)
@@ -5947,6 +5971,30 @@ impl NodeList {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(&Node, u32, &NodeList)>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/NodeList/keys)
+    #[cfg_attr(rust_js, rust_js::link_name = "keys")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn keys(&self) -> Box<dyn Iterator<Item = u32>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/NodeList/values)
+    #[cfg_attr(rust_js, rust_js::link_name = "values")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn values(&self) -> Box<dyn Iterator<Item = &'static Node>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/NodeList/entries)
+    #[cfg_attr(rust_js, rust_js::link_name = "entries")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (u32, &'static Node)>> {
         unreachable!()
     }
 
@@ -32914,6 +32962,30 @@ impl Headers {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Headers/keys)
+    #[cfg_attr(rust_js, rust_js::link_name = "keys")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn keys(&self) -> Box<dyn Iterator<Item = String>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Headers/values)
+    #[cfg_attr(rust_js, rust_js::link_name = "values")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn values(&self) -> Box<dyn Iterator<Item = String>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Headers/entries)
+    #[cfg_attr(rust_js, rust_js::link_name = "entries")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (String, String)>> {
+        unreachable!()
+    }
+
 }
 
 /// [`Request`](https://developer.mozilla.org/docs/Web/API/Request)
@@ -43813,6 +43885,30 @@ impl AudioParamMap {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioParamMap/keys)
+    #[cfg_attr(rust_js, rust_js::link_name = "keys")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn keys(&self) -> Box<dyn Iterator<Item = String>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioParamMap/values)
+    #[cfg_attr(rust_js, rust_js::link_name = "values")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn values(&self) -> Box<dyn Iterator<Item = &'static AudioParam>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioParamMap/entries)
+    #[cfg_attr(rust_js, rust_js::link_name = "entries")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (String, &'static AudioParam)>> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioParamMap/get)
     #[cfg_attr(rust_js, rust_js::link_name = "get")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -46326,6 +46422,30 @@ impl CSSNumericArray {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSNumericArray/keys)
+    #[cfg_attr(rust_js, rust_js::link_name = "keys")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn keys(&self) -> Box<dyn Iterator<Item = u32>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSNumericArray/values)
+    #[cfg_attr(rust_js, rust_js::link_name = "values")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn values(&self) -> Box<dyn Iterator<Item = &'static CSSNumericValue>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSNumericArray/entries)
+    #[cfg_attr(rust_js, rust_js::link_name = "entries")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (u32, &'static CSSNumericValue)>> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSNumericArray/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -48226,6 +48346,30 @@ impl CSSTransformValue {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(&CSSTransformComponent, u32, &CSSTransformValue)>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTransformValue/keys)
+    #[cfg_attr(rust_js, rust_js::link_name = "keys")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn keys(&self) -> Box<dyn Iterator<Item = u32>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTransformValue/values)
+    #[cfg_attr(rust_js, rust_js::link_name = "values")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn values(&self) -> Box<dyn Iterator<Item = &'static CSSTransformComponent>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTransformValue/entries)
+    #[cfg_attr(rust_js, rust_js::link_name = "entries")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (u32, &'static CSSTransformComponent)>> {
         unreachable!()
     }
 
@@ -50727,6 +50871,30 @@ impl CustomStateSet {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(&str, &str, &CustomStateSet)>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomStateSet/keys)
+    #[cfg_attr(rust_js, rust_js::link_name = "keys")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn keys(&self) -> Box<dyn Iterator<Item = String>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomStateSet/values)
+    #[cfg_attr(rust_js, rust_js::link_name = "values")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn values(&self) -> Box<dyn Iterator<Item = String>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomStateSet/entries)
+    #[cfg_attr(rust_js, rust_js::link_name = "entries")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (String, String)>> {
         unreachable!()
     }
 
@@ -54400,6 +54568,30 @@ impl EventCounts {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventCounts/keys)
+    #[cfg_attr(rust_js, rust_js::link_name = "keys")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn keys(&self) -> Box<dyn Iterator<Item = String>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventCounts/values)
+    #[cfg_attr(rust_js, rust_js::link_name = "values")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn values(&self) -> Box<dyn Iterator<Item = f64>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventCounts/entries)
+    #[cfg_attr(rust_js, rust_js::link_name = "entries")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (String, f64)>> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EventCounts/get)
     #[cfg_attr(rust_js, rust_js::link_name = "get")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -55545,6 +55737,30 @@ impl FontFaceSet {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(&FontFace, &FontFace, &FontFaceSet)>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/keys)
+    #[cfg_attr(rust_js, rust_js::link_name = "keys")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn keys(&self) -> Box<dyn Iterator<Item = &'static FontFace>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/values)
+    #[cfg_attr(rust_js, rust_js::link_name = "values")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn values(&self) -> Box<dyn Iterator<Item = &'static FontFace>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/entries)
+    #[cfg_attr(rust_js, rust_js::link_name = "entries")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (&'static FontFace, &'static FontFace)>> {
         unreachable!()
     }
 
@@ -57708,6 +57924,30 @@ impl GPUSupportedFeatures {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedFeatures/keys)
+    #[cfg_attr(rust_js, rust_js::link_name = "keys")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn keys(&self) -> Box<dyn Iterator<Item = String>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedFeatures/values)
+    #[cfg_attr(rust_js, rust_js::link_name = "values")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn values(&self) -> Box<dyn Iterator<Item = String>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedFeatures/entries)
+    #[cfg_attr(rust_js, rust_js::link_name = "entries")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (String, String)>> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedFeatures/has)
     #[cfg_attr(rust_js, rust_js::link_name = "has")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -59820,6 +60060,30 @@ impl Highlight {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Highlight/keys)
+    #[cfg_attr(rust_js, rust_js::link_name = "keys")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn keys(&self) -> Box<dyn Iterator<Item = &'static AbstractRange>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Highlight/values)
+    #[cfg_attr(rust_js, rust_js::link_name = "values")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn values(&self) -> Box<dyn Iterator<Item = &'static AbstractRange>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Highlight/entries)
+    #[cfg_attr(rust_js, rust_js::link_name = "entries")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (&'static AbstractRange, &'static AbstractRange)>> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Highlight/has)
     #[cfg_attr(rust_js, rust_js::link_name = "has")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -59904,6 +60168,30 @@ impl HighlightRegistry {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(&Highlight, &str, &HighlightRegistry)>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HighlightRegistry/keys)
+    #[cfg_attr(rust_js, rust_js::link_name = "keys")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn keys(&self) -> Box<dyn Iterator<Item = String>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HighlightRegistry/values)
+    #[cfg_attr(rust_js, rust_js::link_name = "values")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn values(&self) -> Box<dyn Iterator<Item = &'static Highlight>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HighlightRegistry/entries)
+    #[cfg_attr(rust_js, rust_js::link_name = "entries")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (String, &'static Highlight)>> {
         unreachable!()
     }
 
@@ -62065,6 +62353,30 @@ impl MIDIInputMap {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIInputMap/keys)
+    #[cfg_attr(rust_js, rust_js::link_name = "keys")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn keys(&self) -> Box<dyn Iterator<Item = String>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIInputMap/values)
+    #[cfg_attr(rust_js, rust_js::link_name = "values")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn values(&self) -> Box<dyn Iterator<Item = &'static MIDIInput>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIInputMap/entries)
+    #[cfg_attr(rust_js, rust_js::link_name = "entries")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (String, &'static MIDIInput)>> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIInputMap/get)
     #[cfg_attr(rust_js, rust_js::link_name = "get")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -62185,6 +62497,30 @@ impl MIDIOutputMap {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(&MIDIOutput, &str, &MIDIOutputMap)>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIOutputMap/keys)
+    #[cfg_attr(rust_js, rust_js::link_name = "keys")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn keys(&self) -> Box<dyn Iterator<Item = String>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIOutputMap/values)
+    #[cfg_attr(rust_js, rust_js::link_name = "values")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn values(&self) -> Box<dyn Iterator<Item = &'static MIDIOutput>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIOutputMap/entries)
+    #[cfg_attr(rust_js, rust_js::link_name = "entries")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (String, &'static MIDIOutput)>> {
         unreachable!()
     }
 
@@ -73133,6 +73469,30 @@ impl RTCStatsReport {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCStatsReport/keys)
+    #[cfg_attr(rust_js, rust_js::link_name = "keys")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn keys(&self) -> Box<dyn Iterator<Item = String>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCStatsReport/values)
+    #[cfg_attr(rust_js, rust_js::link_name = "values")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn values(&self) -> Box<dyn Iterator<Item = &'static JsObject>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCStatsReport/entries)
+    #[cfg_attr(rust_js, rust_js::link_name = "entries")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (String, &'static JsObject)>> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCStatsReport/get)
     #[cfg_attr(rust_js, rust_js::link_name = "get")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -78039,6 +78399,30 @@ impl StylePropertyMapReadOnly {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StylePropertyMapReadOnly/keys)
+    #[cfg_attr(rust_js, rust_js::link_name = "keys")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn keys(&self) -> Box<dyn Iterator<Item = String>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StylePropertyMapReadOnly/values)
+    #[cfg_attr(rust_js, rust_js::link_name = "values")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn values(&self) -> Box<dyn Iterator<Item = Vec<&'static CSSStyleValue>>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StylePropertyMapReadOnly/entries)
+    #[cfg_attr(rust_js, rust_js::link_name = "entries")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (String, Vec<&'static CSSStyleValue>)>> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StylePropertyMapReadOnly/getAll)
     #[cfg_attr(rust_js, rust_js::link_name = "getAll")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -79578,6 +79962,30 @@ impl URLSearchParams {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/keys)
+    #[cfg_attr(rust_js, rust_js::link_name = "keys")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn keys(&self) -> Box<dyn Iterator<Item = String>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/values)
+    #[cfg_attr(rust_js, rust_js::link_name = "values")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn values(&self) -> Box<dyn Iterator<Item = String>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/entries)
+    #[cfg_attr(rust_js, rust_js::link_name = "entries")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (String, String)>> {
+        unreachable!()
+    }
+
 }
 
 /// [`UserActivation`](https://developer.mozilla.org/docs/Web/API/UserActivation)
@@ -80620,6 +81028,30 @@ impl ViewTransitionTypeSet {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ViewTransitionTypeSet/keys)
+    #[cfg_attr(rust_js, rust_js::link_name = "keys")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn keys(&self) -> Box<dyn Iterator<Item = String>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ViewTransitionTypeSet/values)
+    #[cfg_attr(rust_js, rust_js::link_name = "values")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn values(&self) -> Box<dyn Iterator<Item = String>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ViewTransitionTypeSet/entries)
+    #[cfg_attr(rust_js, rust_js::link_name = "entries")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (String, String)>> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ViewTransitionTypeSet/has)
     #[cfg_attr(rust_js, rust_js::link_name = "has")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -80805,6 +81237,30 @@ impl WGSLLanguageFeatures {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(&str, &str, &WGSLLanguageFeatures)>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WGSLLanguageFeatures/keys)
+    #[cfg_attr(rust_js, rust_js::link_name = "keys")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn keys(&self) -> Box<dyn Iterator<Item = String>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WGSLLanguageFeatures/values)
+    #[cfg_attr(rust_js, rust_js::link_name = "values")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn values(&self) -> Box<dyn Iterator<Item = String>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WGSLLanguageFeatures/entries)
+    #[cfg_attr(rust_js, rust_js::link_name = "entries")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (String, String)>> {
         unreachable!()
     }
 

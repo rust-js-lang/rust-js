@@ -834,7 +834,12 @@ test("the webapi crate's bindings become plain JS", async () => {
   expect(js).toContain('const style = el.style;\n  style.backgroundColor = "red";\n  return style.webkitLineClamp;');
   expect(js).toContain("nodes.forEach((_node, _i, _list) => {");
   expect(js).toContain('return [seen, headers.get("a"), ranges.has("x"), ranges.size];');
-  const { round_trip } = await import(join(target, "web_forms.js"));
+  // An iterable's iterators are JS's, as they are: no array first.
+  expect(js).toContain("for (const [name, value] of headers.entries()) {");
+  expect(js).toContain("const long = list\n    .values()\n    .filter((token) => $byteLen(token) > 3)\n    .toArray().length;");
+  expect(js).toContain("const keys = headers.keys();\n  return [names, long, $next(keys)];");
+  const { round_trip, iterated } = await import(join(target, "web_forms.js"));
+  expect(iterated(new Headers({ a: "1", b: "2" }), { values: () => ["abcd", "x", "hello"].values() })).toEqual([["a=1", "b=2"], 2, "a"]);
   // "é" is two bytes in UTF-8.
   expect(round_trip("héllo")).toEqual([6, "héllo"]);
 });

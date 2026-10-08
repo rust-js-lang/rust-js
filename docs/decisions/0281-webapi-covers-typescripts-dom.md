@@ -102,3 +102,9 @@ so nothing said when it fell behind.
   map)`, and a map's or a set's `get`, `has`, `size`, and where it can
   change, `set` or `add`, `delete` and `clear`. Not yet `keys`, `values` and
   `entries`, which give JS iterators the js crate has no type of. 95.8%.
+- **An iterable's `keys`, `values` and `entries` are `Box<dyn Iterator>`s**,
+  the JS iterators they are (ADR 0140): `for (name, value) in
+  headers.entries()` is `for (const [name, value] of headers.entries())`,
+  an adapter is JS's iterator helper, `next()` is `$next(it)`. An array's
+  key is its index, a `u32`; a set's its value. No type of the js crate's
+  was needed. 96.4%.
