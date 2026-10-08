@@ -77,15 +77,12 @@ export function units(text) {
 }
 
 export function attributes(label, level) {
-  return Object.fromEntries([
-    ["aria-label", label],
-    ["aria-level", String(level)],
-  ]);
+  return { "aria-label": label, "aria-level": String(level) };
 }
 
 export function identical(same) {
-  const a = Object.fromEntries([["k", 1]]);
-  const b = same ? a : Object.fromEntries([["k", 1]]);
+  const a = { k: 1 };
+  const b = same ? a : { k: 1 };
   return [Object.is(a, b), Object.is(NaN, NaN)];
 }
 

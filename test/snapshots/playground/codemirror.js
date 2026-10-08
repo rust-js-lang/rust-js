@@ -11,7 +11,7 @@ const SOURCE = [
   basicSetup,
   rust(),
   THEME.of(themeFor(false)),
-  EditorView.contentAttributes.of(Object.fromEntries([["aria-label", "Rust source"]])),
+  EditorView.contentAttributes.of({ "aria-label": "Rust source" }),
 ];
 const JS_OUTPUT = output(javascript());
 const PLAIN_OUTPUT = output(undefined);
@@ -23,9 +23,7 @@ function output(language) {
   }
   extensions.push(THEME.of(themeFor(false)));
   extensions.push(EditorState.readOnly.of(true));
-  extensions.push(
-    EditorView.contentAttributes.of(Object.fromEntries([["aria-label", "Generated JavaScript"]])),
-  );
+  extensions.push(EditorView.contentAttributes.of({ "aria-label": "Generated JavaScript" }));
   return extensions;
 }
 

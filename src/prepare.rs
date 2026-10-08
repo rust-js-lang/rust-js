@@ -331,6 +331,50 @@ impl Walk {
     }
 }
 
+/// `Object.fromEntries([["/index.html", code], ..])`, each key a string
+/// written out, is the object literal of them, `{ "/index.html": code }`:
+/// the same properties, made in the same order. Not of a key given twice,
+/// which a literal would have twice, nor of `__proto__`, which a literal
+/// makes the prototype, nor of an `undefined` value, which an object's
+/// field leaves out (ADR 0280) and an entry keeps.
+fn entries_written_out(e: &Expr) -> Option<Expr> {
+    let ExprKind::Call(f, args) = &e.kind else {
+        return None;
+    };
+    let (ExprKind::Member(object, name), [entries]) = (&f.kind, args.as_slice()) else {
+        return None;
+    };
+    let (ExprKind::Var(object), ExprKind::Array(entries)) = (&object.kind, &entries.kind) else {
+        return None;
+    };
+    if object != "Object" || name != "fromEntries" {
+        return None;
+    }
+    let mut fields = Vec::new();
+    for entry in entries {
+        let ExprKind::Array(pair) = &entry.kind else {
+            return None;
+        };
+        let [key, value] = pair.as_slice() else {
+            return None;
+        };
+        let ExprKind::Str(key) = &key.kind else {
+            return None;
+        };
+        let given = fields
+            .iter()
+            .any(|field| matches!(field, Prop::Field(k, _) if k == key));
+        if given || key == "__proto__" || matches!(value.kind, ExprKind::Undefined) {
+            return None;
+        }
+        fields.push(Prop::Field(key.clone(), value.clone()));
+    }
+    Some(Expr {
+        kind: ExprKind::Object(fields),
+        span: e.span,
+    })
+}
+
 fn expr(e: &mut Expr) {
     match &mut e.kind {
         ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => block(body),
@@ -383,6 +427,9 @@ fn expr(e: &mut Expr) {
         ExprKind::Call(f, args) | ExprKind::New(f, args) => {
             expr(f);
             args.iter_mut().for_each(expr);
+            if let Some(object) = entries_written_out(e) {
+                *e = object;
+            }
         }
         ExprKind::Array(items) => items.iter_mut().for_each(expr),
         ExprKind::Object(props) => {

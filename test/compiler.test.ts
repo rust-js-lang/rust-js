@@ -1323,6 +1323,47 @@ pub fn manifest(version: Option<&'static str>) -> String {
   expect(JSON.parse(lib.manifest("1")).version).toBe("1");
 });
 
+// A dictionary of entries written out, each key a string, is an object
+// literal of them, as react.dev's RSC template writes its files: the same
+// properties, in the same order. Not of a `__proto__` key, which a literal
+// makes the object's prototype, nor of a key given twice, nor of a value
+// `undefined`, which an object's field leaves out (ADR 0280).
+test("a dictionary of entries written out is an object literal", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("dict-literal");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Dict, dict};
+pub fn files(code: &str) -> &'static Dict<String> {
+    dict::from_entries(vec![
+        ("/index.html".to_string(), code.to_string()),
+        ("main".to_string(), "m".to_string()),
+    ])
+}
+pub fn twice(code: &str) -> &'static Dict<String> {
+    dict::from_entries(vec![("a".to_string(), code.to_string()), ("a".to_string(), "again".to_string())])
+}
+pub fn proto(code: &str) -> &'static Dict<String> {
+    dict::from_entries(vec![("__proto__".to_string(), code.to_string())])
+}
+pub fn missing() -> &'static Dict<Option<String>> {
+    dict::from_entries(vec![("a".to_string(), None)])
+}
+pub fn named(name: String, code: &str) -> &'static Dict<String> {
+    dict::from_entries(vec![(name, code.to_string())])
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('return { "/index.html": code, main: "m" };');
+  expect(js).toContain('return Object.fromEntries([\n    ["a", code],\n    ["a", "again"],\n  ]);');
+  expect(js).toContain('return Object.fromEntries([["__proto__", code]]);');
+  expect(js).toContain("return Object.fromEntries([[name, code]]);");
+  expect(js).toContain('return Object.fromEntries([["a", undefined]]);');
+  const lib = await import(join(dir, "lib.js"));
+  expect(Object.entries(lib.files("c"))).toEqual([["/index.html", "c"], ["main", "m"]]);
+  expect(Object.keys(lib.proto("c"))).toEqual(["__proto__"]);
+  expect(Object.keys(lib.missing())).toEqual(["a"]);
+});
+
 // ADR 0275: a `#[rust_js::nullable]` field is TypeScript's `T | null`: its
 // `None` is `null`, as Next.js's `getStaticProps` gives react.dev's errors
 // page its `errorCode`, which JSON has no `undefined` for. Another such
@@ -1891,7 +1932,7 @@ pub fn built() -> Vec<String> {
   expect(js).toContain("Object.entries(value)");
   expect(js).toContain("const match$1 = $dictGet(match._0, key);");
   expect(js).toContain("return JSON.stringify(match._0);");
-  expect(js).toContain('const numbers = Object.fromEntries([["a", 1]]);\n  numbers.b = 2;');
+  expect(js).toContain("const numbers = { a: 1 };\n  numbers.b = 2;");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.parsed('{"a":[1,"x",null,true],"b":{}}'), lib.parsed("null"), lib.parsed("nope")])
     .toEqual(["{a:[1,'x',null,true],b:{}}", "null", "invalid"]);

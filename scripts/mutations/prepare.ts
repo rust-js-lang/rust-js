@@ -3,6 +3,38 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "entries-kept",
+    breaks: "`Object.fromEntries([[\"/index.html\", code]])` stays a call where it's the object literal `{ \"/index.html\": code }`",
+    file: "src/prepare.rs",
+    find: "    if object != \"Object\" || name != \"fromEntries\" {",
+    replace: "    if true || object != \"Object\" || name != \"fromEntries\" {",
+    tests: ["test/compiler.test.ts", "-t", "a dictionary of entries written out"],
+  },
+  {
+    name: "entries-proto-literal",
+    breaks: "`Object.fromEntries([[\"__proto__\", x]])` is `{ __proto__: x }`, which sets the prototype",
+    file: "src/prepare.rs",
+    find: "        if given || key == \"__proto__\" || matches!(value.kind, ExprKind::Undefined) {",
+    replace: "        if given || matches!(value.kind, ExprKind::Undefined) {",
+    tests: ["test/compiler.test.ts", "-t", "a dictionary of entries written out"],
+  },
+  {
+    name: "entries-twice-literal",
+    breaks: "a key given twice is an object literal with it twice",
+    file: "src/prepare.rs",
+    find: "        if given || key == \"__proto__\" || matches!(value.kind, ExprKind::Undefined) {",
+    replace: "        if key == \"__proto__\" || matches!(value.kind, ExprKind::Undefined) {",
+    tests: ["test/compiler.test.ts", "-t", "a dictionary of entries written out"],
+  },
+  {
+    name: "entries-undefined-literal",
+    breaks: "an entry of `undefined` is a field an object leaves out",
+    file: "src/prepare.rs",
+    find: "        if given || key == \"__proto__\" || matches!(value.kind, ExprKind::Undefined) {",
+    replace: "        if given || key == \"__proto__\" {",
+    tests: ["test/compiler.test.ts", "-t", "a dictionary of entries written out"],
+  },
+  {
     name: "handler-of-one-call-blocked",
     breaks: "a handler of one call is a block, `() => { setCount(1); }`, where React ignores what it returns",
     file: "src/prepare.rs",

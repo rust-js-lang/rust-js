@@ -182,3 +182,10 @@ value.name = "new";
   as react.dev's Sandpack template writes its package.json. Case A for what
   it takes; a NaN is `null`, as JS writes it, case B: JSON has no NaN and
   Rust no JSON of its own without serde (ADR 0077).
+- **`dict::from_entries(vec![("/index.html".to_string(), code), ..])` is
+  the object literal `{ "/index.html": code, .. }`** where each key is a
+  string written out: the same properties, made in the same order, as
+  react.dev's RSC template writes its files. Not of a key given twice,
+  which a literal would have twice; nor of `__proto__`, which a literal
+  makes the prototype; nor of a value `undefined`, which an object's field
+  leaves out (ADR 0280) and an entry keeps. Case A.
