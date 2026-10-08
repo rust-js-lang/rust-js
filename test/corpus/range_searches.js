@@ -5,7 +5,7 @@ import { $bigRange, $position, $range } from "@rust-js/runtime";
 function main() {
   const n = 5;
   console.log(`${$range(0, n).every((i) => i < 5)}`);
-  console.log(`${$range(0, n).some((i) => i === 3)}`);
+  console.log(`${$range(0, n).includes(3)}`);
   const arg = $range(1, n + 1).find((i) => i % 2 === 0);
   console.log(`${arg == null ? "None" : `Some(${arg})`}`);
   const arg$1 = $position($range(0, n), (i) => Math.imul(i, i) > 5);

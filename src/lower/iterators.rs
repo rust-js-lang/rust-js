@@ -94,6 +94,36 @@ fn is_adapter(known: Std) -> bool {
     )
 }
 
+/// The value `(p) => p === value` or `(p) => value === p` looks for, if
+/// it doesn't depend on `p` and reads the same however often it's read.
+fn sought(test: &Expr) -> Option<Expr> {
+    let js::ExprKind::Arrow(params, body) = &test.kind else {
+        return None;
+    };
+    let (
+        [js::Pattern::Name(param)],
+        [
+            Stmt {
+                kind: StmtKind::Return(Some(e)),
+                ..
+            },
+        ],
+    ) = (params.as_slice(), body.as_slice())
+    else {
+        return None;
+    };
+    let js::ExprKind::Binary(Op::Eq, a, b) = &e.kind else {
+        return None;
+    };
+    let is_param = |e: &Expr| matches!(&e.kind, js::ExprKind::Var(name) if name == param);
+    let value = match (is_param(a), is_param(b)) {
+        (true, false) => b,
+        (false, true) => a,
+        _ => return None,
+    };
+    (value.reads_same() && !value.mentions_var(param)).then(|| (**value).clone())
+}
+
 /// Whether `known` stops before its iterator ends, so a stage before it
 /// that does what can be seen runs fewer times in Rust than over an array,
 /// or, as `rev` does, runs it from the other end.
@@ -901,6 +931,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 if boxed && name == "find" {
                     return Ok(self.find_boxed(items, test, lazy, out));
+                }
+                // Whether any item is one value is whether the array includes
+                // it, where `===` and `includes` agree: not of floats, whose
+                // NaN `includes` finds. The value is read once, not per item,
+                // so it must read the same however often it's read.
+                if name == "some"
+                    && !lazy
+                    && self
+                        .iterator_item(receiver_ty)
+                        .is_some_and(|item| self.eq_is_identity(item))
+                    && let Some(value) = sought(&test)
+                {
+                    return Ok(method(items, "includes", vec![value]));
                 }
                 method(items, name, vec![test])
             }

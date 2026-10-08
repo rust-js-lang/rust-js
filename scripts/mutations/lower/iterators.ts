@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "any-equal-includes-floats",
+    breaks: "`xs.iter().any(|&x| x == f64::NAN)` of floats is `includes`, which finds NaN",
+    file: "src/lower/iterators.rs",
+    find: "                        .is_some_and(|item| self.eq_is_identity(item))\n                    && let Some(value)",
+    replace: "                        .is_some()\n                    && let Some(value)",
+    tests: ["test/format.test.ts", "-t", "whether any item equals a value"],
+  },
+  {
+    name: "any-equal-some",
+    breaks: "`tokens.iter().any(|t| t == \"hidden\")` is `some` with a closure where `includes` says it",
+    file: "src/lower/iterators.rs",
+    find: "                    && let Some(value) = sought(&test)",
+    replace: "                    && let Some(value) = sought(&test).filter(|_| false)",
+    tests: ["test/format.test.ts", "-t", "whether any item equals a value"],
+  },
+  {
     name: "boxed-find-unboxed",
     breaks: "`find` of an `Option` that boxes its `Some` is `items.find(f)`, which gives a found `None` as none found",
     file: "src/lower/iterators.rs",

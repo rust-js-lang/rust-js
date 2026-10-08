@@ -855,7 +855,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Is `==` on `ty` JS's `===`?
-    fn eq_is_identity(&self, ty: Ty<'tcx>) -> bool {
+    pub(super) fn eq_is_identity(&self, ty: Ty<'tcx>) -> bool {
         // A `&mut` to one is a cell, an object (ADR 0099): not by identity.
         if self.has_cell_layer(ty) {
             return false;

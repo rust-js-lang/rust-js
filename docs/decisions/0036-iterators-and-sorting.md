@@ -107,3 +107,9 @@ Two things came with it:
   while the loop runs, so the copy shows nothing (case A). A `chars()`
   passed on or collected is still `Array.from(text)`. Found porting
   react.dev's `createFileMap`.
+- `items.iter().any(|t| t == value)` is `items.includes(value)`, of
+  strings, integers, `bool`s and fieldless enums, where `===` and
+  `includes` agree (case A). Not of floats: `includes` finds NaN, which
+  `==` never does (case C, `some` stays). The value is read once, so it
+  must be a variable, a property or a constant. Found porting react.dev's
+  `createFileMap`, `tokens.includes('hidden')`.
