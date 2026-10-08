@@ -145,6 +145,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A function, or a closure of statements, is called with it.
             Std::OptionMap => {
                 let (option, f) = (arg(), arg());
+                // By a function giving each variant its own name, the option
+                // itself: `section.map(Section::as_str)` is `section` (ADR 0264).
+                if let Some((function, _)) = super::fn_def(self.thir[args[1]].ty)
+                    && self.gives_own_name(function)
+                {
+                    return Ok(Some(option));
+                }
                 let mapped = generic_args.type_at(1);
                 // `|_| 7` has no parameter left (ADR 0038): `Some(None)`.
                 let param = match &f.kind {

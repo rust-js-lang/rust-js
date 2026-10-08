@@ -2010,12 +2010,19 @@ pub fn image(section: Section) -> String {
 pub fn title(section: Section) -> String {
     format!("{} page", section.heading())
 }
+
+// Mapped by it, an option's is the option, as react.dev's Page keys its
+// SidebarNav, \`key={section}\`.
+pub fn key(section: Option<Section>) -> Option<&'static str> {
+    section.map(Section::as_str)
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("as_str(section) {\n    return section;\n  }");
   expect(js).toContain("return `/images/og-${section}.png`;");
   expect(js).toContain("Section.heading(section)");
+  expect(js).toContain("export function key(section) {\n  return section;\n}");
   const { image, title } = await import(join(dir, "lib.js"));
   expect([image("learn"), image("blog"), title("learn"), title("blog")]).toEqual(["/images/og-learn.png", "/images/og-blog.png", "learn page", "news page"]);
 });

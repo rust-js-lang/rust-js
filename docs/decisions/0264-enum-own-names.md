@@ -35,7 +35,8 @@ made the method a conditional and called it, `Section.as_str(section)`.
   method is `return section;`, as a value or returned, as ADR 0233's
   table read now is returned too.
 - **A call of the crate's function whose body is such a `match` of its
-  one parameter is its argument**: `section.as_str()` is `section`.
+  one parameter is its argument**: `section.as_str()` is `section`. An
+  option mapped by it, `section.map(Section::as_str)`, is the option.
 
 ```js
 return `/images/og-${section}.png`;

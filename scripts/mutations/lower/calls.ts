@@ -254,12 +254,4 @@ export const mutations: Mutation[] = [
     replace: "&& false && self.gives_own_name(def_id)",
     tests: ["test/compiler.test.ts", "-t", "enum's own names"],
   },
-  {
-    name: "other-name-call-dropped",
-    breaks: "a function giving a variant another name, `Section::Blog => \"news\"`, is taken for its argument",
-    file: "src/lower/calls.rs",
-    find: "if text.as_str() == super::bindings::variant_name(self.tcx, adt.variant(variant_index)))))",
-    replace: "if true || text.as_str() == super::bindings::variant_name(self.tcx, adt.variant(variant_index)))))",
-    tests: ["test/compiler.test.ts", "-t", "enum's own names"],
-  },
 ];

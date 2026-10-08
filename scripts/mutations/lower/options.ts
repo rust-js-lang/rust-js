@@ -96,4 +96,12 @@ export const mutations: Mutation[] = [
     replace: "return None;",
     tests: ["test/compiler.test.ts", "-t", "text kept where it isn't empty"],
   },
+  {
+    name: "own-name-map-called",
+    breaks: "an option mapped by a function giving each variant its own name, `section.map(Section::as_str)`, is a conditional of a call, not `section`",
+    file: "src/lower/options.rs",
+    find: "                    && self.gives_own_name(function)\n",
+    replace: "                    && false\n",
+    tests: ["test/compiler.test.ts", "-t", "enum's own names"],
+  },
 ];

@@ -28,6 +28,10 @@ export function replaced_first(text, from, to) {
   return text.replace(from, to);
 }
 
+export function split_parts(text) {
+  return [text.split(","), text.split(/[,;]/)];
+}
+
 export function units(text) {
   return $range(0, text.length).map((i) => text.charAt(i));
 }
