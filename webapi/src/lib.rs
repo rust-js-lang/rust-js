@@ -4849,6 +4849,23 @@ impl Document {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onerror)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onerror(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onerror)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onerror")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onerror(&self, value: Option<Box<dyn FnMut(EventOrStr<'_>, Option<String>, Option<u32>, Option<u32>, Option<&Unknown>) -> bool>>) {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onfocus)
     #[cfg_attr(rust_js, rust_js::link_name = "get onfocus")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -7515,6 +7532,23 @@ impl HTMLElement {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_onended(&self, value: Option<Box<dyn FnMut(&Event)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onerror)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onerror(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onerror)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onerror")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onerror(&self, value: Option<Box<dyn FnMut(EventOrStr<'_>, Option<String>, Option<u32>, Option<u32>, Option<&Unknown>) -> bool>>) {
         unreachable!()
     }
 
@@ -14327,6 +14361,23 @@ impl HTMLBodyElement {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onbeforeunload)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeunload")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onbeforeunload(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onbeforeunload)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onbeforeunload")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onbeforeunload(&self, value: Option<Box<dyn FnMut(&Event) -> Option<String>>>) {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onhashchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onhashchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -20067,6 +20118,23 @@ impl Window {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onerror)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onerror(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onerror)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onerror")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onerror(&self, value: Option<Box<dyn FnMut(EventOrStr<'_>, Option<String>, Option<u32>, Option<u32>, Option<&Unknown>) -> bool>>) {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onfocus)
     #[cfg_attr(rust_js, rust_js::link_name = "get onfocus")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -20863,6 +20931,23 @@ impl Window {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_onbeforeprint(&self, value: Option<Box<dyn FnMut(&Event)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onbeforeunload)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeunload")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onbeforeunload(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onbeforeunload)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onbeforeunload")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onbeforeunload(&self, value: Option<Box<dyn FnMut(&BeforeUnloadEvent) -> Option<String>>>) {
         unreachable!()
     }
 
@@ -35996,6 +36081,23 @@ impl SVGElement {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onerror)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onerror(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onerror)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onerror")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onerror(&self, value: Option<Box<dyn FnMut(EventOrStr<'_>, Option<String>, Option<u32>, Option<u32>, Option<&Unknown>) -> bool>>) {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onfocus)
     #[cfg_attr(rust_js, rust_js::link_name = "get onfocus")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -37326,6 +37428,23 @@ impl SVGSVGElement {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_onbeforeprint(&self, value: Option<Box<dyn FnMut(&Event)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onbeforeunload)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeunload")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onbeforeunload(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onbeforeunload)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onbeforeunload")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onbeforeunload(&self, value: Option<Box<dyn FnMut(&Event) -> Option<String>>>) {
         unreachable!()
     }
 
@@ -59614,6 +59733,23 @@ impl HTMLFrameSetElement {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onbeforeunload)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeunload")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onbeforeunload(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onbeforeunload)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onbeforeunload")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onbeforeunload(&self, value: Option<Box<dyn FnMut(&Event) -> Option<String>>>) {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onhashchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onhashchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -63987,6 +64123,23 @@ impl MathMLElement {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_onended(&self, value: Option<Box<dyn FnMut(&Event)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onerror)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onerror(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onerror)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onerror")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onerror(&self, value: Option<Box<dyn FnMut(EventOrStr<'_>, Option<String>, Option<u32>, Option<u32>, Option<&Unknown>) -> bool>>) {
         unreachable!()
     }
 
@@ -100175,6 +100328,525 @@ impl EventListenerOptionsOrBool {
     }
 }
 
+/// `Event | string`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum EventOrStr<'a> {
+    Event(&'a Event),
+    Str(&'a str),
+}
+
+impl<'a> From<&'a Event> for EventOrStr<'a> {
+    fn from(value: &'a Event) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a DragEvent> for EventOrStr<'a> {
+    fn from(value: &'a DragEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a ToggleEvent> for EventOrStr<'a> {
+    fn from(value: &'a ToggleEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a MessageEvent> for EventOrStr<'a> {
+    fn from(value: &'a MessageEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a SubmitEvent> for EventOrStr<'a> {
+    fn from(value: &'a SubmitEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a UIEvent> for EventOrStr<'a> {
+    fn from(value: &'a UIEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a FocusEvent> for EventOrStr<'a> {
+    fn from(value: &'a FocusEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a MouseEvent> for EventOrStr<'a> {
+    fn from(value: &'a MouseEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a KeyboardEvent> for EventOrStr<'a> {
+    fn from(value: &'a KeyboardEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a InputEvent> for EventOrStr<'a> {
+    fn from(value: &'a InputEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a WheelEvent> for EventOrStr<'a> {
+    fn from(value: &'a WheelEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a CompositionEvent> for EventOrStr<'a> {
+    fn from(value: &'a CompositionEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a TouchEvent> for EventOrStr<'a> {
+    fn from(value: &'a TouchEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a AnimationEvent> for EventOrStr<'a> {
+    fn from(value: &'a AnimationEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a TransitionEvent> for EventOrStr<'a> {
+    fn from(value: &'a TransitionEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a ClipboardEvent> for EventOrStr<'a> {
+    fn from(value: &'a ClipboardEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a PointerEvent> for EventOrStr<'a> {
+    fn from(value: &'a PointerEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a MediaQueryListEvent> for EventOrStr<'a> {
+    fn from(value: &'a MediaQueryListEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a AnimationPlaybackEvent> for EventOrStr<'a> {
+    fn from(value: &'a AnimationPlaybackEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a AudioProcessingEvent> for EventOrStr<'a> {
+    fn from(value: &'a AudioProcessingEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a BeforeUnloadEvent> for EventOrStr<'a> {
+    fn from(value: &'a BeforeUnloadEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a BlobEvent> for EventOrStr<'a> {
+    fn from(value: &'a BlobEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a CloseEvent> for EventOrStr<'a> {
+    fn from(value: &'a CloseEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a CommandEvent> for EventOrStr<'a> {
+    fn from(value: &'a CommandEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a ContentVisibilityAutoStateChangeEvent> for EventOrStr<'a> {
+    fn from(value: &'a ContentVisibilityAutoStateChangeEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a CookieChangeEvent> for EventOrStr<'a> {
+    fn from(value: &'a CookieChangeEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a CustomEvent> for EventOrStr<'a> {
+    fn from(value: &'a CustomEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a DeviceMotionEvent> for EventOrStr<'a> {
+    fn from(value: &'a DeviceMotionEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a DeviceOrientationEvent> for EventOrStr<'a> {
+    fn from(value: &'a DeviceOrientationEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a DocumentPictureInPictureEvent> for EventOrStr<'a> {
+    fn from(value: &'a DocumentPictureInPictureEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a ErrorEvent> for EventOrStr<'a> {
+    fn from(value: &'a ErrorEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a FontFaceSetLoadEvent> for EventOrStr<'a> {
+    fn from(value: &'a FontFaceSetLoadEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a FormDataEvent> for EventOrStr<'a> {
+    fn from(value: &'a FormDataEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a GPUUncapturedErrorEvent> for EventOrStr<'a> {
+    fn from(value: &'a GPUUncapturedErrorEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a GamepadEvent> for EventOrStr<'a> {
+    fn from(value: &'a GamepadEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a HashChangeEvent> for EventOrStr<'a> {
+    fn from(value: &'a HashChangeEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a IDBVersionChangeEvent> for EventOrStr<'a> {
+    fn from(value: &'a IDBVersionChangeEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a MIDIConnectionEvent> for EventOrStr<'a> {
+    fn from(value: &'a MIDIConnectionEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a MIDIMessageEvent> for EventOrStr<'a> {
+    fn from(value: &'a MIDIMessageEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a MediaEncryptedEvent> for EventOrStr<'a> {
+    fn from(value: &'a MediaEncryptedEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a MediaKeyMessageEvent> for EventOrStr<'a> {
+    fn from(value: &'a MediaKeyMessageEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a MediaStreamTrackEvent> for EventOrStr<'a> {
+    fn from(value: &'a MediaStreamTrackEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a NavigateEvent> for EventOrStr<'a> {
+    fn from(value: &'a NavigateEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a NavigationCurrentEntryChangeEvent> for EventOrStr<'a> {
+    fn from(value: &'a NavigationCurrentEntryChangeEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a OfflineAudioCompletionEvent> for EventOrStr<'a> {
+    fn from(value: &'a OfflineAudioCompletionEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a PageRevealEvent> for EventOrStr<'a> {
+    fn from(value: &'a PageRevealEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a PageSwapEvent> for EventOrStr<'a> {
+    fn from(value: &'a PageSwapEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a PageTransitionEvent> for EventOrStr<'a> {
+    fn from(value: &'a PageTransitionEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a PaymentMethodChangeEvent> for EventOrStr<'a> {
+    fn from(value: &'a PaymentMethodChangeEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a PaymentRequestUpdateEvent> for EventOrStr<'a> {
+    fn from(value: &'a PaymentRequestUpdateEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a PictureInPictureEvent> for EventOrStr<'a> {
+    fn from(value: &'a PictureInPictureEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a PopStateEvent> for EventOrStr<'a> {
+    fn from(value: &'a PopStateEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a ProgressEvent> for EventOrStr<'a> {
+    fn from(value: &'a ProgressEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a PromiseRejectionEvent> for EventOrStr<'a> {
+    fn from(value: &'a PromiseRejectionEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a RTCDTMFToneChangeEvent> for EventOrStr<'a> {
+    fn from(value: &'a RTCDTMFToneChangeEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a RTCDataChannelEvent> for EventOrStr<'a> {
+    fn from(value: &'a RTCDataChannelEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a RTCErrorEvent> for EventOrStr<'a> {
+    fn from(value: &'a RTCErrorEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a RTCPeerConnectionIceErrorEvent> for EventOrStr<'a> {
+    fn from(value: &'a RTCPeerConnectionIceErrorEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a RTCPeerConnectionIceEvent> for EventOrStr<'a> {
+    fn from(value: &'a RTCPeerConnectionIceEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a RTCTrackEvent> for EventOrStr<'a> {
+    fn from(value: &'a RTCTrackEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a SecurityPolicyViolationEvent> for EventOrStr<'a> {
+    fn from(value: &'a SecurityPolicyViolationEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a SpeechRecognitionErrorEvent> for EventOrStr<'a> {
+    fn from(value: &'a SpeechRecognitionErrorEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a SpeechRecognitionEvent> for EventOrStr<'a> {
+    fn from(value: &'a SpeechRecognitionEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a SpeechSynthesisErrorEvent> for EventOrStr<'a> {
+    fn from(value: &'a SpeechSynthesisErrorEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a SpeechSynthesisEvent> for EventOrStr<'a> {
+    fn from(value: &'a SpeechSynthesisEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a StorageEvent> for EventOrStr<'a> {
+    fn from(value: &'a StorageEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a TaskPriorityChangeEvent> for EventOrStr<'a> {
+    fn from(value: &'a TaskPriorityChangeEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a TextEvent> for EventOrStr<'a> {
+    fn from(value: &'a TextEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a TrackEvent> for EventOrStr<'a> {
+    fn from(value: &'a TrackEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a WebGLContextEvent> for EventOrStr<'a> {
+    fn from(value: &'a WebGLContextEvent) -> Self {
+        EventOrStr::Event(value)
+    }
+}
+
+impl<'a> From<&'a str> for EventOrStr<'a> {
+    fn from(value: &'a str) -> Self {
+        EventOrStr::Str(value)
+    }
+}
+
+/// What a `Event | string` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Event | string`")]
+#[cfg_attr(rust_js, rust_js::types = "Event | string")]
+pub trait IntoEventOrStr: sealed::Sealed {}
+impl IntoEventOrStr for &Event {}
+impl IntoEventOrStr for &DragEvent {}
+impl IntoEventOrStr for &ToggleEvent {}
+impl IntoEventOrStr for &MessageEvent {}
+impl IntoEventOrStr for &SubmitEvent {}
+impl IntoEventOrStr for &UIEvent {}
+impl IntoEventOrStr for &FocusEvent {}
+impl IntoEventOrStr for &MouseEvent {}
+impl IntoEventOrStr for &KeyboardEvent {}
+impl IntoEventOrStr for &InputEvent {}
+impl IntoEventOrStr for &WheelEvent {}
+impl IntoEventOrStr for &CompositionEvent {}
+impl IntoEventOrStr for &TouchEvent {}
+impl IntoEventOrStr for &AnimationEvent {}
+impl IntoEventOrStr for &TransitionEvent {}
+impl IntoEventOrStr for &ClipboardEvent {}
+impl IntoEventOrStr for &PointerEvent {}
+impl IntoEventOrStr for &MediaQueryListEvent {}
+impl IntoEventOrStr for &AnimationPlaybackEvent {}
+impl IntoEventOrStr for &AudioProcessingEvent {}
+impl IntoEventOrStr for &BeforeUnloadEvent {}
+impl IntoEventOrStr for &BlobEvent {}
+impl IntoEventOrStr for &CloseEvent {}
+impl IntoEventOrStr for &CommandEvent {}
+impl IntoEventOrStr for &ContentVisibilityAutoStateChangeEvent {}
+impl IntoEventOrStr for &CookieChangeEvent {}
+impl IntoEventOrStr for &CustomEvent {}
+impl IntoEventOrStr for &DeviceMotionEvent {}
+impl IntoEventOrStr for &DeviceOrientationEvent {}
+impl IntoEventOrStr for &DocumentPictureInPictureEvent {}
+impl IntoEventOrStr for &ErrorEvent {}
+impl IntoEventOrStr for &FontFaceSetLoadEvent {}
+impl IntoEventOrStr for &FormDataEvent {}
+impl IntoEventOrStr for &GPUUncapturedErrorEvent {}
+impl IntoEventOrStr for &GamepadEvent {}
+impl IntoEventOrStr for &HashChangeEvent {}
+impl IntoEventOrStr for &IDBVersionChangeEvent {}
+impl IntoEventOrStr for &MIDIConnectionEvent {}
+impl IntoEventOrStr for &MIDIMessageEvent {}
+impl IntoEventOrStr for &MediaEncryptedEvent {}
+impl IntoEventOrStr for &MediaKeyMessageEvent {}
+impl IntoEventOrStr for &MediaStreamTrackEvent {}
+impl IntoEventOrStr for &NavigateEvent {}
+impl IntoEventOrStr for &NavigationCurrentEntryChangeEvent {}
+impl IntoEventOrStr for &OfflineAudioCompletionEvent {}
+impl IntoEventOrStr for &PageRevealEvent {}
+impl IntoEventOrStr for &PageSwapEvent {}
+impl IntoEventOrStr for &PageTransitionEvent {}
+impl IntoEventOrStr for &PaymentMethodChangeEvent {}
+impl IntoEventOrStr for &PaymentRequestUpdateEvent {}
+impl IntoEventOrStr for &PictureInPictureEvent {}
+impl IntoEventOrStr for &PopStateEvent {}
+impl IntoEventOrStr for &ProgressEvent {}
+impl IntoEventOrStr for &PromiseRejectionEvent {}
+impl IntoEventOrStr for &RTCDTMFToneChangeEvent {}
+impl IntoEventOrStr for &RTCDataChannelEvent {}
+impl IntoEventOrStr for &RTCErrorEvent {}
+impl IntoEventOrStr for &RTCPeerConnectionIceErrorEvent {}
+impl IntoEventOrStr for &RTCPeerConnectionIceEvent {}
+impl IntoEventOrStr for &RTCTrackEvent {}
+impl IntoEventOrStr for &SecurityPolicyViolationEvent {}
+impl IntoEventOrStr for &SpeechRecognitionErrorEvent {}
+impl IntoEventOrStr for &SpeechRecognitionEvent {}
+impl IntoEventOrStr for &SpeechSynthesisErrorEvent {}
+impl IntoEventOrStr for &SpeechSynthesisEvent {}
+impl IntoEventOrStr for &StorageEvent {}
+impl IntoEventOrStr for &TaskPriorityChangeEvent {}
+impl IntoEventOrStr for &TextEvent {}
+impl IntoEventOrStr for &TrackEvent {}
+impl IntoEventOrStr for &WebGLContextEvent {}
+impl IntoEventOrStr for &str {}
+impl IntoEventOrStr for EventOrStr<'_> {}
+
+impl<'a> EventOrStr<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoEventOrStr + 'a) -> EventOrStr<'a> {
+        unreachable!()
+    }
+}
+
 /// `File | string | FormData`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum FileOrStrOrFormData<'a> {
@@ -105572,11 +106244,16 @@ mod sealed {
     use super::*;
 
     pub trait Sealed {}
+    impl Sealed for &AnimationEvent {}
+    impl Sealed for &AnimationPlaybackEvent {}
     impl Sealed for &ArrayBuffer {}
     impl Sealed for &Attr {}
+    impl Sealed for &AudioProcessingEvent {}
+    impl Sealed for &BeforeUnloadEvent {}
     impl Sealed for &BigInt64Array {}
     impl Sealed for &BigUint64Array {}
     impl Sealed for &Blob {}
+    impl Sealed for &BlobEvent {}
     impl Sealed for &CDATASection {}
     impl Sealed for &CSSImageValue {}
     impl Sealed for &CSSKeywordValue {}
@@ -105598,22 +106275,40 @@ mod sealed {
     impl Sealed for &CanvasGradient {}
     impl Sealed for &CanvasPattern {}
     impl Sealed for &CharacterData {}
+    impl Sealed for &ClipboardEvent {}
+    impl Sealed for &CloseEvent {}
+    impl Sealed for &CommandEvent {}
     impl Sealed for &Comment {}
+    impl Sealed for &CompositionEvent {}
+    impl Sealed for &ContentVisibilityAutoStateChangeEvent {}
+    impl Sealed for &CookieChangeEvent {}
+    impl Sealed for &CustomEvent {}
     impl Sealed for &DataView {}
+    impl Sealed for &DeviceMotionEvent {}
+    impl Sealed for &DeviceOrientationEvent {}
     impl Sealed for &Document {}
     impl Sealed for &DocumentFragment {}
+    impl Sealed for &DocumentPictureInPictureEvent {}
     impl Sealed for &DocumentType {}
+    impl Sealed for &DragEvent {}
     impl Sealed for &Element {}
+    impl Sealed for &ErrorEvent {}
+    impl Sealed for &Event {}
     impl Sealed for &File {}
     impl Sealed for &Float32Array {}
     impl Sealed for &Float64Array {}
+    impl Sealed for &FocusEvent {}
+    impl Sealed for &FontFaceSetLoadEvent {}
     impl Sealed for &FormData {}
+    impl Sealed for &FormDataEvent {}
     impl Sealed for &GPUBuffer {}
     impl Sealed for &GPUExternalTexture {}
     impl Sealed for &GPUPipelineLayout {}
     impl Sealed for &GPUSampler {}
     impl Sealed for &GPUTexture {}
     impl Sealed for &GPUTextureView {}
+    impl Sealed for &GPUUncapturedErrorEvent {}
+    impl Sealed for &GamepadEvent {}
     impl Sealed for &HTMLAnchorElement {}
     impl Sealed for &HTMLAreaElement {}
     impl Sealed for &HTMLAudioElement {}
@@ -105686,25 +106381,56 @@ mod sealed {
     impl Sealed for &HTMLUListElement {}
     impl Sealed for &HTMLUnknownElement {}
     impl Sealed for &HTMLVideoElement {}
+    impl Sealed for &HashChangeEvent {}
     impl Sealed for &IDBCursor {}
     impl Sealed for &IDBCursorWithValue {}
     impl Sealed for &IDBIndex {}
     impl Sealed for &IDBObjectStore {}
+    impl Sealed for &IDBVersionChangeEvent {}
     impl Sealed for &ImageBitmap {}
     impl Sealed for &ImageData {}
+    impl Sealed for &InputEvent {}
     impl Sealed for &Int16Array {}
     impl Sealed for &Int32Array {}
     impl Sealed for &Int8Array {}
+    impl Sealed for &KeyboardEvent {}
+    impl Sealed for &MIDIConnectionEvent {}
+    impl Sealed for &MIDIMessageEvent {}
     impl Sealed for &MathMLElement {}
+    impl Sealed for &MediaEncryptedEvent {}
+    impl Sealed for &MediaKeyMessageEvent {}
     impl Sealed for &MediaList {}
+    impl Sealed for &MediaQueryListEvent {}
     impl Sealed for &MediaSource {}
     impl Sealed for &MediaStream {}
     impl Sealed for &MediaStreamTrack {}
+    impl Sealed for &MediaStreamTrackEvent {}
+    impl Sealed for &MessageEvent {}
     impl Sealed for &MessagePort {}
+    impl Sealed for &MouseEvent {}
+    impl Sealed for &NavigateEvent {}
+    impl Sealed for &NavigationCurrentEntryChangeEvent {}
     impl Sealed for &Node {}
+    impl Sealed for &OfflineAudioCompletionEvent {}
     impl Sealed for &OffscreenCanvas {}
+    impl Sealed for &PageRevealEvent {}
+    impl Sealed for &PageSwapEvent {}
+    impl Sealed for &PageTransitionEvent {}
     impl Sealed for &Path2D {}
+    impl Sealed for &PaymentMethodChangeEvent {}
+    impl Sealed for &PaymentRequestUpdateEvent {}
+    impl Sealed for &PictureInPictureEvent {}
+    impl Sealed for &PointerEvent {}
+    impl Sealed for &PopStateEvent {}
     impl Sealed for &ProcessingInstruction {}
+    impl Sealed for &ProgressEvent {}
+    impl Sealed for &PromiseRejectionEvent {}
+    impl Sealed for &RTCDTMFToneChangeEvent {}
+    impl Sealed for &RTCDataChannelEvent {}
+    impl Sealed for &RTCErrorEvent {}
+    impl Sealed for &RTCPeerConnectionIceErrorEvent {}
+    impl Sealed for &RTCPeerConnectionIceEvent {}
+    impl Sealed for &RTCTrackEvent {}
     impl Sealed for &ReadableStream {}
     impl Sealed for &Request {}
     impl Sealed for &SVGAElement {}
@@ -105779,18 +106505,34 @@ mod sealed {
     impl Sealed for &SVGUseElement {}
     impl Sealed for &SVGViewElement {}
     impl Sealed for &Sanitizer {}
+    impl Sealed for &SecurityPolicyViolationEvent {}
     impl Sealed for &ServiceWorker {}
     impl Sealed for &ShadowRoot {}
     impl Sealed for &SharedArrayBuffer {}
+    impl Sealed for &SpeechRecognitionErrorEvent {}
+    impl Sealed for &SpeechRecognitionEvent {}
+    impl Sealed for &SpeechSynthesisErrorEvent {}
+    impl Sealed for &SpeechSynthesisEvent {}
+    impl Sealed for &StorageEvent {}
+    impl Sealed for &SubmitEvent {}
+    impl Sealed for &TaskPriorityChangeEvent {}
     impl Sealed for &TaskSignal {}
     impl Sealed for &Text {}
+    impl Sealed for &TextEvent {}
+    impl Sealed for &ToggleEvent {}
+    impl Sealed for &TouchEvent {}
+    impl Sealed for &TrackEvent {}
+    impl Sealed for &TransitionEvent {}
+    impl Sealed for &UIEvent {}
     impl Sealed for &URLSearchParams {}
     impl Sealed for &Uint16Array {}
     impl Sealed for &Uint32Array {}
     impl Sealed for &Uint8Array {}
     impl Sealed for &Uint8ClampedArray {}
     impl Sealed for &VideoFrame {}
+    impl Sealed for &WebGLContextEvent {}
     impl Sealed for &WebTransportReceiveStream {}
+    impl Sealed for &WheelEvent {}
     impl Sealed for &Window {}
     impl Sealed for &Worker {}
     impl Sealed for &XMLDocument {}
@@ -105834,6 +106576,7 @@ mod sealed {
     impl Sealed for ElementOrText<'_> {}
     impl Sealed for EventListenerOptions {}
     impl Sealed for EventListenerOptionsOrBool {}
+    impl Sealed for EventOrStr<'_> {}
     impl Sealed for FileOrStrOrFormData<'_> {}
     impl Sealed for FileSystemWriteChunkType<'_> {}
     impl Sealed for Float32List<'_> {}

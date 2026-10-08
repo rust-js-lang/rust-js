@@ -844,7 +844,14 @@ test("the webapi crate's bindings become plain JS", async () => {
   expect(js).toContain("return [url.toString(), list.toString()];");
   // A static attribute and a static method beside an instance's of its name.
   expect(js).toContain("return [Notification.permission, Response.json([1, 2])];");
-  const { round_trip, iterated, samples, texts } = await import(join(target, "web_forms.js"));
+  // `onerror`'s closure, given an event or a message, and `onbeforeunload`'s.
+  expect(js).toContain('button.onerror = (e) => typeof e === "string";\n  window.onbeforeunload = () => undefined;\n  return button.onerror != null;');
+  const { round_trip, iterated, samples, texts, on_errors } = await import(join(target, "web_forms.js"));
+  (globalThis as any).window = {};
+  const button: any = {};
+  expect(on_errors(button)).toBe(true);
+  expect([button.onerror("Script error."), button.onerror(new Event("error"))]).toEqual([true, false]);
+  delete (globalThis as any).window;
   expect(texts(new URL("https://example.com/a"), { toString: () => "a b" })).toEqual(["https://example.com/a", "a b"]);
   (globalThis as any).FontFace = class { constructor(public family: string) {} };
   expect(samples({ getChannelData: () => new Float32Array([0.5]) }, { createSVGPoint: () => ({ x: 0 }) }).slice(0, 2)).toEqual([0.5, 2]);

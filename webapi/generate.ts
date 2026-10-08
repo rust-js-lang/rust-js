@@ -611,6 +611,23 @@ const NAMED: Record<string, string> = {
   "Document.createElementNS": "create_element_ns_named",
 };
 
+/** What an event handler property's closure is, by its type, given its
+ * event: `onclick`'s takes it; `onbeforeunload`'s gives the text that
+ * asks whether to leave, or none; `onerror`'s is given an error's event,
+ * or on a window its message, where it was, and what was thrown, and gives
+ * whether it's handled, `true` not reported, as TypeScript's are. */
+const HANDLERS: Record<string, (event: string) => string> = {
+  EventHandler: (event) => `FnMut(&${event})`,
+  OnBeforeUnloadEventHandler: (event) => `FnMut(&${event}) -> Option<String>`,
+  OnErrorEventHandler: () => "FnMut(EventOrStr<'_>, Option<String>, Option<u32>, Option<u32>, Option<&Unknown>) -> bool",
+};
+/** `onerror`'s first argument, TypeScript's `Event | string`. */
+const ERROR_ARG: Union = {
+  name: "EventOrStr",
+  variants: [{ name: "Event", type: "&'a Event", ts: "Event" }, { name: "Str", type: "&'a str", ts: "string" }],
+  borrows: true,
+};
+
 /** A stringifier's `toString()`, `url.to_string()`, its text. */
 const toString = (i: Interface): Fn => ({
   name: "to_string",
@@ -784,14 +801,16 @@ function functionsOf(i: Interface): Fn[] {
       // An event handler property, `onclick`: what it holds, a function or
       // none, and a closure to set it to, given the event its name is on this
       // target, as `add_event_listener`'s is (ADR 0223), or `None`, `null`.
-      if ((m.idlType!.idlType as string) === "EventHandler" && m.name!.startsWith("on")) {
+      const handler = HANDLERS[m.idlType!.idlType as string];
+      if (handler && m.name!.startsWith("on")) {
         const event = listens.get(i.name)?.get(m.name!.slice(2)) ?? "Event";
         const name = snake(m.name!);
+        if (handler === HANDLERS.OnErrorEventHandler) unions.set(ERROR_ARG.name, ERROR_ARG);
         fns.push({ name, jsName: `get ${m.name}`, params: self, result: "Option<&'static JsObject>", doc });
         fns.push({
           name: `set_${name}`,
           jsName: `set ${m.name}`,
-          params: [...self, `value: Option<Box<dyn FnMut(&${typeName(event)})>>`],
+          params: [...self, `value: Option<Box<dyn ${handler(typeName(event))}>>`],
           result: "()",
           doc,
           nullable: ["value"],

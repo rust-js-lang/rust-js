@@ -127,3 +127,8 @@ so nothing said when it fell behind.
   method beside an instance's of its name is its module's too**,
   `response::json(data)` beside `response.json()`, as a method and a
   module function don't clash. 97.9%.
+- **`onerror` and `onbeforeunload` are typed as TypeScript's**:
+  `onerror`'s closure is given an `EventOrStr`, an error's event or on a
+  window its message, where it was and what was thrown, and gives whether
+  it's handled, `true` not reported; `onbeforeunload`'s gives the text that
+  asks whether to leave, or none. They were skipped. 98.0%.

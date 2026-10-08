@@ -155,3 +155,12 @@ pub fn texts(url: &webapi::URL, list: &webapi::DOMTokenList) -> (String, String)
 pub fn statics_read() -> (String, &'static webapi::Response) {
     (webapi::notification::permission(), webapi::response::json(vec![1, 2]))
 }
+
+/// `onerror`'s closure is given an error's event, or on a window its
+/// message, and gives whether it's handled; `onbeforeunload`'s gives the
+/// text that asks whether to leave, or none.
+pub fn on_errors(button: &webapi::HTMLButtonElement) -> bool {
+    button.set_onerror(Some(Box::new(|e, _, _, _, _| matches!(e, webapi::EventOrStr::Str(_)))));
+    webapi::window.set_onbeforeunload(Some(Box::new(|_| None)));
+    button.onerror().is_some()
+}

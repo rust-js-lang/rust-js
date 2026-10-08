@@ -1,6 +1,6 @@
 # The webapi crate against TypeScript's DOM (@types/web): bun test test/webapi-coverage.test.ts
 # classes: 699 of 701 (99.7%)
-# members: 8240 of 8419 (97.9%)
+# members: 8249 of 8419 (98.0%)
 AbortController.abort
 AbortController.constructor
 AbortController.signal
@@ -1521,6 +1521,7 @@ Document.ondrop
 Document.ondurationchange
 Document.onemptied
 Document.onended
+Document.onerror
 Document.onfocus
 Document.onformdata
 Document.onfullscreenchange
@@ -2300,6 +2301,7 @@ HTMLBodyElement.bgColor
 HTMLBodyElement.link
 HTMLBodyElement.onafterprint
 HTMLBodyElement.onbeforeprint
+HTMLBodyElement.onbeforeunload
 HTMLBodyElement.ongamepadconnected
 HTMLBodyElement.ongamepaddisconnected
 HTMLBodyElement.onhashchange
@@ -2425,6 +2427,7 @@ HTMLElement.ondrop
 HTMLElement.ondurationchange
 HTMLElement.onemptied
 HTMLElement.onended
+HTMLElement.onerror
 HTMLElement.onfocus
 HTMLElement.onformdata
 HTMLElement.ongotpointercapture
@@ -2554,6 +2557,7 @@ HTMLFrameElement.src
 HTMLFrameSetElement.cols
 HTMLFrameSetElement.onafterprint
 HTMLFrameSetElement.onbeforeprint
+HTMLFrameSetElement.onbeforeunload
 HTMLFrameSetElement.ongamepadconnected
 HTMLFrameSetElement.ongamepaddisconnected
 HTMLFrameSetElement.onhashchange
@@ -3339,6 +3343,7 @@ MathMLElement.ondrop
 MathMLElement.ondurationchange
 MathMLElement.onemptied
 MathMLElement.onended
+MathMLElement.onerror
 MathMLElement.onfocus
 MathMLElement.onformdata
 MathMLElement.ongotpointercapture
@@ -4576,6 +4581,7 @@ SVGElement.ondrop
 SVGElement.ondurationchange
 SVGElement.onemptied
 SVGElement.onended
+SVGElement.onerror
 SVGElement.onfocus
 SVGElement.onformdata
 SVGElement.ongotpointercapture
@@ -5124,6 +5130,7 @@ SVGSVGElement.getIntersectionList
 SVGSVGElement.height
 SVGSVGElement.onafterprint
 SVGSVGElement.onbeforeprint
+SVGSVGElement.onbeforeunload
 SVGSVGElement.ongamepadconnected
 SVGSVGElement.ongamepaddisconnected
 SVGSVGElement.onhashchange
@@ -7978,6 +7985,7 @@ Window.onbeforeinput
 Window.onbeforematch
 Window.onbeforeprint
 Window.onbeforetoggle
+Window.onbeforeunload
 Window.onblur
 Window.oncancel
 Window.oncanplay
@@ -8006,6 +8014,7 @@ Window.ondrop
 Window.ondurationchange
 Window.onemptied
 Window.onended
+Window.onerror
 Window.onfocus
 Window.onformdata
 Window.ongamepadconnected
