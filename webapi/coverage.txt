@@ -1,6 +1,6 @@
 # The webapi crate against TypeScript's DOM (@types/web): bun test test/webapi-coverage.test.ts
 # classes: 699 of 701 (99.7%)
-# members: 8321 of 8419 (98.8%)
+# members: 8323 of 8419 (98.9%)
 AbortController.abort
 AbortController.constructor
 AbortController.signal
@@ -1429,6 +1429,7 @@ Document.URL
 Document.activeElement
 Document.activeViewTransition
 Document.adoptNode
+Document.adoptedStyleSheets
 Document.alinkColor
 Document.all
 Document.anchors
@@ -5429,6 +5430,7 @@ ServiceWorkerRegistration.update
 ServiceWorkerRegistration.updateViaCache
 ServiceWorkerRegistration.waiting
 ShadowRoot.activeElement
+ShadowRoot.adoptedStyleSheets
 ShadowRoot.clonable
 ShadowRoot.customElementRegistry
 ShadowRoot.delegatesFocus

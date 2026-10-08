@@ -146,3 +146,5 @@ so nothing said when it fell behind.
   `FormDataEntryValue`, where a hand binding gave text alone; a message's
   sender stays an object, a frame's window being another realm's, which
   `instanceof Window` isn't. 98.8%.
+- **An `ObservableArray` is a JS array**, `adoptedStyleSheets`: given as a
+  slice, `set_adopted_style_sheets(&[sheet])`, and read as one. 98.9%.

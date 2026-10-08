@@ -145,4 +145,9 @@ export function unions_read(reader, data) {
   }
   return [text, name];
 }
+
+export function adopted(sheet) {
+  document.adoptedStyleSheets = [sheet];
+  return document.adoptedStyleSheets.length;
+}
 //# sourceMappingURL=web_forms.js.map

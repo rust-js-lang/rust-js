@@ -3802,6 +3802,22 @@ impl Document {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/adoptedStyleSheets)
+    #[cfg_attr(rust_js, rust_js::link_name = "get adoptedStyleSheets")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn adopted_style_sheets(&self) -> &'static [&'static CSSStyleSheet] {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/adoptedStyleSheets)
+    #[cfg_attr(rust_js, rust_js::link_name = "set adoptedStyleSheets")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_adopted_style_sheets(&self, value: &[&CSSStyleSheet]) {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/customElementRegistry)
     #[cfg_attr(rust_js, rust_js::link_name = "get customElementRegistry")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -78339,6 +78355,22 @@ impl ShadowRoot {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn style_sheets(&self) -> &'static StyleSheetList {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/adoptedStyleSheets)
+    #[cfg_attr(rust_js, rust_js::link_name = "get adoptedStyleSheets")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn adopted_style_sheets(&self) -> &'static [&'static CSSStyleSheet] {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/adoptedStyleSheets)
+    #[cfg_attr(rust_js, rust_js::link_name = "set adoptedStyleSheets")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_adopted_style_sheets(&self, value: &[&CSSStyleSheet]) {
         unreachable!()
     }
 

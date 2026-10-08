@@ -184,3 +184,10 @@ pub fn unions_read(reader: &webapi::FileReader, data: &webapi::FormData) -> (boo
     };
     (text, name)
 }
+
+/// An `ObservableArray`, `adoptedStyleSheets`, is a JS array, given as a
+/// slice and read as one.
+pub fn adopted(sheet: &webapi::CSSStyleSheet) -> usize {
+    document.set_adopted_style_sheets(&[sheet]);
+    document.adopted_style_sheets().len()
+}

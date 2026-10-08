@@ -346,13 +346,15 @@ function rustType(t: IdlType, at: Position): string | { skip: string } {
   }
   // A sequence a function takes is a slice, a JS array of its items as
   // they are (ADR 0219): `new Blob([text, "!"])` of `&[BlobPart]`.
-  if ((t.generic === "sequence" || t.generic === "FrozenArray") && at === "param") {
+  // An `ObservableArray`, `adoptedStyleSheets`, is a JS array to JS: given
+  // as one, and read as one, its items as they are.
+  if ((t.generic === "sequence" || t.generic === "FrozenArray" || t.generic === "ObservableArray") && at === "param") {
     const item = paramType((t.idlType as IdlType[])[0]);
     return item ? `&[${item}]` : { skip: t.generic };
   }
   // One a function gives is a `Vec`, a new array each time; a frozen
   // array, the same one, which JS won't change, a slice of it.
-  if ((t.generic === "sequence" || t.generic === "FrozenArray") && at === "result") {
+  if ((t.generic === "sequence" || t.generic === "FrozenArray" || t.generic === "ObservableArray") && at === "result") {
     const inner = (t.idlType as IdlType[])[0];
     const item = rustType(inner, "result");
     if (typeof item !== "string") return item;
