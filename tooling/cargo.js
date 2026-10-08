@@ -194,7 +194,7 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
  * that this build doesn't write goes, if it's still as written: an edited
  * one is a person's, and one rust-js wrote some other way isn't this
  * build's. Where each JS went.
- * @param {{ library: { name: string }, modules: { file: string, map?: string, types?: string, source: string, module: string[] }[] }[]} manifests
+ * @param {{ library: { name: string }, modules: { file: string, map?: string, types?: string, source: string, module: string[], located?: boolean }[] }[]} manifests
  * @param {string} ledger
  * @param {string[]} [routes] directories where each file is a route,
  * Next.js's `pages/`: a module's there gets no declarations, which
@@ -215,18 +215,15 @@ export function writeInSource(manifests, ledger, routes = []) {
     return `crate \`${crate}\`'s ${module.length === 0 ? "root" : own}`;
   };
   for (const { library, modules } of manifests) {
-    const root = modules.find((m) => m.module.length === 0);
-    const crateRoot = root.source;
-    for (const { file, source, module } of modules) {
+    const crateRoot = modules.find((m) => m.module.length === 0).source;
+    for (const { file, source, module, located } of modules) {
       const extension = file.endsWith(".jsx") ? ".jsx" : ".js";
       // The module whose file `source` is, by where it is: `src/api.rs`
       // and `src/api/mod.rs` are `api`'s.
       const own = source === crateRoot ? [] : relative(dirname(crateRoot), source).replace(/\.rs$/, "").split(sep);
       if (own.at(-1) === "mod") own.pop();
-      // Or where its JS is, by its file: a `#[path]` module's (ADR 0273).
-      const placed = relative(dirname(root.file), file).replace(/\.jsx?$/, "").split(sep);
-      const same = (path) => own.length === path.length && own.every((name, i) => name === path[i]);
-      const written = same(module) || (source !== crateRoot && same(placed));
+      // Or a `#[path]` module's file, wherever it is (ADR 0273).
+      const written = (own.length === module.length && own.every((name, i) => name === module[i])) || located;
       moved.set(file, written ? source.replace(/\.rs$/, extension) : join(dirname(crateRoot), ...module) + extension);
     }
     for (const { file, module } of [...modules].sort((a, b) => a.module.length - b.module.length)) {

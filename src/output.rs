@@ -389,17 +389,15 @@ impl OutputPlan {
             .map(|m| m.path.clone())
             .collect();
         // A `#[path]` module's file, below the root's directory as the output
-        // is: `../pages/codes/[code].rs` from `app/page.rs` (ADR 0273).
+        // is: `pages/errors/[errorCode].rs` (ADR 0273). One outside it,
+        // `../shared/model.rs`, is where its module path says, in the output's.
         self.located = lowered
             .modules
             .iter()
             .filter(|m| m.located)
             .filter_map(|m| {
-                let file = m.file.as_ref()?;
-                Some((
-                    m.path.clone(),
-                    parent_dir(&self.output).join(relative(parent_dir(&self.input), file)),
-                ))
+                let below = relative(parent_dir(&self.input), m.file.as_ref()?);
+                (!below.starts_with("..")).then(|| (m.path.clone(), parent_dir(&self.output).join(below)))
             })
             .collect();
         let sources: Vec<PathBuf> = sources.into_iter().map(|p| absolute(&p)).collect::<Result<_, _>>()?;
@@ -438,6 +436,7 @@ impl OutputPlan {
                 map,
                 types,
                 source: module.file.as_deref().map(absolute).transpose()?,
+                located: module.located,
                 imports,
             });
         }

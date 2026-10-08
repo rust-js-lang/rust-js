@@ -16,6 +16,7 @@ const versions: Record<string, string> = {
   "rust-js-webapi": versionOf("webapi"),
   "rust-js-react": versionOf("react"),
   "rust-js-next": versionOf("next"),
+  "rust-js-node": versionOf("node"),
 };
 
 test("the binding crates package for crates.io, each at its version", () => {
@@ -23,7 +24,7 @@ test("the binding crates package for crates.io, each at its version", () => {
   const packaged = runSync([process.execPath, "scripts/package-crates.ts", out], root, 600_000, { RUSTC_BOOTSTRAP: undefined });
   expect(packaged.stderr).not.toContain("error");
   expect(packaged.code).toBe(0);
-  const crates = ["rust-js-builtins", "rust-js-webapi", "rust-js-react", "rust-js-next"].map((name) => `${name}-${versions[name]}.crate`);
+  const crates = ["rust-js-builtins", "rust-js-webapi", "rust-js-react", "rust-js-next", "rust-js-node"].map((name) => `${name}-${versions[name]}.crate`);
   expect(readdirSync(out).sort()).toEqual([...crates].sort());
   // Each is its Rust, and what react's build script reads: not the
   // repository's tools that generate or build it.
@@ -37,5 +38,6 @@ test("the binding crates package for crates.io, each at its version", () => {
   expect(listed("rust-js-webapi")).toEqual(["README.md", "src/lib.rs"]);
   expect(versionOf("react")).toBe(versionOf("."));
   expect(listed("rust-js-react")).toEqual(["README.md", "build.rs", "src/attributes.rs", "src/children.rs", "src/dom.rs", "src/elements.rs", "src/event.rs", "src/lib.rs", "versions.json"]);
-  expect(listed("rust-js-next")).toEqual(["README.md", "src/head.rs", "src/image.rs", "src/legacy.rs", "src/legacy/image.rs", "src/lib.rs", "src/link.rs", "src/navigation.rs", "src/router.rs"]);
+  expect(listed("rust-js-next")).toEqual(["README.md", "src/app.rs", "src/data_fetching.rs", "src/head.rs", "src/image.rs", "src/legacy.rs", "src/legacy/image.rs", "src/lib.rs", "src/link.rs", "src/navigation.rs", "src/router.rs"]);
+  expect(listed("rust-js-node")).toEqual(["README.md", "src/fs.rs", "src/lib.rs", "src/process.rs"]);
 }, 600_000);

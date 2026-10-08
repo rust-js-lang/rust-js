@@ -56,6 +56,10 @@ pub struct Module {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub types: Option<PathBuf>,
     pub source: Option<PathBuf>,
+    /// Whether its `source` is where a `#[path]` says (ADR 0273), where its
+    /// JS goes in source too.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub located: bool,
     pub imports: Vec<PathBuf>,
 }
 

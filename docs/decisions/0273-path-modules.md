@@ -41,3 +41,11 @@ as the compiler placed it.
 - **It's tested**: a compiler test has a root and a `#[path]` module import
   each other and a file beside the root, and the Next.js example builds a
   page of `pages/codes/[code].rs`; mutations place it by its module path.
+
+## Since
+
+- **One outside the root's directory keeps its module path's place in the
+  output**, `../shared/model.rs` of `client/lib.rs`'s crate: its JS stays in
+  the output's directory, where a direct compile writes, not beside a file
+  outside it. A Cargo build in source writes it beside its file still, as
+  the manifest says it's a `#[path]` module's, `located`.
