@@ -36,7 +36,11 @@ import("../MDX/CodeBlock/CodeBlock");
   `#[rust_js::on_load]`, in a `const _` marked so too, which nothing calls;
   rust-js writes its body where the module's statements go, and neither the
   function nor the `const`.
-- **What they use is imported**, a runtime helper's too.
+- **What they use is imported**, a runtime helper's too, and **linked as a
+  function's body is**: a call of another module's function is its import,
+  whose alias is none of their names, a closure's parameters' neither.
+  (Amended: they were left out of linking, so such a call reached the
+  printer unresolved, and an alias could be one of their names.)
 
 ## Why
 
@@ -44,16 +48,6 @@ import("../MDX/CodeBlock/CodeBlock");
   no variable to hold what it gives.
 - **It's tested**: a compiler test's module calls a JS function when it's
   loaded, through a helper; mutations write a function of it, leave its
-  statements out, and its helper unimported.
-
-## Amendment: link module-load statements
-
-Module-load statements participate in both linker walks: reserving their
-bindings (including nested closure parameters), then resolving cross-module
-symbols. They are module roots just like functions and constants. Omitting
-them let an unresolved symbol reach the printer and could let an import
-alias collide with a top-level local.
-
-`test/link.test.ts` executes an on-load body that calls another Rust module
-through a closure and binds a local with the imported function's name.
-Mutations omit symbol resolution or binding reservation independently.
+  statements out, and its helper unimported. A link test calls another
+  module's function from a closure, beside a local of that function's name;
+  mutations leave their names unreserved, or their imports unresolved.
