@@ -81,3 +81,17 @@ pub fn kinds(
     let into = text_encoder::encode_into(text_encoder::new(), "hi", bytes);
     (names, languages.len(), webapi::blob::size(blob), webapi::audio_param::value(param), node::ELEMENT_NODE, into.written)
 }
+
+/// An event handler property, `onclick`: a closure given the event its name
+/// is on the target, a button's click a `PointerEvent`, or `None`, `null`.
+pub fn handlers(button: &webapi::HTMLButtonElement) -> bool {
+    webapi::html_element::set_onclick(
+        button,
+        Some(Box::new(|e: &webapi::PointerEvent| {
+            event::prevent_default(e);
+        })),
+    );
+    let set = webapi::html_element::onclick(button).is_some();
+    webapi::html_element::set_onclick(button, None);
+    set
+}

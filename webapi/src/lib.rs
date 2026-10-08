@@ -683,6 +683,24 @@ pub mod element {
         #[link_name = "requestFullscreen"]
         pub safe fn request_fullscreen_with_options(this: &Element, options: FullscreenOptions<'_>) -> Promise<()>;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/onfullscreenchange)
+        #[link_name = "get onfullscreenchange"]
+        pub safe fn onfullscreenchange(this: &Element) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/onfullscreenchange)
+        #[link_name = "set onfullscreenchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onfullscreenchange(this: &Element, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/onfullscreenerror)
+        #[link_name = "get onfullscreenerror"]
+        pub safe fn onfullscreenerror(this: &Element) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/onfullscreenerror)
+        #[link_name = "set onfullscreenerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onfullscreenerror(this: &Element, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/requestPointerLock)
         #[link_name = "requestPointerLock"]
         pub safe fn request_pointer_lock(this: &Element) -> Promise<()>;
@@ -1629,6 +1647,24 @@ pub mod document {
         #[link_name = "exitFullscreen"]
         pub safe fn exit_fullscreen(this: &Document) -> Promise<()>;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onfullscreenchange)
+        #[link_name = "get onfullscreenchange"]
+        pub safe fn onfullscreenchange(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onfullscreenchange)
+        #[link_name = "set onfullscreenchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onfullscreenchange(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onfullscreenerror)
+        #[link_name = "get onfullscreenerror"]
+        pub safe fn onfullscreenerror(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onfullscreenerror)
+        #[link_name = "set onfullscreenerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onfullscreenerror(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/getSelection)
         #[link_name = "getSelection"]
         pub safe fn get_selection(this: &Document) -> Option<&'static Selection>;
@@ -1644,6 +1680,24 @@ pub mod document {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/exitPictureInPicture)
         #[link_name = "exitPictureInPicture"]
         pub safe fn exit_picture_in_picture(this: &Document) -> Promise<()>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerlockchange)
+        #[link_name = "get onpointerlockchange"]
+        pub safe fn onpointerlockchange(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerlockchange)
+        #[link_name = "set onpointerlockchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerlockchange(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerlockerror)
+        #[link_name = "get onpointerlockerror"]
+        pub safe fn onpointerlockerror(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerlockerror)
+        #[link_name = "set onpointerlockerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerlockerror(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/exitPointerLock)
         #[link_name = "exitPointerLock"]
@@ -1977,6 +2031,24 @@ pub mod document {
         #[link_name = "get visibilityState"]
         pub safe fn visibility_state(this: &Document) -> String;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onreadystatechange)
+        #[link_name = "get onreadystatechange"]
+        pub safe fn onreadystatechange(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onreadystatechange)
+        #[link_name = "set onreadystatechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onreadystatechange(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onvisibilitychange)
+        #[link_name = "get onvisibilitychange"]
+        pub safe fn onvisibilitychange(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onvisibilitychange)
+        #[link_name = "set onvisibilitychange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onvisibilitychange(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/fgColor)
         #[link_name = "get fgColor"]
         pub safe fn fg_color(this: &Document) -> String;
@@ -2134,6 +2206,906 @@ pub mod document {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/evaluate)
         pub safe fn evaluate(this: &Document, expression: &str, context_node: &Node) -> &'static XPathResult;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onselectstart)
+        #[link_name = "get onselectstart"]
+        pub safe fn onselectstart(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onselectstart)
+        #[link_name = "set onselectstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onselectstart(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onselectionchange)
+        #[link_name = "get onselectionchange"]
+        pub safe fn onselectionchange(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onselectionchange)
+        #[link_name = "set onselectionchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onselectionchange(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onanimationstart)
+        #[link_name = "get onanimationstart"]
+        pub safe fn onanimationstart(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onanimationstart)
+        #[link_name = "set onanimationstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onanimationstart(this: &Document, value: Option<Box<dyn FnMut(&AnimationEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onanimationiteration)
+        #[link_name = "get onanimationiteration"]
+        pub safe fn onanimationiteration(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onanimationiteration)
+        #[link_name = "set onanimationiteration"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onanimationiteration(this: &Document, value: Option<Box<dyn FnMut(&AnimationEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onanimationend)
+        #[link_name = "get onanimationend"]
+        pub safe fn onanimationend(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onanimationend)
+        #[link_name = "set onanimationend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onanimationend(this: &Document, value: Option<Box<dyn FnMut(&AnimationEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onanimationcancel)
+        #[link_name = "get onanimationcancel"]
+        pub safe fn onanimationcancel(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onanimationcancel)
+        #[link_name = "set onanimationcancel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onanimationcancel(this: &Document, value: Option<Box<dyn FnMut(&AnimationEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontransitionrun)
+        #[link_name = "get ontransitionrun"]
+        pub safe fn ontransitionrun(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontransitionrun)
+        #[link_name = "set ontransitionrun"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontransitionrun(this: &Document, value: Option<Box<dyn FnMut(&TransitionEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontransitionstart)
+        #[link_name = "get ontransitionstart"]
+        pub safe fn ontransitionstart(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontransitionstart)
+        #[link_name = "set ontransitionstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontransitionstart(this: &Document, value: Option<Box<dyn FnMut(&TransitionEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontransitionend)
+        #[link_name = "get ontransitionend"]
+        pub safe fn ontransitionend(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontransitionend)
+        #[link_name = "set ontransitionend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontransitionend(this: &Document, value: Option<Box<dyn FnMut(&TransitionEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontransitioncancel)
+        #[link_name = "get ontransitioncancel"]
+        pub safe fn ontransitioncancel(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontransitioncancel)
+        #[link_name = "set ontransitioncancel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontransitioncancel(this: &Document, value: Option<Box<dyn FnMut(&TransitionEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerover)
+        #[link_name = "get onpointerover"]
+        pub safe fn onpointerover(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerover)
+        #[link_name = "set onpointerover"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerover(this: &Document, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerenter)
+        #[link_name = "get onpointerenter"]
+        pub safe fn onpointerenter(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerenter)
+        #[link_name = "set onpointerenter"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerenter(this: &Document, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerdown)
+        #[link_name = "get onpointerdown"]
+        pub safe fn onpointerdown(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerdown)
+        #[link_name = "set onpointerdown"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerdown(this: &Document, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointermove)
+        #[link_name = "get onpointermove"]
+        pub safe fn onpointermove(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointermove)
+        #[link_name = "set onpointermove"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointermove(this: &Document, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerrawupdate)
+        #[link_name = "get onpointerrawupdate"]
+        pub safe fn onpointerrawupdate(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerrawupdate)
+        #[link_name = "set onpointerrawupdate"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerrawupdate(this: &Document, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerup)
+        #[link_name = "get onpointerup"]
+        pub safe fn onpointerup(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerup)
+        #[link_name = "set onpointerup"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerup(this: &Document, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointercancel)
+        #[link_name = "get onpointercancel"]
+        pub safe fn onpointercancel(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointercancel)
+        #[link_name = "set onpointercancel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointercancel(this: &Document, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerout)
+        #[link_name = "get onpointerout"]
+        pub safe fn onpointerout(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerout)
+        #[link_name = "set onpointerout"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerout(this: &Document, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerleave)
+        #[link_name = "get onpointerleave"]
+        pub safe fn onpointerleave(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerleave)
+        #[link_name = "set onpointerleave"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerleave(this: &Document, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ongotpointercapture)
+        #[link_name = "get ongotpointercapture"]
+        pub safe fn ongotpointercapture(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ongotpointercapture)
+        #[link_name = "set ongotpointercapture"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ongotpointercapture(this: &Document, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onlostpointercapture)
+        #[link_name = "get onlostpointercapture"]
+        pub safe fn onlostpointercapture(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onlostpointercapture)
+        #[link_name = "set onlostpointercapture"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onlostpointercapture(this: &Document, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchstart)
+        #[link_name = "get ontouchstart"]
+        pub safe fn ontouchstart(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchstart)
+        #[link_name = "set ontouchstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontouchstart(this: &Document, value: Option<Box<dyn FnMut(&TouchEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchend)
+        #[link_name = "get ontouchend"]
+        pub safe fn ontouchend(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchend)
+        #[link_name = "set ontouchend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontouchend(this: &Document, value: Option<Box<dyn FnMut(&TouchEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchmove)
+        #[link_name = "get ontouchmove"]
+        pub safe fn ontouchmove(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchmove)
+        #[link_name = "set ontouchmove"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontouchmove(this: &Document, value: Option<Box<dyn FnMut(&TouchEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchcancel)
+        #[link_name = "get ontouchcancel"]
+        pub safe fn ontouchcancel(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchcancel)
+        #[link_name = "set ontouchcancel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontouchcancel(this: &Document, value: Option<Box<dyn FnMut(&TouchEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onabort)
+        #[link_name = "get onabort"]
+        pub safe fn onabort(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onabort)
+        #[link_name = "set onabort"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onabort(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onauxclick)
+        #[link_name = "get onauxclick"]
+        pub safe fn onauxclick(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onauxclick)
+        #[link_name = "set onauxclick"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onauxclick(this: &Document, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onbeforeinput)
+        #[link_name = "get onbeforeinput"]
+        pub safe fn onbeforeinput(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onbeforeinput)
+        #[link_name = "set onbeforeinput"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onbeforeinput(this: &Document, value: Option<Box<dyn FnMut(&InputEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onbeforematch)
+        #[link_name = "get onbeforematch"]
+        pub safe fn onbeforematch(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onbeforematch)
+        #[link_name = "set onbeforematch"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onbeforematch(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onbeforetoggle)
+        #[link_name = "get onbeforetoggle"]
+        pub safe fn onbeforetoggle(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onbeforetoggle)
+        #[link_name = "set onbeforetoggle"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onbeforetoggle(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onblur)
+        #[link_name = "get onblur"]
+        pub safe fn onblur(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onblur)
+        #[link_name = "set onblur"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onblur(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncancel)
+        #[link_name = "get oncancel"]
+        pub safe fn oncancel(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncancel)
+        #[link_name = "set oncancel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncancel(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncanplay)
+        #[link_name = "get oncanplay"]
+        pub safe fn oncanplay(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncanplay)
+        #[link_name = "set oncanplay"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncanplay(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncanplaythrough)
+        #[link_name = "get oncanplaythrough"]
+        pub safe fn oncanplaythrough(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncanplaythrough)
+        #[link_name = "set oncanplaythrough"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncanplaythrough(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onchange)
+        #[link_name = "get onchange"]
+        pub safe fn onchange(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onchange)
+        #[link_name = "set onchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onchange(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onclick)
+        #[link_name = "get onclick"]
+        pub safe fn onclick(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onclick)
+        #[link_name = "set onclick"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onclick(this: &Document, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onclose)
+        #[link_name = "get onclose"]
+        pub safe fn onclose(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onclose)
+        #[link_name = "set onclose"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onclose(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncommand)
+        #[link_name = "get oncommand"]
+        pub safe fn oncommand(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncommand)
+        #[link_name = "set oncommand"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncommand(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncontextlost)
+        #[link_name = "get oncontextlost"]
+        pub safe fn oncontextlost(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncontextlost)
+        #[link_name = "set oncontextlost"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncontextlost(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncontextmenu)
+        #[link_name = "get oncontextmenu"]
+        pub safe fn oncontextmenu(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncontextmenu)
+        #[link_name = "set oncontextmenu"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncontextmenu(this: &Document, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncontextrestored)
+        #[link_name = "get oncontextrestored"]
+        pub safe fn oncontextrestored(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncontextrestored)
+        #[link_name = "set oncontextrestored"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncontextrestored(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncopy)
+        #[link_name = "get oncopy"]
+        pub safe fn oncopy(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncopy)
+        #[link_name = "set oncopy"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncopy(this: &Document, value: Option<Box<dyn FnMut(&ClipboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncuechange)
+        #[link_name = "get oncuechange"]
+        pub safe fn oncuechange(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncuechange)
+        #[link_name = "set oncuechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncuechange(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncut)
+        #[link_name = "get oncut"]
+        pub safe fn oncut(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncut)
+        #[link_name = "set oncut"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncut(this: &Document, value: Option<Box<dyn FnMut(&ClipboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ondblclick)
+        #[link_name = "get ondblclick"]
+        pub safe fn ondblclick(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ondblclick)
+        #[link_name = "set ondblclick"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondblclick(this: &Document, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ondrag)
+        #[link_name = "get ondrag"]
+        pub safe fn ondrag(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ondrag)
+        #[link_name = "set ondrag"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondrag(this: &Document, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ondragend)
+        #[link_name = "get ondragend"]
+        pub safe fn ondragend(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ondragend)
+        #[link_name = "set ondragend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondragend(this: &Document, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ondragenter)
+        #[link_name = "get ondragenter"]
+        pub safe fn ondragenter(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ondragenter)
+        #[link_name = "set ondragenter"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondragenter(this: &Document, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ondragleave)
+        #[link_name = "get ondragleave"]
+        pub safe fn ondragleave(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ondragleave)
+        #[link_name = "set ondragleave"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondragleave(this: &Document, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ondragover)
+        #[link_name = "get ondragover"]
+        pub safe fn ondragover(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ondragover)
+        #[link_name = "set ondragover"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondragover(this: &Document, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ondragstart)
+        #[link_name = "get ondragstart"]
+        pub safe fn ondragstart(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ondragstart)
+        #[link_name = "set ondragstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondragstart(this: &Document, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ondrop)
+        #[link_name = "get ondrop"]
+        pub safe fn ondrop(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ondrop)
+        #[link_name = "set ondrop"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondrop(this: &Document, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ondurationchange)
+        #[link_name = "get ondurationchange"]
+        pub safe fn ondurationchange(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ondurationchange)
+        #[link_name = "set ondurationchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondurationchange(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onemptied)
+        #[link_name = "get onemptied"]
+        pub safe fn onemptied(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onemptied)
+        #[link_name = "set onemptied"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onemptied(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onended)
+        #[link_name = "get onended"]
+        pub safe fn onended(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onended)
+        #[link_name = "set onended"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onended(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onfocus)
+        #[link_name = "get onfocus"]
+        pub safe fn onfocus(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onfocus)
+        #[link_name = "set onfocus"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onfocus(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onformdata)
+        #[link_name = "get onformdata"]
+        pub safe fn onformdata(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onformdata)
+        #[link_name = "set onformdata"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onformdata(this: &Document, value: Option<Box<dyn FnMut(&FormDataEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oninput)
+        #[link_name = "get oninput"]
+        pub safe fn oninput(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oninput)
+        #[link_name = "set oninput"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oninput(this: &Document, value: Option<Box<dyn FnMut(&InputEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oninvalid)
+        #[link_name = "get oninvalid"]
+        pub safe fn oninvalid(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oninvalid)
+        #[link_name = "set oninvalid"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oninvalid(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onkeydown)
+        #[link_name = "get onkeydown"]
+        pub safe fn onkeydown(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onkeydown)
+        #[link_name = "set onkeydown"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onkeydown(this: &Document, value: Option<Box<dyn FnMut(&KeyboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onkeypress)
+        #[link_name = "get onkeypress"]
+        pub safe fn onkeypress(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onkeypress)
+        #[link_name = "set onkeypress"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onkeypress(this: &Document, value: Option<Box<dyn FnMut(&KeyboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onkeyup)
+        #[link_name = "get onkeyup"]
+        pub safe fn onkeyup(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onkeyup)
+        #[link_name = "set onkeyup"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onkeyup(this: &Document, value: Option<Box<dyn FnMut(&KeyboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onload)
+        #[link_name = "get onload"]
+        pub safe fn onload(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onload)
+        #[link_name = "set onload"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onload(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onloadeddata)
+        #[link_name = "get onloadeddata"]
+        pub safe fn onloadeddata(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onloadeddata)
+        #[link_name = "set onloadeddata"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onloadeddata(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onloadedmetadata)
+        #[link_name = "get onloadedmetadata"]
+        pub safe fn onloadedmetadata(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onloadedmetadata)
+        #[link_name = "set onloadedmetadata"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onloadedmetadata(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onloadstart)
+        #[link_name = "get onloadstart"]
+        pub safe fn onloadstart(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onloadstart)
+        #[link_name = "set onloadstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onloadstart(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onmousedown)
+        #[link_name = "get onmousedown"]
+        pub safe fn onmousedown(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onmousedown)
+        #[link_name = "set onmousedown"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmousedown(this: &Document, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onmouseenter)
+        #[link_name = "get onmouseenter"]
+        pub safe fn onmouseenter(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onmouseenter)
+        #[link_name = "set onmouseenter"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmouseenter(this: &Document, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onmouseleave)
+        #[link_name = "get onmouseleave"]
+        pub safe fn onmouseleave(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onmouseleave)
+        #[link_name = "set onmouseleave"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmouseleave(this: &Document, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onmousemove)
+        #[link_name = "get onmousemove"]
+        pub safe fn onmousemove(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onmousemove)
+        #[link_name = "set onmousemove"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmousemove(this: &Document, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onmouseout)
+        #[link_name = "get onmouseout"]
+        pub safe fn onmouseout(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onmouseout)
+        #[link_name = "set onmouseout"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmouseout(this: &Document, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onmouseover)
+        #[link_name = "get onmouseover"]
+        pub safe fn onmouseover(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onmouseover)
+        #[link_name = "set onmouseover"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmouseover(this: &Document, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onmouseup)
+        #[link_name = "get onmouseup"]
+        pub safe fn onmouseup(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onmouseup)
+        #[link_name = "set onmouseup"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmouseup(this: &Document, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpaste)
+        #[link_name = "get onpaste"]
+        pub safe fn onpaste(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpaste)
+        #[link_name = "set onpaste"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpaste(this: &Document, value: Option<Box<dyn FnMut(&ClipboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpause)
+        #[link_name = "get onpause"]
+        pub safe fn onpause(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpause)
+        #[link_name = "set onpause"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpause(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onplay)
+        #[link_name = "get onplay"]
+        pub safe fn onplay(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onplay)
+        #[link_name = "set onplay"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onplay(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onplaying)
+        #[link_name = "get onplaying"]
+        pub safe fn onplaying(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onplaying)
+        #[link_name = "set onplaying"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onplaying(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onprogress)
+        #[link_name = "get onprogress"]
+        pub safe fn onprogress(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onprogress)
+        #[link_name = "set onprogress"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onprogress(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onratechange)
+        #[link_name = "get onratechange"]
+        pub safe fn onratechange(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onratechange)
+        #[link_name = "set onratechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onratechange(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onreset)
+        #[link_name = "get onreset"]
+        pub safe fn onreset(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onreset)
+        #[link_name = "set onreset"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onreset(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onresize)
+        #[link_name = "get onresize"]
+        pub safe fn onresize(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onresize)
+        #[link_name = "set onresize"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onresize(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onscroll)
+        #[link_name = "get onscroll"]
+        pub safe fn onscroll(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onscroll)
+        #[link_name = "set onscroll"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onscroll(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onscrollend)
+        #[link_name = "get onscrollend"]
+        pub safe fn onscrollend(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onscrollend)
+        #[link_name = "set onscrollend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onscrollend(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onsecuritypolicyviolation)
+        #[link_name = "get onsecuritypolicyviolation"]
+        pub safe fn onsecuritypolicyviolation(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onsecuritypolicyviolation)
+        #[link_name = "set onsecuritypolicyviolation"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onsecuritypolicyviolation(this: &Document, value: Option<Box<dyn FnMut(&SecurityPolicyViolationEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onseeked)
+        #[link_name = "get onseeked"]
+        pub safe fn onseeked(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onseeked)
+        #[link_name = "set onseeked"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onseeked(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onseeking)
+        #[link_name = "get onseeking"]
+        pub safe fn onseeking(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onseeking)
+        #[link_name = "set onseeking"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onseeking(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onselect)
+        #[link_name = "get onselect"]
+        pub safe fn onselect(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onselect)
+        #[link_name = "set onselect"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onselect(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onslotchange)
+        #[link_name = "get onslotchange"]
+        pub safe fn onslotchange(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onslotchange)
+        #[link_name = "set onslotchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onslotchange(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onstalled)
+        #[link_name = "get onstalled"]
+        pub safe fn onstalled(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onstalled)
+        #[link_name = "set onstalled"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onstalled(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onsubmit)
+        #[link_name = "get onsubmit"]
+        pub safe fn onsubmit(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onsubmit)
+        #[link_name = "set onsubmit"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onsubmit(this: &Document, value: Option<Box<dyn FnMut(&SubmitEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onsuspend)
+        #[link_name = "get onsuspend"]
+        pub safe fn onsuspend(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onsuspend)
+        #[link_name = "set onsuspend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onsuspend(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontimeupdate)
+        #[link_name = "get ontimeupdate"]
+        pub safe fn ontimeupdate(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontimeupdate)
+        #[link_name = "set ontimeupdate"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontimeupdate(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontoggle)
+        #[link_name = "get ontoggle"]
+        pub safe fn ontoggle(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontoggle)
+        #[link_name = "set ontoggle"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontoggle(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onvolumechange)
+        #[link_name = "get onvolumechange"]
+        pub safe fn onvolumechange(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onvolumechange)
+        #[link_name = "set onvolumechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onvolumechange(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onwaiting)
+        #[link_name = "get onwaiting"]
+        pub safe fn onwaiting(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onwaiting)
+        #[link_name = "set onwaiting"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwaiting(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onwebkitanimationend)
+        #[link_name = "get onwebkitanimationend"]
+        pub safe fn onwebkitanimationend(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onwebkitanimationend)
+        #[link_name = "set onwebkitanimationend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwebkitanimationend(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onwebkitanimationiteration)
+        #[link_name = "get onwebkitanimationiteration"]
+        pub safe fn onwebkitanimationiteration(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onwebkitanimationiteration)
+        #[link_name = "set onwebkitanimationiteration"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwebkitanimationiteration(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onwebkitanimationstart)
+        #[link_name = "get onwebkitanimationstart"]
+        pub safe fn onwebkitanimationstart(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onwebkitanimationstart)
+        #[link_name = "set onwebkitanimationstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwebkitanimationstart(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onwebkittransitionend)
+        #[link_name = "get onwebkittransitionend"]
+        pub safe fn onwebkittransitionend(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onwebkittransitionend)
+        #[link_name = "set onwebkittransitionend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwebkittransitionend(this: &Document, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onwheel)
+        #[link_name = "get onwheel"]
+        pub safe fn onwheel(this: &Document) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onwheel)
+        #[link_name = "set onwheel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwheel(this: &Document, value: Option<Box<dyn FnMut(&WheelEvent)>>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/getBoxQuads)
         #[link_name = "getBoxQuads"]
@@ -2511,6 +3483,15 @@ pub mod abort_signal {
         #[link_name = "throwIfAborted"]
         pub safe fn throw_if_aborted(this: &AbortSignal);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AbortSignal/onabort)
+        #[link_name = "get onabort"]
+        pub safe fn onabort(this: &AbortSignal) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AbortSignal/onabort)
+        #[link_name = "set onabort"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onabort(this: &AbortSignal, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// Treats `this` as `AbortSignal` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static AbortSignal;
@@ -2728,6 +3709,906 @@ pub mod html_element {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/attributeStyleMap)
         #[link_name = "get attributeStyleMap"]
         pub safe fn attribute_style_map(this: &HTMLElement) -> &'static StylePropertyMap;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onselectstart)
+        #[link_name = "get onselectstart"]
+        pub safe fn onselectstart(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onselectstart)
+        #[link_name = "set onselectstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onselectstart(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onselectionchange)
+        #[link_name = "get onselectionchange"]
+        pub safe fn onselectionchange(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onselectionchange)
+        #[link_name = "set onselectionchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onselectionchange(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onanimationstart)
+        #[link_name = "get onanimationstart"]
+        pub safe fn onanimationstart(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onanimationstart)
+        #[link_name = "set onanimationstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onanimationstart(this: &HTMLElement, value: Option<Box<dyn FnMut(&AnimationEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onanimationiteration)
+        #[link_name = "get onanimationiteration"]
+        pub safe fn onanimationiteration(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onanimationiteration)
+        #[link_name = "set onanimationiteration"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onanimationiteration(this: &HTMLElement, value: Option<Box<dyn FnMut(&AnimationEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onanimationend)
+        #[link_name = "get onanimationend"]
+        pub safe fn onanimationend(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onanimationend)
+        #[link_name = "set onanimationend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onanimationend(this: &HTMLElement, value: Option<Box<dyn FnMut(&AnimationEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onanimationcancel)
+        #[link_name = "get onanimationcancel"]
+        pub safe fn onanimationcancel(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onanimationcancel)
+        #[link_name = "set onanimationcancel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onanimationcancel(this: &HTMLElement, value: Option<Box<dyn FnMut(&AnimationEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontransitionrun)
+        #[link_name = "get ontransitionrun"]
+        pub safe fn ontransitionrun(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontransitionrun)
+        #[link_name = "set ontransitionrun"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontransitionrun(this: &HTMLElement, value: Option<Box<dyn FnMut(&TransitionEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontransitionstart)
+        #[link_name = "get ontransitionstart"]
+        pub safe fn ontransitionstart(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontransitionstart)
+        #[link_name = "set ontransitionstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontransitionstart(this: &HTMLElement, value: Option<Box<dyn FnMut(&TransitionEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontransitionend)
+        #[link_name = "get ontransitionend"]
+        pub safe fn ontransitionend(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontransitionend)
+        #[link_name = "set ontransitionend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontransitionend(this: &HTMLElement, value: Option<Box<dyn FnMut(&TransitionEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontransitioncancel)
+        #[link_name = "get ontransitioncancel"]
+        pub safe fn ontransitioncancel(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontransitioncancel)
+        #[link_name = "set ontransitioncancel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontransitioncancel(this: &HTMLElement, value: Option<Box<dyn FnMut(&TransitionEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerover)
+        #[link_name = "get onpointerover"]
+        pub safe fn onpointerover(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerover)
+        #[link_name = "set onpointerover"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerover(this: &HTMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerenter)
+        #[link_name = "get onpointerenter"]
+        pub safe fn onpointerenter(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerenter)
+        #[link_name = "set onpointerenter"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerenter(this: &HTMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerdown)
+        #[link_name = "get onpointerdown"]
+        pub safe fn onpointerdown(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerdown)
+        #[link_name = "set onpointerdown"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerdown(this: &HTMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointermove)
+        #[link_name = "get onpointermove"]
+        pub safe fn onpointermove(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointermove)
+        #[link_name = "set onpointermove"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointermove(this: &HTMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerrawupdate)
+        #[link_name = "get onpointerrawupdate"]
+        pub safe fn onpointerrawupdate(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerrawupdate)
+        #[link_name = "set onpointerrawupdate"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerrawupdate(this: &HTMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerup)
+        #[link_name = "get onpointerup"]
+        pub safe fn onpointerup(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerup)
+        #[link_name = "set onpointerup"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerup(this: &HTMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointercancel)
+        #[link_name = "get onpointercancel"]
+        pub safe fn onpointercancel(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointercancel)
+        #[link_name = "set onpointercancel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointercancel(this: &HTMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerout)
+        #[link_name = "get onpointerout"]
+        pub safe fn onpointerout(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerout)
+        #[link_name = "set onpointerout"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerout(this: &HTMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerleave)
+        #[link_name = "get onpointerleave"]
+        pub safe fn onpointerleave(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerleave)
+        #[link_name = "set onpointerleave"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerleave(this: &HTMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ongotpointercapture)
+        #[link_name = "get ongotpointercapture"]
+        pub safe fn ongotpointercapture(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ongotpointercapture)
+        #[link_name = "set ongotpointercapture"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ongotpointercapture(this: &HTMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onlostpointercapture)
+        #[link_name = "get onlostpointercapture"]
+        pub safe fn onlostpointercapture(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onlostpointercapture)
+        #[link_name = "set onlostpointercapture"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onlostpointercapture(this: &HTMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchstart)
+        #[link_name = "get ontouchstart"]
+        pub safe fn ontouchstart(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchstart)
+        #[link_name = "set ontouchstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontouchstart(this: &HTMLElement, value: Option<Box<dyn FnMut(&TouchEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchend)
+        #[link_name = "get ontouchend"]
+        pub safe fn ontouchend(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchend)
+        #[link_name = "set ontouchend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontouchend(this: &HTMLElement, value: Option<Box<dyn FnMut(&TouchEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchmove)
+        #[link_name = "get ontouchmove"]
+        pub safe fn ontouchmove(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchmove)
+        #[link_name = "set ontouchmove"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontouchmove(this: &HTMLElement, value: Option<Box<dyn FnMut(&TouchEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchcancel)
+        #[link_name = "get ontouchcancel"]
+        pub safe fn ontouchcancel(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchcancel)
+        #[link_name = "set ontouchcancel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontouchcancel(this: &HTMLElement, value: Option<Box<dyn FnMut(&TouchEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onabort)
+        #[link_name = "get onabort"]
+        pub safe fn onabort(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onabort)
+        #[link_name = "set onabort"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onabort(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onauxclick)
+        #[link_name = "get onauxclick"]
+        pub safe fn onauxclick(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onauxclick)
+        #[link_name = "set onauxclick"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onauxclick(this: &HTMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onbeforeinput)
+        #[link_name = "get onbeforeinput"]
+        pub safe fn onbeforeinput(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onbeforeinput)
+        #[link_name = "set onbeforeinput"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onbeforeinput(this: &HTMLElement, value: Option<Box<dyn FnMut(&InputEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onbeforematch)
+        #[link_name = "get onbeforematch"]
+        pub safe fn onbeforematch(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onbeforematch)
+        #[link_name = "set onbeforematch"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onbeforematch(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onbeforetoggle)
+        #[link_name = "get onbeforetoggle"]
+        pub safe fn onbeforetoggle(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onbeforetoggle)
+        #[link_name = "set onbeforetoggle"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onbeforetoggle(this: &HTMLElement, value: Option<Box<dyn FnMut(&ToggleEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onblur)
+        #[link_name = "get onblur"]
+        pub safe fn onblur(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onblur)
+        #[link_name = "set onblur"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onblur(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncancel)
+        #[link_name = "get oncancel"]
+        pub safe fn oncancel(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncancel)
+        #[link_name = "set oncancel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncancel(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncanplay)
+        #[link_name = "get oncanplay"]
+        pub safe fn oncanplay(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncanplay)
+        #[link_name = "set oncanplay"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncanplay(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncanplaythrough)
+        #[link_name = "get oncanplaythrough"]
+        pub safe fn oncanplaythrough(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncanplaythrough)
+        #[link_name = "set oncanplaythrough"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncanplaythrough(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onchange)
+        #[link_name = "get onchange"]
+        pub safe fn onchange(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onchange)
+        #[link_name = "set onchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onchange(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onclick)
+        #[link_name = "get onclick"]
+        pub safe fn onclick(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onclick)
+        #[link_name = "set onclick"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onclick(this: &HTMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onclose)
+        #[link_name = "get onclose"]
+        pub safe fn onclose(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onclose)
+        #[link_name = "set onclose"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onclose(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncommand)
+        #[link_name = "get oncommand"]
+        pub safe fn oncommand(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncommand)
+        #[link_name = "set oncommand"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncommand(this: &HTMLElement, value: Option<Box<dyn FnMut(&CommandEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncontextlost)
+        #[link_name = "get oncontextlost"]
+        pub safe fn oncontextlost(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncontextlost)
+        #[link_name = "set oncontextlost"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncontextlost(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncontextmenu)
+        #[link_name = "get oncontextmenu"]
+        pub safe fn oncontextmenu(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncontextmenu)
+        #[link_name = "set oncontextmenu"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncontextmenu(this: &HTMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncontextrestored)
+        #[link_name = "get oncontextrestored"]
+        pub safe fn oncontextrestored(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncontextrestored)
+        #[link_name = "set oncontextrestored"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncontextrestored(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncopy)
+        #[link_name = "get oncopy"]
+        pub safe fn oncopy(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncopy)
+        #[link_name = "set oncopy"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncopy(this: &HTMLElement, value: Option<Box<dyn FnMut(&ClipboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncuechange)
+        #[link_name = "get oncuechange"]
+        pub safe fn oncuechange(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncuechange)
+        #[link_name = "set oncuechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncuechange(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncut)
+        #[link_name = "get oncut"]
+        pub safe fn oncut(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncut)
+        #[link_name = "set oncut"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncut(this: &HTMLElement, value: Option<Box<dyn FnMut(&ClipboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ondblclick)
+        #[link_name = "get ondblclick"]
+        pub safe fn ondblclick(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ondblclick)
+        #[link_name = "set ondblclick"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondblclick(this: &HTMLElement, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ondrag)
+        #[link_name = "get ondrag"]
+        pub safe fn ondrag(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ondrag)
+        #[link_name = "set ondrag"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondrag(this: &HTMLElement, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ondragend)
+        #[link_name = "get ondragend"]
+        pub safe fn ondragend(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ondragend)
+        #[link_name = "set ondragend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondragend(this: &HTMLElement, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ondragenter)
+        #[link_name = "get ondragenter"]
+        pub safe fn ondragenter(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ondragenter)
+        #[link_name = "set ondragenter"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondragenter(this: &HTMLElement, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ondragleave)
+        #[link_name = "get ondragleave"]
+        pub safe fn ondragleave(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ondragleave)
+        #[link_name = "set ondragleave"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondragleave(this: &HTMLElement, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ondragover)
+        #[link_name = "get ondragover"]
+        pub safe fn ondragover(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ondragover)
+        #[link_name = "set ondragover"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondragover(this: &HTMLElement, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ondragstart)
+        #[link_name = "get ondragstart"]
+        pub safe fn ondragstart(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ondragstart)
+        #[link_name = "set ondragstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondragstart(this: &HTMLElement, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ondrop)
+        #[link_name = "get ondrop"]
+        pub safe fn ondrop(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ondrop)
+        #[link_name = "set ondrop"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondrop(this: &HTMLElement, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ondurationchange)
+        #[link_name = "get ondurationchange"]
+        pub safe fn ondurationchange(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ondurationchange)
+        #[link_name = "set ondurationchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondurationchange(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onemptied)
+        #[link_name = "get onemptied"]
+        pub safe fn onemptied(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onemptied)
+        #[link_name = "set onemptied"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onemptied(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onended)
+        #[link_name = "get onended"]
+        pub safe fn onended(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onended)
+        #[link_name = "set onended"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onended(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onfocus)
+        #[link_name = "get onfocus"]
+        pub safe fn onfocus(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onfocus)
+        #[link_name = "set onfocus"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onfocus(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onformdata)
+        #[link_name = "get onformdata"]
+        pub safe fn onformdata(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onformdata)
+        #[link_name = "set onformdata"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onformdata(this: &HTMLElement, value: Option<Box<dyn FnMut(&FormDataEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oninput)
+        #[link_name = "get oninput"]
+        pub safe fn oninput(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oninput)
+        #[link_name = "set oninput"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oninput(this: &HTMLElement, value: Option<Box<dyn FnMut(&InputEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oninvalid)
+        #[link_name = "get oninvalid"]
+        pub safe fn oninvalid(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oninvalid)
+        #[link_name = "set oninvalid"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oninvalid(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onkeydown)
+        #[link_name = "get onkeydown"]
+        pub safe fn onkeydown(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onkeydown)
+        #[link_name = "set onkeydown"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onkeydown(this: &HTMLElement, value: Option<Box<dyn FnMut(&KeyboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onkeypress)
+        #[link_name = "get onkeypress"]
+        pub safe fn onkeypress(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onkeypress)
+        #[link_name = "set onkeypress"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onkeypress(this: &HTMLElement, value: Option<Box<dyn FnMut(&KeyboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onkeyup)
+        #[link_name = "get onkeyup"]
+        pub safe fn onkeyup(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onkeyup)
+        #[link_name = "set onkeyup"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onkeyup(this: &HTMLElement, value: Option<Box<dyn FnMut(&KeyboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onload)
+        #[link_name = "get onload"]
+        pub safe fn onload(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onload)
+        #[link_name = "set onload"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onload(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onloadeddata)
+        #[link_name = "get onloadeddata"]
+        pub safe fn onloadeddata(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onloadeddata)
+        #[link_name = "set onloadeddata"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onloadeddata(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onloadedmetadata)
+        #[link_name = "get onloadedmetadata"]
+        pub safe fn onloadedmetadata(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onloadedmetadata)
+        #[link_name = "set onloadedmetadata"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onloadedmetadata(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onloadstart)
+        #[link_name = "get onloadstart"]
+        pub safe fn onloadstart(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onloadstart)
+        #[link_name = "set onloadstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onloadstart(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onmousedown)
+        #[link_name = "get onmousedown"]
+        pub safe fn onmousedown(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onmousedown)
+        #[link_name = "set onmousedown"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmousedown(this: &HTMLElement, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onmouseenter)
+        #[link_name = "get onmouseenter"]
+        pub safe fn onmouseenter(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onmouseenter)
+        #[link_name = "set onmouseenter"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmouseenter(this: &HTMLElement, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onmouseleave)
+        #[link_name = "get onmouseleave"]
+        pub safe fn onmouseleave(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onmouseleave)
+        #[link_name = "set onmouseleave"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmouseleave(this: &HTMLElement, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onmousemove)
+        #[link_name = "get onmousemove"]
+        pub safe fn onmousemove(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onmousemove)
+        #[link_name = "set onmousemove"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmousemove(this: &HTMLElement, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onmouseout)
+        #[link_name = "get onmouseout"]
+        pub safe fn onmouseout(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onmouseout)
+        #[link_name = "set onmouseout"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmouseout(this: &HTMLElement, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onmouseover)
+        #[link_name = "get onmouseover"]
+        pub safe fn onmouseover(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onmouseover)
+        #[link_name = "set onmouseover"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmouseover(this: &HTMLElement, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onmouseup)
+        #[link_name = "get onmouseup"]
+        pub safe fn onmouseup(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onmouseup)
+        #[link_name = "set onmouseup"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmouseup(this: &HTMLElement, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpaste)
+        #[link_name = "get onpaste"]
+        pub safe fn onpaste(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpaste)
+        #[link_name = "set onpaste"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpaste(this: &HTMLElement, value: Option<Box<dyn FnMut(&ClipboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpause)
+        #[link_name = "get onpause"]
+        pub safe fn onpause(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpause)
+        #[link_name = "set onpause"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpause(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onplay)
+        #[link_name = "get onplay"]
+        pub safe fn onplay(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onplay)
+        #[link_name = "set onplay"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onplay(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onplaying)
+        #[link_name = "get onplaying"]
+        pub safe fn onplaying(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onplaying)
+        #[link_name = "set onplaying"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onplaying(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onprogress)
+        #[link_name = "get onprogress"]
+        pub safe fn onprogress(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onprogress)
+        #[link_name = "set onprogress"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onprogress(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onratechange)
+        #[link_name = "get onratechange"]
+        pub safe fn onratechange(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onratechange)
+        #[link_name = "set onratechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onratechange(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onreset)
+        #[link_name = "get onreset"]
+        pub safe fn onreset(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onreset)
+        #[link_name = "set onreset"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onreset(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onresize)
+        #[link_name = "get onresize"]
+        pub safe fn onresize(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onresize)
+        #[link_name = "set onresize"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onresize(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onscroll)
+        #[link_name = "get onscroll"]
+        pub safe fn onscroll(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onscroll)
+        #[link_name = "set onscroll"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onscroll(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onscrollend)
+        #[link_name = "get onscrollend"]
+        pub safe fn onscrollend(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onscrollend)
+        #[link_name = "set onscrollend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onscrollend(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onsecuritypolicyviolation)
+        #[link_name = "get onsecuritypolicyviolation"]
+        pub safe fn onsecuritypolicyviolation(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onsecuritypolicyviolation)
+        #[link_name = "set onsecuritypolicyviolation"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onsecuritypolicyviolation(this: &HTMLElement, value: Option<Box<dyn FnMut(&SecurityPolicyViolationEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onseeked)
+        #[link_name = "get onseeked"]
+        pub safe fn onseeked(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onseeked)
+        #[link_name = "set onseeked"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onseeked(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onseeking)
+        #[link_name = "get onseeking"]
+        pub safe fn onseeking(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onseeking)
+        #[link_name = "set onseeking"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onseeking(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onselect)
+        #[link_name = "get onselect"]
+        pub safe fn onselect(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onselect)
+        #[link_name = "set onselect"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onselect(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onslotchange)
+        #[link_name = "get onslotchange"]
+        pub safe fn onslotchange(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onslotchange)
+        #[link_name = "set onslotchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onslotchange(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onstalled)
+        #[link_name = "get onstalled"]
+        pub safe fn onstalled(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onstalled)
+        #[link_name = "set onstalled"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onstalled(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onsubmit)
+        #[link_name = "get onsubmit"]
+        pub safe fn onsubmit(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onsubmit)
+        #[link_name = "set onsubmit"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onsubmit(this: &HTMLElement, value: Option<Box<dyn FnMut(&SubmitEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onsuspend)
+        #[link_name = "get onsuspend"]
+        pub safe fn onsuspend(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onsuspend)
+        #[link_name = "set onsuspend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onsuspend(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontimeupdate)
+        #[link_name = "get ontimeupdate"]
+        pub safe fn ontimeupdate(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontimeupdate)
+        #[link_name = "set ontimeupdate"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontimeupdate(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontoggle)
+        #[link_name = "get ontoggle"]
+        pub safe fn ontoggle(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontoggle)
+        #[link_name = "set ontoggle"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontoggle(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onvolumechange)
+        #[link_name = "get onvolumechange"]
+        pub safe fn onvolumechange(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onvolumechange)
+        #[link_name = "set onvolumechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onvolumechange(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onwaiting)
+        #[link_name = "get onwaiting"]
+        pub safe fn onwaiting(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onwaiting)
+        #[link_name = "set onwaiting"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwaiting(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onwebkitanimationend)
+        #[link_name = "get onwebkitanimationend"]
+        pub safe fn onwebkitanimationend(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onwebkitanimationend)
+        #[link_name = "set onwebkitanimationend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwebkitanimationend(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onwebkitanimationiteration)
+        #[link_name = "get onwebkitanimationiteration"]
+        pub safe fn onwebkitanimationiteration(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onwebkitanimationiteration)
+        #[link_name = "set onwebkitanimationiteration"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwebkitanimationiteration(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onwebkitanimationstart)
+        #[link_name = "get onwebkitanimationstart"]
+        pub safe fn onwebkitanimationstart(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onwebkitanimationstart)
+        #[link_name = "set onwebkitanimationstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwebkitanimationstart(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onwebkittransitionend)
+        #[link_name = "get onwebkittransitionend"]
+        pub safe fn onwebkittransitionend(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onwebkittransitionend)
+        #[link_name = "set onwebkittransitionend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwebkittransitionend(this: &HTMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onwheel)
+        #[link_name = "get onwheel"]
+        pub safe fn onwheel(this: &HTMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onwheel)
+        #[link_name = "set onwheel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwheel(this: &HTMLElement, value: Option<Box<dyn FnMut(&WheelEvent)>>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/contentEditable)
         #[link_name = "get contentEditable"]
@@ -6076,6 +7957,177 @@ pub mod html_body_element {
         #[link_name = "set background"]
         pub safe fn set_background(this: &HTMLBodyElement, value: &str);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onafterprint)
+        #[link_name = "get onafterprint"]
+        pub safe fn onafterprint(this: &HTMLBodyElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onafterprint)
+        #[link_name = "set onafterprint"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onafterprint(this: &HTMLBodyElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onbeforeprint)
+        #[link_name = "get onbeforeprint"]
+        pub safe fn onbeforeprint(this: &HTMLBodyElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onbeforeprint)
+        #[link_name = "set onbeforeprint"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onbeforeprint(this: &HTMLBodyElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onhashchange)
+        #[link_name = "get onhashchange"]
+        pub safe fn onhashchange(this: &HTMLBodyElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onhashchange)
+        #[link_name = "set onhashchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onhashchange(this: &HTMLBodyElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onlanguagechange)
+        #[link_name = "get onlanguagechange"]
+        pub safe fn onlanguagechange(this: &HTMLBodyElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onlanguagechange)
+        #[link_name = "set onlanguagechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onlanguagechange(this: &HTMLBodyElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onmessage)
+        #[link_name = "get onmessage"]
+        pub safe fn onmessage(this: &HTMLBodyElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onmessage)
+        #[link_name = "set onmessage"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmessage(this: &HTMLBodyElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onmessageerror)
+        #[link_name = "get onmessageerror"]
+        pub safe fn onmessageerror(this: &HTMLBodyElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onmessageerror)
+        #[link_name = "set onmessageerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmessageerror(this: &HTMLBodyElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onoffline)
+        #[link_name = "get onoffline"]
+        pub safe fn onoffline(this: &HTMLBodyElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onoffline)
+        #[link_name = "set onoffline"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onoffline(this: &HTMLBodyElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/ononline)
+        #[link_name = "get ononline"]
+        pub safe fn ononline(this: &HTMLBodyElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/ononline)
+        #[link_name = "set ononline"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ononline(this: &HTMLBodyElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onpagehide)
+        #[link_name = "get onpagehide"]
+        pub safe fn onpagehide(this: &HTMLBodyElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onpagehide)
+        #[link_name = "set onpagehide"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpagehide(this: &HTMLBodyElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onpagereveal)
+        #[link_name = "get onpagereveal"]
+        pub safe fn onpagereveal(this: &HTMLBodyElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onpagereveal)
+        #[link_name = "set onpagereveal"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpagereveal(this: &HTMLBodyElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onpageshow)
+        #[link_name = "get onpageshow"]
+        pub safe fn onpageshow(this: &HTMLBodyElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onpageshow)
+        #[link_name = "set onpageshow"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpageshow(this: &HTMLBodyElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onpageswap)
+        #[link_name = "get onpageswap"]
+        pub safe fn onpageswap(this: &HTMLBodyElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onpageswap)
+        #[link_name = "set onpageswap"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpageswap(this: &HTMLBodyElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onpopstate)
+        #[link_name = "get onpopstate"]
+        pub safe fn onpopstate(this: &HTMLBodyElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onpopstate)
+        #[link_name = "set onpopstate"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpopstate(this: &HTMLBodyElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onrejectionhandled)
+        #[link_name = "get onrejectionhandled"]
+        pub safe fn onrejectionhandled(this: &HTMLBodyElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onrejectionhandled)
+        #[link_name = "set onrejectionhandled"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onrejectionhandled(this: &HTMLBodyElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onstorage)
+        #[link_name = "get onstorage"]
+        pub safe fn onstorage(this: &HTMLBodyElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onstorage)
+        #[link_name = "set onstorage"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onstorage(this: &HTMLBodyElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onunhandledrejection)
+        #[link_name = "get onunhandledrejection"]
+        pub safe fn onunhandledrejection(this: &HTMLBodyElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onunhandledrejection)
+        #[link_name = "set onunhandledrejection"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onunhandledrejection(this: &HTMLBodyElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onunload)
+        #[link_name = "get onunload"]
+        pub safe fn onunload(this: &HTMLBodyElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onunload)
+        #[link_name = "set onunload"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onunload(this: &HTMLBodyElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/ongamepadconnected)
+        #[link_name = "get ongamepadconnected"]
+        pub safe fn ongamepadconnected(this: &HTMLBodyElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/ongamepadconnected)
+        #[link_name = "set ongamepadconnected"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ongamepadconnected(this: &HTMLBodyElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/ongamepaddisconnected)
+        #[link_name = "get ongamepaddisconnected"]
+        pub safe fn ongamepaddisconnected(this: &HTMLBodyElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/ongamepaddisconnected)
+        #[link_name = "set ongamepaddisconnected"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ongamepaddisconnected(this: &HTMLBodyElement, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// Treats `this` as `HTMLBodyElement` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLBodyElement;
@@ -6790,6 +8842,24 @@ pub mod html_video_element {
         #[link_name = "requestPictureInPicture"]
         pub safe fn request_picture_in_picture(this: &HTMLVideoElement) -> Promise<&'static PictureInPictureWindow>;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/onenterpictureinpicture)
+        #[link_name = "get onenterpictureinpicture"]
+        pub safe fn onenterpictureinpicture(this: &HTMLVideoElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/onenterpictureinpicture)
+        #[link_name = "set onenterpictureinpicture"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onenterpictureinpicture(this: &HTMLVideoElement, value: Option<Box<dyn FnMut(&PictureInPictureEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/onleavepictureinpicture)
+        #[link_name = "get onleavepictureinpicture"]
+        pub safe fn onleavepictureinpicture(this: &HTMLVideoElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/onleavepictureinpicture)
+        #[link_name = "set onleavepictureinpicture"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onleavepictureinpicture(this: &HTMLVideoElement, value: Option<Box<dyn FnMut(&PictureInPictureEvent)>>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/disablePictureInPicture)
         #[link_name = "get disablePictureInPicture"]
         pub safe fn disable_picture_in_picture(this: &HTMLVideoElement) -> bool;
@@ -7029,6 +9099,24 @@ pub mod html_media_element {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/mediaKeys)
         #[link_name = "get mediaKeys"]
         pub safe fn media_keys(this: &HTMLMediaElement) -> Option<&'static MediaKeys>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/onencrypted)
+        #[link_name = "get onencrypted"]
+        pub safe fn onencrypted(this: &HTMLMediaElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/onencrypted)
+        #[link_name = "set onencrypted"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onencrypted(this: &HTMLMediaElement, value: Option<Box<dyn FnMut(&MediaEncryptedEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/onwaitingforkey)
+        #[link_name = "get onwaitingforkey"]
+        pub safe fn onwaitingforkey(this: &HTMLMediaElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/onwaitingforkey)
+        #[link_name = "set onwaitingforkey"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwaitingforkey(this: &HTMLMediaElement, value: Option<Box<dyn FnMut(&Event)>>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/setMediaKeys)
         #[link_name = "setMediaKeys"]
@@ -8261,6 +10349,33 @@ pub mod window {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondeviceorientation)
+        #[link_name = "get ondeviceorientation"]
+        pub safe fn ondeviceorientation(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondeviceorientation)
+        #[link_name = "set ondeviceorientation"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondeviceorientation(this: &Window, value: Option<Box<dyn FnMut(&DeviceOrientationEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondeviceorientationabsolute)
+        #[link_name = "get ondeviceorientationabsolute"]
+        pub safe fn ondeviceorientationabsolute(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondeviceorientationabsolute)
+        #[link_name = "set ondeviceorientationabsolute"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondeviceorientationabsolute(this: &Window, value: Option<Box<dyn FnMut(&DeviceOrientationEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondevicemotion)
+        #[link_name = "get ondevicemotion"]
+        pub safe fn ondevicemotion(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondevicemotion)
+        #[link_name = "set ondevicemotion"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondevicemotion(this: &Window, value: Option<Box<dyn FnMut(&DeviceMotionEvent)>>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/getSelection)
         #[link_name = "getSelection"]
         pub safe fn get_selection(this: &Window) -> Option<&'static Selection>;
@@ -8288,6 +10403,15 @@ pub mod window {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/orientation)
         #[link_name = "get orientation"]
         pub safe fn orientation(this: &Window) -> i16;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onorientationchange)
+        #[link_name = "get onorientationchange"]
+        pub safe fn onorientationchange(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onorientationchange)
+        #[link_name = "set onorientationchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onorientationchange(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/window)
         #[link_name = "get window"]
@@ -8594,6 +10718,1077 @@ pub mod window {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/pushManager)
         #[link_name = "get pushManager"]
         pub safe fn push_manager(this: &Window) -> &'static PushManager;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onselectstart)
+        #[link_name = "get onselectstart"]
+        pub safe fn onselectstart(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onselectstart)
+        #[link_name = "set onselectstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onselectstart(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onselectionchange)
+        #[link_name = "get onselectionchange"]
+        pub safe fn onselectionchange(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onselectionchange)
+        #[link_name = "set onselectionchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onselectionchange(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onanimationstart)
+        #[link_name = "get onanimationstart"]
+        pub safe fn onanimationstart(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onanimationstart)
+        #[link_name = "set onanimationstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onanimationstart(this: &Window, value: Option<Box<dyn FnMut(&AnimationEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onanimationiteration)
+        #[link_name = "get onanimationiteration"]
+        pub safe fn onanimationiteration(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onanimationiteration)
+        #[link_name = "set onanimationiteration"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onanimationiteration(this: &Window, value: Option<Box<dyn FnMut(&AnimationEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onanimationend)
+        #[link_name = "get onanimationend"]
+        pub safe fn onanimationend(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onanimationend)
+        #[link_name = "set onanimationend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onanimationend(this: &Window, value: Option<Box<dyn FnMut(&AnimationEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onanimationcancel)
+        #[link_name = "get onanimationcancel"]
+        pub safe fn onanimationcancel(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onanimationcancel)
+        #[link_name = "set onanimationcancel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onanimationcancel(this: &Window, value: Option<Box<dyn FnMut(&AnimationEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontransitionrun)
+        #[link_name = "get ontransitionrun"]
+        pub safe fn ontransitionrun(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontransitionrun)
+        #[link_name = "set ontransitionrun"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontransitionrun(this: &Window, value: Option<Box<dyn FnMut(&TransitionEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontransitionstart)
+        #[link_name = "get ontransitionstart"]
+        pub safe fn ontransitionstart(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontransitionstart)
+        #[link_name = "set ontransitionstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontransitionstart(this: &Window, value: Option<Box<dyn FnMut(&TransitionEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontransitionend)
+        #[link_name = "get ontransitionend"]
+        pub safe fn ontransitionend(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontransitionend)
+        #[link_name = "set ontransitionend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontransitionend(this: &Window, value: Option<Box<dyn FnMut(&TransitionEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontransitioncancel)
+        #[link_name = "get ontransitioncancel"]
+        pub safe fn ontransitioncancel(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontransitioncancel)
+        #[link_name = "set ontransitioncancel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontransitioncancel(this: &Window, value: Option<Box<dyn FnMut(&TransitionEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerover)
+        #[link_name = "get onpointerover"]
+        pub safe fn onpointerover(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerover)
+        #[link_name = "set onpointerover"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerover(this: &Window, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerenter)
+        #[link_name = "get onpointerenter"]
+        pub safe fn onpointerenter(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerenter)
+        #[link_name = "set onpointerenter"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerenter(this: &Window, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerdown)
+        #[link_name = "get onpointerdown"]
+        pub safe fn onpointerdown(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerdown)
+        #[link_name = "set onpointerdown"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerdown(this: &Window, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointermove)
+        #[link_name = "get onpointermove"]
+        pub safe fn onpointermove(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointermove)
+        #[link_name = "set onpointermove"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointermove(this: &Window, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerrawupdate)
+        #[link_name = "get onpointerrawupdate"]
+        pub safe fn onpointerrawupdate(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerrawupdate)
+        #[link_name = "set onpointerrawupdate"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerrawupdate(this: &Window, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerup)
+        #[link_name = "get onpointerup"]
+        pub safe fn onpointerup(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerup)
+        #[link_name = "set onpointerup"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerup(this: &Window, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointercancel)
+        #[link_name = "get onpointercancel"]
+        pub safe fn onpointercancel(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointercancel)
+        #[link_name = "set onpointercancel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointercancel(this: &Window, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerout)
+        #[link_name = "get onpointerout"]
+        pub safe fn onpointerout(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerout)
+        #[link_name = "set onpointerout"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerout(this: &Window, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerleave)
+        #[link_name = "get onpointerleave"]
+        pub safe fn onpointerleave(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerleave)
+        #[link_name = "set onpointerleave"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerleave(this: &Window, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ongotpointercapture)
+        #[link_name = "get ongotpointercapture"]
+        pub safe fn ongotpointercapture(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ongotpointercapture)
+        #[link_name = "set ongotpointercapture"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ongotpointercapture(this: &Window, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onlostpointercapture)
+        #[link_name = "get onlostpointercapture"]
+        pub safe fn onlostpointercapture(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onlostpointercapture)
+        #[link_name = "set onlostpointercapture"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onlostpointercapture(this: &Window, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchstart)
+        #[link_name = "get ontouchstart"]
+        pub safe fn ontouchstart(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchstart)
+        #[link_name = "set ontouchstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontouchstart(this: &Window, value: Option<Box<dyn FnMut(&TouchEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchend)
+        #[link_name = "get ontouchend"]
+        pub safe fn ontouchend(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchend)
+        #[link_name = "set ontouchend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontouchend(this: &Window, value: Option<Box<dyn FnMut(&TouchEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchmove)
+        #[link_name = "get ontouchmove"]
+        pub safe fn ontouchmove(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchmove)
+        #[link_name = "set ontouchmove"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontouchmove(this: &Window, value: Option<Box<dyn FnMut(&TouchEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchcancel)
+        #[link_name = "get ontouchcancel"]
+        pub safe fn ontouchcancel(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchcancel)
+        #[link_name = "set ontouchcancel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontouchcancel(this: &Window, value: Option<Box<dyn FnMut(&TouchEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onabort)
+        #[link_name = "get onabort"]
+        pub safe fn onabort(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onabort)
+        #[link_name = "set onabort"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onabort(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onauxclick)
+        #[link_name = "get onauxclick"]
+        pub safe fn onauxclick(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onauxclick)
+        #[link_name = "set onauxclick"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onauxclick(this: &Window, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onbeforeinput)
+        #[link_name = "get onbeforeinput"]
+        pub safe fn onbeforeinput(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onbeforeinput)
+        #[link_name = "set onbeforeinput"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onbeforeinput(this: &Window, value: Option<Box<dyn FnMut(&InputEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onbeforematch)
+        #[link_name = "get onbeforematch"]
+        pub safe fn onbeforematch(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onbeforematch)
+        #[link_name = "set onbeforematch"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onbeforematch(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onbeforetoggle)
+        #[link_name = "get onbeforetoggle"]
+        pub safe fn onbeforetoggle(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onbeforetoggle)
+        #[link_name = "set onbeforetoggle"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onbeforetoggle(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onblur)
+        #[link_name = "get onblur"]
+        pub safe fn onblur(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onblur)
+        #[link_name = "set onblur"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onblur(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncancel)
+        #[link_name = "get oncancel"]
+        pub safe fn oncancel(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncancel)
+        #[link_name = "set oncancel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncancel(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncanplay)
+        #[link_name = "get oncanplay"]
+        pub safe fn oncanplay(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncanplay)
+        #[link_name = "set oncanplay"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncanplay(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncanplaythrough)
+        #[link_name = "get oncanplaythrough"]
+        pub safe fn oncanplaythrough(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncanplaythrough)
+        #[link_name = "set oncanplaythrough"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncanplaythrough(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onchange)
+        #[link_name = "get onchange"]
+        pub safe fn onchange(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onchange)
+        #[link_name = "set onchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onchange(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onclick)
+        #[link_name = "get onclick"]
+        pub safe fn onclick(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onclick)
+        #[link_name = "set onclick"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onclick(this: &Window, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onclose)
+        #[link_name = "get onclose"]
+        pub safe fn onclose(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onclose)
+        #[link_name = "set onclose"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onclose(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncommand)
+        #[link_name = "get oncommand"]
+        pub safe fn oncommand(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncommand)
+        #[link_name = "set oncommand"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncommand(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncontextlost)
+        #[link_name = "get oncontextlost"]
+        pub safe fn oncontextlost(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncontextlost)
+        #[link_name = "set oncontextlost"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncontextlost(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncontextmenu)
+        #[link_name = "get oncontextmenu"]
+        pub safe fn oncontextmenu(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncontextmenu)
+        #[link_name = "set oncontextmenu"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncontextmenu(this: &Window, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncontextrestored)
+        #[link_name = "get oncontextrestored"]
+        pub safe fn oncontextrestored(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncontextrestored)
+        #[link_name = "set oncontextrestored"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncontextrestored(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncopy)
+        #[link_name = "get oncopy"]
+        pub safe fn oncopy(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncopy)
+        #[link_name = "set oncopy"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncopy(this: &Window, value: Option<Box<dyn FnMut(&ClipboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncuechange)
+        #[link_name = "get oncuechange"]
+        pub safe fn oncuechange(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncuechange)
+        #[link_name = "set oncuechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncuechange(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncut)
+        #[link_name = "get oncut"]
+        pub safe fn oncut(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncut)
+        #[link_name = "set oncut"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncut(this: &Window, value: Option<Box<dyn FnMut(&ClipboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondblclick)
+        #[link_name = "get ondblclick"]
+        pub safe fn ondblclick(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondblclick)
+        #[link_name = "set ondblclick"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondblclick(this: &Window, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondrag)
+        #[link_name = "get ondrag"]
+        pub safe fn ondrag(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondrag)
+        #[link_name = "set ondrag"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondrag(this: &Window, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondragend)
+        #[link_name = "get ondragend"]
+        pub safe fn ondragend(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondragend)
+        #[link_name = "set ondragend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondragend(this: &Window, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondragenter)
+        #[link_name = "get ondragenter"]
+        pub safe fn ondragenter(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondragenter)
+        #[link_name = "set ondragenter"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondragenter(this: &Window, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondragleave)
+        #[link_name = "get ondragleave"]
+        pub safe fn ondragleave(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondragleave)
+        #[link_name = "set ondragleave"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondragleave(this: &Window, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondragover)
+        #[link_name = "get ondragover"]
+        pub safe fn ondragover(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondragover)
+        #[link_name = "set ondragover"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondragover(this: &Window, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondragstart)
+        #[link_name = "get ondragstart"]
+        pub safe fn ondragstart(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondragstart)
+        #[link_name = "set ondragstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondragstart(this: &Window, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondrop)
+        #[link_name = "get ondrop"]
+        pub safe fn ondrop(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondrop)
+        #[link_name = "set ondrop"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondrop(this: &Window, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondurationchange)
+        #[link_name = "get ondurationchange"]
+        pub safe fn ondurationchange(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondurationchange)
+        #[link_name = "set ondurationchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondurationchange(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onemptied)
+        #[link_name = "get onemptied"]
+        pub safe fn onemptied(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onemptied)
+        #[link_name = "set onemptied"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onemptied(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onended)
+        #[link_name = "get onended"]
+        pub safe fn onended(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onended)
+        #[link_name = "set onended"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onended(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onfocus)
+        #[link_name = "get onfocus"]
+        pub safe fn onfocus(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onfocus)
+        #[link_name = "set onfocus"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onfocus(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onformdata)
+        #[link_name = "get onformdata"]
+        pub safe fn onformdata(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onformdata)
+        #[link_name = "set onformdata"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onformdata(this: &Window, value: Option<Box<dyn FnMut(&FormDataEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oninput)
+        #[link_name = "get oninput"]
+        pub safe fn oninput(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oninput)
+        #[link_name = "set oninput"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oninput(this: &Window, value: Option<Box<dyn FnMut(&InputEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oninvalid)
+        #[link_name = "get oninvalid"]
+        pub safe fn oninvalid(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oninvalid)
+        #[link_name = "set oninvalid"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oninvalid(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onkeydown)
+        #[link_name = "get onkeydown"]
+        pub safe fn onkeydown(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onkeydown)
+        #[link_name = "set onkeydown"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onkeydown(this: &Window, value: Option<Box<dyn FnMut(&KeyboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onkeypress)
+        #[link_name = "get onkeypress"]
+        pub safe fn onkeypress(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onkeypress)
+        #[link_name = "set onkeypress"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onkeypress(this: &Window, value: Option<Box<dyn FnMut(&KeyboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onkeyup)
+        #[link_name = "get onkeyup"]
+        pub safe fn onkeyup(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onkeyup)
+        #[link_name = "set onkeyup"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onkeyup(this: &Window, value: Option<Box<dyn FnMut(&KeyboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onload)
+        #[link_name = "get onload"]
+        pub safe fn onload(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onload)
+        #[link_name = "set onload"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onload(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onloadeddata)
+        #[link_name = "get onloadeddata"]
+        pub safe fn onloadeddata(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onloadeddata)
+        #[link_name = "set onloadeddata"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onloadeddata(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onloadedmetadata)
+        #[link_name = "get onloadedmetadata"]
+        pub safe fn onloadedmetadata(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onloadedmetadata)
+        #[link_name = "set onloadedmetadata"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onloadedmetadata(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onloadstart)
+        #[link_name = "get onloadstart"]
+        pub safe fn onloadstart(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onloadstart)
+        #[link_name = "set onloadstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onloadstart(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onmousedown)
+        #[link_name = "get onmousedown"]
+        pub safe fn onmousedown(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onmousedown)
+        #[link_name = "set onmousedown"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmousedown(this: &Window, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onmouseenter)
+        #[link_name = "get onmouseenter"]
+        pub safe fn onmouseenter(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onmouseenter)
+        #[link_name = "set onmouseenter"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmouseenter(this: &Window, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onmouseleave)
+        #[link_name = "get onmouseleave"]
+        pub safe fn onmouseleave(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onmouseleave)
+        #[link_name = "set onmouseleave"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmouseleave(this: &Window, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onmousemove)
+        #[link_name = "get onmousemove"]
+        pub safe fn onmousemove(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onmousemove)
+        #[link_name = "set onmousemove"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmousemove(this: &Window, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onmouseout)
+        #[link_name = "get onmouseout"]
+        pub safe fn onmouseout(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onmouseout)
+        #[link_name = "set onmouseout"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmouseout(this: &Window, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onmouseover)
+        #[link_name = "get onmouseover"]
+        pub safe fn onmouseover(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onmouseover)
+        #[link_name = "set onmouseover"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmouseover(this: &Window, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onmouseup)
+        #[link_name = "get onmouseup"]
+        pub safe fn onmouseup(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onmouseup)
+        #[link_name = "set onmouseup"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmouseup(this: &Window, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpaste)
+        #[link_name = "get onpaste"]
+        pub safe fn onpaste(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpaste)
+        #[link_name = "set onpaste"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpaste(this: &Window, value: Option<Box<dyn FnMut(&ClipboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpause)
+        #[link_name = "get onpause"]
+        pub safe fn onpause(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpause)
+        #[link_name = "set onpause"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpause(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onplay)
+        #[link_name = "get onplay"]
+        pub safe fn onplay(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onplay)
+        #[link_name = "set onplay"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onplay(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onplaying)
+        #[link_name = "get onplaying"]
+        pub safe fn onplaying(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onplaying)
+        #[link_name = "set onplaying"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onplaying(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onprogress)
+        #[link_name = "get onprogress"]
+        pub safe fn onprogress(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onprogress)
+        #[link_name = "set onprogress"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onprogress(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onratechange)
+        #[link_name = "get onratechange"]
+        pub safe fn onratechange(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onratechange)
+        #[link_name = "set onratechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onratechange(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onreset)
+        #[link_name = "get onreset"]
+        pub safe fn onreset(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onreset)
+        #[link_name = "set onreset"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onreset(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onresize)
+        #[link_name = "get onresize"]
+        pub safe fn onresize(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onresize)
+        #[link_name = "set onresize"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onresize(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onscroll)
+        #[link_name = "get onscroll"]
+        pub safe fn onscroll(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onscroll)
+        #[link_name = "set onscroll"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onscroll(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onscrollend)
+        #[link_name = "get onscrollend"]
+        pub safe fn onscrollend(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onscrollend)
+        #[link_name = "set onscrollend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onscrollend(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onsecuritypolicyviolation)
+        #[link_name = "get onsecuritypolicyviolation"]
+        pub safe fn onsecuritypolicyviolation(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onsecuritypolicyviolation)
+        #[link_name = "set onsecuritypolicyviolation"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onsecuritypolicyviolation(this: &Window, value: Option<Box<dyn FnMut(&SecurityPolicyViolationEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onseeked)
+        #[link_name = "get onseeked"]
+        pub safe fn onseeked(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onseeked)
+        #[link_name = "set onseeked"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onseeked(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onseeking)
+        #[link_name = "get onseeking"]
+        pub safe fn onseeking(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onseeking)
+        #[link_name = "set onseeking"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onseeking(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onselect)
+        #[link_name = "get onselect"]
+        pub safe fn onselect(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onselect)
+        #[link_name = "set onselect"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onselect(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onslotchange)
+        #[link_name = "get onslotchange"]
+        pub safe fn onslotchange(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onslotchange)
+        #[link_name = "set onslotchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onslotchange(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onstalled)
+        #[link_name = "get onstalled"]
+        pub safe fn onstalled(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onstalled)
+        #[link_name = "set onstalled"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onstalled(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onsubmit)
+        #[link_name = "get onsubmit"]
+        pub safe fn onsubmit(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onsubmit)
+        #[link_name = "set onsubmit"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onsubmit(this: &Window, value: Option<Box<dyn FnMut(&SubmitEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onsuspend)
+        #[link_name = "get onsuspend"]
+        pub safe fn onsuspend(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onsuspend)
+        #[link_name = "set onsuspend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onsuspend(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontimeupdate)
+        #[link_name = "get ontimeupdate"]
+        pub safe fn ontimeupdate(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontimeupdate)
+        #[link_name = "set ontimeupdate"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontimeupdate(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontoggle)
+        #[link_name = "get ontoggle"]
+        pub safe fn ontoggle(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontoggle)
+        #[link_name = "set ontoggle"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontoggle(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onvolumechange)
+        #[link_name = "get onvolumechange"]
+        pub safe fn onvolumechange(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onvolumechange)
+        #[link_name = "set onvolumechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onvolumechange(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onwaiting)
+        #[link_name = "get onwaiting"]
+        pub safe fn onwaiting(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onwaiting)
+        #[link_name = "set onwaiting"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwaiting(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onwebkitanimationend)
+        #[link_name = "get onwebkitanimationend"]
+        pub safe fn onwebkitanimationend(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onwebkitanimationend)
+        #[link_name = "set onwebkitanimationend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwebkitanimationend(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onwebkitanimationiteration)
+        #[link_name = "get onwebkitanimationiteration"]
+        pub safe fn onwebkitanimationiteration(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onwebkitanimationiteration)
+        #[link_name = "set onwebkitanimationiteration"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwebkitanimationiteration(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onwebkitanimationstart)
+        #[link_name = "get onwebkitanimationstart"]
+        pub safe fn onwebkitanimationstart(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onwebkitanimationstart)
+        #[link_name = "set onwebkitanimationstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwebkitanimationstart(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onwebkittransitionend)
+        #[link_name = "get onwebkittransitionend"]
+        pub safe fn onwebkittransitionend(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onwebkittransitionend)
+        #[link_name = "set onwebkittransitionend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwebkittransitionend(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onwheel)
+        #[link_name = "get onwheel"]
+        pub safe fn onwheel(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onwheel)
+        #[link_name = "set onwheel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwheel(this: &Window, value: Option<Box<dyn FnMut(&WheelEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onafterprint)
+        #[link_name = "get onafterprint"]
+        pub safe fn onafterprint(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onafterprint)
+        #[link_name = "set onafterprint"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onafterprint(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onbeforeprint)
+        #[link_name = "get onbeforeprint"]
+        pub safe fn onbeforeprint(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onbeforeprint)
+        #[link_name = "set onbeforeprint"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onbeforeprint(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onhashchange)
+        #[link_name = "get onhashchange"]
+        pub safe fn onhashchange(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onhashchange)
+        #[link_name = "set onhashchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onhashchange(this: &Window, value: Option<Box<dyn FnMut(&HashChangeEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onlanguagechange)
+        #[link_name = "get onlanguagechange"]
+        pub safe fn onlanguagechange(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onlanguagechange)
+        #[link_name = "set onlanguagechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onlanguagechange(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onmessage)
+        #[link_name = "get onmessage"]
+        pub safe fn onmessage(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onmessage)
+        #[link_name = "set onmessage"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmessage(this: &Window, value: Option<Box<dyn FnMut(&MessageEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onmessageerror)
+        #[link_name = "get onmessageerror"]
+        pub safe fn onmessageerror(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onmessageerror)
+        #[link_name = "set onmessageerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmessageerror(this: &Window, value: Option<Box<dyn FnMut(&MessageEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onoffline)
+        #[link_name = "get onoffline"]
+        pub safe fn onoffline(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onoffline)
+        #[link_name = "set onoffline"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onoffline(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ononline)
+        #[link_name = "get ononline"]
+        pub safe fn ononline(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ononline)
+        #[link_name = "set ononline"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ononline(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpagehide)
+        #[link_name = "get onpagehide"]
+        pub safe fn onpagehide(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpagehide)
+        #[link_name = "set onpagehide"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpagehide(this: &Window, value: Option<Box<dyn FnMut(&PageTransitionEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpagereveal)
+        #[link_name = "get onpagereveal"]
+        pub safe fn onpagereveal(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpagereveal)
+        #[link_name = "set onpagereveal"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpagereveal(this: &Window, value: Option<Box<dyn FnMut(&PageRevealEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpageshow)
+        #[link_name = "get onpageshow"]
+        pub safe fn onpageshow(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpageshow)
+        #[link_name = "set onpageshow"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpageshow(this: &Window, value: Option<Box<dyn FnMut(&PageTransitionEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpageswap)
+        #[link_name = "get onpageswap"]
+        pub safe fn onpageswap(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpageswap)
+        #[link_name = "set onpageswap"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpageswap(this: &Window, value: Option<Box<dyn FnMut(&PageSwapEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpopstate)
+        #[link_name = "get onpopstate"]
+        pub safe fn onpopstate(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpopstate)
+        #[link_name = "set onpopstate"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpopstate(this: &Window, value: Option<Box<dyn FnMut(&PopStateEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onrejectionhandled)
+        #[link_name = "get onrejectionhandled"]
+        pub safe fn onrejectionhandled(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onrejectionhandled)
+        #[link_name = "set onrejectionhandled"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onrejectionhandled(this: &Window, value: Option<Box<dyn FnMut(&PromiseRejectionEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onstorage)
+        #[link_name = "get onstorage"]
+        pub safe fn onstorage(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onstorage)
+        #[link_name = "set onstorage"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onstorage(this: &Window, value: Option<Box<dyn FnMut(&StorageEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onunhandledrejection)
+        #[link_name = "get onunhandledrejection"]
+        pub safe fn onunhandledrejection(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onunhandledrejection)
+        #[link_name = "set onunhandledrejection"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onunhandledrejection(this: &Window, value: Option<Box<dyn FnMut(&PromiseRejectionEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onunload)
+        #[link_name = "get onunload"]
+        pub safe fn onunload(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onunload)
+        #[link_name = "set onunload"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onunload(this: &Window, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ongamepadconnected)
+        #[link_name = "get ongamepadconnected"]
+        pub safe fn ongamepadconnected(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ongamepadconnected)
+        #[link_name = "set ongamepadconnected"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ongamepadconnected(this: &Window, value: Option<Box<dyn FnMut(&GamepadEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ongamepaddisconnected)
+        #[link_name = "get ongamepaddisconnected"]
+        pub safe fn ongamepaddisconnected(this: &Window) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ongamepaddisconnected)
+        #[link_name = "set ongamepaddisconnected"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ongamepaddisconnected(this: &Window, value: Option<Box<dyn FnMut(&GamepadEvent)>>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/indexedDB)
         #[link_name = "get indexedDB"]
@@ -9327,6 +12522,15 @@ pub mod performance {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/setResourceTimingBufferSize)
         #[link_name = "setResourceTimingBufferSize"]
         pub safe fn set_resource_timing_buffer_size(this: &Performance, max_size: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/onresourcetimingbufferfull)
+        #[link_name = "get onresourcetimingbufferfull"]
+        pub safe fn onresourcetimingbufferfull(this: &Performance) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/onresourcetimingbufferfull)
+        #[link_name = "set onresourcetimingbufferfull"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onresourcetimingbufferfull(this: &Performance, value: Option<Box<dyn FnMut(&Event)>>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/mark)
         pub safe fn mark(this: &Performance, mark_name: &str) -> &'static PerformanceMark;
@@ -10494,6 +13698,15 @@ pub mod media_query_list {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaQueryList/removeListener)
         #[link_name = "removeListener"]
         pub safe fn remove_listener(this: &MediaQueryList, callback: Box<dyn FnMut(&Event)>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaQueryList/onchange)
+        #[link_name = "get onchange"]
+        pub safe fn onchange(this: &MediaQueryList) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaQueryList/onchange)
+        #[link_name = "set onchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onchange(this: &MediaQueryList, value: Option<Box<dyn FnMut(&MediaQueryListEvent)>>);
 
         /// Treats `this` as `MediaQueryList` without checking that it is one.
         #[link_name = "this"]
@@ -11864,6 +15077,906 @@ pub mod svg_element {
         #[link_name = "get attributeStyleMap"]
         pub safe fn attribute_style_map(this: &SVGElement) -> &'static StylePropertyMap;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onselectstart)
+        #[link_name = "get onselectstart"]
+        pub safe fn onselectstart(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onselectstart)
+        #[link_name = "set onselectstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onselectstart(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onselectionchange)
+        #[link_name = "get onselectionchange"]
+        pub safe fn onselectionchange(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onselectionchange)
+        #[link_name = "set onselectionchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onselectionchange(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onanimationstart)
+        #[link_name = "get onanimationstart"]
+        pub safe fn onanimationstart(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onanimationstart)
+        #[link_name = "set onanimationstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onanimationstart(this: &SVGElement, value: Option<Box<dyn FnMut(&AnimationEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onanimationiteration)
+        #[link_name = "get onanimationiteration"]
+        pub safe fn onanimationiteration(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onanimationiteration)
+        #[link_name = "set onanimationiteration"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onanimationiteration(this: &SVGElement, value: Option<Box<dyn FnMut(&AnimationEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onanimationend)
+        #[link_name = "get onanimationend"]
+        pub safe fn onanimationend(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onanimationend)
+        #[link_name = "set onanimationend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onanimationend(this: &SVGElement, value: Option<Box<dyn FnMut(&AnimationEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onanimationcancel)
+        #[link_name = "get onanimationcancel"]
+        pub safe fn onanimationcancel(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onanimationcancel)
+        #[link_name = "set onanimationcancel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onanimationcancel(this: &SVGElement, value: Option<Box<dyn FnMut(&AnimationEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontransitionrun)
+        #[link_name = "get ontransitionrun"]
+        pub safe fn ontransitionrun(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontransitionrun)
+        #[link_name = "set ontransitionrun"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontransitionrun(this: &SVGElement, value: Option<Box<dyn FnMut(&TransitionEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontransitionstart)
+        #[link_name = "get ontransitionstart"]
+        pub safe fn ontransitionstart(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontransitionstart)
+        #[link_name = "set ontransitionstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontransitionstart(this: &SVGElement, value: Option<Box<dyn FnMut(&TransitionEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontransitionend)
+        #[link_name = "get ontransitionend"]
+        pub safe fn ontransitionend(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontransitionend)
+        #[link_name = "set ontransitionend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontransitionend(this: &SVGElement, value: Option<Box<dyn FnMut(&TransitionEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontransitioncancel)
+        #[link_name = "get ontransitioncancel"]
+        pub safe fn ontransitioncancel(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontransitioncancel)
+        #[link_name = "set ontransitioncancel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontransitioncancel(this: &SVGElement, value: Option<Box<dyn FnMut(&TransitionEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerover)
+        #[link_name = "get onpointerover"]
+        pub safe fn onpointerover(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerover)
+        #[link_name = "set onpointerover"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerover(this: &SVGElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerenter)
+        #[link_name = "get onpointerenter"]
+        pub safe fn onpointerenter(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerenter)
+        #[link_name = "set onpointerenter"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerenter(this: &SVGElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerdown)
+        #[link_name = "get onpointerdown"]
+        pub safe fn onpointerdown(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerdown)
+        #[link_name = "set onpointerdown"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerdown(this: &SVGElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointermove)
+        #[link_name = "get onpointermove"]
+        pub safe fn onpointermove(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointermove)
+        #[link_name = "set onpointermove"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointermove(this: &SVGElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerrawupdate)
+        #[link_name = "get onpointerrawupdate"]
+        pub safe fn onpointerrawupdate(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerrawupdate)
+        #[link_name = "set onpointerrawupdate"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerrawupdate(this: &SVGElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerup)
+        #[link_name = "get onpointerup"]
+        pub safe fn onpointerup(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerup)
+        #[link_name = "set onpointerup"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerup(this: &SVGElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointercancel)
+        #[link_name = "get onpointercancel"]
+        pub safe fn onpointercancel(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointercancel)
+        #[link_name = "set onpointercancel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointercancel(this: &SVGElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerout)
+        #[link_name = "get onpointerout"]
+        pub safe fn onpointerout(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerout)
+        #[link_name = "set onpointerout"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerout(this: &SVGElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerleave)
+        #[link_name = "get onpointerleave"]
+        pub safe fn onpointerleave(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerleave)
+        #[link_name = "set onpointerleave"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerleave(this: &SVGElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ongotpointercapture)
+        #[link_name = "get ongotpointercapture"]
+        pub safe fn ongotpointercapture(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ongotpointercapture)
+        #[link_name = "set ongotpointercapture"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ongotpointercapture(this: &SVGElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onlostpointercapture)
+        #[link_name = "get onlostpointercapture"]
+        pub safe fn onlostpointercapture(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onlostpointercapture)
+        #[link_name = "set onlostpointercapture"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onlostpointercapture(this: &SVGElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchstart)
+        #[link_name = "get ontouchstart"]
+        pub safe fn ontouchstart(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchstart)
+        #[link_name = "set ontouchstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontouchstart(this: &SVGElement, value: Option<Box<dyn FnMut(&TouchEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchend)
+        #[link_name = "get ontouchend"]
+        pub safe fn ontouchend(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchend)
+        #[link_name = "set ontouchend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontouchend(this: &SVGElement, value: Option<Box<dyn FnMut(&TouchEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchmove)
+        #[link_name = "get ontouchmove"]
+        pub safe fn ontouchmove(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchmove)
+        #[link_name = "set ontouchmove"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontouchmove(this: &SVGElement, value: Option<Box<dyn FnMut(&TouchEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchcancel)
+        #[link_name = "get ontouchcancel"]
+        pub safe fn ontouchcancel(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchcancel)
+        #[link_name = "set ontouchcancel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontouchcancel(this: &SVGElement, value: Option<Box<dyn FnMut(&TouchEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onabort)
+        #[link_name = "get onabort"]
+        pub safe fn onabort(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onabort)
+        #[link_name = "set onabort"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onabort(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onauxclick)
+        #[link_name = "get onauxclick"]
+        pub safe fn onauxclick(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onauxclick)
+        #[link_name = "set onauxclick"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onauxclick(this: &SVGElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onbeforeinput)
+        #[link_name = "get onbeforeinput"]
+        pub safe fn onbeforeinput(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onbeforeinput)
+        #[link_name = "set onbeforeinput"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onbeforeinput(this: &SVGElement, value: Option<Box<dyn FnMut(&InputEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onbeforematch)
+        #[link_name = "get onbeforematch"]
+        pub safe fn onbeforematch(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onbeforematch)
+        #[link_name = "set onbeforematch"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onbeforematch(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onbeforetoggle)
+        #[link_name = "get onbeforetoggle"]
+        pub safe fn onbeforetoggle(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onbeforetoggle)
+        #[link_name = "set onbeforetoggle"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onbeforetoggle(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onblur)
+        #[link_name = "get onblur"]
+        pub safe fn onblur(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onblur)
+        #[link_name = "set onblur"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onblur(this: &SVGElement, value: Option<Box<dyn FnMut(&FocusEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncancel)
+        #[link_name = "get oncancel"]
+        pub safe fn oncancel(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncancel)
+        #[link_name = "set oncancel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncancel(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncanplay)
+        #[link_name = "get oncanplay"]
+        pub safe fn oncanplay(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncanplay)
+        #[link_name = "set oncanplay"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncanplay(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncanplaythrough)
+        #[link_name = "get oncanplaythrough"]
+        pub safe fn oncanplaythrough(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncanplaythrough)
+        #[link_name = "set oncanplaythrough"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncanplaythrough(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onchange)
+        #[link_name = "get onchange"]
+        pub safe fn onchange(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onchange)
+        #[link_name = "set onchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onchange(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onclick)
+        #[link_name = "get onclick"]
+        pub safe fn onclick(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onclick)
+        #[link_name = "set onclick"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onclick(this: &SVGElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onclose)
+        #[link_name = "get onclose"]
+        pub safe fn onclose(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onclose)
+        #[link_name = "set onclose"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onclose(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncommand)
+        #[link_name = "get oncommand"]
+        pub safe fn oncommand(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncommand)
+        #[link_name = "set oncommand"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncommand(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncontextlost)
+        #[link_name = "get oncontextlost"]
+        pub safe fn oncontextlost(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncontextlost)
+        #[link_name = "set oncontextlost"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncontextlost(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncontextmenu)
+        #[link_name = "get oncontextmenu"]
+        pub safe fn oncontextmenu(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncontextmenu)
+        #[link_name = "set oncontextmenu"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncontextmenu(this: &SVGElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncontextrestored)
+        #[link_name = "get oncontextrestored"]
+        pub safe fn oncontextrestored(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncontextrestored)
+        #[link_name = "set oncontextrestored"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncontextrestored(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncopy)
+        #[link_name = "get oncopy"]
+        pub safe fn oncopy(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncopy)
+        #[link_name = "set oncopy"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncopy(this: &SVGElement, value: Option<Box<dyn FnMut(&ClipboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncuechange)
+        #[link_name = "get oncuechange"]
+        pub safe fn oncuechange(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncuechange)
+        #[link_name = "set oncuechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncuechange(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncut)
+        #[link_name = "get oncut"]
+        pub safe fn oncut(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncut)
+        #[link_name = "set oncut"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncut(this: &SVGElement, value: Option<Box<dyn FnMut(&ClipboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ondblclick)
+        #[link_name = "get ondblclick"]
+        pub safe fn ondblclick(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ondblclick)
+        #[link_name = "set ondblclick"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondblclick(this: &SVGElement, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ondrag)
+        #[link_name = "get ondrag"]
+        pub safe fn ondrag(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ondrag)
+        #[link_name = "set ondrag"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondrag(this: &SVGElement, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ondragend)
+        #[link_name = "get ondragend"]
+        pub safe fn ondragend(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ondragend)
+        #[link_name = "set ondragend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondragend(this: &SVGElement, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ondragenter)
+        #[link_name = "get ondragenter"]
+        pub safe fn ondragenter(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ondragenter)
+        #[link_name = "set ondragenter"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondragenter(this: &SVGElement, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ondragleave)
+        #[link_name = "get ondragleave"]
+        pub safe fn ondragleave(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ondragleave)
+        #[link_name = "set ondragleave"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondragleave(this: &SVGElement, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ondragover)
+        #[link_name = "get ondragover"]
+        pub safe fn ondragover(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ondragover)
+        #[link_name = "set ondragover"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondragover(this: &SVGElement, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ondragstart)
+        #[link_name = "get ondragstart"]
+        pub safe fn ondragstart(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ondragstart)
+        #[link_name = "set ondragstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondragstart(this: &SVGElement, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ondrop)
+        #[link_name = "get ondrop"]
+        pub safe fn ondrop(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ondrop)
+        #[link_name = "set ondrop"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondrop(this: &SVGElement, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ondurationchange)
+        #[link_name = "get ondurationchange"]
+        pub safe fn ondurationchange(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ondurationchange)
+        #[link_name = "set ondurationchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondurationchange(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onemptied)
+        #[link_name = "get onemptied"]
+        pub safe fn onemptied(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onemptied)
+        #[link_name = "set onemptied"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onemptied(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onended)
+        #[link_name = "get onended"]
+        pub safe fn onended(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onended)
+        #[link_name = "set onended"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onended(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onfocus)
+        #[link_name = "get onfocus"]
+        pub safe fn onfocus(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onfocus)
+        #[link_name = "set onfocus"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onfocus(this: &SVGElement, value: Option<Box<dyn FnMut(&FocusEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onformdata)
+        #[link_name = "get onformdata"]
+        pub safe fn onformdata(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onformdata)
+        #[link_name = "set onformdata"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onformdata(this: &SVGElement, value: Option<Box<dyn FnMut(&FormDataEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oninput)
+        #[link_name = "get oninput"]
+        pub safe fn oninput(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oninput)
+        #[link_name = "set oninput"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oninput(this: &SVGElement, value: Option<Box<dyn FnMut(&InputEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oninvalid)
+        #[link_name = "get oninvalid"]
+        pub safe fn oninvalid(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oninvalid)
+        #[link_name = "set oninvalid"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oninvalid(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onkeydown)
+        #[link_name = "get onkeydown"]
+        pub safe fn onkeydown(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onkeydown)
+        #[link_name = "set onkeydown"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onkeydown(this: &SVGElement, value: Option<Box<dyn FnMut(&KeyboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onkeypress)
+        #[link_name = "get onkeypress"]
+        pub safe fn onkeypress(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onkeypress)
+        #[link_name = "set onkeypress"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onkeypress(this: &SVGElement, value: Option<Box<dyn FnMut(&KeyboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onkeyup)
+        #[link_name = "get onkeyup"]
+        pub safe fn onkeyup(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onkeyup)
+        #[link_name = "set onkeyup"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onkeyup(this: &SVGElement, value: Option<Box<dyn FnMut(&KeyboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onload)
+        #[link_name = "get onload"]
+        pub safe fn onload(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onload)
+        #[link_name = "set onload"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onload(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onloadeddata)
+        #[link_name = "get onloadeddata"]
+        pub safe fn onloadeddata(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onloadeddata)
+        #[link_name = "set onloadeddata"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onloadeddata(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onloadedmetadata)
+        #[link_name = "get onloadedmetadata"]
+        pub safe fn onloadedmetadata(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onloadedmetadata)
+        #[link_name = "set onloadedmetadata"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onloadedmetadata(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onloadstart)
+        #[link_name = "get onloadstart"]
+        pub safe fn onloadstart(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onloadstart)
+        #[link_name = "set onloadstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onloadstart(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onmousedown)
+        #[link_name = "get onmousedown"]
+        pub safe fn onmousedown(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onmousedown)
+        #[link_name = "set onmousedown"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmousedown(this: &SVGElement, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onmouseenter)
+        #[link_name = "get onmouseenter"]
+        pub safe fn onmouseenter(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onmouseenter)
+        #[link_name = "set onmouseenter"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmouseenter(this: &SVGElement, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onmouseleave)
+        #[link_name = "get onmouseleave"]
+        pub safe fn onmouseleave(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onmouseleave)
+        #[link_name = "set onmouseleave"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmouseleave(this: &SVGElement, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onmousemove)
+        #[link_name = "get onmousemove"]
+        pub safe fn onmousemove(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onmousemove)
+        #[link_name = "set onmousemove"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmousemove(this: &SVGElement, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onmouseout)
+        #[link_name = "get onmouseout"]
+        pub safe fn onmouseout(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onmouseout)
+        #[link_name = "set onmouseout"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmouseout(this: &SVGElement, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onmouseover)
+        #[link_name = "get onmouseover"]
+        pub safe fn onmouseover(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onmouseover)
+        #[link_name = "set onmouseover"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmouseover(this: &SVGElement, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onmouseup)
+        #[link_name = "get onmouseup"]
+        pub safe fn onmouseup(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onmouseup)
+        #[link_name = "set onmouseup"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmouseup(this: &SVGElement, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpaste)
+        #[link_name = "get onpaste"]
+        pub safe fn onpaste(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpaste)
+        #[link_name = "set onpaste"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpaste(this: &SVGElement, value: Option<Box<dyn FnMut(&ClipboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpause)
+        #[link_name = "get onpause"]
+        pub safe fn onpause(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpause)
+        #[link_name = "set onpause"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpause(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onplay)
+        #[link_name = "get onplay"]
+        pub safe fn onplay(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onplay)
+        #[link_name = "set onplay"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onplay(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onplaying)
+        #[link_name = "get onplaying"]
+        pub safe fn onplaying(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onplaying)
+        #[link_name = "set onplaying"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onplaying(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onprogress)
+        #[link_name = "get onprogress"]
+        pub safe fn onprogress(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onprogress)
+        #[link_name = "set onprogress"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onprogress(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onratechange)
+        #[link_name = "get onratechange"]
+        pub safe fn onratechange(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onratechange)
+        #[link_name = "set onratechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onratechange(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onreset)
+        #[link_name = "get onreset"]
+        pub safe fn onreset(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onreset)
+        #[link_name = "set onreset"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onreset(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onresize)
+        #[link_name = "get onresize"]
+        pub safe fn onresize(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onresize)
+        #[link_name = "set onresize"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onresize(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onscroll)
+        #[link_name = "get onscroll"]
+        pub safe fn onscroll(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onscroll)
+        #[link_name = "set onscroll"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onscroll(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onscrollend)
+        #[link_name = "get onscrollend"]
+        pub safe fn onscrollend(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onscrollend)
+        #[link_name = "set onscrollend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onscrollend(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onsecuritypolicyviolation)
+        #[link_name = "get onsecuritypolicyviolation"]
+        pub safe fn onsecuritypolicyviolation(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onsecuritypolicyviolation)
+        #[link_name = "set onsecuritypolicyviolation"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onsecuritypolicyviolation(this: &SVGElement, value: Option<Box<dyn FnMut(&SecurityPolicyViolationEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onseeked)
+        #[link_name = "get onseeked"]
+        pub safe fn onseeked(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onseeked)
+        #[link_name = "set onseeked"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onseeked(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onseeking)
+        #[link_name = "get onseeking"]
+        pub safe fn onseeking(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onseeking)
+        #[link_name = "set onseeking"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onseeking(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onselect)
+        #[link_name = "get onselect"]
+        pub safe fn onselect(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onselect)
+        #[link_name = "set onselect"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onselect(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onslotchange)
+        #[link_name = "get onslotchange"]
+        pub safe fn onslotchange(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onslotchange)
+        #[link_name = "set onslotchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onslotchange(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onstalled)
+        #[link_name = "get onstalled"]
+        pub safe fn onstalled(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onstalled)
+        #[link_name = "set onstalled"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onstalled(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onsubmit)
+        #[link_name = "get onsubmit"]
+        pub safe fn onsubmit(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onsubmit)
+        #[link_name = "set onsubmit"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onsubmit(this: &SVGElement, value: Option<Box<dyn FnMut(&SubmitEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onsuspend)
+        #[link_name = "get onsuspend"]
+        pub safe fn onsuspend(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onsuspend)
+        #[link_name = "set onsuspend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onsuspend(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontimeupdate)
+        #[link_name = "get ontimeupdate"]
+        pub safe fn ontimeupdate(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontimeupdate)
+        #[link_name = "set ontimeupdate"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontimeupdate(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontoggle)
+        #[link_name = "get ontoggle"]
+        pub safe fn ontoggle(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontoggle)
+        #[link_name = "set ontoggle"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontoggle(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onvolumechange)
+        #[link_name = "get onvolumechange"]
+        pub safe fn onvolumechange(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onvolumechange)
+        #[link_name = "set onvolumechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onvolumechange(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onwaiting)
+        #[link_name = "get onwaiting"]
+        pub safe fn onwaiting(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onwaiting)
+        #[link_name = "set onwaiting"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwaiting(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onwebkitanimationend)
+        #[link_name = "get onwebkitanimationend"]
+        pub safe fn onwebkitanimationend(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onwebkitanimationend)
+        #[link_name = "set onwebkitanimationend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwebkitanimationend(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onwebkitanimationiteration)
+        #[link_name = "get onwebkitanimationiteration"]
+        pub safe fn onwebkitanimationiteration(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onwebkitanimationiteration)
+        #[link_name = "set onwebkitanimationiteration"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwebkitanimationiteration(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onwebkitanimationstart)
+        #[link_name = "get onwebkitanimationstart"]
+        pub safe fn onwebkitanimationstart(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onwebkitanimationstart)
+        #[link_name = "set onwebkitanimationstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwebkitanimationstart(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onwebkittransitionend)
+        #[link_name = "get onwebkittransitionend"]
+        pub safe fn onwebkittransitionend(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onwebkittransitionend)
+        #[link_name = "set onwebkittransitionend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwebkittransitionend(this: &SVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onwheel)
+        #[link_name = "get onwheel"]
+        pub safe fn onwheel(this: &SVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onwheel)
+        #[link_name = "set onwheel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwheel(this: &SVGElement, value: Option<Box<dyn FnMut(&WheelEvent)>>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/dataset)
         #[link_name = "get dataset"]
         pub safe fn dataset(this: &SVGElement) -> &'static DOMStringMap;
@@ -12106,6 +16219,177 @@ pub mod svgsvg_element {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/preserveAspectRatio)
         #[link_name = "get preserveAspectRatio"]
         pub safe fn preserve_aspect_ratio(this: &SVGSVGElement) -> &'static SVGAnimatedPreserveAspectRatio;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onafterprint)
+        #[link_name = "get onafterprint"]
+        pub safe fn onafterprint(this: &SVGSVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onafterprint)
+        #[link_name = "set onafterprint"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onafterprint(this: &SVGSVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onbeforeprint)
+        #[link_name = "get onbeforeprint"]
+        pub safe fn onbeforeprint(this: &SVGSVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onbeforeprint)
+        #[link_name = "set onbeforeprint"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onbeforeprint(this: &SVGSVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onhashchange)
+        #[link_name = "get onhashchange"]
+        pub safe fn onhashchange(this: &SVGSVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onhashchange)
+        #[link_name = "set onhashchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onhashchange(this: &SVGSVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onlanguagechange)
+        #[link_name = "get onlanguagechange"]
+        pub safe fn onlanguagechange(this: &SVGSVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onlanguagechange)
+        #[link_name = "set onlanguagechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onlanguagechange(this: &SVGSVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onmessage)
+        #[link_name = "get onmessage"]
+        pub safe fn onmessage(this: &SVGSVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onmessage)
+        #[link_name = "set onmessage"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmessage(this: &SVGSVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onmessageerror)
+        #[link_name = "get onmessageerror"]
+        pub safe fn onmessageerror(this: &SVGSVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onmessageerror)
+        #[link_name = "set onmessageerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmessageerror(this: &SVGSVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onoffline)
+        #[link_name = "get onoffline"]
+        pub safe fn onoffline(this: &SVGSVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onoffline)
+        #[link_name = "set onoffline"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onoffline(this: &SVGSVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/ononline)
+        #[link_name = "get ononline"]
+        pub safe fn ononline(this: &SVGSVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/ononline)
+        #[link_name = "set ononline"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ononline(this: &SVGSVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onpagehide)
+        #[link_name = "get onpagehide"]
+        pub safe fn onpagehide(this: &SVGSVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onpagehide)
+        #[link_name = "set onpagehide"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpagehide(this: &SVGSVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onpagereveal)
+        #[link_name = "get onpagereveal"]
+        pub safe fn onpagereveal(this: &SVGSVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onpagereveal)
+        #[link_name = "set onpagereveal"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpagereveal(this: &SVGSVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onpageshow)
+        #[link_name = "get onpageshow"]
+        pub safe fn onpageshow(this: &SVGSVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onpageshow)
+        #[link_name = "set onpageshow"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpageshow(this: &SVGSVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onpageswap)
+        #[link_name = "get onpageswap"]
+        pub safe fn onpageswap(this: &SVGSVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onpageswap)
+        #[link_name = "set onpageswap"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpageswap(this: &SVGSVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onpopstate)
+        #[link_name = "get onpopstate"]
+        pub safe fn onpopstate(this: &SVGSVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onpopstate)
+        #[link_name = "set onpopstate"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpopstate(this: &SVGSVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onrejectionhandled)
+        #[link_name = "get onrejectionhandled"]
+        pub safe fn onrejectionhandled(this: &SVGSVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onrejectionhandled)
+        #[link_name = "set onrejectionhandled"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onrejectionhandled(this: &SVGSVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onstorage)
+        #[link_name = "get onstorage"]
+        pub safe fn onstorage(this: &SVGSVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onstorage)
+        #[link_name = "set onstorage"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onstorage(this: &SVGSVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onunhandledrejection)
+        #[link_name = "get onunhandledrejection"]
+        pub safe fn onunhandledrejection(this: &SVGSVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onunhandledrejection)
+        #[link_name = "set onunhandledrejection"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onunhandledrejection(this: &SVGSVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onunload)
+        #[link_name = "get onunload"]
+        pub safe fn onunload(this: &SVGSVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onunload)
+        #[link_name = "set onunload"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onunload(this: &SVGSVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/ongamepadconnected)
+        #[link_name = "get ongamepadconnected"]
+        pub safe fn ongamepadconnected(this: &SVGSVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/ongamepadconnected)
+        #[link_name = "set ongamepadconnected"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ongamepadconnected(this: &SVGSVGElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/ongamepaddisconnected)
+        #[link_name = "get ongamepaddisconnected"]
+        pub safe fn ongamepaddisconnected(this: &SVGSVGElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/ongamepaddisconnected)
+        #[link_name = "set ongamepaddisconnected"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ongamepaddisconnected(this: &SVGSVGElement, value: Option<Box<dyn FnMut(&Event)>>);
 
         /// Treats `this` as `SVGSVGElement` without checking that it is one.
         #[link_name = "this"]
@@ -13525,6 +17809,33 @@ pub mod svg_animation_element {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimationElement/targetElement)
         #[link_name = "get targetElement"]
         pub safe fn target_element(this: &SVGAnimationElement) -> Option<&'static SVGElement>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimationElement/onbegin)
+        #[link_name = "get onbegin"]
+        pub safe fn onbegin(this: &SVGAnimationElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimationElement/onbegin)
+        #[link_name = "set onbegin"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onbegin(this: &SVGAnimationElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimationElement/onend)
+        #[link_name = "get onend"]
+        pub safe fn onend(this: &SVGAnimationElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimationElement/onend)
+        #[link_name = "set onend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onend(this: &SVGAnimationElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimationElement/onrepeat)
+        #[link_name = "get onrepeat"]
+        pub safe fn onrepeat(this: &SVGAnimationElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimationElement/onrepeat)
+        #[link_name = "set onrepeat"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onrepeat(this: &SVGAnimationElement, value: Option<Box<dyn FnMut(&Event)>>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimationElement/getStartTime)
         #[link_name = "getStartTime"]
@@ -15455,6 +19766,33 @@ pub mod animation {
         #[link_name = "get finished"]
         pub safe fn finished(this: &Animation) -> Promise<&'static Animation>;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/onfinish)
+        #[link_name = "get onfinish"]
+        pub safe fn onfinish(this: &Animation) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/onfinish)
+        #[link_name = "set onfinish"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onfinish(this: &Animation, value: Option<Box<dyn FnMut(&AnimationPlaybackEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/oncancel)
+        #[link_name = "get oncancel"]
+        pub safe fn oncancel(this: &Animation) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/oncancel)
+        #[link_name = "set oncancel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncancel(this: &Animation, value: Option<Box<dyn FnMut(&AnimationPlaybackEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/onremove)
+        #[link_name = "get onremove"]
+        pub safe fn onremove(this: &Animation) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/onremove)
+        #[link_name = "set onremove"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onremove(this: &Animation, value: Option<Box<dyn FnMut(&AnimationPlaybackEvent)>>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/cancel)
         pub safe fn cancel(this: &Animation);
 
@@ -15833,6 +20171,15 @@ pub mod audio_decoder {
         #[link_name = "get decodeQueueSize"]
         pub safe fn decode_queue_size(this: &AudioDecoder) -> u32;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioDecoder/ondequeue)
+        #[link_name = "get ondequeue"]
+        pub safe fn ondequeue(this: &AudioDecoder) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioDecoder/ondequeue)
+        #[link_name = "set ondequeue"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondequeue(this: &AudioDecoder, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioDecoder/configure)
         pub safe fn configure(this: &AudioDecoder, config: AudioDecoderConfig<'_>);
 
@@ -15909,6 +20256,15 @@ pub mod audio_encoder {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioEncoder/encodeQueueSize)
         #[link_name = "get encodeQueueSize"]
         pub safe fn encode_queue_size(this: &AudioEncoder) -> u32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioEncoder/ondequeue)
+        #[link_name = "get ondequeue"]
+        pub safe fn ondequeue(this: &AudioEncoder) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioEncoder/ondequeue)
+        #[link_name = "set ondequeue"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondequeue(this: &AudioEncoder, value: Option<Box<dyn FnMut(&Event)>>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioEncoder/configure)
         pub safe fn configure(this: &AudioEncoder, config: AudioEncoderConfig<'_>);
@@ -16216,6 +20572,15 @@ pub mod audio_scheduled_source_node {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioScheduledSourceNode/onended)
+        #[link_name = "get onended"]
+        pub safe fn onended(this: &AudioScheduledSourceNode) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioScheduledSourceNode/onended)
+        #[link_name = "set onended"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onended(this: &AudioScheduledSourceNode, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioScheduledSourceNode/start)
         pub safe fn start(this: &AudioScheduledSourceNode);
 
@@ -16283,6 +20648,15 @@ pub mod audio_worklet_node {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioWorkletNode/port)
         #[link_name = "get port"]
         pub safe fn port(this: &AudioWorkletNode) -> &'static MessagePort;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioWorkletNode/onprocessorerror)
+        #[link_name = "get onprocessorerror"]
+        pub safe fn onprocessorerror(this: &AudioWorkletNode) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioWorkletNode/onprocessorerror)
+        #[link_name = "set onprocessorerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onprocessorerror(this: &AudioWorkletNode, value: Option<Box<dyn FnMut(&ErrorEvent)>>);
 
         /// Treats `this` as `AudioWorkletNode` without checking that it is one.
         #[link_name = "this"]
@@ -16436,6 +20810,15 @@ pub mod base_audio_context {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/BaseAudioContext/audioWorklet)
         #[link_name = "get audioWorklet"]
         pub safe fn audio_worklet(this: &BaseAudioContext) -> &'static AudioWorklet;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/BaseAudioContext/onstatechange)
+        #[link_name = "get onstatechange"]
+        pub safe fn onstatechange(this: &BaseAudioContext) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/BaseAudioContext/onstatechange)
+        #[link_name = "set onstatechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onstatechange(this: &BaseAudioContext, value: Option<Box<dyn FnMut(&Event)>>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/BaseAudioContext/createAnalyser)
         #[link_name = "createAnalyser"]
@@ -16691,6 +21074,24 @@ pub mod broadcast_channel {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/BroadcastChannel/close)
         pub safe fn close(this: &BroadcastChannel);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/BroadcastChannel/onmessage)
+        #[link_name = "get onmessage"]
+        pub safe fn onmessage(this: &BroadcastChannel) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/BroadcastChannel/onmessage)
+        #[link_name = "set onmessage"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmessage(this: &BroadcastChannel, value: Option<Box<dyn FnMut(&MessageEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/BroadcastChannel/onmessageerror)
+        #[link_name = "get onmessageerror"]
+        pub safe fn onmessageerror(this: &BroadcastChannel) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/BroadcastChannel/onmessageerror)
+        #[link_name = "set onmessageerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmessageerror(this: &BroadcastChannel, value: Option<Box<dyn FnMut(&MessageEvent)>>);
 
         /// Treats `this` as `BroadcastChannel` without checking that it is one.
         #[link_name = "this"]
@@ -19989,6 +24390,24 @@ pub mod close_watcher {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseWatcher/destroy)
         pub safe fn destroy(this: &CloseWatcher);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseWatcher/oncancel)
+        #[link_name = "get oncancel"]
+        pub safe fn oncancel(this: &CloseWatcher) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseWatcher/oncancel)
+        #[link_name = "set oncancel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncancel(this: &CloseWatcher, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseWatcher/onclose)
+        #[link_name = "get onclose"]
+        pub safe fn onclose(this: &CloseWatcher) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseWatcher/onclose)
+        #[link_name = "set onclose"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onclose(this: &CloseWatcher, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// Treats `this` as `CloseWatcher` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static CloseWatcher;
@@ -20221,6 +24640,15 @@ pub mod cookie_store {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieStore/delete)
         #[link_name = "delete"]
         pub safe fn delete_with_cookie_store_delete_options(this: &CookieStore, options: CookieStoreDeleteOptions<'_>) -> Promise<()>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieStore/onchange)
+        #[link_name = "get onchange"]
+        pub safe fn onchange(this: &CookieStore) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieStore/onchange)
+        #[link_name = "set onchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onchange(this: &CookieStore, value: Option<Box<dyn FnMut(&CookieChangeEvent)>>);
 
         /// Treats `this` as `CookieStore` without checking that it is one.
         #[link_name = "this"]
@@ -21753,6 +26181,15 @@ pub mod document_picture_in_picture {
         #[link_name = "get window"]
         pub safe fn window(this: &DocumentPictureInPicture) -> &'static Window;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentPictureInPicture/onenter)
+        #[link_name = "get onenter"]
+        pub safe fn onenter(this: &DocumentPictureInPicture) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentPictureInPicture/onenter)
+        #[link_name = "set onenter"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onenter(this: &DocumentPictureInPicture, value: Option<Box<dyn FnMut(&DocumentPictureInPictureEvent)>>);
+
         /// Treats `this` as `DocumentPictureInPicture` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static DocumentPictureInPicture;
@@ -22581,6 +27018,33 @@ pub mod event_source {
         #[link_name = "get readyState"]
         pub safe fn ready_state(this: &EventSource) -> u16;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/EventSource/onopen)
+        #[link_name = "get onopen"]
+        pub safe fn onopen(this: &EventSource) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/EventSource/onopen)
+        #[link_name = "set onopen"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onopen(this: &EventSource, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/EventSource/onmessage)
+        #[link_name = "get onmessage"]
+        pub safe fn onmessage(this: &EventSource) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/EventSource/onmessage)
+        #[link_name = "set onmessage"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmessage(this: &EventSource, value: Option<Box<dyn FnMut(&MessageEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/EventSource/onerror)
+        #[link_name = "get onerror"]
+        pub safe fn onerror(this: &EventSource) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/EventSource/onerror)
+        #[link_name = "set onerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onerror(this: &EventSource, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/EventSource/close)
         pub safe fn close(this: &EventSource);
 
@@ -22685,6 +27149,60 @@ pub mod file_reader {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/error)
         #[link_name = "get error"]
         pub safe fn error(this: &FileReader) -> Option<&'static DOMException>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/onloadstart)
+        #[link_name = "get onloadstart"]
+        pub safe fn onloadstart(this: &FileReader) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/onloadstart)
+        #[link_name = "set onloadstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onloadstart(this: &FileReader, value: Option<Box<dyn FnMut(&ProgressEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/onprogress)
+        #[link_name = "get onprogress"]
+        pub safe fn onprogress(this: &FileReader) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/onprogress)
+        #[link_name = "set onprogress"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onprogress(this: &FileReader, value: Option<Box<dyn FnMut(&ProgressEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/onload)
+        #[link_name = "get onload"]
+        pub safe fn onload(this: &FileReader) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/onload)
+        #[link_name = "set onload"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onload(this: &FileReader, value: Option<Box<dyn FnMut(&ProgressEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/onabort)
+        #[link_name = "get onabort"]
+        pub safe fn onabort(this: &FileReader) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/onabort)
+        #[link_name = "set onabort"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onabort(this: &FileReader, value: Option<Box<dyn FnMut(&ProgressEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/onerror)
+        #[link_name = "get onerror"]
+        pub safe fn onerror(this: &FileReader) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/onerror)
+        #[link_name = "set onerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onerror(this: &FileReader, value: Option<Box<dyn FnMut(&ProgressEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/onloadend)
+        #[link_name = "get onloadend"]
+        pub safe fn onloadend(this: &FileReader) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/onloadend)
+        #[link_name = "set onloadend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onloadend(this: &FileReader, value: Option<Box<dyn FnMut(&ProgressEvent)>>);
 
         /// Treats `this` as `FileReader` without checking that it is one.
         #[link_name = "this"]
@@ -23137,6 +27655,33 @@ pub mod font_face_set {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/onloading)
+        #[link_name = "get onloading"]
+        pub safe fn onloading(this: &FontFaceSet) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/onloading)
+        #[link_name = "set onloading"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onloading(this: &FontFaceSet, value: Option<Box<dyn FnMut(&FontFaceSetLoadEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/onloadingdone)
+        #[link_name = "get onloadingdone"]
+        pub safe fn onloadingdone(this: &FontFaceSet) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/onloadingdone)
+        #[link_name = "set onloadingdone"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onloadingdone(this: &FontFaceSet, value: Option<Box<dyn FnMut(&FontFaceSetLoadEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/onloadingerror)
+        #[link_name = "get onloadingerror"]
+        pub safe fn onloadingerror(this: &FontFaceSet) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/onloadingerror)
+        #[link_name = "set onloadingerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onloadingerror(this: &FontFaceSet, value: Option<Box<dyn FnMut(&FontFaceSetLoadEvent)>>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/load)
         pub safe fn load(this: &FontFaceSet, font: &str) -> Promise<Vec<&'static FontFace>>;
 
@@ -23806,6 +28351,15 @@ pub mod gpu_device {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUDevice/popErrorScope)
         #[link_name = "popErrorScope"]
         pub safe fn pop_error_scope(this: &GPUDevice) -> Promise<&'static GPUError>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUDevice/onuncapturederror)
+        #[link_name = "get onuncapturederror"]
+        pub safe fn onuncapturederror(this: &GPUDevice) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUDevice/onuncapturederror)
+        #[link_name = "set onuncapturederror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onuncapturederror(this: &GPUDevice, value: Option<Box<dyn FnMut(&GPUUncapturedErrorEvent)>>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUDevice/label)
         #[link_name = "get label"]
@@ -25190,6 +29744,177 @@ pub mod html_frame_set_element {
         #[link_name = "set rows"]
         pub safe fn set_rows(this: &HTMLFrameSetElement, value: &str);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onafterprint)
+        #[link_name = "get onafterprint"]
+        pub safe fn onafterprint(this: &HTMLFrameSetElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onafterprint)
+        #[link_name = "set onafterprint"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onafterprint(this: &HTMLFrameSetElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onbeforeprint)
+        #[link_name = "get onbeforeprint"]
+        pub safe fn onbeforeprint(this: &HTMLFrameSetElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onbeforeprint)
+        #[link_name = "set onbeforeprint"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onbeforeprint(this: &HTMLFrameSetElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onhashchange)
+        #[link_name = "get onhashchange"]
+        pub safe fn onhashchange(this: &HTMLFrameSetElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onhashchange)
+        #[link_name = "set onhashchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onhashchange(this: &HTMLFrameSetElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onlanguagechange)
+        #[link_name = "get onlanguagechange"]
+        pub safe fn onlanguagechange(this: &HTMLFrameSetElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onlanguagechange)
+        #[link_name = "set onlanguagechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onlanguagechange(this: &HTMLFrameSetElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onmessage)
+        #[link_name = "get onmessage"]
+        pub safe fn onmessage(this: &HTMLFrameSetElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onmessage)
+        #[link_name = "set onmessage"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmessage(this: &HTMLFrameSetElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onmessageerror)
+        #[link_name = "get onmessageerror"]
+        pub safe fn onmessageerror(this: &HTMLFrameSetElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onmessageerror)
+        #[link_name = "set onmessageerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmessageerror(this: &HTMLFrameSetElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onoffline)
+        #[link_name = "get onoffline"]
+        pub safe fn onoffline(this: &HTMLFrameSetElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onoffline)
+        #[link_name = "set onoffline"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onoffline(this: &HTMLFrameSetElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/ononline)
+        #[link_name = "get ononline"]
+        pub safe fn ononline(this: &HTMLFrameSetElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/ononline)
+        #[link_name = "set ononline"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ononline(this: &HTMLFrameSetElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onpagehide)
+        #[link_name = "get onpagehide"]
+        pub safe fn onpagehide(this: &HTMLFrameSetElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onpagehide)
+        #[link_name = "set onpagehide"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpagehide(this: &HTMLFrameSetElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onpagereveal)
+        #[link_name = "get onpagereveal"]
+        pub safe fn onpagereveal(this: &HTMLFrameSetElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onpagereveal)
+        #[link_name = "set onpagereveal"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpagereveal(this: &HTMLFrameSetElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onpageshow)
+        #[link_name = "get onpageshow"]
+        pub safe fn onpageshow(this: &HTMLFrameSetElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onpageshow)
+        #[link_name = "set onpageshow"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpageshow(this: &HTMLFrameSetElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onpageswap)
+        #[link_name = "get onpageswap"]
+        pub safe fn onpageswap(this: &HTMLFrameSetElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onpageswap)
+        #[link_name = "set onpageswap"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpageswap(this: &HTMLFrameSetElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onpopstate)
+        #[link_name = "get onpopstate"]
+        pub safe fn onpopstate(this: &HTMLFrameSetElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onpopstate)
+        #[link_name = "set onpopstate"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpopstate(this: &HTMLFrameSetElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onrejectionhandled)
+        #[link_name = "get onrejectionhandled"]
+        pub safe fn onrejectionhandled(this: &HTMLFrameSetElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onrejectionhandled)
+        #[link_name = "set onrejectionhandled"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onrejectionhandled(this: &HTMLFrameSetElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onstorage)
+        #[link_name = "get onstorage"]
+        pub safe fn onstorage(this: &HTMLFrameSetElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onstorage)
+        #[link_name = "set onstorage"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onstorage(this: &HTMLFrameSetElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onunhandledrejection)
+        #[link_name = "get onunhandledrejection"]
+        pub safe fn onunhandledrejection(this: &HTMLFrameSetElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onunhandledrejection)
+        #[link_name = "set onunhandledrejection"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onunhandledrejection(this: &HTMLFrameSetElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onunload)
+        #[link_name = "get onunload"]
+        pub safe fn onunload(this: &HTMLFrameSetElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onunload)
+        #[link_name = "set onunload"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onunload(this: &HTMLFrameSetElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/ongamepadconnected)
+        #[link_name = "get ongamepadconnected"]
+        pub safe fn ongamepadconnected(this: &HTMLFrameSetElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/ongamepadconnected)
+        #[link_name = "set ongamepadconnected"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ongamepadconnected(this: &HTMLFrameSetElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/ongamepaddisconnected)
+        #[link_name = "get ongamepaddisconnected"]
+        pub safe fn ongamepaddisconnected(this: &HTMLFrameSetElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/ongamepaddisconnected)
+        #[link_name = "set ongamepaddisconnected"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ongamepaddisconnected(this: &HTMLFrameSetElement, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// Treats `this` as `HTMLFrameSetElement` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLFrameSetElement;
@@ -25662,6 +30387,42 @@ pub mod idb_database {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBDatabase/deleteObjectStore)
         #[link_name = "deleteObjectStore"]
         pub safe fn delete_object_store(this: &IDBDatabase, name: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBDatabase/onabort)
+        #[link_name = "get onabort"]
+        pub safe fn onabort(this: &IDBDatabase) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBDatabase/onabort)
+        #[link_name = "set onabort"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onabort(this: &IDBDatabase, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBDatabase/onclose)
+        #[link_name = "get onclose"]
+        pub safe fn onclose(this: &IDBDatabase) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBDatabase/onclose)
+        #[link_name = "set onclose"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onclose(this: &IDBDatabase, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBDatabase/onerror)
+        #[link_name = "get onerror"]
+        pub safe fn onerror(this: &IDBDatabase) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBDatabase/onerror)
+        #[link_name = "set onerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onerror(this: &IDBDatabase, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBDatabase/onversionchange)
+        #[link_name = "get onversionchange"]
+        pub safe fn onversionchange(this: &IDBDatabase) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBDatabase/onversionchange)
+        #[link_name = "set onversionchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onversionchange(this: &IDBDatabase, value: Option<Box<dyn FnMut(&IDBVersionChangeEvent)>>);
 
         /// Treats `this` as `IDBDatabase` without checking that it is one.
         #[link_name = "this"]
@@ -26188,6 +30949,24 @@ pub mod idb_open_db_request {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBOpenDBRequest/onblocked)
+        #[link_name = "get onblocked"]
+        pub safe fn onblocked(this: &IDBOpenDBRequest) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBOpenDBRequest/onblocked)
+        #[link_name = "set onblocked"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onblocked(this: &IDBOpenDBRequest, value: Option<Box<dyn FnMut(&IDBVersionChangeEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBOpenDBRequest/onupgradeneeded)
+        #[link_name = "get onupgradeneeded"]
+        pub safe fn onupgradeneeded(this: &IDBOpenDBRequest) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBOpenDBRequest/onupgradeneeded)
+        #[link_name = "set onupgradeneeded"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onupgradeneeded(this: &IDBOpenDBRequest, value: Option<Box<dyn FnMut(&IDBVersionChangeEvent)>>);
+
         /// Treats `this` as `IDBOpenDBRequest` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static IDBOpenDBRequest;
@@ -26226,6 +31005,24 @@ pub mod idb_request {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBRequest/readyState)
         #[link_name = "get readyState"]
         pub safe fn ready_state(this: &IDBRequest) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBRequest/onsuccess)
+        #[link_name = "get onsuccess"]
+        pub safe fn onsuccess(this: &IDBRequest) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBRequest/onsuccess)
+        #[link_name = "set onsuccess"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onsuccess(this: &IDBRequest, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBRequest/onerror)
+        #[link_name = "get onerror"]
+        pub safe fn onerror(this: &IDBRequest) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBRequest/onerror)
+        #[link_name = "set onerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onerror(this: &IDBRequest, value: Option<Box<dyn FnMut(&Event)>>);
 
         /// Treats `this` as `IDBRequest` without checking that it is one.
         #[link_name = "this"]
@@ -26279,6 +31076,33 @@ pub mod idb_transaction {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBTransaction/abort)
         pub safe fn abort(this: &IDBTransaction);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBTransaction/onabort)
+        #[link_name = "get onabort"]
+        pub safe fn onabort(this: &IDBTransaction) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBTransaction/onabort)
+        #[link_name = "set onabort"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onabort(this: &IDBTransaction, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBTransaction/oncomplete)
+        #[link_name = "get oncomplete"]
+        pub safe fn oncomplete(this: &IDBTransaction) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBTransaction/oncomplete)
+        #[link_name = "set oncomplete"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncomplete(this: &IDBTransaction, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBTransaction/onerror)
+        #[link_name = "get onerror"]
+        pub safe fn onerror(this: &IDBTransaction) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBTransaction/onerror)
+        #[link_name = "set onerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onerror(this: &IDBTransaction, value: Option<Box<dyn FnMut(&Event)>>);
 
         /// Treats `this` as `IDBTransaction` without checking that it is one.
         #[link_name = "this"]
@@ -26764,6 +31588,15 @@ pub mod midi_access {
         #[link_name = "get outputs"]
         pub safe fn outputs(this: &MIDIAccess) -> &'static MIDIOutputMap;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIAccess/onstatechange)
+        #[link_name = "get onstatechange"]
+        pub safe fn onstatechange(this: &MIDIAccess) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIAccess/onstatechange)
+        #[link_name = "set onstatechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onstatechange(this: &MIDIAccess, value: Option<Box<dyn FnMut(&MIDIConnectionEvent)>>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIAccess/sysexEnabled)
         #[link_name = "get sysexEnabled"]
         pub safe fn sysex_enabled(this: &MIDIAccess) -> bool;
@@ -26818,6 +31651,15 @@ pub mod midi_input {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIInput/onmidimessage)
+        #[link_name = "get onmidimessage"]
+        pub safe fn onmidimessage(this: &MIDIInput) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIInput/onmidimessage)
+        #[link_name = "set onmidimessage"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmidimessage(this: &MIDIInput, value: Option<Box<dyn FnMut(&MIDIMessageEvent)>>);
+
         /// Treats `this` as `MIDIInput` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static MIDIInput;
@@ -26934,6 +31776,15 @@ pub mod midi_port {
         #[link_name = "get connection"]
         pub safe fn connection(this: &MIDIPort) -> String;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIPort/onstatechange)
+        #[link_name = "get onstatechange"]
+        pub safe fn onstatechange(this: &MIDIPort) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIPort/onstatechange)
+        #[link_name = "set onstatechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onstatechange(this: &MIDIPort, value: Option<Box<dyn FnMut(&MIDIConnectionEvent)>>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIPort/open)
         pub safe fn open(this: &MIDIPort) -> Promise<&'static MIDIPort>;
 
@@ -26970,6 +31821,906 @@ pub mod math_ml_element {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/attributeStyleMap)
         #[link_name = "get attributeStyleMap"]
         pub safe fn attribute_style_map(this: &MathMLElement) -> &'static StylePropertyMap;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onselectstart)
+        #[link_name = "get onselectstart"]
+        pub safe fn onselectstart(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onselectstart)
+        #[link_name = "set onselectstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onselectstart(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onselectionchange)
+        #[link_name = "get onselectionchange"]
+        pub safe fn onselectionchange(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onselectionchange)
+        #[link_name = "set onselectionchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onselectionchange(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onanimationstart)
+        #[link_name = "get onanimationstart"]
+        pub safe fn onanimationstart(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onanimationstart)
+        #[link_name = "set onanimationstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onanimationstart(this: &MathMLElement, value: Option<Box<dyn FnMut(&AnimationEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onanimationiteration)
+        #[link_name = "get onanimationiteration"]
+        pub safe fn onanimationiteration(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onanimationiteration)
+        #[link_name = "set onanimationiteration"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onanimationiteration(this: &MathMLElement, value: Option<Box<dyn FnMut(&AnimationEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onanimationend)
+        #[link_name = "get onanimationend"]
+        pub safe fn onanimationend(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onanimationend)
+        #[link_name = "set onanimationend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onanimationend(this: &MathMLElement, value: Option<Box<dyn FnMut(&AnimationEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onanimationcancel)
+        #[link_name = "get onanimationcancel"]
+        pub safe fn onanimationcancel(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onanimationcancel)
+        #[link_name = "set onanimationcancel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onanimationcancel(this: &MathMLElement, value: Option<Box<dyn FnMut(&AnimationEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontransitionrun)
+        #[link_name = "get ontransitionrun"]
+        pub safe fn ontransitionrun(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontransitionrun)
+        #[link_name = "set ontransitionrun"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontransitionrun(this: &MathMLElement, value: Option<Box<dyn FnMut(&TransitionEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontransitionstart)
+        #[link_name = "get ontransitionstart"]
+        pub safe fn ontransitionstart(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontransitionstart)
+        #[link_name = "set ontransitionstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontransitionstart(this: &MathMLElement, value: Option<Box<dyn FnMut(&TransitionEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontransitionend)
+        #[link_name = "get ontransitionend"]
+        pub safe fn ontransitionend(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontransitionend)
+        #[link_name = "set ontransitionend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontransitionend(this: &MathMLElement, value: Option<Box<dyn FnMut(&TransitionEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontransitioncancel)
+        #[link_name = "get ontransitioncancel"]
+        pub safe fn ontransitioncancel(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontransitioncancel)
+        #[link_name = "set ontransitioncancel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontransitioncancel(this: &MathMLElement, value: Option<Box<dyn FnMut(&TransitionEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerover)
+        #[link_name = "get onpointerover"]
+        pub safe fn onpointerover(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerover)
+        #[link_name = "set onpointerover"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerover(this: &MathMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerenter)
+        #[link_name = "get onpointerenter"]
+        pub safe fn onpointerenter(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerenter)
+        #[link_name = "set onpointerenter"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerenter(this: &MathMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerdown)
+        #[link_name = "get onpointerdown"]
+        pub safe fn onpointerdown(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerdown)
+        #[link_name = "set onpointerdown"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerdown(this: &MathMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointermove)
+        #[link_name = "get onpointermove"]
+        pub safe fn onpointermove(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointermove)
+        #[link_name = "set onpointermove"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointermove(this: &MathMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerrawupdate)
+        #[link_name = "get onpointerrawupdate"]
+        pub safe fn onpointerrawupdate(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerrawupdate)
+        #[link_name = "set onpointerrawupdate"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerrawupdate(this: &MathMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerup)
+        #[link_name = "get onpointerup"]
+        pub safe fn onpointerup(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerup)
+        #[link_name = "set onpointerup"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerup(this: &MathMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointercancel)
+        #[link_name = "get onpointercancel"]
+        pub safe fn onpointercancel(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointercancel)
+        #[link_name = "set onpointercancel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointercancel(this: &MathMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerout)
+        #[link_name = "get onpointerout"]
+        pub safe fn onpointerout(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerout)
+        #[link_name = "set onpointerout"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerout(this: &MathMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerleave)
+        #[link_name = "get onpointerleave"]
+        pub safe fn onpointerleave(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerleave)
+        #[link_name = "set onpointerleave"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpointerleave(this: &MathMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ongotpointercapture)
+        #[link_name = "get ongotpointercapture"]
+        pub safe fn ongotpointercapture(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ongotpointercapture)
+        #[link_name = "set ongotpointercapture"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ongotpointercapture(this: &MathMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onlostpointercapture)
+        #[link_name = "get onlostpointercapture"]
+        pub safe fn onlostpointercapture(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onlostpointercapture)
+        #[link_name = "set onlostpointercapture"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onlostpointercapture(this: &MathMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchstart)
+        #[link_name = "get ontouchstart"]
+        pub safe fn ontouchstart(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchstart)
+        #[link_name = "set ontouchstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontouchstart(this: &MathMLElement, value: Option<Box<dyn FnMut(&TouchEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchend)
+        #[link_name = "get ontouchend"]
+        pub safe fn ontouchend(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchend)
+        #[link_name = "set ontouchend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontouchend(this: &MathMLElement, value: Option<Box<dyn FnMut(&TouchEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchmove)
+        #[link_name = "get ontouchmove"]
+        pub safe fn ontouchmove(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchmove)
+        #[link_name = "set ontouchmove"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontouchmove(this: &MathMLElement, value: Option<Box<dyn FnMut(&TouchEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchcancel)
+        #[link_name = "get ontouchcancel"]
+        pub safe fn ontouchcancel(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchcancel)
+        #[link_name = "set ontouchcancel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontouchcancel(this: &MathMLElement, value: Option<Box<dyn FnMut(&TouchEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onabort)
+        #[link_name = "get onabort"]
+        pub safe fn onabort(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onabort)
+        #[link_name = "set onabort"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onabort(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onauxclick)
+        #[link_name = "get onauxclick"]
+        pub safe fn onauxclick(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onauxclick)
+        #[link_name = "set onauxclick"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onauxclick(this: &MathMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onbeforeinput)
+        #[link_name = "get onbeforeinput"]
+        pub safe fn onbeforeinput(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onbeforeinput)
+        #[link_name = "set onbeforeinput"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onbeforeinput(this: &MathMLElement, value: Option<Box<dyn FnMut(&InputEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onbeforematch)
+        #[link_name = "get onbeforematch"]
+        pub safe fn onbeforematch(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onbeforematch)
+        #[link_name = "set onbeforematch"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onbeforematch(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onbeforetoggle)
+        #[link_name = "get onbeforetoggle"]
+        pub safe fn onbeforetoggle(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onbeforetoggle)
+        #[link_name = "set onbeforetoggle"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onbeforetoggle(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onblur)
+        #[link_name = "get onblur"]
+        pub safe fn onblur(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onblur)
+        #[link_name = "set onblur"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onblur(this: &MathMLElement, value: Option<Box<dyn FnMut(&FocusEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncancel)
+        #[link_name = "get oncancel"]
+        pub safe fn oncancel(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncancel)
+        #[link_name = "set oncancel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncancel(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncanplay)
+        #[link_name = "get oncanplay"]
+        pub safe fn oncanplay(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncanplay)
+        #[link_name = "set oncanplay"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncanplay(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncanplaythrough)
+        #[link_name = "get oncanplaythrough"]
+        pub safe fn oncanplaythrough(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncanplaythrough)
+        #[link_name = "set oncanplaythrough"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncanplaythrough(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onchange)
+        #[link_name = "get onchange"]
+        pub safe fn onchange(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onchange)
+        #[link_name = "set onchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onchange(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onclick)
+        #[link_name = "get onclick"]
+        pub safe fn onclick(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onclick)
+        #[link_name = "set onclick"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onclick(this: &MathMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onclose)
+        #[link_name = "get onclose"]
+        pub safe fn onclose(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onclose)
+        #[link_name = "set onclose"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onclose(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncommand)
+        #[link_name = "get oncommand"]
+        pub safe fn oncommand(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncommand)
+        #[link_name = "set oncommand"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncommand(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncontextlost)
+        #[link_name = "get oncontextlost"]
+        pub safe fn oncontextlost(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncontextlost)
+        #[link_name = "set oncontextlost"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncontextlost(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncontextmenu)
+        #[link_name = "get oncontextmenu"]
+        pub safe fn oncontextmenu(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncontextmenu)
+        #[link_name = "set oncontextmenu"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncontextmenu(this: &MathMLElement, value: Option<Box<dyn FnMut(&PointerEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncontextrestored)
+        #[link_name = "get oncontextrestored"]
+        pub safe fn oncontextrestored(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncontextrestored)
+        #[link_name = "set oncontextrestored"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncontextrestored(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncopy)
+        #[link_name = "get oncopy"]
+        pub safe fn oncopy(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncopy)
+        #[link_name = "set oncopy"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncopy(this: &MathMLElement, value: Option<Box<dyn FnMut(&ClipboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncuechange)
+        #[link_name = "get oncuechange"]
+        pub safe fn oncuechange(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncuechange)
+        #[link_name = "set oncuechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncuechange(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncut)
+        #[link_name = "get oncut"]
+        pub safe fn oncut(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncut)
+        #[link_name = "set oncut"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncut(this: &MathMLElement, value: Option<Box<dyn FnMut(&ClipboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ondblclick)
+        #[link_name = "get ondblclick"]
+        pub safe fn ondblclick(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ondblclick)
+        #[link_name = "set ondblclick"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondblclick(this: &MathMLElement, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ondrag)
+        #[link_name = "get ondrag"]
+        pub safe fn ondrag(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ondrag)
+        #[link_name = "set ondrag"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondrag(this: &MathMLElement, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ondragend)
+        #[link_name = "get ondragend"]
+        pub safe fn ondragend(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ondragend)
+        #[link_name = "set ondragend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondragend(this: &MathMLElement, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ondragenter)
+        #[link_name = "get ondragenter"]
+        pub safe fn ondragenter(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ondragenter)
+        #[link_name = "set ondragenter"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondragenter(this: &MathMLElement, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ondragleave)
+        #[link_name = "get ondragleave"]
+        pub safe fn ondragleave(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ondragleave)
+        #[link_name = "set ondragleave"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondragleave(this: &MathMLElement, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ondragover)
+        #[link_name = "get ondragover"]
+        pub safe fn ondragover(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ondragover)
+        #[link_name = "set ondragover"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondragover(this: &MathMLElement, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ondragstart)
+        #[link_name = "get ondragstart"]
+        pub safe fn ondragstart(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ondragstart)
+        #[link_name = "set ondragstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondragstart(this: &MathMLElement, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ondrop)
+        #[link_name = "get ondrop"]
+        pub safe fn ondrop(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ondrop)
+        #[link_name = "set ondrop"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondrop(this: &MathMLElement, value: Option<Box<dyn FnMut(&DragEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ondurationchange)
+        #[link_name = "get ondurationchange"]
+        pub safe fn ondurationchange(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ondurationchange)
+        #[link_name = "set ondurationchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondurationchange(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onemptied)
+        #[link_name = "get onemptied"]
+        pub safe fn onemptied(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onemptied)
+        #[link_name = "set onemptied"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onemptied(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onended)
+        #[link_name = "get onended"]
+        pub safe fn onended(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onended)
+        #[link_name = "set onended"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onended(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onfocus)
+        #[link_name = "get onfocus"]
+        pub safe fn onfocus(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onfocus)
+        #[link_name = "set onfocus"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onfocus(this: &MathMLElement, value: Option<Box<dyn FnMut(&FocusEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onformdata)
+        #[link_name = "get onformdata"]
+        pub safe fn onformdata(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onformdata)
+        #[link_name = "set onformdata"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onformdata(this: &MathMLElement, value: Option<Box<dyn FnMut(&FormDataEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oninput)
+        #[link_name = "get oninput"]
+        pub safe fn oninput(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oninput)
+        #[link_name = "set oninput"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oninput(this: &MathMLElement, value: Option<Box<dyn FnMut(&InputEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oninvalid)
+        #[link_name = "get oninvalid"]
+        pub safe fn oninvalid(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oninvalid)
+        #[link_name = "set oninvalid"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oninvalid(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onkeydown)
+        #[link_name = "get onkeydown"]
+        pub safe fn onkeydown(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onkeydown)
+        #[link_name = "set onkeydown"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onkeydown(this: &MathMLElement, value: Option<Box<dyn FnMut(&KeyboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onkeypress)
+        #[link_name = "get onkeypress"]
+        pub safe fn onkeypress(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onkeypress)
+        #[link_name = "set onkeypress"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onkeypress(this: &MathMLElement, value: Option<Box<dyn FnMut(&KeyboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onkeyup)
+        #[link_name = "get onkeyup"]
+        pub safe fn onkeyup(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onkeyup)
+        #[link_name = "set onkeyup"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onkeyup(this: &MathMLElement, value: Option<Box<dyn FnMut(&KeyboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onload)
+        #[link_name = "get onload"]
+        pub safe fn onload(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onload)
+        #[link_name = "set onload"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onload(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onloadeddata)
+        #[link_name = "get onloadeddata"]
+        pub safe fn onloadeddata(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onloadeddata)
+        #[link_name = "set onloadeddata"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onloadeddata(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onloadedmetadata)
+        #[link_name = "get onloadedmetadata"]
+        pub safe fn onloadedmetadata(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onloadedmetadata)
+        #[link_name = "set onloadedmetadata"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onloadedmetadata(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onloadstart)
+        #[link_name = "get onloadstart"]
+        pub safe fn onloadstart(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onloadstart)
+        #[link_name = "set onloadstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onloadstart(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onmousedown)
+        #[link_name = "get onmousedown"]
+        pub safe fn onmousedown(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onmousedown)
+        #[link_name = "set onmousedown"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmousedown(this: &MathMLElement, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onmouseenter)
+        #[link_name = "get onmouseenter"]
+        pub safe fn onmouseenter(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onmouseenter)
+        #[link_name = "set onmouseenter"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmouseenter(this: &MathMLElement, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onmouseleave)
+        #[link_name = "get onmouseleave"]
+        pub safe fn onmouseleave(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onmouseleave)
+        #[link_name = "set onmouseleave"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmouseleave(this: &MathMLElement, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onmousemove)
+        #[link_name = "get onmousemove"]
+        pub safe fn onmousemove(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onmousemove)
+        #[link_name = "set onmousemove"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmousemove(this: &MathMLElement, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onmouseout)
+        #[link_name = "get onmouseout"]
+        pub safe fn onmouseout(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onmouseout)
+        #[link_name = "set onmouseout"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmouseout(this: &MathMLElement, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onmouseover)
+        #[link_name = "get onmouseover"]
+        pub safe fn onmouseover(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onmouseover)
+        #[link_name = "set onmouseover"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmouseover(this: &MathMLElement, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onmouseup)
+        #[link_name = "get onmouseup"]
+        pub safe fn onmouseup(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onmouseup)
+        #[link_name = "set onmouseup"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmouseup(this: &MathMLElement, value: Option<Box<dyn FnMut(&MouseEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpaste)
+        #[link_name = "get onpaste"]
+        pub safe fn onpaste(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpaste)
+        #[link_name = "set onpaste"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpaste(this: &MathMLElement, value: Option<Box<dyn FnMut(&ClipboardEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpause)
+        #[link_name = "get onpause"]
+        pub safe fn onpause(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpause)
+        #[link_name = "set onpause"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpause(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onplay)
+        #[link_name = "get onplay"]
+        pub safe fn onplay(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onplay)
+        #[link_name = "set onplay"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onplay(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onplaying)
+        #[link_name = "get onplaying"]
+        pub safe fn onplaying(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onplaying)
+        #[link_name = "set onplaying"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onplaying(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onprogress)
+        #[link_name = "get onprogress"]
+        pub safe fn onprogress(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onprogress)
+        #[link_name = "set onprogress"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onprogress(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onratechange)
+        #[link_name = "get onratechange"]
+        pub safe fn onratechange(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onratechange)
+        #[link_name = "set onratechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onratechange(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onreset)
+        #[link_name = "get onreset"]
+        pub safe fn onreset(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onreset)
+        #[link_name = "set onreset"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onreset(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onresize)
+        #[link_name = "get onresize"]
+        pub safe fn onresize(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onresize)
+        #[link_name = "set onresize"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onresize(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onscroll)
+        #[link_name = "get onscroll"]
+        pub safe fn onscroll(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onscroll)
+        #[link_name = "set onscroll"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onscroll(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onscrollend)
+        #[link_name = "get onscrollend"]
+        pub safe fn onscrollend(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onscrollend)
+        #[link_name = "set onscrollend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onscrollend(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onsecuritypolicyviolation)
+        #[link_name = "get onsecuritypolicyviolation"]
+        pub safe fn onsecuritypolicyviolation(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onsecuritypolicyviolation)
+        #[link_name = "set onsecuritypolicyviolation"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onsecuritypolicyviolation(this: &MathMLElement, value: Option<Box<dyn FnMut(&SecurityPolicyViolationEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onseeked)
+        #[link_name = "get onseeked"]
+        pub safe fn onseeked(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onseeked)
+        #[link_name = "set onseeked"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onseeked(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onseeking)
+        #[link_name = "get onseeking"]
+        pub safe fn onseeking(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onseeking)
+        #[link_name = "set onseeking"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onseeking(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onselect)
+        #[link_name = "get onselect"]
+        pub safe fn onselect(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onselect)
+        #[link_name = "set onselect"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onselect(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onslotchange)
+        #[link_name = "get onslotchange"]
+        pub safe fn onslotchange(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onslotchange)
+        #[link_name = "set onslotchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onslotchange(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onstalled)
+        #[link_name = "get onstalled"]
+        pub safe fn onstalled(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onstalled)
+        #[link_name = "set onstalled"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onstalled(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onsubmit)
+        #[link_name = "get onsubmit"]
+        pub safe fn onsubmit(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onsubmit)
+        #[link_name = "set onsubmit"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onsubmit(this: &MathMLElement, value: Option<Box<dyn FnMut(&SubmitEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onsuspend)
+        #[link_name = "get onsuspend"]
+        pub safe fn onsuspend(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onsuspend)
+        #[link_name = "set onsuspend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onsuspend(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontimeupdate)
+        #[link_name = "get ontimeupdate"]
+        pub safe fn ontimeupdate(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontimeupdate)
+        #[link_name = "set ontimeupdate"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontimeupdate(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontoggle)
+        #[link_name = "get ontoggle"]
+        pub safe fn ontoggle(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontoggle)
+        #[link_name = "set ontoggle"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontoggle(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onvolumechange)
+        #[link_name = "get onvolumechange"]
+        pub safe fn onvolumechange(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onvolumechange)
+        #[link_name = "set onvolumechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onvolumechange(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onwaiting)
+        #[link_name = "get onwaiting"]
+        pub safe fn onwaiting(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onwaiting)
+        #[link_name = "set onwaiting"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwaiting(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onwebkitanimationend)
+        #[link_name = "get onwebkitanimationend"]
+        pub safe fn onwebkitanimationend(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onwebkitanimationend)
+        #[link_name = "set onwebkitanimationend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwebkitanimationend(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onwebkitanimationiteration)
+        #[link_name = "get onwebkitanimationiteration"]
+        pub safe fn onwebkitanimationiteration(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onwebkitanimationiteration)
+        #[link_name = "set onwebkitanimationiteration"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwebkitanimationiteration(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onwebkitanimationstart)
+        #[link_name = "get onwebkitanimationstart"]
+        pub safe fn onwebkitanimationstart(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onwebkitanimationstart)
+        #[link_name = "set onwebkitanimationstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwebkitanimationstart(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onwebkittransitionend)
+        #[link_name = "get onwebkittransitionend"]
+        pub safe fn onwebkittransitionend(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onwebkittransitionend)
+        #[link_name = "set onwebkittransitionend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwebkittransitionend(this: &MathMLElement, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onwheel)
+        #[link_name = "get onwheel"]
+        pub safe fn onwheel(this: &MathMLElement) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onwheel)
+        #[link_name = "set onwheel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onwheel(this: &MathMLElement, value: Option<Box<dyn FnMut(&WheelEvent)>>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/dataset)
         #[link_name = "get dataset"]
@@ -27087,6 +32838,15 @@ pub mod media_devices {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaDevices/getDisplayMedia)
         #[link_name = "getDisplayMedia"]
         pub safe fn get_display_media_with_options(this: &MediaDevices, options: DisplayMediaStreamOptions<'_>) -> Promise<&'static MediaStream>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaDevices/ondevicechange)
+        #[link_name = "get ondevicechange"]
+        pub safe fn ondevicechange(this: &MediaDevices) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaDevices/ondevicechange)
+        #[link_name = "set ondevicechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondevicechange(this: &MediaDevices, value: Option<Box<dyn FnMut(&Event)>>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaDevices/enumerateDevices)
         #[link_name = "enumerateDevices"]
@@ -27261,6 +33021,24 @@ pub mod media_key_session {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeySession/keyStatuses)
         #[link_name = "get keyStatuses"]
         pub safe fn key_statuses(this: &MediaKeySession) -> &'static MediaKeyStatusMap;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeySession/onkeystatuseschange)
+        #[link_name = "get onkeystatuseschange"]
+        pub safe fn onkeystatuseschange(this: &MediaKeySession) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeySession/onkeystatuseschange)
+        #[link_name = "set onkeystatuseschange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onkeystatuseschange(this: &MediaKeySession, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeySession/onmessage)
+        #[link_name = "get onmessage"]
+        pub safe fn onmessage(this: &MediaKeySession) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeySession/onmessage)
+        #[link_name = "set onmessage"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmessage(this: &MediaKeySession, value: Option<Box<dyn FnMut(&MediaKeyMessageEvent)>>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeySession/load)
         pub safe fn load(this: &MediaKeySession, session_id: &str) -> Promise<bool>;
@@ -27471,6 +33249,60 @@ pub mod media_recorder {
         #[link_name = "get state"]
         pub safe fn state(this: &MediaRecorder) -> String;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/onstart)
+        #[link_name = "get onstart"]
+        pub safe fn onstart(this: &MediaRecorder) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/onstart)
+        #[link_name = "set onstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onstart(this: &MediaRecorder, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/onstop)
+        #[link_name = "get onstop"]
+        pub safe fn onstop(this: &MediaRecorder) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/onstop)
+        #[link_name = "set onstop"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onstop(this: &MediaRecorder, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/ondataavailable)
+        #[link_name = "get ondataavailable"]
+        pub safe fn ondataavailable(this: &MediaRecorder) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/ondataavailable)
+        #[link_name = "set ondataavailable"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondataavailable(this: &MediaRecorder, value: Option<Box<dyn FnMut(&BlobEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/onpause)
+        #[link_name = "get onpause"]
+        pub safe fn onpause(this: &MediaRecorder) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/onpause)
+        #[link_name = "set onpause"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpause(this: &MediaRecorder, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/onresume)
+        #[link_name = "get onresume"]
+        pub safe fn onresume(this: &MediaRecorder) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/onresume)
+        #[link_name = "set onresume"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onresume(this: &MediaRecorder, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/onerror)
+        #[link_name = "get onerror"]
+        pub safe fn onerror(this: &MediaRecorder) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/onerror)
+        #[link_name = "set onerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onerror(this: &MediaRecorder, value: Option<Box<dyn FnMut(&ErrorEvent)>>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/videoBitsPerSecond)
         #[link_name = "get videoBitsPerSecond"]
         pub safe fn video_bits_per_second(this: &MediaRecorder) -> u32;
@@ -27592,6 +33424,33 @@ pub mod media_source {
         #[link_name = "set duration"]
         pub safe fn set_duration(this: &MediaSource, value: f64);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSource/onsourceopen)
+        #[link_name = "get onsourceopen"]
+        pub safe fn onsourceopen(this: &MediaSource) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSource/onsourceopen)
+        #[link_name = "set onsourceopen"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onsourceopen(this: &MediaSource, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSource/onsourceended)
+        #[link_name = "get onsourceended"]
+        pub safe fn onsourceended(this: &MediaSource) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSource/onsourceended)
+        #[link_name = "set onsourceended"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onsourceended(this: &MediaSource, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSource/onsourceclose)
+        #[link_name = "get onsourceclose"]
+        pub safe fn onsourceclose(this: &MediaSource) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSource/onsourceclose)
+        #[link_name = "set onsourceclose"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onsourceclose(this: &MediaSource, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSource/addSourceBuffer)
         #[link_name = "addSourceBuffer"]
         pub safe fn add_source_buffer(this: &MediaSource, type_: &str) -> &'static SourceBuffer;
@@ -27681,6 +33540,24 @@ pub mod media_stream {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStream/active)
         #[link_name = "get active"]
         pub safe fn active(this: &MediaStream) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStream/onaddtrack)
+        #[link_name = "get onaddtrack"]
+        pub safe fn onaddtrack(this: &MediaStream) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStream/onaddtrack)
+        #[link_name = "set onaddtrack"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onaddtrack(this: &MediaStream, value: Option<Box<dyn FnMut(&MediaStreamTrackEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStream/onremovetrack)
+        #[link_name = "get onremovetrack"]
+        pub safe fn onremovetrack(this: &MediaStream) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStream/onremovetrack)
+        #[link_name = "set onremovetrack"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onremovetrack(this: &MediaStream, value: Option<Box<dyn FnMut(&MediaStreamTrackEvent)>>);
 
         /// Treats `this` as `MediaStream` without checking that it is one.
         #[link_name = "this"]
@@ -27791,9 +33668,36 @@ pub mod media_stream_track {
         #[link_name = "get muted"]
         pub safe fn muted(this: &MediaStreamTrack) -> bool;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack/onmute)
+        #[link_name = "get onmute"]
+        pub safe fn onmute(this: &MediaStreamTrack) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack/onmute)
+        #[link_name = "set onmute"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmute(this: &MediaStreamTrack, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack/onunmute)
+        #[link_name = "get onunmute"]
+        pub safe fn onunmute(this: &MediaStreamTrack) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack/onunmute)
+        #[link_name = "set onunmute"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onunmute(this: &MediaStreamTrack, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack/readyState)
         #[link_name = "get readyState"]
         pub safe fn ready_state(this: &MediaStreamTrack) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack/onended)
+        #[link_name = "get onended"]
+        pub safe fn onended(this: &MediaStreamTrack) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack/onended)
+        #[link_name = "set onended"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onended(this: &MediaStreamTrack, value: Option<Box<dyn FnMut(&Event)>>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack/clone)
         pub safe fn clone(this: &MediaStreamTrack) -> &'static MediaStreamTrack;
@@ -27894,6 +33798,33 @@ pub mod message_port {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/MessagePort/close)
         pub safe fn close(this: &MessagePort);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MessagePort/onclose)
+        #[link_name = "get onclose"]
+        pub safe fn onclose(this: &MessagePort) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MessagePort/onclose)
+        #[link_name = "set onclose"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onclose(this: &MessagePort, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MessagePort/onmessage)
+        #[link_name = "get onmessage"]
+        pub safe fn onmessage(this: &MessagePort) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MessagePort/onmessage)
+        #[link_name = "set onmessage"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmessage(this: &MessagePort, value: Option<Box<dyn FnMut(&MessageEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MessagePort/onmessageerror)
+        #[link_name = "get onmessageerror"]
+        pub safe fn onmessageerror(this: &MessagePort) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MessagePort/onmessageerror)
+        #[link_name = "set onmessageerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmessageerror(this: &MessagePort, value: Option<Box<dyn FnMut(&MessageEvent)>>);
 
         /// Treats `this` as `MessagePort` without checking that it is one.
         #[link_name = "this"]
@@ -28212,6 +34143,42 @@ pub mod navigation {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/forward)
         pub safe fn forward(this: &Navigation) -> NavigationResult;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/onnavigate)
+        #[link_name = "get onnavigate"]
+        pub safe fn onnavigate(this: &Navigation) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/onnavigate)
+        #[link_name = "set onnavigate"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onnavigate(this: &Navigation, value: Option<Box<dyn FnMut(&NavigateEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/onnavigatesuccess)
+        #[link_name = "get onnavigatesuccess"]
+        pub safe fn onnavigatesuccess(this: &Navigation) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/onnavigatesuccess)
+        #[link_name = "set onnavigatesuccess"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onnavigatesuccess(this: &Navigation, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/onnavigateerror)
+        #[link_name = "get onnavigateerror"]
+        pub safe fn onnavigateerror(this: &Navigation) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/onnavigateerror)
+        #[link_name = "set onnavigateerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onnavigateerror(this: &Navigation, value: Option<Box<dyn FnMut(&ErrorEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/oncurrententrychange)
+        #[link_name = "get oncurrententrychange"]
+        pub safe fn oncurrententrychange(this: &Navigation) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/oncurrententrychange)
+        #[link_name = "set oncurrententrychange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncurrententrychange(this: &Navigation, value: Option<Box<dyn FnMut(&NavigationCurrentEntryChangeEvent)>>);
+
         /// Treats `this` as `Navigation` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static Navigation;
@@ -28349,6 +34316,15 @@ pub mod navigation_history_entry {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationHistoryEntry/getState)
         #[link_name = "getState"]
         pub safe fn get_state(this: &NavigationHistoryEntry) -> Option<&'static Unknown>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationHistoryEntry/ondispose)
+        #[link_name = "get ondispose"]
+        pub safe fn ondispose(this: &NavigationHistoryEntry) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationHistoryEntry/ondispose)
+        #[link_name = "set ondispose"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondispose(this: &NavigationHistoryEntry, value: Option<Box<dyn FnMut(&Event)>>);
 
         /// Treats `this` as `NavigationHistoryEntry` without checking that it is one.
         #[link_name = "this"]
@@ -28507,6 +34483,42 @@ pub mod notification {
         #[link_name = "Notification.requestPermission"]
         pub safe fn request_permission_with_deprecated_callback(deprecated_callback: Box<dyn FnMut(&str)>) -> Promise<String>;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/onclick)
+        #[link_name = "get onclick"]
+        pub safe fn onclick(this: &Notification) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/onclick)
+        #[link_name = "set onclick"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onclick(this: &Notification, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/onshow)
+        #[link_name = "get onshow"]
+        pub safe fn onshow(this: &Notification) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/onshow)
+        #[link_name = "set onshow"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onshow(this: &Notification, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/onerror)
+        #[link_name = "get onerror"]
+        pub safe fn onerror(this: &Notification) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/onerror)
+        #[link_name = "set onerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onerror(this: &Notification, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/onclose)
+        #[link_name = "get onclose"]
+        pub safe fn onclose(this: &Notification) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/onclose)
+        #[link_name = "set onclose"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onclose(this: &Notification, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/title)
         #[link_name = "get title"]
         pub safe fn title(this: &Notification) -> String;
@@ -28614,6 +34626,15 @@ pub mod offline_audio_context {
         #[link_name = "get length"]
         pub safe fn length(this: &OfflineAudioContext) -> Option<u32>;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/OfflineAudioContext/oncomplete)
+        #[link_name = "get oncomplete"]
+        pub safe fn oncomplete(this: &OfflineAudioContext) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/OfflineAudioContext/oncomplete)
+        #[link_name = "set oncomplete"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncomplete(this: &OfflineAudioContext, value: Option<Box<dyn FnMut(&OfflineAudioCompletionEvent)>>);
+
         /// Treats `this` as `OfflineAudioContext` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static OfflineAudioContext;
@@ -28668,6 +34689,24 @@ pub mod offscreen_canvas {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvas/convertToBlob)
         #[link_name = "convertToBlob"]
         pub safe fn convert_to_blob_with_options(this: &OffscreenCanvas, options: ImageEncodeOptions<'_>) -> Promise<&'static Blob>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvas/oncontextlost)
+        #[link_name = "get oncontextlost"]
+        pub safe fn oncontextlost(this: &OffscreenCanvas) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvas/oncontextlost)
+        #[link_name = "set oncontextlost"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncontextlost(this: &OffscreenCanvas, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvas/oncontextrestored)
+        #[link_name = "get oncontextrestored"]
+        pub safe fn oncontextrestored(this: &OffscreenCanvas) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvas/oncontextrestored)
+        #[link_name = "set oncontextrestored"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncontextrestored(this: &OffscreenCanvas, value: Option<Box<dyn FnMut(&Event)>>);
 
         /// Treats `this` as `OffscreenCanvas` without checking that it is one.
         #[link_name = "this"]
@@ -29665,6 +35704,33 @@ pub mod payment_request {
         #[link_name = "get shippingType"]
         pub safe fn shipping_type(this: &PaymentRequest) -> Option<String>;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequest/onshippingaddresschange)
+        #[link_name = "get onshippingaddresschange"]
+        pub safe fn onshippingaddresschange(this: &PaymentRequest) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequest/onshippingaddresschange)
+        #[link_name = "set onshippingaddresschange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onshippingaddresschange(this: &PaymentRequest, value: Option<Box<dyn FnMut(&PaymentRequestUpdateEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequest/onshippingoptionchange)
+        #[link_name = "get onshippingoptionchange"]
+        pub safe fn onshippingoptionchange(this: &PaymentRequest) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequest/onshippingoptionchange)
+        #[link_name = "set onshippingoptionchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onshippingoptionchange(this: &PaymentRequest, value: Option<Box<dyn FnMut(&PaymentRequestUpdateEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequest/onpaymentmethodchange)
+        #[link_name = "get onpaymentmethodchange"]
+        pub safe fn onpaymentmethodchange(this: &PaymentRequest) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequest/onpaymentmethodchange)
+        #[link_name = "set onpaymentmethodchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpaymentmethodchange(this: &PaymentRequest, value: Option<Box<dyn FnMut(&PaymentMethodChangeEvent)>>);
+
         /// Treats `this` as `PaymentRequest` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static PaymentRequest;
@@ -29756,6 +35822,15 @@ pub mod payment_response {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentResponse/retry)
         #[link_name = "retry"]
         pub safe fn retry_with_error_fields(this: &PaymentResponse, error_fields: PaymentValidationErrors<'_>) -> Promise<()>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentResponse/onpayerdetailchange)
+        #[link_name = "get onpayerdetailchange"]
+        pub safe fn onpayerdetailchange(this: &PaymentResponse) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentResponse/onpayerdetailchange)
+        #[link_name = "set onpayerdetailchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpayerdetailchange(this: &PaymentResponse, value: Option<Box<dyn FnMut(&PaymentRequestUpdateEvent)>>);
 
         /// Treats `this` as `PaymentResponse` without checking that it is one.
         #[link_name = "this"]
@@ -30336,6 +36411,15 @@ pub mod permission_status {
         #[link_name = "get name"]
         pub safe fn name(this: &PermissionStatus) -> String;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PermissionStatus/onchange)
+        #[link_name = "get onchange"]
+        pub safe fn onchange(this: &PermissionStatus) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PermissionStatus/onchange)
+        #[link_name = "set onchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onchange(this: &PermissionStatus, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// Treats `this` as `PermissionStatus` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static PermissionStatus;
@@ -30406,6 +36490,15 @@ pub mod picture_in_picture_window {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/PictureInPictureWindow/height)
         #[link_name = "get height"]
         pub safe fn height(this: &PictureInPictureWindow) -> i32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PictureInPictureWindow/onresize)
+        #[link_name = "get onresize"]
+        pub safe fn onresize(this: &PictureInPictureWindow) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PictureInPictureWindow/onresize)
+        #[link_name = "set onresize"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onresize(this: &PictureInPictureWindow, value: Option<Box<dyn FnMut(&Event)>>);
 
         /// Treats `this` as `PictureInPictureWindow` without checking that it is one.
         #[link_name = "this"]
@@ -30856,6 +36949,15 @@ pub mod rtcdtmf_sender {
         #[link_name = "insertDTMF"]
         pub safe fn insert_dtmf_with_duration_and_inter_tone_gap(this: &RTCDTMFSender, tones: &str, duration: u32, inter_tone_gap: u32);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDTMFSender/ontonechange)
+        #[link_name = "get ontonechange"]
+        pub safe fn ontonechange(this: &RTCDTMFSender) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDTMFSender/ontonechange)
+        #[link_name = "set ontonechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontonechange(this: &RTCDTMFSender, value: Option<Box<dyn FnMut(&RTCDTMFToneChangeEvent)>>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDTMFSender/canInsertDTMF)
         #[link_name = "get canInsertDTMF"]
         pub safe fn can_insert_dtmf(this: &RTCDTMFSender) -> bool;
@@ -30958,8 +37060,62 @@ pub mod rtc_data_channel {
         #[link_name = "set bufferedAmountLowThreshold"]
         pub safe fn set_buffered_amount_low_threshold(this: &RTCDataChannel, value: u32);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/onopen)
+        #[link_name = "get onopen"]
+        pub safe fn onopen(this: &RTCDataChannel) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/onopen)
+        #[link_name = "set onopen"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onopen(this: &RTCDataChannel, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/onbufferedamountlow)
+        #[link_name = "get onbufferedamountlow"]
+        pub safe fn onbufferedamountlow(this: &RTCDataChannel) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/onbufferedamountlow)
+        #[link_name = "set onbufferedamountlow"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onbufferedamountlow(this: &RTCDataChannel, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/onerror)
+        #[link_name = "get onerror"]
+        pub safe fn onerror(this: &RTCDataChannel) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/onerror)
+        #[link_name = "set onerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onerror(this: &RTCDataChannel, value: Option<Box<dyn FnMut(&RTCErrorEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/onclosing)
+        #[link_name = "get onclosing"]
+        pub safe fn onclosing(this: &RTCDataChannel) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/onclosing)
+        #[link_name = "set onclosing"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onclosing(this: &RTCDataChannel, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/onclose)
+        #[link_name = "get onclose"]
+        pub safe fn onclose(this: &RTCDataChannel) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/onclose)
+        #[link_name = "set onclose"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onclose(this: &RTCDataChannel, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/close)
         pub safe fn close(this: &RTCDataChannel);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/onmessage)
+        #[link_name = "get onmessage"]
+        pub safe fn onmessage(this: &RTCDataChannel) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/onmessage)
+        #[link_name = "set onmessage"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmessage(this: &RTCDataChannel, value: Option<Box<dyn FnMut(&MessageEvent)>>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/binaryType)
         #[link_name = "get binaryType"]
@@ -31045,6 +37201,24 @@ pub mod rtc_dtls_transport {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDtlsTransport/getRemoteCertificates)
         #[link_name = "getRemoteCertificates"]
         pub safe fn get_remote_certificates(this: &RTCDtlsTransport) -> Vec<&'static ArrayBuffer>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDtlsTransport/onstatechange)
+        #[link_name = "get onstatechange"]
+        pub safe fn onstatechange(this: &RTCDtlsTransport) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDtlsTransport/onstatechange)
+        #[link_name = "set onstatechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onstatechange(this: &RTCDtlsTransport, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDtlsTransport/onerror)
+        #[link_name = "get onerror"]
+        pub safe fn onerror(this: &RTCDtlsTransport) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDtlsTransport/onerror)
+        #[link_name = "set onerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onerror(this: &RTCDtlsTransport, value: Option<Box<dyn FnMut(&RTCErrorEvent)>>);
 
         /// Treats `this` as `RTCDtlsTransport` without checking that it is one.
         #[link_name = "this"]
@@ -31265,6 +37439,33 @@ pub mod rtc_ice_transport {
         #[link_name = "get gatheringState"]
         pub safe fn gathering_state(this: &RTCIceTransport) -> String;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceTransport/onstatechange)
+        #[link_name = "get onstatechange"]
+        pub safe fn onstatechange(this: &RTCIceTransport) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceTransport/onstatechange)
+        #[link_name = "set onstatechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onstatechange(this: &RTCIceTransport, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceTransport/ongatheringstatechange)
+        #[link_name = "get ongatheringstatechange"]
+        pub safe fn ongatheringstatechange(this: &RTCIceTransport) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceTransport/ongatheringstatechange)
+        #[link_name = "set ongatheringstatechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ongatheringstatechange(this: &RTCIceTransport, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceTransport/onselectedcandidatepairchange)
+        #[link_name = "get onselectedcandidatepairchange"]
+        pub safe fn onselectedcandidatepairchange(this: &RTCIceTransport) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceTransport/onselectedcandidatepairchange)
+        #[link_name = "set onselectedcandidatepairchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onselectedcandidatepairchange(this: &RTCIceTransport, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// Treats `this` as `RTCIceTransport` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static RTCIceTransport;
@@ -31367,6 +37568,69 @@ pub mod rtc_peer_connection {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/close)
         pub safe fn close(this: &RTCPeerConnection);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/onnegotiationneeded)
+        #[link_name = "get onnegotiationneeded"]
+        pub safe fn onnegotiationneeded(this: &RTCPeerConnection) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/onnegotiationneeded)
+        #[link_name = "set onnegotiationneeded"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onnegotiationneeded(this: &RTCPeerConnection, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/onicecandidate)
+        #[link_name = "get onicecandidate"]
+        pub safe fn onicecandidate(this: &RTCPeerConnection) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/onicecandidate)
+        #[link_name = "set onicecandidate"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onicecandidate(this: &RTCPeerConnection, value: Option<Box<dyn FnMut(&RTCPeerConnectionIceEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/onicecandidateerror)
+        #[link_name = "get onicecandidateerror"]
+        pub safe fn onicecandidateerror(this: &RTCPeerConnection) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/onicecandidateerror)
+        #[link_name = "set onicecandidateerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onicecandidateerror(this: &RTCPeerConnection, value: Option<Box<dyn FnMut(&RTCPeerConnectionIceErrorEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/onsignalingstatechange)
+        #[link_name = "get onsignalingstatechange"]
+        pub safe fn onsignalingstatechange(this: &RTCPeerConnection) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/onsignalingstatechange)
+        #[link_name = "set onsignalingstatechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onsignalingstatechange(this: &RTCPeerConnection, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/oniceconnectionstatechange)
+        #[link_name = "get oniceconnectionstatechange"]
+        pub safe fn oniceconnectionstatechange(this: &RTCPeerConnection) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/oniceconnectionstatechange)
+        #[link_name = "set oniceconnectionstatechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oniceconnectionstatechange(this: &RTCPeerConnection, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/onicegatheringstatechange)
+        #[link_name = "get onicegatheringstatechange"]
+        pub safe fn onicegatheringstatechange(this: &RTCPeerConnection) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/onicegatheringstatechange)
+        #[link_name = "set onicegatheringstatechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onicegatheringstatechange(this: &RTCPeerConnection, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/onconnectionstatechange)
+        #[link_name = "get onconnectionstatechange"]
+        pub safe fn onconnectionstatechange(this: &RTCPeerConnection) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/onconnectionstatechange)
+        #[link_name = "set onconnectionstatechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onconnectionstatechange(this: &RTCPeerConnection, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/createOffer)
         #[link_name = "createOffer"]
         pub safe fn create_offer_with_success_callback_and_failure_callback(this: &RTCPeerConnection, success_callback: Box<dyn FnMut(RTCSessionDescriptionInit<'_>)>, failure_callback: Box<dyn FnMut(&DOMException)>) -> Promise<()>;
@@ -31415,6 +37679,15 @@ pub mod rtc_peer_connection {
         #[link_name = "removeTrack"]
         pub safe fn remove_track(this: &RTCPeerConnection, sender: &RTCRtpSender);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/ontrack)
+        #[link_name = "get ontrack"]
+        pub safe fn ontrack(this: &RTCPeerConnection) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/ontrack)
+        #[link_name = "set ontrack"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontrack(this: &RTCPeerConnection, value: Option<Box<dyn FnMut(&RTCTrackEvent)>>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/sctp)
         #[link_name = "get sctp"]
         pub safe fn sctp(this: &RTCPeerConnection) -> Option<&'static RTCSctpTransport>;
@@ -31426,6 +37699,15 @@ pub mod rtc_peer_connection {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/createDataChannel)
         #[link_name = "createDataChannel"]
         pub safe fn create_data_channel_with_data_channel_dict(this: &RTCPeerConnection, label: &str, data_channel_dict: RTCDataChannelInit<'_>) -> &'static RTCDataChannel;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/ondatachannel)
+        #[link_name = "get ondatachannel"]
+        pub safe fn ondatachannel(this: &RTCPeerConnection) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/ondatachannel)
+        #[link_name = "set ondatachannel"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondatachannel(this: &RTCPeerConnection, value: Option<Box<dyn FnMut(&RTCDataChannelEvent)>>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/getStats)
         #[link_name = "getStats"]
@@ -31700,6 +37982,15 @@ pub mod rtc_sctp_transport {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCSctpTransport/maxChannels)
         #[link_name = "get maxChannels"]
         pub safe fn max_channels(this: &RTCSctpTransport) -> Option<u16>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCSctpTransport/onstatechange)
+        #[link_name = "get onstatechange"]
+        pub safe fn onstatechange(this: &RTCSctpTransport) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCSctpTransport/onstatechange)
+        #[link_name = "set onstatechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onstatechange(this: &RTCSctpTransport, value: Option<Box<dyn FnMut(&Event)>>);
 
         /// Treats `this` as `RTCSctpTransport` without checking that it is one.
         #[link_name = "this"]
@@ -32139,6 +38430,33 @@ pub mod remote_playback {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RemotePlayback/state)
         #[link_name = "get state"]
         pub safe fn state(this: &RemotePlayback) -> String;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RemotePlayback/onconnecting)
+        #[link_name = "get onconnecting"]
+        pub safe fn onconnecting(this: &RemotePlayback) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RemotePlayback/onconnecting)
+        #[link_name = "set onconnecting"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onconnecting(this: &RemotePlayback, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RemotePlayback/onconnect)
+        #[link_name = "get onconnect"]
+        pub safe fn onconnect(this: &RemotePlayback) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RemotePlayback/onconnect)
+        #[link_name = "set onconnect"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onconnect(this: &RemotePlayback, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RemotePlayback/ondisconnect)
+        #[link_name = "get ondisconnect"]
+        pub safe fn ondisconnect(this: &RemotePlayback) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RemotePlayback/ondisconnect)
+        #[link_name = "set ondisconnect"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondisconnect(this: &RemotePlayback, value: Option<Box<dyn FnMut(&Event)>>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/RemotePlayback/prompt)
         pub safe fn prompt(this: &RemotePlayback) -> Promise<()>;
@@ -33160,6 +39478,15 @@ pub mod screen_orientation {
         #[link_name = "get angle"]
         pub safe fn angle(this: &ScreenOrientation) -> u16;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ScreenOrientation/onchange)
+        #[link_name = "get onchange"]
+        pub safe fn onchange(this: &ScreenOrientation) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ScreenOrientation/onchange)
+        #[link_name = "set onchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onchange(this: &ScreenOrientation, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// Treats `this` as `ScreenOrientation` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static ScreenOrientation;
@@ -33183,6 +39510,15 @@ pub mod script_processor_node {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ScriptProcessorNode/onaudioprocess)
+        #[link_name = "get onaudioprocess"]
+        pub safe fn onaudioprocess(this: &ScriptProcessorNode) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ScriptProcessorNode/onaudioprocess)
+        #[link_name = "set onaudioprocess"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onaudioprocess(this: &ScriptProcessorNode, value: Option<Box<dyn FnMut(&AudioProcessingEvent)>>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ScriptProcessorNode/bufferSize)
         #[link_name = "get bufferSize"]
         pub safe fn buffer_size(this: &ScriptProcessorNode) -> i32;
@@ -33481,6 +39817,24 @@ pub mod serial_port {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SerialPort/onconnect)
+        #[link_name = "get onconnect"]
+        pub safe fn onconnect(this: &SerialPort) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SerialPort/onconnect)
+        #[link_name = "set onconnect"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onconnect(this: &SerialPort, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SerialPort/ondisconnect)
+        #[link_name = "get ondisconnect"]
+        pub safe fn ondisconnect(this: &SerialPort) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SerialPort/ondisconnect)
+        #[link_name = "set ondisconnect"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondisconnect(this: &SerialPort, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SerialPort/connected)
         #[link_name = "get connected"]
         pub safe fn connected(this: &SerialPort) -> bool;
@@ -33549,6 +39903,24 @@ pub mod service_worker {
         #[link_name = "get state"]
         pub safe fn state(this: &ServiceWorker) -> String;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorker/onstatechange)
+        #[link_name = "get onstatechange"]
+        pub safe fn onstatechange(this: &ServiceWorker) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorker/onstatechange)
+        #[link_name = "set onstatechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onstatechange(this: &ServiceWorker, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorker/onerror)
+        #[link_name = "get onerror"]
+        pub safe fn onerror(this: &ServiceWorker) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorker/onerror)
+        #[link_name = "set onerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onerror(this: &ServiceWorker, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// Treats `this` as `ServiceWorker` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static ServiceWorker;
@@ -33602,6 +39974,33 @@ pub mod service_worker_container {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerContainer/startMessages)
         #[link_name = "startMessages"]
         pub safe fn start_messages(this: &ServiceWorkerContainer);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerContainer/oncontrollerchange)
+        #[link_name = "get oncontrollerchange"]
+        pub safe fn oncontrollerchange(this: &ServiceWorkerContainer) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerContainer/oncontrollerchange)
+        #[link_name = "set oncontrollerchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncontrollerchange(this: &ServiceWorkerContainer, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerContainer/onmessage)
+        #[link_name = "get onmessage"]
+        pub safe fn onmessage(this: &ServiceWorkerContainer) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerContainer/onmessage)
+        #[link_name = "set onmessage"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmessage(this: &ServiceWorkerContainer, value: Option<Box<dyn FnMut(&MessageEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerContainer/onmessageerror)
+        #[link_name = "get onmessageerror"]
+        pub safe fn onmessageerror(this: &ServiceWorkerContainer) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerContainer/onmessageerror)
+        #[link_name = "set onmessageerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmessageerror(this: &ServiceWorkerContainer, value: Option<Box<dyn FnMut(&MessageEvent)>>);
 
         /// Treats `this` as `ServiceWorkerContainer` without checking that it is one.
         #[link_name = "this"]
@@ -33659,6 +40058,15 @@ pub mod service_worker_registration {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerRegistration/unregister)
         pub safe fn unregister(this: &ServiceWorkerRegistration) -> Promise<bool>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerRegistration/onupdatefound)
+        #[link_name = "get onupdatefound"]
+        pub safe fn onupdatefound(this: &ServiceWorkerRegistration) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerRegistration/onupdatefound)
+        #[link_name = "set onupdatefound"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onupdatefound(this: &ServiceWorkerRegistration, value: Option<Box<dyn FnMut(&Event)>>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerRegistration/showNotification)
         #[link_name = "showNotification"]
@@ -33726,6 +40134,15 @@ pub mod shadow_root {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/host)
         #[link_name = "get host"]
         pub safe fn host(this: &ShadowRoot) -> &'static Element;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/onslotchange)
+        #[link_name = "get onslotchange"]
+        pub safe fn onslotchange(this: &ShadowRoot) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/onslotchange)
+        #[link_name = "set onslotchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onslotchange(this: &ShadowRoot, value: Option<Box<dyn FnMut(&Event)>>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/setHTML)
         #[link_name = "setHTML"]
@@ -33814,6 +40231,15 @@ pub mod shared_worker {
         #[link_name = "get port"]
         pub safe fn port(this: &SharedWorker) -> &'static MessagePort;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SharedWorker/onerror)
+        #[link_name = "get onerror"]
+        pub safe fn onerror(this: &SharedWorker) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SharedWorker/onerror)
+        #[link_name = "set onerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onerror(this: &SharedWorker, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// Treats `this` as `SharedWorker` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static SharedWorker;
@@ -33885,6 +40311,51 @@ pub mod source_buffer {
         #[link_name = "set appendWindowEnd"]
         pub safe fn set_append_window_end(this: &SourceBuffer, value: f64);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBuffer/onupdatestart)
+        #[link_name = "get onupdatestart"]
+        pub safe fn onupdatestart(this: &SourceBuffer) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBuffer/onupdatestart)
+        #[link_name = "set onupdatestart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onupdatestart(this: &SourceBuffer, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBuffer/onupdate)
+        #[link_name = "get onupdate"]
+        pub safe fn onupdate(this: &SourceBuffer) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBuffer/onupdate)
+        #[link_name = "set onupdate"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onupdate(this: &SourceBuffer, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBuffer/onupdateend)
+        #[link_name = "get onupdateend"]
+        pub safe fn onupdateend(this: &SourceBuffer) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBuffer/onupdateend)
+        #[link_name = "set onupdateend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onupdateend(this: &SourceBuffer, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBuffer/onerror)
+        #[link_name = "get onerror"]
+        pub safe fn onerror(this: &SourceBuffer) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBuffer/onerror)
+        #[link_name = "set onerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onerror(this: &SourceBuffer, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBuffer/onabort)
+        #[link_name = "get onabort"]
+        pub safe fn onabort(this: &SourceBuffer) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBuffer/onabort)
+        #[link_name = "set onabort"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onabort(this: &SourceBuffer, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBuffer/abort)
         pub safe fn abort(this: &SourceBuffer);
 
@@ -33929,6 +40400,24 @@ pub mod source_buffer_list {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBufferList/length)
         #[link_name = "get length"]
         pub safe fn length(this: &SourceBufferList) -> u32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBufferList/onaddsourcebuffer)
+        #[link_name = "get onaddsourcebuffer"]
+        pub safe fn onaddsourcebuffer(this: &SourceBufferList) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBufferList/onaddsourcebuffer)
+        #[link_name = "set onaddsourcebuffer"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onaddsourcebuffer(this: &SourceBufferList, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBufferList/onremovesourcebuffer)
+        #[link_name = "get onremovesourcebuffer"]
+        pub safe fn onremovesourcebuffer(this: &SourceBufferList) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBufferList/onremovesourcebuffer)
+        #[link_name = "set onremovesourcebuffer"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onremovesourcebuffer(this: &SourceBufferList, value: Option<Box<dyn FnMut(&Event)>>);
 
         /// Treats `this` as `SourceBufferList` without checking that it is one.
         #[link_name = "this"]
@@ -34082,6 +40571,15 @@ pub mod speech_synthesis {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesis/paused)
         #[link_name = "get paused"]
         pub safe fn paused(this: &SpeechSynthesis) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesis/onvoiceschanged)
+        #[link_name = "get onvoiceschanged"]
+        pub safe fn onvoiceschanged(this: &SpeechSynthesis) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesis/onvoiceschanged)
+        #[link_name = "set onvoiceschanged"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onvoiceschanged(this: &SpeechSynthesis, value: Option<Box<dyn FnMut(&Event)>>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesis/speak)
         pub safe fn speak(this: &SpeechSynthesis, utterance: &SpeechSynthesisUtterance);
@@ -34239,6 +40737,69 @@ pub mod speech_synthesis_utterance {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/pitch)
         #[link_name = "set pitch"]
         pub safe fn set_pitch(this: &SpeechSynthesisUtterance, value: f32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/onstart)
+        #[link_name = "get onstart"]
+        pub safe fn onstart(this: &SpeechSynthesisUtterance) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/onstart)
+        #[link_name = "set onstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onstart(this: &SpeechSynthesisUtterance, value: Option<Box<dyn FnMut(&SpeechSynthesisEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/onend)
+        #[link_name = "get onend"]
+        pub safe fn onend(this: &SpeechSynthesisUtterance) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/onend)
+        #[link_name = "set onend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onend(this: &SpeechSynthesisUtterance, value: Option<Box<dyn FnMut(&SpeechSynthesisEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/onerror)
+        #[link_name = "get onerror"]
+        pub safe fn onerror(this: &SpeechSynthesisUtterance) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/onerror)
+        #[link_name = "set onerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onerror(this: &SpeechSynthesisUtterance, value: Option<Box<dyn FnMut(&SpeechSynthesisErrorEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/onpause)
+        #[link_name = "get onpause"]
+        pub safe fn onpause(this: &SpeechSynthesisUtterance) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/onpause)
+        #[link_name = "set onpause"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onpause(this: &SpeechSynthesisUtterance, value: Option<Box<dyn FnMut(&SpeechSynthesisEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/onresume)
+        #[link_name = "get onresume"]
+        pub safe fn onresume(this: &SpeechSynthesisUtterance) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/onresume)
+        #[link_name = "set onresume"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onresume(this: &SpeechSynthesisUtterance, value: Option<Box<dyn FnMut(&SpeechSynthesisEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/onmark)
+        #[link_name = "get onmark"]
+        pub safe fn onmark(this: &SpeechSynthesisUtterance) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/onmark)
+        #[link_name = "set onmark"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmark(this: &SpeechSynthesisUtterance, value: Option<Box<dyn FnMut(&SpeechSynthesisEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/onboundary)
+        #[link_name = "get onboundary"]
+        pub safe fn onboundary(this: &SpeechSynthesisUtterance) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/onboundary)
+        #[link_name = "set onboundary"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onboundary(this: &SpeechSynthesisUtterance, value: Option<Box<dyn FnMut(&SpeechSynthesisEvent)>>);
 
         /// Treats `this` as `SpeechSynthesisUtterance` without checking that it is one.
         #[link_name = "this"]
@@ -34722,6 +41283,15 @@ pub mod task_signal {
         #[link_name = "get priority"]
         pub safe fn priority(this: &TaskSignal) -> String;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/TaskSignal/onprioritychange)
+        #[link_name = "get onprioritychange"]
+        pub safe fn onprioritychange(this: &TaskSignal) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/TaskSignal/onprioritychange)
+        #[link_name = "set onprioritychange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onprioritychange(this: &TaskSignal, value: Option<Box<dyn FnMut(&TaskPriorityChangeEvent)>>);
+
         /// Treats `this` as `TaskSignal` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static TaskSignal;
@@ -34962,6 +41532,15 @@ pub mod text_track {
         #[link_name = "removeCue"]
         pub safe fn remove_cue(this: &TextTrack, cue: &TextTrackCue);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrack/oncuechange)
+        #[link_name = "get oncuechange"]
+        pub safe fn oncuechange(this: &TextTrack) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrack/oncuechange)
+        #[link_name = "set oncuechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_oncuechange(this: &TextTrack, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// Treats `this` as `TextTrack` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static TextTrack;
@@ -35021,6 +41600,24 @@ pub mod text_track_cue {
         #[link_name = "set pauseOnExit"]
         pub safe fn set_pause_on_exit(this: &TextTrackCue, value: bool);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackCue/onenter)
+        #[link_name = "get onenter"]
+        pub safe fn onenter(this: &TextTrackCue) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackCue/onenter)
+        #[link_name = "set onenter"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onenter(this: &TextTrackCue, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackCue/onexit)
+        #[link_name = "get onexit"]
+        pub safe fn onexit(this: &TextTrackCue) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackCue/onexit)
+        #[link_name = "set onexit"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onexit(this: &TextTrackCue, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// Treats `this` as `TextTrackCue` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static TextTrackCue;
@@ -35069,6 +41666,33 @@ pub mod text_track_list {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackList/getTrackById)
         #[link_name = "getTrackById"]
         pub safe fn get_track_by_id(this: &TextTrackList, id: &str) -> Option<&'static TextTrack>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackList/onchange)
+        #[link_name = "get onchange"]
+        pub safe fn onchange(this: &TextTrackList) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackList/onchange)
+        #[link_name = "set onchange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onchange(this: &TextTrackList, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackList/onaddtrack)
+        #[link_name = "get onaddtrack"]
+        pub safe fn onaddtrack(this: &TextTrackList) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackList/onaddtrack)
+        #[link_name = "set onaddtrack"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onaddtrack(this: &TextTrackList, value: Option<Box<dyn FnMut(&TrackEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackList/onremovetrack)
+        #[link_name = "get onremovetrack"]
+        pub safe fn onremovetrack(this: &TextTrackList) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackList/onremovetrack)
+        #[link_name = "set onremovetrack"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onremovetrack(this: &TextTrackList, value: Option<Box<dyn FnMut(&TrackEvent)>>);
 
         /// Treats `this` as `TextTrackList` without checking that it is one.
         #[link_name = "this"]
@@ -35698,6 +42322,15 @@ pub mod video_decoder {
         #[link_name = "get decodeQueueSize"]
         pub safe fn decode_queue_size(this: &VideoDecoder) -> u32;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoDecoder/ondequeue)
+        #[link_name = "get ondequeue"]
+        pub safe fn ondequeue(this: &VideoDecoder) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoDecoder/ondequeue)
+        #[link_name = "set ondequeue"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondequeue(this: &VideoDecoder, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoDecoder/configure)
         pub safe fn configure(this: &VideoDecoder, config: VideoDecoderConfig<'_>);
 
@@ -35747,6 +42380,15 @@ pub mod video_encoder {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoEncoder/encodeQueueSize)
         #[link_name = "get encodeQueueSize"]
         pub safe fn encode_queue_size(this: &VideoEncoder) -> u32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoEncoder/ondequeue)
+        #[link_name = "get ondequeue"]
+        pub safe fn ondequeue(this: &VideoEncoder) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoEncoder/ondequeue)
+        #[link_name = "set ondequeue"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ondequeue(this: &VideoEncoder, value: Option<Box<dyn FnMut(&Event)>>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoEncoder/configure)
         pub safe fn configure(this: &VideoEncoder, config: VideoEncoderConfig<'_>);
@@ -35981,6 +42623,33 @@ pub mod visual_viewport {
         #[link_name = "get scale"]
         pub safe fn scale(this: &VisualViewport) -> f64;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/VisualViewport/onresize)
+        #[link_name = "get onresize"]
+        pub safe fn onresize(this: &VisualViewport) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/VisualViewport/onresize)
+        #[link_name = "set onresize"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onresize(this: &VisualViewport, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/VisualViewport/onscroll)
+        #[link_name = "get onscroll"]
+        pub safe fn onscroll(this: &VisualViewport) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/VisualViewport/onscroll)
+        #[link_name = "set onscroll"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onscroll(this: &VisualViewport, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/VisualViewport/onscrollend)
+        #[link_name = "get onscrollend"]
+        pub safe fn onscrollend(this: &VisualViewport) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/VisualViewport/onscrollend)
+        #[link_name = "set onscrollend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onscrollend(this: &VisualViewport, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// Treats `this` as `VisualViewport` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static VisualViewport;
@@ -36035,6 +42704,15 @@ pub mod wake_lock_sentinel {
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WakeLockSentinel/release)
         pub safe fn release(this: &WakeLockSentinel) -> Promise<()>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WakeLockSentinel/onrelease)
+        #[link_name = "get onrelease"]
+        pub safe fn onrelease(this: &WakeLockSentinel) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WakeLockSentinel/onrelease)
+        #[link_name = "set onrelease"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onrelease(this: &WakeLockSentinel, value: Option<Box<dyn FnMut(&Event)>>);
 
         /// Treats `this` as `WakeLockSentinel` without checking that it is one.
         #[link_name = "this"]
@@ -40639,6 +47317,33 @@ pub mod web_socket {
         #[link_name = "get bufferedAmount"]
         pub safe fn buffered_amount(this: &WebSocket) -> f64;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/onopen)
+        #[link_name = "get onopen"]
+        pub safe fn onopen(this: &WebSocket) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/onopen)
+        #[link_name = "set onopen"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onopen(this: &WebSocket, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/onerror)
+        #[link_name = "get onerror"]
+        pub safe fn onerror(this: &WebSocket) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/onerror)
+        #[link_name = "set onerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onerror(this: &WebSocket, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/onclose)
+        #[link_name = "get onclose"]
+        pub safe fn onclose(this: &WebSocket) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/onclose)
+        #[link_name = "set onclose"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onclose(this: &WebSocket, value: Option<Box<dyn FnMut(&CloseEvent)>>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/extensions)
         #[link_name = "get extensions"]
         pub safe fn extensions(this: &WebSocket) -> String;
@@ -40657,6 +47362,15 @@ pub mod web_socket {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/close)
         #[link_name = "close"]
         pub safe fn close_with_code_and_reason(this: &WebSocket, code: u16, reason: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/onmessage)
+        #[link_name = "get onmessage"]
+        pub safe fn onmessage(this: &WebSocket) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/onmessage)
+        #[link_name = "set onmessage"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmessage(this: &WebSocket, value: Option<Box<dyn FnMut(&MessageEvent)>>);
 
         /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/binaryType)
         #[link_name = "get binaryType"]
@@ -40918,6 +47632,33 @@ pub mod worker {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Worker/terminate)
         pub safe fn terminate(this: &Worker);
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Worker/onerror)
+        #[link_name = "get onerror"]
+        pub safe fn onerror(this: &Worker) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Worker/onerror)
+        #[link_name = "set onerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onerror(this: &Worker, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Worker/onmessage)
+        #[link_name = "get onmessage"]
+        pub safe fn onmessage(this: &Worker) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Worker/onmessage)
+        #[link_name = "set onmessage"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmessage(this: &Worker, value: Option<Box<dyn FnMut(&MessageEvent)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Worker/onmessageerror)
+        #[link_name = "get onmessageerror"]
+        pub safe fn onmessageerror(this: &Worker) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Worker/onmessageerror)
+        #[link_name = "set onmessageerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onmessageerror(this: &Worker, value: Option<Box<dyn FnMut(&MessageEvent)>>);
+
         /// Treats `this` as `Worker` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static Worker;
@@ -41133,6 +47874,15 @@ pub mod xml_http_request {
         #[link_name = "new XMLHttpRequest"]
         pub safe fn new() -> &'static XMLHttpRequest;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequest/onreadystatechange)
+        #[link_name = "get onreadystatechange"]
+        pub safe fn onreadystatechange(this: &XMLHttpRequest) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequest/onreadystatechange)
+        #[link_name = "set onreadystatechange"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onreadystatechange(this: &XMLHttpRequest, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequest/readyState)
         #[link_name = "get readyState"]
         pub safe fn ready_state(this: &XMLHttpRequest) -> u16;
@@ -41257,6 +48007,69 @@ pub mod xml_http_request_event_target {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequestEventTarget/onloadstart)
+        #[link_name = "get onloadstart"]
+        pub safe fn onloadstart(this: &XMLHttpRequestEventTarget) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequestEventTarget/onloadstart)
+        #[link_name = "set onloadstart"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onloadstart(this: &XMLHttpRequestEventTarget, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequestEventTarget/onprogress)
+        #[link_name = "get onprogress"]
+        pub safe fn onprogress(this: &XMLHttpRequestEventTarget) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequestEventTarget/onprogress)
+        #[link_name = "set onprogress"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onprogress(this: &XMLHttpRequestEventTarget, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequestEventTarget/onabort)
+        #[link_name = "get onabort"]
+        pub safe fn onabort(this: &XMLHttpRequestEventTarget) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequestEventTarget/onabort)
+        #[link_name = "set onabort"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onabort(this: &XMLHttpRequestEventTarget, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequestEventTarget/onerror)
+        #[link_name = "get onerror"]
+        pub safe fn onerror(this: &XMLHttpRequestEventTarget) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequestEventTarget/onerror)
+        #[link_name = "set onerror"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onerror(this: &XMLHttpRequestEventTarget, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequestEventTarget/onload)
+        #[link_name = "get onload"]
+        pub safe fn onload(this: &XMLHttpRequestEventTarget) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequestEventTarget/onload)
+        #[link_name = "set onload"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onload(this: &XMLHttpRequestEventTarget, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequestEventTarget/ontimeout)
+        #[link_name = "get ontimeout"]
+        pub safe fn ontimeout(this: &XMLHttpRequestEventTarget) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequestEventTarget/ontimeout)
+        #[link_name = "set ontimeout"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_ontimeout(this: &XMLHttpRequestEventTarget, value: Option<Box<dyn FnMut(&Event)>>);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequestEventTarget/onloadend)
+        #[link_name = "get onloadend"]
+        pub safe fn onloadend(this: &XMLHttpRequestEventTarget) -> Option<&'static JsObject>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequestEventTarget/onloadend)
+        #[link_name = "set onloadend"]
+        #[cfg_attr(rust_js, rust_js::nullable(value))]
+        pub safe fn set_onloadend(this: &XMLHttpRequestEventTarget, value: Option<Box<dyn FnMut(&Event)>>);
+
         /// Treats `this` as `XMLHttpRequestEventTarget` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static XMLHttpRequestEventTarget;

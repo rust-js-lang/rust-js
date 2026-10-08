@@ -77,3 +77,8 @@ so nothing said when it fell behind.
   borrows, so not the result's. A constant is a Rust `const`,
   `node::ELEMENT_NODE`, its value written where it's read (ADR 0031).
   Members: 46.6% to 75.0%.
+- **An event handler property, `onclick`, is a getter of what it holds, a
+  function or none, and a setter of a closure**, given the event its name
+  is on the target, as `add_event_listener`'s is (ADR 0223): a button's
+  `set_onclick` takes `Option<Box<dyn FnMut(&PointerEvent)>>`, whose `None`
+  is `null` (`rust_js::nullable`, ADR 0275). Members: 75.0% to 83.5%.

@@ -563,7 +563,8 @@ function paramType(t: IdlType): string | undefined {
 const skipped = new Map<string, number>();
 const skip = (why: string) => skipped.set(why, (skipped.get(why) ?? 0) + 1);
 
-type Fn = { name: string; jsName: string; params: string[]; result: string; doc: string[] };
+/** A binding; `nullable`, its parameters whose `None` is `null` (ADR 0275). */
+type Fn = { name: string; jsName: string; params: string[]; result: string; doc: string[]; nullable?: string[] };
 
 // Operations whose typed form, by an event's or a tag's type (ADR 0223), has
 // their name: the form that takes any string is `_named`.
@@ -675,8 +676,25 @@ function functionsOf(i: Interface): Fn[] {
         skip(m.special || "namespace attribute");
         continue;
       }
-      const result = rustType(m.idlType!, "result");
       const doc = [`[MDN](${mdn(i.name, m.name)})`];
+      // An event handler property, `onclick`: what it holds, a function or
+      // none, and a closure to set it to, given the event its name is on this
+      // target, as `add_event_listener`'s is (ADR 0223), or `None`, `null`.
+      if ((m.idlType!.idlType as string) === "EventHandler" && m.name!.startsWith("on")) {
+        const event = listens.get(i.name)?.get(m.name!.slice(2)) ?? "Event";
+        const name = snake(m.name!);
+        fns.push({ name, jsName: `get ${m.name}`, params: self, result: "Option<&'static JsObject>", doc });
+        fns.push({
+          name: `set_${name}`,
+          jsName: `set ${m.name}`,
+          params: [...self, `value: Option<Box<dyn FnMut(&${typeName(event)})>>`],
+          result: "()",
+          doc,
+          nullable: ["value"],
+        });
+        continue;
+      }
+      const result = rustType(m.idlType!, "result");
       // A getter whose type isn't supported (a union, say) is skipped, but
       // its setter can still take the union's enum.
       if (typeof result === "string") {
@@ -940,6 +958,7 @@ function module(name: string, all: Fn[], typed: string[] = [], constants: string
     if (k > 0) line();
     for (const d of f.doc) line(`        /// ${d}`);
     if (f.jsName !== f.name) line(`        #[link_name = ${JSON.stringify(f.jsName)}]`);
+    if (f.nullable) line(`        #[cfg_attr(rust_js, rust_js::nullable(${f.nullable.join(", ")}))]`);
     const result = f.result === "()" ? "" : ` -> ${f.result}`;
     line(`        pub safe fn ${f.name}(${f.params.join(", ")})${result};`);
   });

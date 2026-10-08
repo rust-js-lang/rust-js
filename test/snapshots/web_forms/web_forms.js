@@ -58,4 +58,13 @@ export function kinds(el, blob, param, bytes) {
   const into = new TextEncoder().encodeInto("hi", bytes);
   return [names, languages.length, blob.size, param.value, 1, into.written];
 }
+
+export function handlers(button) {
+  button.onclick = (e) => {
+    e.preventDefault();
+  };
+  const set = button.onclick != null;
+  button.onclick = null;
+  return set;
+}
 //# sourceMappingURL=web_forms.js.map
