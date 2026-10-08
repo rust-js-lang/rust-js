@@ -50,3 +50,11 @@ export { helper, other as renamed } from "./inner.js";
   beside a private `use`, and calls them; a declarations test checks
   TypeScript that imports them. Mutations re-export the private `use`,
   drop the rename, and leave out the JS's or the `.d.ts`'s statement.
+
+## Since
+
+- **A default that's another module's function is re-exported as it**:
+  `js::export_default!(super::page::page)` is `export { page as default }
+  from "./page.js"`, with the module's `pub use`s, as react.dev's
+  errors/index makes the errors page its own. A module of only that is a
+  file of it.

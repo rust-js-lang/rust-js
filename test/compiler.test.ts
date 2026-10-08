@@ -2263,9 +2263,6 @@ test("js::directive! and js::export_default! make a module a Next.js route", asy
   expect((await import(join(dir, "generic.js"))).default([7, 8])).toBe(7);
 });
 
-// A module's `pub use` of another module's function is a JS re-export,
-// `export { helper } from "./inner.js"`, as react.dev's Challenges/index
-// re-exports `Challenges` (ADR 0240).
 // A JS module's namespace, `#*.Root`, whose bindings a Rust module holds,
 // is imported by that module's name, as react.dev's BrandMenu has
 // `import * as ContextMenu` and `<ContextMenu.Root>`.
@@ -2323,6 +2320,9 @@ pub fn both() -> u32 {
   expect(lib.both()).toBe(3);
 });
 
+// A module's `pub use` of another module's function is a JS re-export,
+// `export { helper } from "./inner.js"`, as react.dev's Challenges/index
+// re-exports `Challenges` (ADR 0240).
 test("a pub use of another module's function is re-exported from it", async () => {
   const dir = fixture("reexports");
   writeFileSync(join(dir, "lib.rs"), "mod inner;\npub use inner::helper;\npub use inner::other as renamed;\nuse inner::other;\n\npub fn own() -> u32 {\n    other() + 1\n}\n");
@@ -2345,6 +2345,23 @@ test("a module of only pub uses is a file of re-exports", async () => {
   expect(readFileSync(join(dir, "index.js"), "utf8")).toContain('export { helper } from "./inner.js";');
   const index = await import(join(dir, "index.js"));
   expect(index.helper()).toBe(1);
+});
+
+// A module's default that's another module's function is re-exported as
+// it, `export { page as default } from "./page.js"`, as react.dev's
+// errors/index makes the errors page its own (ADR 0240); a module of only
+// that is a file of it.
+test("a module's default of another module's function is re-exported", async () => {
+  const dir = fixture("default-reexport");
+  writeFileSync(join(dir, "lib.rs"), "mod index;\nmod only;\nmod page;\n\npub fn own() -> u32 {\n    page::page() + page::props()\n}\n");
+  writeFileSync(join(dir, "index.rs"), "pub use super::page::props;\n\njs::export_default!(super::page::page);\n");
+  writeFileSync(join(dir, "only.rs"), "js::export_default!(super::page::page);\n");
+  writeFileSync(join(dir, "page.rs"), "pub fn page() -> u32 {\n    1\n}\n\npub fn props() -> u32 {\n    2\n}\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  expect(readFileSync(join(dir, "index.js"), "utf8")).toContain('export { page as default, props } from "./page.js";');
+  expect(readFileSync(join(dir, "only.js"), "utf8")).toContain('export { page as default } from "./page.js";');
+  const index = await import(join(dir, "index.js"));
+  expect([index.default(), index.props()]).toEqual([1, 2]);
 });
 
 // ADR 0267: what a module runs when it's loaded, `js::on_load!`, is its

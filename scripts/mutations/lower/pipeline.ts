@@ -138,4 +138,20 @@ export const mutations: Mutation[] = [
     replace: "(key, value, plain == Some(true))",
     tests: ["test/compiler.test.ts", "-t", "only read and set is the module's let"],
   },
+  {
+    name: "default-of-another-refused",
+    breaks: "`js::export_default!` of another module's function is an error",
+    file: "src/lower/pipeline.rs",
+    find: "                    Some(function) if unset && fns.get(&function).is_some_and(|info| info.owner.is_none()) => {\n",
+    replace: "                    Some(function) if false && unset && fns.get(&function).is_some_and(|info| info.owner.is_none()) => {\n",
+    tests: ["test/compiler.test.ts", "-t", "default of another module"],
+  },
+  {
+    name: "default-of-another-unexported",
+    breaks: "another module's function named the default isn't re-exported as it",
+    file: "src/lower/pipeline.rs",
+    find: "            .push((info.name.clone(), \"default\".to_string()));\n",
+    replace: "            .truncate(0);\n",
+    tests: ["test/compiler.test.ts", "-t", "default of another module"],
+  },
 ];

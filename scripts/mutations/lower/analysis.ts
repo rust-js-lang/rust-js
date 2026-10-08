@@ -54,8 +54,8 @@ export const mutations: Mutation[] = [
     name: "reexport-only-module-unwritten",
     breaks: "a module of only `pub use`s, Sidebar/index, gets no file, and what imports it finds nothing",
     file: "src/lower/analysis.rs",
-    find: "if reexports && seen_modules.insert(module)",
-    replace: "if false && reexports && seen_modules.insert(module)",
+    find: "if (reexports || defaulted()) && seen_modules.insert(module)",
+    replace: "if (false && reexports || defaulted()) && seen_modules.insert(module)",
     tests: ["test/compiler.test.ts", "-t", "only pub uses"],
   },
   {
@@ -65,5 +65,13 @@ export const mutations: Mutation[] = [
     find: "                .filter(|&d| matches!(tcx.def_kind(d), DefKind::Const { .. })),\n",
     replace: "                .filter(|&d| matches!(tcx.def_kind(d), DefKind::Const { .. }) && false),\n",
     tests: ["test/compiler.test.ts", "-t", "only read and set is the module's let"],
+  },
+  {
+    name: "default-only-module-fileless",
+    breaks: "a module of only another module's default gets no file",
+    file: "src/lower/analysis.rs",
+    find: "        let defaulted = || !bindings::default_exports(tcx, module).is_empty();\n",
+    replace: "        let defaulted = || false;\n",
+    tests: ["test/compiler.test.ts", "-t", "default of another module"],
   },
 ];

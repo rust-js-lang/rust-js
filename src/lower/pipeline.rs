@@ -486,15 +486,21 @@ pub fn lower_crate<'tcx>(
                 }
             }
             let mut default_export = None;
+            // Another module's function, re-exported as the default (ADR 0240).
+            let mut default_from = None;
             for (function, span) in super::bindings::default_exports(tcx, module) {
+                let unset = default_export.is_none() && default_from.is_none();
                 match function {
                     Some(function)
-                        if default_export.is_none()
+                        if unset
                             && function
                                 .as_local()
                                 .is_some_and(|local| tcx.parent_module_from_def_id(local) == module) =>
                     {
                         default_export = Some(function);
+                    }
+                    Some(function) if unset && fns.get(&function).is_some_and(|info| info.owner.is_none()) => {
+                        default_from = Some(function);
                     }
                     _ => {
                         tcx.dcx().span_err(
@@ -504,7 +510,7 @@ pub fn lower_crate<'tcx>(
                     }
                 }
             }
-            let reexports = reexports(tcx, module, &fns, &paths);
+            let reexports = reexports(tcx, module, &fns, &paths, default_from);
             let declarations = super::declarations::module(tcx, module, default_export, &paths, &reexports);
             let lowered = LoweredModule {
                 path: paths[&module].clone(),
@@ -567,14 +573,24 @@ pub fn lower_crate<'tcx>(
 
 /// What `module` re-exports, its public `pub use` of another module's
 /// function, by that module's path: each `(export, alias)`, the function's
-/// JS name and the name the `use` gives it (ADR 0240).
+/// JS name and the name the `use` gives it (ADR 0240); and `default`,
+/// another module's function its `js::export_default!` names.
 fn reexports(
     tcx: TyCtxt<'_>,
     module: LocalModId,
     fns: &HashMap<DefId, FnInfo>,
     paths: &HashMap<LocalModId, Vec<String>>,
+    default_from: Option<DefId>,
 ) -> Vec<LoweredImport> {
     let mut grouped: BTreeMap<Vec<String>, Vec<(String, String)>> = BTreeMap::new();
+    if let Some(info) = default_from.and_then(|function| fns.get(&function))
+        && let Some(from) = paths.get(&info.module)
+    {
+        grouped
+            .entry(from.clone())
+            .or_default()
+            .push((info.name.clone(), "default".to_string()));
+    }
     for id in tcx.hir_module_items(module).free_items() {
         let item = tcx.hir_item(id);
         let hir::ItemKind::Use(path, hir::UseKind::Single(ident)) = item.kind else {

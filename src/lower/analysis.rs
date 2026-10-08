@@ -320,7 +320,9 @@ pub(super) fn analyze_crate<'a, 'tcx>(
                 if tcx.visibility(item.owner_id).is_public()
                     && matches!(path.res.value_ns, Some(rustc_hir::def::Res::Def(DefKind::Fn, _))))
         });
-        if reexports && seen_modules.insert(module) {
+        // Or a default that's another module's function (ADR 0240).
+        let defaulted = || !bindings::default_exports(tcx, module).is_empty();
+        if (reexports || defaulted()) && seen_modules.insert(module) {
             modules.push(module);
         }
     }
