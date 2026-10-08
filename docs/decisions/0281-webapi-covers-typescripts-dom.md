@@ -151,3 +151,24 @@ so nothing said when it fell behind.
 - **A function JS gives is an object**, as an event handler property's
   is: `customElements.get(name)`, `walker.filter`, a queuing strategy's
   `size`. What it takes isn't said. 98.9%.
+- **A CSS descriptor's dashed name is its camelCase twin's property**:
+  TypeScript gives `CSSFontFaceDescriptors` both `marginTop` and
+  `"margin-top"`; webapi binds the one, and the measure counts the dashed
+  name covered where its twin is bound. A second Rust name for one
+  property would add nothing. 99.4%.
+- **The 47 left are known gaps**, each a design of its own, not a
+  generator's oversight:
+  - what TypeScript has and no IDL defines, or defines elsewhere:
+    `caretRangeFromPoint`, `ShadowRoot.elementFromPoint` and
+    `elementsFromPoint`, `Navigator.doNotTrack`, `HTMLDocument`;
+  - `PaymentAddress`, which the spec renamed `ContactAddress`, and the
+    payment members that give one;
+  - async iterables, `ReadableStream`'s and `FileSystemDirectoryHandle`'s,
+    which want an async iterator type;
+  - a union of a dictionary, `SubtleCrypto.exportKey`'s `JsonWebKey`, and
+    one with a member Rust has no type of, `ImageData.data`'s
+    `Float16Array`, `MediaKeyStatusMap`'s keys;
+  - a `record<>` parameter, `new ClipboardItem(items)`;
+  - a few interfaces and dictionaries not yet in the crate:
+    `DeviceMotionEventAcceleration`, `RTCIceCandidatePair`,
+    `NavigationUpdateCurrentEntryOptions`, `AudioTrackList`.

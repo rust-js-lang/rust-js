@@ -157,7 +157,12 @@ export async function measure(): Promise<Coverage> {
   }
   all.sort();
   const classes = [...ts.keys()].sort();
-  return { all, covered: all.filter((x) => !x.includes(".static:") && !x.endsWith(".constructor") ? has(x) : bound.has(x)), classes, typed: classes.filter((c) => types.has(c)) };
+  // A CSS descriptor's dashed name, `margin-top`, is the property its
+  // camelCase twin is, `marginTop`: bound where that is.
+  const camel = (x: string) => x.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+  const covered = (x: string) =>
+    x.includes(".static:") || x.endsWith(".constructor") ? bound.has(x) : has(x) || (x.includes("-") && has(camel(x)));
+  return { all, covered: all.filter(covered), classes, typed: classes.filter((c) => types.has(c)) };
 }
 
 /** The baseline's text: a summary, then each member bound. */

@@ -1,6 +1,6 @@
 # The webapi crate against TypeScript's DOM (@types/web): bun test test/webapi-coverage.test.ts
 # classes: 699 of 701 (99.7%)
-# members: 8329 of 8419 (98.9%)
+# members: 8372 of 8419 (99.4%)
 AbortController.abort
 AbortController.constructor
 AbortController.signal
@@ -249,6 +249,12 @@ CSSCounterStyleRule.suffix
 CSSCounterStyleRule.symbols
 CSSCounterStyleRule.system
 CSSFontFaceDescriptors.cssText
+CSSFontFaceDescriptors.font-display
+CSSFontFaceDescriptors.font-family
+CSSFontFaceDescriptors.font-feature-settings
+CSSFontFaceDescriptors.font-stretch
+CSSFontFaceDescriptors.font-style
+CSSFontFaceDescriptors.font-weight
 CSSFontFaceDescriptors.fontDisplay
 CSSFontFaceDescriptors.fontFamily
 CSSFontFaceDescriptors.fontFeatureSettings
@@ -262,8 +268,10 @@ CSSFontFaceDescriptors.length
 CSSFontFaceDescriptors.parentRule
 CSSFontFaceDescriptors.removeProperty
 CSSFontFaceDescriptors.setProperty
+CSSFontFaceDescriptors.size-adjust
 CSSFontFaceDescriptors.sizeAdjust
 CSSFontFaceDescriptors.src
+CSSFontFaceDescriptors.unicode-range
 CSSFontFaceDescriptors.unicodeRange
 CSSFontFeatureValuesRule.fontFamily
 CSSFontPaletteValuesRule.basePalette
@@ -333,6 +341,10 @@ CSSPageDescriptors.getPropertyValue
 CSSPageDescriptors.item
 CSSPageDescriptors.length
 CSSPageDescriptors.margin
+CSSPageDescriptors.margin-bottom
+CSSPageDescriptors.margin-left
+CSSPageDescriptors.margin-right
+CSSPageDescriptors.margin-top
 CSSPageDescriptors.marginBottom
 CSSPageDescriptors.marginLeft
 CSSPageDescriptors.marginRight
@@ -344,15 +356,24 @@ CSSPageDescriptors.size
 CSSPageRule.selectorText
 CSSPerspective.constructor
 CSSPerspective.length
+CSSPositionTryDescriptors.align-self
 CSSPositionTryDescriptors.alignSelf
+CSSPositionTryDescriptors.block-size
 CSSPositionTryDescriptors.blockSize
 CSSPositionTryDescriptors.bottom
 CSSPositionTryDescriptors.cssText
 CSSPositionTryDescriptors.getPropertyPriority
 CSSPositionTryDescriptors.getPropertyValue
 CSSPositionTryDescriptors.height
+CSSPositionTryDescriptors.inline-size
 CSSPositionTryDescriptors.inlineSize
 CSSPositionTryDescriptors.inset
+CSSPositionTryDescriptors.inset-block
+CSSPositionTryDescriptors.inset-block-end
+CSSPositionTryDescriptors.inset-block-start
+CSSPositionTryDescriptors.inset-inline
+CSSPositionTryDescriptors.inset-inline-end
+CSSPositionTryDescriptors.inset-inline-start
 CSSPositionTryDescriptors.insetBlock
 CSSPositionTryDescriptors.insetBlockEnd
 CSSPositionTryDescriptors.insetBlockStart
@@ -360,10 +381,21 @@ CSSPositionTryDescriptors.insetInline
 CSSPositionTryDescriptors.insetInlineEnd
 CSSPositionTryDescriptors.insetInlineStart
 CSSPositionTryDescriptors.item
+CSSPositionTryDescriptors.justify-self
 CSSPositionTryDescriptors.justifySelf
 CSSPositionTryDescriptors.left
 CSSPositionTryDescriptors.length
 CSSPositionTryDescriptors.margin
+CSSPositionTryDescriptors.margin-block
+CSSPositionTryDescriptors.margin-block-end
+CSSPositionTryDescriptors.margin-block-start
+CSSPositionTryDescriptors.margin-bottom
+CSSPositionTryDescriptors.margin-inline
+CSSPositionTryDescriptors.margin-inline-end
+CSSPositionTryDescriptors.margin-inline-start
+CSSPositionTryDescriptors.margin-left
+CSSPositionTryDescriptors.margin-right
+CSSPositionTryDescriptors.margin-top
 CSSPositionTryDescriptors.marginBlock
 CSSPositionTryDescriptors.marginBlockEnd
 CSSPositionTryDescriptors.marginBlockStart
@@ -374,16 +406,27 @@ CSSPositionTryDescriptors.marginInlineStart
 CSSPositionTryDescriptors.marginLeft
 CSSPositionTryDescriptors.marginRight
 CSSPositionTryDescriptors.marginTop
+CSSPositionTryDescriptors.max-block-size
+CSSPositionTryDescriptors.max-height
+CSSPositionTryDescriptors.max-inline-size
+CSSPositionTryDescriptors.max-width
 CSSPositionTryDescriptors.maxBlockSize
 CSSPositionTryDescriptors.maxHeight
 CSSPositionTryDescriptors.maxInlineSize
 CSSPositionTryDescriptors.maxWidth
+CSSPositionTryDescriptors.min-block-size
+CSSPositionTryDescriptors.min-height
+CSSPositionTryDescriptors.min-inline-size
+CSSPositionTryDescriptors.min-width
 CSSPositionTryDescriptors.minBlockSize
 CSSPositionTryDescriptors.minHeight
 CSSPositionTryDescriptors.minInlineSize
 CSSPositionTryDescriptors.minWidth
 CSSPositionTryDescriptors.parentRule
+CSSPositionTryDescriptors.place-self
 CSSPositionTryDescriptors.placeSelf
+CSSPositionTryDescriptors.position-anchor
+CSSPositionTryDescriptors.position-area
 CSSPositionTryDescriptors.positionAnchor
 CSSPositionTryDescriptors.positionArea
 CSSPositionTryDescriptors.removeProperty
