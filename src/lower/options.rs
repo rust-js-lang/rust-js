@@ -130,9 +130,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if self.boxed_payload(generic_args.type_at(0)) {
                     let default = self.some(default);
                     self.some_value(Expr::bin(Op::Coalesce, option, default))
-                } else if self.is_string_like(generic_args.type_at(0))
-                    && let Some(text) = text_or(&option)
-                {
+                } else if let Some(text) = text_or(&option) {
                     Expr::bin(Op::Or, text, default)
                 } else if let Some((kept, value)) = filtered(&option) {
                     Expr::cond(kept, value, default)

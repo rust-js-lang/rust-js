@@ -76,16 +76,8 @@ export const mutations: Mutation[] = [
     name: "kept-text-default-coalesced",
     breaks: "text kept where it isn't empty, or a default, is a conditional and `??`, not `title || \"\"`",
     file: "src/lower/options.rs",
-    find: "&& let Some(text) = text_or(&option)",
-    replace: "&& let Some(text) = text_or(&option).filter(|_| false)",
-    tests: ["test/compiler.test.ts", "-t", "text kept where it isn't empty"],
-  },
-  {
-    name: "kept-array-or",
-    breaks: "an array kept where it isn't empty, or a default, is `list || [1]`, which keeps an empty one, as JS's `[]` is truthy",
-    file: "src/lower/options.rs",
-    find: "} else if self.is_string_like(generic_args.type_at(0))",
-    replace: "} else if true",
+    find: "} else if let Some(text) = text_or(&option) {",
+    replace: "} else if let Some(text) = text_or(&option).filter(|_| false) {",
     tests: ["test/compiler.test.ts", "-t", "text kept where it isn't empty"],
   },
   {

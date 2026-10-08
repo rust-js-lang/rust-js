@@ -65,3 +65,8 @@ const title = meta.title || route?.title || "";
   `Some(code) if !code.is_empty()` is `code ? .. : ..`, as react.dev's
   errors page titles itself. A JSX child shown if text isn't empty is a
   `bool`'s, `{!!excerpt && <p />}`, where `""` would render.
+- **Any value kept where it's truthy, or another, is `||`**, not text's
+  alone: the test `text_or` reads is `!!x`, and `(!!x ? x : undefined) ??
+  d` is `x || d` of every type. An array's emptiness, `length !== 0`,
+  isn't that test, so it never was `||`; the check that the value is
+  text, which kept arrays out, kept nothing out, and went.
