@@ -566,3 +566,26 @@ pub fn shown(best: bool) -> (String, String, String) {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.shown(true), lib.shown(false)]).toEqual([["BestFit", "BestFit", "On"], ["Lookup", "Lookup", "Off"]]);
 });
+
+// ADR 0024: `get X.y` of a function without a receiver reads a class's static
+// property each time it's called, `Notification.permission`.
+test("a binding reads a static property", async () => {
+  const dir = fixture("static-getter");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "get Math.PI")]
+fn pi() -> f64 {
+    unreachable!()
+}
+
+pub fn read() -> f64 {
+    pi() * 2.0
+}
+
+pub fn reader() -> fn() -> f64 {
+    pi
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("return Math.PI * 2;");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.read(), lib.reader()()]).toEqual([Math.PI * 2, Math.PI]);
+});

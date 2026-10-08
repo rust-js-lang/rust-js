@@ -297,6 +297,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (JsForm::Call(name), None) => Expr::call(self.js_ref(&name).or_at(fun_span), args),
                 (JsForm::New(name), None) => Expr::new_(self.js_ref(&name).or_at(fun_span), args),
                 (JsForm::Get(name), Some(this)) if args.is_empty() && !name.contains('#') => Expr::member(this, name),
+                // A class's static property, read at each call: `Notification.permission`.
+                (JsForm::Get(name), None) if args.is_empty() => self.js_ref(&name).or_at(fun_span),
                 (JsForm::Set(name), Some(this)) if args.len() == 1 && !name.contains('#') => {
                     let value = args.remove(0);
                     out.push(StmtKind::Assign(Expr::member(this, name), value).at(self.js_span(span)));

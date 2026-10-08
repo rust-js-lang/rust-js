@@ -220,3 +220,8 @@ which always passes `--extern webapi=..`.
   uses them. They were skipped. One an instance method's name has,
   `Response.json`, still is: the instance's keeps the name. `URL` is in the
   crate, from the URL spec. Case N.
+- **A static attribute is a function of its class's module, read at each
+  call**: `get Notification.permission` of a function without a receiver
+  is `Notification.permission`, and as a value `() =>
+  Notification.permission`, as `get x` of a method is `this.x`. A Rust
+  `static` would say it doesn't change. It was rejected. Case N.

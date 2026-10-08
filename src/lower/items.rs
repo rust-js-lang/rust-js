@@ -103,6 +103,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (JsForm::Call(name), None) => Expr::call(self.js_ref(&name), values),
             (JsForm::New(name), None) => Expr::new_(self.js_ref(&name), values),
             (JsForm::Get(name), Some(this)) if values.is_empty() && !name.contains('#') => Expr::member(this, name),
+            (JsForm::Get(name), None) if values.is_empty() => self.js_ref(&name),
             (JsForm::This, Some(this)) if values.is_empty() => this,
             (JsForm::CallThis, Some(this)) => Expr::call(this, values),
             _ => {

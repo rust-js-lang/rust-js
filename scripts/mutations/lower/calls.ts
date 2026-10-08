@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "static-getter-call-unsupported",
+    breaks: "a call of a `get X.y` binding without a receiver, a class's static property, is rejected",
+    file: "src/lower/calls.rs",
+    find: "                (JsForm::Get(name), None) if args.is_empty() => self.js_ref(&name).or_at(fun_span),",
+    replace: "                (JsForm::Get(name), None) if false => self.js_ref(&name).or_at(fun_span),",
+    tests: ["test/format.test.ts", "-t", "a binding reads a static property"],
+  },
+  {
     name: "nullable-param-undefined",
     breaks: "a binding's `#[rust_js::nullable(replacer)]` parameter given `None` is `undefined`, not `null`",
     file: "src/lower/calls.rs",
