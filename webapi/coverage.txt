@@ -1,6 +1,6 @@
 # The webapi crate against TypeScript's DOM (@types/web): bun test test/webapi-coverage.test.ts
 # classes: 699 of 701 (99.7%)
-# members: 8184 of 8419 (97.2%)
+# members: 8222 of 8419 (97.7%)
 AbortController.abort
 AbortController.constructor
 AbortController.signal
@@ -21,6 +21,8 @@ AnalyserNode.fftSize
 AnalyserNode.frequencyBinCount
 AnalyserNode.getByteFrequencyData
 AnalyserNode.getByteTimeDomainData
+AnalyserNode.getFloatFrequencyData
+AnalyserNode.getFloatTimeDomainData
 AnalyserNode.maxDecibels
 AnalyserNode.minDecibels
 AnalyserNode.smoothingTimeConstant
@@ -64,7 +66,10 @@ Attr.prefix
 Attr.specified
 Attr.value
 AudioBuffer.constructor
+AudioBuffer.copyFromChannel
+AudioBuffer.copyToChannel
 AudioBuffer.duration
+AudioBuffer.getChannelData
 AudioBuffer.length
 AudioBuffer.numberOfChannels
 AudioBuffer.sampleRate
@@ -201,6 +206,7 @@ BiquadFilterNode.constructor
 BiquadFilterNode.detune
 BiquadFilterNode.frequency
 BiquadFilterNode.gain
+BiquadFilterNode.getFrequencyResponse
 BiquadFilterNode.type
 Blob.arrayBuffer
 Blob.bytes
@@ -1260,6 +1266,8 @@ DOMMatrix.scaleSelf
 DOMMatrix.setMatrixValue
 DOMMatrix.skewXSelf
 DOMMatrix.skewYSelf
+DOMMatrix.static:fromFloat32Array
+DOMMatrix.static:fromFloat64Array
 DOMMatrix.static:fromMatrix
 DOMMatrix.translateSelf
 DOMMatrixReadOnly.a
@@ -1299,7 +1307,11 @@ DOMMatrixReadOnly.scale3d
 DOMMatrixReadOnly.scaleNonUniform
 DOMMatrixReadOnly.skewX
 DOMMatrixReadOnly.skewY
+DOMMatrixReadOnly.static:fromFloat32Array
+DOMMatrixReadOnly.static:fromFloat64Array
 DOMMatrixReadOnly.static:fromMatrix
+DOMMatrixReadOnly.toFloat32Array
+DOMMatrixReadOnly.toFloat64Array
 DOMMatrixReadOnly.toJSON
 DOMMatrixReadOnly.transformPoint
 DOMMatrixReadOnly.translate
@@ -3147,6 +3159,7 @@ IDBVersionChangeEvent.constructor
 IDBVersionChangeEvent.newVersion
 IDBVersionChangeEvent.oldVersion
 IIRFilterNode.constructor
+IIRFilterNode.getFrequencyResponse
 IdleDeadline.didTimeout
 IdleDeadline.timeRemaining
 ImageBitmap.close
@@ -4468,6 +4481,8 @@ SVGAnimatedNumberList.animVal
 SVGAnimatedNumberList.baseVal
 SVGAnimatedPreserveAspectRatio.animVal
 SVGAnimatedPreserveAspectRatio.baseVal
+SVGAnimatedRect.animVal
+SVGAnimatedRect.baseVal
 SVGAnimatedString.animVal
 SVGAnimatedString.baseVal
 SVGAnimatedTransformList.animVal
@@ -4890,6 +4905,7 @@ SVGForeignObjectElement.height
 SVGForeignObjectElement.width
 SVGForeignObjectElement.x
 SVGForeignObjectElement.y
+SVGGeometryElement.getPointAtLength
 SVGGeometryElement.getTotalLength
 SVGGeometryElement.isPointInFill
 SVGGeometryElement.isPointInStroke
@@ -4906,6 +4922,9 @@ SVGGradientElement.static:SVG_SPREADMETHOD_PAD
 SVGGradientElement.static:SVG_SPREADMETHOD_REFLECT
 SVGGradientElement.static:SVG_SPREADMETHOD_REPEAT
 SVGGradientElement.static:SVG_SPREADMETHOD_UNKNOWN
+SVGGraphicsElement.getBBox
+SVGGraphicsElement.getCTM
+SVGGraphicsElement.getScreenCTM
 SVGGraphicsElement.requiredExtensions
 SVGGraphicsElement.systemLanguage
 SVGGraphicsElement.transform
@@ -5013,9 +5032,15 @@ SVGPatternElement.viewBox
 SVGPatternElement.width
 SVGPatternElement.x
 SVGPatternElement.y
+SVGPointList.appendItem
 SVGPointList.clear
+SVGPointList.getItem
+SVGPointList.initialize
+SVGPointList.insertItemBefore
 SVGPointList.length
 SVGPointList.numberOfItems
+SVGPointList.removeItem
+SVGPointList.replaceItem
 SVGPolygonElement.animatedPoints
 SVGPolygonElement.points
 SVGPolylineElement.animatedPoints
@@ -5063,16 +5088,24 @@ SVGRectElement.width
 SVGRectElement.x
 SVGRectElement.y
 SVGSVGElement.animationsPaused
+SVGSVGElement.checkEnclosure
+SVGSVGElement.checkIntersection
 SVGSVGElement.createSVGAngle
 SVGSVGElement.createSVGLength
+SVGSVGElement.createSVGMatrix
 SVGSVGElement.createSVGNumber
+SVGSVGElement.createSVGPoint
+SVGSVGElement.createSVGRect
 SVGSVGElement.createSVGTransform
 SVGSVGElement.createSVGTransformFromMatrix
 SVGSVGElement.currentScale
+SVGSVGElement.currentTranslate
 SVGSVGElement.deselectAll
 SVGSVGElement.forceRedraw
 SVGSVGElement.getCurrentTime
 SVGSVGElement.getElementById
+SVGSVGElement.getEnclosureList
+SVGSVGElement.getIntersectionList
 SVGSVGElement.height
 SVGSVGElement.onafterprint
 SVGSVGElement.onbeforeprint
@@ -5128,8 +5161,11 @@ SVGTextContentElement.LENGTHADJUST_SPACINGANDGLYPHS
 SVGTextContentElement.LENGTHADJUST_UNKNOWN
 SVGTextContentElement.getCharNumAtPosition
 SVGTextContentElement.getComputedTextLength
+SVGTextContentElement.getEndPositionOfChar
+SVGTextContentElement.getExtentOfChar
 SVGTextContentElement.getNumberOfChars
 SVGTextContentElement.getRotationOfChar
+SVGTextContentElement.getStartPositionOfChar
 SVGTextContentElement.getSubStringLength
 SVGTextContentElement.lengthAdjust
 SVGTextContentElement.selectSubString
@@ -5166,6 +5202,7 @@ SVGTransform.SVG_TRANSFORM_SKEWY
 SVGTransform.SVG_TRANSFORM_TRANSLATE
 SVGTransform.SVG_TRANSFORM_UNKNOWN
 SVGTransform.angle
+SVGTransform.matrix
 SVGTransform.setMatrix
 SVGTransform.setRotate
 SVGTransform.setScale
@@ -5721,6 +5758,7 @@ WakeLockSentinel.release
 WakeLockSentinel.released
 WakeLockSentinel.type
 WaveShaperNode.constructor
+WaveShaperNode.curve
 WaveShaperNode.oversample
 WebGL2RenderingContext.ACTIVE_ATTRIBUTES
 WebGL2RenderingContext.ACTIVE_TEXTURE

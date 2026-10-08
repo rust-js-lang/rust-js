@@ -111,3 +111,12 @@ so nothing said when it fell behind.
 - **An `[HTMLConstructor]` element's constructor isn't counted**: HTML
   marks the constructor, not its interface, so 69 that JS throws of,
   `new HTMLDivElement()`, were counted missing. 97.2% of 8,419.
+- **A typed array is the js crate's** (ADR 0283), each of its element's
+  Rust number: `getChannelData` gives a `&Float32Array`, and
+  `ArrayBufferView` is a union of each, where only a `Uint8Array` was
+  known. **A class's `LegacyWindowAlias` names it**, as SVG's IDL still
+  does: an `SVGPoint` is a `DOMPoint`, an `SVGRect` a `DOMRect`, an
+  `SVGMatrix` a `DOMMatrix`. **A union is named as it's written**, a
+  typedef in it by its name, `StrOrBufferSource` of `(DOMString or
+  BufferSource)`, as TypeScript's `string | BufferSource` is, not by every
+  member it flattens to. 97.7%.

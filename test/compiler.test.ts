@@ -838,7 +838,12 @@ test("the webapi crate's bindings become plain JS", async () => {
   expect(js).toContain("for (const [name, value] of headers.entries()) {");
   expect(js).toContain("const long = list\n    .values()\n    .filter((token) => $byteLen(token) > 3)\n    .toArray().length;");
   expect(js).toContain("const keys = headers.keys();\n  return [names, long, $next(keys)];");
-  const { round_trip, iterated } = await import(join(target, "web_forms.js"));
+  // A typed array, an SVG alias's class, and a union of a typedef.
+  expect(js).toContain('const data = buffer.getChannelData(0);\n  const point = svg.createSVGPoint();\n  point.x = 2;\n  const face = new FontFace("Mono", new Uint8Array(4));');
+  const { round_trip, iterated, samples } = await import(join(target, "web_forms.js"));
+  (globalThis as any).FontFace = class { constructor(public family: string) {} };
+  expect(samples({ getChannelData: () => new Float32Array([0.5]) }, { createSVGPoint: () => ({ x: 0 }) }).slice(0, 2)).toEqual([0.5, 2]);
+  delete (globalThis as any).FontFace;
   expect(iterated(new Headers({ a: "1", b: "2" }), { values: () => ["abcd", "x", "hello"].values() })).toEqual([["a=1", "b=2"], 2, "a"]);
   // "é" is two bytes in UTF-8.
   expect(round_trip("héllo")).toEqual([6, "héllo"]);

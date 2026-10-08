@@ -131,8 +131,12 @@ const EXTRA: Record<string, Fn[]> = {
 // Namespaces: a module of functions, like `web_assembly::compile`.
 const NAMESPACES = ["WebAssembly"];
 
-// JS's own types that WebIDL uses, declared by hand at the crate root.
-const BUILTINS = new Set(["ArrayBuffer", "Uint8Array"]);
+// JS's own types that WebIDL uses, the js crate's: its buffers and typed
+// arrays, each element a Rust number of its kind (ADR 0283).
+const BUILTINS = new Set([
+  "ArrayBuffer", "SharedArrayBuffer", "DataView", "Int8Array", "Uint8Array", "Uint8ClampedArray", "Int16Array", "Uint16Array",
+  "Int32Array", "Uint32Array", "Float32Array", "Float64Array", "BigInt64Array", "BigUint64Array",
+]);
 
 // A dictionary field's type, where WebIDL's is one Rust can't take: a
 // `HeadersInit` is a sequence or a record, and `fetch` takes a `Headers` too.
@@ -199,6 +203,17 @@ const enums = new Set(everywhere.filter((d) => d.type === "enum").map((d) => d.n
 const typedefs = new Map(everywhere.filter((d) => d.type === "typedef").map((d) => [d.name, d.idlType!]));
 const dictionaries = new Map(everywhere.filter((d) => d.type === "dictionary" && !d.partial).map((d) => [d.name, d]));
 const callbacks = new Map(everywhere.filter((d) => d.type === "callback").map((d) => [d.name, d]));
+// The names a class is known by too, `[LegacyWindowAlias=SVGPoint] interface
+// DOMPoint`, which SVG's IDL still uses: `create_svg_point()` gives a `DOMPoint`.
+const windowAliases = new Map(
+  everywhere.flatMap((d) =>
+    (d.extAttrs ?? []).filter((a) => a.name === "LegacyWindowAlias").flatMap((a: any) => {
+      const value = a.rhs?.value;
+      const names: string[] = typeof value === "string" ? [value] : (value ?? []).map((v: any) => v.value);
+      return names.map((alias): [string, string] => [alias, d.name]);
+    }),
+  ),
+);
 
 type Interface = {
   name: string;
@@ -367,6 +382,8 @@ function rustType(t: IdlType, at: Position): string | { skip: string } {
   if (name === "undefined") return at === "result" ? "()" : { skip: "undefined parameter" };
   // A `WindowProxy` is a `Window`, as a script sees it: `frame.contentWindow`.
   if (name === "WindowProxy") return rustType({ ...t, idlType: "Window" }, at);
+  const alias = windowAliases.get(name);
+  if (alias) return rustType({ ...t, idlType: alias }, at);
   if (NUMBERS[name]) return NUMBERS[name];
   if (STRINGS.has(name) || enums.has(name)) return at === "param" ? "&str" : "String";
   if (name === "EventListener" && at === "param") return "Box<dyn FnMut(&Event)>";
@@ -549,8 +566,19 @@ function unionOf(t: IdlType): Union | null {
   }
   if (variants.length < 2) return null;
   const typedef = !t.union && !t.generic && typedefs.has(t.idlType as string) ? (t.idlType as string) : undefined;
-  const name = typedef ? typeName(typedef) : variants.map((v) => v.name).join("Or");
+  const name = typedef ? typeName(typedef) : memberNames(t).join("Or");
   return { name, variants, borrows: variants.some((v) => v.type.includes("'a")) };
+}
+
+/** A union's members as it's written, for its name: a typedef's its own,
+ * `(DOMString or BufferSource)` `StrOrBufferSource`, as TypeScript's
+ * `string | BufferSource` is; another's its variant's. */
+function memberNames(t: IdlType): string[] {
+  if (t.union) return [...new Set((t.idlType as IdlType[]).flatMap(memberNames))];
+  const name = t.idlType as string;
+  if (!t.generic && typedefs.has(name) && isUnion(t)) return alternatives(t).length ? [typeName(name)] : [];
+  const rust = rustType(t, "param");
+  return typeof rust === "string" ? [variantName(rust)] : [];
 }
 
 /**
@@ -946,7 +974,7 @@ line(`#![allow(invalid_runtime_symbol_definitions)]`);
 line();
 line(`use core::marker::PhantomData;`);
 line(`use core::ops::Deref;`);
-line(`use js::{ArrayBuffer, Defined, JsObject, Promise, StructuredClone, Uint8Array, Unknown};`);
+line(`use js::{${[...BUILTINS, "Defined", "JsObject", "Promise", "StructuredClone", "Unknown"].sort().join(", ")}};`);
 line();
 line(`unsafe extern "Rust" {`);
 GLOBALS.forEach(([name, type], k) => {
@@ -1322,4 +1350,4 @@ await Bun.write(new URL("./src/lib.rs", import.meta.url), `${out.join("\n")}\n`)
 const reasons = [...skipped].sort((a, b) => b[1] - a[1]).map(([why, n]) => `${why} ${n}`);
 console.log(`src/lib.rs: ${INTERFACES.length} interfaces, ${NAMESPACES.length} namespaces, ${count} functions, ${unions.size} unions`);
 console.log(`events: ${eventNames.length} names, ${impls} on ${listens.size} targets (${disagreeing} where specs disagree, as \`Event\`); tags: ${tagNames.length}`);
-console.log(`skipped: ${reasons.slice(0, 12).join(", ")}${reasons.length > 12 ? ", ..." : ""}`);
+console.log(`skipped: ${(process.env.ALL ? reasons : reasons.slice(0, 12)).join(", ")}${reasons.length > 12 && !process.env.ALL ? ", ..." : ""}`);

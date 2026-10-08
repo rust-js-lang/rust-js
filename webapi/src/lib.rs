@@ -20,7 +20,7 @@
 
 use core::marker::PhantomData;
 use core::ops::Deref;
-use js::{ArrayBuffer, Defined, JsObject, Promise, StructuredClone, Uint8Array, Unknown};
+use js::{ArrayBuffer, BigInt64Array, BigUint64Array, DataView, Defined, Float32Array, Float64Array, Int16Array, Int32Array, Int8Array, JsObject, Promise, SharedArrayBuffer, StructuredClone, Uint16Array, Uint32Array, Uint8Array, Uint8ClampedArray, Unknown};
 
 unsafe extern "Rust" {
     /// The `document` global.
@@ -36819,6 +36819,38 @@ impl SVGGraphicsElement {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGGraphicsElement/getBBox)
+    #[cfg_attr(rust_js, rust_js::link_name = "getBBox")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_b_box(&self) -> &'static DOMRect {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGGraphicsElement/getBBox)
+    #[cfg_attr(rust_js, rust_js::link_name = "getBBox")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_b_box_with_options(&self, options: SVGBoundingBoxOptions) -> &'static DOMRect {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGGraphicsElement/getCTM)
+    #[cfg_attr(rust_js, rust_js::link_name = "getCTM")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_ctm(&self) -> Option<&'static DOMMatrix> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGGraphicsElement/getScreenCTM)
+    #[cfg_attr(rust_js, rust_js::link_name = "getScreenCTM")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_screen_ctm(&self) -> Option<&'static DOMMatrix> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGGraphicsElement/requiredExtensions)
     #[cfg_attr(rust_js, rust_js::link_name = "get requiredExtensions")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -36906,6 +36938,14 @@ impl SVGGeometryElement {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_total_length(&self) -> f32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGGeometryElement/getPointAtLength)
+    #[cfg_attr(rust_js, rust_js::link_name = "getPointAtLength")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_point_at_length(&self, distance: f32) -> &'static DOMPoint {
         unreachable!()
     }
 
@@ -37023,6 +37063,46 @@ impl SVGSVGElement {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/currentTranslate)
+    #[cfg_attr(rust_js, rust_js::link_name = "get currentTranslate")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn current_translate(&self) -> &'static DOMPoint {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/getIntersectionList)
+    #[cfg_attr(rust_js, rust_js::link_name = "getIntersectionList")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_intersection_list(&self, rect: &DOMRect, reference_element: &SVGElement) -> &'static NodeList {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/getEnclosureList)
+    #[cfg_attr(rust_js, rust_js::link_name = "getEnclosureList")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_enclosure_list(&self, rect: &DOMRect, reference_element: &SVGElement) -> &'static NodeList {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/checkIntersection)
+    #[cfg_attr(rust_js, rust_js::link_name = "checkIntersection")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn check_intersection(&self, element: &SVGElement, rect: &DOMRect) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/checkEnclosure)
+    #[cfg_attr(rust_js, rust_js::link_name = "checkEnclosure")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn check_enclosure(&self, element: &SVGElement, rect: &DOMRect) -> bool {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/deselectAll)
     #[cfg_attr(rust_js, rust_js::link_name = "deselectAll")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -37052,6 +37132,30 @@ impl SVGSVGElement {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn create_svg_angle(&self) -> &'static SVGAngle {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/createSVGPoint)
+    #[cfg_attr(rust_js, rust_js::link_name = "createSVGPoint")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn create_svg_point(&self) -> &'static DOMPoint {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/createSVGMatrix)
+    #[cfg_attr(rust_js, rust_js::link_name = "createSVGMatrix")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn create_svg_matrix(&self) -> &'static DOMMatrix {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/createSVGRect)
+    #[cfg_attr(rust_js, rust_js::link_name = "createSVGRect")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn create_svg_rect(&self) -> &'static DOMRect {
         unreachable!()
     }
 
@@ -38314,6 +38418,30 @@ impl SVGTextContentElement {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_sub_string_length(&self, charnum: u32, nchars: u32) -> f32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTextContentElement/getStartPositionOfChar)
+    #[cfg_attr(rust_js, rust_js::link_name = "getStartPositionOfChar")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_start_position_of_char(&self, charnum: u32) -> &'static DOMPoint {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTextContentElement/getEndPositionOfChar)
+    #[cfg_attr(rust_js, rust_js::link_name = "getEndPositionOfChar")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_end_position_of_char(&self, charnum: u32) -> &'static DOMPoint {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTextContentElement/getExtentOfChar)
+    #[cfg_attr(rust_js, rust_js::link_name = "getExtentOfChar")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_extent_of_char(&self, charnum: u32) -> &'static DOMRect {
         unreachable!()
     }
 
@@ -42315,11 +42443,27 @@ pub mod analyser_node {
 }
 
 impl AnalyserNode {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AnalyserNode/getFloatFrequencyData)
+    #[cfg_attr(rust_js, rust_js::link_name = "getFloatFrequencyData")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_float_frequency_data(&self, array: &Float32Array) {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AnalyserNode/getByteFrequencyData)
     #[cfg_attr(rust_js, rust_js::link_name = "getByteFrequencyData")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_byte_frequency_data(&self, array: &Uint8Array) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AnalyserNode/getFloatTimeDomainData)
+    #[cfg_attr(rust_js, rust_js::link_name = "getFloatTimeDomainData")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_float_time_domain_data(&self, array: &Float32Array) {
         unreachable!()
     }
 
@@ -42894,6 +43038,46 @@ impl AudioBuffer {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn number_of_channels(&self) -> u32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBuffer/getChannelData)
+    #[cfg_attr(rust_js, rust_js::link_name = "getChannelData")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_channel_data(&self, channel: u32) -> &'static Float32Array {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBuffer/copyFromChannel)
+    #[cfg_attr(rust_js, rust_js::link_name = "copyFromChannel")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn copy_from_channel(&self, destination: &Float32Array, channel_number: u32) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBuffer/copyFromChannel)
+    #[cfg_attr(rust_js, rust_js::link_name = "copyFromChannel")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn copy_from_channel_with_buffer_offset(&self, destination: &Float32Array, channel_number: u32, buffer_offset: u32) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBuffer/copyToChannel)
+    #[cfg_attr(rust_js, rust_js::link_name = "copyToChannel")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn copy_to_channel(&self, source: &Float32Array, channel_number: u32) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBuffer/copyToChannel)
+    #[cfg_attr(rust_js, rust_js::link_name = "copyToChannel")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn copy_to_channel_with_buffer_offset(&self, source: &Float32Array, channel_number: u32, buffer_offset: u32) {
         unreachable!()
     }
 
@@ -44734,6 +44918,14 @@ impl BiquadFilterNode {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn gain(&self) -> &'static AudioParam {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/BiquadFilterNode/getFrequencyResponse)
+    #[cfg_attr(rust_js, rust_js::link_name = "getFrequencyResponse")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_frequency_response(&self, frequency_hz: &Float32Array, mag_response: &Float32Array, phase_response: &Float32Array) {
         unreachable!()
     }
 
@@ -51148,6 +51340,14 @@ pub mod dom_matrix {
         #[link_name = "DOMMatrix.fromMatrix"]
         pub safe fn from_matrix_with_other(other: DOMMatrixInit) -> &'static DOMMatrix;
 
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrix/fromFloat32Array)
+        #[link_name = "DOMMatrix.fromFloat32Array"]
+        pub safe fn from_float32_array(array32: &Float32Array) -> &'static DOMMatrix;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrix/fromFloat64Array)
+        #[link_name = "DOMMatrix.fromFloat64Array"]
+        pub safe fn from_float64_array(array64: &Float64Array) -> &'static DOMMatrix;
+
         /// Treats `this` as `DOMMatrix` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &DOMMatrixReadOnly) -> &'static DOMMatrix;
@@ -51840,6 +52040,14 @@ pub mod dom_matrix_read_only {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/fromMatrix)
         #[link_name = "DOMMatrixReadOnly.fromMatrix"]
         pub safe fn from_matrix_with_other(other: DOMMatrixInit) -> &'static DOMMatrixReadOnly;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/fromFloat32Array)
+        #[link_name = "DOMMatrixReadOnly.fromFloat32Array"]
+        pub safe fn from_float32_array(array32: &Float32Array) -> &'static DOMMatrixReadOnly;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/fromFloat64Array)
+        #[link_name = "DOMMatrixReadOnly.fromFloat64Array"]
+        pub safe fn from_float64_array(array64: &Float64Array) -> &'static DOMMatrixReadOnly;
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/DOMMatrixReadOnly)
@@ -52377,6 +52585,22 @@ impl DOMMatrixReadOnly {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn transform_point_with_point(&self, point: DOMPointInit) -> &'static DOMPoint {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/toFloat32Array)
+    #[cfg_attr(rust_js, rust_js::link_name = "toFloat32Array")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn to_float32_array(&self) -> &'static Float32Array {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/toFloat64Array)
+    #[cfg_attr(rust_js, rust_js::link_name = "toFloat64Array")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn to_float64_array(&self) -> &'static Float64Array {
         unreachable!()
     }
 
@@ -55492,7 +55716,7 @@ pub mod font_face {
     #[cfg_attr(rust_js, rust_js::link_name = "new FontFace")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(family: &str, source: impl IntoStrOrUint8ArrayOrArrayBuffer) -> &'static FontFace {
+    pub fn new(family: &str, source: impl IntoStrOrBufferSource) -> &'static FontFace {
         unreachable!()
     }
 
@@ -55500,7 +55724,7 @@ pub mod font_face {
     #[cfg_attr(rust_js, rust_js::link_name = "new FontFace")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_descriptors(family: &str, source: impl IntoStrOrUint8ArrayOrArrayBuffer, descriptors: FontFaceDescriptors<'_>) -> &'static FontFace {
+    pub fn new_with_descriptors(family: &str, source: impl IntoStrOrBufferSource, descriptors: FontFaceDescriptors<'_>) -> &'static FontFace {
         unreachable!()
     }
 }
@@ -56711,6 +56935,14 @@ impl GPUComputePassEncoder {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUComputePassEncoder/setBindGroup)
+    #[cfg_attr(rust_js, rust_js::link_name = "setBindGroup")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_bind_group_with_dynamic_offsets_data_and_dynamic_offsets_data_start_and_dynamic_offsets_data_length(&self, index: u32, bind_group: &GPUBindGroup, dynamic_offsets_data: &Uint32Array, dynamic_offsets_data_start: f64, dynamic_offsets_data_length: u32) {
+        unreachable!()
+    }
+
 }
 
 /// [`GPUComputePipeline`](https://developer.mozilla.org/docs/Web/API/GPUComputePipeline)
@@ -57409,6 +57641,14 @@ impl GPURenderBundleEncoder {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/setBindGroup)
+    #[cfg_attr(rust_js, rust_js::link_name = "setBindGroup")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_bind_group_with_dynamic_offsets_data_and_dynamic_offsets_data_start_and_dynamic_offsets_data_length(&self, index: u32, bind_group: &GPUBindGroup, dynamic_offsets_data: &Uint32Array, dynamic_offsets_data_start: f64, dynamic_offsets_data_length: u32) {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/setPipeline)
     #[cfg_attr(rust_js, rust_js::link_name = "setPipeline")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -57677,6 +57917,14 @@ impl GPURenderPassEncoder {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_bind_group_with_dynamic_offsets(&self, index: u32, bind_group: &GPUBindGroup, dynamic_offsets: &[u32]) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/setBindGroup)
+    #[cfg_attr(rust_js, rust_js::link_name = "setBindGroup")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_bind_group_with_dynamic_offsets_data_and_dynamic_offsets_data_start_and_dynamic_offsets_data_length(&self, index: u32, bind_group: &GPUBindGroup, dynamic_offsets_data: &Uint32Array, dynamic_offsets_data_start: f64, dynamic_offsets_data_length: u32) {
         unreachable!()
     }
 
@@ -61534,6 +61782,17 @@ pub mod iir_filter_node {
     }
 }
 
+impl IIRFilterNode {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/IIRFilterNode/getFrequencyResponse)
+    #[cfg_attr(rust_js, rust_js::link_name = "getFrequencyResponse")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_frequency_response(&self, frequency_hz: &Float32Array, mag_response: &Float32Array, phase_response: &Float32Array) {
+        unreachable!()
+    }
+
+}
+
 /// [`IdleDeadline`](https://developer.mozilla.org/docs/Web/API/IdleDeadline)
 #[cfg_attr(rust_js, rust_js::types = "IdleDeadline")]
 pub struct IdleDeadline(PhantomData<JsObject>);
@@ -61683,6 +61942,14 @@ pub mod image_data {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageData/ImageData)
         #[link_name = "new ImageData"]
         pub safe fn new_with_settings(sw: u32, sh: u32, settings: ImageDataSettings<'_>) -> &'static ImageData;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageData/ImageData)
+        #[link_name = "new ImageData"]
+        pub safe fn new_with_sh(data: &Uint8ClampedArray, sw: u32, sh: u32) -> &'static ImageData;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageData/ImageData)
+        #[link_name = "new ImageData"]
+        pub safe fn new_with_sh_and_settings(data: &Uint8ClampedArray, sw: u32, sh: u32, settings: ImageDataSettings<'_>) -> &'static ImageData;
     }
 }
 
@@ -71836,7 +72103,7 @@ impl RTCDataChannel {
     #[cfg_attr(rust_js, rust_js::link_name = "send")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn send_with_uint8_array(&self, data: &Uint8Array) {
+    pub fn send_with_array_buffer_view(&self, data: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -73898,7 +74165,7 @@ impl ReadableByteStreamController {
     #[cfg_attr(rust_js, rust_js::link_name = "enqueue")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn enqueue(&self, chunk: &Uint8Array) {
+    pub fn enqueue(&self, chunk: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -73939,7 +74206,7 @@ impl ReadableStreamBYOBReader {
     #[cfg_attr(rust_js, rust_js::link_name = "read")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn read(&self, view: &Uint8Array) -> Promise<ReadableStreamReadResult> {
+    pub fn read(&self, view: impl IntoArrayBufferView) -> Promise<ReadableStreamReadResult> {
         unreachable!()
     }
 
@@ -73947,7 +74214,7 @@ impl ReadableStreamBYOBReader {
     #[cfg_attr(rust_js, rust_js::link_name = "read")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn read_with_options(&self, view: &Uint8Array, options: ReadableStreamBYOBReaderReadOptions) -> Promise<ReadableStreamReadResult> {
+    pub fn read_with_options(&self, view: impl IntoArrayBufferView, options: ReadableStreamBYOBReaderReadOptions) -> Promise<ReadableStreamReadResult> {
         unreachable!()
     }
 
@@ -74010,7 +74277,7 @@ impl ReadableStreamBYOBRequest {
     #[cfg_attr(rust_js, rust_js::link_name = "respondWithNewView")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn respond_with_new_view(&self, view: &Uint8Array) {
+    pub fn respond_with_new_view(&self, view: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -74749,6 +75016,25 @@ impl SVGAnimatedPreserveAspectRatio {
 #[cfg_attr(rust_js, rust_js::types = "SVGAnimatedRect")]
 pub struct SVGAnimatedRect(PhantomData<JsObject>);
 
+impl SVGAnimatedRect {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimatedRect/baseVal)
+    #[cfg_attr(rust_js, rust_js::link_name = "get baseVal")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn base_val(&self) -> &'static DOMRect {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimatedRect/animVal)
+    #[cfg_attr(rust_js, rust_js::link_name = "get animVal")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn anim_val(&self) -> &'static DOMRect {
+        unreachable!()
+    }
+
+}
+
 /// [`SVGAnimatedString`](https://developer.mozilla.org/docs/Web/API/SVGAnimatedString)
 #[cfg_attr(rust_js, rust_js::types = "SVGAnimatedString")]
 pub struct SVGAnimatedString(PhantomData<JsObject>);
@@ -75120,6 +75406,54 @@ impl SVGPointList {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGPointList/initialize)
+    #[cfg_attr(rust_js, rust_js::link_name = "initialize")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn initialize(&self, new_item: &DOMPoint) -> &'static DOMPoint {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGPointList/getItem)
+    #[cfg_attr(rust_js, rust_js::link_name = "getItem")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_item(&self, index: u32) -> &'static DOMPoint {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGPointList/insertItemBefore)
+    #[cfg_attr(rust_js, rust_js::link_name = "insertItemBefore")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn insert_item_before(&self, new_item: &DOMPoint, index: u32) -> &'static DOMPoint {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGPointList/replaceItem)
+    #[cfg_attr(rust_js, rust_js::link_name = "replaceItem")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn replace_item(&self, new_item: &DOMPoint, index: u32) -> &'static DOMPoint {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGPointList/removeItem)
+    #[cfg_attr(rust_js, rust_js::link_name = "removeItem")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn remove_item(&self, index: u32) -> &'static DOMPoint {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGPointList/appendItem)
+    #[cfg_attr(rust_js, rust_js::link_name = "appendItem")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn append_item(&self, new_item: &DOMPoint) -> &'static DOMPoint {
+        unreachable!()
+    }
+
 }
 
 /// [`SVGPreserveAspectRatio`](https://developer.mozilla.org/docs/Web/API/SVGPreserveAspectRatio)
@@ -75319,6 +75653,14 @@ impl SVGTransform {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn type_(&self) -> u16 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTransform/matrix)
+    #[cfg_attr(rust_js, rust_js::link_name = "get matrix")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn matrix(&self) -> &'static DOMMatrix {
         unreachable!()
     }
 
@@ -78608,7 +78950,7 @@ impl SubtleCrypto {
     #[cfg_attr(rust_js, rust_js::link_name = "importKey")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn import_key(&self, format: &str, key_data: impl IntoUint8ArrayOrArrayBufferOrJsonWebKey, algorithm: &dyn core::any::Any, extractable: bool, key_usages: &[&str]) -> Promise<&'static CryptoKey> {
+    pub fn import_key(&self, format: &str, key_data: impl IntoBufferSourceOrJsonWebKey, algorithm: &dyn core::any::Any, extractable: bool, key_usages: &[&str]) -> Promise<&'static CryptoKey> {
         unreachable!()
     }
 
@@ -81404,6 +81746,22 @@ pub mod wave_shaper_node {
 }
 
 impl WaveShaperNode {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WaveShaperNode/curve)
+    #[cfg_attr(rust_js, rust_js::link_name = "get curve")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn curve(&self) -> Option<&'static Float32Array> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WaveShaperNode/curve)
+    #[cfg_attr(rust_js, rust_js::link_name = "set curve")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_curve(&self, value: &Float32Array) {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WaveShaperNode/oversample)
     #[cfg_attr(rust_js, rust_js::link_name = "get oversample")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -84061,7 +84419,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttrib1fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib1fv(&self, index: u32, values: &[f32]) {
+    pub fn vertex_attrib1fv(&self, index: u32, values: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -84069,7 +84427,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttrib2fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib2fv(&self, index: u32, values: &[f32]) {
+    pub fn vertex_attrib2fv(&self, index: u32, values: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -84077,7 +84435,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttrib3fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib3fv(&self, index: u32, values: &[f32]) {
+    pub fn vertex_attrib3fv(&self, index: u32, values: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -84085,7 +84443,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttrib4fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib4fv(&self, index: u32, values: &[f32]) {
+    pub fn vertex_attrib4fv(&self, index: u32, values: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -84117,7 +84475,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getBufferSubData")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_buffer_sub_data(&self, target: u32, src_byte_offset: f64, dst_buffer: &Uint8Array) {
+    pub fn get_buffer_sub_data(&self, target: u32, src_byte_offset: f64, dst_buffer: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -84125,7 +84483,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getBufferSubData")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_buffer_sub_data_with_dst_offset(&self, target: u32, src_byte_offset: f64, dst_buffer: &Uint8Array, dst_offset: f64) {
+    pub fn get_buffer_sub_data_with_dst_offset(&self, target: u32, src_byte_offset: f64, dst_buffer: impl IntoArrayBufferView, dst_offset: f64) {
         unreachable!()
     }
 
@@ -84133,7 +84491,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getBufferSubData")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_buffer_sub_data_with_dst_offset_and_length(&self, target: u32, src_byte_offset: f64, dst_buffer: &Uint8Array, dst_offset: f64, length: u32) {
+    pub fn get_buffer_sub_data_with_dst_offset_and_length(&self, target: u32, src_byte_offset: f64, dst_buffer: impl IntoArrayBufferView, dst_offset: f64, length: u32) {
         unreachable!()
     }
 
@@ -84229,7 +84587,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texImage3D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_image3_d_with_uint8_array(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, depth: i32, border: i32, format: u32, type_: u32, src_data: &Uint8Array) {
+    pub fn tex_image3_d_with_array_buffer_view(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, depth: i32, border: i32, format: u32, type_: u32, src_data: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -84237,7 +84595,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texImage3D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_image3_d_with_uint8_array_and_src_offset(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, depth: i32, border: i32, format: u32, type_: u32, src_data: &Uint8Array, src_offset: f64) {
+    pub fn tex_image3_d_with_array_buffer_view_and_src_offset(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, depth: i32, border: i32, format: u32, type_: u32, src_data: impl IntoArrayBufferView, src_offset: f64) {
         unreachable!()
     }
 
@@ -84261,7 +84619,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texSubImage3D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_sub_image3_d_with_uint8_array(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, type_: u32, src_data: &Uint8Array) {
+    pub fn tex_sub_image3_d_with_array_buffer_view(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, type_: u32, src_data: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -84269,7 +84627,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texSubImage3D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_sub_image3_d_with_uint8_array_and_src_offset(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, type_: u32, src_data: &Uint8Array, src_offset: f64) {
+    pub fn tex_sub_image3_d_with_array_buffer_view_and_src_offset(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, type_: u32, src_data: impl IntoArrayBufferView, src_offset: f64) {
         unreachable!()
     }
 
@@ -84293,7 +84651,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexImage3D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn compressed_tex_image3_d_with_uint8_array(&self, target: u32, level: i32, internalformat: u32, width: i32, height: i32, depth: i32, border: i32, src_data: &Uint8Array) {
+    pub fn compressed_tex_image3_d_with_array_buffer_view(&self, target: u32, level: i32, internalformat: u32, width: i32, height: i32, depth: i32, border: i32, src_data: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -84301,7 +84659,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexImage3D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn compressed_tex_image3_d_with_uint8_array_and_src_offset(&self, target: u32, level: i32, internalformat: u32, width: i32, height: i32, depth: i32, border: i32, src_data: &Uint8Array, src_offset: f64) {
+    pub fn compressed_tex_image3_d_with_array_buffer_view_and_src_offset(&self, target: u32, level: i32, internalformat: u32, width: i32, height: i32, depth: i32, border: i32, src_data: impl IntoArrayBufferView, src_offset: f64) {
         unreachable!()
     }
 
@@ -84309,7 +84667,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexImage3D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn compressed_tex_image3_d_with_uint8_array_and_src_offset_and_src_length_override(&self, target: u32, level: i32, internalformat: u32, width: i32, height: i32, depth: i32, border: i32, src_data: &Uint8Array, src_offset: f64, src_length_override: u32) {
+    pub fn compressed_tex_image3_d_with_array_buffer_view_and_src_offset_and_src_length_override(&self, target: u32, level: i32, internalformat: u32, width: i32, height: i32, depth: i32, border: i32, src_data: impl IntoArrayBufferView, src_offset: f64, src_length_override: u32) {
         unreachable!()
     }
 
@@ -84325,7 +84683,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexSubImage3D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn compressed_tex_sub_image3_d_with_uint8_array(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, src_data: &Uint8Array) {
+    pub fn compressed_tex_sub_image3_d_with_array_buffer_view(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, src_data: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -84333,7 +84691,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexSubImage3D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn compressed_tex_sub_image3_d_with_uint8_array_and_src_offset(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, src_data: &Uint8Array, src_offset: f64) {
+    pub fn compressed_tex_sub_image3_d_with_array_buffer_view_and_src_offset(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, src_data: impl IntoArrayBufferView, src_offset: f64) {
         unreachable!()
     }
 
@@ -84341,7 +84699,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexSubImage3D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn compressed_tex_sub_image3_d_with_uint8_array_and_src_offset_and_src_length_override(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, src_data: &Uint8Array, src_offset: f64, src_length_override: u32) {
+    pub fn compressed_tex_sub_image3_d_with_array_buffer_view_and_src_offset_and_src_length_override(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, src_data: impl IntoArrayBufferView, src_offset: f64, src_length_override: u32) {
         unreachable!()
     }
 
@@ -84389,7 +84747,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1uiv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform1uiv(&self, location: &WebGLUniformLocation, data: &[u32]) {
+    pub fn uniform1uiv(&self, location: &WebGLUniformLocation, data: impl IntoUint32List) {
         unreachable!()
     }
 
@@ -84397,7 +84755,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1uiv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform1uiv_with_src_offset(&self, location: &WebGLUniformLocation, data: &[u32], src_offset: f64) {
+    pub fn uniform1uiv_with_src_offset(&self, location: &WebGLUniformLocation, data: impl IntoUint32List, src_offset: f64) {
         unreachable!()
     }
 
@@ -84405,7 +84763,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1uiv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform1uiv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, data: &[u32], src_offset: f64, src_length: u32) {
+    pub fn uniform1uiv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, data: impl IntoUint32List, src_offset: f64, src_length: u32) {
         unreachable!()
     }
 
@@ -84413,7 +84771,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2uiv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform2uiv(&self, location: &WebGLUniformLocation, data: &[u32]) {
+    pub fn uniform2uiv(&self, location: &WebGLUniformLocation, data: impl IntoUint32List) {
         unreachable!()
     }
 
@@ -84421,7 +84779,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2uiv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform2uiv_with_src_offset(&self, location: &WebGLUniformLocation, data: &[u32], src_offset: f64) {
+    pub fn uniform2uiv_with_src_offset(&self, location: &WebGLUniformLocation, data: impl IntoUint32List, src_offset: f64) {
         unreachable!()
     }
 
@@ -84429,7 +84787,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2uiv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform2uiv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, data: &[u32], src_offset: f64, src_length: u32) {
+    pub fn uniform2uiv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, data: impl IntoUint32List, src_offset: f64, src_length: u32) {
         unreachable!()
     }
 
@@ -84437,7 +84795,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3uiv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform3uiv(&self, location: &WebGLUniformLocation, data: &[u32]) {
+    pub fn uniform3uiv(&self, location: &WebGLUniformLocation, data: impl IntoUint32List) {
         unreachable!()
     }
 
@@ -84445,7 +84803,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3uiv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform3uiv_with_src_offset(&self, location: &WebGLUniformLocation, data: &[u32], src_offset: f64) {
+    pub fn uniform3uiv_with_src_offset(&self, location: &WebGLUniformLocation, data: impl IntoUint32List, src_offset: f64) {
         unreachable!()
     }
 
@@ -84453,7 +84811,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3uiv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform3uiv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, data: &[u32], src_offset: f64, src_length: u32) {
+    pub fn uniform3uiv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, data: impl IntoUint32List, src_offset: f64, src_length: u32) {
         unreachable!()
     }
 
@@ -84461,7 +84819,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4uiv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform4uiv(&self, location: &WebGLUniformLocation, data: &[u32]) {
+    pub fn uniform4uiv(&self, location: &WebGLUniformLocation, data: impl IntoUint32List) {
         unreachable!()
     }
 
@@ -84469,7 +84827,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4uiv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform4uiv_with_src_offset(&self, location: &WebGLUniformLocation, data: &[u32], src_offset: f64) {
+    pub fn uniform4uiv_with_src_offset(&self, location: &WebGLUniformLocation, data: impl IntoUint32List, src_offset: f64) {
         unreachable!()
     }
 
@@ -84477,7 +84835,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4uiv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform4uiv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, data: &[u32], src_offset: f64, src_length: u32) {
+    pub fn uniform4uiv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, data: impl IntoUint32List, src_offset: f64, src_length: u32) {
         unreachable!()
     }
 
@@ -84485,7 +84843,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix3x2fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix3x2fv(&self, location: &WebGLUniformLocation, transpose: bool, data: &[f32]) {
+    pub fn uniform_matrix3x2fv(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -84493,7 +84851,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix3x2fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix3x2fv_with_src_offset(&self, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64) {
+    pub fn uniform_matrix3x2fv_with_src_offset(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List, src_offset: f64) {
         unreachable!()
     }
 
@@ -84501,7 +84859,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix3x2fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix3x2fv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64, src_length: u32) {
+    pub fn uniform_matrix3x2fv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List, src_offset: f64, src_length: u32) {
         unreachable!()
     }
 
@@ -84509,7 +84867,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix4x2fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix4x2fv(&self, location: &WebGLUniformLocation, transpose: bool, data: &[f32]) {
+    pub fn uniform_matrix4x2fv(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -84517,7 +84875,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix4x2fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix4x2fv_with_src_offset(&self, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64) {
+    pub fn uniform_matrix4x2fv_with_src_offset(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List, src_offset: f64) {
         unreachable!()
     }
 
@@ -84525,7 +84883,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix4x2fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix4x2fv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64, src_length: u32) {
+    pub fn uniform_matrix4x2fv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List, src_offset: f64, src_length: u32) {
         unreachable!()
     }
 
@@ -84533,7 +84891,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix2x3fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix2x3fv(&self, location: &WebGLUniformLocation, transpose: bool, data: &[f32]) {
+    pub fn uniform_matrix2x3fv(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -84541,7 +84899,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix2x3fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix2x3fv_with_src_offset(&self, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64) {
+    pub fn uniform_matrix2x3fv_with_src_offset(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List, src_offset: f64) {
         unreachable!()
     }
 
@@ -84549,7 +84907,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix2x3fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix2x3fv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64, src_length: u32) {
+    pub fn uniform_matrix2x3fv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List, src_offset: f64, src_length: u32) {
         unreachable!()
     }
 
@@ -84557,7 +84915,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix4x3fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix4x3fv(&self, location: &WebGLUniformLocation, transpose: bool, data: &[f32]) {
+    pub fn uniform_matrix4x3fv(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -84565,7 +84923,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix4x3fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix4x3fv_with_src_offset(&self, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64) {
+    pub fn uniform_matrix4x3fv_with_src_offset(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List, src_offset: f64) {
         unreachable!()
     }
 
@@ -84573,7 +84931,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix4x3fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix4x3fv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64, src_length: u32) {
+    pub fn uniform_matrix4x3fv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List, src_offset: f64, src_length: u32) {
         unreachable!()
     }
 
@@ -84581,7 +84939,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix2x4fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix2x4fv(&self, location: &WebGLUniformLocation, transpose: bool, data: &[f32]) {
+    pub fn uniform_matrix2x4fv(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -84589,7 +84947,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix2x4fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix2x4fv_with_src_offset(&self, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64) {
+    pub fn uniform_matrix2x4fv_with_src_offset(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List, src_offset: f64) {
         unreachable!()
     }
 
@@ -84597,7 +84955,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix2x4fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix2x4fv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64, src_length: u32) {
+    pub fn uniform_matrix2x4fv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List, src_offset: f64, src_length: u32) {
         unreachable!()
     }
 
@@ -84605,7 +84963,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix3x4fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix3x4fv(&self, location: &WebGLUniformLocation, transpose: bool, data: &[f32]) {
+    pub fn uniform_matrix3x4fv(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -84613,7 +84971,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix3x4fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix3x4fv_with_src_offset(&self, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64) {
+    pub fn uniform_matrix3x4fv_with_src_offset(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List, src_offset: f64) {
         unreachable!()
     }
 
@@ -84621,7 +84979,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix3x4fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix3x4fv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64, src_length: u32) {
+    pub fn uniform_matrix3x4fv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List, src_offset: f64, src_length: u32) {
         unreachable!()
     }
 
@@ -84637,7 +84995,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttribI4iv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib_i_4iv(&self, index: u32, values: &[i32]) {
+    pub fn vertex_attrib_i_4iv(&self, index: u32, values: impl IntoInt32List) {
         unreachable!()
     }
 
@@ -84653,7 +85011,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttribI4uiv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib_i_4uiv(&self, index: u32, values: &[u32]) {
+    pub fn vertex_attrib_i_4uiv(&self, index: u32, values: impl IntoUint32List) {
         unreachable!()
     }
 
@@ -84709,7 +85067,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "clearBufferfv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn clear_bufferfv(&self, buffer: u32, drawbuffer: i32, values: &[f32]) {
+    pub fn clear_bufferfv(&self, buffer: u32, drawbuffer: i32, values: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -84717,7 +85075,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "clearBufferfv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn clear_bufferfv_with_src_offset(&self, buffer: u32, drawbuffer: i32, values: &[f32], src_offset: f64) {
+    pub fn clear_bufferfv_with_src_offset(&self, buffer: u32, drawbuffer: i32, values: impl IntoFloat32List, src_offset: f64) {
         unreachable!()
     }
 
@@ -84725,7 +85083,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "clearBufferiv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn clear_bufferiv(&self, buffer: u32, drawbuffer: i32, values: &[i32]) {
+    pub fn clear_bufferiv(&self, buffer: u32, drawbuffer: i32, values: impl IntoInt32List) {
         unreachable!()
     }
 
@@ -84733,7 +85091,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "clearBufferiv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn clear_bufferiv_with_src_offset(&self, buffer: u32, drawbuffer: i32, values: &[i32], src_offset: f64) {
+    pub fn clear_bufferiv_with_src_offset(&self, buffer: u32, drawbuffer: i32, values: impl IntoInt32List, src_offset: f64) {
         unreachable!()
     }
 
@@ -84741,7 +85099,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "clearBufferuiv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn clear_bufferuiv(&self, buffer: u32, drawbuffer: i32, values: &[u32]) {
+    pub fn clear_bufferuiv(&self, buffer: u32, drawbuffer: i32, values: impl IntoUint32List) {
         unreachable!()
     }
 
@@ -84749,7 +85107,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "clearBufferuiv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn clear_bufferuiv_with_src_offset(&self, buffer: u32, drawbuffer: i32, values: &[u32], src_offset: f64) {
+    pub fn clear_bufferuiv_with_src_offset(&self, buffer: u32, drawbuffer: i32, values: impl IntoUint32List, src_offset: f64) {
         unreachable!()
     }
 
@@ -85133,7 +85491,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "bufferData")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn buffer_data_with_uint8_array_and_src_offset(&self, target: u32, src_data: &Uint8Array, usage: u32, src_offset: f64) {
+    pub fn buffer_data_with_array_buffer_view_and_src_offset(&self, target: u32, src_data: impl IntoArrayBufferView, usage: u32, src_offset: f64) {
         unreachable!()
     }
 
@@ -85141,7 +85499,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "bufferData")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn buffer_data_with_uint8_array_and_src_offset_and_length(&self, target: u32, src_data: &Uint8Array, usage: u32, src_offset: f64, length: u32) {
+    pub fn buffer_data_with_array_buffer_view_and_src_offset_and_length(&self, target: u32, src_data: impl IntoArrayBufferView, usage: u32, src_offset: f64, length: u32) {
         unreachable!()
     }
 
@@ -85149,7 +85507,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "bufferSubData")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn buffer_sub_data_with_uint8_array_and_src_offset(&self, target: u32, dst_byte_offset: f64, src_data: &Uint8Array, src_offset: f64) {
+    pub fn buffer_sub_data_with_array_buffer_view_and_src_offset(&self, target: u32, dst_byte_offset: f64, src_data: impl IntoArrayBufferView, src_offset: f64) {
         unreachable!()
     }
 
@@ -85157,7 +85515,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "bufferSubData")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn buffer_sub_data_with_uint8_array_and_src_offset_and_length(&self, target: u32, dst_byte_offset: f64, src_data: &Uint8Array, src_offset: f64, length: u32) {
+    pub fn buffer_sub_data_with_array_buffer_view_and_src_offset_and_length(&self, target: u32, dst_byte_offset: f64, src_data: impl IntoArrayBufferView, src_offset: f64, length: u32) {
         unreachable!()
     }
 
@@ -85165,7 +85523,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_image2_d(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, border: i32, format: u32, type_: u32, pixels: &Uint8Array) {
+    pub fn tex_image2_d(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, border: i32, format: u32, type_: u32, pixels: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -85181,7 +85539,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texSubImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_sub_image2_d(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, type_: u32, pixels: &Uint8Array) {
+    pub fn tex_sub_image2_d(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, type_: u32, pixels: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -85213,7 +85571,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_image2_d_with_src_offset(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, border: i32, format: u32, type_: u32, src_data: &Uint8Array, src_offset: f64) {
+    pub fn tex_image2_d_with_src_offset(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, border: i32, format: u32, type_: u32, src_data: impl IntoArrayBufferView, src_offset: f64) {
         unreachable!()
     }
 
@@ -85237,7 +85595,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texSubImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_sub_image2_d_with_src_offset(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, type_: u32, src_data: &Uint8Array, src_offset: f64) {
+    pub fn tex_sub_image2_d_with_src_offset(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, type_: u32, src_data: impl IntoArrayBufferView, src_offset: f64) {
         unreachable!()
     }
 
@@ -85253,7 +85611,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn compressed_tex_image2_d_with_uint8_array(&self, target: u32, level: i32, internalformat: u32, width: i32, height: i32, border: i32, src_data: &Uint8Array) {
+    pub fn compressed_tex_image2_d_with_array_buffer_view(&self, target: u32, level: i32, internalformat: u32, width: i32, height: i32, border: i32, src_data: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -85261,7 +85619,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn compressed_tex_image2_d_with_uint8_array_and_src_offset(&self, target: u32, level: i32, internalformat: u32, width: i32, height: i32, border: i32, src_data: &Uint8Array, src_offset: f64) {
+    pub fn compressed_tex_image2_d_with_array_buffer_view_and_src_offset(&self, target: u32, level: i32, internalformat: u32, width: i32, height: i32, border: i32, src_data: impl IntoArrayBufferView, src_offset: f64) {
         unreachable!()
     }
 
@@ -85269,7 +85627,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn compressed_tex_image2_d_with_uint8_array_and_src_offset_and_src_length_override(&self, target: u32, level: i32, internalformat: u32, width: i32, height: i32, border: i32, src_data: &Uint8Array, src_offset: f64, src_length_override: u32) {
+    pub fn compressed_tex_image2_d_with_array_buffer_view_and_src_offset_and_src_length_override(&self, target: u32, level: i32, internalformat: u32, width: i32, height: i32, border: i32, src_data: impl IntoArrayBufferView, src_offset: f64, src_length_override: u32) {
         unreachable!()
     }
 
@@ -85285,7 +85643,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexSubImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn compressed_tex_sub_image2_d_with_uint8_array(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, src_data: &Uint8Array) {
+    pub fn compressed_tex_sub_image2_d_with_array_buffer_view(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, src_data: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -85293,7 +85651,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexSubImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn compressed_tex_sub_image2_d_with_uint8_array_and_src_offset(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, src_data: &Uint8Array, src_offset: f64) {
+    pub fn compressed_tex_sub_image2_d_with_array_buffer_view_and_src_offset(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, src_data: impl IntoArrayBufferView, src_offset: f64) {
         unreachable!()
     }
 
@@ -85301,7 +85659,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexSubImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn compressed_tex_sub_image2_d_with_uint8_array_and_src_offset_and_src_length_override(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, src_data: &Uint8Array, src_offset: f64, src_length_override: u32) {
+    pub fn compressed_tex_sub_image2_d_with_array_buffer_view_and_src_offset_and_src_length_override(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, src_data: impl IntoArrayBufferView, src_offset: f64, src_length_override: u32) {
         unreachable!()
     }
 
@@ -85309,7 +85667,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform1fv(&self, location: &WebGLUniformLocation, data: &[f32]) {
+    pub fn uniform1fv(&self, location: &WebGLUniformLocation, data: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -85317,7 +85675,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform1fv_with_src_offset(&self, location: &WebGLUniformLocation, data: &[f32], src_offset: f64) {
+    pub fn uniform1fv_with_src_offset(&self, location: &WebGLUniformLocation, data: impl IntoFloat32List, src_offset: f64) {
         unreachable!()
     }
 
@@ -85325,7 +85683,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform1fv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, data: &[f32], src_offset: f64, src_length: u32) {
+    pub fn uniform1fv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, data: impl IntoFloat32List, src_offset: f64, src_length: u32) {
         unreachable!()
     }
 
@@ -85333,7 +85691,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform2fv(&self, location: &WebGLUniformLocation, data: &[f32]) {
+    pub fn uniform2fv(&self, location: &WebGLUniformLocation, data: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -85341,7 +85699,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform2fv_with_src_offset(&self, location: &WebGLUniformLocation, data: &[f32], src_offset: f64) {
+    pub fn uniform2fv_with_src_offset(&self, location: &WebGLUniformLocation, data: impl IntoFloat32List, src_offset: f64) {
         unreachable!()
     }
 
@@ -85349,7 +85707,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform2fv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, data: &[f32], src_offset: f64, src_length: u32) {
+    pub fn uniform2fv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, data: impl IntoFloat32List, src_offset: f64, src_length: u32) {
         unreachable!()
     }
 
@@ -85357,7 +85715,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform3fv(&self, location: &WebGLUniformLocation, data: &[f32]) {
+    pub fn uniform3fv(&self, location: &WebGLUniformLocation, data: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -85365,7 +85723,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform3fv_with_src_offset(&self, location: &WebGLUniformLocation, data: &[f32], src_offset: f64) {
+    pub fn uniform3fv_with_src_offset(&self, location: &WebGLUniformLocation, data: impl IntoFloat32List, src_offset: f64) {
         unreachable!()
     }
 
@@ -85373,7 +85731,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform3fv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, data: &[f32], src_offset: f64, src_length: u32) {
+    pub fn uniform3fv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, data: impl IntoFloat32List, src_offset: f64, src_length: u32) {
         unreachable!()
     }
 
@@ -85381,7 +85739,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform4fv(&self, location: &WebGLUniformLocation, data: &[f32]) {
+    pub fn uniform4fv(&self, location: &WebGLUniformLocation, data: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -85389,7 +85747,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform4fv_with_src_offset(&self, location: &WebGLUniformLocation, data: &[f32], src_offset: f64) {
+    pub fn uniform4fv_with_src_offset(&self, location: &WebGLUniformLocation, data: impl IntoFloat32List, src_offset: f64) {
         unreachable!()
     }
 
@@ -85397,7 +85755,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform4fv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, data: &[f32], src_offset: f64, src_length: u32) {
+    pub fn uniform4fv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, data: impl IntoFloat32List, src_offset: f64, src_length: u32) {
         unreachable!()
     }
 
@@ -85405,7 +85763,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1iv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform1iv(&self, location: &WebGLUniformLocation, data: &[i32]) {
+    pub fn uniform1iv(&self, location: &WebGLUniformLocation, data: impl IntoInt32List) {
         unreachable!()
     }
 
@@ -85413,7 +85771,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1iv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform1iv_with_src_offset(&self, location: &WebGLUniformLocation, data: &[i32], src_offset: f64) {
+    pub fn uniform1iv_with_src_offset(&self, location: &WebGLUniformLocation, data: impl IntoInt32List, src_offset: f64) {
         unreachable!()
     }
 
@@ -85421,7 +85779,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1iv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform1iv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, data: &[i32], src_offset: f64, src_length: u32) {
+    pub fn uniform1iv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, data: impl IntoInt32List, src_offset: f64, src_length: u32) {
         unreachable!()
     }
 
@@ -85429,7 +85787,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2iv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform2iv(&self, location: &WebGLUniformLocation, data: &[i32]) {
+    pub fn uniform2iv(&self, location: &WebGLUniformLocation, data: impl IntoInt32List) {
         unreachable!()
     }
 
@@ -85437,7 +85795,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2iv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform2iv_with_src_offset(&self, location: &WebGLUniformLocation, data: &[i32], src_offset: f64) {
+    pub fn uniform2iv_with_src_offset(&self, location: &WebGLUniformLocation, data: impl IntoInt32List, src_offset: f64) {
         unreachable!()
     }
 
@@ -85445,7 +85803,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2iv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform2iv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, data: &[i32], src_offset: f64, src_length: u32) {
+    pub fn uniform2iv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, data: impl IntoInt32List, src_offset: f64, src_length: u32) {
         unreachable!()
     }
 
@@ -85453,7 +85811,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3iv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform3iv(&self, location: &WebGLUniformLocation, data: &[i32]) {
+    pub fn uniform3iv(&self, location: &WebGLUniformLocation, data: impl IntoInt32List) {
         unreachable!()
     }
 
@@ -85461,7 +85819,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3iv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform3iv_with_src_offset(&self, location: &WebGLUniformLocation, data: &[i32], src_offset: f64) {
+    pub fn uniform3iv_with_src_offset(&self, location: &WebGLUniformLocation, data: impl IntoInt32List, src_offset: f64) {
         unreachable!()
     }
 
@@ -85469,7 +85827,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3iv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform3iv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, data: &[i32], src_offset: f64, src_length: u32) {
+    pub fn uniform3iv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, data: impl IntoInt32List, src_offset: f64, src_length: u32) {
         unreachable!()
     }
 
@@ -85477,7 +85835,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4iv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform4iv(&self, location: &WebGLUniformLocation, data: &[i32]) {
+    pub fn uniform4iv(&self, location: &WebGLUniformLocation, data: impl IntoInt32List) {
         unreachable!()
     }
 
@@ -85485,7 +85843,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4iv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform4iv_with_src_offset(&self, location: &WebGLUniformLocation, data: &[i32], src_offset: f64) {
+    pub fn uniform4iv_with_src_offset(&self, location: &WebGLUniformLocation, data: impl IntoInt32List, src_offset: f64) {
         unreachable!()
     }
 
@@ -85493,7 +85851,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4iv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform4iv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, data: &[i32], src_offset: f64, src_length: u32) {
+    pub fn uniform4iv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, data: impl IntoInt32List, src_offset: f64, src_length: u32) {
         unreachable!()
     }
 
@@ -85501,7 +85859,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix2fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix2fv(&self, location: &WebGLUniformLocation, transpose: bool, data: &[f32]) {
+    pub fn uniform_matrix2fv(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -85509,7 +85867,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix2fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix2fv_with_src_offset(&self, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64) {
+    pub fn uniform_matrix2fv_with_src_offset(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List, src_offset: f64) {
         unreachable!()
     }
 
@@ -85517,7 +85875,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix2fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix2fv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64, src_length: u32) {
+    pub fn uniform_matrix2fv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List, src_offset: f64, src_length: u32) {
         unreachable!()
     }
 
@@ -85525,7 +85883,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix3fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix3fv(&self, location: &WebGLUniformLocation, transpose: bool, data: &[f32]) {
+    pub fn uniform_matrix3fv(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -85533,7 +85891,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix3fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix3fv_with_src_offset(&self, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64) {
+    pub fn uniform_matrix3fv_with_src_offset(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List, src_offset: f64) {
         unreachable!()
     }
 
@@ -85541,7 +85899,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix3fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix3fv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64, src_length: u32) {
+    pub fn uniform_matrix3fv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List, src_offset: f64, src_length: u32) {
         unreachable!()
     }
 
@@ -85549,7 +85907,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix4fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix4fv(&self, location: &WebGLUniformLocation, transpose: bool, data: &[f32]) {
+    pub fn uniform_matrix4fv(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -85557,7 +85915,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix4fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix4fv_with_src_offset(&self, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64) {
+    pub fn uniform_matrix4fv_with_src_offset(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List, src_offset: f64) {
         unreachable!()
     }
 
@@ -85565,7 +85923,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix4fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix4fv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, transpose: bool, data: &[f32], src_offset: f64, src_length: u32) {
+    pub fn uniform_matrix4fv_with_src_offset_and_src_length(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List, src_offset: f64, src_length: u32) {
         unreachable!()
     }
 
@@ -85573,7 +85931,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "readPixels")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn read_pixels(&self, x: i32, y: i32, width: i32, height: i32, format: u32, type_: u32, dst_data: &Uint8Array) {
+    pub fn read_pixels(&self, x: i32, y: i32, width: i32, height: i32, format: u32, type_: u32, dst_data: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -85589,7 +85947,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "readPixels")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn read_pixels_with_dst_offset(&self, x: i32, y: i32, width: i32, height: i32, format: u32, type_: u32, dst_data: &Uint8Array, dst_offset: f64) {
+    pub fn read_pixels_with_dst_offset(&self, x: i32, y: i32, width: i32, height: i32, format: u32, type_: u32, dst_data: impl IntoArrayBufferView, dst_offset: f64) {
         unreachable!()
     }
 
@@ -87535,7 +87893,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttrib1fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib1fv(&self, index: u32, values: &[f32]) {
+    pub fn vertex_attrib1fv(&self, index: u32, values: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -87543,7 +87901,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttrib2fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib2fv(&self, index: u32, values: &[f32]) {
+    pub fn vertex_attrib2fv(&self, index: u32, values: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -87551,7 +87909,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttrib3fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib3fv(&self, index: u32, values: &[f32]) {
+    pub fn vertex_attrib3fv(&self, index: u32, values: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -87559,7 +87917,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttrib4fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib4fv(&self, index: u32, values: &[f32]) {
+    pub fn vertex_attrib4fv(&self, index: u32, values: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -87607,7 +87965,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn compressed_tex_image2_d(&self, target: u32, level: i32, internalformat: u32, width: i32, height: i32, border: i32, data: &Uint8Array) {
+    pub fn compressed_tex_image2_d(&self, target: u32, level: i32, internalformat: u32, width: i32, height: i32, border: i32, data: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -87615,7 +87973,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexSubImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn compressed_tex_sub_image2_d(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, data: &Uint8Array) {
+    pub fn compressed_tex_sub_image2_d(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, data: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -87623,7 +87981,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "readPixels")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn read_pixels(&self, x: i32, y: i32, width: i32, height: i32, format: u32, type_: u32, pixels: &Uint8Array) {
+    pub fn read_pixels(&self, x: i32, y: i32, width: i32, height: i32, format: u32, type_: u32, pixels: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -87631,7 +87989,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_image2_d(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, border: i32, format: u32, type_: u32, pixels: &Uint8Array) {
+    pub fn tex_image2_d(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, border: i32, format: u32, type_: u32, pixels: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -87647,7 +88005,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texSubImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_sub_image2_d(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, type_: u32, pixels: &Uint8Array) {
+    pub fn tex_sub_image2_d(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, type_: u32, pixels: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -87663,7 +88021,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform1fv(&self, location: &WebGLUniformLocation, v: &[f32]) {
+    pub fn uniform1fv(&self, location: &WebGLUniformLocation, v: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -87671,7 +88029,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform2fv(&self, location: &WebGLUniformLocation, v: &[f32]) {
+    pub fn uniform2fv(&self, location: &WebGLUniformLocation, v: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -87679,7 +88037,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform3fv(&self, location: &WebGLUniformLocation, v: &[f32]) {
+    pub fn uniform3fv(&self, location: &WebGLUniformLocation, v: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -87687,7 +88045,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform4fv(&self, location: &WebGLUniformLocation, v: &[f32]) {
+    pub fn uniform4fv(&self, location: &WebGLUniformLocation, v: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -87695,7 +88053,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1iv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform1iv(&self, location: &WebGLUniformLocation, v: &[i32]) {
+    pub fn uniform1iv(&self, location: &WebGLUniformLocation, v: impl IntoInt32List) {
         unreachable!()
     }
 
@@ -87703,7 +88061,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2iv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform2iv(&self, location: &WebGLUniformLocation, v: &[i32]) {
+    pub fn uniform2iv(&self, location: &WebGLUniformLocation, v: impl IntoInt32List) {
         unreachable!()
     }
 
@@ -87711,7 +88069,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3iv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform3iv(&self, location: &WebGLUniformLocation, v: &[i32]) {
+    pub fn uniform3iv(&self, location: &WebGLUniformLocation, v: impl IntoInt32List) {
         unreachable!()
     }
 
@@ -87719,7 +88077,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4iv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform4iv(&self, location: &WebGLUniformLocation, v: &[i32]) {
+    pub fn uniform4iv(&self, location: &WebGLUniformLocation, v: impl IntoInt32List) {
         unreachable!()
     }
 
@@ -87727,7 +88085,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix2fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix2fv(&self, location: &WebGLUniformLocation, transpose: bool, value: &[f32]) {
+    pub fn uniform_matrix2fv(&self, location: &WebGLUniformLocation, transpose: bool, value: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -87735,7 +88093,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix3fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix3fv(&self, location: &WebGLUniformLocation, transpose: bool, value: &[f32]) {
+    pub fn uniform_matrix3fv(&self, location: &WebGLUniformLocation, transpose: bool, value: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -87743,7 +88101,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix4fv")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_matrix4fv(&self, location: &WebGLUniformLocation, transpose: bool, value: &[f32]) {
+    pub fn uniform_matrix4fv(&self, location: &WebGLUniformLocation, transpose: bool, value: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -88008,7 +88366,7 @@ impl WebSocket {
     #[cfg_attr(rust_js, rust_js::link_name = "send")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn send(&self, data: impl IntoUint8ArrayOrArrayBufferOrBlobOrStr) {
+    pub fn send(&self, data: impl IntoBufferSourceOrBlobOrStr) {
         unreachable!()
     }
 
@@ -88863,7 +89221,7 @@ impl XMLHttpRequest {
     #[cfg_attr(rust_js, rust_js::link_name = "send")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn send_with_body(&self, body: impl IntoDocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr) {
+    pub fn send_with_body(&self, body: impl IntoDocumentOrXMLHttpRequestBodyInit) {
         unreachable!()
     }
 
@@ -93406,7 +93764,7 @@ pub struct PushSubscriptionOptionsInit<'a> {
     #[cfg_attr(rust_js, rust_js::name = "userVisibleOnly")]
     pub user_visible_only: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "applicationServerKey")]
-    pub application_server_key: Option<Uint8ArrayOrArrayBufferOrStr<'a>>,
+    pub application_server_key: Option<BufferSourceOrStr<'a>>,
 }
 
 /// The [`QueuingStrategy`](https://developer.mozilla.org/docs/Web/API/QueuingStrategy) dictionary: a JS object of these fields, a `None` one not given.
@@ -93909,6 +94267,15 @@ pub struct SvcOutputMetadata {
     pub temporal_layer_id: Option<u32>,
 }
 
+/// The [`SVGBoundingBoxOptions`](https://developer.mozilla.org/docs/Web/API/SVGBoundingBoxOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct SVGBoundingBoxOptions {
+    pub fill: Option<bool>,
+    pub stroke: Option<bool>,
+    pub markers: Option<bool>,
+    pub clipped: Option<bool>,
+}
+
 /// The [`TaskControllerInit`](https://developer.mozilla.org/docs/Web/API/TaskControllerInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct TaskControllerInit<'a> {
@@ -94378,7 +94745,7 @@ pub struct WriteParams<'a> {
     pub type_: &'a str,
     pub size: Option<f64>,
     pub position: Option<f64>,
-    pub data: Option<Uint8ArrayOrArrayBufferOrBlobOrStr<'a>>,
+    pub data: Option<BufferSourceOrBlobOrStr<'a>>,
 }
 
 /// `AddEventListenerOptions | boolean`: each variant's value is the member itself (ADR 0215).
@@ -94417,16 +94784,52 @@ impl<'a> AddEventListenerOptionsOrBool<'a> {
     }
 }
 
-/// `ArrayBuffer | Uint8Array`: each variant's value is the member itself (ADR 0215).
+/// `ArrayBuffer | SharedArrayBuffer | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum AllowSharedBufferSource<'a> {
     ArrayBuffer(&'a ArrayBuffer),
+    SharedArrayBuffer(&'a SharedArrayBuffer),
+    Int8Array(&'a Int8Array),
+    Int16Array(&'a Int16Array),
+    Int32Array(&'a Int32Array),
     Uint8Array(&'a Uint8Array),
+    Uint16Array(&'a Uint16Array),
+    Uint32Array(&'a Uint32Array),
+    Uint8ClampedArray(&'a Uint8ClampedArray),
+    BigInt64Array(&'a BigInt64Array),
+    BigUint64Array(&'a BigUint64Array),
+    Float32Array(&'a Float32Array),
+    Float64Array(&'a Float64Array),
+    DataView(&'a DataView),
 }
 
 impl<'a> From<&'a ArrayBuffer> for AllowSharedBufferSource<'a> {
     fn from(value: &'a ArrayBuffer) -> Self {
         AllowSharedBufferSource::ArrayBuffer(value)
+    }
+}
+
+impl<'a> From<&'a SharedArrayBuffer> for AllowSharedBufferSource<'a> {
+    fn from(value: &'a SharedArrayBuffer) -> Self {
+        AllowSharedBufferSource::SharedArrayBuffer(value)
+    }
+}
+
+impl<'a> From<&'a Int8Array> for AllowSharedBufferSource<'a> {
+    fn from(value: &'a Int8Array) -> Self {
+        AllowSharedBufferSource::Int8Array(value)
+    }
+}
+
+impl<'a> From<&'a Int16Array> for AllowSharedBufferSource<'a> {
+    fn from(value: &'a Int16Array) -> Self {
+        AllowSharedBufferSource::Int16Array(value)
+    }
+}
+
+impl<'a> From<&'a Int32Array> for AllowSharedBufferSource<'a> {
+    fn from(value: &'a Int32Array) -> Self {
+        AllowSharedBufferSource::Int32Array(value)
     }
 }
 
@@ -94436,12 +94839,72 @@ impl<'a> From<&'a Uint8Array> for AllowSharedBufferSource<'a> {
     }
 }
 
-/// What a `ArrayBuffer | Uint8Array` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `ArrayBuffer | Uint8Array`")]
-#[cfg_attr(rust_js, rust_js::types = "ArrayBuffer | Uint8Array")]
+impl<'a> From<&'a Uint16Array> for AllowSharedBufferSource<'a> {
+    fn from(value: &'a Uint16Array) -> Self {
+        AllowSharedBufferSource::Uint16Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint32Array> for AllowSharedBufferSource<'a> {
+    fn from(value: &'a Uint32Array) -> Self {
+        AllowSharedBufferSource::Uint32Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint8ClampedArray> for AllowSharedBufferSource<'a> {
+    fn from(value: &'a Uint8ClampedArray) -> Self {
+        AllowSharedBufferSource::Uint8ClampedArray(value)
+    }
+}
+
+impl<'a> From<&'a BigInt64Array> for AllowSharedBufferSource<'a> {
+    fn from(value: &'a BigInt64Array) -> Self {
+        AllowSharedBufferSource::BigInt64Array(value)
+    }
+}
+
+impl<'a> From<&'a BigUint64Array> for AllowSharedBufferSource<'a> {
+    fn from(value: &'a BigUint64Array) -> Self {
+        AllowSharedBufferSource::BigUint64Array(value)
+    }
+}
+
+impl<'a> From<&'a Float32Array> for AllowSharedBufferSource<'a> {
+    fn from(value: &'a Float32Array) -> Self {
+        AllowSharedBufferSource::Float32Array(value)
+    }
+}
+
+impl<'a> From<&'a Float64Array> for AllowSharedBufferSource<'a> {
+    fn from(value: &'a Float64Array) -> Self {
+        AllowSharedBufferSource::Float64Array(value)
+    }
+}
+
+impl<'a> From<&'a DataView> for AllowSharedBufferSource<'a> {
+    fn from(value: &'a DataView) -> Self {
+        AllowSharedBufferSource::DataView(value)
+    }
+}
+
+/// What a `ArrayBuffer | SharedArrayBuffer | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `ArrayBuffer | SharedArrayBuffer | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView`")]
+#[cfg_attr(rust_js, rust_js::types = "ArrayBuffer | SharedArrayBuffer | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView")]
 pub trait IntoAllowSharedBufferSource: sealed::Sealed {}
 impl IntoAllowSharedBufferSource for &ArrayBuffer {}
+impl IntoAllowSharedBufferSource for &SharedArrayBuffer {}
+impl IntoAllowSharedBufferSource for &Int8Array {}
+impl IntoAllowSharedBufferSource for &Int16Array {}
+impl IntoAllowSharedBufferSource for &Int32Array {}
 impl IntoAllowSharedBufferSource for &Uint8Array {}
+impl IntoAllowSharedBufferSource for &Uint16Array {}
+impl IntoAllowSharedBufferSource for &Uint32Array {}
+impl IntoAllowSharedBufferSource for &Uint8ClampedArray {}
+impl IntoAllowSharedBufferSource for &BigInt64Array {}
+impl IntoAllowSharedBufferSource for &BigUint64Array {}
+impl IntoAllowSharedBufferSource for &Float32Array {}
+impl IntoAllowSharedBufferSource for &Float64Array {}
+impl IntoAllowSharedBufferSource for &DataView {}
 impl IntoAllowSharedBufferSource for AllowSharedBufferSource<'_> {}
 
 impl<'a> AllowSharedBufferSource<'a> {
@@ -94449,6 +94912,122 @@ impl<'a> AllowSharedBufferSource<'a> {
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
     #[allow(unused_variables)]
     pub fn of(this: impl IntoAllowSharedBufferSource + 'a) -> AllowSharedBufferSource<'a> {
+        unreachable!()
+    }
+}
+
+/// `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum ArrayBufferView<'a> {
+    Int8Array(&'a Int8Array),
+    Int16Array(&'a Int16Array),
+    Int32Array(&'a Int32Array),
+    Uint8Array(&'a Uint8Array),
+    Uint16Array(&'a Uint16Array),
+    Uint32Array(&'a Uint32Array),
+    Uint8ClampedArray(&'a Uint8ClampedArray),
+    BigInt64Array(&'a BigInt64Array),
+    BigUint64Array(&'a BigUint64Array),
+    Float32Array(&'a Float32Array),
+    Float64Array(&'a Float64Array),
+    DataView(&'a DataView),
+}
+
+impl<'a> From<&'a Int8Array> for ArrayBufferView<'a> {
+    fn from(value: &'a Int8Array) -> Self {
+        ArrayBufferView::Int8Array(value)
+    }
+}
+
+impl<'a> From<&'a Int16Array> for ArrayBufferView<'a> {
+    fn from(value: &'a Int16Array) -> Self {
+        ArrayBufferView::Int16Array(value)
+    }
+}
+
+impl<'a> From<&'a Int32Array> for ArrayBufferView<'a> {
+    fn from(value: &'a Int32Array) -> Self {
+        ArrayBufferView::Int32Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint8Array> for ArrayBufferView<'a> {
+    fn from(value: &'a Uint8Array) -> Self {
+        ArrayBufferView::Uint8Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint16Array> for ArrayBufferView<'a> {
+    fn from(value: &'a Uint16Array) -> Self {
+        ArrayBufferView::Uint16Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint32Array> for ArrayBufferView<'a> {
+    fn from(value: &'a Uint32Array) -> Self {
+        ArrayBufferView::Uint32Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint8ClampedArray> for ArrayBufferView<'a> {
+    fn from(value: &'a Uint8ClampedArray) -> Self {
+        ArrayBufferView::Uint8ClampedArray(value)
+    }
+}
+
+impl<'a> From<&'a BigInt64Array> for ArrayBufferView<'a> {
+    fn from(value: &'a BigInt64Array) -> Self {
+        ArrayBufferView::BigInt64Array(value)
+    }
+}
+
+impl<'a> From<&'a BigUint64Array> for ArrayBufferView<'a> {
+    fn from(value: &'a BigUint64Array) -> Self {
+        ArrayBufferView::BigUint64Array(value)
+    }
+}
+
+impl<'a> From<&'a Float32Array> for ArrayBufferView<'a> {
+    fn from(value: &'a Float32Array) -> Self {
+        ArrayBufferView::Float32Array(value)
+    }
+}
+
+impl<'a> From<&'a Float64Array> for ArrayBufferView<'a> {
+    fn from(value: &'a Float64Array) -> Self {
+        ArrayBufferView::Float64Array(value)
+    }
+}
+
+impl<'a> From<&'a DataView> for ArrayBufferView<'a> {
+    fn from(value: &'a DataView) -> Self {
+        ArrayBufferView::DataView(value)
+    }
+}
+
+/// What a `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView`")]
+#[cfg_attr(rust_js, rust_js::types = "Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView")]
+pub trait IntoArrayBufferView: sealed::Sealed {}
+impl IntoArrayBufferView for &Int8Array {}
+impl IntoArrayBufferView for &Int16Array {}
+impl IntoArrayBufferView for &Int32Array {}
+impl IntoArrayBufferView for &Uint8Array {}
+impl IntoArrayBufferView for &Uint16Array {}
+impl IntoArrayBufferView for &Uint32Array {}
+impl IntoArrayBufferView for &Uint8ClampedArray {}
+impl IntoArrayBufferView for &BigInt64Array {}
+impl IntoArrayBufferView for &BigUint64Array {}
+impl IntoArrayBufferView for &Float32Array {}
+impl IntoArrayBufferView for &Float64Array {}
+impl IntoArrayBufferView for &DataView {}
+impl IntoArrayBufferView for ArrayBufferView<'_> {}
+
+impl<'a> ArrayBufferView<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoArrayBufferView + 'a) -> ArrayBufferView<'a> {
         unreachable!()
     }
 }
@@ -94496,18 +95075,95 @@ impl<'a> BlobOrMediaSource<'a> {
     }
 }
 
-/// `Uint8Array | ArrayBuffer | Blob | string`: each variant's value is the member itself (ADR 0215).
+/// `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | Blob | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum BlobPart<'a> {
+    Int8Array(&'a Int8Array),
+    Int16Array(&'a Int16Array),
+    Int32Array(&'a Int32Array),
     Uint8Array(&'a Uint8Array),
+    Uint16Array(&'a Uint16Array),
+    Uint32Array(&'a Uint32Array),
+    Uint8ClampedArray(&'a Uint8ClampedArray),
+    BigInt64Array(&'a BigInt64Array),
+    BigUint64Array(&'a BigUint64Array),
+    Float32Array(&'a Float32Array),
+    Float64Array(&'a Float64Array),
+    DataView(&'a DataView),
     ArrayBuffer(&'a ArrayBuffer),
     Blob(&'a Blob),
     Str(&'a str),
 }
 
+impl<'a> From<&'a Int8Array> for BlobPart<'a> {
+    fn from(value: &'a Int8Array) -> Self {
+        BlobPart::Int8Array(value)
+    }
+}
+
+impl<'a> From<&'a Int16Array> for BlobPart<'a> {
+    fn from(value: &'a Int16Array) -> Self {
+        BlobPart::Int16Array(value)
+    }
+}
+
+impl<'a> From<&'a Int32Array> for BlobPart<'a> {
+    fn from(value: &'a Int32Array) -> Self {
+        BlobPart::Int32Array(value)
+    }
+}
+
 impl<'a> From<&'a Uint8Array> for BlobPart<'a> {
     fn from(value: &'a Uint8Array) -> Self {
         BlobPart::Uint8Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint16Array> for BlobPart<'a> {
+    fn from(value: &'a Uint16Array) -> Self {
+        BlobPart::Uint16Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint32Array> for BlobPart<'a> {
+    fn from(value: &'a Uint32Array) -> Self {
+        BlobPart::Uint32Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint8ClampedArray> for BlobPart<'a> {
+    fn from(value: &'a Uint8ClampedArray) -> Self {
+        BlobPart::Uint8ClampedArray(value)
+    }
+}
+
+impl<'a> From<&'a BigInt64Array> for BlobPart<'a> {
+    fn from(value: &'a BigInt64Array) -> Self {
+        BlobPart::BigInt64Array(value)
+    }
+}
+
+impl<'a> From<&'a BigUint64Array> for BlobPart<'a> {
+    fn from(value: &'a BigUint64Array) -> Self {
+        BlobPart::BigUint64Array(value)
+    }
+}
+
+impl<'a> From<&'a Float32Array> for BlobPart<'a> {
+    fn from(value: &'a Float32Array) -> Self {
+        BlobPart::Float32Array(value)
+    }
+}
+
+impl<'a> From<&'a Float64Array> for BlobPart<'a> {
+    fn from(value: &'a Float64Array) -> Self {
+        BlobPart::Float64Array(value)
+    }
+}
+
+impl<'a> From<&'a DataView> for BlobPart<'a> {
+    fn from(value: &'a DataView) -> Self {
+        BlobPart::DataView(value)
     }
 }
 
@@ -94535,11 +95191,22 @@ impl<'a> From<&'a str> for BlobPart<'a> {
     }
 }
 
-/// What a `Uint8Array | ArrayBuffer | Blob | string` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Uint8Array | ArrayBuffer | Blob | string`")]
-#[cfg_attr(rust_js, rust_js::types = "Uint8Array | ArrayBuffer | Blob | string")]
+/// What a `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | Blob | string` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | Blob | string`")]
+#[cfg_attr(rust_js, rust_js::types = "Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | Blob | string")]
 pub trait IntoBlobPart: sealed::Sealed {}
+impl IntoBlobPart for &Int8Array {}
+impl IntoBlobPart for &Int16Array {}
+impl IntoBlobPart for &Int32Array {}
 impl IntoBlobPart for &Uint8Array {}
+impl IntoBlobPart for &Uint16Array {}
+impl IntoBlobPart for &Uint32Array {}
+impl IntoBlobPart for &Uint8ClampedArray {}
+impl IntoBlobPart for &BigInt64Array {}
+impl IntoBlobPart for &BigUint64Array {}
+impl IntoBlobPart for &Float32Array {}
+impl IntoBlobPart for &Float64Array {}
+impl IntoBlobPart for &DataView {}
 impl IntoBlobPart for &ArrayBuffer {}
 impl IntoBlobPart for &Blob {}
 impl IntoBlobPart for &File {}
@@ -94591,12 +95258,23 @@ impl<'a> BluetoothServiceUUID<'a> {
     }
 }
 
-/// `ReadableStream | Blob | Uint8Array | ArrayBuffer | FormData | URLSearchParams | string`: each variant's value is the member itself (ADR 0215).
+/// `ReadableStream | Blob | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | FormData | URLSearchParams | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum BodyInit<'a> {
     ReadableStream(&'a ReadableStream),
     Blob(&'a Blob),
+    Int8Array(&'a Int8Array),
+    Int16Array(&'a Int16Array),
+    Int32Array(&'a Int32Array),
     Uint8Array(&'a Uint8Array),
+    Uint16Array(&'a Uint16Array),
+    Uint32Array(&'a Uint32Array),
+    Uint8ClampedArray(&'a Uint8ClampedArray),
+    BigInt64Array(&'a BigInt64Array),
+    BigUint64Array(&'a BigUint64Array),
+    Float32Array(&'a Float32Array),
+    Float64Array(&'a Float64Array),
+    DataView(&'a DataView),
     ArrayBuffer(&'a ArrayBuffer),
     FormData(&'a FormData),
     URLSearchParams(&'a URLSearchParams),
@@ -94627,9 +95305,75 @@ impl<'a> From<&'a File> for BodyInit<'a> {
     }
 }
 
+impl<'a> From<&'a Int8Array> for BodyInit<'a> {
+    fn from(value: &'a Int8Array) -> Self {
+        BodyInit::Int8Array(value)
+    }
+}
+
+impl<'a> From<&'a Int16Array> for BodyInit<'a> {
+    fn from(value: &'a Int16Array) -> Self {
+        BodyInit::Int16Array(value)
+    }
+}
+
+impl<'a> From<&'a Int32Array> for BodyInit<'a> {
+    fn from(value: &'a Int32Array) -> Self {
+        BodyInit::Int32Array(value)
+    }
+}
+
 impl<'a> From<&'a Uint8Array> for BodyInit<'a> {
     fn from(value: &'a Uint8Array) -> Self {
         BodyInit::Uint8Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint16Array> for BodyInit<'a> {
+    fn from(value: &'a Uint16Array) -> Self {
+        BodyInit::Uint16Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint32Array> for BodyInit<'a> {
+    fn from(value: &'a Uint32Array) -> Self {
+        BodyInit::Uint32Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint8ClampedArray> for BodyInit<'a> {
+    fn from(value: &'a Uint8ClampedArray) -> Self {
+        BodyInit::Uint8ClampedArray(value)
+    }
+}
+
+impl<'a> From<&'a BigInt64Array> for BodyInit<'a> {
+    fn from(value: &'a BigInt64Array) -> Self {
+        BodyInit::BigInt64Array(value)
+    }
+}
+
+impl<'a> From<&'a BigUint64Array> for BodyInit<'a> {
+    fn from(value: &'a BigUint64Array) -> Self {
+        BodyInit::BigUint64Array(value)
+    }
+}
+
+impl<'a> From<&'a Float32Array> for BodyInit<'a> {
+    fn from(value: &'a Float32Array) -> Self {
+        BodyInit::Float32Array(value)
+    }
+}
+
+impl<'a> From<&'a Float64Array> for BodyInit<'a> {
+    fn from(value: &'a Float64Array) -> Self {
+        BodyInit::Float64Array(value)
+    }
+}
+
+impl<'a> From<&'a DataView> for BodyInit<'a> {
+    fn from(value: &'a DataView) -> Self {
+        BodyInit::DataView(value)
     }
 }
 
@@ -94657,15 +95401,26 @@ impl<'a> From<&'a str> for BodyInit<'a> {
     }
 }
 
-/// What a `ReadableStream | Blob | Uint8Array | ArrayBuffer | FormData | URLSearchParams | string` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `ReadableStream | Blob | Uint8Array | ArrayBuffer | FormData | URLSearchParams | string`")]
-#[cfg_attr(rust_js, rust_js::types = "ReadableStream | Blob | Uint8Array | ArrayBuffer | FormData | URLSearchParams | string")]
+/// What a `ReadableStream | Blob | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | FormData | URLSearchParams | string` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `ReadableStream | Blob | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | FormData | URLSearchParams | string`")]
+#[cfg_attr(rust_js, rust_js::types = "ReadableStream | Blob | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | FormData | URLSearchParams | string")]
 pub trait IntoBodyInit: sealed::Sealed {}
 impl IntoBodyInit for &ReadableStream {}
 impl IntoBodyInit for &WebTransportReceiveStream {}
 impl IntoBodyInit for &Blob {}
 impl IntoBodyInit for &File {}
+impl IntoBodyInit for &Int8Array {}
+impl IntoBodyInit for &Int16Array {}
+impl IntoBodyInit for &Int32Array {}
 impl IntoBodyInit for &Uint8Array {}
+impl IntoBodyInit for &Uint16Array {}
+impl IntoBodyInit for &Uint32Array {}
+impl IntoBodyInit for &Uint8ClampedArray {}
+impl IntoBodyInit for &BigInt64Array {}
+impl IntoBodyInit for &BigUint64Array {}
+impl IntoBodyInit for &Float32Array {}
+impl IntoBodyInit for &Float64Array {}
+impl IntoBodyInit for &DataView {}
 impl IntoBodyInit for &ArrayBuffer {}
 impl IntoBodyInit for &FormData {}
 impl IntoBodyInit for &URLSearchParams {}
@@ -94833,16 +95588,93 @@ impl<'a> BoolOrScrollIntoViewOptions<'a> {
     }
 }
 
-/// `Uint8Array | ArrayBuffer`: each variant's value is the member itself (ADR 0215).
+/// `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum BufferSource<'a> {
+    Int8Array(&'a Int8Array),
+    Int16Array(&'a Int16Array),
+    Int32Array(&'a Int32Array),
     Uint8Array(&'a Uint8Array),
+    Uint16Array(&'a Uint16Array),
+    Uint32Array(&'a Uint32Array),
+    Uint8ClampedArray(&'a Uint8ClampedArray),
+    BigInt64Array(&'a BigInt64Array),
+    BigUint64Array(&'a BigUint64Array),
+    Float32Array(&'a Float32Array),
+    Float64Array(&'a Float64Array),
+    DataView(&'a DataView),
     ArrayBuffer(&'a ArrayBuffer),
+}
+
+impl<'a> From<&'a Int8Array> for BufferSource<'a> {
+    fn from(value: &'a Int8Array) -> Self {
+        BufferSource::Int8Array(value)
+    }
+}
+
+impl<'a> From<&'a Int16Array> for BufferSource<'a> {
+    fn from(value: &'a Int16Array) -> Self {
+        BufferSource::Int16Array(value)
+    }
+}
+
+impl<'a> From<&'a Int32Array> for BufferSource<'a> {
+    fn from(value: &'a Int32Array) -> Self {
+        BufferSource::Int32Array(value)
+    }
 }
 
 impl<'a> From<&'a Uint8Array> for BufferSource<'a> {
     fn from(value: &'a Uint8Array) -> Self {
         BufferSource::Uint8Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint16Array> for BufferSource<'a> {
+    fn from(value: &'a Uint16Array) -> Self {
+        BufferSource::Uint16Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint32Array> for BufferSource<'a> {
+    fn from(value: &'a Uint32Array) -> Self {
+        BufferSource::Uint32Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint8ClampedArray> for BufferSource<'a> {
+    fn from(value: &'a Uint8ClampedArray) -> Self {
+        BufferSource::Uint8ClampedArray(value)
+    }
+}
+
+impl<'a> From<&'a BigInt64Array> for BufferSource<'a> {
+    fn from(value: &'a BigInt64Array) -> Self {
+        BufferSource::BigInt64Array(value)
+    }
+}
+
+impl<'a> From<&'a BigUint64Array> for BufferSource<'a> {
+    fn from(value: &'a BigUint64Array) -> Self {
+        BufferSource::BigUint64Array(value)
+    }
+}
+
+impl<'a> From<&'a Float32Array> for BufferSource<'a> {
+    fn from(value: &'a Float32Array) -> Self {
+        BufferSource::Float32Array(value)
+    }
+}
+
+impl<'a> From<&'a Float64Array> for BufferSource<'a> {
+    fn from(value: &'a Float64Array) -> Self {
+        BufferSource::Float64Array(value)
+    }
+}
+
+impl<'a> From<&'a DataView> for BufferSource<'a> {
+    fn from(value: &'a DataView) -> Self {
+        BufferSource::DataView(value)
     }
 }
 
@@ -94852,11 +95684,22 @@ impl<'a> From<&'a ArrayBuffer> for BufferSource<'a> {
     }
 }
 
-/// What a `Uint8Array | ArrayBuffer` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Uint8Array | ArrayBuffer`")]
-#[cfg_attr(rust_js, rust_js::types = "Uint8Array | ArrayBuffer")]
+/// What a `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer`")]
+#[cfg_attr(rust_js, rust_js::types = "Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer")]
 pub trait IntoBufferSource: sealed::Sealed {}
+impl IntoBufferSource for &Int8Array {}
+impl IntoBufferSource for &Int16Array {}
+impl IntoBufferSource for &Int32Array {}
 impl IntoBufferSource for &Uint8Array {}
+impl IntoBufferSource for &Uint16Array {}
+impl IntoBufferSource for &Uint32Array {}
+impl IntoBufferSource for &Uint8ClampedArray {}
+impl IntoBufferSource for &BigInt64Array {}
+impl IntoBufferSource for &BigUint64Array {}
+impl IntoBufferSource for &Float32Array {}
+impl IntoBufferSource for &Float64Array {}
+impl IntoBufferSource for &DataView {}
 impl IntoBufferSource for &ArrayBuffer {}
 impl IntoBufferSource for BufferSource<'_> {}
 
@@ -94865,6 +95708,417 @@ impl<'a> BufferSource<'a> {
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
     #[allow(unused_variables)]
     pub fn of(this: impl IntoBufferSource + 'a) -> BufferSource<'a> {
+        unreachable!()
+    }
+}
+
+/// `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | Blob | string`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum BufferSourceOrBlobOrStr<'a> {
+    Int8Array(&'a Int8Array),
+    Int16Array(&'a Int16Array),
+    Int32Array(&'a Int32Array),
+    Uint8Array(&'a Uint8Array),
+    Uint16Array(&'a Uint16Array),
+    Uint32Array(&'a Uint32Array),
+    Uint8ClampedArray(&'a Uint8ClampedArray),
+    BigInt64Array(&'a BigInt64Array),
+    BigUint64Array(&'a BigUint64Array),
+    Float32Array(&'a Float32Array),
+    Float64Array(&'a Float64Array),
+    DataView(&'a DataView),
+    ArrayBuffer(&'a ArrayBuffer),
+    Blob(&'a Blob),
+    Str(&'a str),
+}
+
+impl<'a> From<&'a Int8Array> for BufferSourceOrBlobOrStr<'a> {
+    fn from(value: &'a Int8Array) -> Self {
+        BufferSourceOrBlobOrStr::Int8Array(value)
+    }
+}
+
+impl<'a> From<&'a Int16Array> for BufferSourceOrBlobOrStr<'a> {
+    fn from(value: &'a Int16Array) -> Self {
+        BufferSourceOrBlobOrStr::Int16Array(value)
+    }
+}
+
+impl<'a> From<&'a Int32Array> for BufferSourceOrBlobOrStr<'a> {
+    fn from(value: &'a Int32Array) -> Self {
+        BufferSourceOrBlobOrStr::Int32Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint8Array> for BufferSourceOrBlobOrStr<'a> {
+    fn from(value: &'a Uint8Array) -> Self {
+        BufferSourceOrBlobOrStr::Uint8Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint16Array> for BufferSourceOrBlobOrStr<'a> {
+    fn from(value: &'a Uint16Array) -> Self {
+        BufferSourceOrBlobOrStr::Uint16Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint32Array> for BufferSourceOrBlobOrStr<'a> {
+    fn from(value: &'a Uint32Array) -> Self {
+        BufferSourceOrBlobOrStr::Uint32Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint8ClampedArray> for BufferSourceOrBlobOrStr<'a> {
+    fn from(value: &'a Uint8ClampedArray) -> Self {
+        BufferSourceOrBlobOrStr::Uint8ClampedArray(value)
+    }
+}
+
+impl<'a> From<&'a BigInt64Array> for BufferSourceOrBlobOrStr<'a> {
+    fn from(value: &'a BigInt64Array) -> Self {
+        BufferSourceOrBlobOrStr::BigInt64Array(value)
+    }
+}
+
+impl<'a> From<&'a BigUint64Array> for BufferSourceOrBlobOrStr<'a> {
+    fn from(value: &'a BigUint64Array) -> Self {
+        BufferSourceOrBlobOrStr::BigUint64Array(value)
+    }
+}
+
+impl<'a> From<&'a Float32Array> for BufferSourceOrBlobOrStr<'a> {
+    fn from(value: &'a Float32Array) -> Self {
+        BufferSourceOrBlobOrStr::Float32Array(value)
+    }
+}
+
+impl<'a> From<&'a Float64Array> for BufferSourceOrBlobOrStr<'a> {
+    fn from(value: &'a Float64Array) -> Self {
+        BufferSourceOrBlobOrStr::Float64Array(value)
+    }
+}
+
+impl<'a> From<&'a DataView> for BufferSourceOrBlobOrStr<'a> {
+    fn from(value: &'a DataView) -> Self {
+        BufferSourceOrBlobOrStr::DataView(value)
+    }
+}
+
+impl<'a> From<&'a ArrayBuffer> for BufferSourceOrBlobOrStr<'a> {
+    fn from(value: &'a ArrayBuffer) -> Self {
+        BufferSourceOrBlobOrStr::ArrayBuffer(value)
+    }
+}
+
+impl<'a> From<&'a Blob> for BufferSourceOrBlobOrStr<'a> {
+    fn from(value: &'a Blob) -> Self {
+        BufferSourceOrBlobOrStr::Blob(value)
+    }
+}
+
+impl<'a> From<&'a File> for BufferSourceOrBlobOrStr<'a> {
+    fn from(value: &'a File) -> Self {
+        BufferSourceOrBlobOrStr::Blob(value)
+    }
+}
+
+impl<'a> From<&'a str> for BufferSourceOrBlobOrStr<'a> {
+    fn from(value: &'a str) -> Self {
+        BufferSourceOrBlobOrStr::Str(value)
+    }
+}
+
+/// What a `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | Blob | string` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | Blob | string`")]
+#[cfg_attr(rust_js, rust_js::types = "Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | Blob | string")]
+pub trait IntoBufferSourceOrBlobOrStr: sealed::Sealed {}
+impl IntoBufferSourceOrBlobOrStr for &Int8Array {}
+impl IntoBufferSourceOrBlobOrStr for &Int16Array {}
+impl IntoBufferSourceOrBlobOrStr for &Int32Array {}
+impl IntoBufferSourceOrBlobOrStr for &Uint8Array {}
+impl IntoBufferSourceOrBlobOrStr for &Uint16Array {}
+impl IntoBufferSourceOrBlobOrStr for &Uint32Array {}
+impl IntoBufferSourceOrBlobOrStr for &Uint8ClampedArray {}
+impl IntoBufferSourceOrBlobOrStr for &BigInt64Array {}
+impl IntoBufferSourceOrBlobOrStr for &BigUint64Array {}
+impl IntoBufferSourceOrBlobOrStr for &Float32Array {}
+impl IntoBufferSourceOrBlobOrStr for &Float64Array {}
+impl IntoBufferSourceOrBlobOrStr for &DataView {}
+impl IntoBufferSourceOrBlobOrStr for &ArrayBuffer {}
+impl IntoBufferSourceOrBlobOrStr for &Blob {}
+impl IntoBufferSourceOrBlobOrStr for &File {}
+impl IntoBufferSourceOrBlobOrStr for &str {}
+impl IntoBufferSourceOrBlobOrStr for BufferSourceOrBlobOrStr<'_> {}
+
+impl<'a> BufferSourceOrBlobOrStr<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoBufferSourceOrBlobOrStr + 'a) -> BufferSourceOrBlobOrStr<'a> {
+        unreachable!()
+    }
+}
+
+/// `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | JsonWebKey`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum BufferSourceOrJsonWebKey<'a> {
+    Int8Array(&'a Int8Array),
+    Int16Array(&'a Int16Array),
+    Int32Array(&'a Int32Array),
+    Uint8Array(&'a Uint8Array),
+    Uint16Array(&'a Uint16Array),
+    Uint32Array(&'a Uint32Array),
+    Uint8ClampedArray(&'a Uint8ClampedArray),
+    BigInt64Array(&'a BigInt64Array),
+    BigUint64Array(&'a BigUint64Array),
+    Float32Array(&'a Float32Array),
+    Float64Array(&'a Float64Array),
+    DataView(&'a DataView),
+    ArrayBuffer(&'a ArrayBuffer),
+    JsonWebKey(JsonWebKey),
+}
+
+impl<'a> From<&'a Int8Array> for BufferSourceOrJsonWebKey<'a> {
+    fn from(value: &'a Int8Array) -> Self {
+        BufferSourceOrJsonWebKey::Int8Array(value)
+    }
+}
+
+impl<'a> From<&'a Int16Array> for BufferSourceOrJsonWebKey<'a> {
+    fn from(value: &'a Int16Array) -> Self {
+        BufferSourceOrJsonWebKey::Int16Array(value)
+    }
+}
+
+impl<'a> From<&'a Int32Array> for BufferSourceOrJsonWebKey<'a> {
+    fn from(value: &'a Int32Array) -> Self {
+        BufferSourceOrJsonWebKey::Int32Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint8Array> for BufferSourceOrJsonWebKey<'a> {
+    fn from(value: &'a Uint8Array) -> Self {
+        BufferSourceOrJsonWebKey::Uint8Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint16Array> for BufferSourceOrJsonWebKey<'a> {
+    fn from(value: &'a Uint16Array) -> Self {
+        BufferSourceOrJsonWebKey::Uint16Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint32Array> for BufferSourceOrJsonWebKey<'a> {
+    fn from(value: &'a Uint32Array) -> Self {
+        BufferSourceOrJsonWebKey::Uint32Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint8ClampedArray> for BufferSourceOrJsonWebKey<'a> {
+    fn from(value: &'a Uint8ClampedArray) -> Self {
+        BufferSourceOrJsonWebKey::Uint8ClampedArray(value)
+    }
+}
+
+impl<'a> From<&'a BigInt64Array> for BufferSourceOrJsonWebKey<'a> {
+    fn from(value: &'a BigInt64Array) -> Self {
+        BufferSourceOrJsonWebKey::BigInt64Array(value)
+    }
+}
+
+impl<'a> From<&'a BigUint64Array> for BufferSourceOrJsonWebKey<'a> {
+    fn from(value: &'a BigUint64Array) -> Self {
+        BufferSourceOrJsonWebKey::BigUint64Array(value)
+    }
+}
+
+impl<'a> From<&'a Float32Array> for BufferSourceOrJsonWebKey<'a> {
+    fn from(value: &'a Float32Array) -> Self {
+        BufferSourceOrJsonWebKey::Float32Array(value)
+    }
+}
+
+impl<'a> From<&'a Float64Array> for BufferSourceOrJsonWebKey<'a> {
+    fn from(value: &'a Float64Array) -> Self {
+        BufferSourceOrJsonWebKey::Float64Array(value)
+    }
+}
+
+impl<'a> From<&'a DataView> for BufferSourceOrJsonWebKey<'a> {
+    fn from(value: &'a DataView) -> Self {
+        BufferSourceOrJsonWebKey::DataView(value)
+    }
+}
+
+impl<'a> From<&'a ArrayBuffer> for BufferSourceOrJsonWebKey<'a> {
+    fn from(value: &'a ArrayBuffer) -> Self {
+        BufferSourceOrJsonWebKey::ArrayBuffer(value)
+    }
+}
+
+impl<'a> From<JsonWebKey> for BufferSourceOrJsonWebKey<'a> {
+    fn from(value: JsonWebKey) -> Self {
+        BufferSourceOrJsonWebKey::JsonWebKey(value)
+    }
+}
+
+/// What a `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | JsonWebKey` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | JsonWebKey`")]
+#[cfg_attr(rust_js, rust_js::types = "Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | JsonWebKey")]
+pub trait IntoBufferSourceOrJsonWebKey: sealed::Sealed {}
+impl IntoBufferSourceOrJsonWebKey for &Int8Array {}
+impl IntoBufferSourceOrJsonWebKey for &Int16Array {}
+impl IntoBufferSourceOrJsonWebKey for &Int32Array {}
+impl IntoBufferSourceOrJsonWebKey for &Uint8Array {}
+impl IntoBufferSourceOrJsonWebKey for &Uint16Array {}
+impl IntoBufferSourceOrJsonWebKey for &Uint32Array {}
+impl IntoBufferSourceOrJsonWebKey for &Uint8ClampedArray {}
+impl IntoBufferSourceOrJsonWebKey for &BigInt64Array {}
+impl IntoBufferSourceOrJsonWebKey for &BigUint64Array {}
+impl IntoBufferSourceOrJsonWebKey for &Float32Array {}
+impl IntoBufferSourceOrJsonWebKey for &Float64Array {}
+impl IntoBufferSourceOrJsonWebKey for &DataView {}
+impl IntoBufferSourceOrJsonWebKey for &ArrayBuffer {}
+impl IntoBufferSourceOrJsonWebKey for JsonWebKey {}
+impl IntoBufferSourceOrJsonWebKey for BufferSourceOrJsonWebKey<'_> {}
+
+impl<'a> BufferSourceOrJsonWebKey<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoBufferSourceOrJsonWebKey + 'a) -> BufferSourceOrJsonWebKey<'a> {
+        unreachable!()
+    }
+}
+
+/// `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | string`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum BufferSourceOrStr<'a> {
+    Int8Array(&'a Int8Array),
+    Int16Array(&'a Int16Array),
+    Int32Array(&'a Int32Array),
+    Uint8Array(&'a Uint8Array),
+    Uint16Array(&'a Uint16Array),
+    Uint32Array(&'a Uint32Array),
+    Uint8ClampedArray(&'a Uint8ClampedArray),
+    BigInt64Array(&'a BigInt64Array),
+    BigUint64Array(&'a BigUint64Array),
+    Float32Array(&'a Float32Array),
+    Float64Array(&'a Float64Array),
+    DataView(&'a DataView),
+    ArrayBuffer(&'a ArrayBuffer),
+    Str(&'a str),
+}
+
+impl<'a> From<&'a Int8Array> for BufferSourceOrStr<'a> {
+    fn from(value: &'a Int8Array) -> Self {
+        BufferSourceOrStr::Int8Array(value)
+    }
+}
+
+impl<'a> From<&'a Int16Array> for BufferSourceOrStr<'a> {
+    fn from(value: &'a Int16Array) -> Self {
+        BufferSourceOrStr::Int16Array(value)
+    }
+}
+
+impl<'a> From<&'a Int32Array> for BufferSourceOrStr<'a> {
+    fn from(value: &'a Int32Array) -> Self {
+        BufferSourceOrStr::Int32Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint8Array> for BufferSourceOrStr<'a> {
+    fn from(value: &'a Uint8Array) -> Self {
+        BufferSourceOrStr::Uint8Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint16Array> for BufferSourceOrStr<'a> {
+    fn from(value: &'a Uint16Array) -> Self {
+        BufferSourceOrStr::Uint16Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint32Array> for BufferSourceOrStr<'a> {
+    fn from(value: &'a Uint32Array) -> Self {
+        BufferSourceOrStr::Uint32Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint8ClampedArray> for BufferSourceOrStr<'a> {
+    fn from(value: &'a Uint8ClampedArray) -> Self {
+        BufferSourceOrStr::Uint8ClampedArray(value)
+    }
+}
+
+impl<'a> From<&'a BigInt64Array> for BufferSourceOrStr<'a> {
+    fn from(value: &'a BigInt64Array) -> Self {
+        BufferSourceOrStr::BigInt64Array(value)
+    }
+}
+
+impl<'a> From<&'a BigUint64Array> for BufferSourceOrStr<'a> {
+    fn from(value: &'a BigUint64Array) -> Self {
+        BufferSourceOrStr::BigUint64Array(value)
+    }
+}
+
+impl<'a> From<&'a Float32Array> for BufferSourceOrStr<'a> {
+    fn from(value: &'a Float32Array) -> Self {
+        BufferSourceOrStr::Float32Array(value)
+    }
+}
+
+impl<'a> From<&'a Float64Array> for BufferSourceOrStr<'a> {
+    fn from(value: &'a Float64Array) -> Self {
+        BufferSourceOrStr::Float64Array(value)
+    }
+}
+
+impl<'a> From<&'a DataView> for BufferSourceOrStr<'a> {
+    fn from(value: &'a DataView) -> Self {
+        BufferSourceOrStr::DataView(value)
+    }
+}
+
+impl<'a> From<&'a ArrayBuffer> for BufferSourceOrStr<'a> {
+    fn from(value: &'a ArrayBuffer) -> Self {
+        BufferSourceOrStr::ArrayBuffer(value)
+    }
+}
+
+impl<'a> From<&'a str> for BufferSourceOrStr<'a> {
+    fn from(value: &'a str) -> Self {
+        BufferSourceOrStr::Str(value)
+    }
+}
+
+/// What a `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | string` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | string`")]
+#[cfg_attr(rust_js, rust_js::types = "Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | string")]
+pub trait IntoBufferSourceOrStr: sealed::Sealed {}
+impl IntoBufferSourceOrStr for &Int8Array {}
+impl IntoBufferSourceOrStr for &Int16Array {}
+impl IntoBufferSourceOrStr for &Int32Array {}
+impl IntoBufferSourceOrStr for &Uint8Array {}
+impl IntoBufferSourceOrStr for &Uint16Array {}
+impl IntoBufferSourceOrStr for &Uint32Array {}
+impl IntoBufferSourceOrStr for &Uint8ClampedArray {}
+impl IntoBufferSourceOrStr for &BigInt64Array {}
+impl IntoBufferSourceOrStr for &BigUint64Array {}
+impl IntoBufferSourceOrStr for &Float32Array {}
+impl IntoBufferSourceOrStr for &Float64Array {}
+impl IntoBufferSourceOrStr for &DataView {}
+impl IntoBufferSourceOrStr for &ArrayBuffer {}
+impl IntoBufferSourceOrStr for &str {}
+impl IntoBufferSourceOrStr for BufferSourceOrStr<'_> {}
+
+impl<'a> BufferSourceOrStr<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoBufferSourceOrStr + 'a) -> BufferSourceOrStr<'a> {
         unreachable!()
     }
 }
@@ -95420,92 +96674,180 @@ impl<'a> CSSUnparsedSegment<'a> {
     }
 }
 
-/// `Document | Blob | Uint8Array | ArrayBuffer | FormData | URLSearchParams | string`: each variant's value is the member itself (ADR 0215).
+/// `Document | Blob | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | FormData | URLSearchParams | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
-pub enum DocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr<'a> {
+pub enum DocumentOrXMLHttpRequestBodyInit<'a> {
     Document(&'a Document),
     Blob(&'a Blob),
+    Int8Array(&'a Int8Array),
+    Int16Array(&'a Int16Array),
+    Int32Array(&'a Int32Array),
     Uint8Array(&'a Uint8Array),
+    Uint16Array(&'a Uint16Array),
+    Uint32Array(&'a Uint32Array),
+    Uint8ClampedArray(&'a Uint8ClampedArray),
+    BigInt64Array(&'a BigInt64Array),
+    BigUint64Array(&'a BigUint64Array),
+    Float32Array(&'a Float32Array),
+    Float64Array(&'a Float64Array),
+    DataView(&'a DataView),
     ArrayBuffer(&'a ArrayBuffer),
     FormData(&'a FormData),
     URLSearchParams(&'a URLSearchParams),
     Str(&'a str),
 }
 
-impl<'a> From<&'a Document> for DocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr<'a> {
+impl<'a> From<&'a Document> for DocumentOrXMLHttpRequestBodyInit<'a> {
     fn from(value: &'a Document) -> Self {
-        DocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr::Document(value)
+        DocumentOrXMLHttpRequestBodyInit::Document(value)
     }
 }
 
-impl<'a> From<&'a XMLDocument> for DocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr<'a> {
+impl<'a> From<&'a XMLDocument> for DocumentOrXMLHttpRequestBodyInit<'a> {
     fn from(value: &'a XMLDocument) -> Self {
-        DocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr::Document(value)
+        DocumentOrXMLHttpRequestBodyInit::Document(value)
     }
 }
 
-impl<'a> From<&'a Blob> for DocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr<'a> {
+impl<'a> From<&'a Blob> for DocumentOrXMLHttpRequestBodyInit<'a> {
     fn from(value: &'a Blob) -> Self {
-        DocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr::Blob(value)
+        DocumentOrXMLHttpRequestBodyInit::Blob(value)
     }
 }
 
-impl<'a> From<&'a File> for DocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr<'a> {
+impl<'a> From<&'a File> for DocumentOrXMLHttpRequestBodyInit<'a> {
     fn from(value: &'a File) -> Self {
-        DocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr::Blob(value)
+        DocumentOrXMLHttpRequestBodyInit::Blob(value)
     }
 }
 
-impl<'a> From<&'a Uint8Array> for DocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr<'a> {
+impl<'a> From<&'a Int8Array> for DocumentOrXMLHttpRequestBodyInit<'a> {
+    fn from(value: &'a Int8Array) -> Self {
+        DocumentOrXMLHttpRequestBodyInit::Int8Array(value)
+    }
+}
+
+impl<'a> From<&'a Int16Array> for DocumentOrXMLHttpRequestBodyInit<'a> {
+    fn from(value: &'a Int16Array) -> Self {
+        DocumentOrXMLHttpRequestBodyInit::Int16Array(value)
+    }
+}
+
+impl<'a> From<&'a Int32Array> for DocumentOrXMLHttpRequestBodyInit<'a> {
+    fn from(value: &'a Int32Array) -> Self {
+        DocumentOrXMLHttpRequestBodyInit::Int32Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint8Array> for DocumentOrXMLHttpRequestBodyInit<'a> {
     fn from(value: &'a Uint8Array) -> Self {
-        DocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr::Uint8Array(value)
+        DocumentOrXMLHttpRequestBodyInit::Uint8Array(value)
     }
 }
 
-impl<'a> From<&'a ArrayBuffer> for DocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr<'a> {
+impl<'a> From<&'a Uint16Array> for DocumentOrXMLHttpRequestBodyInit<'a> {
+    fn from(value: &'a Uint16Array) -> Self {
+        DocumentOrXMLHttpRequestBodyInit::Uint16Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint32Array> for DocumentOrXMLHttpRequestBodyInit<'a> {
+    fn from(value: &'a Uint32Array) -> Self {
+        DocumentOrXMLHttpRequestBodyInit::Uint32Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint8ClampedArray> for DocumentOrXMLHttpRequestBodyInit<'a> {
+    fn from(value: &'a Uint8ClampedArray) -> Self {
+        DocumentOrXMLHttpRequestBodyInit::Uint8ClampedArray(value)
+    }
+}
+
+impl<'a> From<&'a BigInt64Array> for DocumentOrXMLHttpRequestBodyInit<'a> {
+    fn from(value: &'a BigInt64Array) -> Self {
+        DocumentOrXMLHttpRequestBodyInit::BigInt64Array(value)
+    }
+}
+
+impl<'a> From<&'a BigUint64Array> for DocumentOrXMLHttpRequestBodyInit<'a> {
+    fn from(value: &'a BigUint64Array) -> Self {
+        DocumentOrXMLHttpRequestBodyInit::BigUint64Array(value)
+    }
+}
+
+impl<'a> From<&'a Float32Array> for DocumentOrXMLHttpRequestBodyInit<'a> {
+    fn from(value: &'a Float32Array) -> Self {
+        DocumentOrXMLHttpRequestBodyInit::Float32Array(value)
+    }
+}
+
+impl<'a> From<&'a Float64Array> for DocumentOrXMLHttpRequestBodyInit<'a> {
+    fn from(value: &'a Float64Array) -> Self {
+        DocumentOrXMLHttpRequestBodyInit::Float64Array(value)
+    }
+}
+
+impl<'a> From<&'a DataView> for DocumentOrXMLHttpRequestBodyInit<'a> {
+    fn from(value: &'a DataView) -> Self {
+        DocumentOrXMLHttpRequestBodyInit::DataView(value)
+    }
+}
+
+impl<'a> From<&'a ArrayBuffer> for DocumentOrXMLHttpRequestBodyInit<'a> {
     fn from(value: &'a ArrayBuffer) -> Self {
-        DocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr::ArrayBuffer(value)
+        DocumentOrXMLHttpRequestBodyInit::ArrayBuffer(value)
     }
 }
 
-impl<'a> From<&'a FormData> for DocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr<'a> {
+impl<'a> From<&'a FormData> for DocumentOrXMLHttpRequestBodyInit<'a> {
     fn from(value: &'a FormData) -> Self {
-        DocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr::FormData(value)
+        DocumentOrXMLHttpRequestBodyInit::FormData(value)
     }
 }
 
-impl<'a> From<&'a URLSearchParams> for DocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr<'a> {
+impl<'a> From<&'a URLSearchParams> for DocumentOrXMLHttpRequestBodyInit<'a> {
     fn from(value: &'a URLSearchParams) -> Self {
-        DocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr::URLSearchParams(value)
+        DocumentOrXMLHttpRequestBodyInit::URLSearchParams(value)
     }
 }
 
-impl<'a> From<&'a str> for DocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr<'a> {
+impl<'a> From<&'a str> for DocumentOrXMLHttpRequestBodyInit<'a> {
     fn from(value: &'a str) -> Self {
-        DocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr::Str(value)
+        DocumentOrXMLHttpRequestBodyInit::Str(value)
     }
 }
 
-/// What a `Document | Blob | Uint8Array | ArrayBuffer | FormData | URLSearchParams | string` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Document | Blob | Uint8Array | ArrayBuffer | FormData | URLSearchParams | string`")]
-#[cfg_attr(rust_js, rust_js::types = "Document | Blob | Uint8Array | ArrayBuffer | FormData | URLSearchParams | string")]
-pub trait IntoDocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr: sealed::Sealed {}
-impl IntoDocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr for &Document {}
-impl IntoDocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr for &XMLDocument {}
-impl IntoDocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr for &Blob {}
-impl IntoDocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr for &File {}
-impl IntoDocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr for &Uint8Array {}
-impl IntoDocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr for &ArrayBuffer {}
-impl IntoDocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr for &FormData {}
-impl IntoDocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr for &URLSearchParams {}
-impl IntoDocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr for &str {}
-impl IntoDocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr for DocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr<'_> {}
+/// What a `Document | Blob | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | FormData | URLSearchParams | string` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Document | Blob | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | FormData | URLSearchParams | string`")]
+#[cfg_attr(rust_js, rust_js::types = "Document | Blob | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | FormData | URLSearchParams | string")]
+pub trait IntoDocumentOrXMLHttpRequestBodyInit: sealed::Sealed {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for &Document {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for &XMLDocument {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for &Blob {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for &File {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for &Int8Array {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for &Int16Array {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for &Int32Array {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for &Uint8Array {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for &Uint16Array {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for &Uint32Array {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for &Uint8ClampedArray {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for &BigInt64Array {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for &BigUint64Array {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for &Float32Array {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for &Float64Array {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for &DataView {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for &ArrayBuffer {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for &FormData {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for &URLSearchParams {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for &str {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for DocumentOrXMLHttpRequestBodyInit<'_> {}
 
-impl<'a> DocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr<'a> {
+impl<'a> DocumentOrXMLHttpRequestBodyInit<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
     #[allow(unused_variables)]
-    pub fn of(this: impl IntoDocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr + 'a) -> DocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr<'a> {
+    pub fn of(this: impl IntoDocumentOrXMLHttpRequestBodyInit + 'a) -> DocumentOrXMLHttpRequestBodyInit<'a> {
         unreachable!()
     }
 }
@@ -98736,19 +100078,96 @@ impl<'a> FileOrStrOrFormData<'a> {
     }
 }
 
-/// `Uint8Array | ArrayBuffer | Blob | string | WriteParams`: each variant's value is the member itself (ADR 0215).
+/// `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | Blob | string | WriteParams`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum FileSystemWriteChunkType<'a> {
+    Int8Array(&'a Int8Array),
+    Int16Array(&'a Int16Array),
+    Int32Array(&'a Int32Array),
     Uint8Array(&'a Uint8Array),
+    Uint16Array(&'a Uint16Array),
+    Uint32Array(&'a Uint32Array),
+    Uint8ClampedArray(&'a Uint8ClampedArray),
+    BigInt64Array(&'a BigInt64Array),
+    BigUint64Array(&'a BigUint64Array),
+    Float32Array(&'a Float32Array),
+    Float64Array(&'a Float64Array),
+    DataView(&'a DataView),
     ArrayBuffer(&'a ArrayBuffer),
     Blob(&'a Blob),
     Str(&'a str),
     WriteParams(WriteParams<'a>),
 }
 
+impl<'a> From<&'a Int8Array> for FileSystemWriteChunkType<'a> {
+    fn from(value: &'a Int8Array) -> Self {
+        FileSystemWriteChunkType::Int8Array(value)
+    }
+}
+
+impl<'a> From<&'a Int16Array> for FileSystemWriteChunkType<'a> {
+    fn from(value: &'a Int16Array) -> Self {
+        FileSystemWriteChunkType::Int16Array(value)
+    }
+}
+
+impl<'a> From<&'a Int32Array> for FileSystemWriteChunkType<'a> {
+    fn from(value: &'a Int32Array) -> Self {
+        FileSystemWriteChunkType::Int32Array(value)
+    }
+}
+
 impl<'a> From<&'a Uint8Array> for FileSystemWriteChunkType<'a> {
     fn from(value: &'a Uint8Array) -> Self {
         FileSystemWriteChunkType::Uint8Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint16Array> for FileSystemWriteChunkType<'a> {
+    fn from(value: &'a Uint16Array) -> Self {
+        FileSystemWriteChunkType::Uint16Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint32Array> for FileSystemWriteChunkType<'a> {
+    fn from(value: &'a Uint32Array) -> Self {
+        FileSystemWriteChunkType::Uint32Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint8ClampedArray> for FileSystemWriteChunkType<'a> {
+    fn from(value: &'a Uint8ClampedArray) -> Self {
+        FileSystemWriteChunkType::Uint8ClampedArray(value)
+    }
+}
+
+impl<'a> From<&'a BigInt64Array> for FileSystemWriteChunkType<'a> {
+    fn from(value: &'a BigInt64Array) -> Self {
+        FileSystemWriteChunkType::BigInt64Array(value)
+    }
+}
+
+impl<'a> From<&'a BigUint64Array> for FileSystemWriteChunkType<'a> {
+    fn from(value: &'a BigUint64Array) -> Self {
+        FileSystemWriteChunkType::BigUint64Array(value)
+    }
+}
+
+impl<'a> From<&'a Float32Array> for FileSystemWriteChunkType<'a> {
+    fn from(value: &'a Float32Array) -> Self {
+        FileSystemWriteChunkType::Float32Array(value)
+    }
+}
+
+impl<'a> From<&'a Float64Array> for FileSystemWriteChunkType<'a> {
+    fn from(value: &'a Float64Array) -> Self {
+        FileSystemWriteChunkType::Float64Array(value)
+    }
+}
+
+impl<'a> From<&'a DataView> for FileSystemWriteChunkType<'a> {
+    fn from(value: &'a DataView) -> Self {
+        FileSystemWriteChunkType::DataView(value)
     }
 }
 
@@ -98782,11 +100201,22 @@ impl<'a> From<WriteParams<'a>> for FileSystemWriteChunkType<'a> {
     }
 }
 
-/// What a `Uint8Array | ArrayBuffer | Blob | string | WriteParams` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Uint8Array | ArrayBuffer | Blob | string | WriteParams`")]
-#[cfg_attr(rust_js, rust_js::types = "Uint8Array | ArrayBuffer | Blob | string | WriteParams")]
+/// What a `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | Blob | string | WriteParams` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | Blob | string | WriteParams`")]
+#[cfg_attr(rust_js, rust_js::types = "Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | Blob | string | WriteParams")]
 pub trait IntoFileSystemWriteChunkType: sealed::Sealed {}
+impl IntoFileSystemWriteChunkType for &Int8Array {}
+impl IntoFileSystemWriteChunkType for &Int16Array {}
+impl IntoFileSystemWriteChunkType for &Int32Array {}
 impl IntoFileSystemWriteChunkType for &Uint8Array {}
+impl IntoFileSystemWriteChunkType for &Uint16Array {}
+impl IntoFileSystemWriteChunkType for &Uint32Array {}
+impl IntoFileSystemWriteChunkType for &Uint8ClampedArray {}
+impl IntoFileSystemWriteChunkType for &BigInt64Array {}
+impl IntoFileSystemWriteChunkType for &BigUint64Array {}
+impl IntoFileSystemWriteChunkType for &Float32Array {}
+impl IntoFileSystemWriteChunkType for &Float64Array {}
+impl IntoFileSystemWriteChunkType for &DataView {}
 impl IntoFileSystemWriteChunkType for &ArrayBuffer {}
 impl IntoFileSystemWriteChunkType for &Blob {}
 impl IntoFileSystemWriteChunkType for &File {}
@@ -98799,6 +100229,42 @@ impl<'a> FileSystemWriteChunkType<'a> {
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
     #[allow(unused_variables)]
     pub fn of(this: impl IntoFileSystemWriteChunkType + 'a) -> FileSystemWriteChunkType<'a> {
+        unreachable!()
+    }
+}
+
+/// `Float32Array | List`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Float32List<'a> {
+    Float32Array(&'a Float32Array),
+    List(&'a [f32]),
+}
+
+impl<'a> From<&'a Float32Array> for Float32List<'a> {
+    fn from(value: &'a Float32Array) -> Self {
+        Float32List::Float32Array(value)
+    }
+}
+
+impl<'a> From<&'a [f32]> for Float32List<'a> {
+    fn from(value: &'a [f32]) -> Self {
+        Float32List::List(value)
+    }
+}
+
+/// What a `Float32Array | List` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Float32Array | List`")]
+#[cfg_attr(rust_js, rust_js::types = "Float32Array | List")]
+pub trait IntoFloat32List: sealed::Sealed {}
+impl IntoFloat32List for &Float32Array {}
+impl IntoFloat32List for &[f32] {}
+impl IntoFloat32List for Float32List<'_> {}
+
+impl<'a> Float32List<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoFloat32List + 'a) -> Float32List<'a> {
         unreachable!()
     }
 }
@@ -101128,11 +102594,23 @@ impl<'a> ImageBitmapSource<'a> {
     }
 }
 
-/// `ArrayBuffer | Uint8Array | ReadableStream`: each variant's value is the member itself (ADR 0215).
+/// `ArrayBuffer | SharedArrayBuffer | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ReadableStream`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum ImageBufferSource<'a> {
     ArrayBuffer(&'a ArrayBuffer),
+    SharedArrayBuffer(&'a SharedArrayBuffer),
+    Int8Array(&'a Int8Array),
+    Int16Array(&'a Int16Array),
+    Int32Array(&'a Int32Array),
     Uint8Array(&'a Uint8Array),
+    Uint16Array(&'a Uint16Array),
+    Uint32Array(&'a Uint32Array),
+    Uint8ClampedArray(&'a Uint8ClampedArray),
+    BigInt64Array(&'a BigInt64Array),
+    BigUint64Array(&'a BigUint64Array),
+    Float32Array(&'a Float32Array),
+    Float64Array(&'a Float64Array),
+    DataView(&'a DataView),
     ReadableStream(&'a ReadableStream),
 }
 
@@ -101142,9 +102620,81 @@ impl<'a> From<&'a ArrayBuffer> for ImageBufferSource<'a> {
     }
 }
 
+impl<'a> From<&'a SharedArrayBuffer> for ImageBufferSource<'a> {
+    fn from(value: &'a SharedArrayBuffer) -> Self {
+        ImageBufferSource::SharedArrayBuffer(value)
+    }
+}
+
+impl<'a> From<&'a Int8Array> for ImageBufferSource<'a> {
+    fn from(value: &'a Int8Array) -> Self {
+        ImageBufferSource::Int8Array(value)
+    }
+}
+
+impl<'a> From<&'a Int16Array> for ImageBufferSource<'a> {
+    fn from(value: &'a Int16Array) -> Self {
+        ImageBufferSource::Int16Array(value)
+    }
+}
+
+impl<'a> From<&'a Int32Array> for ImageBufferSource<'a> {
+    fn from(value: &'a Int32Array) -> Self {
+        ImageBufferSource::Int32Array(value)
+    }
+}
+
 impl<'a> From<&'a Uint8Array> for ImageBufferSource<'a> {
     fn from(value: &'a Uint8Array) -> Self {
         ImageBufferSource::Uint8Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint16Array> for ImageBufferSource<'a> {
+    fn from(value: &'a Uint16Array) -> Self {
+        ImageBufferSource::Uint16Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint32Array> for ImageBufferSource<'a> {
+    fn from(value: &'a Uint32Array) -> Self {
+        ImageBufferSource::Uint32Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint8ClampedArray> for ImageBufferSource<'a> {
+    fn from(value: &'a Uint8ClampedArray) -> Self {
+        ImageBufferSource::Uint8ClampedArray(value)
+    }
+}
+
+impl<'a> From<&'a BigInt64Array> for ImageBufferSource<'a> {
+    fn from(value: &'a BigInt64Array) -> Self {
+        ImageBufferSource::BigInt64Array(value)
+    }
+}
+
+impl<'a> From<&'a BigUint64Array> for ImageBufferSource<'a> {
+    fn from(value: &'a BigUint64Array) -> Self {
+        ImageBufferSource::BigUint64Array(value)
+    }
+}
+
+impl<'a> From<&'a Float32Array> for ImageBufferSource<'a> {
+    fn from(value: &'a Float32Array) -> Self {
+        ImageBufferSource::Float32Array(value)
+    }
+}
+
+impl<'a> From<&'a Float64Array> for ImageBufferSource<'a> {
+    fn from(value: &'a Float64Array) -> Self {
+        ImageBufferSource::Float64Array(value)
+    }
+}
+
+impl<'a> From<&'a DataView> for ImageBufferSource<'a> {
+    fn from(value: &'a DataView) -> Self {
+        ImageBufferSource::DataView(value)
     }
 }
 
@@ -101160,12 +102710,24 @@ impl<'a> From<&'a WebTransportReceiveStream> for ImageBufferSource<'a> {
     }
 }
 
-/// What a `ArrayBuffer | Uint8Array | ReadableStream` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `ArrayBuffer | Uint8Array | ReadableStream`")]
-#[cfg_attr(rust_js, rust_js::types = "ArrayBuffer | Uint8Array | ReadableStream")]
+/// What a `ArrayBuffer | SharedArrayBuffer | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ReadableStream` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `ArrayBuffer | SharedArrayBuffer | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ReadableStream`")]
+#[cfg_attr(rust_js, rust_js::types = "ArrayBuffer | SharedArrayBuffer | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ReadableStream")]
 pub trait IntoImageBufferSource: sealed::Sealed {}
 impl IntoImageBufferSource for &ArrayBuffer {}
+impl IntoImageBufferSource for &SharedArrayBuffer {}
+impl IntoImageBufferSource for &Int8Array {}
+impl IntoImageBufferSource for &Int16Array {}
+impl IntoImageBufferSource for &Int32Array {}
 impl IntoImageBufferSource for &Uint8Array {}
+impl IntoImageBufferSource for &Uint16Array {}
+impl IntoImageBufferSource for &Uint32Array {}
+impl IntoImageBufferSource for &Uint8ClampedArray {}
+impl IntoImageBufferSource for &BigInt64Array {}
+impl IntoImageBufferSource for &BigUint64Array {}
+impl IntoImageBufferSource for &Float32Array {}
+impl IntoImageBufferSource for &Float64Array {}
+impl IntoImageBufferSource for &DataView {}
 impl IntoImageBufferSource for &ReadableStream {}
 impl IntoImageBufferSource for &WebTransportReceiveStream {}
 impl IntoImageBufferSource for ImageBufferSource<'_> {}
@@ -101175,6 +102737,42 @@ impl<'a> ImageBufferSource<'a> {
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
     #[allow(unused_variables)]
     pub fn of(this: impl IntoImageBufferSource + 'a) -> ImageBufferSource<'a> {
+        unreachable!()
+    }
+}
+
+/// `Int32Array | List`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Int32List<'a> {
+    Int32Array(&'a Int32Array),
+    List(&'a [i32]),
+}
+
+impl<'a> From<&'a Int32Array> for Int32List<'a> {
+    fn from(value: &'a Int32Array) -> Self {
+        Int32List::Int32Array(value)
+    }
+}
+
+impl<'a> From<&'a [i32]> for Int32List<'a> {
+    fn from(value: &'a [i32]) -> Self {
+        Int32List::List(value)
+    }
+}
+
+/// What a `Int32Array | List` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Int32Array | List`")]
+#[cfg_attr(rust_js, rust_js::types = "Int32Array | List")]
+pub trait IntoInt32List: sealed::Sealed {}
+impl IntoInt32List for &Int32Array {}
+impl IntoInt32List for &[i32] {}
+impl IntoInt32List for Int32List<'_> {}
+
+impl<'a> Int32List<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoInt32List + 'a) -> Int32List<'a> {
         unreachable!()
     }
 }
@@ -103181,6 +104779,138 @@ impl<'a> StrOrAudioSinkOptions<'a> {
     }
 }
 
+/// `string | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum StrOrBufferSource<'a> {
+    Str(&'a str),
+    Int8Array(&'a Int8Array),
+    Int16Array(&'a Int16Array),
+    Int32Array(&'a Int32Array),
+    Uint8Array(&'a Uint8Array),
+    Uint16Array(&'a Uint16Array),
+    Uint32Array(&'a Uint32Array),
+    Uint8ClampedArray(&'a Uint8ClampedArray),
+    BigInt64Array(&'a BigInt64Array),
+    BigUint64Array(&'a BigUint64Array),
+    Float32Array(&'a Float32Array),
+    Float64Array(&'a Float64Array),
+    DataView(&'a DataView),
+    ArrayBuffer(&'a ArrayBuffer),
+}
+
+impl<'a> From<&'a str> for StrOrBufferSource<'a> {
+    fn from(value: &'a str) -> Self {
+        StrOrBufferSource::Str(value)
+    }
+}
+
+impl<'a> From<&'a Int8Array> for StrOrBufferSource<'a> {
+    fn from(value: &'a Int8Array) -> Self {
+        StrOrBufferSource::Int8Array(value)
+    }
+}
+
+impl<'a> From<&'a Int16Array> for StrOrBufferSource<'a> {
+    fn from(value: &'a Int16Array) -> Self {
+        StrOrBufferSource::Int16Array(value)
+    }
+}
+
+impl<'a> From<&'a Int32Array> for StrOrBufferSource<'a> {
+    fn from(value: &'a Int32Array) -> Self {
+        StrOrBufferSource::Int32Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint8Array> for StrOrBufferSource<'a> {
+    fn from(value: &'a Uint8Array) -> Self {
+        StrOrBufferSource::Uint8Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint16Array> for StrOrBufferSource<'a> {
+    fn from(value: &'a Uint16Array) -> Self {
+        StrOrBufferSource::Uint16Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint32Array> for StrOrBufferSource<'a> {
+    fn from(value: &'a Uint32Array) -> Self {
+        StrOrBufferSource::Uint32Array(value)
+    }
+}
+
+impl<'a> From<&'a Uint8ClampedArray> for StrOrBufferSource<'a> {
+    fn from(value: &'a Uint8ClampedArray) -> Self {
+        StrOrBufferSource::Uint8ClampedArray(value)
+    }
+}
+
+impl<'a> From<&'a BigInt64Array> for StrOrBufferSource<'a> {
+    fn from(value: &'a BigInt64Array) -> Self {
+        StrOrBufferSource::BigInt64Array(value)
+    }
+}
+
+impl<'a> From<&'a BigUint64Array> for StrOrBufferSource<'a> {
+    fn from(value: &'a BigUint64Array) -> Self {
+        StrOrBufferSource::BigUint64Array(value)
+    }
+}
+
+impl<'a> From<&'a Float32Array> for StrOrBufferSource<'a> {
+    fn from(value: &'a Float32Array) -> Self {
+        StrOrBufferSource::Float32Array(value)
+    }
+}
+
+impl<'a> From<&'a Float64Array> for StrOrBufferSource<'a> {
+    fn from(value: &'a Float64Array) -> Self {
+        StrOrBufferSource::Float64Array(value)
+    }
+}
+
+impl<'a> From<&'a DataView> for StrOrBufferSource<'a> {
+    fn from(value: &'a DataView) -> Self {
+        StrOrBufferSource::DataView(value)
+    }
+}
+
+impl<'a> From<&'a ArrayBuffer> for StrOrBufferSource<'a> {
+    fn from(value: &'a ArrayBuffer) -> Self {
+        StrOrBufferSource::ArrayBuffer(value)
+    }
+}
+
+/// What a `string | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer`")]
+#[cfg_attr(rust_js, rust_js::types = "string | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer")]
+pub trait IntoStrOrBufferSource: sealed::Sealed {}
+impl IntoStrOrBufferSource for &str {}
+impl IntoStrOrBufferSource for &Int8Array {}
+impl IntoStrOrBufferSource for &Int16Array {}
+impl IntoStrOrBufferSource for &Int32Array {}
+impl IntoStrOrBufferSource for &Uint8Array {}
+impl IntoStrOrBufferSource for &Uint16Array {}
+impl IntoStrOrBufferSource for &Uint32Array {}
+impl IntoStrOrBufferSource for &Uint8ClampedArray {}
+impl IntoStrOrBufferSource for &BigInt64Array {}
+impl IntoStrOrBufferSource for &BigUint64Array {}
+impl IntoStrOrBufferSource for &Float32Array {}
+impl IntoStrOrBufferSource for &Float64Array {}
+impl IntoStrOrBufferSource for &DataView {}
+impl IntoStrOrBufferSource for &ArrayBuffer {}
+impl IntoStrOrBufferSource for StrOrBufferSource<'_> {}
+
+impl<'a> StrOrBufferSource<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoStrOrBufferSource + 'a) -> StrOrBufferSource<'a> {
+        unreachable!()
+    }
+}
+
 /// `string | CanvasGradient | CanvasPattern`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum StrOrCanvasGradientOrCanvasPattern<'a> {
@@ -103441,50 +105171,6 @@ impl<'a> StrOrTaskSignal<'a> {
     }
 }
 
-/// `string | Uint8Array | ArrayBuffer`: each variant's value is the member itself (ADR 0215).
-#[cfg_attr(rust_js, rust_js::untagged)]
-pub enum StrOrUint8ArrayOrArrayBuffer<'a> {
-    Str(&'a str),
-    Uint8Array(&'a Uint8Array),
-    ArrayBuffer(&'a ArrayBuffer),
-}
-
-impl<'a> From<&'a str> for StrOrUint8ArrayOrArrayBuffer<'a> {
-    fn from(value: &'a str) -> Self {
-        StrOrUint8ArrayOrArrayBuffer::Str(value)
-    }
-}
-
-impl<'a> From<&'a Uint8Array> for StrOrUint8ArrayOrArrayBuffer<'a> {
-    fn from(value: &'a Uint8Array) -> Self {
-        StrOrUint8ArrayOrArrayBuffer::Uint8Array(value)
-    }
-}
-
-impl<'a> From<&'a ArrayBuffer> for StrOrUint8ArrayOrArrayBuffer<'a> {
-    fn from(value: &'a ArrayBuffer) -> Self {
-        StrOrUint8ArrayOrArrayBuffer::ArrayBuffer(value)
-    }
-}
-
-/// What a `string | Uint8Array | ArrayBuffer` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | Uint8Array | ArrayBuffer`")]
-#[cfg_attr(rust_js, rust_js::types = "string | Uint8Array | ArrayBuffer")]
-pub trait IntoStrOrUint8ArrayOrArrayBuffer: sealed::Sealed {}
-impl IntoStrOrUint8ArrayOrArrayBuffer for &str {}
-impl IntoStrOrUint8ArrayOrArrayBuffer for &Uint8Array {}
-impl IntoStrOrUint8ArrayOrArrayBuffer for &ArrayBuffer {}
-impl IntoStrOrUint8ArrayOrArrayBuffer for StrOrUint8ArrayOrArrayBuffer<'_> {}
-
-impl<'a> StrOrUint8ArrayOrArrayBuffer<'a> {
-    /// The member a parameter was given, as its enum, to `match`: the value itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "this")]
-    #[allow(unused_variables)]
-    pub fn of(this: impl IntoStrOrUint8ArrayOrArrayBuffer + 'a) -> StrOrUint8ArrayOrArrayBuffer<'a> {
-        unreachable!()
-    }
-}
-
 /// `ImageBitmap | ImageData | HTMLImageElement | HTMLCanvasElement | HTMLVideoElement | OffscreenCanvas | VideoFrame`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum TexImageSource<'a> {
@@ -103597,149 +105283,38 @@ impl<'a> TogglePopoverOptionsOrBool<'a> {
     }
 }
 
-/// `Uint8Array | ArrayBuffer | Blob | string`: each variant's value is the member itself (ADR 0215).
+/// `Uint32Array | List`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
-pub enum Uint8ArrayOrArrayBufferOrBlobOrStr<'a> {
-    Uint8Array(&'a Uint8Array),
-    ArrayBuffer(&'a ArrayBuffer),
-    Blob(&'a Blob),
-    Str(&'a str),
+pub enum Uint32List<'a> {
+    Uint32Array(&'a Uint32Array),
+    List(&'a [u32]),
 }
 
-impl<'a> From<&'a Uint8Array> for Uint8ArrayOrArrayBufferOrBlobOrStr<'a> {
-    fn from(value: &'a Uint8Array) -> Self {
-        Uint8ArrayOrArrayBufferOrBlobOrStr::Uint8Array(value)
+impl<'a> From<&'a Uint32Array> for Uint32List<'a> {
+    fn from(value: &'a Uint32Array) -> Self {
+        Uint32List::Uint32Array(value)
     }
 }
 
-impl<'a> From<&'a ArrayBuffer> for Uint8ArrayOrArrayBufferOrBlobOrStr<'a> {
-    fn from(value: &'a ArrayBuffer) -> Self {
-        Uint8ArrayOrArrayBufferOrBlobOrStr::ArrayBuffer(value)
+impl<'a> From<&'a [u32]> for Uint32List<'a> {
+    fn from(value: &'a [u32]) -> Self {
+        Uint32List::List(value)
     }
 }
 
-impl<'a> From<&'a Blob> for Uint8ArrayOrArrayBufferOrBlobOrStr<'a> {
-    fn from(value: &'a Blob) -> Self {
-        Uint8ArrayOrArrayBufferOrBlobOrStr::Blob(value)
-    }
-}
+/// What a `Uint32Array | List` parameter takes: each member as it is, and the enum (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Uint32Array | List`")]
+#[cfg_attr(rust_js, rust_js::types = "Uint32Array | List")]
+pub trait IntoUint32List: sealed::Sealed {}
+impl IntoUint32List for &Uint32Array {}
+impl IntoUint32List for &[u32] {}
+impl IntoUint32List for Uint32List<'_> {}
 
-impl<'a> From<&'a File> for Uint8ArrayOrArrayBufferOrBlobOrStr<'a> {
-    fn from(value: &'a File) -> Self {
-        Uint8ArrayOrArrayBufferOrBlobOrStr::Blob(value)
-    }
-}
-
-impl<'a> From<&'a str> for Uint8ArrayOrArrayBufferOrBlobOrStr<'a> {
-    fn from(value: &'a str) -> Self {
-        Uint8ArrayOrArrayBufferOrBlobOrStr::Str(value)
-    }
-}
-
-/// What a `Uint8Array | ArrayBuffer | Blob | string` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Uint8Array | ArrayBuffer | Blob | string`")]
-#[cfg_attr(rust_js, rust_js::types = "Uint8Array | ArrayBuffer | Blob | string")]
-pub trait IntoUint8ArrayOrArrayBufferOrBlobOrStr: sealed::Sealed {}
-impl IntoUint8ArrayOrArrayBufferOrBlobOrStr for &Uint8Array {}
-impl IntoUint8ArrayOrArrayBufferOrBlobOrStr for &ArrayBuffer {}
-impl IntoUint8ArrayOrArrayBufferOrBlobOrStr for &Blob {}
-impl IntoUint8ArrayOrArrayBufferOrBlobOrStr for &File {}
-impl IntoUint8ArrayOrArrayBufferOrBlobOrStr for &str {}
-impl IntoUint8ArrayOrArrayBufferOrBlobOrStr for Uint8ArrayOrArrayBufferOrBlobOrStr<'_> {}
-
-impl<'a> Uint8ArrayOrArrayBufferOrBlobOrStr<'a> {
+impl<'a> Uint32List<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
     #[allow(unused_variables)]
-    pub fn of(this: impl IntoUint8ArrayOrArrayBufferOrBlobOrStr + 'a) -> Uint8ArrayOrArrayBufferOrBlobOrStr<'a> {
-        unreachable!()
-    }
-}
-
-/// `Uint8Array | ArrayBuffer | JsonWebKey`: each variant's value is the member itself (ADR 0215).
-#[cfg_attr(rust_js, rust_js::untagged)]
-pub enum Uint8ArrayOrArrayBufferOrJsonWebKey<'a> {
-    Uint8Array(&'a Uint8Array),
-    ArrayBuffer(&'a ArrayBuffer),
-    JsonWebKey(JsonWebKey),
-}
-
-impl<'a> From<&'a Uint8Array> for Uint8ArrayOrArrayBufferOrJsonWebKey<'a> {
-    fn from(value: &'a Uint8Array) -> Self {
-        Uint8ArrayOrArrayBufferOrJsonWebKey::Uint8Array(value)
-    }
-}
-
-impl<'a> From<&'a ArrayBuffer> for Uint8ArrayOrArrayBufferOrJsonWebKey<'a> {
-    fn from(value: &'a ArrayBuffer) -> Self {
-        Uint8ArrayOrArrayBufferOrJsonWebKey::ArrayBuffer(value)
-    }
-}
-
-impl<'a> From<JsonWebKey> for Uint8ArrayOrArrayBufferOrJsonWebKey<'a> {
-    fn from(value: JsonWebKey) -> Self {
-        Uint8ArrayOrArrayBufferOrJsonWebKey::JsonWebKey(value)
-    }
-}
-
-/// What a `Uint8Array | ArrayBuffer | JsonWebKey` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Uint8Array | ArrayBuffer | JsonWebKey`")]
-#[cfg_attr(rust_js, rust_js::types = "Uint8Array | ArrayBuffer | JsonWebKey")]
-pub trait IntoUint8ArrayOrArrayBufferOrJsonWebKey: sealed::Sealed {}
-impl IntoUint8ArrayOrArrayBufferOrJsonWebKey for &Uint8Array {}
-impl IntoUint8ArrayOrArrayBufferOrJsonWebKey for &ArrayBuffer {}
-impl IntoUint8ArrayOrArrayBufferOrJsonWebKey for JsonWebKey {}
-impl IntoUint8ArrayOrArrayBufferOrJsonWebKey for Uint8ArrayOrArrayBufferOrJsonWebKey<'_> {}
-
-impl<'a> Uint8ArrayOrArrayBufferOrJsonWebKey<'a> {
-    /// The member a parameter was given, as its enum, to `match`: the value itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "this")]
-    #[allow(unused_variables)]
-    pub fn of(this: impl IntoUint8ArrayOrArrayBufferOrJsonWebKey + 'a) -> Uint8ArrayOrArrayBufferOrJsonWebKey<'a> {
-        unreachable!()
-    }
-}
-
-/// `Uint8Array | ArrayBuffer | string`: each variant's value is the member itself (ADR 0215).
-#[cfg_attr(rust_js, rust_js::untagged)]
-pub enum Uint8ArrayOrArrayBufferOrStr<'a> {
-    Uint8Array(&'a Uint8Array),
-    ArrayBuffer(&'a ArrayBuffer),
-    Str(&'a str),
-}
-
-impl<'a> From<&'a Uint8Array> for Uint8ArrayOrArrayBufferOrStr<'a> {
-    fn from(value: &'a Uint8Array) -> Self {
-        Uint8ArrayOrArrayBufferOrStr::Uint8Array(value)
-    }
-}
-
-impl<'a> From<&'a ArrayBuffer> for Uint8ArrayOrArrayBufferOrStr<'a> {
-    fn from(value: &'a ArrayBuffer) -> Self {
-        Uint8ArrayOrArrayBufferOrStr::ArrayBuffer(value)
-    }
-}
-
-impl<'a> From<&'a str> for Uint8ArrayOrArrayBufferOrStr<'a> {
-    fn from(value: &'a str) -> Self {
-        Uint8ArrayOrArrayBufferOrStr::Str(value)
-    }
-}
-
-/// What a `Uint8Array | ArrayBuffer | string` parameter takes: each member as it is, and the enum (ADR 0229).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `Uint8Array | ArrayBuffer | string`")]
-#[cfg_attr(rust_js, rust_js::types = "Uint8Array | ArrayBuffer | string")]
-pub trait IntoUint8ArrayOrArrayBufferOrStr: sealed::Sealed {}
-impl IntoUint8ArrayOrArrayBufferOrStr for &Uint8Array {}
-impl IntoUint8ArrayOrArrayBufferOrStr for &ArrayBuffer {}
-impl IntoUint8ArrayOrArrayBufferOrStr for &str {}
-impl IntoUint8ArrayOrArrayBufferOrStr for Uint8ArrayOrArrayBufferOrStr<'_> {}
-
-impl<'a> Uint8ArrayOrArrayBufferOrStr<'a> {
-    /// The member a parameter was given, as its enum, to `match`: the value itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "this")]
-    #[allow(unused_variables)]
-    pub fn of(this: impl IntoUint8ArrayOrArrayBufferOrStr + 'a) -> Uint8ArrayOrArrayBufferOrStr<'a> {
+    pub fn of(this: impl IntoUint32List + 'a) -> Uint32List<'a> {
         unreachable!()
     }
 }
@@ -103858,6 +105433,8 @@ mod sealed {
     pub trait Sealed {}
     impl Sealed for &ArrayBuffer {}
     impl Sealed for &Attr {}
+    impl Sealed for &BigInt64Array {}
+    impl Sealed for &BigUint64Array {}
     impl Sealed for &Blob {}
     impl Sealed for &CDATASection {}
     impl Sealed for &CSSImageValue {}
@@ -103881,11 +105458,14 @@ mod sealed {
     impl Sealed for &CanvasPattern {}
     impl Sealed for &CharacterData {}
     impl Sealed for &Comment {}
+    impl Sealed for &DataView {}
     impl Sealed for &Document {}
     impl Sealed for &DocumentFragment {}
     impl Sealed for &DocumentType {}
     impl Sealed for &Element {}
     impl Sealed for &File {}
+    impl Sealed for &Float32Array {}
+    impl Sealed for &Float64Array {}
     impl Sealed for &FormData {}
     impl Sealed for &GPUBuffer {}
     impl Sealed for &GPUExternalTexture {}
@@ -103971,6 +105551,9 @@ mod sealed {
     impl Sealed for &IDBObjectStore {}
     impl Sealed for &ImageBitmap {}
     impl Sealed for &ImageData {}
+    impl Sealed for &Int16Array {}
+    impl Sealed for &Int32Array {}
+    impl Sealed for &Int8Array {}
     impl Sealed for &MathMLElement {}
     impl Sealed for &MediaList {}
     impl Sealed for &MediaSource {}
@@ -104057,10 +105640,14 @@ mod sealed {
     impl Sealed for &Sanitizer {}
     impl Sealed for &ServiceWorker {}
     impl Sealed for &ShadowRoot {}
+    impl Sealed for &SharedArrayBuffer {}
     impl Sealed for &TaskSignal {}
     impl Sealed for &Text {}
     impl Sealed for &URLSearchParams {}
+    impl Sealed for &Uint16Array {}
+    impl Sealed for &Uint32Array {}
     impl Sealed for &Uint8Array {}
+    impl Sealed for &Uint8ClampedArray {}
     impl Sealed for &VideoFrame {}
     impl Sealed for &WebTransportReceiveStream {}
     impl Sealed for &Window {}
@@ -104069,12 +105656,15 @@ mod sealed {
     impl Sealed for &[&[&str]] {}
     impl Sealed for &[&str] {}
     impl Sealed for &[NumberOrDOMPointInit] {}
+    impl Sealed for &[f32] {}
     impl Sealed for &[f64] {}
+    impl Sealed for &[i32] {}
     impl Sealed for &[u32] {}
     impl Sealed for &str {}
     impl Sealed for AddEventListenerOptions<'_> {}
     impl Sealed for AddEventListenerOptionsOrBool<'_> {}
     impl Sealed for AllowSharedBufferSource<'_> {}
+    impl Sealed for ArrayBufferView<'_> {}
     impl Sealed for AudioSinkOptions<'_> {}
     impl Sealed for BlobOrMediaSource<'_> {}
     impl Sealed for BlobPart<'_> {}
@@ -104086,6 +105676,9 @@ mod sealed {
     impl Sealed for BoolOrScrollIntoViewOptions<'_> {}
     impl Sealed for Box<dyn FnMut() -> Promise<Option<&'static Unknown>>> {}
     impl Sealed for BufferSource<'_> {}
+    impl Sealed for BufferSourceOrBlobOrStr<'_> {}
+    impl Sealed for BufferSourceOrJsonWebKey<'_> {}
+    impl Sealed for BufferSourceOrStr<'_> {}
     impl Sealed for CSSNumberish<'_> {}
     impl Sealed for CSSNumericValueOrCSSKeywordValue<'_> {}
     impl Sealed for CSSPerspectiveValue<'_> {}
@@ -104093,7 +105686,7 @@ mod sealed {
     impl Sealed for CSSUnparsedSegment<'_> {}
     impl Sealed for CanvasImageSource<'_> {}
     impl Sealed for DOMPointInit {}
-    impl Sealed for DocumentOrBlobOrUint8ArrayOrArrayBufferOrFormDataOrURLSearchParamsOrStr<'_> {}
+    impl Sealed for DocumentOrXMLHttpRequestBodyInit<'_> {}
     impl Sealed for ElementCreationOptions<'_> {}
     impl Sealed for ElementOrDocument<'_> {}
     impl Sealed for ElementOrProcessingInstruction<'_> {}
@@ -104102,6 +105695,7 @@ mod sealed {
     impl Sealed for EventListenerOptionsOrBool {}
     impl Sealed for FileOrStrOrFormData<'_> {}
     impl Sealed for FileSystemWriteChunkType<'_> {}
+    impl Sealed for Float32List<'_> {}
     impl Sealed for FormDataEntryValue<'_> {}
     impl Sealed for GPUBindingResource<'_> {}
     impl Sealed for GPUBufferBinding<'_> {}
@@ -104127,6 +105721,7 @@ mod sealed {
     impl Sealed for ImageBitmapSource<'_> {}
     impl Sealed for ImageBufferSource<'_> {}
     impl Sealed for ImportNodeOptions<'_> {}
+    impl Sealed for Int32List<'_> {}
     impl Sealed for JsonWebKey {}
     impl Sealed for KeyframeAnimationOptions<'_> {}
     impl Sealed for KeyframeEffectOptions<'_> {}
@@ -104164,6 +105759,7 @@ mod sealed {
     impl Sealed for StartViewTransitionOptions<'_> {}
     impl Sealed for StrOrArrayBuffer<'_> {}
     impl Sealed for StrOrAudioSinkOptions<'_> {}
+    impl Sealed for StrOrBufferSource<'_> {}
     impl Sealed for StrOrCanvasGradientOrCanvasPattern<'_> {}
     impl Sealed for StrOrElementCreationOptions<'_> {}
     impl Sealed for StrOrList<'_> {}
@@ -104171,15 +105767,12 @@ mod sealed {
     impl Sealed for StrOrPerformanceMeasureOptions<'_> {}
     impl Sealed for StrOrSharedWorkerOptions<'_> {}
     impl Sealed for StrOrTaskSignal<'_> {}
-    impl Sealed for StrOrUint8ArrayOrArrayBuffer<'_> {}
     impl Sealed for TexImageSource<'_> {}
     impl Sealed for TogglePopoverOptions<'_> {}
     impl Sealed for TogglePopoverOptionsOrBool<'_> {}
     impl Sealed for URLPatternInit {}
     impl Sealed for URLPatternInput<'_> {}
-    impl Sealed for Uint8ArrayOrArrayBufferOrBlobOrStr<'_> {}
-    impl Sealed for Uint8ArrayOrArrayBufferOrJsonWebKey<'_> {}
-    impl Sealed for Uint8ArrayOrArrayBufferOrStr<'_> {}
+    impl Sealed for Uint32List<'_> {}
     impl Sealed for VibratePattern<'_> {}
     impl Sealed for WorkerAndParameters<'_> {}
     impl Sealed for WorkerOrWorkerAndParameters<'_> {}
