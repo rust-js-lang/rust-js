@@ -23,7 +23,7 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 use std::rc::Rc;
 use std::sync::Arc;
 
-use rustc_ast::{LitKind, Mutability};
+use rustc_ast::{LitKind, Mutability, StrStyle};
 use rustc_hir::def::{CtorKind, DefKind};
 use rustc_hir::{CRATE_OWNER_ID, HirId, ItemLocalId};
 use rustc_middle::middle::region;
@@ -1456,9 +1456,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     // ── Leaves ──────────────────────────────────────────────────────────
 
+    /// Whether a string literal's line breaks are written as such in its
+    /// source, not as `\n`: a raw string's always are, and a cooked one's
+    /// where it spans lines, other than by a `\` ending one, which leaves
+    /// the break out.
+    fn written_across_lines(&self, style: StrStyle, span: Span) -> bool {
+        !span.from_expansion()
+            && match style {
+                StrStyle::Raw(_) => true,
+                StrStyle::Cooked => self
+                    .tcx
+                    .sess
+                    .source_map()
+                    .span_to_snippet(span)
+                    .is_ok_and(|code| code.match_indices('\n').any(|(i, _)| !code[..i].ends_with('\\'))),
+            }
+    }
+
     fn literal(&self, lit: &LitKind, neg: bool, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         match *lit {
             LitKind::Bool(b) => Ok(Expr::bool(b)),
+            // One written across lines keeps them, a template literal.
+            LitKind::Str(s, style) if s.as_str().contains('\n') && self.written_across_lines(style, span) => {
+                Ok(Expr::lines(s.as_str()))
+            }
             LitKind::Str(s, _) => Ok(Expr::str(s.as_str())),
             // A `char` is a string of one character (ADR 0034).
             LitKind::Char(c) => Ok(Expr::str(c.to_string())),

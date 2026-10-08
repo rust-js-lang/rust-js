@@ -254,6 +254,7 @@ fn expr(e: &mut Expr, visitor: &mut Visitor<'_>) {
         | ExprKind::BigUint(_)
         | ExprKind::Bool(_)
         | ExprKind::Str(_)
+        | ExprKind::Lines(_)
         | ExprKind::Undefined
         | ExprKind::Null
         | ExprKind::Regex(_) => {}

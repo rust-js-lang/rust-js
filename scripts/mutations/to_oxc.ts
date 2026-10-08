@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "lines-escaped",
+    breaks: "a string written across lines is a template literal of `\\n`s",
+    file: "src/to_oxc.rs",
+    find: "            '\\n' if lines => raw.push('\\n'),",
+    replace: "            '\\n' if lines => raw.push_str(\"\\\\n\"),",
+    tests: ["test/format.test.ts", "-t", "a string written across lines"],
+  },
+  {
     name: "runtime-binding-own-import",
     breaks: "a binding of a runtime helper, `dict::get`'s `$dictGet`, is imported from `@rust-js/runtime` again, apart from the helpers",
     file: "src/to_oxc.rs",

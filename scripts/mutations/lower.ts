@@ -3,6 +3,22 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "raw-lines-escaped",
+    breaks: "a raw string written across lines is one line of `\\n`s",
+    file: "src/lower.rs",
+    find: "                StrStyle::Raw(_) => true,",
+    replace: "                StrStyle::Raw(_) => false,",
+    tests: ["test/format.test.ts", "-t", "a string written across lines"],
+  },
+  {
+    name: "continued-line-kept",
+    breaks: "a string whose line ends in `\\` is printed with a line break where it has `\\n`",
+    file: "src/lower.rs",
+    find: ".is_ok_and(|code| code.match_indices('\\n').any(|(i, _)| !code[..i].ends_with('\\\\'))),",
+    replace: ".is_ok_and(|code| code.contains('\\n')),",
+    tests: ["test/format.test.ts", "-t", "a string written across lines"],
+  },
+  {
     name: "walks-unkeyed",
     breaks: "what walks of types found is kept for every typing environment, so a copied default's clone shares what its sibling's bounds make a `Vec`",
     file: "src/lower.rs",

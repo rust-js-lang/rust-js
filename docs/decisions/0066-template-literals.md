@@ -56,3 +56,12 @@ It's correct, but it isn't what a person writes today, and once formatted
   around each number.
 - **A template even for values alone** (`` `${a}${b}` ``): uniform, but
   `a + b` of two strings is plainer.
+
+## Since
+
+- **A string literal written across lines is a template literal with its
+  line breaks**, `r#"<!DOCTYPE html>` and the lines after it, as
+  react.dev's Sandpack template writes a file's code: the same text,
+  written as the Rust is. One written with `\n` keeps it, and so does one
+  whose break is left out by a `\` ending the line. A `` ` ``, `\` or
+  `${` in it is escaped. Case N: it's the same string.

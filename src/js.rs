@@ -404,6 +404,9 @@ pub enum ExprKind {
     BigUint(u128),
     Bool(bool),
     Str(String),
+    /// A string written across lines in its source, `r#"<div>` and on: a
+    /// template literal with its line breaks, as a person writes a page.
+    Lines(String),
     Undefined,
     /// Only to test against: `o != null` (ADR 0030).
     Null,
@@ -559,6 +562,10 @@ impl Expr {
 
     pub fn str(s: impl Into<String>) -> Expr {
         Expr::new(ExprKind::Str(s.into()))
+    }
+
+    pub fn lines(s: impl Into<String>) -> Expr {
+        Expr::new(ExprKind::Lines(s.into()))
     }
 
     /// A regular expression literal, as written: `/^[0-9]$/`.
@@ -764,6 +771,7 @@ impl Expr {
                 | ExprKind::BigUint(_)
                 | ExprKind::Bool(_)
                 | ExprKind::Str(_)
+                | ExprKind::Lines(_)
                 | ExprKind::Undefined
                 | ExprKind::Null
         )
@@ -825,6 +833,7 @@ impl Expr {
             | ExprKind::BigUint(_)
             | ExprKind::Bool(_)
             | ExprKind::Str(_)
+            | ExprKind::Lines(_)
             | ExprKind::Undefined
             | ExprKind::Null
             | ExprKind::Symbol(_)
@@ -878,6 +887,7 @@ impl Expr {
             | ExprKind::BigUint(_)
             | ExprKind::Bool(_)
             | ExprKind::Str(_)
+            | ExprKind::Lines(_)
             | ExprKind::Undefined
             | ExprKind::Null
             | ExprKind::Symbol(_)
@@ -914,6 +924,7 @@ impl Expr {
             | ExprKind::BigUint(_)
             | ExprKind::Bool(_)
             | ExprKind::Str(_)
+            | ExprKind::Lines(_)
             | ExprKind::Undefined
             | ExprKind::Null
             | ExprKind::Var(_)
@@ -1027,6 +1038,7 @@ impl Expr {
             | ExprKind::BigUint(_)
             | ExprKind::Bool(_)
             | ExprKind::Str(_)
+            | ExprKind::Lines(_)
             | ExprKind::Undefined
             | ExprKind::Null
             | ExprKind::Symbol(_)
@@ -1127,6 +1139,7 @@ impl Expr {
             | ExprKind::BigUint(_)
             | ExprKind::Bool(_)
             | ExprKind::Str(_)
+            | ExprKind::Lines(_)
             | ExprKind::Undefined
             | ExprKind::Null
             | ExprKind::Var(_)

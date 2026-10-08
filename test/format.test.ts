@@ -332,3 +332,41 @@ pub fn given(items: &[u32], keys: Option<&[&str]>) -> String {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.plain([1, 2]), lib.given([3], undefined)]).toEqual(["[\n  1,\n  2\n]", "[\n  3\n]"]);
 });
+
+// A string literal written across lines is a template literal with its
+// line breaks, as react.dev's Sandpack template writes a file's code; one
+// written with `\n` keeps it.
+test("a string written across lines keeps its lines", async () => {
+  const dir = fixture("multiline-string");
+  writeFileSync(join(dir, "lib.rs"), [
+    "pub fn page() -> &'static str {",
+    "    r#\"<div>",
+    "  `${x}` \\ \"q\"",
+    "</div>\"#",
+    "}",
+    "",
+    "pub fn cooked() -> &'static str {",
+    "    \"a",
+    "b\"",
+    "}",
+    "",
+    "pub fn escaped() -> &'static str {",
+    "    \"a\\nb\"",
+    "}",
+    "",
+    "pub fn continued() -> &'static str {",
+    "    \"a\\n\\",
+    "     b\"",
+    "}",
+    "",
+  ].join("\n"));
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  return `<div>\n  \\`\\${x}\\` \\\\ \"q\"\n</div>`;");
+  expect(js).toContain("  return `a\nb`;");
+  expect(js).toContain('  return "a\\nb";');
+  // A `\` ending a line leaves its break out: the one there is `\n`.
+  expect(js).toMatch(/export function continued\(\) \{\n  return "a\\nb";/);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.page(), lib.cooked(), lib.escaped(), lib.continued()]).toEqual(['<div>\n  `${x}` \\ "q"\n</div>', "a\nb", "a\nb", "a\nb"]);
+});

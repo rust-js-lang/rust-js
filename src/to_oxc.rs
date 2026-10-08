@@ -829,10 +829,18 @@ impl<'a> Cx<'a> {
             ExprKind::Jsx(jsx) => self.jsx(sp, jsx),
             // Printed as written, as `number` prints an integer.
             ExprKind::Regex(literal) => Expression::new_identifier(sp, self.name(literal), b),
+            ExprKind::Lines(text) => {
+                let value = TemplateElementValue {
+                    raw: self.name(&template_raw(text, true)).into(),
+                    cooked: Some(self.name(text).into()),
+                };
+                let quasis = ArenaVec::from_iter_in([TemplateElement::new(SPAN, value, true, b)], b);
+                Expression::new_template_literal(sp, quasis, ArenaVec::new_in(b), b)
+            }
             ExprKind::Template(texts, values) => {
                 let quasis = texts.iter().enumerate().map(|(i, text)| {
                     let value = TemplateElementValue {
-                        raw: self.name(&template_raw(text)).into(),
+                        raw: self.name(&template_raw(text, false)).into(),
                         cooked: Some(self.name(text).into()),
                     };
                     TemplateElement::new(SPAN, value, i + 1 == texts.len(), b)
@@ -1298,8 +1306,9 @@ fn js_number(n: f64) -> String {
 }
 
 /// `text` as a template literal writes it: what would end the text or start
-/// a value is escaped, and so are controls, as in a string.
-fn template_raw(text: &str) -> String {
+/// a value is escaped, and so are controls, as in a string, but a line
+/// break where it keeps its `lines`.
+fn template_raw(text: &str, lines: bool) -> String {
     let mut raw = String::with_capacity(text.len());
     let mut chars = text.chars().peekable();
     while let Some(c) = chars.next() {
@@ -1307,6 +1316,7 @@ fn template_raw(text: &str) -> String {
             '`' => raw.push_str("\\`"),
             '\\' => raw.push_str("\\\\"),
             '$' if chars.peek() == Some(&'{') => raw.push_str("\\$"),
+            '\n' if lines => raw.push('\n'),
             '\n' => raw.push_str("\\n"),
             '\r' => raw.push_str("\\r"),
             '\t' => raw.push_str("\\t"),
