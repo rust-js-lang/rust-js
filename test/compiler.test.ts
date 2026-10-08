@@ -846,7 +846,10 @@ test("the webapi crate's bindings become plain JS", async () => {
   expect(js).toContain("return [Notification.permission, Response.json([1, 2])];");
   // `onerror`'s closure, given an event or a message, and `onbeforeunload`'s.
   expect(js).toContain('button.onerror = (e) => typeof e === "string";\n  window.onbeforeunload = () => undefined;\n  return button.onerror != null;');
-  const { round_trip, iterated, samples, texts, on_errors } = await import(join(target, "web_forms.js"));
+  // `[Symbol.iterator]`, `Iterator.from(list)`.
+  expect(js).toContain("const count = Iterator.from(list).toArray().length;\n  const names = Iterator.from(headers)\n    .map(([name]) => name)\n    .toArray();");
+  const { round_trip, iterated, samples, texts, on_errors, listed } = await import(join(target, "web_forms.js"));
+  expect(listed([1, 2, 3], new Headers({ a: "1", b: "2" }))).toEqual([3, ["a", "b"]]);
   (globalThis as any).window = {};
   const button: any = {};
   expect(on_errors(button)).toBe(true);

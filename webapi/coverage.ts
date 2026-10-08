@@ -113,6 +113,8 @@ function webapi(): { bound: Set<string>; types: Set<string>; parents: Map<string
       const plain = js.replace(/^(get|set) /, "");
       const member =
         js.startsWith("new ") ? "constructor"
+        // `iter(items)`, `Iterator.from(items)`: what `for..of` calls.
+        : js === "Iterator.from" ? "[Symbol.iterator]"
         : /^[A-Z][\w.]*\.\w+$/.test(plain) ? `static:${plain.split(".").pop()}`
         : plain;
       bound.add(`${type}.${member}`);

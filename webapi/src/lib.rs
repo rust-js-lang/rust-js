@@ -5839,6 +5839,16 @@ impl DocumentFragment {
 #[cfg_attr(rust_js, rust_js::types = "DOMTokenList")]
 pub struct DOMTokenList(PhantomData<JsObject>);
 
+pub mod dom_token_list {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMTokenList/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &DOMTokenList) -> Box<dyn Iterator<Item = String>>;
+    }
+}
+
 impl DOMTokenList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMTokenList/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
@@ -5974,6 +5984,16 @@ impl DOMTokenList {
 #[cfg_attr(rust_js, rust_js::types = "NodeList")]
 pub struct NodeList(PhantomData<JsObject>);
 
+pub mod node_list {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/NodeList/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &NodeList) -> Box<dyn Iterator<Item = &'static Node>>;
+    }
+}
+
 impl NodeList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NodeList/item)
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
@@ -6028,6 +6048,16 @@ impl NodeList {
 /// [`HTMLCollection`](https://developer.mozilla.org/docs/Web/API/HTMLCollection)
 #[cfg_attr(rust_js, rust_js::types = "HTMLCollection")]
 pub struct HTMLCollection(PhantomData<JsObject>);
+
+pub mod html_collection {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCollection/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &HTMLCollection) -> Box<dyn Iterator<Item = &'static Element>>;
+    }
+}
 
 impl HTMLCollection {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCollection/length)
@@ -9230,6 +9260,10 @@ pub mod html_form_element {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFormElement/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &HTMLFormElement) -> Box<dyn Iterator<Item = &'static Element>>;
+
         /// Treats `this` as `HTMLFormElement` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLFormElement;
@@ -11402,6 +11436,10 @@ pub mod html_select_element {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &HTMLSelectElement) -> Box<dyn Iterator<Item = &'static HTMLOptionElement>>;
+
         /// Treats `this` as `HTMLSelectElement` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static HTMLSelectElement;
@@ -23789,6 +23827,16 @@ impl PointerEvent {
 #[cfg_attr(rust_js, rust_js::types = "CSSStyleDeclaration")]
 pub struct CSSStyleDeclaration(PhantomData<JsObject>);
 
+pub mod css_style_declaration {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleDeclaration/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &CSSStyleDeclaration) -> Box<dyn Iterator<Item = String>>;
+    }
+}
+
 impl CSSStyleDeclaration {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleDeclaration/cssText)
     #[cfg_attr(rust_js, rust_js::link_name = "get cssText")]
@@ -33019,6 +33067,10 @@ pub mod headers {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/Headers/Headers)
         #[link_name = "new Headers"]
         pub safe fn new_with_init(init: &[&[&str]]) -> &'static Headers;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Headers/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &Headers) -> Box<dyn Iterator<Item = (String, String)>>;
     }
 }
 
@@ -33872,6 +33924,16 @@ impl Touch {
 /// [`TouchList`](https://developer.mozilla.org/docs/Web/API/TouchList)
 #[cfg_attr(rust_js, rust_js::types = "TouchList")]
 pub struct TouchList(PhantomData<JsObject>);
+
+pub mod touch_list {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchList/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &TouchList) -> Box<dyn Iterator<Item = &'static Touch>>;
+    }
+}
 
 impl TouchList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchList/length)
@@ -46115,6 +46177,10 @@ pub mod css_keyframes_rule {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSKeyframesRule/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &CSSKeyframesRule) -> Box<dyn Iterator<Item = &'static CSSKeyframeRule>>;
+
         /// Treats `this` as `CSSKeyframesRule` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &CSSRule) -> &'static CSSKeyframesRule;
@@ -46779,6 +46845,16 @@ pub mod css_nested_declarations {
 /// [`CSSNumericArray`](https://developer.mozilla.org/docs/Web/API/CSSNumericArray)
 #[cfg_attr(rust_js, rust_js::types = "CSSNumericArray")]
 pub struct CSSNumericArray(PhantomData<JsObject>);
+
+pub mod css_numeric_array {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSNumericArray/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &CSSNumericArray) -> Box<dyn Iterator<Item = &'static CSSNumericValue>>;
+    }
+}
 
 impl CSSNumericArray {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSNumericArray/forEach)
@@ -48100,6 +48176,16 @@ impl CSSRule {
 #[cfg_attr(rust_js, rust_js::types = "CSSRuleList")]
 pub struct CSSRuleList(PhantomData<JsObject>);
 
+pub mod css_rule_list {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSRuleList/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &CSSRuleList) -> Box<dyn Iterator<Item = &'static CSSRule>>;
+    }
+}
+
 impl CSSRuleList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSRuleList/item)
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
@@ -48719,6 +48805,10 @@ pub mod css_transform_value {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTransformValue/CSSTransformValue)
         #[link_name = "new CSSTransformValue"]
         pub safe fn new(transforms: &[&CSSTransformComponent]) -> &'static CSSTransformValue;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTransformValue/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &CSSTransformValue) -> Box<dyn Iterator<Item = &'static CSSTransformComponent>>;
 
         /// Treats `this` as `CSSTransformValue` without checking that it is one.
         #[link_name = "this"]
@@ -53157,6 +53247,16 @@ impl DOMQuad {
 #[cfg_attr(rust_js, rust_js::types = "DOMRectList")]
 pub struct DOMRectList(PhantomData<JsObject>);
 
+pub mod dom_rect_list {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRectList/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &DOMRectList) -> Box<dyn Iterator<Item = &'static DOMRect>>;
+    }
+}
+
 impl DOMRectList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRectList/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
@@ -53179,6 +53279,16 @@ impl DOMRectList {
 /// [`DOMStringList`](https://developer.mozilla.org/docs/Web/API/DOMStringList)
 #[cfg_attr(rust_js, rust_js::types = "DOMStringList")]
 pub struct DOMStringList(PhantomData<JsObject>);
+
+pub mod dom_string_list {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMStringList/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &DOMStringList) -> Box<dyn Iterator<Item = String>>;
+    }
+}
 
 impl DOMStringList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMStringList/length)
@@ -53261,6 +53371,16 @@ impl DataTransferItem {
 /// [`DataTransferItemList`](https://developer.mozilla.org/docs/Web/API/DataTransferItemList)
 #[cfg_attr(rust_js, rust_js::types = "DataTransferItemList")]
 pub struct DataTransferItemList(PhantomData<JsObject>);
+
+pub mod data_transfer_item_list {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/DataTransferItemList/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &DataTransferItemList) -> Box<dyn Iterator<Item = &'static DataTransferItem>>;
+    }
+}
 
 impl DataTransferItemList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DataTransferItemList/length)
@@ -55196,6 +55316,16 @@ impl External {
 /// [`FileList`](https://developer.mozilla.org/docs/Web/API/FileList)
 #[cfg_attr(rust_js, rust_js::types = "FileList")]
 pub struct FileList(PhantomData<JsObject>);
+
+pub mod file_list {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/FileList/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &FileList) -> Box<dyn Iterator<Item = &'static File>>;
+    }
+}
 
 impl FileList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileList/item)
@@ -59323,6 +59453,16 @@ impl GeolocationPositionError {
 #[cfg_attr(rust_js, rust_js::types = "HTMLAllCollection")]
 pub struct HTMLAllCollection(PhantomData<JsObject>);
 
+pub mod html_all_collection {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAllCollection/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &HTMLAllCollection) -> Box<dyn Iterator<Item = &'static Element>>;
+    }
+}
+
 impl HTMLAllCollection {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAllCollection/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
@@ -59467,6 +59607,10 @@ pub mod html_form_controls_collection {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFormControlsCollection/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &HTMLFormControlsCollection) -> Box<dyn Iterator<Item = &'static Element>>;
+
         /// Treats `this` as `HTMLFormControlsCollection` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &HTMLCollection) -> &'static HTMLFormControlsCollection;
@@ -60276,6 +60420,10 @@ pub mod html_options_collection {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLOptionsCollection/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &HTMLOptionsCollection) -> Box<dyn Iterator<Item = &'static Element>>;
+
         /// Treats `this` as `HTMLOptionsCollection` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &HTMLCollection) -> &'static HTMLOptionsCollection;
@@ -65568,6 +65716,16 @@ impl MediaKeys {
 #[cfg_attr(rust_js, rust_js::types = "MediaList")]
 pub struct MediaList(PhantomData<JsObject>);
 
+pub mod media_list {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaList/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &MediaList) -> Box<dyn Iterator<Item = String>>;
+    }
+}
+
 impl MediaList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaList/toString)
     #[cfg_attr(rust_js, rust_js::link_name = "toString")]
@@ -66836,6 +66994,16 @@ impl MimeType {
 #[cfg_attr(rust_js, rust_js::types = "MimeTypeArray")]
 pub struct MimeTypeArray(PhantomData<JsObject>);
 
+pub mod mime_type_array {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/MimeTypeArray/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &MimeTypeArray) -> Box<dyn Iterator<Item = &'static MimeType>>;
+    }
+}
+
 impl MimeTypeArray {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MimeTypeArray/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
@@ -66994,6 +67162,16 @@ impl MutationRecord {
 /// [`NamedNodeMap`](https://developer.mozilla.org/docs/Web/API/NamedNodeMap)
 #[cfg_attr(rust_js, rust_js::types = "NamedNodeMap")]
 pub struct NamedNodeMap(PhantomData<JsObject>);
+
+pub mod named_node_map {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/NamedNodeMap/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &NamedNodeMap) -> Box<dyn Iterator<Item = &'static Attr>>;
+    }
+}
 
 impl NamedNodeMap {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NamedNodeMap/length)
@@ -71372,6 +71550,16 @@ impl PictureInPictureWindow {
 #[cfg_attr(rust_js, rust_js::types = "Plugin")]
 pub struct Plugin(PhantomData<JsObject>);
 
+pub mod plugin {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Plugin/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &Plugin) -> Box<dyn Iterator<Item = &'static MimeType>>;
+    }
+}
+
 impl Plugin {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Plugin/name)
     #[cfg_attr(rust_js, rust_js::link_name = "get name")]
@@ -71426,6 +71614,16 @@ impl Plugin {
 /// [`PluginArray`](https://developer.mozilla.org/docs/Web/API/PluginArray)
 #[cfg_attr(rust_js, rust_js::types = "PluginArray")]
 pub struct PluginArray(PhantomData<JsObject>);
+
+pub mod plugin_array {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/PluginArray/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &PluginArray) -> Box<dyn Iterator<Item = &'static Plugin>>;
+    }
+}
 
 impl PluginArray {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PluginArray/refresh)
@@ -74135,6 +74333,10 @@ pub mod radio_node_list {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/RadioNodeList/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &RadioNodeList) -> Box<dyn Iterator<Item = &'static Node>>;
+
         /// Treats `this` as `RadioNodeList` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &NodeList) -> &'static RadioNodeList;
@@ -75478,6 +75680,16 @@ impl SVGLength {
 #[cfg_attr(rust_js, rust_js::types = "SVGLengthList")]
 pub struct SVGLengthList(PhantomData<JsObject>);
 
+pub mod svg_length_list {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGLengthList/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &SVGLengthList) -> Box<dyn Iterator<Item = &'static SVGLength>>;
+    }
+}
+
 impl SVGLengthList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGLengthList/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
@@ -75580,6 +75792,16 @@ impl SVGNumber {
 #[cfg_attr(rust_js, rust_js::types = "SVGNumberList")]
 pub struct SVGNumberList(PhantomData<JsObject>);
 
+pub mod svg_number_list {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGNumberList/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &SVGNumberList) -> Box<dyn Iterator<Item = &'static SVGNumber>>;
+    }
+}
+
 impl SVGNumberList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGNumberList/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
@@ -75658,6 +75880,16 @@ impl SVGNumberList {
 /// [`SVGPointList`](https://developer.mozilla.org/docs/Web/API/SVGPointList)
 #[cfg_attr(rust_js, rust_js::types = "SVGPointList")]
 pub struct SVGPointList(PhantomData<JsObject>);
+
+pub mod svg_point_list {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGPointList/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &SVGPointList) -> Box<dyn Iterator<Item = &'static DOMPoint>>;
+    }
+}
 
 impl SVGPointList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGPointList/length)
@@ -75821,6 +76053,16 @@ impl SVGPreserveAspectRatio {
 /// [`SVGStringList`](https://developer.mozilla.org/docs/Web/API/SVGStringList)
 #[cfg_attr(rust_js, rust_js::types = "SVGStringList")]
 pub struct SVGStringList(PhantomData<JsObject>);
+
+pub mod svg_string_list {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGStringList/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &SVGStringList) -> Box<dyn Iterator<Item = String>>;
+    }
+}
 
 impl SVGStringList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGStringList/length)
@@ -76011,6 +76253,16 @@ impl SVGTransform {
 /// [`SVGTransformList`](https://developer.mozilla.org/docs/Web/API/SVGTransformList)
 #[cfg_attr(rust_js, rust_js::types = "SVGTransformList")]
 pub struct SVGTransformList(PhantomData<JsObject>);
+
+pub mod svg_transform_list {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTransformList/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &SVGTransformList) -> Box<dyn Iterator<Item = &'static SVGTransform>>;
+    }
+}
 
 impl SVGTransformList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTransformList/length)
@@ -78149,6 +78401,16 @@ impl SpeechRecognitionEvent {
 #[cfg_attr(rust_js, rust_js::types = "SpeechRecognitionResult")]
 pub struct SpeechRecognitionResult(PhantomData<JsObject>);
 
+pub mod speech_recognition_result {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionResult/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &SpeechRecognitionResult) -> Box<dyn Iterator<Item = &'static SpeechRecognitionAlternative>>;
+    }
+}
+
 impl SpeechRecognitionResult {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionResult/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
@@ -78179,6 +78441,16 @@ impl SpeechRecognitionResult {
 /// [`SpeechRecognitionResultList`](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionResultList)
 #[cfg_attr(rust_js, rust_js::types = "SpeechRecognitionResultList")]
 pub struct SpeechRecognitionResultList(PhantomData<JsObject>);
+
+pub mod speech_recognition_result_list {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionResultList/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &SpeechRecognitionResultList) -> Box<dyn Iterator<Item = &'static SpeechRecognitionResult>>;
+    }
+}
 
 impl SpeechRecognitionResultList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionResultList/length)
@@ -79018,6 +79290,16 @@ impl StylePropertyMap {
 #[cfg_attr(rust_js, rust_js::types = "StylePropertyMapReadOnly")]
 pub struct StylePropertyMapReadOnly(PhantomData<JsObject>);
 
+pub mod style_property_map_read_only {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/StylePropertyMapReadOnly/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &StylePropertyMapReadOnly) -> Box<dyn Iterator<Item = (String, Vec<&'static CSSStyleValue>)>>;
+    }
+}
+
 impl StylePropertyMapReadOnly {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StylePropertyMapReadOnly/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
@@ -79143,6 +79425,16 @@ impl StyleSheet {
 /// [`StyleSheetList`](https://developer.mozilla.org/docs/Web/API/StyleSheetList)
 #[cfg_attr(rust_js, rust_js::types = "StyleSheetList")]
 pub struct StyleSheetList(PhantomData<JsObject>);
+
+pub mod style_sheet_list {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/StyleSheetList/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &StyleSheetList) -> Box<dyn Iterator<Item = &'static CSSStyleSheet>>;
+    }
+}
 
 impl StyleSheetList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StyleSheetList/item)
@@ -79947,6 +80239,16 @@ impl TextTrackCue {
 #[cfg_attr(rust_js, rust_js::types = "TextTrackCueList")]
 pub struct TextTrackCueList(PhantomData<JsObject>);
 
+pub mod text_track_cue_list {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackCueList/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &TextTrackCueList) -> Box<dyn Iterator<Item = &'static TextTrackCue>>;
+    }
+}
+
 impl TextTrackCueList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackCueList/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
@@ -79983,6 +80285,10 @@ pub mod text_track_list {
     use super::*;
 
     unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackList/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &TextTrackList) -> Box<dyn Iterator<Item = &'static TextTrack>>;
+
         /// Treats `this` as `TextTrackList` without checking that it is one.
         #[link_name = "this"]
         pub safe fn unchecked_from(this: &EventTarget) -> &'static TextTrackList;
@@ -80490,6 +80796,10 @@ pub mod url_search_params {
         /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/URLSearchParams)
         #[link_name = "new URLSearchParams"]
         pub safe fn new() -> &'static URLSearchParams;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/Symbol.iterator)
+        #[link_name = "Iterator.from"]
+        pub safe fn iter(items: &URLSearchParams) -> Box<dyn Iterator<Item = (String, String)>>;
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/URLSearchParams)

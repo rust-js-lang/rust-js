@@ -1,6 +1,6 @@
 # The webapi crate against TypeScript's DOM (@types/web): bun test test/webapi-coverage.test.ts
 # classes: 699 of 701 (99.7%)
-# members: 8249 of 8419 (98.0%)
+# members: 8286 of 8419 (98.4%)
 AbortController.abort
 AbortController.constructor
 AbortController.signal
@@ -273,6 +273,7 @@ CSSImportRule.layerName
 CSSImportRule.styleSheet
 CSSImportRule.supportsText
 CSSKeyframeRule.keyText
+CSSKeyframesRule.[Symbol.iterator]
 CSSKeyframesRule.appendRule
 CSSKeyframesRule.cssRules
 CSSKeyframesRule.deleteRule
@@ -304,6 +305,7 @@ CSSMatrixComponent.constructor
 CSSMatrixComponent.matrix
 CSSNamespaceRule.namespaceURI
 CSSNamespaceRule.prefix
+CSSNumericArray.[Symbol.iterator]
 CSSNumericArray.entries
 CSSNumericArray.forEach
 CSSNumericArray.keys
@@ -424,6 +426,7 @@ CSSRule.static:PAGE_RULE
 CSSRule.static:STYLE_RULE
 CSSRule.static:SUPPORTS_RULE
 CSSRule.type
+CSSRuleList.[Symbol.iterator]
 CSSRuleList.item
 CSSRuleList.length
 CSSScale.constructor
@@ -439,6 +442,7 @@ CSSSkewX.ax
 CSSSkewX.constructor
 CSSSkewY.ay
 CSSSkewY.constructor
+CSSStyleDeclaration.[Symbol.iterator]
 CSSStyleProperties.accentColor
 CSSStyleProperties.alignContent
 CSSStyleProperties.alignItems
@@ -998,6 +1002,7 @@ CSSStyleValue.toString
 CSSTransformComponent.is2D
 CSSTransformComponent.toMatrix
 CSSTransformComponent.toString
+CSSTransformValue.[Symbol.iterator]
 CSSTransformValue.constructor
 CSSTransformValue.entries
 CSSTransformValue.forEach
@@ -1341,6 +1346,7 @@ DOMQuad.static:fromRect
 DOMQuad.toJSON
 DOMRect.constructor
 DOMRect.static:fromRect
+DOMRectList.[Symbol.iterator]
 DOMRectList.item
 DOMRectList.length
 DOMRectReadOnly.bottom
@@ -1354,9 +1360,11 @@ DOMRectReadOnly.top
 DOMRectReadOnly.width
 DOMRectReadOnly.x
 DOMRectReadOnly.y
+DOMStringList.[Symbol.iterator]
 DOMStringList.contains
 DOMStringList.item
 DOMStringList.length
+DOMTokenList.[Symbol.iterator]
 DOMTokenList.add
 DOMTokenList.contains
 DOMTokenList.entries
@@ -1386,6 +1394,7 @@ DataTransferItem.getAsString
 DataTransferItem.kind
 DataTransferItem.type
 DataTransferItem.webkitGetAsEntry
+DataTransferItemList.[Symbol.iterator]
 DataTransferItemList.add
 DataTransferItemList.clear
 DataTransferItemList.length
@@ -1927,6 +1936,7 @@ File.constructor
 File.lastModified
 File.name
 File.webkitRelativePath
+FileList.[Symbol.iterator]
 FileList.item
 FileList.length
 FileReader.DONE
@@ -2243,6 +2253,7 @@ GeolocationPositionError.message
 GeolocationPositionError.static:PERMISSION_DENIED
 GeolocationPositionError.static:POSITION_UNAVAILABLE
 GeolocationPositionError.static:TIMEOUT
+HTMLAllCollection.[Symbol.iterator]
 HTMLAllCollection.length
 HTMLAnchorElement.charset
 HTMLAnchorElement.coords
@@ -2348,6 +2359,7 @@ HTMLCanvasElement.toBlob
 HTMLCanvasElement.toDataURL
 HTMLCanvasElement.transferControlToOffscreen
 HTMLCanvasElement.width
+HTMLCollection.[Symbol.iterator]
 HTMLCollection.item
 HTMLCollection.length
 HTMLCollection.namedItem
@@ -2524,9 +2536,11 @@ HTMLFieldSetElement.willValidate
 HTMLFontElement.color
 HTMLFontElement.face
 HTMLFontElement.size
+HTMLFormControlsCollection.[Symbol.iterator]
 HTMLFormControlsCollection.item
 HTMLFormControlsCollection.length
 HTMLFormControlsCollection.namedItem
+HTMLFormElement.[Symbol.iterator]
 HTMLFormElement.acceptCharset
 HTMLFormElement.action
 HTMLFormElement.autocomplete
@@ -2841,6 +2855,7 @@ HTMLOptionElement.label
 HTMLOptionElement.selected
 HTMLOptionElement.text
 HTMLOptionElement.value
+HTMLOptionsCollection.[Symbol.iterator]
 HTMLOptionsCollection.add
 HTMLOptionsCollection.item
 HTMLOptionsCollection.length
@@ -2884,6 +2899,7 @@ HTMLScriptElement.src
 HTMLScriptElement.static:supports
 HTMLScriptElement.text
 HTMLScriptElement.type
+HTMLSelectElement.[Symbol.iterator]
 HTMLSelectElement.add
 HTMLSelectElement.autocomplete
 HTMLSelectElement.checkValidity
@@ -3056,6 +3072,7 @@ HTMLVideoElement.width
 HashChangeEvent.constructor
 HashChangeEvent.newURL
 HashChangeEvent.oldURL
+Headers.[Symbol.iterator]
 Headers.append
 Headers.constructor
 Headers.delete
@@ -3461,6 +3478,7 @@ MediaKeySystemAccess.keySystem
 MediaKeys.createSession
 MediaKeys.getStatusForPolicy
 MediaKeys.setServerCertificate
+MediaList.[Symbol.iterator]
 MediaList.appendMedium
 MediaList.deleteMedium
 MediaList.item
@@ -3572,6 +3590,7 @@ MimeType.description
 MimeType.enabledPlugin
 MimeType.suffixes
 MimeType.type
+MimeTypeArray.[Symbol.iterator]
 MimeTypeArray.item
 MimeTypeArray.length
 MimeTypeArray.namedItem
@@ -3612,6 +3631,7 @@ MutationRecord.previousSibling
 MutationRecord.removedNodes
 MutationRecord.target
 MutationRecord.type
+NamedNodeMap.[Symbol.iterator]
 NamedNodeMap.getNamedItem
 NamedNodeMap.getNamedItemNS
 NamedNodeMap.item
@@ -3796,6 +3816,7 @@ NodeIterator.previousNode
 NodeIterator.referenceNode
 NodeIterator.root
 NodeIterator.whatToShow
+NodeList.[Symbol.iterator]
 NodeList.entries
 NodeList.forEach
 NodeList.item
@@ -4101,12 +4122,14 @@ PictureInPictureEvent.pictureInPictureWindow
 PictureInPictureWindow.height
 PictureInPictureWindow.onresize
 PictureInPictureWindow.width
+Plugin.[Symbol.iterator]
 Plugin.description
 Plugin.filename
 Plugin.item
 Plugin.length
 Plugin.name
 Plugin.namedItem
+PluginArray.[Symbol.iterator]
 PluginArray.item
 PluginArray.length
 PluginArray.namedItem
@@ -4326,6 +4349,7 @@ RTCTrackEvent.receiver
 RTCTrackEvent.streams
 RTCTrackEvent.track
 RTCTrackEvent.transceiver
+RadioNodeList.[Symbol.iterator]
 RadioNodeList.entries
 RadioNodeList.forEach
 RadioNodeList.item
@@ -4984,6 +5008,7 @@ SVGLength.unitType
 SVGLength.value
 SVGLength.valueAsString
 SVGLength.valueInSpecifiedUnits
+SVGLengthList.[Symbol.iterator]
 SVGLengthList.appendItem
 SVGLengthList.clear
 SVGLengthList.getItem
@@ -5034,6 +5059,7 @@ SVGMaskElement.width
 SVGMaskElement.x
 SVGMaskElement.y
 SVGNumber.value
+SVGNumberList.[Symbol.iterator]
 SVGNumberList.appendItem
 SVGNumberList.clear
 SVGNumberList.getItem
@@ -5053,6 +5079,7 @@ SVGPatternElement.viewBox
 SVGPatternElement.width
 SVGPatternElement.x
 SVGPatternElement.y
+SVGPointList.[Symbol.iterator]
 SVGPointList.appendItem
 SVGPointList.clear
 SVGPointList.getItem
@@ -5162,6 +5189,7 @@ SVGSVGElement.y
 SVGScriptElement.href
 SVGScriptElement.type
 SVGStopElement.offset
+SVGStringList.[Symbol.iterator]
 SVGStringList.appendItem
 SVGStringList.clear
 SVGStringList.getItem
@@ -5239,6 +5267,7 @@ SVGTransform.static:SVG_TRANSFORM_SKEWY
 SVGTransform.static:SVG_TRANSFORM_TRANSLATE
 SVGTransform.static:SVG_TRANSFORM_UNKNOWN
 SVGTransform.type
+SVGTransformList.[Symbol.iterator]
 SVGTransformList.appendItem
 SVGTransformList.clear
 SVGTransformList.consolidate
@@ -5415,9 +5444,11 @@ SpeechRecognitionErrorEvent.message
 SpeechRecognitionEvent.constructor
 SpeechRecognitionEvent.resultIndex
 SpeechRecognitionEvent.results
+SpeechRecognitionResult.[Symbol.iterator]
 SpeechRecognitionResult.isFinal
 SpeechRecognitionResult.item
 SpeechRecognitionResult.length
+SpeechRecognitionResultList.[Symbol.iterator]
 SpeechRecognitionResultList.item
 SpeechRecognitionResultList.length
 SpeechSynthesis.cancel
@@ -5480,6 +5511,7 @@ StylePropertyMap.append
 StylePropertyMap.clear
 StylePropertyMap.delete
 StylePropertyMap.set
+StylePropertyMapReadOnly.[Symbol.iterator]
 StylePropertyMapReadOnly.entries
 StylePropertyMapReadOnly.forEach
 StylePropertyMapReadOnly.getAll
@@ -5492,6 +5524,7 @@ StyleSheet.href
 StyleSheet.parentStyleSheet
 StyleSheet.title
 StyleSheet.type
+StyleSheetList.[Symbol.iterator]
 StyleSheetList.item
 StyleSheetList.length
 SubmitEvent.constructor
@@ -5568,8 +5601,10 @@ TextTrackCue.onexit
 TextTrackCue.pauseOnExit
 TextTrackCue.startTime
 TextTrackCue.track
+TextTrackCueList.[Symbol.iterator]
 TextTrackCueList.getCueById
 TextTrackCueList.length
+TextTrackList.[Symbol.iterator]
 TextTrackList.getTrackById
 TextTrackList.length
 TextTrackList.onaddtrack
@@ -5603,6 +5638,7 @@ TouchEvent.metaKey
 TouchEvent.shiftKey
 TouchEvent.targetTouches
 TouchEvent.touches
+TouchList.[Symbol.iterator]
 TouchList.item
 TouchList.length
 TrackEvent.constructor
@@ -5663,6 +5699,7 @@ URLPattern.protocol
 URLPattern.search
 URLPattern.test
 URLPattern.username
+URLSearchParams.[Symbol.iterator]
 URLSearchParams.append
 URLSearchParams.constructor
 URLSearchParams.delete

@@ -628,6 +628,30 @@ const ERROR_ARG: Union = {
   borrows: true,
 };
 
+/** What `for..of` gives of `i`: an iterable's value, or its key and value,
+ * or an indexed getter's item, `getter Element? item(unsigned long index)`;
+ * its own, or its parent's. */
+function iterated(i: Interface): string | undefined {
+  for (const { member: m } of i.members) {
+    if (m.type === "iterable" || m.type === "maplike" || m.type === "setlike") {
+      const types = (m as unknown as { idlType: IdlType[]; async?: boolean }).idlType;
+      if ((m as unknown as { async?: boolean }).async) return undefined;
+      const each = types.map((t) => rustType(t, "result"));
+      if (each.some((t) => typeof t !== "string")) return undefined;
+      return each.length === 2 ? `(${each.join(", ")})` : (each[0] as string);
+    }
+  }
+  for (const { member: m } of i.members) {
+    const index = m.arguments?.[0]?.idlType.idlType;
+    if (m.type === "operation" && m.special === "getter" && m.arguments?.length === 1 && index === "unsigned long") {
+      const item = rustType(m.idlType!, "result");
+      return typeof item === "string" ? item : undefined;
+    }
+  }
+  const parent = i.parent && interfaces.get(i.parent);
+  return parent ? iterated(parent) : undefined;
+}
+
 /** A stringifier's `toString()`, `url.to_string()`, its text. */
 const toString = (i: Interface): Fn => ({
   name: "to_string",
@@ -872,6 +896,25 @@ function functionsOf(i: Interface): Fn[] {
         const jsName = isStatic ? `${i.name}.${m.name}` : member(m.name);
         fns.push({ name: v.name, jsName, params: isStatic ? v.params : [...self, ...v.params], result: orNull(result, m.idlType!), doc });
       }
+    }
+  }
+
+  // `for..of`'s `[Symbol.iterator]`, where TypeScript has it: a function of
+  // the module, `html_collection::iter(list)`, `Iterator.from(list)`, a JS
+  // iterator (ADR 0140) of an iterable's values or entries, or of an indexed
+  // collection's items. A method would be called on it, `list.from()`.
+  if (!i.isNamespace && typescriptDom.get(i.name)?.members.has("[Symbol.iterator]")) {
+    const item = iterated(i);
+    if (item) {
+      fns.push({
+        name: "iter",
+        jsName: "Iterator.from",
+        params: [`items: &${typeName(i.name)}`],
+        result: `Box<dyn Iterator<Item = ${item}>>`,
+        doc: [`[MDN](${mdn(i.name, "Symbol.iterator")})`],
+      });
+    } else {
+      skip("[Symbol.iterator]");
     }
   }
 

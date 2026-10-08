@@ -132,3 +132,8 @@ so nothing said when it fell behind.
   window its message, where it was and what was thrown, and gives whether
   it's handled, `true` not reported; `onbeforeunload`'s gives the text that
   asks whether to leave, or none. They were skipped. 98.0%.
+- **`[Symbol.iterator]` is its module's `iter`**, where TypeScript has it:
+  `node_list::iter(list)` is `Iterator.from(list)`, a JS iterator (ADR
+  0140) of an iterable's values or entries, or of an indexed collection's
+  items, its getter's type. A method would be a member call,
+  `list.from()`. 98.4%.

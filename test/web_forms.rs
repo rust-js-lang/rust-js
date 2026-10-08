@@ -164,3 +164,11 @@ pub fn on_errors(button: &webapi::HTMLButtonElement) -> bool {
     webapi::window.set_onbeforeunload(Some(Box::new(|_| None)));
     button.onerror().is_some()
 }
+
+/// `for..of`'s `[Symbol.iterator]`: `Iterator.from(list)`, a JS iterator of
+/// an indexed collection's items, or of an iterable's entries.
+pub fn listed(list: &webapi::NodeList, headers: &webapi::Headers) -> (usize, Vec<String>) {
+    let count = webapi::node_list::iter(list).count();
+    let names = webapi::headers::iter(headers).map(|(name, _)| name).collect();
+    (count, names)
+}
