@@ -50,4 +50,12 @@ export const mutations: Mutation[] = [
     replace: "Some(Res::Def(DefKind::Fn, function)) => Some(function),",
     tests: ["test/declarations.test.ts","-t","thread-local default"],
   },
+  {
+    name: "on-load-const-written",
+    breaks: "`js::on_load!`'s `const _`, which holds its function, is written, `const _ = undefined`",
+    file: "src/lower/bindings.rs",
+    find: "[\"import\", \"camel_case\", \"directive\", \"export_default\", \"on_load\"]",
+    replace: "[\"import\", \"camel_case\", \"directive\", \"export_default\"]",
+    tests: ["test/compiler.test.ts", "-t", "js::on_load!"],
+  },
 ];

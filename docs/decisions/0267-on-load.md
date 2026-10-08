@@ -33,8 +33,9 @@ import("../MDX/CodeBlock/CodeBlock");
 ```
 
 - **rustc checks them as a function's body**: the macro writes a function
-  `#[rust_js::on_load]`, in a `const _`, which nothing calls; rust-js writes
-  its body where the module's statements go, and no function.
+  `#[rust_js::on_load]`, in a `const _` marked so too, which nothing calls;
+  rust-js writes its body where the module's statements go, and neither the
+  function nor the `const`.
 - **What they use is imported**, a runtime helper's too.
 
 ## Why

@@ -261,11 +261,11 @@ pub(super) fn is_on_load(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
         .is_some()
 }
 
-/// Is `def_id` a `js::import!`'s, `js::camel_case!`'s, `js::directive!`'s
-/// or `js::export_default!`'s `const _`, which is rust-js's to read, and
-/// has nothing to write?
+/// Is `def_id` a `js::import!`'s, `js::camel_case!`'s, `js::directive!`'s,
+/// `js::export_default!`'s or `js::on_load!`'s `const _`, which is rust-js's
+/// to read, and has nothing to write?
 pub(super) fn is_mark(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
-    ["import", "camel_case", "directive", "export_default"]
+    ["import", "camel_case", "directive", "export_default", "on_load"]
         .iter()
         .any(|name| {
             tcx.get_attrs_by_path(def_id, &[Symbol::intern("rust_js"), Symbol::intern(name)])

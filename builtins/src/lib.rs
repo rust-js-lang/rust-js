@@ -31,6 +31,7 @@ macro_rules! import {
 #[macro_export]
 macro_rules! on_load {
     ($($body:tt)*) => {
+        #[cfg_attr(rust_js, rust_js::on_load)]
         const _: () = {
             #[cfg_attr(rust_js, rust_js::on_load)]
             #[allow(dead_code)]

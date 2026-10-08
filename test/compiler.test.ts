@@ -1929,6 +1929,7 @@ pub fn ready() -> u32 {
   expect(js).toContain('\nglobalThis.loaded("module");\n');
   expect(js).toContain('import { $index } from "@rust-js/runtime";');
   expect(js).not.toContain("on_load");
+  expect(js).not.toContain("const _");
   const seen: string[] = [];
   (globalThis as any).loaded = (what: string) => seen.push(what);
   try {
