@@ -303,6 +303,19 @@ impl Expand<'_> {
     }
 
     fn item(&mut self, item: &mut ast::Item, attrs: &[ast::Attribute]) {
+        // A `thread_local!`'s static may be JSX, a module's constant element,
+        // which rustc would expand as a plain rustc's placeholder: its tokens
+        // are the macro's, never visited as expressions (ADR 0259).
+        if let ItemKind::MacCall(mac) = &mut item.kind
+            && mac
+                .path
+                .segments
+                .last()
+                .is_some_and(|s| s.ident.as_str() == "thread_local")
+        {
+            mac.args.tokens = self.jsx_calls(&mac.args.tokens);
+            return;
+        }
         let ItemKind::Mod(_, ident, kind) = &mut item.kind else {
             mut_visit::walk_item(self, item);
             return;
@@ -413,6 +426,40 @@ impl Expand<'_> {
 }
 
 impl Expand<'_> {
+    /// Each `jsx!` call among a macro's tokens, as rust-js writes it.
+    fn jsx_calls(&self, tokens: &TokenStream) -> TokenStream {
+        let trees: Vec<&TokenTree> = tokens.iter().collect();
+        let mut result = Vec::new();
+        let mut i = 0;
+        while i < trees.len() {
+            if let [
+                TokenTree::Token(name, _),
+                TokenTree::Token(bang, _),
+                TokenTree::Delimited(dspan, spacing, delim, inner),
+                ..,
+            ] = &trees[i..]
+                && matches!(name.kind, TokenKind::Ident(symbol, IdentIsRaw::No) if symbol.as_str() == "jsx")
+                && bang.kind == TokenKind::Bang
+                && !expanded_already(inner)
+                && let span = name.span.to(dspan.entire())
+                && let Ok(rust) = parser::jsx(self.sess, inner.clone(), span, &self.tags)
+            {
+                result.extend([trees[i].clone(), trees[i + 1].clone()]);
+                result.push(TokenTree::Delimited(*dspan, *spacing, *delim, arm(rust, span)));
+                i += 3;
+            } else {
+                result.push(match trees[i] {
+                    TokenTree::Delimited(dspan, spacing, delim, inner) => {
+                        TokenTree::Delimited(*dspan, *spacing, *delim, self.jsx_calls(inner))
+                    }
+                    tree => tree.clone(),
+                });
+                i += 1;
+            }
+        }
+        TokenStream::new(result)
+    }
+
     fn statement(&mut self, stmt: &mut ast::Stmt) {
         let span = stmt.span;
         if let ast::StmtKind::MacCall(mac) = &mut stmt.kind

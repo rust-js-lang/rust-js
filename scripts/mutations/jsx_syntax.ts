@@ -52,4 +52,20 @@ export const mutations: Mutation[] = [
     replace: "[_] => None,",
     tests: ["test/jsx.test.ts", "-t", "function type is a tag"],
   },
+  {
+    name: "thread-local-jsx-unexpanded",
+    breaks: "a `thread_local!`'s `jsx!`, a module's constant element, is expanded by rustc as a plain rustc's placeholder, which rust-js can't call",
+    file: "src/jsx_syntax.rs",
+    find: "            mac.args.tokens = self.jsx_calls(&mac.args.tokens);\n",
+    replace: "",
+    tests: ["test/jsx.test.ts", "-t", "constant element is rendered"],
+  },
+  {
+    name: "thread-local-nested-jsx-unexpanded",
+    breaks: "a `thread_local!`'s `jsx!` inside a call, `Some(jsx! { .. })`, is left to rustc, as a plain rustc's placeholder",
+    file: "src/jsx_syntax.rs",
+    find: "TokenTree::Delimited(*dspan, *spacing, *delim, self.jsx_calls(inner))",
+    replace: "TokenTree::Delimited(*dspan, *spacing, *delim, inner.clone())",
+    tests: ["test/jsx.test.ts", "-t", "constant element is rendered"],
+  },
 ];

@@ -46,4 +46,6 @@ pub struct ImageProps<'a> {
     pub class_name: Option<&'a str>,
     /// The `<img>`'s `id`.
     pub id: Option<&'a str>,
+    /// The `<img>`'s `title`, its tooltip.
+    pub title: Option<&'a str>,
 }

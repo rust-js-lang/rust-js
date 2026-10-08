@@ -84,6 +84,16 @@ pub mod JSX {
     #[cfg_attr(rust_js, rust_js::jsx_element)]
     #[cfg_attr(rust_js, rust_js::types = "react#JSX.Element<>")]
     pub struct Element<T = webapi::Element>(pub(crate) PhantomData<JsObject>, pub(crate) PhantomData<T>);
+
+    // An element is never changed once made, so a copy is the element itself,
+    // as a module's constant one is read wherever it's rendered (ADR 0259).
+    impl<T> Clone for Element<T> {
+        fn clone(&self) -> Self {
+            *self
+        }
+    }
+
+    impl<T> Copy for Element<T> {}
 }
 
 use JSX::Element;

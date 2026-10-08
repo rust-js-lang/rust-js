@@ -3033,6 +3033,31 @@ pub fn List(items: &'static [ItemProps<'static>]) -> JSX::Element {
   expect(renderToStaticMarkup(List([{ label: "a" }, { label: "" }, { label: "b" }]))).toBe("<ul><li>a</li><li>b</li></ul>");
 });
 
+// An element made once, a module's constant, rendered wherever it's read,
+// as react.dev's TopNav renders its icons: an element is never changed, so
+// it's copied as it is.
+test("a module's constant element is rendered where it's read", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+
+thread_local! {
+    static star: JSX::Element = jsx! { <b>{"*"}</b> };
+    static half: Option<JSX::Element> = Some(jsx! { <i>{"+"}</i> });
+}
+
+pub fn Rated() -> JSX::Element {
+    jsx! { <p>{star.with(|icon| *icon)}{star.with(|icon| *icon)}{half.with(|icon| *icon)}</p> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("const star = <b>*</b>;");
+  expect(jsx).toContain("const half = <i>+</i>;");
+  expect(jsx).toContain("{star}\n      {star}\n      {half}");
+  const { Rated } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(Rated())).toBe("<p><b>*</b><b>*</b><i>+</i></p>");
+});
+
 // A key or ref that does nothing, a variable or `Some` of one, is given
 // where JSX puts it with nothing captured in order, as react.dev's
 // SidebarLink gives next/link its `ref={ref}` before its classes, which

@@ -106,6 +106,11 @@ pub fn Linked() -> JSX::Element {
     let anchor = use_ref::<Option<&'static HTMLAnchorElement>>(None);
     jsx! { <Link href="/" ref={Some(anchor)} title={Some("Home")} className={Some(classes(true))} passHref={Some(true)}>{label(true)}</Link> }
 }
+
+// An image titled, as react.dev's TopNav titles its logo.
+pub fn Titled() -> JSX::Element {
+    jsx! { <next::image::Image src="/next.svg" alt="Next.js logo" title={Some("Next.js")} width={Some(90)} height={Some(18)} /> }
+}
 `;
 
 // A handler of the router's events, given on and taken off by the same
@@ -173,6 +178,7 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   expect(routePath.includes("return useRouter().asPath;")).toBe(true);
   expect([routePath.includes('import Router, { useRouter } from "next/router";'), routePath.includes("Router.push(url);")]).toEqual([true, true]);
   expect(readFileSync(join(dir, "app/linked.jsx"), "utf8")).toContain('import Head from "next/head";');
+  expect(readFileSync(join(dir, "app/linked.jsx"), "utf8")).toContain('<Image src="/next.svg" alt="Next.js logo" title="Next.js" width={90} height={18} />');
   expect([routePath.includes("const events = useRouter().events;"), routePath.includes('events.on("routeChangeStart", started);'), routePath.includes('events.off("routeChangeStart", started)')]).toEqual([true, true, true]);
   // The Server Component's page is rendered at build time, the counter in it.
   expect(readFileSync(join(dir, ".next/server/app/index.html"), "utf8")).toContain("Count <!-- -->0");
