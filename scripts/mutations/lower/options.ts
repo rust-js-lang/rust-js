@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "filter-unwrap-or-unfused",
-    breaks: "`title.filter(..).unwrap_or(\"Error\")` is `(title != null && .. ? title : undefined) ?? \"Error\"`, not `title || 'Error'`'s shape",
+    breaks: "`n.filter(|n| *n > 0).unwrap_or(1)` is `(n != null && n > 0 ? n : undefined) ?? 1`, not `n != null && n > 0 ? n : 1`",
     file: "src/lower/options.rs",
     find: "                } else if let Some((kept, value)) = filtered(&option) {\n",
     replace: "                } else if let Some((kept, value)) = None::<(Expr, Expr)> {\n",

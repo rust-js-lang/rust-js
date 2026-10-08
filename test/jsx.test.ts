@@ -747,6 +747,9 @@ pub fn Example(excerpt: Option<&str>) -> JSX::Element {
 pub fn title(name: Option<&str>) -> String {
     name.filter(|name| !name.is_empty()).unwrap_or("Error").to_string()
 }
+pub fn positive(n: Option<i32>) -> i32 {
+    n.filter(|n| *n > 0).unwrap_or(1)
+}
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
@@ -756,6 +759,8 @@ pub fn title(name: Option<&str>) -> String {
   expect(jsx).not.toContain("const className");
   // Text kept where it isn't empty, or a default, is `||` (ADR 0266).
   expect(jsx).toContain('return name || "Error";');
+  // A filter of another test, or a default, is that test.
+  expect(jsx).toContain("return n != null && n > 0 ? n : 1;");
   const { Example, title } = await import(join(dir, "lib.jsx"));
   expect(["e", "", undefined].map((e) => renderToStaticMarkup(createElement(() => Example(e))))).toEqual([
     '<div><h5 class="title">Example</h5><p>e</p><button class="button"><span>Show</span></button></div>',
@@ -763,6 +768,8 @@ pub fn title(name: Option<&str>) -> String {
     '<div><h5 class="title">Example</h5><button class="button"><span>Show</span></button></div>',
   ]);
   expect([title("Oops"), title(""), title(undefined)]).toEqual(["Oops", "Error", "Error"]);
+  const { positive } = await import(join(dir, "lib.jsx"));
+  expect([positive(3), positive(-2), positive(undefined)]).toEqual([3, 1, 1]);
 });
 
 // Each tag takes what @types/react's `JSX.IntrinsicElements` gives it: an
