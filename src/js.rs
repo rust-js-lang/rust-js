@@ -74,11 +74,12 @@ impl Module {
     }
 }
 
-/// Are `a` and `b` one path: a variable, or `a.b.c` of the same names?
+/// Are `a` and `b` one path: a variable, or `a.b.c` or `a?.b` of the same names?
 pub(crate) fn same_path(a: &Expr, b: &Expr) -> bool {
     match (&a.kind, &b.kind) {
         (ExprKind::Var(x), ExprKind::Var(y)) => x == y,
         (ExprKind::Member(x, f), ExprKind::Member(y, g)) => f == g && same_path(x, y),
+        (ExprKind::OptionalMember(x, f), ExprKind::OptionalMember(y, g)) => f == g && same_path(x, y),
         _ => false,
     }
 }
@@ -661,6 +662,16 @@ impl Expr {
     }
 
     pub fn bin(op: Op, lhs: Expr, rhs: Expr) -> Expr {
+        // `a != null && !!a` is `!!a`: neither is truthy.
+        if op == Op::And
+            && let ExprKind::Binary(Op::LooseNe, tested, null) = &lhs.kind
+            && matches!(null.kind, ExprKind::Null)
+            && let ExprKind::Unary(UnaryOp::Not, inner) = &rhs.kind
+            && let ExprKind::Unary(UnaryOp::Not, of) = &inner.kind
+            && same_path(tested, of)
+        {
+            return rhs;
+        }
         // `a != null && Array.isArray(a)` is `Array.isArray(a)`: no array is
         // `null` or `undefined`.
         if op == Op::And

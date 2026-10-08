@@ -49,7 +49,7 @@ export function parts(path) {
   let kept = [];
   let empty = 0;
   for (const part of path.split("/")) {
-    if (part.length === 0) {
+    if (!part) {
       empty = (empty + 1) >>> 0;
     } else {
       kept.push(part);

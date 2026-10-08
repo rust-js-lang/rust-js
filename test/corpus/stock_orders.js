@@ -106,7 +106,7 @@ function parse_order(text) {
       .split(",")
       .values()
       .map((s) => $trim(s))
-      .filter((part) => part.length !== 0)
+      .filter((part) => !!part)
       .map((part) => {
         const option = $splitOnce(part, "x");
         const fallback = `${$debugStr(part)} has no x`;

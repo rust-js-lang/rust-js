@@ -223,9 +223,8 @@ function main() {
       dDrop_drop(option);
     }
   }
-  const kept$1 = kept;
   try {
-    console.log(`kept ${kept$1 != null}`);
+    console.log(`kept ${kept != null}`);
     const option$1 = make(3);
     let kept$2;
     try {
@@ -602,8 +601,8 @@ function main() {
       }
     }
   } finally {
-    if (kept$1 != null) {
-      dDrop_drop(kept$1);
+    if (kept != null) {
+      dDrop_drop(kept);
     }
   }
 }

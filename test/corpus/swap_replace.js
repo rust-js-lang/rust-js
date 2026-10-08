@@ -25,9 +25,8 @@ function main() {
   );
   const old = pair.left;
   pair.left = [9];
-  const old$1 = old;
   console.log(
-    `[${old$1.map((item) => String(item)).join(", ")}] [${pair.left.map((item) => String(item)).join(", ")}]`,
+    `[${old.map((item) => String(item)).join(", ")}] [${pair.left.map((item) => String(item)).join(", ")}]`,
   );
   a = 6;
   console.log(`${a}`);

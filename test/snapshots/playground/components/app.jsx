@@ -188,7 +188,7 @@ export function App() {
       return;
     }
     const path = $trim(answer);
-    if (path.length === 0) {
+    if (!path) {
       return;
     }
     const modulePath = /^([a-z_][a-z0-9_]*\/)*[a-z_][a-z0-9_]*\.rs$/;

@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "            Std::Len if false => {",
     tests: ["test/corpus.test.ts", "-t", "iter_by_ref"],
   },
+  {
+    name: "text-empty-by-length",
+    breaks: "a string's `is_empty()` is `text.length === 0`, not `!text`",
+    file: "src/lower/vecs.rs",
+    find: "            Std::IsEmpty if self.is_string_like(self.thir[args[0]].ty.peel_refs()) => {\n",
+    replace: "            Std::IsEmpty if false && self.is_string_like(self.thir[args[0]].ty.peel_refs()) => {\n",
+    tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
+  },
 ];

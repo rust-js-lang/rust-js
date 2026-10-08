@@ -447,7 +447,7 @@ test("iterators are array methods, and sorting takes comparators", async () => {
   expect(js).toContain("  w.sort((a, b) => a - b);");
   expect(js).toContain("  w.sort((a, b) => $cmp(key(a), key(b)));");
   // `then_with` is `||`: `Equal` is 0.
-  expect(js).toContain("  w.sort((a, b) => $cmp(a.length === 0, b.length === 0) || $cmp(a, b));");
+  expect(js).toContain("  w.sort((a, b) => $cmp(!a, !b) || $cmp(a, b));");
   expect(js).toContain("  if (match === -1) {");
 });
 

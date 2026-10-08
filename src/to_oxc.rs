@@ -497,14 +497,10 @@ impl<'a> Cx<'a> {
         })
     }
 
-    /// A test, which JS makes a `bool` of itself: `!!a` is `a` there.
+    /// A test, which JS makes a `bool` of itself: `!!a` is `a` there, and
+    /// in what `&&` and `||` test of it.
     fn test(&self, e: &js::Expr) -> Expression<'a> {
-        if let ExprKind::Unary(UnaryOp::Not, inner) = &e.kind
-            && let ExprKind::Unary(UnaryOp::Not, value) = &inner.kind
-        {
-            return self.expr(value);
-        }
-        self.expr(e)
+        self.expr(&tested(e))
     }
 
     /// `stmts`, each pushed to `out`. An `if` whose branch leaves has no
@@ -1366,4 +1362,17 @@ fn leaves(stmts: &[js::Stmt]) -> bool {
 fn js_identifier(name: &str) -> bool {
     name.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_' || c == '$')
         && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '$')
+}
+
+/// `e` as a test: `!!a` is `a`, in the parts of `&&` and `||` too, whose
+/// value the test only asks the truth of.
+fn tested(e: &js::Expr) -> js::Expr {
+    match &e.kind {
+        ExprKind::Unary(UnaryOp::Not, inner) if let ExprKind::Unary(UnaryOp::Not, value) = &inner.kind => tested(value),
+        ExprKind::Binary(op @ (Op::And | Op::Or), a, b) => js::Expr {
+            kind: ExprKind::Binary(*op, Box::new(tested(a)), Box::new(tested(b))),
+            span: e.span,
+        },
+        _ => e.clone(),
+    }
 }

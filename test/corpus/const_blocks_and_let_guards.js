@@ -22,7 +22,7 @@ function classify(input) {
     const rest = $stripPrefix(match[1], '"');
     if (rest != null) {
       const inner = $stripSuffix(rest, '"');
-      if (inner != null && inner.length !== 0) {
+      if (inner) {
         return `${match[0]} is the string ${inner}`;
       }
     }

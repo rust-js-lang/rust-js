@@ -6,9 +6,8 @@ function main() {
   const add2 = add;
   console.log(`${add(1)} ${add2(2)}`);
   const count = { value: 0 };
-  const count$1 = count;
   const counter = () => {
-    count$1.value = (count$1.value + 1) | 0;
+    count.value = (count.value + 1) | 0;
   };
   const counter2 = counter;
   counter();

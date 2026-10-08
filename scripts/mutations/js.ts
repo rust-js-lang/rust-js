@@ -91,4 +91,20 @@ export const mutations: Mutation[] = [
     replace: "            && is_array == \"isArrayNot\"\n",
     tests: ["test/compiler.test.ts", "-t", "matches! of a kind's literal"],
   },
+  {
+    name: "truthy-tested-for-null",
+    breaks: "`code != null && !!code` is kept, not `!!code`, `code ? ..` of text",
+    file: "src/js.rs",
+    find: "            && let ExprKind::Unary(UnaryOp::Not, of) = &inner.kind\n            && same_path(tested, of)\n",
+    replace: "            && let ExprKind::Unary(UnaryOp::Not, of) = &inner.kind\n            && same_path(tested, of)\n            && false\n",
+    tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
+  },
+  {
+    name: "optional-member-not-a-path",
+    breaks: "`route?.title` isn't one path, `route?.title != null && !!route?.title` kept",
+    file: "src/js.rs",
+    find: "        (ExprKind::OptionalMember(x, f), ExprKind::OptionalMember(y, g)) => f == g && same_path(x, y),\n",
+    replace: "",
+    tests: ["test/compiler.test.ts", "-t", "text kept where it isn't empty"],
+  },
 ];

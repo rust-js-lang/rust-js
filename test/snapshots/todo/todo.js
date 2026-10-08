@@ -91,7 +91,7 @@ export function main() {
   input.addEventListener("keydown", (e) => {
     const title = input.value;
     const title$1 = $trim(title);
-    if (e.key === "Enter" && title$1.length !== 0) {
+    if (e.key === "Enter" && title$1) {
       add(adding.value, title$1);
       input.value = "";
       render(adding, view);

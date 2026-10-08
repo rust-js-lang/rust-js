@@ -46,7 +46,7 @@ function main() {
   const noisy$2 = make("c");
   let empty;
   try {
-    empty = Noisy.name(noisy$2).length === 0;
+    empty = !Noisy.name(noisy$2);
   } finally {
     noisyDrop_drop(noisy$2);
   }

@@ -363,8 +363,8 @@ pub(super) fn is_some_box(value: Expr) -> Expr {
     Expr::bin(Op::Ne, Expr::member(value, "$someNone"), Expr::undefined())
 }
 
-/// Text kept where it isn't empty, `filter(|s| !s.is_empty())`, `x != null &&
-/// x.length !== 0 ? x : undefined`, or `a || ` such text: `E` whose `E || d`
+/// Text kept where it isn't empty, `filter(|s| !s.is_empty())`, `!!x ? x :
+/// undefined`, or `a || ` such text: `E` whose `E || d`
 /// is the option's `?? d`, as JS's text is falsy only where it's empty
 /// (ADR 0266). Its type says it's text: an empty array is truthy.
 pub(super) fn text_or(option: &Expr) -> Option<Expr> {
@@ -374,22 +374,20 @@ pub(super) fn text_or(option: &Expr) -> Option<Expr> {
     let js::ExprKind::Cond(test, value, none) = &option.kind else {
         return None;
     };
-    let js::ExprKind::Binary(Op::And, present, kept) = &test.kind else {
+    let tested = truthy_of(test)?;
+    let shaped = matches!(none.kind, js::ExprKind::Undefined);
+    (shaped && value.reads_same() && same_place(tested, value)).then(|| (**value).clone())
+}
+
+/// `x` of `!!x`.
+fn truthy_of(test: &Expr) -> Option<&Expr> {
+    let js::ExprKind::Unary(js::UnaryOp::Not, inner) = &test.kind else {
         return None;
     };
-    let (js::ExprKind::Binary(Op::LooseNe, tested, null), js::ExprKind::Binary(Op::Ne, length, zero)) =
-        (&present.kind, &kept.kind)
-    else {
-        return None;
-    };
-    let js::ExprKind::Member(text, key) = &length.kind else {
-        return None;
-    };
-    let shaped = matches!(none.kind, js::ExprKind::Undefined)
-        && matches!(null.kind, js::ExprKind::Null)
-        && matches!(zero.kind, js::ExprKind::Num(n) if n == 0.0)
-        && key == "length";
-    (shaped && value.reads_same() && same_place(tested, value) && same_place(text, value)).then(|| (**value).clone())
+    match &inner.kind {
+        js::ExprKind::Unary(js::UnaryOp::Not, of) => Some(of),
+        _ => None,
+    }
 }
 
 /// A `filter`'s `Option`, `x != null && keep ? x : undefined` of a
@@ -409,9 +407,11 @@ pub(super) fn filtered(option: &Expr) -> Option<(Expr, Expr)> {
         js::ExprKind::Binary(Op::And, first, _) => first,
         _ => test,
     };
-    let js::ExprKind::Binary(Op::LooseNe, tested, null) = &present.kind else {
-        return None;
+    // `x != null`, or text's `!!x`, which holds only where it isn't.
+    let tested = match &present.kind {
+        js::ExprKind::Binary(Op::LooseNe, tested, null) if matches!(null.kind, js::ExprKind::Null) => tested,
+        _ => truthy_of(present)?,
     };
     let tests_it = matches!(&tested.kind, js::ExprKind::Var(v) if v == name);
-    (tests_it && matches!(null.kind, js::ExprKind::Null)).then(|| ((**test).clone(), (**value).clone()))
+    tests_it.then(|| ((**test).clone(), (**value).clone()))
 }

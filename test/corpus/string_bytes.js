@@ -12,7 +12,7 @@ function first_word(s) {
 
 function main() {
   for (const w of ["hello", "héllo", "日本語", "🦀 crab", ""]) {
-    console.log(`${w} ${$byteLen(w)} ${w.length === 0}`);
+    console.log(`${w} ${$byteLen(w)} ${!w}`);
   }
   const s = "héllo wörld";
   console.log(`${$byteLen(s)}`);

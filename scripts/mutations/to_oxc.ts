@@ -170,4 +170,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/compiler.test.ts", "-t", "only read and set is the module's let"],
   },
+  {
+    name: "test-parts-kept",
+    breaks: "`if (a && !!text)`, not `if (a && text)`",
+    file: "src/to_oxc.rs",
+    find: "        ExprKind::Binary(op @ (Op::And | Op::Or), a, b) => js::Expr {\n",
+    replace: "        ExprKind::Binary(op @ (Op::And | Op::Or), a, b) if false => js::Expr {\n",
+    tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
+  },
 ];

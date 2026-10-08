@@ -41,7 +41,7 @@ export function middle(v) {
 
 export function non_empty(words) {
   return words.reduce((count, w) => {
-    if (w.length === 0) {
+    if (!w) {
       return count;
     }
     return (count + 1) >>> 0;
@@ -90,7 +90,7 @@ export function sorted_words(words) {
 
 export function by_length_then_name(words) {
   let w = words.map((s) => s);
-  w.sort((a, b) => $cmp(a.length === 0, b.length === 0) || $cmp(a, b));
+  w.sort((a, b) => $cmp(!a, !b) || $cmp(a, b));
   return w;
 }
 

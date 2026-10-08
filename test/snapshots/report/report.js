@@ -31,7 +31,7 @@ function parse_row(line) {
   if (parts.length !== 4) {
     return { TAG: "Err", _0: { TAG: "Fields", _0: parts.length } };
   }
-  if ($index(parts, 0).length === 0) {
+  if (!$index(parts, 0)) {
     return { TAG: "Err", _0: { TAG: "Empty", _0: "name" } };
   }
   const result = $parseInt($index(parts, 2), 0, 4294967295);

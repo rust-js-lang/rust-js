@@ -36,8 +36,8 @@ maps an `Option` of a JS object, which is never falsy when it's there.**
 
 - **Text and numbers keep their test**: `name != null && <b>{name}</b>` of
   an `Option<&str>`, as `""` would render, and `0` of a number; a test of
-  text by its truthiness, `href ? <a /> : undefined` (ADR 0232), keeps its
-  conditional.
+  text by its truthiness, `!!href && <a />`, is a `bool`'s (ADR 0266).
+  (Amended: it was `href ? <a /> : undefined`.)
 - **A `bool` is one whatever its shape**: `is_lead.then(..)` of a
   variable is `isLead && <span />`, as react.dev's TeamMember has it.
   (Amended: it was a comparison, `!`, or a literal only.)

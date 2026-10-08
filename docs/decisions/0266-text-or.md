@@ -54,3 +54,14 @@ const title = meta.title || route?.title || "";
 - **It's tested**: a compiler test chains a meta's title, a route's and
   `""`, beside an array kept where it isn't empty; mutations coalesce each,
   break the chain, and take the array for text.
+
+## Since
+
+- **Text's emptiness is its truthiness**: a string's `is_empty()` is
+  `!text`, and `!text.is_empty()` `!!text`, the test JS writes, as text is
+  falsy only where it's empty; an array's is still `length === 0`, as an
+  empty one is truthy. In a test, `if`'s, a conditional's, and the parts of
+  `&&` and `||` there, `!!text` is `text`, and `x != null && !!x` is `!!x`:
+  `Some(code) if !code.is_empty()` is `code ? .. : ..`, as react.dev's
+  errors page titles itself. A JSX child shown if text isn't empty is a
+  `bool`'s, `{!!excerpt && <p />}`, where `""` would render.

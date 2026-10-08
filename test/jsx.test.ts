@@ -350,7 +350,7 @@ pub fn Named(name: Option<&'static str>, count: Option<u32>, href: Option<&'stat
   expect(jsx).toContain("{count != null && <i>{count}</i>}");
   expect(jsx).not.toContain("{count &&");
   expect(jsx).not.toContain("{name &&");
-  expect(jsx).toContain("{href ? <a href={href} /> : undefined}");
+  expect(jsx).toContain("{!!href && <a href={href} />}");
   const { Level } = await import(join(dir, "lib.jsx"));
   expect([1, 2].map((level) => renderToStaticMarkup(Level(level)))).toEqual(["<p><b>warn</b>x</p>", "<p>x</p>"]);
   const { Lead } = await import(join(dir, "lib.jsx"));
@@ -747,18 +747,36 @@ pub fn Example(excerpt: Option<&str>) -> JSX::Element {
 pub fn title(name: Option<&str>) -> String {
     name.filter(|name| !name.is_empty()).unwrap_or("Error").to_string()
 }
+pub fn heading(code: Option<&str>) -> String {
+    let shown = match code {
+        Some(code) if !code.is_empty() => format!("Error #{code}"),
+        _ => "Errors".to_string(),
+    };
+    shown
+}
+pub fn both(a: bool, text: &str) -> u32 {
+    if a && !text.is_empty() { 1 } else { 0 }
+}
+pub fn empty(text: &str) -> bool {
+    text.is_empty()
+}
 pub fn positive(n: Option<i32>) -> i32 {
     n.filter(|n| *n > 0).unwrap_or(1)
 }
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(jsx).toContain('{excerpt != null && excerpt.length !== 0 && <p>{excerpt}</p>}');
+  expect(jsx).toContain("{!!excerpt && <p>{excerpt}</p>}");
   expect(jsx).toContain('<span>{expanded ? "Hide" : "Show"}</span>');
   expect(jsx).not.toContain("const children");
   expect(jsx).not.toContain("const className");
   // Text kept where it isn't empty, or a default, is `||` (ADR 0266).
   expect(jsx).toContain('return name || "Error";');
+  // Text that isn't empty is JS's truthy text: \`code ? .. : ..\`, as
+  // react.dev's errors page titles itself (ADR 0266).
+  expect(jsx).toContain("const shown = code ? `Error #${code}` : \"Errors\";");
+  expect(jsx).toContain("export function empty(text) {\n  return !text;\n}");
+  expect(jsx).toContain("  if (a && text) {");
   // A filter of another test, or a default, is that test.
   expect(jsx).toContain("return n != null && n > 0 ? n : 1;");
   const { Example, title } = await import(join(dir, "lib.jsx"));
@@ -768,7 +786,11 @@ pub fn positive(n: Option<i32>) -> i32 {
     '<div><h5 class="title">Example</h5><button class="button"><span>Show</span></button></div>',
   ]);
   expect([title("Oops"), title(""), title(undefined)]).toEqual(["Oops", "Error", "Error"]);
-  const { positive } = await import(join(dir, "lib.jsx"));
+  const { positive, heading, empty } = await import(join(dir, "lib.jsx"));
+  expect([heading("1"), heading(""), heading(undefined)]).toEqual(["Error #1", "Errors", "Errors"]);
+  expect([empty(""), empty("a")]).toEqual([true, false]);
+  const { both } = await import(join(dir, "lib.jsx"));
+  expect([both(true, "x"), both(true, ""), both(false, "x")]).toEqual([1, 0, 0]);
   expect([positive(3), positive(-2), positive(undefined)]).toEqual([3, 1, 1]);
 });
 

@@ -65,7 +65,7 @@ const STRINGS = [
 function main() {
   for (const a of STRINGS) {
     const arg = $byteLen(a);
-    const arg$1 = a.length === 0;
+    const arg$1 = !a;
     const arg$2 = Array.from(a).length;
     const arg$3 = Array.from(a)[1];
     const arg$4 = Array.from(a).toReversed().join("");

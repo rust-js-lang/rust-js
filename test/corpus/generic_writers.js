@@ -17,7 +17,7 @@ function write_time(w, hours, minutes, label, WWrite) {
   write_two(w, hours, WWrite);
   WWrite.write_char(w, ":");
   write_two(w, minutes, WWrite);
-  if (label.length !== 0) {
+  if (label) {
     WWrite.write_str(w, " ");
     WWrite.write_fmt(w, `[${label}:${String((hours + minutes) & 255).padStart(3)}]`);
   }

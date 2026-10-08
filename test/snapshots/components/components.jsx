@@ -14,7 +14,7 @@ import {
 
 const THEME = createContext("light");
 const BADGE = memo(Badge);
-const LOOSE_BADGE = memo(Badge, (a, b) => (a.label.length === 0) === (b.label.length === 0));
+const LOOSE_BADGE = memo(Badge, (a, b) => !a.label === !b.label);
 
 export function Card({ title, children }) {
   return (
@@ -44,7 +44,7 @@ export function Todos() {
   const id = useId();
   const left = useMemo(() => todos.filter((t) => !t.done).length, [todos]);
   const add = () => {
-    if (draft.length !== 0) {
+    if (draft) {
       dispatch({ TAG: "Add", _0: draft });
       setDraft("");
     }

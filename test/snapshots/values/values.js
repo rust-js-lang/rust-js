@@ -168,7 +168,7 @@ function bump(count, by) {
 }
 
 function log(out, line, count) {
-  if (out.value.length !== 0) {
+  if (out.value) {
     out.value += "|";
   }
   out.value += line;

@@ -104,4 +104,20 @@ export const mutations: Mutation[] = [
     replace: "                    && false\n",
     tests: ["test/compiler.test.ts", "-t", "enum's own names"],
   },
+  {
+    name: "text-or-of-truthy-unseen",
+    breaks: "`filter(nonempty).unwrap_or(d)` of text is `!!x ? x : d`, not `x || d`",
+    file: "src/lower/options.rs",
+    find: "    let tested = truthy_of(test)?;\n",
+    replace: "    let tested = truthy_of(test).filter(|_| false)?;\n",
+    tests: ["test/compiler.test.ts", "-t", "text kept where it isn't empty"],
+  },
+  {
+    name: "filtered-of-truthy-unseen",
+    breaks: "a `filter` of text's emptiness isn't fused: `const option` of it, then its test",
+    file: "src/lower/options.rs",
+    find: "        _ => truthy_of(present)?,\n",
+    replace: "        _ => None?,\n",
+    tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
+  },
 ];

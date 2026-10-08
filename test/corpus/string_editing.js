@@ -44,7 +44,7 @@ function main() {
     .join("");
   console.log(`${$debugStr(s)}`);
   s = "";
-  const tmp = s.length === 0;
+  const tmp = !s;
   const popped$2 = $strPop(s);
   s = popped$2[0];
   console.log(

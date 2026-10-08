@@ -60,6 +60,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (v, compare) = (arg(), arg());
                 Expr::call(Expr::member(v, "sort"), vec![compare])
             }
+            // Text is falsy only where it's empty, `!text` (ADR 0266): an empty
+            // array is truthy.
+            Std::IsEmpty if self.is_string_like(self.thir[args[0]].ty.peel_refs()) => {
+                Expr::unary(js::UnaryOp::Not, arg())
+            }
             Std::IsEmpty => Expr::bin(Op::Eq, Expr::member(arg(), "length"), Expr::num(0)),
             Std::VecNew => Expr::array(vec![]),
             Std::Append => {

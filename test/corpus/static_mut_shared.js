@@ -20,7 +20,7 @@ function main() {
   STATS.value.last = 9n;
   console.log(`${STATS.value.calls} ${STATS.value.last} ${$pow(STATS.value.calls, 2) >>> 0}`);
   NAME.value = "renamed";
-  console.log(`${NAME.value} ${NAME.value.length === 0}`);
+  console.log(`${NAME.value} ${!NAME.value}`);
   const total = [COUNT.value, STATS.value.calls].map((n) => n).reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`${total}`);
 }

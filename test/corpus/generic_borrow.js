@@ -74,10 +74,8 @@ function main() {
   const text = $index(words, 0);
   const [list, boxed, shared] = [[1, 2], 3, "rc"];
   const items = list;
-  const boxed$1 = boxed;
-  const shared$1 = shared;
   console.log(
-    `${uuidDebug_fmt(id)} ${name} ${text} [${items.map((item) => String(item)).join(", ")}] ${boxed$1} ${shared$1}`,
+    `${uuidDebug_fmt(id)} ${name} ${text} [${items.map((item) => String(item)).join(", ")}] ${boxed} ${shared}`,
   );
   let labelled = [[{ name: "pear" }], [{ name: "fig" }]];
   labelled.sort((a, b) => labelledOrd_cmp(a, b, tagBorrowStr()));
