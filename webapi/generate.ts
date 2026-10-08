@@ -187,6 +187,7 @@ const enums = new Set(everywhere.filter((d) => d.type === "enum").map((d) => d.n
 const typedefs = new Map(everywhere.filter((d) => d.type === "typedef").map((d) => [d.name, d.idlType!]));
 const dictionaries = new Map(everywhere.filter((d) => d.type === "dictionary" && !d.partial).map((d) => [d.name, d]));
 const callbacks = new Map(everywhere.filter((d) => d.type === "callback").map((d) => [d.name, d]));
+const callbackInterfaces = new Set(everywhere.filter((d) => d.type === "callback interface").map((d) => d.name));
 // The names a class is known by too, `[LegacyWindowAlias=SVGPoint] interface
 // DOMPoint`, which SVG's IDL still uses: `create_svg_point()` gives a `DOMPoint`.
 const windowAliases = new Map(
@@ -389,6 +390,9 @@ function rustType(t: IdlType, at: Position): string | { skip: string } {
     if (args.some((a) => !a || a === ANY) || typeof result !== "string") return { skip: "callback" };
     return `Box<dyn FnMut(${args.join(", ")})${result === "()" ? "" : ` -> ${result}`}>`;
   }
+  // A function JS gives, `walker.filter`, `customElements.get(name)`, is an
+  // object, as an event handler property's is: what it takes isn't said.
+  if (at === "result" && (name === "Function" || callbacks.has(name) || callbackInterfaces.has(name))) return "&'static JsObject";
   // A value of any shape a function gives is the js crate's `Unknown`, or
   // `None` of `undefined` and `null` (ADR 0225): `response.json()`.
   // One it takes is of any type, as JS has it: a generic `M`, `message: M`.

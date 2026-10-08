@@ -148,3 +148,6 @@ so nothing said when it fell behind.
   `instanceof Window` isn't. 98.8%.
 - **An `ObservableArray` is a JS array**, `adoptedStyleSheets`: given as a
   slice, `set_adopted_style_sheets(&[sheet])`, and read as one. 98.9%.
+- **A function JS gives is an object**, as an event handler property's
+  is: `customElements.get(name)`, `walker.filter`, a queuing strategy's
+  `size`. What it takes isn't said. 98.9%.

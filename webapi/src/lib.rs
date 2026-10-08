@@ -45502,6 +45502,14 @@ impl ByteLengthQueuingStrategy {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ByteLengthQueuingStrategy/size)
+    #[cfg_attr(rust_js, rust_js::link_name = "get size")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn size(&self) -> &'static JsObject {
+        unreachable!()
+    }
+
 }
 
 /// [`CDATASection`](https://developer.mozilla.org/docs/Web/API/CDATASection)
@@ -51371,6 +51379,14 @@ impl CountQueuingStrategy {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CountQueuingStrategy/size)
+    #[cfg_attr(rust_js, rust_js::link_name = "get size")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn size(&self) -> &'static JsObject {
+        unreachable!()
+    }
+
 }
 
 /// [`Credential`](https://developer.mozilla.org/docs/Web/API/Credential)
@@ -51554,11 +51570,27 @@ impl CustomElementRegistry {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomElementRegistry/get)
+    #[cfg_attr(rust_js, rust_js::link_name = "get")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get(&self, name: &str) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomElementRegistry/getName)
     #[cfg_attr(rust_js, rust_js::link_name = "getName")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_name(&self, constructor: Box<dyn FnMut() -> &'static HTMLElement>) -> Option<String> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomElementRegistry/whenDefined)
+    #[cfg_attr(rust_js, rust_js::link_name = "whenDefined")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn when_defined(&self, name: &str) -> Promise<&'static JsObject> {
         unreachable!()
     }
 
@@ -68364,6 +68396,14 @@ impl NodeIterator {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/NodeIterator/filter)
+    #[cfg_attr(rust_js, rust_js::link_name = "get filter")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn filter(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NodeIterator/nextNode)
     #[cfg_attr(rust_js, rust_js::link_name = "nextNode")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -81025,6 +81065,14 @@ impl TreeWalker {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn what_to_show(&self) -> u32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TreeWalker/filter)
+    #[cfg_attr(rust_js, rust_js::link_name = "get filter")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn filter(&self) -> Option<&'static JsObject> {
         unreachable!()
     }
 

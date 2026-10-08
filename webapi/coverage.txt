@@ -1,6 +1,6 @@
 # The webapi crate against TypeScript's DOM (@types/web): bun test test/webapi-coverage.test.ts
 # classes: 699 of 701 (99.7%)
-# members: 8323 of 8419 (98.9%)
+# members: 8329 of 8419 (98.9%)
 AbortController.abort
 AbortController.constructor
 AbortController.signal
@@ -231,6 +231,7 @@ BroadcastChannel.onmessageerror
 BroadcastChannel.postMessage
 ByteLengthQueuingStrategy.constructor
 ByteLengthQueuingStrategy.highWaterMark
+ByteLengthQueuingStrategy.size
 CSSAnimation.animationName
 CSSConditionRule.conditionText
 CSSContainerRule.conditions
@@ -1192,6 +1193,7 @@ CookieStoreManager.subscribe
 CookieStoreManager.unsubscribe
 CountQueuingStrategy.constructor
 CountQueuingStrategy.highWaterMark
+CountQueuingStrategy.size
 Credential.id
 Credential.static:isConditionalMediationAvailable
 Credential.type
@@ -1207,9 +1209,11 @@ CryptoKey.type
 CryptoKey.usages
 CustomElementRegistry.constructor
 CustomElementRegistry.define
+CustomElementRegistry.get
 CustomElementRegistry.getName
 CustomElementRegistry.initialize
 CustomElementRegistry.upgrade
+CustomElementRegistry.whenDefined
 CustomEvent.constructor
 CustomEvent.detail
 CustomEvent.initCustomEvent
@@ -3838,6 +3842,7 @@ Node.static:PROCESSING_INSTRUCTION_NODE
 Node.static:TEXT_NODE
 Node.textContent
 NodeIterator.detach
+NodeIterator.filter
 NodeIterator.nextNode
 NodeIterator.pointerBeforeReferenceNode
 NodeIterator.previousNode
@@ -5688,6 +5693,7 @@ TransitionEvent.elapsedTime
 TransitionEvent.propertyName
 TransitionEvent.pseudoElement
 TreeWalker.currentNode
+TreeWalker.filter
 TreeWalker.firstChild
 TreeWalker.lastChild
 TreeWalker.nextNode

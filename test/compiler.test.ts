@@ -850,7 +850,10 @@ test("the webapi crate's bindings become plain JS", async () => {
   expect(js).toContain("const count = Iterator.from(list).toArray().length;\n  const names = Iterator.from(headers)\n    .map(([name]) => name)\n    .toArray();");
   // An `ObservableArray`, an array.
   expect(js).toContain("document.adoptedStyleSheets = [sheet];\n  return document.adoptedStyleSheets.length;");
-  const { round_trip, iterated, samples, texts, on_errors, listed, unions_read } = await import(join(target, "web_forms.js"));
+  // A function JS gives, an object.
+  expect(js).toContain('return registry.get("x-card") != null;');
+  const { round_trip, iterated, samples, texts, on_errors, listed, unions_read, defined } = await import(join(target, "web_forms.js"));
+  expect([defined({ get: () => class {} }), defined({ get: () => undefined })]).toEqual([true, false]);
   // A union a function gives, read as the member JS gives.
   const form = new FormData();
   form.set("name", "Ada");

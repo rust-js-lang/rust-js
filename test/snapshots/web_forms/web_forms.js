@@ -150,4 +150,8 @@ export function adopted(sheet) {
   document.adoptedStyleSheets = [sheet];
   return document.adoptedStyleSheets.length;
 }
+
+export function defined(registry) {
+  return registry.get("x-card") != null;
+}
 //# sourceMappingURL=web_forms.js.map

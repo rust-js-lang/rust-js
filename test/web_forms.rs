@@ -191,3 +191,9 @@ pub fn adopted(sheet: &webapi::CSSStyleSheet) -> usize {
     document.set_adopted_style_sheets(&[sheet]);
     document.adopted_style_sheets().len()
 }
+
+/// A function JS gives is an object, as an event handler's is:
+/// `customElements.get(name)`, a class, or none.
+pub fn defined(registry: &webapi::CustomElementRegistry) -> bool {
+    registry.get("x-card").is_some()
+}
