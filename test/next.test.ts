@@ -88,9 +88,18 @@ use next::link::Link;
 use react::webapi::HTMLAnchorElement;
 use react::{JSX, jsx, use_ref};
 
+fn classes(home: bool) -> &'static str {
+    if home { "home" } else { "away" }
+}
+
+fn label(home: bool) -> &'static str {
+    if home { "Home" } else { "Away" }
+}
+
+// Its classes made before its children, as JSX makes them.
 pub fn Linked() -> JSX::Element {
     let anchor = use_ref::<Option<&'static HTMLAnchorElement>>(None);
-    jsx! { <Link href="/" ref={Some(anchor)} title={Some("Home")} passHref={Some(true)}>{"Home"}</Link> }
+    jsx! { <Link href="/" ref={Some(anchor)} title={Some("Home")} className={Some(classes(true))} passHref={Some(true)}>{label(true)}</Link> }
 }
 `;
 
@@ -132,7 +141,7 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   expect(statements("app/page.jsx")[0]).not.toBe('"use client";');
   expect(readFileSync(join(dir, "app/page.jsx"), "utf8")).toContain("export default Home;");
   expect(readFileSync(join(dir, "app/about/page.jsx"), "utf8")).toContain('import Link from "next/link";');
-  expect(readFileSync(join(dir, "app/linked.jsx"), "utf8")).toContain('<Link href="/" ref={anchor} title="Home" passHref>');
+  expect(readFileSync(join(dir, "app/linked.jsx"), "utf8")).toContain('<Link href="/" ref={anchor} title="Home" className={classes(true)} passHref>\n      {label(true)}');
   const routePath = readFileSync(join(dir, "app/route_path.js"), "utf8");
   expect([routePath.includes('import { useRouter } from "next/router";'), routePath.includes("return useRouter().asPath;")]).toEqual([true, true]);
   // The Server Component's page is rendered at build time, the counter in it.

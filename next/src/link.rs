@@ -18,8 +18,6 @@ pub fn Link<C: ReactNode>(props: LinkProps<'_, C>) -> JSX::Element {
 pub struct LinkProps<'a, C> {
     /// The route it goes to, `/about`, or another site's URL.
     pub href: &'a str,
-    /// What it shows.
-    pub children: C,
     /// The `<a>`'s other props, as Next.js types them, React's
     /// `AnchorHTMLAttributes` (ADR 0208): a component's own, passed on,
     /// `anchor={props}`, is `{...props}` where it's written. Those named
@@ -49,4 +47,7 @@ pub struct LinkProps<'a, C> {
     /// The `<a>`'s `aria-label`, its name for who can't see it.
     #[cfg_attr(rust_js, rust_js::name = "aria-label")]
     pub aria_label: Option<&'a str>,
+    /// What it shows, last, as Next.js types it and JSX makes it: after
+    /// the props, which a call may make.
+    pub children: C,
 }

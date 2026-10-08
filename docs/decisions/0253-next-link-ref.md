@@ -28,8 +28,14 @@ jsx! { <Link href="/" ref={Some(anchor)} passHref={Some(true)}>{"Home"}</Link> }
 <Link href="/" ref={anchor} passHref>Home</Link>
 ```
 
+- **Its children are its last field**, as Next.js types them and JSX
+  makes them: after the props, so a class a call makes is made first,
+  where it's written, and nothing is held for the children. (Amended: they
+  were second, which Rust made before any prop after them.)
+
 ## Why
 
 - **It's Next.js's type**, optional both.
 - **It's tested**: the Next.js build test compiles a client component's
-  link of a ref and `passHref`.
+  link of a ref and `passHref`, and of a class and children each a call
+  makes, in JSX's order.
