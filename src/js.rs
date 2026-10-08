@@ -155,6 +155,8 @@ pub struct Const {
     pub name: String,
     pub value: Expr,
     pub export: bool,
+    /// `let`: a thread-local its module sets (ADR 0270).
+    pub mutable: bool,
     /// The whole `const` item.
     pub span: Span,
 }

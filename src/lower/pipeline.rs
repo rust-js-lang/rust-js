@@ -66,6 +66,7 @@ pub fn lower_crate<'tcx>(
         generic_consts,
         pretty_debug,
         format_options,
+        plain_locals,
     } = analyze_crate(tcx, all_bodies, dependencies, export_library)?;
     // Each module's default export, which a module of the crate imports as
     // its default, not by a name of its own (ADR 0251).
@@ -137,6 +138,7 @@ pub fn lower_crate<'tcx>(
         const_items.entry(info.module).or_default().push(js::Const {
             name: info.name.clone(),
             value,
+            mutable: false,
             export: tcx.visibility(def_id).is_public() || called_from_elsewhere.contains(&def_id.to_def_id()),
             span: sources.span(span),
         });
@@ -175,6 +177,7 @@ pub fn lower_crate<'tcx>(
         serde_attrs,
         pretty_debug,
         format_options,
+        plain_locals: &plain_locals,
     };
     let mut work: Vec<(DefId, Option<&Body<'tcx>>)> = bodies
         .iter()
@@ -334,9 +337,23 @@ pub fn lower_crate<'tcx>(
                 };
                 let info = &fns[&key.to_def_id()];
                 let span = tcx.def_span(key).source_callsite();
+                // One only read and set is its module's variable of what its
+                // cell holds, a `let` if it's set (ADR 0270).
+                let plain = plain_locals.get(&key).copied();
+                let value = match value.kind {
+                    js::ExprKind::Object(ref props)
+                        if plain.is_some()
+                            && let [js::Prop::Field(field, held)] = props.as_slice()
+                            && field == "value" =>
+                    {
+                        held.clone()
+                    }
+                    _ => value,
+                };
                 pass.local_consts.entry(info.module).or_default().push(js::Const {
                     name: info.name.clone(),
                     value,
+                    mutable: plain == Some(true),
                     export: tcx.visibility(key).is_public() || called_from_elsewhere.contains(&key.to_def_id()),
                     span: sources.span(span),
                 });

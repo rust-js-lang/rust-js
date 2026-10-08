@@ -5,6 +5,7 @@ mod drops;
 mod fmt_failures;
 mod mutation;
 mod naming;
+mod plain_locals;
 
 pub(super) use naming::renamed_in;
 mod type_facts;
@@ -153,6 +154,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// Whether the crate gives a placeholder's options to a value it doesn't
     /// apply them to itself: then its writers take them (ADR 0058).
     pub format_options: bool,
+    /// The thread-locals that are their module's variable, each whether it's
+    /// set, a `let` (ADR 0270).
+    pub plain_locals: HashMap<LocalDefId, bool>,
 }
 
 pub(super) fn analyze_crate<'a, 'tcx>(
@@ -250,6 +254,8 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         .filter(|body| tcx.def_kind(body.def_id) == DefKind::Fn)
         .filter_map(|body| Some((body.def_id, in_thread_local(tcx, body.def_id)?)))
         .collect();
+
+    let plain_locals = plain_locals::plain_thread_locals(tcx, all_bodies, thread_local_inits.values().copied());
 
     // `const` items (ADR 0031) and statics (ADR 0096), with the values rustc
     // has computed. One in a function goes beside it, in its module.
@@ -358,6 +364,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         generic_consts,
         pretty_debug,
         format_options,
+        plain_locals,
     })
 }
 

@@ -414,12 +414,14 @@ test("the playground is Rust components, compiled to the JS main.ts starts", asy
 // ADR 0037: `thread_local!` is a variable of its module.
 test("thread-locals are module variables", async () => {
   const js = await Bun.file(join(target, "thread_locals.js")).text();
-  expect(js).toContain("const COUNT = { value: 0 };\nconst LOG = { value: [] };\nconst START = { value: (Math.imul(10, 4) + 2) | 0 };");
-  expect(js).toContain("  COUNT.value = (COUNT.value + 1) >>> 0;\n  return COUNT.value;");
-  expect(js).toContain("  })(LOG.value);");
+  // Each only read and set is the module's variable, a `let` if it's set
+  // (ADR 0270); one whose cell `with` hands out keeps its `{ value }`.
+  expect(js).toContain("let COUNT = 0;\nconst LOG = [];\nconst START = { value: (Math.imul(10, 4) + 2) | 0 };");
+  expect(js).toContain("  COUNT = (COUNT + 1) >>> 0;\n  return COUNT;");
+  expect(js).toContain("  })(LOG);");
   // A closure that only returns is its body, on the key or its value, in place.
   expect(js).toContain("  return START.value;");
-  expect(js).toContain("  return LOG.value.length;");
+  expect(js).toContain("  return LOG.length;");
   // Nothing of std's storage.
   expect(js).not.toContain("__rust_std_internal");
 });
@@ -1045,6 +1047,65 @@ pub fn next_frame(then: &'static dyn Fn(f64)) -> u32 {
   }
 });
 
+// ADR 0270: a thread-local only read and set, in its own module, is the
+// module's variable, a `let` if it's set, as react.dev's errors page caches
+// the codes it fetched: nothing shares its cell, so it needs no `{ value }`.
+// One another module may read, or whose cell `with` hands out, keeps it.
+test("a thread-local only read and set is the module's let", async () => {
+  const dir = fixture("module-let");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::{Cell, RefCell};
+
+thread_local! {
+    static COUNT: Cell<u32> = Cell::new(0);
+    static LOG: RefCell<Vec<String>> = RefCell::new(Vec::new());
+    pub static SHARED: Cell<u32> = Cell::new(0);
+}
+
+pub fn bump() -> u32 {
+    COUNT.set(COUNT.get() + 1);
+    COUNT.get()
+}
+
+pub fn note(line: &str) -> usize {
+    LOG.with_borrow_mut(|log| log.push(line.to_string()));
+    LOG.with_borrow(|log| log.len())
+}
+
+pub fn shared() -> u32 {
+    SHARED.set(SHARED.get() + 2);
+    SHARED.get()
+}
+
+mod counter;
+
+pub fn ticked() -> u32 {
+    counter::tick();
+    counter::TICKS.get()
+}
+`);
+  writeFileSync(join(dir, "counter.rs"), `use std::cell::Cell;
+
+thread_local! {
+    pub(crate) static TICKS: Cell<u32> = Cell::new(0);
+}
+
+pub fn tick() {
+    TICKS.set(TICKS.get() + 1);
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(readFileSync(join(dir, "counter.js"), "utf8")).toContain("export const TICKS = { value: 0 };");
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("let COUNT = 0;");
+  expect(js).toContain("const LOG = [];");
+  expect(js).toContain("export const SHARED = { value: 0 };");
+  expect(js).toContain("COUNT = (COUNT + 1) >>> 0;");
+  expect(js).not.toContain("COUNT.value");
+  expect(js).not.toContain("LOG.value");
+  const { bump, note, shared, ticked } = await import(join(dir, "lib.js"));
+  expect([bump(), bump(), note("a"), note("b"), shared(), shared(), ticked()]).toEqual([1, 2, 1, 2, 2, 4, 1]);
+});
+
 // ADR 0269: what every JS global scope has, a window's, a worker's or Node's,
 // `fetch` and `queueMicrotask`, is called bare, as react.dev's errors page
 // fetches in Next.js's `getStaticProps`, where there's no `window`.
@@ -1423,7 +1484,7 @@ pub fn tally_of_four() -> u32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const lib = await Bun.file(join(dir, "lib.js")).text();
   const shapes = await Bun.file(join(dir, "shapes.js")).text();
-  expect(lib).toContain("const SIDE = { value: Square.sideLength(Square.new(3)) };");
+  expect(lib).toContain("const SIDE = Square.sideLength(Square.new(3));");
   expect(lib).toContain("  return Square.area(Square.new(side));");
   expect(shapes).toContain("export const Square = {\n  new(side) {");
   expect(shapes).toContain("  area(square) {\n    return Math.imul(Square.sideLength(square), Square.sideLength(square)) >>> 0;");

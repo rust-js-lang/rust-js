@@ -1,6 +1,7 @@
 - [0267 js::on_load! is what a module runs when it's loaded](decisions/0267-on-load.md)
 - [0268 An element's type, key and props may be JS values of any shape](decisions/0268-unknown-elements.md)
 - [0269 What every global scope has is called bare](decisions/0269-global-scope.md)
+- [0270 A thread-local only read and set is its module's variable](decisions/0270-module-variables.md)
 # rust-js design docs
 
 rust-js compiles Rust to readable JavaScript. The whole design follows from one

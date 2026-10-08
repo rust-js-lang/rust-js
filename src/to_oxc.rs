@@ -471,13 +471,12 @@ impl<'a> Cx<'a> {
         let sp = span(c.span);
         let id = BindingPattern::new_binding_identifier(SPAN, self.name(&c.name), b);
         let declarator = VariableDeclarator::new(sp, id, None, Some(self.expr(&c.value)), false, b);
-        let decl = Declaration::new_variable_declaration(
-            sp,
-            VariableDeclarationKind::Const,
-            ArenaVec::from_iter_in([declarator], b),
-            false,
-            b,
-        );
+        let kind = if c.mutable {
+            VariableDeclarationKind::Let
+        } else {
+            VariableDeclarationKind::Const
+        };
+        let decl = Declaration::new_variable_declaration(sp, kind, ArenaVec::from_iter_in([declarator], b), false, b);
         if c.export {
             Statement::new_export_declaration(sp, decl, b)
         } else {

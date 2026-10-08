@@ -3170,6 +3170,22 @@ pub(crate) fn is_from_str(tcx: TyCtxt<'_>, id: DefId) -> bool {
         && std_path(tcx, id).ends_with("str::FromStr")
 }
 
+/// Is `id` a thread-local's `get`, `set`, `with_borrow` or
+/// `with_borrow_mut`, which only reads or sets what it holds (ADR 0270)?
+/// `Some(true)` of `set`, which sets it.
+pub(super) fn local_key_access(tcx: TyCtxt<'_>, id: DefId) -> Option<bool> {
+    let imp = tcx.inherent_impl_of_assoc(id)?;
+    let owner = tcx.type_of(imp).instantiate_identity().skip_normalization();
+    if !matches!(owner.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::LocalKey)) {
+        return None;
+    }
+    match tcx.item_name(id).as_str() {
+        "set" => Some(true),
+        "get" | "with_borrow" | "with_borrow_mut" => Some(false),
+        _ => None,
+    }
+}
+
 pub(crate) fn is_std_def(tcx: TyCtxt<'_>, id: DefId, item: StdItem) -> bool {
     tcx.is_diagnostic_item(item.name(), id)
 }

@@ -5,6 +5,7 @@ use super::recognition::Std;
 use super::{FnCx, R};
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
 use crate::runtime::Helper;
+use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -27,10 +28,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(match known {
             // A `Cell` or `RefCell` is `{ value }`, so everyone sharing it sees a change.
             Std::CellNew => Expr::object(vec![Prop::Field("value".into(), arg())]),
+            // A thread-local that's its module's `let` is what it holds
+            // (ADR 0270).
+            Std::CellGet if self.plain_local(args[0]) => self.copy_if_needed(arg(), generic_args.type_at(0)),
             Std::CellGet => self.copy_if_needed(Expr::member(arg(), "value"), generic_args.type_at(0)),
             Std::CellSet => {
                 let (cell, value) = (arg(), arg());
-                out.push(StmtKind::Assign(Expr::member(cell, "value"), value).at(js_span));
+                let place = if self.plain_local(args[0]) {
+                    cell
+                } else {
+                    Expr::member(cell, "value")
+                };
+                out.push(StmtKind::Assign(place, value).at(js_span));
                 Expr::undefined()
             }
             // What it held, and the new value in its place: `v`, its type's
@@ -173,9 +182,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Std::LocalBorrow => {
                 let (key, f) = (arg(), arg());
-                apply(f, vec![Expr::member(key, "value")])
+                let held = if self.plain_local(args[0]) {
+                    key
+                } else {
+                    Expr::member(key, "value")
+                };
+                apply(f, vec![held])
             }
             _ => return Ok(None),
         }))
+    }
+
+    /// Is `key`, `&KEY`, a thread-local that's its module's `let` (ADR 0270)?
+    fn plain_local(&self, key: ExprId) -> bool {
+        let ExprKind::Borrow { arg, .. } = self.thir[self.strip(key)].kind else {
+            return false;
+        };
+        matches!(self.thir[self.strip(arg)].kind, ExprKind::NamedConst { def_id, .. }
+            if def_id.as_local().is_some_and(|key| self.krate.plain_locals.contains_key(&key)))
     }
 }

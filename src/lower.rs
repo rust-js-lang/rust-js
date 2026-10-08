@@ -343,6 +343,9 @@ struct CrateFacts<'a, 'tcx> {
     /// Does it give a placeholder's options to its writers and dictionaries
     /// (ADR 0058)?
     format_options: bool,
+    /// The thread-locals that are their module's variable, each whether it's
+    /// set, a `let` (ADR 0270).
+    plain_locals: &'a HashMap<LocalDefId, bool>,
 }
 
 /// Dependencies recorded by one function (including copied trait bodies and
