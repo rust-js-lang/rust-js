@@ -29,7 +29,7 @@ export function Expressions(show) {
       {pair[0]}
       {pair[1]}
       {list}
-      {show ? <b>yes</b> : undefined}
+      {show && <b>yes</b>}
       {tmp}
       {(n + 1) | 0}
     </section>

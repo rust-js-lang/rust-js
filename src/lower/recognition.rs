@@ -390,19 +390,6 @@ pub(super) enum Json {
 }
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
-    /// Is `def_id` `bool::then` or `bool::then_some`, a child shown if a
-    /// `bool` holds (ADR 0235)?
-    pub(super) fn is_bool_then(&self, def_id: DefId) -> bool {
-        matches!(self.tcx.item_name(def_id).as_str(), "then" | "then_some")
-            && self.tcx.impl_of_assoc(def_id).is_some_and(|imp| {
-                self.tcx
-                    .type_of(imp)
-                    .instantiate_identity()
-                    .skip_normalization()
-                    .is_bool()
-            })
-    }
-
     /// std's `FromStr`, found among the traits, as it has no diagnostic item.
     pub(super) fn std_from_str(&self) -> Option<DefId> {
         self.tcx

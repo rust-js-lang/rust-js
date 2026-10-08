@@ -117,7 +117,7 @@ export function Refs() {
     <div>
       <FancyInput handle={handle} />
       <p ref={element}>with a ref</p>
-      {shown ? (
+      {shown && (
         <b
           ref={(node) => {
             globalThis.log(node != null ? "attached" : "null");
@@ -128,7 +128,7 @@ export function Refs() {
         >
           callback
         </b>
-      ) : undefined}
+      )}
       <button className="hide" onClick={() => setShown(false)}>
         hide
       </button>

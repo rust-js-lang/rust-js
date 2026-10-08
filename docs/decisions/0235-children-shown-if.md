@@ -56,3 +56,12 @@ maps an `Option` of a JS object, which is never falsy when it's there.**
   an `Option` of text, of a number and of text tested by its truthiness,
   each empty and missing, and checks which are `&&`; another an `Option`
   of an `ElementType`.
+
+## Since
+
+- **Every test is a boolean, so every child shown if one holds is `test &&`**:
+  a Rust condition is a `bool`, a call's too, `href.startsWith("#") &&`,
+  and a pattern's test a comparison or `!!text` (ADR 0266). Its shape and
+  `bool::then` were checked first, for text tested by its truthiness, a
+  bare `href`, which "" fails as text; no lowering makes one now, so the
+  check went, and `if shown { Some(..) } else { None }` is `shown &&` too.

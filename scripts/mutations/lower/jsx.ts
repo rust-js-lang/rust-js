@@ -20,7 +20,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "spilled-attribute-copied",
-    breaks: "an attribute read into a `const` is copied to another, `const className$1 = className`, before a child",
+    breaks: "an attribute that reads the same before a child, `p.title`, is read into a `const` first",
     file: "src/lower/jsx.rs",
     find: "                let (base, value) = match prop {\n                    Prop::Field(name, value) | Prop::Getter(name, value) => (name.as_str(), value),\n                    Prop::Spread(value) => (\"props\", value),\n                };\n                if !self.reads_alike(value, out) {",
     replace: "                let (base, value) = match prop {\n                    Prop::Field(name, value) | Prop::Getter(name, value) => (name.as_str(), value),\n                    Prop::Spread(value) => (\"props\", value),\n                };\n                if !value.is_constant() {",
@@ -220,7 +220,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "logical-hoisted",
-    breaks: "`status != null && status.length !== 0` is read into a `const condition` before a later child's statement",
+    breaks: "`done && status != null` is read into a `const condition` before a later child's statement",
     file: "src/lower/jsx.rs",
     find: "js::Op::LooseNe | js::Op::And | js::Op::Or,",
     replace: "js::Op::LooseNe,",
@@ -294,16 +294,8 @@ export const mutations: Mutation[] = [
     name: "children-and-unmade",
     breaks: "`(level == 1).then(|| jsx! { <b /> })` is `level === 1 ? <b /> : undefined`, not `level === 1 && <b />`",
     file: "src/lower/jsx.rs",
-    find: "if !matches!(none.kind, js::ExprKind::Undefined) || !(is_boolean(test) || self.tests_bool(child)) {",
+    find: "if !matches!(none.kind, js::ExprKind::Undefined) {",
     replace: "if true {",
-    tests: ["test/jsx.test.ts", "-t", "the test && the child"],
-  },
-  {
-    name: "children-and-any-test",
-    breaks: "a test of text by its truthiness is `href && <a />`, which renders \"\" as text",
-    file: "src/lower/jsx.rs",
-    find: "if !matches!(none.kind, js::ExprKind::Undefined) || !(is_boolean(test) || self.tests_bool(child)) {",
-    replace: "if !matches!(none.kind, js::ExprKind::Undefined) {",
     tests: ["test/jsx.test.ts", "-t", "the test && the child"],
   },
   {
@@ -329,14 +321,6 @@ export const mutations: Mutation[] = [
     find: ".map(|(item, &field)| self.shown_if(field, item))",
     replace: ".map(|(item, _)| item)",
     tests: ["test/jsx.test.ts", "-t", "the test && the child"],
-  },
-  {
-    name: "bool-variable-conditional",
-    breaks: "a child shown when a `bool` variable holds, `is_lead.then(..)`, is `isLead ? <b /> : undefined`, not `isLead && <b />`",
-    file: "src/lower/jsx.rs",
-    find: "(is_boolean(test) || self.tests_bool(child))",
-    replace: "(is_boolean(test) || false && self.tests_bool(child))",
-    tests: ["test/jsx.test.ts", "-t", "shown only if a test holds"],
   },
   {
     name: "base-spread-last",

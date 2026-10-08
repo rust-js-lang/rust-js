@@ -479,11 +479,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A child shown only if a test holds, `test ? <b /> : undefined`, as JSX
-    /// writes it, `test && <b />` (ADR 0235): only where the test is `false`,
-    /// `null` or `undefined` when it fails, which render nothing, as
-    /// `undefined` does; never `0` nor `""`, which render as text. A boolean,
-    /// `level === 1`, or an `Option` of a JS object mapped, which is one
-    /// when there, so it's its own test: `variant.Icon && <variant.Icon />`.
+    /// writes it, `test && <b />` (ADR 0235): the test is `false` when it
+    /// fails, which renders nothing, as `undefined` does, as each test is a
+    /// boolean, a Rust condition's or a pattern's (`x != null`, `!!text`),
+    /// never `0` nor `""`, which render as text. An `Option` of a JS
+    /// object mapped is one when there, so it's its own test:
+    /// `variant.Icon && <variant.Icon />`.
     fn shown_if(&self, child: ExprId, value: Expr) -> Expr {
         // Children are a tuple, of tuples too: each its own.
         if let ExprKind::Tuple { fields } = &self.thir[self.strip(child)].kind
@@ -502,7 +503,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let js::ExprKind::Cond(test, shown, none) = &value.kind else {
             return value;
         };
-        if !matches!(none.kind, js::ExprKind::Undefined) || !(is_boolean(test) || self.tests_bool(child)) {
+        if !matches!(none.kind, js::ExprKind::Undefined) {
             return value;
         }
         let test = match &test.kind {
@@ -517,15 +518,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             kind: js::ExprKind::Binary(js::Op::And, Box::new(test), shown.clone()),
             span: value.span,
         }
-    }
-
-    /// Is `child` a call on a `bool`, `is_lead.then(..)`, whose test is one
-    /// whatever its shape, a variable's too?
-    fn tests_bool(&self, child: ExprId) -> bool {
-        matches!(self.thir[self.strip(child)].kind, ExprKind::Call { fun, ref args, .. }
-            if args.first().is_some_and(|&receiver| self.thir[receiver].ty.is_bool())
-                && super::fn_def(self.thir[fun].ty)
-                    .is_some_and(|(def_id, _)| self.recognition().is_bool_then(def_id)))
     }
 
     /// Is `child` a call of an `Option` of a JS object, `variant.icon.map(..)`?
@@ -788,21 +780,4 @@ fn passed_handler(value: &Expr, calls_rust: bool) -> Option<Expr> {
     let given = matches!(args.as_slice(), [arg] if matches!(&arg.kind, js::ExprKind::Var(a) if a == param));
     let called = matches!(&callee.kind, js::ExprKind::Var(c) if c == handler);
     (given && called && handler != param).then(|| (**tested).clone())
-}
-
-/// Is `test` a boolean by its shape: a comparison, `!`, a `bool`, or `&&`
-/// and `||` of them? What it is when it fails is `false`.
-fn is_boolean(test: &Expr) -> bool {
-    use js::ExprKind as K;
-    use js::Op;
-    match &test.kind {
-        K::Bool(_) | K::Unary(js::UnaryOp::Not, _) => true,
-        K::Binary(
-            Op::Eq | Op::Ne | Op::LooseEq | Op::LooseNe | Op::Lt | Op::Le | Op::Gt | Op::Ge | Op::InstanceOf | Op::In,
-            _,
-            _,
-        ) => true,
-        K::Binary(Op::And | Op::Or, a, b) => is_boolean(a) && is_boolean(b),
-        _ => false,
-    }
 }

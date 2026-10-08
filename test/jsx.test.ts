@@ -331,7 +331,11 @@ pub fn Lead(group: &str) -> JSX::Element {
     jsx! { <p>{is_lead.then(|| jsx! { <b>{"lead"}</b> })}</p> }
 }
 // Text and a number keep their != null, as "" and 0 would render;
-// a test of text by its truthiness keeps its conditional.
+// a test of text by its truthiness is \`!!href\`, a boolean; and any
+// condition is one, a \`bool\`, a call's too.
+pub fn Hash(href: &'static str) -> JSX::Element {
+    jsx! { <p>{if href.starts_with('#') { Some(jsx! { <a href={href} /> }) } else { None }}</p> }
+}
 pub fn Named(name: Option<&'static str>, count: Option<u32>, href: Option<&'static str>) -> JSX::Element {
     jsx! {
         <p>
@@ -351,6 +355,7 @@ pub fn Named(name: Option<&'static str>, count: Option<u32>, href: Option<&'stat
   expect(jsx).not.toContain("{count &&");
   expect(jsx).not.toContain("{name &&");
   expect(jsx).toContain("{!!href && <a href={href} />}");
+  expect(jsx).toContain('{href.startsWith("#") && <a href={href} />}');
   const { Level } = await import(join(dir, "lib.jsx"));
   expect([1, 2].map((level) => renderToStaticMarkup(Level(level)))).toEqual(["<p><b>warn</b>x</p>", "<p>x</p>"]);
   const { Lead } = await import(join(dir, "lib.jsx"));
@@ -2058,6 +2063,7 @@ pub fn Badge(p: P) -> JSX::Element {
             width={if matches!(p.size, Some(Size::S)) { "12px" } else { "20px" }}
             height={if matches!(p.size, Some(Size::S)) { "12px" } else { "20px" }}
             viewBox="0 0 20 20"
+            role={p.title}
         >
             {p.title.map(|title| jsx! { <title>{title}</title> })}
             <g fill="none"><path d="M0 0" /></g>
@@ -2078,9 +2084,11 @@ pub fn Badge(p: P) -> JSX::Element {
   // them, but a `const` already isn't copied.
   expect(jsx.match(/const (\w+)\$\d+ = \1;/)).toBe(null);
   expect(jsx).toContain("className={className}");
+  // A field nothing changes reads the same after the child's statements.
+  expect(jsx).toContain("role={p.title}");
   expect(jsx).toContain("<svg className={q.class_name}>");
   const result = await import(join(dir, "lib.jsx"));
-  expect(renderToStaticMarkup(result.Badge({ class_name: "c", size: "S", title: "t" }))).toBe('<svg class="c" id="c" width="12px" height="12px" viewBox="0 0 20 20"><title>t</title><g fill="none"><path d="M0 0"></path></g>1</svg>');
+  expect(renderToStaticMarkup(result.Badge({ class_name: "c", size: "S", title: "t" }))).toBe('<svg class="c" id="c" width="12px" height="12px" viewBox="0 0 20 20" role="t"><title>t</title><g fill="none"><path d="M0 0"></path></g>1</svg>');
 });
 
 // A node told apart by what it is, `react::kind_of`: text, or anything else
@@ -2450,6 +2458,8 @@ pub fn Heading(title: &'static str, version: Option<Version>, done: bool, status
             {matches!(version, Some(Version::Canary)).then(|| jsx! { <i>{"canary"}</i> })}
             {(!matches!(version, Some(Version::Rc))).then(|| jsx! { <b>{"stable"}</b> })}
             {(!done).then(|| jsx! { <s>{"todo"}</s> })}
+            {(done && status.is_some()).then(|| jsx! { <u>{"both"}</u> })}
+            {(done || status.is_none()).then(|| jsx! { <q>{"either"}</q> })}
             {status.filter(|s| !s.is_empty()).map(|s| jsx! { <em>{s}</em> })}
             {{
                 let mut letters = 0;
@@ -2475,9 +2485,11 @@ pub fn Count() -> JSX::Element {
   expect(jsx).toContain('{version === "Canary" && <i>canary</i>}');
   expect(jsx).toContain('{version !== "Rc" && <b>stable</b>}');
   expect(jsx).toContain("{!done && <s>todo</s>}");
+  expect(jsx).toContain("{done && status != null && <u>both</u>}");
+  expect(jsx).toContain("{(done || status == null) && <q>either</q>}");
   const result = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(result.Heading("T", "Canary", false, ""))).toBe("<h1>T<i>canary</i><b>stable</b><s>todo</s>1</h1>");
-  expect(renderToStaticMarkup(result.Heading("T", "Rc", true, "new"))).toBe("<h1>T<em>new</em>1</h1>");
+  expect(renderToStaticMarkup(result.Heading("T", "Rc", true, "new"))).toBe("<h1>T<u>both</u><q>either</q><em>new</em>1</h1>");
   expect(renderToStaticMarkup(result.Count())).toBe("<p><i>zero</i>1</p>");
 });
 
