@@ -30,8 +30,8 @@ export const mutations: Mutation[] = [
     name: "route-marks-written",
     breaks: "\`js::directive!\`'s and \`js::export_default!\`'s \`const _\` is written to the JS",
     file: "src/lower/bindings.rs",
-    find: '    ["import", "camel_case", "directive", "export_default"]\n',
-    replace: '    ["import", "camel_case"]\n',
+    find: '    ["import", "camel_case", "directive", "export_default", "on_load"]\n',
+    replace: '    ["import", "camel_case", "on_load"]\n',
     tests: ["test/compiler.test.ts", "-t", "make a module a Next.js route"],
   },
   {
