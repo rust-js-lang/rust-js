@@ -212,6 +212,41 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 erased.insert(index, self.written(bound, &declared, ty::List::empty()));
             }
         }
+        // An `impl Fn(&Item, usize) -> R` parameter is the function it says,
+        // `(item: Item, index: number) => R`, as TypeScript writes a callback.
+        let clauses = self.tcx.clauses_of(def_id).clauses;
+        for (clause, _) in clauses.iter() {
+            let Some(bound) = clause.as_trait_clause().map(|b| b.skip_binder()) else {
+                continue;
+            };
+            let ty::Param(param) = bound.self_ty().kind() else {
+                continue;
+            };
+            let synthetic = matches!(
+                self.tcx
+                    .generics_of(def_id)
+                    .param_at(param.index as usize, self.tcx)
+                    .kind,
+                ty::GenericParamDefKind::Type { synthetic: true, .. }
+            );
+            if !synthetic
+                || erased.contains_key(&param.index)
+                || self.tcx.fn_trait_kind_from_def_id(bound.def_id()).is_none()
+            {
+                continue;
+            }
+            let ty::Tuple(inputs) = bound.trait_ref.args.type_at(1).kind() else {
+                continue;
+            };
+            let output = (clauses.iter())
+                .filter_map(|(clause, _)| clause.as_projection_clause())
+                .map(|p| p.skip_binder())
+                .find(|p| matches!(p.self_ty().kind(), ty::Param(q) if q.index == param.index))
+                .and_then(|p| p.term.as_type())
+                .unwrap_or(self.tcx.types.unit);
+            let function = self.function_type(inputs.as_slice(), output);
+            erased.insert(param.index, function);
+        }
         erased
     }
 

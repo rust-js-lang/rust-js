@@ -300,4 +300,12 @@ export const mutations: Mutation[] = [
     replace: "                _ => out.function(def_id),\n",
     tests: ["test/declarations.test.ts","-t","thread-local default"],
   },
+  {
+    name: "impl-fn-unknown",
+    breaks: "an `impl Fn(&Item, usize) -> R` parameter is declared `unknown`, not its function",
+    file: "src/lower/declarations.rs",
+    find: "            erased.insert(param.index, function);\n",
+    replace: "",
+    tests: ["test/declarations.test.ts", "-t", "impl Fn parameter"],
+  },
 ];

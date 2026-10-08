@@ -756,3 +756,15 @@ export const wrong = <ButtonLink href="/a" hrefLang={1}>Go</ButtonLink>;
   const { renderToStaticMarkup } = await import("react-dom/server");
   expect(renderToStaticMarkup(createElement(ButtonLink, { href: "/a", download: "f", className: "c" }))).toBe('<a href="/a" class="c" download="f"></a>');
 });
+
+// An `impl Fn(&Item, usize) -> R` parameter is the callback it says, as
+// react.dev's toCommaSeparatedList declares `renderCallback: (item: Item,
+// index: number) => React.ReactNode`: no `unknown`.
+test("declarations type an impl Fn parameter as its function", () => {
+  const dir = fixture("declarations-impl-fn");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
+  writeFileSync(join(dir, "lib.rs"), "pub fn listed<Item>(array: &[Item], render: impl Fn(&Item, usize) -> u32, done: impl Fn()) -> Vec<u32> {\n    done();\n    array.iter().enumerate().map(|(i, x)| render(x, i)).collect()\n}\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("export function listed<Item>(array: Item[], render: (item: Item, value: number) => number, done: () => void): number[];");
+});

@@ -127,3 +127,7 @@ export default Tag;
 - **Another module's types are `any`**, until a declaration imports its own.
 - **A closure's own type is untyped**, `(...args: any[]) => any`, as no
   signature names it. (Amended: every function was.)
+- **An `impl Fn(&Item, usize) -> R` parameter is its function**, `(item:
+  Item, value: number) => R`, as TypeScript declares a callback, react.dev's
+  toCommaSeparatedList's `renderCallback`. (Amended: it was `unknown`, as
+  any `impl Trait` parameter still is.)
