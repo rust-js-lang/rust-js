@@ -170,3 +170,5 @@ value.name = "new";
 - **An array is never `null`**: `if let Some(v) = value && matches!(classify(v),
   Kind::Array(_))` is `Array.isArray(value)`, as the errors page asks of what
   JSON gave, with no `value != null` before it.
+- **`js::dict::new()` is `{}`**, a dictionary of nothing to fill with `set`,
+  as react.dev's createFileMap makes Sandpack's files.

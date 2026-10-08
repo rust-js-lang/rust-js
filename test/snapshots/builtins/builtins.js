@@ -25,6 +25,12 @@ export function wrapped(children) {
   return { children };
 }
 
+export function filled() {
+  const files = {};
+  files["/App.js"] = 1;
+  return files;
+}
+
 function hidden(key, value) {
   if (key === "secret") {
     return undefined;

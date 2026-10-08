@@ -324,6 +324,12 @@ pub mod dict {
         unreachable!()
     }
 
+    /// `{}`: a dictionary of nothing, to fill with [`set`].
+    #[cfg_attr(rust_js, rust_js::link_name = "{}")]
+    pub fn new<T>() -> &'static Dict<T> {
+        unreachable!()
+    }
+
     /// `dict[key] = value`.
     #[cfg_attr(rust_js, rust_js::link_name = "set []")]
     #[allow(unused_variables)]

@@ -488,6 +488,8 @@ test("the builtins crate's string functions are JS's string methods", () => {
   expect(js).toContain("export function holds_none(value, key) {\n  return key in value;\n}");
   expect(js).toContain("return { children };");
   expect(builtins.wrapped("text")).toEqual({ children: "text" });
+  expect(js).toContain('  const files = {};\n  files["/App.js"] = 1;');
+  expect(builtins.filled()).toEqual({ "/App.js": 1 });
   expect(js).toContain("return key in value;");
   expect([builtins.holds({ a: 1 }, "a"), builtins.holds({}, "toString"), builtins.holds({}, "b")]).toEqual([true, true, false]);
   for (const call of ["text.slice(1, -1)", "text.slice(-2)", "text.substring(1, 3)", "text.substring(1)", "text.trim()", "text.trimStart()", "text.trimEnd()", 'text.indexOf(part)', "text.indexOf(part, 2)", "text.lastIndexOf(part)", "text.length", "text.charAt(i)", "text.replace(from, to)"]) {

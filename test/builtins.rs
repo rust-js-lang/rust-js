@@ -40,6 +40,14 @@ pub fn wrapped(children: Option<&'static Unknown>) -> &'static Unknown {
     js::unknown_of(Wrapper { children })
 }
 
+/// A dictionary made empty, then filled, as react.dev's createFileMap makes
+/// Sandpack's files.
+pub fn filled() -> &'static js::Dict<u32> {
+    let files = js::dict::new();
+    js::dict::set(files, "/App.js", 1);
+    files
+}
+
 fn hidden(key: &str, value: Option<&'static Unknown>) -> Option<&'static Unknown> {
     if key == "secret" { None } else { value }
 }
