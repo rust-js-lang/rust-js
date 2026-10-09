@@ -75,6 +75,7 @@ mod results;
 mod serde;
 mod shortcuts;
 mod sources;
+pub mod std_coverage;
 mod std_impls;
 mod support;
 mod text;

@@ -103,6 +103,9 @@ struct RustJs {
     /// What's planned and published once rustc has written the metadata too:
     /// a library's JS and its metadata are one build's, or neither is.
     pending: Option<(link::Linked, Vec<PathBuf>)>,
+    /// `--std-coverage <file>`: where to write how much of std's data
+    /// structures rust-js lowers (ADR 0314).
+    std_coverage: Option<PathBuf>,
 }
 
 /// `rust_js` is a tool rustc knows, as it knows `rustfmt`: a program
@@ -158,6 +161,11 @@ impl Callbacks for RustJs {
 
         // 2. Run rustc's full analysis: type check, borrow check, lints.
         tcx.ensure_ok().analysis(());
+        if let Some(path) = &self.std_coverage
+            && let Err(error) = std::fs::write(path, lower::std_coverage::report(tcx, &self.dependencies))
+        {
+            tcx.dcx().err(format!("rust-js: writing {}: {error}", path.display()));
+        }
 
         // 3. Only a program rustc accepts becomes JavaScript.
         if tcx.dcx().has_errors().is_none()
@@ -309,6 +317,17 @@ fn main() -> ExitCode {
     } else {
         None
     };
+    let std_coverage = if let Some(i) = ours.iter().position(|arg| arg == "--std-coverage") {
+        if i + 1 >= ours.len() {
+            eprintln!("--std-coverage requires a path");
+            return ExitCode::FAILURE;
+        }
+        let path = PathBuf::from(ours.remove(i + 1));
+        ours.remove(i);
+        Some(path)
+    } else {
+        None
+    };
     let ours = ours.as_slice();
     let test = ours.first().is_some_and(|a| a == "--test");
     let ours = if test { &ours[1..] } else { ours };
@@ -451,6 +470,7 @@ fn main() -> ExitCode {
         export_library,
         metadata: metadata.is_some(),
         pending: None,
+        std_coverage,
         output: plan,
     };
     let exit = rustc_driver::catch_with_exit_code(|| rustc_driver::run_compiler(&rustc_args, &mut callbacks));
