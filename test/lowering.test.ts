@@ -1745,6 +1745,63 @@ test("a value moved before anything can leave needs no drop of its scope", async
   expect([lib.hold([1]).l[0], lib.checked([2], 1).l[0]]).toEqual([1, 2]);
 });
 
+// An f64 known to be a whole number in an integer's range is that integer as
+// it is (ADR 0302): where `indexOf` found it, as react.dev's CodeBlock writes
+// `startColumn: index` once `index` isn't -1, and an integer's `as f64`. One
+// that may be -1, or is set again after its test, is cast as `as` casts.
+test("an f64 known to be a whole number in range is cast as it is", async () => {
+  const dir = fixture("whole-casts");
+  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
+    #[link_name = "indexOf"]
+    #[rust_js::position]
+    safe fn index_of(this: &str, search: &str) -> f64;
+}
+pub fn found(line: &str, word: &str) -> u32 {
+    let index = index_of(line, word);
+    if index == -1.0 {
+        panic!("Could not find {word}");
+    }
+    index as u32
+}
+pub fn unchecked(line: &str, word: &str) -> u32 {
+    let index = index_of(line, word);
+    index as u32
+}
+pub fn set_again(line: &str, word: &str) -> u32 {
+    let mut index = index_of(line, word);
+    if index == -1.0 {
+        panic!("Could not find {word}");
+    }
+    index = -1.0;
+    index as u32
+}
+pub fn byte(n: u8) -> u8 {
+    let x = n as f64;
+    x as u8
+}
+pub fn shifted(line: &str, word: &str) -> u32 {
+    let mut index = index_of(line, word);
+    index -= 1.0;
+    if index == -1.0 {
+        panic!("Could not find {word}");
+    }
+    index as u32
+}
+pub fn wide(n: u32) -> u64 {
+    let x = n as f64;
+    x as u64
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  return index;\n}");
+  expect(js).toContain("export function unchecked(line, word) {\n  const index = line.indexOf(word);\n  return $f64ToInt(index, 0, 4294967295);\n}");
+  expect(js).toContain("  index = -1;\n  return $f64ToInt(index, 0, 4294967295);\n}");
+  expect(js).toContain("export function byte(n) {\n  const x = n;\n  return x;\n}");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.found("abc", "c"), lib.unchecked("abc", "z"), lib.set_again("abc", "a"), lib.byte(7), lib.shifted("abc", "z"), lib.wide(7)]).toEqual([2, 0, 0, 7, 0, 7n]);
+});
+
 // One whose arms bind what their subject holds, named where it is, is a
 // conditional too (ADR 0209), as react.dev's DocsFooter picks a link or a
 // `<div />`. What needs a `const` of its own is statements, as before.

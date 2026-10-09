@@ -426,4 +426,12 @@ export const mutations: Mutation[] = [
     replace: "        });\n",
     tests: ["test/bindings.test.ts", "-t", "can't throw"],
   },
+  {
+    name: "whole-cast-ignored",
+    breaks: "a cast of an `f64` known to be a whole number in range still saturates, `$f64ToInt(index, ..)`",
+    file: "src/lower.rs",
+    find: "            ExprKind::Cast { source } if self.body_facts.whole_casts.contains(&e) => self.expr(source, out),\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "whole number in range"],
+  },
 ];

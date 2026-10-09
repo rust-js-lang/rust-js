@@ -734,15 +734,18 @@ pub mod string {
         /// [`text.indexOf(search)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/indexOf):
         /// where `search` first is, or `-1`.
         #[link_name = "indexOf"]
+        #[cfg_attr(rust_js, rust_js::position)]
         pub safe fn index_of(this: &str, search: &str) -> f64;
 
         /// `text.indexOf(search, from)`: where `search` first is from `from` on, or `-1`.
         #[link_name = "indexOf"]
+        #[cfg_attr(rust_js, rust_js::position)]
         pub safe fn index_of_from(this: &str, search: &str, from: f64) -> f64;
 
         /// [`text.lastIndexOf(search)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/lastIndexOf):
         /// where `search` last is, or `-1`.
         #[link_name = "lastIndexOf"]
+        #[cfg_attr(rust_js, rust_js::position)]
         pub safe fn last_index_of(this: &str, search: &str) -> f64;
 
         /// [`text.replace(pattern, replacement)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/replace):

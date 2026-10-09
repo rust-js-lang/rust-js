@@ -53,7 +53,8 @@ expected u64`), and a `Value`'s `as_u64()` and `as_i64()` work.
 
 - **`f64` to an integer, `x as u8`, saturates,** as Rust's does: `300.0` is
   `255`, `-1.5` is `0`, and `NaN` is `0` (`$f64ToInt`, `$f64ToBig`).
-  ADR 0011 had made it an error.
+  ADR 0011 had made it an error. (Amended: one known to be a whole number in range
+  is the number, ADR 0302.)
 - **`u8::try_from(x)` and `x.try_into()` between integers** are `Ok` of it
   in range, or a `TryFromIntError`, which is its message, as a parse error
   is (ADR 0063): `out of range integral type conversion attempted`, and

@@ -1172,6 +1172,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let v = self.expr(source, out)?;
                 Ok(Expr::call(Expr::member(Expr::var("String"), "fromCharCode"), vec![v]))
             }
+            // An `f64` known to be a whole number in range (ADR 0302).
+            ExprKind::Cast { source } if self.body_facts.whole_casts.contains(&e) => self.expr(source, out),
             ExprKind::Cast { source } => {
                 let v = self.expr(source, out)?;
                 self.cast(v, self.thir[source].ty, ty, span)

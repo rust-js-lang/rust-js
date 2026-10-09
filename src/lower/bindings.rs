@@ -330,6 +330,13 @@ pub(super) fn named_callback(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
 }
 
+/// `#[rust_js::position]`: a binding that gives a position in what it's
+/// called on, or -1, as `indexOf` does (ADR 0302).
+pub(super) fn position(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("position")];
+    tcx.get_attrs_by_path(def_id, &path).next().is_some()
+}
+
 /// `#[rust_js::cannot_throw]`: a binding that can't throw, as reading a
 /// data property, React's `ref.current`, can't (ADR 0301).
 pub(super) fn cannot_throw(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
