@@ -56,6 +56,10 @@ const n = match != null ? (match + 1) >>> 0 : 0;
 
 - The `const` is of a value, a call's; a place a `match` can't name in
   place, one it copies, keeps its statements.
+- What a JS call threw, `match fs::read_file_sync(..)`, keeps its
+  statements, which are JS's `try` (ADR 0035), as react.dev's errors page
+  reads its `.md` or the generic one. (Amended: it was a conditional of
+  `$try(..)`.)
 - `e ?? d` and `e?.[1] ?? d` read the option once, so they need no
   `const`, of a value or of a variable. A part that may itself be `None`,
   `()` or a generic's, isn't `?? d`'s: `d` would replace it.

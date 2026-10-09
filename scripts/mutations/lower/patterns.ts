@@ -718,4 +718,21 @@ export const mutations: Mutation[] = [
     replace: "                true,\n",
     tests: ["test/lowering.test.ts","-t","only gives a value"],
   },
+  {
+    name: "value-match-thrown",
+    breaks: "a `match` of what a JS call threw is a conditional of `$try(..)`, not JS's `try`",
+    file: "src/lower/patterns.rs",
+    find: "        !thrown\n",
+    replace: "        (thrown || !thrown)\n",
+    tests: ["test/bindings.test.ts", "-t", "node's modules"],
+  },
+  {
+    name: "value-match-thrown-rust",
+    breaks: "a `match` of a Rust function's `Result` is taken as what a JS call threw: `let` and `if`/`else`, not a conditional",
+    file: "src/lower/patterns.rs",
+    find: "                super::bindings::is_binding(self.tcx, def_id)\n",
+    replace: "                true\n",
+    tests: ["test/snapshots.test.ts", "-t", "text: the generated JS"],
+    snapshots: true,
+  },
 ];

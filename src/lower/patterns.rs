@@ -1629,17 +1629,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// the first's guard plain too? The second can't be guarded but where
     /// it's never reached.
     /// Is `e` a value, not a place: a call's, say, which a `match` of it
-    /// reads from a `const` (ADR 0309).
+    /// reads from a `const` (ADR 0309). Not what a JS call threw, whose
+    /// `match` is a `try` of its statements (ADR 0035).
     fn is_value(&self, e: ExprId) -> bool {
-        !matches!(
-            self.thir[self.strip(e)].kind,
-            ExprKind::VarRef { .. }
-                | ExprKind::UpvarRef { .. }
-                | ExprKind::Field { .. }
-                | ExprKind::Deref { .. }
-                | ExprKind::Index { .. }
-                | ExprKind::StaticRef { .. }
-        )
+        let thrown = match self.thir[self.strip(e)].kind {
+            ExprKind::Call { fun, .. } => super::fn_def(self.thir[fun].ty).is_some_and(|(def_id, _)| {
+                super::bindings::is_binding(self.tcx, def_id)
+                    && matches!(
+                        self.recognition().catching(def_id),
+                        super::recognition::Catching::Result
+                    )
+            }),
+            _ => false,
+        };
+        !thrown
+            && !matches!(
+                self.thir[self.strip(e)].kind,
+                ExprKind::VarRef { .. }
+                    | ExprKind::UpvarRef { .. }
+                    | ExprKind::Field { .. }
+                    | ExprKind::Deref { .. }
+                    | ExprKind::Index { .. }
+                    | ExprKind::StaticRef { .. }
+            )
     }
 
     pub(super) fn is_conditional_match(&self, scrutinee: ExprId, arms: &[ArmId]) -> bool {
