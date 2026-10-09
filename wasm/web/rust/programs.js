@@ -13,7 +13,7 @@ export function resolve(from, specifier) {
   if (!specifier.startsWith(".")) {
     return specifier;
   }
-  let parts = from.split("/");
+  const parts = from.split("/");
   parts.pop();
   for (const part of specifier.split("/")) {
     if (part === "..") {
@@ -26,9 +26,9 @@ export function resolve(from, specifier) {
 }
 
 export function link(files) {
-  const imports = new RegExp('^import ([^;]+?) from "([^"]+)";', "gm");
-  const sourceMap = new RegExp("^//# sourceMappingURL=.*$", "m");
-  let entries = [];
+  const imports = /^import ([^;]+?) from "([^"]+)";/gm;
+  const sourceMap = /^\/\/# sourceMappingURL=.*$/m;
+  const entries = [];
   for (const [path, code] of files) {
     const from = path;
     const body = code.replace(imports, (_, names, specifier) => {
@@ -47,7 +47,7 @@ export function link(files) {
 }
 
 export function prepare(files, modules, styles, rootFile, test, run) {
-  let sources = Array.from(files)
+  const sources = Array.from(files)
     .map(([path, code]) => [path, code])
     .map(([path, code]) => {
       const match = path.endsWith(".jsx");
@@ -55,9 +55,8 @@ export function prepare(files, modules, styles, rootFile, test, run) {
         const options = { transforms: ["jsx"], jsxRuntime: "automatic", production: true };
         const code$1 = transform(code, options).code;
         return [path, code$1];
-      } else {
-        return [path, code];
       }
+      return [path, code];
     });
   $extend(sources, Array.from(modules));
   let tests;
@@ -68,38 +67,37 @@ export function prepare(files, modules, styles, rootFile, test, run) {
   } else {
     tests = rootFile;
   }
-  const hasMain = new RegExp("^export (async )?function main\\(\\)", "m");
+  const hasMain = /^export (async )?function main\(\)/m;
   const runnable = test
-    ? sources.some((param) => param[0] === tests)
-    : sources.some((param) => param[0] === rootFile && hasMain.test(param[1]));
+    ? sources.some(([path]) => path === tests)
+    : sources.some(([path, code]) => path === rootFile && hasMain.test(code));
   if (!runnable) {
     return "Nothing";
   }
-  const cssImports = new RegExp('^import "([^"]+\\.css)"(;)', "gm");
-  let css = [];
+  const cssImports = /^import "([^"]+\.css)"(;)/gm;
+  const css = [];
   for (const item of sources) {
     for (const [, specifier] of Array.from(item[1].matchAll(cssImports))) {
-      const value = styles.find((param) => param[0] === specifier);
+      const value = styles.find(([name]) => name === specifier);
       if (value != null && !css.includes(value[1])) {
         css.push(value[1]);
       }
     }
-    const known = styles.map((param) => param[0]);
+    const known = styles.map(([name]) => name);
     item[1] = item[1].replace(cssImports, (whole, specifier) => {
       if (known.includes(specifier)) {
         return "";
-      } else {
-        return whole;
       }
+      return whole;
     });
   }
   const look = css.length === 0 ? FRAME_STYLE : `<style>\n${css.join("")}</style>`;
-  const imports = new RegExp('^import (?:[^;]+? from )?"([^"]+)";', "gm");
-  let external = [];
-  for (const item$1 of sources) {
-    for (const [, specifier$1] of Array.from(item$1[1].matchAll(imports))) {
-      const target = resolve(item$1[0], specifier$1);
-      if (!sources.some((param) => param[0] === target) && !external.includes(specifier$1)) {
+  const imports = /^import (?:[^;]+? from )?"([^"]+)";/gm;
+  const external = [];
+  for (const [path, code] of sources) {
+    for (const [, specifier$1] of Array.from(code.matchAll(imports))) {
+      const target = resolve(path, specifier$1);
+      if (!sources.some(([p]) => p === target) && !external.includes(specifier$1)) {
         external.push(specifier$1);
       }
     }
@@ -122,19 +120,43 @@ export function prepare(files, modules, styles, rootFile, test, run) {
   const arg$3 = report("error: String(e)");
   return {
     TAG: "Page",
-    _0: `${FRAME_HEAD}\n${look}\n<div id="app"></div>\n${linked}\n<script>\n  // Errors later on, in an event handler say.\n  addEventListener("error", (e) => ${arg});\n  // And in async code, which rejects its promise instead (ADR 0029).\n  addEventListener("unhandledrejection", (e) => ${arg$1});\n  // What a test file calls, as bun test provides it (ADR 0026).\n  const registered = [];\n  globalThis.test = (name, f) => registered.push({ name, f });\n  test.skip = (name) => registered.push({ name });\n  // How tall the page is, each time it changes, for the frame to show it whole.\n  new ResizeObserver(() => ${arg$2}).observe(document.documentElement);\n<\/script>\n<script type="module">\n  try {\n${start}\n    ${finished};\n  } catch (e) {\n    ${arg$3};\n  }\n<\/script>`,
+    _0: `${FRAME_HEAD}
+${look}
+<div id="app"></div>
+${linked}
+<script>
+  // Errors later on, in an event handler say.
+  addEventListener("error", (e) => ${arg});
+  // And in async code, which rejects its promise instead (ADR 0029).
+  addEventListener("unhandledrejection", (e) => ${arg$1});
+  // What a test file calls, as bun test provides it (ADR 0026).
+  const registered = [];
+  globalThis.test = (name, f) => registered.push({ name, f });
+  test.skip = (name) => registered.push({ name });
+  // How tall the page is, each time it changes, for the frame to show it whole.
+  new ResizeObserver(() => ${arg$2}).observe(document.documentElement);
+<\/script>
+<script type="module">
+  try {
+${start}
+    ${finished};
+  } catch (e) {
+    ${arg$3};
+  }
+<\/script>`,
   };
 }
 
 export function outcome(report) {
   if (report.error != null) {
     return { TAG: "Failed", _0: report.error };
-  } else if (report.ran === true) {
-    return "Ran";
-  } else if (report.tested != null) {
-    return { TAG: "Tested", _0: report.tested };
-  } else {
-    return undefined;
   }
+  if (report.ran === true) {
+    return "Ran";
+  }
+  if (report.tested != null) {
+    return { TAG: "Tested", _0: report.tested };
+  }
+  return undefined;
 }
 //# sourceMappingURL=programs.js.map

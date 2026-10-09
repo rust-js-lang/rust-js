@@ -5,18 +5,18 @@ import { ROW } from "../styles.js";
 import { inOrder } from "../tree.js";
 
 export function FileTree({ tree, depth, first, selected, onOpen, onDelete }) {
-  const rows = inOrder(tree, first).map((param) => {
-    if (param[1].TAG === "Folder") {
+  const rows = inOrder(tree, first).map(([name, entry]) => {
+    if (entry.TAG === "Folder") {
       return (
-        <li key={`${param[0]}/`} className="flex items-center">
+        <li key={`${name}/`} className="flex items-center">
           <div className="w-full">
             <span
               className={`block ${ROW} text-muted`}
               style={{ paddingLeft: (8 + (Math.imul(depth, 12) >>> 0)) >>> 0 }}
-            >{`${param[0]}/`}</span>
+            >{`${name}/`}</span>
             <ul>
               <FileTree
-                tree={param[1]._0}
+                tree={entry._0}
                 depth={(depth + 1) >>> 0}
                 first={first}
                 selected={selected}
@@ -27,20 +27,19 @@ export function FileTree({ tree, depth, first, selected, onOpen, onDelete }) {
           </div>
         </li>
       );
-    } else {
-      return (
-        <FileItem
-          name={param[0]}
-          path={param[1]._0}
-          depth={depth}
-          open={param[1]._0 === selected}
-          root={param[1]._0 === first}
-          onOpen={onOpen}
-          onDelete={onDelete}
-          key={param[1]._0}
-        />
-      );
     }
+    return (
+      <FileItem
+        name={name}
+        path={entry._0}
+        depth={depth}
+        open={entry._0 === selected}
+        root={entry._0 === first}
+        onOpen={onOpen}
+        onDelete={onDelete}
+        key={entry._0}
+      />
+    );
   });
   return <>{rows}</>;
 }

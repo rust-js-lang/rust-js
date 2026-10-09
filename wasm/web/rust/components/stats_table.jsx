@@ -4,10 +4,10 @@ export function StatsTable({ rows }) {
   return (
     <table id="stats" className="mt-3">
       <tbody>
-        {rows.map((param) => (
-          <tr key={param[0]}>
-            <td className="py-0.5 pr-4 tabular-nums text-muted">{param[0]}</td>
-            <td className="py-0.5 pr-4 tabular-nums">{param[1]}</td>
+        {rows.map(([label, value]) => (
+          <tr key={label}>
+            <td className="py-0.5 pr-4 tabular-nums text-muted">{label}</td>
+            <td className="py-0.5 pr-4 tabular-nums">{value}</td>
           </tr>
         ))}
       </tbody>

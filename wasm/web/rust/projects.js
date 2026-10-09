@@ -9,7 +9,7 @@ export const Project = {
     return { root: "lib.rs", files: [], current: "" };
   },
   of(root, texts) {
-    const files = texts.map((param) => ({ path: param[0], state: sourceState(param[1]) }));
+    const files = texts.map(([path, text]) => ({ path, state: sourceState(text) }));
     return { root, files, current: root };
   },
   has(project, path) {
@@ -22,12 +22,11 @@ export const Project = {
     const match = project.files.find((f) => f.path === project.current);
     if (match != null) {
       return match.state;
-    } else {
-      return undefined;
     }
+    return undefined;
   },
   keeping(project, live) {
-    let files = copy(project.files);
+    const files = copy(project.files);
     if (live != null) {
       for (const file of files) {
         if (file.path === project.current) {
@@ -41,7 +40,7 @@ export const Project = {
     return { root: project.root, files: Project.keeping(project, live), current: path };
   },
   adding(project, path, live) {
-    let files = Project.keeping(project, live);
+    const files = Project.keeping(project, live);
     files.push({ path, state: sourceState("") });
     return { root: project.root, files, current: path };
   },
@@ -66,8 +65,7 @@ export function jsName(path) {
   const match = $stripSuffix(path, ".rs");
   if (match != null) {
     return `${match}.js`;
-  } else {
-    return path;
   }
+  return path;
 }
 //# sourceMappingURL=projects.js.map

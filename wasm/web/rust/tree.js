@@ -3,18 +3,18 @@
 import { $cmp, $rsplitOnce } from "@rust-js/runtime";
 
 export function buildTree(paths) {
-  let tree = [];
+  const tree = [];
   for (const path of paths) {
     let folder = tree;
     let name;
     const match = $rsplitOnce(path, "/");
     if (match != null) {
       for (const part of match[0].split("/")) {
-        if (!folder.some((param) => param[0] === part)) {
+        if (!folder.some(([n]) => n === part)) {
           folder.push([part, { TAG: "Folder", _0: [] }]);
         }
         let tmp;
-        const match$1 = folder.find((param) => param[0] === part);
+        const match$1 = folder.find(([n]) => n === part);
         if (match$1 != null && match$1[1].TAG === "Folder") {
           tmp = match$1[1]._0;
         } else {
@@ -32,23 +32,22 @@ export function buildTree(paths) {
 }
 
 export function inOrder(tree, first) {
-  const key = (param) => {
-    if (param[1].TAG === "Folder") {
-      return `${param[0]}/`;
-    } else {
-      return param[0];
+  const key = ([name, entry]) => {
+    if (entry.TAG === "Folder") {
+      return `${name}/`;
     }
+    return name;
   };
   const isFirst = (entry) => entry.TAG === "File" && entry._0 === first;
-  let entries = tree.slice();
+  const entries = tree.slice();
   entries.sort((a, b) => {
     if (isFirst(a[1])) {
       return -1;
-    } else if (isFirst(b[1])) {
-      return 1;
-    } else {
-      return $cmp(key(a), key(b));
     }
+    if (isFirst(b[1])) {
+      return 1;
+    }
+    return $cmp(key(a), key(b));
   });
   return entries;
 }

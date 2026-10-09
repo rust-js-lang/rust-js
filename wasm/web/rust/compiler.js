@@ -50,11 +50,11 @@ async function loadCompiler(start, stat) {
 
 async function loadSysroot(start, stat) {
   const names = await (await window.fetch("./sysroot.json")).json();
-  let downloads = [];
+  const downloads = [];
   for (const name of names) {
     downloads.push(loadSysrootFile(name));
   }
-  let entries = [];
+  const entries = [];
   let size = 0;
   for (const download of downloads) {
     const entry = await download;
@@ -77,7 +77,7 @@ async function loadSysrootFile(name) {
 async function loadPackages(start, stat) {
   const runtime = (await window.fetch("./runtime.js")).text();
   const packages = (await window.fetch("./packages.json")).json();
-  let modules = [["@rust-js/runtime", await runtime]];
+  const modules = [["@rust-js/runtime", await runtime]];
   const packages$1 = await packages;
   $extend(modules, Array.from(Object.entries(packages$1.modules)));
   stat("download runtime and packages", ms(performance.now() - start));
@@ -100,11 +100,11 @@ async function fetchExampleFile(name, path) {
 }
 
 export async function loadExample(name, paths) {
-  let downloads = [];
+  const downloads = [];
   for (const path of paths) {
     downloads.push(fetchExampleFile(name, path));
   }
-  let texts = [];
+  const texts = [];
   for (const download of downloads) {
     texts.push(await download);
   }
@@ -116,7 +116,7 @@ function dir(name, entry) {
 }
 
 function directoryOf(sources) {
-  let top = new Map();
+  const top = new Map();
   for (const [path, text] of sources) {
     let folder = top;
     let name;
@@ -185,7 +185,7 @@ export async function compile(loaded, sources, rootFile, test) {
   } else {
     outFile = `/out/${rootFile}`;
   }
-  let args = ["rust-js"];
+  const args = ["rust-js"];
   if (test) {
     args.push("--test");
   }
@@ -222,7 +222,7 @@ export async function compile(loaded, sources, rootFile, test) {
     started.TAG === "Ok"
       ? String(started._0)
       : `trap (${started._0 instanceof Error ? started._0.message : String(started._0)})`;
-  let files = [];
+  const files = [];
   if (ok) {
     jsFilesIn(outDir.dir, "", files);
   }

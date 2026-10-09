@@ -21,7 +21,7 @@ function say(text, tone) {
 }
 
 function appended(rows, label, value) {
-  let next = rows.map((param) => [param[0], param[1]]);
+  const next = rows.map(([l, v]) => [l, v]);
   next.push([label, value]);
   return next;
 }
@@ -31,10 +31,9 @@ function testsSummary(passed, failed, ignored) {
   const ignoredText = ignored > 0 ? `, ${ignored} ignored` : "";
   if (total === 0) {
     return say("No tests.", "Good");
-  } else {
-    const tone = failed > 0 ? "Bad" : "Good";
-    return say(`Tests: ${passed} passed, ${failed} failed${ignoredText}.`, tone);
   }
+  const tone = failed > 0 ? "Bad" : "Good";
+  return say(`Tests: ${passed} passed, ${failed} failed${ignoredText}.`, tone);
 }
 
 export function App() {
@@ -81,10 +80,7 @@ export function App() {
       cancelled.value = true;
     };
   }, []);
-  const live = () => {
-    const view = source.current;
-    return view?.state;
-  };
+  const live = () => source.current?.state;
   const run = (files, loaded, rootJs, test) => {
     const n = (runs.current + 1) >>> 0;
     runs.current = n;
@@ -127,8 +123,8 @@ export function App() {
           const files = Array.from(r.files).map(([path, text]) => [path, text]);
           const count = files.length;
           const rootJsx = `${rootJs}x`;
-          const rootJs$1 = files.some((param) => param[0] === rootJsx) ? rootJsx : rootJs;
-          const shown$1 = files.some((param) => param[0] === shown) ? shown : rootJs$1;
+          const rootJs$1 = files.some(([path]) => path === rootJsx) ? rootJsx : rootJs;
+          const shown$1 = files.some(([path]) => path === shown) ? shown : rootJs$1;
           setOutput({ TAG: "Files", files, shown: shown$1 });
           setStatus(say(`Compiled: ${count} JS file${count === 1 ? "" : "s"}.`, "Good"));
           run(r.files, loaded$1, rootJs$1, test);
@@ -189,10 +185,10 @@ export function App() {
       return;
     }
     const path = $trim(answer);
-    if (path.length === 0) {
+    if (!path) {
       return;
     }
-    const modulePath = new RegExp("^([a-z_][a-z0-9_]*/)*[a-z_][a-z0-9_]*\\.rs$", "");
+    const modulePath = /^([a-z_][a-z0-9_]*\/)*[a-z_][a-z0-9_]*\.rs$/;
     if (!modulePath.test(path)) {
       const text = `"${path}" isn't a Rust module file name, like math.rs or geometry/shape.rs.`;
       setStatus(say(text, "Bad"));
@@ -216,7 +212,7 @@ export function App() {
   };
   const openOutput = (path) => {
     if (output.TAG === "Files") {
-      const files = output.files.map((param) => [param[0], param[1]]);
+      const files = output.files.map(([p, t]) => [p, t]);
       setOutput({ TAG: "Files", files, shown: path });
     }
   };
@@ -231,22 +227,22 @@ export function App() {
   const shownState = useMemo(() => {
     if (output === "Nothing") {
       return outputState("", true);
-    } else if (output.TAG === "Files") {
+    }
+    if (output.TAG === "Files") {
       let text;
-      const match = output.files.find((param) => param[0] === output.shown);
+      const match = output.files.find(([path]) => path === output.shown);
       if (match != null) {
         text = match[1];
       } else {
         text = "";
       }
       return outputState(text, true);
-    } else {
-      return outputState(output._0, false);
     }
+    return outputState(output._0, false);
   }, [output]);
   const sourceTree = useMemo(() => buildTree(Project.paths(project)), [project]);
   const tmp =
-    output.TAG === "Files" ? [output.files.map((param) => param[0]), output.shown] : [[], ""];
+    output.TAG === "Files" ? [output.files.map(([path]) => path), output.shown] : [[], ""];
   const outputTree = useMemo(() => buildTree(tmp[0]), [output]);
   const examples = loaded != null ? loaded.examples : [];
   const submit = onCompile;
@@ -284,13 +280,21 @@ export function App() {
               <button
                 id="new-file"
                 className="mx-2 mt-1.5 block cursor-pointer text-muted"
-                onClick={() => newFile()}
+                onClick={newFile}
               >
                 + New file
               </button>
             </>
           }
-          editor={<Editor state={current} view={source} onSubmit={() => submit(false)} />}
+          editor={
+            <Editor
+              state={current}
+              view={source}
+              onSubmit={() => {
+                submit(false);
+              }}
+            />
+          }
         />
         <Pane
           title="JavaScript"
