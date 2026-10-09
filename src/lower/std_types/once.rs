@@ -31,7 +31,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Std::Once(op) = known else {
             return Ok(None);
         };
-        let Call { generic_args, span, .. } = call;
+        let Call {
+            generic_args,
+            args,
+            span,
+            ..
+        } = call;
         let item = generic_args.type_at(0);
         let mut arg = || values.next().expect("rustc checked the arguments");
         Ok(Some(match op {
@@ -61,6 +66,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             OnceOp::Set => {
                 self.runtime.insert(Helper::OnceSet);
                 Expr::call(Expr::var("$onceSet"), vec![arg(), arg()])
+            }
+            // A `OnceLock`'s that sets it deadlocks in Rust: rust-js's error.
+            OnceOp::GetOrInit if self.recognition().is_lock_cell(self.thir[args[0]].ty.peel_refs()) => {
+                self.runtime.insert(Helper::GetOrInitLock);
+                Expr::call(Expr::var("$getOrInitLock"), vec![arg(), arg()])
             }
             OnceOp::GetOrInit => {
                 self.runtime.insert(Helper::GetOrInit);

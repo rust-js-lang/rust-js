@@ -60,3 +60,32 @@ test("a module imports the helpers it names from @rust-js/runtime, and runs", ()
   const printed = run([node ?? "node", "--input-type=module", "--eval", `(await import(${JSON.stringify(out)})).main();`]);
   expect(printed).toBe('"grace" 7\ntrue\n');
 });
+
+// A `OnceLock`'s or `LazyLock`'s init that uses its own cell deadlocks in
+// Rust, which JS can't do: rust-js says so, never a std-looking panic
+// (ADRs 0317, 0318).
+test("a lock's init that uses its own lock is rust-js's error, not a deadlock", () => {
+  const dir = fixture("runtime-lock-reentrant");
+  writeFileSync(join(dir, "lib.rs"), `use std::sync::{LazyLock, OnceLock};
+
+static LAZY: LazyLock<u32> = LazyLock::new(|| *LAZY + 1);
+static ONCE: OnceLock<u32> = OnceLock::new();
+
+pub fn lazy() -> u32 {
+    *LAZY
+}
+
+pub fn once() -> u32 {
+    *ONCE.get_or_init(|| {
+        let _ = ONCE.set(1);
+        2
+    })
+}
+`);
+  const out = join(dir, "lib.js");
+  run([compiler, join(dir, "lib.rs"), "-o", out]);
+  const call = (name: string) =>
+    run([node ?? "node", "--input-type=module", "--eval", `try { (await import(${JSON.stringify(out)})).${name}(); } catch (e) { console.log(e.message); }`]);
+  expect(call("lazy")).toBe("rust-js does not support a `LazyLock` whose init uses it, which deadlocks in Rust\n");
+  expect(call("once")).toBe("rust-js does not support a `OnceLock` whose init sets it, which deadlocks in Rust\n");
+});

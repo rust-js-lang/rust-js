@@ -1229,7 +1229,7 @@ export function $onceSet(cell, value) {
   return { TAG: "Ok", _0: undefined };
 }
 
-// A `LazyCell`'s or `LazyLock`'s value, made by its `init` the first time.
+// A `LazyCell`'s value, made by its `init` the first time.
 // While it runs, and after it panics, `init` is `null`: std's poisoned.
 export function $force(lazy) {
   const init = lazy.init;
@@ -1242,7 +1242,31 @@ export function $force(lazy) {
   return lazy.value;
 }
 
-// A `OnceCell`'s or `OnceLock`'s `get_or_init(f)`: what it holds, made by
+// A `LazyLock`'s value, made by its `init` the first time. An init that
+// uses its own `LazyLock` deadlocks in Rust, which JS can't do.
+export function $forceLock(lazy) {
+  const init = lazy.init;
+  if (init !== undefined) {
+    if (init === null) throw new Error("rust-js does not support a `LazyLock` whose init uses it, which deadlocks in Rust");
+    lazy.init = null;
+    lazy.value = init();
+    lazy.init = undefined;
+  }
+  return lazy.value;
+}
+
+// A `OnceLock`'s `get_or_init(f)`: what it holds, made by `f` the first
+// time. An `f` that sets it itself deadlocks in Rust, which JS can't do.
+export function $getOrInitLock(cell, f) {
+  if (cell.value === undefined) {
+    const value = f();
+    if (cell.value !== undefined) throw new Error("rust-js does not support a `OnceLock` whose init sets it, which deadlocks in Rust");
+    cell.value = $some(value);
+  }
+  return $someValue(cell.value);
+}
+
+// A `OnceCell`'s `get_or_init(f)`: what it holds, made by
 // `f` the first time, which may not set it itself.
 export function $getOrInit(cell, f) {
   if (cell.value === undefined) {

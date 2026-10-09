@@ -1,4 +1,4 @@
-// A `LazyCell`'s or `LazyLock`'s value, made by its `init` the first time.
+// A `LazyCell`'s value, made by its `init` the first time.
 // While it runs, and after it panics, `init` is `null`: std's poisoned.
 function $force(lazy) {
   const init = lazy.init;

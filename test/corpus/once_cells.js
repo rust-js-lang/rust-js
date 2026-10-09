@@ -5,6 +5,7 @@ import {
   $debugStr,
   $eq,
   $getOrInit,
+  $getOrInitLock,
   $onceSet,
   $pretty,
   $print,
@@ -20,7 +21,7 @@ export function entry() {
 const GREETING = {};
 
 function greeting() {
-  return $getOrInit(GREETING, () => "hello");
+  return $getOrInitLock(GREETING, () => "hello");
 }
 
 function main() {
@@ -77,7 +78,7 @@ function main() {
   console.log(
     `${lock.value == null ? "None" : `Some([${lock.value.map((item) => String(item)).join(", ")}])`}`,
   );
-  $getOrInit(lock, () => [1, 2]);
+  $getOrInitLock(lock, () => [1, 2]);
   const arg$7 = $onceSet(lock, [3]);
   console.log(
     `${arg$7.TAG === "Ok" ? "Ok(())" : `Err([${arg$7._0.map((item) => String(item)).join(", ")}])`} ${lock.value == null ? "None" : `Some([${lock.value.map((item) => String(item)).join(", ")}])`}`,

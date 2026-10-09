@@ -2118,6 +2118,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
     }
 
+    /// A `OnceLock` or `LazyLock`, std's, not a `OnceCell` or `LazyCell`,
+    /// `core`'s: their reentrant inits differ (ADRs 0317, 0318).
+    pub(super) fn is_lock_cell(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate) == sym::std)
+            && (self.is_std_type(ty, StdItem::OnceCell) || self.is_std_type(ty, StdItem::LazyCell))
+    }
+
     /// A `Cow<str>`, `{ TAG, _0 }`: its text, borrowed or owned (ADR 0172).
     pub(super) fn is_cow_str(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, args) if std_path(self.tcx, adt.did()) == "std::borrow::Cow"

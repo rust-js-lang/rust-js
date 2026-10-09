@@ -46,7 +46,10 @@ No disagreement at all, tooling, bindings' shape, the output's layout: N
   (ADR 0138).
 - **D, Rust's can't be kept: an error.** `rust-js does not support .. yet`,
   and no output (ADR 0006). A later decision may move a case up, as ADR
-  0138 did string byte counts, an error under ADR 0034.
+  0138 did string byte counts, an error under ADR 0034. Where only running
+  can tell, as an init that uses its own `LazyLock`, which deadlocks in
+  Rust (ADR 0318), the runtime throws `rust-js does not support ..` there:
+  never a panic that looks like std's but isn't what Rust does.
 
 The program's meaning is rustc's: rust-js never makes Rust that's wrong
 work in JS. Two closures, `Box::new(move |_| close())` given to
