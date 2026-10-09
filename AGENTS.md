@@ -8,6 +8,14 @@ rust-js on the frontend, shared types between them, with Scala.js-level
 correctness, library support and interop. The first production app is a
 milestone on the way.
 
+**Be ambitious.** We are setting out to change how people build for the web,
+so don't shy away from a big change. A representation reworked across the
+compiler, a new analysis, a crate rebound from scratch: if it serves the
+north star and keeps every promise below, do it, whatever it takes. The
+size of a change is never a reason to settle for less; only the vision and
+the promises are. Make it as safe as it is bold: a failing test first, the
+corpus and mutations as the net, an ADR that says why.
+
 ## Principles
 
 - **Keep Rust's checks.** rustc owns types, traits, ownership, borrowing and
