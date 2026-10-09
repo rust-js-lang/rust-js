@@ -348,4 +348,21 @@ export const mutations: Mutation[] = [
     replace: "            return Ok(Expr::call(Expr::var(\"$debugStr\"), vec![value]));",
     tests: ["test/compiler.test.ts", "-t", "the calculator's JS is what a person would write"],
   },
+  {
+    name: "string-call-unstringed",
+    breaks: "`String(arg)` the program wrote is `${arg}` in a template, which throws on a symbol",
+    file: "src/lower/display.rs",
+    find: "        js::ExprKind::Stringed(value) => *value,\n",
+    replace: "        js::ExprKind::Stringed(value) => *value,\n        js::ExprKind::Call(_, ref args) if args.len() == 1 => args[0].clone(),\n",
+    tests: ["test/bindings.test.ts", "-t", "js::shown"],
+  },
+  {
+    name: "stringed-not-string",
+    breaks: "a number's `fmt` is `(value) => String(value)`, not `String`",
+    file: "src/lower/display.rs",
+    find: "        if let js::ExprKind::Stringed(value) = &shown.kind\n",
+    replace: "        if false && let js::ExprKind::Stringed(value) = &shown.kind\n",
+    tests: ["test/snapshots.test.ts", "-t", "queues: the generated JS"],
+    snapshots: true,
+  },
 ];

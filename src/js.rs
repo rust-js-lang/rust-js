@@ -612,6 +612,10 @@ pub enum ExprKind {
     OptionalMember(Box<Expr>, String),
     /// `object[index]`, e.g. `pair[0]`.
     Index(Box<Expr>, Box<Expr>),
+    /// `String(x)` of a Rust number, which a template writes as `x`: it
+    /// makes it text as `String` does. Not of any value, a symbol say,
+    /// which a template throws on (ADR 0066).
+    Stringed(Box<Expr>),
     /// `a?.[i]`: `undefined` where `a` is `undefined` or `null`.
     OptionalIndex(Box<Expr>, Box<Expr>),
     /// `[a, b]`: a tuple or tuple struct (ADR 0020).
@@ -858,6 +862,11 @@ impl Expr {
         Expr::new(ExprKind::OptionalMember(Box::new(object), property.into()))
     }
 
+    /// `String(x)` of a Rust number, `x` in a template (ADR 0066).
+    pub fn stringed(value: Expr) -> Expr {
+        Expr::new(ExprKind::Stringed(Box::new(value)))
+    }
+
     pub fn optional_index(object: Expr, index: Expr) -> Expr {
         Expr::new(ExprKind::OptionalIndex(Box::new(object), Box::new(index)))
     }
@@ -1061,6 +1070,7 @@ impl Expr {
             | ExprKind::Unary(_, a)
             | ExprKind::Await(a)
             | ExprKind::Spread(a)
+            | ExprKind::Stringed(a)
             | ExprKind::Handle(a)
             | ExprKind::DropArgument(_, _, a) => a.each_mut(f),
             ExprKind::Index(a, b)
@@ -1123,6 +1133,7 @@ impl Expr {
             | ExprKind::Unary(_, a)
             | ExprKind::Await(a)
             | ExprKind::Spread(a)
+            | ExprKind::Stringed(a)
             | ExprKind::Handle(a)
             | ExprKind::DropArgument(_, _, a) => a.visit_vars(read),
             ExprKind::Index(a, b)
@@ -1184,6 +1195,7 @@ impl Expr {
             | ExprKind::Unary(_, a)
             | ExprKind::Await(a)
             | ExprKind::Spread(a)
+            | ExprKind::Stringed(a)
             | ExprKind::DropArgument(_, _, a) => a.contains_jsx(),
             ExprKind::Handle(_) | ExprKind::Pair(..) => false,
             ExprKind::Index(a, b) | ExprKind::OptionalIndex(a, b) | ExprKind::Binary(_, a, b) => {
@@ -1304,6 +1316,7 @@ impl Expr {
             ExprKind::New(f, args) => ExprKind::New(one(f)?, all(args)?),
             ExprKind::Await(a) => ExprKind::Await(one(a)?),
             ExprKind::Spread(a) => ExprKind::Spread(one(a)?),
+            ExprKind::Stringed(a) => ExprKind::Stringed(one(a)?),
             ExprKind::Template(texts, values, lines) => ExprKind::Template(texts.clone(), all(values)?, *lines),
             ExprKind::Jsx(jsx) => ExprKind::Jsx(Box::new(Jsx {
                 tag: match &jsx.tag {
@@ -1454,7 +1467,7 @@ impl Expr {
             | ExprKind::Function(_) => false,
             // It lets other code run meanwhile, and loads a module.
             ExprKind::Await(_) | ExprKind::Import(_) => true,
-            ExprKind::Spread(a) | ExprKind::DropArgument(_, _, a) => a.has_effects(),
+            ExprKind::Spread(a) | ExprKind::Stringed(a) | ExprKind::DropArgument(_, _, a) => a.has_effects(),
             ExprKind::Member(object, _) | ExprKind::OptionalMember(object, _) => object.has_effects(),
             // Making one reads nothing: its getter does, later.
             ExprKind::Handle(_) => false,

@@ -606,6 +606,7 @@ fn expr(e: &mut Expr) {
         | ExprKind::Unary(_, a)
         | ExprKind::Await(a)
         | ExprKind::Spread(a)
+        | ExprKind::Stringed(a)
         | ExprKind::Handle(a)
         | ExprKind::DropArgument(_, _, a) => expr(a),
         ExprKind::Index(a, b) | ExprKind::OptionalIndex(a, b) | ExprKind::Binary(_, a, b) | ExprKind::Pair(a, b) => {

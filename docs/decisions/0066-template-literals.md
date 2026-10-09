@@ -71,3 +71,12 @@ It's correct, but it isn't what a person writes today, and once formatted
   span of the format string's own, so it's the macro call's first string
   literal, by Rust's lexer. One written with `\n`, or whose break a `\`
   leaves out, keeps it. Case N: it's the same string.
+
+## Amendment: `String(x)` the program wrote stays
+
+`String(n)` of a Rust number is `n` in a template, as before. `String(x)`
+the program wrote, `js::string(arg)` of any value, stays `${String(arg)}`:
+a template throws on a symbol, which `String` names, as react.dev's
+Console names what a page logged. It was `${arg}`. A number's text is its
+own node, which only it unwraps; a bindings test shows a symbol, and
+mutations unwrap any `String`, and keep a number's `fmt` an arrow.

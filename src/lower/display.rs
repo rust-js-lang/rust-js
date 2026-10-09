@@ -1504,6 +1504,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let shown = self.display_string_with(Expr::var("value"), ty, span, &pretty)?;
         let names: Vec<&str> = ["value", "options"].into_iter().take(params.len()).collect();
+        // `String(value)` of a number is the function `String`.
+        if let js::ExprKind::Stringed(value) = &shown.kind
+            && names.len() == 1
+            && is_var(value, "value")
+        {
+            return Ok(Expr::var("String"));
+        }
         if let js::ExprKind::Call(callee, args) = &shown.kind
             && matches!(callee.kind, js::ExprKind::Var(_))
             && args.len() == names.len()
@@ -1573,14 +1580,12 @@ pub(super) fn join(parts: Vec<Expr>) -> Expr {
     Expr::template(texts, values)
 }
 
-/// `String(x)` is `x` in a template, which makes it a string the same way.
+/// `String(n)` of a Rust number is `n` in a template, which makes it a
+/// string the same way. Not `String(x)` the program wrote, of any value,
+/// which names a symbol a template throws on (ADR 0066).
 fn unstringed(value: Expr) -> Expr {
     match value.kind {
-        js::ExprKind::Call(ref callee, ref args)
-            if matches!(&callee.kind, js::ExprKind::Var(name) if name == "String") && args.len() == 1 =>
-        {
-            args[0].clone()
-        }
+        js::ExprKind::Stringed(value) => *value,
         _ => value,
     }
 }
@@ -1629,7 +1634,7 @@ fn is_var(e: &Expr, name: &str) -> bool {
 fn shown_number(value: Expr) -> Expr {
     match value.as_int() {
         Some(n) => Expr::str(n.to_string()),
-        None => Expr::call(Expr::var("String"), vec![value]),
+        None => Expr::stringed(value),
     }
 }
 

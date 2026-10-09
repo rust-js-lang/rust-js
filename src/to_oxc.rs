@@ -937,6 +937,8 @@ impl<'a> Cx<'a> {
             ExprKind::Index(object, index) => {
                 Expression::new_computed_member_expression(sp, self.expr(object), self.expr(index), false, b)
             }
+            // `String(n)` where it isn't in a template (ADR 0066).
+            ExprKind::Stringed(value) => self.expr(&js::Expr::call(js::Expr::var("String"), vec![(**value).clone()])),
             ExprKind::Array(items) => self.nested(items.len() > 2, || {
                 let items = items.iter().map(|item| match &item.kind {
                     ExprKind::Spread(all) => {

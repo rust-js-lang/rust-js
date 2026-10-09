@@ -1282,10 +1282,17 @@ test("js::shown is shown as a template shows any value", async () => {
 pub fn key(msg: Option<&Unknown>, index: usize) -> String {
     format!("{}-{index}", js::shown(msg))
 }
+
+pub fn named(arg: Option<&Unknown>) -> String {
+    format!(" {}", js::string(arg))
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("return `${msg}-${index}`;");
-  const { key } = await import(join(dir, "lib.js"));
+  // `String(arg)` stays, which names a symbol a template throws on.
+  expect(js).toContain("return ` ${String(arg)}`;");
+  const { key, named } = await import(join(dir, "lib.js"));
+  expect(named(Symbol("s"))).toBe(" Symbol(s)");
   expect([key(undefined, 0), key(null, 1), key({}, 2), key("a", 3)]).toEqual(["undefined-0", "null-1", "[object Object]-2", "a-3"]);
 });
