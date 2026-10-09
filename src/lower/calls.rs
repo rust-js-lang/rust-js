@@ -305,6 +305,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Expr::undefined()
                 }
                 (JsForm::This, Some(this)) if args.is_empty() => this,
+                // Of a value that's an `Option` itself, a JSON `null`'s
+                // `Some(None)`, which only an own key has (ADR 0225).
+                (JsForm::GetIndex, Some(this))
+                    if args.len() == 1
+                        && self
+                            .option_of(
+                                self.tcx
+                                    .fn_sig(def_id)
+                                    .instantiate(self.tcx, generic_args)
+                                    .skip_binder()
+                                    .output(),
+                            )
+                            .is_some_and(|value| self.boxed_payload(value)) =>
+                {
+                    self.runtime.insert(Helper::DictGet);
+                    Expr::call(Expr::var("$dictGet"), vec![this, args.remove(0)])
+                }
                 (JsForm::GetIndex, Some(this)) if args.len() == 1 => keyed(this, args.remove(0)),
                 (JsForm::In, Some(this)) if args.len() == 1 => Expr::bin(Op::In, args.remove(0), this),
                 (JsForm::Truthy, Some(this)) if args.is_empty() => {

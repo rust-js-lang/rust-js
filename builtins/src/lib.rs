@@ -361,11 +361,14 @@ impl Json<'_> {
 pub mod dict {
     use super::*;
 
-    /// Its value of `key`: `None` where the key isn't its own, and of a
-    /// `Dict<Option<_>>`, `Some(None)` of a JSON `null`.
-    #[cfg_attr(rust_js, rust_js::link_name = "@rust-js/runtime#$dictGet")]
+    /// Its value of `key`, `dict[key]`, as JS reads it: `None` where it has
+    /// none, and an inherited key, `toString`, reads what it inherits, as
+    /// TypeScript's `Record` and ReScript's `dict` do. Of a
+    /// `Dict<Option<_>>`, `Some(None)` of a JSON `null`, and `None` where the
+    /// key isn't its own (ADR 0225).
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
     #[allow(unused_variables)]
-    pub fn get<'a, T>(dict: &'a Dict<T>, key: &str) -> Option<&'a T> {
+    pub fn get<'a, T>(this: &'a Dict<T>, key: &str) -> Option<&'a T> {
         unreachable!()
     }
 

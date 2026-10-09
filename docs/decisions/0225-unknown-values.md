@@ -189,3 +189,12 @@ value.name = "new";
   which a literal would have twice; nor of `__proto__`, which a literal
   makes the prototype; nor of a value `undefined`, which an object's field
   leaves out (ADR 0280) and an entry keeps. Case A.
+
+## Amendment: a dictionary is read as JS reads one
+
+`dict::get(d, k)` is `d[k]`, where it was `$dictGet(d, k)`, which read
+own keys only: TypeScript's `Record` and ReScript's `dict` read `d[k]`,
+and so does react.dev, `sandpack.files[activeFile]`. An inherited key,
+`toString`, reads what it inherits there too. Of a `Dict<Option<_>>`, a JSON
+object's, `$dictGet` stays: a `null` value is `Some(None)`, which only an
+own key has, apart from a missing one.

@@ -902,6 +902,10 @@ pub fn built() -> Vec<String> {
     dict::set(numbers, "b", 2.0);
     dict::keys(numbers)
 }
+pub fn counted(key: &str) -> f64 {
+    let counts: &Dict<f64> = dict::from_entries(vec![("a".to_string(), 1.0)]);
+    dict::get(counts, key).copied().unwrap_or(0.0)
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
@@ -918,6 +922,9 @@ pub fn built() -> Vec<String> {
     .toEqual(["null", "1", "missing", "missing", "not an object"]);
   expect(lib.round_trip('{"a": [1, null]}')).toBe('{"a":[1,null]}');
   expect(lib.built()).toEqual(["a", "b"]);
+  // A dictionary of what isn't an Option is read as JS reads one (ADR 0225).
+  expect(js).toContain("return counts[key] ?? 0;");
+  expect([lib.counted("a"), lib.counted("b")]).toEqual([1, 0]);
 });
 
 // An element's constructor is WebIDL's `[HTMLConstructor]`, which only a

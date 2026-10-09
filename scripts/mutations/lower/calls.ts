@@ -350,4 +350,12 @@ export const mutations: Mutation[] = [
     replace: "                    | Std::Unwrap\n",
     tests: ["test/lowering.test.ts", "-t", "unwrap_unchecked is the value"],
   },
+  {
+    name: "dict-get-of-options-plain",
+    breaks: "a dictionary of Options is read `d[k]`, so a JSON `null` value reads as a missing key",
+    file: "src/lower/calls.rs",
+    find: "                            .is_some_and(|value| self.boxed_payload(value)) =>",
+    replace: "                            .is_some_and(|value| self.boxed_payload(value) && false) =>",
+    tests: ["test/bindings.test.ts", "-t", "JSON is a typed value"],
+  },
 ];
