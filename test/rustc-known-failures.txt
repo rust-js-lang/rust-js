@@ -2,7 +2,6 @@
 # Rewritten by `bun scripts/rustc-suite.ts --bless`.
 abi/c-stack-returning-int64.rs	error: rust-js does not support calling `std::ffi::CString::new` yet
 abi/nullable-pointer-ffi-compat.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
-allocator/weak-uninhabited-type.rs	error: rust-js does not support calling `std::rc::Weak::<T>::new` yet
 array-slice-vec/destructure-array-1.rs	error: rust-js does not support moving part of a value with a destructor yet
 array-slice-vec/issue-18425.rs	error: rust-js does not support `[x; N]` of a value that isn't `Copy` yet
 associated-consts/mismatched_impl_ty_2.rs	error: rust-js does not support this constant yet
@@ -126,7 +125,7 @@ drop/multiple-drop-safe-code-25549.rs	error: rust-js does not support a `Holder<
 drop/or-pattern-drop-order.rs	error: rust-js does not support a `let` of a value with a destructor, without its value yet
 drop/rc-trait-object-double-drop.rs	error: rust-js does not support a `dyn` of a value with a destructor yet
 dropck/compound-type-of-raw-pointers.rs	error: rust-js does not support values of type `*const NoisyDrop<&std::vec::Vec<i32>>` yet
-dst/dst-coerce-rc.rs	error: rust-js does not support values of type `(*const std::rc::RcInner<i32>) is !null` yet
+dst/dst-coerce-rc.rs	error: rust-js does not support a `std::cell::RefCell<dyn Baz>`, whose last field is a `dyn` yet
 dst/dst-coercions.rs	error: rust-js does not support values of type `*const dyn T` yet
 dst/dst-field-align.rs	error: rust-js does not support a `Baz<dyn Bar>`, whose last field is a `dyn` yet
 dst/dst-raw.rs	error: rust-js does not support values of type `*const dyn Trait` yet
