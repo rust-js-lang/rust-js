@@ -316,6 +316,14 @@ pub(super) fn is_untagged(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 }
 
 /// Whether a binding gives `undefined`, whatever JS's types say of it,
+/// `#[rust_js::skips_falsy]`: a function that skips what's falsy, as
+/// classnames does, given an argument shown only if a test holds as `test &&
+/// value` (ADR 0221).
+pub(super) fn skips_falsy(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("skips_falsy")];
+    tcx.get_attrs_by_path(def_id, &path).next().is_some()
+}
+
 /// `#[rust_js::named_callback]`: a hook whose function a `let` names is
 /// written where it's given, named, as React's effects are (ADR 0297).
 pub(super) fn named_callback(tcx: TyCtxt<'_>, def_id: DefId) -> bool {

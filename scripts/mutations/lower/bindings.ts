@@ -170,4 +170,12 @@ export const mutations: Mutation[] = [
     replace: "    let path = [Symbol::intern(\"rust_js\"), Symbol::intern(\"named_callback\")];\n    tcx.get_attrs_by_path(def_id, &path).next().is_some() && false",
     tests: ["test/jsx.test.ts", "-t", "a closure a let names for a hook"],
   },
+  {
+    name: "skips-falsy-unread",
+    breaks: "no binding skips what's falsy, so classnames is given `test ? value : undefined`",
+    file: "src/lower/bindings.rs",
+    find: "    let path = [Symbol::intern(\"rust_js\"), Symbol::intern(\"skips_falsy\")];\n    tcx.get_attrs_by_path(def_id, &path).next().is_some()",
+    replace: "    let path = [Symbol::intern(\"rust_js\"), Symbol::intern(\"skips_falsy\")];\n    tcx.get_attrs_by_path(def_id, &path).next().is_some() && false",
+    tests: ["test/bindings.test.ts", "-t", "skips what's falsy"],
+  },
 ];

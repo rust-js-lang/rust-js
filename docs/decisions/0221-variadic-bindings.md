@@ -48,3 +48,12 @@ cn(...classes)
 - **It's tested**: a compiler test calls a variadic `Math.max` with a slice
   written out and with a `Vec`, and checks the JS and what it returns; one
   whose last parameter isn't a slice is refused.
+
+## Amendment: a binding that skips what's falsy
+
+`#[rust_js::skips_falsy]` marks a function that skips its falsy arguments,
+as classnames does. An argument shown only if a test holds,
+`expanded.then_some("wide")`, is given as `expanded && "wide"`, where it was
+`expanded ? "wide" : undefined`: such a function skips `false` as it does
+`undefined`, and that's how react.dev writes `cn('a', isExpanded &&
+'sp-layout-expanded')`.

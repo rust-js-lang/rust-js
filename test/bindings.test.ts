@@ -984,3 +984,33 @@ pub fn asked() -> bool {
   expect(js).toContain('return confirm("Clear all your edits?");');
   expect(js).toContain('return window.confirm("Sure?");');
 });
+
+// ADR 0221: a binding that skips what's falsy, `#[rust_js::skips_falsy]`, as
+// classnames does, is given an argument shown only if a test holds as `test
+// && value`, as react.dev writes `cn('a', isExpanded && 'sp-layout-expanded')`.
+test("a binding that skips what's falsy is given test && value", async () => {
+  const dir = fixture("skips-falsy");
+  writeFileSync(join(dir, "cn.js"), 'export default (...classes) => classes.filter(Boolean).join(" ");\n');
+  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
+    #[link_name = "./cn.js#default"]
+    #[rust_js::variadic]
+    #[rust_js::skips_falsy]
+    safe fn cn(classes: &[Option<&str>]) -> String;
+    #[link_name = "./cn.js#default"]
+    #[rust_js::variadic]
+    safe fn plain(classes: &[Option<&str>]) -> String;
+}
+pub fn classes(expanded: bool, shown: bool) -> String {
+    cn(&[Some("a"), expanded.then_some("wide"), (!expanded && shown).then_some("tall")])
+}
+pub fn listed(expanded: bool) -> String {
+    plain(&[Some("a"), expanded.then_some("wide")])
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('return cn("a", expanded && "wide", !expanded && shown && "tall");');
+  expect(js).toContain('return cn("a", expanded ? "wide" : undefined);');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.classes(true, true), lib.classes(false, true), lib.classes(false, false), lib.listed(true)]).toEqual(["a wide", "a tall", "a", "a wide"]);
+});

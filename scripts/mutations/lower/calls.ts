@@ -358,4 +358,12 @@ export const mutations: Mutation[] = [
     replace: "                            .is_some_and(|value| self.boxed_payload(value) && false) =>",
     tests: ["test/bindings.test.ts", "-t", "JSON is a typed value"],
   },
+  {
+    name: "skips-falsy-ternary",
+    breaks: "a binding that skips what's falsy is given `test ? value : undefined`, where react.dev writes `test && value`",
+    file: "src/lower/calls.rs",
+    find: "            if super::bindings::skips_falsy(self.tcx, def_id) {",
+    replace: "            if false {",
+    tests: ["test/bindings.test.ts", "-t", "skips what's falsy"],
+  },
 ];

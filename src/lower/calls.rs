@@ -289,6 +289,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None => {}
                 }
             }
+            // What skips what's falsy is given `test && value` for `test ?
+            // value : undefined`: `false` is skipped as `undefined` is.
+            if super::bindings::skips_falsy(self.tcx, def_id) {
+                for arg in &mut args {
+                    if let js::ExprKind::Cond(test, value, none) = &arg.kind
+                        && matches!(none.kind, js::ExprKind::Undefined)
+                    {
+                        *arg = Expr::bin(Op::And, (**test).clone(), (**value).clone());
+                    }
+                }
+            }
             let value = match (js_form(self.tcx, def_id), this) {
                 // A method or a property is on `this`: it can't be an import.
                 (JsForm::Call(name), Some(this)) if !name.contains('#') => {
