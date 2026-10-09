@@ -121,3 +121,7 @@ const app = $unwrap(document.getElementById("app"), "the page has an #app");
   all of it where its object is `undefined`, as `map(|x| x.inner.v)` is
   `None`. (Amended: each `?.` was a chain of its own, `(o?.inner).v`, which
   read `.v` of `undefined` and threw.)
+- **A method of what's in it, of a JS object, is `o?.m(x)`**, which calls
+  it, its arguments too, only where `o` is, as a person writes
+  `document.body?.appendChild(a)`. A Rust type's method takes the value as
+  an argument, `Node.add(o, x)`, which `?.` can't skip: a test still.

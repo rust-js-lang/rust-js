@@ -143,7 +143,7 @@ export function tree() {
   out += `${p}\n`;
   const option = Value.get(v, "name");
   const s = option != null ? Value.as_str(option) : undefined;
-  const name = s != null ? s.toUpperCase() : undefined;
+  const name = s?.toUpperCase();
   const tmp = price(v);
   const tmp$1 = Value.depth(v);
   const option$1 = Value.get(v, "missing");

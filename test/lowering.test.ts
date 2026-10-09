@@ -729,3 +729,45 @@ pub fn deep(o: Option<&Outer>) -> Option<u32> {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.deep({ inner: { v: 3 } }), lib.deep(undefined)]).toEqual([3, undefined]);
 });
+
+// ADR 0030: a method of what's in an option, of a JS object, is `o?.m(x)`,
+// which calls it, its arguments too, only where `o` is: as a person writes
+// `document.body?.appendChild(a)`. A Rust type's method takes its value as
+// an argument, `Node.add(o, x)`, which `?.` can't skip.
+test("an option's method call ends where it's None", async () => {
+  const dir = fixture("optional-calls");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Node {
+    pub n: u32,
+}
+
+impl Node {
+    pub fn add(&self, x: u32) -> u32 {
+        self.n + x
+    }
+}
+
+pub fn tested(o: Option<&js::RegExp>, x: &str) -> Option<bool> {
+    o.map(|r| r.test(x))
+}
+
+pub fn ran(o: Option<&js::RegExp>, x: &str) {
+    o.map(|r| r.test(x));
+}
+
+pub fn added(o: Option<&Node>, x: u32) -> Option<u32> {
+    o.map(|node| node.add(x))
+}
+
+pub fn or_not(o: Option<&js::RegExp>, x: &str) -> bool {
+    o.map_or(false, |r| r.test(x))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return o?.test(x);");
+  expect(js).toContain("  o?.test(x);");
+  expect(js).toContain("return o != null ? Node.add(o, x) : undefined;");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.tested(/a/, "a"), lib.tested(undefined, "a"), lib.ran(undefined, "a"), lib.added({ n: 1 }, 2), lib.added(undefined, 2), lib.or_not(undefined, "a")])
+    .toEqual([true, undefined, undefined, 3, undefined, false]);
+});

@@ -719,6 +719,24 @@ impl Expr {
                 ..chain
             };
         }
+        // `a != null ? a.m(x) : undefined` is `a?.m(x)`: `?.` skips the call,
+        // its arguments too, where `a` is, as the test does.
+        if let ExprKind::Binary(Op::LooseNe, tested, null) = &test.kind
+            && matches!(null.kind, ExprKind::Null)
+            && matches!(els.kind, ExprKind::Undefined)
+            && let ExprKind::Call(callee, args) = &then.kind
+            && let ExprKind::Member(object, property) = &callee.kind
+            && same_path(tested, object)
+        {
+            let chain = Expr::call(
+                Expr::optional_member((**object).clone(), property.clone()),
+                args.clone(),
+            );
+            return Expr {
+                span: then.span,
+                ..chain
+            };
+        }
         Expr::new(ExprKind::Cond(Box::new(test), Box::new(then), Box::new(els)))
     }
 
