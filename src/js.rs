@@ -479,6 +479,10 @@ pub enum ExprKind {
     /// Where such a function goes until the pipeline puts it there: its
     /// item's index.
     FunctionHole(u32),
+    /// A drop function given to one of the crate's functions for its type
+    /// parameter, `(item, index, drop)`: until the pipeline keeps it, where
+    /// that function uses it, or leaves it out (ADR 0300).
+    DropArgument(u32, u32, Box<Expr>),
     /// `await p`: `.await` (ADR 0029).
     Await(Box<Expr>),
     /// `<div className="hero">..</div>`, `<Counter initial={1} />` or `<>..</>` (ADR 0040).
@@ -639,6 +643,10 @@ impl Expr {
 
     pub fn var(name: &str) -> Expr {
         Expr::new(ExprKind::Var(name.to_string()))
+    }
+
+    pub fn drop_argument(item: u32, index: u32, drop: Expr) -> Expr {
+        Expr::new(ExprKind::DropArgument(item, index, Box::new(drop)))
     }
 
     pub fn handle(place: Expr) -> Expr {
@@ -883,7 +891,8 @@ impl Expr {
             | ExprKind::Unary(_, a)
             | ExprKind::Await(a)
             | ExprKind::Spread(a)
-            | ExprKind::Handle(a) => a.each_mut(f),
+            | ExprKind::Handle(a)
+            | ExprKind::DropArgument(_, _, a) => a.each_mut(f),
             ExprKind::Index(a, b) | ExprKind::Binary(_, a, b) | ExprKind::Pair(a, b) => {
                 a.each_mut(f);
                 b.each_mut(f);
@@ -940,7 +949,8 @@ impl Expr {
             | ExprKind::Unary(_, a)
             | ExprKind::Await(a)
             | ExprKind::Spread(a)
-            | ExprKind::Handle(a) => a.visit_vars(read),
+            | ExprKind::Handle(a)
+            | ExprKind::DropArgument(_, _, a) => a.visit_vars(read),
             ExprKind::Index(a, b) | ExprKind::Binary(_, a, b) | ExprKind::Pair(a, b) => {
                 a.visit_vars(read);
                 b.visit_vars(read);
@@ -995,7 +1005,8 @@ impl Expr {
             | ExprKind::OptionalMember(a, _)
             | ExprKind::Unary(_, a)
             | ExprKind::Await(a)
-            | ExprKind::Spread(a) => a.contains_jsx(),
+            | ExprKind::Spread(a)
+            | ExprKind::DropArgument(_, _, a) => a.contains_jsx(),
             ExprKind::Handle(_) | ExprKind::Pair(..) => false,
             ExprKind::Index(a, b) | ExprKind::Binary(_, a, b) => a.contains_jsx() || b.contains_jsx(),
             ExprKind::Cond(a, b, c) => a.contains_jsx() || b.contains_jsx() || c.contains_jsx(),
@@ -1098,6 +1109,7 @@ impl Expr {
             ExprKind::Member(a, field) => ExprKind::Member(one(a)?, field.clone()),
             ExprKind::OptionalMember(a, field) => ExprKind::OptionalMember(one(a)?, field.clone()),
             ExprKind::Handle(place) => ExprKind::Handle(one(place)?),
+            ExprKind::DropArgument(item, index, drop) => ExprKind::DropArgument(*item, *index, one(drop)?),
             ExprKind::Pair(place, dictionary) => ExprKind::Pair(one(place)?, one(dictionary)?),
             ExprKind::Index(a, b) => ExprKind::Index(one(a)?, one(b)?),
             ExprKind::Array(items) => ExprKind::Array(all(items)?),
@@ -1143,7 +1155,8 @@ impl Expr {
             | ExprKind::Unary(_, a)
             | ExprKind::Await(a)
             | ExprKind::Spread(a)
-            | ExprKind::Handle(a) => a.mentions_var(name),
+            | ExprKind::Handle(a)
+            | ExprKind::DropArgument(_, _, a) => a.mentions_var(name),
             ExprKind::Index(a, b) | ExprKind::Binary(_, a, b) | ExprKind::Pair(a, b) => {
                 a.mentions_var(name) || b.mentions_var(name)
             }
@@ -1243,7 +1256,7 @@ impl Expr {
             | ExprKind::Function(_) => false,
             // It lets other code run meanwhile.
             ExprKind::Await(_) => true,
-            ExprKind::Spread(a) => a.has_effects(),
+            ExprKind::Spread(a) | ExprKind::DropArgument(_, _, a) => a.has_effects(),
             ExprKind::Member(object, _) | ExprKind::OptionalMember(object, _) => object.has_effects(),
             // Making one reads nothing: its getter does, later.
             ExprKind::Handle(_) => false,

@@ -4,33 +4,23 @@ import { $traitImpl } from "@rust-js/runtime";
 
 var $wrapConsume, $wrapTake, $wrapReset, $loudDefault;
 
-function eat(c, CConsume, dropC) {
+function eat(c, CConsume) {
   return CConsume.consume(c);
 }
 
-function taken(c, CTake, dropC) {
+function taken(c, CTake) {
   return CTake.take(c);
 }
 
 function main() {
   console.log(
-    `${eat(
-      [["through the dictionary"]],
-      wrapConsume({ clone: (value) => value }, loudDrop_drop),
-      (wrap) => {
-        loudDrop_drop(wrap[0]);
-      },
-    )}`,
+    `${eat([["through the dictionary"]], wrapConsume({ clone: (value) => value }, loudDrop_drop))}`,
   );
   console.log(
     `${wrapConsume_consume([["called directly"]], { clone: (value) => value }, loudDrop_drop)}`,
   );
   console.log(`${eat([5], wrapConsume({ clone: (value) => value }))}`);
-  console.log(
-    `${taken([7], wrapTake())} ${taken([["taken"]], wrapTake(loudDrop_drop), (wrap$1) => {
-      loudDrop_drop(wrap$1[0]);
-    })}`,
-  );
+  console.log(`${taken([7], wrapTake())} ${taken([["taken"]], wrapTake(loudDrop_drop))}`);
   console.log(`${taken([8], wrapTake())}`);
   const wrapped = [["replaced"]];
   try {

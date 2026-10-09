@@ -19,6 +19,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (mut params, is_async) = self.lower_signature(def_id, &thir.params.raw, body.expr, &mut out)?;
         params.extend(evidence);
         self.check_drops()?;
+        self.note_drop_uses(def_id);
 
         Ok(LoweredFn {
             function: js::Function {

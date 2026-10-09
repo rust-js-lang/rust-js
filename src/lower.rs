@@ -327,6 +327,8 @@ struct CrateFacts<'a, 'tcx> {
     /// of, and the calls of them to check once all are lowered (ADR 0190).
     no_drops: &'a RefCell<HashMap<DefId, BTreeSet<u32>>>,
     drop_checks: &'a RefCell<Vec<drops::DropCheck>>,
+    /// What the functions that take only the drops they use did with them (ADR 0300).
+    drop_uses: &'a RefCell<drops::DropUses>,
     closures: &'a HashMap<LocalDefId, &'a Body<'tcx>>,
     bodies: &'a HashMap<DefId, &'a Body<'tcx>>,
     fns: &'a HashMap<DefId, FnInfo>,

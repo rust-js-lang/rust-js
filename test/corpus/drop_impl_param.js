@@ -4,18 +4,14 @@ import { $traitImpl } from "@rust-js/runtime";
 
 var $wrapPeek;
 
-function peeked(p, PPeek, dropP) {
+function peeked(p, PPeek) {
   return PPeek.peek(p);
 }
 
 function main() {
   const w = [["kept"]];
   try {
-    console.log(
-      `${peeked(w, wrapPeek({ clone: (value) => value }, loudDrop_drop), (wrap) => {
-        loudDrop_drop(wrap[0]);
-      })}`,
-    );
+    console.log(`${peeked(w, wrapPeek({ clone: (value) => value }, loudDrop_drop))}`);
     console.log(`${wrapPeek_peek(w, { clone: (value) => value }, loudDrop_drop)}`);
     console.log(`${peeked([1], wrapPeek({ clone: (value) => value }))}`);
   } finally {

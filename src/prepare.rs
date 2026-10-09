@@ -495,7 +495,8 @@ fn expr(e: &mut Expr) {
         | ExprKind::Unary(_, a)
         | ExprKind::Await(a)
         | ExprKind::Spread(a)
-        | ExprKind::Handle(a) => expr(a),
+        | ExprKind::Handle(a)
+        | ExprKind::DropArgument(_, _, a) => expr(a),
         ExprKind::Index(a, b) | ExprKind::Binary(_, a, b) | ExprKind::Pair(a, b) => {
             expr(a);
             expr(b);

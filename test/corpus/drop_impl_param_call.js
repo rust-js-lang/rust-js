@@ -8,7 +8,7 @@ function discard(_u, dropU) {
   dropU?.(_u);
 }
 
-function peeked(p, PPeek, dropP) {
+function peeked(p, PPeek) {
   return PPeek.peek(p);
 }
 
@@ -22,9 +22,6 @@ function main() {
         wrapPeek({ clone: (value) => value }, (loud) => {
           loudDrop_drop({ value: loud });
         }),
-        (wrap) => {
-          loudDrop_drop({ value: wrap[0] });
-        },
       )}`,
     );
     w$live = false;

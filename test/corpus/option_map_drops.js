@@ -9,7 +9,7 @@ function make(n) {
   return;
 }
 
-function wrapped(value, dropT) {
+function wrapped(value) {
   return value != null ? [$someValue(value)] : undefined;
 }
 
@@ -37,7 +37,7 @@ function checked(n) {
   return { TAG: "Err", _0: `${n} is too big` };
 }
 
-function wrapped_result(value, dropT) {
+function wrapped_result(value) {
   return value.TAG === "Ok" ? { TAG: "Ok", _0: [value._0] } : value;
 }
 
@@ -93,7 +93,7 @@ function main() {
     const none = value$1 ? [value$1] : undefined;
     try {
       console.log(`none ${!none}`);
-      const generic = wrapped(make(3), dDrop_drop);
+      const generic = wrapped(make(3));
       try {
         console.log(`generic ${generic != null ? generic[0][0] : 0}`);
         kept$live = false;
@@ -169,7 +169,7 @@ function main() {
                 }
               }
             }
-            const generic$1 = wrapped_result(checked(2), dDrop_drop);
+            const generic$1 = wrapped_result(checked(2));
             try {
               console.log(`generic ${generic$1.TAG === "Ok" ? generic$1._0[0][0] : 0}`);
               console.log(

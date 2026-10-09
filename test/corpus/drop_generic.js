@@ -20,7 +20,7 @@ function consume(value, dropT) {
   }
 }
 
-function keep(value, dropT) {
+function keep(value) {
   return value;
 }
 
@@ -50,7 +50,7 @@ function shown(x, Display, dropDisplay) {
 function main() {
   consume(["a"], noisyDrop_drop);
   consume(5);
-  const kept = keep(["b"], noisyDrop_drop);
+  const kept = keep(["b"]);
   try {
     const copy = first([["c"], ["d"]], { clone: (value) => value }, noisyDrop_drop);
     try {

@@ -69,7 +69,7 @@ const Mapped = {
       }
     }
   },
-  count(mapped, dropT) {
+  count(mapped) {
     if (mapped === "None") {
       return 0;
     }
@@ -134,28 +134,28 @@ function main() {
     loudDrop_drop,
   );
   try {
-    console.log(`both ${Mapped.count(both, loudDrop_drop)}`);
+    console.log(`both ${Mapped.count(both)}`);
     const one = Mapped.and_then(
       { TAG: "Ambiguous", _0: "c", _1: "d" },
       (n) => make(n, n === "c"),
       loudDrop_drop,
     );
     try {
-      console.log(`one ${Mapped.count(one, loudDrop_drop)}`);
+      console.log(`one ${Mapped.count(one)}`);
       const single = Mapped.and_then(
         { TAG: "Single", _0: "e" },
         (n) => make(n, true),
         loudDrop_drop,
       );
       try {
-        console.log(`single ${Mapped.count(single, loudDrop_drop)}`);
+        console.log(`single ${Mapped.count(single)}`);
         const none = Mapped.and_then(
           { TAG: "Single", _0: "f" },
           (n) => make(n, false),
           loudDrop_drop,
         );
         try {
-          console.log(`none ${Mapped.count(none, loudDrop_drop)}`);
+          console.log(`none ${Mapped.count(none)}`);
           console.log(`first ${first("g")}`);
           console.log(`first ${first(undefined)}`);
           console.log("end");

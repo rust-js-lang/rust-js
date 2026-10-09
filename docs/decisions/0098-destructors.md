@@ -155,7 +155,8 @@ function main() {
   `T` has nothing to run passes none; one whose drop is its `drop` passes
   that, `noisyDrop_drop`, and another an arrow. (Amended as it was done:
   read as first written, nearly every generic function that owns a `T`
-  would take one, since a panic before a move leaves it owned.)
+  would take one, since a panic before a move leaves it owned.) (Amended
+  again: one called by name keeps only the drops its body uses, ADR 0300.)
 
   ```rust
   fn consume<T>(value: T) {}

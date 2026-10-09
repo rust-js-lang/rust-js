@@ -1317,8 +1317,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(item) => item.drops.as_slice(),
             None => self.krate.drop_params.get(&id).map_or(&[][..], Vec::as_slice),
         };
+        // One that takes only the drops it uses is given each as an argument
+        // the pipeline keeps or leaves out (ADR 0300).
+        let takes_used = self.krate.drop_uses.borrow().takes_used(id);
         for &index in given {
-            drops.push(self.drop_function(args.type_at(index as usize), span)?);
+            let ty = args.type_at(index as usize);
+            drops.push(match takes_used {
+                true => Some(self.drop_argument(id, index, ty, span)?),
+                false => self.drop_function(ty, span)?,
+            });
         }
         while matches!(drops.last(), Some(None)) {
             drops.pop();

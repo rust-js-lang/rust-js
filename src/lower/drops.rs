@@ -11,6 +11,7 @@ use std::cell::RefCell;
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::rc::Rc;
 
+use rustc_hir::def::DefKind;
 use rustc_hir::{self as hir, HirId, Node};
 use rustc_middle::middle::region;
 use rustc_middle::thir::{BlockId, ExprId, ExprKind, LocalVarId, Pat, StmtKind as ThirStmt};
@@ -1235,6 +1236,43 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(Expr::arrow(vec![param.into()], body)))
     }
 
+    /// The drop function for a `ty` that `callee`, which takes only the
+    /// drops it uses, is given for its type parameter `index`: an argument
+    /// the pipeline keeps where `callee` uses it (ADR 0300). The drops of
+    /// this function's that it's made of are passed on, not used, where
+    /// this function takes only those it uses too.
+    pub(super) fn drop_argument(&mut self, callee: DefId, index: u32, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let before = std::mem::take(&mut self.drop_state.used_drops);
+        let drop = self.drop_function(ty, span);
+        let through = std::mem::replace(&mut self.drop_state.used_drops, before);
+        if !self.in_copied_default() && self.krate.drop_uses.borrow().takes_used(self.item) {
+            let mut uses = self.krate.drop_uses.borrow_mut();
+            uses.passed
+                .extend(through.into_iter().map(|param| ((self.item, param), (callee, index))));
+        } else {
+            self.drop_state.used_drops.extend(through);
+        }
+        let drop = drop?.unwrap_or_else(Expr::undefined);
+        Ok(Expr::drop_argument(callee.index.as_u32(), index, drop))
+    }
+
+    /// Note which drops `id`, which takes only those it uses, used, and the
+    /// names it took them by (ADR 0300).
+    pub(super) fn note_drop_uses(&self, id: DefId) {
+        let mut uses = self.krate.drop_uses.borrow_mut();
+        if !uses.takes_used(id) {
+            return;
+        }
+        uses.used
+            .extend(self.drop_state.used_drops.iter().map(|&param| (id, param)));
+        let names = self
+            .drop_state
+            .param_drops
+            .iter()
+            .map(|(&index, name)| (index, name.clone()));
+        uses.names.insert(id, names.collect());
+    }
+
     /// A value its scope drops that no variable names, as a `_` parameter.
     pub(super) fn own_value(&mut self, value: Expr, ty: Ty<'tcx>) {
         self.drop_state.owned.push(Owned {
@@ -1635,6 +1673,153 @@ pub(super) fn check_no_drops(
         }
     }
     !reported.is_empty()
+}
+
+/// What the crate's functions that take only the drops they use did with
+/// them, as each was lowered (ADR 0300): those they used, those they passed
+/// on as another's, and the names they took them by.
+#[derive(Default)]
+pub(super) struct DropUses {
+    takes_used: HashSet<DefId>,
+    used: HashSet<(DefId, u32)>,
+    passed: Vec<((DefId, u32), (DefId, u32))>,
+    names: HashMap<DefId, Vec<(u32, String)>>,
+}
+
+impl DropUses {
+    /// Each function given drops that's called where it's named, whose
+    /// callers are all seen or told by its manifest: not a trait's method,
+    /// which a dictionary's callers call, nor an impl's.
+    pub(super) fn new(tcx: TyCtxt<'_>, drop_params: &HashMap<DefId, Vec<u32>>) -> DropUses {
+        let takes_used = drop_params
+            .keys()
+            .copied()
+            .filter(|&id| {
+                id.is_local()
+                    && tcx.trait_of_assoc(id).is_none()
+                    && tcx.trait_impl_of_assoc(id).is_none()
+                    && !matches!(tcx.def_kind(id), DefKind::Impl { .. })
+            })
+            .collect();
+        DropUses {
+            takes_used,
+            ..DropUses::default()
+        }
+    }
+
+    pub(super) fn takes_used(&self, id: DefId) -> bool {
+        self.takes_used.contains(&id)
+    }
+
+    /// The drops each function keeps, those it uses or passes on to one
+    /// that keeps it, in `drop_params`; and the lowered functions with only
+    /// those, as parameters and arguments.
+    pub(super) fn keep(self, drop_params: &mut HashMap<DefId, Vec<u32>>, items: &mut [(DefId, super::LoweredFn)]) {
+        let mut kept = self.used;
+        let mut changed = true;
+        while changed {
+            changed = false;
+            for &(from, to) in &self.passed {
+                if kept.contains(&to) && kept.insert(from) {
+                    changed = true;
+                }
+            }
+        }
+        for id in &self.takes_used {
+            if let Some(indices) = drop_params.get_mut(id) {
+                indices.retain(|&index| kept.contains(&(*id, index)));
+            }
+        }
+        for (id, item) in items {
+            if let Some(names) = self.names.get(id) {
+                let unused: HashSet<&str> = names
+                    .iter()
+                    .filter(|&&(index, _)| !kept.contains(&(*id, index)))
+                    .map(|(_, name)| name.as_str())
+                    .collect();
+                item.function
+                    .params
+                    .retain(|param| !matches!(param, js::Pattern::Name(name) if unused.contains(name.as_str())));
+            }
+            js::each_expr_mut(&mut item.function.body, &mut |e| keep_arguments(e, &kept));
+        }
+    }
+}
+
+/// `e` with only the drop arguments kept: a call's, and the call an arrow
+/// that only passes its parameters on is, which is then its callee,
+/// `(arg0) => keep(arg0)` being `keep`.
+fn keep_arguments(e: &mut Expr, kept: &HashSet<(DefId, u32)>) {
+    let local = |item: u32| DefId {
+        krate: rustc_span::def_id::LOCAL_CRATE,
+        index: rustc_span::def_id::DefIndex::from_u32(item),
+    };
+    let keep = |args: &mut Vec<Expr>| {
+        let mut given = Vec::new();
+        for arg in std::mem::take(args) {
+            match arg.kind {
+                js::ExprKind::DropArgument(item, index, drop) if kept.contains(&(local(item), index)) => {
+                    given.push((*drop, true));
+                }
+                js::ExprKind::DropArgument(..) => {}
+                _ => given.push((arg, false)),
+            }
+        }
+        while matches!(given.last(), Some((drop, true)) if matches!(drop.kind, js::ExprKind::Undefined)) {
+            given.pop();
+        }
+        *args = given.into_iter().map(|(arg, _)| arg).collect();
+    };
+    let has_drops = |args: &[Expr]| args.iter().any(|a| matches!(a.kind, js::ExprKind::DropArgument(..)));
+    let callee = match &mut e.kind {
+        js::ExprKind::Arrow(params, body) => {
+            let [
+                Stmt {
+                    kind: StmtKind::Return(Some(call)),
+                    ..
+                },
+            ] = body.as_mut_slice()
+            else {
+                return;
+            };
+            let js::ExprKind::Call(callee, args) = &mut call.kind else {
+                return;
+            };
+            if !has_drops(args) {
+                return;
+            }
+            keep(args);
+            let names: Vec<&str> = params
+                .iter()
+                .filter_map(|param| match param {
+                    js::Pattern::Name(name) => Some(name.as_str()),
+                    _ => None,
+                })
+                .collect();
+            let passed = names.len() == params.len()
+                && names.len() == args.len()
+                && names
+                    .iter()
+                    .zip(args.iter())
+                    .all(|(name, arg)| matches!(&arg.kind, js::ExprKind::Var(a) if a == name))
+                && match &callee.kind {
+                    js::ExprKind::Var(name) => !names.contains(&name.as_str()),
+                    js::ExprKind::Symbol(_) => true,
+                    _ => false,
+                };
+            passed.then(|| (**callee).clone())
+        }
+        js::ExprKind::Call(_, args) | js::ExprKind::OptionalCall(_, args) | js::ExprKind::New(_, args)
+            if has_drops(args) =>
+        {
+            keep(args);
+            None
+        }
+        _ => None,
+    };
+    if let Some(callee) = callee {
+        *e = callee;
+    }
 }
 
 /// The name of `callee`'s type parameter `index`, `I`.

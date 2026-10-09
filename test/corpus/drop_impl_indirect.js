@@ -9,7 +9,7 @@ function helper(u, UClone, dropU) {
   dropU?.(_copy);
 }
 
-function peeked(p, PPeek, dropP) {
+function peeked(p, PPeek) {
   return PPeek.peek(p);
 }
 
@@ -21,30 +21,17 @@ function valued(v, VValue) {
   return VValue.value(v);
 }
 
-function take(value, TTake, dropT) {
+function take(value, TTake) {
   TTake.take(value);
 }
 
 function main() {
   const lent = [["lent"]];
   try {
-    console.log(
-      `${peeked(lent, wrapPeek({ clone: (value) => value }, loudDrop_drop), (wrap) => {
-        loudDrop_drop(wrap[0]);
-      })}`,
-    );
-    take([["taken by a default"]], wrapTake(loudDrop_drop), (wrap$1) => {
-      loudDrop_drop(wrap$1[0]);
-    });
-    take(
-      [["first of a pair"], ["second of a pair"]],
-      pairTake(loudDrop_drop, loudDrop_drop),
-      (pair) => {
-        loudDrop_drop(pair[0]);
-        loudDrop_drop(pair[1]);
-      },
-    );
-    take(["taken itself"], loudTake(), loudDrop_drop);
+    console.log(`${peeked(lent, wrapPeek({ clone: (value) => value }, loudDrop_drop))}`);
+    take([["taken by a default"]], wrapTake(loudDrop_drop));
+    take([["first of a pair"], ["second of a pair"]], pairTake(loudDrop_drop, loudDrop_drop));
+    take(["taken itself"], loudTake());
     wrapPass(loudDrop_drop).pass([["passed to a helper"]]);
     console.log(`${valued(1, rcValue())}`);
     console.log("end");

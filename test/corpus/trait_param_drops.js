@@ -4,11 +4,11 @@ import { $traitImpl } from "@rust-js/runtime";
 
 var $sinkTakeA, $relayTakeA, $wrapTakeNoisy, $keepTakeA;
 
-function via(t, a, TTakeA, dropA) {
+function via(t, a, TTakeA) {
   return TTakeA.take(t, a);
 }
 
-function build(a, TTakeA, dropA) {
+function build(a, TTakeA) {
   return TTakeA.make(a);
 }
 
@@ -17,19 +17,13 @@ function main() {
   console.log(
     `${relayTakeA_take([[undefined]], [2], relayTakeA(sinkTakeA(noisyDrop_drop), noisyDrop_drop), noisyDrop_drop)}`,
   );
-  console.log(
-    `${via([undefined], [3], relayTakeA(sinkTakeA(noisyDrop_drop), noisyDrop_drop), noisyDrop_drop)}`,
-  );
+  console.log(`${via([undefined], [3], relayTakeA(sinkTakeA(noisyDrop_drop), noisyDrop_drop))}`);
   console.log(`${via(undefined, 4, sinkTakeA())}`);
   const w = [0];
   console.log(
-    `${wrapTakeNoisy({ default: () => 0 }).take(w, [5])} ${via(w, [6], wrapTakeNoisy({ default: () => 0 }), noisyDrop_drop)}`,
+    `${wrapTakeNoisy({ default: () => 0 }).take(w, [5])} ${via(w, [6], wrapTakeNoisy({ default: () => 0 }))}`,
   );
-  const _built = build(
-    [7],
-    relayTakeA(wrapTakeNoisy({ default: () => 0 }), noisyDrop_drop),
-    noisyDrop_drop,
-  );
+  const _built = build([7], relayTakeA(wrapTakeNoisy({ default: () => 0 }), noisyDrop_drop));
   console.log(`${sinkTakeA_take(undefined, [8], noisyDrop_drop)}`);
   const box = { impl: sinkTakeA(noisyDrop_drop) };
   let box$live = true;

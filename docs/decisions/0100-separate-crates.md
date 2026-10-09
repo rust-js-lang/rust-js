@@ -129,7 +129,7 @@ crosses:**
 - **A public generic function takes a `dropT` for each type parameter a
   caller could give a value with a destructor,** one that isn't `Copy`.
   A caller whose `T` has none passes nothing, which `dropT?.(x)` already
-  handles.
+  handles. (Amended: only where its body uses it, ADR 0300.)
 - **A derived impl or codec a consumer can reach is kept and exported.** A
   codec rust-js can't write, of a type it can't read or write, is then an
   error when the library is compiled, not when a consumer uses it.

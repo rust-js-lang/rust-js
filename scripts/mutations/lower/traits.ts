@@ -27,14 +27,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "dyn_drops"],
   },
   {
-    name: "generic-drop-not-given",
-    breaks: "a generic function given a value with a destructor isn't given its drop, and never drops it",
-    file: "src/lower/traits.rs",
-    find: "        for &index in given {\n            drops.push(self.drop_function(args.type_at(index as usize), span)?);\n",
-    replace: "        for &index in given {\n            drops.push(None);\n",
-    tests: ["test/corpus.test.ts", "-t", "drop_generic"],
-  },
-  {
     name: "impl-dictionary-cache-undropped",
     breaks: "a generic impl's dictionary is cached by its dictionaries only, not the drops it's given",
     file: "src/lower/traits.rs",
@@ -768,5 +760,13 @@ export const mutations: Mutation[] = [
     find: "    if tcx.is_lang_item(tr.def_id, LangItem::Copy)\n        && super::analysis::copies_by_callers(tcx, id)",
     replace: "    if false\n        && super::analysis::copies_by_callers(tcx, id)",
     tests: ["test/lowering.test.ts", "-t", "a Copy bound takes a copy only"],
+  },
+  {
+    name: "drops-by-need-unmarked",
+    breaks: "a call gives every drop its callee took before, where it now takes only those it uses",
+    file: "src/lower/traits.rs",
+    find: "                true => Some(self.drop_argument(id, index, ty, span)?),\n",
+    replace: "                true => self.drop_function(ty, span)?,\n",
+    tests: ["test/crates.test.ts", "-t", "drops_by_need"],
   },
 ];

@@ -64,7 +64,7 @@ pub fn lower_crate<'tcx>(
         paths,
         mutated,
         changed_vecs,
-        drop_params,
+        mut drop_params,
         copied,
         type_facts,
         failing,
@@ -172,6 +172,7 @@ pub fn lower_crate<'tcx>(
     let foreign = super::library::Foreign::new(tcx, dependencies);
     let no_drops = RefCell::new(HashMap::new());
     let drop_checks = RefCell::new(Vec::new());
+    let drop_uses = RefCell::new(super::drops::DropUses::new(tcx, &drop_params));
     let called_bodies = rustc_arena::TypedArena::default();
     let crate_facts = CrateFacts {
         called_bodies: &called_bodies,
@@ -188,6 +189,7 @@ pub fn lower_crate<'tcx>(
         any_failing: !failing.is_empty() || foreign.any_fails(),
         no_drops: &no_drops,
         drop_checks: &drop_checks,
+        drop_uses: &drop_uses,
         closures: &closures,
         bodies: &function_bodies,
         fns: &fns,
@@ -310,6 +312,8 @@ pub fn lower_crate<'tcx>(
     if failed {
         return None;
     }
+    // Only the drops each function uses (ADR 0300).
+    drop_uses.into_inner().keep(&mut drop_params, &mut lowered_items);
 
     // Reachability for derived Debug implementations, with adjacency lists
     // rather than scanning every edge again for every reached function.

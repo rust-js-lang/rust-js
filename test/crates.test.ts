@@ -151,6 +151,35 @@ for (const name of readdirSync(pairs).sort()) {
   }, 300_000);
 }
 
+// A library's generic function is given a drop for a type parameter only
+// where its body drops one, itself or through what it calls (ADR 0300): one
+// that moves its value first, or passes it on to one that does, takes none.
+// `two crates: drops_by_need` runs it against native Rust.
+test("a library's generic function takes the drops its body uses", () => {
+  const dir = fixture("drops-by-need");
+  run([compiler, join(pairs, "drops_by_need", "dep.rs"), "-o", join(dir, "lib.js"), "--library", "--manifest", join(dir, "lib.manifest.json"),
+    "--", "--crate-name", "dep", `--emit=metadata=${join(dir, "libdep.rmeta")}`]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const signatures = js.split("\n").filter((line) => line.startsWith("export function"));
+  expect(signatures).toEqual([
+    "export function keep(value) {",
+    "export function pick(a, _b, dropB) {",
+    "export function relay(value) {",
+    "export function discard(value, dropT) {",
+    "export function apply(f, a) {",
+    "export function keep_by(value) {",
+  ]);
+  const items = JSON.parse(readFileSync(join(dir, "lib.manifest.json"), "utf8")).library.items;
+  expect(Object.fromEntries(items.map((item: { export: string; drops: number[] }) => [item.export, item.drops]))).toEqual({
+    keep: [], pick: [1], relay: [], discard: [0], apply: [], keep_by: [],
+  });
+  // What each call gives: only the drops its callee takes, and a function
+  // given as a value is itself.
+  expect(js).toContain("return keep(value);");
+  expect(js).toContain("pick(undefined, value, dropT);");
+  expect(js).toContain("return apply(keep, value);");
+}, 300_000);
+
 // A library's generic trait method is given a drop for its own type
 // parameters, as its trait declares them (ADR 0163): a consumer's value with
 // a destructor is dropped where Rust drops it, at the end of `put`, called on

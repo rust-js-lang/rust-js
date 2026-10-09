@@ -23,7 +23,7 @@ function keep(_f, dropF) {
   }
 }
 
-function run(f, dropF) {
+function run(f) {
   f();
 }
 
@@ -87,21 +87,15 @@ function main() {
       }
       const p = ["p"];
       const q = ["q"];
-      run(
-        () => {
-          try {
-            const [x, y] = [p, q];
-            console.log(`both ${x[0]} ${y[0]}`);
-          } finally {
-            noisyDrop_drop(p);
-            noisyDrop_drop(q);
-          }
-        },
-        (value) => {
+      run(() => {
+        try {
+          const [x, y] = [p, q];
+          console.log(`both ${x[0]} ${y[0]}`);
+        } finally {
           noisyDrop_drop(p);
           noisyDrop_drop(q);
-        },
-      );
+        }
+      });
       let r = ["r1"];
       let r$live = true;
       try {
