@@ -1972,21 +1972,27 @@ export function $tryBorrow(cell, mutable) {
 }
 
 // What `f` makes of a `RefCell`'s value while it's borrowed: its clone, or
-// whether it's equal, where `f` may ask too.
+// whether it's equal, where `f` may ask too. A panic's unwinding releases
+// it before what it drops can ask.
 export function $withBorrow(cell, f) {
-  const result = f($borrow(cell, true).value);
-  $unborrow(cell);
-  return result;
+  $borrow(cell, true);
+  try {
+    return f(cell.value);
+  } finally {
+    $unborrow(cell);
+  }
 }
 
 // What `f` makes of a `&mut` to a `RefCell`'s value while it's mutably
 // borrowed, the cell itself for a number or text (ADR 0074): a
 // thread-local's `with_borrow_mut(f)`.
 export function $withBorrowMut(cell, f, boxed) {
-  const held = $borrowMut(cell, true);
-  const result = f(boxed ? held : held.value);
-  $unborrow(cell);
-  return result;
+  $borrowMut(cell, true);
+  try {
+    return f(boxed ? cell : cell.value);
+  } finally {
+    $unborrow(cell);
+  }
 }
 
 // A `RefCell`'s `{:?}`: what it holds, shown by `show` while it's borrowed,
@@ -2009,8 +2015,11 @@ export function $replaceWith(cell, f, boxed) {
 // second is, so a cell swapped with itself is borrowed twice.
 export function $refCellSwap(a, b) {
   $borrowMut(a, true);
-  $borrowMut(b);
-  $unborrow(a);
+  try {
+    $borrowMut(b);
+  } finally {
+    $unborrow(a);
+  }
   [a.value, b.value] = [b.value, a.value];
 }
 

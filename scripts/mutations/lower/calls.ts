@@ -168,7 +168,7 @@ export const mutations: Mutation[] = [
     name: "option-map-drops-refused",
     breaks: "`map` of an `Option` whose value has a destructor is an error",
     file: "src/lower/calls.rs",
-    find: "                    // Moves its value into the function, which owns it then.\n                    | Std::OptionMap\n",
+    find: "                    // drops the other variant's, or passes it on (ADR 0179).\n                    | Std::OptionMap\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "option_map_drops"],
   },
@@ -176,8 +176,8 @@ export const mutations: Mutation[] = [
     name: "result-map-drops-refused",
     breaks: "`map` of a `Result` whose value has a destructor is an error",
     file: "src/lower/calls.rs",
-    find: "                    | Std::Comb(Comb::ResultMap | Comb::Filter | Comb::MapOr)\n",
-    replace: "                    | Std::Comb(Comb::Filter | Comb::MapOr)\n",
+    find: "                        Comb::ResultMap\n                            | Comb::Filter\n",
+    replace: "                        Comb::Filter\n",
     tests: ["test/corpus.test.ts", "-t", "option_map_drops"],
   },
   {
@@ -413,5 +413,13 @@ export const mutations: Mutation[] = [
     find: "                    // What a guard guards, through its `&mut` (ADR 0328).\n                    | Std::GuardValue { .. }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^locks"],
+  },
+  {
+    name: "is-some-and-of-drops-refused",
+    breaks: "`is_some_and` of a value with a destructor is an error",
+    file: "src/lower/calls.rs",
+    find: "                            | Comb::IsSomeAnd\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "combinators_owned_drops"],
   },
 ];

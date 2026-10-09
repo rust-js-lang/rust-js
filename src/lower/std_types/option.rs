@@ -3,6 +3,7 @@
 use crate::js;
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
 use crate::lower::calls::{Call, apply};
+use crate::lower::drops::Drops;
 use crate::lower::patterns::same_place;
 use crate::lower::places::PreparedPlace;
 use crate::lower::recognition::Std;
@@ -85,6 +86,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // `r.TAG === "Ok" ? r._0 : d`, with `r` computed once, and `d` too,
             // before the test, as Rust does.
+            // An `Err` with a destructor is dropped (ADR 0179).
+            Std::ResultOk if self.drops(generic_args.type_at(1)) != Drops::Nothing => {
+                let result = arg();
+                let result = if result.reads_same() {
+                    result
+                } else {
+                    self.spill("result", result, out)
+                };
+                let ok = Expr::bin(Op::Eq, Expr::member(result.clone(), "TAG"), Expr::str("Ok"));
+                let value = Expr::member(result.clone(), "_0");
+                let value = if boxed { self.some(value) } else { value };
+                let name = self.fresh("value");
+                let then = vec![StmtKind::Assign(Expr::var(&name), value).at(js::Span::NONE)];
+                let error = (Expr::member(result, "_0"), generic_args.type_at(1));
+                self.or_dropped(ok, name, then, error, Expr::undefined(), span, out)?
+            }
             Std::ResultOk | Std::ResultOr => {
                 let mut result = arg();
                 if result.has_effects() {

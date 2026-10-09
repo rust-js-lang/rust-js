@@ -635,9 +635,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::CellReplace
                     | Std::CellTake
                     | Std::CellReplaceWith
-                    // Moves its value into the function, which owns it then.
+                    // Moves its value into the function, which owns it then, and
+                    // drops the other variant's, or passes it on (ADR 0179).
                     | Std::OptionMap
-                    | Std::Comb(Comb::ResultMap | Comb::Filter | Comb::MapOr)
+                    | Std::Comb(
+                        Comb::ResultMap
+                            | Comb::Filter
+                            | Comb::MapOr
+                            | Comb::MapOrElse
+                            | Comb::AndThen
+                            | Comb::UnwrapOrElse
+                            | Comb::IsSomeAnd
+                            | Comb::IsNoneOr
+                            | Comb::MapErr
+                            | Comb::ResultMapOr
+                            | Comb::ResultMapOrElse
+                            | Comb::ResultAndThen
+                            | Comb::ResultUnwrapOrElse
+                            | Comb::IsOkAnd
+                            | Comb::IsErrAnd
+                            | Comb::Err
+                    )
+                    | Std::ResultOk
                     | Std::VecMacro
                     | Std::Unwrap
                     | Std::UnwrapUnchecked

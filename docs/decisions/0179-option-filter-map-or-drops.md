@@ -52,6 +52,14 @@ if (option != null) {
   it was, `option != null && even(option) ? option : undefined`.
 - **The value moves into `map_or`'s function,** which drops it, as
   `map`'s does.
+- (Amended: the other combinators that give their value to a function
+  do too, `is_some_and`, `is_none_or`, `and_then`, `map_or_else`,
+  `unwrap_or_else`, and a `Result`'s `map_err`, `and_then`, `map_or_else`
+  and `unwrap_or_else`; and what a `Result`'s combinator gives up is
+  dropped: `is_ok_and`'s `Err`, `is_err_and`'s `Ok`, `ok()`'s `Err`,
+  `err()`'s `Ok`, and `map_or`'s `Err`, or its fallback once `f` has run.
+  The `combinators_owned_drops` corpus case runs each against native
+  Rust.)
 
 ## Why
 

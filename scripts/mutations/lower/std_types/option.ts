@@ -208,4 +208,12 @@ export const mutations: Mutation[] = [
     replace: "            true => place.clone(),\n",
     tests: ["test/corpus.test.ts", "-t", "option_result_methods"],
   },
+  {
+    name: "ok-of-err-undropped",
+    breaks: "`ok()` of an `Err` with a destructor leaves it undropped",
+    file: "src/lower/std_types/option.rs",
+    find: "            Std::ResultOk if self.drops(generic_args.type_at(1)) != Drops::Nothing => {",
+    replace: "            Std::ResultOk if false => {",
+    tests: ["test/corpus.test.ts", "-t", "combinators_owned_drops"],
+  },
 ];

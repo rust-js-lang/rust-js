@@ -429,6 +429,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ])
     }
 
+    /// `name`, set by `then` where `test` holds, and otherwise to `otherwise`
+    /// once `given_up`, the other variant's value std drops, is dropped
+    /// (ADR 0179): `let holds; if (r.TAG === "Ok") { holds = f(r._0); } else
+    /// { eDrop_drop(r._0); holds = false; }`.
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn or_dropped(
+        &mut self,
+        test: Expr,
+        name: String,
+        then: Vec<Stmt>,
+        given_up: (Expr, Ty<'tcx>),
+        otherwise: Expr,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let js_span = self.js_span(span);
+        let mut dropped = Vec::new();
+        self.drop_value(given_up.0, given_up.1, span, &mut dropped)?;
+        dropped.push(StmtKind::Assign(Expr::var(&name), otherwise).at(js_span));
+        out.push(StmtKind::Let(name.clone(), None).at(js_span));
+        out.push(StmtKind::If(test, then, Some(dropped)).at(js_span));
+        Ok(Expr::var(&name))
+    }
+
     /// One of `Comb`'s: `args[0]` the `Option`, `Result` or `Vec`.
     pub(super) fn comb_call(
         &mut self,
@@ -632,6 +656,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let fallback = self.call_with(g, Vec::new(), "fallback", out);
                 Expr::cond(some, mapped, fallback)
             }
+            // An `Err` with a destructor is dropped, and a fallback with one
+            // once `f` has run, or thrown (ADR 0179).
+            Comb::ResultMapOr
+                if self.drops(generic_args.type_at(1)) != Drops::Nothing
+                    || self.drops(self.thir[args[1]].ty) != Drops::Nothing =>
+            {
+                let fallback_ty = self.thir[args[1]].ty;
+                let fallback = next();
+                let fallback = match fallback.kind {
+                    js::ExprKind::Var(_) => fallback,
+                    _ => self.spill("fallback", fallback, out),
+                };
+                let f = next();
+                let name = self.fresh("mapped");
+                let mut body = Vec::new();
+                let mapped = self.call_with(f, vec![inside()], "map", &mut body);
+                body.push(StmtKind::Assign(Expr::var(&name), mapped).at(js::Span::NONE));
+                let mut unused = Vec::new();
+                self.drop_value(fallback.clone(), fallback_ty, span, &mut unused)?;
+                let then = match unused.is_empty() {
+                    true => body,
+                    false => vec![StmtKind::Try(body, unused).at(self.js_span(span))],
+                };
+                let error = (inside(), generic_args.type_at(1));
+                self.or_dropped(tag("Ok"), name, then, error, fallback, span, out)?
+            }
             Comb::ResultMapOr => {
                 let fallback = next();
                 let fallback = eager(self, fallback, out);
@@ -734,6 +784,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let ok_ty = generic_args.type_at(0);
                 let fallback = self.default_value(ok_ty, span)?;
                 Expr::cond(tag("Ok"), inside(), fallback)
+            }
+            // An `Ok` with a destructor is dropped (ADR 0179).
+            Comb::Err if self.drops(generic_args.type_at(0)) != Drops::Nothing => {
+                let name = self.fresh("error");
+                let then = vec![StmtKind::Assign(Expr::var(&name), inside()).at(js::Span::NONE)];
+                let value = (inside(), generic_args.type_at(0));
+                self.or_dropped(tag("Err"), name, then, value, Expr::undefined(), span, out)?
             }
             Comb::Err => Expr::cond(tag("Err"), inside(), Expr::undefined()),
             // Rust works out `b` either way: in a `const` first if it has effects.
@@ -863,6 +920,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     false => subject,
                 }
+            }
+            // The other variant's value, with a destructor, is dropped (ADR 0179).
+            Comb::IsOkAnd | Comb::IsErrAnd
+                if self.drops(generic_args.type_at(usize::from(comb == Comb::IsOkAnd))) != Drops::Nothing =>
+            {
+                let p = next();
+                let which = if comb == Comb::IsOkAnd { "Ok" } else { "Err" };
+                let name = self.fresh("holds");
+                let mut then = Vec::new();
+                let holds = self.call_with(p, vec![inside()], "holds", &mut then);
+                then.push(StmtKind::Assign(Expr::var(&name), holds).at(js::Span::NONE));
+                let other = (inside(), generic_args.type_at(usize::from(comb == Comb::IsOkAnd)));
+                self.or_dropped(tag(which), name, then, other, Expr::bool(false), span, out)?
             }
             Comb::IsOkAnd | Comb::IsErrAnd => {
                 let p = next();

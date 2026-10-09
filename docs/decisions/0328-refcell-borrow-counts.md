@@ -55,8 +55,12 @@ try {
   borrows a cell, or whose bounds the crate's impls meet, followed through
   std's impls, `Vec<T>: Clone` to `T: Clone`; and nothing dropped but
   guards. A shared borrow beside a shared one asks nothing it changes.
-  Counting it there would change nothing: a panic ends the program
-  (ADR 0035).
+  Counting it there would change nothing: nothing asks before it's
+  released, and a panic's unwinding releases it before a destructor can.
+- **A helper that holds a borrow while code runs releases it in a
+  `finally`**, `$withBorrow`'s, `$withBorrowMut`'s and `$refCellSwap`'s:
+  as a panic unwinds, the destructors it runs see it released, as Rust's
+  do.
 - **A held guard is a value with a destructor** (ADR 0098): a scope that
   holds one is a `try`, `drop(g)` releases it, and generic code is given
   its drop.
