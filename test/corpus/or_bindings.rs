@@ -91,4 +91,5 @@ fn main() {
         }
     }
     println!("{:?}", grown);
+    println!("{:?}", shapes);
 }

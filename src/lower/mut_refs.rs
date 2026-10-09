@@ -4,6 +4,7 @@
 
 use super::bindings::{self};
 use super::fn_def;
+use super::std_types::cow::CowOp;
 use super::std_types::map::{MapOp, Part};
 use super::{FnCx, R, Std, camel_case};
 use crate::js::{Expr, Prop, Stmt, StmtKind};
@@ -241,6 +242,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Map(MapOp::Get) if map => (Helper::MutGet, "$mutGet"),
             Std::Map(MapOp::Iter(Part::Entries)) if map => (Helper::MutEntries, "$mutEntries"),
             Std::Map(MapOp::Iter(Part::Values)) if map => (Helper::MutValues, "$mutValues"),
+            // A `Cow`'s `to_mut()` of text or a number (ADR 0319).
+            Std::Cow(CowOp::ToMut) => (Helper::CowMut, "$cowMut"),
             _ => return None,
         })
     }

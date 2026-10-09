@@ -10,6 +10,7 @@
 //! | `Option` | the value or `undefined`, boxed where it looks like `None` | `option` |
 //! | `Result` | `{ TAG, _0 }` | `result` |
 //! | `Cell`, `RefCell`, `Mutex`, `RwLock`, atomics | `{ value }` | `cell` |
+//! | `Cow` | `{ TAG, _0 }`, what it borrowed or owns | `cow` |
 //! | `OnceCell`, `OnceLock` | `{ value }` of an `Option` | `once` |
 //! | `LazyCell`, `LazyLock` | `{ init }`, then `{ value }` | `lazy` |
 //! | `BinaryHeap` | an `Array` in heap order | `heap` |
@@ -21,6 +22,7 @@
 
 pub(super) mod cell;
 pub(super) mod channel;
+pub(super) mod cow;
 pub(super) mod heap;
 pub(super) mod lazy;
 pub(super) mod map;

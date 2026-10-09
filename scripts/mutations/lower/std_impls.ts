@@ -210,4 +210,12 @@ export const mutations: Mutation[] = [
     replace: '                Expr::object(vec![Prop::Field("value".into(), made)])\n',
     tests: ["test/corpus.test.ts", "-t", "lazy_cells"],
   },
+  {
+    name: "enum-clone-whole-shared",
+    breaks: "a clone of an enum changed in place is the same object",
+    file: "src/lower/std_impls.rs",
+    find: "                    return self.clone_fields(place, fields[0].clone(), span, out);\n",
+    replace: "                    return Ok(place);\n",
+    tests: ["test/corpus.test.ts", "-t", "or_bindings"],
+  },
 ];

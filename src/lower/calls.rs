@@ -794,6 +794,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Std::Heap(op) = known {
             return self.heap_call(op, args, span, out);
         }
+        if let Std::Cow(op) = known {
+            return self.cow_call(op, args, span, out);
+        }
         if known == Std::IterLen {
             return self.iter_len(args[0], span, out);
         }
@@ -1120,6 +1123,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::LocalBorrow => unreachable!("lowered by cell_call"),
             Std::Once(_) => unreachable!("lowered by once_call"),
             Std::Lazy(_) => unreachable!("lowered by lazy_call"),
+            Std::Cow(_) => unreachable!("lowered by cow_call"),
             Std::PtrEq => unreachable!("lowered by ptr_eq"),
             Std::ToBig
             | Std::Duration(_)

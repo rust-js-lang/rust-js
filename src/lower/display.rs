@@ -845,7 +845,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let error = if owned { Expr::member(value, "error") } else { value };
             return Ok(Expr::call(Expr::var("$utf8ErrorMessage"), vec![error]));
         }
-        if self.recognition().is_cow_str(ty) {
+        if let Some((borrowed, _)) = self.recognition().cow_parts(ty)
+            && borrowed.is_str()
+        {
             return Ok(Expr::member(value, "_0"));
         }
         // A path's `display()`, its text (ADR 0173).
@@ -1128,10 +1130,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.runtime.insert(Helper::DebugStr);
             return Ok(Expr::call(Expr::var("$debugStr"), vec![value]));
         }
-        // A `Cow` shows its text, borrowed or owned.
-        if self.recognition().is_cow_str(ty) {
-            self.runtime.insert(Helper::DebugStr);
-            return Ok(Expr::call(Expr::var("$debugStr"), vec![Expr::member(value, "_0")]));
+        // A `Cow` shows what it borrows or owns (ADR 0319).
+        if let Some((borrowed, _)) = self.recognition().cow_parts(ty) {
+            return self.debug_string_with(Expr::member(value, "_0"), borrowed, span, pretty);
         }
         // A parse error is its message (ADR 0063), which says its kind.
         if self.is_parse_error(ty) {

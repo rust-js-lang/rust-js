@@ -157,4 +157,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "lazy_cells"],
   },
+  {
+    name: "cow-mut-no-handle",
+    breaks: "`to_mut()` of a `Cow<str>` is refused",
+    file: "src/lower/mut_refs.rs",
+    find: '            Std::Cow(CowOp::ToMut) => (Helper::CowMut, "$cowMut"),\n',
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^cows"],
+  },
 ];

@@ -63,7 +63,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A map or a set changes in place (ADR 0059).
             ty::Adt(..) if self.is_map(ty) => true,
-            ty::Adt(..) if self.is_rc(ty) || self.is_lang_adt(ty, LangItem::String) || self.is_js_object(ty) => false,
+            // A path is its text, which JS never changes in place (ADR 0173).
+            ty::Adt(..)
+                if self.is_rc(ty)
+                    || self.is_lang_adt(ty, LangItem::String)
+                    || self.recognition().is_path_like(ty)
+                    || self.is_js_object(ty) =>
+            {
+                false
+            }
             ty::Adt(..) if self.has_user_impl(self.clone_trait(), ty) => true,
             // A range is its bounds (ADR 0129), changed in place only if
             // `contains_mutated` says so.
@@ -306,10 +314,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Ok(value)
             }
-            ty::Adt(adt, args) if adt.is_enum() && (!self.is_std(adt.did()) || self.is_known_std(ty)) => {
+            // A `Cow`'s is too: its `Owned`'s clone is the `to_owned()` of what it borrows.
+            ty::Adt(adt, args)
+                if adt.is_enum()
+                    && (!self.is_std(adt.did())
+                        || self.is_known_std(ty)
+                        || self.recognition().cow_parts(ty).is_some()) =>
+            {
                 // `{ TAG: "Line", _0: .. }` (ADR 0033): a variant with fields
                 // that need it gets a copy, and every other value is itself.
                 let itself = self.mutated_itself(ty);
+                // Each variant copied whole, with no field to clone: one `{ ...place }`.
+                let fields: Vec<_> = adt.variants().iter().map(|v| self.variant_fields(v, args)).collect();
+                if itself
+                    && !fields.is_empty()
+                    && fields
+                        .iter()
+                        .all(|f| !f.is_empty() && f.iter().all(|&(_, t)| !self.needs_clone(t)))
+                {
+                    return self.clone_fields(place, fields[0].clone(), span, out);
+                }
                 let mut value = place.clone();
                 for variant in adt.variants().iter().rev() {
                     let fields = self.variant_fields(variant, args);

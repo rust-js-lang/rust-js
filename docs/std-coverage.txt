@@ -469,9 +469,9 @@
 - RwLock::try_read
 - RwLock::try_write
 + RwLock::write
-# Cow 0 of 2
-- Cow::into_owned
-- Cow::to_mut
+# Cow 2 of 2
++ Cow::into_owned
++ Cow::to_mut
 # OnceCell 7 of 7
 + OnceCell::get
 + OnceCell::get_mut

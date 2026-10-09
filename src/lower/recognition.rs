@@ -6,6 +6,7 @@ pub(super) mod registry;
 use super::combinators::{Comb, IterComb, IterSource, StepOp};
 use super::format_spec::Radix;
 use super::representation::Num;
+use super::std_types::cow::CowOp;
 use super::std_types::heap::HeapOp;
 use super::std_types::lazy::LazyOp;
 use super::std_types::map::{MapOp, Part};
@@ -249,6 +250,8 @@ pub(super) enum Std {
     Heap(HeapOp),
     /// A `OnceCell`'s or `OnceLock`'s (ADR 0317).
     Once(OnceOp),
+    /// A `Cow`'s (ADR 0319).
+    Cow(CowOp),
     /// A `LazyCell`'s or `LazyLock`'s (ADR 0318).
     Lazy(LazyOp),
     /// `serde_json::to_string(&v)` (false) and `to_string_pretty` (ADR 0077).
@@ -490,11 +493,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "std::string::FromUtf8Error::into_bytes" | "std::string::FromUtf8Error::as_bytes" => {
                 Some(TextOp::Utf8Part("bytes"))
             }
-            // A `Cow<str>`'s text: a JS string isn't changed in place, so it's
-            // as owned as it'll be.
-            "std::borrow::Cow::<'_, B>::into_owned" if args.types().next().is_some_and(|t| t.is_str()) => {
-                Some(TextOp::Utf8Part("_0"))
-            }
             _ => None,
         };
         if let Some(op) = utf8 {
@@ -650,9 +648,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if diagnostic("deref_method") || diagnostic("deref_mut_method") {
             // A reference to what's inside is the same JS value (ADR 0024 for JS objects).
             let Some(ty) = self_ty else { return Some(None) };
-            // A `Cow<str>`'s text, borrowed or owned (ADR 0172).
-            if diagnostic("deref_method") && self.is_cow_str(ty) {
-                return Some(Some(Std::Text(TextOp::Utf8Part("_0"))));
+            // What a `Cow` borrows or owns (ADRs 0172, 0319).
+            if diagnostic("deref_method") && self.is_cow(ty) {
+                return Some(Some(Std::Cow(CowOp::Deref)));
             }
             // A `LazyCell`'s value, made the first time (ADR 0318).
             if self.is_std_type(ty, StdItem::LazyCell) {
@@ -1113,6 +1111,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let local_key = adt("LocalKey");
         let once = self.is_std_type(owner, StdItem::OnceCell);
         let lazy = self.is_std_type(owner, StdItem::LazyCell);
+        let cow = self.is_cow(owner);
         let arguments = self.is_lang_adt(owner, LangItem::FormatArguments);
         let argument = self.is_lang_adt(owner, LangItem::FormatArgument);
         let map = adt("HashMap") || adt("BTreeMap") || self.is_json_map(owner);
@@ -1280,6 +1279,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "set" if once => Std::Once(OnceOp::Set),
             "get_or_init" if once => Std::Once(OnceOp::GetOrInit),
             "take" if once => Std::Once(OnceOp::Take),
+            "into_owned" if cow => Std::Cow(CowOp::IntoOwned),
+            "to_mut" if cow => Std::Cow(CowOp::ToMut),
             "new" if lazy => Std::Lazy(LazyOp::New),
             "force" if lazy => Std::Lazy(LazyOp::Force),
             "force_mut" if lazy => Std::Lazy(LazyOp::ForceMut),
@@ -2125,10 +2126,29 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             && (self.is_std_type(ty, StdItem::OnceCell) || self.is_std_type(ty, StdItem::LazyCell))
     }
 
-    /// A `Cow<str>`, `{ TAG, _0 }`: its text, borrowed or owned (ADR 0172).
-    pub(super) fn is_cow_str(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(adt, args) if std_path(self.tcx, adt.did()) == "std::borrow::Cow"
-            && args.types().next().is_some_and(|t| t.is_str()))
+    /// A `Cow`, `{ TAG, _0 }` (ADR 0033): what it borrowed, or owns.
+    pub(super) fn is_cow(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::borrow::Cow")
+    }
+
+    /// What a `Cow` borrows and what it owns, where they're one JS value,
+    /// as std's `ToOwned` makes them (ADR 0319): `T` and `T`, `str` and
+    /// `String`, `[T]` and `Vec<T>`, `Path` and `PathBuf`. `None` for another.
+    pub(super) fn cow_parts(&self, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
+        let ty::Adt(adt, args) = ty.kind() else { return None };
+        if !self.is_cow(ty) {
+            return None;
+        }
+        let borrowed = args.types().next()?;
+        let owned_variant = adt.variants().iter().nth(1)?;
+        let owned = self.field_ty(owned_variant.fields.iter().next()?, args);
+        let same = owned == borrowed
+            || borrowed.is_str() && self.is_lang_adt(owned, LangItem::String)
+            // `Path` and `PathBuf`, `OsStr` and `OsString`: text (ADR 0173).
+            || self.is_path_like(borrowed) && self.is_path_like(owned)
+            || matches!(borrowed.kind(), ty::Slice(item) if self.is_std_adt(owned, sym::Vec)
+                && matches!(owned.kind(), ty::Adt(_, vec) if vec.type_at(0) == *item));
+        same.then_some((borrowed, owned))
     }
 
     pub(super) fn is_json_error(&self, ty: Ty<'tcx>) -> bool {

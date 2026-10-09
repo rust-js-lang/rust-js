@@ -96,24 +96,13 @@ function main() {
   }
   const r$2 = { TAG: "Err", _0: 9 };
   console.log(`${r$2._0}`);
-  const grown = shapes.map((item) =>
-    item.TAG === "Circle"
-      ? { ...item }
-      : item.TAG === "Sphere"
-        ? { ...item }
-        : item.TAG === "Square"
-          ? { ...item }
-          : item.TAG === "Rect"
-            ? { ...item }
-            : item.TAG === "Line"
-              ? { ...item }
-              : item,
-  );
+  const grown = shapes.map((item) => ({ ...item }));
   for (const s$1 of grown) {
     if (s$1.TAG === "Circle" || s$1.TAG === "Sphere") {
       s$1._0 *= 10;
     }
   }
   console.log(`[${grown.map((item) => shapeDebug_fmt(item)).join(", ")}]`);
+  console.log(`[${shapes.map((item) => shapeDebug_fmt(item)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

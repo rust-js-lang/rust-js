@@ -503,8 +503,8 @@ export const mutations: Mutation[] = [
     name: "cow-str-deref-unknown",
     breaks: "a `Cow<str>`'s text, `text.len()`, is an error",
     file: "src/lower/recognition.rs",
-    find: "            if diagnostic(\"deref_method\") && self.is_cow_str(ty) {",
-    replace: "            if diagnostic(\"deref_method\") && self.is_cow_str(ty) && false {",
+    find: "            if diagnostic(\"deref_method\") && self.is_cow(ty) {",
+    replace: "            if diagnostic(\"deref_method\") && self.is_cow(ty) && false {",
     tests: ["test/corpus.test.ts", "-t", "utf8_decoding"],
   },
   {
@@ -794,5 +794,13 @@ export const mutations: Mutation[] = [
     find: '                _ => ("LazyCell", "LazyLock"),\n',
     replace: '                _ => ("LazyCell", ""),\n',
     tests: ["test/corpus.test.ts", "-t", "lazy_cells"],
+  },
+  {
+    name: "cow-path-refused",
+    breaks: "a `Cow<Path>` is refused",
+    file: "src/lower/recognition.rs",
+    find: "            || self.is_path_like(borrowed) && self.is_path_like(owned)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^cows"],
   },
 ];
