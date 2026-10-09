@@ -266,14 +266,49 @@ export function buildSerde(kind: "rmeta" | "rlib" = "rmeta"): string[] {
   return serdeFlags[kind];
 }
 
+/** Each file of `paths`, a file or a directory's, read whole: their digest. */
+function digest(paths: string[]): string {
+  const hash = createHash("sha256");
+  const add = (path: string) => {
+    if (statSync(path).isDirectory()) {
+      for (const entry of readdirSync(path).sort()) add(join(path, entry));
+    } else {
+      hash.update(`${path}\0`).update(readFileSync(path)).update("\0");
+    }
+  };
+  for (const path of paths) add(path);
+  return hash.digest("hex");
+}
+
+/** Run `work` unless what it made from `inputs` is still there: each of
+ * `outputs`, and `stamp` saying it was made from what `inputs` hold now.
+ * Whether it ran. */
+export function unlessUnchanged(stamp: string, inputs: string[], outputs: string[], work: () => unknown): boolean {
+  const now = digest(inputs);
+  if (outputs.every((output) => existsSync(output)) && readIfThere(stamp) === now) return false;
+  rmSync(stamp, { force: true });
+  work();
+  writeFileSync(stamp, now);
+  return true;
+}
+
 /** The js, webapi and react crates' metadata, in `target`: built once for
  * the run, as each of its workers is a process of its own, which would
- * otherwise write them again as others read them. */
+ * otherwise write them again as others read them; and not again while their
+ * sources and the toolchain are what they were made from. A compiler isn't
+ * among those: `rust-js --rustc` is rustc, whose metadata it writes. */
 let react = false;
 export function buildReact() {
   if (!react) {
     buildCompiler();
-    once(join(target, "tests-react", thisRun()), () => run(["react/build.sh", "-o", join(target, "libreact.rmeta")]));
+    const inputs = [
+      "react/src", "react/build.sh", "react/cfg.js", "react/versions.json",
+      "webapi/src", "webapi/build.sh", "builtins/src", "builtins/build.sh", "rust-toolchain.toml",
+    ].map((path) => join(root, path));
+    const outputs = ["libreact.rmeta", "libwebapi.rmeta", "libjs.rmeta"].map((name) => join(target, name));
+    once(join(target, "tests-react", thisRun()), () =>
+      unlessUnchanged(join(target, "libreact.stamp"), inputs, outputs, () => run(["react/build.sh", "-o", join(target, "libreact.rmeta")])),
+    );
     react = true;
   }
 }

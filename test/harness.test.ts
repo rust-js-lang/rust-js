@@ -5,11 +5,11 @@
 // Each must fail the run, or say it's incomplete, with what it saw.
 
 import { beforeAll, expect, test } from "bun:test";
-import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { ratchet, runTest, type Shard } from "../scripts/rustc-suite";
-import { buildCompiler, compiler, fixture, root, target } from "./support";
+import { buildCompiler, compiler, fixture, root, target, unlessUnchanged } from "./support";
 
 beforeAll(buildCompiler);
 
@@ -186,3 +186,23 @@ test("a rustc test whose JS prints other bytes, reading the same, fails, and one
   );
   expect(await runTest(ui, either, new Set(["either.rs"]))).toEqual({ test: "either.rs", status: "native", reason: "prints what changes from run to run" });
 }, 120_000);
+
+// What's built from unchanged inputs isn't built again: the react, webapi and
+// js crates' metadata, which every test run asked for anew, three seconds of
+// each run's (DEVELOPMENT.md).
+test("what's built from unchanged inputs isn't built again", () => {
+  const dir = fixture("unless-unchanged");
+  const input = join(dir, "input"), output = join(dir, "output"), stamp = join(dir, "stamp");
+  writeFileSync(input, "a");
+  let runs = 0;
+  const work = () => {
+    runs += 1;
+    writeFileSync(output, readFileSync(input));
+  };
+  const step = () => unlessUnchanged(stamp, [input], [output], work);
+  expect([step(), step()]).toEqual([true, false]);
+  writeFileSync(input, "b");
+  expect(step()).toBe(true);
+  rmSync(output);
+  expect([step(), runs, readFileSync(output, "utf8")]).toEqual([true, 3, "b"]);
+});
