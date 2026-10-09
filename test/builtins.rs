@@ -70,10 +70,10 @@ pub fn replaced(text: &str, pattern: &str, flags: &str, with: &str) -> String {
 
 /// JS's string methods, by JS's indexes, UTF-16's, as react.dev's code
 /// reads its strings: each part of `text`, and where `part` is in it.
-pub fn parts(text: &str, part: &str) -> (Vec<String>, Vec<i32>, u32) {
+pub fn parts(text: &str, part: &str) -> (Vec<String>, Vec<f64>, u32) {
     let parts = vec![
-        string::slice(text, 1, -1),
-        string::slice_to_end(text, -2),
+        string::slice(text, 1.0, -1.0),
+        string::slice_to_end(text, -2.0),
         string::substring(text, 1, 3),
         string::substring_to_end(text, 1),
         string::trim(text),
@@ -82,10 +82,17 @@ pub fn parts(text: &str, part: &str) -> (Vec<String>, Vec<i32>, u32) {
     ];
     let at = vec![
         string::index_of(text, part),
-        string::index_of_from(text, part, 2),
+        string::index_of_from(text, part, 2.0),
         string::last_index_of(text, part),
     ];
     (parts, at, string::length(text))
+}
+
+/// What's after a path's last `/`, as react.dev's NavigationBar takes a
+/// file's name: an index is a JS number, as TypeScript has it, so one past
+/// it is `+ 1`.
+pub fn file_name(path: &str) -> String {
+    string::slice_to_end(path, string::last_index_of(path, "/") + 1.0)
 }
 
 /// JS's `replace` of a string: the first match only, where Rust's

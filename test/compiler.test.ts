@@ -473,6 +473,9 @@ test("the builtins crate's string functions are JS's string methods", () => {
   expect(parts).toEqual([text.slice(1, -1), text.slice(-2), text.substring(1, 3), text.substring(1), text.trim(), text.trimStart(), text.trimEnd()]);
   expect(at).toEqual([text.indexOf("ab"), text.indexOf("ab", 2), text.lastIndexOf("ab")]);
   expect(length).toBe(text.length);
+  // An index is a JS number, as TypeScript has it: one past it is `+ 1`.
+  expect(builtins.file_name("a/b/c.txt")).toBe("c.txt");
+  expect(readFileSync(join(target, "builtins.js"), "utf8")).toContain('return path.slice(path.lastIndexOf("/") + 1);');
   expect(builtins.units("a😀")).toEqual(["a", "\ud83d", "\ude00"]);
   expect(builtins.replaced_first("a-b-c", "-", "+")).toBe("a+b-c");
   expect(builtins.split_parts("a,b;c,")).toEqual([["a", "b;c", ""], ["a", "b", "c", ""]]);

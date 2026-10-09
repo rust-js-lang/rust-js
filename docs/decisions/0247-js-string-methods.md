@@ -50,3 +50,12 @@ const label = isLead ? g.slice(0, -1).trim() : g;
   by a pattern of no groups, as react.dev's pages take a path's query and
   hash off, `asPath.split(/[\?\#]/)`, where each page declared its own. The
   compiler test splits by both.
+
+## Amendment: where a string is searched is a JS number
+
+`index_of`, `index_of_from` and `last_index_of` give an `f64`, and `slice`
+and `slice_to_end` take one, as TypeScript types them `number`: one past
+what's found is `+ 1`, `path.slice(path.lastIndexOf("/") + 1)`, as react.dev's
+NavigationBar takes a file's name, where an `i32`'s was `(i + 1) | 0`. A
+count, `length`, and what a loop indexes by, `char_at`'s and `substring`'s,
+stay `u32`: `for i in 0..string::length(text)` is how Rust counts.

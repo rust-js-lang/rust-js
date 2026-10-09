@@ -697,7 +697,10 @@ pub mod reg_exp {
 /// A JS string's methods, as ReScript's standard library names them, for
 /// code that counts as JS does: by UTF-16 code units, where Rust's `str`
 /// counts bytes, so `"😀".len()` is 4 and its JS `length` 2. A negative
-/// index of `slice` counts from the end.
+/// index of `slice` counts from the end. Where a string is searched, and
+/// what `slice` takes of what's found, is a JS number, `f64`, as TypeScript
+/// has it: one past it is `+ 1`. A count and what a loop indexes by is a
+/// `u32`.
 pub mod string {
     unsafe extern "Rust" {
         /// [`text.length`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/length):
@@ -713,11 +716,11 @@ pub mod string {
         /// [`text.slice(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/slice):
         /// from `start` to before `end`, each counted from the end if negative.
         #[link_name = "slice"]
-        pub safe fn slice(this: &str, start: i32, end: i32) -> String;
+        pub safe fn slice(this: &str, start: f64, end: f64) -> String;
 
         /// `text.slice(start)`: from `start` to the end.
         #[link_name = "slice"]
-        pub safe fn slice_to_end(this: &str, start: i32) -> String;
+        pub safe fn slice_to_end(this: &str, start: f64) -> String;
 
         /// [`text.substring(start, end)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/substring):
         /// from `start` to before `end`, the two swapped if `start` is after it.
@@ -731,16 +734,16 @@ pub mod string {
         /// [`text.indexOf(search)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/indexOf):
         /// where `search` first is, or `-1`.
         #[link_name = "indexOf"]
-        pub safe fn index_of(this: &str, search: &str) -> i32;
+        pub safe fn index_of(this: &str, search: &str) -> f64;
 
         /// `text.indexOf(search, from)`: where `search` first is from `from` on, or `-1`.
         #[link_name = "indexOf"]
-        pub safe fn index_of_from(this: &str, search: &str, from: u32) -> i32;
+        pub safe fn index_of_from(this: &str, search: &str, from: f64) -> f64;
 
         /// [`text.lastIndexOf(search)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/lastIndexOf):
         /// where `search` last is, or `-1`.
         #[link_name = "lastIndexOf"]
-        pub safe fn last_index_of(this: &str, search: &str) -> i32;
+        pub safe fn last_index_of(this: &str, search: &str) -> f64;
 
         /// [`text.replace(pattern, replacement)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/replace):
         /// its first `pattern` replaced, where Rust's `str::replace` replaces each;

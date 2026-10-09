@@ -64,6 +64,10 @@ export function parts(text, part) {
   return [parts$1, at, text.length];
 }
 
+export function file_name(path) {
+  return path.slice(path.lastIndexOf("/") + 1);
+}
+
 export function replaced_first(text, from, to) {
   return text.replace(from, to);
 }
