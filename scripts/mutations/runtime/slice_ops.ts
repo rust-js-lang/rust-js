@@ -1,0 +1,77 @@
+// Mutations of src/runtime/slice_ops.js (ADR 0324).
+import type { Mutation } from "../../mutations";
+
+export const mutations: Mutation[] = [
+  {
+    name: "fill-shares",
+    breaks: "`fill` puts one object in each slot, which a change to one changes in all",
+    file: "src/runtime/slice_ops.js",
+    find: "  for (let i = 0; i < v.length - 1; i++) v[i] = clone(x);\n",
+    replace: "  for (let i = 0; i < v.length - 1; i++) v[i] = x;\n",
+    tests: ["test/corpus.test.ts", "-t", "slice_methods"],
+  },
+  {
+    name: "copy-from-slice-unchecked",
+    breaks: "`copy_from_slice` of another length copies what it can, not std's panic",
+    file: "src/runtime/slice_ops.js",
+    find: "  if (v.length !== src.length) {\n    throw new Error(`copy_from_slice",
+    replace: "  if (false) {\n    throw new Error(`copy_from_slice",
+    tests: ["test/corpus.test.ts", "-t", "copy_from_slice_panic"],
+  },
+  {
+    name: "clone-from-slice-shares",
+    breaks: "`clone_from_slice` copies the objects, not clones of them",
+    file: "src/runtime/slice_ops.js",
+    find: "  for (let i = 0; i < v.length; i++) v[i] = clone ? clone(src[i]) : src[i];\n",
+    replace: "  for (let i = 0; i < v.length; i++) v[i] = src[i];\n",
+    tests: ["test/corpus.test.ts", "-t", "slice_methods"],
+  },
+  {
+    name: "partition-point-off",
+    breaks: "`partition_point` stops one short",
+    file: "src/runtime/slice_ops.js",
+    find: "  return base + (p(v[base]) ? 1 : 0);\n",
+    replace: "  return base;\n",
+    tests: ["test/corpus.test.ts", "-t", "slice_methods"],
+  },
+  {
+    name: "chunks-exact-keeps-rest",
+    breaks: "`chunks_exact` gives what's left as a chunk too",
+    file: "src/runtime/slice_ops.js",
+    find: "  const whole = v.length - (v.length % n);\n",
+    replace: "  const whole = v.length;\n",
+    tests: ["test/corpus.test.ts", "-t", "slice_methods"],
+  },
+  {
+    name: "rchunks-from-start",
+    breaks: "`rchunks` cuts from the start",
+    file: "src/runtime/slice_ops.js",
+    find: "  for (; end >= n; end -= n) chunks.push(v.slice(end - n, end));\n",
+    replace: "  for (; end >= n; end -= n) chunks.push(v.slice(v.length - end, v.length - end + n));\n",
+    tests: ["test/corpus.test.ts", "-t", "slice_methods"],
+  },
+  {
+    name: "split-by-drops-last",
+    breaks: "a slice's `split` drops the piece after the last match",
+    file: "src/runtime/slice_ops.js",
+    find: "  if (!inclusive || start < items.length) parts.push(items.slice(start));\n",
+    replace: "  if (start < items.length) parts.push(items.slice(start));\n",
+    tests: ["test/corpus.test.ts", "-t", "slice_methods"],
+  },
+  {
+    name: "sort-cached-key-each-compare",
+    breaks: "`sort_by_cached_key` calls the key at each comparison",
+    file: "src/runtime/slice_ops.js",
+    find: "  const keyed = v.map((item, i) => [f(item), i, item]);\n  keyed.sort((a, b) => cmp(a[0], b[0]) || a[1] - b[1]);\n",
+    replace: "  const keyed = v.map((item, i) => [item, i, item]);\n  keyed.sort((a, b) => cmp(f(a[0]), f(b[0])) || a[1] - b[1]);\n",
+    tests: ["test/corpus.test.ts", "-t", "slice_methods"],
+  },
+  {
+    name: "is-sorted-by-key-all-keys",
+    breaks: "`is_sorted_by_key` keeps going past the first out of order",
+    file: "src/runtime/slice_ops.js",
+    find: "    if (!(cmp(last, key) <= 0)) return false;\n",
+    replace: "    if (!(cmp(last, key) <= 0)) last = undefined;\n",
+    tests: ["test/corpus.test.ts", "-t", "slice_methods"],
+  },
+];

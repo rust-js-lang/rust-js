@@ -14,6 +14,7 @@ use super::std_types::number::{DurationOp, NumOp};
 use super::std_types::once::OnceOp;
 use super::std_types::range::{RangeKind, RangeOp};
 use super::std_types::rc::RcOp;
+use super::std_types::slice::SliceOp;
 use super::std_types::text::{StringEdit, TextOp};
 use rustc_ast::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;
@@ -255,6 +256,8 @@ pub(super) enum Std {
     Cow(CowOp),
     /// A counted `Rc`'s or a `Weak`'s (ADR 0320).
     Rc(RcOp),
+    /// A slice's fills, copies, order checks, chunks and splits (ADR 0324).
+    Slice(SliceOp),
     /// A `LazyCell`'s or `LazyLock`'s (ADR 0318).
     Lazy(LazyOp),
     /// `serde_json::to_string(&v)` (false) and `to_string_pretty` (ADR 0077).
@@ -1530,6 +1533,49 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "reverse" if ordering => Std::Reverse,
             "chars" if owner.is_str() => Std::Chars,
             "to_vec" if owner.is_slice() => Std::ToVec,
+            "fill" if owner.is_slice() => Std::Slice(SliceOp::Fill),
+            "fill_with" if owner.is_slice() => Std::Slice(SliceOp::FillWith),
+            "copy_from_slice" if owner.is_slice() => Std::Slice(SliceOp::CopyFromSlice),
+            "clone_from_slice" if owner.is_slice() => Std::Slice(SliceOp::CloneFromSlice),
+            "swap_with_slice" if owner.is_slice() => Std::Slice(SliceOp::SwapWithSlice),
+            "copy_within" if owner.is_slice() => Std::Slice(SliceOp::CopyWithin),
+            "is_sorted" if owner.is_slice() => Std::Slice(SliceOp::IsSorted),
+            "is_sorted_by" if owner.is_slice() => Std::Slice(SliceOp::IsSortedBy),
+            "is_sorted_by_key" if owner.is_slice() => Std::Slice(SliceOp::IsSortedByKey),
+            "partition_point" if owner.is_slice() => Std::Slice(SliceOp::PartitionPoint),
+            "chunks_exact" if owner.is_slice() => Std::Slice(SliceOp::ChunksExact),
+            "rchunks" if owner.is_slice() => Std::Slice(SliceOp::Rchunks { exact: false }),
+            "rchunks_exact" if owner.is_slice() => Std::Slice(SliceOp::Rchunks { exact: true }),
+            "remainder" if self.is_exact_chunks(owner) => Std::Slice(SliceOp::Remainder),
+            "first_chunk" if owner.is_slice() => Std::Slice(SliceOp::Chunk { last: false }),
+            "last_chunk" if owner.is_slice() => Std::Slice(SliceOp::Chunk { last: true }),
+            "split" | "splitn" | "rsplit" | "rsplitn" | "split_inclusive" if owner.is_slice() => {
+                Std::Slice(SliceOp::SplitBy {
+                    limited: name.as_str().ends_with('n'),
+                    inclusive: name.as_str() == "split_inclusive",
+                    back: name.as_str().starts_with('r'),
+                })
+            }
+            "sort_by_cached_key" if owner.is_slice() => Std::Slice(SliceOp::SortByCachedKey),
+            "repeat" if owner.is_slice() => Std::Slice(SliceOp::Repeat),
+            "to_ascii_uppercase" | "to_ascii_lowercase" | "make_ascii_uppercase" | "make_ascii_lowercase"
+                if owner.is_slice() =>
+            {
+                Std::Slice(SliceOp::AsciiCase {
+                    upper: name.as_str().ends_with("uppercase"),
+                    in_place: name.as_str().starts_with("make"),
+                })
+            }
+            "is_ascii" if owner.is_slice() => Std::Slice(SliceOp::IsAscii),
+            "trim_ascii" if owner.is_slice() => Std::Slice(SliceOp::TrimAscii { start: true, end: true }),
+            "trim_ascii_start" if owner.is_slice() => Std::Slice(SliceOp::TrimAscii {
+                start: true,
+                end: false,
+            }),
+            "trim_ascii_end" if owner.is_slice() => Std::Slice(SliceOp::TrimAscii {
+                start: false,
+                end: true,
+            }),
             "sort" | "sort_unstable" if owner.is_slice() => Std::Sort,
             "sort_by" | "sort_unstable_by" if owner.is_slice() => Std::SortBy,
             "sort_by_key" | "sort_unstable_by_key" if owner.is_slice() => Std::SortByKey,
@@ -1553,6 +1599,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "starts_with" | "ends_with" if owner.is_slice() && self_ty.is_some_and(|t| self.compares_by_value(t)) => {
                 Std::Text(TextOp::SliceStartsWith {
                     end: name.as_str() == "ends_with",
+                })
+            }
+            "strip_prefix" | "strip_suffix"
+                if owner.is_slice() && self_ty.is_some_and(|t| self.compares_by_value(t)) =>
+            {
+                Std::Slice(SliceOp::Strip {
+                    suffix: name.as_str() == "strip_suffix",
                 })
             }
             // Only `[u8]` has it.
@@ -2223,6 +2276,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let imp = tcx.inherent_impl_of_assoc(def_id)?;
         let owner = tcx.type_of(imp).instantiate_identity().skip_normalization();
         (rc_pointee(tcx, owner).is_some() && tcx.item_name(def_id).as_str() == "new").then(|| (true, args.type_at(0)))
+    }
+
+    /// A slice's `chunks_exact(n)` or `rchunks_exact(n)`, whose `remainder()`
+    /// is what's left (ADR 0324).
+    pub(super) fn is_exact_chunks(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if matches!(
+            std_path(self.tcx, adt.did()).as_str(),
+            "std::slice::ChunksExact" | "std::slice::RChunksExact"
+        ))
     }
 
     /// A `Cow`, `{ TAG, _0 }` (ADR 0033): what it borrowed, or owns.

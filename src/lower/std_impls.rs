@@ -422,6 +422,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::call(Expr::member(items, "map"), vec![clone]))
     }
 
+    /// A clone function of `ty`, for a helper that clones, or `undefined`
+    /// where a clone is the value itself.
+    pub(super) fn clone_arg(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        match self.needs_clone(ty) {
+            true => self.clone_fn("value", ty, span),
+            false => Ok(Expr::undefined()),
+        }
+    }
+
     /// `(name) => <clone of name>`.
     pub(super) fn clone_fn(&mut self, name: &str, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let mut body = Vec::new();

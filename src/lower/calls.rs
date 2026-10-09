@@ -825,6 +825,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Std::Rc(op) = known {
             return self.rc_call(op, args, span, out);
         }
+        if let Std::Slice(op) = known {
+            return self.slice_call(op, args, generic_args, span, out);
+        }
         if known == Std::IterLen {
             return self.iter_len(args[0], span, out);
         }
@@ -1164,6 +1167,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Lazy(_) => unreachable!("lowered by lazy_call"),
             Std::Cow(_) => unreachable!("lowered by cow_call"),
             Std::Rc(_) => unreachable!("lowered by rc_call"),
+            Std::Slice(_) => unreachable!("lowered by slice_call"),
             Std::PtrEq => unreachable!("lowered by ptr_eq"),
             Std::ToBig
             | Std::Duration(_)

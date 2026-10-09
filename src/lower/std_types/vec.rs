@@ -64,10 +64,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ty::Adt(_, items) if self.is_vec_like(separator) => (items.type_at(0), true),
                     _ => (separator, false),
                 };
-                let clone = match self.needs_clone(item) {
-                    true => self.clone_fn("item", item, span)?,
-                    false => Expr::undefined(),
-                };
+                let clone = self.clone_arg(item, span)?;
                 self.runtime.insert(Helper::JoinWith);
                 Expr::call(Expr::var("$joinWith"), vec![arg(), arg(), Expr::bool(spread), clone])
             }

@@ -131,14 +131,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => Expr::member(rc, "value"),
         }
     }
-
-    /// A clone function of `item`, or `undefined` where a clone is the value.
-    fn clone_arg(&mut self, item: Ty<'tcx>, span: Span) -> R<Expr> {
-        match self.needs_clone(item) {
-            true => self.clone_fn("value", item, span),
-            false => Ok(Expr::undefined()),
-        }
-    }
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {

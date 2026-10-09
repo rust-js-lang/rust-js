@@ -33,5 +33,6 @@ pub(super) mod option;
 pub(super) mod range;
 pub(super) mod rc;
 pub(super) mod result;
+pub(super) mod slice;
 pub(super) mod text;
 pub(super) mod vec;
