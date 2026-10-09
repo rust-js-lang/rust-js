@@ -380,6 +380,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0286 A component that sometimes renders nothing returns an `Option`](decisions/0286-components-that-render-nothing.md)
 - [0287 A cell only its function reads and sets is a `let`](decisions/0287-cells-as-variables.md)
 - [0288 A `Cell` in a field is the property it holds](decisions/0288-cell-fields.md)
+- [0289 A `Copy` bound takes a copy only where a copy isn't the value](decisions/0289-copy-bounds.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

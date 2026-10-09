@@ -43,8 +43,8 @@ export function twice(x, TClone) {
   return [TClone.clone(x), TClone.clone(x)];
 }
 
-export function copied(x, TCopy) {
-  return TCopy.copy(x);
+export function copied(x) {
+  return x;
 }
 
 export function defaults() {
@@ -81,7 +81,7 @@ export function hand_written() {
     copy.tracked.generation,
     cloned.map((t) => t.generation).reduce((a, b) => (a + b) >>> 0, 0),
     both.map((t) => t.generation).reduce((a, b) => (a + b) >>> 0, 0),
-    copied(7, { copy: (value) => value }),
+    copied(7),
   ];
 }
 

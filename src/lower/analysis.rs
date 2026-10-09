@@ -19,7 +19,8 @@ use super::{Body, FnInfo, TestFn, module_path};
 use crate::lower::recognition::{StdItem, is_hash_impl, is_js_object_deref, is_std_def, known_derive};
 use debug::{derived_debug, uses_format_options, uses_pretty_debug};
 use drops::drop_params;
-use mutation::mutated_types;
+pub(super) use mutation::copies_by_callers;
+use mutation::{copied_params, mutated_types};
 use naming::{exported_across_modules, js_uses, name_imports, name_items};
 use rustc_hir::def::DefKind;
 use rustc_hir::find_attr;
@@ -142,6 +143,8 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// Each generic function's type parameters it's given a drop function
     /// for (ADR 0098), by their indices.
     pub drop_params: HashMap<DefId, Vec<u32>>,
+    /// The type parameters whose `Copy` bound takes a copy function (ADR 0289).
+    pub copied: HashSet<(DefId, u32)>,
     /// Each generic function's type parameters it's given a size, an
     /// alignment or a name of (ADR 0145), by their indices.
     pub type_facts: HashMap<DefId, Vec<(u32, TypeFact)>>,
@@ -347,6 +350,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let mutated = mutated_types(tcx, all_bodies);
     let changed_vecs = changed_vecs(tcx, all_bodies);
     let drop_params = drop_params(tcx, all_bodies, &fns, &foreign, library);
+    let copied = copied_params(tcx, all_bodies, &fns, library);
     let type_facts = type_fact_params(tcx, all_bodies, &fns, library);
     let failing = fmt_failures::failing_fns(tcx, all_bodies, &foreign);
     let generic_consts = generic_consts(tcx, all_bodies);
@@ -373,6 +377,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         mutated,
         changed_vecs,
         drop_params,
+        copied,
         type_facts,
         failing,
         generic_consts,

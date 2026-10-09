@@ -16,10 +16,10 @@ import {
   $unwrap,
 } from "@rust-js/runtime";
 
-function total(values, zero, TAdd, TCopy) {
-  let sum = TCopy.copy(zero);
+function total(values, zero, TAdd) {
+  let sum = zero;
   for (const item of values) {
-    sum = TAdd.add(TCopy.copy(sum), TCopy.copy(item));
+    sum = TAdd.add(sum, item);
   }
   return sum;
 }
@@ -82,7 +82,7 @@ function main() {
   sorted.sort((a, b) => $unwrap($partialCmp(a, b)));
   console.log(`[${sorted.map((item) => $debugF32(item)).join(", ")}]`);
   console.log(
-    `${$displayF32(total(temps, 0, { add: (a, b) => Math.fround(a + b) }, { copy: (value) => value }))} ${$displayF64(total([0.1, 0.2], 0, { add: (a, b) => a + b }, { copy: (value) => value }))}`,
+    `${$displayF32(total(temps, 0, { add: (a, b) => Math.fround(a + b) }))} ${$displayF64(total([0.1, 0.2], 0, { add: (a, b) => a + b }))}`,
   );
 }
 

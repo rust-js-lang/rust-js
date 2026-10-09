@@ -27,19 +27,19 @@ import {
 
 var $dogDescribe, $catDescribe, $tLabeled;
 
-function largest(items, TPartialOrd, TCopy) {
+function largest(items, TPartialOrd) {
   const it = $iter(items);
   const value = $nextSome(it);
   if (value == null) {
     return undefined;
   }
-  let best = TCopy.copy($someValue(value));
+  let best = $someValue(value);
   for (const item of it) {
     if (TPartialOrd.partial_cmp(item, best) > 0) {
-      best = TCopy.copy(item);
+      best = item;
     }
   }
-  return $some(TCopy.copy(best));
+  return $some(best);
 }
 
 export function tour() {
@@ -69,9 +69,9 @@ export function tour() {
   out += `${tmp == null ? "None" : `Some(${versionDebug_fmt(tmp)})`} ${($cmp(left.major, right.major) || $cmp(left.minor, right.minor) || $cmp(left.patch, right.patch)) < 0}\n`;
   const c = { name: "svc", retries: 3, verbose: false, ratio: 0 };
   out += `${configDebug_fmt(c)}\n`;
-  const arg = largest([3, 9, 2], { partial_cmp: $cmp }, { copy: (value) => value });
-  const arg$1 = largest([1.5, -2], { partial_cmp: $partialCmp }, { copy: (value) => value });
-  const arg$2 = largest([], { partial_cmp: $cmp }, { copy: (value) => value });
+  const arg = largest([3, 9, 2], { partial_cmp: $cmp });
+  const arg$1 = largest([1.5, -2], { partial_cmp: $partialCmp });
+  const arg$2 = largest([], { partial_cmp: $cmp });
   out += `${arg == null ? "None" : `Some(${arg})`} ${arg$1 == null ? "None" : `Some(${$debugF64(arg$1)})`} ${arg$2 == null ? "None" : `Some(${arg$2})`}\n`;
   const running = $scan([1, 2, 3, 4], 0, (acc, x) => {
     acc.value = (acc.value + x) >>> 0;

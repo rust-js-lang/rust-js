@@ -6,15 +6,12 @@ function either(a, b, TBitOr) {
   return TBitOr.bitor(a, b);
 }
 
-function masked(value, mask, TBitAnd, TBitXor, TCopy) {
-  return [
-    TBitAnd.bitand(TCopy.copy(value), TCopy.copy(mask)),
-    TBitXor.bitxor(TCopy.copy(value), TCopy.copy(mask)),
-  ];
+function masked(value, mask, TBitAnd, TBitXor) {
+  return [TBitAnd.bitand(value, mask), TBitXor.bitxor(value, mask)];
 }
 
-function shifted(value, by, TShlU32, TShrU32, TCopy) {
-  return [TShlU32.shl(TCopy.copy(value), by), TShrU32.shr(TCopy.copy(value), by)];
+function shifted(value, by, TShlU32, TShrU32) {
+  return [TShlU32.shl(value, by), TShrU32.shr(value, by)];
 }
 
 function shifted_far(value, by, TShlU64) {
@@ -30,51 +27,29 @@ function main() {
     65280,
     { bitand: (a, b) => (a & b) >>> 0 },
     { bitxor: (a, b) => (a ^ b) >>> 0 },
-    { copy: (value) => value },
   );
   const arg$1 = masked(
     264913582817280n,
     281470681743360n,
     { bitand: (a, b) => a & b },
     { bitxor: (a, b) => a ^ b },
-    { copy: (value) => value },
   );
   console.log(`(${arg[0]}, ${arg[1]}) (${arg$1[0]}, ${arg$1[1]})`);
-  const arg$2 = masked(
-    -6,
-    3,
-    { bitand: (a, b) => a & b },
-    { bitxor: (a, b) => a ^ b },
-    { copy: (value) => value },
-  );
-  const arg$3 = masked(
-    true,
-    false,
-    { bitand: (a, b) => !!(a & b) },
-    { bitxor: (a, b) => a !== b },
-    { copy: (value) => value },
-  );
+  const arg$2 = masked(-6, 3, { bitand: (a, b) => a & b }, { bitxor: (a, b) => a ^ b });
+  const arg$3 = masked(true, false, { bitand: (a, b) => !!(a & b) }, { bitxor: (a, b) => a !== b });
   console.log(`(${arg$2[0]}, ${arg$2[1]}) (${arg$3[0]}, ${arg$3[1]})`);
   const arg$4 = shifted(
     193,
     2,
     { shl: (a, b) => (a << (b & 7)) & 255 },
     { shr: (a, b) => a >>> (b & 7) },
-    { copy: (value) => value },
   );
-  const arg$5 = shifted(
-    -64,
-    3,
-    { shl: (a, b) => (a << b) | 0 },
-    { shr: (a, b) => a >> b },
-    { copy: (value) => value },
-  );
+  const arg$5 = shifted(-64, 3, { shl: (a, b) => (a << b) | 0 }, { shr: (a, b) => a >> b });
   const arg$6 = shifted(
     BigInt.asUintN(64, 1n << 40n),
     4,
     { shl: (a, b) => BigInt.asUintN(64, a << (BigInt(b) & 63n)) },
     { shr: (a, b) => a >> (BigInt(b) & 63n) },
-    { copy: (value) => value },
   );
   console.log(`(${arg$4[0]}, ${arg$4[1]}) (${arg$5[0]}, ${arg$5[1]}) (${arg$6[0]}, ${arg$6[1]})`);
   console.log(

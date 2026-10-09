@@ -2,7 +2,7 @@
 //! it's read (ADR 0052).
 
 use crate::lower::recognition::replaces_whole;
-use crate::lower::{Body, strip};
+use crate::lower::{Body, FnInfo, fn_def, strip};
 use rustc_ast::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::mir::BorrowKind;
@@ -10,7 +10,8 @@ use rustc_middle::thir::ExprKind;
 use rustc_middle::ty;
 use rustc_middle::ty::{Ty, TyCtxt};
 use rustc_span::DesugaringKind;
-use std::collections::HashSet;
+use rustc_span::def_id::DefId;
+use std::collections::{HashMap, HashSet};
 
 /// The types whose JS objects get changed in place somewhere in the crate:
 /// `a.b.c = ..` changes the object `a.b`, so it's `a.b`'s type. Only these
@@ -113,4 +114,102 @@ pub(super) fn binds_ref_mut(pat: &rustc_middle::thir::Pat<'_>) -> bool {
         }
     });
     found
+}
+
+/// The type parameters whose `Copy` bound takes a copy function, `TCopy`
+/// (ADR 0289): every one of a function another crate or a dictionary may
+/// call, a trait's and a public one of a library's, and of the crate's own
+/// others those a caller gives a value whose copy may not be the value
+/// itself, or a type parameter of its own that is one. A reference, a
+/// number, text, a function, and an `Option` of one is its own copy.
+pub(in crate::lower) fn copied_params<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    all_bodies: &[&Body<'tcx>],
+    fns: &HashMap<DefId, FnInfo>,
+    library: bool,
+) -> HashSet<(DefId, u32)> {
+    let mut given = HashSet::new();
+    for &id in fns.keys() {
+        if !copies_by_callers(tcx, id) || (library && crate::lower::library::reachable(tcx, id)) {
+            given.extend(copy_bounded(tcx, id).into_iter().map(|index| (id, index)));
+        }
+    }
+    let mut passed = Vec::new();
+    for body in all_bodies {
+        let caller = tcx.typeck_root_def_id(body.def_id.to_def_id());
+        for expr in body.thir.exprs.iter() {
+            let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
+                continue;
+            };
+            if !fns.contains_key(&callee) {
+                continue;
+            }
+            for index in copy_bounded(tcx, callee) {
+                let Some(given_ty) = args.get(index as usize).and_then(|arg| arg.as_type()) else {
+                    continue;
+                };
+                match given_ty.kind() {
+                    ty::Param(param) => passed.push(((caller, param.index), (callee, index))),
+                    _ if copies_itself(tcx, given_ty) => {}
+                    _ => {
+                        given.insert((callee, index));
+                    }
+                }
+            }
+        }
+    }
+    let mut changed = true;
+    while changed {
+        changed = false;
+        for &(from, to) in &passed {
+            if given.contains(&from) && given.insert(to) {
+                changed = true;
+            }
+        }
+    }
+    given
+}
+
+/// Is `id` one only its crate's callers call, whose `Copy` bounds take a
+/// copy function only where they give one (ADR 0289)? A trait's method, an
+/// impl's, and their closures are called through dictionaries.
+pub(in crate::lower) fn copies_by_callers(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    let id = tcx.typeck_root_def_id(id);
+    id.is_local() && tcx.trait_of_assoc(id).is_none() && tcx.trait_impl_of_assoc(id).is_none()
+}
+
+/// The type parameters of `id` bound by `Copy`, by their indices, an
+/// impl's with its own.
+fn copy_bounded(tcx: TyCtxt<'_>, id: DefId) -> Vec<u32> {
+    let Some(copy) = tcx.lang_items().copy_trait() else {
+        return Vec::new();
+    };
+    let mut indices = Vec::new();
+    for (clause, _) in tcx.clauses_of(id).instantiate_identity(tcx) {
+        if let ty::ClauseKind::Trait(predicate) = clause.skip_normalization().kind().skip_binder()
+            && predicate.def_id() == copy
+            && let ty::Param(param) = predicate.self_ty().kind()
+            && !indices.contains(&param.index)
+        {
+            indices.push(param.index);
+        }
+    }
+    indices
+}
+
+/// Is a copy of `ty` the value itself, whatever changes: a shared
+/// reference, a number, `bool`, text, a function, a closure that changes
+/// nothing it captured, and an `Option` of one?
+fn copies_itself<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    match ty.kind() {
+        ty::Ref(_, _, Mutability::Not) => true,
+        ty::Bool | ty::Char | ty::Int(_) | ty::Uint(_) | ty::Float(_) | ty::Str | ty::Never => true,
+        ty::FnDef(..) | ty::FnPtr(..) => true,
+        // A closure that changes what it captured has copies of its own,
+        // which rust-js refuses where it's copied (ADR 0246).
+        ty::Closure(_, args) => args.as_closure().kind() == ty::ClosureKind::Fn,
+        ty::Tuple(items) => items.is_empty(),
+        ty::Adt(adt, args) if tcx.is_lang_item(adt.did(), LangItem::Option) => copies_itself(tcx, args.type_at(0)),
+        _ => false,
+    }
 }

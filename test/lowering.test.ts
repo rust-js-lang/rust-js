@@ -2249,3 +2249,104 @@ pub fn named_alike(a: &'static str, b: &'static str, hits: u32) -> bool {
   expect([lib.held(slot), slot.n, lib.held(lib.empty())]).toEqual([4, 4, 0]);
   expect([lib.named_alike("Ann", "ANN", 1), lib.named_alike("Ann", "ANN", 2), lib.named_alike("Ann", "Bob", 1)]).toEqual([true, false, false]);
 });
+
+// ADR 0289: a `T: Copy` takes a copy function only where it may be given
+// a value a copy isn't, one changed in place: react.dev's Preview debounces
+// an `Option<&SandpackError>`, whose copy is itself, so `useDebounced(value)`
+// is called as the original does. One a caller outside the crate may call,
+// or given a struct that changes, still takes one.
+test("a Copy bound takes a copy only where a copy isn't the value", async () => {
+  const dir = fixture("copy-bounds");
+  writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy)]
+pub struct Point {
+    pub x: u32,
+}
+
+fn twice<T: Copy>(value: T) -> (T, T) {
+    (value, value)
+}
+
+fn kept<T: Copy>(value: T) -> T {
+    let copy = value;
+    copy
+}
+
+pub fn named(name: Option<&'static str>) -> (Option<&'static str>, Option<&'static str>) {
+    twice(name)
+}
+
+pub fn moved(p: Point) -> u32 {
+    let mut q = kept(p);
+    q.x += 1;
+    p.x + q.x
+}
+
+fn inner<T: Copy>(value: T) -> (T, T) {
+    (value, value)
+}
+
+fn relay<T: Copy>(value: T) -> (T, T) {
+    inner(value)
+}
+
+pub fn relayed(p: Point) -> u32 {
+    let mut pair = relay(p);
+    pair.0.x += 1;
+    pair.0.x + pair.1.x
+}
+
+pub struct Holder<T> {
+    value: T,
+}
+
+impl<T: Copy> Holder<T> {
+    fn get(&self) -> T {
+        self.value
+    }
+}
+
+pub fn held(p: Point) -> u32 {
+    let h = Holder { value: p };
+    let mut q = h.get();
+    q.x += 1;
+    h.value.x + q.x
+}
+
+// Called through a dictionary, a trait's method takes one whatever its
+// direct callers give.
+trait Dup {
+    fn dup<T: Copy>(&self, value: T) -> (T, T);
+}
+
+struct Twin;
+
+impl Dup for Twin {
+    fn dup<T: Copy>(&self, value: T) -> (T, T) {
+        (value, value)
+    }
+}
+
+fn through<S: Dup>(s: &S) -> (&'static str, &'static str) {
+    s.dup("a")
+}
+
+pub fn duped() -> (&'static str, &'static str) {
+    through(&Twin)
+}
+
+pub fn shared<T: Copy>(value: T) -> T {
+    value
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("function twice(value) {");
+  expect(js).toContain("return twice(name);");
+  expect(js).toContain("function kept(value, TCopy) {");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.named("a"), lib.moved({ x: 1 }), lib.relayed({ x: 1 }), lib.held({ x: 1 }), lib.duped()]).toEqual([["a", "a"], 3, 3, 3, ["a", "a"]]);
+  // A library's public one may be given anything by its consumers.
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "library", "lib.js"), "--library", "--manifest", join(dir, "library", "lib.manifest.json"),
+    "--", "--crate-name", "shared", `--emit=metadata=${join(dir, "library", "libshared.rmeta")}`]);
+  expect(readFileSync(join(dir, "library", "lib.js"), "utf8")).toContain("export function shared(value, TCopy) {");
+});

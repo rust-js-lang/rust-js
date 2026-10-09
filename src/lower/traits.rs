@@ -20,7 +20,7 @@ use rustc_middle::traits::{BuiltinImplSource, ImplSource};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeFoldable, TypeVisitableExt};
 use rustc_span::def_id::DefId;
 use rustc_span::{Span, Symbol};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 /// A trait whose bounds take dictionaries (ADR 0049): the crate's own, and
 /// the std ones rust-js has dictionaries for (ADR 0052).
@@ -122,6 +122,7 @@ fn const_params(tcx: TyCtxt<'_>, id: DefId) -> Vec<&ty::GenericParamDef> {
 pub(super) fn bounds<'tcx>(
     tcx: TyCtxt<'tcx>,
     foreign: &super::library::Foreign<'_, 'tcx>,
+    copied: &HashSet<(DefId, u32)>,
     id: DefId,
 ) -> Vec<ty::TraitRef<'tcx>> {
     let mut result = Vec::new();
@@ -135,7 +136,7 @@ pub(super) fn bounds<'tcx>(
     }
     for (clause, _) in tcx.clauses_of(id).instantiate_identity(tcx) {
         let clause = clause.skip_normalization();
-        if let Some(tr) = bound_of(tcx, foreign, clause, id)
+        if let Some(tr) = bound_of(tcx, foreign, copied, clause, id)
             && !result.contains(&tr)
         {
             result.push(tr);
@@ -183,6 +184,7 @@ pub(super) fn may_have_destructors(tcx: TyCtxt<'_>, foreign: &super::library::Fo
 fn bound_of<'tcx>(
     tcx: TyCtxt<'tcx>,
     foreign: &super::library::Foreign<'_, 'tcx>,
+    copied: &HashSet<(DefId, u32)>,
     clause: ty::Clause<'tcx>,
     id: DefId,
 ) -> Option<ty::TraitRef<'tcx>> {
@@ -197,6 +199,15 @@ fn bound_of<'tcx>(
     if is_std_def(tcx, tr.def_id, StdItem::Eq) {
         let partial_eq = tcx.require_lang_item(LangItem::PartialEq, tcx.def_span(id));
         tr = ty::TraitRef::new(tcx, partial_eq, [tr.self_ty(), tr.self_ty()]);
+    }
+    // A `Copy` bound only the crate's callers give, none of them a value
+    // whose copy isn't itself, takes no copy function (ADR 0289).
+    if tcx.is_lang_item(tr.def_id, LangItem::Copy)
+        && super::analysis::copies_by_callers(tcx, id)
+        && let ty::Param(param) = tr.self_ty().kind()
+        && !copied.contains(&(tcx.typeck_root_def_id(id), param.index))
+    {
+        return None;
     }
     (operational(tcx, foreign, tr.def_id) && !is_marker(tcx, foreign, tr.def_id)).then_some(tr)
 }
@@ -222,15 +233,16 @@ pub(super) fn is_marker(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_, '
 pub(super) fn own_bounds<'tcx>(
     tcx: TyCtxt<'tcx>,
     foreign: &super::library::Foreign<'_, 'tcx>,
+    copied: &HashSet<(DefId, u32)>,
     id: DefId,
 ) -> Vec<ty::TraitRef<'tcx>> {
     let own: Vec<_> = tcx
         .clauses_of(id)
         .clauses
         .iter()
-        .filter_map(|&(clause, _)| bound_of(tcx, foreign, clause, id))
+        .filter_map(|&(clause, _)| bound_of(tcx, foreign, copied, clause, id))
         .collect();
-    bounds(tcx, foreign, id)
+    bounds(tcx, foreign, copied, id)
         .into_iter()
         .filter(|tr| own.contains(tr))
         .collect()
@@ -778,18 +790,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.given.const_params.push((param.index, Expr::var(&name)));
             params.push(name.into());
         }
-        params.extend(bounds(self.tcx, self.krate.foreign, id).into_iter().map(|tr| {
-            // `writeT` and `readT`, as a generic codec's (ADR 0081).
-            let name = match super::serde::serde_trait(self.tcx, tr.def_id) {
-                Some(true) => format!("write{}", tr.self_ty()),
-                Some(false) => format!("read{}", tr.self_ty()),
-                // `XConvertF64` and `XConvertString`, of two impls of one trait.
-                None => format!("{}{}", evidence_word(self.tcx, tr.self_ty()), trait_word(self.tcx, tr)),
-            };
-            let name = self.fresh(&js_word(&name));
-            self.given.evidence.push((tr, Expr::var(&name)));
-            js::Pattern::from(name)
-        }));
+        params.extend(
+            bounds(self.tcx, self.krate.foreign, self.krate.copied, id)
+                .into_iter()
+                .map(|tr| {
+                    // `writeT` and `readT`, as a generic codec's (ADR 0081).
+                    let name = match super::serde::serde_trait(self.tcx, tr.def_id) {
+                        Some(true) => format!("write{}", tr.self_ty()),
+                        Some(false) => format!("read{}", tr.self_ty()),
+                        // `XConvertF64` and `XConvertString`, of two impls of one trait.
+                        None => format!("{}{}", evidence_word(self.tcx, tr.self_ty()), trait_word(self.tcx, tr)),
+                    };
+                    let name = self.fresh(&js_word(&name));
+                    self.given.evidence.push((tr, Expr::var(&name)));
+                    js::Pattern::from(name)
+                }),
+        );
         // Then each fact it asks of a type parameter, `TSize` (ADR 0145).
         for &(index, fact) in self.krate.type_facts.get(&id).into_iter().flatten() {
             let param = self.tcx.generics_of(id).param_at(index as usize, self.tcx);
@@ -1283,7 +1299,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .into_iter()
             .map(|param| self.const_arg(args.const_at(param.index as usize), span))
             .collect::<R<Vec<_>>>()?;
-        for bound in bounds(self.tcx, self.krate.foreign, id) {
+        for bound in bounds(self.tcx, self.krate.foreign, self.krate.copied, id) {
             let bound = ty::EarlyBinder::bind(self.tcx, bound)
                 .instantiate(self.tcx, args)
                 .skip_normalization();
@@ -1544,7 +1560,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .into_iter()
             .map(|index| self.const_arg(generic_args.const_at(index as usize), span))
             .collect::<R<Vec<_>>>()?;
-        for bound in own_bounds(self.tcx, self.krate.foreign, id) {
+        for bound in own_bounds(self.tcx, self.krate.foreign, self.krate.copied, id) {
             values.push(
                 self.dictionary(
                     ty::EarlyBinder::bind(self.tcx, bound)
@@ -1580,13 +1596,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         names: &[String],
         span: Span,
     ) -> R<Vec<Expr>> {
-        let own = own_bounds(self.tcx, self.krate.foreign, method);
+        let own = own_bounds(self.tcx, self.krate.foreign, self.krate.copied, method);
         // Its const parameters' values first, the impl's and its own (ADR 0135).
         let mut values = const_params(self.tcx, method)
             .into_iter()
             .map(|param| self.const_arg(args.const_at(param.index as usize), span))
             .collect::<R<Vec<_>>>()?;
-        for bound in bounds(self.tcx, self.krate.foreign, method) {
+        for bound in bounds(self.tcx, self.krate.foreign, self.krate.copied, method) {
             let here = ty::EarlyBinder::bind(self.tcx, bound)
                 .instantiate(self.tcx, args)
                 .skip_normalization();
@@ -2008,7 +2024,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 params.push(name);
             }
             // A generic method's own evidence is its caller's, after the arguments.
-            let declared: Vec<_> = own_bounds(self.tcx, self.krate.foreign, item.def_id)
+            let declared: Vec<_> = own_bounds(self.tcx, self.krate.foreign, self.krate.copied, item.def_id)
                 .into_iter()
                 .map(|bound| {
                     ty::EarlyBinder::bind(self.tcx, bound)
@@ -2162,9 +2178,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut specialized = Vec::new();
         // A generic default's own evidence is its caller's, after its
         // arguments (ADR 0106); the rest is the impl's, made here.
-        let own = own_bounds(self.tcx, self.krate.foreign, id);
+        let own = own_bounds(self.tcx, self.krate.foreign, self.krate.copied, id);
         let mut own_params = Vec::new();
-        for bound in bounds(self.tcx, self.krate.foreign, id) {
+        for bound in bounds(self.tcx, self.krate.foreign, self.krate.copied, id) {
             if own.contains(&bound) {
                 let word = format!(
                     "{}{}",

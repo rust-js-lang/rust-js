@@ -753,4 +753,20 @@ export const mutations: Mutation[] = [
     replace: "        let undefined = Expr::bin(Op::Eq, Expr::var(cache), Expr::undefined());\n        let mut body = Vec::new();\n        if params.is_empty() {\n            body.push(\n                StmtKind::If(\n                    Expr::bool(true),",
     tests: ["test/traits.test.ts", "-t", "an empty trait implementation needs no function body"],
   },
+  {
+    name: "copy-bound-always-dropped",
+    breaks: "a `Copy` bound never takes a copy function, so `kept(p)` shares `p`'s object",
+    file: "src/lower/traits.rs",
+    find: "        && !copied.contains(&(tcx.typeck_root_def_id(id), param.index))\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "a Copy bound takes a copy only"],
+  },
+  {
+    name: "copy-bound-always-kept",
+    breaks: "every `Copy` bound takes a copy function, so `twice(name)` is given `{ copy: (value) => value }`",
+    file: "src/lower/traits.rs",
+    find: "    if tcx.is_lang_item(tr.def_id, LangItem::Copy)\n        && super::analysis::copies_by_callers(tcx, id)",
+    replace: "    if false\n        && super::analysis::copies_by_callers(tcx, id)",
+    tests: ["test/lowering.test.ts", "-t", "a Copy bound takes a copy only"],
+  },
 ];

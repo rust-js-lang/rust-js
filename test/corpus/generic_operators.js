@@ -16,12 +16,8 @@ function affine(x, a, b, TMul, TAdd) {
   return TAdd.add(TMul.mul(a, x), b);
 }
 
-function parts(a, b, TDiv, TRem, TSub, TCopy) {
-  return [
-    TDiv.div(TCopy.copy(a), TCopy.copy(b)),
-    TRem.rem(TCopy.copy(a), TCopy.copy(b)),
-    TSub.sub(TCopy.copy(a), TCopy.copy(b)),
-  ];
+function parts(a, b, TDiv, TRem, TSub) {
+  return [TDiv.div(a, b), TRem.rem(a, b), TSub.sub(a, b)];
 }
 
 function flip(x, TNeg) {
@@ -58,7 +54,6 @@ function main() {
     { div: (a, b) => $bigDiv(a, b, -9223372036854775808n) },
     { rem: (a, b) => $bigRem(a, b, -9223372036854775808n) },
     { sub: (a, b) => BigInt.asIntN(64, a - b) },
-    { copy: (value) => value },
   );
   const arg$1 = parts(
     -7,
@@ -66,7 +61,6 @@ function main() {
     { div: (a, b) => $div(a, b, -2147483648) | 0 },
     { rem: (a, b) => $rem(a, b, -2147483648) | 0 },
     { sub: (a, b) => (a - b) | 0 },
-    { copy: (value) => value },
   );
   console.log(`(${arg[0]}, ${arg[1]}, ${arg[2]}) (${arg$1[0]}, ${arg$1[1]}, ${arg$1[2]})`);
   console.log(
