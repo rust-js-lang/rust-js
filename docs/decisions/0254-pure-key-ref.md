@@ -46,3 +46,13 @@ and one that reads an import, react's `Fragment` of Headless UI's
 `as={Fragment}` in react.dev's NavigationBar, is read in place, as a
 variable nothing writes again is: JS never lets a module change an
 import's binding. It was a `const match = Fragment`.
+
+## Amendment: a component's key where it was written
+
+`jsx!` gives a key last, as `.key(k)`, and a component's was printed last:
+`<Listbox.Option value={filePath} as={Fragment} key={filePath}>` where
+react.dev's NavigationBar writes `key` first. A component's key goes where
+it was written, among its props: `jsx!` reads each in that order already,
+captured or not. One written before `{..base}`, whose spread is put first
+(ADR 0250), comes before it: `<Panel key={k} {...props} wide />`. An
+element's was where it was written already.

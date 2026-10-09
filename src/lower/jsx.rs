@@ -797,11 +797,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 value = handler;
             }
         }
-        jsx.props.push(if name == "..." {
+        // A component's `key`, which `jsx!` gives last, goes where it was
+        // written: `jsx!` reads each in that order already (ADR 0254). A
+        // base's spread, written last and put first (ADR 0250), follows it.
+        let at = match name.as_str() {
+            "key" => {
+                let written = self.js_span(self.thir[value_id].span).lo;
+                jsx.props.iter().position(|prop| match prop {
+                    Prop::Spread(v) if v.span.is_none() => true,
+                    Prop::Field(_, v) | Prop::Getter(_, v) | Prop::Spread(v) => {
+                        !v.span.is_none() && v.span.lo > written
+                    }
+                })
+            }
+            _ => None,
+        };
+        let prop = if name == "..." {
             Prop::Spread(value)
         } else {
             Prop::Field(name, value)
-        });
+        };
+        match at {
+            Some(at) => jsx.props.insert(at, prop),
+            None => jsx.props.push(prop),
+        }
         Ok(element)
     }
 }

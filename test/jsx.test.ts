@@ -475,7 +475,7 @@ pub fn Title(small: bool) -> JSX::Element {
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain("const Heading = small ? H4 : H2;");
-  expect(jsx).toContain('<Heading id="t" className="title" key="h">');
+  expect(jsx).toContain('<Heading key="h" id="t" className="title">');
   const { Title } = await import(join(dir, "lib.jsx"));
   expect([true, false].map((small) => renderToStaticMarkup(Title(small)))).toEqual(['<h4 id="t" class="title">Hi</h4>', '<h2 id="t" class="title">Hi</h2>']);
 });
@@ -617,6 +617,33 @@ pub fn list(tags: &[Tag]) -> Vec<JSX::Element> {
   const { dir, args } = compile(source);
   run(args);
   expect(readFileSync(join(dir, "lib.jsx"), "utf8")).toContain("return tags.map((tag) => <li key={tag}>tag</li>);");
+});
+
+// A `key`, which `jsx!` gives last, is where it was written, as react.dev's
+// NavigationBar writes `<Listbox.Option key={filePath} value={filePath}>`
+// (ADR 0254), a component's as an element's.
+test("a key is where it was written", () => {
+  const source = `#![allow(non_snake_case)]
+use react::{JSX, jsx};
+pub struct ItemProps {
+    pub value: String,
+}
+#[rust_js::link_name = "./item.js#Item"]
+pub fn Item(props: ItemProps) -> JSX::Element {
+    unreachable!()
+}
+pub fn files(paths: &[String]) -> Vec<JSX::Element> {
+    paths.iter().map(|path| jsx! { <li key={path.as_str()} className="file">{path.as_str()}</li> }).collect()
+}
+pub fn items(paths: &[String]) -> Vec<JSX::Element> {
+    paths.iter().map(|path| jsx! { <Item key={path.as_str()} value={path.clone()} /> }).collect()
+}
+`;
+  const { dir, args } = compile(source);
+  run(args);
+  const js = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(js).toContain('<li key={path} className="file">');
+  expect(js).toContain("<Item key={path} value={path} />");
 });
 
 test("nested component JSX stays readable, contextually typed and mapped to the original Rust", async () => {
@@ -3074,7 +3101,7 @@ pub fn Keyed(props: &'static PanelProps<'static>) -> JSX::Element {
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain("<Panel {...props} wide />");
-  expect(jsx).toContain("<Panel {...props} wide key={match} />");
+  expect(jsx).toContain("<Panel key={match} {...props} wide />");
   const { Again } = await import(join(dir, "lib.jsx"));
   const tree = Again({ title: "t", wide: false, extra: 1 });
   expect(tree.props.extra).toBe(1);
@@ -3106,7 +3133,7 @@ pub fn Named(name: &'static str) -> JSX::Element {
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(jsx).toContain("<Panel title={name} wide key={match} />");
+  expect(jsx).toContain("<Panel key={match} title={name} wide />");
   const { Named } = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(Named("n"))).toBe('<p title="n" data-wide="true"></p>');
 });
@@ -3401,7 +3428,7 @@ pub fn Tags(labels: Vec<&'static str>) -> JSX::Element {
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(jsx).toContain("<Tag label={described(label)} key={label} />");
+  expect(jsx).toContain("<Tag key={label} label={described(label)} />");
   expect(jsx).not.toContain("const match");
   const { Tags } = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(Tags(["a", ""]))).toBe("<p><i>some</i><i>none</i></p>");

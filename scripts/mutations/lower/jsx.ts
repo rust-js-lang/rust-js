@@ -434,4 +434,20 @@ export const mutations: Mutation[] = [
     replace: "                        Some(_) => value,",
     tests: ["test/jsx.test.ts", "-t", "component's child shown if a test holds"],
   },
+  {
+    name: "key-last",
+    breaks: "a component's `key` is last, not where it was written, `<Item value={path} key={path} />`",
+    file: "src/lower/jsx.rs",
+    find: "            \"key\" => {\n",
+    replace: "            \"key\" if false => {\n",
+    tests: ["test/jsx.test.ts", "-t", "a key is where it was written"],
+  },
+  {
+    name: "key-after-base",
+    breaks: "a `key` written before `{..base}` follows its spread, `<Panel {...props} key={match} wide />`",
+    file: "src/lower/jsx.rs",
+    find: "                    Prop::Spread(v) if v.span.is_none() => true,\n",
+    replace: "                    Prop::Spread(v) if v.span.is_none() => false,\n",
+    tests: ["test/jsx.test.ts", "-t", "props updated from a reference are spread"],
+  },
 ];
