@@ -487,6 +487,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             );
             return Ok(());
         }
+        let from_async = span.is_desugaring(DesugaringKind::Async);
         let span = self.js_span(span);
         match &pat.kind {
             PatKind::Binding {
@@ -633,6 +634,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return self.destructure(pat, subject, true, false, out);
                 }
                 let items = self.item_subject(init);
+                // `let {error: rawError, registerBundler} = sandpack;`: a
+                // place taken apart into variables is too, each read once
+                // as Rust reads it (ADR 0291). Not what owns a destructor,
+                // which is moved out of the place below, nor an `async fn`'s
+                // parameter, its own pattern (ADR 0029).
+                let mut binds = false;
+                pat.walk_always(|p| binds |= matches!(p.kind, PatKind::Binding { .. }));
+                if binds
+                    && !from_async
+                    && !items
+                    && !self.has_drops(self.thir[init].ty)
+                    && let Some((pattern, mutable)) = self.js_pattern(pat)
+                {
+                    let value = self.expr(init, out)?;
+                    out.push(
+                        StmtKind::Destructure {
+                            pattern,
+                            value,
+                            mutable,
+                        }
+                        .at(span),
+                    );
+                    return Ok(());
+                }
                 let (subject, stable) = self.subject(init, "tmp", out)?;
                 // What it binds by value is moved out of `init` (ADR 0098).
                 self.clear_parts(init, pat, out);

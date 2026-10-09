@@ -2549,7 +2549,7 @@ pub fn A(p: P) -> JSX::Element {
 `);
   const failed = Bun.spawnSync(read.args, { cwd: read.dir });
   expect([failed.exitCode === 0, failed.stderr.toString().includes("take it apart from them")]).toEqual([false, true]);
-  // Nor is one taken apart anywhere but where the props are given.
+  // A `let` takes it apart as JS's destructuring does (ADR 0291).
   const later = compile(`#![allow(non_snake_case)]
 use react::{JSX, Rest, jsx};
 pub struct P { pub href: &'static str, pub rest: Rest }
@@ -2558,7 +2558,19 @@ pub fn A(p: P) -> JSX::Element {
     jsx! { <a href={href} {...rest} /> }
 }
 `);
-  const refused = Bun.spawnSync(later.args, { cwd: later.dir });
+  const destructured = Bun.spawnSync(later.args, { cwd: later.dir });
+  expect([destructured.exitCode, readFileSync(join(later.dir, "lib.jsx"), "utf8").includes("const { href, ...rest } = p;")]).toEqual([0, true]);
+  // Nor is one taken apart anywhere else.
+  const matched = compile(`#![allow(non_snake_case)]
+use react::{JSX, Rest, jsx};
+pub struct P { pub href: &'static str, pub rest: Rest }
+pub fn A(p: P) -> JSX::Element {
+    match p {
+        P { href, rest } => jsx! { <a href={href} {...rest} /> },
+    }
+}
+`);
+  const refused = Bun.spawnSync(matched.args, { cwd: matched.dir });
   expect([refused.exitCode === 0, refused.stderr.toString().includes("a `Rest` of props taken apart here")]).toEqual([false, true]);
 });
 

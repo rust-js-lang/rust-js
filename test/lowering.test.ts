@@ -2467,3 +2467,54 @@ pub fn lent(a: &Counter, b: &Counter) -> u32 {
   expect([lib.cleared(failure), lib.cleared({ message: "kept" }), lib.read_after(failure), lib.taken(failure), lib.looped(failure), lib.captured(failure), lib.bumped(1), lib.bumped_else(1), lib.lent({ hits: 0 }, { hits: 0 })])
     .toEqual([true, false, 6, 6, 11, 6, 3, 3, 50]);
 });
+
+// ADR 0291: a `let` taking a variable apart is JS's destructuring, as one
+// taking a value apart is: react.dev's Preview has `let {error: rawError,
+// registerBundler} = sandpack;`, and calls `registerBundler(..)`, which a
+// method call `sandpack.registerBundler(..)` wouldn't be: JS gives that one
+// `sandpack` as its `this`.
+test("a let taking a variable apart destructures it", async () => {
+  const dir = fixture("place-destructure");
+  writeFileSync(join(dir, "lib.rs"), `pub struct State {
+    pub error: Option<&'static str>,
+    pub status: u32,
+    pub register: fn(u32) -> u32,
+}
+
+pub fn renamed(state: &State) -> u32 {
+    let &State {
+        error: mut raw,
+        register: registered,
+        ..
+    } = state;
+    if raw == Some("x") {
+        raw = None;
+    }
+    registered(raw.map_or(0, |s| s.len() as u32))
+}
+
+pub fn plain(state: &State) -> u32 {
+    let State { status, register, .. } = state;
+    register(*status)
+}
+
+pub fn pair(values: (u32, u32)) -> u32 {
+    let (a, b) = values;
+    a * 10 + b
+}
+
+pub fn ignored(values: (u32, u32)) -> u32 {
+    let (_, _) = values;
+    1
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("let { error: raw, register: registered } = state;");
+  expect(js).toContain("const { status, register } = state;");
+  expect(js).toContain("const [a, b] = values;");
+  expect(js).not.toContain("const [] = values;");
+  const lib = await import(join(dir, "lib.js"));
+  const state = { error: "abc", status: 4, register(n: number) { return this === undefined ? n : -1; } };
+  expect([lib.renamed(state), lib.renamed({ ...state, error: "x" }), lib.plain(state), lib.pair([1, 2])]).toEqual([3, 0, 4, 12]);
+});

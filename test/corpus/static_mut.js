@@ -31,10 +31,10 @@ function main() {
   record(8n);
   const stats = { ...STATS.value };
   record(1n);
-  const tmp = [STATS.value.calls, STATS.value.last, SLOTS.value[1]];
-  console.log(`${statsDebug_fmt(stats)} ${tmp[0]} ${tmp[1]} ${tmp[2]}`);
-  const tmp$1 = [SLOTS.value.slice(), WRAP.value];
-  console.log(`[${tmp$1[0].map((item) => String(item)).join(", ")}] ${tmp$1[1]}`);
+  const [calls, last, slot] = [STATS.value.calls, STATS.value.last, SLOTS.value[1]];
+  console.log(`${statsDebug_fmt(stats)} ${calls} ${last} ${slot}`);
+  const tmp = [SLOTS.value.slice(), WRAP.value];
+  console.log(`[${tmp[0].map((item) => String(item)).join(", ")}] ${tmp[1]}`);
   LINES.value = 10;
   console.log(`${line()} ${line()}`);
 }

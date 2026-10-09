@@ -7,7 +7,7 @@ function decode(bytes) {
   let i = 0;
   while (i < bytes.length) {
     const b = $index(bytes, i);
-    const tmp =
+    const [point, width] =
       b < 128
         ? [b, 1]
         : b < 224
@@ -34,8 +34,8 @@ function decode(bytes) {
                   0,
                 4,
               ];
-    out.push(String.fromCodePoint(tmp[0]));
-    i = (i + tmp[1]) >>> 0;
+    out.push(String.fromCodePoint(point));
+    i = (i + width) >>> 0;
   }
   return out;
 }
