@@ -931,3 +931,75 @@ pub fn Page() -> JSX::Element {
   const custom = lib.Page().props.children;
   expect(custom.props.onCheck()).toBeUndefined();
 });
+
+// ADR 0040: a component's callback of one call whose JS gives `undefined`
+// anyway returns it, `onSubmit={() => submit(false)}`, as react.dev writes
+// it: a function of the crate's that gives `()`, a closure of its own, or a
+// binding that says so, `#[rust_js::returns_undefined]`, React's setter's.
+// A binding that doesn't, `parseInt`, keeps its value dropped.
+test("a component's callback returns a call that gives undefined", async () => {
+  const dir = fixture("undefined-callbacks");
+  writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
+use std::rc::Rc;
+use react::{JSX, jsx};
+
+unsafe extern "Rust" {
+    #[link_name = "parseInt"]
+    safe fn parse_int(s: &str) -> f64;
+    #[link_name = "globalThis.record"]
+    safe fn record(n: i32);
+    #[link_name = "globalThis.record"]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
+    safe fn noted(n: i32);
+}
+
+pub struct CardProps {
+    #[cfg_attr(rust_js, rust_js::name = "onSubmit")]
+    pub on_submit: Box<dyn Fn()>,
+    #[cfg_attr(rust_js, rust_js::name = "onNext")]
+    pub on_next: Rc<dyn Fn()>,
+    #[cfg_attr(rust_js, rust_js::name = "onNote")]
+    pub on_note: Option<Box<dyn Fn()>>,
+    #[cfg_attr(rust_js, rust_js::name = "onParse")]
+    pub on_parse: Box<dyn Fn()>,
+    #[cfg_attr(rust_js, rust_js::name = "onRecord")]
+    pub on_record: Box<dyn Fn()>,
+}
+
+pub fn Card(CardProps { .. }: CardProps) -> JSX::Element {
+    jsx! { <b>{"card"}</b> }
+}
+
+fn submit(flag: bool) {
+    record(if flag { 1 } else { 2 })
+}
+
+pub fn Page() -> JSX::Element {
+    let next = move || {
+        record(3);
+    };
+    jsx! {
+        <Card
+            onSubmit={Box::new(|| submit(false))}
+            onNext={Rc::new(move || next())}
+            onNote={Some(Box::new(|| noted(4)))}
+            onParse={Box::new(|| { parse_int("7"); })}
+            onRecord={Box::new(|| record(5))}
+        />
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(js).toContain("onSubmit={() => submit(false)}");
+  expect(js).toContain("onNext={() => next()}");
+  expect(js).toContain("onNote={() => globalThis.record(4)}");
+  expect(js).toContain('onParse={() => {\n        parseInt("7");\n      }}');
+  expect(js).toContain("onRecord={() => {\n        globalThis.record(5);\n      }}");
+  const previous = globalThis.record;
+  globalThis.record = () => 9;
+  try {
+    const { props } = (await import(join(dir, "lib.jsx"))).Page();
+    expect([props.onSubmit(), props.onNext(), props.onParse(), props.onRecord()]).toEqual([undefined, undefined, undefined, undefined]);
+  } finally { globalThis.record = previous; }
+});

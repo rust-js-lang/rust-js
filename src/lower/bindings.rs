@@ -277,6 +277,13 @@ pub(super) fn is_untagged(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
 }
 
+/// Whether a binding gives `undefined`, whatever JS's types say of it,
+/// `#[rust_js::returns_undefined]`, as React's setter does (ADR 0040).
+pub(super) fn returns_undefined(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("returns_undefined")];
+    tcx.get_attrs_by_path(def_id, &path).next().is_some()
+}
+
 /// Whether a binding's last parameter, a slice, is JS's rest arguments,
 /// `#[rust_js::variadic]` (ADR 0221).
 pub(super) fn is_variadic(tcx: TyCtxt<'_>, def_id: DefId) -> bool {

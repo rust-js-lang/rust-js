@@ -386,23 +386,12 @@ fn expr(e: &mut Expr) {
             for prop in &mut jsx.props {
                 match prop {
                     Prop::Field(name, value) => {
-                        let handler = name
-                            .strip_prefix("on")
-                            .is_some_and(|s| s.starts_with(|c: char| c.is_ascii_uppercase()));
                         // React ignores what a DOM element's handler returns: keep
                         // single-call ones as concise arrow expressions (ADR 0040).
-                        // A component may read what its callback returns.
-                        if element
-                            && handler
-                            && let ExprKind::Arrow(_, body) = &mut value.kind
-                            && let [
-                                Stmt {
-                                    kind: StmtKind::Expr(e),
-                                    span,
-                                },
-                            ] = body.as_slice()
-                        {
-                            *body = vec![StmtKind::Return(Some(e.clone())).at(*span)];
+                        // A component may read what its callback returns, which
+                        // lowering says of one whose call gives `undefined`.
+                        if element && js::is_handler_name(name) {
+                            js::returning_its_call(value);
                         }
                         expr(value);
                     }

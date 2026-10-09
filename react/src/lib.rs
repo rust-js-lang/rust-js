@@ -665,6 +665,7 @@ pub struct SetStateAction<T>(PhantomData<T>);
 
 impl<T> Dispatch<SetStateAction<T>> {
     /// `setCount(value)`.
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     #[cfg_attr(rust_js, rust_js::link_name = "this()")]
     pub fn set(&self, value: T) {
         unreachable!()
@@ -672,6 +673,7 @@ impl<T> Dispatch<SetStateAction<T>> {
 
     /// `setCount((count) => count + 1)`: a new state from the latest one,
     /// which it only reads.
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     #[cfg_attr(rust_js, rust_js::link_name = "this()")]
     pub fn update(&self, f: impl Fn(&T) -> T + 'static) {
         unreachable!()
@@ -717,6 +719,7 @@ handle! {
 
 impl<A> Dispatch<A> {
     /// `dispatch(action)`.
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     #[cfg_attr(rust_js, rust_js::link_name = "this()")]
     pub fn dispatch(&self, action: A) {
         unreachable!()
@@ -770,11 +773,13 @@ handle! {
 
 #[cfg(react = "19.0")]
 impl<S> SetOptimistic<S> {
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     #[cfg_attr(rust_js, rust_js::link_name = "this()")]
     pub fn set(&self, value: S) {
         unreachable!()
     }
 
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     #[cfg_attr(rust_js, rust_js::link_name = "this()")]
     pub fn update(&self, f: impl Fn(&S) -> S + 'static) {
         unreachable!()

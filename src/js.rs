@@ -84,6 +84,28 @@ pub(crate) fn same_path(a: &Expr, b: &Expr) -> bool {
     }
 }
 
+/// Is `name` a handler's, `on` and a capital, `onClick`, `onSubmit`?
+pub fn is_handler_name(name: &str) -> bool {
+    name.strip_prefix("on")
+        .is_some_and(|s| s.starts_with(|c: char| c.is_ascii_uppercase()))
+}
+
+/// An arrow of one call, `() => { f(); }`, as `() => f()`, which gives
+/// what the call gives: for a call that gives what nothing reads, or
+/// `undefined` whatever it is (ADR 0040).
+pub fn returning_its_call(value: &mut Expr) {
+    if let ExprKind::Arrow(_, body) = &mut value.kind
+        && let [
+            Stmt {
+                kind: StmtKind::Expr(e),
+                span,
+            },
+        ] = body.as_slice()
+    {
+        *body = vec![StmtKind::Return(Some(e.clone())).at(*span)];
+    }
+}
+
 /// Each list of statements in `stmts`, itself first, then each nested one,
 /// a closure's body too: for a pass that changes them.
 pub fn each_block_mut(stmts: &mut Vec<Stmt>, f: &mut dyn FnMut(&mut Vec<Stmt>)) {

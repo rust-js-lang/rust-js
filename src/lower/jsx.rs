@@ -1,14 +1,15 @@
 //! Lower JSX bindings into the framework-independent JS tree.
 
-use super::{FnCx, R, Shape, camel_case, js_ident};
+use super::{FnCx, R, Shape, camel_case, fn_def, js_ident};
 use crate::js;
 use crate::js::{Expr, Prop, Stmt, StmtKind};
 use rustc_ast::LitKind;
+use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::{self, ExprId, ExprKind};
 use rustc_middle::ty;
 use rustc_middle::ty::Ty;
-use rustc_span::{BytePos, Span};
+use rustc_span::{BytePos, Span, Symbol};
 use std::collections::HashMap;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -280,6 +281,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // source, a flattened struct made here followed in (ADR 0213).
         let mut written = HashMap::new();
         self.written_at(props, ty, &mut written);
+        // What gives each prop, by its name, where the struct is made here.
+        let mut given = HashMap::new();
+        if let ExprKind::Adt(adt) = &self.thir[super::body_queries::strip(self.thir, props)].kind
+            && let Shape::Object(types) = self.shape(ty)
+        {
+            for field in adt.fields.iter() {
+                given.insert(types[field.name.as_usize()].0.clone(), field.expr);
+            }
+        }
         let mut attrs = Vec::new();
         let mut children = Vec::new();
         for field in fields {
@@ -324,6 +334,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     };
                     let child_ty = types.into_iter().find(|(n, _)| *n == name).expect("the field").1;
                     children = self.spread_children(value, child_ty, out);
+                }
+                // A callback of one call whose JS gives `undefined` anyway
+                // returns it, `onSubmit={() => submit(false)}`: the component
+                // reads what Rust's gives, `undefined` (ADR 0040).
+                Prop::Field(name, mut value)
+                    if js::is_handler_name(&name) && given.get(&name).is_some_and(|&e| self.calls_for_nothing(e)) =>
+                {
+                    js::returning_its_call(&mut value);
+                    attrs.push((written.get(&name).copied(), Prop::Field(name, value)));
                 }
                 other => {
                     let at = match &other {
@@ -381,6 +400,66 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Where each prop `props`, a struct of type `ty`, is given is written,
     /// by its name: a field's value's place, and a flattened struct's made
     /// here, each of its own (ADR 0213).
+    /// Whether `e`, a prop's callback, boxed, counted or in `Some`, is a
+    /// closure of one call whose JS gives `undefined` whatever it is: a
+    /// function of the crate's that gives `()`, a closure of its own, or a
+    /// binding that says so, `#[rust_js::returns_undefined]` (ADR 0040).
+    fn calls_for_nothing(&self, e: ExprId) -> bool {
+        let e = self.strip(e);
+        let closure = match self.thir[e].kind {
+            ExprKind::PointerCoercion { source, .. } => return self.calls_for_nothing(source),
+            ExprKind::Call { fun, ref args, .. }
+                if let [inner] = args[..]
+                    && let Some((id, _)) = fn_def(self.thir[fun].ty)
+                    && self.tcx.item_name(id).as_str() == "new"
+                    && let ty::Adt(adt, _) = self.thir[e].ty.kind()
+                    && (adt.is_box()
+                        || ["Rc", "Arc"]
+                            .iter()
+                            .any(|n| self.tcx.is_diagnostic_item(Symbol::intern(n), adt.did()))) =>
+            {
+                return self.calls_for_nothing(inner);
+            }
+            ExprKind::Adt(ref adt)
+                if self.tcx.is_lang_item(adt.adt_def.did(), LangItem::Option) && adt.fields.len() == 1 =>
+            {
+                return self.calls_for_nothing(adt.fields[0].expr);
+            }
+            ExprKind::Closure(ref closure) => closure,
+            _ => return false,
+        };
+        let body = self.krate.closures[&closure.closure_id];
+        let thir = &body.thir;
+        let mut call = super::body_queries::strip(thir, body.expr);
+        if let ExprKind::Block { block } = thir[call].kind {
+            call = match (&thir[block].stmts[..], thir[block].expr) {
+                ([], Some(value)) => super::body_queries::strip(thir, value),
+                ([stmt], None) => match thir[*stmt].kind {
+                    thir::StmtKind::Expr { expr, .. } => super::body_queries::strip(thir, expr),
+                    _ => return false,
+                },
+                _ => return false,
+            };
+        }
+        let ExprKind::Call { fun, ref args, .. } = thir[call].kind else {
+            return false;
+        };
+        let Some((def_id, _)) = fn_def(thir[fun].ty) else {
+            return false;
+        };
+        if !thir[call].ty.is_unit() {
+            return false;
+        }
+        match self.tcx.trait_of_assoc(def_id) {
+            // A closure of the crate's, `next()`: Rust's, which gives nothing.
+            Some(fn_trait) if self.tcx.fn_trait_kind_from_def_id(fn_trait).is_some() => {
+                matches!(thir[args[0]].ty.peel_refs().kind(), ty::Closure(..))
+            }
+            _ if super::bindings::is_binding(self.tcx, def_id) => super::bindings::returns_undefined(self.tcx, def_id),
+            _ => def_id.is_local(),
+        }
+    }
+
     fn written_at(&self, props: ExprId, ty: Ty<'tcx>, written: &mut HashMap<String, BytePos>) {
         let ExprKind::Adt(adt) = &self.thir[super::body_queries::strip(self.thir, props)].kind else {
             return;

@@ -131,4 +131,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/compiler.test.ts", "-t", "text kept where it isn't empty"],
   },
+  {
+    name: "returned-call-blocked",
+    breaks: "a callback of one call is a block, `() => { setCount(1); }`, where what it gives is `undefined` or ignored",
+    file: "src/js.rs",
+    find: "        *body = vec![StmtKind::Return(Some(e.clone())).at(*span)];\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "callback returns a call that gives undefined"],
+  },
 ];
