@@ -855,7 +855,7 @@ pub fn Choices(items: Vec<String>) -> JSX::Element {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(js).toContain("<Choice value={item} as={Fragment} key={item} />");
+  expect(js).toContain("<Choice key={item} value={item} as={Fragment} />");
   expect(js).not.toContain("const match");
 });
 
