@@ -1,6 +1,7 @@
 //! Read-only library-operation recognition. No function lowering state or JS emission.
 
 mod methods;
+pub(super) mod registry;
 
 use super::combinators::{Comb, HeapOp, IterComb, IterSource, StepOp};
 use super::format_spec::Radix;
@@ -2434,6 +2435,12 @@ pub(super) enum OrderingCall {
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// Of the call's own types, as `json::stringify_with` of an `Unknown`
     /// may throw where one of a `JsonText` can't (ADR 0310).
+    /// `Display::fmt`, whose impl says how `format!` shows a value.
+    pub(super) fn display_fmt(&self) -> Option<DefId> {
+        let display = self.tcx.get_diagnostic_item(sym::Display)?;
+        self.tcx.associated_item_def_ids(display).first().copied()
+    }
+
     pub(super) fn catching(&self, id: DefId, args: ty::GenericArgsRef<'tcx>) -> Catching {
         let output = self
             .tcx

@@ -117,10 +117,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `ty`'s `Display::fmt` is a binding of the value itself,
     /// `#[link_name = "this"]` (ADR 0312).
     fn displays_itself(&self, ty: Ty<'tcx>) -> bool {
-        let Some(display) = self.tcx.get_diagnostic_item(rustc_span::sym::Display) else {
+        let Some(fmt) = self.recognition().display_fmt() else {
             return false;
         };
-        let fmt = self.tcx.associated_item_def_ids(display)[0];
         let args = self.tcx.mk_args(&[self.tcx.erase_and_anonymize_regions(ty).into()]);
         matches!(self.resolve_instance(fmt, args), Ok(Some(instance))
             if super::bindings::is_binding(self.tcx, instance.def_id())
