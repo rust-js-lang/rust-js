@@ -16,10 +16,10 @@
 
 import { createHash } from "node:crypto";
 import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { availableParallelism, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
-import { runSync, stopped, type Exit } from "../test/child";
+import { run, runSync, stopped, type Exit } from "../test/child";
 import { shard, shardArg } from "./shard";
 
 const root = join(import.meta.dir, "..");
@@ -205,7 +205,6 @@ async function since(base: string): Promise<{ files: string[]; changes: Change[]
 // the crate, remade for each mutation, and one target, so only rust-js is
 // built again.
 const work = join(root, "target", "mutants");
-const crate = join(work, "crate");
 const crateFiles = ["Cargo.toml", "Cargo.lock", "build.rs", "rust-toolchain.toml", "src"];
 const buildTimeout = 20 * 60_000;
 const testTimeout = 20 * 60_000;
@@ -257,7 +256,10 @@ export function syncTree(from: string, to: string, paths: string[]): string[] {
  * without one; or why it can't be built. The crate is kept from the last
  * build, the last mutation's file put back: one built without one is kept
  * too, while the crate's sources are what it was built from. */
-function build(mutation?: Mutation): string | { problem: string } {
+async function build(mutation?: Mutation, slot = 0): Promise<string | { problem: string }> {
+  // Each worker builds in a crate and a target of its own (`--jobs`).
+  const crate = slot === 0 ? join(work, "crate") : join(work, `crate-${slot}`);
+  const target = slot === 0 ? join(work, "target") : join(work, `target-${slot}`);
   mkdirSync(crate, { recursive: true });
   syncTree(root, crate, crateFiles);
   const kept = join(work, "bin", mutation?.name ?? "unmutated");
@@ -272,8 +274,7 @@ function build(mutation?: Mutation): string | { problem: string } {
     if (typeof mutated !== "string") return mutated;
     writeFileSync(file, mutated);
   }
-  const target = join(work, "target");
-  const p = runSync(["cargo", "build", "--quiet", "--locked", "--target-dir", target], crate, buildTimeout);
+  const p = await run(["cargo", "build", "--quiet", "--locked", "--target-dir", target], crate, buildTimeout);
   if (p.code !== 0 || stopped(p, buildTimeout)) {
     const why = stopped(p, buildTimeout) ?? p.stderr.split("\n").find((line) => line.startsWith("error")) ?? `exited ${p.code}`;
     return { problem: `doesn't build: ${why}` };
@@ -289,17 +290,23 @@ function build(mutation?: Mutation): string | { problem: string } {
  * mutation is the package's too. The checkout's is put back after. One
  * that writes none, as the control that compiles nothing, runs with the
  * checkout's. */
-function withRuntime<T>(compiler: string, run: () => T): T {
+async function withRuntime<T>(compiler: string, work: () => Promise<T>): Promise<T> {
   const file = join(root, "runtime", "index.js");
   const original = readFileSync(file, "utf8");
-  const written = runSync([compiler, "--runtime-module"], root, buildTimeout);
-  if (written.code !== 0 || stopped(written, buildTimeout)) return run();
-  writeFileSync(file, written.stdout);
+  const written = runtimeOf(compiler);
+  if (written === undefined || written === original) return work();
+  writeFileSync(file, written);
   try {
-    return run();
+    return await work();
   } finally {
     writeFileSync(file, original);
   }
+}
+
+/** The `@rust-js/runtime` `compiler` writes, or none. */
+function runtimeOf(compiler: string): string | undefined {
+  const written = runSync([compiler, "--runtime-module"], root, buildTimeout);
+  return written.code !== 0 || stopped(written, buildTimeout) ? undefined : written.stdout;
 }
 
 const count = (output: string, what: string) => Number(new RegExp(String.raw`^ (\d+) ` + what + "$", "m").exec(output)?.[1] ?? 0);
@@ -321,12 +328,12 @@ export function judge(p: Exit, output: string): "caught" | "survived" | "inconcl
 }
 
 /** How `tests` do with `compiler`, what they printed, and how many ran. */
-function test(tests: string[], compiler: string, snapshots = false): { passed: boolean; ran: number; output: string; exit: Exit } {
+async function test(tests: string[], compiler: string, snapshots = false): Promise<{ passed: boolean; ran: number; output: string; exit: Exit }> {
   // What the JS does is what's checked: a corpus snapshot differs with
   // nearly any change to the compiler, a mutation's or not. One that only
   // changes how the JS reads is checked by its snapshots.
-  const p = withRuntime(compiler, () =>
-    runSync([process.execPath, "test", ...tests], root, testTimeout, {
+  const p = await withRuntime(compiler, () =>
+    run([process.execPath, "test", ...tests], root, testTimeout, {
       RUST_JS_COMPILER: compiler,
       // A compile that takes long, as an exponential one, is stopped, and
       // its test fails, before the runner runs out of time on it, which
@@ -370,7 +377,7 @@ async function main() {
   }
   // Each mutation's tests pass as the compiler is, and run at all, so
   // their failing is the mutation's doing.
-  const unmutated = build();
+  const unmutated = await build();
   if (typeof unmutated !== "string") throw new Error(`the compiler as it is ${unmutated.problem}`);
   // And they use the compiler they're given: with one that compiles
   // nothing, each fails, or a mutation passing them would say nothing.
@@ -380,22 +387,36 @@ async function main() {
   // Each set of tests as its mutations run them, with snapshots or without.
   for (const key of new Set(chosen.map((m) => [m.snapshots ? "snapshots" : "", ...m.tests].join("\0")))) {
     const [mode, ...tests] = key.split("\0");
-    const control = test(tests, unmutated, mode === "snapshots");
+    const control = await test(tests, unmutated, mode === "snapshots");
     if (!control.passed || control.ran === 0) {
       throw new Error(`\`bun test ${tests.join(" ")}\` doesn't pass, or runs nothing, as the compiler is:\n${control.output.slice(-2000)}`);
     }
-    if (test(tests, broken, mode === "snapshots").passed) {
+    if ((await test(tests, broken, mode === "snapshots")).passed) {
       throw new Error(`\`bun test ${tests.join(" ")}\` passes with a compiler that compiles nothing: it isn't using the one it's given`);
     }
   }
-  const rows: [Mutation, string][] = [];
-  for (const mutation of chosen) {
-    const compiler = build(mutation);
+  // Each mutation by one of `--jobs` workers, each building in a crate of its
+  // own: one for each three cores, up to four, as a build uses several,
+  // and one on a CI machine's four, where each would build cold. One whose compiler
+  // writes another runtime, which the checkout's `runtime/index.js` holds
+  // while its tests run, waits for the others and runs alone.
+  const said = Number(args.find((arg) => arg.startsWith("--jobs="))?.slice("--jobs=".length));
+  const jobs = said >= 1 ? said : Math.min(4, Math.max(1, Math.floor(availableParallelism() / 3)));
+  const results = new Map<Mutation, string>();
+  const alone: Mutation[] = [];
+  const original = readFileSync(join(root, "runtime", "index.js"), "utf8");
+  const one = async (mutation: Mutation, slot: number, shared: boolean) => {
+    const compiler = await build(mutation, slot);
     if (typeof compiler !== "string") {
-      rows.push([mutation, compiler.problem]);
-      continue;
+      results.set(mutation, compiler.problem);
+      return;
     }
-    const { ran, output, exit } = test(mutation.tests, compiler, mutation.snapshots);
+    if (shared && runtimeOf(compiler) !== original) {
+      alone.push(mutation);
+      rmSync(compiler, { force: true });
+      return;
+    }
+    const { ran, output, exit } = await test(mutation.tests, compiler, mutation.snapshots);
     // A mutant's compiler is its tests' alone: a debug build, hundreds of
     // megabytes, which kept for each of hundreds would fill a disk.
     rmSync(compiler, { force: true });
@@ -404,11 +425,20 @@ async function main() {
     mkdirSync(join(work, "logs"), { recursive: true });
     writeFileSync(log, output);
     const verdict = judge(exit, output);
-    rows.push([
+    results.set(
       mutation,
       verdict === "caught" ? "caught" : verdict === "survived" ? `SURVIVED: its ${ran} tests passed with it` : `INCONCLUSIVE: no test failed, or the runner didn't end; see ${log}`,
-    ]);
-  }
+    );
+  };
+  const queue = [...chosen];
+  const workers = Math.min(jobs, chosen.length);
+  await Promise.all(
+    Array.from({ length: workers }, async (_, slot) => {
+      for (let next = queue.shift(); next; next = queue.shift()) await one(next, slot, workers > 1);
+    }),
+  );
+  for (const mutation of alone) await one(mutation, 0, false);
+  const rows: [Mutation, string][] = chosen.map((mutation) => [mutation, results.get(mutation) ?? "not run"]);
   for (const [mutation, result] of rows) console.log(`${mutation.name}\t${result}`);
   const summary = process.env.GITHUB_STEP_SUMMARY;
   if (summary) {

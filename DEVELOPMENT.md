@@ -128,6 +128,36 @@ and `wasm32-unknown-unknown` targets; the Bun version the workflows set
 up; Node 24; then `bun install` and `bunx --bun playwright install
 chromium`; and the apps above under Developer Tools.
 
+## What a step of the loop costs
+
+On the M3 Max, with the scan off:
+
+| Step | Takes |
+|---|---|
+| rust-js compiling a small file | 35 ms |
+| `cargo build` after an edit | 4 s |
+| A focused test, `bun test test/<file>.test.ts -t <name>` | 0.3 s |
+| One mutation | 2-5 s |
+| Eight mutations, four at a time | 11 s |
+| The react.dev port, built | 30 s |
+
+What keeps them there:
+
+- **The react, webapi and js crates' metadata** is built only when their
+  sources, build scripts or the toolchain change: a stamp beside it,
+  `target/libreact.stamp`, says what it was made from. Built every run, it
+  was three seconds of a focused test's four.
+- **rust-js is built with one `RUSTC_BOOTSTRAP`**, `.cargo/config.toml`'s,
+  by the tests as by a shell. `.env.test` gives the tests' programs `1`,
+  and a build with it rebuilt every dependency, 22 s, and the next one
+  without it again.
+- **Mutations keep their crate** in `target/mutants/crate`, writing only
+  the files that differ, and the compiler built without a mutation while
+  the sources are what it was built from. They run four at a time, one
+  worker for each three cores, each with a crate and a target of its own
+  (`--jobs=N` says how many). A runtime helper's mutation, whose tests the
+  checkout's `runtime/index.js` serves, runs alone after the others.
+
 ## Working on `main`
 
 - **Each change is a commit on `main`, pushed directly**: no branches, no
