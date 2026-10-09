@@ -809,8 +809,9 @@ handle! {
 }
 
 impl<T> RefObject<T> {
-    /// `ref.current`.
+    /// `ref.current`: a data property, which a read can't throw.
     #[cfg_attr(rust_js, rust_js::link_name = "get current")]
+    #[cfg_attr(rust_js, rust_js::cannot_throw)]
     pub fn current(&self) -> T {
         unreachable!()
     }

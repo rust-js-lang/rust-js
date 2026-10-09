@@ -1014,3 +1014,42 @@ pub fn listed(expanded: bool) -> String {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.classes(true, true), lib.classes(false, true), lib.classes(false, false), lib.listed(true)]).toEqual(["a wide", "a tall", "a", "a wide"]);
 });
+
+// ADR 0301: a binding that can't throw, `#[rust_js::cannot_throw]`, as reading
+// React's `ref.current` can't, read before a value is moved leaves it nothing
+// to drop: a library's function takes no drop for it, and has no `try`, as
+// react.dev's `useEvent` reads its ref, then calls with its arguments. So
+// does `unwrap_unchecked`, which can't panic. One unmarked keeps both.
+test("a binding that can't throw, read before a move, leaves nothing to drop", async () => {
+  const dir = fixture("cannot-throw");
+  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
+    #[link_name = "get globalThis.calls"]
+    #[rust_js::cannot_throw]
+    safe fn calls() -> u32;
+    #[link_name = "get globalThis.calls"]
+    safe fn calls_unmarked() -> u32;
+}
+pub struct Counted<T>(pub u32, pub T);
+pub fn count<T>(value: T) -> Counted<T> {
+    let n = calls();
+    Counted(n, value)
+}
+pub fn count_unmarked<T>(value: T) -> Counted<T> {
+    let n = calls_unmarked();
+    Counted(n, value)
+}
+pub fn first<T>(value: T, given: Option<u32>) -> Counted<T> {
+    let n = unsafe { given.unwrap_unchecked() };
+    Counted(n, value)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--library", "--manifest", join(dir, "lib.manifest.json"),
+    "--", "--crate-name", "counted", `--emit=metadata=${join(dir, "libcounted.rmeta")}`]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function count(value) {\n  const n = globalThis.calls;\n  return [n, value];\n}");
+  expect(js).toContain("export function first(value, given) {\n  const n = given;\n  return [n, value];\n}");
+  expect(js).toContain("export function count_unmarked(value, dropT) {");
+  (globalThis as { calls?: number }).calls = 3;
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.count("a"), lib.count_unmarked("b"), lib.first("c", 4)]).toEqual([[3, "a"], [3, "b"], [4, "c"]]);
+});

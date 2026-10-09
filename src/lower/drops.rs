@@ -133,6 +133,9 @@ pub(super) struct DropState<'tcx> {
     param_drops: HashMap<u32, String>,
     /// The type parameters whose drops the body has used.
     used_drops: HashSet<u32>,
+    /// The variables declared by `let`s that can't leave (ADR 0301): what
+    /// a scope moves after them it moves before anything can leave.
+    quiet: HashSet<String>,
     part_flags: HashMap<(LocalVarId, Path), String>,
     /// Each closure made here that holds a value with a destructor: the body
     /// it's made in, and the variables it holds, which its drop drops.
@@ -1236,6 +1239,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(Expr::arrow(vec![param.into()], body)))
     }
 
+    /// Note the variables `stmts`, a `let` that can't leave, declare: none
+    /// is where a scope can be left (ADR 0301).
+    pub(super) fn note_quiet(&mut self, stmts: &[Stmt]) {
+        for s in stmts {
+            if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &s.kind {
+                self.drop_state.quiet.insert(name.clone());
+            }
+        }
+    }
+
     /// The drop function for a `ty` that `callee`, which takes only the
     /// drops it uses, is given for its type parameter `index`: an argument
     /// the pipeline keeps where `callee` uses it (ADR 0300). The drops of
@@ -1311,8 +1324,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // What's moved before anything in the scope can leave, its flag
         // cleared first and never set again, `children$live = false;`, is
         // never the scope's to drop: no flag, and no `try` for it (ADR 0197).
+        // A `let` that can't leave may come first (ADR 0301).
+        let quiet = |s: &&Stmt| match &s.kind {
+            StmtKind::Const(name, _) | StmtKind::Let(name, _) => self.drop_state.quiet.contains(name),
+            _ => false,
+        };
         let cleared: Vec<String> = body
             .iter()
+            .filter(|s| !quiet(s))
             .map_while(|s| match &s.kind {
                 StmtKind::Assign(target, value) if matches!(value.kind, js::ExprKind::Bool(false)) => {
                     match &target.kind {

@@ -3361,6 +3361,8 @@ pub(crate) enum PureStd {
     Copy,
     /// `Box::new(x)`, which is `x`.
     BoxNew,
+    /// `unwrap_unchecked()`, which is its value, and can't panic.
+    Unchecked,
 }
 
 /// Which pure std function `id` is, if it's one.
@@ -3373,6 +3375,7 @@ pub(crate) fn pure_std(tcx: TyCtxt<'_>, id: DefId) -> Option<PureStd> {
             Some(PureStd::Question)
         }
         "clone" | "to_owned" | "to_string" | "as_str" => Some(PureStd::Copy),
+        "unwrap_unchecked" => Some(PureStd::Unchecked),
         _ if is_std_def(tcx, id, StdItem::BoxNew) => Some(PureStd::BoxNew),
         _ => None,
     }

@@ -410,4 +410,20 @@ export const mutations: Mutation[] = [
     replace: "            let place = Expr::var(&self.krate.fns[&def_id].name);",
     tests: ["test/modules.test.ts", "-t", "imports follow what's used: functions, consts and thread-locals"],
   },
+  {
+    name: "quiet-let-unnoted",
+    breaks: "a `let` that can't leave, before a move, still keeps its scope's drop",
+    file: "src/lower.rs",
+    find: "        if quiet {\n            self.note_quiet(&out[start..]);\n",
+    replace: "        if false && quiet {\n            self.note_quiet(&out[start..]);\n",
+    tests: ["test/bindings.test.ts", "-t", "can't throw"],
+  },
+  {
+    name: "quiet-any-let",
+    breaks: "any `let` before a move is taken as one that can't leave, so a throwing read drops nothing",
+    file: "src/lower.rs",
+    find: "        } if self.cannot_leave(*init));\n",
+    replace: "        });\n",
+    tests: ["test/bindings.test.ts", "-t", "can't throw"],
+  },
 ];

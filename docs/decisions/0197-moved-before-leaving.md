@@ -27,7 +27,8 @@ try {
 **A value whose flag is cleared first in its scope, before anything that
 can leave, and never set again, has no flag, and no `try` for it:**
 `return <a ...>{children}</a>;` alone. Its drop can't run: nothing before
-the move can leave, and nothing after it owns the value.
+the move can leave, and nothing after it owns the value. (Amended: a `let`
+that can't leave may come first, ADR 0301.)
 
 ## Why
 

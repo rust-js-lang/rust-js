@@ -4,6 +4,7 @@
 //! as `body_queries`' are: the destructors' analysis asks it (ADR 0098), and
 //! so do iterator chains, of their stages' closures (ADR 0139).
 
+use super::bindings;
 use super::fn_def;
 use super::recognition::{PureStd, pure_std};
 use std::collections::HashMap;
@@ -100,11 +101,11 @@ pub(super) fn cannot_leave_in<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: Exp
                 Some(_) => generic_args.types().all(simple),
                 // std's own, where no code of the crate's runs: a `len()`, a
                 // question of an `Option` or a `Result`, and a copy or a string
-                // of what's simple.
+                // of what's simple; and a binding that can't throw (ADR 0301).
                 None => match pure_std(tcx, id) {
-                    Some(PureStd::Question | PureStd::BoxNew) => true,
+                    Some(PureStd::Question | PureStd::BoxNew | PureStd::Unchecked) => true,
                     Some(PureStd::Copy) => generic_args.types().all(simple),
-                    None => false,
+                    None => bindings::is_binding(tcx, id) && bindings::cannot_throw(tcx, id),
                 },
             };
             call_pure && args.iter().all(|&a| pure(a))

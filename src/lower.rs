@@ -702,7 +702,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let outer = self.begin_statement(scopes);
         let mut lowered = Vec::new();
         self.statement_body(stmt, &mut lowered)?;
-        self.end_statement(outer, lowered, span, out)
+        // What a `let` that can't leave declares, where nothing can leave
+        // before a move after it (ADR 0301).
+        let quiet = matches!(&self.thir[stmt].kind, thir::StmtKind::Let {
+            initializer: Some(init),
+            else_block: None,
+            ..
+        } if self.cannot_leave(*init));
+        let start = out.len();
+        self.end_statement(outer, lowered, span, out)?;
+        if quiet {
+            self.note_quiet(&out[start..]);
+        }
+        Ok(())
     }
 
     fn statement_body(&mut self, stmt: thir::StmtId, out: &mut Vec<Stmt>) -> R<()> {

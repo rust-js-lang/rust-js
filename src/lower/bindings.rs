@@ -315,7 +315,6 @@ pub(super) fn is_untagged(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
 }
 
-/// Whether a binding gives `undefined`, whatever JS's types say of it,
 /// `#[rust_js::skips_falsy]`: a function that skips what's falsy, as
 /// classnames does, given an argument shown only if a test holds as `test &&
 /// value` (ADR 0221).
@@ -331,6 +330,14 @@ pub(super) fn named_callback(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
 }
 
+/// `#[rust_js::cannot_throw]`: a binding that can't throw, as reading a
+/// data property, React's `ref.current`, can't (ADR 0301).
+pub(super) fn cannot_throw(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("cannot_throw")];
+    tcx.get_attrs_by_path(def_id, &path).next().is_some()
+}
+
+/// Whether a binding gives `undefined`, whatever JS's types say of it,
 /// `#[rust_js::returns_undefined]`, as React's setter does (ADR 0040).
 pub(super) fn returns_undefined(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("returns_undefined")];

@@ -20,4 +20,12 @@ export const mutations: Mutation[] = [
     tests: ["test/snapshots.test.ts"],
     snapshots: true,
   },
+  {
+    name: "cannot-throw-ignored",
+    breaks: "a binding marked `cannot_throw` is taken as one that may throw, so `count` keeps a drop",
+    file: "src/lower/effects.rs",
+    find: "                    None => bindings::is_binding(tcx, id) && bindings::cannot_throw(tcx, id),\n",
+    replace: "                    None => false,\n",
+    tests: ["test/bindings.test.ts", "-t", "can't throw"],
+  },
 ];

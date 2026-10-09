@@ -723,4 +723,12 @@ export const mutations: Mutation[] = [
     replace: "        matches!(ty.kind(), ty::Adt(adt, _) if [\"ParseIntError\"",
     tests: ["test/recognition.test.ts", "-t", "library recognition distinguishes user lookalikes and preserves standard behavior"],
   },
+  {
+    name: "unchecked-may-panic",
+    breaks: "`unwrap_unchecked()` is taken as one that may panic, so `first` keeps a drop",
+    file: "src/lower/recognition.rs",
+    find: "        \"unwrap_unchecked\" => Some(PureStd::Unchecked),\n",
+    replace: "",
+    tests: ["test/bindings.test.ts", "-t", "can't throw"],
+  },
 ];
