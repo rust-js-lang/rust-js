@@ -373,4 +373,12 @@ export const mutations: Mutation[] = [
     replace: "                let inside = Expr::var(\"value\");\n                let shown = self.debug_string_with(inside, item, span, pretty)?;\n                let none = Expr::bin(Op::LooseEq, Expr::var(\"value\"), Expr::null());\n                let shown = Expr::cond(none, Expr::str(\"<uninit>\"), shown);\n",
     tests: ["test/corpus.test.ts", "-t", "once_cells"],
   },
+  {
+    name: "lazy-debug-unmade",
+    breaks: "an unmade `LazyCell`'s `{:?}` reads the value it hasn't",
+    file: "src/lower/display.rs",
+    find: '                let shown = Expr::cond(made, shown, Expr::str("<uninit>"));\n',
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "lazy_cells"],
+  },
 ];

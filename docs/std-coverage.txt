@@ -480,12 +480,12 @@
 + OnceCell::new
 + OnceCell::set
 + OnceCell::take
-# LazyCell 0 of 5
-- LazyCell::force
-- LazyCell::force_mut
-- LazyCell::get
-- LazyCell::get_mut
-- LazyCell::new
+# LazyCell 5 of 5
++ LazyCell::force
++ LazyCell::force_mut
++ LazyCell::get
++ LazyCell::get_mut
++ LazyCell::new
 # OnceLock 7 of 8
 + OnceLock::get
 + OnceLock::get_mut
@@ -495,12 +495,12 @@
 + OnceLock::set
 + OnceLock::take
 - OnceLock::wait
-# LazyLock 0 of 5
-- LazyLock::force
-- LazyLock::force_mut
-- LazyLock::get
-- LazyLock::get_mut
-- LazyLock::new
+# LazyLock 5 of 5
++ LazyLock::force
++ LazyLock::force_mut
++ LazyLock::get
++ LazyLock::get_mut
++ LazyLock::new
 # String 17 of 43
 - String::as_bytes
 - String::as_mut_str

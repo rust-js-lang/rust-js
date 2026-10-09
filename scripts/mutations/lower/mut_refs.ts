@@ -121,8 +121,8 @@ export const mutations: Mutation[] = [
     name: "slice-get-mut-item-subject",
     breaks: "`if let Some(x) = v.get_mut(1)` binds the item, which `bump(x)` can't be given",
     file: "src/lower/mut_refs.rs",
-    find: "        if matches!(self.std_fn(fun), Some(Std::First | Std::SliceGet | Std::SliceLast)) {\n            return false;\n        }\n",
-    replace: "",
+    find: "        if matches!(self.std_fn(fun), Some(Std::First | Std::SliceGet | Std::SliceLast))\n",
+    replace: "        if false\n",
     tests: ["test/corpus.test.ts", "-t", "std_mut_items"],
   },
   {
@@ -148,5 +148,13 @@ export const mutations: Mutation[] = [
     find: "        for (target, name) in backs {\n",
     replace: "        for (target, name) in backs.into_iter().filter(|_| false) {\n",
     tests: ["test/compiler.test.ts", "-t", "values' JS: boxes for &mut to primitives, and recursive clones"],
+  },
+  {
+    name: "own-cell-item-subject",
+    breaks: "`if let Some(n) = LazyCell::get_mut(..)` binds the number, which `*n += 1` can't write",
+    file: "src/lower/mut_refs.rs",
+    find: "            || self.std_fn(fun).is_some_and(Std::gives_its_cell)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "lazy_cells"],
   },
 ];

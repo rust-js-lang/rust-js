@@ -5,7 +5,6 @@
 use super::bindings::{self};
 use super::fn_def;
 use super::std_types::map::{MapOp, Part};
-use super::std_types::once::OnceOp;
 use super::{FnCx, R, Std, camel_case};
 use crate::js::{Expr, Prop, Stmt, StmtKind};
 use crate::runtime::Helper;
@@ -220,7 +219,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A slice's `get_mut`, `first_mut` or `last_mut` gives a handle,
         // which a pattern binds as a `&mut` it's given (ADR 0152).
-        if matches!(self.std_fn(fun), Some(Std::First | Std::SliceGet | Std::SliceLast)) {
+        // So does a call whose `&mut` is its own cell.
+        if matches!(self.std_fn(fun), Some(Std::First | Std::SliceGet | Std::SliceLast))
+            || self.std_fn(fun).is_some_and(Std::gives_its_cell)
+        {
             return false;
         }
         self.mark_item_call(fun);
@@ -256,10 +258,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return false;
         }
         match self.makes_items(self.thir[e].ty, generic_args, args) {
-            // A `OnceCell`'s `get_mut()` gives the cell itself (ADR 0317).
+            // Or one whose `&mut` is its own cell, a `OnceCell`'s `get_mut()`.
             Some(_) => self
                 .std_fn(fun)
-                .is_some_and(|known| self.handle_helper(known, args).is_some() || known == Std::Once(OnceOp::GetMut)),
+                .is_some_and(|known| self.handle_helper(known, args).is_some() || known.gives_its_cell()),
             None => args.first().is_some_and(|&a| self.is_handle(a)),
         }
     }

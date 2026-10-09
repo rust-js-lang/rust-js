@@ -1229,6 +1229,19 @@ export function $onceSet(cell, value) {
   return { TAG: "Ok", _0: undefined };
 }
 
+// A `LazyCell`'s or `LazyLock`'s value, made by its `init` the first time.
+// While it runs, and after it panics, `init` is `null`: std's poisoned.
+export function $force(lazy) {
+  const init = lazy.init;
+  if (init !== undefined) {
+    if (init === null) throw new Error("LazyCell instance has previously been poisoned");
+    lazy.init = null;
+    lazy.value = init();
+    lazy.init = undefined;
+  }
+  return lazy.value;
+}
+
 // A `OnceCell`'s or `OnceLock`'s `get_or_init(f)`: what it holds, made by
 // `f` the first time, which may not set it itself.
 export function $getOrInit(cell, f) {

@@ -1258,6 +1258,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if std(StdItem::Atomic) => {
                 self.debug_string_with(Expr::member(value, "value"), args.type_at(0), span, pretty)
             }
+            // `LazyCell(1)`, or `LazyCell(<uninit>)` where it isn't made yet.
+            ty::Adt(adt, args) if std(StdItem::LazyCell) => {
+                let name = self.tcx.item_name(adt.did());
+                let shown =
+                    self.debug_string_with(Expr::member(Expr::var("lazy"), "value"), args.type_at(0), span, pretty)?;
+                let made = Expr::bin(Op::Eq, Expr::member(Expr::var("lazy"), "init"), Expr::undefined());
+                let shown = Expr::cond(made, shown, Expr::str("<uninit>"));
+                let plain = join(vec![Expr::str(format!("{name}(")), shown.clone(), Expr::str(")")]);
+                let shown = self.pretty_or(pretty, plain, &format!("{name}("), Expr::array(vec![shown]), ")");
+                let f = Expr::arrow(
+                    vec!["lazy".into()],
+                    vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
+                );
+                Ok(self.applied(f, value))
+            }
             // `OnceCell(1)`, or `OnceCell(<uninit>)` where it holds none.
             ty::Adt(adt, args) if std(StdItem::OnceCell) => {
                 let name = self.tcx.item_name(adt.did());

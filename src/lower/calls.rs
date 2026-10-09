@@ -9,6 +9,7 @@ use super::fn_def;
 use super::recognition::{
     Catching, FmtResultAnswer, Std, StdItem, StreamOp, TypeFact, fmt_result_answer, is_std_def, std_item, trait_method,
 };
+use super::std_types::lazy::LazyOp;
 use super::std_types::number::NumOp;
 use super::std_types::once::OnceOp;
 use super::{Dest, FnCx, R};
@@ -672,8 +673,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if let Some(handles) = self.item_handles(known, args, span, out)? {
                 return Ok(handles);
             }
-            // A `OnceCell`'s `get_mut()` is its cell, a handle already (ADR 0317).
-            if known != Std::Once(OnceOp::GetMut) {
+            // A call whose `&mut` is its own cell gives a handle already.
+            if !known.gives_its_cell() {
                 let path = self.tcx.def_path_str(def_id);
                 return Err(self.unsupported(span, &format!("a `{cell}` from `{path}` used as a value")));
             }
@@ -703,8 +704,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::Step(StepOp::Next | StepOp::Peek)
                     // The old value, as it's kept: boxed already.
                     | Std::OptionTake
-                    // A `OnceCell`'s, kept as `$some` makes it (ADR 0317).
+                    // A `OnceCell`'s, kept as `$some` makes it, and a `LazyCell`'s.
                     | Std::Once(OnceOp::Get | OnceOp::Take)
+                    | Std::Lazy(LazyOp::Get)
                     | Std::OptionReplace
                     // The inner `Option`, box and all.
                     | Std::OptionFlatten
@@ -992,6 +994,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(js) = self.once_call(known, call, &mut values, out)? {
             return Ok(js);
         }
+        if let Some(js) = self.lazy_call(known, call, &mut values, out)? {
+            return Ok(js);
+        }
         if let Some(js) = self.channel_call(known, call, &mut values, out)? {
             return Ok(js);
         }
@@ -1114,6 +1119,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::LocalWith
             | Std::LocalBorrow => unreachable!("lowered by cell_call"),
             Std::Once(_) => unreachable!("lowered by once_call"),
+            Std::Lazy(_) => unreachable!("lowered by lazy_call"),
             Std::PtrEq => unreachable!("lowered by ptr_eq"),
             Std::ToBig
             | Std::Duration(_)

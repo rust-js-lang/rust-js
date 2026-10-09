@@ -7,6 +7,7 @@ use super::combinators::{Comb, IterComb, IterSource, StepOp};
 use super::format_spec::Radix;
 use super::representation::Num;
 use super::std_types::heap::HeapOp;
+use super::std_types::lazy::LazyOp;
 use super::std_types::map::{MapOp, Part};
 use super::std_types::number::{DurationOp, NumOp};
 use super::std_types::once::OnceOp;
@@ -248,6 +249,8 @@ pub(super) enum Std {
     Heap(HeapOp),
     /// A `OnceCell`'s or `OnceLock`'s (ADR 0317).
     Once(OnceOp),
+    /// A `LazyCell`'s or `LazyLock`'s (ADR 0318).
+    Lazy(LazyOp),
     /// `serde_json::to_string(&v)` (false) and `to_string_pretty` (ADR 0077).
     ToJson(bool),
     /// `serde_json::from_str::<T>(s)` (ADR 0078).
@@ -371,6 +374,15 @@ pub(super) enum StreamOp {
 }
 
 impl Std {
+    /// Is its `&mut` to a number or text its receiver, the `{ value }` box
+    /// that is (ADRs 0317, 0318): no handle (ADR 0152) to make.
+    pub(super) fn gives_its_cell(self) -> bool {
+        matches!(
+            self,
+            Std::Once(OnceOp::GetMut) | Std::Lazy(LazyOp::GetMut | LazyOp::ForceMut)
+        )
+    }
+
     /// Does it take an iterator, and so a range as an array?
     pub(super) fn takes_iterator(self) -> bool {
         matches!(
@@ -641,6 +653,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             // A `Cow<str>`'s text, borrowed or owned (ADR 0172).
             if diagnostic("deref_method") && self.is_cow_str(ty) {
                 return Some(Some(Std::Text(TextOp::Utf8Part("_0"))));
+            }
+            // A `LazyCell`'s value, made the first time (ADR 0318).
+            if self.is_std_type(ty, StdItem::LazyCell) {
+                let op = if diagnostic("deref_method") {
+                    LazyOp::Force
+                } else {
+                    LazyOp::ForceMut
+                };
+                return Some(Some(Std::Lazy(op)));
             }
             let same = self.is_string_like(ty)
                 || self.is_path_like(ty)
@@ -1091,6 +1112,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ordering = self.is_lang_adt(owner, LangItem::OrderingEnum);
         let local_key = adt("LocalKey");
         let once = self.is_std_type(owner, StdItem::OnceCell);
+        let lazy = self.is_std_type(owner, StdItem::LazyCell);
         let arguments = self.is_lang_adt(owner, LangItem::FormatArguments);
         let argument = self.is_lang_adt(owner, LangItem::FormatArgument);
         let map = adt("HashMap") || adt("BTreeMap") || self.is_json_map(owner);
@@ -1258,6 +1280,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "set" if once => Std::Once(OnceOp::Set),
             "get_or_init" if once => Std::Once(OnceOp::GetOrInit),
             "take" if once => Std::Once(OnceOp::Take),
+            "new" if lazy => Std::Lazy(LazyOp::New),
+            "force" if lazy => Std::Lazy(LazyOp::Force),
+            "force_mut" if lazy => Std::Lazy(LazyOp::ForceMut),
+            "get" if lazy => Std::Lazy(LazyOp::Get),
+            "get_mut" if lazy => Std::Lazy(LazyOp::GetMut),
             "new" if adt("Vec") => Std::VecNew,
             "push" if adt("Vec") => Std::Push,
             // JS's `pop()` gives `undefined` when empty: `None` (ADR 0030).
@@ -2242,6 +2269,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 .into_iter()
                 .any(|name| self.is_std_adt(ty, Symbol::intern(name)))
             || self.is_std_type(ty, StdItem::OnceCell)
+            || self.is_std_type(ty, StdItem::LazyCell)
             || self.is_vec_like(ty)
     }
 
@@ -3166,6 +3194,8 @@ pub(crate) enum StdItem {
     MaybeUninit,
     /// `OnceCell` or `OnceLock`, which have no diagnostic items.
     OnceCell,
+    /// `LazyCell` or `LazyLock`, which have none either.
+    LazyCell,
     Ord,
     PhantomData,
     RefCell,
@@ -3205,6 +3235,7 @@ impl StdItem {
             StdItem::LocalKey => Symbol::intern("LocalKey"),
             StdItem::MaybeUninit => Symbol::intern("MaybeUninit"),
             StdItem::OnceCell => Symbol::intern("OnceCell"),
+            StdItem::LazyCell => Symbol::intern("LazyCell"),
             StdItem::Ord => sym::Ord,
             StdItem::PhantomData => Symbol::intern("PhantomData"),
             StdItem::RefCell => Symbol::intern("RefCell"),
@@ -3348,14 +3379,18 @@ pub(super) fn is_cell_get(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 
 pub(crate) fn is_std_def(tcx: TyCtxt<'_>, id: DefId, item: StdItem) -> bool {
     match item {
-        // Known by its crate and name: `core`'s `OnceCell`, `std`'s `OnceLock`.
-        StdItem::OnceCell => {
-            tcx.def_kind(id) == DefKind::Struct
-                && match tcx.item_name(id).as_str() {
-                    "OnceCell" => tcx.crate_name(id.krate) == sym::core,
-                    "OnceLock" => tcx.crate_name(id.krate) == sym::std,
-                    _ => false,
-                }
+        // Known by its crate and name: `core`'s `OnceCell` and `LazyCell`,
+        // `std`'s `OnceLock` and `LazyLock`.
+        StdItem::OnceCell | StdItem::LazyCell => {
+            let (cell, lock) = match item {
+                StdItem::OnceCell => ("OnceCell", "OnceLock"),
+                _ => ("LazyCell", "LazyLock"),
+            };
+            tcx.def_kind(id) == DefKind::Struct && {
+                let name = tcx.item_name(id);
+                name.as_str() == cell && tcx.crate_name(id.krate) == sym::core
+                    || name.as_str() == lock && tcx.crate_name(id.krate) == sym::std
+            }
         }
         _ => tcx.is_diagnostic_item(item.name(), id),
     }

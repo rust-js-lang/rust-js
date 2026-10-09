@@ -783,8 +783,16 @@ export const mutations: Mutation[] = [
     name: "once-lock-unknown",
     breaks: "a `OnceLock` isn't known, its methods refused",
     file: "src/lower/recognition.rs",
-    find: '                    "OnceLock" => tcx.crate_name(id.krate) == sym::std,\n',
-    replace: '                    "OnceLock" => tcx.crate_name(id.krate) == sym::core,\n',
+    find: '                StdItem::OnceCell => ("OnceCell", "OnceLock"),\n',
+    replace: '                StdItem::OnceCell => ("OnceCell", ""),\n',
     tests: ["test/corpus.test.ts", "-t", "once_cells"],
+  },
+  {
+    name: "lazy-lock-unknown",
+    breaks: "a `LazyLock` isn't known, a `static` one refused",
+    file: "src/lower/recognition.rs",
+    find: '                _ => ("LazyCell", "LazyLock"),\n',
+    replace: '                _ => ("LazyCell", ""),\n',
+    tests: ["test/corpus.test.ts", "-t", "lazy_cells"],
   },
 ];

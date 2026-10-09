@@ -202,4 +202,12 @@ export const mutations: Mutation[] = [
     replace: "                    made\n",
     tests: ["test/jsx.test.ts","-t","JSX gives a flattened struct's fields as a component's own props"],
   },
+  {
+    name: "lazy-default-made",
+    breaks: "`LazyCell::default()` is made already, not on first use",
+    file: "src/lower/std_impls.rs",
+    find: '                let init = Expr::arrow(vec![], vec![StmtKind::Return(Some(made)).at(js::Span::NONE)]);\n                Expr::object(vec![Prop::Field("init".into(), init)])\n',
+    replace: '                Expr::object(vec![Prop::Field("value".into(), made)])\n',
+    tests: ["test/corpus.test.ts", "-t", "lazy_cells"],
+  },
 ];

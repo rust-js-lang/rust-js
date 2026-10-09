@@ -479,6 +479,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) => self.default_value(args.type_at(0), span)?,
             ty::Adt(..) if std(StdItem::OnceCell) => Expr::object(vec![Prop::Field("value".into(), Expr::undefined())]),
+            // `LazyCell::new(T::default)` (ADR 0318).
+            ty::Adt(_, args) if std(StdItem::LazyCell) => {
+                let made = self.default_value(args.type_at(0), span)?;
+                let init = Expr::arrow(vec![], vec![StmtKind::Return(Some(made)).at(js::Span::NONE)]);
+                Expr::object(vec![Prop::Field("init".into(), init)])
+            }
             ty::Adt(_, args) if std(StdItem::Cell) || std(StdItem::RefCell) || std(StdItem::Atomic) => Expr::object(
                 vec![Prop::Field("value".into(), self.default_value(args.type_at(0), span)?)],
             ),

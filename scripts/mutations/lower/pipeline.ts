@@ -234,4 +234,12 @@ export const mutations: Mutation[] = [
     replace: "                && super::copies::shareable(tcx, ty)\n",
     tests: ["test/corpus.test.ts", "-t", "once_cells"],
   },
+  {
+    name: "lazy-static-refused",
+    breaks: "a `static` `LazyLock` is refused",
+    file: "src/lower/pipeline.rs",
+    find: "                if [super::recognition::StdItem::OnceCell, super::recognition::StdItem::LazyCell]\n",
+    replace: "                if [super::recognition::StdItem::OnceCell]\n",
+    tests: ["test/corpus.test.ts", "-t", "lazy_cells"],
+  },
 ];

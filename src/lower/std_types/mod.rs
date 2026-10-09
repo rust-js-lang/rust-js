@@ -11,6 +11,7 @@
 //! | `Result` | `{ TAG, _0 }` | `result` |
 //! | `Cell`, `RefCell`, `Mutex`, `RwLock`, atomics | `{ value }` | `cell` |
 //! | `OnceCell`, `OnceLock` | `{ value }` of an `Option` | `once` |
+//! | `LazyCell`, `LazyLock` | `{ init }`, then `{ value }` | `lazy` |
 //! | `BinaryHeap` | an `Array` in heap order | `heap` |
 //! | ranges | `{ start, end }` | `range` |
 //! | `mpsc` channels | a queue | `channel` |
@@ -21,6 +22,7 @@
 pub(super) mod cell;
 pub(super) mod channel;
 pub(super) mod heap;
+pub(super) mod lazy;
 pub(super) mod map;
 pub(super) mod number;
 pub(super) mod once;

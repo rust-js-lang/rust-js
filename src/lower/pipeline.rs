@@ -130,11 +130,14 @@ pub fn lower_crate<'tcx>(
             // large for a value tree, is its initializer's, where one JS value
             // can be every use's, and it reads no static, whose value may not
             // be made yet.
-            // A `OnceLock`, only ever made empty, is one JS cell too (ADR 0317).
+            // A `OnceLock`, only ever made empty, or a `LazyLock`, which
+            // makes its value when it's used, is one JS cell too (ADRs 0317, 0318).
             let mutable = matches!(tcx.def_kind(def_id), DefKind::Static { mutability, .. } if mutability.is_mut());
             let once = matches!(tcx.def_kind(def_id), DefKind::Static { .. })
                 && matches!(ty.kind(), ty::Adt(adt, _)
-                if super::recognition::is_std_def(tcx, adt.did(), super::recognition::StdItem::OnceCell));
+                if [super::recognition::StdItem::OnceCell, super::recognition::StdItem::LazyCell]
+                    .into_iter()
+                    .any(|item| super::recognition::is_std_def(tcx, adt.did(), item)));
             if !mutable
                 && (super::copies::shareable(tcx, ty) || once)
                 && let Some(body) = initializers.iter().find(|body| body.def_id == def_id)
