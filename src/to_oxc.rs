@@ -762,14 +762,81 @@ impl<'a> Cx<'a> {
         Statement::new_variable_declaration(sp, kind, ArenaVec::from_iter_in([declarator], b), false, b)
     }
 
+    /// A call's argument, `...items` among them (ADR 0221).
+    fn argument(&self, a: &js::Expr) -> Argument<'a> {
+        match &a.kind {
+            ExprKind::Spread(all) => Argument::new_spread_element(span(a.span), self.expr(all), &self.b),
+            _ => Argument::from(self.expr(a)),
+        }
+    }
+
+    /// A link of a chain with a `?.` in it, `o?.inner` of `o?.inner.v`: its
+    /// object a link too, inside the one chain expression, so each `?.`
+    /// ends all of it where its object is `undefined`.
+    fn chain_element(&self, e: &js::Expr) -> ChainElement<'a> {
+        let b = &self.b;
+        let sp = span(e.span);
+        match &e.kind {
+            ExprKind::Member(object, property) | ExprKind::OptionalMember(object, property) => {
+                let optional = matches!(e.kind, ExprKind::OptionalMember(..));
+                let object = self.chain_object(object);
+                if member_name(property) {
+                    let name = IdentifierName::new(SPAN, self.name(property), b);
+                    ChainElement::StaticMemberExpression(StaticMemberExpression::boxed(sp, object, name, optional, b))
+                } else {
+                    // A property that isn't a JS name, by its key.
+                    let key = Expression::new_string_literal(SPAN, self.name(property), None, b);
+                    ChainElement::ComputedMemberExpression(ComputedMemberExpression::boxed(
+                        sp, object, key, optional, b,
+                    ))
+                }
+            }
+            ExprKind::Index(object, index) => ChainElement::ComputedMemberExpression(ComputedMemberExpression::boxed(
+                sp,
+                self.chain_object(object),
+                self.expr(index),
+                false,
+                b,
+            )),
+            ExprKind::Call(callee, args) | ExprKind::OptionalCall(callee, args) => {
+                let optional = matches!(e.kind, ExprKind::OptionalCall(..));
+                let args = ArenaVec::from_iter_in(args.iter().map(|a| self.argument(a)), b);
+                ChainElement::CallExpression(CallExpression::boxed(
+                    sp,
+                    self.chain_object(callee),
+                    None,
+                    args,
+                    optional,
+                    b,
+                ))
+            }
+            _ => unreachable!("a chain is of members, indexes and calls"),
+        }
+    }
+
+    /// The object of a chain's link: a link itself, where the chain goes on
+    /// through it, else the expression it is.
+    fn chain_object(&self, object: &js::Expr) -> Expression<'a> {
+        if !in_chain(object) {
+            return self.expr(object);
+        }
+        match self.chain_element(object) {
+            ChainElement::StaticMemberExpression(member) => Expression::StaticMemberExpression(member),
+            ChainElement::ComputedMemberExpression(member) => Expression::ComputedMemberExpression(member),
+            ChainElement::CallExpression(call) => Expression::CallExpression(call),
+            _ => unreachable!("a chain's links are members and calls"),
+        }
+    }
+
     fn expr(&self, e: &js::Expr) -> Expression<'a> {
         let b = &self.b;
         let sp = span(e.span);
-        // A call's argument, `...items` among them (ADR 0221).
-        let argument = |a: &js::Expr| match &a.kind {
-            ExprKind::Spread(all) => Argument::new_spread_element(span(a.span), self.expr(all), b),
-            _ => Argument::from(self.expr(a)),
-        };
+        let argument = |a: &js::Expr| self.argument(a);
+        // A chain with a `?.` in it, `o?.inner.v` or `a?.m(x)`, is one chain
+        // expression: `(o?.inner).v` would read `.v` of `undefined`.
+        if in_chain(e) {
+            return Expression::new_chain_expression(sp, self.chain_element(e), b);
+        }
         match &e.kind {
             ExprKind::Handle(place) => self.handle(sp, place, None),
             ExprKind::Pair(place, dictionary) => self.handle(sp, place, Some(dictionary)),
@@ -789,17 +856,15 @@ impl<'a> Cx<'a> {
             ExprKind::Undefined => Expression::new_identifier(sp, "undefined", b),
             ExprKind::Null => Expression::new_null_literal(sp, b),
             ExprKind::Symbol(_) => unreachable!("linking resolves every module symbol before emission"),
+            ExprKind::OptionalMember(..) | ExprKind::OptionalCall(..) => {
+                unreachable!("a chain is printed whole, above")
+            }
             ExprKind::Var(name) => Expression::new_identifier(sp, self.name(name), b),
             // A property that isn't a JS name, `files["worker-bundle"]`, by its
             // key: `files.worker-bundle` would be a subtraction.
             ExprKind::Member(object, property) if !member_name(property) => {
                 let key = Expression::new_string_literal(SPAN, self.name(property), None, b);
                 Expression::new_computed_member_expression(sp, self.expr(object), key, false, b)
-            }
-            ExprKind::OptionalMember(object, property) if !member_name(property) => {
-                let key = Expression::new_string_literal(SPAN, self.name(property), None, b);
-                let member = ComputedMemberExpression::boxed(sp, self.expr(object), key, true, b);
-                Expression::new_chain_expression(sp, ChainElement::ComputedMemberExpression(member), b)
             }
             ExprKind::Member(object, property) => {
                 // `5.toString()` would read `5.` as a number: `(5).toString()`.
@@ -818,16 +883,6 @@ impl<'a> Cx<'a> {
                     false,
                     b,
                 )
-            }
-            ExprKind::OptionalMember(object, property) => {
-                let member = StaticMemberExpression::boxed(
-                    sp,
-                    self.expr(object),
-                    IdentifierName::new(SPAN, self.name(property), b),
-                    true,
-                    b,
-                );
-                Expression::new_chain_expression(sp, ChainElement::StaticMemberExpression(member), b)
             }
             ExprKind::Index(object, index) => {
                 Expression::new_computed_member_expression(sp, self.expr(object), self.expr(index), false, b)
@@ -913,11 +968,6 @@ impl<'a> Cx<'a> {
             ExprKind::Call(callee, args) => {
                 let args = args.iter().map(argument);
                 Expression::new_call_expression(sp, self.expr(callee), None, ArenaVec::from_iter_in(args, b), false, b)
-            }
-            ExprKind::OptionalCall(callee, args) => {
-                let args = args.iter().map(argument);
-                let call = CallExpression::boxed(sp, self.expr(callee), None, ArenaVec::from_iter_in(args, b), true, b);
-                Expression::new_chain_expression(sp, ChainElement::CallExpression(call), b)
             }
             ExprKind::New(callee, args) if let Some(literal) = regex_literal(callee, args) => {
                 Expression::new_identifier(sp, self.name(&literal), b)
@@ -1452,4 +1502,14 @@ pub fn module_specifiers(code: &str, declarations: bool) -> Result<Vec<(usize, u
     let mut found = Specifiers(Vec::new());
     found.visit_program(&parsed.program);
     Ok(found.0)
+}
+
+/// Is `e` of a chain with a `?.` in it: a `?.` link, or a member, an index
+/// or a call of one.
+fn in_chain(e: &js::Expr) -> bool {
+    match &e.kind {
+        ExprKind::OptionalMember(..) | ExprKind::OptionalCall(..) => true,
+        ExprKind::Member(object, _) | ExprKind::Index(object, _) | ExprKind::Call(object, _) => in_chain(object),
+        _ => false,
+    }
 }

@@ -3,6 +3,22 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "chain-link-own-chain",
+    breaks: "a link of a chain is a chain of its own, `(o?.inner).v`, which reads `.v` of `undefined`",
+    file: "src/to_oxc.rs",
+    find: "        if !in_chain(object) {",
+    replace: "        if true {",
+    tests: ["test/lowering.test.ts", "-t", "an option's property chain ends"],
+  },
+  {
+    name: "chain-member-outside",
+    breaks: "a member of a `?.` link is outside its chain, `(o?.inner).v`",
+    file: "src/to_oxc.rs",
+    find: "ExprKind::Member(object, _) | ExprKind::Index(object, _) | ExprKind::Call(object, _) => in_chain(object),",
+    replace: "ExprKind::Member(object, _) | ExprKind::Index(object, _) | ExprKind::Call(object, _) => false,",
+    tests: ["test/lowering.test.ts", "-t", "an option's property chain ends"],
+  },
+  {
     name: "template-lines-escaped",
     breaks: "a template whose format string was written across lines prints its line breaks as `\\n`",
     file: "src/to_oxc.rs",
@@ -46,8 +62,8 @@ export const mutations: Mutation[] = [
     name: "keyed-field-chained-dotted",
     breaks: "an optional read of a field named `worker-bundle` is `files?.worker-bundle`",
     file: "src/to_oxc.rs",
-    find: "            ExprKind::OptionalMember(object, property) if !member_name(property) => {",
-    replace: "            ExprKind::OptionalMember(object, property) if false && !member_name(property) => {",
+    find: "                if member_name(property) {\n                    let name = IdentifierName::new(SPAN, self.name(property), b);",
+    replace: "                if true {\n                    let name = IdentifierName::new(SPAN, self.name(property), b);",
     tests: ["test/lowering.test.ts", "-t", "isn't a name is read by its key"],
   },
   {
@@ -78,15 +94,15 @@ export const mutations: Mutation[] = [
     name: "optional-member-plain",
     breaks: "`options?.alternate` is printed `options.alternate`, which throws for a writer given no options",
     file: "src/to_oxc.rs",
-    find: "                    IdentifierName::new(SPAN, self.name(property), b),\n                    true,",
-    replace: "                    IdentifierName::new(SPAN, self.name(property), b),\n                    false,",
+    find: "                let optional = matches!(e.kind, ExprKind::OptionalMember(..));",
+    replace: "                let optional = false;",
     tests: ["test/corpus.test.ts", "-t", "pretty_debug"],
   },
   {
     name: "spread-argument-unwritten",
     breaks: "a call's `...values` argument isn't written, and printing it panics",
     file: "src/to_oxc.rs",
-    find: "            ExprKind::Spread(all) => Argument::new_spread_element(span(a.span), self.expr(all), b),\n",
+    find: "            ExprKind::Spread(all) => Argument::new_spread_element(span(a.span), self.expr(all), &self.b),\n",
     replace: "",
     tests: ["test/compiler.test.ts", "-t", "variadic binding"],
   },

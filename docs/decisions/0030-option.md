@@ -117,3 +117,7 @@ const app = $unwrap(document.getElementById("app"), "the page has an #app");
 - **A property of what's in it, `o.map(|e| e.id)`, is `o?.id`**, reading
   `o` once as a `const` of a getter's would: `ref.current?.offsetHeight`,
   as react.dev's SocialBanner has it.
+- **A chain with a `?.` in it is one chain**, `o?.inner.v`: each `?.` ends
+  all of it where its object is `undefined`, as `map(|x| x.inner.v)` is
+  `None`. (Amended: each `?.` was a chain of its own, `(o?.inner).v`, which
+  read `.v` of `undefined` and threw.)

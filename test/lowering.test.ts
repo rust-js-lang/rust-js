@@ -706,3 +706,26 @@ pub fn most(x: u32) -> bool {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.has("b"), lib.has("c"), lib.changed(), lib.most(4294967295)]).toEqual([true, false, ["z", "a"], true]);
 });
+
+// ADR 0030: a property chain of an option's value ends where it's `None`,
+// `o?.inner.v`, one chain, as `map` does: `(o?.inner).v` would read `.v` of
+// `undefined`.
+test("an option's property chain ends where it's None", async () => {
+  const dir = fixture("optional-chains");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Inner {
+    pub v: u32,
+}
+
+pub struct Outer {
+    pub inner: Inner,
+}
+
+pub fn deep(o: Option<&Outer>) -> Option<u32> {
+    o.map(|x| x.inner.v)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("return o?.inner.v;");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.deep({ inner: { v: 3 } }), lib.deep(undefined)]).toEqual([3, undefined]);
+});
