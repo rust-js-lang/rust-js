@@ -128,70 +128,70 @@ pub fn emit(
     }
     helpers.sort_unstable();
     helpers.dedup();
-    if !packages.is_empty() {
-        code.push('\n');
-        for package in &packages {
-            let named: Vec<String> = package
-                .named
-                .iter()
-                .map(|(export, local)| {
-                    if export == local {
-                        export.clone()
-                    } else {
-                        format!("{export} as {local}")
-                    }
-                })
-                .collect();
-            let named = (!named.is_empty()).then(|| format!("{{ {} }}", named.join(", ")));
-            let clause: Vec<String> = package.default.iter().cloned().chain(named).collect();
-            if !clause.is_empty() {
-                code.push_str(&format!("import {} from {:?};\n", clause.join(", "), package.from));
-            }
-            if let Some(namespace) = &package.namespace {
-                code.push_str(&format!("import * as {namespace} from {:?};\n", package.from));
-            }
-            if clause.is_empty() && package.namespace.is_none() {
-                code.push_str(&format!("import {:?};\n", package.from));
-            }
+    // One block, as a person orders it (ADR 0295): packages, then the
+    // module's own relative ones, bindings and the crate's alike, each by
+    // path; then what it imports for its effect, as written, its CSS after
+    // what it styles; then the runtime's helpers.
+    let mut named: Vec<(bool, &str, String)> = Vec::new();
+    let mut effects = Vec::new();
+    let clause_of = |pairs: &mut dyn Iterator<Item = &(String, String)>| -> Vec<String> {
+        pairs
+            .map(|(export, local)| {
+                if export == local {
+                    export.clone()
+                } else {
+                    format!("{export} as {local}")
+                }
+            })
+            .collect()
+    };
+    for package in &packages {
+        let names = clause_of(&mut package.named.iter());
+        let names = (!names.is_empty()).then(|| format!("{{ {} }}", names.join(", ")));
+        let clause: Vec<String> = package.default.iter().cloned().chain(names).collect();
+        let relative = package.from.starts_with('.');
+        if !clause.is_empty() {
+            let line = format!("import {} from {:?};\n", clause.join(", "), package.from);
+            named.push((relative, &package.from, line));
+        }
+        if let Some(namespace) = &package.namespace {
+            let line = format!("import * as {namespace} from {:?};\n", package.from);
+            named.push((relative, &package.from, line));
+        }
+        if clause.is_empty() && package.namespace.is_none() {
+            effects.push(format!("import {:?};\n", package.from));
         }
     }
-    // The helpers its code names, from the package (ADR 0103), with the
-    // other packages' imports.
-    if !helpers.is_empty() {
-        if packages.is_empty() {
-            code.push('\n');
-        }
-        code.push_str(&format!(
+    for import in &module.imports {
+        let default = (import.named.iter())
+            .find(|(export, _)| export == "default")
+            .map(|(_, local)| local);
+        let names = clause_of(&mut import.named.iter().filter(|(export, _)| export != "default"));
+        let clause = match (default, names.is_empty()) {
+            (Some(default), true) => default.clone(),
+            (Some(default), false) => format!("{default}, {{ {} }}", names.join(", ")),
+            (None, _) => format!("{{ {} }}", names.join(", ")),
+        };
+        let line = format!("import {clause} from {:?};\n", import.from);
+        named.push((import.from.starts_with('.'), &import.from, line));
+    }
+    named.sort_by(|a, b| (a.0, a.1).cmp(&(b.0, b.1)));
+    let runtime = (!helpers.is_empty()).then(|| {
+        format!(
             "import {{ {} }} from {:?};\n",
             helpers.join(", "),
             crate::runtime::PACKAGE
-        ));
-    }
-    if !module.imports.is_empty() {
+        )
+    });
+    let lines: Vec<String> = named
+        .into_iter()
+        .map(|(_, _, line)| line)
+        .chain(effects)
+        .chain(runtime)
+        .collect();
+    if !lines.is_empty() {
         code.push('\n');
-        for import in &module.imports {
-            let default = (import.named.iter())
-                .find(|(export, _)| export == "default")
-                .map(|(_, local)| local);
-            let named: Vec<_> = import
-                .named
-                .iter()
-                .filter(|(export, _)| export != "default")
-                .map(|(export, local)| {
-                    if export == local {
-                        export.clone()
-                    } else {
-                        format!("{export} as {local}")
-                    }
-                })
-                .collect();
-            let clause = match (default, named.is_empty()) {
-                (Some(default), true) => default.clone(),
-                (Some(default), false) => format!("{default}, {{ {} }}", named.join(", ")),
-                (None, _) => format!("{{ {} }}", named.join(", ")),
-            };
-            code.push_str(&format!("import {clause} from {:?};\n", import.from));
-        }
+        code.push_str(&lines.concat());
     }
     // What it re-exports, its `pub use` (ADR 0240), after what it imports.
     if !module.reexports.is_empty() {

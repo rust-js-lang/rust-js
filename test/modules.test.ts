@@ -386,3 +386,49 @@ pub fn ready() -> u32 {
     delete (globalThis as any).loaded;
   }
 });
+
+// ADR 0295: a module's imports are one block, as a person orders them:
+// packages, then its own relative modules, bindings and the crate's alike,
+// each by path; then what it imports for its effect, as written, as
+// react.dev's _app has its CSS after; then rust-js's runtime.
+test("imports are packages, then relative modules, then effects, then the runtime", () => {
+  const dir = fixture("import-order");
+  writeFileSync(join(dir, "lib.rs"), `js::import!("./app.css");
+
+mod helper {
+    pub fn h(items: &[u32], i: usize) -> u32 {
+        items[i]
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "zeta#zeta")]
+fn zeta() -> u32 {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "./local#local")]
+fn local() -> u32 {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "@scope/alpha#alpha")]
+fn alpha() -> u32 {
+    unreachable!()
+}
+
+pub fn all(items: &[u32], i: usize) -> u32 {
+    zeta() + local() + alpha() + helper::h(items, i) + items[i]
+}
+`);
+  buildWebapi();
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const top = readFileSync(join(dir, "lib.js"), "utf8");
+  const imports = top.split("\n").filter((line) => line.startsWith("import") || line === "").slice(1, 8).join("\n");
+  expect(imports).toBe(`import { alpha } from "@scope/alpha";
+import { zeta } from "zeta";
+import { h } from "./helper.js";
+import { local } from "./local";
+import "./app.css";
+import { $index } from "@rust-js/runtime";
+`);
+});

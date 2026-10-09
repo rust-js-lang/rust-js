@@ -260,7 +260,7 @@ test("extern items from JS modules become import statements", async () => {
   // Two directories down, only what the file uses, from the same file.
   const leaf = await Bun.file(join(target, "imports", "inner", "leaf.js")).text();
   expect(leaf).toMatch(
-    /\nimport greet from "\.\.\/greet\.js";\nimport wave from "\.\/wave\.js";\nimport \{ join as join\$1 \} from "node:path";\n\nfunction join/,
+    /\nimport \{ join as join\$1 \} from "node:path";\nimport greet from "\.\.\/greet\.js";\nimport wave from "\.\/wave\.js";\n\nfunction join/,
   );
   // Its own `join` renames its import of node:path's, not the root's.
   expect(leaf).toContain('return join(join$1("a", "leaf"));');
