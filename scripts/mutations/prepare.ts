@@ -218,4 +218,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/bindings.test.ts", "-t", "js::import! loads a module"],
   },
+  {
+    name: "truth-callback-arrow",
+    breaks: "a truth test as a callback stays `(g) => !!g`, not `Boolean`",
+    file: "src/prepare.rs",
+    find: "        && matches!(&tested.kind, ExprKind::Var(name) if name == param)\n",
+    replace: "        && matches!(&tested.kind, ExprKind::Var(name) if name == param && false)\n",
+    tests: ["test/lowering.test.ts", "-t", "a truth test as a callback is Boolean"],
+  },
 ];

@@ -152,7 +152,7 @@ export function eval$(src) {
 
 export function word_freq(text) {
   const m = new Map();
-  for (const w of $splitBy(text, (c) => !/^[\p{Alphabetic}\p{N}]$/u.test(c)).filter((w) => !!w)) {
+  for (const w of $splitBy(text, (c) => !/^[\p{Alphabetic}\p{N}]$/u.test(c)).filter(Boolean)) {
     const key = w.toLowerCase();
     const current = $orInsert(m, key, 0);
     m.set(key, (current + 1) >>> 0);

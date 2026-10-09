@@ -308,15 +308,11 @@ function main() {
         let option$9;
         try {
           option$7$live = false;
-          option$9 = keep(
-            option$7,
-            (d) => !!d,
-            (option$8) => {
-              if (option$8 != null) {
-                dDrop_drop(option$8);
-              }
-            },
-          );
+          option$9 = keep(option$7, Boolean, (option$8) => {
+            if (option$8 != null) {
+              dDrop_drop(option$8);
+            }
+          });
           try {
             console.log(`generic ${option$9 != null}`);
           } finally {

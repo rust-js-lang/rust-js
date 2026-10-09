@@ -202,4 +202,12 @@ export const mutations: Mutation[] = [
     replace: "                items\n            }\n            StepOp::Peek if boxed => {",
     tests: ["test/compiler.test.ts", "-t", "the lexer's JS steps through its source with \\$next and \\$peek"],
   },
+  {
+    name: "filter-map-null-test",
+    breaks: "`filter_map` of a value never falsy keeps `(item) => item != null`, not `Boolean`",
+    file: "src/lower/combinators.rs",
+    find: "                Some(kept) => self.present(Expr::var(\"item\"), kept),\n",
+    replace: "                Some(_) => Expr::bin(Op::LooseNe, Expr::var(\"item\"), Expr::null()),\n",
+    tests: ["test/lowering.test.ts", "-t", "a truth test as a callback is Boolean"],
+  },
 ];

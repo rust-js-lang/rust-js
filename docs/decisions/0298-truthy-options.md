@@ -48,3 +48,11 @@ react.dev writes it. One read as a value keeps its boolean.
 
 - The react.dev port accepts, by name, the explicit tests of an `Option` of
   a number, `h == null || h === 0` for `!h`: Rust's is exact for `NaN`.
+
+## Amendment: what `filter_map` keeps, and `Boolean`
+
+What `filter_map` and `find_map` keep of a value never falsy is tested by
+its truth too, and a callback that only tests its argument's truth,
+`(x) => !!x`, is `Boolean`, which is `!!x` and reads no other argument:
+`.map(f).filter(Boolean)`, as react.dev's runESLint and TeamMember write
+it. A number's or a string's `Option` keeps `(item) => item != null`.

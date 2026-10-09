@@ -3066,3 +3066,31 @@ pub fn named() -> Named {
   const made = lib.reported({ line: 3, severity: 2 });
   expect([made, lib.line(made), lib.named()]).toEqual([{ line: 3, severity: "error" }, 3, { label: "x", line: 1, severity: 2 }]);
 });
+
+// A callback that tests its argument's truth is `Boolean`, as react.dev
+// writes `.filter(Boolean)`: what `filter_map` keeps of a value never falsy
+// (ADR 0298), and `!s.is_empty()` of a string. A number's keeps `!= null`.
+test("a truth test as a callback is Boolean", async () => {
+  const dir = fixture("filter-boolean");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Item {
+    pub n: u32,
+}
+pub fn items(xs: &[u32]) -> Vec<Item> {
+    xs.iter().filter_map(|x| (*x > 1).then(|| Item { n: *x })).collect()
+}
+pub fn words(text: &str) -> Vec<String> {
+    text.split(',').map(|g| g.trim().to_string()).filter(|g| !g.is_empty()).collect()
+}
+pub fn less(xs: &[u32]) -> Vec<u32> {
+    xs.iter().filter_map(|x| x.checked_sub(1)).collect()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return xs.map((x) => (x > 1 ? { n: x } : undefined)).filter(Boolean);");
+  expect(js).not.toContain("(g) => !!g");
+  expect(js).toContain(".filter(Boolean);");
+  expect(js).toContain(".filter((item) => item != null)");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.items([1, 2]), lib.words("a, ,b"), lib.less([0, 2])]).toEqual([[{ n: 2 }], ["a", "b"], [1]]);
+});

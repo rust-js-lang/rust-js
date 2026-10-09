@@ -106,7 +106,7 @@ function parse_order(text) {
       .split(",")
       .values()
       .map((s) => $trim(s))
-      .filter((part) => !!part)
+      .filter(Boolean)
       .map((part) => {
         const option = $splitOnce(part, "x");
         const fallback = `${$debugStr(part)} has no x`;
@@ -234,7 +234,7 @@ function main() {
       item$1.stock = (item$1.stock + more) >>> 0;
       return [sku, item$1.stock];
     })
-    .filter((item) => item != null);
+    .filter(Boolean);
   restocked.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
   const arg$3 = money(Inventory.value_cents(inventory));
   console.log(

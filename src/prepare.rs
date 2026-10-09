@@ -513,6 +513,26 @@ fn entries_written_out(e: &Expr) -> Option<Expr> {
 }
 
 fn expr(e: &mut Expr) {
+    // `(x) => !!x` is `Boolean`, as react.dev's `.filter(Boolean)` is:
+    // `Boolean(x)` is `!!x`, and it reads no other argument.
+    if let ExprKind::Arrow(params, body) = &e.kind
+        && let [js::Pattern::Name(param)] = params.as_slice()
+        && let [
+            Stmt {
+                kind: StmtKind::Return(Some(value)),
+                ..
+            },
+        ] = body.as_slice()
+        && let ExprKind::Unary(js::UnaryOp::Not, not) = &value.kind
+        && let ExprKind::Unary(js::UnaryOp::Not, tested) = &not.kind
+        && matches!(&tested.kind, ExprKind::Var(name) if name == param)
+    {
+        *e = Expr {
+            kind: ExprKind::Var("Boolean".into()),
+            span: e.span,
+        };
+        return;
+    }
     match &mut e.kind {
         ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => block(body),
         ExprKind::Function(function) => block(&mut function.body),
