@@ -35,13 +35,7 @@ export function replaced(s) {
 }
 
 export function module_name(path) {
-  let file;
-  const match = $stripPrefix(path, "src/");
-  if (match != null) {
-    file = match;
-  } else {
-    file = path;
-  }
+  const file = $stripPrefix(path, "src/") ?? path;
   return $stripSuffix(file, ".rs") ?? file;
 }
 
@@ -81,20 +75,8 @@ export function separator(windows) {
 }
 
 export function folder_and_file(path) {
-  let first;
-  const match = $splitOnce(path, "/");
-  if (match) {
-    first = match[0];
-  } else {
-    first = "";
-  }
-  let file;
-  const match$1 = $rsplitOnce(path, "/");
-  if (match$1) {
-    file = match$1[1];
-  } else {
-    file = path;
-  }
+  const first = $splitOnce(path, "/")?.[0] ?? "";
+  const file = $rsplitOnce(path, "/")?.[1] ?? path;
   return [first, file];
 }
 

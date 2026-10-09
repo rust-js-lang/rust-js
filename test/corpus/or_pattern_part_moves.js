@@ -137,13 +137,13 @@ function name(shape) {
 function main() {
   const a = Mapped.earliest({ TAG: "Ambiguous", _0: ["a1"], _1: ["a2"] }, loudDrop_drop);
   try {
-    console.log(`earliest ${a != null ? a[0] : "none"}`);
+    console.log(`earliest ${a?.[0] ?? "none"}`);
     const b = Mapped.latest({ TAG: "Ambiguous", _0: ["b1"], _1: ["b2"] }, loudDrop_drop);
     try {
-      console.log(`latest ${b != null ? b[0] : "none"}`);
+      console.log(`latest ${b?.[0] ?? "none"}`);
       const c = Mapped.earliest({ TAG: "Single", _0: ["c"] }, loudDrop_drop);
       try {
-        console.log(`single ${c != null ? c[0] : "none"}`);
+        console.log(`single ${c?.[0] ?? "none"}`);
         const n = Mapped.latest("None", loudDrop_drop);
         try {
           console.log(`none ${!n}`);
@@ -151,10 +151,10 @@ function main() {
           console.log(`numbers ${numbers == null ? "None" : `Some(${numbers})`}`);
           const m = middle({ TAG: "Triple", _0: ["t1"], _1: ["t2"], _2: ["t3"] });
           try {
-            console.log(`middle ${m != null ? m[0] : "none"}`);
+            console.log(`middle ${m?.[0] ?? "none"}`);
             const p = middle({ TAG: "Pair", _0: ["p1"], _1: ["p2"] });
             try {
-              console.log(`middle ${p != null ? p[0] : "none"}`);
+              console.log(`middle ${p?.[0] ?? "none"}`);
               const option = middle("Empty");
               try {
                 console.log(`middle none ${!option}`);

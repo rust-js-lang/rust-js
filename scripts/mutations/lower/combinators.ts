@@ -210,4 +210,12 @@ export const mutations: Mutation[] = [
     replace: "                Some(_) => Expr::bin(Op::LooseNe, Expr::var(\"item\"), Expr::null()),\n",
     tests: ["test/lowering.test.ts", "-t", "a truth test as a callback is Boolean"],
   },
+  {
+    name: "map-or-nullish-kept",
+    breaks: "`map_or(d, |(_, f)| f)` is `o != null ? o[1] : d`, where a `match` of it is `e?.[1] ?? d`",
+    file: "src/lower/combinators.rs",
+    find: "                match option.filter(|_| !boxed).and_then(|(name, option, spilled)| {\n",
+    replace: "                match option.filter(|_| false).and_then(|(name, option, spilled)| {\n",
+    tests: ["test/lowering.test.ts","-t","only gives a value"],
+  },
 ];

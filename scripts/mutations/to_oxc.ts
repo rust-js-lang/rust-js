@@ -333,4 +333,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "statics"],
     snapshots: true,
   },
+  {
+    name: "optional-index-plain",
+    breaks: "`e?.[1]` is printed `e[1]`, which throws where `e` is `None`",
+    file: "src/to_oxc.rs",
+    find: "                    matches!(e.kind, ExprKind::OptionalIndex(..)),\n",
+    replace: "                    false,\n",
+    tests: ["test/lowering.test.ts","-t","only gives a value"],
+  },
 ];

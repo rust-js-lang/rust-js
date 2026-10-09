@@ -1494,8 +1494,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Tested where it is, or, of what isn't a place, read once: a name
         // no Rust one has, which the test is read for.
         const SUBJECT: &str = "$subject";
+        // Of what isn't a place, and an arm that binds of it, a `const` of
+        // it, whose places they name (ADR 0309).
+        let mut binds = false;
+        for arm in [first, second] {
+            self.thir[arm]
+                .pattern
+                .walk_always(|p| binds |= matches!(p.kind, PatKind::Binding { .. }));
+        }
+        let mut spilled = None;
         let (subject, value) = match self.matched_place(scrutinee) {
             Some(place) => (place, None),
+            None if binds && self.is_value(scrutinee) => {
+                let value = self.expr(scrutinee, out)?;
+                let name = self.fresh("match");
+                spilled = Some((name.clone(), value));
+                (Expr::var(&name), None)
+            }
             None => (Expr::var(SUBJECT), Some(self.expr(scrutinee, out)?)),
         };
         let (mut bindings, mut otherwise) = (Vec::new(), Vec::new());
@@ -1507,6 +1522,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         }
         let items = self.item_subject(scrutinee);
+        let at = out.len();
+        if let Some((name, value)) = &spilled {
+            out.push(StmtKind::Const(name.clone(), value.clone()).at(span));
+        }
         self.bind_all(bindings, true, items, span, out)?;
         // A first arm that takes everything has no test: its guard is it,
         // or its body is the value, the second never reached.
@@ -1555,6 +1574,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let yes = self.evaluated(self.thir[first].body)?;
         self.bind_all(otherwise, true, items, span, out)?;
         let no = self.evaluated(self.thir[second].body)?;
+        // The option's value, or a part of it, or a default: `e ?? d`,
+        // `e?.[1] ?? d`, of a variable or a `const` of a value, which it
+        // then needs no more, as `map_or` is (ADR 0309).
+        let option = match (&spilled, &subject.kind) {
+            (Some((name, value)), _) if out.len() == at + 1 => Some((name.clone(), value.clone())),
+            (None, js::ExprKind::Var(name)) => Some((name.clone(), subject.clone())),
+            _ => None,
+        };
+        if let Some((name, option)) = option
+            && yes.statements.is_empty()
+            && no.statements.is_empty()
+            && let Some(nullish) = super::options::nullish_or(
+                &name,
+                &option,
+                &test,
+                &yes.value,
+                &no.value,
+                self.option_of(self.thir[scrutinee].ty.peel_refs())
+                    .is_some_and(|inner| self.never_falsy(inner)),
+                !self.can_be_nullish(self.thir[self.thir[first].body].ty),
+            )
+        {
+            if spilled.is_some() {
+                out.pop();
+            }
+            return Ok(Some(nullish));
+        }
         Ok(Some(self.conditional(test, yes, no, span, out)))
     }
 
@@ -1582,10 +1628,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Is this `match` one `match_conditional` writes: two arms, plain,
     /// the first's guard plain too? The second can't be guarded but where
     /// it's never reached.
+    /// Is `e` a value, not a place: a call's, say, which a `match` of it
+    /// reads from a `const` (ADR 0309).
+    fn is_value(&self, e: ExprId) -> bool {
+        !matches!(
+            self.thir[self.strip(e)].kind,
+            ExprKind::VarRef { .. }
+                | ExprKind::UpvarRef { .. }
+                | ExprKind::Field { .. }
+                | ExprKind::Deref { .. }
+                | ExprKind::Index { .. }
+                | ExprKind::StaticRef { .. }
+        )
+    }
+
     pub(super) fn is_conditional_match(&self, scrutinee: ExprId, arms: &[ArmId]) -> bool {
-        // What an arm binds is named where it is, so only a place's: read
-        // only, owning nothing (`binds_in_place` checks the rest as it binds).
-        let place = self.matched_place(scrutinee).is_some();
+        // What an arm binds is named where it is, a place's, or a `const`'s
+        // of a value that isn't one, a call's (ADR 0309): read only, owning
+        // nothing (`binds_in_place` checks the rest as it binds).
+        let place = self.matched_place(scrutinee).is_some() || self.is_value(scrutinee);
         let in_place = |pat: &Pat<'tcx>| {
             let mut in_place = true;
             pat.walk_always(|p| {

@@ -599,7 +599,7 @@ fn expr(e: &mut Expr) {
         | ExprKind::Spread(a)
         | ExprKind::Handle(a)
         | ExprKind::DropArgument(_, _, a) => expr(a),
-        ExprKind::Index(a, b) | ExprKind::Binary(_, a, b) | ExprKind::Pair(a, b) => {
+        ExprKind::Index(a, b) | ExprKind::OptionalIndex(a, b) | ExprKind::Binary(_, a, b) | ExprKind::Pair(a, b) => {
             expr(a);
             expr(b);
         }

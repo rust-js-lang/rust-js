@@ -162,7 +162,7 @@ export function other_name(flag, named) {
 }
 
 export function label_of(named) {
-  return named != null ? named.label : "none";
+  return named?.label ?? "none";
 }
 
 export function report() {

@@ -80,13 +80,8 @@ export function words(text) {
     .filter((word) => word !== "")
     .map((w) => w);
   const lines = $lines(text).map((l) => l);
-  let total;
   const match = sum(text);
-  if (match.TAG === "Ok") {
-    total = `sum ${match._0}`;
-  } else {
-    total = `error: ${match._0}`;
-  }
+  const total = match.TAG === "Ok" ? `sum ${match._0}` : `error: ${match._0}`;
   const pieces = $splitBy(text, (c) => /^[0-9]$/.test(c) || c === "\r").map((p) => p);
   return [words$1, lines, total, pieces, Array.from(text).some((c) => /^\p{Uppercase}$/u.test(c))];
 }

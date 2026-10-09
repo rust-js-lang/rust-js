@@ -839,13 +839,15 @@ impl<'a> Cx<'a> {
                     ))
                 }
             }
-            ExprKind::Index(object, index) => ChainElement::ComputedMemberExpression(ComputedMemberExpression::boxed(
-                sp,
-                self.chain_object(object),
-                self.expr(index),
-                false,
-                b,
-            )),
+            ExprKind::Index(object, index) | ExprKind::OptionalIndex(object, index) => {
+                ChainElement::ComputedMemberExpression(ComputedMemberExpression::boxed(
+                    sp,
+                    self.chain_object(object),
+                    self.expr(index),
+                    matches!(e.kind, ExprKind::OptionalIndex(..)),
+                    b,
+                ))
+            }
             ExprKind::Call(callee, args) | ExprKind::OptionalCall(callee, args) => {
                 let optional = matches!(e.kind, ExprKind::OptionalCall(..));
                 let args = ArenaVec::from_iter_in(args.iter().map(|a| self.argument(a)), b);
@@ -904,7 +906,7 @@ impl<'a> Cx<'a> {
             ExprKind::Undefined => Expression::new_identifier(sp, "undefined", b),
             ExprKind::Null => Expression::new_null_literal(sp, b),
             ExprKind::Symbol(_) => unreachable!("linking resolves every module symbol before emission"),
-            ExprKind::OptionalMember(..) | ExprKind::OptionalCall(..) => {
+            ExprKind::OptionalMember(..) | ExprKind::OptionalIndex(..) | ExprKind::OptionalCall(..) => {
                 unreachable!("a chain is printed whole, above")
             }
             ExprKind::Var(name) => Expression::new_identifier(sp, self.name(name), b),
@@ -1571,7 +1573,7 @@ pub fn module_specifiers(code: &str, declarations: bool) -> Result<Vec<(usize, u
 /// or a call of one.
 fn in_chain(e: &js::Expr) -> bool {
     match &e.kind {
-        ExprKind::OptionalMember(..) | ExprKind::OptionalCall(..) => true,
+        ExprKind::OptionalMember(..) | ExprKind::OptionalIndex(..) | ExprKind::OptionalCall(..) => true,
         ExprKind::Member(object, _) | ExprKind::Index(object, _) | ExprKind::Call(object, _) => in_chain(object),
         _ => false,
     }

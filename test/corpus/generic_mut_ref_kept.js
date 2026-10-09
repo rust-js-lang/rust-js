@@ -96,13 +96,7 @@ function main() {
     `[${refs.map((item) => String(item.value)).join(", ")}] ${$eq(refs, [{ value: 1 }, { value: 2 }])}`,
   );
   set_all(refs, 7, { clone: (value) => value });
-  let second;
-  const match = list.next;
-  if (match != null) {
-    second = match.value;
-  } else {
-    second = 0;
-  }
+  const second = list.next?.value ?? 0;
   console.log(`${list.value} ${second}`);
   let [a, b] = [1, 2];
   const result = pick(

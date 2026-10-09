@@ -403,6 +403,56 @@ pub(super) fn text_or(option: &Expr) -> Option<Expr> {
     (shaped && value.reads_same() && same_place(tested, value)).then(|| (**value).clone())
 }
 
+/// `m ? m : d`, of an option `e` in a `const m` read only there, is
+/// `e ?? d`; `m ? m[1] : d`, of a part never `null` or `undefined`, is
+/// `e?.[1] ?? d`, which end where `e` is `None` and give `d` (ADR 0309).
+/// Its test is whether `m` is there, `m != null`, or `!!m` of a value
+/// never falsy: of text, `!!m` is also whether it isn't empty.
+pub(super) fn nullish_or(
+    m: &str,
+    option: &Expr,
+    test: &Expr,
+    yes: &Expr,
+    no: &Expr,
+    never_falsy: bool,
+    part_never_nullish: bool,
+) -> Option<Expr> {
+    let tested = match &test.kind {
+        js::ExprKind::Binary(Op::LooseNe, tested, null) if matches!(null.kind, js::ExprKind::Null) => tested,
+        _ if never_falsy => truthy_of(test)?,
+        _ => return None,
+    };
+    if !matches!(&tested.kind, js::ExprKind::Var(v) if v == m) || no.mentions_var(m) {
+        return None;
+    }
+    let value = match &yes.kind {
+        js::ExprKind::Var(v) if v == m => option.clone(),
+        _ if part_never_nullish => optional_part(yes, m, option)?,
+        _ => return None,
+    };
+    Some(match no.kind {
+        js::ExprKind::Undefined => value,
+        _ => Expr::bin(Op::Coalesce, value, no.clone()),
+    })
+}
+
+/// `part`, a member or index chain of `m`, `m.a[1]`, as one of `option` that
+/// ends where it's `None`: `option?.a[1]`.
+fn optional_part(part: &Expr, m: &str, option: &Expr) -> Option<Expr> {
+    let is_m = |of: &Expr| matches!(&of.kind, js::ExprKind::Var(v) if v == m);
+    match &part.kind {
+        js::ExprKind::Member(of, field) if is_m(of) => Some(Expr::optional_member(option.clone(), field.clone())),
+        js::ExprKind::Index(of, index) if is_m(of) && !index.mentions_var(m) => {
+            Some(Expr::optional_index(option.clone(), (**index).clone()))
+        }
+        js::ExprKind::Member(of, field) => Some(Expr::member(optional_part(of, m, option)?, field.clone())),
+        js::ExprKind::Index(of, index) if !index.mentions_var(m) => {
+            Some(Expr::index(optional_part(of, m, option)?, (**index).clone()))
+        }
+        _ => None,
+    }
+}
+
 /// `body`, a property chain of `param`, `param.a.b`, as one of `option`
 /// that ends where it's `None`: `option?.a.b`.
 fn optional_chain(option: &Expr, body: &Expr, param: &str) -> Option<Expr> {

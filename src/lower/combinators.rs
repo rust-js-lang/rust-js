@@ -519,6 +519,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::bin(Op::Or, text, other));
         }
         // The subject is read more than once.
+        let spilled_at = (!subject.reads_same()).then_some(out.len());
         let subject = if subject.reads_same() {
             subject
         } else {
@@ -605,7 +606,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let fallback = eager(self, fallback, out);
                 let f = next();
                 let mapped = self.call_with(f, vec![value], "map", out);
-                Expr::cond(some, mapped, fallback)
+                // `e?.[1] ?? d`, as a `match` of it is (ADR 0309).
+                let option = match spilled_at {
+                    Some(at) if out.len() == at + 1 => match &out[at].kind {
+                        StmtKind::Const(name, option) => Some((name.clone(), option.clone(), true)),
+                        _ => None,
+                    },
+                    Some(_) => None,
+                    None => match &subject.kind {
+                        js::ExprKind::Var(name) => Some((name.clone(), subject.clone(), false)),
+                        _ => None,
+                    },
+                };
+                let never_nullish = !self.can_be_nullish(generic_args.type_at(1));
+                match option.filter(|_| !boxed).and_then(|(name, option, spilled)| {
+                    let nullish =
+                        super::options::nullish_or(&name, &option, &some, &mapped, &fallback, false, never_nullish)?;
+                    Some((nullish, spilled))
+                }) {
+                    Some((nullish, spilled)) => {
+                        if spilled {
+                            out.pop();
+                        }
+                        nullish
+                    }
+                    None => Expr::cond(some, mapped, fallback),
+                }
             }
             Comb::MapOrElse => {
                 let (g, f) = (next(), next());

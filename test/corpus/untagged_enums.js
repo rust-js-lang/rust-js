@@ -135,13 +135,8 @@ function main() {
   if (typeof spot === "object") {
     spot.x = 9;
   }
-  let code;
   const match = 2;
-  if (typeof match === "number") {
-    code = match;
-  } else {
-    code = match.x;
-  }
+  const code = typeof match === "number" ? match : match.x;
   console.log(
     `${valueDebug_fmt(list)} ${valueDebug_fmt(kept)} ${spotDebug_fmt(spot)} ${spotDebug_fmt(copied)} ${code} ${valueDebug_fmt(START)}`,
   );

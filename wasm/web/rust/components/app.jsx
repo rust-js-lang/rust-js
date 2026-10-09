@@ -56,13 +56,8 @@ export function App() {
     };
     (async () => {
       const loaded = await load(stat);
-      let first;
       const match = loaded.examples[0];
-      if (match) {
-        first = [match.name, match.root, match.files.slice()];
-      } else {
-        first = undefined;
-      }
+      const first = match ? [match.name, match.root, match.files.slice()] : undefined;
       if (first && !cancelled) {
         const texts = await loadExample(first[0], first[2]);
         if (!cancelled) {
@@ -194,13 +189,7 @@ export function App() {
       return;
     }
     setProject(Project.adding(project, path, live()));
-    let file;
-    const match$1 = $rsplitOnce(path, "/");
-    if (match$1) {
-      file = match$1[1];
-    } else {
-      file = path;
-    }
+    const file = $rsplitOnce(path, "/")?.[1] ?? path;
     const module = $stripSuffix(file, ".rs") ?? file;
     const text$1 = `Created ${path}. Declare it with \`mod ${module};\` in its parent, or rustc won't include it.`;
     setStatus(say(text$1, "Plain"));
@@ -212,25 +201,13 @@ export function App() {
     }
   };
   const blank = useMemo(() => sourceState(""), []);
-  let current;
-  const match = Project.currentState(project);
-  if (match) {
-    current = match;
-  } else {
-    current = blank;
-  }
+  const current = Project.currentState(project) ?? blank;
   const shownState = useMemo(() => {
     if (output === "Nothing") {
       return outputState("", true);
     }
     if (output.TAG === "Files") {
-      let text;
-      const match = output.files.find(([path]) => path === output.shown);
-      if (match) {
-        text = match[1];
-      } else {
-        text = "";
-      }
+      const text = output.files.find(([path]) => path === output.shown)?.[1] ?? "";
       return outputState(text, true);
     }
     return outputState(output._0, false);
@@ -239,7 +216,7 @@ export function App() {
   const [outputPaths, shown] =
     output.TAG === "Files" ? [output.files.map(([path]) => path), output.shown] : [[], ""];
   const outputTree = useMemo(() => buildTree(outputPaths), [output]);
-  const examples = loaded ? loaded.examples : [];
+  const examples = loaded?.examples ?? [];
   const submit = onCompile;
   return (
     <>

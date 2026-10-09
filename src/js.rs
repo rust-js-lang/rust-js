@@ -612,6 +612,8 @@ pub enum ExprKind {
     OptionalMember(Box<Expr>, String),
     /// `object[index]`, e.g. `pair[0]`.
     Index(Box<Expr>, Box<Expr>),
+    /// `a?.[i]`: `undefined` where `a` is `undefined` or `null`.
+    OptionalIndex(Box<Expr>, Box<Expr>),
     /// `[a, b]`: a tuple or tuple struct (ADR 0020).
     Array(Vec<Expr>),
     /// `...a`, an array's item only: `[...path, last]`, a slice's `concat`.
@@ -856,6 +858,10 @@ impl Expr {
         Expr::new(ExprKind::OptionalMember(Box::new(object), property.into()))
     }
 
+    pub fn optional_index(object: Expr, index: Expr) -> Expr {
+        Expr::new(ExprKind::OptionalIndex(Box::new(object), Box::new(index)))
+    }
+
     pub fn index(object: Expr, index: Expr) -> Expr {
         // `[x][0]` is `x`, where `x` is an item, not `...items`.
         if let (ExprKind::Array(items), Some(0)) = (&object.kind, index.as_int())
@@ -1057,7 +1063,10 @@ impl Expr {
             | ExprKind::Spread(a)
             | ExprKind::Handle(a)
             | ExprKind::DropArgument(_, _, a) => a.each_mut(f),
-            ExprKind::Index(a, b) | ExprKind::Binary(_, a, b) | ExprKind::Pair(a, b) => {
+            ExprKind::Index(a, b)
+            | ExprKind::OptionalIndex(a, b)
+            | ExprKind::Binary(_, a, b)
+            | ExprKind::Pair(a, b) => {
                 a.each_mut(f);
                 b.each_mut(f);
             }
@@ -1116,7 +1125,10 @@ impl Expr {
             | ExprKind::Spread(a)
             | ExprKind::Handle(a)
             | ExprKind::DropArgument(_, _, a) => a.visit_vars(read),
-            ExprKind::Index(a, b) | ExprKind::Binary(_, a, b) | ExprKind::Pair(a, b) => {
+            ExprKind::Index(a, b)
+            | ExprKind::OptionalIndex(a, b)
+            | ExprKind::Binary(_, a, b)
+            | ExprKind::Pair(a, b) => {
                 a.visit_vars(read);
                 b.visit_vars(read);
             }
@@ -1174,7 +1186,9 @@ impl Expr {
             | ExprKind::Spread(a)
             | ExprKind::DropArgument(_, _, a) => a.contains_jsx(),
             ExprKind::Handle(_) | ExprKind::Pair(..) => false,
-            ExprKind::Index(a, b) | ExprKind::Binary(_, a, b) => a.contains_jsx() || b.contains_jsx(),
+            ExprKind::Index(a, b) | ExprKind::OptionalIndex(a, b) | ExprKind::Binary(_, a, b) => {
+                a.contains_jsx() || b.contains_jsx()
+            }
             ExprKind::Cond(a, b, c) => a.contains_jsx() || b.contains_jsx() || c.contains_jsx(),
             ExprKind::Call(f, args) | ExprKind::OptionalCall(f, args) | ExprKind::New(f, args) => {
                 f.contains_jsx() || args.iter().any(Expr::contains_jsx)
@@ -1279,6 +1293,7 @@ impl Expr {
             ExprKind::DropArgument(item, index, drop) => ExprKind::DropArgument(*item, *index, one(drop)?),
             ExprKind::Pair(place, dictionary) => ExprKind::Pair(one(place)?, one(dictionary)?),
             ExprKind::Index(a, b) => ExprKind::Index(one(a)?, one(b)?),
+            ExprKind::OptionalIndex(a, b) => ExprKind::OptionalIndex(one(a)?, one(b)?),
             ExprKind::Array(items) => ExprKind::Array(all(items)?),
             ExprKind::Object(fields) => ExprKind::Object(props(fields)?),
             ExprKind::Unary(op, a) => ExprKind::Unary(*op, one(a)?),
@@ -1444,7 +1459,9 @@ impl Expr {
             // Making one reads nothing: its getter does, later.
             ExprKind::Handle(_) => false,
             ExprKind::Pair(_, dictionary) => dictionary.has_effects(),
-            ExprKind::Index(object, index) => object.has_effects() || index.has_effects(),
+            ExprKind::Index(object, index) | ExprKind::OptionalIndex(object, index) => {
+                object.has_effects() || index.has_effects()
+            }
             ExprKind::Array(items) | ExprKind::Template(_, items, _) => items.iter().any(Expr::has_effects),
             ExprKind::Object(props) => props.iter().any(|p| match p {
                 Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Spread(value) => value.has_effects(),

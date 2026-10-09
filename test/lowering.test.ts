@@ -3250,3 +3250,89 @@ pub fn guarded() -> u32 {
   expect(js).toMatch(/function later\(\) \{\n    return \(three\(\) \+ 4\) >>> 0;\n  \}\n  try \{/);
   expect([lib.kept([1, undefined, 3]), lib.started(), lib.guarded()]).toEqual([[[1, 3], 2], 10, 14]);
 });
+
+// ADR 0309: a match that only gives a value is one expression, as a person
+// writes it, as the playground's app has `current`, `text` and `file`: an
+// option's value or a default, `e ?? d`; a part of it never null or
+// undefined, `e?.[1] ?? d`; otherwise `m ? f(m) : d`, of a `const m`. And
+// `map_or` is the same expression.
+test("a match that only gives a value is one expression", async () => {
+  const dir = fixture("value-matches");
+  writeFileSync(join(dir, "lib.rs"), `pub struct State {
+    pub n: u32,
+}
+
+fn find(states: &[State], n: u32) -> Option<&State> {
+    states.iter().find(|s| s.n == n)
+}
+
+pub fn picked<'a>(states: &'a [State], blank: &'a State) -> u32 {
+    let current = match find(states, 1) {
+        Some(state) => state,
+        None => blank,
+    };
+    current.n + current.n
+}
+
+pub fn shown_text(files: &[(String, String)], shown: &str) -> String {
+    let text = match files.iter().find(|(path, _)| path == shown) {
+        Some((_, text)) => text.clone(),
+        None => String::new(),
+    };
+    format!("{text}{text}")
+}
+
+pub fn after(path: &str) -> u32 {
+    let n = match path.find('x') {
+        Some(i) => i as u32 + 1,
+        None => 0,
+    };
+    n * n
+}
+
+pub fn mapped(path: &str) -> &str {
+    path.rsplit_once('/').map_or(path, |(_, file)| file)
+}
+
+pub fn field_of(state: Option<&State>) -> u32 {
+    let n = match state {
+        Some(s) => s.n,
+        None => 0,
+    };
+    n * n
+}
+
+fn pair_of(n: u32) -> Option<(u32, Option<u32>)> {
+    match n {
+        0 => None,
+        1 => Some((1, None)),
+        _ => Some((n, Some(n))),
+    }
+}
+
+pub fn inner(n: u32) -> u32 {
+    let inner = match pair_of(n) {
+        Some((_, inner)) => inner,
+        None => Some(7),
+    };
+    inner.unwrap_or(0) + inner.unwrap_or(0)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  const current = find(states, 1) ?? blank;\n");
+  expect(js).toContain('  const text = files.find(([path]) => path === shown)?.[1] ?? "";\n');
+  expect(js).toMatch(/  const match = \$find\(path, "x"\);\n  const n = match != null \? \(match \+ 1\) >>> 0 : 0;\n/);
+  expect(js).toContain('  return $rsplitOnce(path, "/")?.[1] ?? path;\n');
+  // Of a variable, as `map_or` of it.
+  expect(js).toContain("  const n = state?.n ?? 0;\n");
+  expect(js).not.toContain("let ");
+  const lib = await import(join(dir, "lib.js"));
+  const states = [{ n: 1 }, { n: 2 }];
+  expect([lib.picked(states, { n: 9 }), lib.picked([], { n: 9 })]).toEqual([2, 18]);
+  expect([lib.shown_text([["a", "A"], ["b", "B"]], "b"), lib.shown_text([], "b")]).toEqual(["BB", ""]);
+  expect([lib.after("abxd"), lib.after("ab"), lib.mapped("a/b/c"), lib.mapped("c")]).toEqual([9, 0, "c", "c"]);
+  // A part that may be `None` itself isn't `?? d`'s: `Some((1, None))` gives `None`.
+  expect([lib.inner(0), lib.inner(1), lib.inner(3)]).toEqual([14, 0, 6]);
+  expect([lib.field_of({ n: 3 }), lib.field_of(undefined)]).toEqual([9, 0]);
+});

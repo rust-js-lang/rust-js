@@ -66,13 +66,8 @@ export function Store() {
 }
 
 function submit(previous, data) {
-  let name;
   const match = data.get("name");
-  if (typeof match === "string") {
-    name = match;
-  } else {
-    name = "";
-  }
+  const name = typeof match === "string" ? match : "";
   return `${previous}${name};`;
 }
 

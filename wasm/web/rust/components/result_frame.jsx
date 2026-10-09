@@ -19,13 +19,8 @@ export function ResultFrame({ program, onOutcome }) {
         window,
         "message",
         (e) => {
-          let fromFrame;
           const match = frame.current;
-          if (match) {
-            fromFrame = Object.is(e.source, match.contentWindow);
-          } else {
-            fromFrame = false;
-          }
+          const fromFrame = match ? Object.is(e.source, match.contentWindow) : false;
           let report;
           const match$1 = readReport(e);
           if (match$1 && fromFrame && match$1.run == run) {

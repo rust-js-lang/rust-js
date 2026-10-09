@@ -168,4 +168,20 @@ export const mutations: Mutation[] = [
     replace: "                        let present = Expr::bin(Op::LooseNe, option.clone(), Expr::null());",
     tests: ["test/lowering.test.ts", "-t", "an Option of an object is tested by its truth"],
   },
+  {
+    name: "nullish-part-kept",
+    breaks: "a part of an option or a default is `m ? m[1] : d` of a `const m`, not `e?.[1] ?? d`",
+    file: "src/lower/options.rs",
+    find: "        _ if part_never_nullish => optional_part(yes, m, option)?,\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","only gives a value"],
+  },
+  {
+    name: "nullish-text-truthy",
+    breaks: "`!!code` of text, which is also whether it isn't empty, is taken as whether it's there: `code ?? null` keeps `\"\"`",
+    file: "src/lower/options.rs",
+    find: "        _ if never_falsy => truthy_of(test)?,\n",
+    replace: "        _ => truthy_of(test)?,\n",
+    tests: ["test/lowering.test.ts", "-t", "nullable field's None is null"],
+  },
 ];

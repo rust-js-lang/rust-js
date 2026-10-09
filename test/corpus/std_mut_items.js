@@ -22,7 +22,7 @@ function bump(n) {
 }
 
 function peek(o) {
-  return o != null ? o.value : 0;
+  return o?.value ?? 0;
 }
 
 function main() {

@@ -61,14 +61,9 @@ export function prepare(files, modules, styles, rootFile, test, run) {
       return [path, code];
     });
   $extend(sources, Array.from(modules));
-  let tests;
   const option = $stripSuffix(rootFile, ".jsx");
   const match = option ?? $stripSuffix(rootFile, ".js");
-  if (match != null) {
-    tests = `${match}.test.js`;
-  } else {
-    tests = rootFile;
-  }
+  const tests = match != null ? `${match}.test.js` : rootFile;
   const hasMain = /^export (async )?function main\(\)/m;
   const runnable = test
     ? sources.some(([path]) => path === tests)

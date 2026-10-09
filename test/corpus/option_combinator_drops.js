@@ -303,7 +303,7 @@ function main() {
         }
       }
       try {
-        console.log(`closure ${closure != null ? closure[0] : 0}`);
+        console.log(`closure ${closure?.[0] ?? 0}`);
         const option$5 = make(6);
         let option$5$live = true;
         let option$6;

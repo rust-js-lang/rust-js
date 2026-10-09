@@ -96,14 +96,14 @@ function main() {
   const kept = value ? [value] : undefined;
   let kept$live = true;
   try {
-    console.log(`kept ${kept != null ? kept[0][0] : 0}`);
+    console.log(`kept ${kept?.[0][0] ?? 0}`);
     const value$1 = make(0);
     const none = value$1 ? [value$1] : undefined;
     try {
       console.log(`none ${!none}`);
       const generic = wrapped(make(3));
       try {
-        console.log(`generic ${generic != null ? generic[0][0] : 0}`);
+        console.log(`generic ${generic?.[0][0] ?? 0}`);
         kept$live = false;
         if (kept != null) {
           dDrop_drop(kept[0]);

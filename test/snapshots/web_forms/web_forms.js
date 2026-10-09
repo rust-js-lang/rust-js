@@ -136,13 +136,8 @@ export function listed(list, headers) {
 
 export function unions_read(reader, data) {
   const text = typeof reader.result === "string";
-  let name;
   const match$1 = data.get("name");
-  if (typeof match$1 === "string") {
-    name = match$1;
-  } else {
-    name = undefined;
-  }
+  const name = typeof match$1 === "string" ? match$1 : undefined;
   return [text, name];
 }
 

@@ -178,13 +178,8 @@ export async function compile(loaded, sources, rootFile, test) {
       ]),
     ),
   ];
-  let outFile;
   const match = $stripSuffix(rootFile, ".rs");
-  if (match != null) {
-    outFile = `/out/${match}.js`;
-  } else {
-    outFile = `/out/${rootFile}`;
-  }
+  const outFile = match != null ? `/out/${match}.js` : `/out/${rootFile}`;
   const args = ["rust-js"];
   if (test) {
     args.push("--test");
