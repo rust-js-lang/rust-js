@@ -1384,7 +1384,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         )?;
         let mut stmts = Vec::new();
         let value = self.expr(body.expr, &mut stmts);
-        self.leave_body(enclosing)?;
+        let hoisted = self.leave_body(enclosing)?;
+        stmts.splice(0..0, hoisted);
         stmts.push(StmtKind::Return(Some(value?)).at(js::Span::NONE));
         Ok(Expr::arrow(Vec::new(), stmts))
     }
@@ -2286,7 +2287,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         params.extend(own_params.into_iter().map(Into::into));
         // Only the drops it uses: most defaults drop nothing of their `Self`.
         let used = self.used_drops();
-        self.leave_body(enclosing)?;
+        rest.splice(0..0, self.leave_body(enclosing)?);
         let mut out: Vec<_> = made
             .into_iter()
             .filter(|(index, _)| used.contains(index))

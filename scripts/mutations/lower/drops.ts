@@ -46,8 +46,8 @@ export const mutations: Mutation[] = [
     name: "drop-function-in-branch",
     breaks: "a drop function is declared where it's first needed, a branch another call isn't in",
     file: "src/lower/drops.rs",
-    find: "            made.defs\n                .push(StmtKind::Const(name.clone(), Expr::arrow(vec![param.into()], body)).at(js_span));\n",
-    replace: "            out.push(StmtKind::Const(name.clone(), Expr::arrow(vec![param.into()], body)).at(js_span));\n",
+    find: "                Some(hoisted) => hoisted.defs.push(def),\n",
+    replace: "                Some(_) => out.push(def),\n",
     tests: ["test/corpus.test.ts", "-t", "drop_functions"],
   },
   {
@@ -372,5 +372,21 @@ export const mutations: Mutation[] = [
     find: "                if self.is_sorted(ty) {\n",
     replace: "                if false {\n",
     tests: ["test/corpus.test.ts", "-t", "map_drops"],
+  },
+  {
+    name: "hoisted-drops-lost",
+    breaks: "a body's drop functions aren't declared at its top",
+    file: "src/lower/drops.rs",
+    find: "        std::mem::replace(&mut self.drop_state.hoisted, enclosing).map_or_else(Vec::new, |hoisted| hoisted.defs)\n",
+    replace: "        std::mem::replace(&mut self.drop_state.hoisted, enclosing).map_or_else(Vec::new, |_| Vec::new())\n",
+    tests: ["test/corpus.test.ts", "-t", "drop_functions"],
+  },
+  {
+    name: "hoisted-drops-redeclared",
+    breaks: "a drop function is declared again for each drop, twice in one body",
+    file: "src/lower/drops.rs",
+    find: "            .and_then(|hoisted| hoisted.functions.iter().find(|(t, _)| *t == ty))\n",
+    replace: "            .and_then(|hoisted| hoisted.functions.iter().find(|_| false))\n",
+    tests: ["test/corpus.test.ts", "-t", "drop_functions"],
   },
 ];

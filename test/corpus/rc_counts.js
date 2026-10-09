@@ -20,6 +20,12 @@ export function entry() {
 }
 
 function main() {
+  const dropNode = (node) => {
+    $weakDrop(node.parent.value);
+    for (const item of node.children.value) {
+      $rcDrop(item, dropNode);
+    }
+  };
   const a = { value: 5, strong: 1, weak: 0 };
   let a$live = true;
   try {
@@ -137,15 +143,15 @@ function main() {
               try {
                 option$3$live = false;
                 map$1 = (p) => {
+                  const dropNode = (node) => {
+                    $weakDrop(node.parent.value);
+                    for (const item of node.children.value) {
+                      $rcDrop(item, dropNode);
+                    }
+                  };
                   try {
                     return p.value.name;
                   } finally {
-                    const dropNode = (node) => {
-                      $weakDrop(node.parent.value);
-                      for (const item of node.children.value) {
-                        $rcDrop(item, dropNode);
-                      }
-                    };
                     $rcDrop(p, dropNode);
                   }
                 };
@@ -153,12 +159,6 @@ function main() {
                 console.log(`${arg$3 == null ? "None" : `Some(${$debugStr(arg$3)})`}`);
               } finally {
                 if (option$3$live) {
-                  const dropNode = (node) => {
-                    $weakDrop(node.parent.value);
-                    for (const item of node.children.value) {
-                      $rcDrop(item, dropNode);
-                    }
-                  };
                   if (option$3 != null) {
                     $rcDrop(option$3, dropNode);
                   }
@@ -192,15 +192,15 @@ function main() {
                 try {
                   option$4$live = false;
                   map$2 = (p) => {
+                    const dropNode = (node) => {
+                      $weakDrop(node.parent.value);
+                      for (const item of node.children.value) {
+                        $rcDrop(item, dropNode);
+                      }
+                    };
                     try {
                       return p.value.name;
                     } finally {
-                      const dropNode = (node) => {
-                        $weakDrop(node.parent.value);
-                        for (const item of node.children.value) {
-                          $rcDrop(item, dropNode);
-                        }
-                      };
                       $rcDrop(p, dropNode);
                     }
                   };
@@ -210,26 +210,14 @@ function main() {
                   );
                 } finally {
                   if (option$4$live) {
-                    const dropNode$1 = (node$1) => {
-                      $weakDrop(node$1.parent.value);
-                      for (const item$1 of node$1.children.value) {
-                        $rcDrop(item$1, dropNode$1);
-                      }
-                    };
                     if (option$4 != null) {
-                      $rcDrop(option$4, dropNode$1);
+                      $rcDrop(option$4, dropNode);
                     }
                   }
                 }
                 console.log(`${leaf.strong}`);
               } finally {
-                const dropNode$2 = (node$2) => {
-                  $weakDrop(node$2.parent.value);
-                  for (const item$2 of node$2.children.value) {
-                    $rcDrop(item$2, dropNode$2);
-                  }
-                };
-                $rcDrop(branch, dropNode$2);
+                $rcDrop(branch, dropNode);
               }
               const option$5 = $upgrade(leaf.value.parent.value);
               let option$5$live = true;
@@ -238,15 +226,15 @@ function main() {
               try {
                 option$5$live = false;
                 map$3 = (p) => {
+                  const dropNode = (node) => {
+                    $weakDrop(node.parent.value);
+                    for (const item of node.children.value) {
+                      $rcDrop(item, dropNode);
+                    }
+                  };
                   try {
                     return p.value.name;
                   } finally {
-                    const dropNode = (node) => {
-                      $weakDrop(node.parent.value);
-                      for (const item of node.children.value) {
-                        $rcDrop(item, dropNode);
-                      }
-                    };
                     $rcDrop(p, dropNode);
                   }
                 };
@@ -256,14 +244,8 @@ function main() {
                 );
               } finally {
                 if (option$5$live) {
-                  const dropNode$3 = (node$3) => {
-                    $weakDrop(node$3.parent.value);
-                    for (const item$3 of node$3.children.value) {
-                      $rcDrop(item$3, dropNode$3);
-                    }
-                  };
                   if (option$5 != null) {
-                    $rcDrop(option$5, dropNode$3);
+                    $rcDrop(option$5, dropNode);
                   }
                 }
               }
@@ -283,13 +265,7 @@ function main() {
                 }
               }
             } finally {
-              const dropNode$4 = (node$4) => {
-                $weakDrop(node$4.parent.value);
-                for (const item$4 of node$4.children.value) {
-                  $rcDrop(item$4, dropNode$4);
-                }
-              };
-              $rcDrop(leaf, dropNode$4);
+              $rcDrop(leaf, dropNode);
             }
           } finally {
             if (shared$live) {

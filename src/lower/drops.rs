@@ -87,6 +87,8 @@ pub(super) type DefaultDrops<'tcx> = (HashMap<u32, String>, HashMap<u32, (Ty<'tc
 pub(super) struct EnclosingDrops<'tcx> {
     scopes: BodyScopes<'tcx>,
     swapped: Option<SwappedDrops<'tcx>>,
+    /// The enclosing body's drop functions, where this body declares its own.
+    hoisted: Option<Option<Hoisted<'tcx>>>,
 }
 
 /// The statement and the expressions being lowered, whose temporaries a
@@ -145,6 +147,17 @@ pub(super) struct DropState<'tcx> {
     /// The scopes of the expressions being lowered, innermost last, and the
     /// temporaries that end with each: a condition's, a block's tail's.
     open: Vec<(region::Scope, Vec<Temp<'tcx>>)>,
+    /// The drop functions of the function or closure being lowered, each
+    /// declared once at its top; `None` where each drop declares its own.
+    hoisted: Option<Hoisted<'tcx>>,
+}
+
+/// A body's drop functions, each of a type inside itself or with a long
+/// drop: its name, and its `const`.
+#[derive(Default)]
+pub(super) struct Hoisted<'tcx> {
+    functions: Vec<(Ty<'tcx>, String)>,
+    defs: Vec<Stmt>,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -338,6 +351,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             out.push(StmtKind::Expr(Expr::call(Expr::var(name), vec![value])).at(js_span));
             return Ok(());
         }
+        // One declared at the body's top already.
+        if let Some(name) = self
+            .drop_state
+            .hoisted
+            .as_ref()
+            .and_then(|hoisted| hoisted.functions.iter().find(|(t, _)| *t == ty))
+            .map(|(_, name)| name.clone())
+        {
+            let js_span = self.js_span(span);
+            out.push(StmtKind::Expr(Expr::call(Expr::var(&name), vec![value])).at(js_span));
+            return Ok(());
+        }
         // A type of the crate's own whose drop is long, or inside itself, as
         // a list is, gets a function of its own, which calls itself for the
         // ones inside: its drop is written once, not once for each path to it.
@@ -349,12 +374,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let type_name = self.tcx.item_name(adt.did()).to_string();
             let name = self.fresh(&format!("drop{type_name}"));
             let param = self.fresh(&lower_first(&type_name));
-            made.functions.push((ty, name.clone()));
+            let js_span = self.js_span(span);
+            // Declared once, at the top of the body, where it hoists them.
+            match self.drop_state.hoisted.as_mut() {
+                Some(hoisted) => hoisted.functions.push((ty, name.clone())),
+                None => made.functions.push((ty, name.clone())),
+            }
             let mut body = Vec::new();
             self.drop_parts(Expr::var(&param), ty, span, made, &mut body)?;
-            let js_span = self.js_span(span);
-            made.defs
-                .push(StmtKind::Const(name.clone(), Expr::arrow(vec![param.into()], body)).at(js_span));
+            let def = StmtKind::Const(name.clone(), Expr::arrow(vec![param.into()], body)).at(js_span);
+            match self.drop_state.hoisted.as_mut() {
+                Some(hoisted) => hoisted.defs.push(def),
+                None => made.defs.push(def),
+            }
             out.push(StmtKind::Expr(Expr::call(Expr::var(&name), vec![value])).at(js_span));
             return Ok(());
         }
@@ -985,24 +1017,46 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// none of the enclosing one's statement and scopes. A copied default's,
     /// `default`, is given its trait's type parameters' drops and those it
     /// can't make (ADR 0098).
-    pub(super) fn enter_body_drops(&mut self, default: Option<DefaultDrops<'tcx>>) -> R<EnclosingDrops<'tcx>> {
+    /// `frame`: a closure's or a copied default's, a JS function of its own,
+    /// which declares its own drop functions.
+    pub(super) fn enter_body_drops(
+        &mut self,
+        default: Option<DefaultDrops<'tcx>>,
+        frame: bool,
+    ) -> R<EnclosingDrops<'tcx>> {
         let swapped = default.map(|(drops, unsupported)| self.swap_drops(drops, unsupported));
         self.drop_facts()?;
         Ok(EnclosingDrops {
             scopes: self.take_scopes(),
             swapped,
+            hoisted: frame.then(|| self.begin_hoisting()),
         })
+    }
+
+    /// Declare drop functions once, at the top of the body that's starting:
+    /// what the enclosing one had, to give back to `end_hoisting`.
+    pub(super) fn begin_hoisting(&mut self) -> Option<Hoisted<'tcx>> {
+        self.drop_state.hoisted.replace(Hoisted::default())
+    }
+
+    /// The drop functions the body that's ending declared, for its top, and
+    /// the enclosing body's back.
+    pub(super) fn end_hoisting(&mut self, enclosing: Option<Hoisted<'tcx>>) -> Vec<Stmt> {
+        std::mem::replace(&mut self.drop_state.hoisted, enclosing).map_or_else(Vec::new, |hoisted| hoisted.defs)
     }
 
     /// Finish the body `enter_body_drops` started: every owner it has had a
     /// scope, and every move its flag cleared, and the enclosing body's back.
-    pub(super) fn leave_body_drops(&mut self, enclosing: EnclosingDrops<'tcx>) -> R<()> {
+    pub(super) fn leave_body_drops(&mut self, enclosing: EnclosingDrops<'tcx>) -> R<Vec<Stmt>> {
         self.check_drops()?;
         self.give_scopes(enclosing.scopes);
         if let Some(swapped) = enclosing.swapped {
             self.restore_drops(swapped);
         }
-        Ok(())
+        Ok(match enclosing.hoisted {
+            Some(outer) => self.end_hoisting(outer),
+            None => Vec::new(),
+        })
     }
 
     /// The enclosing body's statement and expressions, while a body inside

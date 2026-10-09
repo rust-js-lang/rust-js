@@ -16,8 +16,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let thir = self.thir;
         let evidence = self.evidence_params(def_id);
         self.drop_facts()?;
+        let outer = self.begin_hoisting();
         let (mut params, is_async) = self.lower_signature(def_id, &thir.params.raw, body.expr, &mut out)?;
         params.extend(evidence);
+        out.splice(0..0, self.end_hoisting(outer));
         self.check_drops()?;
         self.note_drop_uses(def_id);
 
@@ -51,7 +53,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let def_id = body.def_id.to_def_id();
         let mut out = Vec::new();
         self.drop_facts()?;
+        let outer = self.begin_hoisting();
         self.stmt(body.expr, &Dest::Return, &mut out)?;
+        out.splice(0..0, self.end_hoisting(outer));
         self.check_drops()?;
         Ok(LoweredFn {
             function: js::Function {
@@ -514,7 +518,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let gives_unit = self.thir[body.expr].ty.is_unit();
         self.close_scope(mark, lowered, span, &mut stmts)?;
-        self.leave_body(enclosing)?;
+        let hoisted = self.leave_body(enclosing)?;
+        stmts.splice(0..0, hoisted);
         self.give_flags(flags);
         for (path, previous) in shadowed {
             match previous {
@@ -579,6 +584,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.unsupported(span, "`async` code that owns a value with a destructor"));
         }
         self.stmt(body.expr, &Dest::Return, out)?;
+        // An `async` block's drop functions are its function's.
         self.leave_body(enclosing)?;
         Ok(true)
     }
@@ -598,6 +604,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let body_owner = std::mem::replace(&mut self.body_owner, owner);
         let stepping = self.enter_body_stepping(&body.facts.stepped, matches!(nested, Nested::Default { .. }));
         let mut default_drops = None;
+        // A closure and a copied default are JS functions of their own, which
+        // declare their own drop functions; an `async` block is its function's.
+        let frame = !matches!(nested, Nested::Coroutine);
         let kind = match nested {
             Nested::Closure { names } => EnclosingKind::Closure {
                 loops: std::mem::take(&mut self.loops),
@@ -625,14 +634,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             body_facts,
             body_owner,
             stepping,
-            drops: self.enter_body_drops(default_drops)?,
+            drops: self.enter_body_drops(default_drops, frame)?,
             kind,
         })
     }
 
-    /// Finish the body `enter_body` started, and go back to the enclosing one.
-    pub(super) fn leave_body(&mut self, enclosing: Enclosing<'a, 'tcx>) -> R<()> {
-        self.leave_body_drops(enclosing.drops)?;
+    /// Finish the body `enter_body` started, and go back to the enclosing one:
+    /// the drop functions it declares, for its top.
+    pub(super) fn leave_body(&mut self, enclosing: Enclosing<'a, 'tcx>) -> R<Vec<Stmt>> {
+        let hoisted = self.leave_body_drops(enclosing.drops)?;
         self.thir = enclosing.thir;
         self.body_facts = enclosing.body_facts;
         self.body_owner = enclosing.body_owner;
@@ -656,7 +666,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.typing_env = typing_env;
             }
         }
-        Ok(())
+        Ok(hoisted)
     }
 
     /// Does capturing `upvar` need a snapshot? Only a by-value capture of a

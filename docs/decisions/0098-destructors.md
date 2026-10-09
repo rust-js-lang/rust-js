@@ -435,3 +435,24 @@ traits.
   more than its Rust one has, as its dictionaries are (ADR 0052). A JS
   caller of an exported one passes none, and the drop doesn't run: a Rust
   value JS holds is never dropped either.
+
+## Amendment: a drop function is declared once, at its body's top
+
+A drop function of its own, of a type inside itself or with a long drop,
+was declared at each drop that called it: a tree's `dropNode` six times in
+one function, once in each `finally`. It's now declared once, at the top of
+the function or closure that drops one, and every drop there calls it.
+
+- **A closure, and a trait's default copied into an impl, is a body of its
+  own**: its names start from its module's, as a JS arrow may reuse an
+  outer name, so one of its locals could be the name its function's drop
+  function has. It declares its own. An `async` block is its
+  function's.
+- **A dictionary's and a codec's drops declare theirs at the drop**, as
+  before: they're no function body of the crate's.
+- **Not once a module**: a module's would need a name chosen after the
+  module's names are, and its imports kept with it if the function that
+  made it is left out. A function's is the same JS without either.
+- Tested: the `drop_functions` corpus case; mutations lose the
+  declarations, declare one again for each drop, and declare it where it's
+  first needed.
