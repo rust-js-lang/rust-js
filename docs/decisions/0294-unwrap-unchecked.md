@@ -30,3 +30,9 @@ let iframeElement = unsafe { iframeRef.current().unwrap_unchecked() };
 - **It's the same program**: Rust makes a `None` here undefined behavior,
   so whatever JS does with `undefined` is within what the program means.
   A port that wants the check keeps `unwrap()`, and `$unwrap`.
+
+## Amendment: `get_unchecked(i)` is the item
+
+A slice's `get_unchecked(i)` is `xs[i]`, unchecked, as JS reads an item:
+react.dev's NavigationBar reads `entry.contentBoxSize[0]`. Past the end is
+undefined behavior in Rust, as a `None` is for `unwrap_unchecked`.

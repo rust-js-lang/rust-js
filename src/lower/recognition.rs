@@ -289,7 +289,8 @@ pub(super) enum Std {
     /// A slice's `first()` and `last()`: `v[0]` and `v.at(-1)`.
     First,
     SliceLast,
-    /// `v.get(i)`: `v[i]`, which is `undefined` past the end.
+    /// `v.get(i)`: `v[i]`, which is `undefined` past the end; and
+    /// `get_unchecked(i)`, which Rust leaves undefined there.
     SliceGet,
     /// `char::from_digit(n, radix)` and `char::from_u32(n)`: `None` when there's no such `char`.
     FromDigit,
@@ -1395,6 +1396,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             // (ADR 0152).
             "first" | "first_mut" if owner.is_slice() => Std::First,
             "get" | "get_mut" if owner.is_slice() && args.types().nth(1).is_some_and(|i| i.is_usize()) => Std::SliceGet,
+            // Unchecked, the item, as JS reads one (ADR 0294).
+            "get_unchecked" if owner.is_slice() && args.types().nth(1).is_some_and(|i| i.is_usize()) => Std::SliceGet,
             "last" | "last_mut" if owner.is_slice() => Std::SliceLast,
             // `includes` compares strings and numbers by value, as `==` does,
             // but objects by identity: only for those.

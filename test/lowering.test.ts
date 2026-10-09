@@ -2815,6 +2815,25 @@ pub fn guarded() -> u32 {
   expect([lib.first("a"), lib.inner(), lib.guarded()]).toEqual(["a", [undefined, 3], 5]);
 });
 
+// `get_unchecked(i)` of a slice is its item, `xs[i]`, unchecked, as JS reads
+// one (ADR 0294): react.dev's NavigationBar reads `entry.contentBoxSize[0]`.
+test("get_unchecked is the item itself", async () => {
+  const dir = fixture("get-unchecked");
+  writeFileSync(join(dir, "lib.rs"), `pub fn first(xs: &[u32]) -> u32 {
+    unsafe { *xs.get_unchecked(0) }
+}
+pub fn second(names: &Vec<String>) -> &str {
+    unsafe { names.get_unchecked(1) }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return xs[0];");
+  expect(js).toContain("return names[1];");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.first([4, 5]), lib.second(["a", "b"])]).toEqual([4, "b"]);
+});
+
 // ADR 0298: an Option whose value is never falsy, an object, an array or a
 // function, is tested by its truth, as react.dev's Preview writes `{error &&
 // ..}`, `!error` and `rawError && rawError.message`; and `o == Some(true)` of

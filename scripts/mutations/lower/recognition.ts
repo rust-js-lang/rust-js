@@ -731,4 +731,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/bindings.test.ts", "-t", "can't throw"],
   },
+  {
+    name: "get-unchecked-unknown",
+    breaks: "a slice's `get_unchecked(i)` is unsupported, not `xs[i]`",
+    file: "src/lower/recognition.rs",
+    find: "            \"get_unchecked\" if owner.is_slice() && args.types().nth(1).is_some_and(|i| i.is_usize()) => Std::SliceGet,\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "get_unchecked is the item"],
+  },
 ];
