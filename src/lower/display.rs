@@ -858,6 +858,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if super::recognition::is_try_from_slice_error(self.tcx, ty) {
             return Ok(Expr::str("could not convert slice to array"));
         }
+        if super::recognition::is_from_utf16_error(self.tcx, ty) {
+            return Ok(Expr::str("invalid utf-16: lone surrogate found"));
+        }
         // `format_args!`'s text (ADR 0034), which its `Display` writes as it
         // is, whatever width the `Formatter` has, as strum's derive asks.
         if self.is_lang_adt(ty, LangItem::FormatArguments) {
@@ -1028,6 +1031,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if super::recognition::is_try_from_slice_error(self.tcx, ty) {
             return Ok(Expr::str("TryFromSliceError(())"));
+        }
+        if super::recognition::is_from_utf16_error(self.tcx, ty) {
+            return Ok(Expr::str("FromUtf16Error { kind: LoneSurrogate }"));
         }
         // A `Duration`'s, in its largest whole unit, `1.5s` (ADR 0188). With
         // options, std rounds and pads it by its own rules: not yet.

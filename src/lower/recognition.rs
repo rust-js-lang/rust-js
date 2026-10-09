@@ -1337,6 +1337,25 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "insert" | "insert_str" if string => Std::StringEdit(StringEdit::Insert),
             "retain" if string => Std::StringEdit(StringEdit::Retain),
             "clear" if string => Std::StringEdit(StringEdit::Clear),
+            "split_off" if string => Std::StringEdit(StringEdit::SplitOff),
+            "drain" if string => Std::StringEdit(StringEdit::Drain),
+            "replace_range" if string => Std::StringEdit(StringEdit::ReplaceRange),
+            "extend_from_within" if string => Std::StringEdit(StringEdit::ExtendFromWithin),
+            "trim_ascii" if owner.is_str() => Std::Text(TextOp::TrimAscii { start: true, end: true }),
+            "trim_ascii_start" if owner.is_str() => Std::Text(TextOp::TrimAscii {
+                start: true,
+                end: false,
+            }),
+            "trim_ascii_end" if owner.is_str() => Std::Text(TextOp::TrimAscii {
+                start: false,
+                end: true,
+            }),
+            "split_at_checked" if owner.is_str() => Std::Text(TextOp::StrSplitAtChecked),
+            "encode_utf16" if owner.is_str() => Std::Text(TextOp::EncodeUtf16),
+            "floor_char_boundary" if owner.is_str() => Std::Text(TextOp::CharBoundaryNear { ceil: false }),
+            "ceil_char_boundary" if owner.is_str() => Std::Text(TextOp::CharBoundaryNear { ceil: true }),
+            "from_utf16" if string => Std::Text(TextOp::FromUtf16 { lossy: false }),
+            "from_utf16_lossy" if string => Std::Text(TextOp::FromUtf16 { lossy: true }),
             "as_str" if string => Std::Same,
             "trim" if owner.is_str() => Std::Trim { start: true, end: true },
             // A closure, a function or a set of `char`s as the pattern (ADRs 0063, 0157).
@@ -1378,7 +1397,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             }
             // Splitting and searching by a `&str` or a `char` (ADR 0150); trimming by
             // a closure or a function too.
-            "splitn" | "rsplitn" | "rsplit" | "split_terminator" | "match_indices" | "matches"
+            "splitn" | "rsplitn" | "rsplit" | "split_terminator" | "match_indices" | "matches" | "split_inclusive"
+            | "rsplit_terminator" | "rmatch_indices" | "rmatches"
                 if owner.is_str() && !self_ty.is_some_and(|p| self.is_string_like(p)) =>
             {
                 return None;
@@ -1387,6 +1407,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "rsplitn" if owner.is_str() => Std::Text(TextOp::Rsplit(true)),
             "rsplit" if owner.is_str() => Std::Text(TextOp::Rsplit(false)),
             "split_terminator" if owner.is_str() => Std::Text(TextOp::SplitTerminator),
+            "split_inclusive" if owner.is_str() => Std::Text(TextOp::SplitInclusive),
+            "rsplit_terminator" if owner.is_str() => Std::Text(TextOp::RsplitTerminator),
+            "rmatch_indices" if owner.is_str() => Std::Text(TextOp::RmatchIndices),
+            "rmatches" if owner.is_str() => Std::Text(TextOp::Rmatches),
             "split_at" if owner.is_str() => Std::Text(TextOp::SplitAt),
             "match_indices" if owner.is_str() => Std::Text(TextOp::MatchIndices),
             "matches" if owner.is_str() => Std::Text(TextOp::Matches),
@@ -2844,6 +2868,13 @@ pub(crate) fn is_duration_ty(ty: Ty<'_>) -> bool {
 pub(crate) fn is_try_from_slice_error(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if tcx.crate_name(adt.did().krate) == sym::core
         && tcx.item_name(adt.did()).as_str() == "TryFromSliceError")
+}
+
+/// `String::from_utf16`'s error, of a lone surrogate, the one kind it makes
+/// (ADR 0323).
+pub(crate) fn is_from_utf16_error(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _) if tcx.crate_name(adt.did().krate) == sym::alloc
+        && tcx.item_name(adt.did()).as_str() == "FromUtf16Error")
 }
 
 /// A `NonZero<T>` type (ADR 0177).

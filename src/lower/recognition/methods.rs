@@ -37,6 +37,7 @@ pub(super) fn text(name: &str, char: bool, str: bool) -> Option<TextOp> {
         // So is a `Box<str>`'s `into_boxed_bytes()`, a copy of its own.
         "as_bytes" | "bytes" | "into_boxed_bytes" if str => TextOp::Bytes,
         "parse" if str => TextOp::Parse,
+        "is_ascii" if str => TextOp::Is("/^[\\0-\\x7f]*$/"),
         _ => return None,
     })
 }

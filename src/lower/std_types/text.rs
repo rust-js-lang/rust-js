@@ -29,6 +29,11 @@ pub(in crate::lower) enum StringEdit {
     Insert,
     Retain,
     Clear,
+    /// `s.split_off(at)`, `s.drain(range)`: what they take out (ADR 0323).
+    SplitOff,
+    Drain,
+    ReplaceRange,
+    ExtendFromWithin,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -122,6 +127,24 @@ pub(in crate::lower) enum TextOp {
     /// `s.rsplit(p)`, or `s.rsplitn(n, p)` if `true`: searched from the end.
     Rsplit(bool),
     SplitTerminator,
+    /// A `str`'s splits and searches from the end, its ASCII trims, and
+    /// UTF-16 (ADR 0323).
+    SplitInclusive,
+    RsplitTerminator,
+    RmatchIndices,
+    Rmatches,
+    StrSplitAtChecked,
+    EncodeUtf16,
+    FromUtf16 {
+        lossy: bool,
+    },
+    CharBoundaryNear {
+        ceil: bool,
+    },
+    TrimAscii {
+        start: bool,
+        end: bool,
+    },
     /// `s.split_at(at)`: by a UTF-8 byte offset.
     SplitAt,
     /// `s.match_indices(p)`: where, in UTF-8 bytes, and what.
@@ -161,7 +184,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ExprKind::Borrow { arg: place, .. } = self.thir[self.strip(args[0])].kind else {
             return Err(self.unsupported(span, "changing this string"));
         };
-        let given = self.operands(&args[1..], out)?;
+        // A byte range's bounds, and `replace_range`'s text (ADR 0323).
+        let given = match edit {
+            StringEdit::Drain | StringEdit::ReplaceRange | StringEdit::ExtendFromWithin => {
+                let (start, end) = self.range_bounds(args[1], span, out)?;
+                let mut given = vec![start, end.unwrap_or_else(Expr::undefined)];
+                given.extend(self.operands(&args[2..], out)?);
+                given
+            }
+            _ => self.operands(&args[1..], out)?,
+        };
         let (target, _) = self.prepare_assignment_target(place, true, Expr::undefined(), span, out)?;
         let current = target.read();
         let js_span = self.js_span(span);
@@ -174,6 +206,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             StringEdit::Clear => (Expr::str(""), None),
             StringEdit::Truncate => (helper(self, Helper::StrTruncate, "$strTruncate", given), None),
             StringEdit::Insert => (helper(self, Helper::InsertStr, "$insertStr", given), None),
+            StringEdit::ReplaceRange => (helper(self, Helper::StrEdits, "$replaceRange", given), None),
+            StringEdit::ExtendFromWithin => (helper(self, Helper::StrEdits, "$strExtendWithin", given), None),
             StringEdit::Retain => {
                 let kept = Expr::call(
                     Expr::member(
@@ -184,9 +218,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
                 (Expr::call(Expr::member(kept, "join"), vec![Expr::str("")]), None)
             }
-            StringEdit::Pop | StringEdit::Remove => {
+            StringEdit::Pop | StringEdit::Remove | StringEdit::SplitOff | StringEdit::Drain => {
                 let (helper_id, name, label) = match edit {
                     StringEdit::Pop => (Helper::StrPop, "$strPop", "popped"),
+                    StringEdit::SplitOff => (Helper::StrEdits, "$strSplitOff", "split"),
+                    StringEdit::Drain => (Helper::StrEdits, "$strDrain", "drained"),
                     _ => (Helper::StrRemove, "$strRemove", "removed"),
                 };
                 let pair = helper(self, helper_id, name, given);
@@ -342,6 +378,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 call(self, Helper::Rsplit, "$rsplit", list)
             }
             TextOp::SplitTerminator => call(self, Helper::SplitTerminator, "$splitTerminator", vec![arg(), arg()]),
+            TextOp::SplitInclusive => call(self, Helper::StrSearch, "$splitInclusive", vec![arg(), arg()]),
+            TextOp::RsplitTerminator => call(self, Helper::StrSearch, "$rsplitTerminator", vec![arg(), arg()]),
+            TextOp::RmatchIndices => call(self, Helper::StrSearch, "$rmatchIndices", vec![arg(), arg()]),
+            TextOp::Rmatches => call(self, Helper::StrSearch, "$rmatches", vec![arg(), arg()]),
+            TextOp::StrSplitAtChecked => call(self, Helper::StrSearch, "$splitAtChecked", vec![arg(), arg()]),
+            TextOp::EncodeUtf16 => call(self, Helper::StrSearch, "$encodeUtf16", vec![arg()]),
+            TextOp::FromUtf16 { lossy: false } => call(self, Helper::StrSearch, "$fromUtf16", vec![arg()]),
+            TextOp::FromUtf16 { lossy: true } => call(self, Helper::StrSearch, "$fromUtf16Lossy", vec![arg()]),
+            TextOp::CharBoundaryNear { ceil: false } => {
+                call(self, Helper::StrSearch, "$floorCharBoundary", vec![arg(), arg()])
+            }
+            TextOp::CharBoundaryNear { ceil: true } => {
+                call(self, Helper::StrSearch, "$ceilCharBoundary", vec![arg(), arg()])
+            }
+            // ASCII whitespace, `u8::is_ascii_whitespace`'s, which isn't JS's.
+            TextOp::TrimAscii { start, end } => {
+                let regex = match (start, end) {
+                    (true, true) => "/^[\\t\\n\\f\\r ]+|[\\t\\n\\f\\r ]+$/g",
+                    (true, false) => "/^[\\t\\n\\f\\r ]+/",
+                    _ => "/[\\t\\n\\f\\r ]+$/",
+                };
+                Expr::call(Expr::member(arg(), "replace"), vec![Expr::regex(regex), Expr::str("")])
+            }
             TextOp::SplitAt => call(self, Helper::SplitAt, "$splitAt", vec![arg(), arg()]),
             TextOp::SliceSplitAt { checked } => {
                 let mut list = vec![arg(), arg()];
@@ -529,8 +588,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// slice can be, since nothing changes `v` while it's borrowed. Out of
     /// bounds, it panics, as Rust does.
     fn slice_range(&mut self, op: TextOp, args: &[ExprId], span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
-        let range = self.strip(args[1]);
-        let range_ty = self.thir[range].ty;
         let (helper, name) = match op {
             TextOp::Drain => (Helper::Drain, "$drain"),
             TextOp::StrSlice => (Helper::StrSlice, "$strSlice"),
@@ -538,7 +595,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TextOp::SliceGet => (Helper::SliceGet, "$sliceGet"),
             _ => (Helper::SliceRange, "$slice"),
         };
+        let items = self.operands(&[args[0]], out)?.remove(0);
+        let (start, end) = self.range_bounds(args[1], span, out)?;
+        // `&s[..]` of a string: all of it, which is never out of bounds, nor
+        // inside a character.
+        if matches!(op, TextOp::StrSlice | TextOp::StrGet) && start.as_int() == Some(0) && end.is_none() {
+            return Ok(items);
+        }
+        self.runtime.insert(helper);
+        let mut list = vec![items, start];
+        list.extend(end);
+        Ok(Expr::call(Expr::var(name), list))
+    }
+
+    /// A range argument's bounds, in order: its start, `0` where it has none,
+    /// and its end past what it holds, `a..=b`'s `b + 1`, or `None` where it
+    /// runs to the end.
+    pub(in crate::lower) fn range_bounds(
+        &mut self,
+        range: ExprId,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<(Expr, Option<Expr>)> {
+        let range = self.strip(range);
+        let range_ty = self.thir[range].ty;
         let kind = self.range_kind(range_ty);
+        // `..=1` is `..2`.
+        let past = |end: Expr| match end.as_int() {
+            Some(n) => Expr::int(n + 1),
+            None => Expr::bin(Op::Add, end, Expr::int(1)),
+        };
         let fields: Vec<(usize, ExprId)> = match self.thir[range].kind {
             ExprKind::Adt(ref adt) if kind != Some(RangeKind::ToInclusive) => {
                 adt.fields.iter().map(|f| (f.name.as_usize(), f.expr)).collect()
@@ -548,25 +634,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let Some(kind) = kind else {
                     return Err(self.unsupported(span, "slicing by this range"));
                 };
-                let [items, range]: [Expr; 2] = self.operands(&[args[0], args[1]], out)?.try_into().ok().unwrap();
-                let parts = self.range_parts(range, kind, out);
-                // `..=1` is `..2`.
-                let past = |end: &Expr| match end.as_int() {
-                    Some(n) => Expr::int(n + 1),
-                    None => Expr::bin(Op::Add, end.clone(), Expr::int(1)),
-                };
-                let (start, end) = match (kind, parts.as_slice()) {
+                let value = self.operands(&[range], out)?.remove(0);
+                let parts = self.range_parts(value, kind, out);
+                return Ok(match (kind, parts.as_slice()) {
                     (RangeKind::Exclusive, [start, end]) => (start.clone(), Some(end.clone())),
-                    (RangeKind::Inclusive, [start, end]) => (start.clone(), Some(past(end))),
+                    (RangeKind::Inclusive, [start, end]) => (start.clone(), Some(past(end.clone()))),
                     (RangeKind::From, [start]) => (start.clone(), None),
                     (RangeKind::To, [end]) => (Expr::int(0), Some(end.clone())),
-                    (RangeKind::ToInclusive, [end]) => (Expr::int(0), Some(past(end))),
+                    (RangeKind::ToInclusive, [end]) => (Expr::int(0), Some(past(end.clone()))),
                     _ => (Expr::int(0), None),
-                };
-                self.runtime.insert(helper);
-                let mut list = vec![items, start];
-                list.extend(end);
-                return Ok(Expr::call(Expr::var(name), list));
+                });
             }
         };
         let bound = |i: usize| fields.iter().find(|&&(n, _)| n == i).map(|&(_, e)| e);
@@ -581,25 +658,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else {
             return Err(self.unsupported(span, "slicing by this range"));
         };
-        // `&s[..]` of a string: all of it, which is never out of bounds, nor
-        // inside a character.
-        if matches!(op, TextOp::StrSlice | TextOp::StrGet) && start.is_none() && end.is_none() {
-            return Ok(self.operands(&[args[0]], out)?.remove(0));
-        }
-        let mut list = vec![args[0]];
-        list.extend(start);
-        list.extend(end);
+        let list: Vec<ExprId> = start.into_iter().chain(end).collect();
         let mut values = self.operands(&list, out)?.into_iter();
-        let items = values.next().expect("the slice");
         let start = match start {
             Some(_) => values.next().expect("a start"),
             None => Expr::int(0),
         };
-        let end = end.map(|_| values.next().expect("an end"));
-        self.runtime.insert(helper);
-        let mut list = vec![items, start];
-        list.extend(end);
-        Ok(Expr::call(Expr::var(name), list))
+        Ok((start, end.map(|_| values.next().expect("an end"))))
     }
 }
 

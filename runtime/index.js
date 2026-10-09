@@ -1381,6 +1381,146 @@ export function $joinWith(lists, sep, spread, clone) {
   return out;
 }
 
+// A `String`'s edits of a byte range (ADR 0323). `$strRange`: the UTF-16
+// units of the bytes `start..end` of `s`, checked as std checks them,
+// `slice::range`'s, then each a `char`'s boundary: `replace_range`'s message,
+// or the other edits' assertion.
+export function $strRange(s, start, end, replacing) {
+  const length = $byteLen(s);
+  end ??= length;
+  if (start > end) throw new Error(`slice index starts at ${start} but ends at ${end}`);
+  if (end > length) throw new Error(`range end index ${end} out of range for slice of length ${length}`);
+  const from = $charBoundary(s, start);
+  if (from === undefined) {
+    throw new Error(replacing ? "start of range should be a character boundary" : "assertion failed: self.is_char_boundary(start)");
+  }
+  const to = $charBoundary(s, end);
+  if (to === undefined) {
+    throw new Error(replacing ? "end of range should be a character boundary" : "assertion failed: self.is_char_boundary(end)");
+  }
+  return [from, to];
+}
+
+// `s.split_off(at)`: what's kept, and the rest from the byte `at`.
+export function $strSplitOff(s, at) {
+  const unit = $charBoundary(s, at);
+  if (unit === undefined) throw new Error("assertion failed: self.is_char_boundary(at)");
+  return [s.slice(0, unit), s.slice(unit)];
+}
+
+export function $replaceRange(s, start, end, replacement) {
+  const [from, to] = $strRange(s, start, end, true);
+  return s.slice(0, from) + replacement + s.slice(to);
+}
+
+// `s.drain(range)`: what's kept, and the `char`s taken out.
+export function $strDrain(s, start, end) {
+  const [from, to] = $strRange(s, start, end, false);
+  return [s.slice(0, from) + s.slice(to), Array.from(s.slice(from, to))];
+}
+
+export function $strExtendWithin(s, start, end) {
+  const [from, to] = $strRange(s, start, end, false);
+  return s + s.slice(from, to);
+}
+
+// A `str`'s splits and searches from the end, by UTF-8 bytes (ADR 0323).
+
+// `s.split_inclusive(p)`: each piece with the match that ends it, and none
+// empty at the end.
+export function $splitInclusive(s, p) {
+  const parts = [];
+  let start = 0;
+  if (p === "") {
+    let unit = 0;
+    for (const c of s) {
+      parts.push(s.slice(start, unit));
+      start = unit;
+      unit += c.length;
+    }
+    parts.push(s.slice(start, unit));
+    return parts;
+  }
+  for (let at = s.indexOf(p); at >= 0; at = s.indexOf(p, at + p.length)) {
+    parts.push(s.slice(start, at + p.length));
+    start = at + p.length;
+  }
+  if (start !== s.length) parts.push(s.slice(start));
+  return parts;
+}
+
+// `s.rsplit_terminator(p)`: `rsplit`'s pieces, without the empty one the
+// end leaves.
+export function $rsplitTerminator(s, p) {
+  const parts = $rsplit(s, p);
+  if (parts[0] === "") parts.shift();
+  return parts;
+}
+
+// `s.rmatch_indices(p)`: each match from the end, none overlapping, with
+// where it starts in UTF-8 bytes.
+export function $rmatchIndices(s, p) {
+  if (p === "") return $matchIndices(s, p).reverse();
+  const found = [];
+  for (let at = s.lastIndexOf(p); at >= 0; at = at - p.length < 0 ? -1 : s.lastIndexOf(p, at - p.length)) {
+    found.push([$byteLen(s.slice(0, at)), p]);
+  }
+  return found;
+}
+
+export function $rmatches(s, p) {
+  return $rmatchIndices(s, p).map(([, found]) => found);
+}
+
+// `s.split_at_checked(at)`: before and after the byte `at`, or `None` past
+// the end or inside a `char`.
+export function $splitAtChecked(s, at) {
+  const unit = $charBoundary(s, at);
+  return unit === undefined ? undefined : [s.slice(0, unit), s.slice(unit)];
+}
+
+export function $encodeUtf16(s) {
+  return Array.from({ length: s.length }, (_, i) => s.charCodeAt(i));
+}
+
+// `String::from_utf16(units)`: `Ok` of its text, or `Err` of a lone
+// surrogate; `from_utf16_lossy`, each of those U+FFFD.
+export function $fromUtf16(units) {
+  const text = $utf16Text(units);
+  return text.isWellFormed() ? { TAG: "Ok", _0: text } : { TAG: "Err", _0: undefined };
+}
+
+export function $fromUtf16Lossy(units) {
+  return $utf16Text(units).toWellFormed();
+}
+
+export function $utf16Text(units) {
+  let text = "";
+  for (let i = 0; i < units.length; i += 4096) text += String.fromCharCode(...units.slice(i, i + 4096));
+  return text;
+}
+
+// `s.floor_char_boundary(at)`: the `char` boundary at the byte `at` or before
+// it; `ceil_char_boundary`, at or after it; the end past it.
+export function $floorCharBoundary(s, at) {
+  let bytes = 0;
+  for (const c of s) {
+    const next = bytes + $byteLen(c);
+    if (next > at) return bytes;
+    bytes = next;
+  }
+  return bytes;
+}
+
+export function $ceilCharBoundary(s, at) {
+  let bytes = 0;
+  for (const c of s) {
+    if (bytes >= at) return bytes;
+    bytes += $byteLen(c);
+  }
+  return bytes;
+}
+
 // A `OnceLock`'s `get_or_init(f)`: what it holds, made by `f` the first
 // time. An `f` that sets it itself deadlocks in Rust, which JS can't do.
 export function $getOrInitLock(cell, f) {
