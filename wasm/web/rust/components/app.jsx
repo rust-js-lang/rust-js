@@ -239,9 +239,9 @@ export function App() {
     return outputState(output._0, false);
   }, [output]);
   const sourceTree = useMemo(() => buildTree(Project.paths(project)), [project]);
-  const tmp =
+  const [outputPaths, shown] =
     output.TAG === "Files" ? [output.files.map(([path]) => path), output.shown] : [[], ""];
-  const outputTree = useMemo(() => buildTree(tmp[0]), [output]);
+  const outputTree = useMemo(() => buildTree(outputPaths), [output]);
   const examples = loaded != null ? loaded.examples : [];
   const submit = onCompile;
   return (
@@ -306,7 +306,7 @@ export function App() {
                   tree={outputTree}
                   depth={0}
                   first={jsName(project.root)}
-                  selected={tmp[1]}
+                  selected={shown}
                   onOpen={openOutput}
                 />
               )}

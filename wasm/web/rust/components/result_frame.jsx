@@ -10,10 +10,10 @@ import { HEADING } from "../styles.js";
 
 export function ResultFrame({ program, onOutcome }) {
   const frame = useRef(undefined);
-  const tmp = program != null ? [program.run, program.page] : [0, ""];
+  const [run, page] = program != null ? [program.run, program.page] : [0, ""];
   useEffect(() => {
     const controller = new AbortController();
-    if (tmp[0] > 0) {
+    if (run > 0) {
       let reported = false;
       const told = onOutcome;
       listen(
@@ -29,7 +29,7 @@ export function ResultFrame({ program, onOutcome }) {
           }
           let report;
           const match$1 = readReport(e);
-          if (match$1 != null && fromFrame && match$1.run == tmp[0]) {
+          if (match$1 != null && fromFrame && match$1.run == run) {
             report = match$1;
           } else {
             return;
@@ -59,7 +59,7 @@ export function ResultFrame({ program, onOutcome }) {
     return () => {
       controller.abort();
     };
-  }, [tmp[0]]);
+  }, [run]);
   return (
     <section id="result-section" className="mt-3" hidden={program == null}>
       <h2 className={HEADING}>
@@ -70,13 +70,13 @@ export function ResultFrame({ program, onOutcome }) {
         </span>
       </h2>
       <iframe
-        key={tmp[0]}
+        key={run}
         ref={frame}
         id="result"
         className="block h-[280px] w-full rounded-md border border-line bg-page"
         title="Result"
         sandbox="allow-scripts"
-        srcDoc={tmp[1]}
+        srcDoc={page}
       />
     </section>
   );
