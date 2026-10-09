@@ -65,3 +65,11 @@ maps an `Option` of a JS object, which is never falsy when it's there.**
   `bool::then` were checked first, for text tested by its truthiness, a
   bare `href`, which "" fails as text; no lowering makes one now, so the
   check went, and `if shown { Some(..) } else { None }` is `shown &&` too.
+
+## Amendment: a component's children too
+
+A component's children, given as its `children` prop, are shown the same
+way: `<Listbox>{isMultiFile && showDropdown && <Listbox.Options>..}</Listbox>`,
+as react.dev's NavigationBar has it, where they were `test ? <el /> :
+undefined`. The component is given `false` where it was given `undefined`,
+as the original's JSX gives it; each renders nothing.

@@ -3647,3 +3647,26 @@ pub fn Shown(ShownProps { error }: ShownProps) -> JSX::Element {
   expect([renderToStaticMarkup(createElement(lib.Shown, { error: { message: "m" } })), renderToStaticMarkup(createElement(lib.Shown, {}))])
     .toEqual(["<div><b>m</b></div>", '<div hidden=""></div>']);
 });
+
+// ADR 0235: a component's child shown only if a test holds is `test &&
+// <el />` too, as an element's is: react.dev's NavigationBar has
+// `{isMultiFile && showDropdown && (<Listbox.Options>..)}` in a Listbox.
+test("a component's child shown if a test holds is test && element", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, ReactNode, jsx};
+pub struct BoxedProps<C> {
+    pub children: C,
+}
+pub fn Boxed<C: ReactNode>(BoxedProps { children }: BoxedProps<C>) -> JSX::Element {
+    jsx! { <div>{children}</div> }
+}
+pub fn Shown(a: bool, b: bool) -> JSX::Element {
+    jsx! { <Boxed>{(a && b).then(|| jsx! { <b>{"x"}</b> })}</Boxed> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("<Boxed>{a && b && <b>x</b>}</Boxed>");
+  const lib = await import(join(dir, "lib.jsx"));
+  expect([renderToStaticMarkup(lib.Shown(true, true)), renderToStaticMarkup(lib.Shown(true, false))]).toEqual(["<div><b>x</b></div>", "<div></div>"]);
+});

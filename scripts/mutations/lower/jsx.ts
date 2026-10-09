@@ -426,4 +426,12 @@ export const mutations: Mutation[] = [
     replace: "            js::ExprKind::Unary(js::UnaryOp::Not, not)\n                if let js::ExprKind::Unary(js::UnaryOp::Not, x) = &not.kind\n                    && false =>",
     tests: ["test/jsx.test.ts", "-t", "JSX tests an Option of an object"],
   },
+  {
+    name: "component-child-shown-ternary",
+    breaks: "a component's child shown only if a test holds is `test ? <el /> : undefined`, where an element's is `test && <el />`",
+    file: "src/lower/jsx.rs",
+    find: "                        Some(&child) => self.shown_if(child, value),",
+    replace: "                        Some(_) => value,",
+    tests: ["test/jsx.test.ts", "-t", "component's child shown if a test holds"],
+  },
 ];

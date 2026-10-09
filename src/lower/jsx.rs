@@ -334,6 +334,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         unreachable!("a struct's fields")
                     };
                     let child_ty = types.into_iter().find(|(n, _)| *n == name).expect("the field").1;
+                    // Shown only if a test holds, `test && <el />`, as an
+                    // element's child is (ADR 0235).
+                    let value = match given.get(&name) {
+                        Some(&child) => self.shown_if(child, value),
+                        None => value,
+                    };
                     children = self.spread_children(value, child_ty, out);
                 }
                 // A callback of one call whose JS gives `undefined` anyway
