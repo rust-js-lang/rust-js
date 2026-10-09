@@ -54,7 +54,6 @@ cast/negative-integer-cast-to-pointer.rs	error: rust-js does not support values 
 cast/supported-cast.rs	error: rust-js does not support values of type `*const std::string::String` yet
 cast/trait-object-cast-segfault-4333.rs	error: rust-js does not support values of type `&mut dyn std::io::Write` yet
 closures/2229_closure_analysis/match/match-edge-cases_1.rs	error: rust-js does not support constants of type `*const i32` yet
-closures/2229_closure_analysis/migrations/insignificant_drop.rs	error: rust-js does not support values of type `(*const std::collections::linked_list::Node<std::string::String>) is !null` yet
 closures/2229_closure_analysis/run_pass/unsafe_ptr.rs	error: rust-js does not support values of type `*const S` yet
 closures/call-fnmut-trait-object-via-ref-mut.rs	error: rust-js does not support `ref mut` bindings to this type yet
 closures/region-obligations-closure-and-projection.rs	error: rust-js does not support values of type `*mut u8` yet
@@ -155,7 +154,7 @@ indexing/indexing-spans-caller-location.rs	error: rust-js does not support calli
 intrinsics/intrinsics-math.rs	error: rust-js does not support calling `std::f32::<impl f32>::mul_add` yet
 intrinsics/volatile-composite-types.rs	error: rust-js does not support calling `std::ptr::write_volatile` yet
 iterators/bytes-iterator-clone-12677.rs	error: rust-js does not support cloning `std::str::Bytes<'_>` yet
-iterators/into-iter-on-boxed-slices-lint.rs	error: rust-js does not support calling `std::vec::Vec::<T, A>::into_boxed_slice` yet
+iterators/into-iter-on-boxed-slices-lint.rs	error: rust-js does not support calling `std::iter::IntoIterator::into_iter` yet
 iterators/iter-map-fold-type-length.rs	error: rust-js does not support `&mut` to a `I` yet
 layout/aggregate-lang/struct-offsets.rs	error: rust-js does not support calling `std::mem::zeroed` yet
 layout/issue-112048-unsizing-field-order.rs	error: rust-js does not support a `GcNode<dyn std::fmt::Debug>`, whose last field is a `dyn` yet
@@ -289,4 +288,3 @@ where-clauses/obligation-error-propagation.rs	error: rust-js does not support co
 zero-sized/write-volatile-zst.rs	error: rust-js does not support calling `std::ptr::write_volatile` yet
 zero-sized/zero-sized-binary-heap-push.rs	error: rust-js does not support calling `std::collections::BinaryHeap::<T, A>::capacity` yet
 zero-sized/zero-sized-btreemap-insert.rs	error: rust-js does not support values of type `Zst` yet
-zero-sized/zero-sized-linkedlist-push.rs	error: rust-js does not support values of type `(*const std::collections::linked_list::Node<()>) is !null` yet
