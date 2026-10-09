@@ -1,5 +1,6 @@
 //! Lower JSX bindings into the framework-independent JS tree.
 
+use super::recognition::Std;
 use super::{FnCx, R, Shape, camel_case, fn_def, js_ident};
 use crate::js;
 use crate::js::{Expr, Prop, Stmt, StmtKind};
@@ -9,7 +10,7 @@ use rustc_hir::def::DefKind;
 use rustc_middle::thir::{self, ExprId, ExprKind};
 use rustc_middle::ty;
 use rustc_middle::ty::Ty;
-use rustc_span::{BytePos, Span, Symbol};
+use rustc_span::{BytePos, Span};
 use std::collections::HashMap;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -408,15 +409,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let e = self.strip(e);
         let closure = match self.thir[e].kind {
             ExprKind::PointerCoercion { source, .. } => return self.calls_for_nothing(source),
+            // `Box::new(f)`, `Rc::new(f)`: what recognition says is `f` itself.
             ExprKind::Call { fun, ref args, .. }
                 if let [inner] = args[..]
-                    && let Some((id, _)) = fn_def(self.thir[fun].ty)
-                    && self.tcx.item_name(id).as_str() == "new"
-                    && let ty::Adt(adt, _) = self.thir[e].ty.kind()
-                    && (adt.is_box()
-                        || ["Rc", "Arc"]
-                            .iter()
-                            .any(|n| self.tcx.is_diagnostic_item(Symbol::intern(n), adt.did()))) =>
+                    && matches!(self.std_fn(fun), Some(Std::Same)) =>
             {
                 return self.calls_for_nothing(inner);
             }
