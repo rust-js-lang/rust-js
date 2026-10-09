@@ -22,6 +22,8 @@ pub(super) struct JsUses {
     pub(super) imported: BTreeMap<Export, HashSet<LocalModId>>,
     /// What each import is bound to in Rust, to name a default import after.
     pub(super) bound_to: HashMap<Export, HashSet<DefId>>,
+    /// The exports read through `require(module)`, not imported (ADR 0305).
+    pub(super) required: HashSet<Export>,
 }
 
 pub(super) fn js_uses<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> JsUses {
@@ -29,6 +31,7 @@ pub(super) fn js_uses<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> Js
         globals: HashSet::new(),
         imported: BTreeMap::new(),
         bound_to: HashMap::new(),
+        required: HashSet::new(),
     };
     for body in all_bodies {
         let module = tcx.parent_module_from_def_id(body.def_id);
@@ -61,6 +64,10 @@ pub(super) fn js_uses<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> Js
                 continue;
             }
             match js_path(tcx, def_id).as_deref().map(|path| (path, js_import(path))) {
+                Some((_, Some((export, _)))) if bindings::requires(tcx, def_id) => {
+                    uses.globals.insert("require".to_string());
+                    uses.required.insert(export);
+                }
                 Some((_, Some((export, _)))) => {
                     uses.bound_to.entry(export.clone()).or_default().insert(def_id);
                     uses.imported.entry(export).or_default().insert(module);

@@ -63,6 +63,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (`node:path#posix.join` is `posix.join`, ADR 0028).
     pub(super) fn js_ref(&self, path: &str) -> Expr {
         match js_import(path) {
+            // `require("eslint-plugin-react-hooks").rules` (ADR 0305).
+            Some((export, rest)) if self.krate.required.contains(&export) => {
+                let module = Expr::call(Expr::var("require"), vec![Expr::str(&export.0)]);
+                format!("{}{rest}", export.1).split('.').fold(module, Expr::member)
+            }
             Some((export, rest)) => {
                 self.dependencies
                     .borrow_mut()

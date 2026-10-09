@@ -333,6 +333,8 @@ struct CrateFacts<'a, 'tcx> {
     bodies: &'a HashMap<DefId, &'a Body<'tcx>>,
     fns: &'a HashMap<DefId, FnInfo>,
     imports: &'a HashMap<LocalModId, HashMap<Export, String>>,
+    /// The exports read through `require(module)`, not imported (ADR 0305).
+    required: &'a HashSet<Export>,
     /// What the crate's libraries export (ADR 0100).
     foreign: &'a library::Foreign<'a, 'tcx>,
     /// Is this crate compiled as a library, for others to use (ADR 0100)?

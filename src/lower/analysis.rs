@@ -127,6 +127,8 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub dictionaries: Vec<DefId>,
     pub import_names: HashMap<LocalModId, HashMap<Export, String>>,
     pub imported: BTreeMap<Export, HashSet<LocalModId>>,
+    /// The exports read through `require(module)` (ADR 0305).
+    pub required: HashSet<Export>,
     pub thread_local_inits: HashMap<LocalDefId, LocalDefId>,
     pub consts: Vec<LocalDefId>,
     pub codecs: Vec<DefId>,
@@ -351,6 +353,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         names.extend(import_names[module].values().cloned());
     }
     let imported = uses.imported;
+    let required = uses.required;
     let mut called_from_elsewhere = exported_across_modules(tcx, all_bodies, &fns);
     let tests = collect_tests(tcx, &markers, &bodies, &fns, &mut called_from_elsewhere);
 
@@ -373,6 +376,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         dictionaries,
         import_names,
         imported,
+        required,
         thread_local_inits,
         consts,
         codecs,

@@ -251,7 +251,9 @@ pub(super) fn js_path(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
     match tcx.def_kind(def_id) {
         DefKind::Static { .. } => Some(js_name(tcx, def_id)),
         DefKind::Fn | DefKind::AssocFn => match js_form(tcx, def_id) {
-            JsForm::Call(name) | JsForm::New(name) if !is_method(tcx, def_id) => Some(name),
+            // A static property, `Notification.permission` or an export
+            // read at each call, `get node:path#sep`.
+            JsForm::Call(name) | JsForm::New(name) | JsForm::Get(name) if !is_method(tcx, def_id) => Some(name),
             // A class to test against is a global or an import like any other.
             JsForm::InstanceOf(class) => Some(class),
             // So is a component: `<react#StrictMode>`.
@@ -339,6 +341,13 @@ pub(super) fn named_callback(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 /// called on, or -1, as `indexOf` does (ADR 0302).
 pub(super) fn position(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("position")];
+    tcx.get_attrs_by_path(def_id, &path).next().is_some()
+}
+
+/// `#[rust_js::require]`: a binding of a module read through
+/// `require(module)`, not imported (ADR 0305).
+pub(super) fn requires(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("require")];
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
 }
 

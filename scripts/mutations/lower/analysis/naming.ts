@@ -116,4 +116,12 @@ export const mutations: Mutation[] = [
     replace: "            if false && dynamic.contains(&id) {\n",
     tests: ["test/bindings.test.ts", "-t", "js::import! loads a module"],
   },
+  {
+    name: "required-also-imported",
+    breaks: "a `#[rust_js::require]` binding is imported statically too",
+    file: "src/lower/analysis/naming.rs",
+    find: "                Some((_, Some((export, _)))) if bindings::requires(tcx, def_id) => {\n",
+    replace: "                Some((_, Some((export, _)))) if false && bindings::requires(tcx, def_id) => {\n",
+    tests: ["test/bindings.test.ts", "-t", "a required binding"],
+  },
 ];

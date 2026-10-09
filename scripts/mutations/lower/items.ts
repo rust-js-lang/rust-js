@@ -74,4 +74,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {",
     tests: ["test/jsx.test.ts", "-t", "a function a block makes and gives"],
   },
+  {
+    name: "required-imported",
+    breaks: "a `#[rust_js::require]` binding is read as an import that was never made",
+    file: "src/lower/items.rs",
+    find: "            Some((export, rest)) if self.krate.required.contains(&export) => {\n",
+    replace: "            Some((export, rest)) if false && self.krate.required.contains(&export) => {\n",
+    tests: ["test/bindings.test.ts", "-t", "a required binding"],
+  },
 ];

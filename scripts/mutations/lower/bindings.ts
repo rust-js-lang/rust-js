@@ -178,4 +178,12 @@ export const mutations: Mutation[] = [
     replace: "    let path = [Symbol::intern(\"rust_js\"), Symbol::intern(\"skips_falsy\")];\n    tcx.get_attrs_by_path(def_id, &path).next().is_some() && false",
     tests: ["test/bindings.test.ts", "-t", "skips what's falsy"],
   },
+  {
+    name: "getter-export-unimported",
+    breaks: "a getter of a module's export, `get node:path#delimiter`, isn't imported",
+    file: "src/lower/bindings.rs",
+    find: "            JsForm::Call(name) | JsForm::New(name) | JsForm::Get(name) if !is_method(tcx, def_id) => Some(name),\n",
+    replace: "            JsForm::Call(name) | JsForm::New(name) if !is_method(tcx, def_id) => Some(name),\n",
+    tests: ["test/bindings.test.ts", "-t", "a required binding"],
+  },
 ];

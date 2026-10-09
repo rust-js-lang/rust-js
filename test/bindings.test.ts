@@ -1109,3 +1109,36 @@ pub async fn rooted() -> u32 {
   const lib = await import(join(dir, "lib.js"));
   expect([await lib.linted(1), await lib.doubled(3), await lib.named(2), await lib.rooted()]).toEqual([2, 6, 3, 7]);
 });
+
+// ADR 0305: a binding marked `#[rust_js::require]` is read through
+// `require(module)`, where it's read, as react.dev's runESLint reads
+// `require('eslint-plugin-react-hooks').rules`: nothing imports it.
+test("a required binding is read through require", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("required");
+  writeFileSync(join(dir, "lib.rs"), `#![allow(non_upper_case_globals)]
+unsafe extern "Rust" {
+    #[link_name = "get node:path#sep"]
+    #[rust_js::require]
+    safe fn sep() -> String;
+    #[link_name = "get node:path#delimiter"]
+    safe fn delimiter() -> String;
+}
+thread_local! {
+    static separator: String = sep();
+}
+pub fn joined(a: &str, b: &str) -> String {
+    separator.with(|s| format!("{a}{s}{b}"))
+}
+pub fn listed() -> String {
+    delimiter()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('const separator = require("node:path").sep;');
+  expect(js).toContain('import { delimiter } from "node:path";');
+  expect(js).not.toContain("import { sep");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.joined("a", "b"), lib.listed()]).toEqual(["a/b", ":"]);
+});

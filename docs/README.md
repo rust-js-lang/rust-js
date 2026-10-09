@@ -396,6 +396,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0302 An `f64` known to be a whole number in range is cast as it is](decisions/0302-whole-number-casts.md)
 - [0303 Top-level statements that span lines are set apart](decisions/0303-blank-lines.md)
 - [0304 `js::import!` of an item loads its module when it's asked for](decisions/0304-dynamic-import.md)
+- [0305 A binding marked `require` is read through `require(module)`](decisions/0305-require.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)
