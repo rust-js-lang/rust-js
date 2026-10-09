@@ -179,6 +179,7 @@ async function since(base: string): Promise<{ files: string[]; changes: Change[]
   // Each list as it was there, where the change touched it; a new one had none.
   const there = mkdtempSync(join(tmpdir(), "mutations-base-"));
   const old: Mutation[] = [];
+  const copies: string[] = [];
   for (const { path, mutations: listed } of lists) {
     const file = `scripts/mutations/${path}`;
     if (!files.includes(file)) {
@@ -190,8 +191,11 @@ async function since(base: string): Promise<{ files: string[]; changes: Change[]
     const copy = join(there, path);
     mkdirSync(dirname(copy), { recursive: true });
     writeFileSync(copy, shown.stdout);
-    old.push(...(await import(copy)).mutations);
+    copies.push(copy);
   }
+  // Each read once all are written: Bun keeps what a directory held when it
+  // first imports from it, so one written after isn't found.
+  for (const copy of copies) old.push(...(await import(copy)).mutations);
   rmSync(there, { recursive: true, force: true });
   return { files, changes, mutations: old };
 }
