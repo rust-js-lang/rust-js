@@ -2803,3 +2803,39 @@ pub fn has(value: Option<&Unknown>) -> bool {
   expect(unknown).toContain("return value != null;");
   expect((await import(join(dir, "unknown.js"))).has("")).toBe(true);
 });
+
+// ADR 0298: a `const` only tests read is a test itself, as react.dev's
+// Preview has `const hideContent = error || !iframeComputedHeight ||
+// !bundlerIsReady;`: what it's made of is read by its truth. One read as a
+// value keeps its boolean.
+test("a const only tests read is read by its truth", async () => {
+  const dir = fixture("tested-consts");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Failure {
+    pub message: String,
+}
+
+pub fn shown(error: Option<&Failure>, ready: bool) -> u32 {
+    let hide = error.is_some() || !ready;
+    let mut n = 0;
+    if hide {
+        n += 1;
+    }
+    if !hide && ready {
+        n += 10;
+    }
+    n + if hide { 100 } else { 0 }
+}
+
+pub fn kept(error: Option<&Failure>, ready: bool) -> (bool, u32) {
+    let has = error.is_some() || !ready;
+    (has, if has { 1 } else { 0 })
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const hide = error || !ready;");
+  expect(js).toContain("const has = !!error || !ready;");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.shown({ message: "" }, true), lib.shown(undefined, true), lib.shown(undefined, false), lib.kept({ message: "" }, true)])
+    .toEqual([101, 10, 101, [true, 1]]);
+});

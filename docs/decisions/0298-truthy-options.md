@@ -25,6 +25,10 @@ test reads `!!o` as `o`, and so does JSX where it shows `o && <el />`,
 which renders nothing for `undefined`. `!!o ? o.m(x) : undefined` is
 `o?.m(x)`, as `o != null ? ..` is.
 
+**A `const` only tests read is read by its truth too**: `const hideContent
+= !!error || ..` read only by `if`s, `?:`s and `!`, is `error || ..`, as
+react.dev writes it. One read as a value keeps its boolean.
+
 **`o == Some(true)` of an `Option<bool>` is `!!o`**, which a test reads as
 `o`: `true`, `false` and `undefined` test alike either way.
 
