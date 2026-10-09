@@ -57,3 +57,14 @@ each compile is measured against std itself and only grows.**
   `BTreeMap` 14 of 31, `String` 17 of 43, `str` 24 of 83, slices 32 of 133,
   `Option` 27 of 46, `Result` 19 of 36; `LinkedList`, `Weak`, `OnceCell`,
   `LazyCell`, `OnceLock`, `LazyLock` and `Cow` none.
+
+## Amendment: a method known for some of its own type arguments
+
+A method generic over its own type arguments, a `str`'s `split<P:
+Pattern>` or a slice's `get<I: SliceIndex>`, is known only for some, a
+`&str` or a `char` pattern, an index; classified with them left as
+parameters it was counted unknown, though it compiles. The measure now
+tries each of its own type parameters as `&str`, `char` and `usize`, and
+counts it known if `classify` knows it for one: `str` 45 of 83, not 24,
+and slices 35 of 133, not 32. The rule is the Consequences' first: known
+for some types counts as known.
