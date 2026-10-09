@@ -258,6 +258,21 @@ const globalScope: Interface = {
   isNamespace: true,
   isGlobal: true,
 };
+// And a window's own, called bare too, as TypeScript's DOM declares them
+// globals, `confirm(message)`: what a page's code calls, where
+// `window.confirm(message)` is the method still (ADR 0269).
+const windowScope: Interface = {
+  name: "Window",
+  members: (interfaces.get("Window")?.members ?? []).filter(
+    ({ member }) =>
+      member.type === "operation" &&
+      !TIMERS.includes(member.name ?? "") &&
+      !globalScope.members.some((own) => own.member === member),
+  ),
+  constructible: false,
+  isNamespace: true,
+  isGlobal: true,
+};
 const missing = INTERFACES.filter((name) => !interfaces.has(name));
 if (missing.length) throw new Error(`not in ${SPECS.join(", ")}: ${missing.join(", ")}`);
 
@@ -1271,6 +1286,10 @@ for (const name of NAMESPACES) {
 line();
 line("/// What every JS global scope has, a window's, a worker's or Node's, called bare: `fetch(url)`.");
 module("global", functionsOf(globalScope));
+
+line();
+line("/// What a window's global scope has besides, called bare: `confirm(message)`.");
+module("window_global", functionsOf(windowScope));
 
 // Typed methods need the concrete receiver, not a Deref-erased EventTarget.
 // One extension trait supplies them to every target without copying the map.

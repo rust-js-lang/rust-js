@@ -31,3 +31,12 @@ closure (ADR 0102).
 - **It's the JS a person writes**, and it runs wherever JS does.
 - **It's tested**: a compiler test fetches and queues a microtask, against
   globals of its own, with no `window` in its JS.
+
+## Amendment: a window's own functions, `webapi::window_global`
+
+A window's own operations are called bare too, from
+`webapi::window_global`: `window_global::confirm_with_message("..")` is
+`confirm("..")`, as TypeScript's DOM declares them globals and react.dev's
+NavigationBar calls it. They're apart from `webapi::global`, which keeps to
+what every scope has: Node has no `confirm`. `window.confirm(..)` is still
+the method, as TopNav's `window.matchMedia(..)` is written.

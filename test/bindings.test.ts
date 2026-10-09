@@ -962,3 +962,25 @@ pub fn largest_of(values: Vec<f64>) -> f64 {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.largest(-3, -2), lib.largest(4, 2), lib.largest_of([2, 9, 4])]).toEqual([1, 4, 9]);
 });
+
+// ADR 0269: a window's own functions are called bare too, as TypeScript's DOM
+// declares them globals and react.dev's NavigationBar asks `confirm('Clear
+// all your edits?')`. `window.confirm(..)` is still the method's.
+test("a window's own functions are called bare", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("window-global");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{window, window_global};
+
+pub fn cleared() -> bool {
+    window_global::confirm_with_message("Clear all your edits?")
+}
+
+pub fn asked() -> bool {
+    window.confirm_with_message("Sure?")
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('return confirm("Clear all your edits?");');
+  expect(js).toContain('return window.confirm("Sure?");');
+});

@@ -91118,6 +91118,188 @@ pub mod global {
     }
 }
 
+/// What a window's global scope has besides, called bare: `confirm(message)`.
+
+pub mod window_global {
+    use super::*;
+
+    unsafe extern "Rust" {
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/getSelection)
+        #[link_name = "getSelection"]
+        pub safe fn get_selection() -> Option<&'static Selection>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/getComputedStyle)
+        #[link_name = "getComputedStyle"]
+        pub safe fn get_computed_style(elt: &Element) -> &'static CSSStyleProperties;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/getComputedStyle)
+        #[link_name = "getComputedStyle"]
+        pub safe fn get_computed_style_with_pseudo_elt(elt: &Element, pseudo_elt: &str) -> &'static CSSStyleProperties;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/close)
+        pub safe fn close();
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/stop)
+        pub safe fn stop();
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/focus)
+        pub safe fn focus();
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/blur)
+        pub safe fn blur();
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/open)
+        pub safe fn open() -> Option<&'static Window>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/open)
+        #[link_name = "open"]
+        pub safe fn open_with_url(url: &str) -> Option<&'static Window>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/open)
+        #[link_name = "open"]
+        pub safe fn open_with_url_and_target(url: &str, target: &str) -> Option<&'static Window>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/open)
+        #[link_name = "open"]
+        pub safe fn open_with_url_and_target_and_features(url: &str, target: &str, features: &str) -> Option<&'static Window>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/alert)
+        pub safe fn alert();
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/alert)
+        #[link_name = "alert"]
+        pub safe fn alert_with_message(message: &str);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/confirm)
+        pub safe fn confirm() -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/confirm)
+        #[link_name = "confirm"]
+        pub safe fn confirm_with_message(message: &str) -> bool;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/prompt)
+        pub safe fn prompt() -> Option<String>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/prompt)
+        #[link_name = "prompt"]
+        pub safe fn prompt_with_message(message: &str) -> Option<String>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/prompt)
+        #[link_name = "prompt"]
+        pub safe fn prompt_with_message_and_default(message: &str, default: &str) -> Option<String>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/print)
+        pub safe fn print();
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/captureEvents)
+        #[link_name = "captureEvents"]
+        pub safe fn capture_events();
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/releaseEvents)
+        #[link_name = "releaseEvents"]
+        pub safe fn release_events();
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/requestIdleCallback)
+        #[link_name = "requestIdleCallback"]
+        pub safe fn request_idle_callback(callback: Box<dyn FnMut(&IdleDeadline)>) -> u32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/requestIdleCallback)
+        #[link_name = "requestIdleCallback"]
+        pub safe fn request_idle_callback_with_options(callback: Box<dyn FnMut(&IdleDeadline)>, options: IdleRequestOptions) -> u32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/cancelIdleCallback)
+        #[link_name = "cancelIdleCallback"]
+        pub safe fn cancel_idle_callback(handle: u32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/matchMedia)
+        #[link_name = "matchMedia"]
+        pub safe fn match_media(query: &str) -> &'static MediaQueryList;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/moveTo)
+        #[link_name = "moveTo"]
+        pub safe fn move_to(x: i32, y: i32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/moveBy)
+        #[link_name = "moveBy"]
+        pub safe fn move_by(x: i32, y: i32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/resizeTo)
+        #[link_name = "resizeTo"]
+        pub safe fn resize_to(width: i32, height: i32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/resizeBy)
+        #[link_name = "resizeBy"]
+        pub safe fn resize_by(x: i32, y: i32);
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scroll)
+        pub safe fn scroll() -> Promise<()>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scroll)
+        #[link_name = "scroll"]
+        pub safe fn scroll_with_options(options: ScrollToOptions<'_>) -> Promise<()>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scroll)
+        #[link_name = "scroll"]
+        pub safe fn scroll_with_x_and_y(x: f64, y: f64) -> Promise<()>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollTo)
+        #[link_name = "scrollTo"]
+        pub safe fn scroll_to() -> Promise<()>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollTo)
+        #[link_name = "scrollTo"]
+        pub safe fn scroll_to_with_options(options: ScrollToOptions<'_>) -> Promise<()>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollTo)
+        #[link_name = "scrollTo"]
+        pub safe fn scroll_to_with_x_and_y(x: f64, y: f64) -> Promise<()>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollBy)
+        #[link_name = "scrollBy"]
+        pub safe fn scroll_by() -> Promise<()>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollBy)
+        #[link_name = "scrollBy"]
+        pub safe fn scroll_by_with_options(options: ScrollToOptions<'_>) -> Promise<()>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollBy)
+        #[link_name = "scrollBy"]
+        pub safe fn scroll_by_with_x_and_y(x: f64, y: f64) -> Promise<()>;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/requestAnimationFrame)
+        #[link_name = "requestAnimationFrame"]
+        pub safe fn request_animation_frame(callback: Box<dyn FnMut(f64)>) -> u32;
+
+        /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/cancelAnimationFrame)
+        #[link_name = "cancelAnimationFrame"]
+        pub safe fn cancel_animation_frame(handle: u32);
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/postMessage)
+    #[cfg_attr(rust_js, rust_js::link_name = "postMessage")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn post_message<M: StructuredClone>(message: M, target_origin: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/postMessage)
+    #[cfg_attr(rust_js, rust_js::link_name = "postMessage")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn post_message_with_transfer<M: StructuredClone>(message: M, target_origin: &str, transfer: &[&dyn core::any::Any]) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/postMessage)
+    #[cfg_attr(rust_js, rust_js::link_name = "postMessage")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn post_message_with_options<M: StructuredClone>(message: M, options: WindowPostMessageOptions<'_>) {
+        unreachable!()
+    }
+}
+
 /// Event listener methods. Import this trait to keep the receiver's event map (ADR 0282).
 pub trait EventTargetExt: IsA<EventTarget> {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener). The event type comes from this receiver.
