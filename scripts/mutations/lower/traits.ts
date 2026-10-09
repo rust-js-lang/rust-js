@@ -769,4 +769,20 @@ export const mutations: Mutation[] = [
     replace: "                true => self.drop_function(ty, span)?,\n",
     tests: ["test/crates.test.ts", "-t", "drops_by_need"],
   },
+  {
+    name: "binding-trait-dictionary",
+    breaks: "a bound of a trait of bindings takes a dictionary, `isReactRuleError(e, lintErrorRuleIdentified())`",
+    file: "src/lower/traits.rs",
+    find: "        && (tcx.associated_items(id).in_definition_order()).all(|item| bindings::is_binding(tcx, item.def_id))\n",
+    replace: "        && tcx.associated_items(id).in_definition_order().next().is_none()\n",
+    tests: ["test/bindings.test.ts","-t","binding method is read of the value"],
+  },
+  {
+    name: "binding-in-dictionary",
+    breaks: "an impl of a trait of bindings is refused: its methods aren't the crate's",
+    file: "src/lower/traits.rs",
+    find: "            if self.tcx.def_kind(item.def_id) != DefKind::AssocFn || bindings::is_binding(self.tcx, item.def_id) {\n",
+    replace: "            if self.tcx.def_kind(item.def_id) != DefKind::AssocFn {\n",
+    tests: ["test/bindings.test.ts","-t","binding method is read of the value"],
+  },
 ];

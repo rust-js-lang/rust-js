@@ -51,6 +51,19 @@ export function spawned() {
   return log;
 }
 
+export function started() {
+  const log = { value: [] };
+  const taskLog = log;
+  const loading = async () => {
+    taskLog.value.push(1);
+    await setTimeout(0, 0);
+    taskLog.value.push(3);
+  };
+  loading();
+  log.value.push(2);
+  return log;
+}
+
 export async function load(url) {
   const response = await window.fetch(url);
   const body = await response.text();

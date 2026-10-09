@@ -584,6 +584,7 @@ impl<'a> Cx<'a> {
         let sp = span(s.span);
         match &s.kind {
             StmtKind::Const(name, init) => self.declare(sp, VariableDeclarationKind::Const, name, Some(init)),
+            StmtKind::Function(function) => self.function(function),
             StmtKind::Let(name, init) => self.declare(sp, VariableDeclarationKind::Let, name, init.as_ref()),
             StmtKind::Destructure {
                 pattern,

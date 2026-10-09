@@ -21,7 +21,7 @@ use debug::{derived_debug, uses_format_options, uses_pretty_debug};
 use drops::drop_params;
 pub(super) use mutation::copies_by_callers;
 use mutation::{copied_params, mutated_types};
-use naming::{exported_across_modules, js_uses, name_imports, name_items, named_expressions};
+use naming::{exported_across_modules, js_uses, local_functions, name_imports, name_items, named_expressions};
 use rustc_hir::def::DefKind;
 use rustc_hir::find_attr;
 use rustc_middle::mir::BorrowKind;
@@ -170,6 +170,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// The functions a block makes and gives, each a named function
     /// expression there (ADR 0296).
     pub named_expressions: HashSet<DefId>,
+    /// The functions written in a function's body, each a function
+    /// declaration there (ADR 0308).
+    pub local_functions: HashMap<DefId, rustc_span::Span>,
 }
 
 pub(super) fn analyze_crate<'a, 'tcx>(
@@ -347,6 +350,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // call it by. An import is named around every one of them.
     // A function a block makes and gives is named in itself alone (ADR 0296).
     let named_expressions = named_expressions(tcx, all_bodies.iter().copied().chain(initializers));
+    let local_functions = local_functions(tcx, all_bodies.iter().copied().chain(initializers), &named_expressions);
     let (mut taken, fns, failed) = name_items(tcx, &items, &modules, &uses.globals, &trait_impls, &named_expressions);
     let import_names = name_imports(tcx, &uses, &taken);
     for (module, names) in taken.iter_mut() {
@@ -400,6 +404,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         plain_cells,
         read_at_once,
         named_expressions,
+        local_functions,
     })
 }
 

@@ -124,4 +124,20 @@ export const mutations: Mutation[] = [
     replace: "                Some((_, Some((export, _)))) if false && bindings::requires(tcx, def_id) => {\n",
     tests: ["test/bindings.test.ts", "-t", "a required binding"],
   },
+  {
+    name: "local-functions-none",
+    breaks: "a function written in a body is the module's, not its body's where it's written",
+    file: "src/lower/analysis/naming.rs",
+    find: "                        hir::Node::Stmt(_)\n",
+    replace: "                        hir::Node::Stmt(_) if false\n",
+    tests: ["test/lowering.test.ts","-t","local function there"],
+  },
+  {
+    name: "local-function-static-user",
+    breaks: "a function a static's initializer calls is written in its body, where the module's initializer can't call it",
+    file: "src/lower/analysis/naming.rs",
+    find: "                    .any(|&user| user != def_id && user != parent(def_id) && !local.contains(&user))\n",
+    replace: "                    .any(|&user| false && user != def_id && user != parent(def_id) && !local.contains(&user))\n",
+    tests: ["test/lowering.test.ts","-t","local function there"],
+  },
 ];

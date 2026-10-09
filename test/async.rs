@@ -75,6 +75,21 @@ pub fn spawned() -> Rc<RefCell<Vec<u32>>> {
     log
 }
 
+/// A closure of an `async` block is an async function, called as react.dev's
+/// useSandpackLint calls its `loadLinter`: up to its first `.await` at once.
+pub fn started() -> Rc<RefCell<Vec<u32>>> {
+    let log = Rc::new(RefCell::new(Vec::new()));
+    let task_log = log.clone();
+    let loading = move || async move {
+        task_log.borrow_mut().push(1);
+        later(0, 0).await;
+        task_log.borrow_mut().push(3);
+    };
+    spawn(Box::new(loading()));
+    log.borrow_mut().push(2);
+    log
+}
+
 /// `fetch`, from the webapi crate: its promises, awaited one after the other.
 pub async fn load(url: &str) -> (u16, bool, String) {
     let response = window.fetch(url).await;

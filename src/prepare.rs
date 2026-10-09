@@ -10,18 +10,7 @@ use crate::js::{self, Expr, ExprKind, JsxTag, Prop, Stmt, StmtKind};
 
 pub fn module(module: &mut js::Module) {
     for function in module.items.iter_mut().flat_map(js::Item::functions_mut) {
-        block(&mut function.body);
-        shadows(&mut function.body, None);
-        // A closure's own parameter, shadowed in it: nothing outside it sets one.
-        js::each_expr_mut(&mut function.body, &mut |e| {
-            if let ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) = &mut e.kind {
-                let own: HashSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
-                shadows(body, Some(&own));
-            }
-        });
-        constants(&mut function.body);
-        tested_constants(&mut function.body);
-        js::each_block_mut(&mut function.body, &mut |stmts| imported(stmts));
+        prepared(function);
     }
     for item in &mut module.items {
         match item {
@@ -30,6 +19,29 @@ pub fn module(module: &mut js::Module) {
             js::Item::Namespace(_) | js::Item::Function(_) => {}
         }
     }
+}
+
+/// A function, and each written in its body (ADR 0308), made readable.
+fn prepared(function: &mut js::Function) {
+    block(&mut function.body);
+    shadows(&mut function.body, None);
+    // A closure's own parameter, shadowed in it: nothing outside it sets one.
+    js::each_expr_mut(&mut function.body, &mut |e| {
+        if let ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) = &mut e.kind {
+            let own: HashSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
+            shadows(body, Some(&own));
+        }
+    });
+    constants(&mut function.body);
+    tested_constants(&mut function.body);
+    js::each_block_mut(&mut function.body, &mut |stmts| imported(stmts));
+    js::each_block_mut(&mut function.body, &mut |stmts| {
+        for stmt in stmts {
+            if let StmtKind::Function(function) = &mut stmt.kind {
+                prepared(function);
+            }
+        }
+    });
 }
 
 /// `const run = await import(spec).then((m) => m.run)` is `const { run } =
@@ -464,7 +476,8 @@ impl Walk {
                 | StmtKind::Break(_)
                 | StmtKind::Continue(_)
                 | StmtKind::Return(_)
-                | StmtKind::Throw(_) => {}
+                | StmtKind::Throw(_)
+                | StmtKind::Function(_) => {}
             }
         }
     }
@@ -534,6 +547,23 @@ fn expr(e: &mut Expr) {
             span: e.span,
         };
         return;
+    }
+    // `() => (async () => { .. })()`, a closure of an `async` block, is
+    // `async () => { .. }`, as react.dev's `loadLinter`: calling either runs
+    // the block up to its first `await` and gives its promise (ADR 0029).
+    if let ExprKind::Arrow(params, body) = &mut e.kind
+        && let [
+            Stmt {
+                kind: StmtKind::Return(Some(value)),
+                ..
+            },
+        ] = body.as_mut_slice()
+        && let ExprKind::Call(callee, args) = &mut value.kind
+        && args.is_empty()
+        && let ExprKind::AsyncArrow(own, block) = &mut callee.kind
+        && own.is_empty()
+    {
+        e.kind = ExprKind::AsyncArrow(std::mem::take(params), std::mem::take(block));
     }
     match &mut e.kind {
         ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => block(body),

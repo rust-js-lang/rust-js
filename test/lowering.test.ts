@@ -3173,3 +3173,80 @@ pub fn logged() {
   lib.logged();
   expect((globalThis as { seen?: string[] }).seen).toEqual(["a"]);
 });
+
+// ADR 0308: a function written in a function's body is that body's, where
+// it's written, as react.dev's useSandpackLint has `isReactRuleError` in
+// its callback: a function declaration, which its block may call before
+// it, as Rust's may. One a static's initializer calls stays the module's,
+// where that initializer is.
+test("a function written in a body is a local function there", async () => {
+  const dir = fixture("local-functions");
+  writeFileSync(join(dir, "lib.rs"), `pub fn kept(errors: Vec<Option<u32>>) -> (Vec<Option<u32>>, u32) {
+    let early = twice(1);
+    fn twice(n: u32) -> u32 {
+        n * 2
+    }
+    let kept = errors
+        .into_iter()
+        .filter(|e| {
+            fn present(e: &Option<u32>) -> bool {
+                e.is_some()
+            }
+            present(e)
+        })
+        .collect();
+    (kept, early)
+}
+
+pub fn started() -> u32 {
+    fn start() -> u32 {
+        5
+    }
+    thread_local! {
+        static START: u32 = start();
+    }
+    START.with(|s| *s) + start()
+}
+
+mod util {
+    pub fn three() -> u32 {
+        3
+    }
+}
+
+struct Noisy;
+
+impl Drop for Noisy {
+    fn drop(&mut self) {}
+}
+
+pub fn listed(n: u32) -> Vec<u32> {
+    fn list_of(n: u32) -> Vec<u32> {
+        let mut list = Vec::new();
+        list.push(n);
+        list
+    }
+    list_of(n)
+}
+
+pub fn guarded() -> u32 {
+    let first = later();
+    let _noisy = Noisy;
+    fn later() -> u32 {
+        util::three() + 4
+    }
+    first + later()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function kept(errors) {\n  const early = twice(1);\n  function twice(n) {");
+  expect(js).toContain("(e) => {\n    function present(e) {");
+  expect(js).toContain("\nfunction start() {");
+  const lib = await import(join(dir, "lib.js"));
+  // Made readable as a module's is: a `let mut` nothing sets again, a `const`.
+  expect(js).toContain("  function list_of(n) {\n    const list = [];\n    list.push(n);");
+  // Called before a destructor's `try`, it's written before it.
+  expect(js).toMatch(/function later\(\) \{\n    return \(three\(\) \+ 4\) >>> 0;\n  \}\n  try \{/);
+  expect([lib.kept([1, undefined, 3]), lib.started(), lib.guarded()]).toEqual([[[1, 3], 2], 10, 14]);
+});

@@ -180,6 +180,7 @@ fn block(body: &mut [Stmt], visitor: &mut Visitor<'_>) {
                 block(body, visitor);
             }
             StmtKind::Labeled(_, body) => block(body, visitor),
+            StmtKind::Function(function) => function_names(function, visitor),
             StmtKind::Try(body, finally) => {
                 block(body, visitor);
                 block(finally, visitor);

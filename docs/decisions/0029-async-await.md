@@ -128,3 +128,13 @@ still runs. `test/async.rs` and the countdown example pin this down.
   reborrowed by rustc inside the `.await`, `&*loop {..}` its arm: still
   `await`, as a reborrow is the reference itself in JS. (Amended: it was
   rejected, as a call of `IntoFuture::into_future`.)
+
+## Amendment: a closure of an `async` block
+
+`move || async move { .. }`, a closure whose body is an `async` block, is
+`async () => { .. }`, as react.dev's useSandpackLint writes its
+`loadLinter`. It was the block called in a closure, `() => (async () => {
+.. })()`: calling either runs the block up to its first `await` and gives
+its promise. Rust writes it so where an `async` closure's future would
+borrow the closure. A compiler test runs one, spawned; a mutation keeps
+the call.

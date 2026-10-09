@@ -360,6 +360,9 @@ struct CrateFacts<'a, 'tcx> {
     /// The functions a block makes and gives, each a named function
     /// expression there (ADR 0296).
     named_expressions: &'a HashSet<DefId>,
+    /// The functions written in a function's body, by the block they're
+    /// in, each a function declaration there (ADR 0308).
+    local_functions: &'a HashMap<DefId, rustc_span::Span>,
 }
 
 /// Dependencies recorded by one function (including copied trait bodies and
@@ -658,12 +661,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a `try` whose `finally` drops it (ADR 0098).
     fn block_rest(&mut self, block_id: BlockId, from: usize, tail: Option<&Dest>, out: &mut Vec<Stmt>) -> R<()> {
         let block = &self.thir[block_id];
+        // The functions written in it, each before what follows it, before
+        // the `try` of a destructor too, as its block may call it before
+        // (ADR 0308).
+        let mut written: Vec<(rustc_span::BytePos, DefId)> = (self.krate.local_functions.iter())
+            .filter(|&(_, &span)| from == 0 && span == block.span)
+            .map(|(&def_id, _)| (self.tcx.def_span(def_id).lo(), def_id))
+            .collect();
+        written.sort_by_key(|&(at, _)| at);
+        let mut written = written.into_iter().peekable();
+        let mut write = |before: Option<rustc_span::BytePos>, out: &mut Vec<Stmt>| {
+            while let Some(&(at, def_id)) = written.peek()
+                && before.is_none_or(|before| at < before)
+            {
+                written.next();
+                let hole = js::ExprKind::FunctionHole(def_id.index.as_u32());
+                out.push(
+                    StmtKind::Expr(Expr {
+                        kind: hole,
+                        span: js::Span::NONE,
+                    })
+                    .at(js::Span::NONE),
+                );
+            }
+        };
         // Every local gets a unique JS name, so a Rust block needs no JS
         // block of its own: its statements go straight into `out`.
         for (i, &stmt) in block.stmts.iter().enumerate().skip(from) {
+            let at = match &self.thir[stmt].kind {
+                thir::StmtKind::Expr { expr, .. } => self.thir[*expr].span,
+                thir::StmtKind::Let { span, .. } => *span,
+            };
+            write(Some(at.lo()), out);
             let mark = self.owned_mark();
             self.statement(stmt, out)?;
             if self.owned_mark() > mark {
+                write(None, out);
                 // The `let`s after it that can't leave early share its `try`.
                 let mut next = i + 1;
                 while let Some(&stmt) = block.stmts.get(next)
@@ -682,6 +715,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return self.close_scope(mark, rest, block.span, out);
             }
         }
+        write(None, out);
         if let Some(dest) = tail
             && let Some(value) = block.expr
         {

@@ -360,6 +360,74 @@ pub(super) fn named_expressions<'a, 'tcx: 'a>(
         .collect()
 }
 
+/// The functions written in a function's body that only it and others of
+/// them name: each is a function declaration where it's written there
+/// (ADR 0308). One a static's initializer names stays the module's, as that
+/// initializer is.
+pub(super) fn local_functions<'a, 'tcx: 'a>(
+    tcx: TyCtxt<'tcx>,
+    bodies: impl Iterator<Item = &'a Body<'tcx>>,
+    named_expressions: &HashSet<DefId>,
+) -> HashMap<DefId, rustc_span::Span> {
+    let mut users: HashMap<DefId, HashSet<DefId>> = HashMap::new();
+    for body in bodies {
+        let root = tcx.typeck_root_def_id(body.def_id.to_def_id());
+        for expr in body.thir.exprs.iter() {
+            if let ExprKind::ZstLiteral { .. } = expr.kind
+                && let ty::FnDef(def_id, _) = *expr.ty.kind()
+            {
+                users.entry(def_id).or_default().insert(root);
+            }
+        }
+    }
+    let mut local: HashSet<DefId> = (users.keys().copied())
+        .filter(|&def_id| {
+            def_id.as_local().is_some_and(|local| {
+                tcx.def_kind(local) == DefKind::Fn
+                    && !named_expressions.contains(&def_id)
+                    && !is_binding(tcx, def_id)
+                    && matches!(
+                        tcx.parent_hir_node(tcx.local_def_id_to_hir_id(local)),
+                        hir::Node::Stmt(_)
+                    )
+                    && matches!(
+                        tcx.def_kind(tcx.typeck_root_def_id(tcx.local_parent(local).to_def_id())),
+                        DefKind::Fn | DefKind::AssocFn
+                    )
+            })
+        })
+        .collect();
+    // Named elsewhere than in its function, or in another of them that
+    // isn't one, it's the module's.
+    loop {
+        let parent = |def_id: DefId| tcx.typeck_root_def_id(tcx.local_parent(def_id.expect_local()).to_def_id());
+        let outside: Vec<DefId> = (local.iter().copied())
+            .filter(|&def_id| {
+                users[&def_id]
+                    .iter()
+                    .any(|&user| user != def_id && user != parent(def_id) && !local.contains(&user))
+            })
+            .collect();
+        if outside.is_empty() {
+            break;
+        }
+        for def_id in outside {
+            local.remove(&def_id);
+        }
+    }
+    // Each in the block it's written in.
+    (local.into_iter())
+        .filter_map(|def_id| {
+            let stmt = tcx.parent_hir_node(tcx.local_def_id_to_hir_id(def_id.expect_local()));
+            let hir::Node::Stmt(stmt) = stmt else { return None };
+            let hir::Node::Block(block) = tcx.parent_hir_node(stmt.hir_id) else {
+                return None;
+            };
+            Some((def_id, block.span))
+        })
+        .collect()
+}
+
 /// Is `def_id` a function its block makes and then gives as its value?
 fn given_by_its_block(tcx: TyCtxt<'_>, def_id: LocalDefId) -> bool {
     if tcx.def_kind(def_id) != DefKind::Fn || tcx.generics_of(def_id).count() != 0 {

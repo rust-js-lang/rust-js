@@ -1142,3 +1142,48 @@ pub fn listed() -> String {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.joined("a", "b"), lib.listed()]).toEqual(["a/b", ":"]);
 });
+
+// ADR 0307: a trait's method that's a binding is read of the value itself,
+// as react.dev's useSandpackLint reads `error.ruleId` of ESLint's errors and
+// CodeMirror's diagnostics alike: generic code takes no dictionary, and an
+// impl, empty, makes none.
+test("a trait's binding method is read of the value, with no dictionary", async () => {
+  const dir = fixture("binding-trait");
+  writeFileSync(join(dir, "lib.rs"), `pub struct LintError {
+    pub rule_id: Option<String>,
+    pub line: f64,
+}
+
+pub struct Diagnostic {
+    pub rule_id: Option<String>,
+    pub from: f64,
+}
+
+pub trait RuleIdentified {
+    #[rust_js::link_name = "get ruleId"]
+    fn rule_id(&self) -> &Option<String> {
+        unreachable!()
+    }
+}
+
+impl RuleIdentified for LintError {}
+impl RuleIdentified for Diagnostic {}
+
+fn isReactRuleError<E: RuleIdentified>(error: &E) -> bool {
+    error.rule_id().is_some()
+}
+
+pub fn lint(errors: Vec<LintError>, diagnostics: Vec<Diagnostic>) -> (Vec<f64>, Vec<f64>) {
+    (
+        errors.into_iter().filter(isReactRuleError).map(|e| e.line).collect(),
+        diagnostics.into_iter().filter(isReactRuleError).map(|d| d.from).collect(),
+    )
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("function isReactRuleError(error) {\n  return error.ruleId != null;\n}");
+  expect(js).not.toContain("RuleIdentified");
+  const { lint } = await import(join(dir, "lib.js"));
+  expect(lint([{ ruleId: "react-hooks/rules-of-hooks", line: 1 }, { ruleId: null, line: 2 }], [{ from: 3 }, { ruleId: "x", from: 4 }])).toEqual([[1], [4]]);
+});

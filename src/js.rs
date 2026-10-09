@@ -145,6 +145,7 @@ pub fn statement_lists(stmts: &mut Vec<Stmt>, f: &mut dyn FnMut(&mut Vec<Stmt>))
                 statement_lists(a, f);
                 statement_lists(b, f);
             }
+            // A function's, as a closure's, are its own.
             StmtKind::Const(..)
             | StmtKind::Let(..)
             | StmtKind::Destructure { .. }
@@ -153,7 +154,8 @@ pub fn statement_lists(stmts: &mut Vec<Stmt>, f: &mut dyn FnMut(&mut Vec<Stmt>))
             | StmtKind::Break(_)
             | StmtKind::Continue(_)
             | StmtKind::Return(_)
-            | StmtKind::Throw(_) => {}
+            | StmtKind::Throw(_)
+            | StmtKind::Function(_) => {}
         }
     }
 }
@@ -198,6 +200,7 @@ pub fn each_expr_mut(stmts: &mut [Stmt], f: &mut dyn FnMut(&mut Expr)) {
                 each_expr_mut(a, f);
                 each_expr_mut(b, f);
             }
+            StmtKind::Function(function) => each_expr_mut(&mut function.body, f),
             StmtKind::Let(_, None) | StmtKind::Break(_) | StmtKind::Continue(_) | StmtKind::Return(None) => {}
         }
     }
@@ -256,6 +259,7 @@ pub fn visit_stmts<'a>(stmts: &'a [Stmt], read: &mut dyn FnMut(&'a str)) {
                 visit_stmts(body, read);
                 visit_stmts(finally, read);
             }
+            StmtKind::Function(function) => visit_stmts(&function.body, read),
             StmtKind::Break(_) | StmtKind::Continue(_) => {}
         }
     }
@@ -559,6 +563,8 @@ pub enum StmtKind {
     TryCatch(Vec<Stmt>, Option<String>, Vec<Stmt>),
     Break(Option<String>),
     Continue(Option<String>),
+    /// `function name(..) { .. }`: a function written in a body (ADR 0308).
+    Function(Box<Function>),
     Return(Option<Expr>),
     /// `throw new Error(..)`: a panic (ADR 0012).
     Throw(Expr),

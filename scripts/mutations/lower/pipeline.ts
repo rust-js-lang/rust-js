@@ -210,4 +210,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "a function a block makes and gives"],
   },
+  {
+    name: "marker-dictionary-written",
+    breaks: "an impl of a marker trait, or of bindings, writes its empty dictionary though nothing reads it",
+    file: "src/lower/pipeline.rs",
+    find: "            super::recognition::known_derive(tcx, id) || super::traits::is_marker(tcx, &foreign, trait_id)\n",
+    replace: "            super::recognition::known_derive(tcx, id)\n",
+    tests: ["test/bindings.test.ts","-t","binding method is read of the value"],
+  },
 ];

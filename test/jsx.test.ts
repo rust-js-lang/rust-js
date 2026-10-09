@@ -3554,7 +3554,7 @@ pub struct CountProps {
     pub n: u32,
 }
 thread_local! {
-    // A function it makes and doesn't give is the module's, as before.
+    // A function written in its body is its own, there (ADR 0308).
     pub static Shout: MemoExoticComponent<LabelProps<'static>> = memo({
         fn Shout(LabelProps { text }: LabelProps) -> JSX::Element {
             fn loud(text: &str) -> String {
@@ -3601,7 +3601,7 @@ pub fn Page() -> JSX::Element {
   expect(jsx).toContain("export const Label = memo(function Label({ text }) {");
   expect(jsx).not.toContain("function Label$1");
   expect(jsx).toContain("export const Shout = memo(function Shout({ text }) {");
-  expect(jsx).toContain("\nfunction loud(text) {");
+  expect(jsx).toContain("function Shout({ text }) {\n  function loud(text) {\n    return text.toUpperCase();\n  }\n  return <i>{loud(text)}</i>;");
   expect(jsx).toContain("export const Count = memo(function Count$1({ n }) {");
   expect(jsx).toContain("\nfunction fact(n) {");
   expect(jsx).toContain("\nfunction double(x, TAdd) {");

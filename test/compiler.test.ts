@@ -282,6 +282,10 @@ test("async code becomes async functions and await", async () => {
   expect(log.value).toEqual([1, 2]);
   await Bun.sleep(20);
   expect(log.value).toEqual([1, 2, 3]);
+  const started = asyncs.started();
+  expect(started.value).toEqual([1, 2]);
+  await Bun.sleep(20);
+  expect(started.value).toEqual([1, 2, 3]);
   // `window.fetch(..)`, from the webapi crate, and the response's promises.
   // Bun has `fetch`; the webapi crate reaches it through `window`. A POST's
   // answer is its method and body, as the server was sent them.
@@ -328,6 +332,8 @@ test("async code becomes async functions and await", async () => {
   // An `async` block is an async arrow, called; an `async` closure, an async arrow.
   expect(js).toContain("const block = (async () => ((await double(x)) + 1) >>> 0");
   expect(js).toContain("const add = async (y) => ((await setTimeout(0, y)) + x) >>> 0;");
+  // A closure of an `async` block, an async arrow.
+  expect(js).toContain("const loading = async () => {\n    taskLog.value.push(1);");
   // A future in a variable is the promise; `.await` on it is `await`.
   expect(js).toContain("const first = setTimeout(5, 1);");
   expect(js).toContain("return ((await first) + (await second)) >>> 0;");

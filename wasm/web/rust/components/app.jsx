@@ -111,32 +111,30 @@ export function App() {
     const rootJs = jsName(project.root);
     const shown = output.TAG === "Files" ? output.shown : "";
     setStatus(say(test ? "Compiling the tests…" : "Compiling…", "Plain"));
-    startTransition(() =>
-      (async () => {
-        const r = await compileInWorker(loaded$1, sources, root, test);
-        const n = (compiles.current + 1) | 0;
-        compiles.current = n;
-        if (r.ok) {
-          const files = Array.from(r.files).map(([path, text]) => [path, text]);
-          const count = files.length;
-          const rootJsx = `${rootJs}x`;
-          const rootJs$1 = files.some(([path]) => path === rootJsx) ? rootJsx : rootJs;
-          const shown$1 = files.some(([path]) => path === shown) ? shown : rootJs$1;
-          setOutput({ TAG: "Files", files, shown: shown$1 });
-          setStatus(say(`Compiled: ${count} JS file${count === 1 ? "" : "s"}.`, "Good"));
-          run(r.files, loaded$1, rootJs$1, test);
-        } else {
-          setOutput({ TAG: "Diagnostics", _0: r.stderr });
-          setProgram(undefined);
-          setStatus(say(`Failed: exit ${r.exit}.`, "Bad"));
-        }
-        const result = r.ok ? "ok" : "error";
-        const times = `instantiate ${ms(r.instantiate)}, run ${ms(r.run)}, memory ${mb(r.memory)}, ${result}`;
-        const label = `compile #${n}`;
-        setStats((rows) => appended(rows, label, times));
-        window.lastResult = r;
-      })(),
-    );
+    startTransition(async () => {
+      const r = await compileInWorker(loaded$1, sources, root, test);
+      const n = (compiles.current + 1) | 0;
+      compiles.current = n;
+      if (r.ok) {
+        const files = Array.from(r.files).map(([path, text]) => [path, text]);
+        const count = files.length;
+        const rootJsx = `${rootJs}x`;
+        const rootJs$1 = files.some(([path]) => path === rootJsx) ? rootJsx : rootJs;
+        const shown$1 = files.some(([path]) => path === shown) ? shown : rootJs$1;
+        setOutput({ TAG: "Files", files, shown: shown$1 });
+        setStatus(say(`Compiled: ${count} JS file${count === 1 ? "" : "s"}.`, "Good"));
+        run(r.files, loaded$1, rootJs$1, test);
+      } else {
+        setOutput({ TAG: "Diagnostics", _0: r.stderr });
+        setProgram(undefined);
+        setStatus(say(`Failed: exit ${r.exit}.`, "Bad"));
+      }
+      const result = r.ok ? "ok" : "error";
+      const times = `instantiate ${ms(r.instantiate)}, run ${ms(r.run)}, memory ${mb(r.memory)}, ${result}`;
+      const label = `compile #${n}`;
+      setStats((rows) => appended(rows, label, times));
+      window.lastResult = r;
+    });
   };
   const onOutcome = (outcome) => {
     if (outcome.TAG === "Failed") {

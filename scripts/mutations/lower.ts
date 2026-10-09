@@ -442,4 +442,20 @@ export const mutations: Mutation[] = [
     replace: "                if false && bindings::has_flatten(self.tcx, ty) && !self.body_facts.jsx_props.contains(&e) =>\n",
     tests: ["test/lowering.test.ts","-t","flattened field made outside JSX"],
   },
+  {
+    name: "local-function-at-end",
+    breaks: "a function written in a body is at the body's end, not where it's written",
+    file: "src/lower.rs",
+    find: "            write(Some(at.lo()), out);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","local function there"],
+  },
+  {
+    name: "local-function-in-try",
+    breaks: "a function written after a destructor's `let` is in its `try`, where what's before can't call it",
+    file: "src/lower.rs",
+    find: "                write(None, out);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","local function there"],
+  },
 ];

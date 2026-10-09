@@ -77,6 +77,7 @@ pub fn lower_crate<'tcx>(
         plain_cells,
         read_at_once,
         named_expressions,
+        local_functions,
     } = analyze_crate(tcx, all_bodies, initializers, dependencies, export_library)?;
     // Each module's default export, which a module of the crate imports as
     // its default, not by a name of its own (ADR 0251).
@@ -205,6 +206,7 @@ pub fn lower_crate<'tcx>(
         plain_cells: &plain_cells,
         read_at_once: &read_at_once,
         named_expressions: &named_expressions,
+        local_functions: &local_functions,
     };
     let mut work: Vec<(DefId, Option<&Body<'tcx>>)> = bodies
         .iter()
@@ -318,11 +320,20 @@ pub fn lower_crate<'tcx>(
     // Only the drops each function uses (ADR 0300).
     drop_uses.into_inner().keep(&mut drop_params, &mut lowered_items);
 
-    // Reachability for derived Debug implementations, with adjacency lists
-    // rather than scanning every edge again for every reached function.
+    // What's written only where it's reached: derived Debug implementations,
+    // and a marker trait's dictionaries, which only a `dyn` reads (ADR 0307).
+    // Adjacency lists rather than scanning every edge again for every reached
+    // function.
     let derived: HashSet<DefId> = trait_impls
         .iter()
-        .filter(|&&id| super::recognition::known_derive(tcx, id))
+        .filter(|&&id| {
+            let trait_id = tcx
+                .impl_trait_ref(id)
+                .instantiate_identity()
+                .skip_normalization()
+                .def_id;
+            super::recognition::known_derive(tcx, id) || super::traits::is_marker(tcx, &foreign, trait_id)
+        })
         .flat_map(|&id| std::iter::once(id).chain(tcx.associated_item_def_ids(id).iter().copied()))
         .collect();
     let edges = lowered_items
@@ -416,6 +427,12 @@ pub fn lower_crate<'tcx>(
                     }
                     // Named in itself alone, as the Rust names it, unless
                     // what it reads is named so.
+                    // Its function's, where it's written there (ADR 0308).
+                    None if local_functions.contains_key(&def_id) => {
+                        let mut function = lowered.function;
+                        function.export = false;
+                        pass.holes.insert(def_id.index.as_u32(), function);
+                    }
                     None if named_expressions.contains(&def_id) => {
                         let mut function = lowered.function;
                         let mut read = HashSet::new();
@@ -695,8 +712,26 @@ fn reexports(
 }
 
 /// Each hole in `stmts` filled with its function, and each in that (ADR 0296).
-fn fill_holes(stmts: &mut [js::Stmt], holes: &mut HashMap<u32, js::Function>) {
+fn fill_holes(stmts: &mut Vec<js::Stmt>, holes: &mut HashMap<u32, js::Function>) {
+    // A function written in a body, a declaration there (ADR 0308).
+    js::each_block_mut(stmts, &mut |stmts| {
+        for stmt in stmts.iter_mut() {
+            if let StmtKind::Expr(e) = &stmt.kind
+                && let js::ExprKind::FunctionHole(index) = e.kind
+                && let Some(function) = holes.remove(&index)
+            {
+                stmt.kind = StmtKind::Function(Box::new(function));
+            }
+        }
+    });
     js::each_expr_mut(stmts, &mut |e| fill_hole(e, holes));
+    js::each_block_mut(stmts, &mut |stmts| {
+        for stmt in stmts.iter_mut() {
+            if let StmtKind::Function(function) = &mut stmt.kind {
+                fill_holes(&mut function.body, holes);
+            }
+        }
+    });
 }
 
 fn fill_hole(e: &mut Expr, holes: &mut HashMap<u32, js::Function>) {

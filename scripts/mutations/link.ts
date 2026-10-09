@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "            if visitor.replacements.is_some() {\n                for param in params {\n                    pattern(param, visitor);\n                }\n                block(body, visitor);\n            }\n",
     tests: ["test/jsx.test.ts", "-t", "named component imports avoid local functions"],
   },
+  {
+    name: "local-function-unlinked",
+    breaks: "a function written in a body reaches the printer with another module's function unresolved",
+    file: "src/link.rs",
+    find: "            StmtKind::Function(function) => function_names(function, visitor),\n",
+    replace: "            StmtKind::Function(_) => {}\n",
+    tests: ["test/lowering.test.ts","-t","local function there"],
+  },
 ];

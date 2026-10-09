@@ -219,7 +219,7 @@ fn bound_of<'tcx>(
 /// drops it (ADR 0098). `Copy` isn't one: its dictionary copies.
 pub(super) fn is_marker(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_, '_>, id: DefId) -> bool {
     (id.is_local() || foreign.in_library(id))
-        && tcx.associated_items(id).in_definition_order().next().is_none()
+        && (tcx.associated_items(id).in_definition_order()).all(|item| bindings::is_binding(tcx, item.def_id))
         && supertraits(tcx, id, ty::GenericArgs::identity_for_item(tcx, id))
             .iter()
             .all(|(_, tr, _)| !operational(tcx, foreign, tr.def_id) || is_marker(tcx, foreign, tr.def_id))
@@ -1905,7 +1905,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 });
                 continue;
             }
-            if self.tcx.def_kind(item.def_id) != DefKind::AssocFn {
+            // A binding, which JS reads of the value itself, isn't in it
+            // (ADR 0307).
+            if self.tcx.def_kind(item.def_id) != DefKind::AssocFn || bindings::is_binding(self.tcx, item.def_id) {
                 continue;
             }
             // A std trait's provided methods, like `Clone::clone_from`,
