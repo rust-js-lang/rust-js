@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
     name: "read-at-once-past-calls",
     breaks: "a `Cell` read after a call is its value from the `let`, so `title.get()` after `error.title.set(..)` reads the old title",
     file: "src/lower/analysis/plain_locals.rs",
-    find: "            if matches!(expr.kind, ExprKind::Call { .. } | ExprKind::Block { .. }) && !self.waiting.is_empty() {",
+    find: "            if runs && !self.waiting.is_empty() {",
     replace: "            if false && !self.waiting.is_empty() {",
     tests: ["test/lowering.test.ts", "-t", "a Cell a let takes apart"],
   },
@@ -70,8 +70,8 @@ export const mutations: Mutation[] = [
     name: "read-at-once-past-blocks",
     breaks: "a `Cell` read after a block is its value from the `let`, so what a drop in the block set is missed",
     file: "src/lower/analysis/plain_locals.rs",
-    find: "ExprKind::Call { .. } | ExprKind::Block { .. }) && !self.waiting.is_empty()",
-    replace: "ExprKind::Call { .. }) && !self.waiting.is_empty()",
+    find: "                ExprKind::Block { .. } => true,\n",
+    replace: "",
     tests: ["test/lowering.test.ts", "-t", "a Cell a let takes apart"],
   },
   {
@@ -89,5 +89,13 @@ export const mutations: Mutation[] = [
     find: "                if uses.get(&var) != Some(&reads.len()) {",
     replace: "                if false {",
     tests: ["test/lowering.test.ts", "-t", "a Cell a let takes apart"],
+  },
+  {
+    name: "read-at-once-builders-run",
+    breaks: "building an element counts as running code, so a `Cell` JSX reads is never its value: ErrorMessage reads `error.title` where the original destructures it",
+    file: "src/lower/analysis/plain_locals.rs",
+    find: "                    !fn_def(self.thir[fun].ty).is_some_and(|(def, _)| is_element_builder(self.tcx, def))",
+    replace: "                    true",
+    tests: ["test/jsx.test.ts", "-t", "JSX reading a Cell"],
   },
 ];

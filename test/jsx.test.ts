@@ -3465,3 +3465,31 @@ pub fn Results(ResultsProps { parameters }: ResultsProps) -> JSX::Element {
   const { Results } = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(Results({}))).toBe('<p title="content">30</p>');
 });
+
+// ADR 0293: building an element runs nothing (ADR 0040), so a `Cell` a
+// `let` takes apart and JSX reads first is still read at once: react.dev's
+// ErrorMessage, `const {message, title} = error;`.
+test("JSX reading a Cell a let took apart reads its value", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use std::cell::Cell;
+use react::{JSX, Rest, jsx};
+pub struct Failure { pub title: Cell<Option<&'static str>>, pub message: String }
+pub struct ErrorMessageProps<'a> { pub error: &'a Failure, pub props: Rest }
+pub fn ErrorMessage(ErrorMessageProps { error, props }: ErrorMessageProps) -> JSX::Element {
+    let Failure { message, title } = error;
+    jsx! {
+        <div className="error" {...props}>
+            <h2 className="title">{title.get().filter(|title| !title.is_empty()).unwrap_or("Error")}</h2>
+            <pre>{message.as_str()}</pre>
+        </div>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("const { message, title } = error;");
+  expect(jsx).toContain('{title || "Error"}');
+  const { ErrorMessage } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(createElement(ErrorMessage, { error: { title: "", message: "m" }, id: "e" })))
+    .toBe('<div class="error" id="e"><h2 class="title">Error</h2><pre>m</pre></div>');
+});

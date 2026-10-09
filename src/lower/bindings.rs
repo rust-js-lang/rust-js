@@ -508,6 +508,25 @@ pub(super) fn has_flatten(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && adt.non_enum_variant().fields.iter().any(|f| is_flatten(tcx, f)))
 }
 
+/// Whether `def` builds an element as `jsx!` writes it: a tag's, `div()`, or
+/// a prop's setter on one. Only the compiler calls these, and building an
+/// element runs nothing (ADR 0040).
+pub(super) fn is_element_builder(tcx: TyCtxt<'_>, def: DefId) -> bool {
+    match js_form(tcx, def) {
+        JsForm::Jsx(_) => true,
+        JsForm::Prop(_) => {
+            let ty = tcx
+                .fn_sig(def)
+                .instantiate_identity()
+                .skip_normalization()
+                .skip_binder()
+                .output();
+            matches!(ty.kind(), ty::Adt(adt, _) if tcx.get_attrs_by_path(adt.did(), &[Symbol::intern("rust_js"), Symbol::intern("jsx_element")]).next().is_some())
+        }
+        _ => false,
+    }
+}
+
 /// Whether `id` is react's `ReactNode`, what React renders as a child: a
 /// sealed trait, its types std's and React's (ADR 0201).
 pub(super) fn is_jsx_node(tcx: TyCtxt<'_>, id: DefId) -> bool {

@@ -1,11 +1,11 @@
 //! Element bindings are compiler plumbing. Check resolved uses, including
 //! aliases, method references and unused functions, rather than source names.
-use super::bindings::{JsForm, js_form};
+use super::bindings::is_element_builder;
 use rustc_hir::{
     self as hir,
     intravisit::{self, Visitor},
 };
-use rustc_middle::ty::{self, TyCtxt, TypeckResults};
+use rustc_middle::ty::{TyCtxt, TypeckResults};
 use rustc_span::def_id::DefId;
 use rustc_span::{Span, Symbol};
 
@@ -42,21 +42,7 @@ impl Uses<'_> {
         {
             return;
         }
-        let internal = match js_form(self.tcx, def) {
-            JsForm::Jsx(_) => true,
-            JsForm::Prop(_) => {
-                let ty = self
-                    .tcx
-                    .fn_sig(def)
-                    .instantiate_identity()
-                    .skip_normalization()
-                    .skip_binder()
-                    .output();
-                matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.get_attrs_by_path(adt.did(), &[Symbol::intern("rust_js"), Symbol::intern("jsx_element")]).next().is_some())
-            }
-            _ => false,
-        };
-        if internal {
+        if is_element_builder(self.tcx, def) {
             self.tcx.dcx().span_err(span, "rust-js: element builders are compiler-only; construct elements and set their props inside `jsx! { <Tag ... /> }`");
             self.valid = false;
         }

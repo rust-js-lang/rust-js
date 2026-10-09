@@ -31,6 +31,8 @@ else runs, is the value in JS's destructuring, and its `get()` reads it:
 call, which could set the cell, and no block, whose drops could, ends
 before the `get()`; the `get()` isn't in a loop, where a later turn would
 read it again. Then the value the destructuring read is what `get()` gives.
+Building an element, which `jsx!` does before its children, `div()` and
+its props' setters, runs nothing (ADR 0040).
 
 A `&Cell` used otherwise, passed on, set, or read in a closure, is still a
 handle.

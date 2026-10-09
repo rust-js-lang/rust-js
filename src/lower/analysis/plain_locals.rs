@@ -3,6 +3,7 @@
 //! a `let` takes apart that are their value (ADR 0293).
 
 use super::super::Body;
+use super::super::bindings::is_element_builder;
 use super::super::body_queries::{lent, strip};
 use super::super::fn_def;
 use super::super::recognition::{CellUse, StdItem, cell_use, is_cell_get, is_std_def, local_key_access};
@@ -181,7 +182,8 @@ pub(super) fn plain_cells<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> Ha
 
 /// The `&Cell`s of fields a `let` binds whose every use is a `get()` that
 /// comes before anything else runs, in the order the code runs: before a
-/// call, a block or a loop ends, outside a loop. What the `let` binds can
+/// call, a block or a loop ends, outside a loop. Building an element, as
+/// `jsx!` does first, `div().class_name(..)`, runs nothing (ADR 0040). What the `let` binds can
 /// be the value, as JS's destructuring has it (ADR 0293): nothing could
 /// set the cell between.
 pub(super) fn read_at_once<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> HashSet<LocalVarId> {
@@ -212,6 +214,7 @@ fn read_at_once_in<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, found: &mut HashS
         }
     }
     struct Runs<'a, 'tcx> {
+        tcx: TyCtxt<'tcx>,
         thir: &'a Thir<'tcx>,
         waiting: HashSet<*const Expr<'tcx>>,
         loops: usize,
@@ -234,7 +237,14 @@ fn read_at_once_in<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, found: &mut HashS
             visit::walk_expr(self, expr);
             self.loops -= usize::from(in_loop);
             // What runs code: a call, and a block, which drops its own.
-            if matches!(expr.kind, ExprKind::Call { .. } | ExprKind::Block { .. }) && !self.waiting.is_empty() {
+            let runs = match expr.kind {
+                ExprKind::Call { fun, .. } => {
+                    !fn_def(self.thir[fun].ty).is_some_and(|(def, _)| is_element_builder(self.tcx, def))
+                }
+                ExprKind::Block { .. } => true,
+                _ => false,
+            };
+            if runs && !self.waiting.is_empty() {
                 self.early = false;
             }
         }
@@ -264,6 +274,7 @@ fn read_at_once_in<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, found: &mut HashS
                     continue;
                 }
                 let mut runs = Runs {
+                    tcx,
                     thir,
                     waiting: reads.iter().map(|&get| &thir[get] as *const _).collect(),
                     loops: 0,
