@@ -825,3 +825,36 @@ pub fn Page() -> JSX::Element {
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(lib.Page())).toBe("<main><b>hi</b><b>memo</b><i>kid</i></main>");
 });
+
+// ADR 0254: what jsx! captures for a key that might do something, an
+// import it reads, react's `Fragment`, reads alike wherever it's read, as
+// a binding of a module never changes: it's written in place, not
+// `const match = Fragment`, as react.dev's NavigationBar gives Headless
+// UI's `Listbox.Option` `as={Fragment}`.
+test("an import jsx! captures is read in place", () => {
+  const dir = fixture("captured-imports");
+  writeFileSync(join(dir, "lib.rs"), `use react::{ElementType, FRAGMENT, JSX, jsx};
+
+pub struct OptionProps {
+    pub value: String,
+    #[cfg_attr(rust_js, rust_js::name = "as")]
+    pub r#as: Option<ElementType>,
+}
+
+pub fn Choice(OptionProps { value, .. }: OptionProps) -> JSX::Element {
+    jsx! { <li>{value}</li> }
+}
+
+pub fn Choices(items: Vec<String>) -> JSX::Element {
+    jsx! {
+        <ul>
+            {items.iter().map(|item| jsx! { <Choice key={item.as_str()} value={item.clone()} r#as={Some(FRAGMENT)} /> }).collect::<Vec<_>>()}
+        </ul>
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(js).toContain("<Choice value={item} as={Fragment} key={item} />");
+  expect(js).not.toContain("const match");
+});

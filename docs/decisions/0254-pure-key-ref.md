@@ -38,3 +38,11 @@ before.
 - **It's the JS a person writes.**
 - **It's tested**: a JSX test keys a component by a variable before a
   prop a call makes; a mutation captures it again.
+
+## Amendment: an import a capture reads
+
+A key that might do something still captures the props written with it,
+and one that reads an import, react's `Fragment` of Headless UI's
+`as={Fragment}` in react.dev's NavigationBar, is read in place, as a
+variable nothing writes again is: JS never lets a module change an
+import's binding. It was a `const match = Fragment`.

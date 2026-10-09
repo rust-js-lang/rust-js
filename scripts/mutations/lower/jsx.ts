@@ -362,4 +362,12 @@ export const mutations: Mutation[] = [
     replace: "        && args.is_empty()\n        && false\n",
     tests: ["test/jsx.test.ts", "-t", "calls a function with nothing"],
   },
+  {
+    name: "captured-import-spilled",
+    breaks: "an import jsx! captures for a key that might do something is spilled, `const match = Fragment`, where it reads the same in place",
+    file: "src/lower/jsx.rs",
+    find: "                    || self.krate.imports[&self.module].values().any(|alias| alias == name)\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "import jsx! captures"],
+  },
 ];

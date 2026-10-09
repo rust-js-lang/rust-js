@@ -79,8 +79,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether `value` reads the same wherever it's read: a constant, a
-    /// function, or a variable nothing writes again, a `const` of `out`'s,
-    /// a field of a plain Rust value of one, and a comparison or a
+    /// function, an import, or a variable nothing writes again, a `const`
+    /// of `out`'s, a field of a plain Rust value of one, and a comparison or a
     /// conditional of them, which runs no code of its own: `version ===
     /// "canary"`, `!done`, `status != null`, `p.size === "S" ? 12 : 20`.
     fn reads_alike(&self, value: &Expr, out: &[Stmt]) -> bool {
@@ -115,6 +115,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             && &f.name == name
                             && matches!(self.tcx.def_kind(*id), DefKind::Fn | DefKind::AssocFn)
                     })
+                    // An import's binding, which JS never lets the module change.
+                    || self.krate.imports[&self.module].values().any(|alias| alias == name)
             }
             _ => value.is_constant(),
         }
