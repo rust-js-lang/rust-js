@@ -90,4 +90,20 @@ export const mutations: Mutation[] = [
     replace: "                    if false && !found.contains(&path) {",
     tests: ["test/corpus.test.ts", "-t", "or_pattern_part_moves"],
   },
+  {
+    name: "weak-drops-nothing",
+    breaks: "dropping a `Weak` doesn't count it gone",
+    file: "src/lower/drops/types.rs",
+    find: "            ty::Adt(..) if weak_pointee(tcx, ty).is_some() => Drops::Runs,\n",
+    replace: "            ty::Adt(..) if weak_pointee(tcx, ty).is_some() => Drops::Nothing,\n",
+    tests: ["test/corpus.test.ts", "-t", "rc_counted_uses"],
+  },
+  {
+    name: "refcell-drops-refused",
+    breaks: "a `RefCell` of a `Weak` is refused",
+    file: "src/lower/drops/types.rs",
+    find: "                        || [StdItem::Cell, StdItem::OnceCell, StdItem::LazyCell]\n",
+    replace: "                        || [StdItem::Cell, StdItem::RefCell, StdItem::OnceCell, StdItem::LazyCell]\n",
+    tests: ["test/corpus.test.ts", "-t", "rc_counts"],
+  },
 ];

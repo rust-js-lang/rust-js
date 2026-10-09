@@ -98,4 +98,12 @@ export const mutations: Mutation[] = [
     replace: "                    true",
     tests: ["test/jsx.test.ts", "-t", "JSX reading a Cell"],
   },
+  {
+    name: "rc-cell-plain",
+    breaks: "a counted `Rc<Cell>`'s cell is taken for its function's variable",
+    file: "src/lower/analysis/plain_locals.rs",
+    find: "                    !rc.is_some_and(|pointee| counted.counts(tcx, pointee))\n",
+    replace: "                    true\n",
+    tests: ["test/corpus.test.ts", "-t", "rc_counted_uses"],
+  },
 ];

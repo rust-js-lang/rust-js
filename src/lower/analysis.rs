@@ -6,6 +6,7 @@ mod fmt_failures;
 mod mutation;
 mod naming;
 mod plain_locals;
+mod rc_counts;
 
 pub(super) use naming::renamed_in;
 mod type_facts;
@@ -22,6 +23,8 @@ use drops::drop_params;
 pub(super) use mutation::copies_by_callers;
 use mutation::{copied_params, mutated_types};
 use naming::{exported_across_modules, js_uses, local_functions, name_imports, name_items, named_expressions};
+pub(super) use rc_counts::Counted;
+use rc_counts::counted_rcs;
 use rustc_hir::def::DefKind;
 use rustc_hir::find_attr;
 use rustc_middle::mir::BorrowKind;
@@ -141,6 +144,8 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub tests: Vec<TestFn>,
     pub paths: HashMap<LocalModId, Vec<String>>,
     pub mutated: HashSet<Ty<'tcx>>,
+    /// The `Rc`s counted, whose counts the crate reads (ADR 0320).
+    pub counted: Counted<'tcx>,
     pub changed_vecs: HashSet<Ty<'tcx>>,
     /// Each generic function's type parameters it's given a drop function
     /// for (ADR 0098), by their indices.
@@ -299,7 +304,8 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         .collect();
 
     let plain_locals = plain_locals::plain_thread_locals(tcx, all_bodies, thread_local_inits.values().copied());
-    let plain_cells = plain_locals::plain_cells(tcx, all_bodies);
+    let counted = counted_rcs(tcx, all_bodies);
+    let plain_cells = plain_locals::plain_cells(tcx, all_bodies, &counted);
     let read_at_once = plain_locals::read_at_once(tcx, all_bodies);
 
     // A derived `Serialize`'s `serialize` and `Deserialize`'s `deserialize`,
@@ -365,7 +371,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
 
     let mutated = mutated_types(tcx, all_bodies);
     let changed_vecs = changed_vecs(tcx, all_bodies);
-    let drop_params = drop_params(tcx, all_bodies, &fns, &foreign, library);
+    let drop_params = drop_params(tcx, all_bodies, &fns, &foreign, library, counted.any());
     let copied = copied_params(tcx, all_bodies, &fns, library);
     let type_facts = type_fact_params(tcx, all_bodies, &fns, library);
     let failing = fmt_failures::failing_fns(tcx, all_bodies, &foreign);
@@ -392,6 +398,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         tests,
         paths,
         mutated,
+        counted,
         changed_vecs,
         drop_params,
         copied,

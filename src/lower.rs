@@ -303,6 +303,8 @@ struct ItemScope<'tcx> {
 struct CrateFacts<'a, 'tcx> {
     sources: &'a sources::CapturedSources,
     mutated: &'a HashSet<Ty<'tcx>>,
+    /// The `Rc`s counted (ADR 0320).
+    counted: &'a analysis::Counted<'tcx>,
     /// The trait constants generic code reads (ADR 0106).
     generic_consts: &'a HashSet<DefId>,
     changed_vecs: &'a HashSet<Ty<'tcx>>,

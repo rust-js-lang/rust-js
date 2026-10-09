@@ -6,7 +6,7 @@ use super::super::Body;
 use super::super::bindings::is_element_builder;
 use super::super::body_queries::{lent, strip};
 use super::super::fn_def;
-use super::super::recognition::{CellUse, StdItem, cell_use, is_cell_get, is_std_def, local_key_access};
+use super::super::recognition::{CellUse, StdItem, cell_use, is_cell_get, is_std_def, local_key_access, rc_pointee};
 use rustc_ast::Mutability;
 use rustc_hir::{BindingMode, ByRef};
 use rustc_middle::thir::visit::{self, Visitor};
@@ -71,14 +71,28 @@ pub(super) fn plain_thread_locals<'tcx>(
 /// to the one it's a clone of, or to itself. One used any other way, given
 /// or returned whole, `replace`d or compared, is a cell, and so is each of
 /// its clones.
-pub(super) fn plain_cells<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> HashMap<LocalVarId, LocalVarId> {
+pub(super) fn plain_cells<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    bodies: &[&Body<'tcx>],
+    counted: &super::Counted<'tcx>,
+) -> HashMap<LocalVarId, LocalVarId> {
     let mut made: HashSet<LocalVarId> = HashSet::new();
     let mut cloned: HashMap<LocalVarId, LocalVarId> = HashMap::new();
     let mut unplain: HashSet<LocalVarId> = HashSet::new();
     for body in bodies {
         let thir = &body.thir;
         let use_of = |e: ExprId| match thir[e].kind {
-            ExprKind::Call { fun, .. } => fn_def(thir[fun].ty).and_then(|(id, args)| cell_use(tcx, id, args)),
+            // Not through a counted `Rc`, which is an object of its own (ADR 0320).
+            ExprKind::Call { fun, .. } => fn_def(thir[fun].ty).and_then(|(id, args)| {
+                cell_use(tcx, id, args).filter(|&found| {
+                    let rc = match found {
+                        CellUse::Shared => Some(args.type_at(0)),
+                        CellUse::Cloned | CellUse::Deref => rc_pointee(tcx, args.type_at(0)),
+                        _ => None,
+                    };
+                    !rc.is_some_and(|pointee| counted.counts(tcx, pointee))
+                })
+            }),
             _ => None,
         };
         // The variable `e` reads, through `&`, `*` and an `Rc`'s deref, and

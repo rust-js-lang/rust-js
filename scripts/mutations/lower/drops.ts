@@ -357,4 +357,12 @@ export const mutations: Mutation[] = [
     replace: "        let drop = drop.map(|_| Expr::undefined())?;\n",
     tests: ["test/corpus.test.ts", "-t", "drop_generic"],
   },
+  {
+    name: "rc-drop-size-unseen",
+    breaks: "a type inside itself through an `Rc` drops itself forever",
+    file: "src/lower/drops.rs",
+    find: "                let (size, recursive) = self.drop_size(pointee, stack);\n",
+    replace: "                let (size, recursive) = (1, false);\n",
+    tests: ["test/corpus.test.ts", "-t", "rc_counts"],
+  },
 ];

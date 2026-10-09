@@ -218,4 +218,12 @@ export const mutations: Mutation[] = [
     replace: "                    return Ok(place);\n",
     tests: ["test/corpus.test.ts", "-t", "or_bindings"],
   },
+  {
+    name: "rc-eq-counts",
+    breaks: "two `Rc`s of equal values compare their counts too",
+    file: "src/lower/std_impls.rs",
+    find: "            ty::Adt(..) if self.counted_rc(ty).is_some() => true,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "rc_counted_uses"],
+  },
 ];

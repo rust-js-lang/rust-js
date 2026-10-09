@@ -145,6 +145,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::call(reader("option"), vec![read]));
         }
         match ty.kind() {
+            ty::Adt(..) if self.counted_rc(ty).is_some() => {
+                Err(self.unsupported(span, &format!("reading a counted `{ty}` from JSON")))
+            }
             ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) => self.json_reader(args.type_at(0), span),
             ty::Adt(_, args) if self.is_std_type(ty, StdItem::Result) => {
                 let (ok, err) = (

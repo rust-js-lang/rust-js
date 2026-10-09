@@ -253,6 +253,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let body = match known {
             Std::Trim { start, end } => self.trimmed(x, start, end),
             Std::Method(method) => Expr::call(Expr::member(x, method), vec![]),
+            // A counted `Rc`'s `new` or deref (ADR 0320).
+            Std::Same if let Some(counted) = self.counted_same(def_id, args, x.clone()) => counted,
             Std::Same | Std::Format => x,
             Std::IsSome => Expr::bin(Op::LooseNe, x, Expr::null()),
             Std::IsNone => Expr::bin(Op::LooseEq, x, Expr::null()),

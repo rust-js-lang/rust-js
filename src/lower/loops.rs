@@ -185,7 +185,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if owns_items {
             while let ExprKind::Call { fun, ref args, .. } = self.thir[self.strip(f.head)].kind {
                 match self.std_fn(fun) {
-                    Some(Std::Same | Std::OptionIter) if args.len() == 1 => f.head = args[0],
+                    // Not a counted `Rc`'s, whose items are its `value`'s (ADR 0320).
+                    Some(Std::Same | Std::OptionIter) if args.len() == 1 && self.counted_same_of(fun).is_none() => {
+                        f.head = args[0]
+                    }
                     Some(Std::IterSource(IterSource::Once)) => {
                         once = Some(args[0]);
                         break;

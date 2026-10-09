@@ -20,7 +20,7 @@ use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 use super::bindings::variant_name;
-use super::recognition::ChannelEnd;
+use super::recognition::{ChannelEnd, StdItem};
 use super::representation::variant_field;
 use super::traits::item_drop_key;
 use super::{FnCx, R, lower_first};
@@ -154,6 +154,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             recognition: self.recognition(),
             evidence: self.evidence_query(),
             library: self.krate.library,
+            counted: self.krate.counted,
             state: &self.drop_state.types,
         }
     }
@@ -297,6 +298,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if ty.is_box() => self.drop_size(args.type_at(0), stack),
             ty::Adt(_, args) if self.is_vec_like(ty) => self.drop_size(args.type_at(0), stack),
             ty::Array(item, _) | ty::Slice(item) => self.drop_size(*item, stack),
+            // A `RefCell`'s value, and what a counted `Rc` points at, after its
+            // count (ADR 0320); a `Weak` drops only a count.
+            ty::Adt(_, args) if self.is_std_type(ty, StdItem::RefCell) => self.drop_size(args.type_at(0), stack),
+            ty::Adt(..) if let Some(pointee) = self.counted_rc(ty) => {
+                let (size, recursive) = self.drop_size(pointee, stack);
+                (size + 1, recursive)
+            }
+            ty::Adt(..) if self.weak_of(ty).is_some() => (1, false),
             ty::Tuple(items) => sum(self, &mut items.iter(), stack),
             ty::Adt(adt, args) => {
                 let own = usize::from(
@@ -373,6 +382,46 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ChannelEnd::Receiver => "$dropReceiver",
                 };
                 out.push(StmtKind::Expr(Expr::call(Expr::var(drop), vec![value])).at(js_span));
+            }
+            // A `RefCell`'s value (ADR 0320).
+            ty::Adt(_, args) if self.is_std_type(ty, StdItem::RefCell) => {
+                self.drop_in(Expr::member(value, "value"), args.type_at(0), span, made, out)?
+            }
+            // A counted `Rc`: `$rcDrop(rc, drop)`, `drop` what the last drops of
+            // what it points at, if that has a destructor; a `Weak`: `$weakDrop`
+            // (ADR 0320).
+            ty::Adt(..) if let Some(pointee) = self.counted_rc(ty) => {
+                self.runtime.insert(Helper::Rc);
+                let mut args = vec![value];
+                if self.drops(pointee) == Drops::Runs {
+                    let name = self.fresh("value");
+                    let mut body = Vec::new();
+                    self.drop_in(Expr::var(&name), pointee, span, made, &mut body)?;
+                    // `(value) => { dropNode(value); }` is `dropNode`.
+                    let drop = match body.as_slice() {
+                        [
+                            Stmt {
+                                kind:
+                                    StmtKind::Expr(Expr {
+                                        kind: js::ExprKind::Call(callee, given),
+                                        ..
+                                    }),
+                                ..
+                            },
+                        ] if matches!(callee.kind, js::ExprKind::Var(_))
+                            && matches!(given.as_slice(), [Expr { kind: js::ExprKind::Var(n), .. }] if *n == name) =>
+                        {
+                            (**callee).clone()
+                        }
+                        _ => Expr::arrow(vec![name.into()], body),
+                    };
+                    args.push(drop);
+                }
+                out.push(StmtKind::Expr(Expr::call(Expr::var("$rcDrop"), args)).at(js_span));
+            }
+            ty::Adt(..) if self.weak_of(ty).is_some() => {
+                self.runtime.insert(Helper::Rc);
+                out.push(StmtKind::Expr(Expr::call(Expr::var("$weakDrop"), vec![value])).at(js_span));
             }
             // What a closure holds: the variables it took, where it was made.
             // Only there, or in a closure made inside it, can JS see them.

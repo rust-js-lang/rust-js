@@ -316,6 +316,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Param(_) | ty::Alias(..) | ty::Dynamic(..) => false,
             ty::Tuple(parts) => parts.iter().all(|t| self.structural_clone_in(t, seen)),
             ty::Array(item, _) | ty::Slice(item) => self.structural_clone_in(*item, seen),
+            // A counted `Rc`'s clone counts it (ADR 0320).
+            ty::Adt(..) if self.counted_rc(ty).is_some() || self.weak_of(ty).is_some() => false,
             ty::Adt(..) if self.is_rc(ty) || self.is_string_like(ty) || self.is_js_object(ty) => true,
             ty::Adt(..) if self.has_user_impl(self.clone_trait(), ty) => false,
             ty::Adt(_, args) if self.is_std_wrapper(ty) || self.is_map(ty) => {

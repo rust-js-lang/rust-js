@@ -22,12 +22,13 @@ pub(super) fn drop_params<'tcx>(
     fns: &HashMap<DefId, FnInfo>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
     library: bool,
+    counts_rcs: bool,
 ) -> HashMap<DefId, Vec<u32>> {
     let mut given: HashSet<(DefId, u32)> = HashSet::new();
     // A crate with no destructor of its own, and none of a library's, has
     // no value to drop: what's below would give drops nothing calls. A
-    // library's consumers may have one.
-    if !library && !crate::lower::traits::may_have_destructors(tcx, foreign) {
+    // library's consumers may have one, and a counted `Rc` drops (ADR 0320).
+    if !library && !counts_rcs && !crate::lower::traits::may_have_destructors(tcx, foreign) {
         return HashMap::new();
     }
     // A trait impl's methods are called through its dictionary, or resolved

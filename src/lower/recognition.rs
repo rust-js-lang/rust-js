@@ -13,6 +13,7 @@ use super::std_types::map::{MapOp, Part};
 use super::std_types::number::{DurationOp, NumOp};
 use super::std_types::once::OnceOp;
 use super::std_types::range::{RangeKind, RangeOp};
+use super::std_types::rc::RcOp;
 use super::std_types::text::{StringEdit, TextOp};
 use rustc_ast::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;
@@ -252,6 +253,8 @@ pub(super) enum Std {
     Once(OnceOp),
     /// A `Cow`'s (ADR 0319).
     Cow(CowOp),
+    /// A counted `Rc`'s or a `Weak`'s (ADR 0320).
+    Rc(RcOp),
     /// A `LazyCell`'s or `LazyLock`'s (ADR 0318).
     Lazy(LazyOp),
     /// `serde_json::to_string(&v)` (false) and `to_string_pretty` (ADR 0077).
@@ -378,11 +381,13 @@ pub(super) enum StreamOp {
 
 impl Std {
     /// Is its `&mut` to a number or text its receiver, the `{ value }` box
-    /// that is (ADRs 0317, 0318): no handle (ADR 0152) to make.
+    /// that is (ADRs 0317, 0318, 0320): no handle (ADR 0152) to make.
     pub(super) fn gives_its_cell(self) -> bool {
         matches!(
             self,
-            Std::Once(OnceOp::GetMut) | Std::Lazy(LazyOp::GetMut | LazyOp::ForceMut)
+            Std::Once(OnceOp::GetMut)
+                | Std::Lazy(LazyOp::GetMut | LazyOp::ForceMut)
+                | Std::Rc(RcOp::GetMut | RcOp::MakeMut)
         )
     }
 
@@ -1110,6 +1115,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ordering = self.is_lang_adt(owner, LangItem::OrderingEnum);
         let local_key = adt("LocalKey");
         let once = self.is_std_type(owner, StdItem::OnceCell);
+        let rc = rc_pointee(tcx, owner).is_some();
+        let weak = weak_pointee(tcx, owner).is_some();
         let lazy = self.is_std_type(owner, StdItem::LazyCell);
         let cow = self.is_cow(owner);
         let arguments = self.is_lang_adt(owner, LangItem::FormatArguments);
@@ -1248,6 +1255,21 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "new_pointer" if argument => Std::FmtPointer,
             "from_usize" if argument => Std::FmtUsize,
             "new" if adt("Rc") || adt("Arc") => Std::Same,
+            // What only a counted one answers (ADR 0320).
+            "strong_count" if rc => Std::Rc(RcOp::StrongCount),
+            "weak_count" if rc => Std::Rc(RcOp::WeakCount),
+            "ptr_eq" if rc || weak => Std::Rc(RcOp::PtrEq),
+            "downgrade" if rc => Std::Rc(RcOp::Downgrade),
+            "get_mut" if rc => Std::Rc(RcOp::GetMut),
+            "make_mut" if rc => Std::Rc(RcOp::MakeMut),
+            "try_unwrap" if rc => Std::Rc(RcOp::TryUnwrap),
+            "into_inner" if rc => Std::Rc(RcOp::IntoInner),
+            "unwrap_or_clone" if rc => Std::Rc(RcOp::UnwrapOrClone),
+            "new_cyclic" if rc => Std::Rc(RcOp::NewCyclic),
+            "new" if weak => Std::Rc(RcOp::WeakNew),
+            "upgrade" if weak => Std::Rc(RcOp::Upgrade),
+            "strong_count" if weak => Std::Rc(RcOp::WeakStrongCount),
+            "weak_count" if weak => Std::Rc(RcOp::WeakWeakCount),
             // Kept for good, a `&'static` of it: in JS, which frees nothing
             // itself, the value itself.
             "leak" if adt("Vec") || string || owner.is_box() => Std::Same,
@@ -2126,6 +2148,19 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             && (self.is_std_type(ty, StdItem::OnceCell) || self.is_std_type(ty, StdItem::LazyCell))
     }
 
+    /// `Rc::new` or an `Rc`'s `Deref`, each `Std::Same` of an `Rc` that's
+    /// its value (ADR 0023): whether it's `new`, and what it points at, for
+    /// a counted one's (ADR 0320).
+    pub(super) fn rc_same(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<(bool, Ty<'tcx>)> {
+        let tcx = self.tcx;
+        if tcx.is_diagnostic_item(Symbol::intern("deref_method"), def_id) {
+            return rc_pointee(tcx, args.type_at(0)).map(|pointee| (false, pointee));
+        }
+        let imp = tcx.inherent_impl_of_assoc(def_id)?;
+        let owner = tcx.type_of(imp).instantiate_identity().skip_normalization();
+        (rc_pointee(tcx, owner).is_some() && tcx.item_name(def_id).as_str() == "new").then(|| (true, args.type_at(0)))
+    }
+
     /// A `Cow`, `{ TAG, _0 }` (ADR 0033): what it borrowed, or owns.
     pub(super) fn is_cow(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::borrow::Cow")
@@ -2297,6 +2332,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 .any(|name| self.is_std_adt(ty, Symbol::intern(name)))
             || self.is_std_type(ty, StdItem::OnceCell)
             || self.is_std_type(ty, StdItem::LazyCell)
+            || weak_pointee(self.tcx, ty).is_some()
             || self.is_vec_like(ty)
     }
 
@@ -3285,6 +3321,56 @@ pub(crate) fn replaces_whole(tcx: TyCtxt<'_>, id: DefId) -> bool {
 }
 
 /// Is `id` std's `item`?
+/// What an `Rc` or `Arc` points at (ADR 0320).
+pub(crate) fn rc_pointee<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    match ty.kind() {
+        ty::Adt(adt, args)
+            if tcx.is_diagnostic_item(sym::Rc, adt.did()) || tcx.is_diagnostic_item(sym::Arc, adt.did()) =>
+        {
+            Some(args.type_at(0))
+        }
+        _ => None,
+    }
+}
+
+/// What an `rc::Weak` or `sync::Weak` points at (ADR 0320).
+pub(crate) fn weak_pointee<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    match ty.kind() {
+        ty::Adt(adt, args)
+            if ["RcWeak", "ArcWeak"]
+                .into_iter()
+                .any(|name| tcx.is_diagnostic_item(Symbol::intern(name), adt.did())) =>
+        {
+            Some(args.type_at(0))
+        }
+        _ => None,
+    }
+}
+
+/// Is `id` a function that reads an `Rc`'s or `Arc`'s counts, or makes
+/// or reads a `Weak` (ADR 0320): what only a counted one can answer.
+pub(crate) fn reads_rc_count(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    let Some(imp) = tcx.inherent_impl_of_assoc(id) else {
+        return false;
+    };
+    let owner = tcx.type_of(imp).instantiate_identity().skip_normalization();
+    weak_pointee(tcx, owner).is_some()
+        || rc_pointee(tcx, owner).is_some()
+            && matches!(
+                tcx.item_name(id).as_str(),
+                "strong_count"
+                    | "weak_count"
+                    | "get_mut"
+                    | "make_mut"
+                    | "try_unwrap"
+                    | "into_inner"
+                    | "unwrap_or_clone"
+                    | "downgrade"
+                    | "new_cyclic"
+                    | "ptr_eq"
+            )
+}
+
 /// Is `id` std's `FromStr`, which has no diagnostic item to know it by?
 pub(crate) fn is_from_str(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.crate_name(id.krate) == sym::core

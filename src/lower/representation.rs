@@ -18,12 +18,13 @@ use rustc_span::{Span, Symbol, sym};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What an `Option<T>`'s `T` is in JS: through references, `Box` and `Rc`,
-    /// which are the value itself (ADR 0023).
+    /// which are the value itself (ADR 0023), but for a counted `Rc`, an
+    /// object of its own (ADR 0320).
     fn payload(&self, mut ty: Ty<'tcx>) -> Ty<'tcx> {
         loop {
             ty = match ty.kind() {
                 ty::Ref(_, inner, _) => *inner,
-                ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) => args.type_at(0),
+                ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) && self.counted_rc(ty).is_none() => args.type_at(0),
                 _ => return ty,
             };
         }
@@ -177,6 +178,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || [StdItem::Cell, StdItem::RefCell, StdItem::Atomic, StdItem::OnceCell, StdItem::LazyCell]
                 .into_iter()
                 .any(|item| self.is_std_type(ty, item))
+            // A counted `Rc`, and a `Weak`, are `{ value, strong, weak }` (ADR 0320).
+            || self.counted_rc(ty).is_some()
+            || self.weak_of(ty).is_some()
             || self.is_vec_like(ty)
             || self.is_map(ty)
             // A `dyn` of the crate's trait is its pair (ADR 0049): a `&mut` to

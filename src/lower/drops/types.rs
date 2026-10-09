@@ -6,7 +6,8 @@
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 
-use crate::lower::recognition::{Recognition, StdItem};
+use crate::lower::analysis::Counted;
+use crate::lower::recognition::{Recognition, StdItem, rc_pointee, weak_pointee};
 use crate::lower::traits::{EvidenceQuery, may_have_destructors};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::{BindingMode, ByRef};
@@ -56,6 +57,8 @@ pub(in crate::lower) struct DropQuery<'a, 'tcx> {
     pub(in crate::lower) evidence: EvidenceQuery<'a, 'tcx>,
     /// A library's: its consumers may have destructors (ADR 0163).
     pub(in crate::lower) library: bool,
+    /// The `Rc`s counted, which drop (ADR 0320).
+    pub(in crate::lower) counted: &'a Counted<'tcx>,
     pub(in crate::lower) state: &'a TypeDrops<'tcx>,
 }
 
@@ -68,7 +71,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
 
     /// `traits::may_have_destructors`, of this crate.
     fn may_have_destructors(&self) -> bool {
-        may_have_destructors(self.recognition.tcx, self.recognition.foreign)
+        self.counted.any() || may_have_destructors(self.recognition.tcx, self.recognition.foreign)
     }
 
     /// An associated type's trait and item, `<Z as Zone>::Offset`'s
@@ -320,6 +323,18 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                     _ => Drops::Unsupported(ty, "a channel of a value with a destructor"),
                 }
             }
+            // A counted `Rc`: one count fewer, and the last drops what it points
+            // at. A `Weak`: one weak count fewer (ADR 0320).
+            ty::Adt(..)
+                if let Some(pointee) = rc_pointee(tcx, ty)
+                    && self.counted.counts(tcx, pointee) =>
+            {
+                match self.drops_in(pointee, walk) {
+                    Drops::Unsupported(t, what) => Drops::Unsupported(t, what),
+                    _ => Drops::Runs,
+                }
+            }
+            ty::Adt(..) if weak_pointee(tcx, ty).is_some() => Drops::Runs,
             // Never dropped, or dropped by hand.
             ty::Adt(..) if self.recognition.is_lang_adt(ty, LangItem::ManuallyDrop) || std(StdItem::MaybeUninit) => {
                 Drops::Nothing
@@ -342,9 +357,10 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                     }
                     // A std type that drops what it holds its own way: an
                     // `Rc` when its last clone goes, a map its entries. A `Cell`
-                    // drops the old value when it's set.
+                    // drops the old value when it's set. A `RefCell` is its fields',
+                    // its value's, and a write through `borrow_mut()` a place's (ADR 0320).
                     _ if own.is_some()
-                        || [StdItem::Cell, StdItem::RefCell, StdItem::OnceCell, StdItem::LazyCell]
+                        || [StdItem::Cell, StdItem::OnceCell, StdItem::LazyCell]
                             .into_iter()
                             .any(std) =>
                     {

@@ -341,6 +341,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match self.thir[self.strip(e)].kind {
             ExprKind::Borrow { arg, .. } => self.place(arg).or_else(|| self.ref_place(arg)),
             ExprKind::Call { fun, ref args, .. } => match self.std_fn(fun)? {
+                // What a counted `Rc` points at is its `value` (ADR 0320).
+                Std::Same if self.counted_same_of(fun) == Some(false) => {
+                    let (rc, _) = self.ref_place(args[0])?;
+                    Some((Expr::member(rc, "value"), true))
+                }
                 Std::Same => self.ref_place(args[0]),
                 Std::Borrow | Std::Lock => {
                     let (cell, _) = self.ref_place(args[0])?;

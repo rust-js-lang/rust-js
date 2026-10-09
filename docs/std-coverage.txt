@@ -357,72 +357,72 @@
 + Result::unwrap_or_default
 + Result::unwrap_or_else
 - Result::unwrap_unchecked
-# Rc 1 of 23
+# Rc 11 of 23
 - Rc::as_ptr
 - Rc::assume_init
 - Rc::decrement_strong_count
 - Rc::downcast
-- Rc::downgrade
++ Rc::downgrade
 - Rc::from_raw
-- Rc::get_mut
++ Rc::get_mut
 - Rc::increment_strong_count
-- Rc::into_inner
++ Rc::into_inner
 - Rc::into_raw
-- Rc::make_mut
++ Rc::make_mut
 + Rc::new
-- Rc::new_cyclic
++ Rc::new_cyclic
 - Rc::new_uninit
 - Rc::new_uninit_slice
 - Rc::new_zeroed
 - Rc::new_zeroed_slice
 - Rc::pin
-- Rc::ptr_eq
-- Rc::strong_count
-- Rc::try_unwrap
-- Rc::unwrap_or_clone
-- Rc::weak_count
-# Arc 1 of 23
++ Rc::ptr_eq
++ Rc::strong_count
++ Rc::try_unwrap
++ Rc::unwrap_or_clone
++ Rc::weak_count
+# Arc 11 of 23
 - Arc::as_ptr
 - Arc::assume_init
 - Arc::decrement_strong_count
 - Arc::downcast
-- Arc::downgrade
++ Arc::downgrade
 - Arc::from_raw
-- Arc::get_mut
++ Arc::get_mut
 - Arc::increment_strong_count
-- Arc::into_inner
++ Arc::into_inner
 - Arc::into_raw
-- Arc::make_mut
++ Arc::make_mut
 + Arc::new
-- Arc::new_cyclic
++ Arc::new_cyclic
 - Arc::new_uninit
 - Arc::new_uninit_slice
 - Arc::new_zeroed
 - Arc::new_zeroed_slice
 - Arc::pin
-- Arc::ptr_eq
-- Arc::strong_count
-- Arc::try_unwrap
-- Arc::unwrap_or_clone
-- Arc::weak_count
-# RcWeak 0 of 8
++ Arc::ptr_eq
++ Arc::strong_count
++ Arc::try_unwrap
++ Arc::unwrap_or_clone
++ Arc::weak_count
+# RcWeak 5 of 8
 - RcWeak::as_ptr
 - RcWeak::from_raw
 - RcWeak::into_raw
-- RcWeak::new
-- RcWeak::ptr_eq
-- RcWeak::strong_count
-- RcWeak::upgrade
-- RcWeak::weak_count
-# ArcWeak 0 of 8
++ RcWeak::new
++ RcWeak::ptr_eq
++ RcWeak::strong_count
++ RcWeak::upgrade
++ RcWeak::weak_count
+# ArcWeak 5 of 8
 - ArcWeak::as_ptr
 - ArcWeak::from_raw
 - ArcWeak::into_raw
-- ArcWeak::new
-- ArcWeak::ptr_eq
-- ArcWeak::strong_count
-- ArcWeak::upgrade
-- ArcWeak::weak_count
++ ArcWeak::new
++ ArcWeak::ptr_eq
++ ArcWeak::strong_count
++ ArcWeak::upgrade
++ ArcWeak::weak_count
 # Cell 6 of 13
 - Cell::as_array_of_cells
 - Cell::as_ptr

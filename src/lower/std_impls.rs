@@ -63,6 +63,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A map or a set changes in place (ADR 0059).
             ty::Adt(..) if self.is_map(ty) => true,
+            // A counted `Rc`'s clone counts one more, and a `Weak`'s (ADR 0320).
+            ty::Adt(..) if self.counted_rc(ty).is_some() || self.weak_of(ty).is_some() => true,
             // A path is its text, which JS never changes in place (ADR 0173).
             ty::Adt(..)
                 if self.is_rc(ty)
@@ -136,6 +138,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.recognition().channel_end(ty) == Some(super::recognition::ChannelEnd::Sender) {
             self.runtime.insert(Helper::Channel);
             return Ok(Expr::call(Expr::var("$cloneSender"), vec![place]));
+        }
+        // A counted `Rc`, or a `Weak`: one more, of the same value (ADR 0320).
+        if self.counted_rc(ty).is_some() || self.weak_of(ty).is_some() {
+            self.runtime.insert(Helper::Rc);
+            let clone = if self.weak_of(ty).is_some() {
+                "$weakClone"
+            } else {
+                "$rcClone"
+            };
+            return Ok(Expr::call(Expr::var(clone), vec![place]));
         }
         // A path is its text, which nothing changes in place (ADR 0173).
         if !self.needs_clone(ty) || self.recognition().is_path_like(ty) {
@@ -501,6 +513,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let class = self.map_class(self.is_set(ty), args.types().next());
                 Expr::new_(class, Vec::new())
             }
+            ty::Adt(_, args) if self.counted_rc(ty).is_some() => {
+                Self::new_rc(self.default_value(args.type_at(0), span)?)
+            }
             ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) => self.default_value(args.type_at(0), span)?,
             ty::Adt(..) if std(StdItem::OnceCell) => Expr::object(vec![Prop::Field("value".into(), Expr::undefined())]),
             // `LazyCell::new(T::default)` (ADR 0318).
@@ -584,6 +599,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Tuple(tys) => tys.iter().any(|t| self.custom_eq_in(t, seen)),
             ty::Array(item, _) | ty::Slice(item) => self.custom_eq_in(*item, seen),
             ty::Adt(..) if self.has_user_impl(self.partial_eq_trait(), ty) => true,
+            // A counted `Rc` compares what it points at, not its counts (ADR 0320).
+            ty::Adt(..) if self.counted_rc(ty).is_some() => true,
             // `Vec`, `Box`, `Rc` and cells compare what they hold.
             ty::Adt(_, args) if self.is_std_wrapper(ty) => args.types().any(|t| self.custom_eq_in(t, seen)),
             ty::Adt(adt, args) => adt
@@ -699,6 +716,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match ty.kind() {
             ty::Array(item, _) | ty::Slice(item) => self.eq_items(a, b, *item, span),
             ty::Adt(_, args) if self.is_vec_like(ty) => self.eq_items(a, b, args.type_at(0), span),
+            ty::Adt(_, args) if self.counted_rc(ty).is_some() => self.eq_value(
+                Expr::member(a, "value"),
+                Expr::member(b, "value"),
+                args.type_at(0),
+                span,
+                out,
+            ),
             ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) => self.eq_value(a, b, args.type_at(0), span, out),
             ty::Adt(_, args) if std(StdItem::Cell) || std(StdItem::RefCell) => self.eq_value(
                 Expr::member(a, "value"),

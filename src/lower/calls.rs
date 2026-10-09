@@ -610,6 +610,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::Replace
                     | Std::Push
                     | Std::Same
+                    // Counts what it takes, or gives it back (ADR 0320).
+                    | Std::Rc(_)
+                    // A cell keeps it, and gives the old one back; a `Cell` of one is
+                    // refused by its type (ADR 0320).
+                    | Std::CellNew
+                    | Std::CellReplace
+                    | Std::CellTake
+                    | Std::CellReplaceWith
                     // Moves its value into the function, which owns it then.
                     | Std::OptionMap
                     | Std::Comb(Comb::ResultMap | Comb::Filter | Comb::MapOr)
@@ -796,6 +804,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if let Std::Cow(op) = known {
             return self.cow_call(op, args, span, out);
+        }
+        if let Std::Rc(op) = known {
+            return self.rc_call(op, args, span, out);
         }
         if known == Std::IterLen {
             return self.iter_len(args[0], span, out);
@@ -985,6 +996,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.failing_consumer(known, call, out);
         }
         let mut values = self.operands(args, out)?.into_iter();
+        // A counted `Rc` (ADR 0320): `Rc::new` makes its `{ value, .. }`, and
+        // what it points at is its `value`.
+        if known == Std::Same && self.counted_same_of(fun).is_some() {
+            let (_, pointee) = self.recognition().rc_same(def_id, generic_args).expect("an `Rc`'s");
+            self.counted_here(pointee, span)?;
+            let value = values.next().expect("rustc checked the arguments");
+            return Ok(self
+                .counted_same(def_id, generic_args, value)
+                .expect("a counted `Rc`'s"));
+        }
         if let Some(js) = self.vec_call(known, call, &mut values, boxed, out)? {
             return Ok(js);
         }
@@ -1124,6 +1145,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Once(_) => unreachable!("lowered by once_call"),
             Std::Lazy(_) => unreachable!("lowered by lazy_call"),
             Std::Cow(_) => unreachable!("lowered by cow_call"),
+            Std::Rc(_) => unreachable!("lowered by rc_call"),
             Std::PtrEq => unreachable!("lowered by ptr_eq"),
             Std::ToBig
             | Std::Duration(_)

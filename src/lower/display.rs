@@ -834,6 +834,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `fmt` can tell (ADR 0137).
     pub(super) fn display_string_with(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, pretty: &Pretty) -> R<Expr> {
         let (value, ty) = self.through_refs(value, ty);
+        let (value, ty) = self.through_counted(value, ty);
         let ty = self.shown_type(ty);
         if let Some(shown) = self.formatted(value.clone(), (Std::FmtDisplay, ty), pretty) {
             return Ok(shown);
@@ -1012,6 +1013,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// value is shown as the value is.
     pub(super) fn debug_string_with(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, pretty: &Pretty) -> R<Expr> {
         let (value, ty) = self.through_refs(value, ty);
+        let (value, ty) = self.through_counted(value, ty);
         // A `fmt::Result`: `undefined`, `Ok`, or the `fmt::Error` it caught
         // (ADR 0187), and a `fmt::Error`, which holds nothing.
         if self.is_fmt_result(ty) {

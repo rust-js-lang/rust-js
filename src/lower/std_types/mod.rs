@@ -10,6 +10,7 @@
 //! | `Option` | the value or `undefined`, boxed where it looks like `None` | `option` |
 //! | `Result` | `{ TAG, _0 }` | `result` |
 //! | `Cell`, `RefCell`, `Mutex`, `RwLock`, atomics | `{ value }` | `cell` |
+//! | `Rc`, `Arc` whose counts are read, `Weak` | `{ value, strong, weak }` | `rc` |
 //! | `Cow` | `{ TAG, _0 }`, what it borrowed or owns | `cow` |
 //! | `OnceCell`, `OnceLock` | `{ value }` of an `Option` | `once` |
 //! | `LazyCell`, `LazyLock` | `{ init }`, then `{ value }` | `lazy` |
@@ -30,6 +31,7 @@ pub(super) mod number;
 pub(super) mod once;
 pub(super) mod option;
 pub(super) mod range;
+pub(super) mod rc;
 pub(super) mod result;
 pub(super) mod text;
 pub(super) mod vec;
