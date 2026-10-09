@@ -1,21 +1,21 @@
-> I thought it would be great if I could do UI programming—my day job—in Rust.
+<p align="center">
+  <img src="docs/logo/rust-js.png" alt="Rust.js logo" height=170>
+</p>
+<h1 align="center">Rust.js</h1>
+<p align="center"><b>Rust in. <i>Readable</i> JavaScript out.</b></p>
 
-# rust-js
-
-**Rust in. Readable JavaScript out.**
-
-rust-js compiles Rust to readable JavaScript. Built on rustc and inspired by
-ReScript, it keeps Rust's type system, traits, ownership, borrow checking,
-and compiler diagnostics while replacing code generation with a JavaScript
-backend.
+Rust.js compiles Rust to readable JavaScript. Built on rustc and inspired by
+Scala.js and ReScript, it keeps Rust's type system, traits, ownership, borrow
+checking, and compiler diagnostics while replacing code generation with a
+JavaScript backend.
 
 The goal is simple:
 
-> **Write Rust. Get JavaScript you would have been willing to write by hand.**
+> **Write Rust. Get *readable* JavaScript that works with every tool you already use.**
 
 [Try the playground](https://rust-js-lang.github.io/rust-js/) — compilation runs
 entirely in your browser. The playground itself is written in Rust and
-compiled by rust-js.
+compiled by Rust.js.
 
 ## Why Rust to JavaScript?
 
@@ -28,13 +28,13 @@ We want to use them together. Write a React component in Rust, import a
 JavaScript package, call a browser API, and inspect the result in DevTools.
 Let Rust check the program and let JavaScript run it.
 
-WebAssembly provides a way to run compiled Rust in the browser. rust-js explores
+WebAssembly provides a way to run compiled Rust in the browser. Rust.js explores
 a different compilation target: JavaScript itself. Its output is ordinary ES
 modules and JSX that existing JavaScript applications can import, debug, and
 build with their usual tools.
 
 The longer-term motivation is Rust across the application stack. A server can
-use native Rust while a frontend uses rust-js, with shared types and data
+use native Rust while a frontend uses Rust.js, with shared types and data
 models describing the contract between them. Support for
 `#[derive(Serialize, Deserialize)]` is one step toward that: for supported
 types and `#[serde(...)]` attributes, generated code writes and reads JSON
@@ -72,18 +72,18 @@ Imports omitted; see the [React guide](react/README.md) for a complete example.
 
 The component remains a function, state remains a React hook, and the event
 handler remains an arrow function. The `| 0` keeps the addition within a signed
-32-bit integer, following rust-js's release-style integer arithmetic.
+32-bit integer, following Rust.js's release-style integer arithmetic.
 
 ## Philosophy
 
 ### Keep Rust's compiler in charge
 
 rustc handles parsing, macro expansion, name resolution, types, traits,
-ownership, lifetimes, and borrow checking. rust-js uses its checked program
+ownership, lifetimes, and borrow checking. Rust.js uses its checked program
 representation to generate JavaScript.
 
-A program must pass Rust's checks before rust-js emits output. Passing those
-checks is necessary, but the program must also use constructs that rust-js
+A program must pass Rust's checks before Rust.js emits output. Passing those
+checks is necessary, but the program must also use constructs that Rust.js
 supports. Unsupported constructs produce compiler errors.
 
 ### Generated code is part of the product
@@ -116,7 +116,7 @@ throughout the compiler.
 
 Rust and JavaScript have different runtime models. Reproducing every detail of
 native Rust would require machinery that can obscure the generated program.
-rust-js favors JavaScript's own building blocks and makes the resulting
+Rust.js favors JavaScript's own building blocks and makes the resulting
 semantic choices explicit.
 
 For example, calling an async function starts its work immediately, up to the
@@ -126,7 +126,7 @@ promise and lets the JavaScript event loop run the work without a Rust executor.
 It also means a future that is never awaited can still have effects.
 
 These differences belong in the design, documentation, and tests.
-[How Rust behaves in rust-js](docs/semantics.md) lists each one, as it is
+[How Rust behaves in Rust.js](docs/semantics.md) lists each one, as it is
 today, and the [design decisions](docs/README.md) record their reasons and
 costs. When a feature has no supported translation, compilation fails
 clearly.
@@ -145,13 +145,13 @@ implementations and compare the results. Snapshot the generated JavaScript
 so changes to its readability can be reviewed too.
 
 Real applications test how those pieces fit together. The playground is
-written in Rust, compiled by rust-js, and built with React and Vite. Developing
+written in Rust, compiled by Rust.js, and built with React and Vite. Developing
 it exercises the same compiler, bindings, and tooling that other applications
 use.
 
 ## What works today
 
-rust-js supports a growing subset of Rust aimed at JavaScript applications:
+Rust.js supports a growing subset of Rust aimed at JavaScript applications:
 
 - structs, tuples, enums, pattern matching, and methods
 - traits and generics within the [supported subset](docs/decisions/0049-traits-and-generics.md)
@@ -164,7 +164,7 @@ rust-js supports a growing subset of Rust aimed at JavaScript applications:
 
 Support is specific to each feature. For example, `i128` is refused, a
 `HashMap` iterates in insertion order, and `#[serde(with)]` is refused.
-[How Rust behaves in rust-js](docs/semantics.md) says what each part of Rust
+[How Rust behaves in Rust.js](docs/semantics.md) says what each part of Rust
 does today, how it differs from native Rust, and what's refused.
 
 ## Get started
