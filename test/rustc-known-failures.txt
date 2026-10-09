@@ -29,7 +29,6 @@ borrowck/borrowck-closures-slice-patterns-ok.rs	error: rust-js does not support 
 borrowck/borrowck-slice-pattern-element-loan-rpass.rs	error: rust-js does not support a `&mut` to part of a slice yet
 borrowck/borrowck-unsafe-static-mutable-borrows.rs	error: rust-js does not support `&mut` references to a `static mut` yet
 borrowck/call-and-ref-option-mutate.rs	error: rust-js does not support a `&mut` of this in a variable yet
-borrowck/issue-29166.rs	error: rust-js does not support calling `std::slice::<impl [T]>::into_vec` yet
 borrowck/issue-46095.rs	error: rust-js does not support assigning to this place yet
 borrowck/issue-51348-multi-ref-mut-in-guard.rs	error: rust-js does not support a `ref mut` bound at another place in each alternative of a `|` pattern yet
 borrowck/pointer-reassignment-after-deref-78192.rs	error: rust-js does not support values of type `*const u32` yet
@@ -242,7 +241,7 @@ threads-sendsync/send_str_treemap.rs	error: rust-js does not support values of t
 threads-sendsync/send-type-inference.rs	error: rust-js does not support a channel of a value with a destructor, `std::sync::mpsc::Sender<std::sync::mpsc::Sender<Command<K, V>>>`, yet
 threads-sendsync/sync-send-iterators-in-libcollections.rs	error: rust-js does not support calling `std::collections::BinaryHeap::<T, A>::drain` yet
 threads-sendsync/sync-send-iterators-in-libcore.rs	error: rust-js does not support calling `core::str::<impl str>::escape_debug` yet
-threads-sendsync/task-comm-16.rs	error: rust-js does not support calling `std::string::String::as_bytes` yet
+threads-sendsync/task-comm-16.rs	error: rust-js does not support a channel of a value with a destructor, `std::sync::mpsc::Sender<std::sync::mpsc::Sender<isize>>`, yet
 threads-sendsync/yield2.rs	error: rust-js does not support calling `std::thread::yield_now` yet
 traits/coercion.rs	error: rust-js does not support values of type `dyn std::io::Write` yet
 traits/default-method/skip-default-method-if-normalization-fails.rs	error: rust-js does not support `&mut` to a `Self` yet
