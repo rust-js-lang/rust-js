@@ -49,14 +49,12 @@ export function App() {
   const runs = useRef(0);
   const compiles = useRef(0);
   useEffect(() => {
-    const cancelled = { value: false };
-    const dropped = cancelled;
+    let cancelled = false;
     const stat = (label, value) => {
-      if (!dropped.value) {
+      if (!cancelled) {
         setStats((rows) => appended(rows, label, value));
       }
     };
-    const done = cancelled;
     (async () => {
       const loaded = await load(stat);
       let first;
@@ -66,9 +64,9 @@ export function App() {
       } else {
         first = undefined;
       }
-      if (first != null && !done.value) {
+      if (first != null && !cancelled) {
         const texts = await loadExample(first[0], first[2]);
-        if (!done.value) {
+        if (!cancelled) {
           setExample(first[0]);
           setProject(Project.of(first[1], texts));
           setLoaded(loaded);
@@ -77,7 +75,7 @@ export function App() {
       }
     })();
     return () => {
-      cancelled.value = true;
+      cancelled = true;
     };
   }, []);
   const live = () => source.current?.state;
