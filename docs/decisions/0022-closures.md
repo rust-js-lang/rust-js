@@ -52,6 +52,11 @@ Captures:
 - **No snapshot needed** when the capture is the variable's only use, and
   the closure isn't in a loop the variable was declared outside of. Nothing
   else can tell the difference then.
+- **Nor where nothing sets the variable after the closure is made**: no
+  change written after it, none in a loop around it, and none by the
+  closure, to its own copy. react.dev's LoadingOverlay sets `fadeTimeout`
+  before it makes its cleanup, which reads it. (Amended: a variable set
+  before the closure was copied too.)
 
 ## Why
 

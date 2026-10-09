@@ -213,9 +213,28 @@ pub(super) struct BodyFacts {
     /// The casts of an `f64` known to be a whole number in the integer's
     /// range, each the value as it is (`whole_casts`).
     pub(super) whole_casts: HashSet<ExprId>,
+    /// Where each variable is changed (`changes`), and where each loop is.
+    changed: HashMap<LocalVarId, Vec<Span>>,
+    loops: Vec<Span>,
 }
 
 impl BodyFacts {
+    /// Whether `var` may be changed after `at`: by a change written after
+    /// it, or one in a loop around it, which runs again after it.
+    /// Whether the body changes `var`, its own or what it captures.
+    pub(super) fn changes(&self, var: LocalVarId) -> bool {
+        self.changed.contains_key(&var)
+    }
+
+    pub(super) fn changed_after(&self, var: LocalVarId, at: Span) -> bool {
+        let at = at.source_callsite();
+        let changes = self.changed.get(&var).map_or(&[][..], Vec::as_slice);
+        changes.iter().any(|change| change.lo() > at.lo())
+            || (self.loops.iter())
+                .filter(|l| l.contains(at))
+                .any(|l| changes.iter().any(|change| l.contains(*change)))
+    }
+
     pub(super) fn collect<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Self {
         let query = BodyQuery { tcx, thir };
         let mut facts = Self {
@@ -223,6 +242,13 @@ impl BodyFacts {
             steady: steady_subjects(tcx, thir),
             in_bounds: known_in_bounds(tcx, thir),
             whole_casts: whole_casts(tcx, thir),
+            changed: changes(thir),
+            loops: thir
+                .exprs
+                .iter()
+                .filter(|e| matches!(e.kind, ExprKind::Loop { .. }))
+                .map(|e| e.span.source_callsite())
+                .collect(),
             ..Self::default()
         };
         for expr in thir.exprs.iter() {

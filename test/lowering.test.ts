@@ -2834,6 +2834,56 @@ pub fn second(names: &Vec<String>) -> &str {
   expect([lib.first([4, 5]), lib.second(["a", "b"])]).toEqual([4, "b"]);
 });
 
+// A closure copies a variable set again only where it may be set after the
+// closure is made: one set before it is read as it is, as react.dev's
+// LoadingOverlay reads `fadeTimeout` in its cleanup. One set after, or in
+// a loop around it, is copied where it's made, and so is one the closure changes.
+test("a closure copies only what may be set after it's made", async () => {
+  const dir = fixture("captured-after");
+  writeFileSync(join(dir, "lib.rs"), `pub fn before(start: u32) -> impl Fn() -> u32 {
+    let mut n = start;
+    if n > 3 {
+        n = 3;
+    }
+    move || n + 1
+}
+pub fn after(start: u32) -> u32 {
+    let mut n = start;
+    let f = move || n + 1;
+    n = 10;
+    f() + n
+}
+pub fn looped(xs: &[u32]) -> u32 {
+    let mut n = 0;
+    let mut fs = Vec::new();
+    for x in xs {
+        n = *x;
+        let f = move || n;
+        fs.push(f);
+    }
+    fs.iter().map(|f| f()).sum()
+}
+pub fn counted(start: u32) -> u32 {
+    let mut n = start;
+    let mut bump = move || {
+        n += 1;
+        n
+    };
+    bump();
+    bump();
+    n
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const body = (name: string) => js.slice(js.indexOf(`function ${name}(`), js.indexOf("\n}\n", js.indexOf(`function ${name}(`)));
+  expect(body("before")).not.toContain("n$1");
+  expect(body("after")).toContain("n$1");
+  expect(body("looped")).toContain("n$1");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.before(7)(), lib.after(1), lib.looped([4, 5]), lib.counted(5)]).toEqual([4, 12, 9, 5]);
+});
+
 // ADR 0298: an Option whose value is never falsy, an object, an array or a
 // function, is tested by its truth, as react.dev's Preview writes `{error &&
 // ..}`, `!error` and `rawError && rawError.message`; and `o == Some(true)` of

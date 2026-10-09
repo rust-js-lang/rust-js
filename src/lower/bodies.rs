@@ -355,7 +355,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let body: &'a Body<'tcx> = self.krate.closures[&closure.closure_id];
         let mut shadowed = Vec::new();
         for &upvar in closure.upvars.iter() {
-            if !self.needs_snapshot(upvar) {
+            if !self.needs_snapshot(upvar, &body.facts) {
                 continue;
             }
             // Since Rust 2021 a closure may capture part of a variable
@@ -660,7 +660,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Does capturing `upvar` need a snapshot? Only a by-value capture of a
     /// mutable variable does, and not when the capture is the variable's
     /// only use, outside any loop the variable isn't also in.
-    pub(super) fn needs_snapshot(&self, upvar: ExprId) -> bool {
+    pub(super) fn needs_snapshot(&self, upvar: ExprId, closure: &super::body_queries::BodyFacts) -> bool {
         let u = self.strip(upvar);
         if matches!(self.thir[u].kind, ExprKind::Borrow { .. }) {
             return false;
@@ -671,9 +671,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(var) = self.locals.vars.get(&id) else {
             return false;
         };
-        // A cell that's its function's variable is shared by what captures
-        // it, as the cell was (ADR 0287).
-        var.mutable && !self.only_use(u) && !self.krate.plain_cells.contains_key(&id)
+        // One nothing sets after the closure is made, nor the closure
+        // itself, reads the same: so a cell that's its function's variable,
+        // which only its `set` changes, is shared by what captures it, as
+        // the cell was (ADR 0287).
+        var.mutable
+            && !self.only_use(u)
+            && (self.body_facts.changed_after(id, self.thir[u].span) || closure.changes(id))
     }
 
     /// Is `e` its variable's only use, outside any loop the variable isn't

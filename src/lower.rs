@@ -1446,7 +1446,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ExprKind::Index { lhs, index } => self.is_simple(lhs) && self.is_simple(index),
             ExprKind::Match { .. } if let Some(awaited) = self.body_query().as_await(e) => self.is_simple(awaited),
             // Its body's statements go inside the arrow; only snapshots come first.
-            ExprKind::Closure(ref closure) => closure.upvars.iter().all(|&u| !self.needs_snapshot(u)),
+            ExprKind::Closure(ref closure) => {
+                let facts = &self.krate.closures[&closure.closure_id].facts;
+                closure.upvars.iter().all(|&u| !self.needs_snapshot(u, facts))
+            }
             ExprKind::Tuple { ref fields } | ExprKind::Array { ref fields } => {
                 fields.iter().all(|&f| self.is_simple(f))
             }

@@ -306,4 +306,20 @@ export const mutations: Mutation[] = [
     replace: "                if false && c.with == lo {\n",
     tests: ["test/lowering.test.ts", "-t", "whole number in range"],
   },
+  {
+    name: "snapshot-set-after",
+    breaks: "a variable set after a closure is made isn't copied, and the closure reads the new value",
+    file: "src/lower/body_queries.rs",
+    find: "        changes.iter().any(|change| change.lo() > at.lo())\n",
+    replace: "        false\n",
+    tests: ["test/lowering.test.ts", "-t", "a closure copies only what may be set"],
+  },
+  {
+    name: "snapshot-loop",
+    breaks: "a variable set in a loop around a closure isn't copied, and each closure reads the last value",
+    file: "src/lower/body_queries.rs",
+    find: "                .any(|l| changes.iter().any(|change| l.contains(*change)))\n",
+    replace: "                .any(|_| false)\n",
+    tests: ["test/lowering.test.ts", "-t", "a closure copies only what may be set"],
+  },
 ];
