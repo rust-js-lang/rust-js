@@ -3,23 +3,17 @@
 function describe(shape) {
   let text;
   if (shape.TAG === "Line" && shape._0 > 10) {
-    const n = shape._0;
-    text = `long ${n}`;
+    text = `long ${shape._0}`;
   } else if (shape.TAG === "Line" && shape._0 < 0) {
-    let n$1 = shape._0;
-    n$1 = -n$1 | 0;
-    text = `backwards ${n$1}`;
+    let n = shape._0;
+    n = -n | 0;
+    text = `backwards ${n}`;
   } else if (shape.TAG === "Line") {
-    const n$2 = shape._0;
-    text = `line ${n$2}`;
+    text = `line ${shape._0}`;
   } else if (shape.TAG === "Rect" && shape.w === shape.h) {
-    const w = shape.w;
-    const h = shape.h;
-    text = `square ${w}`;
+    text = `square ${shape.w}`;
   } else if (shape.TAG === "Rect") {
-    const w$1 = shape.w;
-    const h$1 = shape.h;
-    text = `rect ${w$1}x${h$1}`;
+    text = `rect ${shape.w}x${shape.h}`;
   } else {
     text = "dot";
   }

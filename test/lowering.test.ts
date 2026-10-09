@@ -2350,3 +2350,120 @@ pub fn shared<T: Copy>(value: T) -> T {
     "--", "--crate-name", "shared", `--emit=metadata=${join(dir, "library", "libshared.rmeta")}`]);
   expect(readFileSync(join(dir, "library", "lib.js"), "utf8")).toContain("export function shared(value, TCopy) {");
 });
+
+// ADR 0290: what a pattern binds of a variable that's set again later names
+// it in place while nothing changes it: react.dev's Preview clears
+// `rawError` after testing what it holds, `if (rawError &&
+// rawError.message === ..) { rawError = null; }`. Changed while what's bound
+// is still read, by a loop or a closure, what's bound is a `const`.
+test("a binding names a variable set again only after its last use", async () => {
+  const dir = fixture("steady-bindings");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+pub struct Failure {
+    pub message: String,
+}
+
+pub struct Counter {
+    pub hits: Cell<u32>,
+}
+
+pub fn cleared(error: Option<&Failure>) -> bool {
+    let mut raw = error;
+    if let Some(e) = raw
+        && e.message == "noisy"
+    {
+        raw = None;
+    }
+    if let Some(e) = raw
+        && e.message.contains("Example Error:")
+    {
+        raw = None;
+    }
+    raw.is_none()
+}
+
+pub fn read_after(error: Option<&Failure>) -> usize {
+    let mut raw = error;
+    if let Some(e) = raw {
+        raw = None;
+        return e.message.len() + raw.is_none() as usize;
+    }
+    0
+}
+
+pub fn taken(error: Option<&Failure>) -> usize {
+    let mut raw = error;
+    if let Some(e) = raw {
+        raw.take();
+        return e.message.len() + raw.is_none() as usize;
+    }
+    0
+}
+
+pub fn looped(error: Option<&Failure>) -> usize {
+    let mut raw = error;
+    let mut n = 0;
+    if let Some(e) = raw {
+        for _ in 0..2 {
+            n += e.message.len();
+            raw = None;
+        }
+    }
+    n + raw.is_none() as usize
+}
+
+pub fn captured(error: Option<&Failure>) -> usize {
+    let mut raw = error;
+    if let Some(e) = raw {
+        let length = || e.message.len();
+        raw = None;
+        return length() + raw.is_none() as usize;
+    }
+    0
+}
+
+pub fn bumped(start: Option<u32>) -> u32 {
+    let mut raw = start;
+    if let Some(n) = raw {
+        if let Some(ref mut m) = raw {
+            *m += 1;
+        }
+        return n + raw.unwrap_or(0);
+    }
+    0
+}
+
+pub fn bumped_else(start: Option<u32>) -> u32 {
+    let mut raw = start;
+    if let Some(n) = raw {
+        let Some(ref mut m) = raw else { return 0 };
+        *m += 1;
+        return n + raw.unwrap_or(0);
+    }
+    0
+}
+
+pub fn lent(a: &Counter, b: &Counter) -> u32 {
+    let mut raw = Some(a);
+    if let Some(c) = raw {
+        let hits = &c.hits;
+        raw = Some(b);
+        hits.set(5);
+        return a.hits.get() * 10 + raw.map_or(0, |r| r.hits.get());
+    }
+    0
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`if (raw != null && raw.message === "noisy") {`);
+  expect(js).toContain(`if (raw != null && raw.message.includes("Example Error:")) {`);
+  expect(js.match(/const e\b/g)?.length).toBe(4);
+  expect(js).toContain("const c = raw;");
+  expect(js.match(/const n = raw;/g)?.length).toBe(2);
+  const lib = await import(join(dir, "lib.js"));
+  const failure = { message: "noisy" };
+  expect([lib.cleared(failure), lib.cleared({ message: "kept" }), lib.read_after(failure), lib.taken(failure), lib.looped(failure), lib.captured(failure), lib.bumped(1), lib.bumped_else(1), lib.lent({ hits: 0 }, { hits: 0 })])
+    .toEqual([true, false, 6, 6, 11, 6, 3, 3, 50]);
+});

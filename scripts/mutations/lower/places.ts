@@ -190,4 +190,12 @@ export const mutations: Mutation[] = [
     replace: "        false && (0..i128::from(len)).contains(&i)",
     tests: ["test/compiler.test.ts", "-t", "the report's JS: function values, case mapping, and plain array reads"],
   },
+  {
+    name: "steady-subject-not-in-place",
+    breaks: "a variable set again is never named in place by a pattern, so `if (raw != null && raw.message === ..)` binds `const e = raw`",
+    file: "src/lower/places.rs",
+    find: "        let steady = !mutable || self.body_facts.steady.contains(&self.strip(e));",
+    replace: "        let steady = !mutable;",
+    tests: ["test/lowering.test.ts", "-t", "a binding names a variable set again"],
+  },
 ];

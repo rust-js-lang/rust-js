@@ -10,6 +10,7 @@ use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::{self, ExprId, ExprKind, LocalVarId, Pat, PatKind, Thir};
 use rustc_middle::ty::adjustment::PointerCoercion;
 use rustc_middle::ty::{self, TyCtxt};
+use rustc_span::Span;
 use rustc_span::def_id::{DefId, LocalModId};
 use std::collections::{HashMap, HashSet};
 
@@ -198,6 +199,9 @@ pub(super) struct BodyFacts {
     /// What a borrow lends, `g` of `&mut g`, as a closure's call does: read
     /// there, it's not copied.
     pub(super) lent: HashSet<ExprId>,
+    /// The variables set again that a pattern takes apart in place
+    /// (`steady_subjects`), by their reads there.
+    pub(super) steady: HashSet<ExprId>,
 }
 
 impl BodyFacts {
@@ -205,6 +209,7 @@ impl BodyFacts {
         let query = BodyQuery { tcx, thir };
         let mut facts = Self {
             stepped: stepped_locals(tcx, thir),
+            steady: steady_subjects(tcx, thir),
             ..Self::default()
         };
         for expr in thir.exprs.iter() {
@@ -225,6 +230,170 @@ impl BodyFacts {
         }
         facts
     }
+}
+
+/// The reads of a variable set again that an `if let` or a `match` takes
+/// apart, `raw` of `if let Some(e) = raw`, where nothing changes it while what the pattern
+/// binds is read, so that names it in place (ADR 0290). A change counts once
+/// it may come after the pattern's test and before a read of what it bound:
+/// not one earlier in the body, nor one in a loop the pattern is in too, but
+/// any after a closure's read or a `Cell` lent, which read the variable
+/// when they're called.
+pub(super) fn steady_subjects<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<ExprId> {
+    let at = |span: Span| span.source_callsite();
+    let query = BodyQuery { tcx, thir };
+    // What changes each variable: set, or lent as `&mut`, in place or in part.
+    // The variable a place is in, `e` of `e.message`.
+    let root = |mut e: ExprId| loop {
+        match thir[strip(thir, e)].kind {
+            ExprKind::Field { lhs, .. } | ExprKind::Deref { arg: lhs } => e = lhs,
+            _ => break strip(thir, e),
+        }
+    };
+    let changed_root = |mut e: ExprId| loop {
+        match thir[strip(thir, e)].kind {
+            ExprKind::VarRef { id } => break Some(id),
+            ExprKind::Field { lhs, .. } | ExprKind::Index { lhs, .. } | ExprKind::Deref { arg: lhs } => e = lhs,
+            _ => break None,
+        }
+    };
+    let mut changes: HashMap<LocalVarId, Vec<Span>> = HashMap::new();
+    let mut later: HashSet<ExprId> = HashSet::new();
+    let mut loops = Vec::new();
+    let mut subjects: Vec<(ExprId, LocalVarId, Span, Vec<&Pat<'tcx>>)> = Vec::new();
+    // A variable, or a field of one, whose test comes where it's read.
+    let subject = |scrutinee: ExprId| {
+        let scrutinee = strip(thir, scrutinee);
+        let mut root = scrutinee;
+        while let ExprKind::Field { lhs, .. } = thir[root].kind {
+            root = strip(thir, lhs);
+        }
+        match thir[root].kind {
+            ExprKind::VarRef { id } => Some((scrutinee, id, at(thir[scrutinee].span))),
+            _ => None,
+        }
+    };
+    for (id, expr) in thir.exprs.iter_enumerated() {
+        match expr.kind {
+            ExprKind::Assign { lhs, .. } | ExprKind::AssignOp { lhs, .. } => {
+                if let Some(var) = changed_root(lhs) {
+                    changes.entry(var).or_default().push(at(expr.span));
+                }
+            }
+            ExprKind::Borrow { borrow_kind, arg } => {
+                if matches!(borrow_kind, BorrowKind::Mut { .. })
+                    && let Some(var) = changed_root(arg)
+                {
+                    changes.entry(var).or_default().push(at(expr.span));
+                }
+                // A `Cell` lent of a field is a handle on the field, which
+                // reads its place when it's read (ADR 0288).
+                if matches!(thir[arg].ty.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Cell)) {
+                    later.insert(root(arg));
+                }
+            }
+            ExprKind::RawBorrow {
+                mutability: Mutability::Mut,
+                arg,
+            } => {
+                if let Some(var) = changed_root(arg) {
+                    changes.entry(var).or_default().push(at(expr.span));
+                }
+            }
+            ExprKind::Closure(ref closure) => {
+                for &upvar in &closure.upvars {
+                    let upvar = match thir[strip(thir, upvar)].kind {
+                        ExprKind::Borrow { arg, .. } => arg,
+                        _ => upvar,
+                    };
+                    later.insert(root(upvar));
+                }
+            }
+            ExprKind::Loop { .. } => loops.push(at(expr.span)),
+            ExprKind::Let {
+                expr: scrutinee,
+                ref pat,
+            } => {
+                if let Some((scrutinee, var, site)) = subject(scrutinee) {
+                    subjects.push((scrutinee, var, site, vec![&**pat]));
+                }
+            }
+            ExprKind::Match {
+                scrutinee, ref arms, ..
+            } if query.as_for(id).is_none() => {
+                if let Some((scrutinee, var, site)) = subject(scrutinee) {
+                    subjects.push((
+                        scrutinee,
+                        var,
+                        site,
+                        arms.iter().map(|&arm| &*thir[arm].pattern).collect(),
+                    ));
+                }
+            }
+            _ => {}
+        }
+    }
+    // Where each variable is read, and whether it's read later too.
+    let mut reads: HashMap<LocalVarId, Vec<(Span, bool)>> = HashMap::new();
+    for (id, expr) in thir.exprs.iter_enumerated() {
+        if let ExprKind::VarRef { id: var } = expr.kind {
+            reads.entry(var).or_default().push((at(expr.span), later.contains(&id)));
+        }
+    }
+    // A `ref mut` binding changes the variable it takes apart, a `let`'s too.
+    let lets = thir.stmts.iter().filter_map(|stmt| match stmt.kind {
+        thir::StmtKind::Let {
+            ref pattern,
+            initializer: Some(init),
+            ..
+        } => subject(init).map(|(_, var, _)| (var, &**pattern)),
+        _ => None,
+    });
+    let taken_apart = subjects
+        .iter()
+        .flat_map(|(_, var, _, pats)| pats.iter().map(|&pat| (*var, pat)));
+    for (var, pat) in taken_apart.chain(lets).collect::<Vec<_>>() {
+        pat.walk_always(|p| {
+            if let PatKind::Binding {
+                mode: BindingMode(ByRef::Yes(_, Mutability::Mut), _),
+                ..
+            } = p.kind
+            {
+                changes.entry(var).or_default().push(at(p.span));
+            }
+        });
+    }
+    let mut steady = HashSet::new();
+    for (scrutinee, var, site, pats) in subjects {
+        let changes: Vec<Span> = changes
+            .get(&var)
+            .into_iter()
+            .flatten()
+            .copied()
+            .filter(|change| change.lo() >= site.hi())
+            .collect();
+        let mut uses: Vec<(Span, bool)> = Vec::new();
+        for pat in &pats {
+            pat.walk_always(|p| {
+                if let PatKind::Binding { var, .. } = p.kind {
+                    uses.extend(reads.get(&var).into_iter().flatten().copied());
+                }
+            });
+        }
+        let changed_while_read = changes.iter().any(|change| {
+            uses.iter().any(|&(read, later)| {
+                later
+                    || change.lo() < read.hi()
+                    || loops
+                        .iter()
+                        .any(|l: &Span| l.contains(*change) && l.contains(read) && !l.contains(site))
+            })
+        });
+        if !changed_while_read {
+            steady.insert(scrutinee);
+        }
+    }
+    steady
 }
 
 /// The locals a `#[rust_js::nullable]` field is bound to, by value and not

@@ -53,8 +53,7 @@ function main() {
   } else {
     console.log("other");
   }
-  const v = r;
-  v.value = (v.value + 1) | 0;
+  r.value = (r.value + 1) | 0;
   console.log(`${m}`);
   let [i, j, k] = [3, 1, 2];
   const refs = [

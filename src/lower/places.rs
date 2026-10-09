@@ -311,7 +311,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// still names. So the variable must also be `Copy` (read, never moved:
     /// the read copies it if needed) or hold nothing changed in place. Nor
     /// is one reached through a `&mut`, `e.n` of an `e: &mut N`: what's
-    /// done meanwhile changes it through the same reference.
+    /// done meanwhile changes it through the same reference. A variable set
+    /// again is, where a pattern takes it apart and nothing sets it while
+    /// what that binds is read (ADR 0290).
     pub(super) fn stable_place(&self, e: ExprId) -> Option<Expr> {
         let (place, mutable) = self.place(e)?;
         let mut root = self.strip(e);
@@ -328,7 +330,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let ty = self.thir[root].ty;
         let unchanging = self.is_copy(ty) || !self.contains_mutated(ty);
-        (!mutable && unchanging).then_some(place)
+        let steady = !mutable || self.body_facts.steady.contains(&self.strip(e));
+        (steady && unchanging).then_some(place)
     }
 
     /// Where a reference made by a call points: `c.borrow_mut()` points at
