@@ -56,7 +56,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if self.is_vec_like(ty) => {
                 self.vec_changed(ty) || self.needs_clone_in(args.type_at(0), seen)
             }
-            ty::Adt(..) if std(StdItem::Cell) || std(StdItem::RefCell) || std(StdItem::Atomic) => true,
+            ty::Adt(..)
+                if std(StdItem::Cell) || std(StdItem::RefCell) || std(StdItem::Atomic) || std(StdItem::OnceCell) =>
+            {
+                true
+            }
             // A map or a set changes in place (ADR 0059).
             ty::Adt(..) if self.is_map(ty) => true,
             ty::Adt(..) if self.is_rc(ty) || self.is_lang_adt(ty, LangItem::String) || self.is_js_object(ty) => false,
@@ -223,6 +227,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if ty.is_box() => self.clone_value(place, args.type_at(0), span, out),
             ty::Adt(_, args) if std(StdItem::Cell) || std(StdItem::RefCell) => {
                 let value = self.clone_value(Expr::member(place, "value"), args.type_at(0), span, out)?;
+                Ok(Expr::object(vec![Prop::Field("value".into(), value)]))
+            }
+            // A `OnceCell` holds an `Option` (ADR 0317).
+            ty::Adt(_, args) if std(StdItem::OnceCell) => {
+                let option = Ty::new_option(self.tcx, args.type_at(0));
+                let value = self.clone_value(Expr::member(place, "value"), option, span, out)?;
                 Ok(Expr::object(vec![Prop::Field("value".into(), value)]))
             }
             // `new Map(m)`, cloning each value that needs it, and each key: a
@@ -468,6 +478,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::new_(class, Vec::new())
             }
             ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) => self.default_value(args.type_at(0), span)?,
+            ty::Adt(..) if std(StdItem::OnceCell) => Expr::object(vec![Prop::Field("value".into(), Expr::undefined())]),
             ty::Adt(_, args) if std(StdItem::Cell) || std(StdItem::RefCell) || std(StdItem::Atomic) => Expr::object(
                 vec![Prop::Field("value".into(), self.default_value(args.type_at(0), span)?)],
             ),
@@ -663,6 +674,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::member(a, "value"),
                 Expr::member(b, "value"),
                 args.type_at(0),
+                span,
+                out,
+            ),
+            ty::Adt(_, args) if std(StdItem::OnceCell) => self.eq_value(
+                Expr::member(a, "value"),
+                Expr::member(b, "value"),
+                Ty::new_option(self.tcx, args.type_at(0)),
                 span,
                 out,
             ),

@@ -472,28 +472,28 @@
 # Cow 0 of 2
 - Cow::into_owned
 - Cow::to_mut
-# OnceCell 0 of 7
-- OnceCell::get
-- OnceCell::get_mut
-- OnceCell::get_or_init
-- OnceCell::into_inner
-- OnceCell::new
-- OnceCell::set
-- OnceCell::take
+# OnceCell 7 of 7
++ OnceCell::get
++ OnceCell::get_mut
++ OnceCell::get_or_init
++ OnceCell::into_inner
++ OnceCell::new
++ OnceCell::set
++ OnceCell::take
 # LazyCell 0 of 5
 - LazyCell::force
 - LazyCell::force_mut
 - LazyCell::get
 - LazyCell::get_mut
 - LazyCell::new
-# OnceLock 0 of 8
-- OnceLock::get
-- OnceLock::get_mut
-- OnceLock::get_or_init
-- OnceLock::into_inner
-- OnceLock::new
-- OnceLock::set
-- OnceLock::take
+# OnceLock 7 of 8
++ OnceLock::get
++ OnceLock::get_mut
++ OnceLock::get_or_init
++ OnceLock::into_inner
++ OnceLock::new
++ OnceLock::set
++ OnceLock::take
 - OnceLock::wait
 # LazyLock 0 of 5
 - LazyLock::force

@@ -390,4 +390,12 @@ export const mutations: Mutation[] = [
     replace: "        if false && known == Std::OptionFlatten\n",
     tests: ["test/lowering.test.ts","-t","flatten of a read"],
   },
+  {
+    name: "once-boxed-get-refused",
+    breaks: "`get` of a `OnceCell<()>` is refused",
+    file: "src/lower/calls.rs",
+    find: "                    | Std::Once(OnceOp::Get | OnceOp::Take)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "once_cells"],
+  },
 ];

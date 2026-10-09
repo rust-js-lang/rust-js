@@ -1221,6 +1221,25 @@ export function $cellReplace(cell, value) {
   return previous;
 }
 
+// A `OnceCell`'s or `OnceLock`'s `set(value)`: `Ok`, holding `Some(value)`,
+// or `Err(value)` if it holds one already.
+export function $onceSet(cell, value) {
+  if (cell.value !== undefined) return { TAG: "Err", _0: value };
+  cell.value = $some(value);
+  return { TAG: "Ok", _0: undefined };
+}
+
+// A `OnceCell`'s or `OnceLock`'s `get_or_init(f)`: what it holds, made by
+// `f` the first time, which may not set it itself.
+export function $getOrInit(cell, f) {
+  if (cell.value === undefined) {
+    const value = f();
+    if (cell.value !== undefined) throw new Error("reentrant init");
+    cell.value = $some(value);
+  }
+  return $someValue(cell.value);
+}
+
 // `x.clamp(min, max)` of an integer, a number or a BigInt: `min` or `max` if
 // it's past either. Bounds the wrong way round panic as std's integers do,
 // each shown as `{:?}` shows it, which is its digits.

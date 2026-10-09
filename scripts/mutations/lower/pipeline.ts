@@ -226,4 +226,12 @@ export const mutations: Mutation[] = [
     replace: "                stmt.kind = StmtKind::Function(Box::new(function));\n",
     tests: ["test/lowering.test.ts", "-t", "local function there"],
   },
+  {
+    name: "once-static-refused",
+    breaks: "a `static` `OnceLock` is refused",
+    file: "src/lower/pipeline.rs",
+    find: "                && (super::copies::shareable(tcx, ty) || once)\n",
+    replace: "                && super::copies::shareable(tcx, ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "once_cells"],
+  },
 ];

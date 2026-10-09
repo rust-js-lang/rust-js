@@ -5,6 +5,7 @@
 use super::bindings::{self};
 use super::fn_def;
 use super::std_types::map::{MapOp, Part};
+use super::std_types::once::OnceOp;
 use super::{FnCx, R, Std, camel_case};
 use crate::js::{Expr, Prop, Stmt, StmtKind};
 use crate::runtime::Helper;
@@ -255,9 +256,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return false;
         }
         match self.makes_items(self.thir[e].ty, generic_args, args) {
+            // A `OnceCell`'s `get_mut()` gives the cell itself (ADR 0317).
             Some(_) => self
                 .std_fn(fun)
-                .is_some_and(|known| self.handle_helper(known, args).is_some()),
+                .is_some_and(|known| self.handle_helper(known, args).is_some() || known == Std::Once(OnceOp::GetMut)),
             None => args.first().is_some_and(|&a| self.is_handle(a)),
         }
     }

@@ -9,6 +9,7 @@ use super::representation::Num;
 use super::std_types::heap::HeapOp;
 use super::std_types::map::{MapOp, Part};
 use super::std_types::number::{DurationOp, NumOp};
+use super::std_types::once::OnceOp;
 use super::std_types::range::{RangeKind, RangeOp};
 use super::std_types::text::{StringEdit, TextOp};
 use rustc_ast::Mutability;
@@ -245,6 +246,8 @@ pub(super) enum Std {
     Number(NumOp),
     /// A `BinaryHeap`'s own methods (ADR 0068).
     Heap(HeapOp),
+    /// A `OnceCell`'s or `OnceLock`'s (ADR 0317).
+    Once(OnceOp),
     /// `serde_json::to_string(&v)` (false) and `to_string_pretty` (ADR 0077).
     ToJson(bool),
     /// `serde_json::from_str::<T>(s)` (ADR 0078).
@@ -1087,6 +1090,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let result = self.is_std_adt(owner, sym::Result);
         let ordering = self.is_lang_adt(owner, LangItem::OrderingEnum);
         let local_key = adt("LocalKey");
+        let once = self.is_std_type(owner, StdItem::OnceCell);
         let arguments = self.is_lang_adt(owner, LangItem::FormatArguments);
         let argument = self.is_lang_adt(owner, LangItem::FormatArgument);
         let map = adt("HashMap") || adt("BTreeMap") || self.is_json_map(owner);
@@ -1248,6 +1252,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "fetch_max" if adt("Atomic") => Std::AtomicFetchMax(true),
             "fetch_min" if adt("Atomic") => Std::AtomicFetchMax(false),
             "compare_exchange" | "compare_exchange_weak" if adt("Atomic") => Std::AtomicCompareExchange,
+            "new" if once => Std::Once(OnceOp::New),
+            "get" | "into_inner" if once => Std::Once(OnceOp::Get),
+            "get_mut" if once => Std::Once(OnceOp::GetMut),
+            "set" if once => Std::Once(OnceOp::Set),
+            "get_or_init" if once => Std::Once(OnceOp::GetOrInit),
+            "take" if once => Std::Once(OnceOp::Take),
             "new" if adt("Vec") => Std::VecNew,
             "push" if adt("Vec") => Std::Push,
             // JS's `pop()` gives `undefined` when empty: `None` (ADR 0030).
@@ -1497,7 +1507,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// Is `ty` std's `item`?
     pub(super) fn is_std_type(&self, ty: Ty<'tcx>, item: StdItem) -> bool {
-        self.is_std_adt(ty, item.name())
+        matches!(ty.kind(), ty::Adt(adt, _) if is_std_def(self.tcx, adt.did(), item))
     }
 
     pub(super) fn is_std_adt(&self, ty: Ty<'tcx>, name: Symbol) -> bool {
@@ -2231,6 +2241,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             || ["Cell", "RefCell", "Atomic", "Mutex", "RwLock"]
                 .into_iter()
                 .any(|name| self.is_std_adt(ty, Symbol::intern(name)))
+            || self.is_std_type(ty, StdItem::OnceCell)
             || self.is_vec_like(ty)
     }
 
@@ -3153,6 +3164,8 @@ pub(crate) enum StdItem {
     Iterator,
     LocalKey,
     MaybeUninit,
+    /// `OnceCell` or `OnceLock`, which have no diagnostic items.
+    OnceCell,
     Ord,
     PhantomData,
     RefCell,
@@ -3191,6 +3204,7 @@ impl StdItem {
             StdItem::Iterator => sym::Iterator,
             StdItem::LocalKey => Symbol::intern("LocalKey"),
             StdItem::MaybeUninit => Symbol::intern("MaybeUninit"),
+            StdItem::OnceCell => Symbol::intern("OnceCell"),
             StdItem::Ord => sym::Ord,
             StdItem::PhantomData => Symbol::intern("PhantomData"),
             StdItem::RefCell => Symbol::intern("RefCell"),
@@ -3333,7 +3347,18 @@ pub(super) fn is_cell_get(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 }
 
 pub(crate) fn is_std_def(tcx: TyCtxt<'_>, id: DefId, item: StdItem) -> bool {
-    tcx.is_diagnostic_item(item.name(), id)
+    match item {
+        // Known by its crate and name: `core`'s `OnceCell`, `std`'s `OnceLock`.
+        StdItem::OnceCell => {
+            tcx.def_kind(id) == DefKind::Struct
+                && match tcx.item_name(id).as_str() {
+                    "OnceCell" => tcx.crate_name(id.krate) == sym::core,
+                    "OnceLock" => tcx.crate_name(id.krate) == sym::std,
+                    _ => false,
+                }
+        }
+        _ => tcx.is_diagnostic_item(item.name(), id),
+    }
 }
 
 /// Std's `item`, which every std has: one of `core`'s, which a `#![no_std]`

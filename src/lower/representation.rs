@@ -174,7 +174,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `dyn Iterator` is a JS iterator, which steps itself.
             || self.recognition().is_dyn_iter(ty)
             || ty.is_array()
-            || [StdItem::Cell, StdItem::RefCell, StdItem::Atomic].into_iter().any(|item| self.is_std_type(ty, item))
+            || [StdItem::Cell, StdItem::RefCell, StdItem::Atomic, StdItem::OnceCell]
+                .into_iter()
+                .any(|item| self.is_std_type(ty, item))
             || self.is_vec_like(ty)
             || self.is_map(ty)
             // A `dyn` of the crate's trait is its pair (ADR 0049): a `&mut` to

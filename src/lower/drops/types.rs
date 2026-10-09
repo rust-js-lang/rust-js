@@ -343,7 +343,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                     // A std type that drops what it holds its own way: an
                     // `Rc` when its last clone goes, a map its entries. A `Cell`
                     // drops the old value when it's set.
-                    _ if own.is_some() || std(StdItem::Cell) || std(StdItem::RefCell) => {
+                    _ if own.is_some() || std(StdItem::Cell) || std(StdItem::RefCell) || std(StdItem::OnceCell) => {
                         match all(self, &mut args.types(), walk) {
                             Drops::Nothing => Drops::Nothing,
                             _ => Drops::Unsupported(ty, "a std type holding a value with a destructor"),

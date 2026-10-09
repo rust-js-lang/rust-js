@@ -1258,6 +1258,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if std(StdItem::Atomic) => {
                 self.debug_string_with(Expr::member(value, "value"), args.type_at(0), span, pretty)
             }
+            // `OnceCell(1)`, or `OnceCell(<uninit>)` where it holds none.
+            ty::Adt(adt, args) if std(StdItem::OnceCell) => {
+                let name = self.tcx.item_name(adt.did());
+                let item = args.type_at(0);
+                let inside = if self.boxed_payload(item) {
+                    self.some_value(Expr::var("value"))
+                } else {
+                    Expr::var("value")
+                };
+                let shown = self.debug_string_with(inside, item, span, pretty)?;
+                let none = Expr::bin(Op::LooseEq, Expr::var("value"), Expr::null());
+                let shown = Expr::cond(none, Expr::str("<uninit>"), shown);
+                let plain = join(vec![Expr::str(format!("{name}(")), shown.clone(), Expr::str(")")]);
+                let shown = self.pretty_or(pretty, plain, &format!("{name}("), Expr::array(vec![shown]), ")");
+                let f = Expr::arrow(
+                    vec!["value".into()],
+                    vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
+                );
+                Ok(self.applied(f, Expr::member(value, "value")))
+            }
             ty::Adt(_, args) if std(StdItem::Cell) || std(StdItem::RefCell) => {
                 let name = if std(StdItem::Cell) { "Cell" } else { "RefCell" };
                 let shown = self.debug_string_with(Expr::member(value, "value"), args.type_at(0), span, pretty)?;
