@@ -673,3 +673,36 @@ pub fn plain() -> String {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.page("x"), lib.escaped("x"), lib.raw("x")]).toEqual(["<p>\nx\n</p>", "<p>\nx\n</p>", '<a href="x">\nx\n</a>']);
 });
+
+// ADR 0031: a constant borrowed, `&XS`, is the one there is, as nothing can
+// change it through a shared reference, a library's too (ADR 0100); one
+// used by value, which may be, is copied.
+test("a constant borrowed is the one there is, a library's too", async () => {
+  const dir = fixture("borrowed-const");
+  writeFileSync(join(dir, "lib.rs"), `pub mod files {
+    pub const XS: [&str; 2] = ["a", "b"];
+}
+
+use files::XS;
+
+pub fn has(x: &str) -> bool {
+    XS.contains(&x)
+}
+
+pub fn changed() -> (&'static str, &'static str) {
+    let mut copy = XS;
+    copy[0] = "z";
+    (copy[0], XS[0])
+}
+
+pub fn most(x: u32) -> bool {
+    [x].contains(&u32::MAX)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--library", "--manifest", join(dir, "manifest.json")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return XS.includes(x);");
+  expect(js).toContain("XS.slice()");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.has("b"), lib.has("c"), lib.changed(), lib.most(4294967295)]).toEqual([true, false, ["z", "a"], true]);
+});

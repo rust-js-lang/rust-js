@@ -94,3 +94,9 @@ export function moved(dx) {
   are their value where they're used (ADR 0064).
 - Not yet: `const` blocks. `static`s came later (ADR 0096), and a trait's
   associated constants (ADR 0106).
+- **A constant borrowed, `&XS`, is the one there is**: nothing can change
+  it through a shared reference, in this crate or another, so
+  `XS.contains(&x)` is `XS.includes(x)`, not a copy of it first. One used
+  by value, which may be changed, is copied still. (Amended: in a library,
+  whose consumers might change an array, every use was a copy, `XS.slice()`,
+  as react.dev's DownloadButton found.)

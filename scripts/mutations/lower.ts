@@ -3,6 +3,22 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "borrowed-const-copied",
+    breaks: "`&XS` of a constant is a copy of it, `XS.slice()`, where nothing can change it",
+    file: "src/lower.rs",
+    find: "            } if let ExprKind::NamedConst { def_id, .. } = self.thir[self.strip(arg)].kind\n",
+    replace: "            } if false && let ExprKind::NamedConst { def_id, .. } = self.thir[self.strip(arg)].kind\n",
+    tests: ["test/lowering.test.ts", "-t", "a constant borrowed is the one there is"],
+  },
+  {
+    name: "borrowed-const-of-any-crate",
+    breaks: "`&u32::MAX`, std's, is taken as a constant of the crate's, a name it has none of",
+    file: "src/lower.rs",
+    find: "                && self.krate.fns.contains_key(&def_id)\n                && self.thir[arg].ty.is_freeze(self.tcx, self.typing_env) =>",
+    replace: "                && self.thir[arg].ty.is_freeze(self.tcx, self.typing_env) =>",
+    tests: ["test/lowering.test.ts", "-t", "a constant borrowed is the one there is"],
+  },
+  {
     name: "tagged-variant-made-with-tag",
     breaks: "a discriminated union's variant is made `{ TAG: \"fulfilled\", value }`",
     file: "src/lower.rs",

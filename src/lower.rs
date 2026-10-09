@@ -835,6 +835,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 self.read(self.strip_refs(arg), out)
             }
+            // `&XS` of a constant of ours: the one there is, as nothing can
+            // change it through a shared reference, in this crate or another
+            // (ADR 0031): `XS.includes(x)`, not a copy of it first.
+            ExprKind::Borrow {
+                borrow_kind: BorrowKind::Shared,
+                arg,
+            } if let ExprKind::NamedConst { def_id, .. } = self.thir[self.strip(arg)].kind
+                && self.krate.fns.contains_key(&def_id)
+                && self.thir[arg].ty.is_freeze(self.tcx, self.typing_env) =>
+            {
+                Ok(self.fn_ref(def_id))
+            }
             ExprKind::Borrow {
                 borrow_kind: BorrowKind::Shared,
                 arg,
