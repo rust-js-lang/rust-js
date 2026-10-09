@@ -11,9 +11,10 @@ if (files.some(file => file.startsWith("-"))) {
   process.exit(1);
 }
 
-function run(command: string[], input?: string): string {
+function run(command: string[], input?: string, env: Record<string, string | undefined> = process.env): string {
   const result = Bun.spawnSync(command, {
     cwd: root,
+    env,
     stdin: input === undefined ? "ignore" : Buffer.from(input),
     stdout: "pipe",
     stderr: "pipe",
@@ -34,7 +35,9 @@ try {
   // The compiler given, as an installed one is qualified with (ADR 0094),
   // or this checkout's, built first.
   const given = process.env.RUST_JS_COMPILER;
-  if (!given) run(["cargo", "build", "--locked", "--quiet"]);
+  // As a shell builds it, with `.cargo/config.toml`'s `RUSTC_BOOTSTRAP`,
+  // not a test's `.env.test`'s, which would rebuild what the tests built.
+  if (!given) run(["cargo", "build", "--locked", "--quiet"], undefined, { ...process.env, RUSTC_BOOTSTRAP: undefined });
   const compiler = given ? resolve(given) : resolve(root, "target/debug/rust-js");
   const changed: [string, string][] = [];
   for (const file of [...new Set(files)].sort()) {
