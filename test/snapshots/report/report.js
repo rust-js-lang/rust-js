@@ -69,11 +69,12 @@ function parse_row(line) {
 }
 
 function capitalize(s) {
-  return Array.from(s)
-    .slice(0, 1)
-    .flatMap((c) => Array.from(c.toUpperCase()))
-    .concat(Array.from(s).slice(1))
-    .join("");
+  return [
+    ...Array.from(s)
+      .slice(0, 1)
+      .flatMap((c) => Array.from(c.toUpperCase())),
+    ...Array.from(s).slice(1),
+  ].join("");
 }
 
 function grade(score, age) {

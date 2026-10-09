@@ -178,4 +178,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "boxed_array_iter"]
   },
+  {
+    name: "loop-end-always-const",
+    breaks: "`for i in 0..args.len()` of an `args` nothing changes is `const end`, not `i < args.length`",
+    file: "src/lower/loops.rs",
+    find: " || self.unchanged_length(end) {\n",
+    replace: " {\n",
+    tests: ["test/lowering.test.ts","-t","Console's loops"],
+  },
+  {
+    name: "loop-end-changed-inline",
+    breaks: "a range's end of a length its loop changes is read again each time round, where Rust reads it once",
+    file: "src/lower/loops.rs",
+    find: "                    return !self.body_facts.changes(id);\n",
+    replace: "                    let _ = id;\n                    return true;\n",
+    tests: ["test/lowering.test.ts","-t","Console's loops"],
+  },
 ];

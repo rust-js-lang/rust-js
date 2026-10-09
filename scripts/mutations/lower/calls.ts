@@ -382,4 +382,12 @@ export const mutations: Mutation[] = [
     replace: "            let export = if false && default {\n",
     tests: ["test/bindings.test.ts", "-t", "js::import! loads a module"],
   },
+  {
+    name: "flattened-read-boxed",
+    breaks: "`args.pop_front().flatten()` of items that may be `None` is refused, not `args.shift()`",
+    file: "src/lower/calls.rs",
+    find: "        if known == Std::OptionFlatten\n",
+    replace: "        if false && known == Std::OptionFlatten\n",
+    tests: ["test/lowering.test.ts","-t","flatten of a read"],
+  },
 ];

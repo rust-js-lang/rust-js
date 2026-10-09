@@ -19,6 +19,31 @@ use rustc_middle::ty::{self, TypeVisitableExt};
 use rustc_span::{Span, sym};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Is `e` the length of a `Vec` or a slice nothing in the body changes,
+    /// `xs.len()`, which JS can test again each time round (ADR 0313)?
+    fn unchanged_length(&self, e: ExprId) -> bool {
+        let ExprKind::Call { fun, ref args, .. } = self.thir[self.strip(e)].kind else {
+            return false;
+        };
+        let length = super::fn_def(self.thir[self.strip(fun)].ty).is_some_and(|(def_id, generic_args)| {
+            super::recognition::slice_length(self.tcx, def_id, generic_args)
+                == Some(super::recognition::SliceLength::Len)
+        });
+        let mut items = args[0];
+        if !length {
+            return false;
+        }
+        loop {
+            match self.thir[self.strip(items)].kind {
+                ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => items = arg,
+                ExprKind::VarRef { id } | ExprKind::UpvarRef { var_hir_id: id, .. } => {
+                    return !self.body_facts.changes(id);
+                }
+                _ => return false,
+            }
+        }
+    }
+
     pub(super) fn lower_loop(
         &mut self,
         scope: region::Scope,
@@ -237,7 +262,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.num(self.thir[start].ty, head_span)?;
             let [start_js, end_js] = self.operands(&[start, end], out)?.try_into().ok().unwrap();
             // Rust works out the end once; JS would test it again each time round.
-            let end_js = if end_js.is_constant() || self.stable_place(end).is_some() {
+            // That's the same of a length nothing changes, `i < xs.length` (ADR 0313).
+            let end_js = if end_js.is_constant() || self.stable_place(end).is_some() || self.unchanged_length(end) {
                 end_js
             } else {
                 let name = self.fresh("end");

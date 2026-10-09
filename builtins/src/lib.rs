@@ -264,6 +264,26 @@ pub fn concat_text<T: ToText>(this: T) -> String {
     unreachable!()
 }
 
+/// Any value as JS's template shows it, `${value}`: `format!("{}-{index}",
+/// js::shown(msg))` is `${msg}-${index}` (ADR 0312). The value itself.
+#[cfg_attr(rust_js, rust_js::link_name = "this")]
+#[allow(unused_variables)]
+pub fn shown<T: ToText>(this: T) -> &'static Shown {
+    unreachable!()
+}
+
+/// What [`shown`] gives: a value, whose text is what JS's template makes it.
+pub struct Shown(PhantomData<JsObject>);
+
+impl core::fmt::Display for Shown {
+    /// The value itself, in its template.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        unreachable!()
+    }
+}
+
 /// [`typeof value`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/typeof):
 /// what JS says it is, as text, `"undefined"` of `None` (ADR 0310).
 #[cfg_attr(rust_js, rust_js::link_name = "typeof")]
@@ -974,6 +994,10 @@ pub mod json {
     impl Stringify for Unknown {
         type Stringified = Result<Option<String>, &'static JsError>;
     }
+
+    impl Stringify for Option<&Unknown> {
+        type Stringified = Result<Option<String>, &'static JsError>;
+    }
 }
 
 /// Whatever a JS function threw, or a promise rejected with: usually an
@@ -1058,7 +1082,7 @@ pub mod object {
         /// what JS names any value's kind, `"[object Array]"`; what it throws
         /// of a value whose `Symbol.toStringTag` throws (ADR 0310).
         #[link_name = "Object.prototype.toString.call"]
-        pub safe fn to_string(value: &Unknown) -> Result<String, &'static JsError>;
+        pub safe fn to_string(value: Option<&Unknown>) -> Result<String, &'static JsError>;
     }
 
     /// [`Object.fromEntries(entries)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/fromEntries):

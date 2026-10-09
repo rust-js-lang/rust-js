@@ -55,13 +55,14 @@ function countdown(from) {
 }
 
 function with_header(header, lines) {
-  return [header].concat(lines).map((line) => line.toUpperCase());
+  return [header, ...lines].map((line) => line.toUpperCase());
 }
 
 function maybe_items(item) {
-  return (item == null ? [] : [item]).concat(
-    (item == null ? [] : [item]).map((n) => Math.imul(n, 10)),
-  );
+  return [
+    ...(item == null ? [] : [item]),
+    ...(item == null ? [] : [item]).map((n) => Math.imul(n, 10)),
+  ];
 }
 
 function main() {

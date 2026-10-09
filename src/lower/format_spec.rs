@@ -114,6 +114,19 @@ impl Radix {
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// One placeholder's string: `value` shown as `kind` says, with `spec`'s
     /// options, and its `width` and `precision`: numbers, or other arguments.
+    /// Whether `ty`'s `Display::fmt` is a binding of the value itself,
+    /// `#[link_name = "this"]` (ADR 0312).
+    fn displays_itself(&self, ty: Ty<'tcx>) -> bool {
+        let Some(display) = self.tcx.get_diagnostic_item(rustc_span::sym::Display) else {
+            return false;
+        };
+        let fmt = self.tcx.associated_item_def_ids(display)[0];
+        let args = self.tcx.mk_args(&[self.tcx.erase_and_anonymize_regions(ty).into()]);
+        matches!(self.resolve_instance(fmt, args), Ok(Some(instance))
+            if super::bindings::is_binding(self.tcx, instance.def_id())
+                && matches!(super::bindings::js_form(self.tcx, instance.def_id()), super::bindings::JsForm::This))
+    }
+
     pub(super) fn format_value(
         &mut self,
         value: Expr,
@@ -123,6 +136,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Expr> {
         let (value, ty) = self.through_refs(value, ty);
+        // A value whose `Display` is itself, `js::shown`'s: `${value}`, as
+        // JS's template shows any value (ADR 0312).
+        if kind == Std::FmtDisplay && self.displays_itself(ty) {
+            return Ok(value);
+        }
         let num = Num::of(ty);
         if spec.debug_hex {
             return Err(self.unsupported(span, "`{:x?}`"));

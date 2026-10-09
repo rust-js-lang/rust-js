@@ -18,7 +18,7 @@ import webrefElements from "@webref/elements";
 import elementsPackage from "@webref/elements/package.json" with { type: "json" };
 
 // The specs to read. Partial interfaces and mixins from these are merged in.
-const SPECS = ["dom", "html", "hr-time", "uievents", "pointerevents", "cssom", "cssom-view", "geometry", "fetch", "encoding", "wasm-js-api", "wasm-web-api", "xhr", "streams", "touch-events", "FileAPI", "clipboard-apis", "css-animations", "css-transitions", "SVG", "svg-paths", "svg-animations", "filter-effects", "css-masking", "intersection-observer", "url"];
+const SPECS = ["dom", "html", "hr-time", "uievents", "pointerevents", "cssom", "cssom-view", "geometry", "fetch", "encoding", "wasm-js-api", "wasm-web-api", "xhr", "streams", "touch-events", "FileAPI", "clipboard-apis", "css-animations", "css-transitions", "SVG", "svg-paths", "svg-animations", "filter-effects", "css-masking", "intersection-observer", "url", "console"];
 
 // The everyday DOM. Members that use any other interface are skipped.
 const INTERFACES = [
@@ -113,7 +113,7 @@ const EXTRA: Record<string, Fn[]> = {
 };
 
 // Namespaces: a module of functions, like `web_assembly::compile`.
-const NAMESPACES = ["WebAssembly"];
+const NAMESPACES = ["WebAssembly", "console"];
 
 // JS's own types that WebIDL uses, the js crate's: its buffers and typed
 // arrays, each element a Rust number of its kind (ADR 0283).

@@ -91,7 +91,7 @@ export function iters(n) {
     v.map((x) => half(x)).filter((item) => item != null),
     v.flatMap((x) => [x, x]),
     $zip(v, ["a", "b", "c"]),
-    v.concat([100, 200]),
+    [...v, 100, 200],
     $takeWhile(v, (x) => x < 3),
     $skipWhile(v, (x) => x < 3).filter((_, i) => i % 2 === 0),
   ];

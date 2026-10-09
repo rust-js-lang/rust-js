@@ -548,6 +548,15 @@ fn expr(e: &mut Expr) {
         };
         return;
     }
+    // `x == null || !x` is `!x`: `null` and `undefined` are falsy (ADR 0313).
+    if let ExprKind::Binary(js::Op::Or, null_test, not) = &e.kind
+        && let ExprKind::Binary(js::Op::LooseEq, x, null) = &null_test.kind
+        && matches!(null.kind, ExprKind::Null)
+        && let ExprKind::Unary(js::UnaryOp::Not, y) = &not.kind
+        && js::same_path(x, y)
+    {
+        *e = (**not).clone();
+    }
     // `() => (async () => { .. })()`, a closure of an `async` block, is
     // `async () => { .. }`, as react.dev's `loadLinter`: calling either runs
     // the block up to its first `await` and gives its promise (ADR 0029).
@@ -616,6 +625,13 @@ fn expr(e: &mut Expr) {
         ExprKind::Call(f, args) | ExprKind::New(f, args) => {
             expr(f);
             args.iter_mut().for_each(expr);
+            // A trailing `undefined` after another argument, a `None` say, is
+            // no argument, `f(x)`, as a person leaves an optional one out:
+            // only `arguments.length` tells (ADR 0313). One given alone is a
+            // value, `setProgram(undefined)`.
+            while args.len() > 1 && args.last().is_some_and(|a| matches!(a.kind, ExprKind::Undefined)) {
+                args.pop();
+            }
             if let Some(object) = entries_written_out(e) {
                 *e = object;
             }

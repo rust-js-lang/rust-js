@@ -900,17 +900,15 @@ function main() {
     console.log(`u64 ${a$8}: unsigned ${a$8 !== 0n && (a$8 & (a$8 - 1n)) === 0n}`);
     for (const b$8 of values$8) {
       const quotient$8 =
-        $bigCheckedDiv(a$8, b$8, undefined) != null
-          ? `${$bigDiv(a$8, b$8)} ${$bigRem(a$8, b$8)}`
-          : "-";
+        $bigCheckedDiv(a$8, b$8) != null ? `${$bigDiv(a$8, b$8)} ${$bigRem(a$8, b$8)}` : "-";
       const tmp$26 = BigInt.asUintN(64, a$8 + b$8);
       const tmp$27 = BigInt.asUintN(64, a$8 - b$8);
       const tmp$28 = BigInt.asUintN(64, a$8 * b$8);
       const tmp$29 = $bigChecked(a$8 + b$8, 0n, 18446744073709551615n);
       const tmp$30 = $bigChecked(a$8 - b$8, 0n, 18446744073709551615n);
       const tmp$31 = $bigChecked(a$8 * b$8, 0n, 18446744073709551615n);
-      const tmp$32 = $bigCheckedDiv(a$8, b$8, undefined);
-      const tmp$33 = $checkedRem(a$8, b$8, undefined);
+      const tmp$32 = $bigCheckedDiv(a$8, b$8);
+      const tmp$33 = $checkedRem(a$8, b$8);
       const tmp$34 = $bigClamp(a$8 + b$8, 0n, 18446744073709551615n);
       const tmp$35 = $bigClamp(a$8 - b$8, 0n, 18446744073709551615n);
       const tmp$36 = $bigClamp(a$8 * b$8, 0n, 18446744073709551615n);
@@ -996,17 +994,15 @@ function main() {
     console.log(`u128 ${a$9}: unsigned ${a$9 !== 0n && (a$9 & (a$9 - 1n)) === 0n}`);
     for (const b$9 of values$9) {
       const quotient$9 =
-        $bigCheckedDiv(a$9, b$9, undefined) != null
-          ? `${$bigDiv(a$9, b$9)} ${$bigRem(a$9, b$9)}`
-          : "-";
+        $bigCheckedDiv(a$9, b$9) != null ? `${$bigDiv(a$9, b$9)} ${$bigRem(a$9, b$9)}` : "-";
       const tmp$39 = BigInt.asUintN(128, a$9 + b$9);
       const tmp$40 = BigInt.asUintN(128, a$9 - b$9);
       const tmp$41 = BigInt.asUintN(128, a$9 * b$9);
       const tmp$42 = $bigChecked(a$9 + b$9, 0n, 340282366920938463463374607431768211455n);
       const tmp$43 = $bigChecked(a$9 - b$9, 0n, 340282366920938463463374607431768211455n);
       const tmp$44 = $bigChecked(a$9 * b$9, 0n, 340282366920938463463374607431768211455n);
-      const tmp$45 = $bigCheckedDiv(a$9, b$9, undefined);
-      const tmp$46 = $checkedRem(a$9, b$9, undefined);
+      const tmp$45 = $bigCheckedDiv(a$9, b$9);
+      const tmp$46 = $checkedRem(a$9, b$9);
       const tmp$47 = $bigClamp(a$9 + b$9, 0n, 340282366920938463463374607431768211455n);
       const tmp$48 = $bigClamp(a$9 - b$9, 0n, 340282366920938463463374607431768211455n);
       const tmp$49 = $bigClamp(a$9 * b$9, 0n, 340282366920938463463374607431768211455n);

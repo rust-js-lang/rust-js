@@ -962,7 +962,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.runtime.insert(Helper::LazyChain);
                 Expr::call(Expr::var("$lazyChain"), vec![items, next()])
             }
-            IterComb::Chain => method(items, "concat", vec![next()]),
+            // Two arrays, spread into one, `[...a, ...b]`, as a person writes
+            // it (ADR 0313); a third into the same.
+            IterComb::Chain => {
+                // An array written out is its items, `[header, ...lines]`.
+                let parts = |array: Expr| match array.kind {
+                    js::ExprKind::Array(parts) => parts,
+                    _ => vec![Expr::spread(array)],
+                };
+                let mut all = parts(items);
+                all.extend(parts(next()));
+                Expr::array(all)
+            }
             IterComb::TakeWhile if lazy => {
                 self.runtime.insert(Helper::LazyTakeWhile);
                 Expr::call(Expr::var("$lazyTakeWhile"), vec![items, next()])

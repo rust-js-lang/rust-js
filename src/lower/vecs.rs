@@ -6,8 +6,41 @@ use super::{FnCx, R};
 use crate::js;
 use crate::js::{Expr, Op, Stmt, StmtKind};
 use crate::runtime::Helper;
+use rustc_middle::thir::{ExprId, ExprKind};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// `.flatten()` of a read of items that may be `None`, through a
+    /// `copied()` or `cloned()`: the JS read itself, `items.shift()` or
+    /// `items[0]`, whose `undefined` is both no item and a `None` one, as
+    /// `flatten` makes them one (ADR 0311).
+    pub(super) fn flattened_read(&mut self, read: ExprId, out: &mut Vec<Stmt>) -> R<Option<Expr>> {
+        let ExprKind::Call { fun, ref args, .. } = self.thir[self.strip(read)].kind else {
+            return Ok(None);
+        };
+        let args = args.clone();
+        Ok(Some(match self.std_fn(fun) {
+            // A copy that's the item itself: of a reference, a number or text.
+            Some(Std::OptionCloned)
+                if self
+                    .option_of(self.thir[self.strip(read)].ty)
+                    .and_then(|inner| self.option_of(inner))
+                    .is_some_and(|item| item.is_ref() || item.is_primitive() || self.is_string_like(item)) =>
+            {
+                return self.flattened_read(args[0], out);
+            }
+            Some(Std::Method(method @ ("pop" | "shift"))) => {
+                Expr::call(Expr::member(self.expr(args[0], out)?, method), vec![])
+            }
+            Some(Std::First) => Expr::index(self.expr(args[0], out)?, Expr::int(0)),
+            Some(Std::SliceGet) => {
+                let items = self.expr(args[0], out)?;
+                Expr::index(items, self.expr(args[1], out)?)
+            }
+            Some(Std::SliceLast) => Expr::call(Expr::member(self.expr(args[0], out)?, "at"), vec![Expr::int(-1)]),
+            _ => return Ok(None),
+        }))
+    }
+
     /// A `Vec`'s or a slice's method (ADRs 0025, 0036): `None` if `known` is another.
     pub(super) fn vec_call(
         &mut self,

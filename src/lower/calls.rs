@@ -572,6 +572,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if known == Std::PtrEq {
             return self.ptr_eq(generic_args.type_at(0), args, span, out);
         }
+        if known == Std::OptionFlatten
+            && let Some(read) = self.flattened_read(args[0], out)?
+        {
+            return Ok(read);
+        }
         // One that takes a value with a destructor, or changes a place that
         // holds one, must keep or give back what it takes: these do. Another
         // might drop it, which JS wouldn't (ADR 0098). A value whose drops

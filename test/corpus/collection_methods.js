@@ -115,7 +115,7 @@ function main() {
   const taken = $cellReplace(count, 0);
   console.log(`${old} ${taken} ${count.value}`);
   const label = { value: "x" };
-  const arg$4 = $cellReplace(label, undefined);
+  const arg$4 = $cellReplace(label);
   console.log(
     `${arg$4 == null ? "None" : `Some(${$debugStr(arg$4, "'")})`} ${label.value == null ? "None" : `Some(${$debugStr(label.value, "'")})`}`,
   );

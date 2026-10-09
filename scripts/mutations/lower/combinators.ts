@@ -218,4 +218,12 @@ export const mutations: Mutation[] = [
     replace: "                match option.filter(|_| false).and_then(|(name, option, spilled)| {\n",
     tests: ["test/lowering.test.ts","-t","only gives a value"],
   },
+  {
+    name: "chain-concat",
+    breaks: "`a.chain(b).collect()` is `a.concat(b)`, not `[...a, ...b]`",
+    file: "src/lower/combinators.rs",
+    find: "                let mut all = parts(items);\n                all.extend(parts(next()));\n                Expr::array(all)\n",
+    replace: "                let _ = parts;\n                method(items, \"concat\", vec![next()])\n",
+    tests: ["test/lowering.test.ts","-t","Console's loops"],
+  },
 ];

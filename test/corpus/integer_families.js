@@ -76,7 +76,7 @@ function main() {
     `${$wrappingDiv(-2147483648, -1, -2147483648)} ${$wrappingDiv(-7, 2, -2147483648)} ${$wrappingRem(-2147483648, -1, -2147483648)} ${$wrappingRem(-7, 2, -2147483648)}`,
   );
   const arg$18 = $wrappingDiv(0, -5, -2147483648);
-  const arg$19 = $wrappingRem(9n, 4n, undefined);
+  const arg$19 = $wrappingRem(9n, 4n);
   const arg$20 = $checkedRem(-9223372036854775808n, -1n, -9223372036854775808n);
   console.log(`${arg$18} ${arg$19} ${arg$20 == null ? "None" : `Some(${arg$20})`}`);
   const by = 33;

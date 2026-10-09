@@ -3269,7 +3269,11 @@ pub(super) fn slice_length<'tcx>(
     def_id: DefId,
     args: ty::GenericArgsRef<'tcx>,
 ) -> Option<SliceLength> {
-    let vec = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_diagnostic_item(sym::Vec, adt.did()));
+    // A `Vec` or a `VecDeque`, an array in JS either way.
+    let vec = |ty: Ty<'tcx>| {
+        matches!(ty.kind(), ty::Adt(adt, _)
+            if tcx.is_diagnostic_item(sym::Vec, adt.did()) || is_std_def(tcx, adt.did(), StdItem::VecDeque))
+    };
     if let Some(trait_) = tcx.trait_of_assoc(def_id) {
         let indexed = args.types().next().is_some_and(|ty| vec(ty.peel_refs()));
         return (tcx.is_lang_item(trait_, LangItem::Index)

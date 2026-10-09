@@ -525,7 +525,7 @@ export function more_orderings() {
   return [
     $cmpIn(["Low", "Mid", "High"], "Low", "High") < 0,
     $index(priorities, 0) === "Low",
-    (3 == null ? (undefined == null ? 0 : -1) : undefined == null ? 1 : $cmp(3, undefined)) > 0,
+    (3 == null ? (undefined == null ? 0 : -1) : undefined == null ? 1 : $cmp(3)) > 0,
     sizes,
     in_order("abc", "abd", { partial_cmp: $cmp }),
     $index(byKey, 0).major,

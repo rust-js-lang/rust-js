@@ -1246,7 +1246,7 @@ pub fn kind_of(value: Option<&Unknown>) -> String {
     js::type_of(value)
 }
 
-pub fn tag_of(value: &Unknown) -> Result<String, &'static JsError> {
+pub fn tag_of(value: Option<&Unknown>) -> Result<String, &'static JsError> {
     object::to_string(value)
 }
 `);
@@ -1269,5 +1269,23 @@ pub fn tag_of(value: &Unknown) -> Result<String, &'static JsError> {
   expect([lib.json_of({ a: 1 }), lib.json_of(() => 1)]).toEqual([{ TAG: "Ok", _0: '{\n  "a": 1\n}' }, { TAG: "Ok", _0: undefined }]);
   expect(lib.json_of(cyclic).TAG).toBe("Err");
   expect([lib.kind_of(undefined), lib.kind_of("s"), lib.kind_of(1n)]).toEqual(["undefined", "string", "bigint"]);
-  expect(lib.tag_of([]) ).toEqual({ TAG: "Ok", _0: "[object Array]" });
+  expect([lib.tag_of([]), lib.tag_of(null)]).toEqual([{ TAG: "Ok", _0: "[object Array]" }, { TAG: "Ok", _0: "[object Null]" }]);
+});
+
+// ADR 0312: any value shown as JS's template shows it, `${value}`, as
+// react.dev's Console keys what it logged by `${msg}-${index}`.
+test("js::shown is shown as a template shows any value", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("shown");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+
+pub fn key(msg: Option<&Unknown>, index: usize) -> String {
+    format!("{}-{index}", js::shown(msg))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return `${msg}-${index}`;");
+  const { key } = await import(join(dir, "lib.js"));
+  expect([key(undefined, 0), key(null, 1), key({}, 2), key("a", 3)]).toEqual(["undefined-0", "null-1", "[object Object]-2", "a-3"]);
 });

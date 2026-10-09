@@ -747,4 +747,12 @@ export const mutations: Mutation[] = [
     replace: "            .instantiate_identity()\n            .skip_normalization()\n            .skip_binder()\n            .output();\n        let _ = args;\n        let output = self\n",
     tests: ["test/bindings.test.ts","-t","react.dev's Console"],
   },
+  {
+    name: "deque-length-unknown",
+    breaks: "a `VecDeque`'s `args[i]` in `for i in 0..args.len()` is `$index(args, i)`",
+    file: "src/lower/recognition.rs",
+    find: " || is_std_def(tcx, adt.did(), StdItem::VecDeque))\n",
+    replace: ")\n",
+    tests: ["test/lowering.test.ts","-t","Console's loops"],
+  },
 ];

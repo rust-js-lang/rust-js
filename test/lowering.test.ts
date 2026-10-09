@@ -3348,3 +3348,92 @@ pub fn inner(n: u32) -> u32 {
   expect([lib.inner(0), lib.inner(1), lib.inner(3)]).toEqual([14, 0, 6]);
   expect([lib.field_of({ n: 3 }), lib.field_of(undefined)]).toEqual([9, 0]);
 });
+
+// ADR 0311: `.flatten()` of a read of items that may be `None` is the JS read
+// itself, as react.dev's Console reads `args.shift()` and `data[0]` of any
+// values: JS's `undefined` is both no item and a `None` one, as `flatten`
+// makes them one.
+test("flatten of a read of items that may be None is the read", async () => {
+  const dir = fixture("flattened-reads");
+  writeFileSync(join(dir, "lib.rs"), `use std::collections::VecDeque;
+
+pub fn shifted(items: Vec<Option<u32>>) -> (Option<u32>, Option<u32>, usize) {
+    let mut args: VecDeque<Option<u32>> = items.into_iter().collect();
+    let first = args.pop_front().flatten();
+    let last = args.pop_back().flatten();
+    (first, last, args.len())
+}
+
+pub fn read(items: &[Option<u32>], i: usize) -> (Option<u32>, Option<u32>, Option<u32>) {
+    (items.first().copied().flatten(), items.get(i).copied().flatten(), items.last().copied().flatten())
+}
+
+pub fn popped(mut items: Vec<Option<u32>>) -> Option<u32> {
+    items.pop().flatten()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const first = args.shift();");
+  expect(js).toContain("const last = args.pop();");
+  expect(js).toContain("return [items[0], items[i], items.at(-1)];");
+  expect(js).toContain("return items.pop();");
+  expect(js).not.toContain("$someValue");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.shifted([1, undefined, 3]), lib.shifted([undefined]), lib.shifted([])]).toEqual([[1, 3, 1], [undefined, undefined, 0], [undefined, undefined, 0]]);
+  expect([lib.read([undefined, 2], 1), lib.read([], 0)]).toEqual([[undefined, 2, 2], [undefined, undefined, undefined]]);
+  expect([lib.popped([1, undefined]), lib.popped([]), lib.popped([4])]).toEqual([undefined, undefined, 4]);
+});
+
+// ADR 0313: what react.dev's Console writes, as a person writes it: `!x` of
+// text that's `None` or empty; `i < args.length` of a range of a length
+// nothing in the loop changes, and a deque's `args[i]` in it; `[...a, ...b]`
+// of two chained; and no trailing `undefined` argument.
+test("Console's loops, spreads and calls read as written", async () => {
+  const dir = fixture("console-forms");
+  writeFileSync(join(dir, "lib.rs"), `use std::collections::VecDeque;
+
+pub fn unescaped(escaped: Option<&str>) -> bool {
+    escaped.is_none_or(str::is_empty)
+}
+
+pub fn joined(args: VecDeque<u32>) -> String {
+    let mut formatted = String::new();
+    for i in 0..args.len() {
+        formatted += &format!(" {}", args[i]);
+    }
+    formatted
+}
+
+pub fn drained(mut args: Vec<u32>) -> u32 {
+    let mut total = 0;
+    for _ in 0..args.len() {
+        total += args.pop().unwrap_or(0);
+    }
+    total
+}
+
+pub fn both(prev: &VecDeque<u32>, next: Vec<u32>) -> VecDeque<u32> {
+    prev.iter().copied().chain(next).collect()
+}
+
+fn greet(name: &str, title: Option<&str>) -> String {
+    format!("{}{name}", title.unwrap_or(""))
+}
+
+pub fn hi() -> String {
+    greet("Ada", None)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return !escaped;");
+  expect(js).toContain("for (let i = 0; i < args.length; i++) {\n    formatted += ` ${args[i]}`;");
+  // One whose body changes the length reads its end once, as Rust does.
+  expect(js).toContain("const end = args.length;");
+  expect(js).toContain("return [...prev, ...next];");
+  expect(js).toContain('return greet("Ada");');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.unescaped(undefined), lib.unescaped(""), lib.unescaped("%")]).toEqual([true, true, false]);
+  expect([lib.joined([1, 2]), lib.drained([1, 2, 3]), lib.both([1], [2, 3]), lib.hi()]).toEqual([" 1 2", 6, [1, 2, 3], "Ada"]);
+});

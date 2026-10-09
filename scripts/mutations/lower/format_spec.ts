@@ -114,4 +114,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/compiler.test.ts", "-t", "format options pad, round and change base as Rust does"],
   },
+  {
+    name: "shown-formatted",
+    breaks: "`js::shown(msg)` in `format!` calls its `Display`, not `${msg}`",
+    file: "src/lower/format_spec.rs",
+    find: "        if kind == Std::FmtDisplay && self.displays_itself(ty) {\n",
+    replace: "        if false && kind == Std::FmtDisplay && self.displays_itself(ty) {\n",
+    tests: ["test/bindings.test.ts","-t","js::shown"],
+  },
 ];
