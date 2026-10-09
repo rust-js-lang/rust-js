@@ -4,6 +4,7 @@ mod methods;
 pub(super) mod registry;
 
 use super::combinators::{Comb, IterComb, IterSource, StepOp};
+use super::fn_def;
 use super::format_spec::Radix;
 use super::representation::Num;
 use super::std_types::cow::CowOp;
@@ -22,6 +23,7 @@ use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_hir::{self as hir, intravisit};
 use rustc_middle::mir::{BinOp, UnOp};
+use rustc_middle::thir::{ExprKind, Thir};
 use rustc_middle::traits::ImplSource;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::{DefId, LocalDefId};
@@ -110,9 +112,23 @@ pub(super) enum Std {
     /// A lock's `is_poisoned()`: `false`, as nothing can catch a panic that
     /// holds it (ADR 0327).
     NotPoisoned,
-    /// `RefCell::borrow`, `borrow_mut`: the cell's `value`.
-    Borrow,
-    /// A `Mutex`'s `lock()` or an `RwLock`'s `read()` or `write()`: `Ok` of its `value`.
+    /// `RefCell::borrow`, `borrow_mut`, a `Mutex`'s `lock()` and an `RwLock`'s
+    /// `read()` and `write()`, `Ok` of it: a guard, which is the cell, checked
+    /// free to borrow so (ADR 0328).
+    Borrow {
+        mutable: bool,
+        lock: bool,
+    },
+    /// `try_borrow()`, `try_borrow_mut()`: `Ok` of a guard, or `Err` (ADR 0328).
+    TryBorrow {
+        mutable: bool,
+    },
+    /// What a guard guards: its cell's `value`, and a `&mut` to a number or
+    /// text in it the cell, the `{ value }` box that is (ADR 0328).
+    GuardValue {
+        mutable: bool,
+    },
+    /// A lock's `into_inner()` and `get_mut()`: `Ok` of its `value`.
     Lock,
     /// An atomic's operations (ADR 0096), on its `{ value }` as a `Cell`'s:
     /// `load` and `into_inner`, `store`, `swap`, the `fetch_` ones, with
@@ -374,9 +390,12 @@ pub(super) enum Std {
     /// `-x` or `!b` of a reference to a number or a `bool`, likewise.
     UnaryOperator(UnOp),
     /// A thread-local's `with(f)`: `f(key)`; and `with_borrow(f)`,
-    /// `with_borrow_mut(f)` of a `RefCell` one: `f(key.value)`.
+    /// `with_borrow_mut(f)` of a `RefCell` one: `f` of its value, while it's
+    /// borrowed (ADR 0328).
     LocalWith,
-    LocalBorrow,
+    LocalBorrow {
+        mutable: bool,
+    },
     /// `Ordering::then`, `then_with`, `reverse`.
     Then,
     ThenWith,
@@ -406,6 +425,7 @@ impl Std {
                 | Std::Lazy(LazyOp::GetMut | LazyOp::ForceMut)
                 | Std::Rc(RcOp::GetMut | RcOp::MakeMut)
                 | Std::CellGetMut
+                | Std::GuardValue { mutable: true }
                 | Std::Text(TextOp::EncodeUtf8)
                 | Std::OptionPlace(
                     OptionPlaceOp::GetOrInsert
@@ -695,8 +715,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 || self.is_path_like(ty)
                 || self.is_js_object(ty)
                 || self.is_rc(ty)
-                || self.is_vec_like(ty)
-                || self.is_guard(ty);
+                || self.is_vec_like(ty);
+            // What a guard guards, its cell's `value` (ADR 0328).
+            if self.is_guard(ty) {
+                return Some(Some(Std::GuardValue {
+                    mutable: diagnostic("deref_mut_method"),
+                }));
+            }
             return Some(same.then_some(Std::Same));
         }
         None
@@ -1342,9 +1367,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             // itself, the value itself.
             "leak" if adt("Vec") || string || owner.is_box() => Std::Same,
             "new" if adt("Cell") || adt("RefCell") || adt("Atomic") || adt("Mutex") || adt("RwLock") => Std::CellNew,
-            // On one thread a lock is never contested: always `Ok` (ADR 0025).
-            "lock" if adt("Mutex") => Std::Lock,
-            "read" | "write" if adt("RwLock") => Std::Lock,
+            // On one thread a lock is never contested by another: always `Ok`
+            // (ADR 0025), but locked again while held, a deadlock (ADR 0328).
+            "lock" if adt("Mutex") => Std::Borrow {
+                mutable: true,
+                lock: true,
+            },
+            "read" | "write" if adt("RwLock") => Std::Borrow {
+                mutable: name.as_str() == "write",
+                lock: true,
+            },
             "into_inner" | "get_mut" if adt("Mutex") || adt("RwLock") => Std::Lock,
             "get" if adt("Cell") => Std::CellGet,
             "get_mut" if adt("Cell") || adt("RefCell") => Std::CellGetMut,
@@ -1381,7 +1413,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "replace" if adt("Cell") || adt("RefCell") => Std::CellReplace,
             "take" if adt("Cell") || adt("RefCell") => Std::CellTake,
             "replace_with" if adt("RefCell") => Std::CellReplaceWith,
-            "borrow" | "borrow_mut" if adt("RefCell") => Std::Borrow,
+            "borrow" | "borrow_mut" if adt("RefCell") => Std::Borrow {
+                mutable: name.as_str() == "borrow_mut",
+                lock: false,
+            },
+            "try_borrow" | "try_borrow_mut" if adt("RefCell") => Std::TryBorrow {
+                mutable: name.as_str() == "try_borrow_mut",
+            },
             "load" | "into_inner" if adt("Atomic") => Std::AtomicLoad,
             "store" if adt("Atomic") => Std::AtomicStore,
             "swap" if adt("Atomic") => Std::AtomicSwap,
@@ -1627,7 +1665,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "with" if local_key => Std::LocalWith,
             "get" if local_key => Std::CellGet,
             "set" if local_key => Std::CellSet,
-            "with_borrow" | "with_borrow_mut" if local_key => Std::LocalBorrow,
+            "with_borrow" | "with_borrow_mut" if local_key => Std::LocalBorrow {
+                mutable: name.as_str() == "with_borrow_mut",
+            },
             "then" if ordering => Std::Then,
             "then_with" if ordering => Std::ThenWith,
             "reverse" if ordering => Std::Reverse,
@@ -2324,7 +2364,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(super) fn is_parse_error(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate) == rustc_span::sym::core
-            && ["ParseIntError", "ParseFloatError", "ParseBoolError", "ParseCharError", "TryFromIntError"]
+            && ["ParseIntError", "ParseFloatError", "ParseBoolError", "ParseCharError", "TryFromIntError", "BorrowError", "BorrowMutError"]
                 .contains(&self.tcx.item_name(adt.did()).as_str()))
     }
 
@@ -2633,6 +2673,142 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         ]
         .into_iter()
         .any(|name| self.is_std_adt(ty, Symbol::intern(name)))
+    }
+
+    /// Whether calling `def_id`, of `args`, may run code of the crate's, or
+    /// ask whether a `RefCell` or a lock is borrowed, which only a borrow
+    /// that's held answers (ADR 0328): a function of the crate's, a
+    /// closure, a `dyn`'s method, a cell's or a lock's own but what makes
+    /// one or has a `&mut` to it, or std's whose bounds the crate's impls
+    /// meet, or a cell's.
+    pub(super) fn may_ask_borrows(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+        let Ok(Some(instance)) = ty::Instance::try_resolve(self.tcx, self.typing_env, def_id, args) else {
+            return true;
+        };
+        let ty::InstanceKind::Item(id) = instance.def else {
+            return true;
+        };
+        !self.is_std(id) || self.asks_borrows(id) || !self.bounds_quiet(id, instance.args, 0)
+    }
+
+    /// Whether running a body, a closure's, can't ask whether a cell is
+    /// borrowed (ADR 0328): each call is std's, that may not, and it drops
+    /// nothing of the crate's.
+    pub(super) fn asks_no_borrows(&self, thir: &Thir<'tcx>) -> bool {
+        thir.exprs.iter().all(|e| {
+            let call = match e.kind {
+                ExprKind::Call { fun, .. } => {
+                    fn_def(thir[fun].ty).is_some_and(|(id, args)| !self.may_ask_borrows(id, args))
+                }
+                ExprKind::InlineAsm(_)
+                | ExprKind::Yield { .. }
+                | ExprKind::Become { .. } => false,
+                _ => true,
+            };
+            call && e.ty.walk().all(|part| {
+                part.as_type().is_none_or(|t| {
+                    !matches!(t.kind(), ty::Adt(adt, _) if !self.is_std(adt.did()) && t.needs_drop(self.tcx, self.typing_env))
+                })
+            })
+        })
+    }
+
+    /// A cell's or a lock's function that borrows it, a thread-local
+    /// `RefCell`'s, or a guard's own, `Ref::map` say (ADR 0328).
+    fn asks_borrows(&self, id: DefId) -> bool {
+        let Some(imp) = self.tcx.impl_of_assoc(id) else {
+            return false;
+        };
+        let owner = self.tcx.type_of(imp).instantiate_identity().skip_normalization();
+        match owner.kind() {
+            _ if self.is_borrowed_cell(owner) => !matches!(
+                self.tcx.item_name(id).as_str(),
+                "new" | "default" | "from" | "get_mut" | "into_inner" | "as_ptr" | "is_poisoned" | "clear_poison"
+            ),
+            _ if self.is_guard(owner) => !self.tcx.impl_is_of_trait(imp),
+            ty::Adt(_, args) if self.is_std_type(owner, StdItem::LocalKey) => {
+                args.types().next().is_some_and(|held| self.is_borrowed_cell(held))
+            }
+            _ => false,
+        }
+    }
+
+    /// A `RefCell`, a `Mutex` or an `RwLock`: what a guard borrows (ADR 0328).
+    pub(super) fn is_borrowed_cell(&self, ty: Ty<'tcx>) -> bool {
+        ["RefCell", "Mutex", "RwLock"]
+            .into_iter()
+            .any(|name| self.is_std_adt(ty, Symbol::intern(name)))
+    }
+
+    /// Whether `id`'s bounds, of `args`, run nothing of the crate's and ask
+    /// no cell: each is a trait with no code, of types std's alone, or met by
+    /// an impl of std's whose own bounds are too.
+    fn bounds_quiet(&self, id: DefId, args: ty::GenericArgsRef<'tcx>, depth: usize) -> bool {
+        if depth > 8 {
+            return false;
+        }
+        let clauses = self.tcx.clauses_of(id).instantiate(self.tcx, args).clauses;
+        clauses
+            .into_iter()
+            .filter_map(|clause| clause.skip_normalization().as_trait_clause())
+            .all(|clause| {
+                let tr = self
+                    .tcx
+                    .erase_and_anonymize_regions(self.tcx.instantiate_bound_regions_with_erased(clause).trait_ref);
+                self.codeless(tr.def_id)
+                    || tr.args.types().all(|t| self.std_alone(t))
+                    || matches!(self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr)),
+                        Ok(ImplSource::UserDefined(imp)) if self.is_std(imp.impl_def_id)
+                            && !self.is_borrowed_cell(self.tcx.type_of(imp.impl_def_id).instantiate_identity().skip_normalization())
+                            && self.bounds_quiet(imp.impl_def_id, imp.args, depth + 1))
+            })
+    }
+
+    /// A trait whose impls have no code: an auto trait, `Sized`, `Copy`,
+    /// and one with no functions whose supertraits have none either.
+    fn codeless(&self, tr: DefId) -> bool {
+        let tcx = self.tcx;
+        tcx.trait_is_auto(tr)
+            || [
+                LangItem::Sized,
+                LangItem::MetaSized,
+                LangItem::PointeeSized,
+                LangItem::Copy,
+                LangItem::Tuple,
+                LangItem::Unsize,
+            ]
+            .into_iter()
+            .any(|item| tcx.is_lang_item(tr, item))
+            || (tcx.associated_items(tr).in_definition_order().all(|item| !item.is_fn())
+                && tcx
+                    .explicit_super_clauses_of(tr)
+                    .skip_binder()
+                    .iter()
+                    .filter_map(|(clause, _)| clause.as_trait_clause())
+                    .all(|sup| sup.def_id() == tr || self.codeless(sup.def_id())))
+    }
+
+    /// A type made of std's types alone, and no cell: no impl of the crate's
+    /// can be for it, nor one that borrows (ADR 0328).
+    pub(super) fn std_alone(&self, ty: Ty<'tcx>) -> bool {
+        ty.walk().all(|part| {
+            part.as_type().is_none_or(|t| match t.kind() {
+                ty::Adt(adt, _) => self.is_std(adt.did()) && !self.is_borrowed_cell(t),
+                ty::Bool
+                | ty::Char
+                | ty::Int(_)
+                | ty::Uint(_)
+                | ty::Float(_)
+                | ty::Str
+                | ty::Never
+                | ty::Array(..)
+                | ty::Slice(_)
+                | ty::Ref(..)
+                | ty::RawPtr(..)
+                | ty::Tuple(_) => true,
+                _ => false,
+            })
+        })
     }
 
     pub(super) fn is_std(&self, id: DefId) -> bool {
@@ -3671,6 +3847,12 @@ pub(super) fn cell_use<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty::GenericArgs
         "set" if is_std_def(tcx, adt.did(), StdItem::Cell) => Some(CellUse::Set),
         _ => None,
     }
+}
+
+/// Is `id` a thread-local's `with_borrow` or `with_borrow_mut`, which runs
+/// its closure while its `RefCell` is borrowed (ADR 0328)?
+pub(super) fn is_local_borrow(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    local_key_access(tcx, id) == Some(false) && tcx.item_name(id).as_str() != "get"
 }
 
 /// Is `id` a thread-local's `get`, `set`, `with_borrow` or

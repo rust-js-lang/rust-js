@@ -226,4 +226,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "rc_counted_uses"],
   },
+  {
+    name: "refcell-clone-unheld",
+    breaks: "a `RefCell`'s clone of what may ask runs with it free to borrow mutably",
+    file: "src/lower/std_impls.rs",
+    find: "            ty::Adt(_, args) if std(StdItem::RefCell) && !self.recognition().std_alone(args.type_at(0)) => {\n                let mut body = Vec::new();\n                let value = self.clone_value(",
+    replace: "            ty::Adt(_, args) if false => {\n                let mut body = Vec::new();\n                let value = self.clone_value(",
+    tests: ["test/corpus.test.ts", "-t", "refcell_held_while_asked"],
+  },
+  {
+    name: "refcell-eq-unheld",
+    breaks: "`==` of `RefCell`s of what may ask runs with them free to borrow mutably",
+    file: "src/lower/std_impls.rs",
+    find: "            ty::Adt(_, args) if std(StdItem::RefCell) && !self.recognition().std_alone(args.type_at(0)) => {\n                let mut body = Vec::new();\n                let eq = ",
+    replace: "            ty::Adt(_, args) if false => {\n                let mut body = Vec::new();\n                let eq = ",
+    tests: ["test/corpus.test.ts", "-t", "refcell_held_while_asked"],
+  },
+  {
+    name: "refcell-clone-unchecked",
+    breaks: "a `RefCell`'s clone while it's mutably borrowed runs on",
+    file: "src/lower/std_impls.rs",
+    find: "                let cell = match std(StdItem::RefCell) {\n                    true => {\n                        self.runtime.insert(Helper::Borrow);\n                        Expr::call(Expr::var(\"$borrow\"), vec![place])",
+    replace: "                let cell = match false {\n                    true => {\n                        self.runtime.insert(Helper::Borrow);\n                        Expr::call(Expr::var(\"$borrow\"), vec![place])",
+    tests: ["test/corpus.test.ts", "-t", "refcell_clone_while_mut"],
+  },
 ];

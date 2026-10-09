@@ -3,11 +3,14 @@
 import {
   $at,
   $binarySearchBy,
+  $borrow,
+  $borrowMut,
   $cellReplace,
   $cmp,
   $debugStr,
   $extend,
   $index,
+  $replaceWith,
   $rotateLeft,
   $rotateRight,
   $slice,
@@ -120,14 +123,18 @@ function main() {
     `${arg$4 == null ? "None" : `Some(${$debugStr(arg$4, "'")})`} ${label.value == null ? "None" : `Some(${$debugStr(label.value, "'")})`}`,
   );
   const log = { value: [1] };
-  const before = $cellReplace(log, [2, 3]);
-  log.value.push(4);
-  const after = $cellReplace(log, []);
+  const before = $cellReplace($borrowMut(log), [2, 3]);
+  $borrowMut(log).value.push(4);
+  const after = $cellReplace($borrowMut(log), []);
   console.log(
-    `[${before.map((item) => String(item)).join(", ")}] [${after.map((item) => String(item)).join(", ")}] [${log.value.map((item) => String(item)).join(", ")}]`,
+    `[${before.map((item) => String(item)).join(", ")}] [${after.map((item) => String(item)).join(", ")}] [${$borrow(
+      log,
+    )
+      .value.map((item) => String(item))
+      .join(", ")}]`,
   );
   const name = { value: "old" };
-  const previous = $cellReplace(name, `${name.value}er`);
-  console.log(`${previous} ${name.value}`);
+  const previous = $replaceWith(name, (s) => `${s.value}er`, true);
+  console.log(`${previous} ${$borrow(name).value}`);
 }
 //# sourceMappingURL=case.js.map

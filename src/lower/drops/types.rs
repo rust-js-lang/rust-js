@@ -36,6 +36,8 @@ struct Walk<'tcx> {
     /// Its type parameters, and what only their caller knows, drop nothing
     /// (ADR 0190): what's found is what it drops of its own.
     params_none: bool,
+    /// Guards drop nothing: what's found is what else it drops (ADR 0328).
+    guards_none: bool,
 }
 
 /// What a type drops depends on, of the function being lowered, beside
@@ -106,6 +108,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                 seen: Vec::new(),
                 reached: usize::MAX,
                 params_none: false,
+                guards_none: false,
             },
         )
     }
@@ -119,8 +122,24 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                 seen: Vec::new(),
                 reached: usize::MAX,
                 params_none: true,
+                guards_none: false,
             },
         )
+    }
+
+    /// Whether dropping a `ty` runs more than a guard's, which only counts
+    /// its cell borrowed once fewer (ADR 0328).
+    pub(in crate::lower) fn drops_but_guards(&self, ty: Ty<'tcx>) -> bool {
+        let found = self.drops_in(
+            ty,
+            &mut Walk {
+                seen: Vec::new(),
+                reached: usize::MAX,
+                params_none: false,
+                guards_none: true,
+            },
+        );
+        found != Drops::Nothing
     }
 
     pub(in crate::lower) fn has_drops(&self, ty: Ty<'tcx>) -> bool {
@@ -255,6 +274,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             return Drops::Nothing;
         }
         if !walk.params_none
+            && !walk.guards_none
             && let Some(&known) = self.state.cache.borrow().get(&ty)
         {
             return known;
@@ -347,6 +367,10 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                 }
             }
             ty::Adt(..) if weak_pointee(tcx, ty).is_some() => Drops::Runs,
+            // A guard: its cell borrowed once fewer (ADR 0328). What it guards
+            // is its cell's to drop.
+            ty::Adt(..) if self.recognition.is_guard(ty) && walk.guards_none => Drops::Nothing,
+            ty::Adt(..) if self.recognition.is_guard(ty) => Drops::Runs,
             // Never dropped, or dropped by hand.
             ty::Adt(..) if self.recognition.is_lang_adt(ty, LangItem::ManuallyDrop) || std(StdItem::MaybeUninit) => {
                 Drops::Nothing
@@ -399,7 +423,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             _ => Drops::Nothing,
         };
         walk.seen.pop();
-        if walk.reached >= depth && !walk.params_none {
+        if walk.reached >= depth && !walk.params_none && !walk.guards_none {
             self.state.cache.borrow_mut().insert(ty, found);
         }
         walk.reached = walk.reached.min(outer);

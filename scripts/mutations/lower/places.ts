@@ -123,12 +123,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","std_methods"],
   },
   {
-    name: "lock-guard-not-a-place",
-    breaks: "`*m.lock().unwrap() += 1` writes to nothing, where it's `m.value`",
+    name: "guard-not-a-place",
+    breaks: "`*c.borrow_mut() = vec![7]` is an error, where it writes the guard's cell's `value`",
     file: "src/lower/places.rs",
-    find: "                Std::UnwrapOk => self.ref_place(args[0]),",
+    find: "            _ if let Some(target) = self.guarded_target(e, out)? => Ok(target),\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^locks"],
+    tests: ["test/corpus.test.ts", "-t", "refcell_borrows"],
   },
   {
     name: "replaced-object-refused",
@@ -205,6 +205,15 @@ export const mutations: Mutation[] = [
     find: "                let cell = if cell.reads_same() || place_handle {\n",
     replace: "                let cell = if cell.reads_same() {\n",
     tests: ["test/corpus.test.ts", "-t", "option_result_methods"],
+    snapshots: true,
+  },
+  {
+    name: "only-reads-borrow-check",
+    breaks: "`*c.borrow_mut() += n` takes `n` first, though checking the borrow changes nothing",
+    file: "src/lower/places.rs",
+    find: "                    if [\"$borrow\", \"$borrowMut\", \"$lock\", \"$lockRead\"].contains(&v.as_str())) =>",
+    replace: "                    if [\"$none\"].contains(&v.as_str())) =>",
+    tests: ["test/snapshots.test.ts", "-t", "inventory: the generated JS"],
     snapshots: true,
   },
 ];

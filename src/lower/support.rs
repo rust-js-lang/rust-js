@@ -156,13 +156,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 return None;
             }
-            // A guard held in a variable is the object it guards; a guarded
-            // number would be a copy, not a place.
-            ty::Adt(_, args)
-                if self.is_guard(ty) && !args.types().next().is_some_and(|inner| self.is_object(inner)) =>
-            {
-                return Some(ty);
-            }
             ty::Adt(_, args) if self.is_std_wrapper(ty) => {
                 return args.types().next().and_then(|t| self.unsupported_in(t, seen));
             }

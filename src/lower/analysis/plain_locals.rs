@@ -6,7 +6,9 @@ use super::super::Body;
 use super::super::bindings::is_element_builder;
 use super::super::body_queries::{lent, strip};
 use super::super::fn_def;
-use super::super::recognition::{CellUse, StdItem, cell_use, is_cell_get, is_std_def, local_key_access, rc_pointee};
+use super::super::recognition::{
+    CellUse, StdItem, cell_use, is_cell_get, is_local_borrow, is_std_def, local_key_access, rc_pointee,
+};
 use rustc_ast::Mutability;
 use rustc_hir::{BindingMode, ByRef};
 use rustc_middle::thir::visit::{self, Visitor};
@@ -18,11 +20,14 @@ use std::collections::{HashMap, HashSet};
 /// The thread-locals only read and set, by `get`, `set`, `with_borrow` and
 /// `with_borrow_mut`, in their own module, and not public: nothing shares
 /// their cell, so each is its module's variable, without a `{ value }`. Each
-/// says whether it's `set`, a `let`, or not, a `const`.
+/// says whether it's `set`, a `let`, or not, a `const`. A `with_borrow`'s
+/// closure must be `quiet`, asking nothing of borrows, as nothing counts
+/// them (ADR 0328).
 pub(super) fn plain_thread_locals<'tcx>(
     tcx: TyCtxt<'tcx>,
     bodies: &[&Body<'tcx>],
     keys: impl Iterator<Item = LocalDefId>,
+    quiet: &dyn Fn(LocalDefId) -> bool,
 ) -> HashMap<LocalDefId, bool> {
     let mut plain: HashMap<LocalDefId, bool> = keys
         .filter(|&key| !tcx.visibility(key).is_public())
@@ -37,9 +42,12 @@ pub(super) fn plain_thread_locals<'tcx>(
         let mut set = HashSet::new();
         for expr in thir.exprs.iter() {
             if let ExprKind::Call { fun, ref args, .. } = expr.kind
-                && let Some(sets) = fn_def(thir[fun].ty).and_then(|(id, _)| local_key_access(tcx, id))
+                && let Some((id, _)) = fn_def(thir[fun].ty)
+                && let Some(sets) = local_key_access(tcx, id)
                 && let Some(&first) = args.first()
                 && let ExprKind::Borrow { arg, .. } = thir[strip(thir, first)].kind
+                && (!is_local_borrow(tcx, id)
+                    || matches!(thir[strip(thir, args[1])].kind, ExprKind::Closure(ref c) if quiet(c.closure_id)))
             {
                 accessed.insert(strip(thir, arg));
                 if sets {

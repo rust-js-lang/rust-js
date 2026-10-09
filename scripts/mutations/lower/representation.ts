@@ -251,4 +251,12 @@ export const mutations: Mutation[] = [
     replace: "                    ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Cell) => js,\n",
     tests: ["test/corpus.test.ts", "-t", "marker_traits"],
   },
+  {
+    name: "guard-not-object",
+    breaks: "a `&mut` to a guard's number is a box of the guard",
+    file: "src/lower/representation.rs",
+    find: "            || self.is_guard(ty)\n            || self.is_vec_like(ty)\n",
+    replace: "            || self.is_vec_like(ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^locks"],
+  },
 ];

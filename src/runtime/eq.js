@@ -6,6 +6,8 @@ function $eq(a, b) {
   if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) {
     return false;
   }
+  // A `RefCell` mutably borrowed can't be borrowed to compare (ADR 0328).
+  if (a.borrows < 0 || b.borrows < 0) throw new Error("RefCell already mutably borrowed");
   if (Array.isArray(a)) {
     return Array.isArray(b) && a.length === b.length && a.every((x, i) => $eq(x, b[i]));
   }

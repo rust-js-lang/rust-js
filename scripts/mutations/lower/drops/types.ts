@@ -122,4 +122,21 @@ export const mutations: Mutation[] = [
     replace: "                    Drops::Runs => Drops::Runs,\n",
     tests: ["test/corpus.test.ts", "-t", "map_key_drops"],
   },
+  {
+    name: "guard-drops-nothing",
+    breaks: "a guard dropped leaves its cell borrowed",
+    file: "src/lower/drops/types.rs",
+    find: "            ty::Adt(..) if self.recognition.is_guard(ty) => Drops::Runs,",
+    replace: "            ty::Adt(..) if self.recognition.is_guard(ty) => Drops::Nothing,",
+    tests: ["test/corpus.test.ts", "-t", "refcell_borrows"],
+  },
+  {
+    name: "guards-counted-as-drops",
+    breaks: "a guard beside another is taken as dropping something that asks",
+    file: "src/lower/drops/types.rs",
+    find: "            ty::Adt(..) if self.recognition.is_guard(ty) && walk.guards_none => Drops::Nothing,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^locks"],
+    snapshots: true,
+  },
 ];

@@ -437,7 +437,7 @@
 + Cell::swap
 + Cell::take
 + Cell::update
-# RefCell 9 of 13
+# RefCell 11 of 13
 - RefCell::as_ptr
 + RefCell::borrow
 + RefCell::borrow_mut
@@ -448,8 +448,8 @@
 + RefCell::replace_with
 + RefCell::swap
 + RefCell::take
-- RefCell::try_borrow
-- RefCell::try_borrow_mut
++ RefCell::try_borrow
++ RefCell::try_borrow_mut
 - RefCell::try_borrow_unguarded
 # Mutex 6 of 7
 + Mutex::clear_poison

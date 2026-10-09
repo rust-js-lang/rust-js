@@ -406,4 +406,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "map_drops"],
   },
+  {
+    name: "guard-value-takes-drops",
+    breaks: "a guard's `deref_mut()` is an error, a value with a destructor",
+    file: "src/lower/calls.rs",
+    find: "                    // What a guard guards, through its `&mut` (ADR 0328).\n                    | Std::GuardValue { .. }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^locks"],
+  },
 ];

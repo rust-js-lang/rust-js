@@ -3,7 +3,7 @@
 //! is the value it points at (ADR 0023).
 
 use rustc_middle::thir::ExprId;
-use rustc_middle::ty::{GenericArgsRef, Ty};
+use rustc_middle::ty::{self, GenericArgsRef, Ty};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
@@ -167,13 +167,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.krate.counted.counts(self.tcx, pointee).then_some(new)
     }
 
-    /// What a counted `Rc`, through any others, points at: its `value`, as
-    /// `{}` and `{:?}` show it (ADR 0320). Any other value is itself.
-    pub(in crate::lower) fn through_counted(&self, mut value: Expr, mut ty: Ty<'tcx>) -> (Expr, Ty<'tcx>) {
-        while let Some(pointee) = self.counted_rc(ty) {
+    /// What a counted `Rc` points at, or a guard guards, through any others:
+    /// its `value`, as `{}` and `{:?}` show it (ADRs 0320, 0328). Any other
+    /// value is itself.
+    pub(in crate::lower) fn through_boxes(&self, mut value: Expr, mut ty: Ty<'tcx>) -> (Expr, Ty<'tcx>) {
+        loop {
+            let inside = match ty.kind() {
+                ty::Adt(_, args) if self.is_guard(ty) => args.types().next().expect("what it guards"),
+                _ => match self.counted_rc(ty) {
+                    Some(pointee) => pointee,
+                    None => return (value, ty),
+                },
+            };
             value = Expr::member(value, "value");
-            ty = pointee;
+            ty = inside;
         }
-        (value, ty)
     }
 }

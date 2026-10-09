@@ -181,6 +181,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A counted `Rc`, and a `Weak`, are `{ value, strong, weak }` (ADR 0320).
             || self.counted_rc(ty).is_some()
             || self.weak_of(ty).is_some()
+            // A lock, and a guard, which is its cell (ADR 0328).
+            || self.recognition().is_borrowed_cell(ty)
+            || self.is_guard(ty)
             || self.is_vec_like(ty)
             || self.is_map(ty)
             // A `dyn` of the crate's trait is its pair (ADR 0049): a `&mut` to

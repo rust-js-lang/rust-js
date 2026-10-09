@@ -2,6 +2,7 @@
 
 import {
   $asciiCase,
+  $borrow,
   $byteLen,
   $cellSwap,
   $debugStr,
@@ -16,6 +17,7 @@ import {
   $popFrontIf,
   $popIfCell,
   $range,
+  $refCellSwap,
   $retainMut,
   $slice,
   $unwrap,
@@ -35,9 +37,13 @@ function main() {
   const list = { value: [1] };
   list.value.push(2);
   const more = { value: [9] };
-  $cellSwap(list, more);
+  $refCellSwap(list, more);
   console.log(
-    `[${list.value.map((item) => String(item)).join(", ")}] [${more.value.map((item) => String(item)).join(", ")}]`,
+    `[${$borrow(list)
+      .value.map((item) => String(item))
+      .join(", ")}] [${$borrow(more)
+      .value.map((item) => String(item))
+      .join(", ")}]`,
   );
   const lock = { value: 1 };
   const rw = { value: 2 };

@@ -2,7 +2,7 @@
 
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::calls::{Call, apply};
-use crate::lower::recognition::{CellUse, Std, cell_use};
+use crate::lower::recognition::{CellUse, Std, StdItem, cell_use};
 use crate::lower::{FnCx, R, fn_def};
 use crate::runtime::Helper;
 use rustc_middle::thir::{ExprId, ExprKind, LocalVarId};
@@ -18,6 +18,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
         let Call {
+            fun,
             generic_args,
             args,
             span,
@@ -48,26 +49,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // What it held, and the new value in its place: `v`, its type's
             // default, or what `f` makes of it, given a `&mut` to it: the
             // object itself, or the cell's `{ value }`, which is a box (ADR 0074).
-            Std::CellReplace | Std::CellTake | Std::CellReplaceWith => {
+            // A `RefCell`'s borrows it mutably to do it: `replace_with`'s while
+            // `f` runs, as `f` may ask (ADR 0328).
+            Std::CellReplaceWith => {
+                let item = generic_args.type_at(0);
+                let mut given = vec![arg(), arg()];
+                if !self.is_object(item) {
+                    given.push(Expr::bool(true));
+                }
+                self.runtime.insert(Helper::Borrow);
+                Expr::call(Expr::var("$replaceWith"), given)
+            }
+            Std::CellReplace | Std::CellTake => {
                 let item = generic_args.type_at(0);
                 let cell = arg();
-                let (cell, next) = match known {
-                    Std::CellReplace => (cell, arg()),
-                    Std::CellTake => (cell, self.default_value(item, span)?),
-                    _ => {
-                        let cell = if cell.reads_same() {
-                            cell
-                        } else {
-                            self.spill("cell", cell, out)
-                        };
-                        let given = if self.is_object(item) {
-                            Expr::member(cell.clone(), "value")
-                        } else {
-                            cell.clone()
-                        };
-                        let next = apply(arg(), vec![given]);
-                        (cell, next)
+                let cell = match self.is_std_type(self.thir[args[0]].ty.peel_refs(), StdItem::RefCell) {
+                    true => {
+                        self.runtime.insert(Helper::Borrow);
+                        Expr::call(Expr::var("$borrowMut"), vec![cell])
                     }
+                    false => cell,
+                };
+                let next = match known {
+                    Std::CellReplace => arg(),
+                    _ => self.default_value(item, span)?,
                 };
                 self.runtime.insert(Helper::CellReplace);
                 Expr::call(Expr::var("$cellReplace"), vec![cell, next])
@@ -78,6 +83,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 true => arg(),
                 false => Expr::member(arg(), "value"),
             },
+            Std::CellSwap if self.is_std_type(self.thir[args[0]].ty.peel_refs(), StdItem::RefCell) => {
+                self.runtime.insert(Helper::Borrow);
+                Expr::call(Expr::var("$refCellSwap"), vec![arg(), arg()])
+            }
             Std::CellSwap => {
                 self.runtime.insert(Helper::CellReplace);
                 Expr::call(Expr::var("$cellSwap"), vec![arg(), arg()])
@@ -95,8 +104,41 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::undefined()
             }
             Std::NotPoisoned => Expr::bool(false),
-            // A `Ref` or `RefMut` guard is what it guards: the object itself.
-            Std::Borrow => Expr::member(arg(), "value"),
+            // A guard is its cell, checked free to borrow so, and counted
+            // while it's held where something could ask (ADR 0328).
+            Std::Borrow { mutable, lock } => {
+                let hold = !self.drop_facts()?.momentary.contains(&fun);
+                let name = match (lock, mutable) {
+                    (false, false) => "$borrow",
+                    (false, true) => "$borrowMut",
+                    (true, false) => "$lockRead",
+                    (true, true) => "$lock",
+                };
+                let mut given = vec![arg()];
+                if hold {
+                    given.push(Expr::bool(true));
+                }
+                self.runtime.insert(Helper::Borrow);
+                let guard = Expr::call(Expr::var(name), given);
+                if lock { Self::ok(guard) } else { guard }
+            }
+            Std::TryBorrow { mutable } => {
+                let mut given = vec![arg()];
+                if mutable {
+                    given.push(Expr::bool(true));
+                }
+                self.runtime.insert(Helper::Borrow);
+                Expr::call(Expr::var("$tryBorrow"), given)
+            }
+            Std::GuardValue { mutable } => {
+                let ty::Adt(_, guard) = generic_args.type_at(0).kind() else {
+                    unreachable!("a guard")
+                };
+                match mutable && self.is_boxable(guard.types().next().expect("what it guards")) {
+                    true => arg(),
+                    false => Expr::member(arg(), "value"),
+                }
+            }
             Std::Lock => Self::ok(Expr::member(arg(), "value")),
             // `mem::drop(x)` is `x`'s destructor, run now (ADR 0098).
             Std::Drop => {
@@ -206,14 +248,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (key, f) = (arg(), arg());
                 crate::lower::calls::apply_in(f, vec![key], out)
             }
-            Std::LocalBorrow => {
+            // A plain one's `f` asks nothing of borrows (ADR 0328).
+            Std::LocalBorrow { .. } if self.plain_local(args[0]) => {
                 let (key, f) = (arg(), arg());
-                let held = if self.plain_local(args[0]) {
-                    key
-                } else {
-                    Expr::member(key, "value")
+                apply(f, vec![key])
+            }
+            Std::LocalBorrow { mutable } => {
+                let mut given = vec![arg(), arg()];
+                let name = match mutable {
+                    true => {
+                        if !self.is_object(generic_args.type_at(0)) {
+                            given.push(Expr::bool(true));
+                        }
+                        "$withBorrowMut"
+                    }
+                    false => "$withBorrow",
                 };
-                apply(f, vec![held])
+                self.runtime.insert(Helper::Borrow);
+                Expr::call(Expr::var(name), given)
             }
             _ => return Ok(None),
         }))

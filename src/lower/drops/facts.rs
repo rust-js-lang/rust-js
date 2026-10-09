@@ -17,6 +17,9 @@ use rustc_span::def_id::DefId;
 
 use super::super::body_queries::BodyQuery;
 use super::super::effects::cannot_leave_in;
+use super::super::recognition::Std;
+use super::super::{fn_def, strip};
+use rustc_middle::middle::region;
 
 use super::Path;
 use super::types::{DropQuery, Drops, describe};
@@ -47,6 +50,10 @@ pub(in crate::lower) struct Facts {
     pub(super) updates: HashMap<ExprId, (LocalVarId, Vec<Path>)>,
     /// What this body does that isn't supported yet.
     pub(super) problems: Vec<(Span, String)>,
+    /// Each borrow, by its call's `fun`, whose guard is held only while
+    /// nothing can ask whether its cell is borrowed: checked, and not
+    /// counted, nor dropped (ADR 0328).
+    pub(in crate::lower) momentary: HashSet<ExprId>,
 }
 
 impl Facts {
@@ -109,6 +116,7 @@ pub(super) fn find_facts<'tcx>(cx: &DropQuery<'_, 'tcx>, thir: &Thir<'tcx>, body
             .map(|(id, e)| (std::ptr::from_ref(e) as usize, id))
             .collect(),
         stack: Vec::new(),
+        statements: Vec::new(),
         lets: HashMap::new(),
         passing: HashSet::new(),
         facts: Facts::default(),
@@ -142,6 +150,9 @@ struct Finder<'c, 'q, 'a, 'tcx> {
     ids: HashMap<usize, ExprId>,
     /// The expressions being walked, outermost first.
     stack: Vec<ExprId>,
+    /// The statements being walked, each its temporaries' scope and what's
+    /// in it, a `let` with an `else` nothing.
+    statements: Vec<(region::Scope, Option<ExprId>)>,
     /// Each `let` statement's value, and its pattern.
     lets: HashMap<ExprId, &'a Pat<'tcx>>,
     /// The bindings of `?`'s own `match`, `Continue(v) => v` and `Break(r)`:
@@ -542,9 +553,124 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             }
             _ => false,
         };
-        if used_in_place {
+        if used_in_place && !self.momentary(e) {
             self.facts.temps.insert(e, TempKind::Place);
         }
+    }
+
+    /// A guard made here, `c.borrow_mut()` say, that's held only while
+    /// nothing can ask whether its cell is borrowed: its borrow is checked,
+    /// and not counted (ADR 0328).
+    fn momentary(&mut self, e: ExprId) -> bool {
+        let recognition = &self.cx.recognition;
+        if !recognition.is_guard(self.thir[e].ty) {
+            return false;
+        }
+        // The borrow: `c.borrow()`, or `m.lock()` of `m.lock().unwrap()`.
+        let mut made = e;
+        let (fun, mutable) = loop {
+            let ExprKind::Call { fun, ref args, .. } = self.thir[strip(self.thir, made)].kind else {
+                return false;
+            };
+            match fn_def(self.thir[fun].ty).and_then(|(id, args)| recognition.classify(id, args)) {
+                Some(Std::Borrow { mutable, .. }) => break (fun, mutable),
+                Some(Std::UnwrapOk) => made = args[0],
+                _ => return false,
+            }
+        };
+        let tree = recognition.tcx.region_scope_tree(self.body_owner.expect_local());
+        let Some(scope) = tree.temporary_scope(self.thir[e].temp_scope_id).temp_lifetime else {
+            return false;
+        };
+        let extent = self
+            .stack
+            .iter()
+            .rev()
+            .copied()
+            .find(|&s| matches!(self.thir[s].kind, ExprKind::Scope { region_scope, .. } if region_scope == scope))
+            .or_else(|| {
+                self.statements
+                    .iter()
+                    .rev()
+                    .find(|(s, _)| *s == scope)
+                    .and_then(|&(_, root)| root)
+            });
+        let Some(extent) = extent else {
+            return false;
+        };
+        let mut quiet = Quiet {
+            cx: self.cx,
+            thir: self.thir,
+            own: fun,
+            shared: !mutable,
+            quiet: true,
+        };
+        quiet.visit_expr(&self.thir[extent]);
+        if quiet.quiet {
+            self.facts.momentary.insert(fun);
+        }
+        quiet.quiet
+    }
+}
+
+/// Whether evaluating an expression can't ask whether a cell is borrowed,
+/// but by `own`, a borrow's call (ADR 0328): it calls nothing that may run
+/// code of the crate's, or a cell's that borrows it, and drops nothing but
+/// guards, of what it makes or gives a call by value or `&mut`. A shared
+/// borrow beside `own`, a shared one too, asks only whether it's mutably
+/// borrowed, which `own` doesn't change.
+struct Quiet<'c, 'q, 'a, 'tcx> {
+    cx: &'c DropQuery<'q, 'tcx>,
+    thir: &'a Thir<'tcx>,
+    own: ExprId,
+    shared: bool,
+    quiet: bool,
+}
+
+impl<'c, 'q, 'a, 'tcx> Quiet<'c, 'q, 'a, 'tcx> {
+    fn drops(&self, ty: Ty<'tcx>) -> bool {
+        self.cx.drops_but_guards(ty)
+    }
+}
+
+impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Quiet<'c, 'q, 'a, 'tcx> {
+    fn thir(&self) -> &'a Thir<'tcx> {
+        self.thir
+    }
+
+    fn visit_expr(&mut self, expr: &'a ThirExpr<'tcx>) {
+        if !self.quiet {
+            return;
+        }
+        let asks = match expr.kind {
+            ExprKind::Call { fun, ref args, .. } if fun != self.own => match fn_def(self.thir[fun].ty) {
+                Some((id, args))
+                    if self.shared
+                        && matches!(
+                            self.cx.recognition.classify(id, args),
+                            Some(Std::Borrow { mutable: false, .. })
+                        ) =>
+                {
+                    false
+                }
+                Some((id, generic_args)) => {
+                    self.cx.recognition.may_ask_borrows(id, generic_args)
+                        || args.iter().any(|&a| match *self.thir[a].ty.kind() {
+                            ty::Ref(_, inner, ty::Mutability::Mut) => self.drops(inner),
+                            ty::Ref(..) => false,
+                            _ => self.drops(self.thir[a].ty),
+                        })
+                }
+                None => true,
+            },
+            ExprKind::InlineAsm(_) | ExprKind::Yield { .. } | ExprKind::Become { .. } => true,
+            _ => false,
+        };
+        if asks || (!is_place(&expr.kind) && self.drops(expr.ty)) {
+            self.quiet = false;
+            return;
+        }
+        visit::walk_expr(self, expr);
     }
 }
 
@@ -580,7 +706,17 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Finder<'c, 'q, 'a, 'tcx> {
         {
             self.lets.insert(*init, pattern);
         }
+        self.statements.push(match stmt.kind {
+            ThirStmt::Expr { scope, expr } => (scope, Some(expr)),
+            ThirStmt::Let {
+                init_scope,
+                initializer,
+                else_block,
+                ..
+            } => (init_scope, initializer.filter(|_| else_block.is_none())),
+        });
         visit::walk_stmt(self, stmt);
+        self.statements.pop();
     }
 
     fn visit_pat(&mut self, pat: &'a Pat<'tcx>) {

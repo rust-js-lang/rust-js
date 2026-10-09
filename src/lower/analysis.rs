@@ -17,7 +17,7 @@ use super::bindings::{Export, is_binding};
 use super::recognition::TypeFact;
 use super::traits;
 use super::{Body, FnInfo, TestFn, module_path};
-use crate::lower::recognition::{StdItem, is_hash_impl, is_js_object_deref, is_std_def, known_derive};
+use crate::lower::recognition::{Recognition, StdItem, is_hash_impl, is_js_object_deref, is_std_def, known_derive};
 use debug::{derived_debug, uses_format_options, uses_pretty_debug};
 use drops::drop_params;
 pub(super) use mutation::copies_by_callers;
@@ -303,7 +303,20 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         .filter_map(|d| Some((d, init_of(tcx, d)?)))
         .collect();
 
-    let plain_locals = plain_locals::plain_thread_locals(tcx, all_bodies, thread_local_inits.values().copied());
+    // A closure `with_borrow` runs while its thread-local is borrowed, that
+    // can't ask whether it is (ADR 0328).
+    let quiet = |closure: LocalDefId| {
+        closures.get(&closure).is_some_and(|body| {
+            let recognition = Recognition {
+                tcx,
+                typing_env: ty::TypingEnv::post_analysis(tcx, closure),
+                trait_impls: &trait_impls,
+                foreign: &foreign,
+            };
+            recognition.asks_no_borrows(&body.thir)
+        })
+    };
+    let plain_locals = plain_locals::plain_thread_locals(tcx, all_bodies, thread_local_inits.values().copied(), &quiet);
     let counted = counted_rcs(tcx, all_bodies);
     let plain_cells = plain_locals::plain_cells(tcx, all_bodies, &counted);
     let read_at_once = plain_locals::read_at_once(tcx, all_bodies);

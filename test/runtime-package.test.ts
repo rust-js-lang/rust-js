@@ -89,3 +89,41 @@ pub fn once() -> u32 {
   expect(call("lazy")).toBe("rust-js does not support a `LazyLock` whose init uses it, which deadlocks in Rust\n");
   expect(call("once")).toBe("rust-js does not support a `OnceLock` whose init sets it, which deadlocks in Rust\n");
 });
+
+// Locking a lock its thread holds deadlocks in Rust, which JS can't do:
+// rust-js says so (ADR 0328).
+test("a lock locked again while held is rust-js's error, not a deadlock", () => {
+  const dir = fixture("runtime-lock-held");
+  writeFileSync(join(dir, "lib.rs"), `use std::sync::{Mutex, RwLock};
+
+pub fn mutex() -> u32 {
+    let m = Mutex::new(1);
+    let held = m.lock().unwrap();
+    let again = *m.lock().unwrap();
+    *held + again
+}
+
+pub fn rw() -> u32 {
+    let rw = RwLock::new(1);
+    let reading = rw.read().unwrap();
+    let shared = *rw.read().unwrap();
+    *rw.write().unwrap() += 1;
+    *reading + shared
+}
+
+pub fn rw_read() -> u32 {
+    let rw = RwLock::new(1);
+    let mut writing = rw.write().unwrap();
+    *writing += *rw.read().unwrap();
+    *writing
+}
+`);
+  const out = join(dir, "lib.js");
+  run([compiler, join(dir, "lib.rs"), "-o", out]);
+  const call = (name: string) =>
+    run([node ?? "node", "--input-type=module", "--eval", `try { (await import(${JSON.stringify(out)})).${name}(); } catch (e) { console.log(e.message); }`]);
+  const error = "rust-js does not support locking a lock its thread holds, which deadlocks in Rust\n";
+  expect(call("mutex")).toBe(error);
+  expect(call("rw")).toBe(error);
+  expect(call("rw_read")).toBe(error);
+});

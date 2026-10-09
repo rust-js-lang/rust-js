@@ -171,22 +171,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","destructuring_assignment"],
   },
   {
-    name: "guard-of-number-refused",
-    breaks: "`let mut n = m.lock().unwrap();` of a number is an error, where `n` names `m.value`",
-    file: "src/lower/patterns.rs",
-    find: "            && self.is_guard(ty)\n",
-    replace: "            && false && self.is_guard(ty)\n",
-    tests: ["test/corpus.test.ts", "-t", "^locks"],
-  },
-  {
-    name: "guard-place-unfixed",
-    breaks: "a guard of `slots[i]` follows a later change to `i`, where it's fixed where it's locked",
-    file: "src/lower/patterns.rs",
-    find: "            let place = Expr::member(self.fixed_place(cell, pat.span, out)?, \"value\");",
-    replace: "            let place = Expr::member(self.place(cell).map_or_else(Expr::undefined, |(p, _)| p), \"value\");",
-    tests: ["test/corpus.test.ts", "-t", "^locks"],
-  },
-  {
     name: "range-top-of-u128-dropped",
     breaks: "a `u128` range pattern's top is dropped as if it were the type's, `1..=u64::MAX` matching all",
     file: "src/lower/patterns.rs",

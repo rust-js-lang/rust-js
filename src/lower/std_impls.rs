@@ -234,27 +234,51 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `clone_value` of a `ty` that needs a copy, part by part.
     fn clone_parts(&mut self, place: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+        let std = |item: StdItem| self.is_std_type(ty, item);
+        // Each read once.
+        match ty.kind() {
+            ty::Array(item, _) => return self.clone_items(place, *item, span),
+            ty::Adt(_, args) if self.is_vec_like(ty) => return self.clone_items(place, args.type_at(0), span),
+            ty::Adt(_, args) if ty.is_box() => return self.clone_value(place, args.type_at(0), span, out),
+            // A `RefCell`'s, while it's borrowed (ADR 0328): checked free to,
+            // and held where its value's clone may ask.
+            ty::Adt(_, args) if std(StdItem::RefCell) && !self.recognition().std_alone(args.type_at(0)) => {
+                let mut body = Vec::new();
+                let value = self.clone_value(Expr::var("value"), args.type_at(0), span, &mut body)?;
+                body.push(StmtKind::Return(Some(value)).at(js::Span::NONE));
+                self.runtime.insert(Helper::Borrow);
+                let value = Expr::call(
+                    Expr::var("$withBorrow"),
+                    vec![place, Expr::arrow(vec!["value".into()], body)],
+                );
+                return Ok(Expr::object(vec![Prop::Field("value".into(), value)]));
+            }
+            ty::Adt(_, args) if std(StdItem::Cell) || std(StdItem::RefCell) => {
+                let cell = match std(StdItem::RefCell) {
+                    true => {
+                        self.runtime.insert(Helper::Borrow);
+                        Expr::call(Expr::var("$borrow"), vec![place])
+                    }
+                    false => place,
+                };
+                let value = self.clone_value(Expr::member(cell, "value"), args.type_at(0), span, out)?;
+                return Ok(Expr::object(vec![Prop::Field("value".into(), value)]));
+            }
+            // A `OnceCell` holds an `Option` (ADR 0317).
+            ty::Adt(_, args) if std(StdItem::OnceCell) => {
+                let option = Ty::new_option(self.tcx, args.type_at(0));
+                let value = self.clone_value(Expr::member(place, "value"), option, span, out)?;
+                return Ok(Expr::object(vec![Prop::Field("value".into(), value)]));
+            }
+            _ => {}
+        }
         // Read more than once below.
         let place = if !place.reads_same() {
             self.spill("value", place, out)
         } else {
             place
         };
-        let std = |item: StdItem| self.is_std_type(ty, item);
         match ty.kind() {
-            ty::Array(item, _) => self.clone_items(place, *item, span),
-            ty::Adt(_, args) if self.is_vec_like(ty) => self.clone_items(place, args.type_at(0), span),
-            ty::Adt(_, args) if ty.is_box() => self.clone_value(place, args.type_at(0), span, out),
-            ty::Adt(_, args) if std(StdItem::Cell) || std(StdItem::RefCell) => {
-                let value = self.clone_value(Expr::member(place, "value"), args.type_at(0), span, out)?;
-                Ok(Expr::object(vec![Prop::Field("value".into(), value)]))
-            }
-            // A `OnceCell` holds an `Option` (ADR 0317).
-            ty::Adt(_, args) if std(StdItem::OnceCell) => {
-                let option = Ty::new_option(self.tcx, args.type_at(0));
-                let value = self.clone_value(Expr::member(place, "value"), option, span, out)?;
-                Ok(Expr::object(vec![Prop::Field("value".into(), value)]))
-            }
             // `new Map(m)`, cloning each value that needs it, and each key: a
             // primitive one never does, and one found by value may (ADR 0121).
             ty::Adt(_, args) if self.is_map(ty) => {
@@ -733,13 +757,41 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out,
             ),
             ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) => self.eq_value(a, b, args.type_at(0), span, out),
-            ty::Adt(_, args) if std(StdItem::Cell) || std(StdItem::RefCell) => self.eq_value(
-                Expr::member(a, "value"),
-                Expr::member(b, "value"),
-                args.type_at(0),
-                span,
-                out,
-            ),
+            // Two `RefCell`s', each while it's borrowed (ADR 0328), held where
+            // their values' `==` may ask.
+            ty::Adt(_, args) if std(StdItem::RefCell) && !self.recognition().std_alone(args.type_at(0)) => {
+                let mut body = Vec::new();
+                let eq = self.eq_value(Expr::var("x"), Expr::var("y"), args.type_at(0), span, &mut body)?;
+                body.push(StmtKind::Return(Some(eq)).at(js::Span::NONE));
+                self.runtime.insert(Helper::Borrow);
+                let inner = Expr::call(Expr::var("$withBorrow"), vec![b, Expr::arrow(vec!["y".into()], body)]);
+                Ok(Expr::call(
+                    Expr::var("$withBorrow"),
+                    vec![
+                        a,
+                        Expr::arrow(vec!["x".into()], vec![StmtKind::Return(Some(inner)).at(js::Span::NONE)]),
+                    ],
+                ))
+            }
+            ty::Adt(_, args) if std(StdItem::Cell) || std(StdItem::RefCell) => {
+                let (a, b) = match std(StdItem::RefCell) {
+                    true => {
+                        self.runtime.insert(Helper::Borrow);
+                        (
+                            Expr::call(Expr::var("$borrow"), vec![a]),
+                            Expr::call(Expr::var("$borrow"), vec![b]),
+                        )
+                    }
+                    false => (a, b),
+                };
+                self.eq_value(
+                    Expr::member(a, "value"),
+                    Expr::member(b, "value"),
+                    args.type_at(0),
+                    span,
+                    out,
+                )
+            }
             ty::Adt(_, args) if std(StdItem::OnceCell) => self.eq_value(
                 Expr::member(a, "value"),
                 Expr::member(b, "value"),

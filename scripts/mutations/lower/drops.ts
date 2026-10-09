@@ -389,4 +389,12 @@ export const mutations: Mutation[] = [
     replace: "            .and_then(|hoisted| hoisted.functions.iter().find(|_| false))\n",
     tests: ["test/corpus.test.ts", "-t", "drop_functions"],
   },
+  {
+    name: "guard-drop-unrun",
+    breaks: "a guard dropped leaves its cell borrowed",
+    file: "src/lower/drops.rs",
+    find: "                out.push(StmtKind::Expr(Expr::call(Expr::var(\"$unborrow\"), vec![value])).at(js_span));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "refcell_borrows"],
+  },
 ];

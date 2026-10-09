@@ -57,6 +57,10 @@ is the value it points at, as an `Rc` is:**
   of a lock, which shows whether it's locked, and a lock of a value with a
   destructor.
 
+(Amended by ADR 0328: a lock counts its guards as a `RefCell` does, a
+guard is its cell, and one locked again while its thread holds it is
+rust-js's error, where Rust deadlocks.)
+
 ## Why
 
 - **It's exact on one thread.** A lock only changes what a program does

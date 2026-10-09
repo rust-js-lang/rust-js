@@ -63,7 +63,8 @@ for (let i = 0; i < n; i++) { .. }        // for i in 0..n
 `state.value.todos.push(t)`. A guard (`Ref`, `RefMut`) held in a variable is
 the object it guards. A guarded number in a variable names the cell's
 `value` (ADR 0144). (Amended: it was an error, since a copy wouldn't be a
-place.)
+place.) (Amended by ADR 0328: a `RefCell` counts its borrows, each checked
+as std's panics, and a guard is its cell, whose `value` it guards.)
 
 **`&mut` to an object is the object**, just as `&` is (ADR 0023). An object
 here means a struct, tuple, `Vec`, `Cell`, `RefCell` or JS object. Changes

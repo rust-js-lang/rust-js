@@ -49,6 +49,14 @@ pub(super) fn only_reads(e: &Expr) -> bool {
         js::ExprKind::Call(f, args) if matches!(&f.kind, js::ExprKind::Var(v) if v == "$at" || v == "$index") => {
             args.iter().all(only_reads)
         }
+        // A borrow only checked, `$borrowMut(c)`, changes nothing (ADR 0328).
+        js::ExprKind::Call(f, args)
+            if args.len() == 1
+                && matches!(&f.kind, js::ExprKind::Var(v)
+                    if ["$borrow", "$borrowMut", "$lock", "$lockRead"].contains(&v.as_str())) =>
+        {
+            only_reads(&args[0])
+        }
         _ => !e.has_effects(),
     }
 }
@@ -335,8 +343,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (steady && unchanging).then_some(place)
     }
 
-    /// Where a reference made by a call points: `c.borrow_mut()` points at
-    /// the cell's `value`, and so does the guard's `deref_mut()` (ADR 0025).
+    /// Where a reference made by a call points: a counted `Rc`'s deref at its
+    /// `value` (ADR 0320), and a guard's at its cell's (ADR 0328).
     pub(super) fn ref_place(&self, e: ExprId) -> Option<(Expr, bool)> {
         match self.thir[self.strip(e)].kind {
             ExprKind::Borrow { arg, .. } => self.place(arg).or_else(|| self.ref_place(arg)),
@@ -347,30 +355,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Some((Expr::member(rc, "value"), true))
                 }
                 Std::Same => self.ref_place(args[0]),
-                Std::Borrow | Std::Lock => {
-                    let (cell, _) = self.ref_place(args[0])?;
-                    Some((Expr::member(cell, "value"), true))
+                // What a guard held in a variable guards, its cell's `value`
+                // (ADR 0328). One just made is lowered as it's made.
+                Std::GuardValue { .. } => {
+                    let (guard, _) = self.ref_place(args[0])?;
+                    Some((Expr::member(guard, "value"), true))
                 }
-                // A lock's guard, `m.lock().unwrap()`, which is always `Ok`.
-                Std::UnwrapOk => self.ref_place(args[0]),
                 _ => None,
             },
-            _ => None,
-        }
-    }
-
-    /// The cell a guard is of, `m` in `m.lock().unwrap()` or `c.borrow_mut()`
-    /// (ADR 0144): the place it's at.
-    pub(super) fn guarded_cell(&self, e: ExprId) -> Option<ExprId> {
-        let ExprKind::Call { fun, ref args, .. } = self.thir[self.strip(e)].kind else {
-            return None;
-        };
-        match self.std_fn(fun)? {
-            Std::UnwrapOk => self.guarded_cell(args[0]),
-            Std::Borrow | Std::Lock => Some(match self.thir[self.strip(args[0])].kind {
-                ExprKind::Borrow { arg, .. } => arg,
-                _ => args[0],
-            }),
             _ => None,
         }
     }
@@ -614,7 +606,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 Ok(Expr::member(cell, "value"))
             }
+            _ if let Some(target) = self.guarded_target(e, out)? => Ok(target),
             _ => self.assignee(e),
+        }
+    }
+
+    /// `*c.borrow_mut()` of a guard just made, as a place to write: its
+    /// cell's `value` (ADR 0328).
+    pub(super) fn guarded_target(&mut self, e: ExprId, out: &mut Vec<Stmt>) -> R<Option<Expr>> {
+        let ExprKind::Deref { arg } = self.thir[self.strip(e)].kind else {
+            return Ok(None);
+        };
+        match self.thir[self.strip(arg)].kind {
+            ExprKind::Call { fun, ref args, .. }
+                if self.place(e).is_none() && matches!(self.std_fn(fun), Some(Std::GuardValue { .. })) =>
+            {
+                let guard = self.expr(args[0], out)?;
+                Ok(Some(Expr::member(guard, "value")))
+            }
+            _ => Ok(None),
         }
     }
 

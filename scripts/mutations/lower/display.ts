@@ -385,8 +385,16 @@ export const mutations: Mutation[] = [
     name: "rc-debug-box",
     breaks: "`{:?}` of a counted `Rc` shows its counts",
     file: "src/lower/display.rs",
-    find: "        let (value, ty) = self.through_refs(value, ty);\n        let (value, ty) = self.through_counted(value, ty);\n        let ty = self.shown_type(ty);\n",
+    find: "        let (value, ty) = self.through_refs(value, ty);\n        let (value, ty) = self.through_boxes(value, ty);\n        let ty = self.shown_type(ty);\n",
     replace: "        let (value, ty) = self.through_refs(value, ty);\n        let ty = self.shown_type(ty);\n",
     tests: ["test/corpus.test.ts", "-t", "rc_counts"],
+  },
+  {
+    name: "refcell-debug-unchecked",
+    breaks: "`{:?}` of a mutably borrowed `RefCell` shows its value, where it's `<borrowed>`",
+    file: "src/lower/display.rs",
+    find: "                let shown = match std(StdItem::RefCell) {",
+    replace: "                let shown = match false {",
+    tests: ["test/corpus.test.ts", "-t", "refcell_borrows"],
   },
 ];

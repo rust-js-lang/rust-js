@@ -4,6 +4,7 @@ import {
   $append,
   $asciiCase,
   $bigMax,
+  $borrowMut,
   $cmp,
   $debugStr,
   $displayF32,
@@ -184,7 +185,7 @@ function main() {
     `${arg$3.TAG === "Ok" ? `Ok(${$debugStr(arg$3._0)})` : `Err(${arg$3._0})`} ${r.TAG === "Ok" ? `Ok(${$debugStr(r._0)})` : `Err(${r._0})`}`,
   );
   const cell = { value: [1] };
-  cell.value.push(2);
+  $borrowMut(cell).value.push(2);
   console.log(`[${cell.value.map((item) => String(item)).join(", ")}] 5`);
   const front = [1];
   const back = [2, 3];

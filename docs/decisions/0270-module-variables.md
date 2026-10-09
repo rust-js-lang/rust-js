@@ -26,7 +26,8 @@ cachedErrorCodes.value = codes;
 **A thread-local only read and set, by `get`, `set`, `with_borrow` and
 `with_borrow_mut`, in its own module, and not public, is its module's
 variable of what its cell holds**: a `let` if it's `set`, a `const`
-otherwise.
+otherwise. (Amended by ADR 0328: a `with_borrow` whose closure may ask
+whether the cell is borrowed keeps it its cell, borrowed while `f` runs.)
 
 ```rust
 thread_local! {

@@ -6,6 +6,7 @@ import {
   $debugFields,
   $debugStr,
   $pretty,
+  $showBorrowed,
   $sortedEntries,
   $traitImpl,
 } from "@rust-js/runtime";
@@ -265,10 +266,12 @@ function main() {
     )} ${$pretty(
       "RefCell {",
       [
-        `value: ${$pretty(
-          "[",
-          [1].map((item) => String(item)),
-          "]",
+        `value: ${$showBorrowed({ value: [1] }, (value) =>
+          $pretty(
+            "[",
+            value.map((item) => String(item)),
+            "]",
+          ),
         )}`,
       ],
       "}",

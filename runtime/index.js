@@ -328,6 +328,8 @@ export function $eq(a, b) {
   if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) {
     return false;
   }
+  // A `RefCell` mutably borrowed can't be borrowed to compare (ADR 0328).
+  if (a.borrows < 0 || b.borrows < 0) throw new Error("RefCell already mutably borrowed");
   if (Array.isArray(a)) {
     return Array.isArray(b) && a.length === b.length && a.every((x, i) => $eq(x, b[i]));
   }
@@ -1932,6 +1934,103 @@ export function $decodeUtf16(units) {
     } else out.push({ TAG: "Err", _0: unit });
   }
   return out;
+}
+
+// A `RefCell`'s `borrow()` and `borrow_mut()` (ADR 0328): the cell, if it's
+// free to borrow so, as its guard. `borrows` counts the guards held: how
+// many share it, or -1 for the one that changes it. One held only while
+// nothing can ask isn't counted; with `hold`, it's counted until `$unborrow`.
+export function $borrow(cell, hold) {
+  if (cell.borrows < 0) throw new Error("RefCell already mutably borrowed");
+  if (hold) $setBorrows(cell, (cell.borrows ?? 0) + 1);
+  return cell;
+}
+
+export function $borrowMut(cell, hold) {
+  if (cell.borrows) throw new Error("RefCell already borrowed");
+  if (hold) $setBorrows(cell, -1);
+  return cell;
+}
+
+// A guard dropped: one borrow fewer.
+export function $unborrow(cell) {
+  $setBorrows(cell, cell.borrows > 0 ? cell.borrows - 1 : 0);
+}
+
+// Not enumerable: `==`, a clone and JSON see the cell's `value` alone.
+export function $setBorrows(cell, borrows) {
+  Object.defineProperty(cell, "borrows", { value: borrows, writable: true, configurable: true });
+}
+
+// `try_borrow()`, `try_borrow_mut()`: `Ok` of a guard held, or `Err` of
+// the error, which is its message.
+export function $tryBorrow(cell, mutable) {
+  if (mutable ? cell.borrows : cell.borrows < 0) {
+    return { TAG: "Err", _0: mutable ? "RefCell already borrowed" : "RefCell already mutably borrowed" };
+  }
+  return { TAG: "Ok", _0: mutable ? $borrowMut(cell, true) : $borrow(cell, true) };
+}
+
+// What `f` makes of a `RefCell`'s value while it's borrowed: its clone, or
+// whether it's equal, where `f` may ask too.
+export function $withBorrow(cell, f) {
+  const result = f($borrow(cell, true).value);
+  $unborrow(cell);
+  return result;
+}
+
+// What `f` makes of a `&mut` to a `RefCell`'s value while it's mutably
+// borrowed, the cell itself for a number or text (ADR 0074): a
+// thread-local's `with_borrow_mut(f)`.
+export function $withBorrowMut(cell, f, boxed) {
+  const held = $borrowMut(cell, true);
+  const result = f(boxed ? held : held.value);
+  $unborrow(cell);
+  return result;
+}
+
+// A `RefCell`'s `{:?}`: what it holds, shown by `show` while it's borrowed,
+// or `<borrowed>` where it's mutably borrowed.
+export function $showBorrowed(cell, show) {
+  return cell.borrows < 0 ? "<borrowed>" : $withBorrow(cell, show);
+}
+
+// A `RefCell`'s `replace_with(f)`: `f` given a `&mut` to its value while
+// it's mutably borrowed, the cell itself for a number or text (ADR 0074),
+// and what it makes in its place.
+export function $replaceWith(cell, f, boxed) {
+  const next = $withBorrowMut(cell, f, boxed);
+  const previous = cell.value;
+  cell.value = next;
+  return previous;
+}
+
+// A `RefCell`'s `swap(&other)`: each mutably borrowed, the first while the
+// second is, so a cell swapped with itself is borrowed twice.
+export function $refCellSwap(a, b) {
+  $borrowMut(a, true);
+  $borrowMut(b);
+  $unborrow(a);
+  [a.value, b.value] = [b.value, a.value];
+}
+
+// A `Mutex`'s `lock()`, an `RwLock`'s `write()`, and its `read()`: the
+// guard, as a `RefCell`'s. On one thread, locking what the thread holds
+// deadlocks in Rust.
+export function $lock(cell, hold) {
+  if (cell.borrows) $deadlock();
+  if (hold) $setBorrows(cell, -1);
+  return cell;
+}
+
+export function $lockRead(cell, hold) {
+  if (cell.borrows < 0) $deadlock();
+  if (hold) $setBorrows(cell, (cell.borrows ?? 0) + 1);
+  return cell;
+}
+
+export function $deadlock() {
+  throw new Error("rust-js does not support locking a lock its thread holds, which deadlocks in Rust");
 }
 
 // A `OnceLock`'s `get_or_init(f)`: what it holds, made by `f` the first

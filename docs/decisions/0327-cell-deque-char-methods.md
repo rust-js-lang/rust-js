@@ -41,7 +41,8 @@ ADR 0314's count had `Cell` at 6 of its 13 methods, `RefCell` 7 of 13,
   `&mut [u16]` is part of its buffer, a sub-slice a JS array can't be; and
   `try_borrow`, `try_borrow_mut`, `try_lock`, `try_read` and `try_write`,
   which ask of a borrow's or a lock's state, which rust-js doesn't keep
-  (ADR 0025).
+  (ADR 0025). (Amended by ADR 0328: a `RefCell` counts its borrows, and
+  `try_borrow` and `try_borrow_mut` answer as std's do.)
 
 ## Why
 

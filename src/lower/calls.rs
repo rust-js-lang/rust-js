@@ -646,6 +646,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::Index
                     | Std::Len
                     | Std::IsEmpty
+                    // What a guard guards, through its `&mut` (ADR 0328).
+                    | Std::GuardValue { .. }
             )
         {
             // Of a type parameter's only, a generic iterator's chrono folds:
@@ -1154,7 +1156,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::CellReplace
             | Std::CellTake
             | Std::CellReplaceWith
-            | Std::Borrow
+            | Std::Borrow { .. }
+            | Std::TryBorrow { .. }
+            | Std::GuardValue { .. }
             | Std::Lock
             | Std::Drop
             | Std::Forget
@@ -1165,7 +1169,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::AtomicFetchMax(_)
             | Std::AtomicCompareExchange
             | Std::LocalWith
-            | Std::LocalBorrow
+            | Std::LocalBorrow { .. }
             | Std::CellGetMut
             | Std::CellSwap
             | Std::CellUpdate

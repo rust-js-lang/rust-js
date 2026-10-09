@@ -8,7 +8,16 @@ import {
   PreopenDirectory,
   WASI,
 } from "@bjorn3/browser_wasi_shim";
-import { $extend, $rsplitOnce, $stripSuffix, $try, $unwrap } from "@rust-js/runtime";
+import {
+  $borrow,
+  $borrowMut,
+  $extend,
+  $rsplitOnce,
+  $stripSuffix,
+  $try,
+  $unborrow,
+  $unwrap,
+} from "@rust-js/runtime";
 
 export function ms(t) {
   return `${t.toFixed(0)} ms`;
@@ -158,10 +167,10 @@ export async function compile(loaded, sources, rootFile, test) {
   const fds = [
     new OpenFile(new File([])),
     ConsoleStdout.lineBuffered((line) => {
-      stdoutLines.value.push(line);
+      $borrowMut(stdoutLines).value.push(line);
     }),
     ConsoleStdout.lineBuffered((line) => {
-      stderrLines.value.push(line);
+      $borrowMut(stderrLines).value.push(line);
     }),
     new PreopenDirectory("/in", directoryOf(sources)),
     outDir,
@@ -222,14 +231,20 @@ export async function compile(loaded, sources, rootFile, test) {
     jsFilesIn(outDir.dir, "", files);
   }
   const memory = instance.exports.memory.buffer;
-  return {
-    exit,
-    ok,
-    files: new Map(files),
-    stderr: stderr.value.join("\n"),
-    instantiate: t1 - t0,
-    run: t2 - t1,
-    memory: memory.byteLength,
-  };
+  const files$1 = new Map(files);
+  const ref = $borrow(stderr, true);
+  try {
+    return {
+      exit,
+      ok,
+      files: files$1,
+      stderr: ref.value.join("\n"),
+      instantiate: t1 - t0,
+      run: t2 - t1,
+      memory: memory.byteLength,
+    };
+  } finally {
+    $unborrow(ref);
+  }
 }
 //# sourceMappingURL=compiler.js.map

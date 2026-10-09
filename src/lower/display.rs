@@ -834,7 +834,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `fmt` can tell (ADR 0137).
     pub(super) fn display_string_with(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, pretty: &Pretty) -> R<Expr> {
         let (value, ty) = self.through_refs(value, ty);
-        let (value, ty) = self.through_counted(value, ty);
+        let (value, ty) = self.through_boxes(value, ty);
         let ty = self.shown_type(ty);
         if let Some(shown) = self.formatted(value.clone(), (Std::FmtDisplay, ty), pretty) {
             return Ok(shown);
@@ -987,8 +987,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .ok_or_else(|| self.unsupported(span, "this writer's `write_str`"))
     }
 
-    /// The type `ty` shows: what a `Box`, an `Rc` or a `RefCell`'s
-    /// `borrow()` holds, as they are it in JS, and `ty` itself otherwise.
+    /// The type `ty` shows: what a `Box` or an `Rc` holds, as they are it in
+    /// JS, and `ty` itself otherwise.
     pub(super) fn shown_type(&self, ty: Ty<'tcx>) -> Ty<'tcx> {
         match ty.kind() {
             ty::Adt(_, args) if self.shows_inside(ty) => args.types().next().expect("what it holds").peel_refs(),
@@ -1024,7 +1024,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// value is shown as the value is.
     pub(super) fn debug_string_with(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, pretty: &Pretty) -> R<Expr> {
         let (value, ty) = self.through_refs(value, ty);
-        let (value, ty) = self.through_counted(value, ty);
+        let (value, ty) = self.through_boxes(value, ty);
         // A `fmt::Result`: `undefined`, `Ok`, or the `fmt::Error` it caught
         // (ADR 0187), and a `fmt::Error`, which holds nothing.
         if self.is_fmt_result(ty) {
@@ -1319,7 +1319,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             ty::Adt(_, args) if std(StdItem::Cell) || std(StdItem::RefCell) => {
                 let name = if std(StdItem::Cell) { "Cell" } else { "RefCell" };
-                let shown = self.debug_string_with(Expr::member(value, "value"), args.type_at(0), span, pretty)?;
+                let shown = match std(StdItem::RefCell) {
+                    // What it holds, shown while it's borrowed, or `<borrowed>`
+                    // where it's mutably borrowed (ADR 0328).
+                    true => {
+                        let shown = self.debug_string_with(Expr::var("value"), args.type_at(0), span, pretty)?;
+                        let show = Expr::arrow(
+                            vec!["value".into()],
+                            vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
+                        );
+                        self.runtime.insert(Helper::Borrow);
+                        Expr::call(Expr::var("$showBorrowed"), vec![value, show])
+                    }
+                    false => self.debug_string_with(Expr::member(value, "value"), args.type_at(0), span, pretty)?,
+                };
                 let plain = join(vec![
                     Expr::str(format!("{name} {{ value: ")),
                     shown.clone(),
@@ -1511,10 +1524,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::call(self.fn_ref(instance.def_id()), values))
     }
 
-    /// `Box<T>`, `Rc<T>`, `Ref<T>` and `RefMut<T>`: shown as their `T`,
-    /// which is the value they are in JS (ADR 0023).
+    /// `Box<T>` and `Rc<T>`: shown as their `T`, which is the value they are
+    /// in JS (ADR 0023).
     fn shows_inside(&self, ty: Ty<'tcx>) -> bool {
-        ty.is_box() || self.is_rc(ty) || self.is_guard(ty)
+        ty.is_box() || self.is_rc(ty)
     }
 
     /// Does `{:?}` of a `ty` read the value more than once? An `Option`, a

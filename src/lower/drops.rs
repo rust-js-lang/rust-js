@@ -474,6 +474,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 out.push(StmtKind::Expr(Expr::call(Expr::var("$rcDrop"), args)).at(js_span));
             }
+            // A guard: `$unborrow(cell)` (ADR 0328).
+            ty::Adt(..) if self.is_guard(ty) => {
+                self.runtime.insert(Helper::Borrow);
+                out.push(StmtKind::Expr(Expr::call(Expr::var("$unborrow"), vec![value])).at(js_span));
+            }
             ty::Adt(..) if self.weak_of(ty).is_some() => {
                 self.runtime.insert(Helper::Rc);
                 out.push(StmtKind::Expr(Expr::call(Expr::var("$weakDrop"), vec![value])).at(js_span));
@@ -1667,8 +1672,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else {
             value
         };
-        let Some((target, _)) = self.place(lhs) else {
-            return Err(self.unsupported(rust_span, "assigning a value with a destructor here"));
+        let target = match self.place(lhs) {
+            Some((target, _)) => target,
+            // Dropped, then written: a guard's cell is read twice.
+            None => match self.guarded_target(lhs, out)?.map(|t| t.kind) {
+                Some(js::ExprKind::Member(guard, name)) => {
+                    let guard = if guard.reads_same() {
+                        *guard
+                    } else {
+                        self.spill("cell", *guard, out)
+                    };
+                    Expr::member(guard, &name)
+                }
+                _ => return Err(self.unsupported(rust_span, "assigning a value with a destructor here")),
+            },
         };
         let flag = match self.thir[self.strip(lhs)].kind {
             ExprKind::VarRef { id } => self.drop_state.flags.get(&id).cloned(),

@@ -3,6 +3,8 @@
 import {
   $add,
   $at,
+  $borrow,
+  $borrowMut,
   $cmp,
   $cmpIn,
   $cmpItems,
@@ -16,6 +18,7 @@ import {
   $sortedEntries,
   $sortedKeys,
   $trim,
+  $unborrow,
   $unwrap,
 } from "@rust-js/runtime";
 
@@ -138,23 +141,28 @@ export function toggled(n) {
 export function cell(times) {
   const c = { value: 0 };
   for (let i = 0; i < times; i++) {
-    c.value = (c.value + 2) | 0;
+    const cell$1 = $borrowMut(c);
+    cell$1.value = (cell$1.value + 2) | 0;
   }
-  return (c.value + 1) | 0;
+  return ($borrow(c).value + 1) | 0;
 }
 
 export function shared(times) {
   const log = { value: [] };
   const writer = log;
   for (let i = 0; i < times; i++) {
-    writer.value.push(Math.imul(i, i));
+    $borrowMut(writer).value.push(Math.imul(i, i));
   }
-  const v = log.value;
+  const v = $borrow(log, true);
   let total = 0;
-  for (const x of v) {
-    total = (total + x) | 0;
+  try {
+    for (const x of v.value) {
+      total = (total + x) | 0;
+    }
+    return [total, v.value.length];
+  } finally {
+    $unborrow(v);
   }
-  return [total, v.length];
 }
 
 export function words(s) {
