@@ -286,7 +286,15 @@ export function App() {
               </button>
             </>
           }
-          editor={<Editor state={current} view={source} onSubmit={() => submit(false)} />}
+          editor={
+            <Editor
+              state={current}
+              view={source}
+              onSubmit={() => {
+                submit(false);
+              }}
+            />
+          }
         />
         <Pane
           title="JavaScript"

@@ -667,7 +667,9 @@ pub fn Tokens() -> JSX::Element {
         content={
           active ? <button onClick={() => globalThis.record(7)}>Save</button> : <span>Waiting</span>
         }
-        onSubmit={() => globalThis.record(8)}
+        onSubmit={() => {
+          globalThis.record(8);
+        }}
       />
     </main>
   );

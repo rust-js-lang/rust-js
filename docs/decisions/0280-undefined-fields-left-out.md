@@ -39,3 +39,11 @@ has, and `$key`, a set's or a map's, leaves out a field that's `None`.
   one given `None`, compares and hashes them alike, and keeps a spread's
   `undefined`; mutations keep the keys, drop the spread's, and count keys
   in `$eq` and `$key`.
+
+## Amendment: wherever the object is written
+
+The readability pass that leaves the field out skipped a template's
+values, so the same `Options { value: None }` was `f({})` returned and
+`f({ value: undefined })` in a `format!`, and `"value" in options` told
+them apart. It now visits every expression an expression holds, named
+variant by variant, so a new one is a compile error until it's handled.

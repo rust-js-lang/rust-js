@@ -154,4 +154,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/compiler.test.ts", "-t", "shadowed by its own value"],
   },
+  {
+    name: "template-values-unprepared",
+    breaks: "an object in a `format!`'s template keeps its `undefined` field, `{ value: undefined }`, which a callback's `\"value\" in options` sees",
+    file: "src/prepare.rs",
+    find: "        ExprKind::Template(_, values, _) => values.iter_mut().for_each(expr),\n",
+    replace: "        ExprKind::Template(..) => {}\n",
+    tests: ["test/lowering.test.ts", "-t", "undefined field is no key in"],
+  },
+  {
+    name: "component-callback-returns",
+    breaks: "a component's callback that drops its one call's value returns it, `onCheck={() => parseInt(\"7\")}`, which the component may read",
+    file: "src/prepare.rs",
+    find: "                        if element\n",
+    replace: "                        if true\n",
+    tests: ["test/lowering.test.ts", "-t", "only a DOM element"],
+  },
 ];

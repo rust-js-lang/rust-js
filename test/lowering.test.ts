@@ -858,3 +858,76 @@ pub fn Choices(items: Vec<String>) -> JSX::Element {
   expect(js).toContain("<Choice value={item} as={Fragment} key={item} />");
   expect(js).not.toContain("const match");
 });
+
+// ADR 0280: a field that's `undefined` is no key wherever its object is
+// written: returned, in a `format!`'s template, or in an optional call,
+// as a JS callback that asks `"value" in options` is answered the same.
+test("an undefined field is no key in a template or an optional call", async () => {
+  const dir = fixture("undefined-fields-anywhere");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Options {
+    pub value: Option<u32>,
+}
+
+pub fn direct(f: impl Fn(Options) -> u32) -> u32 {
+    f(Options { value: None })
+}
+
+pub fn formatted(f: impl Fn(Options) -> u32) -> String {
+    format!("value {}", f(Options { value: None }))
+}
+
+unsafe extern "Rust" {
+    #[link_name = "keyed"]
+    safe fn keyed(this: &js::JsObject, options: Options) -> u32;
+}
+
+pub fn optional(o: Option<&js::JsObject>) -> Option<u32> {
+    o.map(|o| keyed(o, Options { value: None }))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toContain("value: undefined");
+  const lib = await import(join(dir, "lib.js"));
+  const keyed = (options: object) => ("value" in options ? 1 : 0);
+  expect(js).toContain("return o?.keyed({});");
+  expect([lib.direct(keyed), lib.formatted(keyed), lib.optional({ keyed })]).toEqual([0, "value 0", 0]);
+});
+
+// ADR 0040: React ignores what a DOM element's handler returns, so one of a
+// single call is `() => f()`; a component's callback may read it, so a
+// callback that drops its value, `on_check`'s, keeps the statement there.
+test("only a DOM element's handler returns its one call", async () => {
+  const dir = fixture("handler-returns");
+  writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
+use react::{JSX, jsx};
+
+unsafe extern "Rust" {
+    #[link_name = "parseInt"]
+    safe fn parse_int(s: &str) -> f64;
+}
+
+pub struct CustomProps {
+    #[cfg_attr(rust_js, rust_js::name = "onCheck")]
+    pub on_check: Box<dyn Fn()>,
+}
+
+pub fn Custom(CustomProps { on_check }: CustomProps) -> JSX::Element {
+    jsx! { <b>{"x"}</b> }
+}
+
+pub fn Page() -> JSX::Element {
+    jsx! {
+        <div onClick={|_| { parse_int("7"); }}>
+            <Custom onCheck={Box::new(|| { parse_int("7"); })} />
+        </div>
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(js).toContain('<div onClick={() => parseInt("7")}>');
+  const lib = await import(join(dir, "lib.jsx"));
+  const custom = lib.Page().props.children;
+  expect(custom.props.onCheck()).toBeUndefined();
+});

@@ -382,15 +382,18 @@ fn expr(e: &mut Expr) {
             if let JsxTag::Component(e) = &mut jsx.tag {
                 expr(e);
             }
+            let element = matches!(jsx.tag, JsxTag::Intrinsic(_));
             for prop in &mut jsx.props {
                 match prop {
                     Prop::Field(name, value) => {
                         let handler = name
                             .strip_prefix("on")
                             .is_some_and(|s| s.starts_with(|c: char| c.is_ascii_uppercase()));
-                        // React ignores handler return values: keep single-call
-                        // event handlers as concise arrow expressions (ADR 0040).
-                        if handler
+                        // React ignores what a DOM element's handler returns: keep
+                        // single-call ones as concise arrow expressions (ADR 0040).
+                        // A component may read what its callback returns.
+                        if element
+                            && handler
                             && let ExprKind::Arrow(_, body) = &mut value.kind
                             && let [
                                 Stmt {
@@ -414,10 +417,16 @@ fn expr(e: &mut Expr) {
         | ExprKind::OptionalMember(a, _)
         | ExprKind::Unary(_, a)
         | ExprKind::Await(a)
-        | ExprKind::Spread(a) => expr(a),
-        ExprKind::Index(a, b) | ExprKind::Binary(_, a, b) => {
+        | ExprKind::Spread(a)
+        | ExprKind::Handle(a) => expr(a),
+        ExprKind::Index(a, b) | ExprKind::Binary(_, a, b) | ExprKind::Pair(a, b) => {
             expr(a);
             expr(b);
+        }
+        ExprKind::Template(_, values, _) => values.iter_mut().for_each(expr),
+        ExprKind::OptionalCall(f, args) => {
+            expr(f);
+            args.iter_mut().for_each(expr);
         }
         ExprKind::Cond(a, b, c) => {
             expr(a);
@@ -444,6 +453,18 @@ fn expr(e: &mut Expr) {
                 expr(value);
             }
         }
-        _ => {}
+        // Every variant with an expression in it is above, so a rule of
+        // what an expression is, ADR 0280's say, holds wherever it's written.
+        ExprKind::Num(_)
+        | ExprKind::BigInt(_)
+        | ExprKind::BigUint(_)
+        | ExprKind::Bool(_)
+        | ExprKind::Str(_)
+        | ExprKind::Lines(_)
+        | ExprKind::Undefined
+        | ExprKind::Null
+        | ExprKind::Var(_)
+        | ExprKind::Symbol(_)
+        | ExprKind::Regex(_) => {}
     }
 }
