@@ -19,6 +19,11 @@ on:
         description: 'The commit whose changes since are the mutations run: of main, its last checked one.'
         type: string
         default: 'origin/main'
+      mutation_shards:
+        description: 'Machines the mutations are split across, as many as keeps each near forty: ci:check counts them.'
+        type: choice
+        options: ['1', '2', '4', '8']
+        default: '1'
   # By nightly.yml, of `main`: every mutation, where a branch's check runs
   # only its own.
   workflow_call:
@@ -177,12 +182,12 @@ jobs:
   rustc:
     uses: ./.github/workflows/rustc-tests.yml
 
-  # The mutations the change touches (ADR 0093): those of the files it
-  # changes, and those it adds or edits. Nightly runs all of them, on 8
-  # machines.
+  # The mutations the change touches (ADR 0093): those in the functions and
+  # tests it changes, and those it adds or edits, on as many machines as
+  # ci:check counts they need. Nightly runs all of them, on 8 machines.
   mutations:
     uses: ./.github/workflows/rustc-tests.yml
     with:
       mutations: true
       mutation_args: ${{ !inputs.nightly && format('--changed={0}', inputs.since || 'origin/main') || '' }}
-      mutation_shards: ${{ inputs.nightly && '8' || '1' }}
+      mutation_shards: ${{ inputs.nightly && '8' || inputs.mutation_shards || '1' }}

@@ -142,7 +142,9 @@ A change elsewhere can still matter to one, as making the code it guards
 redundant for its test (`captured-base-copied`, after a lowering change
 in another file): the nightly run of every mutation finds that, a day
 later at most. Of the checks of the last day's commits, it ran a third to
-a half as many. `test/ci.test.ts` checks how it chooses.
+a half as many. `test/ci.test.ts` checks how it chooses. And they run on as
+many machines as keeps each near forty, about ten minutes: `ci:check`
+counts them first, and asks for 1, 2, 4 or 8.
 
 ## Amendment: a mutation's test builds only what it needs
 

@@ -13,6 +13,8 @@
 import { mkdirSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
+import { changedSince } from "./mutations";
+
 const root = join(import.meta.dir, "..");
 const workflow = "check.yml";
 
@@ -73,15 +75,26 @@ function status() {
  * ahead, isn't what would be checked. Its mutations are of what changed
  * since `since`: of `main`, by default, since its last finished check, or
  * the commit before; of another branch, since it left `main`. */
-function check(branch: string, shards: string, since?: string) {
+/** Machines for a check's mutations, as many as keeps each near forty,
+ * ten minutes or so: 1, 2, 4 or 8, as the workflow takes. */
+export function mutationShards(count: number): string {
+  const wanted = Math.ceil(count / 40);
+  return String([1, 2, 4, 8].find((n) => n >= wanted) ?? 8);
+}
+
+async function check(branch: string, shards: string, since?: string) {
   const git = (args: string[]) => Bun.spawnSync(["git", ...args], { cwd: root }).stdout.toString().trim();
   git(["fetch", "--quiet", "origin", branch]);
   const local = git(["rev-parse", branch]);
   const pushed = git(["rev-parse", `origin/${branch}`]);
   if (!pushed || pushed !== local) throw new Error(`${branch} isn't as it's pushed: push it first, git push -u origin ${branch}`);
   const base = since ?? (branch === "main" ? (checkedSince(runs(), branch) ?? `${local}~1`) : "origin/main");
-  gh(["workflow", "run", workflow, `--ref=${branch}`, "-f", `test_shards=${shards}`, "-f", `since=${base}`]);
-  console.log(`started ${workflow} of ${branch} at ${local.slice(0, 10)}, the suite on ${shards} machine${shards === "1" ? "" : "s"}, the mutations of what changed since ${base.slice(0, 10)}: bun run ci:status`);
+  // As many machines as the mutations it runs need, which are this
+  // checkout's, as it's pushed.
+  const count = (await changedSince(base)).length;
+  const machines = mutationShards(count);
+  gh(["workflow", "run", workflow, `--ref=${branch}`, "-f", `test_shards=${shards}`, "-f", `since=${base}`, "-f", `mutation_shards=${machines}`]);
+  console.log(`started ${workflow} of ${branch} at ${local.slice(0, 10)}, the suite on ${shards} machine${shards === "1" ? "" : "s"}, the ${count} mutations of what changed since ${base.slice(0, 10)} on ${machines}: bun run ci:status`);
 }
 
 function bless(branch: string) {
@@ -114,7 +127,7 @@ if (import.meta.main) {
   const since = rest.find((arg) => arg.startsWith("--since="))?.slice("--since=".length);
   try {
     if (command === "status") status();
-    else if (command === "check") check(branch, shards, since);
+    else if (command === "check") await check(branch, shards, since);
     else if (command === "bless") bless(branch);
     else {
       console.error("usage: bun scripts/ci.ts check [branch] [--shards=1|2|4] [--since=<rev>] | status | bless [branch]");

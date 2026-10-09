@@ -91,6 +91,19 @@ export function changedMutations(now: Mutation[], base: Mutation[], changes: Cha
   });
 }
 
+/** The mutations, of `among`, a change since `base` runs (`--changed`). */
+export async function changedSince(base: string, among: Mutation[] = mutations): Promise<Mutation[]> {
+  const { changes, mutations: old } = await since(base);
+  const read = (file: string) => {
+    try {
+      return readFileSync(join(root, file), "utf8");
+    } catch {
+      return undefined;
+    }
+  };
+  return changedMutations(among, old, changes, read);
+}
+
 /** The lines of the function lines `first` to `last` are in, the innermost,
  * as rustfmt and Prettier lay one out: `fn` or `function` where it starts,
  * and `}` at its indent where it ends. Code in none is its own lines and
@@ -292,15 +305,7 @@ async function main() {
   let chosen = named.length > 0 ? mutations.filter((m) => named.includes(m.name)) : mutations;
   const changed = args.find((arg) => arg.startsWith("--changed="))?.slice("--changed=".length);
   if (changed) {
-    const { changes, mutations: base } = await since(changed);
-    const read = (file: string) => {
-      try {
-        return readFileSync(join(root, file), "utf8");
-      } catch {
-        return undefined;
-      }
-    };
-    chosen = changedMutations(chosen, base, changes, read);
+    chosen = await changedSince(changed, chosen);
   }
   const sharded = shardArg(args);
   if (sharded) {

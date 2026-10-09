@@ -2,7 +2,7 @@
 // shards, the mutations a change touches, and each branch's latest run.
 
 import { expect, test } from "bun:test";
-import { checkedSince, latestRuns } from "../scripts/ci";
+import { checkedSince, latestRuns, mutationShards } from "../scripts/ci";
 import { changedLines, changedMutations, enclosingFunction, testBlocks } from "../scripts/mutations";
 import { shard } from "../scripts/shard";
 
@@ -110,6 +110,11 @@ test("a diff's changed lines are where the file is changed now", () => {
     "@@ -1 +0,0 @@",
   ].join("\n");
   expect(changedLines(diff)).toEqual([{ file: "src/a.rs", lines: [[4, 5], [11, 11], [21, 22]] }]);
+});
+
+// A check's mutations on as many machines as keeps each near forty.
+test("a check's mutations are split to about forty a machine", () => {
+  expect([0, 40, 41, 80, 81, 160, 161, 400].map(mutationShards)).toEqual(["1", "1", "2", "2", "4", "4", "8", "8"]);
 });
 
 const run = (headBranch: string, databaseId: number, status: string, conclusion: string, headSha = `sha${databaseId}`) =>
