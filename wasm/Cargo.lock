@@ -1734,6 +1734,7 @@ dependencies = [
  "rustc_hir",
  "rustc_hir_analysis",
  "rustc_interface",
+ "rustc_lexer",
  "rustc_middle",
  "rustc_parse",
  "rustc_session",

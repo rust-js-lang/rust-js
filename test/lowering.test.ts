@@ -614,3 +614,62 @@ pub fn by(s: &str, p: &str, t: &str) -> String {
   // A pattern that may be empty is the runtime's (ADR 0063), its replacement as it is too.
   expect([lib.by("xa", "a", "$&"), lib.by("ab", "", "$")]).toEqual(["x$&", "$a$b$"]);
 });
+
+// ADR 0066: a format string written across lines keeps them, as a string
+// literal does, a template literal of the page react.dev's DownloadButton
+// writes; one written with `\n` keeps those.
+test("a format string written across lines keeps its lines", async () => {
+  const dir = fixture("format-lines");
+  writeFileSync(join(dir, "lib.rs"), `pub fn page(code: &str) -> String {
+    format!(
+        "<p>
+{code}
+</p>"
+    )
+}
+
+pub fn escaped(code: &str) -> String {
+    format!("<p>\\n{code}\\n</p>")
+}
+
+pub fn raw(code: &str) -> String {
+    format!(
+        r#"<a href="x">
+{}
+</a>"#,
+        code
+    )
+}
+
+pub fn continued(code: &str) -> String {
+    format!("<p>\\n{code}\\
+        </p>")
+}
+
+pub fn logged(code: &str) {
+    println!(
+        "<p>
+{code}
+</p>"
+    );
+}
+
+pub fn plain() -> String {
+    format!(
+        "<p>
+</p>"
+    )
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return `<p>\n${code}\n</p>`;");
+  expect(js).toContain("return `<p>\\n${code}\\n</p>`;");
+  expect(js).toContain('return `<a href="x">\n${code}\n</a>`;');
+  // A line a `\` continues isn't one: its `\n` is written so.
+  expect(js).toContain("return `<p>\\n${code}</p>`;");
+  expect(js).toContain("console.log(`<p>\n${code}\n</p>`);");
+  expect(js).toContain("return `<p>\n</p>`;");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.page("x"), lib.escaped("x"), lib.raw("x")]).toEqual(["<p>\nx\n</p>", "<p>\nx\n</p>", '<a href="x">\nx\n</a>']);
+});

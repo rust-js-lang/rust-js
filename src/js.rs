@@ -444,8 +444,9 @@ pub enum ExprKind {
     /// A regular expression literal, as written: `/^\p{White_Space}$/u` (ADR 0063).
     Regex(String),
     /// `\`Some(${x})\``: the texts around the values, as they read (one more
-    /// than the values), and the values (ADR 0066).
-    Template(Vec<String>, Vec<Expr>),
+    /// than the values), and the values (ADR 0066); and whether a line break
+    /// in its texts is one, where its format string was written across lines.
+    Template(Vec<String>, Vec<Expr>, bool),
     /// `{ get value() { return x; }, set value(value) { x = value; } }`: a
     /// `&mut` kept, reading and writing its place each time (ADR 0099). The
     /// place is what's read then, not before: it's never taken out.
@@ -575,7 +576,15 @@ impl Expr {
 
     pub fn template(texts: Vec<String>, values: Vec<Expr>) -> Expr {
         debug_assert_eq!(texts.len(), values.len() + 1);
-        Expr::new(ExprKind::Template(texts, values))
+        Expr::new(ExprKind::Template(texts, values, false))
+    }
+
+    /// A template written across `lines`: its line breaks written as they are.
+    pub fn with_lines(self, lines: bool) -> Expr {
+        match self.kind {
+            ExprKind::Template(texts, values, _) => Expr::new(ExprKind::Template(texts, values, lines)),
+            _ => self,
+        }
     }
 
     pub fn undefined() -> Expr {
@@ -817,7 +826,7 @@ impl Expr {
                 callee.each_mut(f);
                 args.iter_mut().for_each(|a| a.each_mut(f));
             }
-            ExprKind::Array(items) | ExprKind::Template(_, items) => items.iter_mut().for_each(|a| a.each_mut(f)),
+            ExprKind::Array(items) | ExprKind::Template(_, items, _) => items.iter_mut().for_each(|a| a.each_mut(f)),
             ExprKind::Object(fields) => props(fields, f),
             ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => each_expr_mut(body, f),
             ExprKind::Jsx(jsx) => {
@@ -872,7 +881,7 @@ impl Expr {
                 f.visit_vars(read);
                 args.iter().for_each(|a| a.visit_vars(read));
             }
-            ExprKind::Array(items) | ExprKind::Template(_, items) => items.iter().for_each(|a| a.visit_vars(read)),
+            ExprKind::Array(items) | ExprKind::Template(_, items, _) => items.iter().for_each(|a| a.visit_vars(read)),
             ExprKind::Object(fields) => props(fields, read),
             ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => visit_stmts(body, read),
             ExprKind::Jsx(jsx) => {
@@ -918,7 +927,7 @@ impl Expr {
             ExprKind::Call(f, args) | ExprKind::OptionalCall(f, args) | ExprKind::New(f, args) => {
                 f.contains_jsx() || args.iter().any(Expr::contains_jsx)
             }
-            ExprKind::Template(_, values) => values.iter().any(Expr::contains_jsx),
+            ExprKind::Template(_, values, _) => values.iter().any(Expr::contains_jsx),
             ExprKind::Num(_)
             | ExprKind::BigInt(_)
             | ExprKind::BigUint(_)
@@ -1024,7 +1033,7 @@ impl Expr {
             ExprKind::New(f, args) => ExprKind::New(one(f)?, all(args)?),
             ExprKind::Await(a) => ExprKind::Await(one(a)?),
             ExprKind::Spread(a) => ExprKind::Spread(one(a)?),
-            ExprKind::Template(texts, values) => ExprKind::Template(texts.clone(), all(values)?),
+            ExprKind::Template(texts, values, lines) => ExprKind::Template(texts.clone(), all(values)?, *lines),
             ExprKind::Jsx(jsx) => ExprKind::Jsx(Box::new(Jsx {
                 tag: match &jsx.tag {
                     JsxTag::Component(c) => JsxTag::Component(c.replace(with, callbacks)?),
@@ -1118,7 +1127,7 @@ impl Expr {
             ExprKind::Unary(_, a) | ExprKind::Spread(a) => a.reads_only_vars(),
             ExprKind::Binary(_, a, b) => a.reads_only_vars() && b.reads_only_vars(),
             ExprKind::Cond(a, b, c) => a.reads_only_vars() && b.reads_only_vars() && c.reads_only_vars(),
-            ExprKind::Array(items) | ExprKind::Template(_, items) => items.iter().all(Expr::reads_only_vars),
+            ExprKind::Array(items) | ExprKind::Template(_, items, _) => items.iter().all(Expr::reads_only_vars),
             ExprKind::Object(items) => props(items),
             ExprKind::Jsx(jsx) => {
                 let tag = match &jsx.tag {
@@ -1155,7 +1164,7 @@ impl Expr {
             ExprKind::Handle(_) => false,
             ExprKind::Pair(_, dictionary) => dictionary.has_effects(),
             ExprKind::Index(object, index) => object.has_effects() || index.has_effects(),
-            ExprKind::Array(items) | ExprKind::Template(_, items) => items.iter().any(Expr::has_effects),
+            ExprKind::Array(items) | ExprKind::Template(_, items, _) => items.iter().any(Expr::has_effects),
             ExprKind::Object(props) => props.iter().any(|p| match p {
                 Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Spread(value) => value.has_effects(),
             }),

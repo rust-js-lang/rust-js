@@ -1589,7 +1589,7 @@ fn unstringed(value: Expr) -> Expr {
 /// `"(" + a + ")"`, which starts with a string, so that each `+` in it
 /// concatenates, its operands. Anything else is one piece.
 fn joined_pieces(e: Expr) -> Vec<Expr> {
-    if let js::ExprKind::Template(texts, values) = e.kind {
+    if let js::ExprKind::Template(texts, values, _) = e.kind {
         let mut pieces = Vec::new();
         let mut values = values.into_iter();
         for text in texts {
@@ -1661,7 +1661,7 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for Called<'a, 'tcx> {
 /// `target += written`: piece by piece, `pieces`, where what it writes may
 /// fail, so what came before it is written (ADR 0187).
 pub(super) fn append_written(target: &Expr, written: Expr, pieces: bool, js_span: js::Span, out: &mut Vec<Stmt>) {
-    let parts = if pieces && let js::ExprKind::Template(texts, values) = &written.kind {
+    let parts = if pieces && let js::ExprKind::Template(texts, values, _) = &written.kind {
         let mut parts = Vec::new();
         let mut values = values.iter().cloned();
         for text in texts {

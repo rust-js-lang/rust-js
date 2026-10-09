@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "template-lines-escaped",
+    breaks: "a template whose format string was written across lines prints its line breaks as `\\n`",
+    file: "src/to_oxc.rs",
+    find: "                        raw: self.name(&template_raw(text, *lines)).into(),",
+    replace: "                        raw: self.name(&template_raw(text, false)).into(),",
+    tests: ["test/lowering.test.ts", "-t", "a format string written across lines"],
+  },
+  {
     name: "import-specifier-unlinked",
     breaks: "an `import`'s specifier isn't in its module's links, so a host that copies the files keeps the build's name",
     file: "src/to_oxc.rs",

@@ -3,6 +3,38 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "format-lines-unseen",
+    breaks: "a format string written across lines is a template of `\\n`s on one line",
+    file: "src/lower/format_args.rs",
+    find: "        let lines = template.contains(&b'\\n') && self.format_string_across_lines(",
+    replace: "        let lines = false && self.format_string_across_lines(",
+    tests: ["test/lowering.test.ts", "-t", "a format string written across lines"],
+  },
+  {
+    name: "format-lines-continuation-counted",
+    breaks: "a line a `\\` continues is taken as written across, so a `\\n` written so is a line break",
+    file: "src/lower/format_args.rs",
+    find: "                    return text.match_indices('\\n').any(|(i, _)| !text[..i].ends_with('\\\\'));",
+    replace: "                    return text.contains('\\n');",
+    tests: ["test/lowering.test.ts", "-t", "a format string written across lines"],
+  },
+  {
+    name: "format-lines-raw-unseen",
+    breaks: "a raw format string written across lines is a template of `\\n`s on one line",
+    file: "src/lower/format_args.rs",
+    find: "                    return text.contains('\\n');\n",
+    replace: "                    return false;\n",
+    tests: ["test/lowering.test.ts", "-t", "a format string written across lines"],
+  },
+  {
+    name: "format-lines-println-dropped",
+    breaks: "a `println!` written across lines is a template of `\\n`s on one line",
+    file: "src/lower/format_args.rs",
+    find: "            Ok(Expr::template(texts, values.clone()).with_lines(*lines))",
+    replace: "            Ok(Expr::template(texts, values.clone()).with_lines(false))",
+    tests: ["test/lowering.test.ts", "-t", "a format string written across lines"],
+  },
+  {
     name: "formatted-copied",
     breaks: "a `Copy` value changed elsewhere is copied before it's shown, `pDebug_fmt({ ...q })`, though showing it only reads it",
     file: "src/lower/format_args.rs",

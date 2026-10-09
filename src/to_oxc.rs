@@ -856,10 +856,10 @@ impl<'a> Cx<'a> {
                 let quasis = ArenaVec::from_iter_in([TemplateElement::new(SPAN, value, true, b)], b);
                 Expression::new_template_literal(sp, quasis, ArenaVec::new_in(b), b)
             }
-            ExprKind::Template(texts, values) => {
+            ExprKind::Template(texts, values, lines) => {
                 let quasis = texts.iter().enumerate().map(|(i, text)| {
                     let value = TemplateElementValue {
-                        raw: self.name(&template_raw(text, false)).into(),
+                        raw: self.name(&template_raw(text, *lines)).into(),
                         cooked: Some(self.name(text).into()),
                     };
                     TemplateElement::new(SPAN, value, i + 1 == texts.len(), b)

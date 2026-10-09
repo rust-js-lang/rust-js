@@ -120,7 +120,30 @@ export function prepare(files, modules, styles, rootFile, test, run) {
   const arg$3 = report("error: String(e)");
   return {
     TAG: "Page",
-    _0: `${FRAME_HEAD}\n${look}\n<div id="app"></div>\n${linked}\n<script>\n  // Errors later on, in an event handler say.\n  addEventListener("error", (e) => ${arg});\n  // And in async code, which rejects its promise instead (ADR 0029).\n  addEventListener("unhandledrejection", (e) => ${arg$1});\n  // What a test file calls, as bun test provides it (ADR 0026).\n  const registered = [];\n  globalThis.test = (name, f) => registered.push({ name, f });\n  test.skip = (name) => registered.push({ name });\n  // How tall the page is, each time it changes, for the frame to show it whole.\n  new ResizeObserver(() => ${arg$2}).observe(document.documentElement);\n<\/script>\n<script type="module">\n  try {\n${start}\n    ${finished};\n  } catch (e) {\n    ${arg$3};\n  }\n<\/script>`,
+    _0: `${FRAME_HEAD}
+${look}
+<div id="app"></div>
+${linked}
+<script>
+  // Errors later on, in an event handler say.
+  addEventListener("error", (e) => ${arg});
+  // And in async code, which rejects its promise instead (ADR 0029).
+  addEventListener("unhandledrejection", (e) => ${arg$1});
+  // What a test file calls, as bun test provides it (ADR 0026).
+  const registered = [];
+  globalThis.test = (name, f) => registered.push({ name, f });
+  test.skip = (name) => registered.push({ name });
+  // How tall the page is, each time it changes, for the frame to show it whole.
+  new ResizeObserver(() => ${arg$2}).observe(document.documentElement);
+<\/script>
+<script type="module">
+  try {
+${start}
+    ${finished};
+  } catch (e) {
+    ${arg$3};
+  }
+<\/script>`,
   };
 }
 

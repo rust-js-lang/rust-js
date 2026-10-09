@@ -31,6 +31,8 @@ pub(super) struct FormatArgs<'tcx> {
     pub(super) values: Vec<ExprId>,
     /// Each placeholder's argument: which value, how, and its type.
     slots: Vec<(usize, Std, Ty<'tcx>)>,
+    /// Whether its format string was written across lines, as its JS is (ADR 0066).
+    lines: bool,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -164,10 +166,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let LitKind::ByteStr(ref bytes, _) = lit.node else {
             return None;
         };
+        let template = bytes.as_byte_str().to_vec();
+        let lines = template.contains(&b'\n') && self.format_string_across_lines(thir[self.strip_refs(args[0])].span);
         Some(FormatArgs {
-            template: bytes.as_byte_str().to_vec(),
+            template,
             values,
             slots,
+            lines,
         })
     }
 
@@ -321,7 +326,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             });
         }
-        Ok(super::display::join(parts))
+        Ok(super::display::join(parts).with_lines(f.lines))
+    }
+
+    /// Whether the format string of the macro call `span` is part of was
+    /// written across lines: a line break in it, not one a `\` ends, as a
+    /// string literal's (`written_across_lines`). rustc keeps no span of the
+    /// format string's own, so it's the call's first string literal,
+    /// `format!("..", ..)`'s and `write!(f, "..", ..)`'s, by Rust's lexer.
+    fn format_string_across_lines(&self, span: Span) -> bool {
+        let Ok(code) = self.tcx.sess.source_map().span_to_snippet(span.source_callsite()) else {
+            return false;
+        };
+        let mut at = 0;
+        for token in rustc_lexer::tokenize(&code, rustc_lexer::FrontmatterAllowed::No) {
+            let text = &code[at..at + token.len as usize];
+            at += token.len as usize;
+            match token.kind {
+                rustc_lexer::TokenKind::Literal {
+                    kind: rustc_lexer::LiteralKind::Str { .. },
+                    ..
+                } => {
+                    return text.match_indices('\n').any(|(i, _)| !text[..i].ends_with('\\'));
+                }
+                rustc_lexer::TokenKind::Literal {
+                    kind: rustc_lexer::LiteralKind::RawStr { .. },
+                    ..
+                } => {
+                    return text.contains('\n');
+                }
+                _ => {}
+            }
+        }
+        false
     }
 }
 
@@ -508,10 +545,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 pub(super) fn without_newline(text: Expr) -> Result<Expr, Expr> {
     match &text.kind {
         js::ExprKind::Str(s) if s.ends_with('\n') => Ok(Expr::str(&s[..s.len() - 1])),
-        js::ExprKind::Template(texts, values) if texts.last().is_some_and(|last| last.ends_with('\n')) => {
+        js::ExprKind::Template(texts, values, lines) if texts.last().is_some_and(|last| last.ends_with('\n')) => {
             let mut texts = texts.clone();
             texts.last_mut().expect("a template has a last text").pop();
-            Ok(Expr::template(texts, values.clone()))
+            Ok(Expr::template(texts, values.clone()).with_lines(*lines))
         }
         _ => Err(text),
     }

@@ -65,3 +65,9 @@ It's correct, but it isn't what a person writes today, and once formatted
   written as the Rust is. One written with `\n` keeps it, and so does one
   whose break is left out by a `\` ending the line. A `` ` ``, `\` or
   `${` in it is escaped. Case N: it's the same string.
+- **So is a format string written across lines**, `format!`, `println!`
+  and the rest: the template its value is in, with its line breaks, as
+  react.dev's DownloadButton writes the page it downloads. rustc keeps no
+  span of the format string's own, so it's the macro call's first string
+  literal, by Rust's lexer. One written with `\n`, or whose break a `\`
+  leaves out, keeps it. Case N: it's the same string.
