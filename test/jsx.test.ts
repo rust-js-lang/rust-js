@@ -1908,16 +1908,21 @@ pub fn App() -> JSX::Element {
   const { createElement } = await import("react");
   expect(renderToStaticMarkup(App())).toBe('<a class="big" target="_self" href="/learn" aria-label="Learn">Learn</a>');
   expect(renderToStaticMarkup(createElement(ButtonLink, { href: "/x", target: "_blank" }, "x"))).toBe('<a class="small" target="_blank" href="/x">x</a>');
-  // What JS's props can't be is an error: the field read whole, the
-  // struct made anywhere but as JSX's props, two rests, and a name both have.
+  // Made outside JSX, the props are one object too, a default's as well
+  // (ADR 0204).
+  const made = compile(flattened + "pub fn made() -> JSX::Element { ButtonLink(ButtonLinkProps { size: None, children: (), anchor: Anchor::default() }) }\npub fn defaulted() -> ButtonLinkProps<()> { ButtonLinkProps::default() }\n");
+  run(made.args);
+  const madeJs = readFileSync(join(made.dir, "lib.jsx"), "utf8");
+  expect(madeJs).toContain("return ButtonLink({});");
+  expect(madeJs).toContain("export function defaulted() {\n  return {};\n}");
+  // What JS's props can't be is an error: the field read whole, two
+  // rests, and a name both have.
   const refused = (source: string, says: string) => {
     const c = compile(source);
     const failed = Bun.spawnSync(c.args, { cwd: c.dir });
     expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining(says)]);
   };
   refused(flattened + "pub fn read(p: ButtonLinkProps<()>) -> Option<&'static str> { let a = p.anchor; a.href }\n", "flattened props");
-  refused(flattened + "pub fn made() -> JSX::Element { ButtonLink(ButtonLinkProps { size: None, children: (), anchor: Anchor::default() }) }\n", "made only as JSX");
-  refused(flattened + "pub fn defaulted() -> ButtonLinkProps<()> { ButtonLinkProps::default() }\n", "made only as JSX");
   refused(flattened + "pub fn matched(p: ButtonLinkProps<()>) -> Option<&'static str> { match p { ButtonLinkProps { anchor, .. } => anchor.href } }\n", "flattened props taken apart here");
   refused(flattened.replace("pub children: C,", "pub children: C,\n    pub rest: react::Rest,").replace("{ size, children, anchor }", "{ size, children, anchor, .. }"), "one rest");
 });

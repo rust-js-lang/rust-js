@@ -434,4 +434,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "whole number in range"],
   },
+  {
+    name: "flattened-made-nested",
+    breaks: "a struct with a flattened field made outside JSX nests it, `{ item, severity }`",
+    file: "src/lower.rs",
+    find: "                if bindings::has_flatten(self.tcx, ty) && !self.body_facts.jsx_props.contains(&e) =>\n",
+    replace: "                if false && bindings::has_flatten(self.tcx, ty) && !self.body_facts.jsx_props.contains(&e) =>\n",
+    tests: ["test/lowering.test.ts","-t","flattened field made outside JSX"],
+  },
 ];

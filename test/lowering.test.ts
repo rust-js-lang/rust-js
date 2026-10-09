@@ -3019,3 +3019,50 @@ pub fn cleanup(on: bool) -> Option<fn()> {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.halved(3), lib.halved(4), lib.cleanup(false)]).toEqual([undefined, 2, undefined]);
 });
+
+// A struct with a flattened field, made outside JSX, is an object of its
+// fields and the flattened one's: a struct made there inlined, another
+// spread, `{ ...item, severity }`, as react.dev's runESLint writes
+// `{...item, severity: severity[item.severity]}` (ADR 0204). A flattened
+// field may be a reference to a struct.
+test("a struct with a flattened field made outside JSX spreads it", async () => {
+  const dir = fixture("flattened-made");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Message {
+    pub line: f64,
+    pub severity: f64,
+}
+pub struct Reported<'a> {
+    #[rust_js::flatten]
+    pub item: &'a Message,
+    pub severity: &'static str,
+}
+pub fn reported(item: &Message) -> Reported<'_> {
+    Reported {
+        item,
+        severity: if item.severity > 1.0 { "error" } else { "warning" },
+    }
+}
+pub fn line(report: &Reported) -> f64 {
+    report.item.line
+}
+pub struct Named {
+    pub label: &'static str,
+    #[rust_js::flatten]
+    pub message: Message,
+}
+pub fn named() -> Named {
+    Named {
+        label: "x",
+        message: Message { line: 1.0, severity: 2.0 },
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('return { ...item, severity: item.severity > 1 ? "error" : "warning" };');
+  expect(js).toContain("return report.line;");
+  expect(js).toContain('return { label: "x", line: 1, severity: 2 };');
+  const lib = await import(join(dir, "lib.js"));
+  const made = lib.reported({ line: 3, severity: 2 });
+  expect([made, lib.line(made), lib.named()]).toEqual([{ line: 3, severity: "error" }, 3, { label: "x", line: 1, severity: 2 }]);
+});

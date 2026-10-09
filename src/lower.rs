@@ -1127,6 +1127,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ExprKind::Closure(ref closure) => self.closure(closure, out),
             ExprKind::Tuple { ref fields } if fields.is_empty() => Ok(Expr::undefined()),
             ExprKind::Tuple { ref fields } => Ok(Expr::array(self.operands(fields, out)?)),
+            // One with a flattened field, made outside JSX, an object of its
+            // fields and the flattened one's (ADR 0204).
+            ExprKind::Adt(ref adt)
+                if bindings::has_flatten(self.tcx, ty) && !self.body_facts.jsx_props.contains(&e) =>
+            {
+                let made = self.adt(adt, ty, span, out)?;
+                Ok(self.flattened_object(made, ty))
+            }
             ExprKind::Adt(ref adt) => self.adt(adt, ty, span, out),
             ExprKind::Binary { op, lhs, rhs } => {
                 let [l, r] = self.operands(&[lhs, rhs], out)?.try_into().ok().unwrap();

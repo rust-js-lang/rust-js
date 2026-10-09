@@ -482,15 +482,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             ty::Adt(adt, _) if adt.is_struct() && adt.non_enum_variant().fields.is_empty() => Expr::undefined(),
             _ => match self.shape(ty) {
-                Shape::Object(fields) => Expr::object(
-                    fields
-                        .into_iter()
-                        .map(|(name, t)| {
-                            let value = self.default_value(t, span)?;
-                            Ok(Prop::Field(name, self.holding(value, t)))
-                        })
-                        .collect::<R<_>>()?,
-                ),
+                // A flattened field's defaults are the struct's own (ADR 0204).
+                Shape::Object(fields) => {
+                    let made = Expr::object(
+                        fields
+                            .into_iter()
+                            .map(|(name, t)| {
+                                let value = self.default_value(t, span)?;
+                                Ok(Prop::Field(name, self.holding(value, t)))
+                            })
+                            .collect::<R<_>>()?,
+                    );
+                    self.flattened_object(made, ty)
+                }
                 Shape::Array(tys) => {
                     Expr::array(tys.into_iter().map(|t| self.default_value(t, span)).collect::<R<_>>()?)
                 }

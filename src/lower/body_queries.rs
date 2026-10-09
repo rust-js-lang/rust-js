@@ -213,6 +213,8 @@ pub(super) struct BodyFacts {
     /// The casts of an `f64` known to be a whole number in the integer's
     /// range, each the value as it is (`whole_casts`).
     pub(super) whole_casts: HashSet<ExprId>,
+    /// The structs JSX gives a component as its props (`jsx_given_props`).
+    pub(super) jsx_props: HashSet<ExprId>,
     /// Where each variable is changed (`changes`), and where each loop is.
     changed: HashMap<LocalVarId, Vec<Span>>,
     loops: Vec<Span>,
@@ -242,6 +244,7 @@ impl BodyFacts {
             steady: steady_subjects(tcx, thir),
             in_bounds: known_in_bounds(tcx, thir),
             whole_casts: whole_casts(tcx, thir),
+            jsx_props: jsx_given_props(tcx, thir).0,
             changed: changes(thir),
             loops: thir
                 .exprs
@@ -1163,4 +1166,38 @@ pub(super) fn whole_casts<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet
         }
     }
     found
+}
+
+/// Each struct JSX gives a component as its props, `<*>`'s second, with
+/// its base, `{..Default::default()}`, and its flattened fields' values,
+/// made there as structs or defaults: JSX takes them apart (ADR 0213); and
+/// what's a base of them, `..props.html`, where a flattened field read
+/// whole is the object its parent is, `{...props}`.
+pub(crate) fn jsx_given_props<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> (HashSet<ExprId>, HashSet<ExprId>) {
+    let mut made = Vec::new();
+    for expr in thir.exprs.iter() {
+        if let ExprKind::Call { fun, ref args, .. } = expr.kind
+            && let ty::FnDef(def_id, _) = *thir[fun].ty.kind()
+            && matches!(super::bindings::js_form(tcx, def_id), super::bindings::JsForm::Jsx(tag) if tag == "*")
+            && let [_, given] = args[..]
+        {
+            made.push(strip(thir, given));
+        }
+    }
+    let (mut props, mut bases) = (HashSet::new(), HashSet::new());
+    while let Some(e) = made.pop() {
+        props.insert(e);
+        if let ExprKind::Adt(ref adt) = thir[e].kind {
+            if let thir::AdtExprBase::Base(ref fru) = adt.base {
+                bases.insert(strip(thir, fru.base));
+                made.push(strip(thir, fru.base));
+            }
+            for field in &adt.fields {
+                if super::bindings::is_flatten_field(tcx, thir[e].ty, field.name.as_usize()) {
+                    made.push(strip(thir, field.expr));
+                }
+            }
+        }
+    }
+    (props, bases)
 }

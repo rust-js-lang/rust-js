@@ -90,3 +90,14 @@ export interface ButtonLinkProps<C> extends Anchor {
 - **No `Omit`**: a name both structs have is an error, so a flattened
   struct holds only what its parent doesn't. ADR 0205 gives it to the
   parent.
+
+## Amendment: made outside JSX
+
+A struct with a flattened field made outside JSX is one object too: its
+own fields and the flattened one's, a struct made there written in place
+and another value spread where the field is declared, `{ ...item,
+severity }`, as react.dev's runESLint writes `{...item, severity:
+severity[item.severity]}`. A derived `Default`'s is too. A flattened field
+may be a reference to a struct, read through as the struct is,
+`report.item.line` being `report.line`. They were refused, made only as
+JSX's.

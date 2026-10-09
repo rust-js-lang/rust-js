@@ -215,4 +215,12 @@ export const mutations: Mutation[] = [
     replace: "        let value = if self.untagged(ty).is_some() {\n",
     tests: ["test/lowering.test.ts", "-t", "otherwise variant is any other"],
   },
+  {
+    name: "flattened-made-spread-literal",
+    breaks: "a flattened struct made in place is spread, `{ ...{ line: 1 } }`, not its fields",
+    file: "src/lower/aggregates.rs",
+    find: "                    js::ExprKind::Object(inner) => flat.extend(inner),\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","flattened field made outside JSX"],
+  },
 ];

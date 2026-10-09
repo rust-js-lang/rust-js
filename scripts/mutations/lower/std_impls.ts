@@ -194,4 +194,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {",
     tests: ["test/lowering.test.ts", "-t", "an Option of an object is tested by its truth"],
   },
+  {
+    name: "flattened-default-nested",
+    breaks: "a derived `Default` of props with a flattened field nests it, `{ anchor: {} }`",
+    file: "src/lower/std_impls.rs",
+    find: "                    self.flattened_object(made, ty)\n",
+    replace: "                    made\n",
+    tests: ["test/jsx.test.ts","-t","JSX gives a flattened struct's fields as a component's own props"],
+  },
 ];

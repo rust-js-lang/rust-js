@@ -8,7 +8,7 @@ use rustc_hir::def::DefKind;
 use rustc_hir::find_attr;
 use rustc_middle::middle::codegen_fn_attrs::CodegenFnAttrFlags;
 use rustc_middle::mir::BorrowKind;
-use rustc_middle::thir::{AdtExprBase, ExprId, ExprKind, Thir};
+use rustc_middle::thir::{ExprId, ExprKind, Thir};
 use rustc_middle::ty;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LocalDefId};
@@ -231,7 +231,9 @@ pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body
             continue;
         }
         let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+        // A struct, or a reference to one, which is the object it is.
         if !ty
+            .peel_refs()
             .ty_adt_def()
             .is_some_and(|adt| adt.is_struct() && adt.non_enum_variant().ctor.is_none())
         {
@@ -243,42 +245,18 @@ pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body
     }
     for body in all_bodies {
         let thir = &body.thir;
-        // Each struct JSX gives a component as its props, `<*>`'s second,
-        // with its base, `{..Default::default()}`, and its flattened
-        // fields' values, made there as structs or defaults: JSX takes
-        // them apart.
-        let mut made = Vec::new();
-        for expr in thir.exprs.iter() {
-            if let ExprKind::Call { fun, ref args, .. } = expr.kind
-                && let ty::FnDef(def_id, _) = *thir[fun].ty.kind()
-                && matches!(bindings::js_form(tcx, def_id), bindings::JsForm::Jsx(tag) if tag == "*")
-                && let [_, given] = args[..]
-            {
-                made.push(strip(thir, given));
-            }
-        }
-        let mut props = HashSet::new();
-        // What's a base of them, `..props.html`: a flattened field read whole
-        // there is the object its parent is, `{...props}`.
-        let mut bases = HashSet::new();
-        while let Some(e) = made.pop() {
-            props.insert(e);
-            if let ExprKind::Adt(ref adt) = thir[e].kind {
-                if let AdtExprBase::Base(ref fru) = adt.base {
-                    bases.insert(strip(thir, fru.base));
-                    made.push(strip(thir, fru.base));
-                }
-                for field in &adt.fields {
-                    if bindings::is_flatten_field(tcx, thir[e].ty, field.name.as_usize()) {
-                        made.push(strip(thir, field.expr));
-                    }
-                }
-            }
-        }
-        // A flattened field read through, `props.html.title`, is its parent's.
+        let (_, bases) = crate::lower::body_queries::jsx_given_props(tcx, thir);
+        // A flattened field read through, `props.html.title`, is its parent's,
+        // a reference's too, `(*report.item).line`.
         let read_through: HashSet<ExprId> = (thir.exprs.iter())
             .filter_map(|expr| match expr.kind {
-                ExprKind::Field { lhs, .. } => Some(strip(thir, lhs)),
+                ExprKind::Field { lhs, .. } => {
+                    let mut lhs = strip(thir, lhs);
+                    while let ExprKind::Deref { arg } = thir[lhs].kind {
+                        lhs = strip(thir, arg);
+                    }
+                    Some(lhs)
+                }
                 _ => None,
             })
             .collect();
@@ -292,15 +270,6 @@ pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body
                     refuse(
                         expr.span,
                         "reading flattened props whole: take them apart where they're given, `Props { a, anchor }: Props`, or read through them, `anchor.html.title`".into(),
-                    );
-                }
-                ExprKind::Adt(_) | ExprKind::Call { .. }
-                    if bindings::has_flatten(tcx, expr.ty) && !props.contains(&e) =>
-                {
-                    refuse(
-                        expr.span,
-                        "props with a flattened field made here: they're made only as JSX's, `<Card anchor={..} />`"
-                            .into(),
                     );
                 }
                 _ => {}

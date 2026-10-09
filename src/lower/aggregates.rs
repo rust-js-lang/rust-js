@@ -18,6 +18,30 @@ use std::collections::HashMap;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A struct literal: `{ x: 1, y: 2 }`, or `[1, 2]` for a tuple struct.
+    /// `made`, a struct with a flattened field's object, as JS has it: the
+    /// flattened field's own fields, of a struct made there, or its spread,
+    /// `{ ...item, severity }`, where it's declared (ADR 0204).
+    pub(super) fn flattened_object(&self, made: Expr, ty: Ty<'tcx>) -> Expr {
+        let js::ExprKind::Object(props) = made.kind else {
+            return made;
+        };
+        let mut flat = Vec::new();
+        for (i, prop) in props.into_iter().enumerate() {
+            match prop {
+                Prop::Field(_, value) if bindings::is_flatten_field(self.tcx, ty, i) => match value.kind {
+                    js::ExprKind::Object(inner) => flat.extend(inner),
+                    js::ExprKind::Undefined => {}
+                    _ => flat.push(Prop::Spread(value)),
+                },
+                prop => flat.push(prop),
+            }
+        }
+        Expr {
+            kind: js::ExprKind::Object(flat),
+            span: made.span,
+        }
+    }
+
     pub(super) fn adt(&mut self, adt: &thir::AdtExpr<'tcx>, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         let variant = adt.adt_def.variant(adt.variant_index);
         // A `fmt::Result`'s `Ok` is nothing (ADR 0054), and so is an

@@ -18,4 +18,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "a function a block makes and gives"],
   },
+  {
+    name: "flattened-reference-refused",
+    breaks: "a flattened field that's a reference to a struct is refused",
+    file: "src/lower/analysis/validation.rs",
+    find: "            .peel_refs()\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","flattened field made outside JSX"],
+  },
+  {
+    name: "flattened-read-through-deref",
+    breaks: "reading through a flattened reference, `report.item.line`, is refused as a read of it whole",
+    file: "src/lower/analysis/validation.rs",
+    find: "                    while let ExprKind::Deref { arg } = thir[lhs].kind {\n",
+    replace: "                    while let ExprKind::Deref { arg } = thir[lhs].kind && false {\n",
+    tests: ["test/lowering.test.ts","-t","flattened field made outside JSX"],
+  },
 ];
