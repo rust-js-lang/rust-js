@@ -3,9 +3,10 @@
 mod methods;
 pub(super) mod registry;
 
-use super::combinators::{Comb, HeapOp, IterComb, IterSource, StepOp};
+use super::combinators::{Comb, IterComb, IterSource, StepOp};
 use super::format_spec::Radix;
 use super::representation::Num;
+use super::std_types::heap::HeapOp;
 use super::std_types::map::{MapOp, Part};
 use super::std_types::number::{DurationOp, NumOp};
 use super::std_types::range::{RangeKind, RangeOp};

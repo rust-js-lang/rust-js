@@ -10,6 +10,7 @@
 //! | `Option` | the value or `undefined`, boxed where it looks like `None` | `option` |
 //! | `Result` | `{ TAG, _0 }` | `result` |
 //! | `Cell`, `RefCell`, `Mutex`, `RwLock`, atomics | `{ value }` | `cell` |
+//! | `BinaryHeap` | an `Array` in heap order | `heap` |
 //! | ranges | `{ start, end }` | `range` |
 //! | `mpsc` channels | a queue | `channel` |
 //!
@@ -18,6 +19,7 @@
 
 pub(super) mod cell;
 pub(super) mod channel;
+pub(super) mod heap;
 pub(super) mod map;
 pub(super) mod number;
 pub(super) mod option;

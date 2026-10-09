@@ -233,7 +233,7 @@ Each is checked to stay that way.
 | `support.rs` | What rust-js can represent, and the error where a value it can't is made or bound |
 | `aggregates.rs` | Structs, variants and tuple structs made, by fields or a struct update, and constructors as values |
 | `std_types/result.rs` | `?`, and the `From` that converts its error |
-| `std_types/` | std's data structures and values, one module each, as its `mod.rs` tables them: `vec.rs` (`Vec`, `VecDeque`, slices, arrays), `map.rs` (hashed and B-tree maps and sets), `text.rs`, `number.rs`, `option.rs`, `cell.rs`, `range.rs`, `channel.rs` (ADR 0314) |
+| `std_types/` | std's data structures and values, one module each, as its `mod.rs` tables them: `vec.rs` (`Vec`, `VecDeque`, slices, arrays), `map.rs` (hashed and B-tree maps and sets), `heap.rs` (`BinaryHeap`), `text.rs`, `number.rs`, `option.rs`, `cell.rs`, `range.rs`, `channel.rs` (ADR 0314) |
 | `items.rs` | References to items: what a function or a binding is in JS, whether it's the crate's, which impl a call runs |
 | `traits.rs`, `std_impls.rs`, `ordering.rs` | Traits: dictionaries, evidence, `dyn`, calls of an impl's method; `Clone`, `Default`, `PartialEq`, `Ord` |
 | `display.rs`, `format_args.rs`, `format_spec.rs` | `Display` and `Debug`, `format_args!`, placeholders' options |
