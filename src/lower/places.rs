@@ -377,7 +377,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ExprKind::Deref { arg } => self.expr(arg, out),
             ExprKind::Index { lhs, index } => {
                 let values = self.indexed(lhs, index, out)?;
-                Ok(self.checked_index(lhs, values))
+                Ok(self.checked_index(self.strip(e), lhs, values))
             }
             _ => self.expr(e, out),
         }
@@ -542,8 +542,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `v[i]`, checked: `$index(v, i)`, or just `v[i]` for an array whose
     /// length is its type's and a constant index below it, which rustc checked.
-    pub(super) fn checked_index(&mut self, lhs: ExprId, values: Vec<Expr>) -> Expr {
-        if self.in_bounds(lhs, &values[1]) {
+    /// Of one a condition showed in bounds too (ADR 0292): `site` is the
+    /// index, or the function of a `Vec`'s `Index::index`.
+    pub(super) fn checked_index(&mut self, site: ExprId, lhs: ExprId, values: Vec<Expr>) -> Expr {
+        if self.in_bounds(lhs, &values[1]) || self.body_facts.in_bounds.contains(&site) {
             let [items, index]: [Expr; 2] = values.try_into().ok().expect("the items and an index");
             return Expr::index(items, index);
         }

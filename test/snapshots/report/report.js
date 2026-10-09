@@ -31,20 +31,20 @@ function parse_row(line) {
   if (parts.length !== 4) {
     return { TAG: "Err", _0: { TAG: "Fields", _0: parts.length } };
   }
-  if (!$index(parts, 0)) {
+  if (!parts[0]) {
     return { TAG: "Err", _0: { TAG: "Empty", _0: "name" } };
   }
-  const result = $parseInt($index(parts, 2), 0, 4294967295);
+  const result = $parseInt(parts[2], 0, 4294967295);
   if (result.TAG === "Err") {
     return { TAG: "Err", _0: rowErrorFromParseIntError_from(result._0) };
   }
   const score = result._0;
-  const result$1 = $parseInt($index(parts, 3), 0, 4294967295);
+  const result$1 = $parseInt(parts[3], 0, 4294967295);
   if (result$1.TAG === "Err") {
     return { TAG: "Err", _0: rowErrorFromParseIntError_from(result$1._0) };
   }
   const age = result$1._0;
-  return { TAG: "Ok", _0: { name: $index(parts, 0), team: $index(parts, 1), score, age } };
+  return { TAG: "Ok", _0: { name: parts[0], team: parts[1], score, age } };
 }
 
 function capitalize(s) {

@@ -2518,3 +2518,86 @@ pub fn ignored(values: (u32, u32)) -> u32 {
   const state = { error: "abc", status: 4, register(n: number) { return this === undefined ? n : -1; } };
   expect([lib.renamed(state), lib.renamed({ ...state, error: "x" }), lib.plain(state), lib.pair([1, 2])]).toEqual([3, 0, 4, 12]);
 });
+
+// ADR 0292: an index a condition shows is in bounds is JS's own: react.dev's
+// Preview reads `lintErrors[0]` where `lintErrors.length === 0` is false. In
+// a branch, after an early return and in `for i in 0..xs.len()`, of a slice
+// and an index the function never changes; anywhere else it's checked.
+test("an index a condition shows in bounds is read as it is", async () => {
+  const dir = fixture("known-bounds");
+  writeFileSync(join(dir, "lib.rs"), `pub fn first(items: &[u32]) -> Option<u32> {
+    if items.is_empty() { None } else { Some(items[0]) }
+}
+
+pub fn second(items: &Vec<u32>) -> u32 {
+    if items.len() < 2 {
+        return 0;
+    }
+    items[1]
+}
+
+pub fn total(items: &[u32]) -> u32 {
+    let mut sum = 0;
+    for i in 0..items.len() {
+        sum += items[i];
+    }
+    sum
+}
+
+pub fn below(items: &[u32], i: usize) -> u32 {
+    if i < items.len() && !items.is_empty() { items[i] + items[0] } else { 0 }
+}
+
+pub fn unchecked(items: &[u32]) -> u32 {
+    if items.len() > 1 { items[2] } else { 0 }
+}
+
+pub fn changed(mut items: Vec<u32>) -> u32 {
+    if items.is_empty() {
+        return 0;
+    }
+    items.clear();
+    items[0]
+}
+
+pub fn either(items: &[u32]) -> u32 {
+    if items.len() > 3 || !items.is_empty() { items[3] } else { 0 }
+}
+
+pub fn third(items: &[u32]) -> u32 {
+    if items.len() < 2 {
+        return 0;
+    }
+    items[2]
+}
+
+pub fn after(items: &[u32]) -> u32 {
+    let mut n = 0;
+    if items.is_empty() {
+        n = 1;
+    }
+    n + items[0]
+}
+
+pub fn wrong(items: &[u32]) -> u32 {
+    if items.is_empty() { items[0] } else { 0 }
+}
+
+pub fn other(items: &[u32]) -> u32 {
+    if items.len() != 5 { items[0] } else { 0 }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  for (const read of ["items[0]", "items[1]", "items[i]", "items[i] + items[0]"]) expect(js).toContain(read);
+  expect(js).toContain("$index(items, 2)");
+  expect(js).toContain("$index(items, 0)");
+  expect(js.match(/\$index/g)?.length).toBe(8);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.first([]), lib.first([4]), lib.second([1, 2]), lib.second([1]), lib.total([1, 2, 3]), lib.below([5, 6], 1), lib.below([5], 3)]).toEqual([undefined, 4, 2, 0, 6, 11, 0]);
+  expect(() => lib.unchecked([1, 2])).toThrow();
+  expect(() => lib.changed([1])).toThrow();
+  for (const unknown of [() => lib.either([1]), () => lib.third([1, 2]), () => lib.after([]), () => lib.wrong([]), () => lib.other([])]) {
+    expect(unknown).toThrow();
+  }
+});

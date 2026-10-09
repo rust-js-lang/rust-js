@@ -3236,6 +3236,43 @@ pub(super) fn local_key_access(tcx: TyCtxt<'_>, id: DefId) -> Option<bool> {
     }
 }
 
+/// What a function asks of a `Vec`'s or a slice's length: its `len()`,
+/// its `is_empty()`, or an item by its index, `v[i]` of a `Vec`. What
+/// knows an index in bounds reads these (ADR 0292).
+#[derive(Clone, Copy, PartialEq)]
+pub(super) enum SliceLength {
+    Len,
+    IsEmpty,
+    Index,
+}
+
+pub(super) fn slice_length<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Option<SliceLength> {
+    let vec = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_diagnostic_item(sym::Vec, adt.did()));
+    if let Some(trait_) = tcx.trait_of_assoc(def_id) {
+        let indexed = args.types().next().is_some_and(|ty| vec(ty.peel_refs()));
+        return (tcx.is_lang_item(trait_, LangItem::Index)
+            && indexed
+            && args.types().nth(1).is_some_and(|i| i.is_usize()))
+        .then_some(SliceLength::Index);
+    }
+    let owner = tcx
+        .type_of(tcx.inherent_impl_of_assoc(def_id)?)
+        .instantiate_identity()
+        .skip_normalization();
+    if !vec(owner) && !owner.is_slice() {
+        return None;
+    }
+    match tcx.item_name(def_id).as_str() {
+        "len" => Some(SliceLength::Len),
+        "is_empty" => Some(SliceLength::IsEmpty),
+        _ => None,
+    }
+}
+
 pub(crate) fn is_std_def(tcx: TyCtxt<'_>, id: DefId, item: StdItem) -> bool {
     tcx.is_diagnostic_item(item.name(), id)
 }

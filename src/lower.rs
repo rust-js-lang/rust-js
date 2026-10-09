@@ -970,7 +970,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             ExprKind::Index { lhs, index } => {
                 let values = self.indexed(lhs, index, out)?;
-                let item = self.checked_index(lhs, values);
+                let item = self.checked_index(e, lhs, values);
                 Ok(self.copy_if_needed(item, ty))
             }
             // A `dyn Iterator` is a JS iterator.

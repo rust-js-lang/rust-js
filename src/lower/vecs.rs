@@ -92,10 +92,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::member(items, "length")
             }
             Std::Len => Expr::member(arg(), "length"),
-            Std::Index => {
-                self.runtime.insert(Helper::Index);
-                Expr::call(Expr::var("$index"), vec![arg(), arg()])
-            }
+            Std::Index => self.checked_index(call.fun, args[0], vec![arg(), arg()]),
             Std::Clear => {
                 out.push(StmtKind::Assign(Expr::member(arg(), "length"), Expr::num(0)).at(js_span));
                 Expr::undefined()
