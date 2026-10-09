@@ -18,6 +18,13 @@ corpus and mutations as the net, an ADR that says why.
 
 ## Principles
 
+- **One spell for one job.** rust-js is a tool AI coding agents write
+  against, and an agent needs one way to do a job, not a choice: one
+  attribute, one macro, one API, one form of output for each thing. Never
+  add a synonym, an alias, an option or a second spelling for taste; people
+  need preferences, an agent needs one answer it can't get wrong. Before
+  adding a form, find the one that does the job and extend it; where two do
+  one job, remove one.
 - **Keep Rust's checks.** rustc owns types, traits, ownership, borrowing and
   diagnostics. Never bypass them to make a feature compile.
 - **Generated code is a product.** Names, control flow, modules, JSX,
