@@ -3571,3 +3571,45 @@ pub fn Page() -> JSX::Element {
   expect([renderToStaticMarkup(lib.Page()), lib.Label.type.name, lib.fact_of(3), lib.doubled(4)])
     .toEqual(["<main><b>hi</b><i>UP</i><b>2<b>1<b>0</b></b></b></main>", "Label", 6, 8]);
 });
+
+// ADR 0297: a closure a `let` names and only a hook's function is is written
+// there, named, as react.dev names its effects: `useEffect(function
+// createBundler() { .. }, [])`. Given elsewhere, or used twice, it's a
+// `const` as before.
+test("a closure a let names for a hook is the hook's named function", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx, use_callback, use_effect, use_memo, use_state};
+pub fn Ticker() -> JSX::Element {
+    let (n, set_n) = use_state(0u32);
+    let startTicking = move || {
+        set_n.set(1);
+    };
+    use_effect(startTicking, ());
+    let computeDouble = move || n * 2;
+    let double = use_memo(computeDouble, [n]);
+    let handleClick = move || set_n.set(n + 1);
+    let onClick = use_callback(handleClick, [n]);
+    let twice = move || n;
+    let both = twice() + twice();
+    // One reading what it would be named is a const too.
+    let step = 1u32;
+    let step = move || set_n.set(step);
+    use_effect(step, [n]);
+    // One used besides is a const too.
+    let report = move || n;
+    let reported = use_memo(report, [n]);
+    let again = report();
+    jsx! { <button onClick={move |_| onClick()}>{*double + both + *reported + again}</button> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("useEffect(function startTicking() {");
+  expect(jsx).toMatch(/useMemo\(\s*function computeDouble\(\) \{/);
+  expect(jsx).toMatch(/useCallback\(\s*function handleClick\(\) \{/);
+  expect(jsx).toContain("const twice = () => n;");
+  expect(jsx).toContain("const report = () => n;");
+  expect(jsx).toMatch(/const step\$1 = \(\) => \{\n\s*setN\(step\);\n\s*\};\n\s*useEffect\(step\$1, \[n\]\);/);
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(createElement(lib.Ticker))).toBe("<button>0</button>");
+});

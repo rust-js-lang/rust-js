@@ -285,6 +285,48 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             self.keep_chain(var, init);
         }
+        // A closure only a hook's function is: written there, named, unless
+        // it reads what it would be named (ADR 0297).
+        if let PatKind::Binding { name, var, .. } = pat.kind
+            && self.body_facts.named_callbacks.contains(&var)
+            && let Some(init) = init
+        {
+            let value = self.expr(init, out)?;
+            let js_name = super::camel_case(name.as_str());
+            let mut reads_own = false;
+            value.visit_vars(&mut |read| reads_own |= read == js_name);
+            let (params, body, is_async) = match value.kind {
+                js::ExprKind::Arrow(ref params, ref body) if !reads_own => (params.clone(), body.clone(), false),
+                js::ExprKind::AsyncArrow(ref params, ref body) if !reads_own => (params.clone(), body.clone(), true),
+                _ => {
+                    let bound = self.bind(var, name.as_str(), false);
+                    out.push(StmtKind::Const(bound, value).at(self.js_span(span)));
+                    return Ok(());
+                }
+            };
+            let span = value.span;
+            let function = js::Function {
+                name: js_name,
+                params,
+                body,
+                export: false,
+                is_async,
+                span,
+                name_span: self.js_span(pat.span),
+            };
+            self.locals.vars.insert(
+                var,
+                Var {
+                    place: Expr {
+                        kind: js::ExprKind::Function(Box::new(function)),
+                        span,
+                    },
+                    mutable: false,
+                    depth: self.loops.len(),
+                },
+            );
+            return Ok(());
+        }
         // A cell that's its function's variable (ADR 0287): `let n = 0` of
         // what it starts as, and a clone of it the same variable.
         if let PatKind::Binding {

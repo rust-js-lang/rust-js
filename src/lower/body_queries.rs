@@ -1,6 +1,7 @@
 //! Read-only questions about a captured THIR body. No emission state, names,
 //! dependencies or JavaScript: these answers cannot change lowering as a side effect.
 
+use super::bindings::named_callback;
 use super::fn_def;
 use super::recognition::{SliceLength, StdItem, is_std_def, is_std_method, slice_length};
 use rustc_hir::attrs::lang_items::LangItem;
@@ -206,6 +207,9 @@ pub(super) struct BodyFacts {
     /// index in bounds (`known_in_bounds`): each `a[i]`, and the function
     /// of each `Index::index(&v, i)`.
     pub(super) in_bounds: HashSet<ExprId>,
+    /// The closures a `let` names that only a hook's function is, each
+    /// written there, named (`named_callbacks`).
+    pub(super) named_callbacks: HashSet<LocalVarId>,
 }
 
 impl BodyFacts {
@@ -233,8 +237,56 @@ impl BodyFacts {
                 _ => {}
             }
         }
+        facts.named_callbacks = named_callbacks(tcx, thir, &facts.uses);
         facts
     }
+}
+
+/// The closures a `let` names whose one use is as the function a
+/// `#[rust_js::named_callback]` hook is given: each written there, named,
+/// `useEffect(function createBundler() { .. }, [])` (ADR 0297).
+fn named_callbacks<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    thir: &Thir<'tcx>,
+    uses: &HashMap<LocalVarId, usize>,
+) -> HashSet<LocalVarId> {
+    let closures: HashSet<LocalVarId> = thir
+        .stmts
+        .iter()
+        .filter_map(|stmt| match stmt.kind {
+            thir::StmtKind::Let {
+                ref pattern,
+                initializer: Some(init),
+                else_block: None,
+                ..
+            } => match (&pattern.kind, &thir[strip(thir, init)].kind) {
+                (
+                    &PatKind::Binding {
+                        var,
+                        mode: BindingMode(ByRef::No, Mutability::Not),
+                        subpattern: None,
+                        ..
+                    },
+                    ExprKind::Closure(_),
+                ) => Some(var),
+                _ => None,
+            },
+            _ => None,
+        })
+        .collect();
+    let mut found = HashSet::new();
+    for expr in thir.exprs.iter() {
+        if let ExprKind::Call { fun, ref args, .. } = expr.kind
+            && fn_def(thir[strip(thir, fun)].ty).is_some_and(|(def_id, _)| named_callback(tcx, def_id))
+            && let Some(&first) = args.first()
+            && let ExprKind::VarRef { id } = thir[strip(thir, first)].kind
+            && closures.contains(&id)
+            && uses.get(&id) == Some(&1)
+        {
+            found.insert(id);
+        }
+    }
+    found
 }
 
 /// Where each variable is changed, as the body's order has it: set, lent as

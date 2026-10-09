@@ -162,4 +162,12 @@ export const mutations: Mutation[] = [
     replace: "            && false\n",
     tests: ["test/diagnostics.test.ts", "-t", "derive of an open union"],
   },
+  {
+    name: "named-callback-unread",
+    breaks: "no hook names its function, so `useEffect(startTicking, [])` follows `const startTicking = () => ..`",
+    file: "src/lower/bindings.rs",
+    find: "    let path = [Symbol::intern(\"rust_js\"), Symbol::intern(\"named_callback\")];\n    tcx.get_attrs_by_path(def_id, &path).next().is_some()",
+    replace: "    let path = [Symbol::intern(\"rust_js\"), Symbol::intern(\"named_callback\")];\n    tcx.get_attrs_by_path(def_id, &path).next().is_some() && false",
+    tests: ["test/jsx.test.ts", "-t", "a closure a let names for a hook"],
+  },
 ];

@@ -859,12 +859,14 @@ impl<F: FnOnce() + 'static> Cleanup for Option<F> {}
 /// [`useEffect`](https://react.dev/reference/react/useEffect): run `effect`
 /// after a render in which `deps` changed.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useEffect")]
+#[cfg_attr(rust_js, rust_js::named_callback)]
 pub fn use_effect<C: Cleanup>(effect: impl Fn() -> C + 'static, deps: impl DependencyList) {
     unreachable!()
 }
 
 /// `useEffect(effect)`: after every render.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useEffect")]
+#[cfg_attr(rust_js, rust_js::named_callback)]
 pub fn use_effect_on_every_render<C: Cleanup>(effect: impl Fn() -> C + 'static) {
     unreachable!()
 }
@@ -872,12 +874,14 @@ pub fn use_effect_on_every_render<C: Cleanup>(effect: impl Fn() -> C + 'static) 
 /// [`useLayoutEffect`](https://react.dev/reference/react/useLayoutEffect):
 /// [`use_effect`], before the browser paints.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useLayoutEffect")]
+#[cfg_attr(rust_js, rust_js::named_callback)]
 pub fn use_layout_effect<C: Cleanup>(effect: impl Fn() -> C + 'static, deps: impl DependencyList) {
     unreachable!()
 }
 
 /// `useLayoutEffect(effect)`: after every render, before the browser paints.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useLayoutEffect")]
+#[cfg_attr(rust_js, rust_js::named_callback)]
 pub fn use_layout_effect_on_every_render<C: Cleanup>(effect: impl Fn() -> C + 'static) {
     unreachable!()
 }
@@ -885,12 +889,14 @@ pub fn use_layout_effect_on_every_render<C: Cleanup>(effect: impl Fn() -> C + 's
 /// [`useInsertionEffect`](https://react.dev/reference/react/useInsertionEffect):
 /// before layout effects, for CSS-in-JS libraries to insert styles.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useInsertionEffect")]
+#[cfg_attr(rust_js, rust_js::named_callback)]
 pub fn use_insertion_effect<C: Cleanup>(effect: impl Fn() -> C + 'static, deps: impl DependencyList) {
     unreachable!()
 }
 
 /// `useInsertionEffect(effect)`: after every render.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useInsertionEffect")]
+#[cfg_attr(rust_js, rust_js::named_callback)]
 pub fn use_insertion_effect_on_every_render<C: Cleanup>(effect: impl Fn() -> C + 'static) {
     unreachable!()
 }
@@ -900,6 +906,7 @@ pub fn use_insertion_effect_on_every_render<C: Cleanup>(effect: impl Fn() -> C +
 /// being one of its dependencies. Call it only from effects.
 #[cfg(react = "19.2")]
 #[cfg_attr(rust_js, rust_js::link_name = "react#useEffectEvent")]
+#[cfg_attr(rust_js, rust_js::named_callback)]
 pub fn use_effect_event<F: 'static>(f: F) -> &'static F {
     unreachable!()
 }
@@ -909,6 +916,7 @@ pub fn use_effect_event<F: 'static>(f: F) -> &'static F {
 /// [`useMemo`](https://react.dev/reference/react/useMemo): `f`'s value, computed
 /// again only when `deps` change.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useMemo")]
+#[cfg_attr(rust_js, rust_js::named_callback)]
 pub fn use_memo<T>(f: impl Fn() -> T + 'static, deps: impl DependencyList) -> &'static T {
     unreachable!()
 }
@@ -916,6 +924,7 @@ pub fn use_memo<T>(f: impl Fn() -> T + 'static, deps: impl DependencyList) -> &'
 /// [`useCallback`](https://react.dev/reference/react/useCallback): the same
 /// function across renders, until `deps` change.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useCallback")]
+#[cfg_attr(rust_js, rust_js::named_callback)]
 pub fn use_callback<F: 'static>(f: F, deps: impl DependencyList) -> &'static F {
     unreachable!()
 }

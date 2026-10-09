@@ -250,4 +250,12 @@ export const mutations: Mutation[] = [
     replace: "                    false",
     tests: ["test/lowering.test.ts", "-t", "an index a condition shows"],
   },
+  {
+    name: "named-callback-used-twice",
+    breaks: "a closure a hook is given and that's called besides is written at both, a function each",
+    file: "src/lower/body_queries.rs",
+    find: "            && uses.get(&id) == Some(&1)\n",
+    replace: "",
+    tests: ["test/jsx.test.ts", "-t", "a closure a let names for a hook"],
+  },
 ];

@@ -686,4 +686,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "a Cell a let takes apart"],
   },
+  {
+    name: "named-callback-shadows",
+    breaks: "a hook's function named as what it reads reads itself: `function step() { setN(step) }`",
+    file: "src/lower/patterns.rs",
+    find: "                js::ExprKind::Arrow(ref params, ref body) if !reads_own => (params.clone(), body.clone(), false),",
+    replace: "                js::ExprKind::Arrow(ref params, ref body) => (params.clone(), body.clone(), false),",
+    tests: ["test/jsx.test.ts", "-t", "a closure a let names for a hook"],
+  },
 ];
