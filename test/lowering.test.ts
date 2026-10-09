@@ -2334,6 +2334,36 @@ pub fn duped() -> (&'static str, &'static str) {
     through(&Twin)
 }
 
+// A trait impl's own bound, given with its dictionary, as rustc's
+// traits/conditional-dispatch.rs has it.
+trait Again {
+    fn again(&self) -> Self;
+}
+
+impl<T: Copy> Again for Option<T> {
+    fn again(&self) -> Self {
+        *self
+    }
+}
+
+trait Get {
+    fn get(&self) -> Self;
+}
+
+impl<T: Again> Get for T {
+    fn get(&self) -> T {
+        self.again()
+    }
+}
+
+fn get_it<T: Get>(t: &T) -> T {
+    t.get()
+}
+
+pub fn got() -> Option<u32> {
+    get_it(&Some(4))
+}
+
 pub fn shared<T: Copy>(value: T) -> T {
     value
 }
@@ -2344,7 +2374,7 @@ pub fn shared<T: Copy>(value: T) -> T {
   expect(js).toContain("return twice(name);");
   expect(js).toContain("function kept(value, TCopy) {");
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.named("a"), lib.moved({ x: 1 }), lib.relayed({ x: 1 }), lib.held({ x: 1 }), lib.duped()]).toEqual([["a", "a"], 3, 3, 3, ["a", "a"]]);
+  expect([lib.named("a"), lib.moved({ x: 1 }), lib.relayed({ x: 1 }), lib.held({ x: 1 }), lib.duped(), lib.got()]).toEqual([["a", "a"], 3, 3, 3, ["a", "a"], 4]);
   // A library's public one may be given anything by its consumers.
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "library", "lib.js"), "--library", "--manifest", join(dir, "library", "lib.manifest.json"),
     "--", "--crate-name", "shared", `--emit=metadata=${join(dir, "library", "libshared.rmeta")}`]);

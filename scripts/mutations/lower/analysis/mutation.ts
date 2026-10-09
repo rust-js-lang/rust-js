@@ -87,8 +87,16 @@ export const mutations: Mutation[] = [
     name: "trait-method-copies-by-callers",
     breaks: "a trait method's `Copy` bound is decided by the crate's direct calls, though it's called through a dictionary",
     file: "src/lower/analysis/mutation.rs",
-    find: "id.is_local() && tcx.trait_of_assoc(id).is_none() && ",
-    replace: "id.is_local() && ",
+    find: "        && tcx.trait_of_assoc(id).is_none()\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "a Copy bound takes a copy only"],
+  },
+  {
+    name: "trait-impl-copies-by-callers",
+    breaks: "a trait impl's own `T: Copy` takes no copy function, which its method's dictionary is given, so rustc's conditional dispatch is refused",
+    file: "src/lower/analysis/mutation.rs",
+    find: "        && !matches!(tcx.def_kind(id), DefKind::Impl { of_trait: true })\n",
+    replace: "",
     tests: ["test/lowering.test.ts", "-t", "a Copy bound takes a copy only"],
   },
 ];

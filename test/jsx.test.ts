@@ -2432,6 +2432,11 @@ pub fn Counter() -> JSX::Element {
     let count = Cell::new(0);
     jsx! { <div><p>{count.get()}</p>{{ count.set(5); 1 }}</div> }
 }
+pub struct Tally { pub count: Cell<i32> }
+pub fn Tallied() -> JSX::Element {
+    let tally = Tally { count: Cell::new(0) };
+    jsx! { <div><p>{tally.count.get()}</p>{{ tally.count.set(5); 1 }}</div> }
+}
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
@@ -2440,10 +2445,11 @@ pub fn Counter() -> JSX::Element {
   expect(badge).toContain('<svg width={p.size === "S" ? "12px" : "20px"}>');
   expect(jsx).toMatch(/= n\.textContent;\n  n\.textContent = "x";/);
   expect(jsx).toMatch(/= count;\n  count = 5;/);
-  const { Badge, Counter, Edited } = await import(join(dir, "lib.jsx"));
+  const { Badge, Counter, Edited, Tallied } = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(Badge({ size: "S", title: "t" }))).toBe('<svg width="12px"><title>t</title>2</svg>');
   expect(renderToStaticMarkup(Counter())).toBe("<div><p>0</p>1</div>");
   expect(renderToStaticMarkup(Edited({ n: 0 }))).toBe("<p>01</p>");
+  expect(renderToStaticMarkup(Tallied())).toBe("<div><p>0</p>1</div>");
 });
 
 // A comparison of what reads the same reads the same after a later child's

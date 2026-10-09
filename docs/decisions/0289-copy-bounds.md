@@ -44,6 +44,9 @@ kept(point)                // kept({ ...point }, { copy: (value) => ({ ...value 
   method and an impl's, called through dictionaries; a library's function
   its consumers can reach; a function of another crate.
 - An impl's `T: Copy` counts as its method's.
+- A trait impl's own `T: Copy` takes one too: its dictionary is given to
+  callers rust-js can't see, as its methods are (found by rustc's
+  `traits/conditional-dispatch.rs`).
 
 ## Why
 

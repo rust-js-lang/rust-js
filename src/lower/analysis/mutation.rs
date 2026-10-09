@@ -5,6 +5,7 @@ use crate::lower::recognition::replaces_whole;
 use crate::lower::{Body, FnInfo, fn_def, strip};
 use rustc_ast::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;
+use rustc_hir::def::DefKind;
 use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty;
@@ -172,10 +173,14 @@ pub(in crate::lower) fn copied_params<'tcx>(
 
 /// Is `id` one only its crate's callers call, whose `Copy` bounds take a
 /// copy function only where they give one (ADR 0289)? A trait's method, an
-/// impl's, and their closures are called through dictionaries.
+/// impl's, and their closures are called through dictionaries, and a trait
+/// impl's own bounds are its dictionary's.
 pub(in crate::lower) fn copies_by_callers(tcx: TyCtxt<'_>, id: DefId) -> bool {
     let id = tcx.typeck_root_def_id(id);
-    id.is_local() && tcx.trait_of_assoc(id).is_none() && tcx.trait_impl_of_assoc(id).is_none()
+    id.is_local()
+        && !matches!(tcx.def_kind(id), DefKind::Impl { of_trait: true })
+        && tcx.trait_of_assoc(id).is_none()
+        && tcx.trait_impl_of_assoc(id).is_none()
 }
 
 /// The type parameters of `id` bound by `Copy`, by their indices, an
