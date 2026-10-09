@@ -2094,3 +2094,30 @@ pub fn escaping() -> Rc<Cell<u32>> {
   listener(7);
   expect([lib.local(), lib.counted((f: () => void) => { f(); f(); }), before, read(), lib.escaping().value]).toEqual([2, 2, undefined, 7, 2]);
 });
+
+// ADR 0102: `clearTimeout` and `clearInterval` take an id or `undefined`, as
+// TypeScript types them, `number | undefined`: react.dev clears a timeout
+// its listener may not have set, `clearTimeout(timeout)`.
+test("a timer is cleared of an id or none", async () => {
+  const dir = fixture("cleared-timers");
+  writeFileSync(join(dir, "lib.rs"), `pub fn cleared(id: Option<&js::TimeoutId>) {
+    js::clear_timeout(id);
+}
+
+pub fn stopped(id: Option<&js::IntervalId>) {
+    js::clear_interval(id);
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  clearTimeout(id);");
+  expect(js).toContain("  clearInterval(id);");
+  const lib = await import(join(dir, "lib.js"));
+  let ran = false;
+  const timer = setTimeout(() => { ran = true; }, 0);
+  lib.cleared(undefined);
+  lib.stopped(undefined);
+  lib.cleared(timer);
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  expect(ran).toBe(false);
+});

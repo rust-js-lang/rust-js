@@ -516,9 +516,10 @@ unsafe extern "Rust" {
     pub safe fn set_timeout(callback: Box<dyn FnOnce()>, ms: u32) -> &'static TimeoutId;
 
     /// [`clearTimeout(id)`](https://developer.mozilla.org/docs/Web/API/Window/clearTimeout):
-    /// the timeout's `callback` won't run, if it hasn't.
+    /// the timeout's `callback` won't run, if it hasn't; of none, nothing,
+    /// as TypeScript types it, `number | undefined`.
     #[link_name = "clearTimeout"]
-    pub safe fn clear_timeout(id: &TimeoutId);
+    pub safe fn clear_timeout(id: Option<&TimeoutId>);
 
     /// [`setInterval(callback, ms)`](https://developer.mozilla.org/docs/Web/API/Window/setInterval):
     /// `callback` every `ms` milliseconds, until it's cleared.
@@ -526,9 +527,10 @@ unsafe extern "Rust" {
     pub safe fn set_interval(callback: Box<dyn FnMut()>, ms: u32) -> &'static IntervalId;
 
     /// [`clearInterval(id)`](https://developer.mozilla.org/docs/Web/API/Window/clearInterval):
-    /// the interval's `callback` doesn't run again.
+    /// the interval's `callback` doesn't run again; of none, nothing, as
+    /// TypeScript types it, `number | undefined`.
     #[link_name = "clearInterval"]
-    pub safe fn clear_interval(id: &IntervalId);
+    pub safe fn clear_interval(id: Option<&IntervalId>);
 }
 
 /// A JS [`RegExp`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp),

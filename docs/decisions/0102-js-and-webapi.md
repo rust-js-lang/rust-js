@@ -172,3 +172,12 @@ What else it declares is a library's or its own: webapi has an iframe's
 `contentWindow`, `MessageEvent` and `performance` now (ADR 0024), and
 `object::is` takes two types, since one JS object may be seen as either,
 a message's sender, an object, and a frame's `Window`.
+
+## Amendment: a timer is cleared of an id or none
+
+`clear_timeout` and `clear_interval` take an `Option`, as TypeScript
+types `clearTimeout(id: number | undefined)`: what a JS program clears is
+often a timeout it may not have set, react.dev's Preview's `timeout` its
+listener sets. Two react.dev ports bound their own `clearTimeout` of an
+`Option` for it, which a port shouldn't need to. ReScript's takes an id
+only; TypeScript's type is what JS does.

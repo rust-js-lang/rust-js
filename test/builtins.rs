@@ -144,7 +144,7 @@ pub fn after(ms: u32, done: Box<dyn FnOnce()>) {
 /// `never` after `ms`, cleared first: it doesn't run.
 pub fn cancelled(ms: u32, never: Box<dyn FnOnce()>) {
     let id = js::set_timeout(never, ms);
-    js::clear_timeout(id);
+    js::clear_timeout(Some(id));
 }
 
 /// `tick` every `ms`, until `stop` of what this gives.
@@ -153,7 +153,7 @@ pub fn every(ms: u32, tick: Box<dyn FnMut()>) -> &'static js::IntervalId {
 }
 
 pub fn stop(id: &js::IntervalId) {
-    js::clear_interval(id);
+    js::clear_interval(Some(id));
 }
 
 async fn doubled(n: u32) -> u32 {
