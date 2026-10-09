@@ -2,6 +2,22 @@
 
 import { $byteLen, $someValue } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function loudDrop_drop(loud) {
+  console.log(`drop ${loud[0]}`);
+}
+
+function make(name, give) {
+  console.log(`make ${name}`);
+  if (give) {
+    return [name];
+  }
+  return;
+}
+
 const Mapped = {
   and_then(mapped, f, dropU) {
     if (mapped === "None") {
@@ -79,14 +95,6 @@ const Mapped = {
     return 2;
   },
 };
-
-function make(name, give) {
-  console.log(`make ${name}`);
-  if (give) {
-    return [name];
-  }
-  return;
-}
 
 function first(k) {
   if (k != null) {
@@ -195,13 +203,5 @@ function main() {
       loudDrop_drop(both._1);
     }
   }
-}
-
-export function entry() {
-  main();
-}
-
-function loudDrop_drop(loud) {
-  console.log(`drop ${loud[0]}`);
 }
 //# sourceMappingURL=case.js.map

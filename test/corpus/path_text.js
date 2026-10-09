@@ -4,6 +4,24 @@ import { $debugStr } from "@rust-js/runtime";
 
 var $pathAsDisplay;
 
+export function entry() {
+  main();
+}
+
+function pathAsDisplay() {
+  if ($pathAsDisplay === undefined) {
+    $pathAsDisplay = {
+      TargetDisplay: () => ({ fmt: (value) => value }),
+      as_display: pathAsDisplay_as_display,
+    };
+  }
+  return $pathAsDisplay;
+}
+
+function pathAsDisplay_as_display(path) {
+  return path;
+}
+
 function describe(e) {
   return `no file at ${pathAsDisplay_as_display(e.path)}`;
 }
@@ -21,23 +39,5 @@ function main() {
   console.log(`${asPath}`);
   console.log(`${describe({ path: "data/x.csv" })}`);
   console.log("");
-}
-
-export function entry() {
-  main();
-}
-
-function pathAsDisplay_as_display(path) {
-  return path;
-}
-
-function pathAsDisplay() {
-  if ($pathAsDisplay === undefined) {
-    $pathAsDisplay = {
-      TargetDisplay: () => ({ fmt: (value) => value }),
-      as_display: pathAsDisplay_as_display,
-    };
-  }
-  return $pathAsDisplay;
 }
 //# sourceMappingURL=case.js.map

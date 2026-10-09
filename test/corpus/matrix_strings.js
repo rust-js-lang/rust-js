@@ -29,6 +29,10 @@ import {
   $utf8Lossy,
 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 const STRINGS = [
   "",
   "a",
@@ -133,9 +137,5 @@ function main() {
       );
     }
   }
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

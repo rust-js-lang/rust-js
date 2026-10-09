@@ -18,6 +18,18 @@ import {
   $unzip,
 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function counterIterator_next(counter) {
+  if (counter[0] < 3) {
+    counter[0] = (counter[0] + 1) >>> 0;
+    return counter[0];
+  }
+  return;
+}
+
 function repeated(first, n, TClone) {
   return $successors($some(first), (item) => $some(TClone.clone(item)), true)
     .take(n)
@@ -147,17 +159,5 @@ function main() {
   for (const item of maybe == null ? [] : [maybe]) {
     console.log(`${item}`);
   }
-}
-
-export function entry() {
-  main();
-}
-
-function counterIterator_next(counter) {
-  if (counter[0] < 3) {
-    counter[0] = (counter[0] + 1) >>> 0;
-    return counter[0];
-  }
-  return;
 }
 //# sourceMappingURL=case.js.map

@@ -4,17 +4,15 @@ import { $fmtError, $fmtOrPanic, $fmtWritten } from "@rust-js/runtime";
 
 var $hoursDisplay, $spanDisplay;
 
-function main() {
-  console.log("before");
-  const s = $fmtOrPanic(
-    () => `<${spanDisplay_fmt([[1], [99]])}>`,
-    "a formatting trait implementation returned an error when the underlying stream did not: Error",
-  );
-  console.log(`${s}`);
-}
-
 export function entry() {
   main();
+}
+
+export function hoursDisplay() {
+  if ($hoursDisplay === undefined) {
+    $hoursDisplay = { fmt: hoursDisplay_fmt };
+  }
+  return $hoursDisplay;
 }
 
 function hoursDisplay_fmt(hours) {
@@ -31,6 +29,13 @@ function hoursDisplay_fmt(hours) {
   return f;
 }
 
+export function spanDisplay() {
+  if ($spanDisplay === undefined) {
+    $spanDisplay = { fmt: spanDisplay_fmt };
+  }
+  return $spanDisplay;
+}
+
 function spanDisplay_fmt(span) {
   let f = "";
   try {
@@ -43,17 +48,12 @@ function spanDisplay_fmt(span) {
   return f;
 }
 
-export function hoursDisplay() {
-  if ($hoursDisplay === undefined) {
-    $hoursDisplay = { fmt: hoursDisplay_fmt };
-  }
-  return $hoursDisplay;
-}
-
-export function spanDisplay() {
-  if ($spanDisplay === undefined) {
-    $spanDisplay = { fmt: spanDisplay_fmt };
-  }
-  return $spanDisplay;
+function main() {
+  console.log("before");
+  const s = $fmtOrPanic(
+    () => `<${spanDisplay_fmt([[1], [99]])}>`,
+    "a formatting trait implementation returned an error when the underlying stream did not: Error",
+  );
+  console.log(`${s}`);
 }
 //# sourceMappingURL=case.js.map

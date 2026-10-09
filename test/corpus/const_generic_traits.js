@@ -4,8 +4,70 @@ import { $traitImpl } from "@rust-js/runtime";
 
 var $sevenRepeat, $metersScaled10, $metersScaled100, $anyScaled, $dotsPad;
 
+export function entry() {
+  main();
+}
+
+function sevenRepeat() {
+  if ($sevenRepeat === undefined) {
+    $sevenRepeat = { repeat: sevenRepeat_repeat, twice: (self) => sevenRepeat_repeat(self, 2) };
+  }
+  return $sevenRepeat;
+}
+
+function sevenRepeat_repeat(seven, N) {
+  return new Array(N).fill(7);
+}
+
 function three(r, RRepeat) {
   return RRepeat.repeat(r, 3);
+}
+
+function metersScaled10() {
+  if ($metersScaled10 === undefined) {
+    $metersScaled10 = { scaled: metersScaled10_scaled, factor: (self) => 10 };
+  }
+  return $metersScaled10;
+}
+
+function metersScaled10_scaled(meters) {
+  return Math.imul(meters[0], 10) >>> 0;
+}
+
+function metersScaled100() {
+  if ($metersScaled100 === undefined) {
+    $metersScaled100 = { scaled: metersScaled100_scaled, factor: (self) => 100 };
+  }
+  return $metersScaled100;
+}
+
+function metersScaled100_scaled(meters) {
+  return Math.imul(meters[0], 100) >>> 0;
+}
+
+function anyScaled(K) {
+  if ($anyScaled === undefined) {
+    $anyScaled = new Map();
+  }
+  return $traitImpl($anyScaled, [K], () => ({
+    scaled: (arg0) => anyScaled_scaled(arg0, K),
+    factor: (self) => K,
+  }));
+}
+
+function anyScaled_scaled(any, K) {
+  return Math.imul(any[0], K) >>> 0;
+}
+
+function dotsPad() {
+  if ($dotsPad === undefined) {
+    $dotsPad = { pad: dotsPad_pad };
+  }
+  return $dotsPad;
+}
+
+function dotsPad_pad(dots, value, N, TDisplay) {
+  return ".".repeat(N) + TDisplay.fmt(value);
 }
 
 function padded(p, PPad) {
@@ -42,67 +104,5 @@ function main() {
   console.log(
     `${padded(undefined, dotsPad())} ${dotsPad_pad(undefined, "x", 1, { fmt: (value) => value })}`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function sevenRepeat_repeat(seven, N) {
-  return new Array(N).fill(7);
-}
-
-function metersScaled10_scaled(meters) {
-  return Math.imul(meters[0], 10) >>> 0;
-}
-
-function metersScaled100_scaled(meters) {
-  return Math.imul(meters[0], 100) >>> 0;
-}
-
-function anyScaled_scaled(any, K) {
-  return Math.imul(any[0], K) >>> 0;
-}
-
-function dotsPad_pad(dots, value, N, TDisplay) {
-  return ".".repeat(N) + TDisplay.fmt(value);
-}
-
-function sevenRepeat() {
-  if ($sevenRepeat === undefined) {
-    $sevenRepeat = { repeat: sevenRepeat_repeat, twice: (self) => sevenRepeat_repeat(self, 2) };
-  }
-  return $sevenRepeat;
-}
-
-function metersScaled10() {
-  if ($metersScaled10 === undefined) {
-    $metersScaled10 = { scaled: metersScaled10_scaled, factor: (self) => 10 };
-  }
-  return $metersScaled10;
-}
-
-function metersScaled100() {
-  if ($metersScaled100 === undefined) {
-    $metersScaled100 = { scaled: metersScaled100_scaled, factor: (self) => 100 };
-  }
-  return $metersScaled100;
-}
-
-function anyScaled(K) {
-  if ($anyScaled === undefined) {
-    $anyScaled = new Map();
-  }
-  return $traitImpl($anyScaled, [K], () => ({
-    scaled: (arg0) => anyScaled_scaled(arg0, K),
-    factor: (self) => K,
-  }));
-}
-
-function dotsPad() {
-  if ($dotsPad === undefined) {
-    $dotsPad = { pad: dotsPad_pad };
-  }
-  return $dotsPad;
 }
 //# sourceMappingURL=case.js.map

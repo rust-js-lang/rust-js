@@ -80,13 +80,13 @@ pub fn emit(
     };
     let b = &cx.b;
 
-    let namespaces = module.namespaces.iter().map(|n| cx.namespace(n));
-    let consts = module.consts.iter().map(|c| cx.constant(c));
     let body = ArenaVec::from_iter_in(
-        namespaces
-            .chain(consts)
-            .chain(cx.stmts(&module.statements))
-            .chain(module.functions.iter().map(|f| cx.function(f))),
+        module.items.iter().flat_map(|item| match item {
+            js::Item::Namespace(n) => vec![cx.namespace(n)],
+            js::Item::Const(c) => vec![cx.constant(c)],
+            js::Item::Statements(stmts) => cx.stmts(stmts).into_iter().collect(),
+            js::Item::Function(f) => vec![cx.function(f)],
+        }),
         b,
     );
     let program = Program::new(
@@ -209,8 +209,12 @@ pub fn emit(
     // object of several, the method on its own lines. Record where each part
     // of each generated line ends up, to fix the map.
     let one_method: Vec<String> = module
-        .namespaces
+        .items
         .iter()
+        .filter_map(|item| match item {
+            js::Item::Namespace(n) => Some(n),
+            _ => None,
+        })
         .filter(|n| n.methods.len() == 1)
         .map(|n| format!("{}const {} = {{ ", if n.export { "export " } else { "" }, n.name))
         .collect();

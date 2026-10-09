@@ -2,13 +2,13 @@
 
 import { $ilog } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   for (const n of [100, 9, 0]) {
     console.log(`${$ilog(n, 10)}`);
   }
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

@@ -15,6 +15,10 @@ import {
 
 var $pointDebug, $secretDebug, $pairDebug, $bagDebug, $lettersDebug, $tableDebug;
 
+export function entry() {
+  main();
+}
+
 const Stack = {
   push(stack, value) {
     const old = stack.head;
@@ -37,6 +41,76 @@ function swap_in(slot, value) {
   const old = slot.value;
   slot.value = $some(value);
   return old;
+}
+
+function versionDebug_fmt(version) {
+  return `Version(${version[0]}, ${$debugStr(version[1])})`;
+}
+
+export function pointDebug() {
+  if ($pointDebug === undefined) {
+    $pointDebug = { fmt: pointDebug_fmt };
+  }
+  return $pointDebug;
+}
+
+function pointDebug_fmt(point) {
+  return `Point { x: ${point.x}, label: ${$debugStr(point.label)}, tags: [${point.tags.map((item) => String(item)).join(", ")}] }`;
+}
+
+export function secretDebug() {
+  if ($secretDebug === undefined) {
+    $secretDebug = { fmt: secretDebug_fmt };
+  }
+  return $secretDebug;
+}
+
+function secretDebug_fmt(secret) {
+  return `Secret { hint: ${secret[0]}, .. }`;
+}
+
+export function pairDebug() {
+  if ($pairDebug === undefined) {
+    $pairDebug = { fmt: pairDebug_fmt };
+  }
+  return $pairDebug;
+}
+
+function pairDebug_fmt(pair) {
+  return `Pair(${pair[0]}, ${$debugStr(pair[1])})`;
+}
+
+export function bagDebug() {
+  if ($bagDebug === undefined) {
+    $bagDebug = { fmt: bagDebug_fmt };
+  }
+  return $bagDebug;
+}
+
+function bagDebug_fmt(bag) {
+  return `[${["0"].concat(Array.from(bag[0], (entry) => String(entry))).join(", ")}]`;
+}
+
+export function lettersDebug() {
+  if ($lettersDebug === undefined) {
+    $lettersDebug = { fmt: lettersDebug_fmt };
+  }
+  return $lettersDebug;
+}
+
+function lettersDebug_fmt(letters) {
+  return `{${Array.from(letters[0], (entry) => $debugStr(entry, "'")).join(", ")}}`;
+}
+
+export function tableDebug() {
+  if ($tableDebug === undefined) {
+    $tableDebug = { fmt: tableDebug_fmt };
+  }
+  return $tableDebug;
+}
+
+function tableDebug_fmt(table) {
+  return `{${Array.from($sortedEntries(table[0], $cmp), (entry) => `${$debugStr(entry[0])}: ${entry[1]}`).join(", ")}}`;
 }
 
 function main() {
@@ -133,79 +207,5 @@ function main() {
   console.log(
     `${lettersDebug_fmt([["a", "b"]])} ${tableDebug_fmt([table])} ${tableDebug_fmt([new Map()])}`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function versionDebug_fmt(version) {
-  return `Version(${version[0]}, ${$debugStr(version[1])})`;
-}
-
-function pointDebug_fmt(point) {
-  return `Point { x: ${point.x}, label: ${$debugStr(point.label)}, tags: [${point.tags.map((item) => String(item)).join(", ")}] }`;
-}
-
-function secretDebug_fmt(secret) {
-  return `Secret { hint: ${secret[0]}, .. }`;
-}
-
-function pairDebug_fmt(pair) {
-  return `Pair(${pair[0]}, ${$debugStr(pair[1])})`;
-}
-
-function bagDebug_fmt(bag) {
-  return `[${["0"].concat(Array.from(bag[0], (entry) => String(entry))).join(", ")}]`;
-}
-
-function lettersDebug_fmt(letters) {
-  return `{${Array.from(letters[0], (entry) => $debugStr(entry, "'")).join(", ")}}`;
-}
-
-function tableDebug_fmt(table) {
-  return `{${Array.from($sortedEntries(table[0], $cmp), (entry) => `${$debugStr(entry[0])}: ${entry[1]}`).join(", ")}}`;
-}
-
-export function pointDebug() {
-  if ($pointDebug === undefined) {
-    $pointDebug = { fmt: pointDebug_fmt };
-  }
-  return $pointDebug;
-}
-
-export function secretDebug() {
-  if ($secretDebug === undefined) {
-    $secretDebug = { fmt: secretDebug_fmt };
-  }
-  return $secretDebug;
-}
-
-export function pairDebug() {
-  if ($pairDebug === undefined) {
-    $pairDebug = { fmt: pairDebug_fmt };
-  }
-  return $pairDebug;
-}
-
-export function bagDebug() {
-  if ($bagDebug === undefined) {
-    $bagDebug = { fmt: bagDebug_fmt };
-  }
-  return $bagDebug;
-}
-
-export function lettersDebug() {
-  if ($lettersDebug === undefined) {
-    $lettersDebug = { fmt: lettersDebug_fmt };
-  }
-  return $lettersDebug;
-}
-
-export function tableDebug() {
-  if ($tableDebug === undefined) {
-    $tableDebug = { fmt: tableDebug_fmt };
-  }
-  return $tableDebug;
 }
 //# sourceMappingURL=case.js.map

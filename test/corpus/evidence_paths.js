@@ -13,16 +13,154 @@ var $smallInt,
   $pointMovableS,
   $bagAdd;
 
+export function entry() {
+  main();
+}
+
+function smallInt() {
+  if ($smallInt === undefined) {
+    $smallInt = { value: smallInt_value };
+  }
+  return $smallInt;
+}
+
+function smallInt_value(small) {
+  return small[0];
+}
+
+function u8NonZero() {
+  if ($u8NonZero === undefined) {
+    $u8NonZero = { non_zero: u8NonZero_non_zero };
+  }
+  return $u8NonZero;
+}
+
+function u8NonZero_non_zero(self) {
+  return self !== 0;
+}
+
 function check(i, j, IInt, ITNonZero) {
   return IInt.value(i) > 0 && ITNonZero.non_zero(j);
+}
+
+function i32Source() {
+  if ($i32Source === undefined) {
+    $i32Source = { Produce: () => i32ProduceU32() };
+  }
+  return $i32Source;
+}
+
+function i32ProduceU32() {
+  if ($i32ProduceU32 === undefined) {
+    $i32ProduceU32 = { produce: i32ProduceU32_produce };
+  }
+  return $i32ProduceU32;
+}
+
+function i32ProduceU32_produce(self) {
+  return Math.imul(self >>> 0, 2) >>> 0;
 }
 
 function produced(t, TSource) {
   return TSource.Produce().produce(t);
 }
 
+export function celsiusDisplay() {
+  if ($celsiusDisplay === undefined) {
+    $celsiusDisplay = { fmt: celsiusDisplay_fmt };
+  }
+  return $celsiusDisplay;
+}
+
+function celsiusDisplay_fmt(celsius) {
+  return `${$displayF64(celsius[0])}°C`;
+}
+
 function shout(x, TToString) {
   return TToString.to_string(x).toUpperCase();
+}
+
+function optionGetterT(TClone) {
+  if ($optionGetterT === undefined) {
+    $optionGetterT = new WeakMap();
+  }
+  return $traitImpl($optionGetterT, [TClone], () => ({
+    get: (arg0) => optionGetterT_get(arg0, TClone),
+    twice: (self) => {
+      const x = optionGetterT_get(self, TClone);
+      return [TClone.clone(x), x];
+    },
+  }));
+}
+
+function optionGetterT_get(option, TClone) {
+  return TClone.clone($someValue($unwrap(option)));
+}
+
+function iDigits() {
+  if ($iDigits === undefined) {
+    $iDigits = {
+      digit_iter: iDigits_digit_iter,
+      digit_sum: (self) =>
+        Iterator.from(iDigits_digit_iter(self))
+          .map((d) => d)
+          .reduce((s, d) => (s + d) >>> 0, 0),
+    };
+  }
+  return $iDigits;
+}
+
+function iDigits_digit_iter(self) {
+  return self;
+}
+
+function pointPositionedS(SClone) {
+  if ($pointPositionedS === undefined) {
+    $pointPositionedS = new WeakMap();
+  }
+  return $traitImpl($pointPositionedS, [SClone], () => ({
+    set_x: (arg0, arg1) => pointPositionedS_set_x(arg0.value, arg1, SClone),
+    x: (arg0) => pointPositionedS_x(arg0, SClone),
+  }));
+}
+
+function pointPositionedS_set_x(point, x, SClone) {
+  point.x = x;
+}
+
+function pointPositionedS_x(point, SClone) {
+  return SClone.clone(point.x);
+}
+
+function pointMovableS(SClone, SAdd) {
+  if ($pointMovableS === undefined) {
+    $pointMovableS = new WeakMap();
+  }
+  return $traitImpl($pointMovableS, [SClone, SAdd], () => ({
+    Positioned: () => pointPositionedS(SClone),
+    translate: (self, dx) => {
+      const before = pointPositionedS_x(self.value, SClone);
+      const x = SAdd.add(pointPositionedS_x(self.value, SClone), dx);
+      pointPositionedS_set_x(self.value, x, SClone);
+      return before;
+    },
+  }));
+}
+
+function bagDebug_fmt(bag) {
+  return `Bag([${bag[0].map((item) => String(item)).join(", ")}])`;
+}
+
+export function bagAdd() {
+  if ($bagAdd === undefined) {
+    $bagAdd = { add: bagAdd_add };
+  }
+  return $bagAdd;
+}
+
+function bagAdd_add(bag, other) {
+  $extend(bag[0], Array.from(other[0]));
+  return bag;
 }
 
 function main() {
@@ -58,143 +196,5 @@ function main() {
   console.log(
     `${bagDebug_fmt(before$1)} ${bagDebug_fmt(pointPositionedS_x(bag, { clone: (value) => [value[0].slice()] }))}`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function smallInt_value(small) {
-  return small[0];
-}
-
-function u8NonZero_non_zero(self) {
-  return self !== 0;
-}
-
-function i32ProduceU32_produce(self) {
-  return Math.imul(self >>> 0, 2) >>> 0;
-}
-
-function celsiusDisplay_fmt(celsius) {
-  return `${$displayF64(celsius[0])}°C`;
-}
-
-function optionGetterT_get(option, TClone) {
-  return TClone.clone($someValue($unwrap(option)));
-}
-
-function iDigits_digit_iter(self) {
-  return self;
-}
-
-function pointPositionedS_set_x(point, x, SClone) {
-  point.x = x;
-}
-
-function pointPositionedS_x(point, SClone) {
-  return SClone.clone(point.x);
-}
-
-function bagDebug_fmt(bag) {
-  return `Bag([${bag[0].map((item) => String(item)).join(", ")}])`;
-}
-
-function bagAdd_add(bag, other) {
-  $extend(bag[0], Array.from(other[0]));
-  return bag;
-}
-
-function smallInt() {
-  if ($smallInt === undefined) {
-    $smallInt = { value: smallInt_value };
-  }
-  return $smallInt;
-}
-
-function u8NonZero() {
-  if ($u8NonZero === undefined) {
-    $u8NonZero = { non_zero: u8NonZero_non_zero };
-  }
-  return $u8NonZero;
-}
-
-function i32Source() {
-  if ($i32Source === undefined) {
-    $i32Source = { Produce: () => i32ProduceU32() };
-  }
-  return $i32Source;
-}
-
-function i32ProduceU32() {
-  if ($i32ProduceU32 === undefined) {
-    $i32ProduceU32 = { produce: i32ProduceU32_produce };
-  }
-  return $i32ProduceU32;
-}
-
-export function celsiusDisplay() {
-  if ($celsiusDisplay === undefined) {
-    $celsiusDisplay = { fmt: celsiusDisplay_fmt };
-  }
-  return $celsiusDisplay;
-}
-
-function optionGetterT(TClone) {
-  if ($optionGetterT === undefined) {
-    $optionGetterT = new WeakMap();
-  }
-  return $traitImpl($optionGetterT, [TClone], () => ({
-    get: (arg0) => optionGetterT_get(arg0, TClone),
-    twice: (self) => {
-      const x = optionGetterT_get(self, TClone);
-      return [TClone.clone(x), x];
-    },
-  }));
-}
-
-function iDigits() {
-  if ($iDigits === undefined) {
-    $iDigits = {
-      digit_iter: iDigits_digit_iter,
-      digit_sum: (self) =>
-        Iterator.from(iDigits_digit_iter(self))
-          .map((d) => d)
-          .reduce((s, d) => (s + d) >>> 0, 0),
-    };
-  }
-  return $iDigits;
-}
-
-function pointPositionedS(SClone) {
-  if ($pointPositionedS === undefined) {
-    $pointPositionedS = new WeakMap();
-  }
-  return $traitImpl($pointPositionedS, [SClone], () => ({
-    set_x: (arg0, arg1) => pointPositionedS_set_x(arg0.value, arg1, SClone),
-    x: (arg0) => pointPositionedS_x(arg0, SClone),
-  }));
-}
-
-function pointMovableS(SClone, SAdd) {
-  if ($pointMovableS === undefined) {
-    $pointMovableS = new WeakMap();
-  }
-  return $traitImpl($pointMovableS, [SClone, SAdd], () => ({
-    Positioned: () => pointPositionedS(SClone),
-    translate: (self, dx) => {
-      const before = pointPositionedS_x(self.value, SClone);
-      const x = SAdd.add(pointPositionedS_x(self.value, SClone), dx);
-      pointPositionedS_set_x(self.value, x, SClone);
-      return before;
-    },
-  }));
-}
-
-export function bagAdd() {
-  if ($bagAdd === undefined) {
-    $bagAdd = { add: bagAdd_add };
-  }
-  return $bagAdd;
 }
 //# sourceMappingURL=case.js.map

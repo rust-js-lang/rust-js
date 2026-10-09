@@ -69,6 +69,10 @@ export function expected(c) {
   return $unwrapOk(parse_digit(c), "a digit");
 }
 
+function appErrorFromString_from(message) {
+  return { TAG: "Parse", _0: message };
+}
+
 function small_sum(a, b) {
   const result = parse_digit(a);
   if (result.TAG === "Err") {
@@ -95,9 +99,5 @@ export function converted(a, b) {
     return `parse: ${match._0._0}`;
   }
   return `too big: ${match._0._0}`;
-}
-
-function appErrorFromString_from(message) {
-  return { TAG: "Parse", _0: message };
 }
 //# sourceMappingURL=results.js.map

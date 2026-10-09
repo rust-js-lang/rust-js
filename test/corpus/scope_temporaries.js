@@ -2,6 +2,18 @@
 
 import { $assertFailed, $eq } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function noisyDebug_fmt(noisy) {
+  return `Noisy(${noisy[0]})`;
+}
+
+function noisyDrop_drop(noisy) {
+  console.log(`drop ${noisy[0]}`);
+}
+
 const Noisy = {
   big(noisy) {
     console.log(`big ${noisy[0]}`);
@@ -220,17 +232,5 @@ function main() {
     }
   }
   console.log("end");
-}
-
-export function entry() {
-  main();
-}
-
-function noisyDebug_fmt(noisy) {
-  return `Noisy(${noisy[0]})`;
-}
-
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
 }
 //# sourceMappingURL=case.js.map

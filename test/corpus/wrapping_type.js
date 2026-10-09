@@ -2,6 +2,10 @@
 
 import { $cmp, $eq } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function pow(base, one, exp, TMul, TCopy) {
   let acc = TCopy.copy(one);
   for (let i = 0; i < exp; i++) {
@@ -45,9 +49,5 @@ function main() {
   const left$1 = [3];
   const right$1 = [-1];
   console.log(`${tmp$2[0]} ${$cmp(left$1[0], right$1[0]) < 0}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

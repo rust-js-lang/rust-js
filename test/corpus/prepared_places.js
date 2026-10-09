@@ -2,6 +2,10 @@
 
 import { $orInsert, $unwrap } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function key(log) {
   log.push(1);
   return 0;
@@ -55,9 +59,5 @@ function main() {
   console.log(
     `[${log.map((item) => String(item)).join(", ")}] ${$unwrap(map.get(0), "no entry found for key")}`,
   );
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

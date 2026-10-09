@@ -2,6 +2,21 @@
 
 var $refMutI32Bump;
 
+export function entry() {
+  main();
+}
+
+function refMutI32Bump() {
+  if ($refMutI32Bump === undefined) {
+    $refMutI32Bump = { bump: refMutI32Bump_bump };
+  }
+  return $refMutI32Bump;
+}
+
+function refMutI32Bump_bump(self) {
+  self.value = (self.value + 1) | 0;
+}
+
 function go(t, TBump) {
   TBump.bump(t);
 }
@@ -35,20 +50,5 @@ function main() {
   const result$1 = pass(_t$1);
   unit = _t$1.value;
   console.log(`${x} ${tmp} ${result$1}`);
-}
-
-export function entry() {
-  main();
-}
-
-function refMutI32Bump_bump(self) {
-  self.value = (self.value + 1) | 0;
-}
-
-function refMutI32Bump() {
-  if ($refMutI32Bump === undefined) {
-    $refMutI32Bump = { bump: refMutI32Bump_bump };
-  }
-  return $refMutI32Bump;
 }
 //# sourceMappingURL=case.js.map

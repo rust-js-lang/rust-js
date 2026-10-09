@@ -2,6 +2,44 @@
 
 import { $checked, $iter, $iterator, $next, $sizeHint } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function countdownIterator_next(countdown) {
+  if (countdown[0] === 0) {
+    return;
+  }
+  countdown[0] = (countdown[0] - 1) >>> 0;
+  return countdown[0];
+}
+
+function knownIterator_next(known) {
+  const value = $checked(known[0] - 1, 0, 4294967295);
+  if (value == null) {
+    return;
+  }
+  known[0] = value;
+  return known[0];
+}
+
+function knownIterator_size_hint(known) {
+  return [known[0], known[0]];
+}
+
+function indexedIterator_next(indexed) {
+  const item = countdownIterator_next(indexed.inner);
+  if (item == null) {
+    return;
+  }
+  indexed.at = (indexed.at + 1) >>> 0;
+  return [(indexed.at - 1) >>> 0, item];
+}
+
+function indexedIterator_size_hint(indexed) {
+  return [0, undefined];
+}
+
 function hint(it) {
   return $sizeHint(it);
 }
@@ -41,43 +79,5 @@ function main() {
   console.log(
     `(${arg$8[0]}, ${arg$8[1] == null ? "None" : `Some(${arg$8[1]})`}) (${arg$9[0]}, ${arg$9[1] == null ? "None" : `Some(${arg$9[1]})`}) (${arg$10[0]}, ${arg$10[1] == null ? "None" : `Some(${arg$10[1]})`})`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function countdownIterator_next(countdown) {
-  if (countdown[0] === 0) {
-    return;
-  }
-  countdown[0] = (countdown[0] - 1) >>> 0;
-  return countdown[0];
-}
-
-function knownIterator_next(known) {
-  const value = $checked(known[0] - 1, 0, 4294967295);
-  if (value == null) {
-    return;
-  }
-  known[0] = value;
-  return known[0];
-}
-
-function knownIterator_size_hint(known) {
-  return [known[0], known[0]];
-}
-
-function indexedIterator_next(indexed) {
-  const item = countdownIterator_next(indexed.inner);
-  if (item == null) {
-    return;
-  }
-  indexed.at = (indexed.at + 1) >>> 0;
-  return [(indexed.at - 1) >>> 0, item];
-}
-
-function indexedIterator_size_hint(indexed) {
-  return [0, undefined];
 }
 //# sourceMappingURL=case.js.map

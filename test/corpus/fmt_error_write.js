@@ -12,6 +12,50 @@ import {
 
 var $hoursDisplay, $spanDisplay;
 
+export function entry() {
+  main();
+}
+
+export function hoursDisplay() {
+  if ($hoursDisplay === undefined) {
+    $hoursDisplay = { fmt: hoursDisplay_fmt };
+  }
+  return $hoursDisplay;
+}
+
+function hoursDisplay_fmt(hours) {
+  let f = "";
+  try {
+    if (hours[0] > 23) {
+      $fmtError();
+      return f;
+    }
+    f += `${String(hours[0]).padStart(2, "0")}h`;
+  } catch (error) {
+    throw $fmtWritten(error, f);
+  }
+  return f;
+}
+
+export function spanDisplay() {
+  if ($spanDisplay === undefined) {
+    $spanDisplay = { fmt: spanDisplay_fmt };
+  }
+  return $spanDisplay;
+}
+
+function spanDisplay_fmt(span) {
+  let f = "";
+  try {
+    f += hoursDisplay_fmt(span[0]);
+    f += "-";
+    f += hoursDisplay_fmt(span[1]);
+  } catch (error) {
+    throw $fmtWritten(error, f);
+  }
+  return f;
+}
+
 function show(s, h) {
   try {
     s.value += "[";
@@ -69,49 +113,5 @@ function main() {
     $fmtPrintFailed(error$2, text, false);
   }
   $print(text);
-}
-
-export function entry() {
-  main();
-}
-
-function hoursDisplay_fmt(hours) {
-  let f = "";
-  try {
-    if (hours[0] > 23) {
-      $fmtError();
-      return f;
-    }
-    f += `${String(hours[0]).padStart(2, "0")}h`;
-  } catch (error) {
-    throw $fmtWritten(error, f);
-  }
-  return f;
-}
-
-function spanDisplay_fmt(span) {
-  let f = "";
-  try {
-    f += hoursDisplay_fmt(span[0]);
-    f += "-";
-    f += hoursDisplay_fmt(span[1]);
-  } catch (error) {
-    throw $fmtWritten(error, f);
-  }
-  return f;
-}
-
-export function hoursDisplay() {
-  if ($hoursDisplay === undefined) {
-    $hoursDisplay = { fmt: hoursDisplay_fmt };
-  }
-  return $hoursDisplay;
-}
-
-export function spanDisplay() {
-  if ($spanDisplay === undefined) {
-    $spanDisplay = { fmt: spanDisplay_fmt };
-  }
-  return $spanDisplay;
 }
 //# sourceMappingURL=case.js.map

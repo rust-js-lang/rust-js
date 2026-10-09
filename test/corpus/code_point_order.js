@@ -14,6 +14,10 @@ import {
   $trimStart,
 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   const crab = "🦀";
   const bang = "！";
@@ -86,9 +90,5 @@ function main() {
   for (const s of ["hi", "﻿hi﻿", " 	 hi \n", "　hi\u2028"]) {
     console.log(`${$debugStr($trim(s))} ${$debugStr($trimStart(s))} ${$debugStr($trimEnd(s))}`);
   }
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

@@ -12,6 +12,10 @@ import {
   $wrappingRem,
 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   console.log(`${5 > 0} ${0 > 0} ${-3n < 0n} ${0 < 0}`);
   for (const x of [5, 0, -2147483648]) {
@@ -95,9 +99,5 @@ function main() {
   console.log(
     `${$saturatingPow(-3, 21, -2147483648, 2147483647)} ${$saturatingPow(-3, 22, -2147483648, 2147483647)} ${$saturatingPow(-2n, 65, -9223372036854775808n, 9223372036854775807n)}`,
   );
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

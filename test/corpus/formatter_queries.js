@@ -4,6 +4,61 @@ import { $debugStr, $formatted, $pad, $zeroPad } from "@rust-js/runtime";
 
 var $tagDisplay, $probeDisplay, $moneyDisplay;
 
+export function entry() {
+  main();
+}
+
+export function tagDisplay() {
+  if ($tagDisplay === undefined) {
+    $tagDisplay = { fmt: tagDisplay_fmt };
+  }
+  return $tagDisplay;
+}
+
+function tagDisplay_fmt(tag, options) {
+  return $formatted(tag[0], options);
+}
+
+export function probeDisplay() {
+  if ($probeDisplay === undefined) {
+    $probeDisplay = { fmt: probeDisplay_fmt };
+  }
+  return $probeDisplay;
+}
+
+function probeDisplay_fmt(probe, options) {
+  let f = "";
+  let align;
+  const match = options?.align;
+  if (match === "Left") {
+    align = "left";
+  } else if (match === "Right") {
+    align = "right";
+  } else if (match === "Center") {
+    align = "center";
+  } else {
+    align = "none";
+  }
+  f += `w=${options?.width == null ? "None" : `Some(${options?.width})`} p=${options?.precision == null ? "None" : `Some(${options?.precision})`} fill=${$debugStr(options?.fill ?? " ", "'")} align=${align} plus=${options?.plus === true} zero=${options?.zero === true} alt=${options?.alternate === true}`;
+  return f;
+}
+
+export function moneyDisplay() {
+  if ($moneyDisplay === undefined) {
+    $moneyDisplay = { fmt: moneyDisplay_fmt };
+  }
+  return $moneyDisplay;
+}
+
+function moneyDisplay_fmt(money, options) {
+  const s = `$${money[0] / 100n}.${$zeroPad(String(money[0] % 100n), 2)}`;
+  const match = options?.width;
+  if (match != null) {
+    return $pad(s, match, ">");
+  }
+  return s;
+}
+
 function main() {
   console.log(
     `[${tagDisplay_fmt(["ab"], { width: 6, align: "Right" })}] [${tagDisplay_fmt(["cd"], {
@@ -29,60 +84,5 @@ function main() {
   console.log(`${probeDisplay_fmt(undefined, { width: 5, fill: "*", align: "Center" })}`);
   console.log(`${probeDisplay_fmt(undefined, { width: 5, align: "Left" })}`);
   console.log(`[${moneyDisplay_fmt([1234n], { width: 10 })}] [${moneyDisplay_fmt([5n])}]`);
-}
-
-export function entry() {
-  main();
-}
-
-function tagDisplay_fmt(tag, options) {
-  return $formatted(tag[0], options);
-}
-
-function probeDisplay_fmt(probe, options) {
-  let f = "";
-  let align;
-  const match = options?.align;
-  if (match === "Left") {
-    align = "left";
-  } else if (match === "Right") {
-    align = "right";
-  } else if (match === "Center") {
-    align = "center";
-  } else {
-    align = "none";
-  }
-  f += `w=${options?.width == null ? "None" : `Some(${options?.width})`} p=${options?.precision == null ? "None" : `Some(${options?.precision})`} fill=${$debugStr(options?.fill ?? " ", "'")} align=${align} plus=${options?.plus === true} zero=${options?.zero === true} alt=${options?.alternate === true}`;
-  return f;
-}
-
-function moneyDisplay_fmt(money, options) {
-  const s = `$${money[0] / 100n}.${$zeroPad(String(money[0] % 100n), 2)}`;
-  const match = options?.width;
-  if (match != null) {
-    return $pad(s, match, ">");
-  }
-  return s;
-}
-
-export function tagDisplay() {
-  if ($tagDisplay === undefined) {
-    $tagDisplay = { fmt: tagDisplay_fmt };
-  }
-  return $tagDisplay;
-}
-
-export function probeDisplay() {
-  if ($probeDisplay === undefined) {
-    $probeDisplay = { fmt: probeDisplay_fmt };
-  }
-  return $probeDisplay;
-}
-
-export function moneyDisplay() {
-  if ($moneyDisplay === undefined) {
-    $moneyDisplay = { fmt: moneyDisplay_fmt };
-  }
-  return $moneyDisplay;
 }
 //# sourceMappingURL=case.js.map

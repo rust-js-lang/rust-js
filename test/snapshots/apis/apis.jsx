@@ -25,8 +25,6 @@ import { createPortal, flushSync, useFormStatus } from "react-dom";
 import { createRoot } from "react-dom/client";
 import { renderToReadableStream, renderToString } from "react-dom/server";
 
-const LAZY_CARD = lazy(() => import("./lazy-card.jsx"));
-
 export function Greeting() {
   const text = use(globalThis.greeting);
   return <p className="greeting">{text}</p>;
@@ -185,6 +183,8 @@ export function Places() {
     </>
   );
 }
+
+const LAZY_CARD = lazy(() => import("./lazy-card.jsx"));
 
 export function Misc() {
   const id = useId();

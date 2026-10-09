@@ -2,6 +2,23 @@
 
 import { $byteLen, $checked, $debugStr, $index, $iterator } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function noisyDrop_drop(noisy) {
+  console.log(`drop ${noisy[0]}`);
+}
+
+function countdownIterator_next(countdown) {
+  const value = $checked(countdown[0] - 1, 0, 255);
+  if (value == null) {
+    return;
+  }
+  countdown[0] = value;
+  return [$index(["c0", "c1", "c2"], countdown[0])];
+}
+
 function first_long(items) {
   const items$1 = items.values();
   try {
@@ -194,22 +211,5 @@ function main() {
   const arg = first_long([["s"], ["long"], ["rest"]]);
   console.log(`${arg == null ? "None" : `Some(${$debugStr(arg)})`}`);
   console.log("end");
-}
-
-export function entry() {
-  main();
-}
-
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
-function countdownIterator_next(countdown) {
-  const value = $checked(countdown[0] - 1, 0, 255);
-  if (value == null) {
-    return;
-  }
-  countdown[0] = value;
-  return [$index(["c0", "c1", "c2"], countdown[0])];
 }
 //# sourceMappingURL=case.js.map

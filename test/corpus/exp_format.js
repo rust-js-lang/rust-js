@@ -2,6 +2,10 @@
 
 import { $lowerExp, $plus, $zeroPad } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   console.log(
     `${$lowerExp(Infinity).replace("e", "E")} ${$lowerExp(NaN).replace("e", "E")} ${$lowerExp(-Infinity)} ${$lowerExp(-0).replace("e", "E")}`,
@@ -16,9 +20,5 @@ function main() {
   console.log(
     `[${$lowerExp(1234.5).padStart(12)}] [${$lowerExp(7).padEnd(10)}] [${$plus($lowerExp(2.5))}] [${$zeroPad($lowerExp(-1.5), 10)}]`,
   );
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

@@ -3,6 +3,14 @@
 import { LINES, line } from "./log.js";
 import { $at } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function statsDebug_fmt(stats) {
+  return `Stats { calls: ${stats.calls}, last: ${stats.last} }`;
+}
+
 const COUNT = { value: 0 };
 const STATS = { value: { calls: 0, last: -1n } };
 const SLOTS = { value: [0, 0, 0] };
@@ -35,13 +43,5 @@ function main() {
   console.log(`[${tmp[0].map((item) => String(item)).join(", ")}] ${tmp[1]}`);
   LINES.value = 10;
   console.log(`${line()} ${line()}`);
-}
-
-export function entry() {
-  main();
-}
-
-function statsDebug_fmt(stats) {
-  return `Stats { calls: ${stats.calls}, last: ${stats.last} }`;
 }
 //# sourceMappingURL=case.js.map

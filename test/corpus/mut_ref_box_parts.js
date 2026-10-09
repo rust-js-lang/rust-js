@@ -2,6 +2,10 @@
 
 import { $assertFailed, $debugStr, $someValue } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function number(o) {
   const match = o.value;
   if (match !== 3) {
@@ -69,9 +73,5 @@ function main() {
   b = o$4.value;
   a = p$1.value;
   console.log(`${x} ${s} ${n == null ? "None" : `Some(${n})`} ${tmp$1} ${result$1}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

@@ -2,6 +2,10 @@
 
 import { $byteLen, $slice, $sliceGet, $sliceSplitAt } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function halves(bytes) {
   const [high, low] = $sliceSplitAt(bytes, (bytes.length / 2) >>> 0);
   const fold = (part) => part.reduce((acc, b) => ((Math.imul(acc, 256) >>> 0) + b) >>> 0, 0);
@@ -78,9 +82,5 @@ function main() {
   } else {
     console.log("none");
   }
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

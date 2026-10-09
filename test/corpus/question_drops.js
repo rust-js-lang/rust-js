@@ -4,6 +4,14 @@ import { $some, $someValue } from "@rust-js/runtime";
 
 var $dCheckedDouble;
 
+export function entry() {
+  main();
+}
+
+function dDrop_drop(d) {
+  console.log(`drop ${d[0]}`);
+}
+
 function step(d) {
   if (d[0] < 3) {
     return [(d[0] + 1) >>> 0];
@@ -89,6 +97,20 @@ function go(d) {
   } finally {
     dDrop_drop(d);
   }
+}
+
+function dCheckedDouble() {
+  if ($dCheckedDouble === undefined) {
+    $dCheckedDouble = { checked_double: dCheckedDouble_checked_double, $drop: dDrop_drop };
+  }
+  return $dCheckedDouble;
+}
+
+function dCheckedDouble_checked_double(d) {
+  if (d[0] < 10) {
+    return [Math.imul(d[0], 2) >>> 0];
+  }
+  return;
 }
 
 function twice(base, TCheckedDouble, dropT) {
@@ -205,27 +227,5 @@ function main() {
       }
     }
   }
-}
-
-export function entry() {
-  main();
-}
-
-function dDrop_drop(d) {
-  console.log(`drop ${d[0]}`);
-}
-
-function dCheckedDouble_checked_double(d) {
-  if (d[0] < 10) {
-    return [Math.imul(d[0], 2) >>> 0];
-  }
-  return;
-}
-
-function dCheckedDouble() {
-  if ($dCheckedDouble === undefined) {
-    $dCheckedDouble = { checked_double: dCheckedDouble_checked_double, $drop: dDrop_drop };
-  }
-  return $dCheckedDouble;
 }
 //# sourceMappingURL=case.js.map

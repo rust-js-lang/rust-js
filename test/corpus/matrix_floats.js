@@ -32,6 +32,10 @@ import {
   $zeroPad,
 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function f64_bits(x) {
   if (Number.isNaN(x)) {
     return "NaN";
@@ -169,9 +173,5 @@ function main() {
       );
     }
   }
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

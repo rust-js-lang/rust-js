@@ -4,6 +4,33 @@ import { $byteLen, $nextSome, $range } from "@rust-js/runtime";
 
 var $deltaAdd;
 
+export function entry() {
+  main();
+}
+
+function noisyDrop_drop(noisy) {
+  console.log(`drop ${noisy[0]}`);
+}
+
+function deltaDebug_fmt(delta) {
+  return `Delta(${delta[0]})`;
+}
+
+export function deltaAdd() {
+  if ($deltaAdd === undefined) {
+    $deltaAdd = { add: deltaAdd_add };
+  }
+  return $deltaAdd;
+}
+
+function deltaAdd_add(delta, other) {
+  return [BigInt.asIntN(64, delta[0] + other[0])];
+}
+
+function deltaSum_sum(iter, dropI) {
+  return Iterator.from(iter).reduce((acc, x) => deltaAdd_add(acc, x), [0n]);
+}
+
 function first_long(items, BAsRefStr) {
   for (const item of Iterator.from(items)) {
     const text = BAsRefStr.as_ref(item);
@@ -42,32 +69,5 @@ function main() {
   } finally {
     noisyDrop_drop(loud);
   }
-}
-
-export function entry() {
-  main();
-}
-
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
-function deltaDebug_fmt(delta) {
-  return `Delta(${delta[0]})`;
-}
-
-function deltaAdd_add(delta, other) {
-  return [BigInt.asIntN(64, delta[0] + other[0])];
-}
-
-function deltaSum_sum(iter, dropI) {
-  return Iterator.from(iter).reduce((acc, x) => deltaAdd_add(acc, x), [0n]);
-}
-
-export function deltaAdd() {
-  if ($deltaAdd === undefined) {
-    $deltaAdd = { add: deltaAdd_add };
-  }
-  return $deltaAdd;
 }
 //# sourceMappingURL=case.js.map

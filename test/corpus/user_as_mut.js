@@ -4,6 +4,33 @@ import { $at, $mutItems, $swap } from "@rust-js/runtime";
 
 var $stackBorrow_i32_;
 
+export function entry() {
+  main();
+}
+
+function stackAsMut_i32__as_mut(stack) {
+  return stack.items;
+}
+
+function stackBorrowMut_i32__borrow_mut(stack) {
+  return stack.items;
+}
+
+export function stackBorrow_i32_() {
+  if ($stackBorrow_i32_ === undefined) {
+    $stackBorrow_i32_ = { borrow: stackBorrow_i32__borrow };
+  }
+  return $stackBorrow_i32_;
+}
+
+function stackBorrow_i32__borrow(stack) {
+  return stack.items;
+}
+
+function gridAsMut_u8__as_mut(grid) {
+  return grid[0];
+}
+
 function main() {
   const stack = { items: [3, 1, 2] };
   const items = stackAsMut_i32__as_mut(stack);
@@ -25,32 +52,5 @@ function main() {
   const result = gridAsMut_u8__as_mut(grid);
   $swap(result, 0, 3);
   console.log(`[${grid[0].map((item) => String(item)).join(", ")}]`);
-}
-
-export function entry() {
-  main();
-}
-
-function stackAsMut_i32__as_mut(stack) {
-  return stack.items;
-}
-
-function stackBorrowMut_i32__borrow_mut(stack) {
-  return stack.items;
-}
-
-function stackBorrow_i32__borrow(stack) {
-  return stack.items;
-}
-
-function gridAsMut_u8__as_mut(grid) {
-  return grid[0];
-}
-
-export function stackBorrow_i32_() {
-  if ($stackBorrow_i32_ === undefined) {
-    $stackBorrow_i32_ = { borrow: stackBorrow_i32__borrow };
-  }
-  return $stackBorrow_i32_;
 }
 //# sourceMappingURL=case.js.map

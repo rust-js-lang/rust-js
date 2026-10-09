@@ -2,6 +2,26 @@
 
 import { $debugF64, $displayF64, $index } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function shapeDebug_fmt(shape) {
+  if (shape.TAG === "Circle") {
+    return `Circle(${$debugF64(shape._0)})`;
+  }
+  if (shape.TAG === "Sphere") {
+    return `Sphere(${$debugF64(shape._0)})`;
+  }
+  if (shape.TAG === "Square") {
+    return `Square(${$debugF64(shape._0)})`;
+  }
+  if (shape.TAG === "Rect") {
+    return `Rect { w: ${$debugF64(shape.w)}, h: ${$debugF64(shape.h)} }`;
+  }
+  return `Line { w: ${$debugF64(shape.w)} }`;
+}
+
 function size(s) {
   if (s.TAG === "Circle" || s.TAG === "Sphere") {
     return s._0 * 2;
@@ -95,25 +115,5 @@ function main() {
     }
   }
   console.log(`[${grown.map((item) => shapeDebug_fmt(item)).join(", ")}]`);
-}
-
-export function entry() {
-  main();
-}
-
-function shapeDebug_fmt(shape) {
-  if (shape.TAG === "Circle") {
-    return `Circle(${$debugF64(shape._0)})`;
-  }
-  if (shape.TAG === "Sphere") {
-    return `Sphere(${$debugF64(shape._0)})`;
-  }
-  if (shape.TAG === "Square") {
-    return `Square(${$debugF64(shape._0)})`;
-  }
-  if (shape.TAG === "Rect") {
-    return `Rect { w: ${$debugF64(shape.w)}, h: ${$debugF64(shape.h)} }`;
-  }
-  return `Line { w: ${$debugF64(shape.w)} }`;
 }
 //# sourceMappingURL=case.js.map

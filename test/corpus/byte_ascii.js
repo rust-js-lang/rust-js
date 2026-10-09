@@ -2,6 +2,10 @@
 
 import { $debugUtf8Error, $fromUtf8, $range, $unwrapOk } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function digits(text) {
   let n = 0;
   for (const b of Array.from(new TextEncoder().encode(text))) {
@@ -58,9 +62,5 @@ function main() {
     b >= 97 && b <= 122 ? b - 32 : b,
   );
   console.log(`${$unwrapOk($fromUtf8(word, true), undefined, (e) => $debugUtf8Error(e, true))}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

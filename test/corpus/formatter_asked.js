@@ -2,16 +2,8 @@
 
 var $wDisplay;
 
-function main() {
-  console.log(`${wDisplay_fmt(undefined)}`);
-}
-
 export function entry() {
   main();
-}
-
-function wDisplay_fmt(w, options) {
-  return `${options?.width == null ? "None" : `Some(${options?.width})`} ${options?.align == null}`;
 }
 
 export function wDisplay() {
@@ -19,5 +11,13 @@ export function wDisplay() {
     $wDisplay = { fmt: wDisplay_fmt };
   }
   return $wDisplay;
+}
+
+function wDisplay_fmt(w, options) {
+  return `${options?.width == null ? "None" : `Some(${options?.width})`} ${options?.align == null}`;
+}
+
+function main() {
+  console.log(`${wDisplay_fmt(undefined)}`);
 }
 //# sourceMappingURL=case.js.map

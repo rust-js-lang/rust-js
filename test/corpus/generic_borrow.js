@@ -9,6 +9,10 @@ var $qEquivalentK,
   $labelledPartialOrd,
   $labelledOrd;
 
+export function entry() {
+  main();
+}
+
 function contains(keys, wanted, KBorrowQ, QPartialEq) {
   return keys.some((key) => QPartialEq.eq(KBorrowQ.borrow(key), wanted));
 }
@@ -17,8 +21,88 @@ function total(values, VBorrow_i32_) {
   return VBorrow_i32_.borrow(values).reduce((a, b) => (a + b) | 0, 0);
 }
 
+function qEquivalentK(QPartialEq, KBorrowQ) {
+  if ($qEquivalentK === undefined) {
+    $qEquivalentK = new WeakMap();
+  }
+  return $traitImpl($qEquivalentK, [QPartialEq, KBorrowQ], () => ({
+    equivalent: (arg0, arg1) => qEquivalentK_equivalent(arg0, arg1, QPartialEq, KBorrowQ),
+  }));
+}
+
+function qEquivalentK_equivalent(self, key, QPartialEq, KBorrowQ) {
+  return QPartialEq.eq(self, KBorrowQ.borrow(key));
+}
+
 function position(keys, wanted, QEquivalentK) {
   return $position(keys, (key) => QEquivalentK.equivalent(wanted, key));
+}
+
+function uuidDebug_fmt(uuid) {
+  return `Uuid(${uuid[0]})`;
+}
+
+export function hyphenatedBorrowUuid() {
+  if ($hyphenatedBorrowUuid === undefined) {
+    $hyphenatedBorrowUuid = { borrow: hyphenatedBorrowUuid_borrow };
+  }
+  return $hyphenatedBorrowUuid;
+}
+
+function hyphenatedBorrowUuid_borrow(hyphenated) {
+  return hyphenated[0];
+}
+
+export function tagBorrowStr() {
+  if ($tagBorrowStr === undefined) {
+    $tagBorrowStr = { borrow: tagBorrowStr_borrow };
+  }
+  return $tagBorrowStr;
+}
+
+function tagBorrowStr_borrow(tag) {
+  return tag.name;
+}
+
+export function labelledPartialEq(KBorrowStr) {
+  if ($labelledPartialEq === undefined) {
+    $labelledPartialEq = new WeakMap();
+  }
+  return $traitImpl($labelledPartialEq, [KBorrowStr], () => ({
+    eq: (arg0, arg1) => labelledPartialEq_eq(arg0, arg1, KBorrowStr),
+  }));
+}
+
+function labelledPartialEq_eq(labelled, other, KBorrowStr) {
+  return KBorrowStr.borrow(labelled[0]) === KBorrowStr.borrow(other[0]);
+}
+
+export function labelledPartialOrd(KBorrowStr) {
+  if ($labelledPartialOrd === undefined) {
+    $labelledPartialOrd = new WeakMap();
+  }
+  return $traitImpl($labelledPartialOrd, [KBorrowStr], () => ({
+    PartialEq: () => labelledPartialEq(KBorrowStr),
+    partial_cmp: (arg0, arg1) => labelledPartialOrd_partial_cmp(arg0, arg1, KBorrowStr),
+  }));
+}
+
+function labelledPartialOrd_partial_cmp(labelled, other, KBorrowStr) {
+  return labelledOrd_cmp(labelled, other, KBorrowStr);
+}
+
+export function labelledOrd(KBorrowStr) {
+  if ($labelledOrd === undefined) {
+    $labelledOrd = new WeakMap();
+  }
+  return $traitImpl($labelledOrd, [KBorrowStr], () => ({
+    PartialOrd: () => labelledPartialOrd(KBorrowStr),
+    cmp: (arg0, arg1) => labelledOrd_cmp(arg0, arg1, KBorrowStr),
+  }));
+}
+
+function labelledOrd_cmp(labelled, other, KBorrowStr) {
+  return $cmp(KBorrowStr.borrow(labelled[0]), KBorrowStr.borrow(other[0]));
 }
 
 function main() {
@@ -80,89 +164,5 @@ function main() {
   const labelled = [[{ name: "pear" }], [{ name: "fig" }]];
   labelled.sort((a, b) => labelledOrd_cmp(a, b, tagBorrowStr()));
   console.log(`${$index(labelled, 0)[0].name} ${$index(labelled, 1)[0].name}`);
-}
-
-export function entry() {
-  main();
-}
-
-function qEquivalentK_equivalent(self, key, QPartialEq, KBorrowQ) {
-  return QPartialEq.eq(self, KBorrowQ.borrow(key));
-}
-
-function uuidDebug_fmt(uuid) {
-  return `Uuid(${uuid[0]})`;
-}
-
-function hyphenatedBorrowUuid_borrow(hyphenated) {
-  return hyphenated[0];
-}
-
-function tagBorrowStr_borrow(tag) {
-  return tag.name;
-}
-
-function labelledPartialEq_eq(labelled, other, KBorrowStr) {
-  return KBorrowStr.borrow(labelled[0]) === KBorrowStr.borrow(other[0]);
-}
-
-function labelledPartialOrd_partial_cmp(labelled, other, KBorrowStr) {
-  return labelledOrd_cmp(labelled, other, KBorrowStr);
-}
-
-function labelledOrd_cmp(labelled, other, KBorrowStr) {
-  return $cmp(KBorrowStr.borrow(labelled[0]), KBorrowStr.borrow(other[0]));
-}
-
-function qEquivalentK(QPartialEq, KBorrowQ) {
-  if ($qEquivalentK === undefined) {
-    $qEquivalentK = new WeakMap();
-  }
-  return $traitImpl($qEquivalentK, [QPartialEq, KBorrowQ], () => ({
-    equivalent: (arg0, arg1) => qEquivalentK_equivalent(arg0, arg1, QPartialEq, KBorrowQ),
-  }));
-}
-
-export function hyphenatedBorrowUuid() {
-  if ($hyphenatedBorrowUuid === undefined) {
-    $hyphenatedBorrowUuid = { borrow: hyphenatedBorrowUuid_borrow };
-  }
-  return $hyphenatedBorrowUuid;
-}
-
-export function tagBorrowStr() {
-  if ($tagBorrowStr === undefined) {
-    $tagBorrowStr = { borrow: tagBorrowStr_borrow };
-  }
-  return $tagBorrowStr;
-}
-
-export function labelledPartialEq(KBorrowStr) {
-  if ($labelledPartialEq === undefined) {
-    $labelledPartialEq = new WeakMap();
-  }
-  return $traitImpl($labelledPartialEq, [KBorrowStr], () => ({
-    eq: (arg0, arg1) => labelledPartialEq_eq(arg0, arg1, KBorrowStr),
-  }));
-}
-
-export function labelledPartialOrd(KBorrowStr) {
-  if ($labelledPartialOrd === undefined) {
-    $labelledPartialOrd = new WeakMap();
-  }
-  return $traitImpl($labelledPartialOrd, [KBorrowStr], () => ({
-    PartialEq: () => labelledPartialEq(KBorrowStr),
-    partial_cmp: (arg0, arg1) => labelledPartialOrd_partial_cmp(arg0, arg1, KBorrowStr),
-  }));
-}
-
-export function labelledOrd(KBorrowStr) {
-  if ($labelledOrd === undefined) {
-    $labelledOrd = new WeakMap();
-  }
-  return $traitImpl($labelledOrd, [KBorrowStr], () => ({
-    PartialOrd: () => labelledPartialOrd(KBorrowStr),
-    cmp: (arg0, arg1) => labelledOrd_cmp(arg0, arg1, KBorrowStr),
-  }));
 }
 //# sourceMappingURL=case.js.map

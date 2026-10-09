@@ -2,6 +2,18 @@
 
 import { $iter, $iterator, $max, $next, $print } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function countdownIterator_next(countdown) {
+  if (countdown[0] === 0) {
+    return;
+  }
+  countdown[0] = (countdown[0] - 1) >>> 0;
+  return (countdown[0] + 1) >>> 0;
+}
+
 function evens(v) {
   return Iterator.from(v.filter((n) => n % 2 === 0));
 }
@@ -78,17 +90,5 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function countdownIterator_next(countdown) {
-  if (countdown[0] === 0) {
-    return;
-  }
-  countdown[0] = (countdown[0] - 1) >>> 0;
-  return (countdown[0] + 1) >>> 0;
 }
 //# sourceMappingURL=case.js.map

@@ -2,6 +2,10 @@
 
 import { $iter, $next, $peek, $position } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function fnv1a(text) {
   let hash = 2166136261;
   for (const b of Array.from(new TextEncoder().encode(text))) {
@@ -75,9 +79,5 @@ function main() {
     `${before} ${next == null ? "None" : `Some(${next})`} ${rest.items.length - rest.at}`,
   );
   console.log(`${[1, 2, 3].slice(1).length}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

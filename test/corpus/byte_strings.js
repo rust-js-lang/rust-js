@@ -2,6 +2,10 @@
 
 import { $cmp, $cmpItems, $eq, $slice } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function method(line) {
   if (line.length === 3 && line[0] === 71 && line[1] === 69 && line[2] === 84) {
     return "get";
@@ -41,9 +45,5 @@ function main() {
   );
   console.log(`${checksum(Array.from(new TextEncoder().encode("abc")))}`);
   console.log(`${method(Array.from(new TextEncoder().encode("GET")))}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

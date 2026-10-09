@@ -12,6 +12,64 @@ import {
 
 var $shelfContainer, $countsContainer, $countdownContainer, $byteFilled;
 
+export function entry() {
+  main();
+}
+
+function shelfContainer() {
+  if ($shelfContainer === undefined) {
+    $shelfContainer = {
+      ItemDebug: () => ({ fmt: (value) => $debugStr(value) }),
+      items: shelfContainer_items,
+      last: (self) => {
+        const items = Iterator.from(shelfContainer_items(self)).toArray();
+        return $someAt(items, items.length - 1);
+      },
+    };
+  }
+  return $shelfContainer;
+}
+
+function shelfContainer_items(shelf) {
+  return shelf.books;
+}
+
+function countsContainer() {
+  if ($countsContainer === undefined) {
+    $countsContainer = {
+      ItemDebug: () => ({ fmt: (value) => String(value) }),
+      items: countsContainer_items,
+      last: (self) => {
+        const items = Iterator.from(countsContainer_items(self)).toArray();
+        return $someAt(items, items.length - 1);
+      },
+    };
+  }
+  return $countsContainer;
+}
+
+function countsContainer_items(counts) {
+  return counts[0];
+}
+
+function countdownContainer() {
+  if ($countdownContainer === undefined) {
+    $countdownContainer = {
+      ItemDebug: () => ({ fmt: (value) => String(value) }),
+      items: countdownContainer_items,
+      last: (self) => {
+        const items = Iterator.from(countdownContainer_items(self)).toArray();
+        return $someAt(items, items.length - 1);
+      },
+    };
+  }
+  return $countdownContainer;
+}
+
+function countdownContainer_items(countdown) {
+  return $successors(countdown[0], (n) => $checked(n - 1, 0, 4294967295));
+}
+
 function count(c, CContainer) {
   return Iterator.from(CContainer.items(c)).toArray().length;
 }
@@ -23,6 +81,17 @@ function first(c, CContainer) {
 function show(c, CContainer) {
   const arg = CContainer.last(c);
   return arg == null ? "None" : `Some(${CContainer.ItemDebug().fmt($someValue(arg))})`;
+}
+
+function byteFilled() {
+  if ($byteFilled === undefined) {
+    $byteFilled = { filled: byteFilled_filled };
+  }
+  return $byteFilled;
+}
+
+function byteFilled_filled(byte, N) {
+  return new Array(N).fill(byte[0]);
 }
 
 function main() {
@@ -59,74 +128,5 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function shelfContainer_items(shelf) {
-  return shelf.books;
-}
-
-function countsContainer_items(counts) {
-  return counts[0];
-}
-
-function countdownContainer_items(countdown) {
-  return $successors(countdown[0], (n) => $checked(n - 1, 0, 4294967295));
-}
-
-function byteFilled_filled(byte, N) {
-  return new Array(N).fill(byte[0]);
-}
-
-function shelfContainer() {
-  if ($shelfContainer === undefined) {
-    $shelfContainer = {
-      ItemDebug: () => ({ fmt: (value) => $debugStr(value) }),
-      items: shelfContainer_items,
-      last: (self) => {
-        const items = Iterator.from(shelfContainer_items(self)).toArray();
-        return $someAt(items, items.length - 1);
-      },
-    };
-  }
-  return $shelfContainer;
-}
-
-function countsContainer() {
-  if ($countsContainer === undefined) {
-    $countsContainer = {
-      ItemDebug: () => ({ fmt: (value) => String(value) }),
-      items: countsContainer_items,
-      last: (self) => {
-        const items = Iterator.from(countsContainer_items(self)).toArray();
-        return $someAt(items, items.length - 1);
-      },
-    };
-  }
-  return $countsContainer;
-}
-
-function countdownContainer() {
-  if ($countdownContainer === undefined) {
-    $countdownContainer = {
-      ItemDebug: () => ({ fmt: (value) => String(value) }),
-      items: countdownContainer_items,
-      last: (self) => {
-        const items = Iterator.from(countdownContainer_items(self)).toArray();
-        return $someAt(items, items.length - 1);
-      },
-    };
-  }
-  return $countdownContainer;
-}
-
-function byteFilled() {
-  if ($byteFilled === undefined) {
-    $byteFilled = { filled: byteFilled_filled };
-  }
-  return $byteFilled;
 }
 //# sourceMappingURL=case.js.map

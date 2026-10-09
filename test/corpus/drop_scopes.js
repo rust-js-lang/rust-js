@@ -2,6 +2,22 @@
 
 import { $position } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function noisyDrop_drop(noisy) {
+  console.log(`drop ${noisy[0]}`);
+}
+
+function pairDrop_drop(pair) {
+  console.log(`drop pair of ${pair.first[0]} and ${pair.second[0]}`);
+}
+
+function unitDrop_drop(self) {
+  console.log("drop unit");
+}
+
 function consume(n) {
   try {
     console.log(`consume ${n[0]}`);
@@ -161,21 +177,5 @@ function main() {
       noisyDrop_drop(maybe);
     }
   }
-}
-
-export function entry() {
-  main();
-}
-
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
-function pairDrop_drop(pair) {
-  console.log(`drop pair of ${pair.first[0]} and ${pair.second[0]}`);
-}
-
-function unitDrop_drop(self) {
-  console.log("drop unit");
 }
 //# sourceMappingURL=case.js.map

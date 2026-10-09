@@ -4,40 +4,8 @@ import { $traitImpl } from "@rust-js/runtime";
 
 var $varPointer, $varLowerHex, $handlePointer, $handleLowerHex;
 
-function hex(t, TLowerHex) {
-  return `${TLowerHex.fmt(t)}|${TLowerHex.fmt(t, { alternate: true })}`;
-}
-
-function main() {
-  console.log(
-    `${varPointer_fmt([[7]], undefined, handlePointer())} ${varLowerHex_fmt([[255]], undefined, handleLowerHex())} ${varLowerHex_fmt([[16]], { alternate: true }, handleLowerHex())}`,
-  );
-  console.log(`${hex([10], handleLowerHex())} ${hex([[11]], varLowerHex(handleLowerHex()))}`);
-}
-
 export function entry() {
   main();
-}
-
-function varPointer_fmt(var$, options, TPointer) {
-  return TPointer.fmt(var$[0], options);
-}
-
-function varLowerHex_fmt(var$, options, TLowerHex) {
-  return TLowerHex.fmt(var$[0], options);
-}
-
-function handlePointer_fmt(handle, options) {
-  return `@${handle[0]}`;
-}
-
-function handleLowerHex_fmt(handle, options) {
-  let f = "";
-  if (options?.alternate === true) {
-    f += "0x";
-  }
-  f += handle[0].toString(16);
-  return f;
 }
 
 export function varPointer(TPointer) {
@@ -49,6 +17,10 @@ export function varPointer(TPointer) {
   }));
 }
 
+function varPointer_fmt(var$, options, TPointer) {
+  return TPointer.fmt(var$[0], options);
+}
+
 export function varLowerHex(TLowerHex) {
   if ($varLowerHex === undefined) {
     $varLowerHex = new WeakMap();
@@ -58,6 +30,10 @@ export function varLowerHex(TLowerHex) {
   }));
 }
 
+function varLowerHex_fmt(var$, options, TLowerHex) {
+  return TLowerHex.fmt(var$[0], options);
+}
+
 export function handlePointer() {
   if ($handlePointer === undefined) {
     $handlePointer = { fmt: handlePointer_fmt };
@@ -65,10 +41,34 @@ export function handlePointer() {
   return $handlePointer;
 }
 
+function handlePointer_fmt(handle, options) {
+  return `@${handle[0]}`;
+}
+
 export function handleLowerHex() {
   if ($handleLowerHex === undefined) {
     $handleLowerHex = { fmt: handleLowerHex_fmt };
   }
   return $handleLowerHex;
+}
+
+function handleLowerHex_fmt(handle, options) {
+  let f = "";
+  if (options?.alternate === true) {
+    f += "0x";
+  }
+  f += handle[0].toString(16);
+  return f;
+}
+
+function hex(t, TLowerHex) {
+  return `${TLowerHex.fmt(t)}|${TLowerHex.fmt(t, { alternate: true })}`;
+}
+
+function main() {
+  console.log(
+    `${varPointer_fmt([[7]], undefined, handlePointer())} ${varLowerHex_fmt([[255]], undefined, handleLowerHex())} ${varLowerHex_fmt([[16]], { alternate: true }, handleLowerHex())}`,
+  );
+  console.log(`${hex([10], handleLowerHex())} ${hex([[11]], varLowerHex(handleLowerHex()))}`);
 }
 //# sourceMappingURL=case.js.map

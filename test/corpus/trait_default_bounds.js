@@ -4,36 +4,8 @@ import { $cmp, $displayF64, $eq, $partialCmp, $traitImpl } from "@rust-js/runtim
 
 var $f64Zero, $f64Signed, $i32Zero, $i32Signed, $u8One, $wrappingOne;
 
-function main() {
-  console.log(
-    `${f64Signed().negative(-1.5)} ${f64Signed().negative(2)} ${f64Signed().negative(NaN)} ${i32Signed().at_most_zero(0)}`,
-  );
-  console.log(
-    `${wrappingOne(u8One(), { mul: (a, b) => [(a[0] * b[0]) & 255] }).is_one([1], { eq: $eq })} ${wrappingOne(u8One(), { mul: (a, b) => [(a[0] * b[0]) & 255] }).is_one([3], { eq: $eq })} ${u8One().is_one(1, { eq: (a, b) => a === b })}`,
-  );
-  console.log(
-    `${$displayF64(f64Signed().distance(2.5, -1))} ${i32Signed().distance(7, 3)} ${i32Signed().distance(-5, 5)}`,
-  );
-}
-
 export function entry() {
   main();
-}
-
-function f64Zero_zero() {
-  return 0;
-}
-
-function i32Zero_zero() {
-  return 0;
-}
-
-function u8One_one() {
-  return 1;
-}
-
-function wrappingOne_one(TOne, std__num__Wrapping_T_Mul) {
-  return [TOne.one()];
 }
 
 function f64Zero() {
@@ -41,6 +13,10 @@ function f64Zero() {
     $f64Zero = { zero: f64Zero_zero };
   }
   return $f64Zero;
+}
+
+function f64Zero_zero() {
+  return 0;
 }
 
 function f64Signed() {
@@ -69,6 +45,10 @@ function i32Zero() {
     $i32Zero = { zero: i32Zero_zero };
   }
   return $i32Zero;
+}
+
+function i32Zero_zero() {
+  return 0;
 }
 
 function i32Signed() {
@@ -103,6 +83,10 @@ function u8One() {
   return $u8One;
 }
 
+function u8One_one() {
+  return 1;
+}
+
 function wrappingOne(TOne, std__num__Wrapping_T_Mul) {
   if ($wrappingOne === undefined) {
     $wrappingOne = new WeakMap();
@@ -113,5 +97,21 @@ function wrappingOne(TOne, std__num__Wrapping_T_Mul) {
     is_one: (self, SelfPartialEq) =>
       SelfPartialEq.eq(self, wrappingOne_one(TOne, std__num__Wrapping_T_Mul)),
   }));
+}
+
+function wrappingOne_one(TOne, std__num__Wrapping_T_Mul) {
+  return [TOne.one()];
+}
+
+function main() {
+  console.log(
+    `${f64Signed().negative(-1.5)} ${f64Signed().negative(2)} ${f64Signed().negative(NaN)} ${i32Signed().at_most_zero(0)}`,
+  );
+  console.log(
+    `${wrappingOne(u8One(), { mul: (a, b) => [(a[0] * b[0]) & 255] }).is_one([1], { eq: $eq })} ${wrappingOne(u8One(), { mul: (a, b) => [(a[0] * b[0]) & 255] }).is_one([3], { eq: $eq })} ${u8One().is_one(1, { eq: (a, b) => a === b })}`,
+  );
+  console.log(
+    `${$displayF64(f64Signed().distance(2.5, -1))} ${i32Signed().distance(7, 3)} ${i32Signed().distance(-5, 5)}`,
+  );
 }
 //# sourceMappingURL=case.js.map

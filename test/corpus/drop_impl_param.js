@@ -4,36 +4,8 @@ import { $traitImpl } from "@rust-js/runtime";
 
 var $wrapPeek;
 
-function peeked(p, PPeek) {
-  return PPeek.peek(p);
-}
-
-function main() {
-  const w = [["kept"]];
-  try {
-    console.log(`${peeked(w, wrapPeek({ clone: (value) => value }, loudDrop_drop))}`);
-    console.log(`${wrapPeek_peek(w, { clone: (value) => value }, loudDrop_drop)}`);
-    console.log(`${peeked([1], wrapPeek({ clone: (value) => value }))}`);
-  } finally {
-    loudDrop_drop(w[0]);
-  }
-}
-
 export function entry() {
   main();
-}
-
-function wrapPeek_peek(wrap, TClone, dropT) {
-  const copy = TClone.clone(wrap[0]);
-  try {
-    return 1;
-  } finally {
-    dropT?.(copy);
-  }
-}
-
-function loudDrop_drop(loud) {
-  console.log(`drop ${loud[0]}`);
 }
 
 function wrapPeek(TClone, dropT) {
@@ -46,5 +18,33 @@ function wrapPeek(TClone, dropT) {
       dropT?.(wrap[0]);
     },
   }));
+}
+
+function wrapPeek_peek(wrap, TClone, dropT) {
+  const copy = TClone.clone(wrap[0]);
+  try {
+    return 1;
+  } finally {
+    dropT?.(copy);
+  }
+}
+
+function peeked(p, PPeek) {
+  return PPeek.peek(p);
+}
+
+function loudDrop_drop(loud) {
+  console.log(`drop ${loud[0]}`);
+}
+
+function main() {
+  const w = [["kept"]];
+  try {
+    console.log(`${peeked(w, wrapPeek({ clone: (value) => value }, loudDrop_drop))}`);
+    console.log(`${wrapPeek_peek(w, { clone: (value) => value }, loudDrop_drop)}`);
+    console.log(`${peeked([1], wrapPeek({ clone: (value) => value }))}`);
+  } finally {
+    loudDrop_drop(w[0]);
+  }
 }
 //# sourceMappingURL=case.js.map

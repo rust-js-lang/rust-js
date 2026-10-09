@@ -4,22 +4,15 @@ import { $fmtError, $fmtPrintFailed, $fmtWritten, $print } from "@rust-js/runtim
 
 var $hoursDisplay, $spanDisplay;
 
-function main() {
-  console.log("before");
-  let text = "";
-  try {
-    text += "<";
-    text += spanDisplay_fmt([[1], [99]]);
-    text += ">\n";
-  } catch (error) {
-    $fmtPrintFailed(error, text, false);
-  }
-  $print(text);
-  console.log("after");
-}
-
 export function entry() {
   main();
+}
+
+export function hoursDisplay() {
+  if ($hoursDisplay === undefined) {
+    $hoursDisplay = { fmt: hoursDisplay_fmt };
+  }
+  return $hoursDisplay;
 }
 
 function hoursDisplay_fmt(hours) {
@@ -36,6 +29,13 @@ function hoursDisplay_fmt(hours) {
   return f;
 }
 
+export function spanDisplay() {
+  if ($spanDisplay === undefined) {
+    $spanDisplay = { fmt: spanDisplay_fmt };
+  }
+  return $spanDisplay;
+}
+
 function spanDisplay_fmt(span) {
   let f = "";
   try {
@@ -48,17 +48,17 @@ function spanDisplay_fmt(span) {
   return f;
 }
 
-export function hoursDisplay() {
-  if ($hoursDisplay === undefined) {
-    $hoursDisplay = { fmt: hoursDisplay_fmt };
+function main() {
+  console.log("before");
+  let text = "";
+  try {
+    text += "<";
+    text += spanDisplay_fmt([[1], [99]]);
+    text += ">\n";
+  } catch (error) {
+    $fmtPrintFailed(error, text, false);
   }
-  return $hoursDisplay;
-}
-
-export function spanDisplay() {
-  if ($spanDisplay === undefined) {
-    $spanDisplay = { fmt: spanDisplay_fmt };
-  }
-  return $spanDisplay;
+  $print(text);
+  console.log("after");
 }
 //# sourceMappingURL=case.js.map

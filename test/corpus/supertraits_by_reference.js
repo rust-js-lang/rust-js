@@ -4,34 +4,8 @@ import { $displayF64, $traitImpl } from "@rust-js/runtime";
 
 var $tRefAddBase, $metersAdd, $metersAddMeters;
 
-function twice_and_once(a, b, TRefAddT, TCopy) {
-  const byValue = TRefAddT.AddBase().add(TCopy.copy(a), TCopy.copy(b));
-  return TRefAddT.AddRefBase().add(TCopy.copy(byValue), b);
-}
-
-function main() {
-  console.log(
-    `${twice_and_once(1, 2, tRefAddBase({ add: (a, b) => (a + b) | 0 }, { add: (a, b) => (a + b) | 0 }), { copy: (value) => value })} ${$displayF64(twice_and_once(0.5, 0.25, tRefAddBase({ add: (a, b) => a + b }, { add: (a, b) => a + b }), { copy: (value) => value }))}`,
-  );
-  console.log(
-    `${metersDebug_fmt(twice_and_once([1], [2], tRefAddBase(metersAdd(), metersAddMeters()), { copy: (value) => [value[0]] }))}`,
-  );
-}
-
 export function entry() {
   main();
-}
-
-function metersDebug_fmt(meters) {
-  return `Meters(${meters[0]})`;
-}
-
-function metersAdd_add(meters, other) {
-  return [(meters[0] + other[0]) | 0];
-}
-
-function metersAddMeters_add(meters, other) {
-  return [(meters[0] + Math.imul(other[0], 10)) | 0];
 }
 
 function tRefAddBase(TAddBase, TAddBase$1) {
@@ -44,6 +18,15 @@ function tRefAddBase(TAddBase, TAddBase$1) {
   }));
 }
 
+function twice_and_once(a, b, TRefAddT, TCopy) {
+  const byValue = TRefAddT.AddBase().add(TCopy.copy(a), TCopy.copy(b));
+  return TRefAddT.AddRefBase().add(TCopy.copy(byValue), b);
+}
+
+function metersDebug_fmt(meters) {
+  return `Meters(${meters[0]})`;
+}
+
 export function metersAdd() {
   if ($metersAdd === undefined) {
     $metersAdd = { add: metersAdd_add };
@@ -51,10 +34,27 @@ export function metersAdd() {
   return $metersAdd;
 }
 
+function metersAdd_add(meters, other) {
+  return [(meters[0] + other[0]) | 0];
+}
+
 export function metersAddMeters() {
   if ($metersAddMeters === undefined) {
     $metersAddMeters = { add: metersAddMeters_add };
   }
   return $metersAddMeters;
+}
+
+function metersAddMeters_add(meters, other) {
+  return [(meters[0] + Math.imul(other[0], 10)) | 0];
+}
+
+function main() {
+  console.log(
+    `${twice_and_once(1, 2, tRefAddBase({ add: (a, b) => (a + b) | 0 }, { add: (a, b) => (a + b) | 0 }), { copy: (value) => value })} ${$displayF64(twice_and_once(0.5, 0.25, tRefAddBase({ add: (a, b) => a + b }, { add: (a, b) => a + b }), { copy: (value) => value }))}`,
+  );
+  console.log(
+    `${metersDebug_fmt(twice_and_once([1], [2], tRefAddBase(metersAdd(), metersAddMeters()), { copy: (value) => [value[0]] }))}`,
+  );
 }
 //# sourceMappingURL=case.js.map

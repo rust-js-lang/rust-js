@@ -4,12 +4,39 @@ import { $traitImpl } from "@rust-js/runtime";
 
 var $wrapPeek;
 
+export function entry() {
+  main();
+}
+
 function discard(_u, dropU) {
   dropU?.(_u);
 }
 
+function wrapPeek(TClone, dropT) {
+  if ($wrapPeek === undefined) {
+    $wrapPeek = new WeakMap();
+  }
+  return $traitImpl($wrapPeek, [TClone, dropT], () => ({
+    peek: (arg0) => wrapPeek_peek(arg0, TClone, dropT),
+    $drop: (wrap) => {
+      dropT?.(wrap[0]);
+    },
+  }));
+}
+
+function wrapPeek_peek(wrap, TClone, dropT) {
+  const value = TClone.clone(wrap[0]);
+  dropT?.(value);
+  discard(TClone.clone(wrap[0]), dropT);
+  return 1;
+}
+
 function peeked(p, PPeek) {
   return PPeek.peek(p);
+}
+
+function loudDrop_drop(self) {
+  console.log("dropped");
 }
 
 function main() {
@@ -31,32 +58,5 @@ function main() {
       loudDrop_drop({ value: w[0] });
     }
   }
-}
-
-export function entry() {
-  main();
-}
-
-function wrapPeek_peek(wrap, TClone, dropT) {
-  const value = TClone.clone(wrap[0]);
-  dropT?.(value);
-  discard(TClone.clone(wrap[0]), dropT);
-  return 1;
-}
-
-function loudDrop_drop(self) {
-  console.log("dropped");
-}
-
-function wrapPeek(TClone, dropT) {
-  if ($wrapPeek === undefined) {
-    $wrapPeek = new WeakMap();
-  }
-  return $traitImpl($wrapPeek, [TClone, dropT], () => ({
-    peek: (arg0) => wrapPeek_peek(arg0, TClone, dropT),
-    $drop: (wrap) => {
-      dropT?.(wrap[0]);
-    },
-  }));
 }
 //# sourceMappingURL=case.js.map

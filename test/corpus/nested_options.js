@@ -2,6 +2,18 @@
 
 import { $debugStr, $eq, $pop, $some, $someAt, $someValue } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function unitDebug_fmt(unit) {
+  return "Unit";
+}
+
+function entryDebug_fmt(entry$1) {
+  return `Entry { name: ${$debugStr(entry$1.name)}, note: ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))($someValue(value))})`))(entry$1.note)} }`;
+}
+
 const NOTHING_FOUND = { $someNone: 0 };
 const DEEP = { $someNone: 1 };
 const FOUND_UNIT = { $someNone: 0 };
@@ -152,17 +164,5 @@ function main() {
 
 function flat(o) {
   return $someValue(o);
-}
-
-export function entry() {
-  main();
-}
-
-function unitDebug_fmt(unit) {
-  return "Unit";
-}
-
-function entryDebug_fmt(entry$1) {
-  return `Entry { name: ${$debugStr(entry$1.name)}, note: ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))($someValue(value))})`))(entry$1.note)} }`;
 }
 //# sourceMappingURL=case.js.map

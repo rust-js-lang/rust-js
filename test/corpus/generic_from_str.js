@@ -16,6 +16,10 @@ import {
 
 var $unitDebug, $unitFromStr;
 
+export function entry() {
+  main();
+}
+
 function read(s, TFromStr) {
   const result = TFromStr.from_str(s);
   return result.TAG === "Ok" ? $some(result._0) : undefined;
@@ -36,6 +40,34 @@ function explain(s, TFromStr, TDebug, TErrDebug) {
     return TDebug.fmt(match._0);
   }
   return `error ${TErrDebug.fmt(match._0)}`;
+}
+
+function unitDebug_fmt(unit) {
+  return unit === "Kg" ? "Kg" : "Lb";
+}
+
+export function unitDebug() {
+  if ($unitDebug === undefined) {
+    $unitDebug = { fmt: unitDebug_fmt };
+  }
+  return $unitDebug;
+}
+
+export function unitFromStr() {
+  if ($unitFromStr === undefined) {
+    $unitFromStr = { from_str: unitFromStr_from_str };
+  }
+  return $unitFromStr;
+}
+
+function unitFromStr_from_str(s) {
+  if (s === "kg") {
+    return { TAG: "Ok", _0: "Kg" };
+  }
+  if (s === "lb") {
+    return { TAG: "Ok", _0: "Lb" };
+  }
+  return { TAG: "Err", _0: `unit ${s}` };
 }
 
 function main() {
@@ -68,37 +100,5 @@ function main() {
       { fmt: (value) => "" },
     )} | ${explain("-9", { from_str: (s) => $parseBig(s, -9223372036854775808n, 9223372036854775807n) }, { fmt: (value) => String(value) }, { fmt: (value) => $debugParseError(value, "ParseIntError") })}`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function unitDebug_fmt(unit) {
-  return unit === "Kg" ? "Kg" : "Lb";
-}
-
-function unitFromStr_from_str(s) {
-  if (s === "kg") {
-    return { TAG: "Ok", _0: "Kg" };
-  }
-  if (s === "lb") {
-    return { TAG: "Ok", _0: "Lb" };
-  }
-  return { TAG: "Err", _0: `unit ${s}` };
-}
-
-export function unitDebug() {
-  if ($unitDebug === undefined) {
-    $unitDebug = { fmt: unitDebug_fmt };
-  }
-  return $unitDebug;
-}
-
-export function unitFromStr() {
-  if ($unitFromStr === undefined) {
-    $unitFromStr = { from_str: unitFromStr_from_str };
-  }
-  return $unitFromStr;
 }
 //# sourceMappingURL=case.js.map

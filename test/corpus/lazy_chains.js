@@ -11,6 +11,10 @@ import {
   $someValue,
 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function noisy(tag, x) {
   console.log(`${tag} ${x}`);
   return x;
@@ -141,9 +145,5 @@ function main() {
     .filter((x) => x % 4 === 0)
     .slice(0, 1);
   console.log(`[${doubled$1.map((item) => String(item)).join(", ")}]`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

@@ -4,12 +4,89 @@ import { $traitImpl } from "@rust-js/runtime";
 
 var $wrapConsume, $wrapTake, $wrapReset, $loudDefault;
 
+export function entry() {
+  main();
+}
+
+function wrapConsume(TClone, dropT) {
+  if ($wrapConsume === undefined) {
+    $wrapConsume = new WeakMap();
+  }
+  return $traitImpl($wrapConsume, [TClone, dropT], () => ({
+    consume: (arg0) => wrapConsume_consume(arg0, TClone, dropT),
+    $drop: (wrap) => {
+      dropT?.(wrap[0]);
+    },
+  }));
+}
+
+function wrapConsume_consume(wrap, TClone, dropT) {
+  try {
+    return 1;
+  } finally {
+    dropT?.(wrap[0]);
+  }
+}
+
 function eat(c, CConsume) {
   return CConsume.consume(c);
 }
 
+function wrapTake(dropT) {
+  if ($wrapTake === undefined) {
+    $wrapTake = new WeakMap();
+  }
+  return $traitImpl($wrapTake, [dropT], () => ({
+    take: (arg0) => wrapTake_take(arg0, dropT),
+    $drop: (wrap) => {
+      dropT?.(wrap[0]);
+    },
+  }));
+}
+
+function wrapTake_take(wrap, dropT) {
+  try {
+    return 2;
+  } finally {
+    dropT?.(wrap[0]);
+  }
+}
+
 function taken(c, CTake) {
   return CTake.take(c);
+}
+
+function wrapReset(TDefault, dropT) {
+  if ($wrapReset === undefined) {
+    $wrapReset = new WeakMap();
+  }
+  return $traitImpl($wrapReset, [TDefault, dropT], () => ({
+    reset: (arg0) => wrapReset_reset(arg0.value, TDefault, dropT),
+    $drop: (wrap) => {
+      dropT?.(wrap[0]);
+    },
+  }));
+}
+
+function wrapReset_reset(wrap, TDefault, dropT) {
+  const next = TDefault.default();
+  dropT?.(wrap[0]);
+  wrap[0] = next;
+}
+
+export function loudDefault() {
+  if ($loudDefault === undefined) {
+    $loudDefault = { default: loudDefault_default, $drop: loudDrop_drop };
+  }
+  return $loudDefault;
+}
+
+function loudDefault_default() {
+  return ["made by default"];
+}
+
+function loudDrop_drop(loud) {
+  console.log(`drop ${loud[0]}`);
 }
 
 function main() {
@@ -29,82 +106,5 @@ function main() {
   } finally {
     loudDrop_drop(wrapped[0]);
   }
-}
-
-export function entry() {
-  main();
-}
-
-function wrapConsume_consume(wrap, TClone, dropT) {
-  try {
-    return 1;
-  } finally {
-    dropT?.(wrap[0]);
-  }
-}
-
-function wrapTake_take(wrap, dropT) {
-  try {
-    return 2;
-  } finally {
-    dropT?.(wrap[0]);
-  }
-}
-
-function wrapReset_reset(wrap, TDefault, dropT) {
-  const next = TDefault.default();
-  dropT?.(wrap[0]);
-  wrap[0] = next;
-}
-
-function loudDefault_default() {
-  return ["made by default"];
-}
-
-function loudDrop_drop(loud) {
-  console.log(`drop ${loud[0]}`);
-}
-
-function wrapConsume(TClone, dropT) {
-  if ($wrapConsume === undefined) {
-    $wrapConsume = new WeakMap();
-  }
-  return $traitImpl($wrapConsume, [TClone, dropT], () => ({
-    consume: (arg0) => wrapConsume_consume(arg0, TClone, dropT),
-    $drop: (wrap) => {
-      dropT?.(wrap[0]);
-    },
-  }));
-}
-
-function wrapTake(dropT) {
-  if ($wrapTake === undefined) {
-    $wrapTake = new WeakMap();
-  }
-  return $traitImpl($wrapTake, [dropT], () => ({
-    take: (arg0) => wrapTake_take(arg0, dropT),
-    $drop: (wrap) => {
-      dropT?.(wrap[0]);
-    },
-  }));
-}
-
-function wrapReset(TDefault, dropT) {
-  if ($wrapReset === undefined) {
-    $wrapReset = new WeakMap();
-  }
-  return $traitImpl($wrapReset, [TDefault, dropT], () => ({
-    reset: (arg0) => wrapReset_reset(arg0.value, TDefault, dropT),
-    $drop: (wrap) => {
-      dropT?.(wrap[0]);
-    },
-  }));
-}
-
-export function loudDefault() {
-  if ($loudDefault === undefined) {
-    $loudDefault = { default: loudDefault_default, $drop: loudDrop_drop };
-  }
-  return $loudDefault;
 }
 //# sourceMappingURL=case.js.map

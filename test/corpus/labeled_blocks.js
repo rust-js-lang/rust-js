@@ -2,6 +2,10 @@
 
 import { $debugStr } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function grade(score) {
   if (score < 0) {
     return "invalid";
@@ -73,9 +77,5 @@ function main() {
     total = sum;
   }
   console.log(`${total}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

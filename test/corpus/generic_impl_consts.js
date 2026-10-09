@@ -4,24 +4,6 @@ import { $traitImpl } from "@rust-js/runtime";
 
 var $u8ConstZero, $i64ConstZero, $wrappingConstZero, $u8Width, $u32Width, $pairWidth;
 
-function zero(TConstZero) {
-  return TConstZero.ZERO;
-}
-
-function bits(TWidth) {
-  return TWidth.BITS;
-}
-
-function main() {
-  console.log(
-    `${zero(wrappingConstZero(u8ConstZero()))[0]} ${zero(wrappingConstZero(wrappingConstZero(i64ConstZero())))[0][0]}`,
-  );
-  console.log(
-    `${bits(pairWidth(u8Width(), u32Width()))} ${bits(pairWidth(pairWidth(u8Width(), u8Width()), u32Width()))} ${bits(u8Width())}`,
-  );
-  console.log("64");
-}
-
 export function entry() {
   main();
 }
@@ -74,5 +56,23 @@ function pairWidth(AWidth, BWidth) {
       return (AWidth.BITS + BWidth.BITS) >>> 0;
     },
   }));
+}
+
+function zero(TConstZero) {
+  return TConstZero.ZERO;
+}
+
+function bits(TWidth) {
+  return TWidth.BITS;
+}
+
+function main() {
+  console.log(
+    `${zero(wrappingConstZero(u8ConstZero()))[0]} ${zero(wrappingConstZero(wrappingConstZero(i64ConstZero())))[0][0]}`,
+  );
+  console.log(
+    `${bits(pairWidth(u8Width(), u32Width()))} ${bits(pairWidth(pairWidth(u8Width(), u8Width()), u32Width()))} ${bits(u8Width())}`,
+  );
+  console.log("64");
 }
 //# sourceMappingURL=case.js.map

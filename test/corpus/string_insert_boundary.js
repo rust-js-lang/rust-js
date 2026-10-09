@@ -2,14 +2,14 @@
 
 import { $insertStr } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   let s = "héllo";
   s = $insertStr(s, 1, "x");
   s = $insertStr(s, 3, "y");
   console.log(`${s}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

@@ -2,6 +2,60 @@
 
 var $i32Bump, $cBump;
 
+export function entry() {
+  main();
+}
+
+function cDebug_fmt(c) {
+  return `C { n: ${c.n} }`;
+}
+
+function i32Bump() {
+  if ($i32Bump === undefined) {
+    $i32Bump = {
+      bump: i32Bump_bump,
+      get: i32Bump_get,
+      bumped_twice: (self) => {
+        i32Bump_bump(self);
+        i32Bump_bump(self);
+        return i32Bump_get(self.value);
+      },
+    };
+  }
+  return $i32Bump;
+}
+
+function i32Bump_bump(self) {
+  self.value = (self.value + 1) | 0;
+}
+
+function i32Bump_get(self) {
+  return self;
+}
+
+function cBump() {
+  if ($cBump === undefined) {
+    $cBump = {
+      bump: (arg0) => cBump_bump(arg0.value),
+      get: cBump_get,
+      bumped_twice: (self) => {
+        cBump_bump(self.value);
+        cBump_bump(self.value);
+        return cBump_get(self.value);
+      },
+    };
+  }
+  return $cBump;
+}
+
+function cBump_bump(c) {
+  c.n = (c.n + 1) | 0;
+}
+
+function cBump_get(c) {
+  return c.n;
+}
+
 function twice(x, TBump) {
   TBump.bump(x);
   TBump.bump(x);
@@ -46,59 +100,5 @@ function main() {
   c = self$1.value;
   console.log(`${tmp} ${result$1}`);
   console.log(`${n} ${c.n}`);
-}
-
-export function entry() {
-  main();
-}
-
-function cDebug_fmt(c) {
-  return `C { n: ${c.n} }`;
-}
-
-function i32Bump_bump(self) {
-  self.value = (self.value + 1) | 0;
-}
-
-function i32Bump_get(self) {
-  return self;
-}
-
-function cBump_bump(c) {
-  c.n = (c.n + 1) | 0;
-}
-
-function cBump_get(c) {
-  return c.n;
-}
-
-function i32Bump() {
-  if ($i32Bump === undefined) {
-    $i32Bump = {
-      bump: i32Bump_bump,
-      get: i32Bump_get,
-      bumped_twice: (self) => {
-        i32Bump_bump(self);
-        i32Bump_bump(self);
-        return i32Bump_get(self.value);
-      },
-    };
-  }
-  return $i32Bump;
-}
-
-function cBump() {
-  if ($cBump === undefined) {
-    $cBump = {
-      bump: (arg0) => cBump_bump(arg0.value),
-      get: cBump_get,
-      bumped_twice: (self) => {
-        cBump_bump(self.value);
-        cBump_bump(self.value);
-        return cBump_get(self.value);
-      },
-    };
-  }
-  return $cBump;
 }
 //# sourceMappingURL=case.js.map

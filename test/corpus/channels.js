@@ -12,6 +12,10 @@ import {
   $unwrapOk,
 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function produce(tx) {
   try {
     for (let id = 1; id <= 3; id++) {
@@ -119,9 +123,5 @@ function main() {
       $dropSender(tx);
     }
   }
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

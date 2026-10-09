@@ -2,6 +2,10 @@
 
 import { $iterator, $next, $nextSome, $someValue, $successors } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function sum(it) {
   it = Iterator.from(it);
   let total = 0;
@@ -48,6 +52,14 @@ function firsts(it) {
   return [a, b];
 }
 
+function countdownIterator_next(countdown) {
+  if (countdown[0] === 0) {
+    return;
+  }
+  countdown[0] = (countdown[0] - 1) >>> 0;
+  return countdown[0];
+}
+
 function main() {
   const v = [1, 2, 3, 4, 5];
   console.log(
@@ -73,17 +85,5 @@ function main() {
   console.log(
     `(${arg$3[0] == null ? "None" : "Some(())"}, ${arg$3[1] == null ? "None" : "Some(())"})`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function countdownIterator_next(countdown) {
-  if (countdown[0] === 0) {
-    return;
-  }
-  countdown[0] = (countdown[0] - 1) >>> 0;
-  return countdown[0];
 }
 //# sourceMappingURL=case.js.map

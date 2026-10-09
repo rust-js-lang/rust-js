@@ -2,6 +2,10 @@
 
 import { $slice, $unwrapOk } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   const bytes = [1, 2, 3, 4, 5];
   const slice = $slice(bytes, 0, 3);
@@ -35,9 +39,5 @@ function main() {
     (e$2) => "TryFromSliceError(())",
   );
   console.log(`${pair[0]} ${pair[1]}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

@@ -9,7 +9,6 @@ const PAIR = [-3, 2048];
 const PRIMES = [2, 3, 5, 7];
 const NOTHING = undefined;
 const LEVEL = "High";
-const STEP = 3;
 
 export function size_in_kb() {
   return (SIZE / 1024) >>> 0;
@@ -56,6 +55,8 @@ export function high() {
 export function limits() {
   return [4294967295, -2147483648];
 }
+
+const STEP = 3;
 
 export function local() {
   return Math.imul(STEP, 2) >>> 0;

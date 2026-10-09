@@ -9,6 +9,10 @@ import {
   $some,
 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function parse_all(v) {
   return $collectResults(v.values().map((s) => $parseInt(s, 0, 4294967295)));
 }
@@ -60,9 +64,5 @@ function main() {
   console.log(
     `${deque.TAG === "Ok" ? `Ok([${deque._0.map((item) => String(item)).join(", ")}])` : "Err(())"}`,
   );
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

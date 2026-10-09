@@ -2,6 +2,10 @@
 
 import { $unwrap } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   const inspect = (o) => {
     console.log(`${o == null ? "None" : `Some(${o})`}`);
@@ -15,9 +19,5 @@ function main() {
     .map((x) => $unwrap(x))
     .toArray();
   console.log(`[${seen.map((item) => String(item)).join(", ")}]`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

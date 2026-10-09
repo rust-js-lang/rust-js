@@ -2,6 +2,10 @@
 
 import { $debugStr, $parseBig, $parseInt } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   for (const s of [
     "999x",
@@ -23,9 +27,5 @@ function main() {
       `${s}: ${arg.TAG === "Ok" ? `Ok(${arg._0})` : `Err(${$debugStr(arg._0)})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugStr(arg$1._0)})`} ${arg$2.TAG === "Ok" ? `Ok(${arg$2._0})` : `Err(${$debugStr(arg$2._0)})`} ${arg$3.TAG === "Ok" ? `Ok(${arg$3._0})` : `Err(${$debugStr(arg$3._0)})`}`,
     );
   }
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

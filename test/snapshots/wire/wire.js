@@ -13,6 +13,391 @@ import {
   $unwrapOk,
 } from "@rust-js/runtime";
 
+function orderDebug_fmt(order) {
+  const names = ["order_id", "item_name", "qty", "note", "price", "tags", "paid", "cache"];
+  const values = [
+    String(order.order_id),
+    $debugStr(order.item_name),
+    String(order.qty),
+    order.note == null ? "None" : `Some(${$debugStr(order.note)})`,
+    $debugF64(order.price),
+    `[${order.tags.map((item) => $debugStr(item)).join(", ")}]`,
+    String(order.paid),
+    String(order.cache),
+  ];
+  return $debugFields("Order", names, values);
+}
+
+function orderSerialize_serialize(order, json) {
+  json.beginObject();
+  json.key("orderId");
+  json.int(order.order_id);
+  json.key("itemName");
+  json.string(order.item_name);
+  json.key("qty");
+  json.int(order.qty);
+  if (order.note != null) {
+    json.key("note");
+    json.string(order.note);
+  }
+  json.key("price");
+  json.number(order.price);
+  json.key("tags");
+  json.beginArray();
+  for (const item of order.tags) {
+    json.element();
+    json.string(item);
+  }
+  json.endArray();
+  json.key("ok");
+  json.bool(order.paid);
+  json.endObject();
+}
+
+function orderDeserialize_deserialize(json) {
+  return json.struct(
+    "struct Order",
+    [
+      ["orderId", $json.u32],
+      ["itemName", $json.string],
+      ["qty", $json.u8],
+      ["note", $json.option($json.string)],
+      ["price", $json.f64],
+      ["tags", $json.vec($json.string)],
+      ["ok", $json.bool],
+    ],
+    ([order_id, item_name, qty, note, price, tags, paid]) => ({
+      order_id,
+      item_name,
+      qty,
+      note,
+      price,
+      tags,
+      paid,
+      cache: 0,
+    }),
+  );
+}
+
+function shapeSerialize_serialize(shape, json) {
+  if (shape === "Dot") {
+    json.variant("Dot");
+  } else if (shape.TAG === "Circle") {
+    json.beginObject();
+    json.key("Circle");
+    json.number(shape._0);
+    json.endObject();
+  } else if (shape.TAG === "Rect") {
+    json.beginObject();
+    json.key("Rect");
+    json.beginTuple();
+    json.element();
+    json.number(shape._0);
+    json.element();
+    json.number(shape._1);
+    json.endArray();
+    json.endObject();
+  } else {
+    json.beginObject();
+    json.key("Poly");
+    json.beginObject();
+    json.key("sides");
+    json.int(shape.sides);
+    json.key("name");
+    json.string(shape.name);
+    json.endObject();
+    json.endObject();
+  }
+}
+
+function eventDebug_fmt(event) {
+  if (event === "Started") {
+    return "Started";
+  }
+  if (event.TAG === "Moved") {
+    return `Moved { dx: ${event.dx}, dy: ${event.dy} }`;
+  }
+  return `Placed(${orderDebug_fmt(event._0)})`;
+}
+
+function eventSerialize_serialize(event, json) {
+  if (event === "Started") {
+    json.beginObject();
+    json.key("type");
+    json.string("started");
+    json.endObject();
+  } else if (event.TAG === "Moved") {
+    json.beginObject();
+    json.key("type");
+    json.string("moved");
+    json.key("dx");
+    json.int(event.dx);
+    json.key("dy");
+    json.int(event.dy);
+    json.endObject();
+  } else {
+    json.beginObject();
+    json.key("type");
+    json.string("placed");
+    json.key("orderId");
+    json.int(event._0.order_id);
+    json.key("itemName");
+    json.string(event._0.item_name);
+    json.key("qty");
+    json.int(event._0.qty);
+    if (event._0.note != null) {
+      json.key("note");
+      json.string(event._0.note);
+    }
+    json.key("price");
+    json.number(event._0.price);
+    json.key("tags");
+    json.beginArray();
+    for (const item of event._0.tags) {
+      json.element();
+      json.string(item);
+    }
+    json.endArray();
+    json.key("ok");
+    json.bool(event._0.paid);
+    json.endObject();
+  }
+}
+
+function eventDeserialize_deserialize(json) {
+  return json.internallyTagged(
+    "type",
+    "internally tagged enum Event",
+    ["started", "moved", "placed"],
+    (variant, content) => {
+      if (variant === "started") {
+        content.taggedUnit("unit variant Event::Started");
+        return "Started";
+      }
+      if (variant === "moved") {
+        return content.struct(
+          "struct variant Event::Moved",
+          [
+            ["dx", $json.i32],
+            ["dy", $json.i32],
+          ],
+          ([dx, dy]) => ({ TAG: "Moved", dx, dy }),
+        );
+      }
+      return { TAG: "Placed", _0: orderDeserialize_deserialize(content) };
+    },
+  );
+}
+
+function msgDebug_fmt(msg) {
+  if (msg === "Ping") {
+    return "Ping";
+  }
+  if (msg.TAG === "Text") {
+    return `Text(${$debugStr(msg._0)})`;
+  }
+  return `Pair(${msg._0}, ${msg._1})`;
+}
+
+function msgSerialize_serialize(msg, json) {
+  if (msg === "Ping") {
+    json.beginObject();
+    json.key("t");
+    json.string("Ping");
+    json.endObject();
+  } else if (msg.TAG === "Text") {
+    json.beginObject();
+    json.key("t");
+    json.string("Text");
+    json.key("c");
+    json.string(msg._0);
+    json.endObject();
+  } else {
+    json.beginObject();
+    json.key("t");
+    json.string("Pair");
+    json.key("c");
+    json.beginTuple();
+    json.element();
+    json.int(msg._0);
+    json.element();
+    json.int(msg._1);
+    json.endArray();
+    json.endObject();
+  }
+}
+
+function msgDeserialize_deserialize(json) {
+  return json.adjacentlyTagged(
+    "t",
+    "c",
+    "adjacently tagged enum Msg",
+    ["Ping", "Text", "Pair"],
+    (variant, content) => {
+      if (variant === "Ping") {
+        content.untaggedUnit("unit variant Msg::Ping");
+        return "Ping";
+      }
+      if (variant === "Text") {
+        return { TAG: "Text", _0: $json.string(content) };
+      }
+      return content.tupleStruct("tuple variant Msg::Pair", [$json.u32, $json.u32], ([_0, _1]) => ({
+        TAG: "Pair",
+        _0,
+        _1,
+      }));
+    },
+  );
+}
+
+function looseDebug_fmt(loose) {
+  if (loose.TAG === "Num") {
+    return `Num(${$debugF64(loose._0)})`;
+  }
+  if (loose.TAG === "Word") {
+    return `Word(${$debugStr(loose._0)})`;
+  }
+  return "Nothing";
+}
+
+function looseSerialize_serialize(loose, json) {
+  if (loose.TAG === "Num") {
+    json.number(loose._0);
+  } else if (loose.TAG === "Word") {
+    json.string(loose._0);
+  } else {
+    json.null();
+  }
+}
+
+function looseDeserialize_deserialize(json) {
+  return json.untagged("data did not match any variant of untagged enum Loose", [
+    (content) => ({ TAG: "Num", _0: $json.f64(content) }),
+    (content) => ({ TAG: "Word", _0: $json.string(content) }),
+    (content) => {
+      content.untaggedUnit("unit variant Loose::Nothing");
+      return "Nothing";
+    },
+  ]);
+}
+
+function idSerialize_serialize(id, json) {
+  json.int(id[0]);
+}
+
+function pointSerialize_serialize(point, json) {
+  json.beginTupleStruct();
+  json.element();
+  json.int(point[0]);
+  json.element();
+  json.int(point[1]);
+  json.endArray();
+}
+
+function unitSerialize_serialize(unit, json) {
+  json.null();
+}
+
+function metersSerialize_serialize(meters, json) {
+  json.number(meters.value);
+}
+
+function everythingSerialize_serialize(everything, json) {
+  json.beginObject();
+  json.key("id");
+  idSerialize_serialize(everything.id, json);
+  json.key("at");
+  pointSerialize_serialize(everything.at, json);
+  json.key("unit");
+  unitSerialize_serialize(everything.unit, json);
+  json.key("len");
+  metersSerialize_serialize(everything.len, json);
+  json.key("shapes");
+  json.beginArray();
+  for (const item of everything.shapes) {
+    json.element();
+    shapeSerialize_serialize(item, json);
+  }
+  json.endArray();
+  json.key("events");
+  json.beginArray();
+  for (const item$1 of everything.events) {
+    json.element();
+    eventSerialize_serialize(item$1, json);
+  }
+  json.endArray();
+  json.key("msgs");
+  json.beginArray();
+  for (const item$2 of everything.msgs) {
+    json.element();
+    msgSerialize_serialize(item$2, json);
+  }
+  json.endArray();
+  json.key("loose");
+  json.beginArray();
+  for (const item$3 of everything.loose) {
+    json.element();
+    looseSerialize_serialize(item$3, json);
+  }
+  json.endArray();
+  json.key("counts");
+  json.beginObject();
+  for (const [key, item$4] of $sortedEntries(everything.counts, $cmp)) {
+    json.key(key);
+    json.int(item$4);
+  }
+  json.endObject();
+  json.key("by_id");
+  json.beginObject();
+  for (const [key$1, item$5] of $sortedEntries(everything.by_id, $cmp)) {
+    json.key(String(key$1));
+    json.bool(item$5);
+  }
+  json.endObject();
+  json.key("pair");
+  json.beginTuple();
+  json.element();
+  json.int(everything.pair[0]);
+  json.element();
+  json.char(everything.pair[1]);
+  json.element();
+  if (everything.pair[2] == null) {
+    json.null();
+  } else {
+    json.int(everything.pair[2]);
+  }
+  json.endArray();
+  json.key("empty");
+  json.beginArray();
+  for (const item$6 of everything.empty) {
+    json.element();
+    json.int(item$6);
+  }
+  json.endArray();
+  json.key("nested");
+  json.beginArray();
+  for (const item$7 of everything.nested) {
+    json.element();
+    json.beginArray();
+    for (const item$8 of item$7) {
+      json.element();
+      json.int(item$8);
+    }
+    json.endArray();
+  }
+  json.endArray();
+  json.key("text");
+  json.string(everything.text);
+  json.key("floats");
+  json.beginArray();
+  for (const item$9 of everything.floats) {
+    json.element();
+    json.number(item$9);
+  }
+  json.endArray();
+  json.endObject();
+}
+
 export function sample() {
   const order = {
     order_id: 7,
@@ -134,390 +519,5 @@ export function report() {
     $debugJsonError,
   );
   return `${$unwrapOk($toJson(e, everythingSerialize_serialize, false), undefined, $debugJsonError)}\n${$unwrapOk($toJson(e, everythingSerialize_serialize, true), undefined, $debugJsonError)}\n${$unwrapOk($toJson(order, orderSerialize_serialize, false), undefined, $debugJsonError)}\n[${events.map((item) => eventDebug_fmt(item)).join(", ")}]\n[${msgs.map((item) => msgDebug_fmt(item)).join(", ")}]\n[${loose.map((item) => looseDebug_fmt(item)).join(", ")}]\n`;
-}
-
-function orderDebug_fmt(order) {
-  const names = ["order_id", "item_name", "qty", "note", "price", "tags", "paid", "cache"];
-  const values = [
-    String(order.order_id),
-    $debugStr(order.item_name),
-    String(order.qty),
-    order.note == null ? "None" : `Some(${$debugStr(order.note)})`,
-    $debugF64(order.price),
-    `[${order.tags.map((item) => $debugStr(item)).join(", ")}]`,
-    String(order.paid),
-    String(order.cache),
-  ];
-  return $debugFields("Order", names, values);
-}
-
-function eventDebug_fmt(event) {
-  if (event === "Started") {
-    return "Started";
-  }
-  if (event.TAG === "Moved") {
-    return `Moved { dx: ${event.dx}, dy: ${event.dy} }`;
-  }
-  return `Placed(${orderDebug_fmt(event._0)})`;
-}
-
-function msgDebug_fmt(msg) {
-  if (msg === "Ping") {
-    return "Ping";
-  }
-  if (msg.TAG === "Text") {
-    return `Text(${$debugStr(msg._0)})`;
-  }
-  return `Pair(${msg._0}, ${msg._1})`;
-}
-
-function looseDebug_fmt(loose) {
-  if (loose.TAG === "Num") {
-    return `Num(${$debugF64(loose._0)})`;
-  }
-  if (loose.TAG === "Word") {
-    return `Word(${$debugStr(loose._0)})`;
-  }
-  return "Nothing";
-}
-
-function orderSerialize_serialize(order, json) {
-  json.beginObject();
-  json.key("orderId");
-  json.int(order.order_id);
-  json.key("itemName");
-  json.string(order.item_name);
-  json.key("qty");
-  json.int(order.qty);
-  if (order.note != null) {
-    json.key("note");
-    json.string(order.note);
-  }
-  json.key("price");
-  json.number(order.price);
-  json.key("tags");
-  json.beginArray();
-  for (const item of order.tags) {
-    json.element();
-    json.string(item);
-  }
-  json.endArray();
-  json.key("ok");
-  json.bool(order.paid);
-  json.endObject();
-}
-
-function eventSerialize_serialize(event, json) {
-  if (event === "Started") {
-    json.beginObject();
-    json.key("type");
-    json.string("started");
-    json.endObject();
-  } else if (event.TAG === "Moved") {
-    json.beginObject();
-    json.key("type");
-    json.string("moved");
-    json.key("dx");
-    json.int(event.dx);
-    json.key("dy");
-    json.int(event.dy);
-    json.endObject();
-  } else {
-    json.beginObject();
-    json.key("type");
-    json.string("placed");
-    json.key("orderId");
-    json.int(event._0.order_id);
-    json.key("itemName");
-    json.string(event._0.item_name);
-    json.key("qty");
-    json.int(event._0.qty);
-    if (event._0.note != null) {
-      json.key("note");
-      json.string(event._0.note);
-    }
-    json.key("price");
-    json.number(event._0.price);
-    json.key("tags");
-    json.beginArray();
-    for (const item of event._0.tags) {
-      json.element();
-      json.string(item);
-    }
-    json.endArray();
-    json.key("ok");
-    json.bool(event._0.paid);
-    json.endObject();
-  }
-}
-
-function eventDeserialize_deserialize(json) {
-  return json.internallyTagged(
-    "type",
-    "internally tagged enum Event",
-    ["started", "moved", "placed"],
-    (variant, content) => {
-      if (variant === "started") {
-        content.taggedUnit("unit variant Event::Started");
-        return "Started";
-      }
-      if (variant === "moved") {
-        return content.struct(
-          "struct variant Event::Moved",
-          [
-            ["dx", $json.i32],
-            ["dy", $json.i32],
-          ],
-          ([dx, dy]) => ({ TAG: "Moved", dx, dy }),
-        );
-      }
-      return { TAG: "Placed", _0: orderDeserialize_deserialize(content) };
-    },
-  );
-}
-
-function msgSerialize_serialize(msg, json) {
-  if (msg === "Ping") {
-    json.beginObject();
-    json.key("t");
-    json.string("Ping");
-    json.endObject();
-  } else if (msg.TAG === "Text") {
-    json.beginObject();
-    json.key("t");
-    json.string("Text");
-    json.key("c");
-    json.string(msg._0);
-    json.endObject();
-  } else {
-    json.beginObject();
-    json.key("t");
-    json.string("Pair");
-    json.key("c");
-    json.beginTuple();
-    json.element();
-    json.int(msg._0);
-    json.element();
-    json.int(msg._1);
-    json.endArray();
-    json.endObject();
-  }
-}
-
-function msgDeserialize_deserialize(json) {
-  return json.adjacentlyTagged(
-    "t",
-    "c",
-    "adjacently tagged enum Msg",
-    ["Ping", "Text", "Pair"],
-    (variant, content) => {
-      if (variant === "Ping") {
-        content.untaggedUnit("unit variant Msg::Ping");
-        return "Ping";
-      }
-      if (variant === "Text") {
-        return { TAG: "Text", _0: $json.string(content) };
-      }
-      return content.tupleStruct("tuple variant Msg::Pair", [$json.u32, $json.u32], ([_0, _1]) => ({
-        TAG: "Pair",
-        _0,
-        _1,
-      }));
-    },
-  );
-}
-
-function looseSerialize_serialize(loose, json) {
-  if (loose.TAG === "Num") {
-    json.number(loose._0);
-  } else if (loose.TAG === "Word") {
-    json.string(loose._0);
-  } else {
-    json.null();
-  }
-}
-
-function looseDeserialize_deserialize(json) {
-  return json.untagged("data did not match any variant of untagged enum Loose", [
-    (content) => ({ TAG: "Num", _0: $json.f64(content) }),
-    (content) => ({ TAG: "Word", _0: $json.string(content) }),
-    (content) => {
-      content.untaggedUnit("unit variant Loose::Nothing");
-      return "Nothing";
-    },
-  ]);
-}
-
-function everythingSerialize_serialize(everything, json) {
-  json.beginObject();
-  json.key("id");
-  idSerialize_serialize(everything.id, json);
-  json.key("at");
-  pointSerialize_serialize(everything.at, json);
-  json.key("unit");
-  unitSerialize_serialize(everything.unit, json);
-  json.key("len");
-  metersSerialize_serialize(everything.len, json);
-  json.key("shapes");
-  json.beginArray();
-  for (const item of everything.shapes) {
-    json.element();
-    shapeSerialize_serialize(item, json);
-  }
-  json.endArray();
-  json.key("events");
-  json.beginArray();
-  for (const item$1 of everything.events) {
-    json.element();
-    eventSerialize_serialize(item$1, json);
-  }
-  json.endArray();
-  json.key("msgs");
-  json.beginArray();
-  for (const item$2 of everything.msgs) {
-    json.element();
-    msgSerialize_serialize(item$2, json);
-  }
-  json.endArray();
-  json.key("loose");
-  json.beginArray();
-  for (const item$3 of everything.loose) {
-    json.element();
-    looseSerialize_serialize(item$3, json);
-  }
-  json.endArray();
-  json.key("counts");
-  json.beginObject();
-  for (const [key, item$4] of $sortedEntries(everything.counts, $cmp)) {
-    json.key(key);
-    json.int(item$4);
-  }
-  json.endObject();
-  json.key("by_id");
-  json.beginObject();
-  for (const [key$1, item$5] of $sortedEntries(everything.by_id, $cmp)) {
-    json.key(String(key$1));
-    json.bool(item$5);
-  }
-  json.endObject();
-  json.key("pair");
-  json.beginTuple();
-  json.element();
-  json.int(everything.pair[0]);
-  json.element();
-  json.char(everything.pair[1]);
-  json.element();
-  if (everything.pair[2] == null) {
-    json.null();
-  } else {
-    json.int(everything.pair[2]);
-  }
-  json.endArray();
-  json.key("empty");
-  json.beginArray();
-  for (const item$6 of everything.empty) {
-    json.element();
-    json.int(item$6);
-  }
-  json.endArray();
-  json.key("nested");
-  json.beginArray();
-  for (const item$7 of everything.nested) {
-    json.element();
-    json.beginArray();
-    for (const item$8 of item$7) {
-      json.element();
-      json.int(item$8);
-    }
-    json.endArray();
-  }
-  json.endArray();
-  json.key("text");
-  json.string(everything.text);
-  json.key("floats");
-  json.beginArray();
-  for (const item$9 of everything.floats) {
-    json.element();
-    json.number(item$9);
-  }
-  json.endArray();
-  json.endObject();
-}
-
-function orderDeserialize_deserialize(json) {
-  return json.struct(
-    "struct Order",
-    [
-      ["orderId", $json.u32],
-      ["itemName", $json.string],
-      ["qty", $json.u8],
-      ["note", $json.option($json.string)],
-      ["price", $json.f64],
-      ["tags", $json.vec($json.string)],
-      ["ok", $json.bool],
-    ],
-    ([order_id, item_name, qty, note, price, tags, paid]) => ({
-      order_id,
-      item_name,
-      qty,
-      note,
-      price,
-      tags,
-      paid,
-      cache: 0,
-    }),
-  );
-}
-
-function shapeSerialize_serialize(shape, json) {
-  if (shape === "Dot") {
-    json.variant("Dot");
-  } else if (shape.TAG === "Circle") {
-    json.beginObject();
-    json.key("Circle");
-    json.number(shape._0);
-    json.endObject();
-  } else if (shape.TAG === "Rect") {
-    json.beginObject();
-    json.key("Rect");
-    json.beginTuple();
-    json.element();
-    json.number(shape._0);
-    json.element();
-    json.number(shape._1);
-    json.endArray();
-    json.endObject();
-  } else {
-    json.beginObject();
-    json.key("Poly");
-    json.beginObject();
-    json.key("sides");
-    json.int(shape.sides);
-    json.key("name");
-    json.string(shape.name);
-    json.endObject();
-    json.endObject();
-  }
-}
-
-function idSerialize_serialize(id, json) {
-  json.int(id[0]);
-}
-
-function pointSerialize_serialize(point, json) {
-  json.beginTupleStruct();
-  json.element();
-  json.int(point[0]);
-  json.element();
-  json.int(point[1]);
-  json.endArray();
-}
-
-function unitSerialize_serialize(unit, json) {
-  json.null();
-}
-
-function metersSerialize_serialize(meters, json) {
-  json.number(meters.value);
 }
 //# sourceMappingURL=wire.js.map

@@ -2,6 +2,26 @@
 
 import { $debugStr, $iterator } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function countdownIterator_next(countdown) {
+  if (countdown[0] === 0) {
+    return;
+  }
+  countdown[0] = (countdown[0] - 1) >>> 0;
+  return countdown[0];
+}
+
+function blinkerIterator_next(blinker) {
+  blinker[0] = (blinker[0] + 1) >>> 0;
+  if (blinker[0] % 3 === 0) {
+    return;
+  }
+  return blinker[0];
+}
+
 function main() {
   console.log(
     `${
@@ -22,25 +42,5 @@ function main() {
   const sizes = [1, 22, 333];
   console.log(`${sizes.map((s) => s % 10).reduce((a, b) => (a + b) >>> 0, 0)}`);
   console.log(`${$debugStr(Array.from("héllo").toReversed().join(""))}`);
-}
-
-export function entry() {
-  main();
-}
-
-function countdownIterator_next(countdown) {
-  if (countdown[0] === 0) {
-    return;
-  }
-  countdown[0] = (countdown[0] - 1) >>> 0;
-  return countdown[0];
-}
-
-function blinkerIterator_next(blinker) {
-  blinker[0] = (blinker[0] + 1) >>> 0;
-  if (blinker[0] % 3 === 0) {
-    return;
-  }
-  return blinker[0];
 }
 //# sourceMappingURL=case.js.map

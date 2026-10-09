@@ -10,6 +10,10 @@ import {
   $toBytes,
 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function fnv1a(text) {
   let hash = 2166136261;
   for (const byte of Array.from(new TextEncoder().encode(text))) {
@@ -81,9 +85,5 @@ function main() {
     `${$displayF64($floatFromBits($floatToBits(1.25, 8), 8))} ${$floatToBits(Math.fround(1.1754944e-38), 4)}`,
   );
   console.log(`${fnv1a("hello")} ${xorshift(88172645463325252n)}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

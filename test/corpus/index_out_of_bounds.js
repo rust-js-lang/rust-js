@@ -2,14 +2,14 @@
 
 import { $index } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   const v = [1, 2, 3];
   const i = (v.length + 2) >>> 0;
   console.log(`reading ${i}`);
   console.log(`${$index(v, i)}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

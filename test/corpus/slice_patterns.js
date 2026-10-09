@@ -2,7 +2,9 @@
 
 import { $debugStr, $slice } from "@rust-js/runtime";
 
-const ORIGIN = [0, 0];
+export function entry() {
+  main();
+}
 
 function describe(xs) {
   if (xs.length === 0) {
@@ -42,6 +44,8 @@ function greet(words) {
 function sum3([x, y, z]) {
   return (((x + y) | 0) + z) | 0;
 }
+
+const ORIGIN = [0, 0];
 
 function main() {
   for (const xs of [
@@ -104,9 +108,5 @@ function main() {
     value[0] = value[0] + "!";
   }
   console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

@@ -26,6 +26,90 @@ import {
 
 var $categoryDisplay, $stockErrorDisplay, $linePriced;
 
+export function entry() {
+  main();
+}
+
+export function categoryDisplay() {
+  if ($categoryDisplay === undefined) {
+    $categoryDisplay = { fmt: categoryDisplay_fmt };
+  }
+  return $categoryDisplay;
+}
+
+function categoryDisplay_fmt(category, options) {
+  let f = "";
+  let name;
+  if (category === "Tools") {
+    name = "tools";
+  } else if (category === "Garden") {
+    name = "garden";
+  } else {
+    name = "kitchen";
+  }
+  f += $formatted(name, options);
+  return f;
+}
+
+function stockErrorDebug_fmt(stockError, options) {
+  let f = "";
+  if (stockError.TAG === "UnknownSku") {
+    const shown = $debugStr(stockError._0);
+    f += options?.alternate ? $pretty("UnknownSku(", [shown], ")") : `UnknownSku(${shown})`;
+  } else if (stockError.TAG === "OutOfStock") {
+    const shown$1 = $debugStr(stockError.sku);
+    const shown$2 = $formatted(String(stockError.wanted), options, true);
+    const shown$3 = $formatted(String(stockError.have), options, true);
+    f += options?.alternate
+      ? $pretty("OutOfStock {", [`sku: ${shown$1}`, `wanted: ${shown$2}`, `have: ${shown$3}`], "}")
+      : `OutOfStock { sku: ${shown$1}, wanted: ${shown$2}, have: ${shown$3} }`;
+  } else {
+    f += "EmptyOrder";
+  }
+  return f;
+}
+
+export function stockErrorDisplay() {
+  if ($stockErrorDisplay === undefined) {
+    $stockErrorDisplay = { fmt: stockErrorDisplay_fmt };
+  }
+  return $stockErrorDisplay;
+}
+
+function stockErrorDisplay_fmt(stockError, options) {
+  if (stockError.TAG === "UnknownSku") {
+    return `no item ${stockError._0}`;
+  }
+  if (stockError.TAG === "OutOfStock") {
+    return `${stockError.sku}: wanted ${stockError.wanted}, have ${stockError.have}`;
+  }
+  return "an order needs a line";
+}
+
+function linePriced() {
+  if ($linePriced === undefined) {
+    $linePriced = {
+      unit_cents: linePriced_unit_cents,
+      quantity: linePriced_quantity,
+      total_cents: (self) =>
+        BigInt.asUintN(64, BigInt(linePriced_unit_cents(self)) * BigInt(linePriced_quantity(self))),
+    };
+  }
+  return $linePriced;
+}
+
+function linePriced_unit_cents(line) {
+  return line.unit_cents;
+}
+
+function linePriced_quantity(line) {
+  return line.quantity;
+}
+
+function money(cents) {
+  return `$${cents / 100n}.${$zeroPad(String(cents % 100n), 2)}`;
+}
+
 const Inventory = {
   new(items) {
     const items$1 = new Map(items.map((item) => [item.sku, item]));
@@ -95,10 +179,6 @@ const Inventory = {
       .reduce((a, b) => BigInt.asUintN(64, a + b), 0n);
   },
 };
-
-function money(cents) {
-  return `$${cents / 100n}.${$zeroPad(String(cents % 100n), 2)}`;
-}
 
 function parse_order(text) {
   return $collectResults(
@@ -240,85 +320,5 @@ function main() {
   console.log(
     `restocked: [${restocked.map((item) => `(${$debugStr(item[0])}, ${item[1]})`).join(", ")}], value now ${arg$3}`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function categoryDisplay_fmt(category, options) {
-  let f = "";
-  let name;
-  if (category === "Tools") {
-    name = "tools";
-  } else if (category === "Garden") {
-    name = "garden";
-  } else {
-    name = "kitchen";
-  }
-  f += $formatted(name, options);
-  return f;
-}
-
-function stockErrorDebug_fmt(stockError, options) {
-  let f = "";
-  if (stockError.TAG === "UnknownSku") {
-    const shown = $debugStr(stockError._0);
-    f += options?.alternate ? $pretty("UnknownSku(", [shown], ")") : `UnknownSku(${shown})`;
-  } else if (stockError.TAG === "OutOfStock") {
-    const shown$1 = $debugStr(stockError.sku);
-    const shown$2 = $formatted(String(stockError.wanted), options, true);
-    const shown$3 = $formatted(String(stockError.have), options, true);
-    f += options?.alternate
-      ? $pretty("OutOfStock {", [`sku: ${shown$1}`, `wanted: ${shown$2}`, `have: ${shown$3}`], "}")
-      : `OutOfStock { sku: ${shown$1}, wanted: ${shown$2}, have: ${shown$3} }`;
-  } else {
-    f += "EmptyOrder";
-  }
-  return f;
-}
-
-function stockErrorDisplay_fmt(stockError, options) {
-  if (stockError.TAG === "UnknownSku") {
-    return `no item ${stockError._0}`;
-  }
-  if (stockError.TAG === "OutOfStock") {
-    return `${stockError.sku}: wanted ${stockError.wanted}, have ${stockError.have}`;
-  }
-  return "an order needs a line";
-}
-
-function linePriced_unit_cents(line) {
-  return line.unit_cents;
-}
-
-function linePriced_quantity(line) {
-  return line.quantity;
-}
-
-export function categoryDisplay() {
-  if ($categoryDisplay === undefined) {
-    $categoryDisplay = { fmt: categoryDisplay_fmt };
-  }
-  return $categoryDisplay;
-}
-
-export function stockErrorDisplay() {
-  if ($stockErrorDisplay === undefined) {
-    $stockErrorDisplay = { fmt: stockErrorDisplay_fmt };
-  }
-  return $stockErrorDisplay;
-}
-
-function linePriced() {
-  if ($linePriced === undefined) {
-    $linePriced = {
-      unit_cents: linePriced_unit_cents,
-      quantity: linePriced_quantity,
-      total_cents: (self) =>
-        BigInt.asUintN(64, BigInt(linePriced_unit_cents(self)) * BigInt(linePriced_quantity(self))),
-    };
-  }
-  return $linePriced;
 }
 //# sourceMappingURL=case.js.map

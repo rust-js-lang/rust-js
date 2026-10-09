@@ -28,11 +28,8 @@ pub struct LoweredModule {
     /// What it exports of the crate's other modules, by their path: its
     /// `pub use` of their functions (ADR 0240).
     pub reexports: Vec<LoweredImport>,
-    pub namespaces: Vec<js::Namespace>,
-    pub consts: Vec<js::Const>,
-    /// What it runs when it's loaded, `js::on_load!`'s (ADR 0267).
-    pub statements: Vec<js::Stmt>,
-    pub functions: Vec<js::Function>,
+    /// Its items, where its Rust has them (ADR 0306).
+    pub items: Vec<js::Item>,
     pub caches: Vec<String>,
     /// The function it exports as its default too (ADR 0192).
     pub default_export: Option<String>,

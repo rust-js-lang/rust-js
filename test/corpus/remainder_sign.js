@@ -2,6 +2,10 @@
 
 import { $debugF64 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   const a = -2;
   const r = (a % 2) | 0;
@@ -14,9 +18,5 @@ function main() {
   console.log(`${$debugF64(Number(d % 2n))}`);
   const u = 6;
   console.log(`${$debugF64(u % 3)}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

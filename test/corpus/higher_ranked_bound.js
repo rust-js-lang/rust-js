@@ -4,26 +4,8 @@ import { $debugStr, $traitImpl } from "@rust-js/runtime";
 
 var $tNamed, $tShout;
 
-function loud(value, TShout) {
-  return TShout.shout(value);
-}
-
-function main() {
-  console.log(
-    `${loud("quiet", tShout(tNamed({ fmt: (value) => $debugStr(value) })))} ${loud(3, tShout(tNamed({ fmt: (value) => (value == null ? "None" : `Some(${value})`) })))}`,
-  );
-}
-
 export function entry() {
   main();
-}
-
-function tNamed_name(self, TDebug) {
-  return TDebug.fmt(self);
-}
-
-function tShout_shout(self, TNamed) {
-  return TNamed.name(self).toUpperCase();
 }
 
 function tNamed(TDebug) {
@@ -33,10 +15,28 @@ function tNamed(TDebug) {
   return $traitImpl($tNamed, [TDebug], () => ({ name: (arg0) => tNamed_name(arg0, TDebug) }));
 }
 
+function tNamed_name(self, TDebug) {
+  return TDebug.fmt(self);
+}
+
 function tShout(TNamed) {
   if ($tShout === undefined) {
     $tShout = new WeakMap();
   }
   return $traitImpl($tShout, [TNamed], () => ({ shout: (arg0) => tShout_shout(arg0, TNamed) }));
+}
+
+function tShout_shout(self, TNamed) {
+  return TNamed.name(self).toUpperCase();
+}
+
+function loud(value, TShout) {
+  return TShout.shout(value);
+}
+
+function main() {
+  console.log(
+    `${loud("quiet", tShout(tNamed({ fmt: (value) => $debugStr(value) })))} ${loud(3, tShout(tNamed({ fmt: (value) => (value == null ? "None" : `Some(${value})`) })))}`,
+  );
 }
 //# sourceMappingURL=case.js.map

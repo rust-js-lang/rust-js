@@ -13,6 +13,10 @@ import {
   $toBytes,
 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   console.log(
     `${$edgeOnes(227, 8)} ${$edgeOnes(227, 8, true)} ${$edgeOnes(-1, 16)} ${$edgeOnes(0n, 64, true)}`,
@@ -49,9 +53,5 @@ function main() {
       $floatFromBits($fromBytes([64, 73, 15, 219], 4, false, false), 4),
     )} ${$displayF64($floatFromBits($fromBytes($toBytes($floatToBits(0.1, 8), 8, true), 8, true, false), 8))}`,
   );
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

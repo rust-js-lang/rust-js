@@ -12,6 +12,10 @@ import {
   $zeroPad,
 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   const arg = [1.25, 2];
   console.log(
@@ -32,9 +36,5 @@ function main() {
         ", ",
       )}}] [${arg$2.TAG === "Ok" ? `Ok(${String(arg$2._0).padStart(4, "x")})` : `Err(${$pad("()", 4, ">", "x")})`}]`,
   );
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

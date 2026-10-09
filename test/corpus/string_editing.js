@@ -2,6 +2,10 @@
 
 import { $at, $debugStr, $insertStr, $strPop, $strRemove, $strTruncate } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function tidy(s) {
   s.value = Array.from(s.value)
     .filter((c) => !/^\p{White_Space}$/u.test(c))
@@ -60,9 +64,5 @@ function main() {
   words[$at(words, 1)] = $insertStr(words[$at(words, 1)], 0, "2");
   words[$at(words, 0)] = $strTruncate(words[$at(words, 0)], 1);
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}]`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

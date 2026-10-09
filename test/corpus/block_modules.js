@@ -5,7 +5,9 @@ import { name } from "./names$2.js";
 import { NAME } from "./names.js";
 import { $debugStr } from "@rust-js/runtime";
 
-const ALL = ["constant", "and more"];
+export function entry() {
+  main();
+}
 
 function first() {
   return NAME$1;
@@ -15,11 +17,9 @@ function second() {
   return name();
 }
 
+const ALL = ["constant", "and more"];
+
 function main() {
   console.log(`${NAME} ${first()} ${second()} [${ALL.map((item) => $debugStr(item)).join(", ")}]`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

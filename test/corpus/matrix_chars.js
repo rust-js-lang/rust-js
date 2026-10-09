@@ -11,6 +11,10 @@ import {
   $toDigit,
 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 const CHARS = [
   "\0",
   "	",
@@ -115,9 +119,5 @@ function main() {
       `${n}: ${arg$38 == null ? "None" : `Some(${$debugStr(arg$38, "'")})`} ${arg$39 == null ? "None" : `Some(${$debugStr(arg$39, "'")})`} ${arg$40 == null ? "None" : `Some(${$debugStr(arg$40, "'")})`}`,
     );
   }
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

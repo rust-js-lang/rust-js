@@ -2,6 +2,10 @@
 
 import { $debugStr, $unwrap } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function process(x) {
   return Array.from(x).length;
 }
@@ -72,9 +76,5 @@ function main() {
   const r$2 = $unwrap(o);
   r$2.value = (r$2.value + 1) | 0;
   console.log(`${a} ${b} ${c}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

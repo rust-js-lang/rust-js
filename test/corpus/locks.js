@@ -2,6 +2,10 @@
 
 import { $at, $byteLen, $debugStr, $displayF64 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function record(stats, name) {
   const s = stats.value;
   s.hits = (s.hits + 1) >>> 0;
@@ -58,9 +62,5 @@ function main() {
       .join(", ")}]`,
   );
   console.log(`${text.value} ${$byteLen(text.value)} ${$displayF64(cell.value)}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

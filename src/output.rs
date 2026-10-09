@@ -85,10 +85,7 @@ impl OutputPlan {
                 imports,
                 reexports,
                 helpers: Vec::new(),
-                namespaces: module.namespaces,
-                consts: module.consts,
-                statements: module.statements,
-                functions: module.functions,
+                items: module.items,
                 caches: module.caches,
                 default_export: module.default_export,
             };

@@ -27,6 +27,61 @@ import {
 
 var $dogDescribe, $catDescribe, $tLabeled;
 
+export function dogDescribe() {
+  if ($dogDescribe === undefined) {
+    $dogDescribe = {
+      name: dogDescribe_name,
+      describe: (self) => `<${dogDescribe_name(self)}>`,
+      shout: (self) => dogDescribe().describe(self).toUpperCase(),
+    };
+  }
+  return $dogDescribe;
+}
+
+function dogDescribe_name(dog) {
+  return "dog";
+}
+
+export function catDescribe() {
+  if ($catDescribe === undefined) {
+    $catDescribe = {
+      name: catDescribe_name,
+      describe: catDescribe_describe,
+      shout: (self) => catDescribe_describe(self).toUpperCase(),
+    };
+  }
+  return $catDescribe;
+}
+
+function catDescribe_name(cat) {
+  return `cat${cat.lives}`;
+}
+
+function catDescribe_describe(cat) {
+  return `[${catDescribe_name(cat)}]`;
+}
+
+export function tLabeled(TDisplay) {
+  if ($tLabeled === undefined) {
+    $tLabeled = new WeakMap();
+  }
+  return $traitImpl($tLabeled, [TDisplay], () => ({
+    label: (arg0) => tLabeled_label(arg0, TDisplay),
+  }));
+}
+
+function tLabeled_label(self, TDisplay) {
+  return `#${TDisplay.fmt(self)}`;
+}
+
+function versionDebug_fmt(version) {
+  return `Version { major: ${version.major}, minor: ${version.minor}, patch: ${version.patch} }`;
+}
+
+function configDebug_fmt(config) {
+  return `Config { name: ${$debugStr(config.name)}, retries: ${config.retries}, verbose: ${config.verbose}, ratio: ${$debugF64(config.ratio)} }`;
+}
+
 function largest(items, TPartialOrd) {
   const it = $iter(items);
   const value = $nextSome(it);
@@ -140,60 +195,5 @@ export function panics(i) {
 
 export function report() {
   return `${tour()}${edges()}\n`;
-}
-
-function dogDescribe_name(dog) {
-  return "dog";
-}
-
-function catDescribe_name(cat) {
-  return `cat${cat.lives}`;
-}
-
-function catDescribe_describe(cat) {
-  return `[${catDescribe_name(cat)}]`;
-}
-
-function tLabeled_label(self, TDisplay) {
-  return `#${TDisplay.fmt(self)}`;
-}
-
-function versionDebug_fmt(version) {
-  return `Version { major: ${version.major}, minor: ${version.minor}, patch: ${version.patch} }`;
-}
-
-function configDebug_fmt(config) {
-  return `Config { name: ${$debugStr(config.name)}, retries: ${config.retries}, verbose: ${config.verbose}, ratio: ${$debugF64(config.ratio)} }`;
-}
-
-export function dogDescribe() {
-  if ($dogDescribe === undefined) {
-    $dogDescribe = {
-      name: dogDescribe_name,
-      describe: (self) => `<${dogDescribe_name(self)}>`,
-      shout: (self) => dogDescribe().describe(self).toUpperCase(),
-    };
-  }
-  return $dogDescribe;
-}
-
-export function catDescribe() {
-  if ($catDescribe === undefined) {
-    $catDescribe = {
-      name: catDescribe_name,
-      describe: catDescribe_describe,
-      shout: (self) => catDescribe_describe(self).toUpperCase(),
-    };
-  }
-  return $catDescribe;
-}
-
-export function tLabeled(TDisplay) {
-  if ($tLabeled === undefined) {
-    $tLabeled = new WeakMap();
-  }
-  return $traitImpl($tLabeled, [TDisplay], () => ({
-    label: (arg0) => tLabeled_label(arg0, TDisplay),
-  }));
 }
 //# sourceMappingURL=versions.js.map

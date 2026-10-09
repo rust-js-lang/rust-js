@@ -11,6 +11,84 @@ import {
 
 var $roleFromStr, $pointErrorDisplay, $pointFromStr;
 
+export function entry() {
+  main();
+}
+
+export function roleFromStr() {
+  if ($roleFromStr === undefined) {
+    $roleFromStr = { from_str: roleFromStr_from_str };
+  }
+  return $roleFromStr;
+}
+
+function roleFromStr_from_str(s) {
+  const match = $trim(s).toLowerCase();
+  if (match === "admin") {
+    return { TAG: "Ok", _0: "Admin" };
+  }
+  if (match === "member") {
+    return { TAG: "Ok", _0: "Member" };
+  }
+  return { TAG: "Err", _0: `no role ${$debugStr(match)}` };
+}
+
+function pointDebug_fmt(point) {
+  return `Point { x: ${point.x}, y: ${point.y} }`;
+}
+
+function pointErrorDebug_fmt(pointError) {
+  if (pointError === "Shape") {
+    return "Shape";
+  }
+  return `Number(${$debugParseError(pointError._0, "ParseIntError")})`;
+}
+
+export function pointErrorDisplay() {
+  if ($pointErrorDisplay === undefined) {
+    $pointErrorDisplay = { fmt: pointErrorDisplay_fmt };
+  }
+  return $pointErrorDisplay;
+}
+
+function pointErrorDisplay_fmt(pointError) {
+  if (pointError === "Shape") {
+    return "expected x,y";
+  }
+  return `bad number: ${pointError._0}`;
+}
+
+export function pointFromStr() {
+  if ($pointFromStr === undefined) {
+    $pointFromStr = { from_str: pointFromStr_from_str };
+  }
+  return $pointFromStr;
+}
+
+function pointFromStr_from_str(s) {
+  const option = $splitOnce(s, ",");
+  const result = option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: "Shape" };
+  if (result.TAG === "Err") {
+    return result;
+  }
+  const [x, y] = result._0;
+  const result$1 = $parseInt($trim(x), -2147483648, 2147483647);
+  const result$2 =
+    result$1.TAG === "Err" ? { TAG: "Err", _0: { TAG: "Number", _0: result$1._0 } } : result$1;
+  if (result$2.TAG === "Err") {
+    return result$2;
+  }
+  const x$1 = result$2._0;
+  const result$3 = $parseInt($trim(y), -2147483648, 2147483647);
+  const result$4 =
+    result$3.TAG === "Err" ? { TAG: "Err", _0: { TAG: "Number", _0: result$3._0 } } : result$3;
+  if (result$4.TAG === "Err") {
+    return result$4;
+  }
+  const y$1 = result$4._0;
+  return { TAG: "Ok", _0: { x: x$1, y: y$1 } };
+}
+
 function total(text) {
   let sum = 0;
   for (const part of text.split(";")) {
@@ -59,83 +137,5 @@ function main() {
   console.log(
     `${result$2.TAG === "Ok" ? String(result$2._0) : pointErrorDisplay_fmt(result$2._0)}`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function roleFromStr_from_str(s) {
-  const match = $trim(s).toLowerCase();
-  if (match === "admin") {
-    return { TAG: "Ok", _0: "Admin" };
-  }
-  if (match === "member") {
-    return { TAG: "Ok", _0: "Member" };
-  }
-  return { TAG: "Err", _0: `no role ${$debugStr(match)}` };
-}
-
-function pointDebug_fmt(point) {
-  return `Point { x: ${point.x}, y: ${point.y} }`;
-}
-
-function pointErrorDebug_fmt(pointError) {
-  if (pointError === "Shape") {
-    return "Shape";
-  }
-  return `Number(${$debugParseError(pointError._0, "ParseIntError")})`;
-}
-
-function pointErrorDisplay_fmt(pointError) {
-  if (pointError === "Shape") {
-    return "expected x,y";
-  }
-  return `bad number: ${pointError._0}`;
-}
-
-function pointFromStr_from_str(s) {
-  const option = $splitOnce(s, ",");
-  const result = option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: "Shape" };
-  if (result.TAG === "Err") {
-    return result;
-  }
-  const [x, y] = result._0;
-  const result$1 = $parseInt($trim(x), -2147483648, 2147483647);
-  const result$2 =
-    result$1.TAG === "Err" ? { TAG: "Err", _0: { TAG: "Number", _0: result$1._0 } } : result$1;
-  if (result$2.TAG === "Err") {
-    return result$2;
-  }
-  const x$1 = result$2._0;
-  const result$3 = $parseInt($trim(y), -2147483648, 2147483647);
-  const result$4 =
-    result$3.TAG === "Err" ? { TAG: "Err", _0: { TAG: "Number", _0: result$3._0 } } : result$3;
-  if (result$4.TAG === "Err") {
-    return result$4;
-  }
-  const y$1 = result$4._0;
-  return { TAG: "Ok", _0: { x: x$1, y: y$1 } };
-}
-
-export function roleFromStr() {
-  if ($roleFromStr === undefined) {
-    $roleFromStr = { from_str: roleFromStr_from_str };
-  }
-  return $roleFromStr;
-}
-
-export function pointErrorDisplay() {
-  if ($pointErrorDisplay === undefined) {
-    $pointErrorDisplay = { fmt: pointErrorDisplay_fmt };
-  }
-  return $pointErrorDisplay;
-}
-
-export function pointFromStr() {
-  if ($pointFromStr === undefined) {
-    $pointFromStr = { from_str: pointFromStr_from_str };
-  }
-  return $pointFromStr;
 }
 //# sourceMappingURL=case.js.map

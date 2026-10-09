@@ -2,6 +2,10 @@
 
 import { $cmpIn, $maxBy, $minBy } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   console.log(
     `${$cmpIn(["Below", "Low", "High"], "High", "Low") > 0} ${
@@ -30,9 +34,5 @@ function main() {
   );
   const arg$3 = $minBy(["Second", "First"], (a, b) => $cmpIn(["First", "Second", "Third"], a, b));
   console.log(`${arg$3 == null ? "None" : `Some(${arg$3})`}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

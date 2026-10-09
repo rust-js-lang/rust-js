@@ -22,8 +22,9 @@ struct Pass {
     runtime: HashMap<LocalModId, HashSet<Helper>>,
     jsx: HashSet<LocalModId>,
     caches: HashMap<LocalModId, Vec<String>>,
-    /// What each module runs when it's loaded, `js::on_load!`'s (ADR 0267).
-    statements: HashMap<LocalModId, Vec<js::Stmt>>,
+    /// What each module runs when it's loaded, each `js::on_load!`'s
+    /// (ADR 0267).
+    statements: HashMap<LocalModId, Vec<Vec<js::Stmt>>>,
     /// `thread_local!`s' values, made from their lowered `init`s.
     local_consts: HashMap<LocalModId, Vec<js::Const>>,
     /// The functions a block makes and gives, by their items' indices, for
@@ -411,7 +412,7 @@ pub fn lower_crate<'tcx>(
                         }
                     }
                     None if super::bindings::is_on_load(tcx, def_id) => {
-                        pass.statements.entry(module).or_default().extend(lowered.function.body)
+                        pass.statements.entry(module).or_default().push(lowered.function.body)
                     }
                     // Named in itself alone, as the Rust names it, unless
                     // what it reads is named so.
@@ -447,7 +448,7 @@ pub fn lower_crate<'tcx>(
     for function in pass.functions.values_mut().flatten().chain(methods) {
         fill_holes(&mut function.body, holes);
     }
-    for statements in pass.statements.values_mut() {
+    for statements in pass.statements.values_mut().flatten() {
         fill_holes(statements, holes);
     }
 
@@ -573,10 +574,30 @@ pub fn lower_crate<'tcx>(
                 packages,
                 imports: Vec::new(),
                 reexports,
-                namespaces: pass.namespaces.remove(&module).unwrap_or_default(),
-                consts: const_items.remove(&module).unwrap_or_default(),
-                statements: pass.statements.remove(&module).unwrap_or_default(),
-                functions: pass.functions.remove(&module).unwrap_or_default(),
+                items: js::in_load_order(
+                    (pass
+                        .namespaces
+                        .remove(&module)
+                        .into_iter()
+                        .flatten()
+                        .map(js::Item::Namespace))
+                    .chain(const_items.remove(&module).into_iter().flatten().map(js::Item::Const))
+                    .chain(
+                        pass.statements
+                            .remove(&module)
+                            .into_iter()
+                            .flatten()
+                            .map(js::Item::Statements),
+                    )
+                    .chain(
+                        pass.functions
+                            .remove(&module)
+                            .into_iter()
+                            .flatten()
+                            .map(js::Item::Function),
+                    )
+                    .collect(),
+                ),
                 caches: pass.caches.remove(&module).unwrap_or_default(),
                 default_export: default_export.map(|function| super::bindings::fn_name(tcx, function)),
                 declarations,

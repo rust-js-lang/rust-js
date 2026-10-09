@@ -12,6 +12,60 @@ import {
 
 var $minStockRule, $revenueRule, $storeDisplay;
 
+export function minStockRule() {
+  if ($minStockRule === undefined) {
+    $minStockRule = { name: minStockRule_name, check: minStockRule_check };
+  }
+  return $minStockRule;
+}
+
+function minStockRule_name(minStock) {
+  return `min-stock(${minStock.item})`;
+}
+
+function minStockRule_check(minStock, store) {
+  const have = store.stock.get(minStock.item) ?? 0;
+  if (have < minStock.min) {
+    return `${minStock.item} low: ${have} < ${minStock.min}`;
+  }
+  return;
+}
+
+export function revenueRule() {
+  if ($revenueRule === undefined) {
+    $revenueRule = { name: revenueRule_name, check: revenueRule_check };
+  }
+  return $revenueRule;
+}
+
+function revenueRule_name(revenue) {
+  return "revenue";
+}
+
+function revenueRule_check(revenue, store) {
+  return store.revenue < revenue[0]
+    ? `revenue ${$toFixed(store.revenue, 2)} under ${$toFixed(revenue[0], 2)}`
+    : undefined;
+}
+
+export function storeDisplay() {
+  if ($storeDisplay === undefined) {
+    $storeDisplay = { fmt: storeDisplay_fmt };
+  }
+  return $storeDisplay;
+}
+
+function storeDisplay_fmt(store) {
+  let f = "";
+  const items = Array.from(store.stock);
+  items.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
+  for (const [name, qty] of items) {
+    f += `${name}=${qty} `;
+  }
+  f += `| ${$toFixed(store.revenue, 2)}`;
+  return f;
+}
+
 export const Store = {
   apply(store, e) {
     if (e.TAG === "Restock") {
@@ -153,59 +207,5 @@ export function bands(xs) {
     }
     return "odd";
   });
-}
-
-function minStockRule_name(minStock) {
-  return `min-stock(${minStock.item})`;
-}
-
-function minStockRule_check(minStock, store) {
-  const have = store.stock.get(minStock.item) ?? 0;
-  if (have < minStock.min) {
-    return `${minStock.item} low: ${have} < ${minStock.min}`;
-  }
-  return;
-}
-
-function revenueRule_name(revenue) {
-  return "revenue";
-}
-
-function revenueRule_check(revenue, store) {
-  return store.revenue < revenue[0]
-    ? `revenue ${$toFixed(store.revenue, 2)} under ${$toFixed(revenue[0], 2)}`
-    : undefined;
-}
-
-function storeDisplay_fmt(store) {
-  let f = "";
-  const items = Array.from(store.stock);
-  items.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
-  for (const [name, qty] of items) {
-    f += `${name}=${qty} `;
-  }
-  f += `| ${$toFixed(store.revenue, 2)}`;
-  return f;
-}
-
-export function minStockRule() {
-  if ($minStockRule === undefined) {
-    $minStockRule = { name: minStockRule_name, check: minStockRule_check };
-  }
-  return $minStockRule;
-}
-
-export function revenueRule() {
-  if ($revenueRule === undefined) {
-    $revenueRule = { name: revenueRule_name, check: revenueRule_check };
-  }
-  return $revenueRule;
-}
-
-export function storeDisplay() {
-  if ($storeDisplay === undefined) {
-    $storeDisplay = { fmt: storeDisplay_fmt };
-  }
-  return $storeDisplay;
 }
 //# sourceMappingURL=inventory.js.map

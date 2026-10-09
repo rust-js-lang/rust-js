@@ -13,6 +13,10 @@ import {
   $unwrap,
 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function bump(n) {
   n.value = (n.value + 100) | 0;
 }
@@ -113,9 +117,5 @@ function main() {
     r$1.value = -r$1.value | 0;
   }
   console.log(`${seen} ${found} [${cells.map((item) => String(item)).join(", ")}]`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

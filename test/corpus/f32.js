@@ -16,6 +16,14 @@ import {
   $unwrap,
 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function readingDebug_fmt(reading) {
+  return `Reading { celsius: ${$debugF32(reading.celsius)} }`;
+}
+
 function total(values, zero, TAdd) {
   let sum = zero;
   for (const item of values) {
@@ -84,13 +92,5 @@ function main() {
   console.log(
     `${$displayF32(total(temps, 0, { add: (a, b) => Math.fround(a + b) }))} ${$displayF64(total([0.1, 0.2], 0, { add: (a, b) => a + b }))}`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function readingDebug_fmt(reading) {
-  return `Reading { celsius: ${$debugF32(reading.celsius)} }`;
 }
 //# sourceMappingURL=case.js.map

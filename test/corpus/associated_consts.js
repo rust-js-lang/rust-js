@@ -11,59 +11,8 @@ var $squareShape,
   $u32Zero,
   $u32Bump;
 
-function describe(s, SShape) {
-  return `${SShape.NAME} with ${SShape.SIDES} sides, area ${$displayF64(SShape.area(s))}`;
-}
-
-function total(shapes, SShape) {
-  return Math.imul(shapes.length, SShape.SIDES) >>> 0;
-}
-
-function fresh(TZero, TBump, TDebug) {
-  let a = TZero.ZERO;
-  const self = { value: a };
-  TBump.bump(self);
-  a = self.value;
-  return [a, TZero.ZERO];
-}
-
-function main() {
-  console.log("4 shape square 90");
-  console.log(`${describe([2], squareShape())} | ${describe([3], triangleShape())}`);
-  console.log(`${total([[1], [2]], squareShape())} ${describe([1], wrapShape())}`);
-  const arg = fresh(counterZero(), counterBump(), counterDebug());
-  const arg$1 = fresh(u32Zero(), u32Bump(), { fmt: (value) => String(value) });
-  console.log(
-    `(${counterDebug_fmt(arg[0])}, ${counterDebug_fmt(arg[1])}) (${arg$1[0]}, ${arg$1[1]})`,
-  );
-}
-
 export function entry() {
   main();
-}
-
-function squareShape_area(square) {
-  return square[0] * square[0];
-}
-
-function triangleShape_area(triangle) {
-  return (triangle[0] * triangle[0]) / 2;
-}
-
-function wrapShape_area(wrap) {
-  return 0;
-}
-
-function counterDebug_fmt(counter) {
-  return `Counter { n: ${counter.n} }`;
-}
-
-function counterBump_bump(counter) {
-  counter.n = (counter.n + 1) >>> 0;
-}
-
-function u32Bump_bump(self) {
-  self.value = (self.value + 1) >>> 0;
 }
 
 function squareShape() {
@@ -73,6 +22,10 @@ function squareShape() {
   return $squareShape;
 }
 
+function squareShape_area(square) {
+  return square[0] * square[0];
+}
+
 function triangleShape() {
   if ($triangleShape === undefined) {
     $triangleShape = { SIDES: 3, NAME: "shape", area: triangleShape_area };
@@ -80,11 +33,31 @@ function triangleShape() {
   return $triangleShape;
 }
 
+function triangleShape_area(triangle) {
+  return (triangle[0] * triangle[0]) / 2;
+}
+
+function describe(s, SShape) {
+  return `${SShape.NAME} with ${SShape.SIDES} sides, area ${$displayF64(SShape.area(s))}`;
+}
+
+function total(shapes, SShape) {
+  return Math.imul(shapes.length, SShape.SIDES) >>> 0;
+}
+
 function wrapShape() {
   if ($wrapShape === undefined) {
     $wrapShape = { SIDES: 0, NAME: "shape", area: wrapShape_area };
   }
   return $wrapShape;
+}
+
+function wrapShape_area(wrap) {
+  return 0;
+}
+
+function counterDebug_fmt(counter) {
+  return `Counter { n: ${counter.n} }`;
 }
 
 export function counterDebug() {
@@ -112,6 +85,10 @@ function counterBump() {
   return $counterBump;
 }
 
+function counterBump_bump(counter) {
+  counter.n = (counter.n + 1) >>> 0;
+}
+
 function u32Zero() {
   if ($u32Zero === undefined) {
     $u32Zero = { ZERO: 0 };
@@ -124,5 +101,28 @@ function u32Bump() {
     $u32Bump = { bump: u32Bump_bump };
   }
   return $u32Bump;
+}
+
+function u32Bump_bump(self) {
+  self.value = (self.value + 1) >>> 0;
+}
+
+function fresh(TZero, TBump, TDebug) {
+  let a = TZero.ZERO;
+  const self = { value: a };
+  TBump.bump(self);
+  a = self.value;
+  return [a, TZero.ZERO];
+}
+
+function main() {
+  console.log("4 shape square 90");
+  console.log(`${describe([2], squareShape())} | ${describe([3], triangleShape())}`);
+  console.log(`${total([[1], [2]], squareShape())} ${describe([1], wrapShape())}`);
+  const arg = fresh(counterZero(), counterBump(), counterDebug());
+  const arg$1 = fresh(u32Zero(), u32Bump(), { fmt: (value) => String(value) });
+  console.log(
+    `(${counterDebug_fmt(arg[0])}, ${counterDebug_fmt(arg[1])}) (${arg$1[0]}, ${arg$1[1]})`,
+  );
 }
 //# sourceMappingURL=case.js.map

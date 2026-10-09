@@ -4,6 +4,127 @@ import { $traitImpl } from "@rust-js/runtime";
 
 var $sinkTakeA, $relayTakeA, $wrapTakeNoisy, $keepTakeA;
 
+export function entry() {
+  main();
+}
+
+function noisyDrop_drop(noisy) {
+  console.log(`drop ${noisy[0]}`);
+}
+
+function sinkTakeA(dropA) {
+  if ($sinkTakeA === undefined) {
+    $sinkTakeA = new WeakMap();
+  }
+  return $traitImpl($sinkTakeA, [dropA], () => ({
+    take: (arg0, arg1) => sinkTakeA_take(arg0, arg1, dropA),
+    make: (arg0) => sinkTakeA_make(arg0, dropA),
+  }));
+}
+
+function sinkTakeA_take(sink, _a, dropA) {
+  try {
+    console.log("sink");
+    return 1;
+  } finally {
+    dropA?.(_a);
+  }
+}
+
+function sinkTakeA_make(_a, dropA) {
+  try {
+    return;
+  } finally {
+    dropA?.(_a);
+  }
+}
+
+function relayTakeA(STakeA, dropA, dropS) {
+  if ($relayTakeA === undefined) {
+    $relayTakeA = new WeakMap();
+  }
+  return $traitImpl($relayTakeA, [STakeA, dropA, dropS], () => ({
+    take: (arg0, arg1) => relayTakeA_take(arg0, arg1, STakeA, dropA, dropS),
+    make: (arg0) => relayTakeA_make(arg0, STakeA, dropA, dropS),
+    $drop: (relay) => {
+      dropS?.(relay[0]);
+    },
+  }));
+}
+
+function relayTakeA_take(relay, a, STakeA, dropA, dropS) {
+  let a$live = true;
+  try {
+    console.log("relay");
+    a$live = false;
+    return (STakeA.take(relay[0], a) + 1) & 255;
+  } finally {
+    if (a$live) {
+      dropA?.(a);
+    }
+  }
+}
+
+function relayTakeA_make(a, STakeA, dropA, dropS) {
+  return [STakeA.make(a)];
+}
+
+function wrapTakeNoisy(TDefault, dropT) {
+  if ($wrapTakeNoisy === undefined) {
+    $wrapTakeNoisy = new WeakMap();
+  }
+  return $traitImpl($wrapTakeNoisy, [TDefault, dropT], () => ({
+    take: (self, a) => {
+      let a$live = true;
+      try {
+        console.log("default");
+        a$live = false;
+        noisyDrop_drop?.(a);
+        return 0;
+      } finally {
+        if (a$live) {
+          noisyDrop_drop?.(a);
+        }
+      }
+    },
+    make: (arg0) => wrapTakeNoisy_make(arg0, TDefault, dropT),
+    $drop: (wrap$1) => {
+      dropT?.(wrap$1[0]);
+    },
+  }));
+}
+
+function wrapTakeNoisy_make(a, TDefault, dropT) {
+  try {
+    console.log(`make ${a[0]}`);
+    return [TDefault.default()];
+  } finally {
+    noisyDrop_drop(a);
+  }
+}
+
+function keepTakeA(dropA) {
+  if ($keepTakeA === undefined) {
+    $keepTakeA = new WeakMap();
+  }
+  return $traitImpl($keepTakeA, [dropA], () => ({
+    take: (arg0, arg1) => keepTakeA_take(arg0, arg1, dropA),
+    make: (arg0) => keepTakeA_make(arg0, dropA),
+  }));
+}
+
+function keepTakeA_take(keep, a, dropA) {
+  return 2;
+}
+
+function keepTakeA_make(_a, dropA) {
+  try {
+    return;
+  } finally {
+    dropA?.(_a);
+  }
+}
+
 function via(t, a, TTakeA) {
   return TTakeA.take(t, a);
 }
@@ -40,126 +161,5 @@ function main() {
       item.impl.$drop?.(item.value);
     }
   }
-}
-
-export function entry() {
-  main();
-}
-
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
-function sinkTakeA_take(sink, _a, dropA) {
-  try {
-    console.log("sink");
-    return 1;
-  } finally {
-    dropA?.(_a);
-  }
-}
-
-function sinkTakeA_make(_a, dropA) {
-  try {
-    return;
-  } finally {
-    dropA?.(_a);
-  }
-}
-
-function relayTakeA_take(relay, a, STakeA, dropA, dropS) {
-  let a$live = true;
-  try {
-    console.log("relay");
-    a$live = false;
-    return (STakeA.take(relay[0], a) + 1) & 255;
-  } finally {
-    if (a$live) {
-      dropA?.(a);
-    }
-  }
-}
-
-function relayTakeA_make(a, STakeA, dropA, dropS) {
-  return [STakeA.make(a)];
-}
-
-function wrapTakeNoisy_make(a, TDefault, dropT) {
-  try {
-    console.log(`make ${a[0]}`);
-    return [TDefault.default()];
-  } finally {
-    noisyDrop_drop(a);
-  }
-}
-
-function keepTakeA_take(keep, a, dropA) {
-  return 2;
-}
-
-function keepTakeA_make(_a, dropA) {
-  try {
-    return;
-  } finally {
-    dropA?.(_a);
-  }
-}
-
-function sinkTakeA(dropA) {
-  if ($sinkTakeA === undefined) {
-    $sinkTakeA = new WeakMap();
-  }
-  return $traitImpl($sinkTakeA, [dropA], () => ({
-    take: (arg0, arg1) => sinkTakeA_take(arg0, arg1, dropA),
-    make: (arg0) => sinkTakeA_make(arg0, dropA),
-  }));
-}
-
-function relayTakeA(STakeA, dropA, dropS) {
-  if ($relayTakeA === undefined) {
-    $relayTakeA = new WeakMap();
-  }
-  return $traitImpl($relayTakeA, [STakeA, dropA, dropS], () => ({
-    take: (arg0, arg1) => relayTakeA_take(arg0, arg1, STakeA, dropA, dropS),
-    make: (arg0) => relayTakeA_make(arg0, STakeA, dropA, dropS),
-    $drop: (relay) => {
-      dropS?.(relay[0]);
-    },
-  }));
-}
-
-function wrapTakeNoisy(TDefault, dropT) {
-  if ($wrapTakeNoisy === undefined) {
-    $wrapTakeNoisy = new WeakMap();
-  }
-  return $traitImpl($wrapTakeNoisy, [TDefault, dropT], () => ({
-    take: (self, a) => {
-      let a$live = true;
-      try {
-        console.log("default");
-        a$live = false;
-        noisyDrop_drop?.(a);
-        return 0;
-      } finally {
-        if (a$live) {
-          noisyDrop_drop?.(a);
-        }
-      }
-    },
-    make: (arg0) => wrapTakeNoisy_make(arg0, TDefault, dropT),
-    $drop: (wrap$1) => {
-      dropT?.(wrap$1[0]);
-    },
-  }));
-}
-
-function keepTakeA(dropA) {
-  if ($keepTakeA === undefined) {
-    $keepTakeA = new WeakMap();
-  }
-  return $traitImpl($keepTakeA, [dropA], () => ({
-    take: (arg0, arg1) => keepTakeA_take(arg0, arg1, dropA),
-    make: (arg0) => keepTakeA_make(arg0, dropA),
-  }));
 }
 //# sourceMappingURL=case.js.map

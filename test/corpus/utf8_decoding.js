@@ -11,6 +11,10 @@ import {
   $utf8Lossy,
 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function show(bytes) {
   const match = $fromUtf8(bytes);
   if (match.TAG === "Ok") {
@@ -71,9 +75,5 @@ function main() {
   console.log(`${owned}`);
   const euro = $utf8Decode([226, 130, 172]);
   console.log(`${euro} ${$fromUtf8($slice(inputs[2], 2, 3)).TAG === "Ok"}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

@@ -2,13 +2,13 @@
 
 import { $clampFloat, $debugF64, $displayF64 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   console.log(`${$displayF64($clampFloat(0.5, 0, 1, $debugF64))}`);
   const low = NaN;
   console.log(`${$displayF64($clampFloat(0.5, low, 1, $debugF64))}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

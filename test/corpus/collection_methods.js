@@ -17,6 +17,14 @@ import {
   $unwrap,
 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function pointDebug_fmt(point) {
+  return `Point { x: ${point.x} }`;
+}
+
 function main() {
   const v = [1, 2];
   $extend(v, [3, 4]);
@@ -121,13 +129,5 @@ function main() {
   const name = { value: "old" };
   const previous = $cellReplace(name, `${name.value}er`);
   console.log(`${previous} ${name.value}`);
-}
-
-export function entry() {
-  main();
-}
-
-function pointDebug_fmt(point) {
-  return `Point { x: ${point.x} }`;
 }
 //# sourceMappingURL=case.js.map

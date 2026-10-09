@@ -3,6 +3,10 @@
 import { HITS, hit } from "./counter.js";
 import { $debugStr } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 const NEXT_ID = { value: 1 };
 const READY = { value: false };
 const BIG = { value: 18446744073709551614n };
@@ -83,9 +87,5 @@ function main() {
   order(seen, "store");
   local.value = operand;
   console.log(`${local.value} [${seen.map((item) => $debugStr(item)).join(", ")}] 0`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

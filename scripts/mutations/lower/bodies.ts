@@ -154,4 +154,13 @@ export const mutations: Mutation[] = [
     replace: "            && self.body_facts.changed_after(id, self.thir[u].span)\n",
     tests: ["test/lowering.test.ts", "-t", "a closure copies only what may be set"],
   },
+  {
+    name: "function-span-signature",
+    breaks: "a function's span is its signature, so a `const` in its body is after it",
+    file: "src/lower/bodies.rs",
+    find: "                    self.tcx.hir_span_with_body(self.tcx.local_def_id_to_hir_id(local))\n",
+    replace: "                    self.tcx.def_span(local)\n",
+    tests: ["test/snapshots.test.ts", "-t", "consts: the generated JS"],
+    snapshots: true,
+  },
 ];

@@ -2,6 +2,10 @@
 
 import { $bigRange, $position, $range } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   const n = 5;
   console.log(`${$range(0, n).every((i) => i < 5)}`);
@@ -11,9 +15,5 @@ function main() {
   const arg$1 = $position($range(0, n), (i) => Math.imul(i, i) > 5);
   console.log(`${arg$1 == null ? "None" : `Some(${arg$1})`}`);
   console.log(`${$bigRange(0n, 3n).every((i) => i < 3n)}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

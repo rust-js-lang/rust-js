@@ -2,6 +2,14 @@
 
 import { $byteLen, $debugStr, $index } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function titlesDebug_fmt(titles$1) {
+  return `Titles { first: ${$debugStr(titles$1.first)}, count: ${titles$1.count} }`;
+}
+
 function titles() {
   return ["Note", "Pitfall"];
 }
@@ -18,13 +26,5 @@ function main() {
   );
   const titles$1 = kept();
   console.log(`${titlesDebug_fmt(titles$1)} ${($byteLen(titles$1.first) + titles$1.count) >>> 0}`);
-}
-
-export function entry() {
-  main();
-}
-
-function titlesDebug_fmt(titles$1) {
-  return `Titles { first: ${$debugStr(titles$1.first)}, count: ${titles$1.count} }`;
 }
 //# sourceMappingURL=case.js.map

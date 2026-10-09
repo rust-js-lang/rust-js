@@ -2,6 +2,29 @@
 
 var $enGreet;
 
+export function entry() {
+  main();
+}
+
+function enGreet() {
+  if ($enGreet === undefined) {
+    $enGreet = { hi: enGreet_hi };
+  }
+  return $enGreet;
+}
+
+function enGreet_hi(en) {
+  return "hello";
+}
+
+function double(x) {
+  return Math.imul(x, 2);
+}
+
+function triple(x) {
+  return Math.imul(x, 3);
+}
+
 const F = double;
 const G = (x) => (x + 1) | 0;
 
@@ -15,14 +38,6 @@ const GREETER = { impl: enGreet() };
 const SHOWN = { value: 42, impl: { fmt: String } };
 const ADD = (x) => (x + 10) | 0;
 
-function double(x) {
-  return Math.imul(x, 2);
-}
-
-function triple(x) {
-  return Math.imul(x, 3);
-}
-
 function main() {
   console.log(`${F(2)} ${G(2)}`);
   for (const [name, f] of TABLE) {
@@ -34,20 +49,5 @@ function main() {
     console.log(`${f$1(1)}`);
   }
   console.log(`${GREETER.impl.hi(GREETER.value)} ${SHOWN.impl.fmt(SHOWN.value)} ${ADD(1)}`);
-}
-
-export function entry() {
-  main();
-}
-
-function enGreet_hi(en) {
-  return "hello";
-}
-
-function enGreet() {
-  if ($enGreet === undefined) {
-    $enGreet = { hi: enGreet_hi };
-  }
-  return $enGreet;
 }
 //# sourceMappingURL=case.js.map

@@ -2,6 +2,14 @@
 
 import { $some } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function loudDrop_drop(loud) {
+  console.log(`drop ${loud[0]}`);
+}
+
 const Mapped = {
   earliest(mapped, dropT) {
     let mapped$Single$0$live = true;
@@ -189,13 +197,5 @@ function main() {
       loudDrop_drop(a);
     }
   }
-}
-
-export function entry() {
-  main();
-}
-
-function loudDrop_drop(loud) {
-  console.log(`drop ${loud[0]}`);
 }
 //# sourceMappingURL=case.js.map

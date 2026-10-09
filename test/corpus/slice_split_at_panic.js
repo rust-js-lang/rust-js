@@ -2,14 +2,14 @@
 
 import { $sliceSplitAt } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   const v = [1, 2];
   const at = (v.length + 1) >>> 0;
   const [before] = $sliceSplitAt(v, at);
   console.log(`${before.length}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

@@ -2,6 +2,10 @@
 
 var $flagsBitOr;
 
+export function entry() {
+  main();
+}
+
 function either(a, b, TBitOr) {
   return TBitOr.bitor(a, b);
 }
@@ -16,6 +20,21 @@ function shifted(value, by, TShlU32, TShrU32) {
 
 function shifted_far(value, by, TShlU64) {
   return TShlU64.shl(value, by);
+}
+
+function flagsDebug_fmt(flags) {
+  return `Flags(${flags[0]})`;
+}
+
+export function flagsBitOr() {
+  if ($flagsBitOr === undefined) {
+    $flagsBitOr = { bitor: flagsBitOr_bitor };
+  }
+  return $flagsBitOr;
+}
+
+function flagsBitOr_bitor(flags, other) {
+  return [flags[0] | other[0]];
 }
 
 function main() {
@@ -68,24 +87,5 @@ function main() {
   console.log(`${c} ${(a << Number(far & 63n)) >>> 0}`);
   const total = [1, 2, 4].reduce((all, bit) => all | bit, 0);
   console.log(`${total}`);
-}
-
-export function entry() {
-  main();
-}
-
-function flagsDebug_fmt(flags) {
-  return `Flags(${flags[0]})`;
-}
-
-function flagsBitOr_bitor(flags, other) {
-  return [flags[0] | other[0]];
-}
-
-export function flagsBitOr() {
-  if ($flagsBitOr === undefined) {
-    $flagsBitOr = { bitor: flagsBitOr_bitor };
-  }
-  return $flagsBitOr;
 }
 //# sourceMappingURL=case.js.map

@@ -4,6 +4,69 @@ import { $index } from "@rust-js/runtime";
 
 var $cCounter, $i32Counter, $i32Sub;
 
+export function entry() {
+  main();
+}
+
+function cDebug_fmt(c) {
+  return `C { n: ${c.n} }`;
+}
+
+function cCounter() {
+  if ($cCounter === undefined) {
+    $cCounter = {
+      bump: (arg0) => cCounter_bump(arg0.value),
+      get: cCounter_get,
+      twice: (self) => {
+        cCounter_bump(self.value);
+        cCounter_bump(self.value);
+      },
+    };
+  }
+  return $cCounter;
+}
+
+function cCounter_bump(c) {
+  c.n = (c.n + 1) | 0;
+}
+
+function cCounter_get(c) {
+  return c.n;
+}
+
+function i32Counter() {
+  if ($i32Counter === undefined) {
+    $i32Counter = {
+      bump: i32Counter_bump,
+      get: i32Counter_get,
+      twice: (self) => {
+        i32Counter_bump(self);
+        i32Counter_bump(self);
+      },
+    };
+  }
+  return $i32Counter;
+}
+
+function i32Counter_bump(self) {
+  self.value = (self.value + 10) | 0;
+}
+
+function i32Counter_get(self) {
+  return self;
+}
+
+function i32Sub() {
+  if ($i32Sub === undefined) {
+    $i32Sub = { Counter: () => i32Counter(), name: i32Sub_name };
+  }
+  return $i32Sub;
+}
+
+function i32Sub_name(self) {
+  return `i${self}`;
+}
+
 function up(s) {
   return {
     impl: s.impl.Counter(),
@@ -75,68 +138,5 @@ function main() {
   const tmp$1 = receiver$1.impl.get(receiver$1.value);
   const receiver$2 = $index(list, 1);
   console.log(`${tmp} ${tmp$1} ${receiver$2.impl.get(receiver$2.value)}`);
-}
-
-export function entry() {
-  main();
-}
-
-function cDebug_fmt(c) {
-  return `C { n: ${c.n} }`;
-}
-
-function cCounter_bump(c) {
-  c.n = (c.n + 1) | 0;
-}
-
-function cCounter_get(c) {
-  return c.n;
-}
-
-function i32Counter_bump(self) {
-  self.value = (self.value + 10) | 0;
-}
-
-function i32Counter_get(self) {
-  return self;
-}
-
-function i32Sub_name(self) {
-  return `i${self}`;
-}
-
-function cCounter() {
-  if ($cCounter === undefined) {
-    $cCounter = {
-      bump: (arg0) => cCounter_bump(arg0.value),
-      get: cCounter_get,
-      twice: (self) => {
-        cCounter_bump(self.value);
-        cCounter_bump(self.value);
-      },
-    };
-  }
-  return $cCounter;
-}
-
-function i32Counter() {
-  if ($i32Counter === undefined) {
-    $i32Counter = {
-      bump: i32Counter_bump,
-      get: i32Counter_get,
-      twice: (self) => {
-        i32Counter_bump(self);
-        i32Counter_bump(self);
-      },
-    };
-  }
-  return $i32Counter;
-}
-
-function i32Sub() {
-  if ($i32Sub === undefined) {
-    $i32Sub = { Counter: () => i32Counter(), name: i32Sub_name };
-  }
-  return $i32Sub;
 }
 //# sourceMappingURL=case.js.map

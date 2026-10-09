@@ -4,6 +4,56 @@ import { $debugStr } from "@rust-js/runtime";
 
 var $noisyDebug, $logStore;
 
+export function entry() {
+  main();
+}
+
+function noisyDebug_fmt(noisy) {
+  return `Noisy(${$debugStr(noisy[0])})`;
+}
+
+export function noisyDebug() {
+  if ($noisyDebug === undefined) {
+    $noisyDebug = { fmt: noisyDebug_fmt, $drop: noisyDrop_drop };
+  }
+  return $noisyDebug;
+}
+
+function noisyDrop_drop(noisy) {
+  console.log(`drop ${noisy[0]}`);
+}
+
+function logStore() {
+  if ($logStore === undefined) {
+    $logStore = {
+      put: (arg0, arg1, TDebug, dropT) => logStore_put(arg0.value, arg1, TDebug, dropT),
+      put_all: (arg0, arg1, dropI) => logStore_put_all(arg0.value, arg1, dropI),
+      keep: (self, item, TDebug$1) => {
+        const arg = `kept ${TDebug$1.fmt(item)}`;
+        logStore_put(self.value, arg, { fmt: (value) => $debugStr(value) });
+        return item;
+      },
+    };
+  }
+  return $logStore;
+}
+
+function logStore_put(log, item, TDebug, dropT) {
+  try {
+    log[0].push(TDebug.fmt(item));
+    console.log(`put ${log[0].length}`);
+    return log[0].length;
+  } finally {
+    dropT?.(item);
+  }
+}
+
+function logStore_put_all(log, items, dropI) {
+  for (const item of items) {
+    log[0].push(item);
+  }
+}
+
 function fill(store, SStore) {
   SStore.put(store, 1, { fmt: (value) => String(value) });
   SStore.put(store, ["through a dictionary"], noisyDebug(), noisyDrop_drop);
@@ -25,55 +75,5 @@ function main() {
   log = store.value;
   logStore_put_all(log, ["a", "b"]);
   console.log(`[${log[0].map((item) => $debugStr(item)).join(", ")}]`);
-}
-
-export function entry() {
-  main();
-}
-
-function noisyDebug_fmt(noisy) {
-  return `Noisy(${$debugStr(noisy[0])})`;
-}
-
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
-function logStore_put(log, item, TDebug, dropT) {
-  try {
-    log[0].push(TDebug.fmt(item));
-    console.log(`put ${log[0].length}`);
-    return log[0].length;
-  } finally {
-    dropT?.(item);
-  }
-}
-
-function logStore_put_all(log, items, dropI) {
-  for (const item of items) {
-    log[0].push(item);
-  }
-}
-
-export function noisyDebug() {
-  if ($noisyDebug === undefined) {
-    $noisyDebug = { fmt: noisyDebug_fmt, $drop: noisyDrop_drop };
-  }
-  return $noisyDebug;
-}
-
-function logStore() {
-  if ($logStore === undefined) {
-    $logStore = {
-      put: (arg0, arg1, TDebug, dropT) => logStore_put(arg0.value, arg1, TDebug, dropT),
-      put_all: (arg0, arg1, dropI) => logStore_put_all(arg0.value, arg1, dropI),
-      keep: (self, item, TDebug$1) => {
-        const arg = `kept ${TDebug$1.fmt(item)}`;
-        logStore_put(self.value, arg, { fmt: (value) => $debugStr(value) });
-        return item;
-      },
-    };
-  }
-  return $logStore;
 }
 //# sourceMappingURL=case.js.map

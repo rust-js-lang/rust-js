@@ -15,6 +15,10 @@ import {
   $unwrap,
 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   const line = "a=b=c";
   console.log(
@@ -101,9 +105,5 @@ function main() {
     total = (total + (($byteLen($unwrap($next(kv))) + $byteLen($next(kv) ?? "")) >>> 0)) >>> 0;
   }
   console.log(`${total}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

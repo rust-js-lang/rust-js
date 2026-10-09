@@ -2,13 +2,13 @@
 
 import { $debugDuration, $durationNew } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   console.log(`${$debugDuration($durationNew(18446744073709551615n, 999999999))}`);
   const d = $durationNew(18446744073709551615n, 1000000000);
   console.log(`${$debugDuration(d)}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

@@ -4,6 +4,14 @@ import { $parseInt, $some, $someValue, $stripPrefix } from "@rust-js/runtime";
 
 var $dNamed;
 
+export function entry() {
+  main();
+}
+
+function dDrop_drop(d) {
+  console.log(`drop ${d[0]}`);
+}
+
 function make(n) {
   if (n > 0) {
     return [n];
@@ -44,6 +52,19 @@ function found(value, fallback, dropT) {
     mapped = fallback;
   }
   return mapped;
+}
+
+function dNamed() {
+  if ($dNamed === undefined) {
+    $dNamed = { from_name: dNamed_from_name, $drop: dDrop_drop };
+  }
+  return $dNamed;
+}
+
+function dNamed_from_name(name) {
+  const result = $parseInt(name, 0, 4294967295);
+  const value = result.TAG === "Ok" ? result._0 : undefined;
+  return value != null ? [value] : undefined;
 }
 
 function parse(name, BNamed, dropB) {
@@ -601,26 +622,5 @@ function main() {
       dDrop_drop(kept);
     }
   }
-}
-
-export function entry() {
-  main();
-}
-
-function dDrop_drop(d) {
-  console.log(`drop ${d[0]}`);
-}
-
-function dNamed_from_name(name) {
-  const result = $parseInt(name, 0, 4294967295);
-  const value = result.TAG === "Ok" ? result._0 : undefined;
-  return value != null ? [value] : undefined;
-}
-
-function dNamed() {
-  if ($dNamed === undefined) {
-    $dNamed = { from_name: dNamed_from_name, $drop: dDrop_drop };
-  }
-  return $dNamed;
 }
 //# sourceMappingURL=case.js.map

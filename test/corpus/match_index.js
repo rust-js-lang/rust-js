@@ -2,16 +2,14 @@
 
 import { $index } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 const VARIANTS = {
   note: { title: "Note", depth: 1 },
   pitfall: { title: "Pitfall", depth: 2 },
   rsc: { title: "React Server Components", depth: 3 },
-};
-
-const OTHER = {
-  note: { title: "Other note", depth: 4 },
-  pitfall: { title: "Other pitfall", depth: 5 },
-  rsc: { title: "Other RSC", depth: 6 },
 };
 
 function variant(kind) {
@@ -44,6 +42,12 @@ function crossed(kind) {
   return tmp;
 }
 
+const OTHER = {
+  note: { title: "Other note", depth: 4 },
+  pitfall: { title: "Other pitfall", depth: 5 },
+  rsc: { title: "Other RSC", depth: 6 },
+};
+
 function mixed(kind) {
   let tmp;
   if (kind === "note") {
@@ -62,9 +66,5 @@ function main() {
     console.log(`${v.title} ${v.depth} ${crossed(kind).title} ${mixed(kind).title}`);
   }
   console.log(`${picked(4).title} ${titled("rsc")}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

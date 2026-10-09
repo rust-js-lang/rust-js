@@ -2,12 +2,6 @@
 
 import { $debugStr, $pretty } from "@rust-js/runtime";
 
-function main() {
-  const shape = { TAG: "Dot", _0: { x: 1, tags: ["a", "b"] } };
-  console.log(`${shapeDebug_fmt(shape, { alternate: true })}`);
-  console.log(`${shapeDebug_fmt("Empty")} ${shapeDebug_fmt("Empty", { alternate: true })}`);
-}
-
 export function entry() {
   main();
 }
@@ -35,5 +29,11 @@ function shapeDebug_fmt(shape, options) {
     f += "Empty";
   }
   return f;
+}
+
+function main() {
+  const shape = { TAG: "Dot", _0: { x: 1, tags: ["a", "b"] } };
+  console.log(`${shapeDebug_fmt(shape, { alternate: true })}`);
+  console.log(`${shapeDebug_fmt("Empty")} ${shapeDebug_fmt("Empty", { alternate: true })}`);
 }
 //# sourceMappingURL=case.js.map

@@ -2,13 +2,13 @@
 
 import { $debugUtf8Error, $fromUtf8, $unwrapOk } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   const bytes = [97, 255];
   const text = $unwrapOk($fromUtf8(bytes), undefined, $debugUtf8Error);
   console.log(`${text}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

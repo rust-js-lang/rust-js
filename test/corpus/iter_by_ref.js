@@ -2,6 +2,10 @@
 
 import { $debugStr, $iter, $iterator, $rest } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function split_number(text) {
   const cs = $iter(Array.from(text).map((x, i) => [i, x]));
   let digits = "";
@@ -29,6 +33,27 @@ function split_mut(text) {
   return [head, $rest(cs).length];
 }
 
+function namesIterator_next(names) {
+  const all = [
+    ["A", 1],
+    ["B", 2],
+    ["AB", 3],
+    ["C", 4],
+  ];
+  const item = all[names.at];
+  names.at = (names.at + 1) >>> 0;
+  return item;
+}
+
+function equalNamesIterator_next(equalNames) {
+  for (const [n, bits] of $iterator(equalNames.inner, namesIterator_next)) {
+    if (bits === equalNames.bits) {
+      return n;
+    }
+  }
+  return;
+}
+
 function main() {
   const arg = split_number("12e34");
   const arg$1 = split_number("7");
@@ -50,30 +75,5 @@ function main() {
   console.log(
     `${arg$4 == null ? "None" : `Some((${$debugStr(arg$4[0])}, ${arg$4[1]}))`} ${all.at}`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function namesIterator_next(names) {
-  const all = [
-    ["A", 1],
-    ["B", 2],
-    ["AB", 3],
-    ["C", 4],
-  ];
-  const item = all[names.at];
-  names.at = (names.at + 1) >>> 0;
-  return item;
-}
-
-function equalNamesIterator_next(equalNames) {
-  for (const [n, bits] of $iterator(equalNames.inner, namesIterator_next)) {
-    if (bits === equalNames.bits) {
-      return n;
-    }
-  }
-  return;
 }
 //# sourceMappingURL=case.js.map

@@ -2,6 +2,25 @@
 
 import { $debugF64, $debugStr, $displayF32, $eq, $index, $zip } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function metersDebug_fmt(meters) {
+  return `Meters(${$debugF64(meters[0])})`;
+}
+
+function pairDebug_fmt(pair) {
+  return `Pair(${pair[0]}, ${$debugStr(pair[1])})`;
+}
+
+function shapeDebug_fmt(shape) {
+  if (shape.TAG === "Circle") {
+    return `Circle(${$debugF64(shape._0)})`;
+  }
+  return `Rect(${$debugF64(shape._0)}, ${$debugF64(shape._1)})`;
+}
+
 function apply(f, x) {
   return f(x);
 }
@@ -38,24 +57,5 @@ function main() {
   console.log(
     `${$displayF32(Math.fround($index(single, 0) * $index(single, 0)))} ${Math.fround($index(single, 0) * $index(single, 0)) === 2}`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function metersDebug_fmt(meters) {
-  return `Meters(${$debugF64(meters[0])})`;
-}
-
-function pairDebug_fmt(pair) {
-  return `Pair(${pair[0]}, ${$debugStr(pair[1])})`;
-}
-
-function shapeDebug_fmt(shape) {
-  if (shape.TAG === "Circle") {
-    return `Circle(${$debugF64(shape._0)})`;
-  }
-  return `Rect(${$debugF64(shape._0)}, ${$debugF64(shape._1)})`;
 }
 //# sourceMappingURL=case.js.map

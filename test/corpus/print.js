@@ -2,6 +2,10 @@
 
 import { $eprint, $pad, $print } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   const n = 7;
   console.log("hello");
@@ -19,9 +23,5 @@ function main() {
   const name = "x";
   console.log(`${$pad(name, 5, ">")}|${"12".padEnd(4)}|${$pad("mid", 7, "^")}|`);
   console.log('tab	quote" backslash\\ unicode é 🦀');
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

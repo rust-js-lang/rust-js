@@ -2,6 +2,10 @@
 
 import { $iter, $max, $next, $position, $range } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function tens(v) {
   return v.map((x) => Math.imul(x, 10));
 }
@@ -41,9 +45,5 @@ function main() {
   console.log(
     `${arg$10 == null ? "None" : `Some(${arg$10})`} ${arg$11 == null ? "None" : `Some(${arg$11})`}`,
   );
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

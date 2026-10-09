@@ -4,6 +4,10 @@ import { $bigDiv, $bigRem, $debugF64, $displayF64, $div, $rem } from "@rust-js/r
 
 var $v2Add, $v2Mul, $v2Neg, $metersMulF64, $f64MulV2;
 
+export function entry() {
+  main();
+}
+
 function total(values, zero, TAdd, TCopy) {
   let sum = TCopy.copy(zero);
   for (const item of values) {
@@ -26,6 +30,65 @@ function flip(x, TNeg) {
 
 function invert(x, TNot) {
   return TNot.not(x);
+}
+
+function v2Debug_fmt(v2) {
+  return `V2 { x: ${$debugF64(v2.x)}, y: ${$debugF64(v2.y)} }`;
+}
+
+export function v2Add() {
+  if ($v2Add === undefined) {
+    $v2Add = { add: v2Add_add };
+  }
+  return $v2Add;
+}
+
+function v2Add_add(v2, o) {
+  return { x: v2.x + o.x, y: v2.y + o.y };
+}
+
+export function v2Mul() {
+  if ($v2Mul === undefined) {
+    $v2Mul = { mul: v2Mul_mul };
+  }
+  return $v2Mul;
+}
+
+function v2Mul_mul(v2, o) {
+  return { x: v2.x * o.x, y: v2.y * o.y };
+}
+
+export function v2Neg() {
+  if ($v2Neg === undefined) {
+    $v2Neg = { neg: v2Neg_neg };
+  }
+  return $v2Neg;
+}
+
+function v2Neg_neg(v2) {
+  return { x: -v2.x, y: -v2.y };
+}
+
+export function metersMulF64() {
+  if ($metersMulF64 === undefined) {
+    $metersMulF64 = { mul: metersMulF64_mul };
+  }
+  return $metersMulF64;
+}
+
+function metersMulF64_mul(meters, k) {
+  return [meters[0] * k];
+}
+
+export function f64MulV2() {
+  if ($f64MulV2 === undefined) {
+    $f64MulV2 = { mul: f64MulV2_mul };
+  }
+  return $f64MulV2;
+}
+
+function f64MulV2_mul(self, v) {
+  return { x: self * v.x, y: self * v.y };
 }
 
 function times(k, v, KMulV2) {
@@ -79,68 +142,5 @@ function main() {
   console.log(
     `${$displayF64(scaled([2], 1.5, metersMulF64())[0])} ${v2Debug_fmt(times(3, v, f64MulV2()))}`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function v2Debug_fmt(v2) {
-  return `V2 { x: ${$debugF64(v2.x)}, y: ${$debugF64(v2.y)} }`;
-}
-
-function v2Add_add(v2, o) {
-  return { x: v2.x + o.x, y: v2.y + o.y };
-}
-
-function v2Mul_mul(v2, o) {
-  return { x: v2.x * o.x, y: v2.y * o.y };
-}
-
-function v2Neg_neg(v2) {
-  return { x: -v2.x, y: -v2.y };
-}
-
-function metersMulF64_mul(meters, k) {
-  return [meters[0] * k];
-}
-
-function f64MulV2_mul(self, v) {
-  return { x: self * v.x, y: self * v.y };
-}
-
-export function v2Add() {
-  if ($v2Add === undefined) {
-    $v2Add = { add: v2Add_add };
-  }
-  return $v2Add;
-}
-
-export function v2Mul() {
-  if ($v2Mul === undefined) {
-    $v2Mul = { mul: v2Mul_mul };
-  }
-  return $v2Mul;
-}
-
-export function v2Neg() {
-  if ($v2Neg === undefined) {
-    $v2Neg = { neg: v2Neg_neg };
-  }
-  return $v2Neg;
-}
-
-export function metersMulF64() {
-  if ($metersMulF64 === undefined) {
-    $metersMulF64 = { mul: metersMulF64_mul };
-  }
-  return $metersMulF64;
-}
-
-export function f64MulV2() {
-  if ($f64MulV2 === undefined) {
-    $f64MulV2 = { mul: f64MulV2_mul };
-  }
-  return $f64MulV2;
 }
 //# sourceMappingURL=case.js.map

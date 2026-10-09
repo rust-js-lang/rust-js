@@ -2,13 +2,13 @@
 
 import { $wrappingRem } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   console.log(`${$wrappingRem(-2147483648, -1, -2147483648)}`);
   const zero = 0;
   console.log(`${$wrappingRem(7, zero, -2147483648)}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

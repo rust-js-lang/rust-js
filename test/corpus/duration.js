@@ -10,6 +10,10 @@ import {
   $durationSub,
 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   const d = $durationNew(5n, 1500000000);
   console.log(
@@ -57,9 +61,5 @@ function main() {
   console.log(
     `${$debugDuration(1n * 1000000000n)} ${$debugDuration(10n * 1000000n)} ${$debugDuration($durationNew(3n, 40))}`,
   );
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

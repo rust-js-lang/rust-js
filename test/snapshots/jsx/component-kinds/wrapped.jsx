@@ -2,11 +2,6 @@
 
 import { createContext, forwardRef, lazy, memo } from "react";
 
-export const MEMO = memo(Card);
-export const LAZY = lazy(() => import("./lazy.jsx"));
-export const FORWARD = forwardRef(Input);
-export const THEME = createContext("light");
-
 export function Card(p) {
   return <b>{p.label}</b>;
 }
@@ -18,4 +13,9 @@ export function Provider() {
 export function Input(p, _) {
   return <b>{p.label}</b>;
 }
+
+export const MEMO = memo(Card);
+export const LAZY = lazy(() => import("./lazy.jsx"));
+export const FORWARD = forwardRef(Input);
+export const THEME = createContext("light");
 //# sourceMappingURL=wrapped.jsx.map

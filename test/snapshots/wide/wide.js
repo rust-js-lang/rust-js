@@ -34,6 +34,18 @@ import {
   $zeroPad,
 } from "@rust-js/runtime";
 
+function idDebug_fmt(id) {
+  return `Id(${id[0]})`;
+}
+
+function idSerialize_serialize(id, json) {
+  json.int(id[0]);
+}
+
+function idDeserialize_deserialize(json) {
+  return [$json.u64(json)];
+}
+
 export const Id = {
   new(millis, worker, sequence) {
     const worker$1 = BigInt(worker & 1023);
@@ -62,6 +74,33 @@ export function fnv1a(text) {
     hash = BigInt.asUintN(64, hash * 1099511628211n);
   }
   return hash;
+}
+
+function paymentDebug_fmt(payment) {
+  return `Payment { id: ${idDebug_fmt(payment.id)}, cents: ${payment.cents}, at: ${payment.at} }`;
+}
+
+function paymentSerialize_serialize(payment, json) {
+  json.beginObject();
+  json.key("id");
+  idSerialize_serialize(payment.id, json);
+  json.key("cents");
+  json.int(payment.cents);
+  json.key("at");
+  json.int(payment.at);
+  json.endObject();
+}
+
+function paymentDeserialize_deserialize(json) {
+  return json.struct(
+    "struct Payment",
+    [
+      ["id", idDeserialize_deserialize],
+      ["cents", $json.i64],
+      ["at", $json.i64],
+    ],
+    ([id, cents, at]) => ({ id, cents, at }),
+  );
 }
 
 export function balances(entries) {
@@ -177,44 +216,5 @@ export function panics(i) {
   return $unwrapOk($parseBig("x", -9223372036854775808n, 9223372036854775807n), undefined, (e) =>
     $debugParseError(e, "ParseIntError"),
   );
-}
-
-function idDebug_fmt(id) {
-  return `Id(${id[0]})`;
-}
-
-function paymentDebug_fmt(payment) {
-  return `Payment { id: ${idDebug_fmt(payment.id)}, cents: ${payment.cents}, at: ${payment.at} }`;
-}
-
-function paymentSerialize_serialize(payment, json) {
-  json.beginObject();
-  json.key("id");
-  idSerialize_serialize(payment.id, json);
-  json.key("cents");
-  json.int(payment.cents);
-  json.key("at");
-  json.int(payment.at);
-  json.endObject();
-}
-
-function paymentDeserialize_deserialize(json) {
-  return json.struct(
-    "struct Payment",
-    [
-      ["id", idDeserialize_deserialize],
-      ["cents", $json.i64],
-      ["at", $json.i64],
-    ],
-    ([id, cents, at]) => ({ id, cents, at }),
-  );
-}
-
-function idSerialize_serialize(id, json) {
-  json.int(id[0]);
-}
-
-function idDeserialize_deserialize(json) {
-  return [$json.u64(json)];
 }
 //# sourceMappingURL=wide.js.map

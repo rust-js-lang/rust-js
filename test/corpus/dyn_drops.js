@@ -4,6 +4,67 @@ import { $traitImpl } from "@rust-js/runtime";
 
 var $noisyShape, $quietShape, $wrapShape, $loudDebug;
 
+export function entry() {
+  main();
+}
+
+function noisyDrop_drop(noisy) {
+  console.log(`drop ${noisy[0]}`);
+}
+
+function noisyShape() {
+  if ($noisyShape === undefined) {
+    $noisyShape = { name: noisyShape_name, $drop: noisyDrop_drop };
+  }
+  return $noisyShape;
+}
+
+function noisyShape_name(noisy) {
+  return `noisy ${noisy[0]}`;
+}
+
+function quietShape() {
+  if ($quietShape === undefined) {
+    $quietShape = { name: quietShape_name };
+  }
+  return $quietShape;
+}
+
+function quietShape_name(quiet) {
+  return `quiet ${quiet[0]}`;
+}
+
+function wrapShape(TDebug, dropT) {
+  if ($wrapShape === undefined) {
+    $wrapShape = new WeakMap();
+  }
+  return $traitImpl($wrapShape, [TDebug, dropT], () => ({
+    name: (arg0) => wrapShape_name(arg0, TDebug, dropT),
+    $drop: (wrap) => {
+      dropT?.(wrap[0]);
+    },
+  }));
+}
+
+function wrapShape_name(wrap, TDebug, dropT) {
+  return `wrap ${TDebug.fmt(wrap[0])}`;
+}
+
+function loudDebug_fmt(loud) {
+  return `Loud(${loud[0]})`;
+}
+
+export function loudDebug() {
+  if ($loudDebug === undefined) {
+    $loudDebug = { fmt: loudDebug_fmt, $drop: loudDrop_drop };
+  }
+  return $loudDebug;
+}
+
+function loudDrop_drop(loud) {
+  console.log(`drop loud ${loud[0]}`);
+}
+
 function consume(shape) {
   try {
     return shape.impl.name(shape.value);
@@ -93,66 +154,5 @@ function main() {
       }
     }
   }
-}
-
-export function entry() {
-  main();
-}
-
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
-function noisyShape_name(noisy) {
-  return `noisy ${noisy[0]}`;
-}
-
-function quietShape_name(quiet) {
-  return `quiet ${quiet[0]}`;
-}
-
-function wrapShape_name(wrap, TDebug, dropT) {
-  return `wrap ${TDebug.fmt(wrap[0])}`;
-}
-
-function loudDebug_fmt(loud) {
-  return `Loud(${loud[0]})`;
-}
-
-function loudDrop_drop(loud) {
-  console.log(`drop loud ${loud[0]}`);
-}
-
-function noisyShape() {
-  if ($noisyShape === undefined) {
-    $noisyShape = { name: noisyShape_name, $drop: noisyDrop_drop };
-  }
-  return $noisyShape;
-}
-
-function quietShape() {
-  if ($quietShape === undefined) {
-    $quietShape = { name: quietShape_name };
-  }
-  return $quietShape;
-}
-
-function wrapShape(TDebug, dropT) {
-  if ($wrapShape === undefined) {
-    $wrapShape = new WeakMap();
-  }
-  return $traitImpl($wrapShape, [TDebug, dropT], () => ({
-    name: (arg0) => wrapShape_name(arg0, TDebug, dropT),
-    $drop: (wrap) => {
-      dropT?.(wrap[0]);
-    },
-  }));
-}
-
-export function loudDebug() {
-  if ($loudDebug === undefined) {
-    $loudDebug = { fmt: loudDebug_fmt, $drop: loudDrop_drop };
-  }
-  return $loudDebug;
 }
 //# sourceMappingURL=case.js.map

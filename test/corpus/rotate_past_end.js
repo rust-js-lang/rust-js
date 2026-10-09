@@ -2,14 +2,14 @@
 
 import { $rotateLeft } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   const v = [1, 2, 3];
   $rotateLeft(v, 2, "mid");
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
   $rotateLeft(v, 4, "mid");
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

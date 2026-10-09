@@ -2,6 +2,14 @@
 
 import { $debugStr } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function pointDebug_fmt(point) {
+  return `Point { x: ${point.x} }`;
+}
+
 function main() {
   const names = ["a", "b"];
   const owned = names.map((s) => s + "!");
@@ -28,13 +36,5 @@ function main() {
   console.log(
     `[${seen.map((item) => String(item)).join(", ")}] [${arg.map((item) => String(item)).join(", ")}]`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function pointDebug_fmt(point) {
-  return `Point { x: ${point.x} }`;
 }
 //# sourceMappingURL=case.js.map

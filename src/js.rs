@@ -8,7 +8,7 @@
 //! Every node carries a `Span`: byte offsets into the Rust source file. That
 //! is what lets the source map point from JS back to Rust.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 /// Byte offsets `lo..hi` into the Rust source file. `Span::NONE` (empty)
 /// means "no mapping": oxc skips empty spans when building the source map.
@@ -40,14 +40,9 @@ pub struct Module {
     /// What it imports of `@rust-js/runtime`, sorted: the helpers its
     /// prepared tree reads (ADR 0103), chosen before it's printed.
     pub helpers: Vec<&'static str>,
-    /// Types' methods, before the `const`s, whose values may call them.
-    pub namespaces: Vec<Namespace>,
-    /// `const` items, with the values rustc computed (ADR 0031).
-    pub consts: Vec<Const>,
-    /// What it runs when it's loaded, `js::on_load!`'s, after its `const`s
-    /// (ADR 0267).
-    pub statements: Vec<Stmt>,
-    pub functions: Vec<Function>,
+    /// Its items, where its Rust has them, what's made when it's loaded
+    /// after what that reads (ADR 0306).
+    pub items: Vec<Item>,
     /// Lazy trait dictionary caches. `var` without an initializer is cycle-safe.
     pub caches: Vec<String>,
     /// `export default page;`, after its functions (ADR 0192).
@@ -55,17 +50,9 @@ pub struct Module {
 }
 
 impl Module {
-    /// Each expression in it, outermost first: its functions', its types'
-    /// methods', its `const`s' and its statements'.
+    /// Each expression in it, outermost first, item by item.
     pub fn each_expr_mut(&mut self, f: &mut dyn FnMut(&mut Expr)) {
-        let methods = self.namespaces.iter_mut().flat_map(|n| n.methods.iter_mut());
-        for function in self.functions.iter_mut().chain(methods) {
-            each_expr_mut(&mut function.body, f);
-        }
-        for constant in &mut self.consts {
-            constant.value.each_mut(f);
-        }
-        each_expr_mut(&mut self.statements, f);
+        each_item_expr_mut(&mut self.items, f);
     }
 
     /// Each variable its code reads, a helper's `$cmp` or its own: what it
@@ -76,13 +63,9 @@ impl Module {
         let mut read = |name| {
             vars.insert(name);
         };
-        for function in self.namespaces.iter().flat_map(|n| &n.methods).chain(&self.functions) {
-            visit_stmts(&function.body, &mut read);
+        for item in &self.items {
+            item.visit_vars(&mut read);
         }
-        for constant in &self.consts {
-            constant.value.visit_vars(&mut read);
-        }
-        visit_stmts(&self.statements, &mut read);
         vars
     }
 }
@@ -274,6 +257,154 @@ pub fn visit_stmts<'a>(stmts: &'a [Stmt], read: &mut dyn FnMut(&'a str)) {
                 visit_stmts(finally, read);
             }
             StmtKind::Break(_) | StmtKind::Continue(_) => {}
+        }
+    }
+}
+
+/// A module's item.
+pub enum Item {
+    /// A type's methods, before what's made when it's loaded calls them.
+    Namespace(Namespace),
+    /// A `const`, with the value rustc computed (ADR 0031), or a
+    /// thread-local's (ADR 0037).
+    Const(Const),
+    /// What it runs when it's loaded, one `js::on_load!`'s (ADR 0267).
+    Statements(Vec<Stmt>),
+    Function(Function),
+}
+
+impl Item {
+    /// Its functions: itself, or a type's methods.
+    pub fn functions_mut(&mut self) -> impl Iterator<Item = &mut Function> {
+        let (function, methods) = match self {
+            Item::Function(function) => (Some(function), None),
+            Item::Namespace(namespace) => (None, Some(namespace.methods.iter_mut())),
+            Item::Const(_) | Item::Statements(_) => (None, None),
+        };
+        function.into_iter().chain(methods.into_iter().flatten())
+    }
+
+    /// Each variable it reads, its functions' bodies' too.
+    pub fn visit_vars<'a>(&'a self, read: &mut dyn FnMut(&'a str)) {
+        match self {
+            Item::Namespace(namespace) => namespace.methods.iter().for_each(|m| visit_stmts(&m.body, read)),
+            Item::Const(constant) => constant.value.visit_vars(read),
+            Item::Statements(stmts) => visit_stmts(stmts, read),
+            Item::Function(function) => visit_stmts(&function.body, read),
+        }
+    }
+
+    /// Where its Rust is, of what's in the crate's sources.
+    fn spans(&self) -> Vec<Span> {
+        let spans: Vec<Span> = match self {
+            Item::Namespace(namespace) => namespace.methods.iter().map(|m| m.span).collect(),
+            Item::Const(constant) => vec![constant.span],
+            Item::Statements(stmts) => stmts.iter().map(|s| s.span).collect(),
+            Item::Function(function) => vec![function.span],
+        };
+        spans.into_iter().filter(|span| !span.is_none()).collect()
+    }
+
+    /// The variable it declares at its module's top that another item can
+    /// read: a `const`'s, a type's.
+    pub fn declared(&self) -> Option<&str> {
+        match self {
+            Item::Namespace(Namespace { name, .. }) | Item::Const(Const { name, .. }) => Some(name),
+            Item::Statements(_) | Item::Function(_) => None,
+        }
+    }
+}
+
+/// `items` where their Rust has them, each made when its module loads
+/// after the `const`s and types it reads, the functions' it calls read
+/// too, closures' too: JS throws on a `const` read before it's made, where
+/// Rust's thread-locals are made when first read. Of a cycle, the first
+/// written comes first (ADR 0306).
+pub fn in_load_order(items: Vec<Item>) -> Vec<Item> {
+    // Where each is written: one in another, a `const` in a function's
+    // body, just before it; one without a place, beside the one before it.
+    let spans: Vec<Vec<Span>> = items.iter().map(Item::spans).collect();
+    let around = |inner: Span| {
+        (spans.iter().flatten())
+            .filter(|outer| outer.lo <= inner.lo && inner.hi <= outer.hi && **outer != inner)
+            .map(|outer| outer.lo)
+            .min()
+    };
+    let mut at = (0, false, 0);
+    let keys: Vec<(u32, bool, u32)> = (spans.iter())
+        .map(|spans| {
+            if let Some(&own) = spans.iter().min_by_key(|span| span.lo) {
+                at = match around(own) {
+                    Some(outer) => (outer, false, own.lo),
+                    None => (own.lo, true, own.lo),
+                };
+            }
+            at
+        })
+        .collect();
+    let mut placed: Vec<((u32, bool, u32), Item)> = keys.into_iter().zip(items).collect();
+    placed.sort_by_key(|(at, _)| *at);
+    let mut items: Vec<Option<Item>> = placed.into_iter().map(|(_, item)| Some(item)).collect();
+
+    let order = {
+        let items: Vec<&Item> = items.iter().flatten().collect();
+        let declaring: HashMap<&str, usize> = (items.iter().enumerate())
+            .filter_map(|(i, item)| Some((item.declared()?, i)))
+            .collect();
+        let called: HashMap<&str, &Item> = (items.iter())
+            .filter_map(|item| match item {
+                Item::Function(function) => Some((function.name.as_str(), *item)),
+                Item::Namespace(namespace) => Some((namespace.name.as_str(), *item)),
+                Item::Const(_) | Item::Statements(_) => None,
+            })
+            .collect();
+        // The items each reads when it's loaded.
+        let reads: Vec<HashSet<usize>> = (items.iter().enumerate())
+            .map(|(i, item)| {
+                let mut seen = HashSet::new();
+                let mut work = Vec::new();
+                match item {
+                    Item::Const(constant) => constant.value.visit_vars(&mut |v| work.push(v)),
+                    Item::Statements(stmts) => visit_stmts(stmts, &mut |v| work.push(v)),
+                    Item::Namespace(_) | Item::Function(_) => {}
+                }
+                while let Some(name) = work.pop() {
+                    if seen.insert(name)
+                        && let Some(item) = called.get(name)
+                    {
+                        item.visit_vars(&mut |v| work.push(v));
+                    }
+                }
+                seen.iter()
+                    .filter_map(|name| declaring.get(name))
+                    .copied()
+                    .filter(|&d| d != i)
+                    .collect()
+            })
+            .collect();
+        let mut done = vec![false; items.len()];
+        let mut order = Vec::new();
+        while let Some(next) = (0..items.len())
+            .find(|&i| !done[i] && reads[i].iter().all(|&d| done[d]))
+            .or_else(|| done.iter().position(|d| !d))
+        {
+            done[next] = true;
+            order.push(next);
+        }
+        order
+    };
+    order.into_iter().filter_map(|i| items[i].take()).collect()
+}
+
+/// Each expression in `items`, outermost first, as `each_expr_mut` goes.
+pub fn each_item_expr_mut(items: &mut [Item], f: &mut dyn FnMut(&mut Expr)) {
+    for item in items {
+        match item {
+            Item::Const(constant) => constant.value.each_mut(f),
+            Item::Statements(stmts) => each_expr_mut(stmts, f),
+            Item::Namespace(_) | Item::Function(_) => item
+                .functions_mut()
+                .for_each(|function| each_expr_mut(&mut function.body, f)),
         }
     }
 }

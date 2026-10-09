@@ -20,6 +20,10 @@ import {
   $signum,
 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   console.log(
     `${$clamp(17, 0, 10)} ${$clamp(-3n, -2n, 2n)} ${$clamp(200, 1, 100)} ${$displayF64($clampFloat(1.5, 0, 1, $debugF64))} ${$displayF64($clampFloat(NaN, 0, 1, $debugF64))}`,
@@ -59,9 +63,5 @@ function main() {
     `${Math.trunc((3 + 8) / 2)} ${Math.trunc((-7 + 0) / 2)} ${Math.trunc((0 + -7) / 2)} ${Math.trunc((255 + 253) / 2)} ${(-9223372036854775808n + -1n) / 2n}`,
   );
   console.log(`${8 - $countOnes(5)} ${32 - $countOnes(-1)} ${64 - $bigCountOnes(0n)}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

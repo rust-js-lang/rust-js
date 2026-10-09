@@ -2,6 +2,10 @@
 
 import { $bytesAsciiEq, $slice, $sliceStartsWith } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   const v = [1, 2, 3, 4];
   console.log(
@@ -36,9 +40,5 @@ function main() {
     )} ${$bytesAsciiEq(a, [99, 111, 110, 116, 101, 110, 116, 95, 116, 121, 112, 101])}`,
   );
   console.log(`${$bytesAsciiEq([97, 98], [97, 98, 99])} ${$bytesAsciiEq([192, 128], [224, 128])}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

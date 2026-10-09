@@ -2,13 +2,13 @@
 
 import { $clamp } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   const [low, high] = [5, 1];
   console.log(`${$clamp(3, high, low)}`);
   console.log(`${$clamp(3, low, high)}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

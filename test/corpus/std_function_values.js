@@ -15,6 +15,10 @@ import {
   $unwrap,
 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   const words = ["héllo", "ab", ""];
   const bytes = words.map((s) => $byteLen(s));
@@ -88,9 +92,5 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

@@ -2,6 +2,23 @@
 
 import { $parseErrorKind, $parseInt, $pretty, $unwrapErr } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function boundedDebug_fmt(bounded, options) {
+  let f = "";
+  if (bounded.TAG === "Parse") {
+    f += options?.alternate ? $pretty("Parse(", [bounded._0], ")") : `Parse(${bounded._0})`;
+  } else {
+    const shown = String(bounded.limit);
+    f += options?.alternate
+      ? $pretty("OutOfRange {", [`kind: ${bounded.kind}`, `limit: ${shown}`], "}")
+      : `OutOfRange { kind: ${bounded.kind}, limit: ${shown} }`;
+  }
+  return f;
+}
+
 function read(text, max) {
   const result = $parseInt(text, 0, 255);
   const result$1 =
@@ -25,22 +42,5 @@ function main() {
   }
   const kind = $parseErrorKind($unwrapErr($parseInt("", -2147483648, 2147483647)));
   console.log(`${kind === "Empty"} ${kind} Zero`);
-}
-
-export function entry() {
-  main();
-}
-
-function boundedDebug_fmt(bounded, options) {
-  let f = "";
-  if (bounded.TAG === "Parse") {
-    f += options?.alternate ? $pretty("Parse(", [bounded._0], ")") : `Parse(${bounded._0})`;
-  } else {
-    const shown = String(bounded.limit);
-    f += options?.alternate
-      ? $pretty("OutOfRange {", [`kind: ${bounded.kind}`, `limit: ${shown}`], "}")
-      : `OutOfRange { kind: ${bounded.kind}, limit: ${shown} }`;
-  }
-  return f;
 }
 //# sourceMappingURL=case.js.map

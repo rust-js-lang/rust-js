@@ -4,6 +4,10 @@ import { $byteLen, $max, $slice } from "@rust-js/runtime";
 
 var $nameAsRefStr, $scoresAsRef_i32_;
 
+export function entry() {
+  main();
+}
+
 function shout(s, SAsRefStr) {
   return SAsRefStr.as_ref(s).toUpperCase();
 }
@@ -14,6 +18,28 @@ function total(values, VAsRef_i32_) {
 
 function longest(words, SAsRefStr) {
   return $max(words.map((w) => $byteLen(SAsRefStr.as_ref(w)))) ?? 0;
+}
+
+export function nameAsRefStr() {
+  if ($nameAsRefStr === undefined) {
+    $nameAsRefStr = { as_ref: nameAsRefStr_as_ref };
+  }
+  return $nameAsRefStr;
+}
+
+function nameAsRefStr_as_ref(name) {
+  return name.first;
+}
+
+export function scoresAsRef_i32_() {
+  if ($scoresAsRef_i32_ === undefined) {
+    $scoresAsRef_i32_ = { as_ref: scoresAsRef_i32__as_ref };
+  }
+  return $scoresAsRef_i32_;
+}
+
+function scoresAsRef_i32__as_ref(scores) {
+  return scores[0];
 }
 
 function main() {
@@ -32,31 +58,5 @@ function main() {
   const name = { first: "lin" };
   const direct = nameAsRefStr_as_ref(name);
   console.log(`${direct} ${scoresAsRef_i32__as_ref([[1, 2]]).length}`);
-}
-
-export function entry() {
-  main();
-}
-
-function nameAsRefStr_as_ref(name) {
-  return name.first;
-}
-
-function scoresAsRef_i32__as_ref(scores) {
-  return scores[0];
-}
-
-export function nameAsRefStr() {
-  if ($nameAsRefStr === undefined) {
-    $nameAsRefStr = { as_ref: nameAsRefStr_as_ref };
-  }
-  return $nameAsRefStr;
-}
-
-export function scoresAsRef_i32_() {
-  if ($scoresAsRef_i32_ === undefined) {
-    $scoresAsRef_i32_ = { as_ref: scoresAsRef_i32__as_ref };
-  }
-  return $scoresAsRef_i32_;
 }
 //# sourceMappingURL=case.js.map

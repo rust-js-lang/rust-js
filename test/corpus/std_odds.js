@@ -2,6 +2,10 @@
 
 import { $debugStr, $print } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function greet(err) {
   console.error("to stderr 1");
   return;
@@ -43,9 +47,5 @@ function main() {
   table(4);
   greet(undefined);
   console.log("end");
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

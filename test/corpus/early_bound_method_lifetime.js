@@ -2,26 +2,8 @@
 
 var $sevenPicker, $doublePicker;
 
-function boxed(p) {
-  return p.impl.pick(p.value, 4);
-}
-
-function generic(p, PPicker) {
-  return PPicker.pick(p, 5);
-}
-
-function main() {
-  console.log(
-    `${boxed({ impl: sevenPicker() })} ${boxed({ impl: doublePicker() })} ${generic(undefined, sevenPicker())} ${generic(undefined, doublePicker())}`,
-  );
-}
-
 export function entry() {
   main();
-}
-
-function doublePicker_pick(double, x) {
-  return (x * 2) & 255;
 }
 
 function sevenPicker() {
@@ -36,5 +18,23 @@ function doublePicker() {
     $doublePicker = { pick: doublePicker_pick };
   }
   return $doublePicker;
+}
+
+function doublePicker_pick(double, x) {
+  return (x * 2) & 255;
+}
+
+function boxed(p) {
+  return p.impl.pick(p.value, 4);
+}
+
+function generic(p, PPicker) {
+  return PPicker.pick(p, 5);
+}
+
+function main() {
+  console.log(
+    `${boxed({ impl: sevenPicker() })} ${boxed({ impl: doublePicker() })} ${generic(undefined, sevenPicker())} ${generic(undefined, doublePicker())}`,
+  );
 }
 //# sourceMappingURL=case.js.map

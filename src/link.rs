@@ -2,7 +2,7 @@
 //! Locals keep their names; import aliases avoid every binding that could
 //! shadow them, including parameters of nested arrows and copied defaults.
 
-use crate::js::{Expr, ExprKind, Function, JsxTag, Pattern, Prop, Stmt, StmtKind};
+use crate::js::{Expr, ExprKind, Function, Item, JsxTag, Pattern, Prop, Stmt, StmtKind};
 use crate::names::fresh_in;
 use crate::program::{ImportRequest, Lowered, LoweredImport, LoweredModule, Unlinked};
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -83,20 +83,22 @@ impl Visitor<'_> {
 }
 
 fn visit(module: &mut LoweredModule, visitor: &mut Visitor<'_>) {
-    for function in &mut module.functions {
-        function_names(function, visitor);
-    }
-    for namespace in &mut module.namespaces {
-        visitor.name(&namespace.name);
-        for function in &mut namespace.methods {
-            function_names(function, visitor);
+    for item in &mut module.items {
+        match item {
+            Item::Function(function) => function_names(function, visitor),
+            Item::Namespace(namespace) => {
+                visitor.name(&namespace.name);
+                for function in &mut namespace.methods {
+                    function_names(function, visitor);
+                }
+            }
+            Item::Const(constant) => {
+                visitor.name(&constant.name);
+                expr(&mut constant.value, visitor);
+            }
+            Item::Statements(stmts) => block(stmts, visitor),
         }
     }
-    for constant in &mut module.consts {
-        visitor.name(&constant.name);
-        expr(&mut constant.value, visitor);
-    }
-    block(&mut module.statements, visitor);
     for cache in &mut module.caches {
         visitor.name(cache);
     }

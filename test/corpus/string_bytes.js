@@ -2,6 +2,10 @@
 
 import { $byteLen, $charIndices, $find, $rfind, $strSlice } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function first_word(s) {
   const match = $find(s, " ");
   if (match != null) {
@@ -53,9 +57,5 @@ function main() {
     const [left, right] = [$strSlice(s, 0, at), $strSlice(s, at)];
     console.log(`${left}|${right} ${($byteLen(left) + $byteLen(right)) >>> 0}`);
   }
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

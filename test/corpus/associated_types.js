@@ -4,6 +4,36 @@ import { $debugStr, $someValue } from "@rust-js/runtime";
 
 var $countSource, $wordsSource, $countLabeled, $wordsLabeled;
 
+export function entry() {
+  main();
+}
+
+function countSource() {
+  if ($countSource === undefined) {
+    $countSource = { next_item: (arg0) => countSource_next_item(arg0.value) };
+  }
+  return $countSource;
+}
+
+function countSource_next_item(count) {
+  if (count.n === 0) {
+    return;
+  }
+  count.n = (count.n - 1) >>> 0;
+  return count.n;
+}
+
+function wordsSource() {
+  if ($wordsSource === undefined) {
+    $wordsSource = { next_item: (arg0) => wordsSource_next_item(arg0.value) };
+  }
+  return $wordsSource;
+}
+
+function wordsSource_next_item(words) {
+  return words.list.pop();
+}
+
 function drain(s, SSource) {
   const out = [];
   while (true) {
@@ -26,6 +56,28 @@ function shown(s, SSource, SItemDebug) {
   return `[${drain(s, SSource)
     .map((item) => SItemDebug.fmt(item))
     .join(", ")}]`;
+}
+
+function countLabeled() {
+  if ($countLabeled === undefined) {
+    $countLabeled = { LabelDisplay: () => ({ fmt: String }), label: countLabeled_label };
+  }
+  return $countLabeled;
+}
+
+function countLabeled_label(count) {
+  return count.n;
+}
+
+function wordsLabeled() {
+  if ($wordsLabeled === undefined) {
+    $wordsLabeled = { LabelDisplay: () => ({ fmt: (value) => value }), label: wordsLabeled_label };
+  }
+  return $wordsLabeled;
+}
+
+function wordsLabeled_label(words) {
+  return words.list.join("+");
 }
 
 function tag(l, LLabeled) {
@@ -59,57 +111,5 @@ function main() {
   console.log(
     `${arg == null ? "None" : `Some(${arg})`} ${arg$1 == null ? "None" : `Some(${arg$1})`}`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function countSource_next_item(count) {
-  if (count.n === 0) {
-    return;
-  }
-  count.n = (count.n - 1) >>> 0;
-  return count.n;
-}
-
-function wordsSource_next_item(words) {
-  return words.list.pop();
-}
-
-function countLabeled_label(count) {
-  return count.n;
-}
-
-function wordsLabeled_label(words) {
-  return words.list.join("+");
-}
-
-function countSource() {
-  if ($countSource === undefined) {
-    $countSource = { next_item: (arg0) => countSource_next_item(arg0.value) };
-  }
-  return $countSource;
-}
-
-function wordsSource() {
-  if ($wordsSource === undefined) {
-    $wordsSource = { next_item: (arg0) => wordsSource_next_item(arg0.value) };
-  }
-  return $wordsSource;
-}
-
-function countLabeled() {
-  if ($countLabeled === undefined) {
-    $countLabeled = { LabelDisplay: () => ({ fmt: String }), label: countLabeled_label };
-  }
-  return $countLabeled;
-}
-
-function wordsLabeled() {
-  if ($wordsLabeled === undefined) {
-    $wordsLabeled = { LabelDisplay: () => ({ fmt: (value) => value }), label: wordsLabeled_label };
-  }
-  return $wordsLabeled;
 }
 //# sourceMappingURL=case.js.map

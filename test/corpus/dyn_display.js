@@ -4,6 +4,65 @@ import { $debugStr, $displayF64, $print, $stringError } from "@rust-js/runtime";
 
 var $pointDisplay, $counterDisplay, $missingDebug, $missingDisplay, $missingError;
 
+export function entry() {
+  main();
+}
+
+export function pointDisplay() {
+  if ($pointDisplay === undefined) {
+    $pointDisplay = { fmt: pointDisplay_fmt };
+  }
+  return $pointDisplay;
+}
+
+function pointDisplay_fmt(point) {
+  return `(${point.x}, ${point.y})`;
+}
+
+export function counterDisplay() {
+  if ($counterDisplay === undefined) {
+    $counterDisplay = { fmt: counterDisplay_fmt };
+  }
+  return $counterDisplay;
+}
+
+function counterDisplay_fmt(counter) {
+  return `counted ${counter[0].value}`;
+}
+
+function missingDebug_fmt(missing) {
+  return `Missing(${$debugStr(missing[0])})`;
+}
+
+export function missingDebug() {
+  if ($missingDebug === undefined) {
+    $missingDebug = { fmt: missingDebug_fmt };
+  }
+  return $missingDebug;
+}
+
+export function missingDisplay() {
+  if ($missingDisplay === undefined) {
+    $missingDisplay = { fmt: missingDisplay_fmt };
+  }
+  return $missingDisplay;
+}
+
+function missingDisplay_fmt(missing) {
+  return `missing ${missing[0]}`;
+}
+
+export function missingError() {
+  if ($missingError === undefined) {
+    $missingError = {
+      Debug: () => missingDebug(),
+      Display: () => missingDisplay(),
+      source: () => undefined,
+    };
+  }
+  return $missingError;
+}
+
 function find(name) {
   if (name === "one") {
     return { TAG: "Ok", _0: 1 };
@@ -71,64 +130,5 @@ function main() {
   console.log(
     `${fromString.impl.Display().fmt(fromString.value)} ${fromStr.impl.Debug().fmt(fromStr.value)}`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function pointDisplay_fmt(point) {
-  return `(${point.x}, ${point.y})`;
-}
-
-function counterDisplay_fmt(counter) {
-  return `counted ${counter[0].value}`;
-}
-
-function missingDebug_fmt(missing) {
-  return `Missing(${$debugStr(missing[0])})`;
-}
-
-function missingDisplay_fmt(missing) {
-  return `missing ${missing[0]}`;
-}
-
-export function pointDisplay() {
-  if ($pointDisplay === undefined) {
-    $pointDisplay = { fmt: pointDisplay_fmt };
-  }
-  return $pointDisplay;
-}
-
-export function counterDisplay() {
-  if ($counterDisplay === undefined) {
-    $counterDisplay = { fmt: counterDisplay_fmt };
-  }
-  return $counterDisplay;
-}
-
-export function missingDebug() {
-  if ($missingDebug === undefined) {
-    $missingDebug = { fmt: missingDebug_fmt };
-  }
-  return $missingDebug;
-}
-
-export function missingDisplay() {
-  if ($missingDisplay === undefined) {
-    $missingDisplay = { fmt: missingDisplay_fmt };
-  }
-  return $missingDisplay;
-}
-
-export function missingError() {
-  if ($missingError === undefined) {
-    $missingError = {
-      Debug: () => missingDebug(),
-      Display: () => missingDisplay(),
-      source: () => undefined,
-    };
-  }
-  return $missingError;
 }
 //# sourceMappingURL=case.js.map

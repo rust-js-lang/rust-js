@@ -2,11 +2,11 @@
 
 import { forwardRef } from "react";
 
-const INPUT = forwardRef(Input);
-
 export function Input(p, reference) {
   return <input ref={reference} tabIndex={p.label} />;
 }
+
+const INPUT = forwardRef(Input);
 
 export function Plain(reference) {
   return <INPUT label={1} ref={reference} />;

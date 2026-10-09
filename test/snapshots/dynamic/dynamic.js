@@ -31,6 +31,42 @@ import {
   $unwrapOk,
 } from "@rust-js/runtime";
 
+function recordSerialize_serialize(record, json) {
+  json.beginObject();
+  json.key("name");
+  json.string(record.name);
+  json.key("data");
+  $jsonValueWrite(record.data, json);
+  json.key("meta");
+  json.beginObject();
+  for (const [key, item] of $sortedEntries(record.meta, $cmp)) {
+    json.key(key);
+    $jsonValueWrite(item, json);
+  }
+  json.endObject();
+  json.endObject();
+}
+
+function recordDeserialize_deserialize(json) {
+  return json.struct(
+    "struct Record",
+    [
+      ["name", $json.string],
+      ["data", $json.value],
+      ["meta", $json.map($json.key.string, $json.value)],
+    ],
+    ([name, data, meta]) => ({ name, data, meta }),
+  );
+}
+
+function recordDebug_fmt(record) {
+  return `Record { name: ${$debugStr(record.name)}, data: ${$debugJsonValue(record.data)}, meta: {${Array.from(
+    $sortedEntries(record.meta, $cmp),
+  )
+    .map(([key, value]) => `${$debugStr(key)}: ${$debugJsonValue(value)}`)
+    .join(", ")}} }`;
+}
+
 export function describe(v) {
   if (v === "Null") {
     return "null";
@@ -48,6 +84,177 @@ export function describe(v) {
     return `array of ${v._0.length}`;
   }
   return `object with ${v._0.size}`;
+}
+
+function userSerialize_serialize(user, json) {
+  json.beginObject();
+  json.key("name");
+  json.string(user.name);
+  json.key("age");
+  json.int(user.age);
+  json.key("tags");
+  json.beginArray();
+  for (const item of user.tags) {
+    json.element();
+    json.string(item);
+  }
+  json.endArray();
+  json.key("extra");
+  if (user.extra == null) {
+    json.null();
+  } else {
+    $jsonValueWrite(user.extra, json);
+  }
+  json.key("initial");
+  json.char(user.initial);
+  json.endObject();
+}
+
+function userDeserialize_deserialize(json) {
+  return json.struct(
+    "struct User",
+    [
+      ["name", $json.string],
+      ["age", $json.u8],
+      ["tags", $json.vec($json.string)],
+      ["extra", $json.option($json.value), () => undefined],
+      ["initial", $json.char],
+    ],
+    ([name, age, tags, extra, initial]) => ({ name, age, tags, extra, initial }),
+  );
+}
+
+function userDebug_fmt(user) {
+  return `User { name: ${$debugStr(user.name)}, age: ${user.age}, tags: [${user.tags.map((item) => $debugStr(item)).join(", ")}], extra: ${user.extra == null ? "None" : `Some(${$debugJsonValue(user.extra)})`}, initial: ${$debugStr(user.initial, "'")} }`;
+}
+
+function shapeDeserialize_deserialize(json) {
+  return json.enum("Shape", ["Dot", "Circle", "Rect", "Poly"], (variant, content) => {
+    if (variant === "Dot") {
+      content.unit();
+      return "Dot";
+    }
+    if (variant === "Circle") {
+      return { TAG: "Circle", _0: content.newtype($json.f64) };
+    }
+    if (variant === "Rect") {
+      return content.tuple("tuple variant Shape::Rect", [$json.f64, $json.f64], ([_0, _1]) => ({
+        TAG: "Rect",
+        _0,
+        _1,
+      }));
+    }
+    return content.struct("struct variant Shape::Poly", [["sides", $json.u32]], ([sides]) => ({
+      TAG: "Poly",
+      sides,
+    }));
+  });
+}
+
+function shapeDebug_fmt(shape) {
+  if (shape === "Dot") {
+    return "Dot";
+  }
+  if (shape.TAG === "Circle") {
+    return `Circle(${$debugF64(shape._0)})`;
+  }
+  if (shape.TAG === "Rect") {
+    return `Rect(${$debugF64(shape._0)}, ${$debugF64(shape._1)})`;
+  }
+  return `Poly { sides: ${shape.sides} }`;
+}
+
+function taggedDeserialize_deserialize(json) {
+  return json.internallyTagged(
+    "type",
+    "internally tagged enum Tagged",
+    ["Moved", "Named"],
+    (variant, content) => {
+      if (variant === "Moved") {
+        return content.struct("struct variant Tagged::Moved", [["dx", $json.i32]], ([dx]) => ({
+          TAG: "Moved",
+          dx,
+        }));
+      }
+      return { TAG: "Named", _0: userDeserialize_deserialize(content) };
+    },
+  );
+}
+
+function taggedDebug_fmt(tagged) {
+  if (tagged.TAG === "Moved") {
+    return `Moved { dx: ${tagged.dx} }`;
+  }
+  return `Named(${userDebug_fmt(tagged._0)})`;
+}
+
+function messageSerialize_serialize(message, json) {
+  if (message.TAG === "Data") {
+    json.beginObject();
+    json.key("kind");
+    json.string("Data");
+    json.key("payload");
+    $jsonValueWrite(message.payload, json);
+    json.endObject();
+  } else {
+    json.beginObject();
+    json.key("kind");
+    json.string("Empty");
+    json.endObject();
+  }
+}
+
+function messageDeserialize_deserialize(json) {
+  return json.internallyTagged(
+    "kind",
+    "internally tagged enum Message",
+    ["Data", "Empty"],
+    (variant, content) => {
+      if (variant === "Data") {
+        return content.struct(
+          "struct variant Message::Data",
+          [["payload", $json.value]],
+          ([payload]) => ({ TAG: "Data", payload }),
+        );
+      }
+      content.taggedUnit("unit variant Message::Empty");
+      return "Empty";
+    },
+  );
+}
+
+function messageDebug_fmt(message) {
+  if (message.TAG === "Data") {
+    return `Data { payload: ${$debugJsonValue(message.payload)} }`;
+  }
+  return "Empty";
+}
+
+function openSerialize_serialize(open, json) {
+  json.beginObject();
+  json.key("id");
+  json.int(open.id);
+  json.flat(open.rest, (value, json$1) => {
+    json$1.beginObject();
+    for (const [key, item] of $sortedEntries(value, $cmp)) {
+      json$1.key(key);
+      $jsonValueWrite(item, json$1);
+    }
+    json$1.endObject();
+  });
+  json.endObject();
+}
+
+function openDeserialize_deserialize(json) {
+  return json.struct("struct Open", [["id", $json.u32]], ([id, rest]) => ({ id, rest }), {
+    flatten: [$json.map($json.key.string, $json.value)],
+  });
+}
+
+function openDebug_fmt(open) {
+  return `Open { id: ${open.id}, rest: {${Array.from($sortedEntries(open.rest, $cmp))
+    .map(([key, value]) => `${$debugStr(key)}: ${$debugJsonValue(value)}`)
+    .join(", ")}} }`;
 }
 
 export function report() {
@@ -703,212 +910,5 @@ export function report() {
     }
   }
   return out;
-}
-
-function recordDebug_fmt(record) {
-  return `Record { name: ${$debugStr(record.name)}, data: ${$debugJsonValue(record.data)}, meta: {${Array.from(
-    $sortedEntries(record.meta, $cmp),
-  )
-    .map(([key, value]) => `${$debugStr(key)}: ${$debugJsonValue(value)}`)
-    .join(", ")}} }`;
-}
-
-function userDebug_fmt(user) {
-  return `User { name: ${$debugStr(user.name)}, age: ${user.age}, tags: [${user.tags.map((item) => $debugStr(item)).join(", ")}], extra: ${user.extra == null ? "None" : `Some(${$debugJsonValue(user.extra)})`}, initial: ${$debugStr(user.initial, "'")} }`;
-}
-
-function shapeDebug_fmt(shape) {
-  if (shape === "Dot") {
-    return "Dot";
-  }
-  if (shape.TAG === "Circle") {
-    return `Circle(${$debugF64(shape._0)})`;
-  }
-  if (shape.TAG === "Rect") {
-    return `Rect(${$debugF64(shape._0)}, ${$debugF64(shape._1)})`;
-  }
-  return `Poly { sides: ${shape.sides} }`;
-}
-
-function taggedDebug_fmt(tagged) {
-  if (tagged.TAG === "Moved") {
-    return `Moved { dx: ${tagged.dx} }`;
-  }
-  return `Named(${userDebug_fmt(tagged._0)})`;
-}
-
-function messageDebug_fmt(message) {
-  if (message.TAG === "Data") {
-    return `Data { payload: ${$debugJsonValue(message.payload)} }`;
-  }
-  return "Empty";
-}
-
-function openDebug_fmt(open) {
-  return `Open { id: ${open.id}, rest: {${Array.from($sortedEntries(open.rest, $cmp))
-    .map(([key, value]) => `${$debugStr(key)}: ${$debugJsonValue(value)}`)
-    .join(", ")}} }`;
-}
-
-function recordSerialize_serialize(record, json) {
-  json.beginObject();
-  json.key("name");
-  json.string(record.name);
-  json.key("data");
-  $jsonValueWrite(record.data, json);
-  json.key("meta");
-  json.beginObject();
-  for (const [key, item] of $sortedEntries(record.meta, $cmp)) {
-    json.key(key);
-    $jsonValueWrite(item, json);
-  }
-  json.endObject();
-  json.endObject();
-}
-
-function recordDeserialize_deserialize(json) {
-  return json.struct(
-    "struct Record",
-    [
-      ["name", $json.string],
-      ["data", $json.value],
-      ["meta", $json.map($json.key.string, $json.value)],
-    ],
-    ([name, data, meta]) => ({ name, data, meta }),
-  );
-}
-
-function userSerialize_serialize(user, json) {
-  json.beginObject();
-  json.key("name");
-  json.string(user.name);
-  json.key("age");
-  json.int(user.age);
-  json.key("tags");
-  json.beginArray();
-  for (const item of user.tags) {
-    json.element();
-    json.string(item);
-  }
-  json.endArray();
-  json.key("extra");
-  if (user.extra == null) {
-    json.null();
-  } else {
-    $jsonValueWrite(user.extra, json);
-  }
-  json.key("initial");
-  json.char(user.initial);
-  json.endObject();
-}
-
-function userDeserialize_deserialize(json) {
-  return json.struct(
-    "struct User",
-    [
-      ["name", $json.string],
-      ["age", $json.u8],
-      ["tags", $json.vec($json.string)],
-      ["extra", $json.option($json.value), () => undefined],
-      ["initial", $json.char],
-    ],
-    ([name, age, tags, extra, initial]) => ({ name, age, tags, extra, initial }),
-  );
-}
-
-function shapeDeserialize_deserialize(json) {
-  return json.enum("Shape", ["Dot", "Circle", "Rect", "Poly"], (variant, content) => {
-    if (variant === "Dot") {
-      content.unit();
-      return "Dot";
-    }
-    if (variant === "Circle") {
-      return { TAG: "Circle", _0: content.newtype($json.f64) };
-    }
-    if (variant === "Rect") {
-      return content.tuple("tuple variant Shape::Rect", [$json.f64, $json.f64], ([_0, _1]) => ({
-        TAG: "Rect",
-        _0,
-        _1,
-      }));
-    }
-    return content.struct("struct variant Shape::Poly", [["sides", $json.u32]], ([sides]) => ({
-      TAG: "Poly",
-      sides,
-    }));
-  });
-}
-
-function taggedDeserialize_deserialize(json) {
-  return json.internallyTagged(
-    "type",
-    "internally tagged enum Tagged",
-    ["Moved", "Named"],
-    (variant, content) => {
-      if (variant === "Moved") {
-        return content.struct("struct variant Tagged::Moved", [["dx", $json.i32]], ([dx]) => ({
-          TAG: "Moved",
-          dx,
-        }));
-      }
-      return { TAG: "Named", _0: userDeserialize_deserialize(content) };
-    },
-  );
-}
-
-function messageSerialize_serialize(message, json) {
-  if (message.TAG === "Data") {
-    json.beginObject();
-    json.key("kind");
-    json.string("Data");
-    json.key("payload");
-    $jsonValueWrite(message.payload, json);
-    json.endObject();
-  } else {
-    json.beginObject();
-    json.key("kind");
-    json.string("Empty");
-    json.endObject();
-  }
-}
-
-function messageDeserialize_deserialize(json) {
-  return json.internallyTagged(
-    "kind",
-    "internally tagged enum Message",
-    ["Data", "Empty"],
-    (variant, content) => {
-      if (variant === "Data") {
-        return content.struct(
-          "struct variant Message::Data",
-          [["payload", $json.value]],
-          ([payload]) => ({ TAG: "Data", payload }),
-        );
-      }
-      content.taggedUnit("unit variant Message::Empty");
-      return "Empty";
-    },
-  );
-}
-
-function openSerialize_serialize(open, json) {
-  json.beginObject();
-  json.key("id");
-  json.int(open.id);
-  json.flat(open.rest, (value, json$1) => {
-    json$1.beginObject();
-    for (const [key, item] of $sortedEntries(value, $cmp)) {
-      json$1.key(key);
-      $jsonValueWrite(item, json$1);
-    }
-    json$1.endObject();
-  });
-  json.endObject();
-}
-
-function openDeserialize_deserialize(json) {
-  return json.struct("struct Open", [["id", $json.u32]], ([id, rest]) => ({ id, rest }), {
-    flatten: [$json.map($json.key.string, $json.value)],
-  });
 }
 //# sourceMappingURL=dynamic.js.map

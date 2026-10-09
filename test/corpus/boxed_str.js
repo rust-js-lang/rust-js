@@ -2,6 +2,17 @@
 
 import { $byteLen, $debugStr, $eq } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function itemDebug_fmt(item) {
+  if (item.TAG === "Literal") {
+    return `Literal(${$debugStr(item._0)})`;
+  }
+  return `OwnedLiteral(${$debugStr(item._0)})`;
+}
+
 const Item = {
   to_owned(item) {
     if (item.TAG === "Literal") {
@@ -27,16 +38,5 @@ function main() {
   console.log(`${fromString} ${arg$2} ${$debugStr(into)} ${arg$3}`);
   const copy = fromString;
   console.log(`${$eq(copy, fromString)} ${copy === "héllo"}`);
-}
-
-export function entry() {
-  main();
-}
-
-function itemDebug_fmt(item) {
-  if (item.TAG === "Literal") {
-    return `Literal(${$debugStr(item._0)})`;
-  }
-  return `OwnedLiteral(${$debugStr(item._0)})`;
 }
 //# sourceMappingURL=case.js.map

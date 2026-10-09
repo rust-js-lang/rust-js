@@ -4,11 +4,11 @@ import { mixed as mixed$1, shadowed as shadowed$1, square } from "./geometry/are
 import { mean } from "./stats.js";
 import { double } from "./util.js";
 
-export const HALVES = 2;
-
 export function summary(a, b) {
   return (mean(a, b) + square(a)) >>> 0;
 }
+
+export const HALVES = 2;
 
 export function clamp(x) {
   if (x > 1000) {

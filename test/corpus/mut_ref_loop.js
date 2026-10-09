@@ -2,6 +2,10 @@
 
 import { $at, $debugF64, $debugStr, $sliceEnd } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   const ints = [1, 2, 3];
   for (let i = 0; i < ints.length; i++) {
@@ -77,9 +81,5 @@ function main() {
   console.log(
     `[${a$1.map((item) => String(item)).join(", ")}] [${b$1.map((item) => String(item)).join(", ")}]`,
   );
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

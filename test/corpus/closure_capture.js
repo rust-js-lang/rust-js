@@ -2,6 +2,10 @@
 
 import { $debugStr, $range } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function make_counter() {
   let count = 0;
   return () => {
@@ -53,9 +57,5 @@ function main() {
   const text = "moved";
   const owns = () => Array.from(text).length;
   console.log(`len ${owns()}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

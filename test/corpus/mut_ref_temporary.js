@@ -2,6 +2,10 @@
 
 import { $debugStr } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function bump(x) {
   x.value = (x.value + 1) | 0;
 }
@@ -37,9 +41,5 @@ function main() {
   match[0] = (match[0] + 10) | 0;
   match[1] = (match[1] + 20) | 0;
   console.log(`${match[0]} ${match[1]}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

@@ -2,6 +2,10 @@
 
 import { $debugStr, $fromU32, $index, $unwrap } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function decode(bytes) {
   const out = [];
   let i = 0;
@@ -49,9 +53,5 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

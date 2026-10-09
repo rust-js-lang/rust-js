@@ -2,6 +2,14 @@
 
 import { $byteLen } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function noisyDrop_drop(noisy) {
+  console.log(`drop ${noisy[0]}`);
+}
+
 function call_once(f, dropF) {
   let f$live = true;
   try {
@@ -190,13 +198,5 @@ function main() {
       noisyDrop_drop(a);
     }
   }
-}
-
-export function entry() {
-  main();
-}
-
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
 }
 //# sourceMappingURL=case.js.map

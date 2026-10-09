@@ -94,6 +94,45 @@ export const Value = {
   },
 };
 
+export function valueDisplay() {
+  if ($valueDisplay === undefined) {
+    $valueDisplay = { fmt: valueDisplay_fmt };
+  }
+  return $valueDisplay;
+}
+
+function valueDisplay_fmt(value) {
+  let f = "";
+  if (value === "Null") {
+    f += "null";
+  } else if (value.TAG === "Bool") {
+    f += String(value._0);
+  } else if (value.TAG === "Num") {
+    f += $displayF64(value._0);
+  } else if (value.TAG === "Str") {
+    f += $debugStr(value._0);
+  } else if (value.TAG === "List") {
+    f += "[";
+    for (const [i, x] of value._0.entries()) {
+      if (i > 0) {
+        f += ",";
+      }
+      f += valueDisplay_fmt(x);
+    }
+    f += "]";
+  } else {
+    f += "{";
+    for (const item of $sortedEntries(value._0, $cmp).entries()) {
+      if (item[0] > 0) {
+        f += ",";
+      }
+      f += `${$debugStr(item[1][0])}:${valueDisplay_fmt(item[1][1])}`;
+    }
+    f += "}";
+  }
+  return f;
+}
+
 function price(v) {
   const value = Value.get(v, "items");
   if (value == null) {
@@ -216,44 +255,5 @@ export function boxes() {
 
 export function report() {
   return `${tree()}${boxes()}\n`;
-}
-
-function valueDisplay_fmt(value) {
-  let f = "";
-  if (value === "Null") {
-    f += "null";
-  } else if (value.TAG === "Bool") {
-    f += String(value._0);
-  } else if (value.TAG === "Num") {
-    f += $displayF64(value._0);
-  } else if (value.TAG === "Str") {
-    f += $debugStr(value._0);
-  } else if (value.TAG === "List") {
-    f += "[";
-    for (const [i, x] of value._0.entries()) {
-      if (i > 0) {
-        f += ",";
-      }
-      f += valueDisplay_fmt(x);
-    }
-    f += "]";
-  } else {
-    f += "{";
-    for (const item of $sortedEntries(value._0, $cmp).entries()) {
-      if (item[0] > 0) {
-        f += ",";
-      }
-      f += `${$debugStr(item[1][0])}:${valueDisplay_fmt(item[1][1])}`;
-    }
-    f += "}";
-  }
-  return f;
-}
-
-export function valueDisplay() {
-  if ($valueDisplay === undefined) {
-    $valueDisplay = { fmt: valueDisplay_fmt };
-  }
-  return $valueDisplay;
 }
 //# sourceMappingURL=values.js.map

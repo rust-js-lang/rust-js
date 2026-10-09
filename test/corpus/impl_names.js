@@ -11,12 +11,126 @@ var $vecI32Describe,
   $errorDeError,
   $errorSerError;
 
+export function entry() {
+  main();
+}
+
+function vecI32Describe() {
+  if ($vecI32Describe === undefined) {
+    $vecI32Describe = { describe: vecI32Describe_describe };
+  }
+  return $vecI32Describe;
+}
+
+function vecI32Describe_describe(vec) {
+  return `${vec.length} ints`;
+}
+
+function vecStringDescribe() {
+  if ($vecStringDescribe === undefined) {
+    $vecStringDescribe = { describe: vecStringDescribe_describe };
+  }
+  return $vecStringDescribe;
+}
+
+function vecStringDescribe_describe(vec) {
+  return `${vec.length} strings`;
+}
+
+function wrapperRefStrDescribe() {
+  if ($wrapperRefStrDescribe === undefined) {
+    $wrapperRefStrDescribe = { describe: wrapperRefStrDescribe_describe };
+  }
+  return $wrapperRefStrDescribe;
+}
+
+function wrapperRefStrDescribe_describe(wrapper) {
+  return `a str ${wrapper[0]}`;
+}
+
+function wrapperU8Describe() {
+  if ($wrapperU8Describe === undefined) {
+    $wrapperU8Describe = { describe: wrapperU8Describe_describe };
+  }
+  return $wrapperU8Describe;
+}
+
+function wrapperU8Describe_describe(wrapper) {
+  return `a byte ${wrapper[0]}`;
+}
+
+function __ConvertU8() {
+  if ($__ConvertU8 === undefined) {
+    $__ConvertU8 = { convert: __ConvertU8_convert };
+  }
+  return $__ConvertU8;
+}
+
+function __ConvertU8_convert(self) {
+  return "to u8";
+}
+
+function __ConvertRefU8() {
+  if ($__ConvertRefU8 === undefined) {
+    $__ConvertRefU8 = { convert: __ConvertRefU8_convert };
+  }
+  return $__ConvertRefU8;
+}
+
+function __ConvertRefU8_convert(self) {
+  return "to &u8";
+}
+
+function localDescribe() {
+  if ($localDescribe === undefined) {
+    $localDescribe = { describe: localDescribe_describe };
+  }
+  return $localDescribe;
+}
+
+function localDescribe_describe(local) {
+  return "the first local";
+}
+
 function first() {
   return localDescribe_describe(undefined);
 }
 
+function localDescribe2() {
+  if ($localDescribe2 === undefined) {
+    $localDescribe2 = { describe: localDescribe2_describe };
+  }
+  return $localDescribe2;
+}
+
+function localDescribe2_describe(local) {
+  return "the second local";
+}
+
 function second() {
   return localDescribe2_describe(undefined);
+}
+
+export function errorDeError() {
+  if ($errorDeError === undefined) {
+    $errorDeError = { custom: errorDeError_custom };
+  }
+  return $errorDeError;
+}
+
+function errorDeError_custom(msg) {
+  return [`de: ${msg}`];
+}
+
+export function errorSerError() {
+  if ($errorSerError === undefined) {
+    $errorSerError = { custom: errorSerError_custom };
+  }
+  return $errorSerError;
+}
+
+function errorSerError_custom(msg) {
+  return [`ser: ${msg}`];
 }
 
 function fail_de(EError) {
@@ -33,119 +147,5 @@ function main() {
   console.log(`${__ConvertU8_convert(undefined)} | ${__ConvertRefU8_convert(undefined)}`);
   console.log(`${first()} | ${second()}`);
   console.log(`${fail_de(errorDeError())[0]} | ${fail_ser(errorSerError())[0]}`);
-}
-
-export function entry() {
-  main();
-}
-
-function vecI32Describe_describe(vec) {
-  return `${vec.length} ints`;
-}
-
-function vecStringDescribe_describe(vec) {
-  return `${vec.length} strings`;
-}
-
-function wrapperRefStrDescribe_describe(wrapper) {
-  return `a str ${wrapper[0]}`;
-}
-
-function wrapperU8Describe_describe(wrapper) {
-  return `a byte ${wrapper[0]}`;
-}
-
-function __ConvertU8_convert(self) {
-  return "to u8";
-}
-
-function __ConvertRefU8_convert(self) {
-  return "to &u8";
-}
-
-function localDescribe_describe(local) {
-  return "the first local";
-}
-
-function localDescribe2_describe(local) {
-  return "the second local";
-}
-
-function errorDeError_custom(msg) {
-  return [`de: ${msg}`];
-}
-
-function errorSerError_custom(msg) {
-  return [`ser: ${msg}`];
-}
-
-function vecI32Describe() {
-  if ($vecI32Describe === undefined) {
-    $vecI32Describe = { describe: vecI32Describe_describe };
-  }
-  return $vecI32Describe;
-}
-
-function vecStringDescribe() {
-  if ($vecStringDescribe === undefined) {
-    $vecStringDescribe = { describe: vecStringDescribe_describe };
-  }
-  return $vecStringDescribe;
-}
-
-function wrapperRefStrDescribe() {
-  if ($wrapperRefStrDescribe === undefined) {
-    $wrapperRefStrDescribe = { describe: wrapperRefStrDescribe_describe };
-  }
-  return $wrapperRefStrDescribe;
-}
-
-function wrapperU8Describe() {
-  if ($wrapperU8Describe === undefined) {
-    $wrapperU8Describe = { describe: wrapperU8Describe_describe };
-  }
-  return $wrapperU8Describe;
-}
-
-function __ConvertU8() {
-  if ($__ConvertU8 === undefined) {
-    $__ConvertU8 = { convert: __ConvertU8_convert };
-  }
-  return $__ConvertU8;
-}
-
-function __ConvertRefU8() {
-  if ($__ConvertRefU8 === undefined) {
-    $__ConvertRefU8 = { convert: __ConvertRefU8_convert };
-  }
-  return $__ConvertRefU8;
-}
-
-function localDescribe() {
-  if ($localDescribe === undefined) {
-    $localDescribe = { describe: localDescribe_describe };
-  }
-  return $localDescribe;
-}
-
-function localDescribe2() {
-  if ($localDescribe2 === undefined) {
-    $localDescribe2 = { describe: localDescribe2_describe };
-  }
-  return $localDescribe2;
-}
-
-export function errorDeError() {
-  if ($errorDeError === undefined) {
-    $errorDeError = { custom: errorDeError_custom };
-  }
-  return $errorDeError;
-}
-
-export function errorSerError() {
-  if ($errorSerError === undefined) {
-    $errorSerError = { custom: errorSerError_custom };
-  }
-  return $errorSerError;
 }
 //# sourceMappingURL=case.js.map

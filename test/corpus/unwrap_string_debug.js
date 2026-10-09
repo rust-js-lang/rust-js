@@ -2,12 +2,12 @@
 
 import { $unwrapOk } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   const r = { TAG: "Err", _0: 'bell \x07, tab 	, quote "' };
   console.log(`${$unwrapOk(r)}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

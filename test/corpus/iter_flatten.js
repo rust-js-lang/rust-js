@@ -2,6 +2,10 @@
 
 import { $debugStr } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function joined(parts) {
   return parts.filter((item) => item != null).join(" ");
 }
@@ -29,9 +33,5 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

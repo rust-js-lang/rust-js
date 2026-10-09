@@ -13,6 +13,10 @@ import {
   $trimMatches,
 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   const line = "id=42; name=Zoë, age 31";
   const arg = $findBy(line, (c) => /^[0-9]$/.test(c), false);
@@ -74,9 +78,5 @@ function main() {
   const letters = ["h", "é", "!"].join("");
   const joined = ["ab", "cd"].join("");
   console.log(`${letters} ${joined}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

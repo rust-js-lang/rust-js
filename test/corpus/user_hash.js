@@ -2,6 +2,10 @@
 
 import { $KeyMap, $KeySet, $debugStr, $orInsert } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function counts(items) {
   const map = new $KeyMap();
   for (const item of items) {
@@ -49,9 +53,5 @@ function main() {
   const arg$5 = byVersion.size;
   const arg$6 = byVersion.get(v(0, 1, "x"));
   console.log(`${arg$5} ${arg$6 == null ? "None" : `Some(${arg$6})`}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

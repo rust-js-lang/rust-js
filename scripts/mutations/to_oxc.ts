@@ -206,8 +206,8 @@ export const mutations: Mutation[] = [
     name: "load-statements-unprinted",
     breaks: "what a module runs when it's loaded is left out of its JS",
     file: "src/to_oxc.rs",
-    find: "            .chain(cx.stmts(&module.statements))\n",
-    replace: "",
+    find: "            js::Item::Statements(stmts) => cx.stmts(stmts).into_iter().collect(),\n",
+    replace: "            js::Item::Statements(_) => Vec::new(),\n",
     tests: ["test/modules.test.ts", "-t", "js::on_load!"],
   },
   {

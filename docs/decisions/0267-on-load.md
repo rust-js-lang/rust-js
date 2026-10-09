@@ -20,7 +20,7 @@ write one: a port made it a `thread_local!`, an unused `const prefetched`.
 ## Decision
 
 **`js::on_load! { .. }` is the module's own statements, run when it's
-loaded**, after its `const`s:
+loaded**, where it's written, after the `const`s it reads (ADR 0306):
 
 ```rust
 js::on_load! {

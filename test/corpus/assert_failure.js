@@ -2,6 +2,10 @@
 
 import { $assertFailed } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   const total = [1, 2, 3].reduce((a, b) => (a + b) | 0, 0);
   if (total !== 6) {
@@ -13,9 +17,5 @@ function main() {
     const kind$1 = "Eq";
     $assertFailed(kind$1, String(total), "7", "totals differ");
   }
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

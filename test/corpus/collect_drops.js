@@ -2,6 +2,14 @@
 
 import { $byteLen, $debugStr, $skipWhile } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function noisyDrop_drop(noisy) {
+  console.log(`drop ${noisy[0]}`);
+}
+
 function main() {
   const v = [["a"], ["bb"], ["c"], ["dd"]];
   const keep = (n) => $byteLen(n[0]) > 1;
@@ -98,13 +106,5 @@ function main() {
       noisyDrop_drop(item$4);
     }
   }
-}
-
-export function entry() {
-  main();
-}
-
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
 }
 //# sourceMappingURL=case.js.map

@@ -4,6 +4,68 @@ import { $debugF64, $debugStr, $displayF64 } from "@rust-js/runtime";
 
 var $circleShape, $squareShape;
 
+export function entry() {
+  main();
+}
+
+function circleShape() {
+  if ($circleShape === undefined) {
+    $circleShape = {
+      area: circleShape_area,
+      describe: (self, label, TDisplay) => {
+        const arg = circleShape_area(self);
+        return `${TDisplay.fmt(label)}: ${$displayF64(arg)}`;
+      },
+      scaled: circleShape_scaled,
+      tagged: circleShape_tagged,
+    };
+  }
+  return $circleShape;
+}
+
+function circleShape_area(circle) {
+  return 3 * circle[0] * circle[0];
+}
+
+function circleShape_scaled(circle, f) {
+  return f(circleShape_area(circle));
+}
+
+function circleShape_tagged(circle, a, b, AClone, ADebug, BDisplay) {
+  const arg = AClone.clone(a);
+  return `circle ${ADebug.fmt(arg)} ${BDisplay.fmt(b)} ${ADebug.fmt(a)}`;
+}
+
+function squareShape() {
+  if ($squareShape === undefined) {
+    $squareShape = {
+      area: squareShape_area,
+      describe: squareShape_describe,
+      scaled: squareShape_scaled,
+      tagged: (arg0, arg1, arg2, AClone, ADebug, BDisplay) =>
+        squareShape_tagged(arg0, arg1, arg2, ADebug, AClone, BDisplay),
+    };
+  }
+  return $squareShape;
+}
+
+function squareShape_area(square) {
+  return square[0] * square[0];
+}
+
+function squareShape_describe(square, label, TDisplay) {
+  const arg = squareShape_area(square);
+  return `square ${TDisplay.fmt(label)} of ${$displayF64(arg)}`;
+}
+
+function squareShape_scaled(square, f) {
+  return f(square[0]);
+}
+
+function squareShape_tagged(square, a, b, ADebug, AClone, BDisplay) {
+  return `square ${BDisplay.fmt(b)} ${ADebug.fmt(a)}`;
+}
+
 function report(s, SShape) {
   return SShape.describe(s, "area", { fmt: (value) => value });
 }
@@ -34,67 +96,5 @@ function main() {
   console.log(`(${$debugStr(arg[0])}, ${$debugF64(arg[1])}, ${$debugStr(arg[2])})`);
   const arg$1 = everything(s, squareShape());
   console.log(`(${$debugStr(arg$1[0])}, ${$debugF64(arg$1[1])}, ${$debugStr(arg$1[2])})`);
-}
-
-export function entry() {
-  main();
-}
-
-function circleShape_area(circle) {
-  return 3 * circle[0] * circle[0];
-}
-
-function circleShape_scaled(circle, f) {
-  return f(circleShape_area(circle));
-}
-
-function circleShape_tagged(circle, a, b, AClone, ADebug, BDisplay) {
-  const arg = AClone.clone(a);
-  return `circle ${ADebug.fmt(arg)} ${BDisplay.fmt(b)} ${ADebug.fmt(a)}`;
-}
-
-function squareShape_area(square) {
-  return square[0] * square[0];
-}
-
-function squareShape_describe(square, label, TDisplay) {
-  const arg = squareShape_area(square);
-  return `square ${TDisplay.fmt(label)} of ${$displayF64(arg)}`;
-}
-
-function squareShape_scaled(square, f) {
-  return f(square[0]);
-}
-
-function squareShape_tagged(square, a, b, ADebug, AClone, BDisplay) {
-  return `square ${BDisplay.fmt(b)} ${ADebug.fmt(a)}`;
-}
-
-function circleShape() {
-  if ($circleShape === undefined) {
-    $circleShape = {
-      area: circleShape_area,
-      describe: (self, label, TDisplay) => {
-        const arg = circleShape_area(self);
-        return `${TDisplay.fmt(label)}: ${$displayF64(arg)}`;
-      },
-      scaled: circleShape_scaled,
-      tagged: circleShape_tagged,
-    };
-  }
-  return $circleShape;
-}
-
-function squareShape() {
-  if ($squareShape === undefined) {
-    $squareShape = {
-      area: squareShape_area,
-      describe: squareShape_describe,
-      scaled: squareShape_scaled,
-      tagged: (arg0, arg1, arg2, AClone, ADebug, BDisplay) =>
-        squareShape_tagged(arg0, arg1, arg2, ADebug, AClone, BDisplay),
-    };
-  }
-  return $squareShape;
 }
 //# sourceMappingURL=case.js.map

@@ -17,6 +17,14 @@ import {
   $slice,
 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function labelledDebug_fmt(labelled) {
+  return `Labelled { span: ${labelled.span.start}..${labelled.span.end}, name: ${$debugStr(labelled.name)} }`;
+}
+
 function sum_all(items) {
   return Iterator.from(items).reduce((a, b) => (a + b) >>> 0, 0);
 }
@@ -161,13 +169,5 @@ function main() {
 
 function r_of(n) {
   return { start: 0, end: n };
-}
-
-export function entry() {
-  main();
-}
-
-function labelledDebug_fmt(labelled) {
-  return `Labelled { span: ${labelled.span.start}..${labelled.span.end}, name: ${$debugStr(labelled.name)} }`;
 }
 //# sourceMappingURL=case.js.map

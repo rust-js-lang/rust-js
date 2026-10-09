@@ -41,6 +41,23 @@ export const Stack = {
   },
 };
 
+function gridIndex_usize__usize__index(grid, [r, c]) {
+  return $index(grid.cells, ((Math.imul(r, grid.w) >>> 0) + c) >>> 0);
+}
+
+export function labeledDisplay(TDisplay) {
+  if ($labeledDisplay === undefined) {
+    $labeledDisplay = new WeakMap();
+  }
+  return $traitImpl($labeledDisplay, [TDisplay], () => ({
+    fmt: (arg0) => labeledDisplay_fmt(arg0, TDisplay),
+  }));
+}
+
+function labeledDisplay_fmt(labeled, TDisplay) {
+  return `${labeled.label}=${TDisplay.fmt(labeled.value)}`;
+}
+
 export const Pipeline = {
   run(pipeline, x) {
     return pipeline.steps.reduce((acc, f) => f(acc), x);
@@ -108,6 +125,28 @@ export function bfs_order(n, edges) {
     }
   }
   return order;
+}
+
+export function taskOrd() {
+  if ($taskOrd === undefined) {
+    $taskOrd = { PartialOrd: () => taskPartialOrd(), cmp: taskOrd_cmp };
+  }
+  return $taskOrd;
+}
+
+function taskOrd_cmp(task, other) {
+  return $cmp(task.pri, other.pri);
+}
+
+export function taskPartialOrd() {
+  if ($taskPartialOrd === undefined) {
+    $taskPartialOrd = { PartialEq: () => ({ eq: $eq }), partial_cmp: taskPartialOrd_partial_cmp };
+  }
+  return $taskPartialOrd;
+}
+
+function taskPartialOrd_partial_cmp(task, other) {
+  return taskOrd_cmp(task, other);
 }
 
 export function heaps() {
@@ -228,44 +267,5 @@ export function report() {
   const arg$8 = reverses(5, 3);
   out += `${arg$6}\n(${arg$7[0]}, ${arg$7[1]}, ${arg$7[2]}, ${$debugStr(arg$7[3])}, [${arg$7[4].map((item) => String(item)).join(", ")}]) (${arg$8[0]}, ${arg$8[1]}, ${arg$8[2]}, ${$debugStr(arg$8[3])}, [${arg$8[4].map((item) => String(item)).join(", ")}])\n`;
   return out;
-}
-
-function gridIndex_usize__usize__index(grid, [r, c]) {
-  return $index(grid.cells, ((Math.imul(r, grid.w) >>> 0) + c) >>> 0);
-}
-
-function labeledDisplay_fmt(labeled, TDisplay) {
-  return `${labeled.label}=${TDisplay.fmt(labeled.value)}`;
-}
-
-function taskOrd_cmp(task, other) {
-  return $cmp(task.pri, other.pri);
-}
-
-function taskPartialOrd_partial_cmp(task, other) {
-  return taskOrd_cmp(task, other);
-}
-
-export function labeledDisplay(TDisplay) {
-  if ($labeledDisplay === undefined) {
-    $labeledDisplay = new WeakMap();
-  }
-  return $traitImpl($labeledDisplay, [TDisplay], () => ({
-    fmt: (arg0) => labeledDisplay_fmt(arg0, TDisplay),
-  }));
-}
-
-export function taskOrd() {
-  if ($taskOrd === undefined) {
-    $taskOrd = { PartialOrd: () => taskPartialOrd(), cmp: taskOrd_cmp };
-  }
-  return $taskOrd;
-}
-
-export function taskPartialOrd() {
-  if ($taskPartialOrd === undefined) {
-    $taskPartialOrd = { PartialEq: () => ({ eq: $eq }), partial_cmp: taskPartialOrd_partial_cmp };
-  }
-  return $taskPartialOrd;
 }
 //# sourceMappingURL=queues.js.map

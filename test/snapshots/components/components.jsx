@@ -12,10 +12,6 @@ import {
   useState,
 } from "react";
 
-const THEME = createContext("light");
-const BADGE = memo(Badge);
-const LOOSE_BADGE = memo(Badge, (a, b) => !a.label === !b.label);
-
 export function Card({ title, children }) {
   return (
     <div className="card">
@@ -103,6 +99,10 @@ export function Clock() {
     </>
   );
 }
+
+const THEME = createContext("light");
+const BADGE = memo(Badge);
+const LOOSE_BADGE = memo(Badge, (a, b) => !a.label === !b.label);
 
 export function Badge({ label }) {
   globalThis.rendered(label);

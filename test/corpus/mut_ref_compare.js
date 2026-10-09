@@ -2,6 +2,14 @@
 
 import { $cmp, $eq, $maxBy } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function sDebug_fmt(s) {
+  return `S { r: ${s.r.value} }`;
+}
+
 function main() {
   const a = 1;
   console.log(`${a === 1}`);
@@ -135,13 +143,5 @@ function main() {
     };
     console.log(`${arg$3.value} ${arg$3.value}`);
   }
-}
-
-export function entry() {
-  main();
-}
-
-function sDebug_fmt(s) {
-  return `S { r: ${s.r.value} }`;
 }
 //# sourceMappingURL=case.js.map

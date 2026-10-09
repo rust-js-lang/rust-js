@@ -2,6 +2,14 @@
 
 import { $at, $index } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function pDebug_fmt(p) {
+  return `P { x: ${p.x} }`;
+}
+
 function main() {
   const log = [];
   const grid = [
@@ -35,13 +43,5 @@ function main() {
     `[${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${ps.map((item) => pDebug_fmt(item)).join(", ")}] [${arr.map((item) => pDebug_fmt(item)).join(", ")}] [${v.map((item) => String(item)).join(", ")}]`,
   );
   console.log(`[${log.map((item) => String(item)).join(", ")}]`);
-}
-
-export function entry() {
-  main();
-}
-
-function pDebug_fmt(p) {
-  return `P { x: ${p.x} }`;
 }
 //# sourceMappingURL=case.js.map

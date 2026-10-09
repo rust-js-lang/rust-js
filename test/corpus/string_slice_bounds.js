@@ -2,13 +2,13 @@
 
 import { $strSlice } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   const s = "héllo";
   console.log(`${$strSlice(s, 3)}`);
   console.log(`${$strSlice(s, 3, 20)}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

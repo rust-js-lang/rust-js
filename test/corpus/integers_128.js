@@ -26,6 +26,10 @@ import {
   $tryFromInt,
 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function fnv(bytes) {
   let hash = 144066263297769815596495629667062367629n;
   for (const b of bytes) {
@@ -164,9 +168,5 @@ function main() {
   console.log(
     `${size} [${values.map((item) => String(item)).join(", ")}] ${$slice(values, 0, 3).reduce((a, b) => BigInt.asUintN(128, a + b), 0n)}`,
   );
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

@@ -12,6 +12,194 @@ import {
 
 var $wrapDebug, $builtDebug, $listyDebug, $rawDebug, $asksDebug, $shownDisplay, $delegateDebug;
 
+export function entry() {
+  main();
+}
+
+function pointDebug_fmt(point, options) {
+  const shown = String(point.x);
+  const shown$1 = $debugStr(point.label);
+  return options?.alternate
+    ? $pretty("Point {", [`x: ${shown}`, `label: ${shown$1}`], "}")
+    : `Point { x: ${shown}, label: ${shown$1} }`;
+}
+
+function pairDebug_fmt(pair, options) {
+  const shown = String(pair[0]);
+  const shown$1 =
+    pair[1] == null
+      ? "None"
+      : options?.alternate
+        ? $pretty("Some(", [pointDebug_fmt(pair[1], options)], ")")
+        : `Some(${pointDebug_fmt(pair[1], options)})`;
+  return options?.alternate
+    ? $pretty("Pair(", [shown, shown$1], ")")
+    : `Pair(${shown}, ${shown$1})`;
+}
+
+function shapeDebug_fmt(shape, options) {
+  let f = "";
+  if (shape === "Dot") {
+    f += "Dot";
+  } else if (shape.TAG === "Circle") {
+    const shown = $debugF64(shape.r);
+    f += options?.alternate ? $pretty("Circle {", [`r: ${shown}`], "}") : `Circle { r: ${shown} }`;
+  } else {
+    const shown$1 = pointDebug_fmt(shape._0, options);
+    const shown$2 = pointDebug_fmt(shape._1, options);
+    f += options?.alternate
+      ? $pretty("Line(", [shown$1, shown$2], ")")
+      : `Line(${shown$1}, ${shown$2})`;
+  }
+  return f;
+}
+
+function unitDebug_fmt(unit, options) {
+  return "Unit";
+}
+
+function wideDebug_fmt(wide, options) {
+  const names = ["a", "b", "c", "d", "e", "f"];
+  const values = [
+    String(wide.a),
+    String(wide.b),
+    String(wide.c),
+    String(wide.d),
+    String(wide.e),
+    String(wide.f),
+  ];
+  return $debugFields("Wide", names, values, options?.alternate);
+}
+
+function wrapDebug_fmt(wrap, options, TDebug) {
+  const shown = TDebug.fmt(wrap.inner, options);
+  const shown$1 = options?.alternate
+    ? $pretty(
+        "[",
+        wrap.list.map((item) => TDebug.fmt(item, options)),
+        "]",
+      )
+    : `[${wrap.list.map((item) => TDebug.fmt(item, options)).join(", ")}]`;
+  return options?.alternate
+    ? $pretty("Wrap {", [`inner: ${shown}`, `list: ${shown$1}`], "}")
+    : `Wrap { inner: ${shown}, list: ${shown$1} }`;
+}
+
+export function wrapDebug(TDebug) {
+  if ($wrapDebug === undefined) {
+    $wrapDebug = new WeakMap();
+  }
+  return $traitImpl($wrapDebug, [TDebug], () => ({
+    fmt: (arg0, arg1) => wrapDebug_fmt(arg0, arg1, TDebug),
+  }));
+}
+
+export function builtDebug() {
+  if ($builtDebug === undefined) {
+    $builtDebug = { fmt: builtDebug_fmt };
+  }
+  return $builtDebug;
+}
+
+function builtDebug_fmt(built, options) {
+  return options?.alternate
+    ? $pretty(
+        "Built {",
+        [
+          `x: ${built.x}`,
+          `tags: ${
+            options?.alternate
+              ? $pretty(
+                  "[",
+                  built.tags.map((item) => String(item)),
+                  "]",
+                )
+              : `[${built.tags.map((item) => String(item)).join(", ")}]`
+          }`,
+        ],
+        "}",
+        true,
+      )
+    : `Built { x: ${built.x}, tags: ${
+        options?.alternate
+          ? $pretty(
+              "[",
+              built.tags.map((item) => String(item)),
+              "]",
+            )
+          : `[${built.tags.map((item) => String(item)).join(", ")}]`
+      }, .. }`;
+}
+
+export function listyDebug() {
+  if ($listyDebug === undefined) {
+    $listyDebug = { fmt: listyDebug_fmt };
+  }
+  return $listyDebug;
+}
+
+function listyDebug_fmt(listy, options) {
+  return options?.alternate
+    ? $pretty("[", ["0"].concat(Array.from(listy[0], (entry) => String(entry))), "]")
+    : `[${["0"].concat(Array.from(listy[0], (entry) => String(entry))).join(", ")}]`;
+}
+
+export function rawDebug() {
+  if ($rawDebug === undefined) {
+    $rawDebug = { fmt: rawDebug_fmt };
+  }
+  return $rawDebug;
+}
+
+function rawDebug_fmt(raw, options) {
+  return `[${raw[0]} [${[raw[0]].map((item) => String(item)).join(", ")}]]`;
+}
+
+export function asksDebug() {
+  if ($asksDebug === undefined) {
+    $asksDebug = { fmt: asksDebug_fmt };
+  }
+  return $asksDebug;
+}
+
+function asksDebug_fmt(asks, options) {
+  if (options?.alternate === true) {
+    return "pretty";
+  }
+  return "plain";
+}
+
+export function shownDisplay() {
+  if ($shownDisplay === undefined) {
+    $shownDisplay = { fmt: shownDisplay_fmt };
+  }
+  return $shownDisplay;
+}
+
+function shownDisplay_fmt(shown, options) {
+  if (options?.alternate === true) {
+    return `#${shown[0]}`;
+  }
+  return String(shown[0]);
+}
+
+export function delegateDebug() {
+  if ($delegateDebug === undefined) {
+    $delegateDebug = { fmt: delegateDebug_fmt };
+  }
+  return $delegateDebug;
+}
+
+function delegateDebug_fmt(delegate, options) {
+  return options?.alternate
+    ? $pretty(
+        "[",
+        delegate[0].map((item) => String(item)),
+        "]",
+      )
+    : `[${delegate[0].map((item) => String(item)).join(", ")}]`;
+}
+
 function pretty(value, TDebug) {
   return TDebug.fmt(value, { alternate: true });
 }
@@ -133,193 +321,5 @@ function main() {
   const kept = [1, undefined];
   console.error(`${pairDebug_fmt(kept, { alternate: true })}`);
   console.log(`${pairDebug_fmt(kept)}`);
-}
-
-export function entry() {
-  main();
-}
-
-function pointDebug_fmt(point, options) {
-  const shown = String(point.x);
-  const shown$1 = $debugStr(point.label);
-  return options?.alternate
-    ? $pretty("Point {", [`x: ${shown}`, `label: ${shown$1}`], "}")
-    : `Point { x: ${shown}, label: ${shown$1} }`;
-}
-
-function pairDebug_fmt(pair, options) {
-  const shown = String(pair[0]);
-  const shown$1 =
-    pair[1] == null
-      ? "None"
-      : options?.alternate
-        ? $pretty("Some(", [pointDebug_fmt(pair[1], options)], ")")
-        : `Some(${pointDebug_fmt(pair[1], options)})`;
-  return options?.alternate
-    ? $pretty("Pair(", [shown, shown$1], ")")
-    : `Pair(${shown}, ${shown$1})`;
-}
-
-function shapeDebug_fmt(shape, options) {
-  let f = "";
-  if (shape === "Dot") {
-    f += "Dot";
-  } else if (shape.TAG === "Circle") {
-    const shown = $debugF64(shape.r);
-    f += options?.alternate ? $pretty("Circle {", [`r: ${shown}`], "}") : `Circle { r: ${shown} }`;
-  } else {
-    const shown$1 = pointDebug_fmt(shape._0, options);
-    const shown$2 = pointDebug_fmt(shape._1, options);
-    f += options?.alternate
-      ? $pretty("Line(", [shown$1, shown$2], ")")
-      : `Line(${shown$1}, ${shown$2})`;
-  }
-  return f;
-}
-
-function unitDebug_fmt(unit, options) {
-  return "Unit";
-}
-
-function wideDebug_fmt(wide, options) {
-  const names = ["a", "b", "c", "d", "e", "f"];
-  const values = [
-    String(wide.a),
-    String(wide.b),
-    String(wide.c),
-    String(wide.d),
-    String(wide.e),
-    String(wide.f),
-  ];
-  return $debugFields("Wide", names, values, options?.alternate);
-}
-
-function wrapDebug_fmt(wrap, options, TDebug) {
-  const shown = TDebug.fmt(wrap.inner, options);
-  const shown$1 = options?.alternate
-    ? $pretty(
-        "[",
-        wrap.list.map((item) => TDebug.fmt(item, options)),
-        "]",
-      )
-    : `[${wrap.list.map((item) => TDebug.fmt(item, options)).join(", ")}]`;
-  return options?.alternate
-    ? $pretty("Wrap {", [`inner: ${shown}`, `list: ${shown$1}`], "}")
-    : `Wrap { inner: ${shown}, list: ${shown$1} }`;
-}
-
-function builtDebug_fmt(built, options) {
-  return options?.alternate
-    ? $pretty(
-        "Built {",
-        [
-          `x: ${built.x}`,
-          `tags: ${
-            options?.alternate
-              ? $pretty(
-                  "[",
-                  built.tags.map((item) => String(item)),
-                  "]",
-                )
-              : `[${built.tags.map((item) => String(item)).join(", ")}]`
-          }`,
-        ],
-        "}",
-        true,
-      )
-    : `Built { x: ${built.x}, tags: ${
-        options?.alternate
-          ? $pretty(
-              "[",
-              built.tags.map((item) => String(item)),
-              "]",
-            )
-          : `[${built.tags.map((item) => String(item)).join(", ")}]`
-      }, .. }`;
-}
-
-function listyDebug_fmt(listy, options) {
-  return options?.alternate
-    ? $pretty("[", ["0"].concat(Array.from(listy[0], (entry) => String(entry))), "]")
-    : `[${["0"].concat(Array.from(listy[0], (entry) => String(entry))).join(", ")}]`;
-}
-
-function rawDebug_fmt(raw, options) {
-  return `[${raw[0]} [${[raw[0]].map((item) => String(item)).join(", ")}]]`;
-}
-
-function asksDebug_fmt(asks, options) {
-  if (options?.alternate === true) {
-    return "pretty";
-  }
-  return "plain";
-}
-
-function shownDisplay_fmt(shown, options) {
-  if (options?.alternate === true) {
-    return `#${shown[0]}`;
-  }
-  return String(shown[0]);
-}
-
-function delegateDebug_fmt(delegate, options) {
-  return options?.alternate
-    ? $pretty(
-        "[",
-        delegate[0].map((item) => String(item)),
-        "]",
-      )
-    : `[${delegate[0].map((item) => String(item)).join(", ")}]`;
-}
-
-export function wrapDebug(TDebug) {
-  if ($wrapDebug === undefined) {
-    $wrapDebug = new WeakMap();
-  }
-  return $traitImpl($wrapDebug, [TDebug], () => ({
-    fmt: (arg0, arg1) => wrapDebug_fmt(arg0, arg1, TDebug),
-  }));
-}
-
-export function builtDebug() {
-  if ($builtDebug === undefined) {
-    $builtDebug = { fmt: builtDebug_fmt };
-  }
-  return $builtDebug;
-}
-
-export function listyDebug() {
-  if ($listyDebug === undefined) {
-    $listyDebug = { fmt: listyDebug_fmt };
-  }
-  return $listyDebug;
-}
-
-export function rawDebug() {
-  if ($rawDebug === undefined) {
-    $rawDebug = { fmt: rawDebug_fmt };
-  }
-  return $rawDebug;
-}
-
-export function asksDebug() {
-  if ($asksDebug === undefined) {
-    $asksDebug = { fmt: asksDebug_fmt };
-  }
-  return $asksDebug;
-}
-
-export function shownDisplay() {
-  if ($shownDisplay === undefined) {
-    $shownDisplay = { fmt: shownDisplay_fmt };
-  }
-  return $shownDisplay;
-}
-
-export function delegateDebug() {
-  if ($delegateDebug === undefined) {
-    $delegateDebug = { fmt: delegateDebug_fmt };
-  }
-  return $delegateDebug;
 }
 //# sourceMappingURL=case.js.map

@@ -4,6 +4,60 @@ import { $byteLen, $debugStr, $pad } from "@rust-js/runtime";
 
 var $collectorWrite, $shoutingWrite, $pointDisplay;
 
+export function entry() {
+  main();
+}
+
+export function collectorWrite() {
+  if ($collectorWrite === undefined) {
+    const write_str = (arg0, arg1) => collectorWrite_write_str(arg0.value, arg1);
+    $collectorWrite = { write_str, write_char: write_str, write_fmt: write_str };
+  }
+  return $collectorWrite;
+}
+
+function collectorWrite_write_str(collector, s) {
+  collector.text += s;
+  const value = $byteLen(s);
+  collector.bytes = (collector.bytes + value) >>> 0;
+  return;
+}
+
+export function shoutingWrite() {
+  if ($shoutingWrite === undefined) {
+    const write_str = (arg0, arg1) => shoutingWrite_write_str(arg0.value, arg1);
+    $shoutingWrite = {
+      write_str,
+      write_char: (arg0, arg1) => shoutingWrite_write_char(arg0.value, arg1),
+      write_fmt: write_str,
+    };
+  }
+  return $shoutingWrite;
+}
+
+function shoutingWrite_write_str(shouting, s) {
+  shouting[0] = shouting[0] + s.toUpperCase();
+  return;
+}
+
+function shoutingWrite_write_char(shouting, c) {
+  shouting[0] = shouting[0] + "<";
+  shouting[0] = shouting[0] + c;
+  shouting[0] = shouting[0] + ">";
+  return;
+}
+
+export function pointDisplay() {
+  if ($pointDisplay === undefined) {
+    $pointDisplay = { fmt: pointDisplay_fmt };
+  }
+  return $pointDisplay;
+}
+
+function pointDisplay_fmt(point) {
+  return `(${point.x}, ${point.y})`;
+}
+
 function describe(out, p) {
   collectorWrite_write_str(out, `at ${pointDisplay_fmt(p)} [${$pad("zoë", 6, ">")}]\n`);
   collectorWrite_write_str(out, "é");
@@ -20,59 +74,5 @@ function main() {
   shoutingWrite_write_char(s, "x");
   shoutingWrite_write_str(s, "\n");
   console.log(`${$debugStr(s[0])}`);
-}
-
-export function entry() {
-  main();
-}
-
-function collectorWrite_write_str(collector, s) {
-  collector.text += s;
-  const value = $byteLen(s);
-  collector.bytes = (collector.bytes + value) >>> 0;
-  return;
-}
-
-function shoutingWrite_write_str(shouting, s) {
-  shouting[0] = shouting[0] + s.toUpperCase();
-  return;
-}
-
-function shoutingWrite_write_char(shouting, c) {
-  shouting[0] = shouting[0] + "<";
-  shouting[0] = shouting[0] + c;
-  shouting[0] = shouting[0] + ">";
-  return;
-}
-
-function pointDisplay_fmt(point) {
-  return `(${point.x}, ${point.y})`;
-}
-
-export function collectorWrite() {
-  if ($collectorWrite === undefined) {
-    const write_str = (arg0, arg1) => collectorWrite_write_str(arg0.value, arg1);
-    $collectorWrite = { write_str, write_char: write_str, write_fmt: write_str };
-  }
-  return $collectorWrite;
-}
-
-export function shoutingWrite() {
-  if ($shoutingWrite === undefined) {
-    const write_str = (arg0, arg1) => shoutingWrite_write_str(arg0.value, arg1);
-    $shoutingWrite = {
-      write_str,
-      write_char: (arg0, arg1) => shoutingWrite_write_char(arg0.value, arg1),
-      write_fmt: write_str,
-    };
-  }
-  return $shoutingWrite;
-}
-
-export function pointDisplay() {
-  if ($pointDisplay === undefined) {
-    $pointDisplay = { fmt: pointDisplay_fmt };
-  }
-  return $pointDisplay;
 }
 //# sourceMappingURL=case.js.map

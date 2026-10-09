@@ -2,6 +2,14 @@
 
 import { $skipWhile } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function fragmentDrop_drop(fragment) {
+  console.log(`drop ${fragment[0]}`);
+}
+
 function main() {
   const fragments = [[1], [2], [3]];
   const skip = (f) => f[0] < 2;
@@ -19,13 +27,5 @@ function main() {
       fragmentDrop_drop(item);
     }
   }
-}
-
-export function entry() {
-  main();
-}
-
-function fragmentDrop_drop(fragment) {
-  console.log(`drop ${fragment[0]}`);
 }
 //# sourceMappingURL=case.js.map

@@ -12,6 +12,19 @@ import {
   $unwrap,
 } from "@rust-js/runtime";
 
+function tokDebug_fmt(tok) {
+  if (tok.TAG === "Num") {
+    return `Num(${tok._0})`;
+  }
+  if (tok.TAG === "Ident") {
+    return `Ident(${$debugStr(tok._0)})`;
+  }
+  if (tok.TAG === "Sym") {
+    return `Sym(${$debugStr(tok._0, "'")})`;
+  }
+  return `Str(${$debugStr(tok._0)})`;
+}
+
 export const Lexer = {
   new(src) {
     return { chars: $iter(Array.from(src)), line: 1 };
@@ -127,18 +140,5 @@ export function report() {
   const rest = $rest(words);
   out += `${first == null ? "None" : `Some(${$debugStr(first)})`} [${rest.map((item) => $debugStr(item)).join(", ")}]\n`;
   return out;
-}
-
-function tokDebug_fmt(tok) {
-  if (tok.TAG === "Num") {
-    return `Num(${tok._0})`;
-  }
-  if (tok.TAG === "Ident") {
-    return `Ident(${$debugStr(tok._0)})`;
-  }
-  if (tok.TAG === "Sym") {
-    return `Sym(${$debugStr(tok._0, "'")})`;
-  }
-  return `Str(${$debugStr(tok._0)})`;
 }
 //# sourceMappingURL=lexer.js.map

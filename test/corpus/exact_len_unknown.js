@@ -2,16 +2,16 @@
 
 import { $exactLen } from "@rust-js/runtime";
 
-function main() {
-  const it = undefined;
-  console.log(`${$exactLen([0, undefined])}`);
-}
-
 export function entry() {
   main();
 }
 
 function foreverIterator_next(self) {
   return 1;
+}
+
+function main() {
+  const it = undefined;
+  console.log(`${$exactLen([0, undefined])}`);
 }
 //# sourceMappingURL=case.js.map

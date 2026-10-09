@@ -3,6 +3,21 @@
 import { NAME, SIDES } from "./shapes.js";
 import { $debugF64, $debugStr, $print } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function pointDebug_fmt(point) {
+  return `Point { x: ${point.x}, y: ${point.y} }`;
+}
+
+function levelDebug_fmt(level) {
+  if (level === "Low") {
+    return "Low";
+  }
+  return `High(${level._0})`;
+}
+
 const ORIGIN = { x: 0, y: 0 };
 const CORNER = { x: 2, y: -3 };
 const LIMIT = 1099511627776n;
@@ -15,13 +30,14 @@ const MAYBE = "z";
 const PAIR = [true, 2.5];
 const BOXED = { x: 3, y: 4 };
 const COMPUTED = -42;
-const WORDS = ["one", "two"];
 
 function moved(dx) {
   const p = { ...ORIGIN };
   p.x = (p.x + dx) | 0;
   return p;
 }
+
+const WORDS = ["one", "two"];
 
 function counted() {
   return WORDS.length;
@@ -44,20 +60,5 @@ function main() {
     $print(`${name} `);
   }
   console.log("");
-}
-
-export function entry() {
-  main();
-}
-
-function pointDebug_fmt(point) {
-  return `Point { x: ${point.x}, y: ${point.y} }`;
-}
-
-function levelDebug_fmt(level) {
-  if (level === "Low") {
-    return "Low";
-  }
-  return `High(${level._0})`;
 }
 //# sourceMappingURL=case.js.map

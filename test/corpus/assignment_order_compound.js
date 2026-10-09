@@ -2,6 +2,10 @@
 
 import { $at } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function value(x) {
   console.log("value");
   return x;
@@ -12,9 +16,5 @@ function main() {
   const i = 0;
   const value$1 = value(1);
   v[$at(v, i)] = (v[$at(v, i)] + value$1) | 0;
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

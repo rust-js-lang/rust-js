@@ -11,6 +11,14 @@ import {
   $take,
 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function counterDebug_fmt(counter) {
+  return `Counter { n: ${counter.n}, label: ${$debugStr(counter.label)}, items: [${counter.items.map((item) => String(item)).join(", ")}] }`;
+}
+
 const Counter = {
   reset(counter) {
     $assign(counter, { n: 0, label: "", items: [] });
@@ -18,12 +26,6 @@ const Counter = {
   restart(counter, n) {
     $assign(counter, { n, label: `from ${counter.n}`, items: [] });
     counter.items.push(n);
-  },
-};
-
-const Light = {
-  toggle(self) {
-    self.value = self.value === "Off" ? { TAG: "On", level: 5 } : "Off";
   },
 };
 
@@ -37,6 +39,10 @@ function swap_two(a, b) {
 
 function take_all(v) {
   return $take(v, []);
+}
+
+function pDebug_fmt(p) {
+  return `P { x: ${p.x}, y: ${p.y} }`;
 }
 
 function origin(p) {
@@ -57,9 +63,26 @@ function through_ref_mut_variable() {
   return (a.x + a.y) | 0;
 }
 
+function qDebug_fmt(q) {
+  return `Q { x: ${q.x} }`;
+}
+
 function swap_points(a, b) {
   $exchange(a, b);
 }
+
+function lightDebug_fmt(light) {
+  if (light === "Off") {
+    return "Off";
+  }
+  return `On { level: ${light.level} }`;
+}
+
+const Light = {
+  toggle(self) {
+    self.value = self.value === "Off" ? { TAG: "On", level: 5 } : "Off";
+  },
+};
 
 function set(l, level) {
   l.value = { TAG: "On", level };
@@ -69,6 +92,13 @@ function brighter(l) {
   if (l.value.TAG === "On") {
     l.value.level = (l.value.level + 1) & 255;
   }
+}
+
+function shapeDebug_fmt(shape) {
+  if (shape.TAG === "Circle") {
+    return `Circle { r: ${$debugF64(shape.r)} }`;
+  }
+  return `Square { side: ${$debugF64(shape.side)} }`;
 }
 
 function flip(s) {
@@ -174,35 +204,5 @@ function main() {
   const t = [5, "five"];
   zero(t);
   console.log(`(${t[0]}, ${$debugStr(t[1])})`);
-}
-
-export function entry() {
-  main();
-}
-
-function counterDebug_fmt(counter) {
-  return `Counter { n: ${counter.n}, label: ${$debugStr(counter.label)}, items: [${counter.items.map((item) => String(item)).join(", ")}] }`;
-}
-
-function pDebug_fmt(p) {
-  return `P { x: ${p.x}, y: ${p.y} }`;
-}
-
-function qDebug_fmt(q) {
-  return `Q { x: ${q.x} }`;
-}
-
-function lightDebug_fmt(light) {
-  if (light === "Off") {
-    return "Off";
-  }
-  return `On { level: ${light.level} }`;
-}
-
-function shapeDebug_fmt(shape) {
-  if (shape.TAG === "Circle") {
-    return `Circle { r: ${$debugF64(shape.r)} }`;
-  }
-  return `Square { side: ${$debugF64(shape.side)} }`;
 }
 //# sourceMappingURL=case.js.map

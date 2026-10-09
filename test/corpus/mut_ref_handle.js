@@ -2,6 +2,14 @@
 
 import { $at, $debugStr } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function counterDrop_drop(counter) {
+  counter[0].value = (counter[0].value + 1) | 0;
+}
+
 function pick(takeFirst, a, b) {
   return takeFirst ? a : b;
 }
@@ -184,13 +192,5 @@ function main() {
   const cell = first(v);
   cell.value = 9;
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
-}
-
-export function entry() {
-  main();
-}
-
-function counterDrop_drop(counter) {
-  counter[0].value = (counter[0].value + 1) | 0;
 }
 //# sourceMappingURL=case.js.map

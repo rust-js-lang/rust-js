@@ -2,6 +2,10 @@
 
 import { $debugStr, $replace, $split } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function show(text, pattern) {
   console.log(
     `${$debugStr($replace(text, pattern, "-"))} [${$split(text, pattern)
@@ -17,9 +21,5 @@ function main() {
   }
   show("a,b", ",");
   console.log(`${$replace("x🦀y", "", "|")}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

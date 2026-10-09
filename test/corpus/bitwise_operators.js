@@ -4,15 +4,120 @@ import { $eq } from "@rust-js/runtime";
 
 var $flagsBitOr, $flagsBitAnd, $flagsBitXor, $flagsNot, $flagsShlU8, $flagsShrU32, $refFlagsBitOr;
 
+export function entry() {
+  main();
+}
+
+function flagsDebug_fmt(flags) {
+  return `Flags(${flags[0]})`;
+}
+
+const READ = [1];
+const WRITE = [2];
+const RUN = [4];
+
+export function flagsBitOr() {
+  if ($flagsBitOr === undefined) {
+    $flagsBitOr = { bitor: flagsBitOr_bitor };
+  }
+  return $flagsBitOr;
+}
+
+function flagsBitOr_bitor(flags, other) {
+  return [flags[0] | other[0]];
+}
+
+export function flagsBitAnd() {
+  if ($flagsBitAnd === undefined) {
+    $flagsBitAnd = { bitand: flagsBitAnd_bitand };
+  }
+  return $flagsBitAnd;
+}
+
+function flagsBitAnd_bitand(flags, other) {
+  return [flags[0] & other[0]];
+}
+
+export function flagsBitXor() {
+  if ($flagsBitXor === undefined) {
+    $flagsBitXor = { bitxor: flagsBitXor_bitxor };
+  }
+  return $flagsBitXor;
+}
+
+function flagsBitXor_bitxor(flags, other) {
+  return [flags[0] ^ other[0]];
+}
+
+export function flagsNot() {
+  if ($flagsNot === undefined) {
+    $flagsNot = { not: flagsNot_not };
+  }
+  return $flagsNot;
+}
+
+function flagsNot_not(flags) {
+  return [~flags[0] & 255 & 7];
+}
+
+export function flagsShlU8() {
+  if ($flagsShlU8 === undefined) {
+    $flagsShlU8 = { shl: flagsShlU8_shl };
+  }
+  return $flagsShlU8;
+}
+
+function flagsShlU8_shl(flags, by) {
+  return [(flags[0] << (by & 7)) & 255 & 7];
+}
+
+export function flagsShrU32() {
+  if ($flagsShrU32 === undefined) {
+    $flagsShrU32 = { shr: flagsShrU32_shr };
+  }
+  return $flagsShrU32;
+}
+
+function flagsShrU32_shr(flags, by) {
+  return [flags[0] >>> (by & 7)];
+}
+
+function flagsBitOrAssign_bitor_assign(flags, other) {
+  flags[0] = flags[0] | other[0];
+}
+
+function flagsBitAndAssign_bitand_assign(flags, other) {
+  flags[0] = flags[0] & other[0];
+}
+
+function flagsBitXorAssign_bitxor_assign(flags, other) {
+  flags[0] = flags[0] ^ other[0];
+}
+
+function flagsShlAssignU8_shl_assign(flags, by) {
+  flags[0] = (flags[0] << (by & 7)) & 255 & 7;
+}
+
+function flagsShrAssignU32_shr_assign(flags, by) {
+  flags[0] = flags[0] >>> (by & 7);
+}
+
+export function refFlagsBitOr() {
+  if ($refFlagsBitOr === undefined) {
+    $refFlagsBitOr = { bitor: refFlagsBitOr_bitor };
+  }
+  return $refFlagsBitOr;
+}
+
+function refFlagsBitOr_bitor(flags, other) {
+  return [flags[0] | other[0]];
+}
+
 const Flags = {
   has(flags, other) {
     return $eq(flagsBitAnd_bitand([flags[0]], [other[0]]), other);
   },
 };
-
-const READ = [1];
-const WRITE = [2];
-const RUN = [4];
 
 function main() {
   const rw = flagsBitOr_bitor([READ[0]], [WRITE[0]]);
@@ -42,110 +147,5 @@ function main() {
   console.log(
     `[${all.map((item) => flagsDebug_fmt(item)).join(", ")}] ${flagsDebug_fmt(user[0])} ${user[1]}`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function flagsDebug_fmt(flags) {
-  return `Flags(${flags[0]})`;
-}
-
-function flagsBitOr_bitor(flags, other) {
-  return [flags[0] | other[0]];
-}
-
-function flagsBitAnd_bitand(flags, other) {
-  return [flags[0] & other[0]];
-}
-
-function flagsBitXor_bitxor(flags, other) {
-  return [flags[0] ^ other[0]];
-}
-
-function flagsNot_not(flags) {
-  return [~flags[0] & 255 & 7];
-}
-
-function flagsShlU8_shl(flags, by) {
-  return [(flags[0] << (by & 7)) & 255 & 7];
-}
-
-function flagsShrU32_shr(flags, by) {
-  return [flags[0] >>> (by & 7)];
-}
-
-function flagsBitOrAssign_bitor_assign(flags, other) {
-  flags[0] = flags[0] | other[0];
-}
-
-function flagsBitAndAssign_bitand_assign(flags, other) {
-  flags[0] = flags[0] & other[0];
-}
-
-function flagsBitXorAssign_bitxor_assign(flags, other) {
-  flags[0] = flags[0] ^ other[0];
-}
-
-function flagsShlAssignU8_shl_assign(flags, by) {
-  flags[0] = (flags[0] << (by & 7)) & 255 & 7;
-}
-
-function flagsShrAssignU32_shr_assign(flags, by) {
-  flags[0] = flags[0] >>> (by & 7);
-}
-
-function refFlagsBitOr_bitor(flags, other) {
-  return [flags[0] | other[0]];
-}
-
-export function flagsBitOr() {
-  if ($flagsBitOr === undefined) {
-    $flagsBitOr = { bitor: flagsBitOr_bitor };
-  }
-  return $flagsBitOr;
-}
-
-export function flagsBitAnd() {
-  if ($flagsBitAnd === undefined) {
-    $flagsBitAnd = { bitand: flagsBitAnd_bitand };
-  }
-  return $flagsBitAnd;
-}
-
-export function flagsBitXor() {
-  if ($flagsBitXor === undefined) {
-    $flagsBitXor = { bitxor: flagsBitXor_bitxor };
-  }
-  return $flagsBitXor;
-}
-
-export function flagsNot() {
-  if ($flagsNot === undefined) {
-    $flagsNot = { not: flagsNot_not };
-  }
-  return $flagsNot;
-}
-
-export function flagsShlU8() {
-  if ($flagsShlU8 === undefined) {
-    $flagsShlU8 = { shl: flagsShlU8_shl };
-  }
-  return $flagsShlU8;
-}
-
-export function flagsShrU32() {
-  if ($flagsShrU32 === undefined) {
-    $flagsShrU32 = { shr: flagsShrU32_shr };
-  }
-  return $flagsShrU32;
-}
-
-export function refFlagsBitOr() {
-  if ($refFlagsBitOr === undefined) {
-    $refFlagsBitOr = { bitor: refFlagsBitOr_bitor };
-  }
-  return $refFlagsBitOr;
 }
 //# sourceMappingURL=case.js.map

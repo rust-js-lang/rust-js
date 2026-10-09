@@ -4,6 +4,26 @@ import { $at, $index } from "@rust-js/runtime";
 
 var $refMutI32Bump;
 
+export function entry() {
+  main();
+}
+
+function gridIndexUsize_index(grid, i) {
+  return $index(grid[0], i);
+}
+
+function gridIndexMutUsize_index_mut(grid, i) {
+  const at = $at(grid[0], i);
+  return {
+    get value() {
+      return grid[0][at];
+    },
+    set value(value) {
+      grid[0][at] = value;
+    },
+  };
+}
+
 const Counter = {
   get_mut(counter) {
     return {
@@ -16,6 +36,17 @@ const Counter = {
     };
   },
 };
+
+function refMutI32Bump() {
+  if ($refMutI32Bump === undefined) {
+    $refMutI32Bump = { bump: refMutI32Bump_bump };
+  }
+  return $refMutI32Bump;
+}
+
+function refMutI32Bump_bump(self) {
+  self.value = (self.value + 1) | 0;
+}
 
 function go(t, TBump) {
   TBump.bump(t);
@@ -62,36 +93,5 @@ function main() {
     refMutI32Bump(),
   );
   console.log(`${b}`);
-}
-
-export function entry() {
-  main();
-}
-
-function gridIndexUsize_index(grid, i) {
-  return $index(grid[0], i);
-}
-
-function gridIndexMutUsize_index_mut(grid, i) {
-  const at = $at(grid[0], i);
-  return {
-    get value() {
-      return grid[0][at];
-    },
-    set value(value) {
-      grid[0][at] = value;
-    },
-  };
-}
-
-function refMutI32Bump_bump(self) {
-  self.value = (self.value + 1) | 0;
-}
-
-function refMutI32Bump() {
-  if ($refMutI32Bump === undefined) {
-    $refMutI32Bump = { bump: refMutI32Bump_bump };
-  }
-  return $refMutI32Bump;
 }
 //# sourceMappingURL=case.js.map

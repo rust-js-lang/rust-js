@@ -2,21 +2,8 @@
 
 var $stringAsStr;
 
-function show(s) {
-  return s.impl.get(s.value).toUpperCase();
-}
-
-function main() {
-  const b = { value: "bar", impl: stringAsStr() };
-  console.log(`${b.impl.get(b.value)} ${show({ value: "four", impl: stringAsStr() })}`);
-}
-
 export function entry() {
   main();
-}
-
-function stringAsStr_get(string) {
-  return string;
 }
 
 function stringAsStr() {
@@ -24,5 +11,18 @@ function stringAsStr() {
     $stringAsStr = { get: stringAsStr_get };
   }
   return $stringAsStr;
+}
+
+function stringAsStr_get(string) {
+  return string;
+}
+
+function show(s) {
+  return s.impl.get(s.value).toUpperCase();
+}
+
+function main() {
+  const b = { value: "bar", impl: stringAsStr() };
+  console.log(`${b.impl.get(b.value)} ${show({ value: "four", impl: stringAsStr() })}`);
 }
 //# sourceMappingURL=case.js.map

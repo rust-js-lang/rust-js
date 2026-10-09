@@ -4,6 +4,144 @@ import { $debugStr, $json, $splitOnce, $trim } from "@rust-js/runtime";
 
 var $contactDebug, $newContactDebug, $fieldErrorDebug, $problemDebug;
 
+export function contactDebug_fmt(contact) {
+  return `Contact { id: ${contact.id}, name: ${$debugStr(contact.name)}, email: ${$debugStr(contact.email)}, age: ${contact.age} }`;
+}
+
+export function contactDebug() {
+  if ($contactDebug === undefined) {
+    $contactDebug = { fmt: contactDebug_fmt };
+  }
+  return $contactDebug;
+}
+
+export function contactSerialize_serialize(contact, json) {
+  json.beginObject();
+  json.key("id");
+  json.int(contact.id);
+  json.key("name");
+  json.string(contact.name);
+  json.key("email");
+  json.string(contact.email);
+  json.key("age");
+  json.int(contact.age);
+  json.endObject();
+}
+
+export function contactDeserialize_deserialize(json) {
+  return json.struct(
+    "struct Contact",
+    [
+      ["id", $json.u32],
+      ["name", $json.string],
+      ["email", $json.string],
+      ["age", $json.u32],
+    ],
+    ([id, name, email, age]) => ({ id, name, email, age }),
+  );
+}
+
+export function newContactDebug_fmt(newContact) {
+  return `NewContact { name: ${$debugStr(newContact.name)}, email: ${$debugStr(newContact.email)}, age: ${newContact.age} }`;
+}
+
+export function newContactDebug() {
+  if ($newContactDebug === undefined) {
+    $newContactDebug = { fmt: newContactDebug_fmt };
+  }
+  return $newContactDebug;
+}
+
+export function newContactSerialize_serialize(newContact, json) {
+  json.beginObject();
+  json.key("name");
+  json.string(newContact.name);
+  json.key("email");
+  json.string(newContact.email);
+  json.key("age");
+  json.int(newContact.age);
+  json.endObject();
+}
+
+export function newContactDeserialize_deserialize(json) {
+  return json.struct(
+    "struct NewContact",
+    [
+      ["name", $json.string],
+      ["email", $json.string],
+      ["age", $json.u32],
+    ],
+    ([name, email, age]) => ({ name, email, age }),
+  );
+}
+
+export function fieldErrorDebug_fmt(fieldError) {
+  return `FieldError { field: ${$debugStr(fieldError.field)}, message: ${$debugStr(fieldError.message)} }`;
+}
+
+export function fieldErrorDebug() {
+  if ($fieldErrorDebug === undefined) {
+    $fieldErrorDebug = { fmt: fieldErrorDebug_fmt };
+  }
+  return $fieldErrorDebug;
+}
+
+export function fieldErrorSerialize_serialize(fieldError, json) {
+  json.beginObject();
+  json.key("field");
+  json.string(fieldError.field);
+  json.key("message");
+  json.string(fieldError.message);
+  json.endObject();
+}
+
+export function fieldErrorDeserialize_deserialize(json) {
+  return json.struct(
+    "struct FieldError",
+    [
+      ["field", $json.string],
+      ["message", $json.string],
+    ],
+    ([field, message]) => ({ field, message }),
+  );
+}
+
+export function problemDebug_fmt(problem) {
+  return `Problem { message: ${$debugStr(problem.message)}, errors: [${problem.errors.map((item) => fieldErrorDebug_fmt(item)).join(", ")}] }`;
+}
+
+export function problemDebug() {
+  if ($problemDebug === undefined) {
+    $problemDebug = { fmt: problemDebug_fmt };
+  }
+  return $problemDebug;
+}
+
+export function problemSerialize_serialize(problem, json) {
+  json.beginObject();
+  json.key("message");
+  json.string(problem.message);
+  json.key("errors");
+  json.beginArray();
+  for (const item of problem.errors) {
+    json.element();
+    fieldErrorSerialize_serialize(item, json);
+  }
+  json.endArray();
+  json.endObject();
+}
+
+export function problemDeserialize_deserialize(json) {
+  return json.struct(
+    "struct Problem",
+    [
+      ["message", $json.string],
+      ["errors", $json.vec(fieldErrorDeserialize_deserialize)],
+    ],
+    ([message, errors]) => ({ message, errors }),
+  );
+}
+
 export const Problem = {
   new(message) {
     return { message, errors: [] };
@@ -52,144 +190,6 @@ export function matches(contact, query) {
     !query$1 ||
     contact.name.toLowerCase().includes(query$1) ||
     contact.email.toLowerCase().includes(query$1)
-  );
-}
-
-export function contactDebug_fmt(contact) {
-  return `Contact { id: ${contact.id}, name: ${$debugStr(contact.name)}, email: ${$debugStr(contact.email)}, age: ${contact.age} }`;
-}
-
-export function newContactDebug_fmt(newContact) {
-  return `NewContact { name: ${$debugStr(newContact.name)}, email: ${$debugStr(newContact.email)}, age: ${newContact.age} }`;
-}
-
-export function fieldErrorDebug_fmt(fieldError) {
-  return `FieldError { field: ${$debugStr(fieldError.field)}, message: ${$debugStr(fieldError.message)} }`;
-}
-
-export function problemDebug_fmt(problem) {
-  return `Problem { message: ${$debugStr(problem.message)}, errors: [${problem.errors.map((item) => fieldErrorDebug_fmt(item)).join(", ")}] }`;
-}
-
-export function contactDebug() {
-  if ($contactDebug === undefined) {
-    $contactDebug = { fmt: contactDebug_fmt };
-  }
-  return $contactDebug;
-}
-
-export function newContactDebug() {
-  if ($newContactDebug === undefined) {
-    $newContactDebug = { fmt: newContactDebug_fmt };
-  }
-  return $newContactDebug;
-}
-
-export function fieldErrorDebug() {
-  if ($fieldErrorDebug === undefined) {
-    $fieldErrorDebug = { fmt: fieldErrorDebug_fmt };
-  }
-  return $fieldErrorDebug;
-}
-
-export function problemDebug() {
-  if ($problemDebug === undefined) {
-    $problemDebug = { fmt: problemDebug_fmt };
-  }
-  return $problemDebug;
-}
-
-export function contactSerialize_serialize(contact, json) {
-  json.beginObject();
-  json.key("id");
-  json.int(contact.id);
-  json.key("name");
-  json.string(contact.name);
-  json.key("email");
-  json.string(contact.email);
-  json.key("age");
-  json.int(contact.age);
-  json.endObject();
-}
-
-export function contactDeserialize_deserialize(json) {
-  return json.struct(
-    "struct Contact",
-    [
-      ["id", $json.u32],
-      ["name", $json.string],
-      ["email", $json.string],
-      ["age", $json.u32],
-    ],
-    ([id, name, email, age]) => ({ id, name, email, age }),
-  );
-}
-
-export function newContactSerialize_serialize(newContact, json) {
-  json.beginObject();
-  json.key("name");
-  json.string(newContact.name);
-  json.key("email");
-  json.string(newContact.email);
-  json.key("age");
-  json.int(newContact.age);
-  json.endObject();
-}
-
-export function newContactDeserialize_deserialize(json) {
-  return json.struct(
-    "struct NewContact",
-    [
-      ["name", $json.string],
-      ["email", $json.string],
-      ["age", $json.u32],
-    ],
-    ([name, email, age]) => ({ name, email, age }),
-  );
-}
-
-export function fieldErrorSerialize_serialize(fieldError, json) {
-  json.beginObject();
-  json.key("field");
-  json.string(fieldError.field);
-  json.key("message");
-  json.string(fieldError.message);
-  json.endObject();
-}
-
-export function fieldErrorDeserialize_deserialize(json) {
-  return json.struct(
-    "struct FieldError",
-    [
-      ["field", $json.string],
-      ["message", $json.string],
-    ],
-    ([field, message]) => ({ field, message }),
-  );
-}
-
-export function problemSerialize_serialize(problem, json) {
-  json.beginObject();
-  json.key("message");
-  json.string(problem.message);
-  json.key("errors");
-  json.beginArray();
-  for (const item of problem.errors) {
-    json.element();
-    fieldErrorSerialize_serialize(item, json);
-  }
-  json.endArray();
-  json.endObject();
-}
-
-export function problemDeserialize_deserialize(json) {
-  return json.struct(
-    "struct Problem",
-    [
-      ["message", $json.string],
-      ["errors", $json.vec(fieldErrorDeserialize_deserialize)],
-    ],
-    ([message, errors]) => ({ message, errors }),
   );
 }
 //# sourceMappingURL=lib.js.map

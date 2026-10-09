@@ -2,14 +2,14 @@
 
 import { $debugStr, $rotateRight } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   const q = Array.from("ab");
   $rotateRight(q, 1, "n");
   console.log(`[${q.map((item) => $debugStr(item, "'")).join(", ")}]`);
   $rotateRight(q, 3, "n");
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

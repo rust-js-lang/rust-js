@@ -30,7 +30,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && (self.tcx.def_kind(def_id) != rustc_hir::def::DefKind::AssocFn
                         || self.tcx.inherent_impl_of_assoc(def_id).is_some()),
                 is_async,
-                span: self.js_span(self.tcx.def_span(def_id)),
+                span: self.js_span(def_id.as_local().map_or(self.tcx.def_span(def_id), |local| {
+                    self.tcx.hir_span_with_body(self.tcx.local_def_id_to_hir_id(local))
+                })),
                 name_span: self
                     .tcx
                     .def_ident_span(def_id)

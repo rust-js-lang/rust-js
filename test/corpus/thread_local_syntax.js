@@ -2,6 +2,10 @@
 
 import { $debugStr } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 const COUNT = { value: 0 };
 const NAMES = { value: [] };
 const LIMIT = 3;
@@ -25,9 +29,5 @@ function main() {
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

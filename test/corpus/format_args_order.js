@@ -2,6 +2,10 @@
 
 import { $debugStr } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 const Counter = {
   bump(counter) {
     counter.n = (counter.n + 1) >>> 0;
@@ -30,9 +34,5 @@ function main() {
   const arg$7 = words.pop();
   const line = `${arg$6}|${arg$7 == null ? "None" : `Some(${$debugStr(arg$7)})`}|${words.length}`;
   console.log(`${line}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

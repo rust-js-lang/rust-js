@@ -4,6 +4,14 @@ import { $at, $debugStr, $eq } from "@rust-js/runtime";
 
 var $cSlot;
 
+export function entry() {
+  main();
+}
+
+function cDebug_fmt(c) {
+  return `C { n: ${c.n} }`;
+}
+
 function to_refs(list) {
   const result = [];
   while (true) {
@@ -44,6 +52,39 @@ function first(v) {
     },
     set value(value) {
       v[at] = value;
+    },
+  };
+}
+
+function checkedDeref_deref(checked) {
+  return checked.value;
+}
+
+function checkedDerefMut_deref_mut(checked) {
+  return {
+    get value() {
+      return checked.value;
+    },
+    set value(value) {
+      checked.value = value;
+    },
+  };
+}
+
+function cSlot() {
+  if ($cSlot === undefined) {
+    $cSlot = { slot: (arg0) => cSlot_slot(arg0.value) };
+  }
+  return $cSlot;
+}
+
+function cSlot_slot(c) {
+  return {
+    get value() {
+      return c.n;
+    },
+    set value(value) {
+      c.n = value;
     },
   };
 }
@@ -216,46 +257,5 @@ function main() {
     match$1.value = (match$1.value + 1) | 0;
   }
   console.log(`${cDebug_fmt(k)}`);
-}
-
-export function entry() {
-  main();
-}
-
-function cDebug_fmt(c) {
-  return `C { n: ${c.n} }`;
-}
-
-function checkedDeref_deref(checked) {
-  return checked.value;
-}
-
-function checkedDerefMut_deref_mut(checked) {
-  return {
-    get value() {
-      return checked.value;
-    },
-    set value(value) {
-      checked.value = value;
-    },
-  };
-}
-
-function cSlot_slot(c) {
-  return {
-    get value() {
-      return c.n;
-    },
-    set value(value) {
-      c.n = value;
-    },
-  };
-}
-
-function cSlot() {
-  if ($cSlot === undefined) {
-    $cSlot = { slot: (arg0) => cSlot_slot(arg0.value) };
-  }
-  return $cSlot;
 }
 //# sourceMappingURL=case.js.map

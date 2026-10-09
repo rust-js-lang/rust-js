@@ -2,6 +2,10 @@
 
 import { $parseInt, $splitOnce, $stripPrefix, $stripSuffix } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function square(n) {
   return Math.imul(n, n) >>> 0;
 }
@@ -58,9 +62,5 @@ function main() {
   console.log(
     `${arg == null ? "None" : `Some(${arg})`} ${arg$1 == null ? "None" : `Some(${arg$1})`}`,
   );
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

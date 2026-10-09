@@ -10,12 +10,20 @@ import {
   $unwrap,
 } from "@rust-js/runtime";
 
-const SEVEN = 7;
+export function entry() {
+  main();
+}
+
+function yearDebug_fmt(year$1) {
+  return `Year(${year$1[0]})`;
+}
 
 function year(n) {
   const value = n === 0 ? undefined : n;
   return value ? [value] : undefined;
 }
+
+const SEVEN = 7;
 
 function main() {
   const a = $unwrap(7);
@@ -57,13 +65,5 @@ function main() {
       console.log(`${n}`);
     }
   }
-}
-
-export function entry() {
-  main();
-}
-
-function yearDebug_fmt(year$1) {
-  return `Year(${year$1[0]})`;
 }
 //# sourceMappingURL=case.js.map

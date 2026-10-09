@@ -2,6 +2,14 @@
 
 import { $at, $index } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function cellDebug_fmt(cell) {
+  return `Cell { value: ${cell.value} }`;
+}
+
 function main() {
   const grid = [
     [0, 0, 0],
@@ -42,13 +50,5 @@ function main() {
   console.log(
     `[${deep.map((item) => `[${item.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`).join(", ")}] ${deep[1][0][1]}`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function cellDebug_fmt(cell) {
-  return `Cell { value: ${cell.value} }`;
 }
 //# sourceMappingURL=case.js.map

@@ -11,6 +11,55 @@ import {
 
 var $metersDisplay, $nameDisplay, $pairDebug;
 
+export function entry() {
+  main();
+}
+
+export function metersDisplay() {
+  if ($metersDisplay === undefined) {
+    $metersDisplay = { fmt: metersDisplay_fmt };
+  }
+  return $metersDisplay;
+}
+
+function metersDisplay_fmt(meters, options) {
+  let f = $formatFloat(meters[0], options, $displayF64);
+  f += " m";
+  return f;
+}
+
+export function nameDisplay() {
+  if ($nameDisplay === undefined) {
+    $nameDisplay = { fmt: nameDisplay_fmt };
+  }
+  return $nameDisplay;
+}
+
+function nameDisplay_fmt(name, options) {
+  return $formatted(name[0], options);
+}
+
+function pointDebug_fmt(point, options) {
+  const shown = $formatted(String(point.x), options, true);
+  const shown$1 = $formatFloat(point.y, options, $debugF64);
+  return options?.alternate
+    ? $pretty("Point {", [`x: ${shown}`, `y: ${shown$1}`], "}")
+    : `Point { x: ${shown}, y: ${shown$1} }`;
+}
+
+export function pairDebug() {
+  if ($pairDebug === undefined) {
+    $pairDebug = { fmt: pairDebug_fmt };
+  }
+  return $pairDebug;
+}
+
+function pairDebug_fmt(pair, options) {
+  return options?.alternate
+    ? $pretty("Pair(", [$formatted(String(pair[0]), options, true), $debugStr(pair[1])], ")")
+    : `Pair(${$formatted(String(pair[0]), options, true)}, ${$debugStr(pair[1])})`;
+}
+
 function show(value, TDisplay) {
   return `[${TDisplay.fmt(value, { width: 6, align: "Right" })}]`;
 }
@@ -68,54 +117,5 @@ function main() {
       align: "Center",
     })}] [${String(true).padStart(5)}]`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function metersDisplay_fmt(meters, options) {
-  let f = $formatFloat(meters[0], options, $displayF64);
-  f += " m";
-  return f;
-}
-
-function nameDisplay_fmt(name, options) {
-  return $formatted(name[0], options);
-}
-
-function pointDebug_fmt(point, options) {
-  const shown = $formatted(String(point.x), options, true);
-  const shown$1 = $formatFloat(point.y, options, $debugF64);
-  return options?.alternate
-    ? $pretty("Point {", [`x: ${shown}`, `y: ${shown$1}`], "}")
-    : `Point { x: ${shown}, y: ${shown$1} }`;
-}
-
-function pairDebug_fmt(pair, options) {
-  return options?.alternate
-    ? $pretty("Pair(", [$formatted(String(pair[0]), options, true), $debugStr(pair[1])], ")")
-    : `Pair(${$formatted(String(pair[0]), options, true)}, ${$debugStr(pair[1])})`;
-}
-
-export function metersDisplay() {
-  if ($metersDisplay === undefined) {
-    $metersDisplay = { fmt: metersDisplay_fmt };
-  }
-  return $metersDisplay;
-}
-
-export function nameDisplay() {
-  if ($nameDisplay === undefined) {
-    $nameDisplay = { fmt: nameDisplay_fmt };
-  }
-  return $nameDisplay;
-}
-
-export function pairDebug() {
-  if ($pairDebug === undefined) {
-    $pairDebug = { fmt: pairDebug_fmt };
-  }
-  return $pairDebug;
 }
 //# sourceMappingURL=case.js.map

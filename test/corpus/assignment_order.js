@@ -2,6 +2,18 @@
 
 import { $at, $index } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function totalDebug_fmt(total) {
+  return `Total(${total[0]})`;
+}
+
+function totalAddAssignI32_add_assign(total, other) {
+  total[0] = (total[0] + other) | 0;
+}
+
 function index(name, i) {
   console.log(`${name}: index`);
   return i;
@@ -143,17 +155,5 @@ function main() {
   const empty = [];
   const value$14 = (value("out of bounds", 8) << 24) >> 24;
   empty[$at(empty, index("out of bounds", 0))] = value$14;
-}
-
-export function entry() {
-  main();
-}
-
-function totalDebug_fmt(total) {
-  return `Total(${total[0]})`;
-}
-
-function totalAddAssignI32_add_assign(total, other) {
-  total[0] = (total[0] + other) | 0;
 }
 //# sourceMappingURL=case.js.map

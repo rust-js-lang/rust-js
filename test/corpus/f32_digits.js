@@ -2,6 +2,10 @@
 
 import { $debugF32, $displayF32 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   let power = 1;
   for (let i = 0; i < 149; i++) {
@@ -36,9 +40,5 @@ function main() {
     }
     console.log(`${$displayF32(x)} ${$debugF32(x)}`);
   }
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

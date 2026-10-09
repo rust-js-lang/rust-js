@@ -2,6 +2,10 @@
 
 import { $at, $index } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function bump(n) {
   n.value = (n.value + 1) | 0;
 }
@@ -127,9 +131,5 @@ function main() {
   z = (z + 1) | 0;
   z = (z + 1) | 0;
   console.log(`${z}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

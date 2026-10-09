@@ -24,6 +24,27 @@ import {
 
 var $rowErrorDisplay;
 
+function rowErrorFromParseIntError_from(e) {
+  return { TAG: "Number", _0: e };
+}
+
+export function rowErrorDisplay() {
+  if ($rowErrorDisplay === undefined) {
+    $rowErrorDisplay = { fmt: rowErrorDisplay_fmt };
+  }
+  return $rowErrorDisplay;
+}
+
+function rowErrorDisplay_fmt(rowError) {
+  if (rowError.TAG === "Fields") {
+    return `expected 4 fields, got ${rowError._0}`;
+  }
+  if (rowError.TAG === "Number") {
+    return `bad number: ${rowError._0}`;
+  }
+  return `empty ${rowError._0}`;
+}
+
 const HEADERS = ["name", "team", "score", "age"];
 
 function parse_row(line) {
@@ -134,26 +155,5 @@ export function report() {
   const arg$1 = parse_errors();
   const arg$2 = function_values(["x", "é"]);
   return `${arg}${arg$1}\n([${arg$2[0].map((item) => $debugStr(item)).join(", ")}], [${arg$2[1].map((item) => String(item)).join(", ")}], [${arg$2[2].map((item) => $debugF64(item)).join(", ")}], [${arg$2[3].map((item) => $debugStr(item)).join(", ")}])\n`;
-}
-
-function rowErrorFromParseIntError_from(e) {
-  return { TAG: "Number", _0: e };
-}
-
-function rowErrorDisplay_fmt(rowError) {
-  if (rowError.TAG === "Fields") {
-    return `expected 4 fields, got ${rowError._0}`;
-  }
-  if (rowError.TAG === "Number") {
-    return `bad number: ${rowError._0}`;
-  }
-  return `empty ${rowError._0}`;
-}
-
-export function rowErrorDisplay() {
-  if ($rowErrorDisplay === undefined) {
-    $rowErrorDisplay = { fmt: rowErrorDisplay_fmt };
-  }
-  return $rowErrorDisplay;
 }
 //# sourceMappingURL=report.js.map

@@ -21,6 +21,133 @@ import {
 
 var $calcErrorDisplay;
 
+export function entry() {
+  main();
+}
+
+function tokenDebug_fmt(token) {
+  if (token.TAG === "Num") {
+    return `Num(${$debugF64(token._0)})`;
+  }
+  if (token.TAG === "Ident") {
+    return `Ident(${$debugStr(token._0)})`;
+  }
+  if (token.TAG === "Op") {
+    return `Op(${$debugStr(token._0, "'")})`;
+  }
+  if (token === "LParen") {
+    return "LParen";
+  }
+  if (token === "RParen") {
+    return "RParen";
+  }
+  if (token === "Comma") {
+    return "Comma";
+  }
+  return "Assign";
+}
+
+export function calcErrorDisplay() {
+  if ($calcErrorDisplay === undefined) {
+    $calcErrorDisplay = { fmt: calcErrorDisplay_fmt };
+  }
+  return $calcErrorDisplay;
+}
+
+function calcErrorDisplay_fmt(calcError) {
+  if (calcError.TAG === "Unexpected") {
+    return `unexpected '${calcError._0}'`;
+  }
+  if (calcError === "UnexpectedEnd") {
+    return "unexpected end of input";
+  }
+  if (calcError.TAG === "Expected") {
+    return `expected ${calcError._0}`;
+  }
+  if (calcError.TAG === "Unknown") {
+    return `unknown name \`${calcError._0}\``;
+  }
+  if (calcError === "DivideByZero") {
+    return "division by zero";
+  }
+  return `${calcError.name} takes ${calcError.wanted} argument${calcError.wanted === 1 ? "" : "s"}, got ${calcError.got}`;
+}
+
+function number(chars) {
+  let text = "";
+  while (true) {
+    const value = $peek(chars);
+    if (value != null) {
+      if (/^[0-9]$/.test(value) || value === ".") {
+        text += value;
+        $next(chars);
+      } else {
+        break;
+      }
+    } else {
+      break;
+    }
+  }
+  const result = $parseF64(text);
+  return result.TAG === "Ok" ? result._0 : 0;
+}
+
+function tokenize(source) {
+  const tokens = [];
+  const chars = $iter(Array.from(source));
+  while (true) {
+    const value = $peek(chars);
+    if (value != null) {
+      if (value === " ") {
+        $next(chars);
+      } else if ((value >= "0" && value <= "9") || value === ".") {
+        tokens.push({ TAG: "Num", _0: number(chars) });
+      } else if (
+        (value >= "a" && value <= "z") ||
+        (value >= "A" && value <= "Z") ||
+        value === "_"
+      ) {
+        let name = "";
+        while (true) {
+          const c = $nextIf(chars, (c) => /^[\p{Alphabetic}\p{N}]$/u.test(c) || c === "_");
+          if (c != null) {
+            name += c;
+          } else {
+            break;
+          }
+        }
+        tokens.push({ TAG: "Ident", _0: name });
+      } else if (
+        value === "+" ||
+        value === "-" ||
+        value === "*" ||
+        value === "/" ||
+        value === "^"
+      ) {
+        tokens.push({ TAG: "Op", _0: value });
+        $next(chars);
+      } else if (value === "(") {
+        tokens.push("LParen");
+        $next(chars);
+      } else if (value === ")") {
+        tokens.push("RParen");
+        $next(chars);
+      } else if (value === ",") {
+        tokens.push("Comma");
+        $next(chars);
+      } else if (value === "=") {
+        tokens.push("Assign");
+        $next(chars);
+      } else {
+        return { TAG: "Err", _0: { TAG: "Unexpected", _0: value } };
+      }
+    } else {
+      break;
+    }
+  }
+  return { TAG: "Ok", _0: tokens };
+}
+
 const Parser = {
   peek(parser) {
     return parser.tokens[parser.at];
@@ -278,81 +405,6 @@ const Calculator = {
   },
 };
 
-function number(chars) {
-  let text = "";
-  while (true) {
-    const value = $peek(chars);
-    if (value != null) {
-      if (/^[0-9]$/.test(value) || value === ".") {
-        text += value;
-        $next(chars);
-      } else {
-        break;
-      }
-    } else {
-      break;
-    }
-  }
-  const result = $parseF64(text);
-  return result.TAG === "Ok" ? result._0 : 0;
-}
-
-function tokenize(source) {
-  const tokens = [];
-  const chars = $iter(Array.from(source));
-  while (true) {
-    const value = $peek(chars);
-    if (value != null) {
-      if (value === " ") {
-        $next(chars);
-      } else if ((value >= "0" && value <= "9") || value === ".") {
-        tokens.push({ TAG: "Num", _0: number(chars) });
-      } else if (
-        (value >= "a" && value <= "z") ||
-        (value >= "A" && value <= "Z") ||
-        value === "_"
-      ) {
-        let name = "";
-        while (true) {
-          const c = $nextIf(chars, (c) => /^[\p{Alphabetic}\p{N}]$/u.test(c) || c === "_");
-          if (c != null) {
-            name += c;
-          } else {
-            break;
-          }
-        }
-        tokens.push({ TAG: "Ident", _0: name });
-      } else if (
-        value === "+" ||
-        value === "-" ||
-        value === "*" ||
-        value === "/" ||
-        value === "^"
-      ) {
-        tokens.push({ TAG: "Op", _0: value });
-        $next(chars);
-      } else if (value === "(") {
-        tokens.push("LParen");
-        $next(chars);
-      } else if (value === ")") {
-        tokens.push("RParen");
-        $next(chars);
-      } else if (value === ",") {
-        tokens.push("Comma");
-        $next(chars);
-      } else if (value === "=") {
-        tokens.push("Assign");
-        $next(chars);
-      } else {
-        return { TAG: "Err", _0: { TAG: "Unexpected", _0: value } };
-      }
-    } else {
-      break;
-    }
-  }
-  return { TAG: "Ok", _0: tokens };
-}
-
 function main() {
   const calc = Calculator.new();
   const lines = [
@@ -384,57 +436,5 @@ function main() {
   const names = Array.from(calc.vars.keys());
   names.sort($cmp);
   console.log(`${names.join(", ")}`);
-}
-
-export function entry() {
-  main();
-}
-
-function tokenDebug_fmt(token) {
-  if (token.TAG === "Num") {
-    return `Num(${$debugF64(token._0)})`;
-  }
-  if (token.TAG === "Ident") {
-    return `Ident(${$debugStr(token._0)})`;
-  }
-  if (token.TAG === "Op") {
-    return `Op(${$debugStr(token._0, "'")})`;
-  }
-  if (token === "LParen") {
-    return "LParen";
-  }
-  if (token === "RParen") {
-    return "RParen";
-  }
-  if (token === "Comma") {
-    return "Comma";
-  }
-  return "Assign";
-}
-
-function calcErrorDisplay_fmt(calcError) {
-  if (calcError.TAG === "Unexpected") {
-    return `unexpected '${calcError._0}'`;
-  }
-  if (calcError === "UnexpectedEnd") {
-    return "unexpected end of input";
-  }
-  if (calcError.TAG === "Expected") {
-    return `expected ${calcError._0}`;
-  }
-  if (calcError.TAG === "Unknown") {
-    return `unknown name \`${calcError._0}\``;
-  }
-  if (calcError === "DivideByZero") {
-    return "division by zero";
-  }
-  return `${calcError.name} takes ${calcError.wanted} argument${calcError.wanted === 1 ? "" : "s"}, got ${calcError.got}`;
-}
-
-export function calcErrorDisplay() {
-  if ($calcErrorDisplay === undefined) {
-    $calcErrorDisplay = { fmt: calcErrorDisplay_fmt };
-  }
-  return $calcErrorDisplay;
 }
 //# sourceMappingURL=case.js.map

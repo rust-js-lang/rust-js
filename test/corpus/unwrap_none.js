@@ -2,6 +2,10 @@
 
 import { $position, $unwrap } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function find(v, x) {
   return $position(v, (y) => y === x);
 }
@@ -11,9 +15,5 @@ function main() {
   console.log(`${arg == null ? "None" : `Some(${arg})`}`);
   const at = $unwrap(find([4, 5], 6));
   console.log(`${at}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

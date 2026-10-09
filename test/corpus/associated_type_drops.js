@@ -4,6 +4,44 @@ import { $byteLen, $some, $someValue } from "@rust-js/runtime";
 
 var $loudZone, $quietZone, $loudSource;
 
+export function entry() {
+  main();
+}
+
+function noisyDrop_drop(noisy) {
+  console.log(`drop ${noisy[0]}`);
+}
+
+function loudZone() {
+  if ($loudZone === undefined) {
+    $loudZone = { offset: loudZone_offset, show: loudZone_show, $dropOffset: noisyDrop_drop };
+  }
+  return $loudZone;
+}
+
+function loudZone_offset(loud, name) {
+  return [name];
+}
+
+function loudZone_show(offset) {
+  return `loud ${offset[0]}`;
+}
+
+function quietZone() {
+  if ($quietZone === undefined) {
+    $quietZone = { offset: quietZone_offset, show: quietZone_show };
+  }
+  return $quietZone;
+}
+
+function quietZone_offset(quiet, name) {
+  return $byteLen(name);
+}
+
+function quietZone_show(offset) {
+  return `quiet ${offset}`;
+}
+
 function stamp(zone, at, name, ZZone) {
   return { at, offset: ZZone.offset(zone, name) };
 }
@@ -48,6 +86,17 @@ function describe(zone, ZZone) {
   }
 }
 
+function loudSource() {
+  if ($loudSource === undefined) {
+    $loudSource = { make: loudSource_make, $dropItem: noisyDrop_drop };
+  }
+  return $loudSource;
+}
+
+function loudSource_make(loud) {
+  return ["made"];
+}
+
 function take(source, SSource) {
   const _item = SSource.make(source);
   try {
@@ -69,54 +118,5 @@ function main() {
   } finally {
     noisyDrop_drop(kept.offset);
   }
-}
-
-export function entry() {
-  main();
-}
-
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
-function loudZone_offset(loud, name) {
-  return [name];
-}
-
-function loudZone_show(offset) {
-  return `loud ${offset[0]}`;
-}
-
-function quietZone_offset(quiet, name) {
-  return $byteLen(name);
-}
-
-function quietZone_show(offset) {
-  return `quiet ${offset}`;
-}
-
-function loudSource_make(loud) {
-  return ["made"];
-}
-
-function loudZone() {
-  if ($loudZone === undefined) {
-    $loudZone = { offset: loudZone_offset, show: loudZone_show, $dropOffset: noisyDrop_drop };
-  }
-  return $loudZone;
-}
-
-function quietZone() {
-  if ($quietZone === undefined) {
-    $quietZone = { offset: quietZone_offset, show: quietZone_show };
-  }
-  return $quietZone;
-}
-
-function loudSource() {
-  if ($loudSource === undefined) {
-    $loudSource = { make: loudSource_make, $dropItem: noisyDrop_drop };
-  }
-  return $loudSource;
 }
 //# sourceMappingURL=case.js.map

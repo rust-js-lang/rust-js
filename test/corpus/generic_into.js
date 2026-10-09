@@ -2,6 +2,18 @@
 
 import { $displayF64 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function nameFromStr_from(s) {
+  return [s.toUpperCase()];
+}
+
+function fahrenheitFromCelsius_from(c) {
+  return [(c[0] * 9) / 5 + 32];
+}
+
 function greet(name, IntoString) {
   const name$1 = IntoString.into(name);
   return `hello, ${name$1}`;
@@ -32,17 +44,5 @@ function main() {
     })} ${widened([-5, 7], { into: (n) => BigInt(n) })}`,
   );
   console.log(`${$displayF64(fahrenheit([100], { into: fahrenheitFromCelsius_from }))}`);
-}
-
-export function entry() {
-  main();
-}
-
-function nameFromStr_from(s) {
-  return [s.toUpperCase()];
-}
-
-function fahrenheitFromCelsius_from(c) {
-  return [(c[0] * 9) / 5 + 32];
 }
 //# sourceMappingURL=case.js.map

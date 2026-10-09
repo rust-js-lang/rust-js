@@ -19,6 +19,43 @@ import {
 
 var $negativeDebug, $negativeDisplay, $negativeError, $tAsDyn;
 
+export function entry() {
+  main();
+}
+
+function negativeDebug_fmt(negative) {
+  return `Negative(${negative[0]})`;
+}
+
+export function negativeDebug() {
+  if ($negativeDebug === undefined) {
+    $negativeDebug = { fmt: negativeDebug_fmt };
+  }
+  return $negativeDebug;
+}
+
+export function negativeDisplay() {
+  if ($negativeDisplay === undefined) {
+    $negativeDisplay = { fmt: negativeDisplay_fmt };
+  }
+  return $negativeDisplay;
+}
+
+function negativeDisplay_fmt(negative) {
+  return `${negative[0]} is negative`;
+}
+
+export function negativeError() {
+  if ($negativeError === undefined) {
+    $negativeError = {
+      Debug: () => negativeDebug(),
+      Display: () => negativeDisplay(),
+      source: () => undefined,
+    };
+  }
+  return $negativeError;
+}
+
 function parse_positive(s) {
   const result = $parseBig($trim(s), -9223372036854775808n, 9223372036854775807n);
   if (result.TAG === "Err") {
@@ -59,6 +96,17 @@ function settings(text) {
   }
   const small = result$4._0;
   return { TAG: "Ok", _0: [scale, on, mark, small] };
+}
+
+function tAsDyn(TError) {
+  if ($tAsDyn === undefined) {
+    $tAsDyn = new WeakMap();
+  }
+  return $traitImpl($tAsDyn, [TError], () => ({ as_dyn: (arg0) => tAsDyn_as_dyn(arg0, TError) }));
+}
+
+function tAsDyn_as_dyn(self, TError) {
+  return { value: self, impl: TError };
 }
 
 function describe(e, EError) {
@@ -123,53 +171,5 @@ function main() {
       source: () => undefined,
     })}`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function negativeDebug_fmt(negative) {
-  return `Negative(${negative[0]})`;
-}
-
-function negativeDisplay_fmt(negative) {
-  return `${negative[0]} is negative`;
-}
-
-function tAsDyn_as_dyn(self, TError) {
-  return { value: self, impl: TError };
-}
-
-export function negativeDebug() {
-  if ($negativeDebug === undefined) {
-    $negativeDebug = { fmt: negativeDebug_fmt };
-  }
-  return $negativeDebug;
-}
-
-export function negativeDisplay() {
-  if ($negativeDisplay === undefined) {
-    $negativeDisplay = { fmt: negativeDisplay_fmt };
-  }
-  return $negativeDisplay;
-}
-
-export function negativeError() {
-  if ($negativeError === undefined) {
-    $negativeError = {
-      Debug: () => negativeDebug(),
-      Display: () => negativeDisplay(),
-      source: () => undefined,
-    };
-  }
-  return $negativeError;
-}
-
-function tAsDyn(TError) {
-  if ($tAsDyn === undefined) {
-    $tAsDyn = new WeakMap();
-  }
-  return $traitImpl($tAsDyn, [TError], () => ({ as_dyn: (arg0) => tAsDyn_as_dyn(arg0, TError) }));
 }
 //# sourceMappingURL=case.js.map

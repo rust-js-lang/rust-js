@@ -2,6 +2,32 @@
 
 var $partialDefault;
 
+export function entry() {
+  main();
+}
+
+function noisyDrop_drop(noisy) {
+  console.log(`drop ${noisy[0]}`);
+}
+
+export function partialDefault() {
+  if ($partialDefault === undefined) {
+    $partialDefault = {
+      default: partialDefault_default,
+      $drop: (partial) => {
+        noisyDrop_drop(partial.x);
+        noisyDrop_drop(partial.y);
+      },
+    };
+  }
+  return $partialDefault;
+}
+
+function partialDefault_default() {
+  console.log("default");
+  return { x: [20], y: [21], n: 0 };
+}
+
 function swap_y(p) {
   let p$y$live = true;
   let p$x$live = true;
@@ -132,31 +158,5 @@ function main() {
     noisyDrop_drop(swapped.x);
     noisyDrop_drop(swapped.y);
   }
-}
-
-export function entry() {
-  main();
-}
-
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
-function partialDefault_default() {
-  console.log("default");
-  return { x: [20], y: [21], n: 0 };
-}
-
-export function partialDefault() {
-  if ($partialDefault === undefined) {
-    $partialDefault = {
-      default: partialDefault_default,
-      $drop: (partial) => {
-        noisyDrop_drop(partial.x);
-        noisyDrop_drop(partial.y);
-      },
-    };
-  }
-  return $partialDefault;
 }
 //# sourceMappingURL=case.js.map

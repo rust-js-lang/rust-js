@@ -10,6 +10,18 @@ import {
   $unwrap,
 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function pointDebug_fmt(point) {
+  return `Point { x: ${point.x}, y: ${point.y} }`;
+}
+
+function accountDebug_fmt(account) {
+  return `Account { owner: ${$debugStr(account.owner)}, id: ${account.id}, at: ${pointDebug_fmt(account.at)} }`;
+}
+
 function main() {
   const seen = new $KeySet();
   console.log(`${$add(seen, [1, 2])} ${$add(seen, [1, 2])} ${$add(seen, [2, 1])}`);
@@ -118,17 +130,5 @@ function main() {
   console.log(
     `${arg$14} ${arg$15 == null ? "None" : `Some(${arg$15})`} ${arg$16 == null ? "None" : `Some(${arg$16})`}`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function pointDebug_fmt(point) {
-  return `Point { x: ${point.x}, y: ${point.y} }`;
-}
-
-function accountDebug_fmt(account) {
-  return `Account { owner: ${$debugStr(account.owner)}, id: ${account.id}, at: ${pointDebug_fmt(account.at)} }`;
 }
 //# sourceMappingURL=case.js.map

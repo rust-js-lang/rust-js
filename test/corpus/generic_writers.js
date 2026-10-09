@@ -4,6 +4,10 @@ import { $byteLen, $mutStringWriter, $pad, $stringWriter, $zeroPad } from "@rust
 
 var $timeDisplay, $counterWrite, $flagsDisplay;
 
+export function entry() {
+  main();
+}
+
 function write_digit(w, v, Write) {
   return Write.write_char(w, String.fromCharCode((48 + v) & 255));
 }
@@ -21,6 +25,37 @@ function write_time(w, hours, minutes, label, WWrite) {
     WWrite.write_str(w, " ");
     WWrite.write_fmt(w, `[${label}:${String((hours + minutes) & 255).padStart(3)}]`);
   }
+  return;
+}
+
+export function timeDisplay() {
+  if ($timeDisplay === undefined) {
+    $timeDisplay = { fmt: timeDisplay_fmt };
+  }
+  return $timeDisplay;
+}
+
+function timeDisplay_fmt(time) {
+  let f = "at ";
+  const w = { value: f };
+  write_time(w, time.hours, time.minutes, "", $stringWriter);
+  f = w.value;
+  f += ".";
+  return f;
+}
+
+export function counterWrite() {
+  if ($counterWrite === undefined) {
+    const write_str = (arg0, arg1) => counterWrite_write_str(arg0.value, arg1);
+    $counterWrite = { write_str, write_char: write_str, write_fmt: write_str };
+  }
+  return $counterWrite;
+}
+
+function counterWrite_write_str(counter, s) {
+  const value = Array.from(s).length;
+  counter.chars = (counter.chars + value) >>> 0;
+  counter.text += s;
   return;
 }
 
@@ -60,6 +95,21 @@ function to_writer(bits, writer, Write) {
   );
 }
 
+export function flagsDisplay() {
+  if ($flagsDisplay === undefined) {
+    $flagsDisplay = { fmt: flagsDisplay_fmt };
+  }
+  return $flagsDisplay;
+}
+
+function flagsDisplay_fmt(flags) {
+  let f = "";
+  const writer = { value: f };
+  to_writer(flags[0], writer, $mutStringWriter);
+  f = writer.value;
+  return f;
+}
+
 function main() {
   let s = "> ";
   const w = { value: s };
@@ -93,55 +143,5 @@ function main() {
   console.log(`${bits} ${flagsDisplay_fmt(arg$2)} ${$pad(arg$3, 12, ">")}|`);
   to_writer(9, counter, counterWrite());
   console.log(`${counter.text} ${counter.chars}`);
-}
-
-export function entry() {
-  main();
-}
-
-function timeDisplay_fmt(time) {
-  let f = "at ";
-  const w = { value: f };
-  write_time(w, time.hours, time.minutes, "", $stringWriter);
-  f = w.value;
-  f += ".";
-  return f;
-}
-
-function counterWrite_write_str(counter, s) {
-  const value = Array.from(s).length;
-  counter.chars = (counter.chars + value) >>> 0;
-  counter.text += s;
-  return;
-}
-
-function flagsDisplay_fmt(flags) {
-  let f = "";
-  const writer = { value: f };
-  to_writer(flags[0], writer, $mutStringWriter);
-  f = writer.value;
-  return f;
-}
-
-export function timeDisplay() {
-  if ($timeDisplay === undefined) {
-    $timeDisplay = { fmt: timeDisplay_fmt };
-  }
-  return $timeDisplay;
-}
-
-export function counterWrite() {
-  if ($counterWrite === undefined) {
-    const write_str = (arg0, arg1) => counterWrite_write_str(arg0.value, arg1);
-    $counterWrite = { write_str, write_char: write_str, write_fmt: write_str };
-  }
-  return $counterWrite;
-}
-
-export function flagsDisplay() {
-  if ($flagsDisplay === undefined) {
-    $flagsDisplay = { fmt: flagsDisplay_fmt };
-  }
-  return $flagsDisplay;
 }
 //# sourceMappingURL=case.js.map

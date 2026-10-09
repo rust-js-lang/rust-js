@@ -4,53 +4,13 @@ import { $traitImpl } from "@rust-js/runtime";
 
 var $wrapPeek, $wrapPass, $rcValue, $wrapTake, $pairTake, $loudTake;
 
-function helper(u, UClone, dropU) {
-  const _copy = UClone.clone(u);
-  dropU?.(_copy);
-}
-
-function peeked(p, PPeek) {
-  return PPeek.peek(p);
-}
-
-function helper_taking(_u, dropU) {
-  dropU?.(_u);
-}
-
-function valued(v, VValue) {
-  return VValue.value(v);
-}
-
-function take(value, TTake) {
-  TTake.take(value);
-}
-
-function main() {
-  const lent = [["lent"]];
-  try {
-    console.log(`${peeked(lent, wrapPeek({ clone: (value) => value }, loudDrop_drop))}`);
-    take([["taken by a default"]], wrapTake(loudDrop_drop));
-    take([["first of a pair"], ["second of a pair"]], pairTake(loudDrop_drop, loudDrop_drop));
-    take(["taken itself"], loudTake());
-    wrapPass(loudDrop_drop).pass([["passed to a helper"]]);
-    console.log(`${valued(1, rcValue())}`);
-    console.log("end");
-  } finally {
-    loudDrop_drop(lent[0]);
-  }
-}
-
 export function entry() {
   main();
 }
 
-function wrapPeek_peek(wrap, TClone, dropT) {
-  helper(wrap[0], TClone, dropT);
-  return 1;
-}
-
-function loudDrop_drop(loud) {
-  console.log(`drop ${loud[0]}`);
+function helper(u, UClone, dropU) {
+  const _copy = UClone.clone(u);
+  dropU?.(_copy);
 }
 
 function wrapPeek(TClone, dropT) {
@@ -63,6 +23,19 @@ function wrapPeek(TClone, dropT) {
       dropT?.(wrap[0]);
     },
   }));
+}
+
+function wrapPeek_peek(wrap, TClone, dropT) {
+  helper(wrap[0], TClone, dropT);
+  return 1;
+}
+
+function peeked(p, PPeek) {
+  return PPeek.peek(p);
+}
+
+function helper_taking(_u, dropU) {
+  dropU?.(_u);
 }
 
 function wrapPass(dropT) {
@@ -87,6 +60,10 @@ function rcValue(dropT) {
     $rcValue = new WeakMap();
   }
   return $traitImpl($rcValue, [dropT], () => ({ value: (self) => 7 }));
+}
+
+function valued(v, VValue) {
+  return VValue.value(v);
 }
 
 function wrapTake(dropT) {
@@ -135,5 +112,28 @@ function loudTake() {
     };
   }
   return $loudTake;
+}
+
+function take(value, TTake) {
+  TTake.take(value);
+}
+
+function loudDrop_drop(loud) {
+  console.log(`drop ${loud[0]}`);
+}
+
+function main() {
+  const lent = [["lent"]];
+  try {
+    console.log(`${peeked(lent, wrapPeek({ clone: (value) => value }, loudDrop_drop))}`);
+    take([["taken by a default"]], wrapTake(loudDrop_drop));
+    take([["first of a pair"], ["second of a pair"]], pairTake(loudDrop_drop, loudDrop_drop));
+    take(["taken itself"], loudTake());
+    wrapPass(loudDrop_drop).pass([["passed to a helper"]]);
+    console.log(`${valued(1, rcValue())}`);
+    console.log("end");
+  } finally {
+    loudDrop_drop(lent[0]);
+  }
 }
 //# sourceMappingURL=case.js.map

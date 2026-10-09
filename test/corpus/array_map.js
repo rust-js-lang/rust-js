@@ -2,6 +2,14 @@
 
 import { $debugStr, $some, $someValue } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function pDebug_fmt(p) {
+  return `P { x: ${p.x} }`;
+}
+
 function double(n) {
   return Math.imul(n, 2);
 }
@@ -57,13 +65,5 @@ function main() {
   console.log(
     `[${points.map((item) => pDebug_fmt(item)).join(", ")}] [${iterated.map((item) => pDebug_fmt(item)).join(", ")}]`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function pDebug_fmt(p) {
-  return `P { x: ${p.x} }`;
 }
 //# sourceMappingURL=case.js.map

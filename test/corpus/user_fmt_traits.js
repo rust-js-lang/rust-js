@@ -15,6 +15,172 @@ var $idLowerHex,
   $bitsBinary,
   $circleDisplay;
 
+export function entry() {
+  main();
+}
+
+export function idLowerHex() {
+  if ($idLowerHex === undefined) {
+    $idLowerHex = { fmt: idLowerHex_fmt };
+  }
+  return $idLowerHex;
+}
+
+function idLowerHex_fmt(id, options) {
+  let f = "";
+  if (options?.alternate === true) {
+    f += "0x";
+  }
+  f += id[0].toString(16).padStart(8, "0");
+  return f;
+}
+
+export function idUpperHex() {
+  if ($idUpperHex === undefined) {
+    $idUpperHex = { fmt: idUpperHex_fmt };
+  }
+  return $idUpperHex;
+}
+
+function idUpperHex_fmt(id, options) {
+  return id[0].toString(16).toUpperCase().padStart(8, "0");
+}
+
+export function idOctal() {
+  if ($idOctal === undefined) {
+    $idOctal = { fmt: idOctal_fmt };
+  }
+  return $idOctal;
+}
+
+function idOctal_fmt(id, options) {
+  let f = idLowerHex_fmt(id, options);
+  f += "/";
+  f += idUpperHex_fmt(id, options);
+  return f;
+}
+
+export function idBinary() {
+  if ($idBinary === undefined) {
+    $idBinary = { fmt: idBinary_fmt };
+  }
+  return $idBinary;
+}
+
+function idBinary_fmt(id, options) {
+  return $formatted(id[0].toString(2), options);
+}
+
+export function ratioLowerExp() {
+  if ($ratioLowerExp === undefined) {
+    $ratioLowerExp = { fmt: ratioLowerExp_fmt };
+  }
+  return $ratioLowerExp;
+}
+
+function ratioLowerExp_fmt(ratio, options) {
+  return `${$lowerExp(ratio[0])}~`;
+}
+
+export function handlePointer() {
+  if ($handlePointer === undefined) {
+    $handlePointer = { fmt: handlePointer_fmt };
+  }
+  return $handlePointer;
+}
+
+function handlePointer_fmt(handle, options) {
+  return `@${handle[0]}`;
+}
+
+export function flagsDisplay() {
+  if ($flagsDisplay === undefined) {
+    $flagsDisplay = { fmt: flagsDisplay_fmt };
+  }
+  return $flagsDisplay;
+}
+
+function flagsDisplay_fmt(flags, options) {
+  let f = "";
+  let first = true;
+  for (const [bit, name] of [
+    [1, "A"],
+    [2, "B"],
+    [4, "C"],
+  ]) {
+    if ((flags[0] & bit) !== 0) {
+      if (!first) {
+        f += " | ";
+      }
+      f += name;
+      first = false;
+    }
+  }
+  f += ".";
+  return f;
+}
+
+export function bitsLowerHex(TLowerHex) {
+  if ($bitsLowerHex === undefined) {
+    $bitsLowerHex = new WeakMap();
+  }
+  return $traitImpl($bitsLowerHex, [TLowerHex], () => ({
+    fmt: (arg0, arg1) => bitsLowerHex_fmt(arg0, arg1, TLowerHex),
+  }));
+}
+
+function bitsLowerHex_fmt(bits, options, TLowerHex) {
+  return TLowerHex.fmt(bits[0], options);
+}
+
+export function bitsUpperHex() {
+  if ($bitsUpperHex === undefined) {
+    $bitsUpperHex = { fmt: bitsUpperHex_fmt };
+  }
+  return $bitsUpperHex;
+}
+
+function bitsUpperHex_fmt(bits, options) {
+  return $formatted(
+    (options?.alternate ? "0x" : "") + bits[0].toString(16).toUpperCase(),
+    options,
+    true,
+  );
+}
+
+export function bitsOctal() {
+  if ($bitsOctal === undefined) {
+    $bitsOctal = { fmt: bitsOctal_fmt };
+  }
+  return $bitsOctal;
+}
+
+function bitsOctal_fmt(bits, options) {
+  return $formatted((options?.alternate ? "0o" : "") + bits[0].toString(8), options, true);
+}
+
+export function bitsBinary() {
+  if ($bitsBinary === undefined) {
+    $bitsBinary = { fmt: bitsBinary_fmt };
+  }
+  return $bitsBinary;
+}
+
+function bitsBinary_fmt(bits, options) {
+  return $formatted((options?.alternate ? "0b" : "") + (bits[0] & 255).toString(2), options, true);
+}
+
+export function circleDisplay() {
+  if ($circleDisplay === undefined) {
+    $circleDisplay = { fmt: circleDisplay_fmt };
+  }
+  return $circleDisplay;
+}
+
+function circleDisplay_fmt(circle, options) {
+  return `circle of ${circle[0]}`;
+}
+
 function main() {
   const id = [48879];
   console.log(
@@ -72,171 +238,5 @@ function main() {
   console.log(
     `[${circleDisplay_fmt([3])}] [${circleDisplay_fmt([4], { width: 14, align: "Right" })}]`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function idLowerHex_fmt(id, options) {
-  let f = "";
-  if (options?.alternate === true) {
-    f += "0x";
-  }
-  f += id[0].toString(16).padStart(8, "0");
-  return f;
-}
-
-function idUpperHex_fmt(id, options) {
-  return id[0].toString(16).toUpperCase().padStart(8, "0");
-}
-
-function idOctal_fmt(id, options) {
-  let f = idLowerHex_fmt(id, options);
-  f += "/";
-  f += idUpperHex_fmt(id, options);
-  return f;
-}
-
-function idBinary_fmt(id, options) {
-  return $formatted(id[0].toString(2), options);
-}
-
-function ratioLowerExp_fmt(ratio, options) {
-  return `${$lowerExp(ratio[0])}~`;
-}
-
-function handlePointer_fmt(handle, options) {
-  return `@${handle[0]}`;
-}
-
-function flagsDisplay_fmt(flags, options) {
-  let f = "";
-  let first = true;
-  for (const [bit, name] of [
-    [1, "A"],
-    [2, "B"],
-    [4, "C"],
-  ]) {
-    if ((flags[0] & bit) !== 0) {
-      if (!first) {
-        f += " | ";
-      }
-      f += name;
-      first = false;
-    }
-  }
-  f += ".";
-  return f;
-}
-
-function bitsLowerHex_fmt(bits, options, TLowerHex) {
-  return TLowerHex.fmt(bits[0], options);
-}
-
-function bitsUpperHex_fmt(bits, options) {
-  return $formatted(
-    (options?.alternate ? "0x" : "") + bits[0].toString(16).toUpperCase(),
-    options,
-    true,
-  );
-}
-
-function bitsOctal_fmt(bits, options) {
-  return $formatted((options?.alternate ? "0o" : "") + bits[0].toString(8), options, true);
-}
-
-function bitsBinary_fmt(bits, options) {
-  return $formatted((options?.alternate ? "0b" : "") + (bits[0] & 255).toString(2), options, true);
-}
-
-function circleDisplay_fmt(circle, options) {
-  return `circle of ${circle[0]}`;
-}
-
-export function idLowerHex() {
-  if ($idLowerHex === undefined) {
-    $idLowerHex = { fmt: idLowerHex_fmt };
-  }
-  return $idLowerHex;
-}
-
-export function idUpperHex() {
-  if ($idUpperHex === undefined) {
-    $idUpperHex = { fmt: idUpperHex_fmt };
-  }
-  return $idUpperHex;
-}
-
-export function idOctal() {
-  if ($idOctal === undefined) {
-    $idOctal = { fmt: idOctal_fmt };
-  }
-  return $idOctal;
-}
-
-export function idBinary() {
-  if ($idBinary === undefined) {
-    $idBinary = { fmt: idBinary_fmt };
-  }
-  return $idBinary;
-}
-
-export function ratioLowerExp() {
-  if ($ratioLowerExp === undefined) {
-    $ratioLowerExp = { fmt: ratioLowerExp_fmt };
-  }
-  return $ratioLowerExp;
-}
-
-export function handlePointer() {
-  if ($handlePointer === undefined) {
-    $handlePointer = { fmt: handlePointer_fmt };
-  }
-  return $handlePointer;
-}
-
-export function flagsDisplay() {
-  if ($flagsDisplay === undefined) {
-    $flagsDisplay = { fmt: flagsDisplay_fmt };
-  }
-  return $flagsDisplay;
-}
-
-export function bitsLowerHex(TLowerHex) {
-  if ($bitsLowerHex === undefined) {
-    $bitsLowerHex = new WeakMap();
-  }
-  return $traitImpl($bitsLowerHex, [TLowerHex], () => ({
-    fmt: (arg0, arg1) => bitsLowerHex_fmt(arg0, arg1, TLowerHex),
-  }));
-}
-
-export function bitsUpperHex() {
-  if ($bitsUpperHex === undefined) {
-    $bitsUpperHex = { fmt: bitsUpperHex_fmt };
-  }
-  return $bitsUpperHex;
-}
-
-export function bitsOctal() {
-  if ($bitsOctal === undefined) {
-    $bitsOctal = { fmt: bitsOctal_fmt };
-  }
-  return $bitsOctal;
-}
-
-export function bitsBinary() {
-  if ($bitsBinary === undefined) {
-    $bitsBinary = { fmt: bitsBinary_fmt };
-  }
-  return $bitsBinary;
-}
-
-export function circleDisplay() {
-  if ($circleDisplay === undefined) {
-    $circleDisplay = { fmt: circleDisplay_fmt };
-  }
-  return $circleDisplay;
 }
 //# sourceMappingURL=case.js.map

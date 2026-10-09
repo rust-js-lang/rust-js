@@ -2,6 +2,10 @@
 
 import { $classify, $isNormal, $print } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   const f32s = [
     1,
@@ -44,9 +48,5 @@ function main() {
     $print(`${kind} ${$classify(x$2, 1.1754943508222875e-38)} `);
   }
   console.log(`${$classify(5e-324, 2.2250738585072014e-308) === "Subnormal"}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

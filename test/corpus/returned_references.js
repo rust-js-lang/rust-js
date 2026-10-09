@@ -2,6 +2,14 @@
 
 import { $debugStr, $unwrap } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function itemDebug_fmt(item) {
+  return `Item { name: ${$debugStr(item.name)}, count: ${item.count} }`;
+}
+
 function pick(items, log) {
   log.push("pick");
   return $unwrap(items.at(-1));
@@ -31,13 +39,5 @@ function main() {
   const item$1 = $unwrap(stock.get("pen"));
   item$1.count = Math.imul(item$1.count, 4) >>> 0;
   console.log(`${$unwrap(stock.get("pen"), "no entry found for key").count}`);
-}
-
-export function entry() {
-  main();
-}
-
-function itemDebug_fmt(item) {
-  return `Item { name: ${$debugStr(item.name)}, count: ${item.count} }`;
 }
 //# sourceMappingURL=case.js.map

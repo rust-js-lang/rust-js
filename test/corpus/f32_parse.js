@@ -2,6 +2,10 @@
 
 import { $debugF32, $debugStr, $displayF32, $parseF32 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function show(s) {
   const match = $parseF32(s);
   if (match.TAG === "Ok") {
@@ -50,9 +54,5 @@ function main() {
   ]) {
     show(s$3);
   }
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

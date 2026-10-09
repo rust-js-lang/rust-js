@@ -4,6 +4,52 @@ import { $displayF64 } from "@rust-js/runtime";
 
 var $squareShape, $squareNamed, $upCounter;
 
+export function entry() {
+  main();
+}
+
+function squareShape() {
+  if ($squareShape === undefined) {
+    $squareShape = {
+      area: squareShape_area,
+      scale: (arg0, arg1) => squareShape_scale(arg0.value, arg1),
+      name: (self) => "shape",
+    };
+  }
+  return $squareShape;
+}
+
+function squareShape_area(square) {
+  return square[0] * square[0];
+}
+
+function squareShape_scale(square, k) {
+  square[0] = square[0] * k;
+}
+
+function squareNamed() {
+  if ($squareNamed === undefined) {
+    $squareNamed = { Shape: () => squareShape(), label: squareNamed_label };
+  }
+  return $squareNamed;
+}
+
+function squareNamed_label(square) {
+  return `square ${$displayF64(square[0])}`;
+}
+
+function upCounter() {
+  if ($upCounter === undefined) {
+    $upCounter = { next_item: (arg0) => upCounter_next_item(arg0.value) };
+  }
+  return $upCounter;
+}
+
+function upCounter_next_item(up) {
+  up[0] = (up[0] + 1) >>> 0;
+  return up[0];
+}
+
 function area_of(s, TShape) {
   return TShape.area(s);
 }
@@ -76,51 +122,5 @@ function main() {
   );
   console.log(`${result}`);
   console.log(`${up[0]}`);
-}
-
-export function entry() {
-  main();
-}
-
-function squareShape_area(square) {
-  return square[0] * square[0];
-}
-
-function squareShape_scale(square, k) {
-  square[0] = square[0] * k;
-}
-
-function squareNamed_label(square) {
-  return `square ${$displayF64(square[0])}`;
-}
-
-function upCounter_next_item(up) {
-  up[0] = (up[0] + 1) >>> 0;
-  return up[0];
-}
-
-function squareShape() {
-  if ($squareShape === undefined) {
-    $squareShape = {
-      area: squareShape_area,
-      scale: (arg0, arg1) => squareShape_scale(arg0.value, arg1),
-      name: (self) => "shape",
-    };
-  }
-  return $squareShape;
-}
-
-function squareNamed() {
-  if ($squareNamed === undefined) {
-    $squareNamed = { Shape: () => squareShape(), label: squareNamed_label };
-  }
-  return $squareNamed;
-}
-
-function upCounter() {
-  if ($upCounter === undefined) {
-    $upCounter = { next_item: (arg0) => upCounter_next_item(arg0.value) };
-  }
-  return $upCounter;
 }
 //# sourceMappingURL=case.js.map

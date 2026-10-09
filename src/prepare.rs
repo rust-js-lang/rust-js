@@ -9,8 +9,7 @@ use std::collections::HashSet;
 use crate::js::{self, Expr, ExprKind, JsxTag, Prop, Stmt, StmtKind};
 
 pub fn module(module: &mut js::Module) {
-    let methods = module.namespaces.iter_mut().flat_map(|n| n.methods.iter_mut());
-    for function in module.functions.iter_mut().chain(methods) {
+    for function in module.items.iter_mut().flat_map(js::Item::functions_mut) {
         block(&mut function.body);
         shadows(&mut function.body, None);
         // A closure's own parameter, shadowed in it: nothing outside it sets one.
@@ -24,10 +23,13 @@ pub fn module(module: &mut js::Module) {
         tested_constants(&mut function.body);
         js::each_block_mut(&mut function.body, &mut |stmts| imported(stmts));
     }
-    for constant in &mut module.consts {
-        expr(&mut constant.value);
+    for item in &mut module.items {
+        match item {
+            js::Item::Const(constant) => expr(&mut constant.value),
+            js::Item::Statements(stmts) => block(stmts),
+            js::Item::Namespace(_) | js::Item::Function(_) => {}
+        }
     }
-    block(&mut module.statements);
 }
 
 /// `const run = await import(spec).then((m) => m.run)` is `const { run } =

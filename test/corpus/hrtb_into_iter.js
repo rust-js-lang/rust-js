@@ -4,14 +4,6 @@ import { $slice } from "@rust-js/runtime";
 
 var $_T_Collection;
 
-function main() {
-  const v = [3, 4];
-  const total = _T_Collection()
-    .my_iter(v)
-    .reduce((a, b) => (a + b) >>> 0, 0);
-  console.log(`${total} ${_T_Collection().my_iter($slice(v, 0)).length}`);
-}
-
 export function entry() {
   main();
 }
@@ -21,5 +13,13 @@ function _T_Collection() {
     $_T_Collection = { my_iter: (self) => self };
   }
   return $_T_Collection;
+}
+
+function main() {
+  const v = [3, 4];
+  const total = _T_Collection()
+    .my_iter(v)
+    .reduce((a, b) => (a + b) >>> 0, 0);
+  console.log(`${total} ${_T_Collection().my_iter($slice(v, 0)).length}`);
 }
 //# sourceMappingURL=case.js.map

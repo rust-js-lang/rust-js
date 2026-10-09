@@ -2,6 +2,18 @@
 
 import { $iterator } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function countIterator_next(count) {
+  if (count[0] < 3) {
+    count[0] = (count[0] + 1) >>> 0;
+    return count[0];
+  }
+  return;
+}
+
 const Count = {
   doubled(count) {
     return $iterator(count, countIterator_next)
@@ -24,17 +36,5 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function countIterator_next(count) {
-  if (count[0] < 3) {
-    count[0] = (count[0] + 1) >>> 0;
-    return count[0];
-  }
-  return;
 }
 //# sourceMappingURL=case.js.map

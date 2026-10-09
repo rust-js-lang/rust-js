@@ -35,6 +35,50 @@ var $configDefault,
   $posDebug,
   $hiddenDebug;
 
+export function configDefault() {
+  if ($configDefault === undefined) {
+    $configDefault = { default: configDefault_default };
+  }
+  return $configDefault;
+}
+
+function configDefault_default() {
+  return { retries: 3, name: "main" };
+}
+
+export function trackedClone() {
+  if ($trackedClone === undefined) {
+    $trackedClone = { clone: trackedClone_clone };
+  }
+  return $trackedClone;
+}
+
+function trackedClone_clone(tracked) {
+  return { generation: (tracked.generation + 1) >>> 0 };
+}
+
+export function figureClone() {
+  if ($figureClone === undefined) {
+    $figureClone = { clone: figureClone_clone };
+  }
+  return $figureClone;
+}
+
+function figureClone_clone(figure) {
+  if (figure === "Dot") {
+    return "Dot";
+  }
+  return { TAG: "Poly", _0: figure._0.slice() };
+}
+
+function metersFromF64_from(m) {
+  return [m];
+}
+
+function metersFromU32_from(km) {
+  return [km * 1000];
+}
+
 export function fresh(TDefault) {
   return TDefault.default();
 }
@@ -116,6 +160,13 @@ export function conversions() {
   return [a[0], b[0], c[0]];
 }
 
+function evenTryFromU32_try_from(n) {
+  if (n % 2 === 0) {
+    return { TAG: "Ok", _0: [n] };
+  }
+  return { TAG: "Err", _0: `${n} is odd` };
+}
+
 export function fallible_conversions(n) {
   let direct;
   const match = evenTryFromU32_try_from(n);
@@ -127,6 +178,17 @@ export function fallible_conversions(n) {
   const inferred = evenTryFromU32_try_from((n + 1) >>> 0);
   const result = inferred.TAG === "Ok" ? { TAG: "Ok", _0: String(inferred._0[0]) } : inferred;
   return `${direct}, ${result.TAG === "Ok" ? result._0 : result._0}`;
+}
+
+export function versionPartialEq() {
+  if ($versionPartialEq === undefined) {
+    $versionPartialEq = { eq: versionPartialEq_eq };
+  }
+  return $versionPartialEq;
+}
+
+function versionPartialEq_eq(version$1, other) {
+  return version$1.major === other.major;
 }
 
 function version(major, label) {
@@ -189,13 +251,87 @@ export function generic_equalities() {
   ];
 }
 
+export function metersPartialEqF64() {
+  if ($metersPartialEqF64 === undefined) {
+    $metersPartialEqF64 = { eq: metersPartialEqF64_eq };
+  }
+  return $metersPartialEqF64;
+}
+
+function metersPartialEqF64_eq(meters, other) {
+  return meters[0] === other;
+}
+
 export function compared() {
   const m = metersFromF64_from(2);
   return [metersPartialEqF64_eq(m, 2), !metersPartialEqF64_eq(m, 3), !metersPartialEqF64_eq(m, 2)];
 }
 
+export function pointDisplay() {
+  if ($pointDisplay === undefined) {
+    $pointDisplay = { fmt: pointDisplay_fmt };
+  }
+  return $pointDisplay;
+}
+
+function pointDisplay_fmt(point) {
+  return `(${point.x}, ${point.y})`;
+}
+
+export function routeDisplay() {
+  if ($routeDisplay === undefined) {
+    $routeDisplay = { fmt: routeDisplay_fmt };
+  }
+  return $routeDisplay;
+}
+
+function routeDisplay_fmt(route) {
+  let f = "";
+  if (route.stops.length === 0) {
+    f += "nowhere";
+    return f;
+  }
+  for (const [i, stop] of route.stops.entries()) {
+    if (i > 0) {
+      f += " -> ";
+    }
+    f += pointDisplay_fmt(stop);
+  }
+  if (route.closed) {
+    f += write_loop(route.stops.length);
+  }
+  return f;
+}
+
 function write_loop(stops) {
   return ` (a loop of ${stops})`;
+}
+
+export function figureDisplay() {
+  if ($figureDisplay === undefined) {
+    $figureDisplay = { fmt: figureDisplay_fmt };
+  }
+  return $figureDisplay;
+}
+
+function figureDisplay_fmt(figure) {
+  if (figure === "Dot") {
+    return "a dot";
+  }
+  return `a polygon of ${figure._0.length}`;
+}
+
+export function labeledDisplay(TDisplay) {
+  if ($labeledDisplay === undefined) {
+    $labeledDisplay = new WeakMap();
+  }
+  return $traitImpl($labeledDisplay, [TDisplay], () => ({
+    fmt: (arg0) => labeledDisplay_fmt(arg0, TDisplay),
+  }));
+}
+
+function labeledDisplay_fmt(labeled, TDisplay) {
+  return `${labeled.label}: ${TDisplay.fmt(labeled.value)}`;
 }
 
 export function shown(x, TDisplay) {
@@ -221,6 +357,29 @@ export function displays() {
     shown(labeled, labeledDisplay(pointDisplay())),
     shown({ label: "n", value: 2.5 }, labeledDisplay({ fmt: $displayF64 })),
   ];
+}
+
+function countdownIterator_next(countdown$1) {
+  if (countdown$1.n === 0) {
+    return;
+  }
+  countdown$1.n = (countdown$1.n - 1) >>> 0;
+  return (countdown$1.n + 1) >>> 0;
+}
+
+function fibonacciIterator_next(fibonacci$1) {
+  const a = fibonacci$1.a;
+  fibonacci$1.a = fibonacci$1.b;
+  fibonacci$1.b = (fibonacci$1.b + a) >>> 0;
+  return a;
+}
+
+function repeatIterator_next(repeat, TClone) {
+  if (repeat.times === 0) {
+    return;
+  }
+  repeat.times = (repeat.times - 1) >>> 0;
+  return $some(TClone.clone(repeat.item));
 }
 
 function fibonacci() {
@@ -272,6 +431,32 @@ export function generic_iterations() {
         .toArray(),
     ),
   ];
+}
+
+export function wordPartialOrd() {
+  if ($wordPartialOrd === undefined) {
+    $wordPartialOrd = { PartialEq: () => ({ eq: $eq }), partial_cmp: wordPartialOrd_partial_cmp };
+  }
+  return $wordPartialOrd;
+}
+
+function wordPartialOrd_partial_cmp(word, other) {
+  return wordOrd_cmp(word, other);
+}
+
+export function wordOrd() {
+  if ($wordOrd === undefined) {
+    $wordOrd = { PartialOrd: () => wordPartialOrd(), cmp: wordOrd_cmp };
+  }
+  return $wordOrd;
+}
+
+function wordOrd_cmp(word, other) {
+  const byLength = $cmp(Array.from(word[0]).length, Array.from(other[0]).length);
+  if (byLength !== 0) {
+    return byLength;
+  }
+  return $cmp(word[0], other[0]);
 }
 
 export function largest(xs, TOrd, TCopy) {
@@ -352,6 +537,63 @@ export function more_orderings() {
   ];
 }
 
+function posDebug_fmt(pos) {
+  return `Pos { x: ${$debugF64(pos.x)}, y: ${$debugF64(pos.y)} }`;
+}
+
+export function posDebug() {
+  if ($posDebug === undefined) {
+    $posDebug = { fmt: posDebug_fmt };
+  }
+  return $posDebug;
+}
+
+function dimsDebug_fmt(dims) {
+  return `Dims(${dims[0]}, ${dims[1]})`;
+}
+
+function nothingDebug_fmt(nothing) {
+  return "Nothing";
+}
+
+function glyphDebug_fmt(glyph) {
+  if (glyph === "Dot") {
+    return "Dot";
+  }
+  if (glyph.TAG === "Ring") {
+    return `Ring(${$debugF64(glyph._0)})`;
+  }
+  return `Box { w: ${glyph.w}, h: ${glyph.h} }`;
+}
+
+function sixDebug_fmt(six) {
+  const names = ["a", "b", "c", "d", "e", "f"];
+  const values = [
+    String(six.a),
+    String(six.b),
+    String(six.c),
+    String(six.d),
+    String(six.e),
+    $debugStr(six.f, "'"),
+  ];
+  return $debugFields("Six", names, values);
+}
+
+function boxedDebug_fmt(boxed, TDebug) {
+  return `Boxed { item: ${TDebug.fmt(boxed.item)} }`;
+}
+
+export function hiddenDebug() {
+  if ($hiddenDebug === undefined) {
+    $hiddenDebug = { fmt: hiddenDebug_fmt };
+  }
+  return $hiddenDebug;
+}
+
+function hiddenDebug_fmt(hidden) {
+  return "<hidden>";
+}
+
 export function debugged(x, TDebug) {
   return TDebug.fmt(x);
 }
@@ -419,247 +661,5 @@ export function generic_iterators(n) {
       .map((x) => (x + 1) >>> 0)
       .reduce((a, b) => (a + b) >>> 0, 0),
   ];
-}
-
-function configDefault_default() {
-  return { retries: 3, name: "main" };
-}
-
-function trackedClone_clone(tracked) {
-  return { generation: (tracked.generation + 1) >>> 0 };
-}
-
-function figureClone_clone(figure) {
-  if (figure === "Dot") {
-    return "Dot";
-  }
-  return { TAG: "Poly", _0: figure._0.slice() };
-}
-
-function metersFromF64_from(m) {
-  return [m];
-}
-
-function metersFromU32_from(km) {
-  return [km * 1000];
-}
-
-function evenTryFromU32_try_from(n) {
-  if (n % 2 === 0) {
-    return { TAG: "Ok", _0: [n] };
-  }
-  return { TAG: "Err", _0: `${n} is odd` };
-}
-
-function versionPartialEq_eq(version$1, other) {
-  return version$1.major === other.major;
-}
-
-function metersPartialEqF64_eq(meters, other) {
-  return meters[0] === other;
-}
-
-function pointDisplay_fmt(point) {
-  return `(${point.x}, ${point.y})`;
-}
-
-function routeDisplay_fmt(route) {
-  let f = "";
-  if (route.stops.length === 0) {
-    f += "nowhere";
-    return f;
-  }
-  for (const [i, stop] of route.stops.entries()) {
-    if (i > 0) {
-      f += " -> ";
-    }
-    f += pointDisplay_fmt(stop);
-  }
-  if (route.closed) {
-    f += write_loop(route.stops.length);
-  }
-  return f;
-}
-
-function figureDisplay_fmt(figure) {
-  if (figure === "Dot") {
-    return "a dot";
-  }
-  return `a polygon of ${figure._0.length}`;
-}
-
-function labeledDisplay_fmt(labeled, TDisplay) {
-  return `${labeled.label}: ${TDisplay.fmt(labeled.value)}`;
-}
-
-function countdownIterator_next(countdown$1) {
-  if (countdown$1.n === 0) {
-    return;
-  }
-  countdown$1.n = (countdown$1.n - 1) >>> 0;
-  return (countdown$1.n + 1) >>> 0;
-}
-
-function fibonacciIterator_next(fibonacci$1) {
-  const a = fibonacci$1.a;
-  fibonacci$1.a = fibonacci$1.b;
-  fibonacci$1.b = (fibonacci$1.b + a) >>> 0;
-  return a;
-}
-
-function repeatIterator_next(repeat, TClone) {
-  if (repeat.times === 0) {
-    return;
-  }
-  repeat.times = (repeat.times - 1) >>> 0;
-  return $some(TClone.clone(repeat.item));
-}
-
-function wordPartialOrd_partial_cmp(word, other) {
-  return wordOrd_cmp(word, other);
-}
-
-function wordOrd_cmp(word, other) {
-  const byLength = $cmp(Array.from(word[0]).length, Array.from(other[0]).length);
-  if (byLength !== 0) {
-    return byLength;
-  }
-  return $cmp(word[0], other[0]);
-}
-
-function posDebug_fmt(pos) {
-  return `Pos { x: ${$debugF64(pos.x)}, y: ${$debugF64(pos.y)} }`;
-}
-
-function dimsDebug_fmt(dims) {
-  return `Dims(${dims[0]}, ${dims[1]})`;
-}
-
-function nothingDebug_fmt(nothing) {
-  return "Nothing";
-}
-
-function glyphDebug_fmt(glyph) {
-  if (glyph === "Dot") {
-    return "Dot";
-  }
-  if (glyph.TAG === "Ring") {
-    return `Ring(${$debugF64(glyph._0)})`;
-  }
-  return `Box { w: ${glyph.w}, h: ${glyph.h} }`;
-}
-
-function sixDebug_fmt(six) {
-  const names = ["a", "b", "c", "d", "e", "f"];
-  const values = [
-    String(six.a),
-    String(six.b),
-    String(six.c),
-    String(six.d),
-    String(six.e),
-    $debugStr(six.f, "'"),
-  ];
-  return $debugFields("Six", names, values);
-}
-
-function boxedDebug_fmt(boxed, TDebug) {
-  return `Boxed { item: ${TDebug.fmt(boxed.item)} }`;
-}
-
-function hiddenDebug_fmt(hidden) {
-  return "<hidden>";
-}
-
-export function configDefault() {
-  if ($configDefault === undefined) {
-    $configDefault = { default: configDefault_default };
-  }
-  return $configDefault;
-}
-
-export function trackedClone() {
-  if ($trackedClone === undefined) {
-    $trackedClone = { clone: trackedClone_clone };
-  }
-  return $trackedClone;
-}
-
-export function figureClone() {
-  if ($figureClone === undefined) {
-    $figureClone = { clone: figureClone_clone };
-  }
-  return $figureClone;
-}
-
-export function versionPartialEq() {
-  if ($versionPartialEq === undefined) {
-    $versionPartialEq = { eq: versionPartialEq_eq };
-  }
-  return $versionPartialEq;
-}
-
-export function metersPartialEqF64() {
-  if ($metersPartialEqF64 === undefined) {
-    $metersPartialEqF64 = { eq: metersPartialEqF64_eq };
-  }
-  return $metersPartialEqF64;
-}
-
-export function pointDisplay() {
-  if ($pointDisplay === undefined) {
-    $pointDisplay = { fmt: pointDisplay_fmt };
-  }
-  return $pointDisplay;
-}
-
-export function routeDisplay() {
-  if ($routeDisplay === undefined) {
-    $routeDisplay = { fmt: routeDisplay_fmt };
-  }
-  return $routeDisplay;
-}
-
-export function figureDisplay() {
-  if ($figureDisplay === undefined) {
-    $figureDisplay = { fmt: figureDisplay_fmt };
-  }
-  return $figureDisplay;
-}
-
-export function labeledDisplay(TDisplay) {
-  if ($labeledDisplay === undefined) {
-    $labeledDisplay = new WeakMap();
-  }
-  return $traitImpl($labeledDisplay, [TDisplay], () => ({
-    fmt: (arg0) => labeledDisplay_fmt(arg0, TDisplay),
-  }));
-}
-
-export function wordPartialOrd() {
-  if ($wordPartialOrd === undefined) {
-    $wordPartialOrd = { PartialEq: () => ({ eq: $eq }), partial_cmp: wordPartialOrd_partial_cmp };
-  }
-  return $wordPartialOrd;
-}
-
-export function wordOrd() {
-  if ($wordOrd === undefined) {
-    $wordOrd = { PartialOrd: () => wordPartialOrd(), cmp: wordOrd_cmp };
-  }
-  return $wordOrd;
-}
-
-export function posDebug() {
-  if ($posDebug === undefined) {
-    $posDebug = { fmt: posDebug_fmt };
-  }
-  return $posDebug;
-}
-
-export function hiddenDebug() {
-  if ($hiddenDebug === undefined) {
-    $hiddenDebug = { fmt: hiddenDebug_fmt };
-  }
-  return $hiddenDebug;
 }
 //# sourceMappingURL=std_traits.js.map

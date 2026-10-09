@@ -2,6 +2,14 @@
 
 import { $index } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function pointDebug_fmt(point) {
+  return `Point { x: ${point.x}, y: ${point.y} }`;
+}
+
 const Point = {
   sum(point) {
     return (point.x + point.y) | 0;
@@ -11,6 +19,27 @@ const Point = {
     point.y = (point.y + by) | 0;
   },
 };
+
+function trackedDeref_deref(tracked) {
+  tracked.reads = (tracked.reads + 1) >>> 0;
+  return tracked.point;
+}
+
+function trackedDerefMut_deref_mut(tracked) {
+  return tracked.point;
+}
+
+function outerDeref_deref(outer) {
+  return outer[0];
+}
+
+function gridIndex_usize__usize__index(grid, [row, col]) {
+  return $index(grid.cells, ((Math.imul(row, grid.width) >>> 0) + col) >>> 0);
+}
+
+function gridIndexMut_usize__usize__index_mut(grid, [row, col]) {
+  return $index(grid.cells, ((Math.imul(row, grid.width) >>> 0) + col) >>> 0);
+}
 
 function main() {
   const t = { point: { x: 1, y: 2 }, reads: 0 };
@@ -32,34 +61,5 @@ function main() {
   console.log(
     `${pointDebug_fmt({ ...gridIndex_usize__usize__index(grid, [1, 0]) })} ${pointDebug_fmt({ ...gridIndex_usize__usize__index(grid, [0, 1]) })} [${grid.cells.map((item) => pointDebug_fmt(item)).join(", ")}]`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function pointDebug_fmt(point) {
-  return `Point { x: ${point.x}, y: ${point.y} }`;
-}
-
-function trackedDeref_deref(tracked) {
-  tracked.reads = (tracked.reads + 1) >>> 0;
-  return tracked.point;
-}
-
-function trackedDerefMut_deref_mut(tracked) {
-  return tracked.point;
-}
-
-function outerDeref_deref(outer) {
-  return outer[0];
-}
-
-function gridIndex_usize__usize__index(grid, [row, col]) {
-  return $index(grid.cells, ((Math.imul(row, grid.width) >>> 0) + col) >>> 0);
-}
-
-function gridIndexMut_usize__usize__index_mut(grid, [row, col]) {
-  return $index(grid.cells, ((Math.imul(row, grid.width) >>> 0) + col) >>> 0);
 }
 //# sourceMappingURL=case.js.map

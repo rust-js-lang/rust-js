@@ -13,12 +13,620 @@ import {
   $sortedKeys,
 } from "@rust-js/runtime";
 
+function orderDeserialize_deserialize(json) {
+  return json.struct(
+    "struct Order",
+    [
+      ["orderId", $json.u32],
+      ["itemName", $json.string],
+      ["qty", $json.u32, () => 0],
+      ["note", $json.option($json.string)],
+      ["price", $json.f64],
+      ["tags", $json.vec($json.string)],
+      [["ok", "paid"], $json.bool],
+    ],
+    ([order_id, item_name, qty, note, price, tags, paid]) => ({
+      order_id,
+      item_name,
+      qty,
+      note,
+      price,
+      tags,
+      paid,
+      cache: 0,
+    }),
+  );
+}
+
+function orderDebug_fmt(order) {
+  const names = ["order_id", "item_name", "qty", "note", "price", "tags", "paid", "cache"];
+  const values = [
+    String(order.order_id),
+    $debugStr(order.item_name),
+    String(order.qty),
+    order.note == null ? "None" : `Some(${$debugStr(order.note)})`,
+    $debugF64(order.price),
+    `[${order.tags.map((item) => $debugStr(item)).join(", ")}]`,
+    String(order.paid),
+    String(order.cache),
+  ];
+  return $debugFields("Order", names, values);
+}
+
+function shapeDeserialize_deserialize(json) {
+  return json.enum("Shape", ["Dot", "Circle", "Rect", "Poly"], (variant, content) => {
+    if (variant === "Dot") {
+      content.unit();
+      return "Dot";
+    }
+    if (variant === "Circle") {
+      return { TAG: "Circle", _0: content.newtype($json.f64) };
+    }
+    if (variant === "Rect") {
+      return content.tuple("tuple variant Shape::Rect", [$json.f64, $json.f64], ([_0, _1]) => ({
+        TAG: "Rect",
+        _0,
+        _1,
+      }));
+    }
+    return content.struct(
+      "struct variant Shape::Poly",
+      [
+        ["sides", $json.u32],
+        ["name", $json.string],
+      ],
+      ([sides, name]) => ({ TAG: "Poly", sides, name }),
+    );
+  });
+}
+
+function shapeDebug_fmt(shape) {
+  if (shape === "Dot") {
+    return "Dot";
+  }
+  if (shape.TAG === "Circle") {
+    return `Circle(${$debugF64(shape._0)})`;
+  }
+  if (shape.TAG === "Rect") {
+    return `Rect(${$debugF64(shape._0)}, ${$debugF64(shape._1)})`;
+  }
+  return `Poly { sides: ${shape.sides}, name: ${$debugStr(shape.name)} }`;
+}
+
+function idDeserialize_deserialize(json) {
+  return [$json.u32(json)];
+}
+
+function idDebug_fmt(id) {
+  return `Id(${id[0]})`;
+}
+
+function pointDeserialize_deserialize(json) {
+  return json.tupleStruct("tuple struct Point", [$json.i32, $json.i32]);
+}
+
+function pointDebug_fmt(point) {
+  return `Point(${point[0]}, ${point[1]})`;
+}
+
+function unitDeserialize_deserialize(json) {
+  return json.unitStruct("unit struct Unit");
+}
+
+function unitDebug_fmt(unit) {
+  return "Unit";
+}
+
+function metersDeserialize_deserialize(json) {
+  return { value: $json.f64(json) };
+}
+
+function metersDebug_fmt(meters) {
+  return `Meters { value: ${$debugF64(meters.value)} }`;
+}
+
+function strictDeserialize_deserialize(json) {
+  return json.struct(
+    "struct Strict",
+    [
+      ["a", $json.u8],
+      ["b", $json.option($json.i8)],
+    ],
+    ([a, b]) => ({ a, b }),
+    { deny: true },
+  );
+}
+
+function strictDebug_fmt(strict) {
+  return `Strict { a: ${strict.a}, b: ${strict.b == null ? "None" : `Some(${strict.b})`} }`;
+}
+
+function levelDeserialize_deserialize(json) {
+  return json.enum(
+    "Level",
+    ["lo", "High", "Unknown"],
+    (variant, content) => {
+      if (variant === "lo") {
+        content.unit();
+        return "Low";
+      }
+      if (variant === "High") {
+        content.unit();
+        return "High";
+      }
+      content.unit();
+      return "Unknown";
+    },
+    "Unknown",
+  );
+}
+
 function seven() {
   return 7;
 }
 
 function fallback() {
   return { name: "fallback", level: 3, verbose: true };
+}
+
+function configDeserialize_deserialize(json) {
+  return json.struct(
+    "struct Config",
+    [
+      ["name", $json.string, (defaults) => defaults.name],
+      ["level", $json.u32, (defaults) => defaults.level],
+      ["verbose", $json.bool, (defaults) => defaults.verbose],
+    ],
+    ([name, level, verbose], defaults) => ({ name, level, verbose }),
+    { container: () => fallback() },
+  );
+}
+
+function configDebug_fmt(config) {
+  return `Config { name: ${$debugStr(config.name)}, level: ${config.level}, verbose: ${config.verbose} }`;
+}
+
+function looseDeserialize_deserialize(json) {
+  return json.struct(
+    "struct Loose",
+    [
+      ["a", $json.u32, (defaults) => defaults.a],
+      ["b", $json.string, (defaults) => defaults.b],
+      ["c", $json.u32, (defaults) => seven()],
+    ],
+    ([a, b, c], defaults) => ({ a, b, c, d: defaults.d }),
+    { container: () => ({ a: 0, b: "", c: 0, d: [] }) },
+  );
+}
+
+function looseDebug_fmt(loose) {
+  return `Loose { a: ${loose.a}, b: ${$debugStr(loose.b)}, c: ${loose.c}, d: [${loose.d.map((item) => String(item)).join(", ")}] }`;
+}
+
+function eventDeserialize_deserialize(json) {
+  return json.enum(
+    "Event",
+    [["started", "begin", "Aa"], "moved", "renamed"],
+    (variant, content) => {
+      if (variant === "started") {
+        content.unit();
+        return "Started";
+      }
+      if (variant === "moved") {
+        return content.struct(
+          "struct variant Event::Moved",
+          [
+            ["deltaX", $json.i32],
+            ["deltaY", $json.i32],
+          ],
+          ([delta_x, delta_y]) => ({ TAG: "Moved", delta_x, delta_y }),
+          { deny: true },
+        );
+      }
+      return content.struct(
+        "struct variant Event::Renamed",
+        [["OLD_NAME", $json.string]],
+        ([old_name]) => ({ TAG: "Renamed", old_name }),
+        { deny: true },
+      );
+    },
+  );
+}
+
+function eventDebug_fmt(event) {
+  if (event === "Started") {
+    return "Started";
+  }
+  if (event.TAG === "Moved") {
+    return `Moved { delta_x: ${event.delta_x}, delta_y: ${event.delta_y} }`;
+  }
+  if (event.TAG === "Renamed") {
+    return `Renamed { old_name: ${$debugStr(event.old_name)} }`;
+  }
+  return "Hidden";
+}
+
+function ptDeserialize_deserialize(json) {
+  return json.tupleStruct("a point, like [1, 2]", [$json.i32, $json.i32], undefined, {
+    expecting: "a point, like [1, 2]",
+  });
+}
+
+function ptDebug_fmt(pt) {
+  return `Pt(${pt[0]}, ${pt[1]})`;
+}
+
+function namedDeserialize_deserialize(json) {
+  return json.struct(
+    "struct Named",
+    [
+      ["in", $json.u8],
+      ["other", $json.u8],
+    ],
+    ([value, other]) => ({ value, other }),
+  );
+}
+
+function namedDebug_fmt(named) {
+  return `Named { value: ${named.value}, other: ${named.other} }`;
+}
+
+function nothingDeserialize_deserialize(json) {
+  return json.struct("struct Nothing", [], ([]) => ({ x: 0 }), { deny: true });
+}
+
+function nothingDebug_fmt(nothing) {
+  return `Nothing { x: ${nothing.x} }`;
+}
+
+function treeDeserialize_deserialize(json) {
+  return json.struct(
+    "struct Tree",
+    [
+      ["value", $json.u32],
+      ["children", $json.vec(treeDeserialize_deserialize)],
+    ],
+    ([value, children]) => ({ value, children }),
+  );
+}
+
+function treeDebug_fmt(tree) {
+  return `Tree { value: ${tree.value}, children: [${tree.children.map((item) => treeDebug_fmt(item)).join(", ")}] }`;
+}
+
+function neverDeserialize_deserialize(json) {
+  return json.enum("Never", [], (variant, content) => {});
+}
+
+function holderDeserialize_deserialize(json) {
+  return json.struct(
+    "struct Holder",
+    [
+      ["boxed", $json.u32],
+      ["shared", $json.string],
+      ["queue", $json.vec($json.i16)],
+      ["set", $json.set($json.char)],
+      ["by_char", $json.map($json.key.char, $json.u8)],
+      ["by_int", $json.map($json.key.number($json.i32), $json.f64)],
+      ["nested", $json.option($json.vec($json.option(ptDeserialize_deserialize)))],
+    ],
+    ([boxed, shared, queue, set, by_char, by_int, nested]) => ({
+      boxed,
+      shared,
+      queue,
+      set,
+      by_char,
+      by_int,
+      nested,
+    }),
+  );
+}
+
+function holderDebug_fmt(holder) {
+  const names = ["boxed", "shared", "queue", "set", "by_char", "by_int", "nested"];
+  const values = [
+    String(holder.boxed),
+    $debugStr(holder.shared),
+    `[${holder.queue.map((item) => String(item)).join(", ")}]`,
+    `{${Array.from($sortedKeys(holder.set, $cmp))
+      .map((item) => $debugStr(item, "'"))
+      .join(", ")}}`,
+    `{${Array.from(holder.by_char)
+      .map(([key, value]) => `${$debugStr(key, "'")}: ${value}`)
+      .join(", ")}}`,
+    `{${Array.from(holder.by_int)
+      .map(([key, value]) => `${key}: ${$debugF64(value)}`)
+      .join(", ")}}`,
+    holder.nested == null
+      ? "None"
+      : `Some([${holder.nested.map((item) => (item == null ? "None" : `Some(${ptDebug_fmt(item)})`)).join(", ")}])`,
+  ];
+  return $debugFields("Holder", names, values);
+}
+
+function detailsDeserialize_deserialize(json) {
+  return json.struct(
+    "struct Details",
+    [
+      ["id", $json.u32],
+      ["note", $json.option($json.string)],
+    ],
+    ([id, note]) => ({ id, note }),
+  );
+}
+
+function detailsDebug_fmt(details) {
+  return `Details { id: ${details.id}, note: ${details.note == null ? "None" : `Some(${$debugStr(details.note)})`} }`;
+}
+
+function markerDeserialize_deserialize(json) {
+  return json.unitStruct("unit struct Marker");
+}
+
+function markerDebug_fmt(marker) {
+  return "Marker";
+}
+
+function updateDeserialize_deserialize(json) {
+  return json.internallyTagged(
+    "type",
+    "internally tagged enum Update",
+    ["started", "moved", "placed", "marked", "count", "keys", "unknown"],
+    (variant, content) => {
+      if (variant === "started") {
+        content.taggedUnit("unit variant Update::Started");
+        return "Started";
+      }
+      if (variant === "moved") {
+        return content.struct(
+          "struct variant Update::Moved",
+          [
+            ["dx", $json.i32],
+            ["dy", $json.i32],
+          ],
+          ([dx, dy]) => ({ TAG: "Moved", dx, dy }),
+        );
+      }
+      if (variant === "placed") {
+        return { TAG: "Placed", _0: detailsDeserialize_deserialize(content) };
+      }
+      if (variant === "marked") {
+        return { TAG: "Marked", _0: markerDeserialize_deserialize(content) };
+      }
+      if (variant === "count") {
+        return { TAG: "Count", _0: $json.option($json.u32)(content) };
+      }
+      if (variant === "keys") {
+        return content.struct(
+          "struct variant Update::Keys",
+          [["map", $json.map($json.key.number($json.u32), $json.u8)]],
+          ([map]) => ({ TAG: "Keys", map }),
+        );
+      }
+      content.taggedUnit("unit variant Update::Unknown");
+      return "Unknown";
+    },
+    "unknown",
+  );
+}
+
+function updateDebug_fmt(update) {
+  if (update === "Started") {
+    return "Started";
+  }
+  if (update.TAG === "Moved") {
+    return `Moved { dx: ${update.dx}, dy: ${update.dy} }`;
+  }
+  if (update.TAG === "Placed") {
+    return `Placed(${detailsDebug_fmt(update._0)})`;
+  }
+  if (update.TAG === "Marked") {
+    return `Marked(${markerDebug_fmt(update._0)})`;
+  }
+  if (update.TAG === "Count") {
+    return `Count(${update._0 == null ? "None" : `Some(${update._0})`})`;
+  }
+  if (update.TAG === "Keys") {
+    return `Keys { map: {${Array.from($sortedEntries(update.map, $cmp))
+      .map(([key, value]) => `${key}: ${value}`)
+      .join(", ")}} }`;
+  }
+  return "Unknown";
+}
+
+function chatDeserialize_deserialize(json) {
+  return json.adjacentlyTagged(
+    "t",
+    "c",
+    "adjacently tagged enum Chat",
+    ["Ping", "Text", "Pair", "Move", "Maybe"],
+    (variant, content) => {
+      if (variant === "Ping") {
+        content.untaggedUnit("unit variant Chat::Ping");
+        return "Ping";
+      }
+      if (variant === "Text") {
+        return { TAG: "Text", _0: $json.string(content) };
+      }
+      if (variant === "Pair") {
+        return content.tupleStruct(
+          "tuple variant Chat::Pair",
+          [$json.u8, $json.u8],
+          ([_0, _1]) => ({ TAG: "Pair", _0, _1 }),
+        );
+      }
+      if (variant === "Move") {
+        return content.untaggedStruct("struct variant Chat::Move", [["x", $json.i32]], ([x]) => ({
+          TAG: "Move",
+          x,
+        }));
+      }
+      return { TAG: "Maybe", _0: $json.option($json.u8)(content) };
+    },
+  );
+}
+
+function chatDebug_fmt(chat) {
+  if (chat === "Ping") {
+    return "Ping";
+  }
+  if (chat.TAG === "Text") {
+    return `Text(${$debugStr(chat._0)})`;
+  }
+  if (chat.TAG === "Pair") {
+    return `Pair(${chat._0}, ${chat._1})`;
+  }
+  if (chat.TAG === "Move") {
+    return `Move { x: ${chat.x} }`;
+  }
+  return `Maybe(${chat._0 == null ? "None" : `Some(${chat._0})`})`;
+}
+
+function strictChatDeserialize_deserialize(json) {
+  return json.adjacentlyTagged(
+    "t",
+    "c",
+    "adjacently tagged enum StrictChat",
+    ["A", "B"],
+    (variant, content) => {
+      if (variant === "A") {
+        return { TAG: "A", _0: $json.u8(content) };
+      }
+      content.untaggedUnit("unit variant StrictChat::B");
+      return "B";
+    },
+    { deny: true },
+  );
+}
+
+function strictChatDebug_fmt(strictChat) {
+  if (strictChat.TAG === "A") {
+    return `A(${strictChat._0})`;
+  }
+  return "B";
+}
+
+function anythingDeserialize_deserialize(json) {
+  return json.untagged("data did not match any variant of untagged enum Anything", [
+    (content) => ({ TAG: "Num", _0: $json.f64(content) }),
+    (content) => ({ TAG: "Word", _0: $json.string(content) }),
+    (content) =>
+      content.tupleStruct("tuple variant Anything::Pair", [$json.u8, $json.bool], ([_0, _1]) => ({
+        TAG: "Pair",
+        _0,
+        _1,
+      })),
+    (content) =>
+      content.untaggedStruct(
+        "struct variant Anything::Point",
+        [
+          ["x", $json.i32],
+          ["y", $json.i32],
+        ],
+        ([x, y]) => ({ TAG: "Point", x, y }),
+      ),
+    (content) => {
+      content.untaggedUnit("unit variant Anything::Nothing");
+      return "Nothing";
+    },
+    (content) => ({ TAG: "Many", _0: $json.vec($json.u8)(content) }),
+  ]);
+}
+
+function anythingDebug_fmt(anything) {
+  if (anything.TAG === "Num") {
+    return `Num(${$debugF64(anything._0)})`;
+  }
+  if (anything.TAG === "Word") {
+    return `Word(${$debugStr(anything._0)})`;
+  }
+  if (anything.TAG === "Pair") {
+    return `Pair(${anything._0}, ${anything._1})`;
+  }
+  if (anything.TAG === "Point") {
+    return `Point { x: ${anything.x}, y: ${anything.y} }`;
+  }
+  if (anything === "Nothing") {
+    return "Nothing";
+  }
+  return `Many([${anything._0.map((item) => String(item)).join(", ")}])`;
+}
+
+function eitherDeserialize_deserialize(json) {
+  return json.untagged("data did not match any variant of untagged enum Either", [
+    (content) =>
+      content.enum("Either", ["A", "B"], (variant, content$1) => {
+        if (variant === "A") {
+          return { TAG: "A", _0: content$1.newtype($json.u8) };
+        }
+        return content$1.struct("struct variant Either::B", [["x", $json.u8]], ([x]) => ({
+          TAG: "B",
+          x,
+        }));
+      }),
+    (content) => ({ TAG: "Raw", _0: $json.string(content) }),
+    (content) => ({ TAG: "Other", _0: $json.u32(content) }),
+  ]);
+}
+
+function eitherDebug_fmt(either) {
+  if (either.TAG === "A") {
+    return `A(${either._0})`;
+  }
+  if (either.TAG === "B") {
+    return `B { x: ${either.x} }`;
+  }
+  if (either.TAG === "Raw") {
+    return `Raw(${$debugStr(either._0)})`;
+  }
+  return `Other(${either._0})`;
+}
+
+function wrapperDeserialize_deserialize(json) {
+  return json.untagged("data did not match any variant of untagged enum Wrapper", [
+    (content) => ({ TAG: "Tagged", _0: updateDeserialize_deserialize(content) }),
+    (content) => ({ TAG: "Plain", _0: chatDeserialize_deserialize(content) }),
+  ]);
+}
+
+function wrapperDebug_fmt(wrapper) {
+  if (wrapper.TAG === "Tagged") {
+    return `Tagged(${updateDebug_fmt(wrapper._0)})`;
+  }
+  return `Plain(${chatDebug_fmt(wrapper._0)})`;
+}
+
+function batchDeserialize_deserialize(json) {
+  return json.struct(
+    "struct Batch",
+    [
+      ["events", $json.vec(updateDeserialize_deserialize)],
+      ["loose", anythingDeserialize_deserialize],
+    ],
+    ([events, loose]) => ({ events, loose }),
+  );
+}
+
+function batchDebug_fmt(batch) {
+  return `Batch { events: [${batch.events.map((item) => updateDebug_fmt(item)).join(", ")}], loose: ${anythingDebug_fmt(batch.loose)} }`;
+}
+
+function taggedDeserialize_deserialize(json) {
+  return json.struct("struct Tagged", [["id", $json.u32]], ([id]) => ({ id }));
+}
+
+function taggedDebug_fmt(tagged) {
+  return `Tagged { id: ${tagged.id} }`;
+}
+
+function strictTaggedDeserialize_deserialize(json) {
+  return json.struct("struct StrictTagged", [["id", $json.u32]], ([id]) => ({ id }), {
+    deny: true,
+  });
+}
+
+function strictTaggedDebug_fmt(strictTagged) {
+  return `StrictTagged { id: ${strictTagged.id} }`;
 }
 
 export function report() {
@@ -1718,613 +2326,5 @@ export function report() {
     }
   }
   return out;
-}
-
-function orderDebug_fmt(order) {
-  const names = ["order_id", "item_name", "qty", "note", "price", "tags", "paid", "cache"];
-  const values = [
-    String(order.order_id),
-    $debugStr(order.item_name),
-    String(order.qty),
-    order.note == null ? "None" : `Some(${$debugStr(order.note)})`,
-    $debugF64(order.price),
-    `[${order.tags.map((item) => $debugStr(item)).join(", ")}]`,
-    String(order.paid),
-    String(order.cache),
-  ];
-  return $debugFields("Order", names, values);
-}
-
-function shapeDebug_fmt(shape) {
-  if (shape === "Dot") {
-    return "Dot";
-  }
-  if (shape.TAG === "Circle") {
-    return `Circle(${$debugF64(shape._0)})`;
-  }
-  if (shape.TAG === "Rect") {
-    return `Rect(${$debugF64(shape._0)}, ${$debugF64(shape._1)})`;
-  }
-  return `Poly { sides: ${shape.sides}, name: ${$debugStr(shape.name)} }`;
-}
-
-function idDebug_fmt(id) {
-  return `Id(${id[0]})`;
-}
-
-function pointDebug_fmt(point) {
-  return `Point(${point[0]}, ${point[1]})`;
-}
-
-function unitDebug_fmt(unit) {
-  return "Unit";
-}
-
-function metersDebug_fmt(meters) {
-  return `Meters { value: ${$debugF64(meters.value)} }`;
-}
-
-function strictDebug_fmt(strict) {
-  return `Strict { a: ${strict.a}, b: ${strict.b == null ? "None" : `Some(${strict.b})`} }`;
-}
-
-function configDebug_fmt(config) {
-  return `Config { name: ${$debugStr(config.name)}, level: ${config.level}, verbose: ${config.verbose} }`;
-}
-
-function looseDebug_fmt(loose) {
-  return `Loose { a: ${loose.a}, b: ${$debugStr(loose.b)}, c: ${loose.c}, d: [${loose.d.map((item) => String(item)).join(", ")}] }`;
-}
-
-function eventDebug_fmt(event) {
-  if (event === "Started") {
-    return "Started";
-  }
-  if (event.TAG === "Moved") {
-    return `Moved { delta_x: ${event.delta_x}, delta_y: ${event.delta_y} }`;
-  }
-  if (event.TAG === "Renamed") {
-    return `Renamed { old_name: ${$debugStr(event.old_name)} }`;
-  }
-  return "Hidden";
-}
-
-function ptDebug_fmt(pt) {
-  return `Pt(${pt[0]}, ${pt[1]})`;
-}
-
-function namedDebug_fmt(named) {
-  return `Named { value: ${named.value}, other: ${named.other} }`;
-}
-
-function nothingDebug_fmt(nothing) {
-  return `Nothing { x: ${nothing.x} }`;
-}
-
-function treeDebug_fmt(tree) {
-  return `Tree { value: ${tree.value}, children: [${tree.children.map((item) => treeDebug_fmt(item)).join(", ")}] }`;
-}
-
-function holderDebug_fmt(holder) {
-  const names = ["boxed", "shared", "queue", "set", "by_char", "by_int", "nested"];
-  const values = [
-    String(holder.boxed),
-    $debugStr(holder.shared),
-    `[${holder.queue.map((item) => String(item)).join(", ")}]`,
-    `{${Array.from($sortedKeys(holder.set, $cmp))
-      .map((item) => $debugStr(item, "'"))
-      .join(", ")}}`,
-    `{${Array.from(holder.by_char)
-      .map(([key, value]) => `${$debugStr(key, "'")}: ${value}`)
-      .join(", ")}}`,
-    `{${Array.from(holder.by_int)
-      .map(([key, value]) => `${key}: ${$debugF64(value)}`)
-      .join(", ")}}`,
-    holder.nested == null
-      ? "None"
-      : `Some([${holder.nested.map((item) => (item == null ? "None" : `Some(${ptDebug_fmt(item)})`)).join(", ")}])`,
-  ];
-  return $debugFields("Holder", names, values);
-}
-
-function detailsDebug_fmt(details) {
-  return `Details { id: ${details.id}, note: ${details.note == null ? "None" : `Some(${$debugStr(details.note)})`} }`;
-}
-
-function markerDebug_fmt(marker) {
-  return "Marker";
-}
-
-function updateDebug_fmt(update) {
-  if (update === "Started") {
-    return "Started";
-  }
-  if (update.TAG === "Moved") {
-    return `Moved { dx: ${update.dx}, dy: ${update.dy} }`;
-  }
-  if (update.TAG === "Placed") {
-    return `Placed(${detailsDebug_fmt(update._0)})`;
-  }
-  if (update.TAG === "Marked") {
-    return `Marked(${markerDebug_fmt(update._0)})`;
-  }
-  if (update.TAG === "Count") {
-    return `Count(${update._0 == null ? "None" : `Some(${update._0})`})`;
-  }
-  if (update.TAG === "Keys") {
-    return `Keys { map: {${Array.from($sortedEntries(update.map, $cmp))
-      .map(([key, value]) => `${key}: ${value}`)
-      .join(", ")}} }`;
-  }
-  return "Unknown";
-}
-
-function chatDebug_fmt(chat) {
-  if (chat === "Ping") {
-    return "Ping";
-  }
-  if (chat.TAG === "Text") {
-    return `Text(${$debugStr(chat._0)})`;
-  }
-  if (chat.TAG === "Pair") {
-    return `Pair(${chat._0}, ${chat._1})`;
-  }
-  if (chat.TAG === "Move") {
-    return `Move { x: ${chat.x} }`;
-  }
-  return `Maybe(${chat._0 == null ? "None" : `Some(${chat._0})`})`;
-}
-
-function strictChatDebug_fmt(strictChat) {
-  if (strictChat.TAG === "A") {
-    return `A(${strictChat._0})`;
-  }
-  return "B";
-}
-
-function anythingDebug_fmt(anything) {
-  if (anything.TAG === "Num") {
-    return `Num(${$debugF64(anything._0)})`;
-  }
-  if (anything.TAG === "Word") {
-    return `Word(${$debugStr(anything._0)})`;
-  }
-  if (anything.TAG === "Pair") {
-    return `Pair(${anything._0}, ${anything._1})`;
-  }
-  if (anything.TAG === "Point") {
-    return `Point { x: ${anything.x}, y: ${anything.y} }`;
-  }
-  if (anything === "Nothing") {
-    return "Nothing";
-  }
-  return `Many([${anything._0.map((item) => String(item)).join(", ")}])`;
-}
-
-function eitherDebug_fmt(either) {
-  if (either.TAG === "A") {
-    return `A(${either._0})`;
-  }
-  if (either.TAG === "B") {
-    return `B { x: ${either.x} }`;
-  }
-  if (either.TAG === "Raw") {
-    return `Raw(${$debugStr(either._0)})`;
-  }
-  return `Other(${either._0})`;
-}
-
-function wrapperDebug_fmt(wrapper) {
-  if (wrapper.TAG === "Tagged") {
-    return `Tagged(${updateDebug_fmt(wrapper._0)})`;
-  }
-  return `Plain(${chatDebug_fmt(wrapper._0)})`;
-}
-
-function batchDebug_fmt(batch) {
-  return `Batch { events: [${batch.events.map((item) => updateDebug_fmt(item)).join(", ")}], loose: ${anythingDebug_fmt(batch.loose)} }`;
-}
-
-function taggedDebug_fmt(tagged) {
-  return `Tagged { id: ${tagged.id} }`;
-}
-
-function strictTaggedDebug_fmt(strictTagged) {
-  return `StrictTagged { id: ${strictTagged.id} }`;
-}
-
-function orderDeserialize_deserialize(json) {
-  return json.struct(
-    "struct Order",
-    [
-      ["orderId", $json.u32],
-      ["itemName", $json.string],
-      ["qty", $json.u32, () => 0],
-      ["note", $json.option($json.string)],
-      ["price", $json.f64],
-      ["tags", $json.vec($json.string)],
-      [["ok", "paid"], $json.bool],
-    ],
-    ([order_id, item_name, qty, note, price, tags, paid]) => ({
-      order_id,
-      item_name,
-      qty,
-      note,
-      price,
-      tags,
-      paid,
-      cache: 0,
-    }),
-  );
-}
-
-function shapeDeserialize_deserialize(json) {
-  return json.enum("Shape", ["Dot", "Circle", "Rect", "Poly"], (variant, content) => {
-    if (variant === "Dot") {
-      content.unit();
-      return "Dot";
-    }
-    if (variant === "Circle") {
-      return { TAG: "Circle", _0: content.newtype($json.f64) };
-    }
-    if (variant === "Rect") {
-      return content.tuple("tuple variant Shape::Rect", [$json.f64, $json.f64], ([_0, _1]) => ({
-        TAG: "Rect",
-        _0,
-        _1,
-      }));
-    }
-    return content.struct(
-      "struct variant Shape::Poly",
-      [
-        ["sides", $json.u32],
-        ["name", $json.string],
-      ],
-      ([sides, name]) => ({ TAG: "Poly", sides, name }),
-    );
-  });
-}
-
-function idDeserialize_deserialize(json) {
-  return [$json.u32(json)];
-}
-
-function pointDeserialize_deserialize(json) {
-  return json.tupleStruct("tuple struct Point", [$json.i32, $json.i32]);
-}
-
-function unitDeserialize_deserialize(json) {
-  return json.unitStruct("unit struct Unit");
-}
-
-function metersDeserialize_deserialize(json) {
-  return { value: $json.f64(json) };
-}
-
-function strictDeserialize_deserialize(json) {
-  return json.struct(
-    "struct Strict",
-    [
-      ["a", $json.u8],
-      ["b", $json.option($json.i8)],
-    ],
-    ([a, b]) => ({ a, b }),
-    { deny: true },
-  );
-}
-
-function levelDeserialize_deserialize(json) {
-  return json.enum(
-    "Level",
-    ["lo", "High", "Unknown"],
-    (variant, content) => {
-      if (variant === "lo") {
-        content.unit();
-        return "Low";
-      }
-      if (variant === "High") {
-        content.unit();
-        return "High";
-      }
-      content.unit();
-      return "Unknown";
-    },
-    "Unknown",
-  );
-}
-
-function configDeserialize_deserialize(json) {
-  return json.struct(
-    "struct Config",
-    [
-      ["name", $json.string, (defaults) => defaults.name],
-      ["level", $json.u32, (defaults) => defaults.level],
-      ["verbose", $json.bool, (defaults) => defaults.verbose],
-    ],
-    ([name, level, verbose], defaults) => ({ name, level, verbose }),
-    { container: () => fallback() },
-  );
-}
-
-function looseDeserialize_deserialize(json) {
-  return json.struct(
-    "struct Loose",
-    [
-      ["a", $json.u32, (defaults) => defaults.a],
-      ["b", $json.string, (defaults) => defaults.b],
-      ["c", $json.u32, (defaults) => seven()],
-    ],
-    ([a, b, c], defaults) => ({ a, b, c, d: defaults.d }),
-    { container: () => ({ a: 0, b: "", c: 0, d: [] }) },
-  );
-}
-
-function eventDeserialize_deserialize(json) {
-  return json.enum(
-    "Event",
-    [["started", "begin", "Aa"], "moved", "renamed"],
-    (variant, content) => {
-      if (variant === "started") {
-        content.unit();
-        return "Started";
-      }
-      if (variant === "moved") {
-        return content.struct(
-          "struct variant Event::Moved",
-          [
-            ["deltaX", $json.i32],
-            ["deltaY", $json.i32],
-          ],
-          ([delta_x, delta_y]) => ({ TAG: "Moved", delta_x, delta_y }),
-          { deny: true },
-        );
-      }
-      return content.struct(
-        "struct variant Event::Renamed",
-        [["OLD_NAME", $json.string]],
-        ([old_name]) => ({ TAG: "Renamed", old_name }),
-        { deny: true },
-      );
-    },
-  );
-}
-
-function ptDeserialize_deserialize(json) {
-  return json.tupleStruct("a point, like [1, 2]", [$json.i32, $json.i32], undefined, {
-    expecting: "a point, like [1, 2]",
-  });
-}
-
-function namedDeserialize_deserialize(json) {
-  return json.struct(
-    "struct Named",
-    [
-      ["in", $json.u8],
-      ["other", $json.u8],
-    ],
-    ([value, other]) => ({ value, other }),
-  );
-}
-
-function nothingDeserialize_deserialize(json) {
-  return json.struct("struct Nothing", [], ([]) => ({ x: 0 }), { deny: true });
-}
-
-function treeDeserialize_deserialize(json) {
-  return json.struct(
-    "struct Tree",
-    [
-      ["value", $json.u32],
-      ["children", $json.vec(treeDeserialize_deserialize)],
-    ],
-    ([value, children]) => ({ value, children }),
-  );
-}
-
-function neverDeserialize_deserialize(json) {
-  return json.enum("Never", [], (variant, content) => {});
-}
-
-function holderDeserialize_deserialize(json) {
-  return json.struct(
-    "struct Holder",
-    [
-      ["boxed", $json.u32],
-      ["shared", $json.string],
-      ["queue", $json.vec($json.i16)],
-      ["set", $json.set($json.char)],
-      ["by_char", $json.map($json.key.char, $json.u8)],
-      ["by_int", $json.map($json.key.number($json.i32), $json.f64)],
-      ["nested", $json.option($json.vec($json.option(ptDeserialize_deserialize)))],
-    ],
-    ([boxed, shared, queue, set, by_char, by_int, nested]) => ({
-      boxed,
-      shared,
-      queue,
-      set,
-      by_char,
-      by_int,
-      nested,
-    }),
-  );
-}
-
-function updateDeserialize_deserialize(json) {
-  return json.internallyTagged(
-    "type",
-    "internally tagged enum Update",
-    ["started", "moved", "placed", "marked", "count", "keys", "unknown"],
-    (variant, content) => {
-      if (variant === "started") {
-        content.taggedUnit("unit variant Update::Started");
-        return "Started";
-      }
-      if (variant === "moved") {
-        return content.struct(
-          "struct variant Update::Moved",
-          [
-            ["dx", $json.i32],
-            ["dy", $json.i32],
-          ],
-          ([dx, dy]) => ({ TAG: "Moved", dx, dy }),
-        );
-      }
-      if (variant === "placed") {
-        return { TAG: "Placed", _0: detailsDeserialize_deserialize(content) };
-      }
-      if (variant === "marked") {
-        return { TAG: "Marked", _0: markerDeserialize_deserialize(content) };
-      }
-      if (variant === "count") {
-        return { TAG: "Count", _0: $json.option($json.u32)(content) };
-      }
-      if (variant === "keys") {
-        return content.struct(
-          "struct variant Update::Keys",
-          [["map", $json.map($json.key.number($json.u32), $json.u8)]],
-          ([map]) => ({ TAG: "Keys", map }),
-        );
-      }
-      content.taggedUnit("unit variant Update::Unknown");
-      return "Unknown";
-    },
-    "unknown",
-  );
-}
-
-function chatDeserialize_deserialize(json) {
-  return json.adjacentlyTagged(
-    "t",
-    "c",
-    "adjacently tagged enum Chat",
-    ["Ping", "Text", "Pair", "Move", "Maybe"],
-    (variant, content) => {
-      if (variant === "Ping") {
-        content.untaggedUnit("unit variant Chat::Ping");
-        return "Ping";
-      }
-      if (variant === "Text") {
-        return { TAG: "Text", _0: $json.string(content) };
-      }
-      if (variant === "Pair") {
-        return content.tupleStruct(
-          "tuple variant Chat::Pair",
-          [$json.u8, $json.u8],
-          ([_0, _1]) => ({ TAG: "Pair", _0, _1 }),
-        );
-      }
-      if (variant === "Move") {
-        return content.untaggedStruct("struct variant Chat::Move", [["x", $json.i32]], ([x]) => ({
-          TAG: "Move",
-          x,
-        }));
-      }
-      return { TAG: "Maybe", _0: $json.option($json.u8)(content) };
-    },
-  );
-}
-
-function strictChatDeserialize_deserialize(json) {
-  return json.adjacentlyTagged(
-    "t",
-    "c",
-    "adjacently tagged enum StrictChat",
-    ["A", "B"],
-    (variant, content) => {
-      if (variant === "A") {
-        return { TAG: "A", _0: $json.u8(content) };
-      }
-      content.untaggedUnit("unit variant StrictChat::B");
-      return "B";
-    },
-    { deny: true },
-  );
-}
-
-function anythingDeserialize_deserialize(json) {
-  return json.untagged("data did not match any variant of untagged enum Anything", [
-    (content) => ({ TAG: "Num", _0: $json.f64(content) }),
-    (content) => ({ TAG: "Word", _0: $json.string(content) }),
-    (content) =>
-      content.tupleStruct("tuple variant Anything::Pair", [$json.u8, $json.bool], ([_0, _1]) => ({
-        TAG: "Pair",
-        _0,
-        _1,
-      })),
-    (content) =>
-      content.untaggedStruct(
-        "struct variant Anything::Point",
-        [
-          ["x", $json.i32],
-          ["y", $json.i32],
-        ],
-        ([x, y]) => ({ TAG: "Point", x, y }),
-      ),
-    (content) => {
-      content.untaggedUnit("unit variant Anything::Nothing");
-      return "Nothing";
-    },
-    (content) => ({ TAG: "Many", _0: $json.vec($json.u8)(content) }),
-  ]);
-}
-
-function eitherDeserialize_deserialize(json) {
-  return json.untagged("data did not match any variant of untagged enum Either", [
-    (content) =>
-      content.enum("Either", ["A", "B"], (variant, content$1) => {
-        if (variant === "A") {
-          return { TAG: "A", _0: content$1.newtype($json.u8) };
-        }
-        return content$1.struct("struct variant Either::B", [["x", $json.u8]], ([x]) => ({
-          TAG: "B",
-          x,
-        }));
-      }),
-    (content) => ({ TAG: "Raw", _0: $json.string(content) }),
-    (content) => ({ TAG: "Other", _0: $json.u32(content) }),
-  ]);
-}
-
-function wrapperDeserialize_deserialize(json) {
-  return json.untagged("data did not match any variant of untagged enum Wrapper", [
-    (content) => ({ TAG: "Tagged", _0: updateDeserialize_deserialize(content) }),
-    (content) => ({ TAG: "Plain", _0: chatDeserialize_deserialize(content) }),
-  ]);
-}
-
-function batchDeserialize_deserialize(json) {
-  return json.struct(
-    "struct Batch",
-    [
-      ["events", $json.vec(updateDeserialize_deserialize)],
-      ["loose", anythingDeserialize_deserialize],
-    ],
-    ([events, loose]) => ({ events, loose }),
-  );
-}
-
-function taggedDeserialize_deserialize(json) {
-  return json.struct("struct Tagged", [["id", $json.u32]], ([id]) => ({ id }));
-}
-
-function strictTaggedDeserialize_deserialize(json) {
-  return json.struct("struct StrictTagged", [["id", $json.u32]], ([id]) => ({ id }), {
-    deny: true,
-  });
-}
-
-function detailsDeserialize_deserialize(json) {
-  return json.struct(
-    "struct Details",
-    [
-      ["id", $json.u32],
-      ["note", $json.option($json.string)],
-    ],
-    ([id, note]) => ({ id, note }),
-  );
-}
-
-function markerDeserialize_deserialize(json) {
-  return json.unitStruct("unit struct Marker");
 }
 //# sourceMappingURL=inbox.js.map

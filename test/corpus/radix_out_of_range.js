@@ -2,6 +2,10 @@
 
 import { $debugParseError, $parseInt } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   for (const radix of [2, 36, 37]) {
     const arg = $parseInt("11", 0, 4294967295, radix);
@@ -9,9 +13,5 @@ function main() {
       `${arg.TAG === "Ok" ? `Ok(${arg._0})` : `Err(${$debugParseError(arg._0, "ParseIntError")})`}`,
     );
   }
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

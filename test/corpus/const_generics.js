@@ -4,20 +4,9 @@ import { $debugStr, $index, $removeAt, $traitImpl } from "@rust-js/runtime";
 
 var $ringShow, $ringDisplay, $gridShow;
 
-const Ring = {
-  new(CAP) {
-    return { items: [] };
-  },
-  push(ring, x, CAP) {
-    if (ring.items.length === CAP) {
-      $removeAt(ring.items, 0);
-    }
-    ring.items.push(x);
-  },
-  capacity(ring, CAP) {
-    return CAP;
-  },
-};
+export function entry() {
+  main();
+}
 
 function sum(values, N) {
   let total = 0;
@@ -42,6 +31,21 @@ function filled(x, N) {
   return new Array(N).fill(x);
 }
 
+const Ring = {
+  new(CAP) {
+    return { items: [] };
+  },
+  push(ring, x, CAP) {
+    if (ring.items.length === CAP) {
+      $removeAt(ring.items, 0);
+    }
+    ring.items.push(x);
+  },
+  capacity(ring, CAP) {
+    return CAP;
+  },
+};
+
 function flag(ON, C) {
   if (ON) {
     return C;
@@ -51,6 +55,39 @@ function flag(ON, C) {
 
 function scaled(values, K) {
   return values.map((v) => Math.imul(v, K) >>> 0);
+}
+
+function ringShow(CAP) {
+  if ($ringShow === undefined) {
+    $ringShow = new Map();
+  }
+  return $traitImpl($ringShow, [CAP], () => ({ show: (arg0) => ringShow_show(arg0, CAP) }));
+}
+
+function ringShow_show(ring, CAP) {
+  return `${ring.items.length}/${CAP}`;
+}
+
+export function ringDisplay(CAP) {
+  if ($ringDisplay === undefined) {
+    $ringDisplay = new Map();
+  }
+  return $traitImpl($ringDisplay, [CAP], () => ({ fmt: (arg0) => ringDisplay_fmt(arg0, CAP) }));
+}
+
+function ringDisplay_fmt(ring, CAP) {
+  return `ring of ${Ring.capacity(ring, CAP)}`;
+}
+
+function gridShow(W, H) {
+  if ($gridShow === undefined) {
+    $gridShow = new Map();
+  }
+  return $traitImpl($gridShow, [W, H], () => ({ show: (arg0) => gridShow_show(arg0, W, H) }));
+}
+
+function gridShow_show(grid, W, H) {
+  return `${W}x${H}`;
 }
 
 function shown(s, SShow) {
@@ -97,42 +134,5 @@ function main() {
   );
   const twice = () => count(4);
   console.log(`${twice()}`);
-}
-
-export function entry() {
-  main();
-}
-
-function ringShow_show(ring, CAP) {
-  return `${ring.items.length}/${CAP}`;
-}
-
-function ringDisplay_fmt(ring, CAP) {
-  return `ring of ${Ring.capacity(ring, CAP)}`;
-}
-
-function gridShow_show(grid, W, H) {
-  return `${W}x${H}`;
-}
-
-function ringShow(CAP) {
-  if ($ringShow === undefined) {
-    $ringShow = new Map();
-  }
-  return $traitImpl($ringShow, [CAP], () => ({ show: (arg0) => ringShow_show(arg0, CAP) }));
-}
-
-export function ringDisplay(CAP) {
-  if ($ringDisplay === undefined) {
-    $ringDisplay = new Map();
-  }
-  return $traitImpl($ringDisplay, [CAP], () => ({ fmt: (arg0) => ringDisplay_fmt(arg0, CAP) }));
-}
-
-function gridShow(W, H) {
-  if ($gridShow === undefined) {
-    $gridShow = new Map();
-  }
-  return $traitImpl($gridShow, [W, H], () => ({ show: (arg0) => gridShow_show(arg0, W, H) }));
 }
 //# sourceMappingURL=case.js.map

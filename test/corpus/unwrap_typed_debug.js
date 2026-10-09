@@ -2,6 +2,14 @@
 
 import { $debugStr, $unwrapOk } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function stockErrorDebug_fmt(stockError) {
+  return `Missing { name: ${$debugStr(stockError.name)}, shelf: ${stockError.shelf == null ? "None" : `Some(${stockError.shelf})`} }`;
+}
+
 function find(name) {
   if (name === "pen") {
     return { TAG: "Ok", _0: 3 };
@@ -12,13 +20,5 @@ function find(name) {
 function main() {
   console.log(`${$unwrapOk(find("pen"), undefined, stockErrorDebug_fmt)}`);
   console.log(`${$unwrapOk(find("ink"), undefined, stockErrorDebug_fmt)}`);
-}
-
-export function entry() {
-  main();
-}
-
-function stockErrorDebug_fmt(stockError) {
-  return `Missing { name: ${$debugStr(stockError.name)}, shelf: ${stockError.shelf == null ? "None" : `Some(${stockError.shelf})`} }`;
 }
 //# sourceMappingURL=case.js.map

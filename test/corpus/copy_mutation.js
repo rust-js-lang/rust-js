@@ -2,6 +2,18 @@
 
 import { $at, $debugStr, $eq, $index } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function pointDebug_fmt(point) {
+  return `Point { x: ${point.x}, y: ${point.y} }`;
+}
+
+function shapeDebug_fmt(shape) {
+  return `Shape { name: ${$debugStr(shape.name)}, points: [${shape.points.map((item) => pointDebug_fmt(item)).join(", ")}] }`;
+}
+
 function moved(p) {
   p.x = (p.x + 100) | 0;
   return p;
@@ -9,6 +21,10 @@ function moved(p) {
 
 function duplicate(t, TClone) {
   return { ...t, unit: t.unit };
+}
+
+function numbersIterator_next(self) {
+  return;
 }
 
 function held(h, TClone) {
@@ -79,21 +95,5 @@ function main() {
   console.log(
     `[${points$1.map((item) => pointDebug_fmt(item)).join(", ")}] [${moved$1.map((item) => pointDebug_fmt(item)).join(", ")}] [${copied.map((item) => pointDebug_fmt(item)).join(", ")}]`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function pointDebug_fmt(point) {
-  return `Point { x: ${point.x}, y: ${point.y} }`;
-}
-
-function shapeDebug_fmt(shape) {
-  return `Shape { name: ${$debugStr(shape.name)}, points: [${shape.points.map((item) => pointDebug_fmt(item)).join(", ")}] }`;
-}
-
-function numbersIterator_next(self) {
-  return;
 }
 //# sourceMappingURL=case.js.map

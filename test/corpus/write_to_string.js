@@ -2,6 +2,10 @@
 
 import { $pad } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function render(items) {
   let out = "";
   for (const [name, n] of items) {
@@ -37,9 +41,5 @@ function main() {
   t += "!";
   const ok = true;
   console.log(`${t} ${ok}`);
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

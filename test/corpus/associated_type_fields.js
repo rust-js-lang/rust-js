@@ -4,6 +4,28 @@ import { $debugStr, $eq, $some, $someValue } from "@rust-js/runtime";
 
 var $i32Key, $refStrKey;
 
+export function entry() {
+  main();
+}
+
+function i32Key() {
+  if ($i32Key === undefined) {
+    $i32Key = {};
+  }
+  return $i32Key;
+}
+
+function refStrKey() {
+  if ($refStrKey === undefined) {
+    $refStrKey = {};
+  }
+  return $refStrKey;
+}
+
+function nodeDebug_fmt(node, KDebug, KKey, KValueDebug) {
+  return `Node { key: ${KDebug.fmt(node.key)}, value: ${KValueDebug.fmt(node.value)} }`;
+}
+
 function get(node, KKey, VClone) {
   return node.value == null ? node.value : $some(VClone.clone($someValue(node.value)));
 }
@@ -28,27 +50,5 @@ function main() {
   const c = a;
   console.log(`${$eq(c, a)} ${c.value != null ? (c.value + 1) >>> 0 : 0}`);
   console.log(`${fill({ TAG: "Full", _0: 5 })} ${fill({ TAG: "Full" })} ${fill("Empty")}`);
-}
-
-export function entry() {
-  main();
-}
-
-function nodeDebug_fmt(node, KDebug, KKey, KValueDebug) {
-  return `Node { key: ${KDebug.fmt(node.key)}, value: ${KValueDebug.fmt(node.value)} }`;
-}
-
-function i32Key() {
-  if ($i32Key === undefined) {
-    $i32Key = {};
-  }
-  return $i32Key;
-}
-
-function refStrKey() {
-  if ($refStrKey === undefined) {
-    $refStrKey = {};
-  }
-  return $refStrKey;
 }
 //# sourceMappingURL=case.js.map

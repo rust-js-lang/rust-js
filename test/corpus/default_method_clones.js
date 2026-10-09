@@ -2,18 +2,6 @@
 
 var $sTr;
 
-function main() {
-  const n = { item: 1 };
-  const c = sTr().a(n, { clone: (value) => value });
-  console.log(`${n.item} ${c.item}`);
-  const h = { item: [1] };
-  const c$1 = sTr().b(h, { clone: (value) => value });
-  c$1.item.push(2);
-  console.log(
-    `[${h.item.map((item) => String(item)).join(", ")}] [${c$1.item.map((item) => String(item)).join(", ")}]`,
-  );
-}
-
 export function entry() {
   main();
 }
@@ -31,5 +19,17 @@ function sTr() {
     $sTr = { a: (h, TClone) => h, b: (h, TClone$1) => ({ ...h, item: h.item.slice() }) };
   }
   return $sTr;
+}
+
+function main() {
+  const n = { item: 1 };
+  const c = sTr().a(n, { clone: (value) => value });
+  console.log(`${n.item} ${c.item}`);
+  const h = { item: [1] };
+  const c$1 = sTr().b(h, { clone: (value) => value });
+  c$1.item.push(2);
+  console.log(
+    `[${h.item.map((item) => String(item)).join(", ")}] [${c$1.item.map((item) => String(item)).join(", ")}]`,
+  );
 }
 //# sourceMappingURL=case.js.map

@@ -14,12 +14,66 @@ var $metersConvertF64,
   $metersGreetStr,
   $metersGreeter;
 
+export function entry() {
+  main();
+}
+
+function metersConvertF64() {
+  if ($metersConvertF64 === undefined) {
+    $metersConvertF64 = {
+      convert: metersConvertF64_convert,
+      twice: (self) => [metersConvertF64_convert(self), metersConvertF64_convert(self)],
+    };
+  }
+  return $metersConvertF64;
+}
+
+function metersConvertF64_convert(meters) {
+  return meters[0];
+}
+
+function metersConvertString() {
+  if ($metersConvertString === undefined) {
+    $metersConvertString = {
+      convert: metersConvertString_convert,
+      twice: (self) => [metersConvertString_convert(self), metersConvertString_convert(self)],
+    };
+  }
+  return $metersConvertString;
+}
+
+function metersConvertString_convert(meters) {
+  return `${$displayF64(meters[0])} m`;
+}
+
 function show(x, XConvertString) {
   return XConvertString.convert(x);
 }
 
 function both(x, XConvertF64, XConvertString) {
   return [XConvertF64.convert(x), XConvertString.convert(x)];
+}
+
+function numsTakeU32() {
+  if ($numsTakeU32 === undefined) {
+    $numsTakeU32 = { take: (arg0) => numsTakeU32_take(arg0.value) };
+  }
+  return $numsTakeU32;
+}
+
+function numsTakeU32_take(nums) {
+  return nums.list.pop();
+}
+
+function stackTakeT() {
+  if ($stackTakeT === undefined) {
+    $stackTakeT = { take: (arg0) => stackTakeT_take(arg0.value) };
+  }
+  return $stackTakeT;
+}
+
+function stackTakeT_take(stack) {
+  return $pop(stack.list);
 }
 
 function first(x, XTakeT) {
@@ -34,6 +88,46 @@ function count(x, XTakeT) {
   return n;
 }
 
+function metersLabelU32() {
+  if ($metersLabelU32 === undefined) {
+    $metersLabelU32 = { label: metersLabelU32_label };
+  }
+  return $metersLabelU32;
+}
+
+function metersLabelU32_label(meters) {
+  return $f64ToInt(meters[0], 0, 4294967295);
+}
+
+function metersLabelString() {
+  if ($metersLabelString === undefined) {
+    $metersLabelString = { label: metersLabelString_label };
+  }
+  return $metersLabelString;
+}
+
+function metersLabelString_label(meters) {
+  return "meters";
+}
+
+function metersBoth() {
+  if ($metersBoth === undefined) {
+    $metersBoth = {
+      LabelU32: () => metersLabelU32(),
+      LabelString: () => metersLabelString(),
+      both: (self) => [metersLabelU32_label(self), metersLabelString_label(self)],
+    };
+  }
+  return $metersBoth;
+}
+
+function metersPairU32String() {
+  if ($metersPairU32String === undefined) {
+    $metersPairU32String = { LabelA: () => metersLabelU32(), LabelB: () => metersLabelString() };
+  }
+  return $metersPairU32String;
+}
+
 function labels(p, PPairAB) {
   return [PPairAB.LabelA().label(p), PPairAB.LabelB().label(p)];
 }
@@ -42,8 +136,32 @@ function number(b, BBoth) {
   return BBoth.LabelU32().label(b);
 }
 
+function metersWrapF64() {
+  if ($metersWrapF64 === undefined) {
+    $metersWrapF64 = {
+      Convert: () => metersConvertF64(),
+      wrapped: (self) => [metersConvertF64_convert(self)],
+    };
+  }
+  return $metersWrapF64;
+}
+
 function unwrapped(x, XWrapT) {
   return XWrapT.Convert().convert(x);
+}
+
+function metersGreetStr() {
+  if ($metersGreetStr === undefined) {
+    $metersGreetStr = { greet: (self) => "hi" };
+  }
+  return $metersGreetStr;
+}
+
+function metersGreeter() {
+  if ($metersGreeter === undefined) {
+    $metersGreeter = { Greet: () => metersGreetStr() };
+  }
+  return $metersGreeter;
 }
 
 function main() {
@@ -86,123 +204,5 @@ function main() {
   );
   const g = { value: m, impl: metersGreeter() };
   console.log(`${g.impl.Greet().greet(g.value)}`);
-}
-
-export function entry() {
-  main();
-}
-
-function metersConvertF64_convert(meters) {
-  return meters[0];
-}
-
-function metersConvertString_convert(meters) {
-  return `${$displayF64(meters[0])} m`;
-}
-
-function numsTakeU32_take(nums) {
-  return nums.list.pop();
-}
-
-function stackTakeT_take(stack) {
-  return $pop(stack.list);
-}
-
-function metersLabelU32_label(meters) {
-  return $f64ToInt(meters[0], 0, 4294967295);
-}
-
-function metersLabelString_label(meters) {
-  return "meters";
-}
-
-function metersConvertF64() {
-  if ($metersConvertF64 === undefined) {
-    $metersConvertF64 = {
-      convert: metersConvertF64_convert,
-      twice: (self) => [metersConvertF64_convert(self), metersConvertF64_convert(self)],
-    };
-  }
-  return $metersConvertF64;
-}
-
-function metersConvertString() {
-  if ($metersConvertString === undefined) {
-    $metersConvertString = {
-      convert: metersConvertString_convert,
-      twice: (self) => [metersConvertString_convert(self), metersConvertString_convert(self)],
-    };
-  }
-  return $metersConvertString;
-}
-
-function numsTakeU32() {
-  if ($numsTakeU32 === undefined) {
-    $numsTakeU32 = { take: (arg0) => numsTakeU32_take(arg0.value) };
-  }
-  return $numsTakeU32;
-}
-
-function stackTakeT() {
-  if ($stackTakeT === undefined) {
-    $stackTakeT = { take: (arg0) => stackTakeT_take(arg0.value) };
-  }
-  return $stackTakeT;
-}
-
-function metersLabelU32() {
-  if ($metersLabelU32 === undefined) {
-    $metersLabelU32 = { label: metersLabelU32_label };
-  }
-  return $metersLabelU32;
-}
-
-function metersLabelString() {
-  if ($metersLabelString === undefined) {
-    $metersLabelString = { label: metersLabelString_label };
-  }
-  return $metersLabelString;
-}
-
-function metersBoth() {
-  if ($metersBoth === undefined) {
-    $metersBoth = {
-      LabelU32: () => metersLabelU32(),
-      LabelString: () => metersLabelString(),
-      both: (self) => [metersLabelU32_label(self), metersLabelString_label(self)],
-    };
-  }
-  return $metersBoth;
-}
-
-function metersPairU32String() {
-  if ($metersPairU32String === undefined) {
-    $metersPairU32String = { LabelA: () => metersLabelU32(), LabelB: () => metersLabelString() };
-  }
-  return $metersPairU32String;
-}
-
-function metersWrapF64() {
-  if ($metersWrapF64 === undefined) {
-    $metersWrapF64 = {
-      Convert: () => metersConvertF64(),
-      wrapped: (self) => [metersConvertF64_convert(self)],
-    };
-  }
-  return $metersWrapF64;
-}
-
-function metersGreetStr() {
-  if ($metersGreetStr === undefined) {
-    $metersGreetStr = { greet: (self) => "hi" };
-  }
-  return $metersGreetStr;
-}
-
-function metersGreeter() {
-  if ($metersGreeter === undefined) {
-    $metersGreeter = { Greet: () => metersGreetStr() };
-  }
-  return $metersGreeter;
 }
 //# sourceMappingURL=case.js.map

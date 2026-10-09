@@ -3,6 +3,18 @@
 import { sourceState, textOf } from "./codemirror.js";
 import { $stripSuffix } from "@rust-js/runtime";
 
+function copy(files) {
+  return files.map((f) => ({ path: f.path, state: f.state }));
+}
+
+export function jsName(path) {
+  const match = $stripSuffix(path, ".rs");
+  if (match != null) {
+    return `${match}.js`;
+  }
+  return path;
+}
+
 export const Project = {
   empty() {
     return { root: "lib.rs", files: [], current: "" };
@@ -55,16 +67,4 @@ export const Project = {
     return new Map(files.map((f) => [f.path, textOf(f.state)]));
   },
 };
-
-function copy(files) {
-  return files.map((f) => ({ path: f.path, state: f.state }));
-}
-
-export function jsName(path) {
-  const match = $stripSuffix(path, ".rs");
-  if (match != null) {
-    return `${match}.js`;
-  }
-  return path;
-}
 //# sourceMappingURL=projects.js.map

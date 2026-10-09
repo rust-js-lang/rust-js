@@ -4,25 +4,8 @@ import { $iter, $next, $rest } from "@rust-js/runtime";
 
 var $numbersSecond;
 
-function main() {
-  const skipOne = (v) => {
-    const it = $iter(v);
-    $next(it);
-    return $rest(it).map((x) => Math.imul(x, 10) >>> 0);
-  };
-  console.log(
-    `[${skipOne([1, 2, 3])
-      .map((item) => String(item))
-      .join(", ")}] ${numbersSecond().second(undefined)}`,
-  );
-}
-
 export function entry() {
   main();
-}
-
-function numbersSecond_items(numbers) {
-  return [4, 5, 6];
 }
 
 function numbersSecond() {
@@ -38,5 +21,22 @@ function numbersSecond() {
     };
   }
   return $numbersSecond;
+}
+
+function numbersSecond_items(numbers) {
+  return [4, 5, 6];
+}
+
+function main() {
+  const skipOne = (v) => {
+    const it = $iter(v);
+    $next(it);
+    return $rest(it).map((x) => Math.imul(x, 10) >>> 0);
+  };
+  console.log(
+    `[${skipOne([1, 2, 3])
+      .map((item) => String(item))
+      .join(", ")}] ${numbersSecond().second(undefined)}`,
+  );
 }
 //# sourceMappingURL=case.js.map

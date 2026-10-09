@@ -2,6 +2,10 @@
 
 import { $iter, $next, $print } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 const Delayed = {
   total(delayed, IClone, BBorrowU32) {
     let sum = 0;
@@ -62,9 +66,5 @@ function main() {
       .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
       .join(", ")}]`,
   );
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

@@ -387,6 +387,60 @@ pub fn ready() -> u32 {
   }
 });
 
+// ADR 0306: a module's items are where its Rust has them, as react.dev's
+// runESLint has its function, then its consts and statements, each where
+// it's written; what's made when it's loaded comes after what it reads, a
+// later thread-local's, or one a function it calls reads.
+test("a module's items are in source order, each after what it reads when loaded", async () => {
+  const dir = fixture("item-order");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+fn twice(n: u32) -> u32 {
+    n * 2
+}
+
+thread_local! {
+    static FIRST: u32 = twice(1);
+    static AFTER: u32 = LATER.with(|later| *later) + 1;
+    static CALLED: u32 = read_later() + 1;
+}
+
+js::on_load! {
+    SEEN.with(|seen| seen.set(seen.get() + 1));
+}
+
+thread_local! {
+    static SEEN: Cell<u32> = Cell::new(0);
+    static LATER: u32 = 10;
+}
+
+fn read_later() -> u32 {
+    LATER.with(|later| *later)
+}
+
+pub fn values() -> [u32; 4] {
+    [FIRST.with(|f| *f), AFTER.with(|a| *a), CALLED.with(|c| *c), SEEN.with(|s| s.get())]
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const at = (text: string | RegExp) => {
+    const index = typeof text === "string" ? js.indexOf(text) : js.search(text);
+    expect(index).toBeGreaterThan(-1);
+    return index;
+  };
+  // Where the Rust has them.
+  expect(at("function twice(")).toBeLessThan(at("const FIRST ="));
+  expect(at("const FIRST =")).toBeLessThan(at("const SEEN ="));
+  expect(at("const LATER =")).toBeLessThan(at("function read_later("));
+  // After what they read: LATER, directly or through read_later; SEEN.
+  expect(at("const LATER =")).toBeLessThan(at("const AFTER ="));
+  expect(at("const LATER =")).toBeLessThan(at("const CALLED ="));
+  expect(at("const SEEN =")).toBeLessThan(at(/seen\.value =/i));
+  const { values } = await import(join(dir, "lib.js"));
+  expect(values()).toEqual([2, 11, 11, 1]);
+});
+
 // ADR 0295: a module's imports are one block, as a person orders them:
 // packages, then its own relative modules, bindings and the crate's alike,
 // each by path; then what it imports for its effect, as written, as

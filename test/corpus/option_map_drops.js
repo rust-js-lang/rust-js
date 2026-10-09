@@ -2,6 +2,14 @@
 
 import { $some, $someValue } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function dDrop_drop(d) {
+  console.log(`drop ${d[0]}`);
+}
+
 function make(n) {
   if (n > 0) {
     return [n];
@@ -210,13 +218,5 @@ function main() {
       }
     }
   }
-}
-
-export function entry() {
-  main();
-}
-
-function dDrop_drop(d) {
-  console.log(`drop ${d[0]}`);
 }
 //# sourceMappingURL=case.js.map

@@ -2,6 +2,10 @@
 
 import { $debugStr, $div } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function note(log, name, value) {
   log.push(name);
   console.log(`evaluated ${name}`);
@@ -26,9 +30,5 @@ function main() {
   const zero = ((log.length | 0) - 8) | 0;
   (($div(note(log, "before", 1), zero, -2147483648) | 0) + note(log, "never", 2)) | 0;
   console.log("unreachable");
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map

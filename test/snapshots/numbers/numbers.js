@@ -23,6 +23,10 @@ import {
 
 var $vec2Add, $vec2Sub, $vec2MulF64, $vec2Neg;
 
+function vec2Debug_fmt(vec2) {
+  return `Vec2 { x: ${$debugF64(vec2.x)}, y: ${$debugF64(vec2.y)} }`;
+}
+
 export const Vec2 = {
   new(x, y) {
     return { x, y };
@@ -31,6 +35,55 @@ export const Vec2 = {
     return Math.sqrt(vec2.x * vec2.x + vec2.y * vec2.y);
   },
 };
+
+export function vec2Add() {
+  if ($vec2Add === undefined) {
+    $vec2Add = { add: vec2Add_add };
+  }
+  return $vec2Add;
+}
+
+function vec2Add_add(vec2, o) {
+  return Vec2.new(vec2.x + o.x, vec2.y + o.y);
+}
+
+export function vec2Sub() {
+  if ($vec2Sub === undefined) {
+    $vec2Sub = { sub: vec2Sub_sub };
+  }
+  return $vec2Sub;
+}
+
+function vec2Sub_sub(vec2, o) {
+  return Vec2.new(vec2.x - o.x, vec2.y - o.y);
+}
+
+export function vec2MulF64() {
+  if ($vec2MulF64 === undefined) {
+    $vec2MulF64 = { mul: vec2MulF64_mul };
+  }
+  return $vec2MulF64;
+}
+
+function vec2MulF64_mul(vec2, k) {
+  return Vec2.new(vec2.x * k, vec2.y * k);
+}
+
+export function vec2Neg() {
+  if ($vec2Neg === undefined) {
+    $vec2Neg = { neg: vec2Neg_neg };
+  }
+  return $vec2Neg;
+}
+
+function vec2Neg_neg(vec2) {
+  return Vec2.new(-vec2.x, -vec2.y);
+}
+
+function vec2AddAssign_add_assign(vec2, o) {
+  vec2.x += o.x;
+  vec2.y += o.y;
+}
 
 export function vectors() {
   const a = Vec2.new(3, 4);
@@ -68,6 +121,10 @@ export function gcd(a, b) {
     return a;
   }
   return gcd(b, $rem(a, b) >>> 0);
+}
+
+function cell2Debug_fmt(cell2) {
+  return `Cell2 { hits: ${cell2.hits} }`;
 }
 
 export function grids(n) {
@@ -153,62 +210,5 @@ export function report() {
   const arg = grids(3);
   out += `([${arg[0].map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}], [${arg[1].map((item) => String(item)).join(", ")}], ${$debugStr(arg[2])})\n${searches()}\n`;
   return out;
-}
-
-function vec2Debug_fmt(vec2) {
-  return `Vec2 { x: ${$debugF64(vec2.x)}, y: ${$debugF64(vec2.y)} }`;
-}
-
-function vec2Add_add(vec2, o) {
-  return Vec2.new(vec2.x + o.x, vec2.y + o.y);
-}
-
-function vec2Sub_sub(vec2, o) {
-  return Vec2.new(vec2.x - o.x, vec2.y - o.y);
-}
-
-function vec2MulF64_mul(vec2, k) {
-  return Vec2.new(vec2.x * k, vec2.y * k);
-}
-
-function vec2Neg_neg(vec2) {
-  return Vec2.new(-vec2.x, -vec2.y);
-}
-
-function vec2AddAssign_add_assign(vec2, o) {
-  vec2.x += o.x;
-  vec2.y += o.y;
-}
-
-function cell2Debug_fmt(cell2) {
-  return `Cell2 { hits: ${cell2.hits} }`;
-}
-
-export function vec2Add() {
-  if ($vec2Add === undefined) {
-    $vec2Add = { add: vec2Add_add };
-  }
-  return $vec2Add;
-}
-
-export function vec2Sub() {
-  if ($vec2Sub === undefined) {
-    $vec2Sub = { sub: vec2Sub_sub };
-  }
-  return $vec2Sub;
-}
-
-export function vec2MulF64() {
-  if ($vec2MulF64 === undefined) {
-    $vec2MulF64 = { mul: vec2MulF64_mul };
-  }
-  return $vec2MulF64;
-}
-
-export function vec2Neg() {
-  if ($vec2Neg === undefined) {
-    $vec2Neg = { neg: vec2Neg_neg };
-  }
-  return $vec2Neg;
 }
 //# sourceMappingURL=numbers.js.map

@@ -4,7 +4,68 @@ import { $at, $byteLen, $debugStr, $eq, $index } from "@rust-js/runtime";
 
 var $namePartialEq;
 
+export function entry() {
+  main();
+}
+
+function pointDebug_fmt(point) {
+  return `Point { x: ${point.x}, y: ${point.y} }`;
+}
+
+function valueDebug_fmt(value) {
+  if (typeof value === "string") {
+    return `Text(${$debugStr(value)})`;
+  }
+  if (typeof value === "number") {
+    return `Count(${value})`;
+  }
+  if (typeof value === "bigint") {
+    return `Big(${value})`;
+  }
+  if (typeof value === "boolean") {
+    return `Flag(${value})`;
+  }
+  if (Array.isArray(value)) {
+    return `List([${value.map((item) => String(item)).join(", ")}])`;
+  }
+  return `At(${pointDebug_fmt(value)})`;
+}
+
+function valueFromString_from(text) {
+  return text;
+}
+
+function valueFromI32_from(n) {
+  return n;
+}
+
+function posDebug_fmt(pos) {
+  return `Pos { x: ${pos.x} }`;
+}
+
+function spotDebug_fmt(spot) {
+  if (typeof spot === "object") {
+    return `At(${posDebug_fmt(spot)})`;
+  }
+  return `Code(${spot})`;
+}
+
+function noisyDrop_drop(noisy) {
+  console.log(`drop ${noisy[0]}`);
+}
+
 const START = 3;
+
+export function namePartialEq() {
+  if ($namePartialEq === undefined) {
+    $namePartialEq = { eq: namePartialEq_eq };
+  }
+  return $namePartialEq;
+}
+
+function namePartialEq_eq(name, other) {
+  return name[0].toLowerCase() === other[0].toLowerCase();
+}
 
 function describe(value) {
   if (typeof value === "number" && value < 0) {
@@ -174,66 +235,5 @@ function main() {
       noisyDrop_drop(lone.second);
     }
   }
-}
-
-export function entry() {
-  main();
-}
-
-function pointDebug_fmt(point) {
-  return `Point { x: ${point.x}, y: ${point.y} }`;
-}
-
-function valueDebug_fmt(value) {
-  if (typeof value === "string") {
-    return `Text(${$debugStr(value)})`;
-  }
-  if (typeof value === "number") {
-    return `Count(${value})`;
-  }
-  if (typeof value === "bigint") {
-    return `Big(${value})`;
-  }
-  if (typeof value === "boolean") {
-    return `Flag(${value})`;
-  }
-  if (Array.isArray(value)) {
-    return `List([${value.map((item) => String(item)).join(", ")}])`;
-  }
-  return `At(${pointDebug_fmt(value)})`;
-}
-
-function valueFromString_from(text) {
-  return text;
-}
-
-function valueFromI32_from(n) {
-  return n;
-}
-
-function posDebug_fmt(pos) {
-  return `Pos { x: ${pos.x} }`;
-}
-
-function spotDebug_fmt(spot) {
-  if (typeof spot === "object") {
-    return `At(${posDebug_fmt(spot)})`;
-  }
-  return `Code(${spot})`;
-}
-
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
-function namePartialEq_eq(name, other) {
-  return name[0].toLowerCase() === other[0].toLowerCase();
-}
-
-export function namePartialEq() {
-  if ($namePartialEq === undefined) {
-    $namePartialEq = { eq: namePartialEq_eq };
-  }
-  return $namePartialEq;
 }
 //# sourceMappingURL=case.js.map

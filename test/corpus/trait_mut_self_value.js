@@ -4,6 +4,38 @@ import { $at, $index } from "@rust-js/runtime";
 
 var $i32Bump, $stringShout;
 
+export function entry() {
+  main();
+}
+
+function i32Bump() {
+  if ($i32Bump === undefined) {
+    $i32Bump = { bump: i32Bump_bump, bump_by: i32Bump_bump_by };
+  }
+  return $i32Bump;
+}
+
+function i32Bump_bump(self) {
+  self.value = (self.value + 1) | 0;
+}
+
+function i32Bump_bump_by(self, by) {
+  self.value = (self.value + by.value) | 0;
+  by.value = (by.value + 1) | 0;
+  return self.value;
+}
+
+function stringShout() {
+  if ($stringShout === undefined) {
+    $stringShout = { shout: stringShout_shout };
+  }
+  return $stringShout;
+}
+
+function stringShout_shout(self) {
+  self.value += "!";
+}
+
 function main() {
   let n = 1;
   const self = { value: n };
@@ -33,37 +65,5 @@ function main() {
   i32Bump_bump(self$5);
   counts[$at(counts, 1)] = self$5.value;
   console.log(`[${counts.map((item) => String(item)).join(", ")}]`);
-}
-
-export function entry() {
-  main();
-}
-
-function i32Bump_bump(self) {
-  self.value = (self.value + 1) | 0;
-}
-
-function i32Bump_bump_by(self, by) {
-  self.value = (self.value + by.value) | 0;
-  by.value = (by.value + 1) | 0;
-  return self.value;
-}
-
-function stringShout_shout(self) {
-  self.value += "!";
-}
-
-function i32Bump() {
-  if ($i32Bump === undefined) {
-    $i32Bump = { bump: i32Bump_bump, bump_by: i32Bump_bump_by };
-  }
-  return $i32Bump;
-}
-
-function stringShout() {
-  if ($stringShout === undefined) {
-    $stringShout = { shout: stringShout_shout };
-  }
-  return $stringShout;
 }
 //# sourceMappingURL=case.js.map

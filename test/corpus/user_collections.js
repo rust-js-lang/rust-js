@@ -4,33 +4,19 @@ import { $debugStr } from "@rust-js/runtime";
 
 var $moneyAdd;
 
-function main() {
-  const prices = [{ cents: 250n }, { cents: 199n }];
-  const owned = moneySum_sum(prices);
-  const borrowed = moneySumMoney_sum(prices);
-  console.log(`${moneyDebug_fmt(owned)} ${moneyDebug_fmt(borrowed)}`);
-  const cart = cartFromIterator_std__string__String__Money__from_iter(
-    [
-      ["tea", 250n],
-      ["cake", 199n],
-    ].map(([name, cents]) => [name, { cents }]),
-  );
-  cartExtend_std__string__String__Money__extend(cart, [["jam", { cents: 300n }]]);
-  for (const [name, price] of refCartIntoIterator_into_iter(cart)) {
-    console.log(`${name}: ${price.cents}`);
-  }
-  const total = moneySum_sum(cart.lines.map(([, m]) => m));
-  console.log(`${moneyDebug_fmt(total)} ${refCartIntoIterator_into_iter(cart).length}`);
-  const names = cartIntoIterator_into_iter(cart).map(([name]) => name);
-  console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
-}
-
 export function entry() {
   main();
 }
 
 function moneyDebug_fmt(money) {
   return `Money { cents: ${money.cents} }`;
+}
+
+export function moneyAdd() {
+  if ($moneyAdd === undefined) {
+    $moneyAdd = { add: moneyAdd_add };
+  }
+  return $moneyAdd;
 }
 
 function moneyAdd_add(money, other) {
@@ -63,10 +49,24 @@ function refCartIntoIterator_into_iter(cart) {
   return cart.lines;
 }
 
-export function moneyAdd() {
-  if ($moneyAdd === undefined) {
-    $moneyAdd = { add: moneyAdd_add };
+function main() {
+  const prices = [{ cents: 250n }, { cents: 199n }];
+  const owned = moneySum_sum(prices);
+  const borrowed = moneySumMoney_sum(prices);
+  console.log(`${moneyDebug_fmt(owned)} ${moneyDebug_fmt(borrowed)}`);
+  const cart = cartFromIterator_std__string__String__Money__from_iter(
+    [
+      ["tea", 250n],
+      ["cake", 199n],
+    ].map(([name, cents]) => [name, { cents }]),
+  );
+  cartExtend_std__string__String__Money__extend(cart, [["jam", { cents: 300n }]]);
+  for (const [name, price] of refCartIntoIterator_into_iter(cart)) {
+    console.log(`${name}: ${price.cents}`);
   }
-  return $moneyAdd;
+  const total = moneySum_sum(cart.lines.map(([, m]) => m));
+  console.log(`${moneyDebug_fmt(total)} ${refCartIntoIterator_into_iter(cart).length}`);
+  const names = cartIntoIterator_into_iter(cart).map(([name]) => name);
+  console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

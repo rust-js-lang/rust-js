@@ -2,6 +2,32 @@
 
 import { $exactLen, $iterator } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function spanIterator_next(span) {
+  if (span.low >= span.high) {
+    return;
+  }
+  span.low = (span.low + 1) >>> 0;
+  return (span.low - 1) >>> 0;
+}
+
+function spanIterator_size_hint(span) {
+  const n = (span.high - span.low) >>> 0;
+  return [n, n];
+}
+
+function spanDoubleEndedIterator_next_back(span) {
+  if (span.low >= span.high) {
+    return;
+  }
+  span.high = (span.high - 1) >>> 0;
+  console.log(`back ${span.high}`);
+  return span.high;
+}
+
 function main() {
   const s = { low: 0, high: 5 };
   const arg = spanIterator_next(s);
@@ -27,31 +53,5 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
-}
-
-export function entry() {
-  main();
-}
-
-function spanIterator_next(span) {
-  if (span.low >= span.high) {
-    return;
-  }
-  span.low = (span.low + 1) >>> 0;
-  return (span.low - 1) >>> 0;
-}
-
-function spanIterator_size_hint(span) {
-  const n = (span.high - span.low) >>> 0;
-  return [n, n];
-}
-
-function spanDoubleEndedIterator_next_back(span) {
-  if (span.low >= span.high) {
-    return;
-  }
-  span.high = (span.high - 1) >>> 0;
-  console.log(`back ${span.high}`);
-  return span.high;
 }
 //# sourceMappingURL=case.js.map

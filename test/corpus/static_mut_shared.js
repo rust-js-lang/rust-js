@@ -2,6 +2,14 @@
 
 import { $pow } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
+function statsDebug_fmt(stats) {
+  return `Stats { calls: ${stats.calls}, last: ${stats.last} }`;
+}
+
 const COUNT = { value: 0 };
 const STATS = { value: { calls: 0, last: -1n } };
 const NAME = { value: "start" };
@@ -22,13 +30,5 @@ function main() {
   console.log(`${NAME.value} ${!NAME.value}`);
   const total = [COUNT.value, STATS.value.calls].map((n) => n).reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`${total}`);
-}
-
-export function entry() {
-  main();
-}
-
-function statsDebug_fmt(stats) {
-  return `Stats { calls: ${stats.calls}, last: ${stats.last} }`;
 }
 //# sourceMappingURL=case.js.map

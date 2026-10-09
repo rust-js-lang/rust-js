@@ -4,6 +4,41 @@ import { $debugF64, $displayF64, $position } from "@rust-js/runtime";
 
 var $shapeArea;
 
+export function entry() {
+  main();
+}
+
+function shapeDebug_fmt(shape) {
+  if (shape.TAG === "Circle") {
+    return `Circle(${$debugF64(shape._0)})`;
+  }
+  if (shape.TAG === "Square") {
+    return `Square { side: ${$debugF64(shape.side)} }`;
+  }
+  return "Dot";
+}
+
+function shapeArea() {
+  if ($shapeArea === undefined) {
+    $shapeArea = { area: shapeArea_area, unit: shapeArea_unit };
+  }
+  return $shapeArea;
+}
+
+function shapeArea_area(shape) {
+  if (shape.TAG === "Circle") {
+    return 3 * shape._0 * shape._0;
+  }
+  if (shape.TAG === "Square") {
+    return shape.side * shape.side;
+  }
+  return 0;
+}
+
+function shapeArea_unit() {
+  return { TAG: "Square", side: 1 };
+}
+
 const Marker = {
   new() {
     return;
@@ -12,6 +47,10 @@ const Marker = {
     return true;
   },
 };
+
+function loudDrop_drop(loud) {
+  console.log(`drop ${loud[0]}`);
+}
 
 function twice(n) {
   return Math.imul(n, 2);
@@ -85,44 +124,5 @@ function main() {
   const arg = sizes(4, 4);
   const arg$1 = sizes(4, 2);
   console.log(`(${arg[0]}, ${arg[1]}) (${arg$1[0]}, ${arg$1[1]})`);
-}
-
-export function entry() {
-  main();
-}
-
-function shapeDebug_fmt(shape) {
-  if (shape.TAG === "Circle") {
-    return `Circle(${$debugF64(shape._0)})`;
-  }
-  if (shape.TAG === "Square") {
-    return `Square { side: ${$debugF64(shape.side)} }`;
-  }
-  return "Dot";
-}
-
-function shapeArea_area(shape) {
-  if (shape.TAG === "Circle") {
-    return 3 * shape._0 * shape._0;
-  }
-  if (shape.TAG === "Square") {
-    return shape.side * shape.side;
-  }
-  return 0;
-}
-
-function shapeArea_unit() {
-  return { TAG: "Square", side: 1 };
-}
-
-function loudDrop_drop(loud) {
-  console.log(`drop ${loud[0]}`);
-}
-
-function shapeArea() {
-  if ($shapeArea === undefined) {
-    $shapeArea = { area: shapeArea_area, unit: shapeArea_unit };
-  }
-  return $shapeArea;
 }
 //# sourceMappingURL=case.js.map

@@ -12,6 +12,10 @@ import {
   $unwrap,
 } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function skip(it, n) {
   it = $lent(it);
   for (let i = 0; i < n; i++) {
@@ -71,6 +75,14 @@ function until_zero(it) {
   return sum;
 }
 
+function countdownIterator_next(countdown) {
+  if (countdown[0] === 0) {
+    return;
+  }
+  countdown[0] = (countdown[0] - 1) >>> 0;
+  return countdown[0];
+}
+
 function main() {
   const it = $iter([1, 2, 3, 4, 5]);
   skip(it, 2);
@@ -105,17 +117,5 @@ function main() {
   const s2 = until_zero(v);
   const arg$4 = $next(v);
   console.log(`${s1} ${s2} ${arg$4 == null ? "None" : `Some(${arg$4})`}`);
-}
-
-export function entry() {
-  main();
-}
-
-function countdownIterator_next(countdown) {
-  if (countdown[0] === 0) {
-    return;
-  }
-  countdown[0] = (countdown[0] - 1) >>> 0;
-  return countdown[0];
 }
 //# sourceMappingURL=case.js.map

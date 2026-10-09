@@ -2,6 +2,10 @@
 
 import { $checked } from "@rust-js/runtime";
 
+export function entry() {
+  main();
+}
+
 function main() {
   const [a, b, c, d] = [255, -128, 65535, 32767];
   console.log(
@@ -31,9 +35,5 @@ function shifts(by, far, small) {
   console.log(
     `${22 >> Number(by & 63n)} ${(1 << (Number(far & 63n) & 7)) & 255} ${BigInt.asUintN(64, 5n << (BigInt(small) & 63n))} ${-64n >> (BigInt(far) & 63n)}`,
   );
-}
-
-export function entry() {
-  main();
 }
 //# sourceMappingURL=case.js.map
