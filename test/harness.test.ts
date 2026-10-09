@@ -206,3 +206,21 @@ test("what's built from unchanged inputs isn't built again", () => {
   rmSync(output);
   expect([step(), runs, readFileSync(output, "utf8")]).toEqual([true, 3, "b"]);
 });
+
+// rust-js is built as a shell builds it, with `.cargo/config.toml`'s
+// `RUSTC_BOOTSTRAP`, not the one `.env.test` gives the tests' programs:
+// cargo, building it after the other, rebuilt every dependency, twenty
+// seconds of the next build's (DEVELOPMENT.md).
+test("the tests build rust-js as a shell does", () => {
+  const { RUSTC_BOOTSTRAP: _, NODE_ENV: __, ...env } = process.env;
+  const p = Bun.spawnSync(["cargo", "build", "--locked", "-v"], { cwd: root, env, stdout: "pipe", stderr: "pipe" });
+  expect(p.stderr.toString().split("\n").filter((line) => line.includes("Dirty"))).toEqual([]);
+});
+
+// And loading the rustc suite leaves the environment as it was: each
+// test's compilers are given it.
+test("the rustc suite gives RUSTC_BOOTSTRAP to its compilers alone", () => {
+  const { RUSTC_BOOTSTRAP: _, NODE_ENV: __, ...env } = process.env;
+  const p = Bun.spawnSync([process.execPath, "-e", 'await import("./scripts/rustc-suite.ts"); console.log(process.env.RUSTC_BOOTSTRAP ?? "unset")'], { cwd: root, env, stdout: "pipe", stderr: "pipe" });
+  expect(p.stdout.toString().trim()).toBe("unset");
+});

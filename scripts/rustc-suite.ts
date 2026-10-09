@@ -27,8 +27,10 @@ const root = join(import.meta.dir, "..");
 
 // rustc's tests use its unstable features, natively and with rust-js alike, as
 // rustc's own CI runs them: a stable release lets a crate use them only with
-// `RUSTC_BOOTSTRAP` (ADR 0109).
-process.env.RUSTC_BOOTSTRAP = "1";
+// `RUSTC_BOOTSTRAP` (ADR 0109). Given to their compilers alone: in this
+// process's environment, it reached cargo too, whose build of rust-js it
+// changed, and so the next build without it rebuilt every dependency.
+const unstable = { RUSTC_BOOTSTRAP: "1" };
 // The rust-js that compiles each test: a release build, as the known
 // failures are made with, since a debug build's deeper stack overflows on
 // tests a release build passes. `--compiler=path` says another.
@@ -111,7 +113,7 @@ export function stableFeatures(names: string[]): Set<string> {
       // In this checkout, so its `rust-toolchain.toml` says which rustc.
       const check = Bun.spawnSync(["rustc", "--edition=2021", "--emit=metadata", "-o", join(dir, "features.rmeta"), file], {
         cwd: root,
-        env: { ...process.env, RUSTC_BOOTSTRAP: "1" },
+        env: { ...process.env, ...unstable },
         stdout: "pipe",
         stderr: "pipe",
       });
@@ -369,6 +371,7 @@ export async function runTest(ui: string, file: string, listedChanging: Set<stri
       ["rustc", `--edition=${s.edition}`, "-Coverflow-checks=off", "-Awarnings", at(dirname(file)), file, "-o", binary],
       dirname(file),
       120_000,
+      unstable,
     );
     if (failed(build, 120_000)) return { test, status: "native", reason: `rustc: ${stopped(build, 120_000) ?? firstError(build.stderr)}` };
     const native = await run([binary], dirname(file), 10_000);
@@ -391,7 +394,7 @@ export async function runTest(ui: string, file: string, listedChanging: Set<stri
     const lib = join(dir, basename(file));
     writeFileSync(lib, `${source}\n/// The test's main, for the JS to call.\npub fn entry() {\n    main()\n}\n`);
     const js = join(dir, "case.js");
-    const compiled = await run([rustJs, lib, "-o", js, "--", `--edition=${s.edition}`, "-Awarnings", at(dir)], dir, 120_000);
+    const compiled = await run([rustJs, lib, "-o", js, "--", `--edition=${s.edition}`, "-Awarnings", at(dir)], dir, 120_000, unstable);
     if (failed(compiled, 120_000)) {
       // Its first error, if it's rust-js's rejection; what crashed, if not,
       // even after a rejection.

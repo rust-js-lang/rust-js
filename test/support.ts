@@ -17,7 +17,7 @@ export const compiler = given ? resolve(given) : join(target, "debug", "rust-js"
  * failed. It's stopped after `timeout` ms:
  * as the tests load, no test's deadline applies yet. The default is what
  * a setup hook is allowed, for the first build. */
-export function run(cmd: string[], timeout = 600_000, env: Record<string, string> = {}): string {
+export function run(cmd: string[], timeout = 600_000, env: Record<string, string | undefined> = {}): string {
   const p = runSync(cmd, root, timeout, env);
   const why = stopped(p, timeout);
   if (p.code !== 0 || why) throw new Error(`${cmd.join(" ")} failed${why ? `: it ${why}` : ""}:\n${p.stderr}`);
@@ -190,7 +190,10 @@ let built = false;
  */
 export function buildCompiler() {
   if (built || given) return;
-  once(join(target, "tests-build", thisRun()), () => run(["cargo", "build", "--quiet"]));
+  // As a shell builds it, with `.cargo/config.toml`'s `RUSTC_BOOTSTRAP`, not
+  // `.env.test`'s for the tests' programs: built with the other, cargo
+  // rebuilds every dependency, and again the next time (DEVELOPMENT.md).
+  once(join(target, "tests-build", thisRun()), () => run(["cargo", "build", "--quiet"], 600_000, { RUSTC_BOOTSTRAP: undefined }));
   process.env.RUST_JS_COMPILER = compiler;
   built = true;
 }
