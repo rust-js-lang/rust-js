@@ -3273,6 +3273,16 @@ pub(super) fn slice_length<'tcx>(
     }
 }
 
+/// `Cell::get`, whose value a `let` can take where it's read at once
+/// (ADR 0293).
+pub(super) fn is_cell_get(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    tcx.item_name(def_id).as_str() == "get"
+        && tcx.inherent_impl_of_assoc(def_id).is_some_and(|imp| {
+            matches!(tcx.type_of(imp).instantiate_identity().skip_normalization().kind(),
+                ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Cell))
+        })
+}
+
 pub(crate) fn is_std_def(tcx: TyCtxt<'_>, id: DefId, item: StdItem) -> bool {
     tcx.is_diagnostic_item(item.name(), id)
 }

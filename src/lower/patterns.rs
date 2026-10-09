@@ -70,9 +70,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ if self.is_cell(field.ty) => None,
                 // A `Cell` in an object's field is the property itself (ADR
                 // 0288): what's bound of it is a handle on it, or a cell of its
-                // own, which JS's destructuring wouldn't give.
+                // own, which JS's destructuring wouldn't give. One read at
+                // once is its value, then, which its `get()` reads (ADR 0293).
                 _ if matches!(self.shape(pat.ty), Shape::Object(_)) && self.is_std_type(field.ty, StdItem::Cell) => {
-                    None
+                    match without_refs(field).kind {
+                        PatKind::Binding {
+                            name,
+                            var,
+                            subpattern: None,
+                            ..
+                        } if self.krate.read_at_once.contains(&var) => Some((i, Some((name, var, false)))),
+                        _ => None,
+                    }
                 }
                 PatKind::Wild => Some((i, None)),
                 PatKind::Binding {
@@ -151,6 +160,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     let Some((name, var, m)) = part else { continue };
                     let bound = self.bind(var, name.as_str(), m);
+                    // A `&Cell` read at once, as its value (ADR 0293).
+                    if self.krate.read_at_once.contains(&var)
+                        && let Some(local) = self.locals.vars.get_mut(&var)
+                    {
+                        local.place = Expr::handle(local.place.clone());
+                    }
                     // The props a component's struct doesn't name, `...rest` (ADR
                     // 0195), or a flattened struct's, typed (ADR 0204).
                     match super::bindings::is_rest_field(self.tcx, pat.ty, i) {

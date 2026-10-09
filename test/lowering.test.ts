@@ -2601,3 +2601,85 @@ pub fn other(items: &[u32]) -> u32 {
     expect(unknown).toThrow();
   }
 });
+
+// ADR 0293: a `Cell` a `let` takes apart, read by `get()` before anything
+// else runs, is its value in JS's destructuring: react.dev's ErrorMessage
+// has `const {message, title} = error;`. Set before it's read, it's read
+// where it is.
+test("a Cell a let takes apart and reads at once is its value", async () => {
+  const dir = fixture("early-gets");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+pub struct Failure {
+    pub title: Cell<Option<&'static str>>,
+    pub message: String,
+}
+
+pub fn shown(error: &Failure) -> String {
+    let Failure { message, title } = error;
+    format!("{}: {}", title.get().unwrap_or("Error"), message)
+}
+
+pub fn retitled(error: &Failure) -> Option<&'static str> {
+    let Failure { title, .. } = error;
+    error.title.set(Some("new"));
+    title.get()
+}
+
+pub fn twice(error: &Failure) -> usize {
+    let Failure { title, .. } = error;
+    let mut n = 0;
+    for _ in 0..2 {
+        n += title.get().map_or(0, |t| t.len());
+        error.title.set(None);
+    }
+    n
+}
+
+pub fn looped(error: &Failure) -> usize {
+    let Failure { title, .. } = error;
+    let mut n = 0;
+    let mut turns = 0;
+    loop {
+        n += title.get().map_or(0, |t| t.len());
+        turns += 1;
+        if turns == 2 {
+            break;
+        }
+        error.title.set(None);
+    }
+    n
+}
+
+pub fn aliased(error: &Failure) -> (Option<&'static str>, Option<&'static str>) {
+    let Failure { title, .. } = error;
+    let first = title.get();
+    let other = title;
+    other.set(Some("set"));
+    (first, error.title.get())
+}
+
+struct Retitle<'a>(&'a Failure);
+
+impl Drop for Retitle<'_> {
+    fn drop(&mut self) {
+        self.0.title.set(Some("dropped"));
+    }
+}
+
+pub fn dropped(error: &Failure) -> Option<&'static str> {
+    let Failure { title, .. } = error;
+    {
+        let _retitle = Retitle(error);
+    }
+    title.get()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const { message, title } = error;");
+  expect(js.match(/const \{ title \} = /g)).toBeNull();
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.shown({ title: undefined, message: "m" }), lib.shown({ title: "T", message: "m" }), lib.retitled({ title: "old", message: "" }), lib.twice({ title: "ab", message: "" }), lib.looped({ title: "ab", message: "" }), lib.aliased({ title: "T", message: "" }), lib.dropped({ title: "T", message: "" })])
+    .toEqual(["Error: m", "T: m", "new", 2, 2, ["T", "set"], "dropped"]);
+});

@@ -351,6 +351,8 @@ struct CrateFacts<'a, 'tcx> {
     /// The cells that are their function's variable, each to the one it's a
     /// clone of, or itself (ADR 0287).
     plain_cells: &'a HashMap<LocalVarId, LocalVarId>,
+    /// The `&Cell`s a `let` takes apart that are their value (ADR 0293).
+    read_at_once: &'a HashSet<LocalVarId>,
 }
 
 /// Dependencies recorded by one function (including copied trait bodies and

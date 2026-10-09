@@ -163,6 +163,8 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// The cells that are their function's variable, each to the one it's a
     /// clone of, or itself (ADR 0287).
     pub plain_cells: HashMap<LocalVarId, LocalVarId>,
+    /// The `&Cell`s a `let` takes apart that are their value (ADR 0293).
+    pub read_at_once: HashSet<LocalVarId>,
 }
 
 pub(super) fn analyze_crate<'a, 'tcx>(
@@ -289,6 +291,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
 
     let plain_locals = plain_locals::plain_thread_locals(tcx, all_bodies, thread_local_inits.values().copied());
     let plain_cells = plain_locals::plain_cells(tcx, all_bodies);
+    let read_at_once = plain_locals::read_at_once(tcx, all_bodies);
 
     // A derived `Serialize`'s `serialize` and `Deserialize`'s `deserialize`,
     // which rust-js writes (ADRs 0077 and 0078).
@@ -385,6 +388,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         format_options,
         plain_locals,
         plain_cells,
+        read_at_once,
     })
 }
 

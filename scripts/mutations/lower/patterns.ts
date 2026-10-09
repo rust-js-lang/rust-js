@@ -634,8 +634,8 @@ export const mutations: Mutation[] = [
     name: "cell-field-destructured",
     breaks: "a struct of a `Cell` field taken apart through a reference is JS's destructuring, `const { count } = ..`, the number, which `count.value = ..` can't set",
     file: "src/lower/patterns.rs",
-    find: "                _ if matches!(self.shape(pat.ty), Shape::Object(_)) && self.is_std_type(field.ty, StdItem::Cell) => {\n                    None\n                }\n",
-    replace: "",
+    find: "                _ if matches!(self.shape(pat.ty), Shape::Object(_)) && self.is_std_type(field.ty, StdItem::Cell) => {\n                    match without_refs(field).kind {",
+    replace: "                _ if false => {\n                    match without_refs(field).kind {",
     tests: ["test/lowering.test.ts", "-t", "struct taken apart through a reference"],
   },
   {
@@ -669,5 +669,21 @@ export const mutations: Mutation[] = [
     find: "                pat.walk_always(|p| binds |= matches!(p.kind, PatKind::Binding { .. }));",
     replace: "                binds = true;",
     tests: ["test/lowering.test.ts", "-t", "a let taking a variable apart"],
+  },
+  {
+    name: "read-at-once-never",
+    breaks: "a `Cell` a `let` takes apart is never its value, so ErrorMessage reads `error.title` where the original destructures it",
+    file: "src/lower/patterns.rs",
+    find: "                        } if self.krate.read_at_once.contains(&var) => Some((i, Some((name, var, false)))),",
+    replace: "                        } if false => Some((i, Some((name, var, false)))),",
+    tests: ["test/lowering.test.ts", "-t", "a Cell a let takes apart"],
+  },
+  {
+    name: "read-at-once-not-a-handle",
+    breaks: "a `Cell` destructured as its value is still read as a cell, `title.value`",
+    file: "src/lower/patterns.rs",
+    find: "                        local.place = Expr::handle(local.place.clone());",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "a Cell a let takes apart"],
   },
 ];

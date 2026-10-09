@@ -690,7 +690,7 @@ pub(super) fn strip(thir: &Thir<'_>, mut e: ExprId) -> ExprId {
 }
 
 /// What `&mut it`, reborrowed or not, lends: `it`.
-fn lent(thir: &Thir<'_>, e: ExprId) -> ExprId {
+pub(super) fn lent(thir: &Thir<'_>, e: ExprId) -> ExprId {
     let e = strip(thir, e);
     match thir[e].kind {
         ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => lent(thir, arg),
