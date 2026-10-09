@@ -75,14 +75,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts", "-t", "a string written across lines"],
   },
   {
-    name: "runtime-binding-own-import",
-    breaks: "a binding of a runtime helper, `dict::get`'s `$dictGet`, is imported from `@rust-js/runtime` again, apart from the helpers",
-    file: "src/to_oxc.rs",
-    find: "            && package.named.iter().all(|(export, local)| export == local)",
-    replace: "            && package.named.iter().all(|(export, local)| export == local)\n            && false",
-    tests: ["test/bindings.test.ts", "-t", "JSON is a typed value"],
-  },
-  {
     name: "pair-without-impl",
     breaks: "a number's `&mut dyn` pair is printed without its `impl`, and `d.impl.bump` throws",
     file: "src/to_oxc.rs",

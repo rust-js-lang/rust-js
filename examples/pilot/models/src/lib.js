@@ -34,7 +34,7 @@ export function validate(contact) {
 
 export function is_email(text) {
   const match = $splitOnce(text, "@");
-  if (match != null) {
+  if (match) {
     return (
       !!match[0] &&
       !match[1].includes("@") &&

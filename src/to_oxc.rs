@@ -113,19 +113,8 @@ pub fn emit(
     for directive in &module.directives {
         code.push_str(&format!("\n{directive:?};\n"));
     }
-    // A binding of a runtime helper, the js crate's `dict::get`'s
-    // `$dictGet` (ADR 0225), is imported with the helpers its code names.
-    let is_helper = |package: &js::Package| {
-        package.from == crate::runtime::PACKAGE
-            && package.default.is_none()
-            && package.namespace.is_none()
-            && package.named.iter().all(|(export, local)| export == local)
-    };
-    let packages: Vec<&js::Package> = module.packages.iter().filter(|p| !is_helper(p)).collect();
+    let packages = &module.packages;
     let mut helpers: Vec<&str> = module.helpers.clone();
-    for package in module.packages.iter().filter(|p| is_helper(p)) {
-        helpers.extend(package.named.iter().map(|(export, _)| export.as_str()));
-    }
     helpers.sort_unstable();
     helpers.dedup();
     // One block, as a person orders it (ADR 0295): packages, then the
@@ -145,7 +134,7 @@ pub fn emit(
             })
             .collect()
     };
-    for package in &packages {
+    for package in packages {
         let names = clause_of(&mut package.named.iter());
         let names = (!names.is_empty()).then(|| format!("{{ {} }}", names.join(", ")));
         let clause: Vec<String> = package.default.iter().cloned().chain(names).collect();
