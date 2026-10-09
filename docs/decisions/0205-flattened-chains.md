@@ -58,3 +58,12 @@ export interface ButtonLinkProps extends Omit<Anchor, "href"> { href: string; }
 
 - **A shadowed name's own field is still in the flattened struct**, as
   Rust has it, always `None`.
+
+## Amendment: a flattened reference
+
+A field flattening a reference, `&'static LintMessage`, as react.dev's
+runESLint spreads ESLint's message into its own, omits what its struct
+has too, as a struct's does: `extends Omit<LintMessage, "severity">`. Its
+keys were none, so it was `extends LintMessage`, which TypeScript
+rejects for a `severity` of another type. The declarations test checks
+one, and a mutation reads a reference's keys as none.

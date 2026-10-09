@@ -787,10 +787,10 @@ impl<'tcx> Declarations<'_, 'tcx> {
     }
 }
 
-/// The JS names of `ty`'s fields, a flattened struct's, and of those of
-/// the flattened struct in it (ADR 0205).
+/// The JS names of `ty`'s fields, a flattened struct's, or one's it
+/// refers to, and of those of the flattened struct in it (ADR 0205).
 fn flattened_keys<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Vec<String> {
-    let ty::Adt(adt, args) = ty.kind() else {
+    let ty::Adt(adt, args) = ty.peel_refs().kind() else {
         return Vec::new();
     };
     if !adt.is_struct() {

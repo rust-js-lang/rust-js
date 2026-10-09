@@ -340,4 +340,12 @@ export const mutations: Mutation[] = [
     replace: "                if false && is_std_def(tcx, did, StdItem::Cell) {\n",
     tests: ["test/declarations.test.ts", "-t", "declarations type what a module exports"],
   },
+  {
+    name: "flattened-ref-keys",
+    breaks: "a field a flattened reference's struct has too isn't omitted: `extends Html`, which TypeScript rejects",
+    file: "src/lower/declarations.rs",
+    find: "    let ty::Adt(adt, args) = ty.peel_refs().kind() else {\n",
+    replace: "    let ty::Adt(adt, args) = ty.kind() else {\n",
+    tests: ["test/declarations.test.ts", "-t", "declarations type what a module exports"],
+  },
 ];

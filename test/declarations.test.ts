@@ -102,6 +102,17 @@ pub fn Titled(TitledProps { title, html }: TitledProps) -> JSX::Element {
     jsx! { <h1 title={title} {...html} /> }
 }
 
+// Of a reference too, as react.dev's runESLint spreads one.
+pub struct Retitled {
+    #[rust_js::flatten]
+    pub html: &'static Html,
+    pub title: u32,
+}
+
+pub fn retitled(html: &'static Html) -> Retitled {
+    Retitled { html, title: 1 }
+}
+
 // One React types, as its rust_js::types says: what the props extend.
 #[rust_js::types = "react#AnchorHTMLAttributes<HTMLAnchorElement>"]
 #[derive(Default)]
@@ -318,6 +329,7 @@ pub fn tallied(cell: &std::cell::Cell<u32>) -> u32 {
     "export interface Linked extends Html {\n    href?: string;\n}",
     'export interface LinkButtonProps extends Omit<Linked, "href" | "className"> {\n    href: string;\n    className?: string;\n}',
     'export interface TitledProps extends Omit<Html, "title"> {\n    title: string;\n}',
+    'export interface Retitled extends Omit<Html, "title"> {\n    title: number;\n}',
     "export interface DownloadProps extends AnchorHTMLAttributes<HTMLAnchorElement> {\n    label: string;\n}",
     "export const Icon: NamedExoticComponent<IconProps>;",
     "export function words(n: bigint, flags: boolean[]): string;",
