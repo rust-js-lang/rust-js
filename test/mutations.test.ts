@@ -3,12 +3,12 @@
 // and running them is scripts/mutations.ts's.
 
 import { expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { judge, lists, mutate, mutations } from "../scripts/mutations";
+import { judge, lists, mutate, mutations, syncTree } from "../scripts/mutations";
 import type { Exit } from "./child";
-import { root } from "./support";
+import { fixture, root } from "./support";
 
 test("every mutation applies to the compiler as it is, once", () => {
   expect(mutations.length).toBeGreaterThan(0);
@@ -59,4 +59,23 @@ test("a mutant is caught, survives, or the run says nothing of it", () => {
   // A hook that ran out of time, as bun test prints it: the test never ran.
   const hookTimedOut = "(fail) never reaches assertion [101.76ms]\n  ^ a beforeEach/afterEach hook timed out for this test.\n";
   expect(judge(exit(1), `${hookTimedOut}\n 0 pass\n 1 fail\n`)).toBe("inconclusive");
+});
+
+// The mutated crate is kept between mutations and runs: only what differs
+// from the checkout is written again, so cargo rebuilds what changed, not all
+// of rust-js, nine seconds of each mutation's (DEVELOPMENT.md).
+test("the crate a mutation is built in is written only where it differs", () => {
+  const from = fixture("sync-from"), to = fixture("sync-to");
+  mkdirSync(join(from, "src"), { recursive: true });
+  writeFileSync(join(from, "src", "a.rs"), "a");
+  writeFileSync(join(from, "src", "b.rs"), "b");
+  writeFileSync(join(from, "Cargo.toml"), "toml");
+  expect(syncTree(from, to, ["Cargo.toml", "src"]).sort()).toEqual(["Cargo.toml", "src/a.rs", "src/b.rs"]);
+  const kept = statSync(join(to, "src", "a.rs")).mtimeMs;
+  writeFileSync(join(from, "src", "b.rs"), "b2");
+  rmSync(join(from, "Cargo.toml"));
+  writeFileSync(join(to, "src", "stale.rs"), "gone");
+  expect(syncTree(from, to, ["Cargo.toml", "src"]).sort()).toEqual(["Cargo.toml", "src/b.rs", "src/stale.rs"]);
+  expect([statSync(join(to, "src", "a.rs")).mtimeMs, readFileSync(join(to, "src", "b.rs"), "utf8"), existsSync(join(to, "src", "stale.rs")), existsSync(join(to, "Cargo.toml"))])
+    .toEqual([kept, "b2", false, false]);
 });

@@ -14,7 +14,8 @@
 // that runs them under Developer Tools, or the first run of each is slow
 // (AGENTS.md).
 
-import { chmodSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -217,12 +218,54 @@ export function mutate(source: string, mutation: Mutation): string | { problem: 
   return source.slice(0, at) + mutation.replace + source.slice(at + mutation.find.length);
 }
 
+/** Each file under `paths` of `dir`, a file or a directory's, by its path from `dir`. */
+function files(dir: string, paths: string[]): string[] {
+  const found: string[] = [];
+  const walk = (path: string) => {
+    const full = join(dir, path);
+    if (!existsSync(full)) return;
+    if (statSync(full).isDirectory()) for (const entry of readdirSync(full)) walk(join(path, entry));
+    else found.push(path);
+  };
+  for (const path of paths) walk(path);
+  return found;
+}
+
+/** `to`'s `paths` made what `from`'s are, writing only the files that differ
+ * and removing those `from` hasn't: what's the same keeps its time, so cargo
+ * rebuilds only what changed. The files written or removed. */
+export function syncTree(from: string, to: string, paths: string[]): string[] {
+  const touched: string[] = [];
+  const wanted = new Set(files(from, paths));
+  for (const path of wanted) {
+    const source = readFileSync(join(from, path));
+    const target = join(to, path);
+    if (existsSync(target) && readFileSync(target).equals(source)) continue;
+    mkdirSync(dirname(target), { recursive: true });
+    writeFileSync(target, source);
+    touched.push(path);
+  }
+  for (const path of files(to, paths)) {
+    if (wanted.has(path)) continue;
+    rmSync(join(to, path));
+    touched.push(path);
+  }
+  return touched;
+}
+
 /** A compiler built from this checkout's crate, with `mutation` in it, or
- * without one; or why it can't be built. */
+ * without one; or why it can't be built. The crate is kept from the last
+ * build, the last mutation's file put back: one built without one is kept
+ * too, while the crate's sources are what it was built from. */
 function build(mutation?: Mutation): string | { problem: string } {
-  rmSync(crate, { recursive: true, force: true });
   mkdirSync(crate, { recursive: true });
-  for (const file of crateFiles) cpSync(join(root, file), join(crate, file), { recursive: true });
+  syncTree(root, crate, crateFiles);
+  const kept = join(work, "bin", mutation?.name ?? "unmutated");
+  const sources = createHash("sha256");
+  for (const path of files(crate, crateFiles).sort()) sources.update(path).update(readFileSync(join(crate, path)));
+  const built = sources.digest("hex");
+  const stamp = join(work, "unmutated.stamp");
+  if (!mutation && existsSync(kept) && existsSync(stamp) && readFileSync(stamp, "utf8") === built) return kept;
   if (mutation) {
     const file = join(crate, mutation.file);
     const mutated = mutate(readFileSync(file, "utf8"), mutation);
@@ -235,9 +278,9 @@ function build(mutation?: Mutation): string | { problem: string } {
     const why = stopped(p, buildTimeout) ?? p.stderr.split("\n").find((line) => line.startsWith("error")) ?? `exited ${p.code}`;
     return { problem: `doesn't build: ${why}` };
   }
-  const kept = join(work, "bin", mutation?.name ?? "unmutated");
   mkdirSync(join(work, "bin"), { recursive: true });
   cpSync(join(target, "debug", "rust-js"), kept);
+  if (!mutation) writeFileSync(stamp, built);
   return kept;
 }
 
@@ -320,8 +363,11 @@ async function main() {
     console.log("no mutations to run");
     return;
   }
-  // A killed run's compilers, which it didn't get to remove.
-  rmSync(join(work, "bin"), { recursive: true, force: true });
+  // A killed run's compilers, which it didn't get to remove; not the one
+  // built without a mutation, kept while the crate is what it was built from.
+  for (const entry of existsSync(join(work, "bin")) ? readdirSync(join(work, "bin")) : []) {
+    if (entry !== "unmutated") rmSync(join(work, "bin", entry), { recursive: true, force: true });
+  }
   // Each mutation's tests pass as the compiler is, and run at all, so
   // their failing is the mutation's doing.
   const unmutated = build();
