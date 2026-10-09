@@ -122,3 +122,24 @@ written, and what it breaks, as Rust would see it:
   mutation's log is kept in `target/mutants/logs/`. Found in review: every
   failed process had counted as caught. Later, a test that timed out had,
   then one whose `beforeEach` hook did.
+
+## Amendment: a change's mutations are of what it touches
+
+A check of a change, `--changed=<base>`, ran every mutation of each file
+it touched: one line of `lower/jsx.rs` reran its 130, nearly all of code
+the change didn't come near, and a day's check took 45 minutes. It now
+runs, besides those it adds or edits:
+
+- **those in a function it changes**, the function the mutated code is
+  in, found as rustfmt and Prettier lay one out (`fn` or `function`, and
+  `}` at its indent); code in none, its lines and ten each side;
+- **those whose test it changes**: a test their `-t` names, its comment
+  above included, or all of a file's, where it changes what they share,
+  above the first; and a corpus case their `-t` names;
+- **one that no longer applies**, to say so.
+
+A change elsewhere can still matter to one, as making the code it guards
+redundant for its test (`captured-base-copied`, after a lowering change
+in another file): the nightly run of every mutation finds that, a day
+later at most. Of the checks of the last day's commits, it ran a third to
+a half as many. `test/ci.test.ts` checks how it chooses.

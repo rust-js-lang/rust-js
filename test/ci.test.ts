@@ -3,7 +3,7 @@
 
 import { expect, test } from "bun:test";
 import { checkedSince, latestRuns } from "../scripts/ci";
-import { changedMutations } from "../scripts/mutations";
+import { changedLines, changedMutations, enclosingFunction, testBlocks } from "../scripts/mutations";
 import { shard } from "../scripts/shard";
 
 const files = ["a", "b", "c", "d", "e", "f", "g"].map((name) => `test/${name}.test.ts`);
@@ -16,15 +16,100 @@ test("shards split the files between them, each once, whatever the order given",
   expect(() => shard(files, 4, 3)).toThrow("a shard is 1 to 3");
 });
 
-const mutation = (name: string, file: string, find = "a", replace = "b") => ({ name, breaks: "", file, find, replace, tests: ["test/x.test.ts"] });
+const mutation = (name: string, file: string, find = "a", replace = "b", tests = ["test/y.test.ts"]) => ({ name, breaks: "", file, find, replace, tests });
 
-// A change's mutations: those of a file it changes, and those it adds or
-// edits, which a change to their tests' files alone wouldn't name.
-test("the changed mutations are a changed file's, and the new or edited", () => {
-  const base = [mutation("kept", "src/a.rs"), mutation("edited", "src/b.rs"), mutation("touched", "src/c.rs")];
-  const now = [mutation("kept", "src/a.rs"), mutation("edited", "src/b.rs", "a", "c"), mutation("touched", "src/c.rs"), mutation("added", "src/a.rs")];
-  expect(changedMutations(now, base, ["src/c.rs", "docs/x.md"]).map((m) => m.name)).toEqual(["edited", "touched", "added"]);
-  expect(changedMutations(now, now, [])).toEqual([]);
+const source = `use std::fmt;
+
+fn first() -> u32 {
+    let a = 1;
+    a + 1
+}
+
+impl Thing {
+    pub(super) fn second(&self) -> u32 {
+        let b = 2;
+        b * 2
+    }
+
+    fn short(&self) -> u32 { 3 }
+}
+`;
+
+const tests = `import { test } from "bun:test";
+
+const shared = 1;
+
+// The first.
+test("adds", () => {
+  expect(1 + 1).toBe(2);
+});
+
+// The second,
+// of two lines.
+test.skipIf(false)("multiplies", () => {
+  expect(2 * 2).toBe(4);
+});
+`;
+
+// A change's mutations (ADR 0093): those it adds or edits, those in a
+// function it changes, and those whose test, or corpus case, it changes.
+test("the changed mutations are of the functions and tests a change touches", () => {
+  const files: Record<string, string> = { "src/a.rs": source, "test/x.test.ts": tests };
+  const read = (file: string) => files[file];
+  const base = [
+    mutation("in-first", "src/a.rs", "a + 1"),
+    mutation("in-second", "src/a.rs", "b * 2"),
+    mutation("edited", "src/a.rs", "let a = 1;", "let a = 2;"),
+    mutation("adds-test", "src/b.rs", "x", "y", ["test/x.test.ts", "-t", "adds"]),
+    mutation("multiplies-test", "src/b.rs", "x", "y", ["test/x.test.ts", "-t", "multiplies"]),
+    mutation("case", "src/b.rs", "x", "y", ["test/corpus.test.ts", "-t", "array_map"]),
+    mutation("gone", "src/a.rs", "no longer here"),
+  ];
+  const now = [...base.slice(0, 2), mutation("edited", "src/a.rs", "let a = 1;", "let a = 3;"), ...base.slice(3), mutation("added", "src/c.rs")];
+  const names = (changes: { file: string; lines: [number, number][] }[]) => changedMutations(now, base, changes, read).map((m) => m.name);
+  // A line of \`second\`'s: its mutation, the edited and added ones, and one
+  // that no longer applies, to say so.
+  expect(names([{ file: "src/a.rs", lines: [[10, 10]] }])).toEqual(["in-second", "edited", "gone", "added"]);
+  // The second test's comment, then what both tests share.
+  expect(names([{ file: "test/x.test.ts", lines: [[11, 11]] }])).toEqual(["edited", "multiplies-test", "added"]);
+  expect(names([{ file: "test/x.test.ts", lines: [[3, 3]] }])).toEqual(["edited", "adds-test", "multiplies-test", "added"]);
+  expect(names([{ file: "test/corpus/array_map.rs", lines: [[1, 1]] }, { file: "docs/x.md", lines: [[1, 1]] }])).toEqual(["edited", "case", "added"]);
+  expect(changedMutations(now, now, [], read)).toEqual([]);
+});
+
+test("a function is where rustfmt and Prettier lay it out", () => {
+  expect(enclosingFunction(source, 5, 5)).toEqual([3, 6]);
+  expect(enclosingFunction(source, 11, 11)).toEqual([9, 12]);
+  expect(enclosingFunction(source, 14, 14)).toEqual([14, 14]);
+  // In none: its lines, and ten each side.
+  expect(enclosingFunction(source, 1, 1)).toEqual([1, 11]);
+});
+
+test("a test file's tests are their comments and bodies", () => {
+  expect(testBlocks(tests)).toEqual([
+    { name: "adds", first: 5, last: 9 },
+    { name: "multiplies", first: 10, last: 15 },
+  ]);
+});
+
+test("a diff's changed lines are where the file is changed now", () => {
+  const diff = [
+    "diff --git a/src/a.rs b/src/a.rs",
+    "--- a/src/a.rs",
+    "+++ b/src/a.rs",
+    "@@ -3,0 +4,2 @@ fn first() {",
+    "+one",
+    "+two",
+    "@@ -9 +11 @@",
+    "-old",
+    "+new",
+    "@@ -20,2 +21,0 @@",
+    "diff --git a/gone.rs b/gone.rs",
+    "--- a/gone.rs",
+    "+++ /dev/null",
+    "@@ -1 +0,0 @@",
+  ].join("\n");
+  expect(changedLines(diff)).toEqual([{ file: "src/a.rs", lines: [[4, 5], [11, 11], [21, 22]] }]);
 });
 
 const run = (headBranch: string, databaseId: number, status: string, conclusion: string, headSha = `sha${databaseId}`) =>

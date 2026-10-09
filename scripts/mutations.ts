@@ -46,17 +46,115 @@ for (const path of [...new Bun.Glob("**/*.ts").scanSync(join(import.meta.dir, "m
 }
 export const mutations: Mutation[] = lists.flatMap((list) => list.mutations);
 
-/** A change's mutations (DEVELOPMENT.md): those of a file it changes, and
- * those it adds or edits, of `base`'s, which a change to their tests
- * alone wouldn't name. */
-export function changedMutations(now: Mutation[], base: Mutation[], changedFiles: string[]): Mutation[] {
+/** A file a change touches, and the lines of it, as it is now, that it
+ * changed: each `[first, last]`, from 1. */
+export type Change = { file: string; lines: [number, number][] };
+
+/** A change's mutations (DEVELOPMENT.md, ADR 0093): those it adds or edits,
+ * of `base`'s; those of a function it changes, the function the mutated
+ * code is in; and those whose tests it changes, a test they name, or a
+ * corpus case. What a change elsewhere does to them, as making the code
+ * one guards redundant, the nightly run of all of them finds. `read` gives
+ * a file as it is now. */
+export function changedMutations(now: Mutation[], base: Mutation[], changes: Change[], read: (file: string) => string | undefined): Mutation[] {
   const same = (a: Mutation, b: Mutation) => JSON.stringify(a) === JSON.stringify(b);
-  return now.filter((m) => changedFiles.includes(m.file) || !base.some((b) => same(b, m)));
+  const changed = new Map(changes.map((c) => [c.file, c.lines]));
+  const overlaps = (lines: [number, number][], [first, last]: [number, number]) => lines.some(([a, b]) => a <= last && b >= first);
+  // A test file's tests the change touches, by name: all of them where it
+  // changes what they share, above the first. A corpus case is its own test.
+  const touchedTests = (file: string): string[] | "all" => {
+    const lines = changed.get(file);
+    const source = lines && read(file);
+    if (!lines || source === undefined) return [];
+    const blocks = testBlocks(source);
+    if (blocks.length === 0 || overlaps(lines, [1, blocks[0].first - 1])) return "all";
+    return blocks.filter((block) => overlaps(lines, [block.first, block.last])).map((block) => block.name);
+  };
+  const cases = changes.filter((c) => c.file.startsWith("test/corpus/")).map((c) => c.file.slice("test/corpus/".length));
+  return now.filter((m) => {
+    if (!base.some((b) => same(b, m))) return true;
+    const source = changed.has(m.file) ? read(m.file) : undefined;
+    if (source !== undefined) {
+      const at = source.indexOf(m.find);
+      // One that no longer applies runs, to say so.
+      if (at < 0) return true;
+      const first = source.slice(0, at).split("\n").length;
+      const block = enclosingFunction(source, first, first + m.find.split("\n").length - 1);
+      if (overlaps(changed.get(m.file)!, block)) return true;
+    }
+    const [file, ...args] = m.tests;
+    const at = args.indexOf("-t");
+    const filter = at >= 0 ? new RegExp(args[at + 1]) : undefined;
+    const tests = touchedTests(file);
+    if (tests === "all" || (tests.length > 0 && (!filter || tests.some((name) => filter.test(name))))) return true;
+    return file === "test/corpus.test.ts" && filter !== undefined && cases.some((name) => filter.test(name));
+  });
+}
+
+/** The lines of the function lines `first` to `last` are in, the innermost,
+ * as rustfmt and Prettier lay one out: `fn` or `function` where it starts,
+ * and `}` at its indent where it ends. Code in none is its own lines and
+ * ten each side. */
+export function enclosingFunction(source: string, first: number, last: number): [number, number] {
+  const lines = source.split("\n");
+  const start = /^(\s*)(?:(?:pub(?:\([^)]*\))?|export|async|const|unsafe|extern\s+"[^"]*"|default)\s+)*(?:fn|function)\s/;
+  for (let i = first - 1; i >= 0; i--) {
+    const m = lines[i].match(start);
+    if (!m) continue;
+    const trimmed = lines[i].trimEnd();
+    // One of one line, `fn n() -> u32 { 1 }`, or a declaration, `fn n();`.
+    let end = trimmed.endsWith("}") || trimmed.endsWith(";") ? i : -1;
+    for (let j = i + 1; end < 0 && j < lines.length; j++) if (lines[j] === `${m[1]}}`) end = j;
+    if (end + 1 >= last) return [i + 1, end + 1];
+  }
+  return [Math.max(1, first - 10), last + 10];
+}
+
+/** A test file's tests, each its name and its lines: from the comment
+ * above it to the one above the next. */
+export function testBlocks(source: string): { name: string; first: number; last: number }[] {
+  const lines = source.split("\n");
+  const starts: { name: string; line: number }[] = [];
+  lines.forEach((line, i) => {
+    const m = line.match(/^test(?:\.(?:skipIf|if|todo)\([^)]*\))?\(\s*(["'`])(.*?)\1/);
+    if (m) starts.push({ name: m[2], line: i });
+  });
+  const header = (line: number) => {
+    let i = line;
+    while (i > 0 && lines[i - 1].startsWith("//")) i--;
+    return i;
+  };
+  return starts.map((s, k) => ({
+    name: s.name,
+    first: header(s.line) + 1,
+    last: k + 1 < starts.length ? header(starts[k + 1].line) : lines.length,
+  }));
+}
+
+/** The lines `git diff -U0` says each file's change is in, as it is now. */
+export function changedLines(diff: string): Change[] {
+  const changes: Change[] = [];
+  let current: Change | undefined;
+  for (const line of diff.split("\n")) {
+    if (line.startsWith("+++ ")) {
+      current = line === "+++ /dev/null" ? undefined : { file: line.slice("+++ b/".length), lines: [] };
+      if (current) changes.push(current);
+      continue;
+    }
+    const hunk = line.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/);
+    if (hunk && current) {
+      const from = Number(hunk[1]);
+      const count = hunk[2] === undefined ? 1 : Number(hunk[2]);
+      // Lines taken away are between two: both are where the change is.
+      current.lines.push(count === 0 ? [from, from + 1] : [from, from + count - 1]);
+    }
+  }
+  return changes;
 }
 
 /** The files changed since where this branch left `base`, and the
  * mutations as they were there. */
-async function since(base: string): Promise<{ files: string[]; mutations: Mutation[] }> {
+async function since(base: string): Promise<{ files: string[]; changes: Change[]; mutations: Mutation[] }> {
   const git = (args: string[]) => {
     const p = runSync(["git", ...args], root, 60_000);
     if (p.code !== 0) throw new Error(`git ${args.join(" ")} failed:\n${p.stderr}`);
@@ -64,6 +162,7 @@ async function since(base: string): Promise<{ files: string[]; mutations: Mutati
   };
   const from = git(["merge-base", base, "HEAD"]).trim();
   const files = git(["diff", "--name-only", from]).split("\n").filter(Boolean);
+  const changes = changedLines(git(["diff", "-U0", "--no-color", from]));
   // Each list as it was there, where the change touched it; a new one had none.
   const there = mkdtempSync(join(tmpdir(), "mutations-base-"));
   const old: Mutation[] = [];
@@ -81,7 +180,7 @@ async function since(base: string): Promise<{ files: string[]; mutations: Mutati
     old.push(...(await import(copy)).mutations);
   }
   rmSync(there, { recursive: true, force: true });
-  return { files, mutations: old };
+  return { files, changes, mutations: old };
 }
 
 // Where the mutated crate is built, and the compilers kept: one copy of
@@ -193,8 +292,15 @@ async function main() {
   let chosen = named.length > 0 ? mutations.filter((m) => named.includes(m.name)) : mutations;
   const changed = args.find((arg) => arg.startsWith("--changed="))?.slice("--changed=".length);
   if (changed) {
-    const { files, mutations: base } = await since(changed);
-    chosen = changedMutations(chosen, base, files);
+    const { changes, mutations: base } = await since(changed);
+    const read = (file: string) => {
+      try {
+        return readFileSync(join(root, file), "utf8");
+      } catch {
+        return undefined;
+      }
+    };
+    chosen = changedMutations(chosen, base, changes, read);
   }
   const sharded = shardArg(args);
   if (sharded) {

@@ -200,7 +200,7 @@ of any branch, cancels the one in progress. Its jobs run at once:
 | `examples` | the Vite example's build | 10 min |
 | `wasm` | build `rust-js.wasm`, then the snapshot and playground tests with it | 30 min |
 | `rustc` | rustc's suite, a release build, then 6 shards and a report; a lists patch on failure | 20 min |
-| `mutations` | `--changed=<since>`: the mutations whose file the change touches, and those it adds or edits | 0–30 min |
+| `mutations` | `--changed=<since>`: the mutations in a function the change touches, or of a test or corpus case it touches, and those it adds or edits (ADR 0093) | 0–30 min |
 
 ### `rustc-tests.yml`, by hand, and called by `check.yml`
 
