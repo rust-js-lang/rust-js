@@ -322,7 +322,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display.rs",
     find: "        if self.recognition().is_js_error(ty) {\n",
     replace: "        if false && self.recognition().is_js_error(ty) {\n",
-    tests: ["test/compiler.test.ts", "-t", "a JS error is shown as JS shows it"],
+    tests: ["test/bindings.test.ts", "-t", "a JS error is shown as JS shows it"],
   },
   {
     name: "js-error-width-dropped",

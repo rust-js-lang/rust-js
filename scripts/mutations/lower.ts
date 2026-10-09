@@ -356,7 +356,7 @@ export const mutations: Mutation[] = [
     file: "src/lower.rs",
     find: "            } if self.body_query().as_for(e).is_none() && self.is_conditional_match(scrutinee, arms) => {\n",
     replace: "            } if false && self.is_conditional_match(scrutinee, arms) => {\n",
-    tests: ["test/compiler.test.ts", "-t", "two-arm match"],
+    tests: ["test/lowering.test.ts", "-t", "two-arm match"],
   },
   {
     name: "operand-named-tmp",
@@ -392,6 +392,6 @@ export const mutations: Mutation[] = [
     file: "src/lower.rs",
     find: "} if !matches!(dest, Dest::Discard)",
     replace: "} if false && !matches!(dest, Dest::Discard)",
-    tests: ["test/compiler.test.ts", "-t", "enum's own names"],
+    tests: ["test/lowering.test.ts", "-t", "enum's own names"],
   },
 ];

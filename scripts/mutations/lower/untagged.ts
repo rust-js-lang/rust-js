@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/untagged.rs",
     find: "            return Some(if num.big() { Kind::BigInt } else { Kind::Number });\n",
     replace: "            return Some(Kind::Number);\n",
-    tests: ["test/compiler.test.ts", "-t", "untagged enum"],
+    tests: ["test/compiler.test.ts", "test/lowering.test.ts", "-t", "untagged enum"],
   },
   {
     name: "untagged-object-takes-arrays",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/untagged.rs",
     find: "                (Kind::Object, Kind::Array | Kind::Class(..) | Kind::Test(_)) => true,\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "-t", "untagged enum"],
+    tests: ["test/compiler.test.ts", "test/lowering.test.ts", "-t", "untagged enum"],
   },
   {
     name: "untagged-class-takes-subclass",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/untagged.rs",
     find: "                (Kind::Class(_, Some(base)), Kind::Class(_, Some(sub))) => self.superclasses(*sub).contains(base),\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "-t", "untagged enum"],
+    tests: ["test/compiler.test.ts", "test/lowering.test.ts", "-t", "untagged enum"],
   },
   {
     name: "untagged-subclass-left-out-twice",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/untagged.rs",
     find: "            .filter(|kind| !narrower.iter().any(|base| extends(kind, base)))\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "-t", "untagged enum"],
+    tests: ["test/compiler.test.ts", "test/lowering.test.ts", "-t", "untagged enum"],
   },
   {
     name: "untagged-kinds-alike",
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/untagged.rs",
     find: "                    && tested_by_impls(tcx, def_id.to_def_id(), &recognition)\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "-t", "untagged enum only made"],
+    tests: ["test/lowering.test.ts", "-t", "untagged enum only made"],
   },
   {
     name: "cloned-untagged-alike-allowed",

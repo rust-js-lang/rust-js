@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "            && package.named.iter().all(|(export, local)| export == local)",
     replace: "            && package.named.iter().all(|(export, local)| export == local)\n            && false",
-    tests: ["test/compiler.test.ts", "-t", "JSON is a typed value"],
+    tests: ["test/bindings.test.ts", "-t", "JSON is a typed value"],
   },
   {
     name: "pair-without-impl",
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "            ExprKind::Spread(all) => Argument::new_spread_element(span(a.span), self.expr(all), &self.b),\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "-t", "variadic binding"],
+    tests: ["test/bindings.test.ts", "-t", "variadic binding"],
   },
   {
     name: "else-after-return-kept",
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "StmtKind::If(cond, then, Some(els)) if leaves(then) =>",
     replace: "StmtKind::If(cond, then, Some(els)) if false && leaves(then) =>",
-    tests: ["test/compiler.test.ts", "-t", "branch returns has no else"],
+    tests: ["test/lowering.test.ts", "-t", "branch returns has no else"],
   },
   {
     name: "else-dropped-of-any-branch",
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "StmtKind::If(cond, then, Some(els)) if leaves(then) =>",
     replace: "StmtKind::If(cond, then, Some(els)) if true || leaves(then) =>",
-    tests: ["test/compiler.test.ts", "-t", "branch returns has no else"],
+    tests: ["test/lowering.test.ts", "-t", "branch returns has no else"],
   },
   {
     name: "inner-if-leaving-unseen",
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "Some(StmtKind::If(_, then, Some(els))) => leaves(then) && leaves(els),",
     replace: "Some(StmtKind::If(_, _, Some(_))) => false,",
-    tests: ["test/compiler.test.ts", "-t", "branch returns has no else"],
+    tests: ["test/lowering.test.ts", "-t", "branch returns has no else"],
   },
   {
     name: "reexport-unprinted",
@@ -136,7 +136,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "        for reexport in &module.reexports {",
     replace: "        for reexport in module.reexports.iter().take(0) {",
-    tests: ["test/compiler.test.ts","-t","re-exported from it"],
+    tests: ["test/modules.test.ts", "-t", "re-exported from it"],
   },
   {
     name: "adjacent-text-joined",
@@ -216,7 +216,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "            .chain(cx.stmts(&module.statements))\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "-t", "js::on_load!"],
+    tests: ["test/modules.test.ts", "-t", "js::on_load!"],
   },
   {
     name: "truthy-test-kept",
@@ -224,7 +224,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "= &inner.kind => tested(value),\n",
     replace: "= &inner.kind => e.clone(),\n",
-    tests: ["test/compiler.test.ts", "-t", "tested as JS tests it"],
+    tests: ["test/bindings.test.ts", "-t", "tested as JS tests it"],
   },
   {
     name: "let-undefined-written",
@@ -232,7 +232,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "            (ExprKind::Undefined, true) => None,\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "-t", "only read and set is the module's let"],
+    tests: ["test/modules.test.ts", "-t", "only read and set is the module's let"],
   },
   {
     name: "coalesce-assign-spelled-out",
@@ -240,7 +240,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "                    Op::Coalesce => Some(AssignmentOperator::LogicalNullish),\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "-t", "only read and set is the module's let"],
+    tests: ["test/modules.test.ts", "-t", "only read and set is the module's let"],
   },
   {
     name: "test-parts-kept",
@@ -256,6 +256,6 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "                if js::same_path(&tested(test), then) && !matches!(els.kind, ExprKind::Undefined) =>\n",
     replace: "                if false && js::same_path(&tested(test), then) && !matches!(els.kind, ExprKind::Undefined) =>\n",
-    tests: ["test/compiler.test.ts", "-t", "nullable field's None is null"],
+    tests: ["test/lowering.test.ts", "-t", "nullable field's None is null"],
   },
 ];

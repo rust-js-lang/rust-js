@@ -74,6 +74,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/naming.rs",
     find: "                (\"*\", _, Some(module)) => module,\n",
     replace: "\n",
-    tests: ["test/compiler.test.ts", "-t", "namespace import is named"],
+    tests: ["test/modules.test.ts", "-t", "namespace import is named"],
   },
 ];

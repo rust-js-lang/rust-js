@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: '    ["import", "camel_case", "directive", "export_default", "on_load"]\n',
     replace: '    ["import", "camel_case", "on_load"]\n',
-    tests: ["test/compiler.test.ts", "-t", "make a module a Next.js route"],
+    tests: ["test/modules.test.ts", "-t", "make a module a Next.js route"],
   },
   {
     name: "flatten-not-a-rest",
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "[\"import\", \"camel_case\", \"directive\", \"export_default\", \"on_load\"]",
     replace: "[\"import\", \"camel_case\", \"directive\", \"export_default\"]",
-    tests: ["test/compiler.test.ts", "-t", "js::on_load!"],
+    tests: ["test/modules.test.ts", "-t", "js::on_load!"],
   },
   {
     name: "truthy-form-unknown",
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "        \"!!\" => return JsForm::Truthy,\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "-t", "tested as JS tests it"],
+    tests: ["test/bindings.test.ts", "-t", "tested as JS tests it"],
   },
   {
     name: "optional-component-takes-dictionary",

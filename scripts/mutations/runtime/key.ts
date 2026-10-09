@@ -8,6 +8,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/key.js",
     find: "      const keys = Object.keys(value).filter((k) => value[k] != null);\n",
     replace: "      const keys = Object.keys(value);\n",
-    tests: ["test/compiler.test.ts", "-t", "literal None is left out"],
+    tests: ["test/lowering.test.ts", "-t", "literal None is left out"],
   },
 ];

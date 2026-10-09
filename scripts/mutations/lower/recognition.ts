@@ -657,7 +657,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition.rs",
     find: "            \"leak\" if adt(\"Vec\") || string || owner.is_box() => Std::Same,",
     replace: "            \"leak\" if adt(\"Vec\") || owner.is_box() => Std::Same,",
-    tests: ["test/compiler.test.ts", "-t", "leaked String"],
+    tests: ["test/lowering.test.ts", "-t", "leaked String"],
   },
   {
     name: "type-only-trait-refused",
@@ -673,6 +673,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition.rs",
     find: "self.tcx.crate_name(adt.did().krate).as_str() == \"js\"",
     replace: "self.tcx.crate_name(adt.did().krate).as_str() == \"jsx\"",
-    tests: ["test/compiler.test.ts", "-t", "a JS error is shown as JS shows it"],
+    tests: ["test/bindings.test.ts", "-t", "a JS error is shown as JS shows it"],
   },
 ];

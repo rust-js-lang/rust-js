@@ -143,3 +143,16 @@ redundant for its test (`captured-base-copied`, after a lowering change
 in another file): the nightly run of every mutation finds that, a day
 later at most. Of the checks of the last day's commits, it ran a third to
 a half as many. `test/ci.test.ts` checks how it chooses.
+
+## Amendment: a mutation's test builds only what it needs
+
+A mutation is judged by its tests alone, but `compiler.test.ts` compiles
+some forty programs and runs native Rust before any of its tests runs, for
+the ones that check those programs. A mutation of a test of its own
+program paid for all of that, and was inconclusive where it broke one of
+them, as `regex-slash-unescaped` did the playground. The 59 of its tests
+that read none of that are in files of their own, each building only the
+crates: `bindings.test.ts`, the binding language and the js and webapi
+crates; `modules.test.ts`, a crate's modules as files; `stable.test.ts`,
+plain stable Rust; and `lowering.test.ts`, the rest. `compiler.test.ts`
+keeps the 45 that check its programs.

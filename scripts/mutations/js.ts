@@ -73,7 +73,7 @@ export const mutations: Mutation[] = [
     file: "src/js.rs",
     find: "            && let ExprKind::Member(object, property) = &then.kind\n            && same_path(tested, object)\n",
     replace: "            && let ExprKind::Member(object, property) = &then.kind\n            && same_path(tested, object)\n            && false\n",
-    tests: ["test/compiler.test.ts", "-t", "optional chain"],
+    tests: ["test/compiler.test.ts", "test/lowering.test.ts", "-t", "optional chain"],
   },
   {
     name: "optional-chain-of-another",
@@ -97,7 +97,7 @@ export const mutations: Mutation[] = [
     file: "src/js.rs",
     find: "        visit_stmts(&self.statements, &mut read);\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "-t", "js::on_load!"],
+    tests: ["test/modules.test.ts", "-t", "js::on_load!"],
   },
   {
     name: "not-of-truthy-kept",
@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
     file: "src/js.rs",
     find: "        if let (UnaryOp::Not, ExprKind::Unary(UnaryOp::Not, inner)) = (op, &arg.kind)\n",
     replace: "        if false && let (UnaryOp::Not, ExprKind::Unary(UnaryOp::Not, inner)) = (op, &arg.kind)\n",
-    tests: ["test/compiler.test.ts", "-t", "tested as JS tests it"],
+    tests: ["test/bindings.test.ts", "-t", "tested as JS tests it"],
   },
   {
     name: "is-array-tested-for-null",
@@ -113,7 +113,7 @@ export const mutations: Mutation[] = [
     file: "src/js.rs",
     find: "            && is_array == \"isArray\"\n",
     replace: "            && is_array == \"isArrayNot\"\n",
-    tests: ["test/compiler.test.ts", "-t", "matches! of a kind's literal"],
+    tests: ["test/lowering.test.ts", "-t", "matches! of a kind's literal"],
   },
   {
     name: "truthy-tested-for-null",
@@ -129,7 +129,7 @@ export const mutations: Mutation[] = [
     file: "src/js.rs",
     find: "        (ExprKind::OptionalMember(x, f), ExprKind::OptionalMember(y, g)) => f == g && same_path(x, y),\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "-t", "text kept where it isn't empty"],
+    tests: ["test/lowering.test.ts", "-t", "text kept where it isn't empty"],
   },
   {
     name: "returned-call-blocked",

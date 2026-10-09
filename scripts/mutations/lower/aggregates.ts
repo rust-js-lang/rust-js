@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/aggregates.rs",
     find: "            return Ok(bindings::unit_name(self.tcx, adt.adt_def.did()).map_or_else(Expr::undefined, Expr::str));",
     replace: "            return Ok(Expr::undefined());",
-    tests: ["test/compiler.test.ts", "-t", "named unit struct"],
+    tests: ["test/lowering.test.ts", "-t", "named unit struct"],
   },
   {
     name: "failing-user-writer-allowed",
@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/aggregates.rs",
     find: "        // An untagged enum's variant is its payload (ADR 0214).\n        if self.untagged(ty).is_some() {\n",
     replace: "        // An untagged enum's variant is its payload (ADR 0214).\n        if false {\n",
-    tests: ["test/compiler.test.ts", "-t", "untagged enum"],
+    tests: ["test/compiler.test.ts", "test/lowering.test.ts", "-t", "untagged enum"],
   },
   {
     name: "untagged-constructor-tagged",
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/aggregates.rs",
     find: "        let value = if self.untagged(ty).is_some() {\n",
     replace: "        let value = if false {\n",
-    tests: ["test/compiler.test.ts", "-t", "untagged enum"],
+    tests: ["test/compiler.test.ts", "test/lowering.test.ts", "-t", "untagged enum"],
   },
   {
     name: "tuple-field-named",
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/aggregates.rs",
     find: "            if bindings::is_nullable(self.tcx, &variant.fields[field.name])\n",
     replace: "            if false && bindings::is_nullable(self.tcx, &variant.fields[field.name])\n",
-    tests: ["test/compiler.test.ts", "-t", "nullable field's None is null"],
+    tests: ["test/lowering.test.ts", "-t", "nullable field's None is null"],
   },
   {
     name: "nullable-literal-none-coalesced",
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/aggregates.rs",
     find: "            js::ExprKind::Undefined => Expr::null(),\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "-t", "nullable field's None is null"],
+    tests: ["test/lowering.test.ts", "-t", "nullable field's None is null"],
   },
   {
     name: "nullable-maybe-none-kept",
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/aggregates.rs",
     find: "            _ if other_field || value.is_constant() => value,\n",
     replace: "            _ => value,\n",
-    tests: ["test/compiler.test.ts", "-t", "nullable field's None is null"],
+    tests: ["test/lowering.test.ts", "-t", "nullable field's None is null"],
   },
   {
     name: "nullable-binding-coalesced",
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/aggregates.rs",
     find: "            thir::ExprKind::VarRef { id } => super::body_queries::nullable_bindings(self.tcx, self.thir).contains(&id),\n",
     replace: "            thir::ExprKind::VarRef { .. } => false,\n",
-    tests: ["test/compiler.test.ts", "-t", "nullable field's None is null"],
+    tests: ["test/lowering.test.ts", "-t", "nullable field's None is null"],
   },
   {
     name: "nullable-field-coalesced",
@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/aggregates.rs",
     find: "                ty::Adt(adt, _) => bindings::is_nullable(self.tcx, &adt.variant(variant_index).fields[name]),\n",
     replace: "                ty::Adt(..) => false,\n",
-    tests: ["test/compiler.test.ts", "-t", "nullable field's None is null"],
+    tests: ["test/lowering.test.ts", "-t", "nullable field's None is null"],
   },
   {
     name: "nullable-some-coalesced",
@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/aggregates.rs",
     find: "            thir::ExprKind::Adt(ref made) => made.fields.len() == 1,\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "-t", "nullable field's None is null"],
+    tests: ["test/lowering.test.ts", "-t", "nullable field's None is null"],
   },
   {
     name: "nullable-conditional-coalesced",
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/aggregates.rs",
     find: "            js::ExprKind::Cond(..) if self.made_some_or_none(e) => nulled(value),\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "-t", "nullable field's None is null"],
+    tests: ["test/lowering.test.ts", "-t", "nullable field's None is null"],
   },
   {
     name: "nullable-match-unseen",
@@ -181,6 +181,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/aggregates.rs",
     find: "            thir::ExprKind::Match { arms, .. } => arms.iter().all(",
     replace: "            thir::ExprKind::Match { arms, .. } => arms.is_empty() && arms.iter().all(",
-    tests: ["test/compiler.test.ts", "-t", "nullable field's None is null"],
+    tests: ["test/lowering.test.ts", "-t", "nullable field's None is null"],
   },
 ];

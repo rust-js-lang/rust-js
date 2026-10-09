@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/representation.rs",
     find: "                Some(CtorKind::Const) => Some(unit_name(tcx, adt.did()).map_or_else(Expr::undefined, Expr::str)),",
     replace: "                Some(CtorKind::Const) => Some(Expr::undefined()),",
-    tests: ["test/compiler.test.ts", "-t", "named unit struct"],
+    tests: ["test/lowering.test.ts", "-t", "named unit struct"],
   },
   {
     name: "i32-wrap",

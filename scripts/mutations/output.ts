@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     file: "src/output.rs",
     find: "        if let Some(file) = self.located.get(module) {\n",
     replace: "        if let Some(file) = self.located.get(module).filter(|_| false) {\n",
-    tests: ["test/compiler.test.ts", "-t", "path. module's JS is beside"],
+    tests: ["test/modules.test.ts", "-t", "path. module's JS is beside"],
   },
   {
     name: "path-module-imported-by-its-path",
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     file: "src/output.rs",
     find: "        if self.located.contains_key(from) || self.located.contains_key(to) {\n",
     replace: "        if false {\n",
-    tests: ["test/compiler.test.ts", "-t", "path. module's JS is beside"],
+    tests: ["test/modules.test.ts", "-t", "path. module's JS is beside"],
   },
   {
     name: "path-module-package-by-its-path",
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     file: "src/output.rs",
     find: "                    from: if self.located.contains_key(&module.path) {\n",
     replace: "                    from: if false {\n",
-    tests: ["test/compiler.test.ts", "-t", "path. module's JS is beside"],
+    tests: ["test/modules.test.ts", "-t", "path. module's JS is beside"],
   },
   {
     name: "path-module-root-relative",
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
     file: "src/output.rs",
     find: "                let below = relative(parent_dir(&self.input), m.file.as_ref()?);\n",
     replace: "                let below = relative(std::path::Path::new(\".\"), m.file.as_ref()?);\n",
-    tests: ["test/compiler.test.ts", "-t", "path. module's JS is beside"],
+    tests: ["test/modules.test.ts", "-t", "path. module's JS is beside"],
   },
   {
     name: "path-module-escapes-output",

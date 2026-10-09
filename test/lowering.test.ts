@@ -8,7 +8,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildReact, compiler, fixture, run, target } from "./support";
+import { buildReact, compiler, fixture, root, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -1048,4 +1048,954 @@ pub fn unparsed() -> bool {
   expect(lib.emptied("x")).toBe("^x");
   expect(lib.joined("a\nb")).toBe("a b");
   expect(() => lib.unparsed()).toThrow(SyntaxError);
+});
+
+// A dictionary of entries written out, each key a string, is an object
+// literal of them, as react.dev's RSC template writes its files: the same
+// properties, in the same order. Not of a `__proto__` key, which a literal
+// makes the object's prototype, nor of a key given twice, nor of a value
+// `undefined`, which an object's field leaves out (ADR 0280).
+test("a dictionary of entries written out is an object literal", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("dict-literal");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Dict, dict};
+pub fn files(code: &str) -> &'static Dict<String> {
+    dict::from_entries(vec![
+        ("/index.html".to_string(), code.to_string()),
+        ("main".to_string(), "m".to_string()),
+    ])
+}
+pub fn twice(code: &str) -> &'static Dict<String> {
+    dict::from_entries(vec![("a".to_string(), code.to_string()), ("a".to_string(), "again".to_string())])
+}
+pub fn proto(code: &str) -> &'static Dict<String> {
+    dict::from_entries(vec![("__proto__".to_string(), code.to_string())])
+}
+pub fn missing() -> &'static Dict<Option<String>> {
+    dict::from_entries(vec![("a".to_string(), None)])
+}
+pub fn named(name: String, code: &str) -> &'static Dict<String> {
+    dict::from_entries(vec![(name, code.to_string())])
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('return { "/index.html": code, main: "m" };');
+  expect(js).toContain('return Object.fromEntries([\n    ["a", code],\n    ["a", "again"],\n  ]);');
+  expect(js).toContain('return Object.fromEntries([["__proto__", code]]);');
+  expect(js).toContain("return Object.fromEntries([[name, code]]);");
+  expect(js).toContain('return Object.fromEntries([["a", undefined]]);');
+  const lib = await import(join(dir, "lib.js"));
+  expect(Object.entries(lib.files("c"))).toEqual([["/index.html", "c"], ["main", "m"]]);
+  expect(Object.keys(lib.proto("c"))).toEqual(["__proto__"]);
+  expect(Object.keys(lib.missing())).toEqual(["a"]);
+});
+
+// ADR 0275: a `#[rust_js::nullable]` field is TypeScript's `T | null`: its
+// `None` is `null`, as Next.js's `getStaticProps` gives react.dev's errors
+// page its `errorCode`, which JSON has no `undefined` for. Another such
+// field's value is one already, passed on as it is.
+test("a nullable field's None is null", async () => {
+  const dir = fixture("nullable-null");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Props {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub code: Option<String>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub message: Option<String>,
+    pub title: Option<String>,
+}
+
+pub fn none() -> Props {
+    Props { code: None, message: Some("m".to_string()), title: None }
+}
+
+pub fn given(code: Option<String>) -> Props {
+    Props { code, message: None, title: None }
+}
+
+pub fn passed(Props { code, message, .. }: Props) -> Props {
+    Props { code, message, title: None }
+}
+
+pub fn chosen(code: Option<&str>) -> Props {
+    Props {
+        code: match code {
+            Some(code) if !code.is_empty() => Some(code.to_string()),
+            _ => None,
+        },
+        message: None,
+        title: None,
+    }
+}
+
+pub fn moved(p: Props) -> Props {
+    Props { code: p.code, message: Some(p.title.unwrap_or_default()), title: None }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('return { code: null, message: "m" };');
+  expect(js).toContain("return { code: code ?? null, message: null };");
+  expect(js).toContain("return { code, message };");
+  // A conditional of `Some` or `None` is one of the value or `null`.
+  expect(js).toContain("return { code: code || null, message: null };");
+  expect(js).toContain('return { code: p.code, message: p.title ?? "" };');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.given(undefined), lib.given("1")]).toEqual([{ code: null, message: null }, { code: "1", message: null }]);
+  expect(JSON.stringify(lib.passed(lib.given(undefined)))).toBe('{"code":null,"message":null}');
+  expect([lib.chosen("1").code, lib.chosen("").code, lib.chosen(undefined).code]).toEqual(["1", null, null]);
+});
+
+// ADR 0277: `let n = n;`, a variable shadowed by its own value, is `n`
+// itself where nothing sets `n` while the new one is read: no `n$1`, as
+// react.dev's errors page has `<Type />` of `let Type = from_unknown(Type)`.
+// One of another name is the name written; one a loop sets again keeps its own.
+test("a variable shadowed by its own value is the variable", async () => {
+  const dir = fixture("shadows");
+  writeFileSync(join(dir, "lib.rs"), `pub fn captured(text: String) -> Box<dyn Fn() -> String> {
+    let text = text.clone();
+    Box::new(move || text.clone())
+}
+pub fn kept(text: String) -> String {
+    let kept = text;
+    kept + "!"
+}
+pub fn before(flag: bool) -> u32 {
+    let mut n = 1;
+    if flag {
+        n = 2;
+    }
+    let n = n;
+    n + 1
+}
+pub fn summed(items: &[String]) -> usize {
+    items.iter().fold(0, |total, item| {
+        let item = item.as_str();
+        total + item.len()
+    })
+}
+pub fn looped() -> u32 {
+    let mut fs: Vec<Box<dyn Fn() -> u32>> = Vec::new();
+    let mut n = 0;
+    while n < 2 {
+        n += 1;
+        let n = n;
+        fs.push(Box::new(move || n));
+    }
+    fs[0]()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function captured(text) {\n  return () => text;\n}");
+  expect(js).toContain("  const kept$1 = text;\n");
+  expect(js).toContain("  return (n + 1) >>> 0;\n");
+  expect(js).toContain("    const n$1 = n;\n    fs.push(() => n$1);");
+  // In a closure too, of its own parameter, as react.dev's createFileMap
+  // casts each snippet it's given.
+  expect(js).toContain("return items.reduce((total, item) => (total + $byteLen(item)) >>> 0, 0);");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.captured("a")(), lib.kept("b"), lib.before(true), lib.before(false), lib.looped(), lib.summed(["ab", "c"])]).toEqual(["a", "b!", 3, 2, 1, 3]);
+});
+
+// ADR 0030: a getter's option mapped to a property of what's in it,
+// `o.map(|e| e.id)`, is `o?.id`, which reads `o` once, as a `const` of it
+// would, as react.dev's SocialBanner has `ref.current?.offsetHeight`.
+test("a getter's option mapped to a property is an optional chain", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("getter-chain");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::Element;
+
+pub fn first_id(parent: &Element) -> Option<String> {
+    parent.first_element_child().map(|child| child.id())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("return parent.firstElementChild?.id;");
+  const { first_id } = await import(join(dir, "lib.js"));
+  expect([first_id({ firstElementChild: { id: "a" } }), first_id({ firstElementChild: null })]).toEqual(["a", undefined]);
+});
+
+// ADR 0280: a field made of a literal `None` is no key, `{ code }`, as
+// hand-written JS leaves it out, and as react.dev's sandboxes give Sandpack
+// `{ code, hidden, active }`. Rust can't tell: it reads a key that isn't
+// there as `None`, compares the two alike, and hashes them alike.
+test("a field of a literal None is left out", async () => {
+  const dir = fixture("none-fields");
+  writeFileSync(join(dir, "lib.rs"), `use std::collections::HashSet;
+
+#[derive(PartialEq, Eq, Hash, Clone, Debug, Default)]
+pub struct File {
+    pub code: String,
+    pub hidden: Option<bool>,
+    pub read_only: Option<bool>,
+}
+
+pub fn literal(code: &str) -> File {
+    File { code: code.to_string(), hidden: Some(true), read_only: None }
+}
+
+pub fn given(code: &str, read_only: Option<bool>) -> File {
+    File { code: code.to_string(), hidden: Some(true), read_only }
+}
+
+pub fn defaulted(code: &str) -> File {
+    File { code: code.to_string(), ..Default::default() }
+}
+
+#[derive(Clone, Copy)]
+pub struct Flags {
+    pub on: Option<bool>,
+    pub off: Option<bool>,
+}
+
+pub fn reset(flags: &Flags) -> Flags {
+    Flags { on: None, ..*flags }
+}
+
+pub fn alike(code: &str) -> (bool, usize, String) {
+    let a = literal(code);
+    let b = given(code, None);
+    let set: HashSet<File> = [a.clone(), b.clone()].into_iter().collect();
+    (a == b, set.len(), format!("{a:?}"))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return { code, hidden: true };");
+  const lib = await import(join(dir, "lib.js"));
+  expect(Object.keys(lib.literal("a"))).toEqual(["code", "hidden"]);
+  expect(Object.keys(lib.defaulted("a"))).toEqual(["code"]);
+  expect(lib.given("a", undefined).hidden).toBe(true);
+  // Not after a spread, whose field it would be.
+  expect(js).toContain("return { ...flags, on: undefined };");
+  expect(lib.reset({ on: true, off: false })).toEqual({ on: undefined, off: false });
+  expect(lib.alike("a")).toEqual([true, 1, 'File { code: "a", hidden: Some(true), read_only: None }']);
+});
+
+// ADR 0214: an untagged enum only made, never told apart, may have variants
+// of one kind, as Next.js's `getStaticProps` gives `{ props }` or
+// `{ notFound: true }`, react.dev's errors page's: each is its payload.
+test("an untagged enum only made may hold objects in two variants", async () => {
+  const dir = fixture("untagged-objects");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Found {
+    pub props: u32,
+}
+
+pub struct Missing {
+    #[cfg_attr(rust_js, rust_js::name = "notFound")]
+    pub not_found: bool,
+}
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Page {
+    Found(Found),
+    Missing(Missing),
+}
+
+pub fn page(code: u32) -> Page {
+    if code == 0 { Page::Missing(Missing { not_found: true }) } else { Page::Found(Found { props: code }) }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("{ notFound: true }");
+  expect(js).toContain("{ props: code }");
+  const { page } = await import(join(dir, "lib.js"));
+  expect([page(0), page(3)]).toEqual([{ notFound: true }, { props: 3 }]);
+});
+
+// `matches!` of a kind's literal says the literal: `x === "a"` holds of no
+// other kind, nor of `null`, so neither `typeof` nor `!= null` is said, and
+// what's tested once is read where it's tested, as react.dev's Link tests
+// `child.type.mdxName === "inlineCode"`. A temporary with a destructor
+// stays in its `const`, which its drop names.
+test("matches! of a kind's literal tests the value alone, where it's read", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("matches-literal");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Kind, Unknown, classify};
+pub fn is_code(value: &Unknown) -> bool {
+    matches!(js::get(value, "mdxName").map(classify), Some(Kind::String("inlineCode")))
+}
+pub fn is_text(value: Option<&Unknown>) -> bool {
+    matches!(value.map(classify), Some(Kind::String("inlineCode")))
+}
+pub fn kind_is(value: &Unknown) -> bool {
+    matches!(classify(value), Kind::String("inlineCode"))
+}
+pub fn listed(value: Option<&Unknown>) -> u32 {
+    if let Some(value) = value
+        && matches!(classify(value), Kind::Array(_))
+    {
+        1
+    } else {
+        0
+    }
+}
+pub fn is_string(value: &Unknown) -> bool {
+    matches!(js::get(value, "mdxName").map(classify), Some(Kind::String(_)))
+}
+pub struct Loud(pub u32);
+impl Drop for Loud {
+    fn drop(&mut self) {}
+}
+fn make(n: u32) -> Loud {
+    Loud(n)
+}
+pub fn is_three(n: u32) -> bool {
+    matches!(make(n).0, 3)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('export function is_code(value) {\n  return value.mdxName === "inlineCode";\n}');
+  expect(js).toContain('export function is_text(value) {\n  return value === "inlineCode";\n}');
+  expect(js).toContain('export function kind_is(value) {\n  return value === "inlineCode";\n}');
+  // An array is never `null`: `Array.isArray` alone says it.
+  expect(js).toContain("export function listed(value) {\n  if (Array.isArray(value)) {");
+  expect(js).toContain('export function is_string(value) {\n  return typeof value.mdxName === "string";\n}');
+  const lib = await import(join(dir, "lib.js"));
+  const values = [{ mdxName: "inlineCode" }, { mdxName: "pre" }, { mdxName: null }, {}, { mdxName: 5 }];
+  expect(values.map(lib.is_code)).toEqual([true, false, false, false, false]);
+  expect(values.map((v) => lib.is_string(v))).toEqual([true, true, false, false, false]);
+  expect(["inlineCode", "pre", 5, null, undefined].map((v) => lib.is_text(v))).toEqual([true, false, false, false, false]);
+  expect(["inlineCode", "pre", 5, {}].map((v) => lib.kind_is(v))).toEqual([true, false, false, false]);
+  expect([lib.is_three(3), lib.is_three(4)]).toEqual([true, false]);
+  expect([[1], undefined, null, "a"].map((v) => lib.listed(v))).toEqual([1, 0, 0, 0]);
+});
+
+// ADR 0020: only a mutated type is copied, and that's decided per type: a
+// mutated `Pair<u32>` isn't a reason to copy a `Pair<bool>`. A generic
+// function that mutates `Holder<T>` may mutate any `Holder<..>`, though.
+test("copies are made for the mutated instantiations of a generic type only", async () => {
+  const { fixture, compiler } = await import("./support");
+  const { writeFileSync } = await import("node:fs");
+  const dir = fixture("copies");
+  writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy)]
+pub struct Pair<T: Copy> {
+    pub a: T,
+    pub b: T,
+}
+
+#[derive(Clone, Copy)]
+pub struct Holder<T: Copy> {
+    pub value: T,
+}
+
+pub fn bumped(p: Pair<u32>) -> (Pair<u32>, Pair<u32>) {
+    let mut q = p;
+    q.a += 1;
+    (p, q)
+}
+
+pub fn twice(p: Pair<bool>) -> (Pair<bool>, Pair<bool>) {
+    let q = p;
+    (p, q)
+}
+
+pub fn set<T: Copy>(holder: &mut Holder<T>, value: T) {
+    holder.value = value;
+}
+
+pub fn both(h: Holder<bool>) -> (Holder<bool>, Holder<bool>) {
+    let mut g = h;
+    set(&mut g, !h.value);
+    (h, g)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = await Bun.file(join(dir, "lib.js")).text();
+  expect(js).toContain("export function bumped(p) {\n  const q = { ...p };");
+  expect(js).toContain("export function twice(p) {\n  const q = p;");
+  expect(js).toContain("export function both(h) {\n  const g = { ...h };");
+  const module = await import(join(dir, "lib.js"));
+  expect(module.bumped({ a: 1, b: 2 })).toEqual([{ a: 1, b: 2 }, { a: 2, b: 2 }]);
+  expect(module.twice({ a: true, b: false })).toEqual([{ a: true, b: false }, { a: true, b: false }]);
+  expect(module.both({ value: true })).toEqual([{ value: true }, { value: false }]);
+});
+
+// A JS module's namespace, `#*.Root`, whose bindings a Rust module holds,
+// is imported by that module's name, as react.dev's BrandMenu has
+// `import * as ContextMenu` and `<ContextMenu.Root>`.
+// A closure that only spawns an async block is an async arrow, as
+// react.dev's BrandMenu writes `onSelect={async () => { await
+// navigator.clipboard.writeText(..) }}`: it starts the same, and gives
+// back a promise where nothing reads its `()` (ADR 0257).
+test("a closure that only spawns an async block is an async arrow", async () => {
+  const dir = fixture("spawning-closure");
+  writeFileSync(join(dir, "copy.js"), "export const copied = [];\nexport async function copy(text) { copied.push(text); }\n");
+  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
+    #[link_name = "./copy.js#copy"]
+    safe fn copy(text: &str) -> js::Promise<()>;
+}
+
+pub fn handler() -> Box<dyn Fn()> {
+    Box::new(|| {
+        js::spawn(Box::new(async {
+            copy("#58C4DC").await;
+        }))
+    })
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('return async () => {\n    await copy("#58C4DC");\n  };');
+  const lib = await import(join(dir, "lib.js"));
+  const { copied } = await import(join(dir, "copy.js"));
+  lib.handler()();
+  expect(copied).toEqual(["#58C4DC"]);
+});
+
+// ADR 0266: text is falsy in JS only where it's empty, so text an option
+// keeps where it isn't, `filter(|s| !s.is_empty())`, then another's or a
+// default, is JS's `||`: `meta.title || route?.title || ""`, as react.dev's
+// Page writes it. An array, which is truthy empty, isn't.
+test("text kept where it isn't empty, or another, is ||", async () => {
+  const dir = fixture("text-or");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Meta<'a> {
+    pub title: Option<&'a str>,
+}
+
+pub struct Route {
+    pub title: String,
+}
+
+pub fn title<'a>(meta: &Meta<'a>, route: Option<&'a Route>) -> &'a str {
+    (meta.title.filter(|title| !title.is_empty()))
+        .or(route.map(|route| route.title.as_str()).filter(|title| !title.is_empty()))
+        .unwrap_or("")
+}
+
+pub fn items(list: Option<Vec<u32>>) -> Vec<u32> {
+    list.filter(|list| !list.is_empty()).unwrap_or(vec![1])
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('return meta.title || route?.title || "";');
+  expect(js).not.toContain("list ||");
+  const { title, items } = await import(join(dir, "lib.js"));
+  expect([title({ title: "" }, { title: "R" }), title({}, undefined), title({ title: "M" }, { title: "R" }), title({ title: "" }, { title: "" })]).toEqual(["R", "", "M", ""]);
+  expect([items([]), items([2]), items(undefined)]).toEqual([[1], [2], [1]]);
+});
+
+// ADR 0264: a fieldless variant is its name (ADR 0013), so a `match` giving
+// each variant its own name is what's matched, and a function that gives
+// back what it's given, its argument: `/images/og-${section}.png`, as
+// react.dev's Page writes it. One giving another name is a conditional.
+test("an enum's own names are the enum", async () => {
+  const dir = fixture("enum-names");
+  writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy, PartialEq)]
+pub enum Section {
+    #[cfg_attr(rust_js, rust_js::name = "learn")]
+    Learn,
+    #[cfg_attr(rust_js, rust_js::name = "blog")]
+    Blog,
+}
+
+impl Section {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Section::Learn => "learn",
+            Section::Blog => "blog",
+        }
+    }
+
+    pub fn heading(self) -> &'static str {
+        match self {
+            Section::Learn => "learn",
+            Section::Blog => "news",
+        }
+    }
+}
+
+pub fn image(section: Section) -> String {
+    format!("/images/og-{}.png", section.as_str())
+}
+
+pub fn title(section: Section) -> String {
+    format!("{} page", section.heading())
+}
+
+// Mapped by it, an option's is the option, as react.dev's Page keys its
+// SidebarNav, \`key={section}\`.
+pub fn key(section: Option<Section>) -> Option<&'static str> {
+    section.map(Section::as_str)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("as_str(section) {\n    return section;\n  }");
+  expect(js).toContain("return `/images/og-${section}.png`;");
+  expect(js).toContain("Section.heading(section)");
+  expect(js).toContain("export function key(section) {\n  return section;\n}");
+  const { image, title } = await import(join(dir, "lib.js"));
+  expect([image("learn"), image("blog"), title("learn"), title("blog")]).toEqual(["/images/og-learn.png", "/images/og-blog.png", "learn page", "news page"]);
+});
+
+// ADR 0238: a `String` kept for good, `.leak()`, is the string itself, as
+// react.dev's Page gives Seo the image it makes for a component's
+// `'static` props: JS frees nothing itself.
+test("a leaked String is the string", async () => {
+  const dir = fixture("string-leak");
+  writeFileSync(join(dir, "lib.rs"), `pub fn named(n: u32) -> &'static str {
+    format!("item-{n}").leak()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return `item-${n}`;");
+  const { named } = await import(join(dir, "lib.js"));
+  expect(named(3)).toBe("item-3");
+});
+
+// A struct taken apart through a shared reference is JS's destructuring,
+// `const { errorMessage, errorCode } = useErrorDecoderParams();`, as
+// react.dev's ErrorDecoder has it: what's borrowed can't change while it
+// is (ADR 0244). A `Cell`, which can, is the one JS object either way.
+test("a struct taken apart through a reference is destructured", async () => {
+  const dir = fixture("ref-destructure");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+pub struct Params {
+    pub message: Option<String>,
+    pub code: Option<String>,
+}
+
+pub struct Counter {
+    pub count: Cell<u32>,
+    pub label: String,
+}
+
+fn params() -> &'static Params {
+    Box::leak(Box::new(Params { message: Some("m".to_string()), code: None }))
+}
+
+fn first(counter: &Counter) -> &Counter {
+    counter
+}
+
+pub fn described() -> String {
+    let Params { message, code } = params();
+    format!("{message:?} {code:?}")
+}
+
+pub fn counted() -> u32 {
+    let counter = Counter { count: Cell::new(1), label: "ab".to_string() };
+    let Counter { count, label } = first(&counter);
+    count.set(count.get() + label.len() as u32);
+    counter.count.get()
+}
+
+// A closure taking a pair apart, inlined where it's called, is its part.
+pub fn found(people: Vec<(String, u32)>) -> Option<usize> {
+    people.binary_search_by_key(&57, |&(_, age)| age).ok()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const { message, code } = params();");
+  const lib = await import(join(dir, "lib.js"));
+  expect(js).toContain("$cmp(item[1], 57)");
+  expect([lib.described(), lib.counted(), lib.found([["a", 50], ["b", 57]])]).toEqual(['Some("m") None', 3, 1]);
+});
+
+// An `if` whose branch leaves has no `else`: what follows it runs only when
+// the branch doesn't, as JS writes it and react.dev's Link has it, `if (..)
+// { return cloneElement(..); } return child;` (ADR 0237). A branch that
+// doesn't leave keeps its `else`.
+test("an if whose branch returns has no else", async () => {
+  const dir = fixture("no-else-return");
+  writeFileSync(join(dir, "lib.rs"), `pub fn classify(n: i32) -> &'static str {
+    if n < 0 {
+        println!("neg");
+        "neg"
+    } else if n == 0 {
+        println!("zero");
+        "zero"
+    } else {
+        println!("pos");
+        "pos"
+    }
+}
+// A branch that leaves by an inner \`if\` both of whose branches do.
+pub fn nested(a: bool, b: bool) -> u32 {
+    if a {
+        if b {
+            println!("ab");
+            1
+        } else {
+            println!("a");
+            2
+        }
+    } else {
+        println!("none");
+        3
+    }
+}
+pub fn counted(n: i32) -> i32 {
+    let mut total = 0;
+    if n > 0 {
+        total += n;
+    } else {
+        total -= n;
+    }
+    total
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('  if (n < 0) {\n    console.log("neg");\n    return "neg";\n  }\n  if (n === 0) {\n    console.log("zero");\n    return "zero";\n  }\n  console.log("pos");\n  return "pos";\n}');
+  expect(js).toContain("} else {\n    total = (total - n) | 0;");
+  expect(js).toContain('    console.log("a");\n    return 2;\n  }\n  console.log("none");\n  return 3;\n}');
+  const lib = await import(join(dir, "lib.js"));
+  const log = console.log;
+  console.log = () => {};
+  try {
+    expect([lib.classify(-1), lib.classify(0), lib.classify(3), lib.counted(2), lib.counted(-2)]).toEqual(["neg", "zero", "pos", 2, 2]);
+    expect([lib.nested(true, true), lib.nested(true, false), lib.nested(false, true)]).toEqual([1, 2, 3]);
+  } finally {
+    console.log = log;
+  }
+});
+
+// A `match` of a fieldless enum whose arms each give one table's field named
+// as their variant is the table read by the value, as react.dev's
+// ExpandableCallout reads `variantMap[type]`; an arm of another field keeps
+// the conditional. The corpus's `match_index` runs it beside native Rust.
+test("a match giving a table's field named as each variant reads the table by it", () => {
+  const dir = fixture("match-index");
+  writeFileSync(join(dir, "lib.rs"), readFileSync(join(root, "test/corpus/match_index.rs"), "utf8").replace("fn main()", "pub fn main()"));
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("function variant(kind) {\n  return VARIANTS[kind];\n}");
+  expect(js).toContain("function picked(i) {\n  return VARIANTS[pick(i)];\n}");
+  expect(js).toContain("const chosen = VARIANTS[kind];\n  return chosen.title;");
+  expect(js).toContain('if (kind === "note") {\n    tmp = VARIANTS.pitfall;');
+  expect(js).toContain('tmp = OTHER.pitfall;');
+});
+
+// `let Some(href) = href.filter(|href| !href.is_empty()) else { .. }` tests
+// what the filter does and names `href`, with no `const` of the `Option`:
+// of text, which is falsy only empty, `if (!href)`, as react.dev's Link
+// has it. An array, which is truthy empty, keeps its `length` test, and
+// what's bound of a variable that changes is a copy.
+test("a let-else of an Option's filter tests the filter, and binds what it kept", async () => {
+  const dir = fixture("let-else-filter");
+  writeFileSync(join(dir, "lib.rs"), `pub fn link(href: Option<&str>) -> String {
+    let Some(href) = href.filter(|href| !href.is_empty()) else {
+        return "none".to_string();
+    };
+    href.to_uppercase()
+}
+pub fn named(name: Option<String>) -> String {
+    if let Some(n) = name.filter(|n| !n.is_empty()) { n.to_uppercase() } else { "anon".to_string() }
+}
+pub fn listed(items: Option<Vec<u32>>) -> u32 {
+    let Some(items) = items.filter(|items| !items.is_empty()) else {
+        return 0;
+    };
+    items[0]
+}
+pub fn later(mut href: Option<&str>) -> String {
+    let Some(h) = href.filter(|h| !h.is_empty()) else {
+        return "none".to_string();
+    };
+    href = Some("changed");
+    format!("{h} {}", href.unwrap_or_default())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('export function link(href) {\n  if (!href) {\n    return "none";\n  }\n  return href.toUpperCase();\n}');
+  expect(js).toContain('if (name) {\n    return name.toUpperCase();');
+  expect(js).toContain("if (!(items != null && items.length !== 0)) {\n    return 0;\n  }\n  return $index(items, 0);");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.link("/a"), lib.link(""), lib.link(undefined)]).toEqual(["/A", "none", "none"]);
+  expect([lib.named("ann"), lib.named(""), lib.named(undefined)]).toEqual(["ANN", "anon", "anon"]);
+  expect([lib.listed([7]), lib.listed([]), lib.listed(undefined)]).toEqual([7, 0, 0]);
+  expect([lib.later("/a"), lib.later("")]).toEqual(["/a changed", "none"]);
+});
+
+// `Some(Direction::Up)` of an `Option` of a unit variant is `d === "Up"`:
+// `undefined === "Up"` is false too, so it's said without `d != null`, as
+// a constant is. Where the variant is an object's, `d.TAG`, it's needed.
+test("a Some of a unit variant is tested as the variant, without a null test", async () => {
+  const dir = fixture("option-unit-variant");
+  writeFileSync(join(dir, "lib.rs"), 'pub enum Direction {\n    Up,\n    Down,\n}\npub enum Shape {\n    Dot,\n    Line(u32),\n}\npub fn turn(d: Option<Direction>) -> u32 {\n    match d {\n        Some(Direction::Up) => 1,\n        Some(Direction::Down) => 2,\n        None => 0,\n    }\n}\npub fn size(s: Option<Shape>) -> u32 {\n    match s {\n        Some(Shape::Dot) => 1,\n        Some(Shape::Line(n)) => n,\n        None => 0,\n    }\n}\n');
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect([js.includes('if (d === "Up")'), js.includes("d != null"), js.includes('if (s === "Dot")'), js.includes("s != null && s.TAG")]).toEqual([true, false, true, true]);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.turn("Up"), lib.turn("Down"), lib.turn(undefined), lib.size("Dot"), lib.size({ TAG: "Line", _0: 7 }), lib.size(undefined)]).toEqual([1, 2, 0, 1, 7, 0]);
+});
+
+// A value with a destructor moved before anything in its scope can leave,
+// `hold(l)`'s into what it returns, is never the scope's to drop: no flag,
+// no `try` (ADR 0197), as react.dev's ExternalLink moves its children. One
+// moved after what may panic keeps them.
+test("a value moved before anything can leave needs no drop of its scope", async () => {
+  const dir = fixture("moved-first");
+  writeFileSync(join(dir, "lib.rs"), 'pub struct Loud(pub u32);\nimpl Drop for Loud {\n    fn drop(&mut self) {}\n}\npub struct Holder {\n    pub l: Loud,\n}\npub fn hold(l: Loud) -> Holder {\n    Holder { l }\n}\npub fn checked(l: Loud, n: u32) -> Holder {\n    assert!(n > 0);\n    Holder { l }\n}\n');
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function hold(l) {\n  return { l };\n}");
+  expect(js).toContain("l$live = false;");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.hold([1]).l[0], lib.checked([2], 1).l[0]]).toEqual([1, 2]);
+});
+
+// One whose arms bind what their subject holds, named where it is, is a
+// conditional too (ADR 0209), as react.dev's DocsFooter picks a link or a
+// `<div />`. What needs a `const` of its own is statements, as before.
+test("a two-arm match whose arms bind places is a conditional expression", async () => {
+  const dir = fixture("match-conditional-binds");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Item {
+    pub title: String,
+    pub path: Option<String>,
+}
+pub fn path(item: Option<&Item>) -> &str {
+    let label = match item {
+        Some(Item { path: Some(path), .. }) => path.as_str(),
+        _ => "none",
+    };
+    label
+}
+// The second arm's too.
+pub fn either(r: Result<u32, u32>) -> u32 {
+    let v = match r {
+        Ok(n) => n,
+        Err(n) => n + 1,
+    };
+    v
+}
+// A guard reads what its arm binds.
+pub fn titled(item: Option<&Item>) -> &str {
+    let label = match item {
+        Some(item) if item.path.is_some() => item.title.as_str(),
+        _ => "untitled",
+    };
+    label
+}
+// What's owned has a \`const\` of its own, dropped where Rust drops it.
+pub struct Loud(pub u32);
+impl Drop for Loud {
+    fn drop(&mut self) {
+        println!("drop {}", self.0);
+    }
+}
+pub fn owned(some: bool) -> u32 {
+    let l = if some { Some(Loud(7)) } else { None };
+    let n = match l {
+        Some(l) => l.0,
+        None => 0,
+    };
+    println!("after");
+    n
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('const label = item != null && item.path != null ? item.path : "none";');
+  expect(js).toContain('const v = r.TAG === "Ok" ? r._0 : (r._0 + 1) >>> 0;');
+  expect(js).toContain('const label = item != null && item.path != null ? item.title : "untitled";');
+  expect(js).not.toContain("let tmp");
+  const lib = await import(join(dir, "lib.js"));
+  const item = { title: "T", path: "/p" };
+  expect([lib.path(item), lib.path({ title: "T" }), lib.path(undefined)]).toEqual(["/p", "none", "none"]);
+  expect([lib.either({ TAG: "Ok", _0: 1 }), lib.either({ TAG: "Err", _0: 1 })]).toEqual([1, 2]);
+  expect([lib.titled(item), lib.titled({ title: "T" })]).toEqual(["T", "untitled"]);
+  const logs: string[] = [];
+  const log = console.log;
+  console.log = (line: string) => logs.push(line);
+  try {
+    expect([lib.owned(true), lib.owned(false)]).toEqual([7, 0]);
+  } finally {
+    console.log = log;
+  }
+  expect(logs).toEqual(["drop 7", "after", "after"]);
+});
+
+// A unit struct named `#[rust_js::name]` is that string, as a fieldless
+// variant is (ADR 0013): `webapi`'s event names, `Click`, are types whose
+// value is `"click"` (ADR 0223). One without a name holds nothing.
+test("a named unit struct is its name", async () => {
+  const dir = fixture("named-unit-struct");
+  writeFileSync(join(dir, "lib.rs"), `#[rust_js::name = "click"]
+pub struct Click;
+pub struct Marker;
+const CLICK: Click = Click;
+fn pass<E>(event: E) -> E {
+    event
+}
+pub fn click() -> Click {
+    Click
+}
+pub fn passed() -> Click {
+    pass(Click)
+}
+pub fn constant() -> Click {
+    CLICK
+}
+pub fn marker() -> Marker {
+    Marker
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('return "click";');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.click(), lib.passed(), lib.constant(), lib.marker()]).toEqual(["click", "click", "click", undefined]);
+});
+
+// A value shown is only read, through the reference `format_args!` takes,
+// which nothing can change before it's shown: a `Copy` one changed elsewhere
+// is shown in place, not copied first, as a read of it by value is (ADR 0020).
+test("a formatted value is read in place, not copied", async () => {
+  const dir = fixture("format-in-place");
+  writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy, Debug)]
+pub struct P {
+    pub x: i32,
+}
+pub fn show(mut p: P) -> String {
+    let q = p;
+    p.x += 1;
+    let all = [q, p];
+    format!("{q:?} {p:?} {all:?}")
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const q = { ...p };");
+  expect(js).toContain("${pDebug_fmt(q)} ${pDebug_fmt(p)} [${all.map((item) => pDebug_fmt(item))");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.show({ x: 1 })).toBe("P { x: 1 } P { x: 2 } [P { x: 1 }, P { x: 2 }]");
+});
+
+// A two-arm `match` as a value, its arms plain and binding nothing, is a
+// conditional, as a person writes it (ADR 0209): its subject in place
+// where the test reads it once, else in a `const` of its own.
+test("a two-arm match that's a value is a conditional expression", async () => {
+  const dir = fixture("match-conditional");
+  writeFileSync(join(dir, "lib.rs"), `pub enum Kind {
+    Primary,
+    Secondary,
+}
+pub fn button_class(kind: Option<Kind>) -> &'static str {
+    let class = match kind.unwrap_or(Kind::Primary) {
+        Kind::Primary => "bg-link",
+        Kind::Secondary => "text-primary",
+    };
+    class
+}
+pub fn low(x: u32) -> &'static str {
+    let size = match x % 3 {
+        0 | 1 => "low",
+        _ => "high",
+    };
+    size
+}
+// A plain guard is the arm's test too.
+pub fn guarded(n: u32, flag: bool) -> &'static str {
+    let label = match n {
+        0 if flag => "flagged zero",
+        _ => "other",
+    };
+    label
+}
+// A &mut to a number, a cell, is tested by its value.
+pub fn zero(n: &mut i32) -> &'static str {
+    let label = match n {
+        &mut 0 => "zero",
+        _ => "other",
+    };
+    label
+}
+// A bool tested against true is the bool, as JS has it.
+pub fn emptiness(xs: Vec<u32>) -> &'static str {
+    let label = match xs.is_empty() {
+        true => "empty",
+        false => "some",
+    };
+    label
+}
+pub fn toggle(flag: bool) -> &'static str {
+    let label = match flag {
+        false => "off",
+        true => "on",
+    };
+    label
+}
+// A first arm that takes everything is the value, its guard the test.
+#[allow(unreachable_patterns)]
+pub fn every(n: u32, flag: bool) -> &'static str {
+    let all = match n {
+        _ => "all",
+        1 => "one",
+    };
+    let guarded = match n {
+        _ if flag => "flag",
+        _ => "no flag",
+    };
+    if all == "all" { guarded } else { "never" }
+}
+// A subject with a destructor is dropped where Rust drops it.
+pub struct Loud(pub u32);
+impl Drop for Loud {
+    fn drop(&mut self) {
+        println!("drop {}", self.0);
+    }
+}
+pub fn dropped() -> &'static str {
+    let label = match Loud(1) {
+        Loud(1) => "one",
+        _ => "other",
+    };
+    println!("after");
+    label
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('(kind ?? "Primary") === "Primary" ? "bg-link" : "text-primary"');
+  expect(js).toContain('match === 0 || match === 1 ? "low" : "high"');
+  expect(js).toContain('const label = n === 0 && flag ? "flagged zero" : "other";');
+  expect(js).toContain('const label = n.value === 0 ? "zero" : "other";');
+  expect(js).toContain('const label = xs.length === 0 ? "empty" : "some";');
+  expect(js).toContain('const label = !flag ? "off" : "on";');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.button_class(undefined), lib.button_class("Secondary"), lib.low(4), lib.low(5)]).toEqual(["bg-link", "text-primary", "low", "high"]);
+  expect([lib.guarded(0, true), lib.guarded(0, false), lib.guarded(1, true)]).toEqual(["flagged zero", "other", "other"]);
+  expect([lib.zero({ value: 0 }), lib.zero({ value: 3 })]).toEqual(["zero", "other"]);
+  expect([lib.every(1, true), lib.every(1, false)]).toEqual(["flag", "no flag"]);
+  expect([lib.emptiness([]), lib.emptiness([1])]).toEqual(["empty", "some"]);
+  expect([lib.toggle(false), lib.toggle(true)]).toEqual(["off", "on"]);
+  const logged: string[] = [];
+  const log = console.log;
+  console.log = (line: string) => logged.push(line);
+  try {
+    expect(lib.dropped()).toBe("one");
+  } finally {
+    console.log = log;
+  }
+  expect(logged).toEqual(["drop 1", "after"]);
+});
+
+// `Option::as_deref` of a `String` or a `Vec` is the option itself: a
+// `&str` is the string a `String` is, a slice the array (ADR 0211).
+test("Option::as_deref of a String or a Vec is the option itself", async () => {
+  const dir = fixture("option-as-deref");
+  writeFileSync(join(dir, "lib.rs"), `pub fn path_is(path: Option<String>, want: &str) -> bool {
+    path.as_deref() == Some(want)
+}
+pub fn first(items: Option<Vec<u32>>) -> Option<u32> {
+    items.as_deref().and_then(|items| items.first().copied())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toContain("as_deref");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.path_is("/learn", "/learn"), lib.path_is("/a", "/learn"), lib.path_is(undefined, "/learn")]).toEqual([true, false, false]);
+  expect([lib.first([4, 5]), lib.first([]), lib.first(undefined)]).toEqual([4, undefined, undefined]);
 });

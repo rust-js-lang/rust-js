@@ -224,7 +224,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "                    Some(test) if names_value(&test) => test,",
     replace: "                    Some(test) if false && names_value(&test) => test,",
-    tests: ["test/compiler.test.ts", "-t", "unit variant is tested as the variant"],
+    tests: ["test/lowering.test.ts", "-t", "unit variant is tested as the variant"],
   },
   {
     name: "rest-props-as-field",
@@ -264,7 +264,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "                1 => value,",
     replace: "                usize::MAX => value,",
-    tests: ["test/compiler.test.ts", "-t", "two-arm match"],
+    tests: ["test/lowering.test.ts", "-t", "two-arm match"],
   },
   {
     name: "conditional-match-guard-dropped",
@@ -272,7 +272,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "                true => Expr::bin(Op::And, test, guard.value),",
     replace: "                true => test,",
-    tests: ["test/compiler.test.ts", "-t", "two-arm match"],
+    tests: ["test/lowering.test.ts", "-t", "two-arm match"],
   },
   {
     name: "conditional-match-all-guard-dropped",
@@ -280,7 +280,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "                Some(guard) => self.expr(guard, out)?,",
     replace: "                Some(_) => Expr::bool(true),",
-    tests: ["test/compiler.test.ts", "-t", "two-arm match"],
+    tests: ["test/lowering.test.ts", "-t", "two-arm match"],
   },
   {
     name: "conditional-match-binding",
@@ -296,7 +296,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "                    js::ExprKind::Bool(true) if pat.ty.is_bool() => subject.clone(),",
     replace: "                    js::ExprKind::Bool(true) if false => subject.clone(),",
-    tests: ["test/compiler.test.ts", "-t", "two-arm match"],
+    tests: ["test/lowering.test.ts", "-t", "two-arm match"],
   },
   {
     name: "bool-pattern-compared-to-false",
@@ -304,7 +304,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "                    js::ExprKind::Bool(false) if pat.ty.is_bool() => Expr::unary(UnaryOp::Not, subject.clone()),",
     replace: "                    js::ExprKind::Bool(false) if false => Expr::unary(UnaryOp::Not, subject.clone()),",
-    tests: ["test/compiler.test.ts", "-t", "two-arm match"],
+    tests: ["test/lowering.test.ts", "-t", "two-arm match"],
   },
   {
     name: "prop-default-not-written",
@@ -336,7 +336,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "            } if self.untagged(pat.ty).is_some() => {\n",
     replace: "            } if false => {\n",
-    tests: ["test/compiler.test.ts", "-t", "untagged enum"],
+    tests: ["test/compiler.test.ts", "test/lowering.test.ts", "-t", "untagged enum"],
   },
   {
     name: "match-binding-statements",
@@ -344,7 +344,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "                    in_place &= place\n",
     replace: "                    in_place &= false && place\n",
-    tests: ["test/compiler.test.ts", "-t", "match whose arms bind places"],
+    tests: ["test/lowering.test.ts", "-t", "match whose arms bind places"],
   },
   {
     name: "match-owner-in-place",
@@ -352,7 +352,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "                        && !(matches!(by_ref, ByRef::No) && self.has_drops(ty));\n",
     replace: "                        && !(matches!(by_ref, ByRef::No) && self.has_drops(ty) && false);\n",
-    tests: ["test/compiler.test.ts", "-t", "match whose arms bind places"],
+    tests: ["test/lowering.test.ts", "-t", "match whose arms bind places"],
   },
   {
     name: "match-second-arm-unbound",
@@ -444,7 +444,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "if !tests.first().is_some_and(|test| says_kind(test, subject, &kind)) {",
     replace: "if true {",
-    tests: ["test/compiler.test.ts", "-t", "kind's literal"],
+    tests: ["test/lowering.test.ts", "-t", "kind's literal"],
   },
   {
     name: "matches-subject-kept",
@@ -452,7 +452,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "Some(read_in_place(test, out, start))",
     replace: "Some(test)",
-    tests: ["test/compiler.test.ts", "-t", "kind's literal"],
+    tests: ["test/lowering.test.ts", "-t", "kind's literal"],
   },
   {
     name: "matches-drops-read-in-place",
@@ -460,7 +460,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: " && !self.makes_drops(scrutinee)",
     replace: "",
-    tests: ["test/compiler.test.ts", "-t", "kind's literal"],
+    tests: ["test/lowering.test.ts", "-t", "kind's literal"],
   },
   {
     name: "some-typeof-null-tested",
@@ -468,7 +468,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "Some(test) => and(present, test),",
     replace: "Some(test) => Expr::bin(Op::And, present, test),",
-    tests: ["test/compiler.test.ts", "-t", "kind's literal"],
+    tests: ["test/lowering.test.ts", "-t", "kind's literal"],
   },
   {
     name: "filter-option-in-const",
@@ -476,7 +476,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "let (test, kept) = super::options::filtered(value)?;",
     replace: "let (test, kept) = None::<(Expr, Expr)>?;",
-    tests: ["test/compiler.test.ts", "-t", "let-else of an Option's filter"],
+    tests: ["test/lowering.test.ts", "-t", "let-else of an Option's filter"],
   },
   {
     name: "filter-binding-aliases-changed",
@@ -484,7 +484,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "let stable = matches!(&kept.kind, js::ExprKind::Var(name) if self.plain_value(name));",
     replace: "let stable = true;",
-    tests: ["test/compiler.test.ts", "-t", "let-else of an Option's filter"],
+    tests: ["test/lowering.test.ts", "-t", "let-else of an Option's filter"],
   },
   {
     name: "match-index-unmade",
@@ -492,7 +492,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "        if arms.len() < 2 {\n            return Ok(None);\n        }\n        const SUBJECT: &str = \"$subject\";\n        let place = self.stable_place(scrutinee);",
     replace: "        if true {\n            return Ok(None);\n        }\n        const SUBJECT: &str = \"$subject\";\n        let place = self.stable_place(scrutinee);",
-    tests: ["test/compiler.test.ts", "-t", "reads the table by it"],
+    tests: ["test/lowering.test.ts", "-t", "reads the table by it"],
   },
   {
     name: "match-index-any-field",
@@ -500,7 +500,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "if key != *name || table.as_ref()",
     replace: "if table.as_ref()",
-    tests: ["test/compiler.test.ts", "-t", "reads the table by it"],
+    tests: ["test/lowering.test.ts", "-t", "reads the table by it"],
   },
   {
     name: "match-index-any-table",
@@ -508,7 +508,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "table.as_ref().is_some_and(|table| !same_place(table, &of))",
     replace: "false",
-    tests: ["test/compiler.test.ts", "-t", "reads the table by it"],
+    tests: ["test/lowering.test.ts", "-t", "reads the table by it"],
   },
   {
     name: "let-match-index-unmade",
@@ -516,7 +516,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "                                self.match_index(scrutinee, &arms, out)?\n",
     replace: "                                let _ = (scrutinee, arms);\n                                None\n",
-    tests: ["test/compiler.test.ts", "-t", "reads the table by it"],
+    tests: ["test/lowering.test.ts", "-t", "reads the table by it"],
   },
   {
     name: "ref-pattern-kept",
@@ -524,7 +524,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "        let pat = without_refs(pat);\n",
     replace: "\n",
-    tests: ["test/compiler.test.ts","-t","taken apart through a reference"],
+    tests: ["test/lowering.test.ts", "-t", "taken apart through a reference"],
   },
   {
     name: "ref-binding-aliased",
@@ -532,7 +532,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "                } if self.unsupported_part(ty).is_none() => Some((i, Some((name, var, false)))),",
     replace: "                } if false => Some((i, Some((name, var, false)))),",
-    tests: ["test/compiler.test.ts","-t","taken apart through a reference"],
+    tests: ["test/lowering.test.ts", "-t", "taken apart through a reference"],
   },
   {
     name: "unchanging-part-spilled",
@@ -572,7 +572,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "&& text.as_str() == name.as_str()",
     replace: "&& false",
-    tests: ["test/compiler.test.ts", "-t", "enum's own names"],
+    tests: ["test/lowering.test.ts", "-t", "enum's own names"],
   },
   {
     name: "other-name-call-dropped",
@@ -580,7 +580,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "if text.as_str() == super::bindings::variant_name(self.tcx, adt.variant(variant_index)))))",
     replace: "if true || text.as_str() == super::bindings::variant_name(self.tcx, adt.variant(variant_index)))))",
-    tests: ["test/compiler.test.ts", "-t", "enum's own names"],
+    tests: ["test/lowering.test.ts", "-t", "enum's own names"],
   },
   {
     name: "matched-untagged-alike-allowed",

@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/options.rs",
     find: "} else if let Some(text) = text_or(&option) {",
     replace: "} else if let Some(text) = text_or(&option).filter(|_| false) {",
-    tests: ["test/compiler.test.ts", "-t", "text kept where it isn't empty"],
+    tests: ["test/lowering.test.ts", "-t", "text kept where it isn't empty"],
   },
   {
     name: "text-or-chain-unread",
@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/options.rs",
     find: "return Some(Expr::bin(Op::Or, (**first).clone(), text_or(rest)?));",
     replace: "return None;",
-    tests: ["test/compiler.test.ts", "-t", "text kept where it isn't empty"],
+    tests: ["test/lowering.test.ts", "-t", "text kept where it isn't empty"],
   },
   {
     name: "own-name-map-called",
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/options.rs",
     find: "                    && (self.gives_own_name(function)\n",
     replace: "                    && (false && self.gives_own_name(function)\n",
-    tests: ["test/compiler.test.ts", "-t", "enum's own names"],
+    tests: ["test/lowering.test.ts", "-t", "enum's own names"],
   },
   {
     name: "text-or-of-truthy-unseen",
@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/options.rs",
     find: "    let tested = truthy_of(test)?;\n",
     replace: "    let tested = truthy_of(test).filter(|_| false)?;\n",
-    tests: ["test/compiler.test.ts", "-t", "text kept where it isn't empty"],
+    tests: ["test/lowering.test.ts", "-t", "text kept where it isn't empty"],
   },
   {
     name: "filtered-of-truthy-unseen",
@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/options.rs",
     find: "                            && let Some(chain) = optional_chain(&option, b, p)\n",
     replace: "                            && let Some(chain) = optional_chain(&option, b, p).filter(|_| false)\n",
-    tests: ["test/compiler.test.ts", "-t", "mapped to a property is an optional chain"],
+    tests: ["test/lowering.test.ts", "-t", "mapped to a property is an optional chain"],
   },
   {
     name: "map-of-value-itself-called",

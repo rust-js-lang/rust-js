@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "    if object != \"Object\" || name != \"fromEntries\" {",
     replace: "    if true || object != \"Object\" || name != \"fromEntries\" {",
-    tests: ["test/compiler.test.ts", "-t", "a dictionary of entries written out"],
+    tests: ["test/lowering.test.ts", "-t", "a dictionary of entries written out"],
   },
   {
     name: "entries-proto-literal",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "        if given || key == \"__proto__\" || matches!(value.kind, ExprKind::Undefined) {",
     replace: "        if given || matches!(value.kind, ExprKind::Undefined) {",
-    tests: ["test/compiler.test.ts", "-t", "a dictionary of entries written out"],
+    tests: ["test/lowering.test.ts", "-t", "a dictionary of entries written out"],
   },
   {
     name: "entries-twice-literal",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "        if given || key == \"__proto__\" || matches!(value.kind, ExprKind::Undefined) {",
     replace: "        if key == \"__proto__\" || matches!(value.kind, ExprKind::Undefined) {",
-    tests: ["test/compiler.test.ts", "-t", "a dictionary of entries written out"],
+    tests: ["test/lowering.test.ts", "-t", "a dictionary of entries written out"],
   },
   {
     name: "entries-undefined-literal",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "        if given || key == \"__proto__\" || matches!(value.kind, ExprKind::Undefined) {",
     replace: "        if given || key == \"__proto__\" {",
-    tests: ["test/compiler.test.ts", "-t", "a dictionary of entries written out"],
+    tests: ["test/lowering.test.ts", "-t", "a dictionary of entries written out"],
   },
   {
     name: "handler-of-one-call-blocked",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "    try_catches(body);\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "-t", "a JS error is shown"],
+    tests: ["test/bindings.test.ts", "-t", "a JS error is shown"],
   },
   {
     name: "try-with-error-read",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "        || js::mentions_in(failed, result) > 0\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "-t", "a JS error is shown"],
+    tests: ["test/bindings.test.ts", "-t", "a JS error is shown"],
   },
   {
     name: "try-around-more",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "        StmtKind::Return(Some(e)) if of_result(e, \"_0\") => StmtKind::Return(Some(call.clone())),\n",
     replace: "        StmtKind::Return(Some(_)) => StmtKind::Return(Some(call.clone())),\n",
-    tests: ["test/compiler.test.ts", "-t", "a JS error is shown"],
+    tests: ["test/bindings.test.ts", "-t", "a JS error is shown"],
   },
   {
     name: "coalescing-if",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "        if let Some(coalesced) = coalescing(stmt) {\n",
     replace: "        if let Some(coalesced) = coalescing(stmt).filter(|_| false) {\n",
-    tests: ["test/compiler.test.ts", "-t", "only read and set is the module's let"],
+    tests: ["test/modules.test.ts", "-t", "only read and set is the module's let"],
   },
   {
     name: "coalescing-another",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "    if !matches!(null.kind, ExprKind::Null) || !js::same_path(tested, target) {\n",
     replace: "    if !matches!(null.kind, ExprKind::Null) {\n",
-    tests: ["test/compiler.test.ts", "-t", "only read and set is the module's let"],
+    tests: ["test/modules.test.ts", "-t", "only read and set is the module's let"],
   },
   {
     name: "shadow-kept",
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "        shadows(&mut function.body, None);\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "-t", "shadowed by its own value"],
+    tests: ["test/lowering.test.ts", "-t", "shadowed by its own value"],
   },
   {
     name: "alias-of-another-name",
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "                        && alias\n                            .strip_prefix(of.as_str())\n                            .and_then(|rest| rest.strip_prefix('$'))\n                            .is_some_and(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()))\n",
     replace: "                        && !alias.is_empty()\n",
-    tests: ["test/compiler.test.ts", "-t", "shadowed by its own value"],
+    tests: ["test/lowering.test.ts", "-t", "shadowed by its own value"],
   },
   {
     name: "shadow-in-loop-aliased",
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "(sets.is_empty() || !looped && sets.iter().all(|&set| set < at))",
     replace: "(sets.is_empty() || sets.iter().all(|&set| set < at))",
-    tests: ["test/compiler.test.ts", "-t", "shadowed by its own value"],
+    tests: ["test/lowering.test.ts", "-t", "shadowed by its own value"],
   },
   {
     name: "lets-kept",
@@ -136,7 +136,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "            if !props.iter().any(|p| matches!(p, Prop::Spread(_))) {\n",
     replace: "            if false {\n",
-    tests: ["test/compiler.test.ts", "-t", "literal None is left out"],
+    tests: ["test/lowering.test.ts", "-t", "literal None is left out"],
   },
   {
     name: "undefined-after-spread-dropped",
@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "            if !props.iter().any(|p| matches!(p, Prop::Spread(_))) {\n",
     replace: "            if true {\n",
-    tests: ["test/compiler.test.ts", "-t", "literal None is left out"],
+    tests: ["test/lowering.test.ts", "-t", "literal None is left out"],
   },
   {
     name: "closure-shadow-kept",
@@ -152,7 +152,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "                shadows(body, Some(&own));\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "-t", "shadowed by its own value"],
+    tests: ["test/lowering.test.ts", "-t", "shadowed by its own value"],
   },
   {
     name: "template-values-unprepared",

@@ -274,7 +274,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops.rs",
     find: "            .filter(|flag| cleared.contains(flag) && js::mentions_in(&body, flag) == 1 && declared(out, flag))",
     replace: "            .filter(|flag| false && cleared.contains(flag) && js::mentions_in(&body, flag) == 1 && declared(out, flag))",
-    tests: ["test/compiler.test.ts", "-t", "moved before anything can leave"],
+    tests: ["test/lowering.test.ts", "-t", "moved before anything can leave"],
   },
   {
     name: "untagged-drop-part",

@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis.rs",
     find: " && !bindings::is_mark(tcx, d.to_def_id())\n",
     replace: "\n",
-    tests: ["test/compiler.test.ts","-t","js::import"],
+    tests: ["test/modules.test.ts", "-t", "js::import"],
   },
   {
     name: "pretty-flag-off",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis.rs",
     find: "                    && !is_js_object_deref(tcx, parent)\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "-t", "untagged enum"],
+    tests: ["test/compiler.test.ts", "test/lowering.test.ts", "-t", "untagged enum"],
   },
   {
     name: "reexport-only-module-unwritten",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis.rs",
     find: "if (reexports || defaulted()) && seen_modules.insert(module)",
     replace: "if (false && reexports || defaulted()) && seen_modules.insert(module)",
-    tests: ["test/compiler.test.ts", "-t", "only pub uses"],
+    tests: ["test/modules.test.ts", "-t", "only pub uses"],
   },
   {
     name: "const-thread-local-init-unseen",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis.rs",
     find: "                .filter(|&d| matches!(tcx.def_kind(d), DefKind::Const { .. })),\n",
     replace: "                .filter(|&d| matches!(tcx.def_kind(d), DefKind::Const { .. }) && false),\n",
-    tests: ["test/compiler.test.ts", "-t", "only read and set is the module's let"],
+    tests: ["test/modules.test.ts", "-t", "only read and set is the module's let"],
   },
   {
     name: "default-only-module-fileless",
@@ -72,6 +72,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis.rs",
     find: "        let defaulted = || !bindings::default_exports(tcx, module).is_empty();\n",
     replace: "        let defaulted = || false;\n",
-    tests: ["test/compiler.test.ts", "-t", "default of another module"],
+    tests: ["test/modules.test.ts", "-t", "default of another module"],
   },
 ];

@@ -184,6 +184,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators.rs",
     find: "&& let Some(text) = super::options::text_or(&subject)",
     replace: "&& let Some(text) = super::options::text_or(&subject).filter(|_| false)",
-    tests: ["test/compiler.test.ts", "-t", "text kept where it isn't empty"],
+    tests: ["test/lowering.test.ts", "-t", "text kept where it isn't empty"],
   },
 ];

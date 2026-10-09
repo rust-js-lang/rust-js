@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/format_args.rs",
     find: "                *value = place;\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "-t", "read in place"],
+    tests: ["test/lowering.test.ts", "-t", "read in place"],
   },
   {
     name: "begin-panic-payload",

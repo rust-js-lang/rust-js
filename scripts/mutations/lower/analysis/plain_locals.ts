@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/plain_locals.rs",
     find: "        .filter(|&key| !tcx.visibility(key).is_public())\n",
     replace: "        .filter(|_| false)\n",
-    tests: ["test/compiler.test.ts", "-t", "only read and set is the module's"],
+    tests: ["test/modules.test.ts", "-t", "only read and set is the module's"],
   },
   {
     name: "other-module-local-unboxed",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/plain_locals.rs",
     find: "if !accessed.contains(&id) || tcx.parent_module_from_def_id(key) != module {",
     replace: "if !accessed.contains(&id) {",
-    tests: ["test/compiler.test.ts", "-t", "only read and set is the module's"],
+    tests: ["test/modules.test.ts", "-t", "only read and set is the module's"],
   },
   {
     name: "set-local-const",
@@ -24,6 +24,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/plain_locals.rs",
     find: "                if sets {\n",
     replace: "                if false && sets {\n",
-    tests: ["test/compiler.test.ts", "-t", "only read and set is the module's"],
+    tests: ["test/modules.test.ts", "-t", "only read and set is the module's"],
   },
 ];

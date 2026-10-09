@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bodies.rs",
     find: "            && gives_unit\n",
     replace: "            && gives_unit\n            && false\n",
-    tests: ["test/compiler.test.ts", "-t", "only spawns an async block"],
+    tests: ["test/lowering.test.ts", "-t", "only spawns an async block"],
   },
   {
     name: "async-param-taken-apart-in-body",

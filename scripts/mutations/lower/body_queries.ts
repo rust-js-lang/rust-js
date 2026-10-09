@@ -80,6 +80,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries.rs",
     find: "    let params = thir.params.iter().filter_map(|param| param.pat.as_deref());\n",
     replace: "    let params = thir.params.iter().filter_map(|param| param.pat.as_deref()).filter(|_| false);\n",
-    tests: ["test/compiler.test.ts", "-t", "nullable field's None is null"],
+    tests: ["test/lowering.test.ts", "-t", "nullable field's None is null"],
   },
 ];

@@ -244,7 +244,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/calls.rs",
     find: "                    }) => args.extend(items),\n",
     replace: "                    }) => args.push(Expr::array(items)),\n",
-    tests: ["test/compiler.test.ts", "-t", "variadic binding"],
+    tests: ["test/bindings.test.ts", "-t", "variadic binding"],
   },
   {
     name: "variadic-slice-given-whole",
@@ -252,7 +252,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/calls.rs",
     find: "                    Some(last) => args.push(Expr::spread(last)),\n",
     replace: "                    Some(last) => args.push(last),\n",
-    tests: ["test/compiler.test.ts", "-t", "variadic binding"],
+    tests: ["test/bindings.test.ts", "-t", "variadic binding"],
   },
   {
     name: "variadic-of-no-slice",
@@ -268,7 +268,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/calls.rs",
     find: "                js::Pattern::Array(items) => Some(",
     replace: "                js::Pattern::Array(items) if false => Some(",
-    tests: ["test/compiler.test.ts", "-t", "taken apart through a reference"],
+    tests: ["test/lowering.test.ts", "-t", "taken apart through a reference"],
   },
   {
     name: "leaked-text-a-cell",
@@ -276,7 +276,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/calls.rs",
     find: "            && !self.is_item_call(fun)\n            && !leaked_text\n",
     replace: "            && !self.is_item_call(fun)\n",
-    tests: ["test/compiler.test.ts", "-t", "leaked String"],
+    tests: ["test/lowering.test.ts", "-t", "leaked String"],
   },
   {
     name: "own-name-call-kept",
@@ -284,7 +284,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/calls.rs",
     find: "&& self.gives_own_name(def_id)",
     replace: "&& false && self.gives_own_name(def_id)",
-    tests: ["test/compiler.test.ts", "-t", "enum's own names"],
+    tests: ["test/lowering.test.ts", "-t", "enum's own names"],
   },
   {
     name: "in-reversed",
@@ -300,6 +300,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/calls.rs",
     find: "Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, this))",
     replace: "Expr::unary(UnaryOp::Not, this)",
-    tests: ["test/compiler.test.ts", "-t", "tested as JS tests it"],
+    tests: ["test/bindings.test.ts", "-t", "tested as JS tests it"],
   },
 ];

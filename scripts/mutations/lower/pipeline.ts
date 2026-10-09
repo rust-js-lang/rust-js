@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "            for attr in super::bindings::marks(tcx, module, \"import\") {\n",
     replace: "            for attr in super::bindings::marks(tcx, module, \"none\") {\n",
-    tests: ["test/compiler.test.ts","-t","js::import"],
+    tests: ["test/modules.test.ts", "-t", "js::import"],
   },
   {
     name: "initializer-reads-statics",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "                    Some(directive) => directives.push(directive.to_string()),",
     replace: "                    Some(_) => {}",
-    tests: ["test/compiler.test.ts", "-t", "make a module a Next.js route"],
+    tests: ["test/modules.test.ts", "-t", "make a module a Next.js route"],
   },
   {
     name: "default-export-unwritten",
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "                        default_export = Some(function);",
     replace: "                        let _ = function;",
-    tests: ["test/compiler.test.ts", "-t", "make a module a Next.js route"],
+    tests: ["test/modules.test.ts", "-t", "make a module a Next.js route"],
   },
   {
     name: "reexport-private-use",
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "        if !tcx.visibility(item.owner_id).is_public() || info.module == module || info.owner.is_some() {",
     replace: "        if info.module == module || info.owner.is_some() {",
-    tests: ["test/compiler.test.ts","-t","re-exported from it"],
+    tests: ["test/modules.test.ts", "-t", "re-exported from it"],
   },
   {
     name: "reexport-alias-unread",
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "            false => ident.to_string(),",
     replace: "            false => info.name.clone(),",
-    tests: ["test/compiler.test.ts","-t","re-exported from it"],
+    tests: ["test/modules.test.ts", "-t", "re-exported from it"],
   },
   {
     name: "default-exported-by-name-too",
@@ -136,7 +136,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "None if super::bindings::is_on_load(tcx, def_id) =>",
     replace: "None if false && super::bindings::is_on_load(tcx, def_id) =>",
-    tests: ["test/compiler.test.ts", "-t", "js::on_load!"],
+    tests: ["test/modules.test.ts", "-t", "js::on_load!"],
   },
   {
     name: "path-module-unseen",
@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "                located: find_attr!(tcx, module.to_def_id(), Path(..)),\n",
     replace: "                located: false,\n",
-    tests: ["test/compiler.test.ts", "-t", "path. module's JS is beside"],
+    tests: ["test/modules.test.ts", "-t", "path. module's JS is beside"],
   },
   {
     name: "const-thread-local-own-name",
@@ -152,7 +152,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "        let key = thread_local_inits.get(&def_id).copied();\n",
     replace: "        let key = thread_local_inits.get(&def_id).copied().filter(|_| false);\n",
-    tests: ["test/compiler.test.ts", "-t", "only read and set is the module's let"],
+    tests: ["test/modules.test.ts", "-t", "only read and set is the module's let"],
   },
   {
     name: "const-thread-local-boxed",
@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "(key, module_variable(value, plain), plain == Some(true))",
     replace: "(key, value, plain == Some(true))",
-    tests: ["test/compiler.test.ts", "-t", "only read and set is the module's let"],
+    tests: ["test/modules.test.ts", "-t", "only read and set is the module's let"],
   },
   {
     name: "default-of-another-refused",
@@ -168,7 +168,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "                    Some(function) if unset && fns.get(&function).is_some_and(|info| info.owner.is_none()) => {\n",
     replace: "                    Some(function) if false && unset && fns.get(&function).is_some_and(|info| info.owner.is_none()) => {\n",
-    tests: ["test/compiler.test.ts", "-t", "default of another module"],
+    tests: ["test/modules.test.ts", "-t", "default of another module"],
   },
   {
     name: "default-of-another-unexported",
@@ -176,6 +176,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "            .push((info.name.clone(), \"default\".to_string()));\n",
     replace: "            .truncate(0);\n",
-    tests: ["test/compiler.test.ts", "-t", "default of another module"],
+    tests: ["test/modules.test.ts", "-t", "default of another module"],
   },
 ];

@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/dict_get.js",
     find: "Object.hasOwn(dict, key)",
     replace: "key in dict",
-    tests: ["test/compiler.test.ts", "-t", "JSON is a typed value"],
+    tests: ["test/bindings.test.ts", "-t", "JSON is a typed value"],
   },
   {
     name: "dict-get-unboxed",
@@ -16,6 +16,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/dict_get.js",
     find: "$some(dict[key])",
     replace: "dict[key]",
-    tests: ["test/compiler.test.ts", "-t", "JSON is a typed value"],
+    tests: ["test/bindings.test.ts", "-t", "JSON is a typed value"],
   },
 ];
