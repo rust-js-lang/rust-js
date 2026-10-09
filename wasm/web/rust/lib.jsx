@@ -2,9 +2,8 @@
 
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { $unwrap } from "@rust-js/runtime";
-
 import { App } from "./components/app.jsx";
+import { $unwrap } from "@rust-js/runtime";
 
 export function start() {
   const root = createRoot($unwrap(document.getElementById("app"), "the page has an #app"));
