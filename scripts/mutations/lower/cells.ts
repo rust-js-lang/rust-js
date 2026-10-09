@@ -39,8 +39,16 @@ export const mutations: Mutation[] = [
     name: "local-with-closure-called",
     breaks: "`START.with(|s| s.get())` calls the closure it's given, `((s) => s.value)(START)`, not `START.value` in place",
     file: "src/lower/cells.rs",
-    find: "                let (key, f) = (arg(), arg());\n                apply(f, vec![key])\n",
-    replace: "                let (key, f) = (arg(), arg());\n                Expr::call(f, vec![key])\n",
+    find: "                super::calls::apply_in(f, vec![key], out)\n",
+    replace: "                Expr::call(f, vec![key])\n",
     tests: ["test/compiler.test.ts", "-t", "thread-locals are module variables"],
+  },
+  {
+    name: "with-statement-called",
+    breaks: "a thread-local's `with` of a one-statement closure calls it in place, `((it) => { .. })(LOGGER)`",
+    file: "src/lower/cells.rs",
+    find: "                super::calls::apply_in(f, vec![key], out)\n",
+    replace: "                apply(f, vec![key])\n",
+    tests: ["test/lowering.test.ts", "-t", "with of a one-statement closure"],
   },
 ];

@@ -3143,3 +3143,33 @@ pub fn copied(message: &Message) -> Diagnostic {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.copied({ id: null }), lib.copied({ id: "x" })]).toEqual([{ id: null }, { id: "x" }]);
 });
+
+// A thread-local's `with` of a closure of one statement is the statement,
+// the thread-local in its parameter's place, as react.dev's runESLint
+// writes `linter.defineRules({..})`: no closure called in place.
+test("with of a one-statement closure is its statement", async () => {
+  const dir = fixture("with-statement");
+  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
+    #[link_name = "globalThis.seen.push"]
+    safe fn seen(s: &str);
+}
+pub struct Logger {
+    pub prefix: &'static str,
+}
+thread_local! {
+    static LOGGER: Logger = Logger { prefix: "a" };
+}
+pub fn logged() {
+    LOGGER.with(|it| {
+        seen(it.prefix);
+    });
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function logged() {\n  globalThis.seen.push(LOGGER.prefix);\n}");
+  (globalThis as { seen?: string[] }).seen = [];
+  const lib = await import(join(dir, "lib.js"));
+  lib.logged();
+  expect((globalThis as { seen?: string[] }).seen).toEqual(["a"]);
+});

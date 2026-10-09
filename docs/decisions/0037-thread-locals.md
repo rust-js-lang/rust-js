@@ -91,3 +91,10 @@ export function bump() {
   `((log) => log.push(line))(LOG.value)`.
 - Plain `static`s were still an error, until ADR 0096, and so are `take`
   and `replace` on a thread-local.
+
+## Amendment: a `with` of one statement
+
+`KEY.with(|it| { it.f(); })`, of a closure of one statement, is that
+statement, the thread-local in its parameter's place: `KEY.f();`, as
+react.dev's runESLint writes `linter.defineRules({..})`. It was the
+closure called in place, `((it) => { it.f(); })(KEY)`.

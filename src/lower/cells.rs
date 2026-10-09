@@ -181,7 +181,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Std::LocalWith => {
                 let (key, f) = (arg(), arg());
-                apply(f, vec![key])
+                super::calls::apply_in(f, vec![key], out)
             }
             Std::LocalBorrow => {
                 let (key, f) = (arg(), arg());

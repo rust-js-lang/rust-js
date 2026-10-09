@@ -18,9 +18,7 @@ function main() {
   for (let i = 0; i < end; i++) {
     bump();
   }
-  ((n) => {
-    n.value.push("a");
-  })(NAMES);
+  NAMES.value.push("a");
   console.log(
     `${COUNT.value} [${NAMES.value
       .slice()

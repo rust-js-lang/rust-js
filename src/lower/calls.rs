@@ -1183,14 +1183,41 @@ pub(super) fn apply(f: Expr, args: Vec<Expr>) -> Expr {
                 ..
             },
         ] = body.as_slice()
-        && params.len() <= args.len()
-        && args.iter().all(Expr::reads_same)
+        && let Some(inlined) = inlined(params, &args, value)
     {
+        return inlined;
+    }
+    Expr::call(f, args)
+}
+
+/// `f(args)` as a statement, in `out`: a closure of one statement put in
+/// place, `((it) => { it.f(); })(linter)` being `linter.f();`, or
+/// `apply`'s. What it gives, `undefined` of one put in place.
+pub(super) fn apply_in(f: Expr, args: Vec<Expr>, out: &mut Vec<Stmt>) -> Expr {
+    if let js::ExprKind::Arrow(params, body) = &f.kind
+        && let [
+            js::Stmt {
+                kind: StmtKind::Expr(value),
+                span,
+            },
+        ] = body.as_slice()
+        && let Some(inlined) = inlined(params, &args, value)
+    {
+        out.push(StmtKind::Expr(inlined).at(*span));
+        return Expr::undefined();
+    }
+    apply(f, args)
+}
+
+/// `value`, of a closure of `params`, with each the part of `args` it
+/// binds, if each reads the same however often it's read.
+fn inlined(params: &[js::Pattern], args: &[Expr], value: &Expr) -> Option<Expr> {
+    if params.len() <= args.len() && args.iter().all(Expr::reads_same) {
         // Each variable a parameter binds, and the part of its argument it
         // is: a destructured one's, `[, age]`'s `age` of `item`, `item[1]`.
         let parts: Option<Vec<(&str, Expr)>> = params
             .iter()
-            .zip(&args)
+            .zip(args)
             .map(|(p, arg)| match p {
                 js::Pattern::Name(name) => Some(vec![(name.as_str(), arg.clone())]),
                 js::Pattern::Array(items) => Some(
@@ -1209,14 +1236,11 @@ pub(super) fn apply(f: Expr, args: Vec<Expr>) -> Expr {
             })
             .collect::<Option<Vec<_>>>()
             .map(|parts| parts.into_iter().flatten().collect());
-        let inlined = parts.and_then(|parts| {
+        return parts.and_then(|parts| {
             value.substitute(&|name: &str| parts.iter().find(|(n, _)| *n == name).map(|(_, part)| part.clone()))
         });
-        if let Some(inlined) = inlined {
-            return inlined;
-        }
     }
-    Expr::call(f, args)
+    None
 }
 
 /// `this[key]`, or `this.name` of a key written that's a name, as a person
