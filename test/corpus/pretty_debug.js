@@ -79,7 +79,7 @@ function main() {
       [
         `value: ${$pretty(
           "[",
-          { value: [1] }.value.map((item) => String(item)),
+          [1].map((item) => String(item)),
           "]",
         )}`,
       ],

@@ -1,7 +1,7 @@
 //! Bindings, destructuring and match/let-chain evaluation regions.
 
 use super::fn_def;
-use super::recognition::Std;
+use super::recognition::{Std, StdItem};
 use super::{
     Binding, Dest, Evaluation, FnCx, Num, R, Shape, Var, bindings, camel_case, const_js, drops, fresh_in, js_ident,
     ordering_value, recognition::is_non_zero, std_impls, variant_field, without_refs,
@@ -68,6 +68,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|(i, field)| match without_refs(field).kind {
                 // A cell, a `&mut` to a number, is taken apart as a cell (ADR 0099).
                 _ if self.is_cell(field.ty) => None,
+                // A `Cell` in an object's field is the property itself (ADR
+                // 0288): what's bound of it is a handle on it, or a cell of its
+                // own, which JS's destructuring wouldn't give.
+                _ if matches!(self.shape(pat.ty), Shape::Object(_)) && self.is_std_type(field.ty, StdItem::Cell) => {
+                    None
+                }
                 PatKind::Wild => Some((i, None)),
                 PatKind::Binding {
                     name,
@@ -1807,6 +1813,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         subject.clone(),
                         variant_field(self.tcx, variant, field.field.as_usize()),
                     );
+                    // A `Cell` in a variant's field is what it holds (ADR 0288).
+                    let part = self.held(part, field.pattern.ty);
                     tests.extend(self.pattern_test(&field.pattern, &part, bindings)?);
                 }
                 Ok(tests.into_iter().reduce(|a, b| Expr::bin(Op::And, a, b)))

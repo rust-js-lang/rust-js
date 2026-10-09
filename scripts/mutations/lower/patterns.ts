@@ -622,4 +622,20 @@ export const mutations: Mutation[] = [
     replace: "                let name = self.bind(var, name.as_str(), false);\n                out.push(StmtKind::Let(name, Some(value)).at(self.js_span(span)));\n",
     tests: ["test/jsx.test.ts", "-t", "keeps a field of what never changes in place"],
   },
+  {
+    name: "variant-cell-field-unhandled",
+    breaks: "a variant's `Cell` field bound in a pattern is the number, so `n.set(..)` sets `n.value` of it",
+    file: "src/lower/patterns.rs",
+    find: "                    let part = self.held(part, field.pattern.ty);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "cell in a field is the property"],
+  },
+  {
+    name: "cell-field-destructured",
+    breaks: "a struct of a `Cell` field taken apart through a reference is JS's destructuring, `const { count } = ..`, the number, which `count.value = ..` can't set",
+    file: "src/lower/patterns.rs",
+    find: "                _ if matches!(self.shape(pat.ty), Shape::Object(_)) && self.is_std_type(field.ty, StdItem::Cell) => {\n                    None\n                }\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "struct taken apart through a reference"],
+  },
 ];

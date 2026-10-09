@@ -487,7 +487,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     let alias = written.and_then(|w| self.written_alias(w));
                     (
                         field_default(self.tcx, field).is_some(),
-                        alias.unwrap_or_else(|| self.ts(ty)),
+                        alias.unwrap_or_else(|| self.field_ts(ty)),
                     )
                 }
             };
@@ -563,7 +563,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                         let tuple = matches!(v.ctor_kind(), Some(rustc_hir::def::CtorKind::Fn));
                         let tag = json!({ "kind": "property", "name": key, "optional": false, "readonly": false, "type": name });
                         let fields = v.fields.iter().enumerate().map(|(i, field)| {
-                            let ty = self.ts(field.ty(self.tcx, args).skip_normalization());
+                            let ty = self.field_ts(field.ty(self.tcx, args).skip_normalization());
                             let name = if tuple { format!("_{i}") } else { field_key(self.tcx, field) };
                             json!({ "kind": "property", "name": name, "optional": false, "readonly": false, "type": ty })
                         });
@@ -636,6 +636,15 @@ impl<'tcx> Declarations<'_, 'tcx> {
     }
 
     /// `ty` as a TypeScript type.
+    /// A field's type: of a `Cell`, what it holds, as a `Cell` in a field
+    /// is the property set in place (ADR 0288).
+    fn field_ts(&mut self, ty: Ty<'tcx>) -> Value {
+        match ty.kind() {
+            ty::Adt(adt, args) if is_std_def(self.tcx, adt.did(), StdItem::Cell) => self.ts(args.type_at(0)),
+            _ => self.ts(ty),
+        }
+    }
+
     fn ts(&mut self, ty: Ty<'tcx>) -> Value {
         let tcx = self.tcx;
         if let Some(num) = Num::of(ty) {
@@ -716,6 +725,11 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 }
                 if ty.is_box() {
                     return self.ts(args.type_at(0));
+                }
+                // A `Cell` of its own, or one lent, is `{ value }` (ADRs 0023, 0288).
+                if is_std_def(tcx, did, StdItem::Cell) {
+                    let value = json!({ "kind": "property", "name": "value", "optional": false, "readonly": false, "type": self.ts(args.type_at(0)) });
+                    return json!({ "kind": "object", "members": [value] });
                 }
                 if is_rest(tcx, ty) {
                     return reference("Record", vec![keyword("string"), keyword("unknown")]);

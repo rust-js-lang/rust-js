@@ -2121,3 +2121,131 @@ pub fn stopped(id: Option<&js::IntervalId>) {
   await new Promise((resolve) => setTimeout(resolve, 10));
   expect(ran).toBe(false);
 });
+
+// ADR 0288: a `Cell` in a struct's or a variant's field is the value it
+// holds, the property set in place, as ReScript's `mutable` field is:
+// `c.count = c.count + 1`, not `c.count.value`. A `&Cell` of one is a handle
+// on the property (ADR 0099), so what's lent it sets the field.
+test("a cell in a field is the property it holds", async () => {
+  const dir = fixture("cell-fields");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+#[derive(Clone, Default, PartialEq, Debug)]
+pub struct Counter {
+    pub label: &'static str,
+    pub count: Cell<u32>,
+}
+
+pub fn made() -> Counter {
+    Counter { label: "a", count: Cell::new(1) }
+}
+
+pub fn counting(n: u32) -> Counter {
+    Counter { label: "n", count: Cell::new(n) }
+}
+
+pub fn bumped(c: &Counter) -> u32 {
+    c.count.set(c.count.get() + 1);
+    c.count.get()
+}
+
+fn add(cell: &Cell<u32>, n: u32) {
+    cell.set(cell.get() + n);
+}
+
+pub fn lent(c: &Counter) -> u32 {
+    add(&c.count, 5);
+    c.count.get()
+}
+
+pub fn cloned(c: &Counter) -> Counter {
+    let copy = c.clone();
+    c.count.set(9);
+    copy
+}
+
+pub fn same(a: &Counter, b: &Counter) -> bool {
+    a == b
+}
+
+pub fn shown(c: &Counter) -> String {
+    format!("{c:?}")
+}
+
+pub fn fresh() -> Counter {
+    Counter::default()
+}
+
+pub fn taken(c: Counter) -> u32 {
+    let Counter { count, .. } = c;
+    count.set(count.get() + 10);
+    count.get()
+}
+
+pub fn matched(c: &Counter) -> u32 {
+    match c {
+        Counter { count, .. } => {
+            count.set(count.get() * 3);
+            count.get()
+        }
+    }
+}
+
+pub enum Slot {
+    Empty,
+    Held { n: Cell<u32> },
+}
+
+pub fn held(slot: &Slot) -> u32 {
+    if let Slot::Held { n } = slot {
+        n.set(n.get() * 2);
+        n.get()
+    } else {
+        0
+    }
+}
+
+pub fn empty() -> Slot {
+    Slot::Empty
+}
+
+/// A name equal to another of any case: a hand-written eq.
+pub struct Name(pub &'static str);
+
+impl PartialEq for Name {
+    fn eq(&self, other: &Name) -> bool {
+        self.0.eq_ignore_ascii_case(other.0)
+    }
+}
+
+#[derive(PartialEq)]
+pub struct Named {
+    pub name: Name,
+    pub hits: Cell<u32>,
+}
+
+pub fn named_alike(a: &'static str, b: &'static str, hits: u32) -> bool {
+    Named { name: Name(a), hits: Cell::new(1) } == Named { name: Name(b), hits: Cell::new(hits) }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('return { label: "a", count: 1 };');
+  expect(js).toContain('return { label: "n", count: n };');
+  expect(js).toContain("  c.count = (c.count + 1) >>> 0;\n  return c.count;");
+  expect(js).toContain("  const copy = { ...c };");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.made()).toEqual({ label: "a", count: 1 });
+  const lentTo = lib.made();
+  expect([lib.bumped(lib.made()), lib.lent(lentTo), lentTo.count]).toEqual([2, 6, 6]);
+  const original = lib.made();
+  expect([lib.cloned(original).count, original.count]).toEqual([1, 9]);
+  expect([lib.same(lib.made(), lib.made()), lib.same(lib.made(), original)]).toEqual([true, false]);
+  expect(lib.shown(lib.made())).toBe('Counter { label: "a", count: Cell { value: 1 } }');
+  expect(lib.fresh()).toEqual({ label: "", count: 0 });
+  const matched = lib.made();
+  expect([lib.taken(lib.made()), lib.matched(matched), matched.count]).toEqual([11, 3, 3]);
+  const slot = { TAG: "Held", n: 2 };
+  expect([lib.held(slot), slot.n, lib.held(lib.empty())]).toEqual([4, 4, 0]);
+  expect([lib.named_alike("Ann", "ANN", 1), lib.named_alike("Ann", "ANN", 2), lib.named_alike("Ann", "Bob", 1)]).toEqual([true, false, false]);
+});

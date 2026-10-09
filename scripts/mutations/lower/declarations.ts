@@ -128,8 +128,8 @@ export const mutations: Mutation[] = [
     name: "defaulted-field-required",
     breaks: "a field with a default is declared required, `count: number`, where a caller may leave it out",
     file: "src/lower/declarations.rs",
-    find: "                        field_default(self.tcx, field).is_some(),\n                        alias.unwrap_or_else(|| self.ts(ty)),",
-    replace: "                        false,\n                        alias.unwrap_or_else(|| self.ts(ty)),",
+    find: "                        field_default(self.tcx, field).is_some(),\n                        alias.unwrap_or_else(|| self.field_ts(ty)),",
+    replace: "                        false,\n                        alias.unwrap_or_else(|| self.field_ts(ty)),",
     tests,
   },
   {
@@ -322,6 +322,22 @@ export const mutations: Mutation[] = [
     file: "src/lower/declarations.rs",
     find: "                            && is_otherwise(self.tcx, v.def_id)\n",
     replace: "                            && false\n",
+    tests: ["test/declarations.test.ts", "-t", "declarations type what a module exports"],
+  },
+  {
+    name: "cell-field-declared-any",
+    breaks: "a `Cell` field is declared `any`, where it's the number it holds",
+    file: "src/lower/declarations.rs",
+    find: "            ty::Adt(adt, args) if is_std_def(self.tcx, adt.did(), StdItem::Cell) => self.ts(args.type_at(0)),\n",
+    replace: "            ty::Adt(adt, args) if false && is_std_def(self.tcx, adt.did(), StdItem::Cell) => self.ts(args.type_at(0)),\n",
+    tests: ["test/declarations.test.ts", "-t", "declarations type what a module exports"],
+  },
+  {
+    name: "lent-cell-declared-any",
+    breaks: "a `&Cell` parameter is declared `any`, where it's `{ value }`",
+    file: "src/lower/declarations.rs",
+    find: "                if is_std_def(tcx, did, StdItem::Cell) {\n",
+    replace: "                if false && is_std_def(tcx, did, StdItem::Cell) {\n",
     tests: ["test/declarations.test.ts", "-t", "declarations type what a module exports"],
   },
 ];

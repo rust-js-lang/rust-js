@@ -351,9 +351,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let mut props = vec![Prop::Spread(place.clone())];
         for (name, t) in fields {
-            if self.needs_clone(t) {
-                let field = self.clone_value(Expr::member(place.clone(), name.clone()), t, span, out)?;
-                props.push(Prop::Field(name, field));
+            // A `Cell` in a field is what it holds (ADR 0288): a clone of
+            // one is a copy of that, which the spread makes if it needs none.
+            let held = match t.kind() {
+                ty::Adt(_, args) if self.is_std_type(t, StdItem::Cell) => Some(args.type_at(0)),
+                _ => None,
+            };
+            if held.map_or(self.needs_clone(t), |item| self.needs_clone(item)) {
+                let read = self.held(Expr::member(place.clone(), name.clone()), t);
+                let field = self.clone_value(read, t, span, out)?;
+                props.push(Prop::Field(name, self.holding(field, t)));
             }
         }
         Ok(Expr::object(props))
@@ -478,7 +485,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Shape::Object(fields) => Expr::object(
                     fields
                         .into_iter()
-                        .map(|(name, t)| Ok(Prop::Field(name, self.default_value(t, span)?)))
+                        .map(|(name, t)| {
+                            let value = self.default_value(t, span)?;
+                            Ok(Prop::Field(name, self.holding(value, t)))
+                        })
                         .collect::<R<_>>()?,
                 ),
                 Shape::Array(tys) => {
@@ -690,8 +700,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let mut same = tag(&b);
                     for (field, t) in fields {
                         let field = self.eq_value(
-                            Expr::member(a.clone(), field.clone()),
-                            Expr::member(b.clone(), field),
+                            self.held(Expr::member(a.clone(), field.clone()), t),
+                            self.held(Expr::member(b.clone(), field), t),
                             t,
                             span,
                             out,
@@ -706,7 +716,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let parts: Vec<(Expr, Expr, Ty<'tcx>)> = match self.shape(ty) {
                     Shape::Object(fields) => fields
                         .into_iter()
-                        .map(|(name, t)| (Expr::member(a.clone(), name.clone()), Expr::member(b.clone(), name), t))
+                        .map(|(name, t)| {
+                            let x = self.held(Expr::member(a.clone(), name.clone()), t);
+                            (x, self.held(Expr::member(b.clone(), name), t), t)
+                        })
                         .collect(),
                     Shape::Array(tys) => tys
                         .into_iter()

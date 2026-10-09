@@ -291,6 +291,14 @@ pub enum Open {
 pub fn on(open: &Open) -> bool {
     matches!(open, Open::On)
 }
+
+pub struct Tally {
+    pub count: std::cell::Cell<u32>,
+}
+
+pub fn tallied(cell: &std::cell::Cell<u32>) -> u32 {
+    cell.get()
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
@@ -327,6 +335,9 @@ pub fn on(open: &Open) -> bool {
     'export type Light = {\n    kind: "on";\n} | {\n    kind: "Off";\n};',
     // An `otherwise`, any other object, is the object it holds (ADR 0284).
     'export type Open = {\n    kind: "on";\n} | any;',
+    // A `Cell` in a field is what it holds; one lent is `{ value }` (ADR 0288).
+    "export interface Tally {\n    count: number;\n}",
+    "export function tallied(cell: {\n    value: number;\n}): number;",
   ]) {
     expect(declarations).toContain(line);
   }

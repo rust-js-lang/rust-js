@@ -642,6 +642,20 @@ impl Expr {
         {
             return value.clone();
         }
+        // A handle's `value` is the place it's on (ADR 0099), and a cell
+        // made here, `{ value: x }`, holds `x`: a cell in a field is the
+        // property itself (ADR 0288).
+        if property == "value" {
+            if let ExprKind::Handle(place) = object.kind {
+                return *place;
+            }
+            if let ExprKind::Object(props) = &object.kind
+                && let [Prop::Field(name, value)] = props.as_slice()
+                && name == "value"
+            {
+                return value.clone();
+            }
+        }
         Expr::new(ExprKind::Member(Box::new(object), property))
     }
 

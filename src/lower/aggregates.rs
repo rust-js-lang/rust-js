@@ -236,23 +236,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .all(|(i, &(_, t))| given.contains_key(&i) || !(self.contains_mutated(t) && self.is_copy(t)))
         {
             let mut props = vec![Prop::Spread(base.clone())];
-            for (i, (name, _)) in fields.iter().enumerate() {
+            for (i, &(ref name, field_ty)) in fields.iter().enumerate() {
                 if let Some(value) = given.remove(&i) {
-                    props.push(Prop::Field(name.clone(), value));
+                    props.push(Prop::Field(name.clone(), self.holding(value, field_ty)));
                 }
             }
             return Ok(Expr::object(props));
         }
+        let object = matches!(shape, Shape::Object(_));
         let mut items = Vec::new();
         for (i, field_ty) in field_tys.into_iter().enumerate() {
-            items.push(match (given.remove(&i), &base) {
+            let item = match (given.remove(&i), &base) {
                 (Some(value), _) => value,
                 (None, None) if let Some(defaults) = &mut defaults => {
                     std::mem::replace(&mut defaults[i], Expr::undefined())
                 }
                 (None, Some(base)) => self.copy_if_needed(self.project(base.clone(), ty, i), field_ty),
                 (None, None) => unreachable!("rustc checked that every field is given"),
-            });
+            };
+            // A `Cell` in an object's field is what it holds (ADR 0288).
+            items.push(if object { self.holding(item, field_ty) } else { item });
         }
         Ok(assembled(shape, tag, items))
     }

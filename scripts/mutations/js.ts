@@ -139,4 +139,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "callback returns a call that gives undefined"],
   },
+  {
+    name: "handle-value-kept",
+    breaks: "a handle's `value` is read through the handle, `{ get value() { .. } }.value`, where it's the field itself",
+    file: "src/js.rs",
+    find: "            if let ExprKind::Handle(place) = object.kind {\n",
+    replace: "            if false && let ExprKind::Handle(place) = object.kind {\n",
+    tests: ["test/lowering.test.ts", "-t", "cell in a field is the property"],
+  },
+  {
+    name: "made-cell-value-kept",
+    breaks: "a cell made into a field is `{ value: 1 }.value`, where it's `1`",
+    file: "src/js.rs",
+    find: "                && name == \"value\"\n",
+    replace: "                && name == \"never\"\n",
+    tests: ["test/lowering.test.ts", "-t", "cell in a field is the property"],
+  },
 ];

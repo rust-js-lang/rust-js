@@ -227,4 +227,28 @@ export const mutations: Mutation[] = [
     replace: "        _ => format!(\"_{i}\"),",
     tests: ["test/compiler.test.ts", "-t", "enums with fields are tagged objects, as in ReScript"],
   },
+  {
+    name: "cell-field-unhandled",
+    breaks: "a `Cell` field is read as the cell, so `c.count.get()` reads `c.count.value` of the number it holds",
+    file: "src/lower/representation.rs",
+    find: "            true => Expr::handle(field),\n",
+    replace: "            true => field,\n",
+    tests: ["test/lowering.test.ts", "-t", "cell in a field is the property"],
+  },
+  {
+    name: "cell-field-boxed",
+    breaks: "a `Cell` made into a field is `{ value: 1 }`, the box, where the field is what it holds",
+    file: "src/lower/representation.rs",
+    find: "            true => Expr::member(value, \"value\"),\n",
+    replace: "            true => value,\n",
+    tests: ["test/lowering.test.ts", "-t", "cell in a field is the property"],
+  },
+  {
+    name: "const-cell-field-boxed",
+    breaks: "a constant's `Cell` field is `{ hits: { value: 0 } }`, so setting `COUNTER.hits` adds to an object",
+    file: "src/lower/representation.rs",
+    find: "                    ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Cell) => Expr::member(js, \"value\"),\n",
+    replace: "                    ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Cell) => js,\n",
+    tests: ["test/corpus.test.ts", "-t", "marker_traits"],
+  },
 ];

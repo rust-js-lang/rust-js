@@ -251,8 +251,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A flattened struct's fields are its parent's: read through it,
             // `props.html.title` is `props.title` (ADR 0205).
             (Shape::Object(_), _) if super::bindings::is_flatten_field(self.tcx, ty, i) => base,
-            (Shape::Object(fields), _) => Expr::member(base, fields[i].0.clone()),
+            (Shape::Object(fields), _) => self.held(Expr::member(base, fields[i].0.clone()), fields[i].1),
             (Shape::Other, _) => unreachable!("fields of a type without fields"),
+        }
+    }
+
+    /// What a field of type `ty` is, read where it's `field`: itself, or of
+    /// a `Cell`, a handle on it, as a `Cell` in a field is the value it
+    /// holds, the property set in place (ADR 0288). Every use of a cell,
+    /// `.value`, reads and writes the property through it.
+    pub(super) fn held(&self, field: Expr, ty: Ty<'tcx>) -> Expr {
+        match self.is_std_type(ty, StdItem::Cell) {
+            true => Expr::handle(field),
+            false => field,
+        }
+    }
+
+    /// What a field of type `ty` holds of `value`, a field's value made: of
+    /// a `Cell`, what the cell holds (ADR 0288).
+    pub(super) fn holding(&self, value: Expr, ty: Ty<'tcx>) -> Expr {
+        match self.is_std_type(ty, StdItem::Cell) {
+            true => Expr::member(value, "value"),
+            false => value,
         }
     }
 
@@ -647,6 +667,19 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
         }
     };
     let all = |values: &[ty::Value<'tcx>]| values.iter().map(|&v| const_js(tcx, v)).collect::<Option<Vec<_>>>();
+    // A field's: of a `Cell`, what it holds, as a `Cell` in an object's
+    // field is the property set in place (ADR 0288).
+    let fields_of = |values: &[ty::Value<'tcx>]| {
+        (values.iter())
+            .map(|&v| {
+                let js = const_js(tcx, v)?;
+                Some(match v.ty.kind() {
+                    ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Cell) => Expr::member(js, "value"),
+                    _ => js,
+                })
+            })
+            .collect::<Option<Vec<_>>>()
+    };
     match ty.kind() {
         ty::Ref(_, inner, _) if inner.is_str() => {
             Some(Expr::str(std::str::from_utf8(value.try_to_raw_bytes(tcx)?).ok()?))
@@ -680,7 +713,7 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
             if fields.is_empty() {
                 return Some(super::bindings::unit_variant(tcx, adt.did(), variant));
             }
-            let values = all(fields)?;
+            let values = fields_of(fields)?;
             let props = values
                 .into_iter()
                 .enumerate()
@@ -738,7 +771,10 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
         ty::Adt(adt, _) if adt.is_struct() && !super::recognition::struct_is_its_fields(tcx, adt.did()) => None,
         ty::Adt(adt, _) if adt.is_struct() => {
             let variant = adt.non_enum_variant();
-            let values = all(&children()?)?;
+            let values = match variant.ctor_kind() {
+                None => fields_of(&children()?)?,
+                _ => all(&children()?)?,
+            };
             match variant.ctor_kind() {
                 Some(CtorKind::Const) => Some(unit_name(tcx, adt.did()).map_or_else(Expr::undefined, Expr::str)),
                 Some(CtorKind::Fn) => Some(Expr::array(values)),
