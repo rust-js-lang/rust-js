@@ -7,6 +7,7 @@ use crate::lower::recognition::Std;
 use crate::lower::{FnCx, R};
 use crate::runtime::Helper;
 use rustc_middle::thir::{ExprId, ExprKind};
+use rustc_middle::ty;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `.flatten()` of a read of items that may be `None`, through a
@@ -54,6 +55,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut arg = || values.next().expect("rustc checked the arguments");
         let js_span = self.js_span(span);
         Ok(Some(match known {
+            // The separator `&T` between each two, or `&[T]`'s items; each
+            // item cloned, as `Join`'s are.
+            Std::JoinItems => {
+                let separator = self.thir[args[1]].ty.peel_refs();
+                let (item, spread) = match separator.kind() {
+                    ty::Slice(item) | ty::Array(item, _) => (*item, true),
+                    ty::Adt(_, items) if self.is_vec_like(separator) => (items.type_at(0), true),
+                    _ => (separator, false),
+                };
+                let clone = match self.needs_clone(item) {
+                    true => self.clone_fn("item", item, span)?,
+                    false => Expr::undefined(),
+                };
+                self.runtime.insert(Helper::JoinWith);
+                Expr::call(Expr::var("$joinWith"), vec![arg(), arg(), Expr::bool(spread), clone])
+            }
             Std::Method("pop") if boxed => {
                 self.runtime.insert(Helper::Pop);
                 Expr::call(Expr::var("$pop"), vec![arg()])

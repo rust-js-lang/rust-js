@@ -1114,6 +1114,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::SliceLast
             | Std::SliceGet
             | Std::ToVec
+            | Std::JoinItems
             | Std::SortBy
             | Std::IsEmpty
             | Std::VecNew

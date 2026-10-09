@@ -41,10 +41,9 @@ pub fn report<'tcx>(tcx: TyCtxt<'tcx>, dependencies: &crate::library::Dependenci
                         _ => args[param.index as usize],
                     })
                 };
-                let known = recognition.classify(def_id, args).is_some()
-                    || [ty::Ty::new_static_str(tcx), tcx.types.char, tcx.types.usize]
-                        .into_iter()
-                        .any(|pattern| recognition.classify(def_id, given(pattern)).is_some());
+                let known = [ty::Ty::new_static_str(tcx), tcx.types.char, tcx.types.usize]
+                    .into_iter()
+                    .any(|pattern| recognition.classify(def_id, given(pattern)).is_some());
                 let method = format!("{name}::{}", tcx.item_name(def_id));
                 match methods.iter_mut().find(|(m, _)| *m == method) {
                     Some((_, k)) => *k |= known,

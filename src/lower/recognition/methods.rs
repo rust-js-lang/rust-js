@@ -31,9 +31,11 @@ pub(super) fn text(name: &str, char: bool, str: bool) -> Option<TextOp> {
         "to_lowercase" if char => TextOp::CharCase(false),
         "is_digit" if char => TextOp::IsDigit,
         "split_whitespace" if str => TextOp::SplitWhitespace,
-        "lines" if str => TextOp::Lines,
+        // `lines_any`, deprecated, is `lines` (ADR 0322).
+        "lines" | "lines_any" if str => TextOp::Lines,
         // `s.bytes()` is `s.as_bytes()` iterated: the same array.
-        "as_bytes" | "bytes" if str => TextOp::Bytes,
+        // So is a `Box<str>`'s `into_boxed_bytes()`, a copy of its own.
+        "as_bytes" | "bytes" | "into_boxed_bytes" if str => TextOp::Bytes,
         "parse" if str => TextOp::Parse,
         _ => return None,
     })

@@ -343,6 +343,8 @@ pub(super) enum Std {
     Extreme(bool),
     Chars,
     ToVec,
+    /// `join` of a slice of lists, not of text: `$joinWith` (ADR 0322).
+    JoinItems,
     Sort,
     SortBy,
     SortByKey,
@@ -467,9 +469,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let utf8 = match std_path(tcx, def_id).as_str() {
             "std::str::from_utf8" | "std::str::<impl str>::from_utf8" => Some(TextOp::FromUtf8 { owned: false }),
             "std::string::String::from_utf8" => Some(TextOp::FromUtf8 { owned: true }),
-            "std::str::from_utf8_unchecked" | "std::str::<impl str>::from_utf8_unchecked" => {
-                Some(TextOp::Utf8Unchecked)
-            }
+            "std::str::from_utf8_unchecked"
+            | "std::str::<impl str>::from_utf8_unchecked"
+            | "std::string::String::from_utf8_unchecked" => Some(TextOp::Utf8Unchecked),
             "std::string::String::from_utf8_lossy" => Some(TextOp::Utf8Lossy),
             "std::str::Utf8Error::valid_up_to" => Some(TextOp::Utf8Part("valid_up_to")),
             "std::num::ParseIntError::kind" => Some(TextOp::ParseErrorKind),
@@ -1182,6 +1184,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 Some(Std::Nothing)
             }
             "into_boxed_slice" if adt("Vec") => Some(Std::Same),
+            // A JS string has no capacity either (ADR 0322).
+            "reserve" | "reserve_exact" | "shrink_to" | "shrink_to_fit" if string => Some(Std::Nothing),
+            // A `Box<str>` is its string, and a `Box<[T]>` its array.
+            "into_boxed_str" if string => Some(Std::Same),
+            // A `String`'s bytes, a new array, as a `str`'s are.
+            "as_bytes" | "into_bytes" if string => Some(Std::Text(TextOp::Bytes)),
+            "into_string" if owner.is_str() => Some(Std::Same),
+            "into_vec" if owner.is_slice() => Some(Std::Same),
             "into_flattened" if adt("Vec") => Some(Std::Comb(Comb::Concat)),
             "splice" if adt("Vec") => Some(Std::Text(TextOp::Splice)),
             "extend_from_within" if adt("Vec") => Some(Std::Text(TextOp::ExtendFromWithin)),
@@ -1386,6 +1396,29 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 return None;
             }
             "trim_matches" if owner.is_str() => Std::Text(TextOp::TrimMatches { start: true, end: true }),
+            // `trim_left` and `trim_right`, deprecated, are `trim_start` and
+            // `trim_end`, and theirs of a pattern (ADR 0322).
+            "trim_left_matches" | "trim_right_matches"
+                if owner.is_str() && !self_ty.is_some_and(|p| self.is_string_like(p) || self.is_char_predicate(p)) =>
+            {
+                return None;
+            }
+            "trim_left_matches" if owner.is_str() => Std::Text(TextOp::TrimMatches {
+                start: true,
+                end: false,
+            }),
+            "trim_right_matches" if owner.is_str() => Std::Text(TextOp::TrimMatches {
+                start: false,
+                end: true,
+            }),
+            "trim_left" if owner.is_str() => Std::Trim {
+                start: true,
+                end: false,
+            },
+            "trim_right" if owner.is_str() => Std::Trim {
+                start: false,
+                end: true,
+            },
             "trim_start_matches" if owner.is_str() => Std::Text(TextOp::TrimMatches {
                 start: true,
                 end: false,
@@ -1418,7 +1451,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 end: true,
             },
             "repeat" if owner.is_str() => Std::Method("repeat"),
-            "join" if owner.is_slice() => Std::Method("join"),
+            // Of text, JS's `join`; of lists, their items with the separator's
+            // between (ADR 0322). `connect`, deprecated, is `join`.
+            "join" | "connect"
+                if owner.is_slice() && self_ty.is_some_and(|item| self.is_string_like(item.peel_refs())) =>
+            {
+                Std::Method("join")
+            }
+            "join" | "connect" if owner.is_slice() => Std::JoinItems,
             "push_str" | "push" if string => Std::PushStr,
             "is_empty" if adt("Vec") || owner.is_slice() || owner.is_str() || string => Std::IsEmpty,
             "lock" if self.stream(owner).is_some() => Std::Stream(StreamOp::Nothing),

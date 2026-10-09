@@ -803,4 +803,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cows"],
   },
+  {
+    name: "join-lists-as-text",
+    breaks: "`join` of a slice of lists is JS's string `join`",
+    file: "src/lower/recognition.rs",
+    find: "self_ty.is_some_and(|item| self.is_string_like(item.peel_refs()))",
+    replace: "true",
+    tests: ["test/corpus.test.ts", "-t", "text_aliases"],
+  },
 ];

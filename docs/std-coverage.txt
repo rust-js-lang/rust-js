@@ -501,8 +501,8 @@
 + LazyLock::get
 + LazyLock::get_mut
 + LazyLock::new
-# String 17 of 43
-- String::as_bytes
+# String 25 of 43
++ String::as_bytes
 - String::as_mut_str
 - String::as_mut_vec
 + String::as_str
@@ -520,11 +520,11 @@
 + String::from_utf8
 + String::from_utf8_lossy
 - String::from_utf8_lossy_owned
-- String::from_utf8_unchecked
++ String::from_utf8_unchecked
 + String::insert
 + String::insert_str
-- String::into_boxed_str
-- String::into_bytes
++ String::into_boxed_str
++ String::into_bytes
 - String::into_raw_parts
 + String::is_empty
 + String::leak
@@ -535,11 +535,11 @@
 + String::push_str
 + String::remove
 - String::replace_range
-- String::reserve
-- String::reserve_exact
++ String::reserve
++ String::reserve_exact
 + String::retain
-- String::shrink_to
-- String::shrink_to_fit
++ String::shrink_to
++ String::shrink_to_fit
 - String::split_off
 + String::truncate
 - String::try_reserve
@@ -563,7 +563,7 @@
 - Box::new_zeroed_slice
 - Box::pin
 - Box::write
-# str 45 of 83
+# str 52 of 83
 + str::as_bytes
 - str::as_bytes_mut
 - str::as_mut_ptr
@@ -589,14 +589,14 @@
 - str::get_mut
 - str::get_unchecked
 - str::get_unchecked_mut
-- str::into_boxed_bytes
-- str::into_string
++ str::into_boxed_bytes
++ str::into_string
 - str::is_ascii
 + str::is_char_boundary
 + str::is_empty
 + str::len
 + str::lines
-- str::lines_any
++ str::lines_any
 - str::make_ascii_lowercase
 - str::make_ascii_uppercase
 + str::match_indices
@@ -640,14 +640,14 @@
 - str::trim_ascii_start
 + str::trim_end
 + str::trim_end_matches
-- str::trim_left
-- str::trim_left_matches
++ str::trim_left
++ str::trim_left_matches
 + str::trim_matches
-- str::trim_right
-- str::trim_right_matches
++ str::trim_right
++ str::trim_right_matches
 + str::trim_start
 + str::trim_start_matches
-# slice 35 of 133
+# slice 37 of 133
 - slice::align_to
 - slice::align_to_mut
 - slice::array_windows
@@ -679,7 +679,7 @@
 - slice::chunks_mut
 - slice::clone_from_slice
 + slice::concat
-- slice::connect
++ slice::connect
 + slice::contains
 - slice::copy_from_slice
 - slice::copy_within
@@ -699,7 +699,7 @@
 + slice::get_mut
 + slice::get_unchecked
 - slice::get_unchecked_mut
-- slice::into_vec
++ slice::into_vec
 - slice::is_ascii
 + slice::is_empty
 - slice::is_sorted
