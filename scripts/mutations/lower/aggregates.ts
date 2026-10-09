@@ -183,4 +183,20 @@ export const mutations: Mutation[] = [
     replace: "            thir::ExprKind::Match { arms, .. } => arms.is_empty() && arms.iter().all(",
     tests: ["test/lowering.test.ts", "-t", "nullable field's None is null"],
   },
+  {
+    name: "struct-fields-declared-order",
+    breaks: "`Point { y: f(), x: g() }` runs `g` before `f`, in the order JS lists the fields, not the order Rust runs them",
+    file: "src/lower/aggregates.rs",
+    find: "        if reordered && values.iter().filter(|v| v.has_effects()).count() > 1 {",
+    replace: "        if false && reordered && values.iter().filter(|v| v.has_effects()).count() > 1 {",
+    tests: ["test/compiler.test.ts", "-t", "structs and tuples are plain objects and arrays"],
+  },
+  {
+    name: "update-fields-after-base",
+    breaks: "`Version { patch: tick(1), major: tick(2), ..made() }` makes the base first, `made` before either `tick`, not after the fields as Rust does",
+    file: "src/lower/aggregates.rs",
+    find: "                        let value = if defaults_act && value.has_effects() {",
+    replace: "                        let value = if false && defaults_act && value.has_effects() {",
+    tests: ["test/compiler.test.ts", "-t", "versions' JS: struct update in Rust's order, scan, drain and total_cmp"],
+  },
 ];

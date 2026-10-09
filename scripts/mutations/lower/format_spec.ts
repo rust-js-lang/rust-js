@@ -106,4 +106,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "matrix_integers"],
   },
+  {
+    name: "i32-hex-signed",
+    breaks: "`{:x}` of a negative `i32` is `-ff`, not its two's complement bits, `ffffff01`",
+    file: "src/lower/format_spec.rs",
+    find: "            Num::I32 => Expr::bin(Op::UShr, value, Expr::int(0)),\n",
+    replace: "",
+    tests: ["test/compiler.test.ts", "-t", "format options pad, round and change base as Rust does"],
+  },
 ];

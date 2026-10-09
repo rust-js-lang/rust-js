@@ -138,4 +138,28 @@ export const mutations: Mutation[] = [
     replace: "            ty::Adt(adt, args) if false => {\n                let mut value = Expr::bool(false);\n",
     tests: ["test/corpus.test.ts", "-t", "untagged_enums"],
   },
+  {
+    name: "derived-clone-shares-changed-vec",
+    breaks: "a derived `clone` is `{ ...s }`, sharing the `Vec` the copy is pushed to, so the push shows in the original too",
+    file: "src/lower/std_impls.rs",
+    find: "            if self.needs_clone(t) {",
+    replace: "            if false && self.needs_clone(t) {",
+    tests: ["test/compiler.test.ts", "-t", "std trait impls are direct calls, and a clone copies only what changes"],
+  },
+  {
+    name: "inner-eq-unseen",
+    breaks: "a derived `==` of a struct holding a type with a hand-written `eq` compares field by field with `$eq`, never calling that `eq`",
+    file: "src/lower/std_impls.rs",
+    find: "            ty::Adt(adt, args) => adt\n                .all_fields()\n                .any(|f| self.custom_eq_in(self.field_ty(f, args), seen)),",
+    replace: "            ty::Adt(..) => false,",
+    tests: ["test/compiler.test.ts", "-t", "== calls a hand-written eq wherever it's inside, and generics take a dictionary"],
+  },
+  {
+    name: "map-clone-shares-values",
+    breaks: "a clone of a `HashMap` of `Vec`s is `new Map(m)`, sharing each `Vec`, so a push to the clone's shows in the original's",
+    file: "src/lower/std_impls.rs",
+    find: "                let value = args.types().nth(1).filter(|&v| !set && self.needs_clone(v));",
+    replace: "                let value = args.types().nth(1).filter(|&v| false && !set && self.needs_clone(v));",
+    tests: ["test/compiler.test.ts", "-t", "HashMap and HashSet are a JS Map and Set"],
+  },
 ];

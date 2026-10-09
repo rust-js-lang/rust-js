@@ -122,4 +122,20 @@ export const mutations: Mutation[] = [
     replace: "        } else if false {\n",
     tests: ["test/compiler.test.ts", "-t", "async code becomes async functions"],
   },
+  {
+    name: "wild-closure-param-kept",
+    breaks: "`move |_| { .. }` is `(_) => { .. }`, a parameter JS ignores written out, not `() => { .. }`",
+    file: "src/lower/bodies.rs",
+    find: "                    PatKind::Wild => true,",
+    replace: "                    PatKind::Wild => false,",
+    tests: ["test/compiler.test.ts", "-t", "the counter's JS is plain DOM code"],
+  },
+  {
+    name: "self-unnamed",
+    breaks: "a method's `self` is `self` in JS, not named after its type, `counter`",
+    file: "src/lower/bodies.rs",
+    find: "                            ty::Adt(adt, _) if name.as_str() == \"self\" => {",
+    replace: "                            ty::Adt(adt, _) if false && name.as_str() == \"self\" => {",
+    tests: ["test/compiler.test.ts", "-t", "methods are their type's object of functions"],
+  },
 ];

@@ -106,4 +106,20 @@ export const mutations: Mutation[] = [
     replace: "    false\n",
     tests: ["test/diagnostics.test.ts", "-t", "one kind, cloned"],
   },
+  {
+    name: "untagged-text-kindless",
+    breaks: "an untagged enum's text payload, `ReactNodeKind::Text(&str)`, has no kind JS tells, and is refused",
+    file: "src/lower/untagged.rs",
+    find: "        if self.is_string_like(ty) || ty.is_char() {",
+    replace: "        if ty.is_char() {",
+    tests: ["test/jsx.test.ts", "-t", "JSX tells text children from any other node"],
+  },
+  {
+    name: "untagged-slice-kindless",
+    breaks: "an untagged enum's slice payload, `ReactNodeKind::List(&[..])`, isn't an array JS tells, and is refused",
+    file: "src/lower/untagged.rs",
+    find: "            || ty.is_slice()\n",
+    replace: "",
+    tests: ["test/jsx.test.ts", "-t", "JSX components take apart a list of children"],
+  },
 ];

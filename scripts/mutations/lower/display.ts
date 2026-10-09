@@ -332,4 +332,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "a width for a JsError"],
   },
+  {
+    name: "fmt-branches-build-string",
+    breaks: "a `fmt` that writes once each way through builds a string up, `let f = \"\"; if (..) { f += \"a dot\" } ..`, not a `return` each way",
+    file: "src/lower/display.rs",
+    find: "        StmtKind::If(test, then, Some(els)) => {\n            StmtKind::If(test.clone(), as_returns(then, name)?, Some(as_returns(els, name)?))",
+    replace: "        StmtKind::If(test, then, Some(els)) if false => {\n            StmtKind::If(test.clone(), as_returns(then, name)?, Some(as_returns(els, name)?))",
+    tests: ["test/compiler.test.ts", "-t", "a Display impl's fmt returns the string it writes"],
+  },
+  {
+    name: "char-debug-double-quoted",
+    breaks: "`{:?}` of a `char` is `\"b\"`, quoted as a string is, not `'b'`",
+    file: "src/lower/display.rs",
+    find: "            return Ok(Expr::call(Expr::var(\"$debugStr\"), vec![value, Expr::str(\"'\")]));",
+    replace: "            return Ok(Expr::call(Expr::var(\"$debugStr\"), vec![value]));",
+    tests: ["test/compiler.test.ts", "-t", "the calculator's JS is what a person would write"],
+  },
 ];

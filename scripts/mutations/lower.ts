@@ -394,4 +394,20 @@ export const mutations: Mutation[] = [
     replace: "} if false && !matches!(dest, Dest::Discard)",
     tests: ["test/lowering.test.ts", "-t", "enum's own names"],
   },
+  {
+    name: "const-use-shared",
+    breaks: "each use of a `const` of a struct something changes is the one object, so `p.x += dx` on `let mut p = ORIGIN` changes `ORIGIN` for its next use",
+    file: "src/lower.rs",
+    find: "            return Ok(if self.contains_mutated(ty) {\n                self.copy(place, ty)\n            } else {\n                place\n            });",
+    replace: "            return Ok(place);",
+    tests: ["test/compiler.test.ts", "-t", "constants are the values rustc computed, by name"],
+  },
+  {
+    name: "const-use-unrecorded",
+    breaks: "another module's `const`, `util::SIZE`, is read by its name, but its module isn't imported for it",
+    file: "src/lower.rs",
+    find: "            let place = self.fn_ref(def_id);",
+    replace: "            let place = Expr::var(&self.krate.fns[&def_id].name);",
+    tests: ["test/modules.test.ts", "-t", "imports follow what's used: functions, consts and thread-locals"],
+  },
 ];

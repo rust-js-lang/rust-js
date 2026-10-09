@@ -737,4 +737,20 @@ export const mutations: Mutation[] = [
     replace: "            if false && self.copies_own_captures(ty) {",
     tests: ["test/corpus.test.ts", "-t", "copied_closure_bound"],
   },
+  {
+    name: "dyn-receiver-evaluated-twice",
+    breaks: "a `dyn` method call's receiver with effects, as `make(&c).add(..)`, runs once for its value and again for its impl",
+    file: "src/lower/traits.rs",
+    find: "            let pair = if receiver.has_effects() {",
+    replace: "            let pair = if false && receiver.has_effects() {",
+    tests: ["test/traits.test.ts", "-t", "concrete, generic and dyn calls match native Rust"],
+  },
+  {
+    name: "dictionary-uncached",
+    breaks: "an impl's dictionary is made anew on each call, so two of the same impl aren't the same object",
+    file: "src/lower/traits.rs",
+    find: "        let undefined = Expr::bin(Op::Eq, Expr::var(cache), Expr::undefined());\n        let mut body = Vec::new();\n        if params.is_empty() {\n            body.push(\n                StmtKind::If(\n                    undefined,",
+    replace: "        let undefined = Expr::bin(Op::Eq, Expr::var(cache), Expr::undefined());\n        let mut body = Vec::new();\n        if params.is_empty() {\n            body.push(\n                StmtKind::If(\n                    Expr::bool(true),",
+    tests: ["test/traits.test.ts", "-t", "an empty trait implementation needs no function body"],
+  },
 ];

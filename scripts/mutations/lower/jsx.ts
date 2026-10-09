@@ -410,4 +410,12 @@ export const mutations: Mutation[] = [
     replace: "                    && false =>\n",
     tests: ["test/lowering.test.ts", "-t", "callback returns a call that gives undefined"],
   },
+  {
+    name: "jsx-shown-if-ternary",
+    breaks: "a child shown only if a test holds, `Option::map` to an element, is `t != null ? <p /> : undefined`, not the `t != null && <p />` a person writes",
+    file: "src/lower/jsx.rs",
+    find: "        if !matches!(none.kind, js::ExprKind::Undefined) {\n            return value;\n        }",
+    replace: "        if !matches!(none.kind, js::ExprKind::Undefined) || child == child {\n            return value;\n        }",
+    tests: ["test/react.test.ts", "-t", "React components are hand-written JSX, and React runs them"],
+  },
 ];

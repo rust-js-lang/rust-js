@@ -186,4 +186,20 @@ export const mutations: Mutation[] = [
     replace: "&& let Some(text) = super::options::text_or(&subject).filter(|_| false)",
     tests: ["test/lowering.test.ts", "-t", "text kept where it isn't empty"],
   },
+  {
+    name: "vec-repeat-rows-shared",
+    breaks: "`vec![vec![0; n]; n]` is one row `n` times, `new Array(n).fill(row)`, so a write to one row is a write to all",
+    file: "src/lower/combinators.rs",
+    find: "        if !self.needs_clone(item_ty) {\n            let array = Expr::new_(Expr::var(\"Array\"), vec![n]);",
+    replace: "        if true || !self.needs_clone(item_ty) {\n            let array = Expr::new_(Expr::var(\"Array\"), vec![n]);",
+    tests: ["test/compiler.test.ts", "-t", "numbers are Math's, operators call their impl, and vec!\\[x; n\\] fills"],
+  },
+  {
+    name: "peekable-unstepped",
+    breaks: "`src.chars().peekable()` is the array of chars itself, not a `$iter` that knows where it is, so `$peek` and `$next` read nothing",
+    file: "src/lower/combinators.rs",
+    find: "                self.stepped_items(items)\n            }\n            StepOp::Peek if boxed => {",
+    replace: "                items\n            }\n            StepOp::Peek if boxed => {",
+    tests: ["test/compiler.test.ts", "-t", "the lexer's JS steps through its source with \\$next and \\$peek"],
+  },
 ];

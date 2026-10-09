@@ -115,4 +115,12 @@ export const mutations: Mutation[] = [
     replace: "matches!(ty.kind(), ty::Closure(..)) && self.is_copy(ty)",
     tests: ["test/corpus.test.ts", "-t", "moved_closure"],
   },
+  {
+    name: "mutated-type-any-instance",
+    breaks: "a type's arguments aren't compared: a mutated `Pair<u32>` makes every `Pair<..>` copied where it's read, `Pair<bool>` too, which nothing changes",
+    file: "src/lower/copies.rs",
+    find: "(Some(arg), Some(general)) => self.instance_of(arg, general),",
+    replace: "(Some(_), Some(_)) => true,",
+    tests: ["test/lowering.test.ts", "-t", "copies are made for the mutated instantiations of a generic type only"],
+  },
 ];

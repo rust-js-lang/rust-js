@@ -35,4 +35,12 @@ export const mutations: Mutation[] = [
     replace: "                        let given = if true || self.is_object(item) {",
     tests: ["test/corpus.test.ts", "-t", "collection_methods"],
   },
+  {
+    name: "local-with-closure-called",
+    breaks: "`START.with(|s| s.get())` calls the closure it's given, `((s) => s.value)(START)`, not `START.value` in place",
+    file: "src/lower/cells.rs",
+    find: "                let (key, f) = (arg(), arg());\n                apply(f, vec![key])\n",
+    replace: "                let (key, f) = (arg(), arg());\n                Expr::call(f, vec![key])\n",
+    tests: ["test/compiler.test.ts", "-t", "thread-locals are module variables"],
+  },
 ];

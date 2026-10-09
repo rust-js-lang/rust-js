@@ -99,4 +99,12 @@ export const mutations: Mutation[] = [
     replace: "vec![Expr::int(0)],",
     tests: ["test/corpus.test.ts", "-t", "^slice_split.rs"],
   },
+  {
+    name: "split-whitespace-js-s",
+    breaks: "`split_whitespace()` splits by JS's `\\s`, at U+FEFF too, where Rust's whitespace is Unicode's `White_Space`",
+    file: "src/lower/text.rs",
+    find: "                let words = method(arg(), \"split\", vec![Expr::regex(\"/\\\\p{White_Space}+/u\")]);",
+    replace: "                let words = method(arg(), \"split\", vec![Expr::regex(\"/\\\\s+/\")]);",
+    tests: ["test/compiler.test.ts", "-t", "chars, parse and slices are plain JS with Rust's answers"],
+  },
 ];

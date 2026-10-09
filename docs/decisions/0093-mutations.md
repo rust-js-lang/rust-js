@@ -156,3 +156,26 @@ crates: `bindings.test.ts`, the binding language and the js and webapi
 crates; `modules.test.ts`, a crate's modules as files; `stable.test.ts`,
 plain stable Rust; and `lowering.test.ts`, the rest. `compiler.test.ts`
 keeps the 45 that check its programs.
+
+## Amendment: each test shows what it's for
+
+125 tests of the compiler were named by no mutation, so nothing showed
+they'd fail if what they check broke: 36 of `compiler.test.ts`'s, 36 of
+`jsx.test.ts`'s (behind two mutations that run the whole file), and the
+rest across a dozen files. Each was audited:
+
+- **89 have mutations now**, 96 in all, each seen caught by the test it
+  names: a rule of the code the test is for taken away. Some were the
+  first of their code: the `new`, setter and index-setter forms of a
+  binding, `$try`, `$toFixed`'s ties, a library's `drops`, object keys
+  quoted.
+- **9 are covered**: an existing mutation of what they check, run against
+  each alone, is caught by it too.
+- **27 check what no mutation can reach**: the react, js and webapi
+  crates' types and messages, which rustc checks; plain rustc and Cargo;
+  or native Rust itself, as "native Rust ran every case" does.
+- **None was deleted**: each checks something no other test does, or
+  is one of the covered, which check more than their mutation.
+
+What a mutation can't reach isn't untested: rustc checks the crates'
+types where they're used, and the corpus runs each against native Rust.

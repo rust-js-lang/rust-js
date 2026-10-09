@@ -141,4 +141,12 @@ export const mutations: Mutation[] = [
     replace: "let (current, target) = match None::<String> {",
     tests: ["test/corpus.test.ts", "-t", "generic_writers"],
   },
+  {
+    name: "boxed-arg-not-copied-back",
+    breaks: "a `&mut` to a string given to a function is boxed, but what the function writes isn't copied back, so `pretty(v, 0, &mut p)` leaves `p` as it was",
+    file: "src/lower/mut_refs.rs",
+    find: "        for (target, name) in backs {\n",
+    replace: "        for (target, name) in backs.into_iter().filter(|_| false) {\n",
+    tests: ["test/compiler.test.ts", "-t", "values' JS: boxes for &mut to primitives, and recursive clones"],
+  },
 ];

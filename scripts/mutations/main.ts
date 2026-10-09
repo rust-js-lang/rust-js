@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "        let ours = [\"rust-js\", \"--check-cfg=cfg(rust_js)\"].map(String::from);\n",
     tests: ["test/snapshots.test.ts","-t","counter"],
   },
+  {
+    name: "rustc-bootstrapped",
+    breaks: "rust-js turns its rustc's unstable features on, as `RUSTC_BOOTSTRAP=1` does, so a crate's own `#![feature]` compiles where a stable release refuses it",
+    file: "src/main.rs",
+    find: "    let mut rustc_args = vec![\n        \"rust-js\".to_string(), // argv[0], ignored by rustc",
+    replace: "    unsafe { std::env::set_var(\"RUSTC_BOOTSTRAP\", \"1\") };\n    let mut rustc_args = vec![\n        \"rust-js\".to_string(), // argv[0], ignored by rustc",
+    tests: ["test/diagnostics.test.ts", "-t", "a crate's own #!\\[feature\\] is refused, as on a stable release"],
+  },
 ];

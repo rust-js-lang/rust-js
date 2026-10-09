@@ -83,4 +83,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "generic_traits"],
     snapshots: true,
   },
+  {
+    name: "format-out-of-order-effects-inline",
+    breaks: "`format!(\"{1} {0}\", f(), g())` writes its arguments in place in the template, so `g` runs before `f`, in the order shown, not the order Rust runs them",
+    file: "src/lower/format_args.rs",
+    find: "            } else if effects {",
+    replace: "            } else if false && effects {",
+    tests: ["test/compiler.test.ts", "-t", "format! writes its arguments in place, in the order Rust runs them"],
+  },
 ];

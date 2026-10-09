@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: 'vec![value, Expr::str("key not found")]',
     tests: ["test/corpus.test.ts", "-t", "map_index_missing"],
   },
+  {
+    name: "ordered-key-custom-ord",
+    breaks: "a `BTreeMap` of a key with its own `Ord` is kept in the key's JS order, not the order its `cmp` says",
+    file: "src/lower/maps.rs",
+    find: "            && (!ordered || !self.has_user_impl(self.ord_trait(), peeled));",
+    replace: ";",
+    tests: ["test/semantics.test.ts", "-t", "BTreeMap rejects custom ordering even when equality is derived"],
+  },
 ];

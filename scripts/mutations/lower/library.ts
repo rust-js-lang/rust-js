@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "            no_drops: Vec::new(),",
     tests: ["test/crates.test.ts","-t","no destructor by its consumers"],
   },
+  {
+    name: "library-drops-unlisted",
+    breaks: "a library's manifest says none of its functions takes a drop, so a consumer gives `Sink.put` none, and its value isn't dropped",
+    file: "src/lower/library.rs",
+    find: "            drops: drop_params.get(&id).cloned().unwrap_or_default(),",
+    replace: "            drops: Vec::new(),",
+    tests: ["test/crates.test.ts", "-t", "a library's generic trait method drops a consumer's value where Rust does"],
+  },
 ];

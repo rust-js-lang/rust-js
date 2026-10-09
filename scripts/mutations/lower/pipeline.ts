@@ -178,4 +178,28 @@ export const mutations: Mutation[] = [
     replace: "            .truncate(0);\n",
     tests: ["test/modules.test.ts", "-t", "default of another module"],
   },
+  {
+    name: "unshown-debug-kept",
+    breaks: "a derived `Debug` nothing shows is in the JS anyway, a function no one calls",
+    file: "src/lower/pipeline.rs",
+    find: "        .filter(|(id, _)| !derived.contains(id) || reached.contains(id))",
+    replace: "        .filter(|(id, _)| true || !derived.contains(id) || reached.contains(id))",
+    tests: ["test/compiler.test.ts", "-t", "a derived Debug is a function, left out unless something shows the type"],
+  },
+  {
+    name: "private-type-object-exported",
+    breaks: "a type's object is exported though none of its methods is, `export const Tally`, where only its module uses it",
+    file: "src/lower/pipeline.rs",
+    find: "                                methods: vec![lowered.function],\n                                export,\n",
+    replace: "                                methods: vec![lowered.function],\n                                export: true,\n",
+    tests: ["test/modules.test.ts", "-t", "methods across modules, in a thread-local, and camelCase"],
+  },
+  {
+    name: "dictionary-jsx-unmarked",
+    breaks: "an impl whose copied default renders JSX is written to a `.js` file, which a JS tool won't parse",
+    file: "src/lower/pipeline.rs",
+    find: "                cx.lower_dictionary(def_id, &cache).map(|function| super::LoweredFn {\n                    function,\n                    runtime: std::mem::take(&mut cx.runtime),\n                    jsx: cx.jsx,",
+    replace: "                cx.lower_dictionary(def_id, &cache).map(|function| super::LoweredFn {\n                    function,\n                    runtime: std::mem::take(&mut cx.runtime),\n                    jsx: false,",
+    tests: ["test/traits.test.ts", "-t", "copied JSX defaults select the implementation module's JSX extension"],
+  },
 ];

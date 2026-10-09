@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "            Std::IsEmpty if false && self.is_string_like(self.thir[args[0]].ty.peel_refs()) => {\n",
     tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
   },
+  {
+    name: "lazy-count-length",
+    breaks: "`count()` of a JS iterator, `list.values().filter(..)`, is its `.length`, which a JS iterator doesn't have",
+    file: "src/lower/vecs.rs",
+    find: "            Std::Len if self.is_lazy_value(args[0]) => {",
+    replace: "            Std::Len if false && self.is_lazy_value(args[0]) => {",
+    tests: ["test/compiler.test.ts", "-t", "the webapi crate's bindings become plain JS"],
+  },
 ];

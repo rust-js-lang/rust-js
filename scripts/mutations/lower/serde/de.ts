@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "                if false && self.is_value_key(item) && !self.is_js_key(item) {",
     tests: ["test/serde.test.ts", "-t", "set of structs"],
   },
+  {
+    name: "generic-codec-readers-unpassed",
+    breaks: "a generic type's derived `deserialize` is given no readers of its type arguments, so it reads its items with `undefined` and throws",
+    file: "src/lower/serde/de.rs",
+    find: "                if readers.is_empty() {\n                    return Ok(callee);\n                }",
+    replace: "                if !readers.is_empty() {\n                    return Ok(callee);\n                }",
+    tests: ["test/serde.test.ts", "-t", "a generic type's derived codec of a value with a destructor"],
+  },
 ];

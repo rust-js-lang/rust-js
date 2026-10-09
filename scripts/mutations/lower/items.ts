@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "            Std::IsSome => Expr::bin(Op::LooseEq, x, Expr::null()),",
     tests: ["test/corpus.test.ts","-t","expression_values"],
   },
+  {
+    name: "copied-default-import-unused",
+    breaks: "a trait's default that calls a JS import, copied into an impl in another module, calls it there unimported, and throws a `ReferenceError`",
+    file: "src/lower/items.rs",
+    find: "            Some((export, rest)) => {\n                self.dependencies\n                    .borrow_mut()\n                    .package_uses\n                    .insert((self.module, export.clone()));\n                global(",
+    replace: "            Some((export, rest)) => {\n                global(",
+    tests: ["test/traits.test.ts", "-t", "impls and default bodies retain their defining modules across cycles"],
+  },
 ];

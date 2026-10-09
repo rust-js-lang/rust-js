@@ -203,4 +203,12 @@ export const mutations: Mutation[] = [
     replace: "                            vec![tried, Expr::str(\"Zero\")],\n",
     tests: ["test/corpus.test.ts","-t","nonzero"],
   },
+  {
+    name: "big-div-unknown-unchecked",
+    breaks: "an `i64` division by what may be zero is `7n / zero`, which throws JS's `RangeError`, not Rust's panic",
+    file: "src/lower/numbers.rs",
+    find: "                    .or_else(|| r.as_bigint())\n                    .is_some_and(|d| d != 0 && !(num.signed() && d == -1));",
+    replace: "                    .or_else(|| r.as_bigint())\n                    .is_none_or(|d| d != 0 && !(num.signed() && d == -1));",
+    tests: ["test/compiler.test.ts", "-t", "64-bit integers are BigInts, wrapped as release Rust wraps them"],
+  },
 ];

@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "            return Ok(Some(Expr::bin(op, a, b)));",
     tests: ["test/corpus.test.ts", "-t", "code_point_order"],
   },
+  {
+    name: "partial-parts-joined-by-or",
+    breaks: "a derived `partial_cmp` of `f64` parts joins them with `||`, so a `NaN` part, unordered, goes on to the next part, not `None`",
+    file: "src/lower/ordering.rs",
+    find: "                let total = !partial || parts.iter().all(|&(_, _, t)| self.is_total(t));",
+    replace: "                let total = true || !partial || parts.iter().all(|&(_, _, t)| self.is_total(t));",
+    tests: ["test/compiler.test.ts", "-t", "PartialOrd and Ord compare with \\$cmp, a hand-written cmp, or the parts in turn"],
+  },
 ];

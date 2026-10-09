@@ -174,4 +174,20 @@ export const mutations: Mutation[] = [
     replace: "if self.copies_own_captures(ty) && !self.body_facts.lent.contains(&self.strip(e)) {",
     tests: ["test/corpus.test.ts", "-t", "moved_closure"],
   },
+  {
+    name: "map-slot-not-put-back",
+    breaks: "`*have -= e.qty` of `m.get_mut(&k)`'s number changes only its copy, and the map keeps the old count",
+    file: "src/lower/places.rs",
+    find: "                out.push(StmtKind::Expr(Expr::call(Expr::member(map, \"set\"), vec![key, local])).at(span));\n",
+    replace: "",
+    tests: ["test/compiler.test.ts", "-t", "the store's JS: let-else, ranges, and writes through a map's value"],
+  },
+  {
+    name: "constant-index-checked",
+    breaks: "an array's constant index below its length, `HEADERS[0]`, is checked, `$index(HEADERS, 0)`, as an index that may be past the end is",
+    file: "src/lower/places.rs",
+    find: "        (0..i128::from(len)).contains(&i)",
+    replace: "        false && (0..i128::from(len)).contains(&i)",
+    tests: ["test/compiler.test.ts", "-t", "the report's JS: function values, case mapping, and plain array reads"],
+  },
 ];
