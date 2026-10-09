@@ -23,8 +23,10 @@ And webapi had no `console`, whose `console.warn` it calls.
 ## Decision
 
 - **`x == null || !x` is `!x`**: `null` and `undefined` are falsy.
-- **A range's end of a length nothing in the body changes, `xs.len()` of
-  an `xs` never changed, is `i < xs.length`**, read each time round as
+- **A range's end of a length nothing in the loop's body changes,
+  `xs.len()`, is `i < xs.length`**, as is a change before the loop, a
+  closure's too: Rust's borrows let nothing outside the body change `xs`
+  while the loop reads it, read each time round as
   JS's is; one the body may change is still a `const`, as Rust reads it
   once. A `VecDeque`'s length and index are a `Vec`'s, so `args[i]` in it
   is in bounds.

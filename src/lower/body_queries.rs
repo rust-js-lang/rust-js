@@ -228,6 +228,13 @@ impl BodyFacts {
         self.changed.contains_key(&var)
     }
 
+    /// Whether anything in `region` changes `var`: a loop's body, which
+    /// Rust's borrows let nothing outside it change while it reads it (ADR 0313).
+    pub(super) fn changed_in(&self, var: LocalVarId, region: Span) -> bool {
+        let region = region.source_callsite();
+        (self.changed.get(&var)).is_some_and(|changes| changes.iter().any(|change| region.contains(*change)))
+    }
+
     pub(super) fn changed_after(&self, var: LocalVarId, at: Span) -> bool {
         let at = at.source_callsite();
         let changes = self.changed.get(&var).map_or(&[][..], Vec::as_slice);
@@ -523,8 +530,14 @@ pub(super) fn known_in_bounds<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Has
     let query = BodyQuery { tcx, thir };
     let changed = changes(thir);
     let fixed = |var: LocalVarId| !changed.contains_key(&var);
-    // The slice a place is, through references: `items` of `*items`.
-    let slice = |mut e: ExprId| {
+    // Whether nothing in `region` changes `var`: a loop's body, which Rust's
+    // borrows let nothing outside it change while it reads it (ADR 0313).
+    let unchanged_in = |var: LocalVarId, region: Span| {
+        !(changed.get(&var)).is_some_and(|changes| changes.iter().any(|change| region.contains(*change)))
+    };
+    // The slice a place is, through references: `items` of `*items`, of a
+    // variable `fixed` says may be read where it's known.
+    let place_of = |mut e: ExprId, fixed: &dyn Fn(LocalVarId) -> bool| {
         let mut path = Vec::new();
         loop {
             e = strip(thir, e);
@@ -545,6 +558,8 @@ pub(super) fn known_in_bounds<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Has
             }
         }
     };
+    let slice = |e: ExprId| place_of(e, &fixed);
+    let any_slice = |e: ExprId| place_of(e, &|_| true);
     let asks = |e: ExprId, of: SliceLength| match thir[strip(thir, e)].kind {
         ExprKind::Call { fun, ref args, .. } => fn_def(thir[strip(thir, fun)].ty)
             .filter(|&(def_id, generic_args)| slice_length(tcx, def_id, generic_args) == Some(of))
@@ -665,10 +680,16 @@ pub(super) fn known_in_bounds<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Has
             }
             ExprKind::Match { .. } => {
                 let Some(for_loop) = query.as_for(id) else { continue };
+                let body = at(thir[for_loop.body].span);
                 if let ExprKind::Adt(ref range) = thir[strip(thir, for_loop.head)].kind
                     && tcx.is_lang_item(range.adt_def.did(), LangItem::Range)
                     && let [_, end] = &range.fields[..]
-                    && let Some((path, var)) = asks(end.expr, SliceLength::Len)
+                    && let ExprKind::Call { fun, ref args, .. } = thir[strip(thir, end.expr)].kind
+                    && fn_def(thir[strip(thir, fun)].ty).is_some_and(|(def_id, generic_args)| {
+                        slice_length(tcx, def_id, generic_args) == Some(SliceLength::Len)
+                    })
+                    && let Some((path, var)) = any_slice(args[0])
+                    && unchanged_in(var, body)
                     && let PatKind::Binding {
                         var: index,
                         mode: BindingMode(ByRef::No, Mutability::Not),
@@ -698,7 +719,7 @@ pub(super) fn known_in_bounds<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Has
             }
             _ => continue,
         };
-        let Some((path, var)) = slice(items) else { continue };
+        let Some((path, var)) = any_slice(items) else { continue };
         let here = at(expr.span);
         let shown_here = known.iter().filter(|(region, _)| region.contains(here)).map(|(_, l)| l);
         let ok = match (constant(index), index_var(index)) {

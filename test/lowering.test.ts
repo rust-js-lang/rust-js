@@ -3405,6 +3405,16 @@ pub fn joined(args: VecDeque<u32>) -> String {
     formatted
 }
 
+pub fn shifted(mut args: VecDeque<u32>) -> String {
+    let mut take = || args.pop_front();
+    take();
+    let mut formatted = String::new();
+    for i in 0..args.len() {
+        formatted += &format!(" {}", args[i]);
+    }
+    formatted
+}
+
 pub fn drained(mut args: Vec<u32>) -> u32 {
     let mut total = 0;
     for _ in 0..args.len() {
@@ -3429,11 +3439,14 @@ pub fn hi() -> String {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("return !escaped;");
   expect(js).toContain("for (let i = 0; i < args.length; i++) {\n    formatted += ` ${args[i]}`;");
+  // Changed before the loop only, by a closure even, as Rust's borrows
+  // allow nothing else while the loop reads it.
+  expect(js).toMatch(/export function shifted\(args\) \{[^]*for \(let i = 0; i < args\.length; i\+\+\) \{\n    formatted \+= ` \$\{args\[i\]\}`;/);
   // One whose body changes the length reads its end once, as Rust does.
   expect(js).toContain("const end = args.length;");
   expect(js).toContain("return [...prev, ...next];");
   expect(js).toContain('return greet("Ada");');
   const lib = await import(join(dir, "lib.js"));
   expect([lib.unescaped(undefined), lib.unescaped(""), lib.unescaped("%")]).toEqual([true, true, false]);
-  expect([lib.joined([1, 2]), lib.drained([1, 2, 3]), lib.both([1], [2, 3]), lib.hi()]).toEqual([" 1 2", 6, [1, 2, 3], "Ada"]);
+  expect([lib.joined([1, 2]), lib.shifted([1, 2, 3]), lib.drained([1, 2, 3]), lib.both([1], [2, 3]), lib.hi()]).toEqual([" 1 2", " 2 3", 6, [1, 2, 3], "Ada"]);
 });

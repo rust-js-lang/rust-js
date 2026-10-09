@@ -322,4 +322,12 @@ export const mutations: Mutation[] = [
     replace: "                .any(|_| false)\n",
     tests: ["test/lowering.test.ts", "-t", "a closure copies only what may be set"],
   },
+  {
+    name: "in-bounds-changed-anywhere",
+    breaks: "a range loop's `args[i]` of an `args` changed only before the loop is `$index(args, i)`",
+    file: "src/lower/body_queries.rs",
+    find: "                    && unchanged_in(var, body)\n",
+    replace: "                    && unchanged_in(var, body)\n                    && fixed(var)\n",
+    tests: ["test/lowering.test.ts", "-t", "Console's loops"],
+  },
 ];
