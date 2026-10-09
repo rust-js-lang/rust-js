@@ -21,3 +21,4 @@ node_modules/
 
 # A binding crate checked on its own, `cargo check` in next/ say.
 /*/target
+.DS_Store
