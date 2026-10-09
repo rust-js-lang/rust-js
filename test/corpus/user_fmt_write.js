@@ -30,19 +30,19 @@ function collectorWrite_write_str(collector, s) {
   collector.text += s;
   const value = $byteLen(s);
   collector.bytes = (collector.bytes + value) >>> 0;
-  return undefined;
+  return;
 }
 
 function shoutingWrite_write_str(shouting, s) {
   shouting[0] = shouting[0] + s.toUpperCase();
-  return undefined;
+  return;
 }
 
 function shoutingWrite_write_char(shouting, c) {
   shouting[0] = shouting[0] + "<";
   shouting[0] = shouting[0] + c;
   shouting[0] = shouting[0] + ">";
-  return undefined;
+  return;
 }
 
 function pointDisplay_fmt(point) {

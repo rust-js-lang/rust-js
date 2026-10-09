@@ -8,7 +8,7 @@ function make(n) {
   if (n > 0) {
     return [n];
   }
-  return undefined;
+  return;
 }
 
 function even(d) {

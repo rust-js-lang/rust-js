@@ -31,7 +31,7 @@ function largest(items, TPartialOrd) {
   const it = $iter(items);
   const value = $nextSome(it);
   if (value == null) {
-    return undefined;
+    return;
   }
   let best = $someValue(value);
   for (const item of it) {
@@ -110,7 +110,7 @@ export function edges() {
   const upto = $scan([5, 3, 8, 1], 1, (acc, x) => {
     acc.value = Math.imul(acc.value, x) >>> 0;
     if (acc.value > 100) {
-      return undefined;
+      return;
     }
     return acc.value;
   });

@@ -74,6 +74,6 @@ function equalNamesIterator_next(equalNames) {
       return n;
     }
   }
-  return undefined;
+  return;
 }
 //# sourceMappingURL=case.js.map

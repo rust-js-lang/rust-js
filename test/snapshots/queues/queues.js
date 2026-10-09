@@ -50,7 +50,7 @@ export const Pipeline = {
 function first_even_square(v) {
   const e = v.find((x) => x % 2 === 0);
   if (e == null) {
-    return undefined;
+    return;
   }
   return Math.imul(e, e);
 }

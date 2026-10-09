@@ -17,7 +17,7 @@ export function pick(x, keep) {
   if (keep) {
     return $some(x);
   }
-  return undefined;
+  return;
 }
 
 export function kept(xs) {
@@ -47,7 +47,7 @@ export function mapped(x, f) {
 export function tried(x, keep) {
   const v = pick(x, keep);
   if (v == null) {
-    return undefined;
+    return;
   }
   return $some($someValue(v));
 }

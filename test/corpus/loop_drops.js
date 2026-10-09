@@ -20,7 +20,7 @@ function first_long(items) {
       noisyDrop_drop(left);
     }
   }
-  return undefined;
+  return;
 }
 
 function main() {
@@ -207,7 +207,7 @@ function noisyDrop_drop(noisy) {
 function countdownIterator_next(countdown) {
   const value = $checked(countdown[0] - 1, 0, 255);
   if (value == null) {
-    return undefined;
+    return;
   }
   countdown[0] = value;
   return [$index(["c0", "c1", "c2"], countdown[0])];

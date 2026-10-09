@@ -11,7 +11,7 @@ function first_long(items, BAsRefStr) {
       return $byteLen(text);
     }
   }
-  return undefined;
+  return;
 }
 
 function second(items) {

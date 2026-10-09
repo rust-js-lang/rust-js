@@ -34,7 +34,7 @@ function rebuild(p, stop) {
   try {
     let tmp;
     if (stop) {
-      return undefined;
+      return;
     }
     tmp = [9];
     p$x$live = false;

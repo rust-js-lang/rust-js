@@ -24,7 +24,7 @@ function half(n) {
   if (n % 2 === 0) {
     return (n / 2) >>> 0;
   }
-  return undefined;
+  return;
 }
 
 function parse(c) {
@@ -114,7 +114,7 @@ export function consumers(n) {
         if (x > 2) {
           return Math.imul(x, 100) >>> 0;
         }
-        return undefined;
+        return;
       })
       .find((item) => item != null),
     $partition(v, (x) => x % 2 === 0),

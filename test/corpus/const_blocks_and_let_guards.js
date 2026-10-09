@@ -42,7 +42,7 @@ function first_even(items) {
       }
     }
   }
-  return undefined;
+  return;
 }
 
 function main() {

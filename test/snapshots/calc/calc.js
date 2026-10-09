@@ -187,7 +187,7 @@ export function first_dup(s) {
       return [i, c];
     }
   }
-  return undefined;
+  return;
 }
 
 export function report() {

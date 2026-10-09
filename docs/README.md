@@ -390,6 +390,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0296 A function a block makes and gives is a named function expression](decisions/0296-named-function-expressions.md)
 - [0297 A closure a `let` names for a hook is the hook's named function](decisions/0297-named-hook-functions.md)
 - [0298 An Option of a value never falsy is tested by its truth](decisions/0298-truthy-options.md)
+- [0299 A return of `undefined` is a bare `return;`](decisions/0299-bare-return.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

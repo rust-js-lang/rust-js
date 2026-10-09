@@ -8,7 +8,7 @@ function step(d) {
   if (d[0] < 3) {
     return [(d[0] + 1) >>> 0];
   }
-  return undefined;
+  return;
 }
 
 function climb(d) {
@@ -16,7 +16,7 @@ function climb(d) {
   try {
     const value = step(d);
     if (value == null) {
-      return undefined;
+      return;
     }
     if (d$live) {
       dDrop_drop(d);
@@ -25,7 +25,7 @@ function climb(d) {
     d$live = true;
     const value$1 = step(d);
     if (value$1 == null) {
-      return undefined;
+      return;
     }
     if (d$live) {
       dDrop_drop(d);
@@ -45,7 +45,7 @@ function first(d) {
   try {
     const value = step(d);
     if (value == null) {
-      return undefined;
+      return;
     }
     const e = value;
     try {
@@ -61,7 +61,7 @@ function first(d) {
 function discarded(d) {
   const value = step(d);
   if (value == null) {
-    return undefined;
+    return;
   }
   dDrop_drop(value);
   return 0;
@@ -96,7 +96,7 @@ function twice(base, TCheckedDouble, dropT) {
   try {
     const value = TCheckedDouble.checked_double(base);
     if (value == null) {
-      return undefined;
+      return;
     }
     const next = $someValue(value);
     if (base$live) {
@@ -106,7 +106,7 @@ function twice(base, TCheckedDouble, dropT) {
     base$live = true;
     const value$1 = TCheckedDouble.checked_double(base);
     if (value$1 == null) {
-      return undefined;
+      return;
     }
     const next$1 = $someValue(value$1);
     if (base$live) {
@@ -219,7 +219,7 @@ function dCheckedDouble_checked_double(d) {
   if (d[0] < 10) {
     return [Math.imul(d[0], 2) >>> 0];
   }
-  return undefined;
+  return;
 }
 
 function dCheckedDouble() {

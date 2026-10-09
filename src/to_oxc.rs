@@ -687,7 +687,16 @@ impl<'a> Cx<'a> {
                 Statement::new_continue_statement(sp, label.as_deref().map(|l| self.label(l)), b)
             }
             StmtKind::Throw(value) => Statement::new_throw_statement(sp, self.expr(value), b),
-            StmtKind::Return(value) => Statement::new_return_statement(sp, value.as_ref().map(|v| self.expr(v)), b),
+            // `return;` of `undefined`, as JS ends a function with nothing to give
+            // (ADR 0299).
+            StmtKind::Return(value) => Statement::new_return_statement(
+                sp,
+                value
+                    .as_ref()
+                    .filter(|v| !matches!(v.kind, ExprKind::Undefined))
+                    .map(|v| self.expr(v)),
+                b,
+            ),
         }
     }
 

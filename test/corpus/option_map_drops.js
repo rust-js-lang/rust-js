@@ -6,7 +6,7 @@ function make(n) {
   if (n > 0) {
     return [n];
   }
-  return undefined;
+  return;
 }
 
 function wrapped(value, dropT) {
@@ -20,7 +20,7 @@ function keep_if(value, keep, dropT) {
       value$live = false;
       return value;
     }
-    return undefined;
+    return;
   } finally {
     if (value$live) {
       if (value != null) {

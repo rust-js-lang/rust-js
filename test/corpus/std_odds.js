@@ -4,7 +4,7 @@ import { $debugStr, $print } from "@rust-js/runtime";
 
 function greet(err) {
   console.error("to stderr 1");
-  return undefined;
+  return;
 }
 
 function table(rows) {
@@ -14,7 +14,7 @@ function table(rows) {
     $print(`${Math.imul(row, row) >>> 0} `);
   }
   console.log("");
-  return undefined;
+  return;
 }
 
 function main() {

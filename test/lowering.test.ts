@@ -819,7 +819,7 @@ pub fn Page() -> JSX::Element {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(js).toContain('<Label text="hi" shown />');
-  expect(js).toContain("    return undefined;");
+  expect(js).toContain("    return;");
   expect(js).toContain("export function Shown({ children }) {");
   const { renderToStaticMarkup } = await import("react-dom/server");
   const lib = await import(join(dir, "lib.jsx"));
@@ -2868,4 +2868,28 @@ pub fn kept(error: Option<&Failure>, ready: bool) -> (bool, u32) {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.shown({ message: "" }, true), lib.shown(undefined, true), lib.shown(undefined, false), lib.kept({ message: "" }, true)])
     .toEqual([101, 10, 101, [true, 1]]);
+});
+
+// ADR 0299: a `return` of `undefined` is a bare `return;`, as react.dev's
+// NavigationBar ends its effect, `} else { return; }`.
+test("a return of undefined is a bare return", async () => {
+  const dir = fixture("bare-return");
+  writeFileSync(join(dir, "lib.rs"), `pub fn halved(n: u32) -> Option<u32> {
+    if n % 2 == 1 {
+        return None;
+    }
+    Some(n / 2)
+}
+
+pub fn cleanup(on: bool) -> Option<fn()> {
+    fn noop() {}
+    if on { Some(noop) } else { None }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toContain("return undefined;");
+  expect(js.match(/return;/g)?.length).toBe(2);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.halved(3), lib.halved(4), lib.cleanup(false)]).toEqual([undefined, 2, undefined]);
 });

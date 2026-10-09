@@ -228,7 +228,7 @@ function main() {
     .map(([sku, item$1]) => {
       const value = restock.get(sku);
       if (value == null) {
-        return undefined;
+        return;
       }
       const more = value;
       item$1.stock = (item$1.stock + more) >>> 0;

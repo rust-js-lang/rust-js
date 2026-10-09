@@ -146,7 +146,7 @@ export function Counter() {
   const [n, setN] = useState(0);
   useEffect(() => {
     if (n === 0) {
-      return undefined;
+      return;
     }
     return () => {
       globalThis.log(`cleanup ${n}`);

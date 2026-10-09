@@ -494,7 +494,7 @@ function labeledDisplay_fmt(labeled, TDisplay) {
 
 function countdownIterator_next(countdown$1) {
   if (countdown$1.n === 0) {
-    return undefined;
+    return;
   }
   countdown$1.n = (countdown$1.n - 1) >>> 0;
   return (countdown$1.n + 1) >>> 0;
@@ -509,7 +509,7 @@ function fibonacciIterator_next(fibonacci$1) {
 
 function repeatIterator_next(repeat, TClone) {
   if (repeat.times === 0) {
-    return undefined;
+    return;
   }
   repeat.times = (repeat.times - 1) >>> 0;
   return $some(TClone.clone(repeat.item));

@@ -6,7 +6,7 @@ export function half(n) {
   if (n % 2 === 0) {
     return (n / 2) | 0;
   }
-  return undefined;
+  return;
 }
 
 export function describe(o) {
@@ -100,7 +100,7 @@ function pair(n) {
   if (n > 0) {
     return [n, (n + 1) | 0];
   }
-  return undefined;
+  return;
 }
 
 export function mapped(n) {

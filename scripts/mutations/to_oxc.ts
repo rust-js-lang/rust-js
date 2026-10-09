@@ -322,4 +322,12 @@ export const mutations: Mutation[] = [
     replace: "        .map(|(_, _, line)| line)\n        .chain(runtime)\n        .chain(effects)",
     tests: ["test/modules.test.ts", "-t", "imports are packages"],
   },
+  {
+    name: "return-undefined-written",
+    breaks: "a `return` of `undefined` says it, `return undefined;`, where JS writes `return;`",
+    file: "src/to_oxc.rs",
+    find: "                    .filter(|v| !matches!(v.kind, ExprKind::Undefined))\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "a return of undefined is a bare return"],
+  },
 ];

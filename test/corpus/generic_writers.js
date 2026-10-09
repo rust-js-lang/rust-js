@@ -21,7 +21,7 @@ function write_time(w, hours, minutes, label, WWrite) {
     WWrite.write_str(w, " ");
     WWrite.write_fmt(w, `[${label}:${String((hours + minutes) & 255).padStart(3)}]`);
   }
-  return undefined;
+  return;
 }
 
 function to_writer(bits, writer, Write) {
@@ -112,7 +112,7 @@ function counterWrite_write_str(counter, s) {
   const value = Array.from(s).length;
   counter.chars = (counter.chars + value) >>> 0;
   counter.text += s;
-  return undefined;
+  return;
 }
 
 function flagsDisplay_fmt(flags) {

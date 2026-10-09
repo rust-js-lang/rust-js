@@ -88,7 +88,7 @@ function sinkTakeA_take(sink, _a, dropA) {
 
 function sinkTakeA_make(_a, dropA) {
   try {
-    return undefined;
+    return;
   } finally {
     dropA?.(_a);
   }
@@ -126,7 +126,7 @@ function keepTakeA_take(keep, a, dropA) {
 
 function keepTakeA_make(_a, dropA) {
   try {
-    return undefined;
+    return;
   } finally {
     dropA?.(_a);
   }

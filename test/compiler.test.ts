@@ -572,7 +572,7 @@ test("a throwing JS call is a Result, and ? returns early", async () => {
   expect(js).toContain('await $settle(Promise.reject("no"))');
   const results = await Bun.file(join(target, "results.js")).text();
   // On an option, the value keeps the variable's name.
-  expect(results).toContain("  const a = half(n);\n  if (a == null) {\n    return undefined;\n  }");
+  expect(results).toContain("  const a = half(n);\n  if (a == null) {\n    return;\n  }");
   expect(results).toContain('    r.TAG === "Ok" ? r._0 : 99,');
 });
 
@@ -682,7 +682,7 @@ test("constants are the values rustc computed, by name", async () => {
 // ADR 0030: `Some(x)` is `x`, `None` is `undefined`, and `null` counts as `None`.
 test("options are the value or undefined", async () => {
   const js = await Bun.file(join(target, "options.js")).text();
-  expect(js).toContain("    return (n / 2) | 0;\n  }\n  return undefined;");
+  expect(js).toContain("    return (n / 2) | 0;\n  }\n  return;");
   // `Some(0)` needs no `!= null`; `Some(n)` does.
   expect(js).toContain("  if (o === 0) {\n    return 100;\n  }\n  if (o != null && o < 0) {");
   // `if let Some(h) = ..` keeps the value in a `const h`.

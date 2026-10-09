@@ -7,7 +7,7 @@ const Temporary = {
 };
 
 function make() {
-  return undefined;
+  return;
 }
 
 function main() {

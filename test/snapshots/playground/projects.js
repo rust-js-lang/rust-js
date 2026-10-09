@@ -22,7 +22,7 @@ export const Project = {
     if (match) {
       return match.state;
     }
-    return undefined;
+    return;
   },
   keeping(project, live) {
     const files = copy(project.files);

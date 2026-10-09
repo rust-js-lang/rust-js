@@ -35,7 +35,7 @@ export function entry() {
 
 function spanIterator_next(span) {
   if (span.low >= span.high) {
-    return undefined;
+    return;
   }
   span.low = (span.low + 1) >>> 0;
   return (span.low - 1) >>> 0;
@@ -48,7 +48,7 @@ function spanIterator_size_hint(span) {
 
 function spanDoubleEndedIterator_next_back(span) {
   if (span.low >= span.high) {
-    return undefined;
+    return;
   }
   span.high = (span.high - 1) >>> 0;
   console.log(`back ${span.high}`);

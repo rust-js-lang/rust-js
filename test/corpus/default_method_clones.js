@@ -19,11 +19,11 @@ export function entry() {
 }
 
 function numbersIterator_next(self) {
-  return undefined;
+  return;
 }
 
 function listsIterator_next(self) {
-  return undefined;
+  return;
 }
 
 function sTr() {

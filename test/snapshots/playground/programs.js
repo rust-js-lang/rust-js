@@ -157,6 +157,6 @@ export function outcome(report) {
   if (report.tested) {
     return { TAG: "Tested", _0: report.tested };
   }
-  return undefined;
+  return;
 }
 //# sourceMappingURL=programs.js.map

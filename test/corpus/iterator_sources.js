@@ -35,7 +35,7 @@ function countdown(from) {
   let n = from;
   return $fromFn(() => {
     if (n === 0) {
-      return undefined;
+      return;
     }
     n = (n - 1) >>> 0;
     return (n + 1) >>> 0;
@@ -158,6 +158,6 @@ function counterIterator_next(counter) {
     counter[0] = (counter[0] + 1) >>> 0;
     return counter[0];
   }
-  return undefined;
+  return;
 }
 //# sourceMappingURL=case.js.map

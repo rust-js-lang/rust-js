@@ -23,7 +23,7 @@ function first_some(o) {
   if (o[0] != null || (o[0] == null && o[1] != null)) {
     return o[0] != null ? o[0] : o[1];
   }
-  return undefined;
+  return;
 }
 
 function text(t) {

@@ -13,7 +13,7 @@ const Mapped = {
         const t = mapped._0;
         return $some(t);
       }
-      return undefined;
+      return;
     } finally {
       if (mapped.TAG === "Single") {
         if (mapped$Single$0$live) {
@@ -38,7 +38,7 @@ const Mapped = {
         const t = mapped.TAG === "Single" ? mapped._0 : mapped._1;
         return $some(t);
       }
-      return undefined;
+      return;
     } finally {
       if (mapped.TAG === "Single") {
         if (mapped$Single$0$live) {
@@ -75,7 +75,7 @@ function middle(shape) {
       }
     }
     console.log("none");
-    return undefined;
+    return;
   } finally {
     if (shape.TAG === "Pair") {
       loudDrop_drop(shape._0);

@@ -14,7 +14,7 @@ export function named(value, key) {
   if (key in value) {
     return value[key];
   }
-  return undefined;
+  return;
 }
 
 export function holds_none(value, key) {
@@ -37,7 +37,7 @@ export function filled() {
 
 function hidden(key, value) {
   if (key === "secret") {
-    return undefined;
+    return;
   }
   return value;
 }

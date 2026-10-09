@@ -94,6 +94,6 @@ function shapeDebug_fmt(shape) {
 }
 
 function numbersIterator_next(self) {
-  return undefined;
+  return;
 }
 //# sourceMappingURL=case.js.map

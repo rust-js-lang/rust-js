@@ -19,25 +19,25 @@ export const Value = {
     if (value.TAG === "Obj") {
       return value._0.get(key);
     }
-    return undefined;
+    return;
   },
   at(value, i) {
     if (value.TAG === "List") {
       return value._0[i];
     }
-    return undefined;
+    return;
   },
   as_num(value) {
     if (value.TAG === "Num") {
       return value._0;
     }
-    return undefined;
+    return;
   },
   as_str(value) {
     if (value.TAG === "Str") {
       return value._0;
     }
-    return undefined;
+    return;
   },
   is_null(value) {
     return value === "Null";
@@ -97,19 +97,19 @@ export const Value = {
 function price(v) {
   const value = Value.get(v, "items");
   if (value == null) {
-    return undefined;
+    return;
   }
   const item = Value.at(value, 1);
   if (item == null) {
-    return undefined;
+    return;
   }
   const value$1 = Value.get(item, "price");
   if (value$1 == null) {
-    return undefined;
+    return;
   }
   const p = Value.as_num(value$1);
   if (p == null) {
-    return undefined;
+    return;
   }
   const option = Value.get(v, "qty");
   return p * ((option != null ? Value.as_num(option) : undefined) ?? 1);

@@ -35,11 +35,11 @@ export function sum_digits(a, b) {
 export function halves(n) {
   const a = half(n);
   if (a == null) {
-    return undefined;
+    return;
   }
   const b = half(a);
   if (b == null) {
-    return undefined;
+    return;
   }
   return b;
 }
@@ -48,7 +48,7 @@ function half(n) {
   if (n % 2 === 0) {
     return (n / 2) >>> 0;
   }
-  return undefined;
+  return;
 }
 
 export function methods(c) {

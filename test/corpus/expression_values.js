@@ -6,7 +6,7 @@ var $shapeArea;
 
 const Marker = {
   new() {
-    return undefined;
+    return;
   },
   is_marker(marker) {
     return true;

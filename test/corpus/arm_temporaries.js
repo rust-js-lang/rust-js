@@ -85,7 +85,7 @@ function make(name, give) {
   if (give) {
     return [name];
   }
-  return undefined;
+  return;
 }
 
 function first(k) {

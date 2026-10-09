@@ -32,7 +32,7 @@ function find(items, wanted) {
   try {
     const at = $position(items, (x) => x === wanted);
     if (at == null) {
-      return undefined;
+      return;
     }
     return (at + 1) >>> 0;
   } finally {
