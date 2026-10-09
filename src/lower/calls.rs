@@ -526,6 +526,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::Comb(Comb::ResultMap | Comb::Filter | Comb::MapOr)
                     | Std::VecMacro
                     | Std::Unwrap
+                    | Std::UnwrapUnchecked
                     | Std::UnwrapOk
                     | Std::Method("pop")
                     | Std::Index
@@ -990,6 +991,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::IsSome
             | Std::IsNone
             | Std::Unwrap
+            | Std::UnwrapUnchecked
             | Std::UnwrapOr
             | Std::OptionMap
             | Std::OptionIter

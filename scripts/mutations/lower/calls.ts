@@ -342,4 +342,12 @@ export const mutations: Mutation[] = [
     replace: "                (JsForm::Set(name), Some(this)) if args.len() == 1 && !name.contains('#') => {\n                    Expr::call(Expr::member(this, name), args)\n                }",
     tests: ["test/bindings.test.ts", "-t", "the history global is the page's history"],
   },
+  {
+    name: "unwrap-unchecked-keeps-drops",
+    breaks: "`unwrap_unchecked()` can't take a value with a destructor, so `Some(Guard(5)).unwrap_unchecked()` is refused",
+    file: "src/lower/calls.rs",
+    find: "                    | Std::Unwrap\n                    | Std::UnwrapUnchecked\n",
+    replace: "                    | Std::Unwrap\n",
+    tests: ["test/lowering.test.ts", "-t", "unwrap_unchecked is the value"],
+  },
 ];

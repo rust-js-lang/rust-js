@@ -2683,3 +2683,47 @@ pub fn dropped(error: &Failure) -> Option<&'static str> {
   expect([lib.shown({ title: undefined, message: "m" }), lib.shown({ title: "T", message: "m" }), lib.retitled({ title: "old", message: "" }), lib.twice({ title: "ab", message: "" }), lib.looped({ title: "ab", message: "" }), lib.aliased({ title: "T", message: "" }), lib.dropped({ title: "T", message: "" })])
     .toEqual(["Error: m", "T: m", "new", 2, 2, ["T", "set"], "dropped"]);
 });
+
+// ADR 0294: `unwrap_unchecked()` is TypeScript's `x!`: the value, unchecked,
+// as react.dev's Preview has `iframeRef.current!`. Rust leaves a `None`
+// undefined behavior, so JS's `undefined` read on is the program's.
+test("unwrap_unchecked is the value itself", async () => {
+  const dir = fixture("unwrap-unchecked");
+  writeFileSync(join(dir, "lib.rs"), `pub fn first(v: Option<&'static str>) -> &'static str {
+    unsafe { v.unwrap_unchecked() }
+}
+
+fn nested(v: Option<Option<u32>>) -> Option<u32> {
+    unsafe { v.unwrap_unchecked() }
+}
+
+pub fn inner() -> (Option<u32>, Option<u32>) {
+    (nested(Some(None)), nested(Some(Some(3))))
+}
+
+thread_local! {
+    static DROPS: std::cell::Cell<u32> = const { std::cell::Cell::new(0) };
+}
+
+struct Guard(u32);
+
+impl Drop for Guard {
+    fn drop(&mut self) {
+        DROPS.with(|d| d.set(d.get() + self.0));
+    }
+}
+
+pub fn guarded() -> u32 {
+    {
+        let _guard = unsafe { Some(Guard(5)).unwrap_unchecked() };
+    }
+    DROPS.with(|d| d.get())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return v;");
+  expect(js).not.toContain("$unwrap");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.first("a"), lib.inner(), lib.guarded()]).toEqual(["a", [undefined, 3], 5]);
+});

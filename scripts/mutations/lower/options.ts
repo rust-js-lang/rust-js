@@ -128,4 +128,12 @@ export const mutations: Mutation[] = [
     replace: "                        || false && super::bindings::is_binding(self.tcx, function)\n",
     tests: ["test/compiler.test.ts", "-t", "string functions are JS's"],
   },
+  {
+    name: "unwrap-unchecked-unboxed",
+    breaks: "`unwrap_unchecked()` of an `Option<Option<T>>` is the box, so `Some(None)` unwrapped is `{ ... }`, not `undefined`",
+    file: "src/lower/options.rs",
+    find: "                let value = arg();\n                if self.boxed_payload(generic_args.type_at(0)) {\n                    self.some_value(value)",
+    replace: "                let value = arg();\n                if false {\n                    self.some_value(value)",
+    tests: ["test/lowering.test.ts", "-t", "unwrap_unchecked is the value"],
+  },
 ];

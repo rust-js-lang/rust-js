@@ -116,6 +116,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     unwrapped
                 }
             }
+            // Rust leaves a `None` undefined behavior: the value, as `o!` is.
+            Std::UnwrapUnchecked => {
+                let value = arg();
+                if self.boxed_payload(generic_args.type_at(0)) {
+                    self.some_value(value)
+                } else {
+                    value
+                }
+            }
             // `??` skips its right side when it isn't needed, and Rust
             // evaluates it either way: one with effects runs first, in order.
             Std::UnwrapOr => {

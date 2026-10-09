@@ -263,6 +263,8 @@ pub(super) enum Std {
     IsNone,
     /// `unwrap()` and `expect(msg)`: `$unwrap(o)`, `$unwrap(o, msg)`.
     Unwrap,
+    /// `unwrap_unchecked()`: the value, unchecked, TypeScript's `o!` (ADR 0294).
+    UnwrapUnchecked,
     /// `unwrap_or(d)`: `o ?? d`.
     UnwrapOr,
     /// `a += b` of numbers where `b` is a reference: `a = a + b`.
@@ -1363,6 +1365,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "eq_ignore_ascii_case" if owner.is_str() || owner.is_char() => Std::AsciiEq,
             "append" if adt("Vec") || adt("VecDeque") => Std::Append,
             "is_some" if option => Std::IsSome,
+            "unwrap_unchecked" if option => Std::UnwrapUnchecked,
             "take" if option => Std::OptionTake,
             "replace" if option => Std::OptionReplace,
             "flatten" if option => Std::OptionFlatten,
