@@ -12,7 +12,7 @@ export function App() {
   if (match === "List") {
     page = <ContactList />;
   } else if (match.TAG === "Contact") {
-    page = <ContactPage id={match._0} key={match._0} />;
+    page = <ContactPage key={match._0} id={match._0} />;
   } else if (match === "New") {
     page = <NewContactForm />;
   } else {
