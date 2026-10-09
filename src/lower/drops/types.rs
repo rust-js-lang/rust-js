@@ -323,6 +323,18 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                     _ => Drops::Unsupported(ty, "a channel of a value with a destructor"),
                 }
             }
+            // A map's values (ADR 0321). A key with a destructor is refused: a
+            // map keeps the old key `insert` is given again, which a JS `Map`
+            // doesn't.
+            ty::Adt(_, args) if self.recognition.is_map(ty) => {
+                let key = args.type_at(0);
+                match self.drops_in(key, walk) {
+                    Drops::Nothing if self.recognition.is_set(ty) => Drops::Nothing,
+                    Drops::Nothing => self.drops_in(args.type_at(1), walk),
+                    Drops::Unsupported(t, what) => Drops::Unsupported(t, what),
+                    Drops::Runs => Drops::Unsupported(key, "a map's key with a destructor"),
+                }
+            }
             // A counted `Rc`: one count fewer, and the last drops what it points
             // at. A `Weak`: one weak count fewer (ADR 0320).
             ty::Adt(..)

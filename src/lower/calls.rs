@@ -10,6 +10,7 @@ use super::recognition::{
     Catching, FmtResultAnswer, Std, StdItem, StreamOp, TypeFact, fmt_result_answer, is_std_def, std_item, trait_method,
 };
 use super::std_types::lazy::LazyOp;
+use super::std_types::map::MapOp;
 use super::std_types::number::NumOp;
 use super::std_types::once::OnceOp;
 use super::{Dest, FnCx, R};
@@ -612,6 +613,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::Same
                     // Counts what it takes, or gives it back (ADR 0320).
                     | Std::Rc(_)
+                    // A map keeps what it takes, and gives back what it replaces or
+                    // removes; `or_insert_with` runs its function only to insert
+                    // (ADR 0321).
+                    | Std::Map(
+                        MapOp::Insert
+                            | MapOp::Remove
+                            | MapOp::Get
+                            | MapOp::Index
+                            | MapOp::Has
+                            | MapOp::Iter(_)
+                            | MapOp::Entry
+                            | MapOp::OrInsertWith
+                            | MapOp::OrDefault
+                            | MapOp::Len
+                            | MapOp::IsEmpty
+                    )
                     // A cell keeps it, and gives the old one back; a `Cell` of one is
                     // refused by its type (ADR 0320).
                     | Std::CellNew

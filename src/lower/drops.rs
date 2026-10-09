@@ -383,6 +383,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 out.push(StmtKind::Expr(Expr::call(Expr::var(drop), vec![value])).at(js_span));
             }
+            // A map's values, a `BTreeMap`'s in its keys' order (ADR 0321).
+            ty::Adt(_, args) if self.is_map(ty) => {
+                let value_ty = args.type_at(1);
+                if self.is_sorted(ty) {
+                    let entries = self.in_order_of(value, ty, span)?;
+                    let name = self.fresh("value");
+                    let mut body = Vec::new();
+                    self.drop_in(Expr::var(&name), value_ty, span, made, &mut body)?;
+                    out.push(
+                        StmtKind::ForOf {
+                            label: None,
+                            pattern: js::Pattern::Array(vec![None, Some(name)]),
+                            mutable: false,
+                            iterable: entries,
+                            body,
+                        }
+                        .at(js_span),
+                    );
+                } else {
+                    let values = Expr::call(Expr::member(value, "values"), Vec::new());
+                    self.drop_items(values, value_ty, span, made, out)?;
+                }
+            }
             // A `RefCell`'s value (ADR 0320).
             ty::Adt(_, args) if self.is_std_type(ty, StdItem::RefCell) => {
                 self.drop_in(Expr::member(value, "value"), args.type_at(0), span, made, out)?

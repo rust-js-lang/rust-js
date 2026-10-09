@@ -398,4 +398,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "once_cells"],
   },
+  {
+    name: "map-remove-refused",
+    breaks: "`remove` from a map of values with a destructor is refused",
+    file: "src/lower/calls.rs",
+    find: "                            | MapOp::Remove\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "map_drops"],
+  },
 ];

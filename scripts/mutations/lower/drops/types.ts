@@ -106,4 +106,20 @@ export const mutations: Mutation[] = [
     replace: "                        || [StdItem::Cell, StdItem::RefCell, StdItem::OnceCell, StdItem::LazyCell]\n",
     tests: ["test/corpus.test.ts", "-t", "rc_counts"],
   },
+  {
+    name: "map-values-drop-nothing",
+    breaks: "a map's values aren't dropped with it",
+    file: "src/lower/drops/types.rs",
+    find: "                    Drops::Nothing => self.drops_in(args.type_at(1), walk),\n",
+    replace: "                    Drops::Nothing => Drops::Nothing,\n",
+    tests: ["test/corpus.test.ts", "-t", "map_drops"],
+  },
+  {
+    name: "map-key-drops-allowed",
+    breaks: "a map's key with a destructor is taken, its drops lost",
+    file: "src/lower/drops/types.rs",
+    find: "                    Drops::Runs => Drops::Unsupported(key, \"a map's key with a destructor\"),\n",
+    replace: "                    Drops::Runs => Drops::Runs,\n",
+    tests: ["test/corpus.test.ts", "-t", "map_key_drops"],
+  },
 ];

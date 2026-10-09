@@ -365,4 +365,12 @@ export const mutations: Mutation[] = [
     replace: "                let (size, recursive) = (1, false);\n",
     tests: ["test/corpus.test.ts", "-t", "rc_counts"],
   },
+  {
+    name: "btree-drops-unsorted",
+    breaks: "a `BTreeMap` drops its values in the order they went in",
+    file: "src/lower/drops.rs",
+    find: "                if self.is_sorted(ty) {\n",
+    replace: "                if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "map_drops"],
+  },
 ];
