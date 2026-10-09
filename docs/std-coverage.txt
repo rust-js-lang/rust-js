@@ -1,4 +1,4 @@
-# Vec 18 of 48
+# Vec 33 of 48
 + Vec::append
 - Vec::as_mut_ptr
 + Vec::as_mut_slice
@@ -7,18 +7,18 @@
 - Vec::capacity
 + Vec::clear
 + Vec::dedup
-- Vec::dedup_by
-- Vec::dedup_by_key
++ Vec::dedup_by
++ Vec::dedup_by_key
 + Vec::drain
 + Vec::extend_from_slice
-- Vec::extend_from_within
++ Vec::extend_from_within
 - Vec::extract_if
 - Vec::from_parts
 - Vec::from_raw_parts
 + Vec::insert
 - Vec::insert_mut
-- Vec::into_boxed_slice
-- Vec::into_flattened
++ Vec::into_boxed_slice
++ Vec::into_flattened
 - Vec::into_parts
 - Vec::into_raw_parts
 + Vec::is_empty
@@ -26,28 +26,28 @@
 + Vec::len
 + Vec::new
 + Vec::pop
-- Vec::pop_if
++ Vec::pop_if
 + Vec::push
 - Vec::push_mut
 + Vec::remove
-- Vec::reserve
-- Vec::reserve_exact
-- Vec::resize
-- Vec::resize_with
++ Vec::reserve
++ Vec::reserve_exact
++ Vec::resize
++ Vec::resize_with
 + Vec::retain
 - Vec::retain_mut
 - Vec::set_len
-- Vec::shrink_to
-- Vec::shrink_to_fit
++ Vec::shrink_to
++ Vec::shrink_to_fit
 - Vec::spare_capacity_mut
-- Vec::splice
++ Vec::splice
 + Vec::split_off
-- Vec::swap_remove
++ Vec::swap_remove
 + Vec::truncate
 - Vec::try_reserve
 - Vec::try_reserve_exact
-- Vec::with_capacity
-# VecDeque 28 of 55
++ Vec::with_capacity
+# VecDeque 34 of 55
 + VecDeque::append
 - VecDeque::as_mut_slices
 - VecDeque::as_slices
@@ -84,17 +84,17 @@
 - VecDeque::range
 - VecDeque::range_mut
 + VecDeque::remove
-- VecDeque::reserve
-- VecDeque::reserve_exact
-- VecDeque::resize
-- VecDeque::resize_with
++ VecDeque::reserve
++ VecDeque::reserve_exact
++ VecDeque::resize
++ VecDeque::resize_with
 + VecDeque::retain
 - VecDeque::retain_back
 - VecDeque::retain_mut
 + VecDeque::rotate_left
 + VecDeque::rotate_right
-- VecDeque::shrink_to
-- VecDeque::shrink_to_fit
++ VecDeque::shrink_to
++ VecDeque::shrink_to_fit
 + VecDeque::split_off
 + VecDeque::swap
 - VecDeque::swap_remove_back
@@ -249,7 +249,7 @@
 - BTreeSet::symmetric_difference
 - BTreeSet::take
 - BTreeSet::union
-# BinaryHeap 11 of 23
+# BinaryHeap 15 of 23
 - BinaryHeap::append
 - BinaryHeap::as_slice
 - BinaryHeap::capacity
@@ -265,11 +265,11 @@
 - BinaryHeap::peek_mut
 + BinaryHeap::pop
 + BinaryHeap::push
-- BinaryHeap::reserve
-- BinaryHeap::reserve_exact
++ BinaryHeap::reserve
++ BinaryHeap::reserve_exact
 - BinaryHeap::retain
-- BinaryHeap::shrink_to
-- BinaryHeap::shrink_to_fit
++ BinaryHeap::shrink_to
++ BinaryHeap::shrink_to_fit
 - BinaryHeap::try_reserve
 - BinaryHeap::try_reserve_exact
 + BinaryHeap::with_capacity

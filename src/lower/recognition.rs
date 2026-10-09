@@ -121,6 +121,10 @@ pub(super) enum Std {
     /// `is_empty` on a string or a `Vec`: `x.length === 0`.
     IsEmpty,
     VecNew,
+    /// What JS has nothing of: a `Vec`'s capacity asked for, `reserve`,
+    /// `shrink_to_fit`: its arguments, for what they do, and `undefined`
+    /// (ADR 0315).
+    Nothing,
     /// `vec![a, b]`.
     VecMacro,
     Push,
@@ -1134,6 +1138,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "front" if deque => Some(Std::First),
             "back" if deque => Some(Std::SliceLast),
             "make_contiguous" if deque => Some(Std::Same),
+            // A JS array has no capacity: asking for some does nothing (ADR 0315).
+            "with_capacity" if adt("Vec") => Some(Std::VecNew),
+            "reserve" | "reserve_exact" | "shrink_to" | "shrink_to_fit" if adt("Vec") || deque || heap => {
+                Some(Std::Nothing)
+            }
+            "into_boxed_slice" if adt("Vec") => Some(Std::Same),
+            "into_flattened" if adt("Vec") => Some(Std::Comb(Comb::Concat)),
+            "splice" if adt("Vec") => Some(Std::Text(TextOp::Splice)),
+            "extend_from_within" if adt("Vec") => Some(Std::Text(TextOp::ExtendFromWithin)),
             // A `Vec` is its array, and the whole of it the same array: what's
             // written through `as_mut_slice()` is the `Vec`'s. An array's is it too.
             "as_slice" | "as_mut_slice" if adt("Vec") || owner.is_array() => Some(Std::Same),

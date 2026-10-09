@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "            Std::Len if false && self.is_lazy_value(args[0]) => {",
     tests: ["test/compiler.test.ts", "-t", "the webapi crate's bindings become plain JS"],
   },
+  {
+    name: "capacity-args-dropped",
+    breaks: "what `reserve` or `with_capacity` is given doesn't run, a call's effects lost",
+    file: "src/lower/std_types/vec.rs",
+    find: "                    if value.has_effects() {\n",
+    replace: "                    if false && value.has_effects() {\n",
+    tests: ["test/corpus.test.ts","-t","vec_edits"],
+  },
 ];

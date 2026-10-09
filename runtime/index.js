@@ -4566,6 +4566,79 @@ export function $dedup(v) {
   v.length = n;
 }
 
+export function $dedupBy(v, same) {
+  let n = 0;
+  for (const item of v) {
+    if (n === 0 || !same(item, v[n - 1])) {
+      v[n++] = item;
+    }
+  }
+  v.length = n;
+}
+
+export function $swapRemove(v, index) {
+  if (index >= v.length) {
+    throw new Error(`swap_remove index (is ${index}) should be < len (is ${v.length})`);
+  }
+  const item = v[index];
+  v[index] = v[v.length - 1];
+  v.pop();
+  return item;
+}
+
+export function $resize(v, length, item, clone) {
+  if (length <= v.length) {
+    v.length = length;
+    return;
+  }
+  for (let i = v.length + 1; i < length; i++) v.push(clone === undefined ? item : clone(item));
+  v.push(item);
+}
+
+export function $resizeWith(v, length, make) {
+  if (length <= v.length) {
+    v.length = length;
+    return;
+  }
+  while (v.length < length) v.push(make());
+}
+
+export function $popIf(v, holds) {
+  return v.length !== 0 && holds(v[v.length - 1]) ? v.pop() : undefined;
+}
+
+export function $popIfCell(v, holds) {
+  if (v.length === 0) return undefined;
+  const last = { value: v[v.length - 1] };
+  const popped = holds(last);
+  v[v.length - 1] = last.value;
+  return popped ? v.pop() : undefined;
+}
+
+export function $dedupByCells(v, same) {
+  let n = 0;
+  for (let i = 0; i < v.length; i++) {
+    if (n === 0) {
+      v[n++] = v[i];
+      continue;
+    }
+    const a = { value: v[i] };
+    const b = { value: v[n - 1] };
+    const duplicate = same(a, b);
+    v[n - 1] = b.value;
+    if (!duplicate) {
+      v[n++] = a.value;
+    }
+  }
+  v.length = n;
+}
+
+export function $splice(items, start, end, replacement) {
+  if (start > end) throw new Error(`slice index starts at ${start} but ends at ${end}`);
+  if (end > items.length) throw new Error(`range end index ${end} out of range for slice of length ${items.length}`);
+  return items.splice(start, end - start, ...replacement);
+}
+
 export function $windows(v, size) {
   if (size === 0) {
     throw new Error("window size must be non-zero");

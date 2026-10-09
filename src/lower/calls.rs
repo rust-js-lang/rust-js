@@ -1062,6 +1062,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::SortBy
             | Std::IsEmpty
             | Std::VecNew
+            | Std::Nothing
             | Std::Append
             | Std::Push
             | Std::Len

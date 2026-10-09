@@ -755,4 +755,12 @@ export const mutations: Mutation[] = [
     replace: ")\n",
     tests: ["test/lowering.test.ts","-t","Console's loops"],
   },
+  {
+    name: "vec-with-capacity-unknown",
+    breaks: "`Vec::with_capacity(n)` is refused, not `[]`",
+    file: "src/lower/recognition.rs",
+    find: "            \"with_capacity\" if adt(\"Vec\") => Some(Std::VecNew),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","vec_edits"],
+  },
 ];

@@ -112,6 +112,11 @@ pub(in crate::lower) enum TextOp {
     CharIndices,
     /// `v.drain(a..b)`: those items, taken out of `v`.
     Drain,
+    /// `v.splice(a..b, items)`: those items, taken out of `v`, `items` in
+    /// their place (ADR 0315).
+    Splice,
+    /// `v.extend_from_within(a..b)`: a copy of those items, pushed (ADR 0315).
+    ExtendFromWithin,
     /// `s.splitn(n, p)`: its first pieces, and the rest whole (ADR 0150).
     SplitN,
     /// `s.rsplit(p)`, or `s.rsplitn(n, p)` if `true`: searched from the end.
@@ -209,6 +214,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TextOp::Slice | TextOp::StrSlice | TextOp::StrGet | TextOp::SliceGet | TextOp::Drain
         ) {
             return self.slice_range(op, args, span, out);
+        }
+        // A range of a `Vec`'s, checked as `drain`'s and `&v[..]`'s are:
+        // replaced, `$splice(v, a, b, items)`, or pushed again,
+        // `v.push(...$slice(v, a, b))` (ADR 0315).
+        if matches!(op, TextOp::Splice | TextOp::ExtendFromWithin) {
+            let read = if op == TextOp::Splice {
+                TextOp::Drain
+            } else {
+                TextOp::Slice
+            };
+            let range = self.slice_range(read, &args[..2], span, out)?;
+            let js::ExprKind::Call(callee, mut list) = range.kind else {
+                unreachable!("a range's read is a helper's call");
+            };
+            let items = list[0].clone();
+            if op == TextOp::ExtendFromWithin {
+                return Ok(Expr::call(
+                    Expr::member(items, "push"),
+                    vec![Expr::spread(Expr::call(*callee, list))],
+                ));
+            }
+            if list.len() == 2 {
+                list.push(Expr::member(items, "length"));
+            }
+            list.extend(self.operands(&args[2..], out)?);
+            self.runtime.insert(Helper::Splice);
+            return Ok(Expr::call(Expr::var("$splice"), list));
         }
         let mut values = self.operands(args, out)?;
         // A set of `char`s as a pattern is the predicate of being one of
@@ -414,7 +446,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.runtime.insert(Helper::CharIndices);
                 Expr::call(Expr::var("$charIndices"), vec![arg()])
             }
-            TextOp::Slice | TextOp::StrSlice | TextOp::StrGet | TextOp::SliceGet | TextOp::Drain => {
+            TextOp::Slice
+            | TextOp::StrSlice
+            | TextOp::StrGet
+            | TextOp::SliceGet
+            | TextOp::Drain
+            | TextOp::Splice
+            | TextOp::ExtendFromWithin => {
                 unreachable!("handled above")
             }
         })

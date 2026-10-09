@@ -99,7 +99,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::unary(js::UnaryOp::Not, arg())
             }
             Std::IsEmpty => Expr::bin(Op::Eq, Expr::member(arg(), "length"), Expr::num(0)),
-            Std::VecNew => Expr::array(vec![]),
+            // What it's given does what it does, of a capacity too (ADR 0315).
+            Std::VecNew | Std::Nothing => {
+                for value in values.by_ref() {
+                    if value.has_effects() {
+                        out.push(StmtKind::Expr(value).at(js_span));
+                    }
+                }
+                match known {
+                    Std::Nothing => Expr::undefined(),
+                    _ => Expr::array(vec![]),
+                }
+            }
             Std::Append => {
                 self.runtime.insert(Helper::Append);
                 Expr::call(Expr::var("$append"), vec![arg(), arg()])

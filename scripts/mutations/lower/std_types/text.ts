@@ -107,4 +107,12 @@ export const mutations: Mutation[] = [
     replace: "                let words = method(arg(), \"split\", vec![Expr::regex(\"/\\\\s+/\")]);",
     tests: ["test/compiler.test.ts", "-t", "chars, parse and slices are plain JS with Rust's answers"],
   },
+  {
+    name: "extend-from-within-unspread",
+    breaks: "`extend_from_within` pushes the range as one item, not its items",
+    file: "src/lower/std_types/text.rs",
+    find: "                    vec![Expr::spread(Expr::call(*callee, list))],\n",
+    replace: "                    vec![Expr::call(*callee, list)],\n",
+    tests: ["test/corpus.test.ts","-t","vec_edits"],
+  },
 ];

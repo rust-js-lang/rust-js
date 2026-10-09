@@ -226,4 +226,20 @@ export const mutations: Mutation[] = [
     replace: "                let _ = parts;\n                method(items, \"concat\", vec![next()])\n",
     tests: ["test/lowering.test.ts","-t","Console's loops"],
   },
+  {
+    name: "items-never-cells",
+    breaks: "a closure taking `&mut` text or numbers is given them, not cells: `a.value` is `undefined`",
+    file: "src/lower/combinators.rs",
+    find: "        match self.slice_item(items).is_some_and(|item| self.is_object(item)) {\n",
+    replace: "        match self.slice_item(items).is_some_and(|item| true || self.is_object(item)) {\n",
+    tests: ["test/corpus.test.ts","-t","vec_edits"],
+  },
+  {
+    name: "resize-shares-copies",
+    breaks: "`resize(n, vec![1])` fills with one array, so a change to one is every one's",
+    file: "src/lower/combinators.rs",
+    find: "                if self.needs_clone(item_ty) {\n",
+    replace: "                if false && self.needs_clone(item_ty) {\n",
+    tests: ["test/corpus.test.ts","-t","vec_edits"],
+  },
 ];

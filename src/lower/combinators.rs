@@ -62,6 +62,14 @@ pub(super) enum Comb {
     Swap,
     Truncate,
     Dedup,
+    /// `dedup_by`, `dedup_by_key`, `swap_remove`, `resize`, `resize_with`
+    /// and `pop_if` of a `Vec` (ADR 0315).
+    DedupBy,
+    DedupByKey,
+    SwapRemove,
+    Resize,
+    ResizeWith,
+    PopIf,
     Windows,
     Chunks,
     Concat,
@@ -817,6 +825,77 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 helper(self, Helper::Dedup, "$dedup", vec![subject])
             }
+            // Its closure takes `&mut` items: an object itself, or a cell of a
+            // number or text, whose change is written back, as std's is.
+            Comb::DedupBy | Comb::DedupByKey | Comb::PopIf
+                if self
+                    .slice_item(subject_ty)
+                    .is_none_or(|item| !self.is_object(item) && !self.is_boxable(item)) =>
+            {
+                return Err(self.unsupported(span, "this call, of items a `&mut` can't be given to its closure"));
+            }
+            Comb::DedupBy => {
+                let (helper_of, name) = self.by_cells(
+                    subject_ty,
+                    (Helper::DedupBy, "$dedupBy"),
+                    (Helper::DedupByCells, "$dedupByCells"),
+                );
+                helper(self, helper_of, name, vec![subject, next()])
+            }
+            // Its key's `==`, of what `===` compares, each item's key made once a
+            // comparison, the later item's first, as std's are.
+            Comb::DedupByKey => {
+                let key_ty = generic_args.type_at(generic_args.len() - 1);
+                if !self.eq_is_identity(key_ty) {
+                    return Err(self.unsupported(span, "`dedup_by_key` of keys `===` doesn't compare"));
+                }
+                let key = next();
+                let key = if key.reads_same() {
+                    key
+                } else {
+                    self.spill("key", key, out)
+                };
+                let (a, b) = (self.fresh("a"), self.fresh("b"));
+                let same = Expr::bin(
+                    Op::Eq,
+                    Expr::call(key.clone(), vec![Expr::var(&a)]),
+                    Expr::call(key, vec![Expr::var(&b)]),
+                );
+                let same = Expr::arrow(
+                    vec![a.into(), b.into()],
+                    vec![StmtKind::Return(Some(same)).at(js::Span::NONE)],
+                );
+                let (helper_of, name) = self.by_cells(
+                    subject_ty,
+                    (Helper::DedupBy, "$dedupBy"),
+                    (Helper::DedupByCells, "$dedupByCells"),
+                );
+                helper(self, helper_of, name, vec![subject, same])
+            }
+            Comb::SwapRemove => helper(self, Helper::SwapRemove, "$swapRemove", vec![subject, next()]),
+            // Each new item its own, a clone, but the last, which is the value
+            // given, as std moves it; one whose copies can't be told apart, it.
+            Comb::Resize => {
+                let (length, item) = (next(), next());
+                let item_ty = self
+                    .slice_item(subject_ty)
+                    .ok_or_else(|| self.unsupported(span, "`resize` of this"))?;
+                let mut list = vec![subject, length, item];
+                if self.needs_clone(item_ty) {
+                    let name = self.fresh("item");
+                    let mut body = Vec::new();
+                    let copy = self.clone_value(Expr::var(&name), item_ty, span, &mut body)?;
+                    body.push(StmtKind::Return(Some(copy)).at(js::Span::NONE));
+                    list.push(Expr::arrow(vec![name.into()], body));
+                }
+                helper(self, Helper::Resize, "$resize", list)
+            }
+            Comb::ResizeWith => helper(self, Helper::ResizeWith, "$resizeWith", vec![subject, next(), next()]),
+            Comb::PopIf => {
+                let (helper_of, name) =
+                    self.by_cells(subject_ty, (Helper::PopIf, "$popIf"), (Helper::PopIfCell, "$popIfCell"));
+                helper(self, helper_of, name, vec![subject, next()])
+            }
             Comb::Windows => helper(self, Helper::Windows, "$windows", vec![subject, next()]),
             Comb::Chunks => helper(self, Helper::Chunks, "$chunks", vec![subject, next()]),
             // Of strings, one string; of `Vec`s or arrays, one array.
@@ -829,6 +908,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Comb::Concat => Expr::call(Expr::member(subject, "flat"), Vec::new()),
         })
+    }
+
+    /// The helper of items a closure takes `&mut`: of objects, `objects`;
+    /// of what a `&mut` to is a cell, a number or text, `cells` (ADR 0315).
+    fn by_cells(
+        &self,
+        items: Ty<'tcx>,
+        objects: (Helper, &'static str),
+        cells: (Helper, &'static str),
+    ) -> (Helper, &'static str) {
+        match self.slice_item(items).is_some_and(|item| self.is_object(item)) {
+            true => objects,
+            false => cells,
+        }
     }
 
     /// What a slice, an array or a `Vec` holds.
