@@ -51,4 +51,12 @@ export const mutations: Mutation[] = [
     replace: "                apply(f, vec![key])\n",
     tests: ["test/lowering.test.ts", "-t", "with of a one-statement closure"],
   },
+  {
+    name: "cell-get-mut-copy",
+    breaks: "a number `Cell`'s `get_mut` gives the number, so a write through it is lost",
+    file: "src/lower/std_types/cell.rs",
+    find: "                true => arg(),\n                false => Expr::member(arg(), \"value\"),\n",
+    replace: "                true => Expr::member(arg(), \"value\"),\n                false => Expr::member(arg(), \"value\"),\n",
+    tests: ["test/corpus.test.ts", "-t", "cell_deque_char_methods"],
+  },
 ];

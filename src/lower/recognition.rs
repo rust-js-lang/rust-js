@@ -102,6 +102,14 @@ pub(super) enum Std {
     CellTake,
     /// `RefCell::replace_with(f)`.
     CellReplaceWith,
+    /// A `Cell`'s or `RefCell`'s `get_mut()`, `swap(&other)`, and a `Cell`'s
+    /// `update(f)` (ADR 0327).
+    CellGetMut,
+    CellSwap,
+    CellUpdate,
+    /// A lock's `is_poisoned()`: `false`, as nothing can catch a panic that
+    /// holds it (ADR 0327).
+    NotPoisoned,
     /// `RefCell::borrow`, `borrow_mut`: the cell's `value`.
     Borrow,
     /// A `Mutex`'s `lock()` or an `RwLock`'s `read()` or `write()`: `Ok` of its `value`.
@@ -388,14 +396,17 @@ pub(super) enum StreamOp {
 }
 
 impl Std {
-    /// Is its `&mut` to a number or text its receiver, the `{ value }` box
-    /// that is (ADRs 0317, 0318, 0320): no handle (ADR 0152) to make.
+    /// Does it give its `&mut` to a number or text as a cell already: its
+    /// receiver, the `{ value }` box that is (ADRs 0317, 0318, 0320), or one it
+    /// makes (ADR 0327): no handle (ADR 0152) to make.
     pub(super) fn gives_its_cell(self) -> bool {
         matches!(
             self,
             Std::Once(OnceOp::GetMut)
                 | Std::Lazy(LazyOp::GetMut | LazyOp::ForceMut)
                 | Std::Rc(RcOp::GetMut | RcOp::MakeMut)
+                | Std::CellGetMut
+                | Std::Text(TextOp::EncodeUtf8)
                 | Std::OptionPlace(
                     OptionPlaceOp::GetOrInsert
                         | OptionPlaceOp::GetOrInsertWith
@@ -1193,8 +1204,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "pop_back" if deque => Some(Std::Method("pop")),
             "push_front" if deque => Some(Std::Method("unshift")),
             "pop_front" if deque => Some(Std::Method("shift")),
-            "front" if deque => Some(Std::First),
-            "back" if deque => Some(Std::SliceLast),
+            "front" | "front_mut" if deque => Some(Std::First),
+            "back" | "back_mut" if deque => Some(Std::SliceLast),
             "make_contiguous" if deque => Some(Std::Same),
             // A JS array has no capacity: asking for some does nothing (ADR 0315).
             "with_capacity" if adt("Vec") => Some(Std::VecNew),
@@ -1336,6 +1347,36 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "read" | "write" if adt("RwLock") => Std::Lock,
             "into_inner" | "get_mut" if adt("Mutex") || adt("RwLock") => Std::Lock,
             "get" if adt("Cell") => Std::CellGet,
+            "get_mut" if adt("Cell") || adt("RefCell") => Std::CellGetMut,
+            "swap" if adt("Cell") || adt("RefCell") => Std::CellSwap,
+            "update" if adt("Cell") => Std::CellUpdate,
+            "is_poisoned" if adt("Mutex") || adt("RwLock") => Std::NotPoisoned,
+            "clear_poison" if adt("Mutex") || adt("RwLock") => Std::Nothing,
+            "each_ref" | "each_mut" if owner.is_array() => Std::Same,
+            "swap_remove_back" if deque => Std::Slice(SliceOp::DequeSwapRemove { front: false }),
+            "swap_remove_front" if deque => Std::Slice(SliceOp::DequeSwapRemove { front: true }),
+            "retain_mut" if adt("Vec") || deque => Std::Slice(SliceOp::RetainMut),
+            "pop_front_if" if deque => Std::Slice(SliceOp::PopFrontIf),
+            "partition_point" if deque => Std::Slice(SliceOp::PartitionPoint),
+            "range" if deque => Std::Text(TextOp::Slice),
+            "escape_default" | "escape_debug" | "escape_unicode" if owner.is_char() || owner.is_str() => {
+                Std::Text(TextOp::Escape {
+                    kind: match name.as_str() {
+                        "escape_default" => "default",
+                        "escape_debug" => "debug",
+                        _ => "unicode",
+                    },
+                    str: owner.is_str(),
+                })
+            }
+            "encode_utf8" if owner.is_char() => Std::Text(TextOp::EncodeUtf8),
+            "decode_utf16" if owner.is_char() => Std::Text(TextOp::DecodeUtf16),
+            "unpaired_surrogate" if is_decode_utf16_error(tcx, owner) => Std::Same,
+            "make_ascii_uppercase" | "make_ascii_lowercase" if owner.is_char() => {
+                Std::StringEdit(StringEdit::AsciiCase {
+                    upper: name.as_str() == "make_ascii_uppercase",
+                })
+            }
             "set" if adt("Cell") => Std::CellSet,
             "replace" if adt("Cell") || adt("RefCell") => Std::CellReplace,
             "take" if adt("Cell") || adt("RefCell") => Std::CellTake,
@@ -1645,7 +1686,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             // A `_mut` one's item, of numbers or strings, is a handle on it
             // (ADR 0152).
             "first" | "first_mut" if owner.is_slice() => Std::First,
-            "get" | "get_mut" if owner.is_slice() && args.types().nth(1).is_some_and(|i| i.is_usize()) => Std::SliceGet,
+            "get" | "get_mut" if (owner.is_slice() && args.types().nth(1).is_some_and(|i| i.is_usize())) || deque => {
+                Std::SliceGet
+            }
             // Unchecked, the item, as JS reads one (ADR 0294).
             "get_unchecked" if owner.is_slice() && args.types().nth(1).is_some_and(|i| i.is_usize()) => Std::SliceGet,
             "last" | "last_mut" if owner.is_slice() => Std::SliceLast,
@@ -2997,6 +3040,20 @@ pub(crate) fn is_try_from_slice_error(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 pub(crate) fn is_from_utf16_error(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if tcx.crate_name(adt.did().krate) == sym::alloc
         && tcx.item_name(adt.did()).as_str() == "FromUtf16Error")
+}
+
+/// `char::decode_utf16`'s error, its unpaired surrogate's code (ADR 0327).
+pub(crate) fn is_decode_utf16_error(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _) if tcx.crate_name(adt.did().krate) == sym::core
+        && tcx.item_name(adt.did()).as_str() == "DecodeUtf16Error")
+}
+
+/// A `char`'s or a `str`'s `escape_default()`, `escape_debug()` or
+/// `escape_unicode()`, its text (ADR 0327).
+pub(crate) fn is_text_escape(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _) if tcx.crate_name(adt.did().krate) == sym::core
+        && matches!(tcx.item_name(adt.did()).as_str(), "EscapeDefault" | "EscapeDebug" | "EscapeUnicode")
+        && matches!(std_path(tcx, adt.did()).as_str(), p if p.starts_with("std::char::") || p.starts_with("std::str::")))
 }
 
 /// A `NonZero<T>` type (ADR 0177).

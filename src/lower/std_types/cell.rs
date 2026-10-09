@@ -72,6 +72,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.runtime.insert(Helper::CellReplace);
                 Expr::call(Expr::var("$cellReplace"), vec![cell, next])
             }
+            // A `&mut` to what it holds: the object itself, or for a number or
+            // text the cell, the `{ value }` box a `&mut` to one is (ADR 0074).
+            Std::CellGetMut => match self.is_boxable(generic_args.type_at(0)) {
+                true => arg(),
+                false => Expr::member(arg(), "value"),
+            },
+            Std::CellSwap => {
+                self.runtime.insert(Helper::CellReplace);
+                Expr::call(Expr::var("$cellSwap"), vec![arg(), arg()])
+            }
+            // `c.value = f(c.value)`.
+            Std::CellUpdate => {
+                let cell = arg();
+                let cell = if cell.reads_same() {
+                    cell
+                } else {
+                    self.spill("cell", cell, out)
+                };
+                let updated = apply(arg(), vec![Expr::member(cell.clone(), "value")]);
+                out.push(StmtKind::Assign(Expr::member(cell, "value"), updated).at(js_span));
+                Expr::undefined()
+            }
+            Std::NotPoisoned => Expr::bool(false),
             // A `Ref` or `RefMut` guard is what it guards: the object itself.
             Std::Borrow => Expr::member(arg(), "value"),
             Std::Lock => Self::ok(Expr::member(arg(), "value")),

@@ -74,4 +74,20 @@ export const mutations: Mutation[] = [
     replace: "    if (!(cmp(last, key) <= 0)) last = undefined;\n",
     tests: ["test/corpus.test.ts", "-t", "slice_methods"],
   },
+  {
+    name: "deque-swap-remove-front-as-back",
+    breaks: "`swap_remove_front` takes the last item's place",
+    file: "src/runtime/slice_ops.js",
+    find: "  if (front) {\n    v[i] = v[0];\n",
+    replace: "  if (false) {\n    v[i] = v[0];\n",
+    tests: ["test/corpus.test.ts", "-t", "cell_deque_char_methods"],
+  },
+  {
+    name: "retain-mut-keeps-all",
+    breaks: "`retain_mut` keeps what `f` rejects",
+    file: "src/runtime/slice_ops.js",
+    find: "    if (keep) v[kept++] = v[at];\n",
+    replace: "    v[kept++] = v[at];\n",
+    tests: ["test/corpus.test.ts", "-t", "cell_deque_char_methods"],
+  },
 ];

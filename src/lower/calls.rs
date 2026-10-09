@@ -1165,7 +1165,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::AtomicFetchMax(_)
             | Std::AtomicCompareExchange
             | Std::LocalWith
-            | Std::LocalBorrow => unreachable!("lowered by cell_call"),
+            | Std::LocalBorrow
+            | Std::CellGetMut
+            | Std::CellSwap
+            | Std::CellUpdate
+            | Std::NotPoisoned => unreachable!("lowered by cell_call"),
             Std::Once(_) => unreachable!("lowered by once_call"),
             Std::Lazy(_) => unreachable!("lowered by lazy_call"),
             Std::Cow(_) => unreachable!("lowered by cow_call"),

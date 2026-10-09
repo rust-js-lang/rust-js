@@ -154,3 +154,55 @@ function $repeatItems(v, n) {
   for (let i = 0; i < n; i++) out.push(...v);
   return out;
 }
+
+// A `VecDeque`'s `swap_remove_back(i)`, or `swap_remove_front(i)`: the item
+// at `i`, its last item, or its first, in its place; `None` past the end.
+function $dequeSwapRemove(v, i, front) {
+  if (i >= v.length) return undefined;
+  const item = v[i];
+  if (front) {
+    v[i] = v[0];
+    v.shift();
+  } else {
+    v[i] = v[v.length - 1];
+    v.pop();
+  }
+  return item;
+}
+
+// `retain_mut(f)`: the items `f` keeps, each given as itself, or as a handle
+// on a number or a string, whose change is kept.
+function $retainMut(v, f, handles) {
+  let kept = 0;
+  for (let i = 0; i < v.length; i++) {
+    const at = i;
+    const keep = handles
+      ? f({
+          get value() {
+            return v[at];
+          },
+          set value(item) {
+            v[at] = item;
+          },
+        })
+      : f(v[at]);
+    if (keep) v[kept++] = v[at];
+  }
+  v.length = kept;
+}
+
+// A `VecDeque`'s `pop_front_if(f)`: its first item, if `f` of it holds.
+function $popFrontIf(v, holds, handles) {
+  if (v.length === 0) return undefined;
+  const given = handles
+    ? {
+        get value() {
+          return v[0];
+        },
+        set value(item) {
+          v[0] = item;
+        },
+      }
+    : v[0];
+  return holds(given) ? v.shift() : undefined;
+}

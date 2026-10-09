@@ -1221,6 +1221,11 @@ export function $cellReplace(cell, value) {
   return previous;
 }
 
+// `a.swap(&b)` of two cells: each the other's value.
+export function $cellSwap(a, b) {
+  [a.value, b.value] = [b.value, a.value];
+}
+
 // A `OnceCell`'s or `OnceLock`'s `set(value)`: `Ok`, holding `Some(value)`,
 // or `Err(value)` if it holds one already.
 export function $onceSet(cell, value) {
@@ -1678,6 +1683,58 @@ export function $repeatItems(v, n) {
   return out;
 }
 
+// A `VecDeque`'s `swap_remove_back(i)`, or `swap_remove_front(i)`: the item
+// at `i`, its last item, or its first, in its place; `None` past the end.
+export function $dequeSwapRemove(v, i, front) {
+  if (i >= v.length) return undefined;
+  const item = v[i];
+  if (front) {
+    v[i] = v[0];
+    v.shift();
+  } else {
+    v[i] = v[v.length - 1];
+    v.pop();
+  }
+  return item;
+}
+
+// `retain_mut(f)`: the items `f` keeps, each given as itself, or as a handle
+// on a number or a string, whose change is kept.
+export function $retainMut(v, f, handles) {
+  let kept = 0;
+  for (let i = 0; i < v.length; i++) {
+    const at = i;
+    const keep = handles
+      ? f({
+          get value() {
+            return v[at];
+          },
+          set value(item) {
+            v[at] = item;
+          },
+        })
+      : f(v[at]);
+    if (keep) v[kept++] = v[at];
+  }
+  v.length = kept;
+}
+
+// A `VecDeque`'s `pop_front_if(f)`: its first item, if `f` of it holds.
+export function $popFrontIf(v, holds, handles) {
+  if (v.length === 0) return undefined;
+  const given = handles
+    ? {
+        get value() {
+          return v[0];
+        },
+        set value(item) {
+          v[0] = item;
+        },
+      }
+    : v[0];
+  return holds(given) ? v.shift() : undefined;
+}
+
 // A map's or a set's own methods (ADR 0325): a `Map`, a `Set`, or a
 // `$KeyMap` or `$KeySet` of keys found by value, the same to each.
 
@@ -1811,6 +1868,70 @@ export function $extendMap(m, items, set) {
     if (set) m.add(item);
     else m.set(item[0], item[1]);
   }
+}
+
+// A `char`'s or a `str`'s escapes, as text, and a `char`'s UTF-8 and UTF-16
+// (ADR 0327).
+
+// `escape_debug()`: each `char` as `{:?}` shows it, both quotes escaped; a
+// `str`'s Grapheme_Extend ones only first.
+export function $escapeDebug(s, str) {
+  let out = "";
+  let first = true;
+  for (const c of s) {
+    out += $debugChar(c, "'\"", !str || first);
+    first = false;
+  }
+  return out;
+}
+
+// `escape_default()`: `\t`, `\r`, `\n`, quotes and `\\` escaped, printable
+// ASCII as it is, and the rest as `\u{..}`.
+export function $escapeDefault(s) {
+  let out = "";
+  for (const c of s) {
+    if (c === "\t") out += "\\t";
+    else if (c === "\r") out += "\\r";
+    else if (c === "\n") out += "\\n";
+    else if (c === "'" || c === '"' || c === "\\") out += "\\" + c;
+    else if (c >= " " && c <= "~") out += c;
+    else out += "\\u{" + c.codePointAt(0).toString(16) + "}";
+  }
+  return out;
+}
+
+export function $escapeUnicode(s) {
+  let out = "";
+  for (const c of s) out += "\\u{" + c.codePointAt(0).toString(16) + "}";
+  return out;
+}
+
+// `c.encode_utf8(&mut buf)`: its bytes at the start of `buf`, and itself;
+// a `buf` too short panics, as std's does.
+export function $encodeUtf8(c, buf) {
+  const bytes = new TextEncoder().encode(c);
+  if (bytes.length > buf.length) {
+    const code = c.codePointAt(0).toString(16).toUpperCase().padStart(4, "0");
+    throw new Error(`encode_utf8: need ${bytes.length} bytes to encode U+${code} but buffer has just ${buf.length}`);
+  }
+  bytes.forEach((b, i) => (buf[i] = b));
+  return c;
+}
+
+// `char::decode_utf16(units)`: each `char`, `Ok`, or `Err` of an unpaired
+// surrogate, its code.
+export function $decodeUtf16(units) {
+  const out = [];
+  const list = Array.from(units);
+  for (let i = 0; i < list.length; i++) {
+    const unit = list[i];
+    if (unit < 0xd800 || unit > 0xdfff) out.push({ TAG: "Ok", _0: String.fromCharCode(unit) });
+    else if (unit <= 0xdbff && i + 1 < list.length && list[i + 1] >= 0xdc00 && list[i + 1] <= 0xdfff) {
+      out.push({ TAG: "Ok", _0: String.fromCharCode(unit, list[i + 1]) });
+      i++;
+    } else out.push({ TAG: "Err", _0: unit });
+  }
+  return out;
 }
 
 // A `OnceLock`'s `get_or_init(f)`: what it holds, made by `f` the first
@@ -5463,21 +5584,29 @@ export function $debugF64(value) {
   return Number.isFinite(value) && !text.includes(".") ? text + ".0" : text;
 }
 
+// One `char` as `{:?}` and `escape_debug()` show it: `quotes` the quotes it
+// escapes, `extend` whether a Grapheme_Extend one is escaped too.
+export function $debugChar(c, quotes, extend = true) {
+  if (quotes.includes(c) || c === "\\") return "\\" + c;
+  if (c === "\n") return "\\n";
+  if (c === "\r") return "\\r";
+  if (c === "\t") return "\\t";
+  if (c === "\0") return "\\0";
+  // Halfwidth katakana's voiced marks, which 1.99 shows as they are,
+  // though Unicode makes them combining marks.
+  if (c === "\uff9e" || c === "\uff9f") return c;
+  if (
+    (extend && /\p{Grapheme_Extend}/u.test(c)) ||
+    /[\p{Cc}\p{Cf}\p{Cs}\p{Co}\p{Cn}\p{Zl}\p{Zp}\p{Default_Ignorable_Code_Point}]/u.test(c) ||
+    (c !== " " && /\p{Zs}/u.test(c))
+  )
+    return "\\u{" + c.codePointAt(0).toString(16) + "}";
+  return c;
+}
+
 export function $debugStr(s, quote = '"') {
   let out = quote;
-  for (const c of s) {
-    if (c === quote || c === "\\") out += "\\" + c;
-    else if (c === "\n") out += "\\n";
-    else if (c === "\r") out += "\\r";
-    else if (c === "\t") out += "\\t";
-    else if (c === "\0") out += "\\0";
-    // Halfwidth katakana's voiced marks, which 1.99 shows as they are,
-    // though Unicode makes them combining marks.
-    else if (c === "\uff9e" || c === "\uff9f") out += c;
-    else if (/[\p{Cc}\p{Cf}\p{Cs}\p{Co}\p{Cn}\p{Zl}\p{Zp}\p{Grapheme_Extend}\p{Default_Ignorable_Code_Point}]/u.test(c) || (c !== " " && /\p{Zs}/u.test(c)))
-      out += "\\u{" + c.codePointAt(0).toString(16) + "}";
-    else out += c;
-  }
+  for (const c of s) out += $debugChar(c, quote);
   return out + quote;
 }
 

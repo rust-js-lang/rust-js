@@ -861,6 +861,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if super::recognition::is_from_utf16_error(self.tcx, ty) {
             return Ok(Expr::str("invalid utf-16: lone surrogate found"));
         }
+        // An escape is its text, and `decode_utf16`'s error its code (ADR 0327).
+        if super::recognition::is_text_escape(self.tcx, ty) {
+            return Ok(value);
+        }
+        if super::recognition::is_decode_utf16_error(self.tcx, ty) {
+            let hex = Expr::call(Expr::member(value, "toString"), vec![Expr::int(16)]);
+            return Ok(join(vec![Expr::str("unpaired surrogate found: "), hex]));
+        }
         // `format_args!`'s text (ADR 0034), which its `Display` writes as it
         // is, whatever width the `Formatter` has, as strum's derive asks.
         if self.is_lang_adt(ty, LangItem::FormatArguments) {
@@ -1034,6 +1042,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if super::recognition::is_from_utf16_error(self.tcx, ty) {
             return Ok(Expr::str("FromUtf16Error { kind: LoneSurrogate }"));
+        }
+        if super::recognition::is_decode_utf16_error(self.tcx, ty) {
+            return Ok(join(vec![
+                Expr::str("DecodeUtf16Error { code: "),
+                Expr::call(Expr::var("String"), vec![value]),
+                Expr::str(" }"),
+            ]));
         }
         // A `Duration`'s, in its largest whole unit, `1.5s` (ADR 0188). With
         // options, std rounds and pads it by its own rules: not yet.

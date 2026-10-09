@@ -1,4 +1,4 @@
-# Vec 33 of 48
+# Vec 34 of 48
 + Vec::append
 - Vec::as_mut_ptr
 + Vec::as_mut_slice
@@ -35,7 +35,7 @@
 + Vec::resize
 + Vec::resize_with
 + Vec::retain
-- Vec::retain_mut
++ Vec::retain_mut
 - Vec::set_len
 + Vec::shrink_to
 + Vec::shrink_to_fit
@@ -47,12 +47,12 @@
 - Vec::try_reserve
 - Vec::try_reserve_exact
 + Vec::with_capacity
-# VecDeque 34 of 55
+# VecDeque 45 of 55
 + VecDeque::append
 - VecDeque::as_mut_slices
 - VecDeque::as_slices
 + VecDeque::back
-- VecDeque::back_mut
++ VecDeque::back_mut
 + VecDeque::binary_search
 + VecDeque::binary_search_by
 + VecDeque::binary_search_by_key
@@ -61,9 +61,9 @@
 + VecDeque::contains
 + VecDeque::drain
 + VecDeque::front
-- VecDeque::front_mut
-- VecDeque::get
-- VecDeque::get_mut
++ VecDeque::front_mut
++ VecDeque::get
++ VecDeque::get_mut
 + VecDeque::insert
 - VecDeque::insert_mut
 + VecDeque::is_empty
@@ -72,16 +72,16 @@
 + VecDeque::len
 + VecDeque::make_contiguous
 + VecDeque::new
-- VecDeque::partition_point
++ VecDeque::partition_point
 + VecDeque::pop_back
-- VecDeque::pop_back_if
++ VecDeque::pop_back_if
 + VecDeque::pop_front
-- VecDeque::pop_front_if
++ VecDeque::pop_front_if
 + VecDeque::push_back
 - VecDeque::push_back_mut
 + VecDeque::push_front
 - VecDeque::push_front_mut
-- VecDeque::range
++ VecDeque::range
 - VecDeque::range_mut
 + VecDeque::remove
 + VecDeque::reserve
@@ -90,28 +90,28 @@
 + VecDeque::resize_with
 + VecDeque::retain
 - VecDeque::retain_back
-- VecDeque::retain_mut
++ VecDeque::retain_mut
 + VecDeque::rotate_left
 + VecDeque::rotate_right
 + VecDeque::shrink_to
 + VecDeque::shrink_to_fit
 + VecDeque::split_off
 + VecDeque::swap
-- VecDeque::swap_remove_back
-- VecDeque::swap_remove_front
++ VecDeque::swap_remove_back
++ VecDeque::swap_remove_front
 + VecDeque::truncate
 - VecDeque::try_reserve
 - VecDeque::try_reserve_exact
 + VecDeque::with_capacity
-# LinkedList 15 of 20
+# LinkedList 17 of 20
 + LinkedList::append
 + LinkedList::back
-- LinkedList::back_mut
++ LinkedList::back_mut
 + LinkedList::clear
 + LinkedList::contains
 - LinkedList::extract_if
 + LinkedList::front
-- LinkedList::front_mut
++ LinkedList::front_mut
 + LinkedList::is_empty
 + LinkedList::iter
 + LinkedList::iter_mut
@@ -423,47 +423,47 @@
 + ArcWeak::strong_count
 + ArcWeak::upgrade
 + ArcWeak::weak_count
-# Cell 6 of 13
+# Cell 9 of 13
 - Cell::as_array_of_cells
 - Cell::as_ptr
 - Cell::as_slice_of_cells
 - Cell::from_mut
 + Cell::get
-- Cell::get_mut
++ Cell::get_mut
 + Cell::into_inner
 + Cell::new
 + Cell::replace
 + Cell::set
-- Cell::swap
++ Cell::swap
 + Cell::take
-- Cell::update
-# RefCell 7 of 13
++ Cell::update
+# RefCell 9 of 13
 - RefCell::as_ptr
 + RefCell::borrow
 + RefCell::borrow_mut
-- RefCell::get_mut
++ RefCell::get_mut
 + RefCell::into_inner
 + RefCell::new
 + RefCell::replace
 + RefCell::replace_with
-- RefCell::swap
++ RefCell::swap
 + RefCell::take
 - RefCell::try_borrow
 - RefCell::try_borrow_mut
 - RefCell::try_borrow_unguarded
-# Mutex 4 of 7
-- Mutex::clear_poison
+# Mutex 6 of 7
++ Mutex::clear_poison
 + Mutex::get_mut
 + Mutex::into_inner
-- Mutex::is_poisoned
++ Mutex::is_poisoned
 + Mutex::lock
 + Mutex::new
 - Mutex::try_lock
-# RwLock 5 of 9
-- RwLock::clear_poison
+# RwLock 7 of 9
++ RwLock::clear_poison
 + RwLock::get_mut
 + RwLock::into_inner
-- RwLock::is_poisoned
++ RwLock::is_poisoned
 + RwLock::new
 + RwLock::read
 - RwLock::try_read
@@ -563,7 +563,7 @@
 - Box::new_zeroed_slice
 - Box::pin
 - Box::write
-# str 64 of 83
+# str 67 of 83
 + str::as_bytes
 - str::as_bytes_mut
 - str::as_mut_ptr
@@ -576,9 +576,9 @@
 + str::encode_utf16
 + str::ends_with
 + str::eq_ignore_ascii_case
-- str::escape_debug
-- str::escape_default
-- str::escape_unicode
++ str::escape_debug
++ str::escape_default
++ str::escape_unicode
 + str::find
 + str::floor_char_boundary
 + str::from_utf8
@@ -781,20 +781,20 @@
 + slice::windows
 - slice::write_clone_of_slice
 - slice::write_copy_of_slice
-# array 3 of 5
+# array 5 of 5
 + array::as_mut_slice
 + array::as_slice
-- array::each_mut
-- array::each_ref
++ array::each_mut
++ array::each_ref
 + array::map
-# char 30 of 38
-- char::decode_utf16
+# char 37 of 38
++ char::decode_utf16
 - char::encode_utf16
-- char::encode_utf8
++ char::encode_utf8
 + char::eq_ignore_ascii_case
-- char::escape_debug
-- char::escape_default
-- char::escape_unicode
++ char::escape_debug
++ char::escape_default
++ char::escape_unicode
 + char::from_digit
 + char::from_u32
 + char::from_u32_unchecked
@@ -819,8 +819,8 @@
 + char::is_whitespace
 + char::len_utf16
 + char::len_utf8
-- char::make_ascii_lowercase
-- char::make_ascii_uppercase
++ char::make_ascii_lowercase
++ char::make_ascii_uppercase
 + char::to_ascii_lowercase
 + char::to_ascii_uppercase
 + char::to_digit

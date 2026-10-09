@@ -57,6 +57,14 @@ pub(in crate::lower) enum SliceOp {
         suffix: bool,
     },
     Repeat,
+    /// A `VecDeque`'s `swap_remove_back(i)` or `swap_remove_front(i)`.
+    DequeSwapRemove {
+        front: bool,
+    },
+    /// `retain_mut(f)` and a `VecDeque`'s `pop_front_if(f)`: `f` given each
+    /// item, or a handle on a number or a string.
+    RetainMut,
+    PopFrontIf,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -208,6 +216,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     SliceOp::Strip { suffix } => helper(self, "$sliceStrip", vec![arg(), arg(), Expr::bool(suffix)]),
                     SliceOp::Repeat => helper(self, "$repeatItems", vec![arg(), arg()]),
+                    SliceOp::DequeSwapRemove { front } => {
+                        helper(self, "$dequeSwapRemove", vec![arg(), arg(), Expr::bool(front)])
+                    }
+                    SliceOp::RetainMut | SliceOp::PopFrontIf => {
+                        let handles = self.is_boxable(item());
+                        let name = if op == SliceOp::RetainMut {
+                            "$retainMut"
+                        } else {
+                            "$popFrontIf"
+                        };
+                        helper(self, name, vec![arg(), arg(), Expr::bool(handles)])
+                    }
                     SliceOp::CopyWithin => unreachable!("lowered above"),
                 }
             }

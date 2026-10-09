@@ -252,6 +252,8 @@ pub(super) fn combinator(name: &str, option: bool, result: bool, vec: bool, slic
         "resize" if vec => Comb::Resize,
         "resize_with" if vec => Comb::ResizeWith,
         "pop_if" if vec => Comb::PopIf,
+        // A `VecDeque`'s, at its back (ADR 0327).
+        "pop_back_if" if vec => Comb::PopIf,
         "windows" if slice => Comb::Windows,
         "chunks" if slice => Comb::Chunks,
         "concat" if slice => Comb::Concat,

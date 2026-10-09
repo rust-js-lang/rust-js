@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "                            Some(_) => Expr::unary(crate::js::UnaryOp::Not, Expr::bin(Op::Gt, a, b)),\n",
     tests: ["test/corpus.test.ts", "-t", "slice_methods"],
   },
+  {
+    name: "retain-mut-no-handles",
+    breaks: "`retain_mut` of numbers gives each as a value, so what `f` writes is lost",
+    file: "src/lower/std_types/slice.rs",
+    find: "                        let handles = self.is_boxable(item());\n",
+    replace: "                        let handles = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "cell_deque_char_methods"],
+  },
 ];

@@ -5,3 +5,8 @@ function $cellReplace(cell, value) {
   cell.value = value;
   return previous;
 }
+
+// `a.swap(&b)` of two cells: each the other's value.
+function $cellSwap(a, b) {
+  [a.value, b.value] = [b.value, a.value];
+}

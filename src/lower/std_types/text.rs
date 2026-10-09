@@ -34,6 +34,10 @@ pub(in crate::lower) enum StringEdit {
     Drain,
     ReplaceRange,
     ExtendFromWithin,
+    /// A `char`'s `make_ascii_uppercase()` or `make_ascii_lowercase()` (ADR 0327).
+    AsciiCase {
+        upper: bool,
+    },
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -145,6 +149,15 @@ pub(in crate::lower) enum TextOp {
         start: bool,
         end: bool,
     },
+    /// A `char`'s or a `str`'s `escape_default()`, `escape_debug()` or
+    /// `escape_unicode()`, as text; a `char`'s `encode_utf8(&mut buf)`, and
+    /// `char::decode_utf16(units)` (ADR 0327).
+    Escape {
+        kind: &'static str,
+        str: bool,
+    },
+    EncodeUtf8,
+    DecodeUtf16,
     /// `s.split_at(at)`: by a UTF-8 byte offset.
     SplitAt,
     /// `s.match_indices(p)`: where, in UTF-8 bytes, and what.
@@ -208,6 +221,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             StringEdit::Insert => (helper(self, Helper::InsertStr, "$insertStr", given), None),
             StringEdit::ReplaceRange => (helper(self, Helper::StrEdits, "$replaceRange", given), None),
             StringEdit::ExtendFromWithin => (helper(self, Helper::StrEdits, "$strExtendWithin", given), None),
+            StringEdit::AsciiCase { upper } => (
+                helper(self, Helper::AsciiCase, "$asciiCase", vec![Expr::bool(upper)]),
+                None,
+            ),
             StringEdit::Retain => {
                 let kept = Expr::call(
                     Expr::member(
@@ -384,6 +401,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TextOp::Rmatches => call(self, Helper::StrSearch, "$rmatches", vec![arg(), arg()]),
             TextOp::StrSplitAtChecked => call(self, Helper::StrSearch, "$splitAtChecked", vec![arg(), arg()]),
             TextOp::EncodeUtf16 => call(self, Helper::StrSearch, "$encodeUtf16", vec![arg()]),
+            TextOp::Escape { kind: "default", .. } => call(self, Helper::CharEscape, "$escapeDefault", vec![arg()]),
+            TextOp::Escape { kind: "unicode", .. } => call(self, Helper::CharEscape, "$escapeUnicode", vec![arg()]),
+            TextOp::Escape { str, .. } => call(self, Helper::CharEscape, "$escapeDebug", vec![arg(), Expr::bool(str)]),
+            // Its `&mut str`, a cell of the `char`'s text (ADR 0099).
+            TextOp::EncodeUtf8 => {
+                let written = call(self, Helper::CharEscape, "$encodeUtf8", vec![arg(), arg()]);
+                Expr::object(vec![Prop::Field("value".into(), written)])
+            }
+            TextOp::DecodeUtf16 => call(self, Helper::CharEscape, "$decodeUtf16", vec![arg()]),
             TextOp::FromUtf16 { lossy: false } => call(self, Helper::StrSearch, "$fromUtf16", vec![arg()]),
             TextOp::FromUtf16 { lossy: true } => call(self, Helper::StrSearch, "$fromUtf16Lossy", vec![arg()]),
             TextOp::CharBoundaryNear { ceil: false } => {
