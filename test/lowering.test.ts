@@ -766,7 +766,7 @@ pub fn or_not(o: Option<&js::RegExp>, x: &str) -> bool {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("return o?.test(x);");
   expect(js).toContain("  o?.test(x);");
-  expect(js).toContain("return o != null ? Node.add(o, x) : undefined;");
+  expect(js).toContain("return o ? Node.add(o, x) : undefined;");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.tested(/a/, "a"), lib.tested(undefined, "a"), lib.ran(undefined, "a"), lib.added({ n: 1 }, 2), lib.added(undefined, 2), lib.or_not(undefined, "a")])
     .toEqual([true, undefined, undefined, 3, undefined, false]);
@@ -1796,9 +1796,9 @@ pub fn owned(some: bool) -> u32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('const label = item != null && item.path != null ? item.path : "none";');
+  expect(js).toContain('const label = item && item.path != null ? item.path : "none";');
   expect(js).toContain('const v = r.TAG === "Ok" ? r._0 : (r._0 + 1) >>> 0;');
-  expect(js).toContain('const label = item != null && item.path != null ? item.title : "untitled";');
+  expect(js).toContain('const label = item && item.path != null ? item.title : "untitled";');
   expect(js).not.toContain("let tmp");
   const lib = await import(join(dir, "lib.js"));
   const item = { title: "T", path: "/p" };
@@ -2457,8 +2457,8 @@ pub fn lent(a: &Counter, b: &Counter) -> u32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain(`if (raw != null && raw.message === "noisy") {`);
-  expect(js).toContain(`if (raw != null && raw.message.includes("Example Error:")) {`);
+  expect(js).toContain(`if (raw && raw.message === "noisy") {`);
+  expect(js).toContain(`if (raw && raw.message.includes("Example Error:")) {`);
   expect(js.match(/const e\b/g)?.length).toBe(4);
   expect(js).toContain("const c = raw;");
   expect(js.match(/const n = raw;/g)?.length).toBe(2);
@@ -2726,4 +2726,80 @@ pub fn guarded() -> u32 {
   expect(js).not.toContain("$unwrap");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.first("a"), lib.inner(), lib.guarded()]).toEqual(["a", [undefined, 3], 5]);
+});
+
+// ADR 0298: an Option whose value is never falsy, an object, an array or a
+// function, is tested by its truth, as react.dev's Preview writes `{error &&
+// ..}`, `!error` and `rawError && rawError.message`; and `o == Some(true)` of
+// an `Option<bool>` is `o` in a test, `if (message.firstLoad)`. A number's
+// or a string's, which can be falsy, is tested against null still.
+test("an Option of an object is tested by its truth", async () => {
+  const dir = fixture("truthy-options");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Failure {
+    pub message: String,
+}
+
+pub fn shown(error: Option<&Failure>) -> bool {
+    error.is_some()
+}
+
+pub fn hidden(error: Option<&Failure>) -> bool {
+    error.is_none()
+}
+
+pub fn tested(error: Option<&Failure>) -> u32 {
+    if error.is_some() { 1 } else { 0 }
+}
+
+pub fn chained(error: Option<&Failure>) -> bool {
+    if let Some(e) = error
+        && e.message == "x"
+    {
+        return true;
+    }
+    false
+}
+
+pub fn mapped(error: Option<&Failure>) -> Option<usize> {
+    error.map(|e| e.message.len())
+}
+
+pub fn number(n: Option<u32>) -> bool {
+    n.is_some()
+}
+
+pub fn text(s: Option<&str>) -> bool {
+    s.is_none()
+}
+
+pub fn first(f: Option<bool>) -> u32 {
+    if f == Some(true) { 1 } else { 0 }
+}
+
+pub fn first_value(f: Option<bool>) -> bool {
+    f == Some(true)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  for (const written of ["return !!error;", "return !error;", "if (error) {", "if (error && error.message === \"x\") {",
+    "return error ? $byteLen(error.message) : undefined;", "return n != null;", "return s == null;", "if (f) {", "return !!f;"]) {
+    expect(js).toContain(written);
+  }
+  const lib = await import(join(dir, "lib.js"));
+  const failure = { message: "x" };
+  expect([lib.shown(failure), lib.shown(undefined), lib.hidden(undefined), lib.tested(failure), lib.chained(failure), lib.chained(undefined),
+    lib.mapped(failure), lib.number(0), lib.text(""), lib.first(true), lib.first(undefined), lib.first_value(false)])
+    .toEqual([true, false, true, 1, true, false, 1, true, false, 1, 0, false]);
+  // A JS value of unknown kind may be `""` or `0`: tested against null still.
+  writeFileSync(join(dir, "unknown.rs"), `use js::Unknown;
+
+pub fn has(value: Option<&Unknown>) -> bool {
+    value.is_some()
+}
+`);
+  run([compiler, join(dir, "unknown.rs"), "-o", join(dir, "unknown.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const unknown = readFileSync(join(dir, "unknown.js"), "utf8");
+  expect(unknown).toContain("return value != null;");
+  expect((await import(join(dir, "unknown.js"))).has("")).toBe(true);
 });

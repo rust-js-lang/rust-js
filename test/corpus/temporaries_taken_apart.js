@@ -194,7 +194,7 @@ function main() {
           temporary$2 = [option, arg$3];
           temporary$2$0$Some$0$live = true;
           try {
-            if (temporary$2[0] != null) {
+            if (temporary$2[0]) {
               temporary$2$0$Some$0$live = false;
               const z = temporary$2[0];
               try {

@@ -69,7 +69,7 @@ function main() {
   const opt = ["o"];
   let opt$Some$0$live = true;
   try {
-    if (opt != null) {
+    if (opt) {
       opt$Some$0$live = false;
       const inner = opt;
       consume(inner);

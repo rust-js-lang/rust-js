@@ -47,7 +47,7 @@ function main() {
   const i = find(items, 7);
   const pair = [i != null ? i : 99, 2];
   const pairs = [[1, 2], undefined];
-  const sums = pairs.map((p) => (10 + (p != null ? (p[0] + p[1]) | 0 : 0)) | 0);
+  const sums = pairs.map((p) => (10 + (p ? (p[0] + p[1]) | 0 : 0)) | 0);
   const words = ["a", "bb"];
   const first = (1 + Array.from(words[0]).length) >>> 0;
   console.log(

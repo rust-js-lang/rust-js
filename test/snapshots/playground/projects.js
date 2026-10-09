@@ -19,14 +19,14 @@ export const Project = {
   },
   currentState(project) {
     const match = project.files.find((f) => f.path === project.current);
-    if (match != null) {
+    if (match) {
       return match.state;
     }
     return undefined;
   },
   keeping(project, live) {
     const files = copy(project.files);
-    if (live != null) {
+    if (live) {
       for (const file of files) {
         if (file.path === project.current) {
           file.state = live;

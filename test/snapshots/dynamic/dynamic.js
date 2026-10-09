@@ -641,17 +641,17 @@ export function report() {
   const v$1 = { TAG: "Object", _0: object$31 };
   out += `${$jsonValueText(v$1, true)}\n`;
   const obj = $jsonValueAs(v$1, "Object");
-  if (obj != null) {
+  if (obj) {
     obj.set("d", { TAG: "String", _0: "new" });
     obj.delete("b");
   }
   const copy = $jsonValueClone(v$1);
   const items = $jsonValueAs($jsonIndex(v$1, "a"), "Array");
-  if (items != null) {
+  if (items) {
     out += `${items.length} items\n`;
   }
   const obj$1 = $jsonValueAs(v$1, "Object");
-  if (obj$1 != null) {
+  if (obj$1) {
     obj$1.set("e", { TAG: "Bool", _0: false });
   }
   out += `${$jsonValueText(v$1, false)}\n${$jsonValueText(copy, false)}\n`;

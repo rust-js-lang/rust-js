@@ -4,7 +4,7 @@ function main() {
   const deep = [undefined, undefined, 7];
   const held = [undefined, undefined, [1]];
   try {
-    console.log(`${deep[2] == null ? "None" : `Some(${deep[2]})`} ${held[2] != null}`);
+    console.log(`${deep[2] == null ? "None" : `Some(${deep[2]})`} ${!!held[2]}`);
   } finally {
     const dropS0$13 = (s0$13) => {
       if (s0$13[0][0] != null) {

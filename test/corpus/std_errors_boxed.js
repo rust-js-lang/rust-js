@@ -62,7 +62,7 @@ function settings(text) {
 }
 
 function describe(e, EError) {
-  const arg = EError.source(e) != null;
+  const arg = !!EError.source(e);
   return `${EError.Display().fmt(e)} | ${EError.Debug().fmt(e)} | ${arg}`;
 }
 
@@ -72,7 +72,7 @@ function main() {
     if (match.TAG === "Ok") {
       console.log(`ok ${match._0}`);
     } else {
-      const arg = match._0.impl.source(match._0.value) == null;
+      const arg = !match._0.impl.source(match._0.value);
       console.log(
         `err ${match._0.impl.Display().fmt(match._0.value)} / ${match._0.impl.Debug().fmt(match._0.value)} / ${arg}`,
       );
@@ -108,9 +108,7 @@ function main() {
     Display: () => ({ fmt: (value) => value }),
     source: () => undefined,
   });
-  console.log(
-    `${tmp.impl.Display().fmt(tmp.value)} ${receiver.impl.source(receiver.value) == null}`,
-  );
+  console.log(`${tmp.impl.Display().fmt(tmp.value)} ${!receiver.impl.source(receiver.value)}`);
   console.log(
     `${describe($unwrapErr($tryFromInt(300, 0, 255)), {
       Debug: () => ({ fmt: (value) => $debugParseError(value, "TryFromIntError") }),

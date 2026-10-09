@@ -110,7 +110,7 @@ export function Refs() {
     globalThis.log("layout");
   }, []);
   useEffect(() => {
-    globalThis.log(element.current != null ? "element set" : "no element");
+    globalThis.log(element.current ? "element set" : "no element");
     globalThis.log(handle.current ?? "no handle");
   }, []);
   const onLog = useEffectEvent(() => {
@@ -126,7 +126,7 @@ export function Refs() {
       {shown && (
         <b
           ref={(node) => {
-            globalThis.log(node != null ? "attached" : "null");
+            globalThis.log(node ? "attached" : "null");
             return () => {
               globalThis.log("detached");
             };

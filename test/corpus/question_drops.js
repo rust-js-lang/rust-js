@@ -128,7 +128,7 @@ function main() {
     const option = climb([start]);
     let option$Some$0$live = true;
     try {
-      if (option != null) {
+      if (option) {
         option$Some$0$live = false;
         const d = option;
         try {
@@ -186,7 +186,7 @@ function main() {
     const option$1 = twice([start$2], dCheckedDouble(), dDrop_drop);
     let option$1$Some$0$live = true;
     try {
-      if (option$1 != null) {
+      if (option$1) {
         option$1$Some$0$live = false;
         const d$3 = option$1;
         try {

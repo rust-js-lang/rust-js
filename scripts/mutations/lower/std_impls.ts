@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "eq-without-cells",
     breaks: "`o == Some(&mut 7)` of an `Option<&mut i32>` compares the cells, not what they point at",
     file: "src/lower/std_impls.rs",
-    find: "        let (a, _) = self.through_refs(a, ty);\n        let (b, ty) = self.through_refs(b, ty);\n        if self.is_primitive_eq(ty) {",
-    replace: "        let ty = ty.peel_refs();\n        if self.is_primitive_eq(ty) {",
+    find: "        let (a, _) = self.through_refs(a, ty);\n        let (b, ty) = self.through_refs(b, ty);\n",
+    replace: "        let ty = ty.peel_refs();\n",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_compare"],
   },
   {
@@ -185,5 +185,13 @@ export const mutations: Mutation[] = [
     find: "                            let x = self.held(Expr::member(a.clone(), name.clone()), t);\n",
     replace: "                            let x = Expr::member(a.clone(), name.clone());\n",
     tests: ["test/lowering.test.ts", "-t", "cell in a field is the property"],
+  },
+  {
+    name: "some-true-compared",
+    breaks: "`o == Some(true)` of an `Option<bool>` is `o === true`, where the original tests `o`",
+    file: "src/lower/std_impls.rs",
+    find: "        if self.option_of(ty).is_some_and(|inner| inner.is_bool()) {",
+    replace: "        if false {",
+    tests: ["test/lowering.test.ts", "-t", "an Option of an object is tested by its truth"],
   },
 ];

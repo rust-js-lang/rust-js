@@ -89,7 +89,7 @@ function main() {
         console.log(`defaults ${defaults.x[0]} ${defaults.y[0]}`);
         const option = rebuild({ x: [10], y: [11], n: 4 }, true);
         try {
-          console.log(`stopped ${option == null}`);
+          console.log(`stopped ${!option}`);
         } finally {
           if (option != null) {
             noisyDrop_drop(option.x);
@@ -99,7 +99,7 @@ function main() {
         const option$1 = rebuild({ x: [12], y: [13], n: 5 }, false);
         let option$1$Some$0$live = true;
         try {
-          if (option$1 != null) {
+          if (option$1) {
             option$1$Some$0$live = false;
             const built = option$1;
             try {

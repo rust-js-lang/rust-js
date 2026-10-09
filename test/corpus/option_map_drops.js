@@ -75,7 +75,7 @@ function main() {
         dDrop_drop(d);
       }
     };
-    read = option != null ? map(option) : undefined;
+    read = option ? map(option) : undefined;
   } finally {
     if (option$live) {
       if (option != null) {
@@ -85,14 +85,14 @@ function main() {
   }
   console.log(`read ${read == null ? "None" : `Some(${read})`}`);
   const value = make(2);
-  const kept = value != null ? [value] : undefined;
+  const kept = value ? [value] : undefined;
   let kept$live = true;
   try {
     console.log(`kept ${kept != null ? kept[0][0] : 0}`);
     const value$1 = make(0);
-    const none = value$1 != null ? [value$1] : undefined;
+    const none = value$1 ? [value$1] : undefined;
     try {
-      console.log(`none ${none == null}`);
+      console.log(`none ${!none}`);
       const generic = wrapped(make(3), dDrop_drop);
       try {
         console.log(`generic ${generic != null ? generic[0][0] : 0}`);
@@ -102,7 +102,7 @@ function main() {
         }
         const option$1 = keep_if(make(4), false, dDrop_drop);
         try {
-          console.log(`${option$1 == null}`);
+          console.log(`${!option$1}`);
         } finally {
           if (option$1 != null) {
             dDrop_drop(option$1);

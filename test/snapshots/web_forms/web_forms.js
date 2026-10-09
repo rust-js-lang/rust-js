@@ -63,7 +63,7 @@ export function handlers(button) {
   button.onclick = (e) => {
     e.preventDefault();
   };
-  const set = button.onclick != null;
+  const set = !!button.onclick;
   button.onclick = null;
   return set;
 }
@@ -123,7 +123,7 @@ export function statics_read() {
 export function on_errors(button) {
   button.onerror = (e) => typeof e === "string";
   window.onbeforeunload = () => undefined;
-  return button.onerror != null;
+  return !!button.onerror;
 }
 
 export function listed(list, headers) {
@@ -152,6 +152,6 @@ export function adopted(sheet) {
 }
 
 export function defined(registry) {
-  return registry.get("x-card") != null;
+  return !!registry.get("x-card");
 }
 //# sourceMappingURL=web_forms.js.map

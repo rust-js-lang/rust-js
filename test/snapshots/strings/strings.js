@@ -83,14 +83,14 @@ export function separator(windows) {
 export function folder_and_file(path) {
   let first;
   const match = $splitOnce(path, "/");
-  if (match != null) {
+  if (match) {
     first = match[0];
   } else {
     first = "";
   }
   let file;
   const match$1 = $rsplitOnce(path, "/");
-  if (match$1 != null) {
+  if (match$1) {
     file = match$1[1];
   } else {
     file = path;
@@ -120,7 +120,7 @@ export function kind(s) {
 
 export function tagged(s) {
   const option = $splitOnce(s, "/");
-  const top = option != null ? option[0] : undefined;
+  const top = option ? option[0] : undefined;
   let n;
   const match = s.endsWith("/");
   if (top === "ab") {

@@ -67,7 +67,7 @@ export function dijkstra(edges, n, src) {
   $heapPush(heap, [[0, src]], (a, b) => $cmp(b[0][0], a[0][0]) || $cmp(b[0][1], a[0][1]));
   while (true) {
     const value = $heapPop(heap, (a, b) => $cmp(b[0][0], a[0][0]) || $cmp(b[0][1], a[0][1]));
-    if (value != null) {
+    if (value) {
       const option = $index(dist, value[0][1]);
       if (option != null && value[0][0] > option) {
         continue;

@@ -10,7 +10,7 @@ function halves(bytes) {
 
 function total(items) {
   const match = items.length === 0 ? undefined : [items[0], items.slice(1)];
-  if (match != null) {
+  if (match) {
     return (match[0] + total(match[1])) >>> 0;
   }
   return 0;
@@ -64,7 +64,7 @@ function main() {
   );
   const tmp$2 = total(v);
   const option = words.length === 0 ? undefined : [words[words.length - 1], words.slice(0, -1)];
-  const arg$12 = option != null ? [$byteLen(option[0]), option[1].length] : undefined;
+  const arg$12 = option ? [$byteLen(option[0]), option[1].length] : undefined;
   console.log(`${tmp$2} ${arg$12 == null ? "None" : `Some((${arg$12[0]}, ${arg$12[1]}))`}`);
   const one = [9];
   const arg$13 = one.length === 0 ? undefined : [one[0], one.slice(1)];
@@ -73,7 +73,7 @@ function main() {
     `${arg$13 == null ? "None" : `Some((${arg$13[0]}, [${arg$13[1].map((item) => String(item)).join(", ")}]))`} ${arg$14 == null ? "None" : `Some((${arg$14[0]}, [${arg$14[1].map((item) => String(item)).join(", ")}]))`}`,
   );
   const match = $sliceGet(words, 1);
-  if (match != null) {
+  if (match) {
     console.log(`${match.length}`);
   } else {
     console.log("none");

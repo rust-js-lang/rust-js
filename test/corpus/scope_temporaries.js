@@ -146,7 +146,7 @@ function main() {
   }
   const option = early(true);
   try {
-    console.log(`early ${option == null}`);
+    console.log(`early ${!option}`);
   } finally {
     if (option != null) {
       noisyDrop_drop(option.a);
@@ -155,7 +155,7 @@ function main() {
   const option$1 = early(false);
   let option$1$Some$0$live = true;
   try {
-    if (option$1 != null) {
+    if (option$1) {
       option$1$Some$0$live = false;
       const pair = option$1;
       try {
@@ -205,7 +205,7 @@ function main() {
   };
   const option$2 = pair$1(true);
   try {
-    console.log(`pair ${option$2 == null}`);
+    console.log(`pair ${!option$2}`);
   } finally {
     if (option$2 != null) {
       noisyDrop_drop(option$2.a);
@@ -213,7 +213,7 @@ function main() {
   }
   const option$3 = kept_early(true);
   try {
-    console.log(`kept ${option$3 == null}`);
+    console.log(`kept ${!option$3}`);
   } finally {
     if (option$3 != null) {
       noisyDrop_drop(option$3.a);

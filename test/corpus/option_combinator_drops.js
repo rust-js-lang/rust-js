@@ -224,7 +224,7 @@ function main() {
     }
   }
   try {
-    console.log(`kept ${kept != null}`);
+    console.log(`kept ${!!kept}`);
     const option$1 = make(3);
     let kept$2;
     try {
@@ -238,7 +238,7 @@ function main() {
     }
     const dropped = kept$2;
     try {
-      console.log(`dropped ${dropped == null}`);
+      console.log(`dropped ${!dropped}`);
       const option$2 = make(0);
       let kept$3;
       try {
@@ -252,7 +252,7 @@ function main() {
       }
       const option$3 = kept$3;
       try {
-        console.log(`none ${option$3 == null}`);
+        console.log(`none ${!option$3}`);
       } finally {
         if (option$3 != null) {
           dDrop_drop(option$3);
@@ -290,7 +290,7 @@ function main() {
           option$5$live = false;
           option$6 = keep(option$5, (d) => d[0] > 9, dDrop_drop);
           try {
-            console.log(`generic ${option$6 == null}`);
+            console.log(`generic ${!option$6}`);
           } finally {
             if (option$6 != null) {
               dDrop_drop(option$6);
@@ -310,7 +310,7 @@ function main() {
           option$7$live = false;
           option$9 = keep(
             option$7,
-            (d) => d != null,
+            (d) => !!d,
             (option$8) => {
               if (option$8 != null) {
                 dDrop_drop(option$8);

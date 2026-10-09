@@ -3613,3 +3613,31 @@ pub fn Ticker() -> JSX::Element {
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(lib.Ticker))).toBe("<button>0</button>");
 });
+
+// ADR 0298: JSX shows an Option of an object by its truth, as react.dev's
+// Preview writes `{error && <div>..</div>}` and `visible={!error}`.
+test("JSX tests an Option of an object by its truth", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+pub struct Failure {
+    pub message: String,
+}
+pub struct ShownProps<'a> {
+    pub error: Option<&'a Failure>,
+}
+pub fn Shown(ShownProps { error }: ShownProps) -> JSX::Element {
+    jsx! {
+        <div hidden={error.is_none()}>
+            {error.map(|error| jsx! { <b>{error.message.as_str()}</b> })}
+        </div>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("hidden={!error}");
+  expect(jsx).toContain("{error && <b>{error.message}</b>}");
+  const lib = await import(join(dir, "lib.jsx"));
+  expect([renderToStaticMarkup(createElement(lib.Shown, { error: { message: "m" } })), renderToStaticMarkup(createElement(lib.Shown, {}))])
+    .toEqual(["<div><b>m</b></div>", '<div hidden=""></div>']);
+});

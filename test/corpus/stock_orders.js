@@ -60,7 +60,7 @@ const Inventory = {
       } else {
         for (const line of lines) {
           const item = inventory.items.get(line.sku);
-          if (item != null) {
+          if (item) {
             item.stock = (item.stock + line.quantity) >>> 0;
           }
         }

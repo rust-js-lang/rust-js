@@ -61,7 +61,7 @@ function main() {
     console.log(`found ${match$1._0}`);
   } else {
     const arg = match$1._0.impl.Display().fmt(match$1._0.value);
-    const arg$1 = match$1._0.impl.source(match$1._0.value) == null;
+    const arg$1 = !match$1._0.impl.source(match$1._0.value);
     console.log(
       `error ${match$1._0.impl.Display().fmt(match$1._0.value)} / ${match$1._0.impl.Debug().fmt(match$1._0.value)} / ${arg} / ${arg$1}`,
     );

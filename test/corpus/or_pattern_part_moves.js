@@ -138,7 +138,7 @@ function main() {
         console.log(`single ${c != null ? c[0] : "none"}`);
         const n = Mapped.latest("None", loudDrop_drop);
         try {
-          console.log(`none ${n == null}`);
+          console.log(`none ${!n}`);
           const numbers = Mapped.latest({ TAG: "Ambiguous", _0: 1, _1: 2 });
           console.log(`numbers ${numbers == null ? "None" : `Some(${numbers})`}`);
           const m = middle({ TAG: "Triple", _0: ["t1"], _1: ["t2"], _2: ["t3"] });
@@ -149,7 +149,7 @@ function main() {
               console.log(`middle ${p != null ? p[0] : "none"}`);
               const option = middle("Empty");
               try {
-                console.log(`middle none ${option == null}`);
+                console.log(`middle none ${!option}`);
               } finally {
                 if (option != null) {
                   loudDrop_drop(option);

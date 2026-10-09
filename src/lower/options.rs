@@ -5,7 +5,7 @@ use super::patterns::same_place;
 use super::recognition::Std;
 use super::{FnCx, R};
 use crate::js;
-use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
+use crate::js::{Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
 use crate::runtime::Helper;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty};
@@ -103,8 +103,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let value = if boxed { self.some(value) } else { value };
                 Expr::cond(ok, value, otherwise)
             }
-            Std::IsSome => Expr::bin(Op::LooseNe, arg(), Expr::null()),
-            Std::IsNone => Expr::bin(Op::LooseEq, arg(), Expr::null()),
+            Std::IsSome => self.present(arg(), generic_args.type_at(0)),
+            Std::IsNone => self.absent(arg(), generic_args.type_at(0)),
             Std::Unwrap => {
                 self.runtime.insert(Helper::Unwrap);
                 // `expect` has a message too.
@@ -215,7 +215,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             }
                             _ => self.spill(&base, option, out),
                         };
-                        let present = Expr::bin(Op::LooseNe, option.clone(), Expr::null());
+                        let present = self.present(option.clone(), generic_args.type_at(0));
                         (option, present)
                     }
                 };
@@ -450,4 +450,35 @@ pub(super) fn filtered(option: &Expr) -> Option<(Expr, Expr)> {
     };
     let tests_it = matches!(&tested.kind, js::ExprKind::Var(v) if v == name);
     tests_it.then(|| ((**test).clone(), (**value).clone()))
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Whether an `Option<ty>`'s value is never falsy in JS, an object, an
+    /// array or a function, so its truth is whether it's there (ADR 0298).
+    /// Not a binding's `unknown` or `any`, which may be `0` or `""`.
+    pub(super) fn never_falsy(&self, ty: Ty<'tcx>) -> bool {
+        let ty = ty.peel_refs();
+        let any = matches!(ty.kind(), ty::Adt(adt, _)
+            if matches!(super::declarations::written_types(self.tcx, adt.did()).as_deref(), Some("unknown" | "any")));
+        self.option_of(ty).is_none()
+            && !any
+            && (self.is_object(ty) || matches!(ty.kind(), ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..)))
+    }
+
+    /// Whether an `Option<ty>` is `Some`: `o != null`, or `!!o` of a value
+    /// never falsy, which a test reads as `o` (ADR 0298).
+    pub(super) fn present(&self, option: Expr, ty: Ty<'tcx>) -> Expr {
+        match self.never_falsy(ty) {
+            true => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, option)),
+            false => Expr::bin(Op::LooseNe, option, Expr::null()),
+        }
+    }
+
+    /// Whether it's `None`: `o == null`, or `!o`.
+    pub(super) fn absent(&self, option: Expr, ty: Ty<'tcx>) -> Expr {
+        match self.never_falsy(ty) {
+            true => Expr::unary(UnaryOp::Not, option),
+            false => Expr::bin(Op::LooseEq, option, Expr::null()),
+        }
+    }
 }

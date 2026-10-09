@@ -95,7 +95,7 @@ function first(k) {
       const option = make(k, true);
       let option$Some$0$live = true;
       try {
-        if (option != null) {
+        if (option) {
           option$Some$0$live = false;
           const l = option;
           try {

@@ -589,6 +589,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 (**x).clone()
             }
+            // `!!error` of a value never falsy (ADR 0298): `error`, which
+            // renders nothing when it isn't there.
+            js::ExprKind::Unary(js::UnaryOp::Not, not)
+                if let js::ExprKind::Unary(js::UnaryOp::Not, x) = &not.kind
+                    && self.maps_js_object(child) =>
+            {
+                (**x).clone()
+            }
             _ => (**test).clone(),
         };
         Expr {
@@ -597,12 +605,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// Is `child` a call of an `Option` of a JS object, `variant.icon.map(..)`?
+    /// Is `child` a call of an `Option` of a JS object, `variant.icon.map(..)`,
+    /// or of another value never falsy (ADR 0298)?
     fn maps_js_object(&self, child: ExprId) -> bool {
         matches!(self.thir[self.strip(child)].kind, ExprKind::Call { ref args, .. }
             if args.first().is_some_and(|&receiver| self
                 .option_of(self.thir[receiver].ty)
-                .is_some_and(|inner| self.is_js_object(inner.peel_refs()))))
+                .is_some_and(|inner| self.is_js_object(inner.peel_refs()) || self.never_falsy(inner))))
     }
 
     /// A tuple of children is several, `("Count is ", count)`: `Count is {count}`.

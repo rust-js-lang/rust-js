@@ -694,4 +694,12 @@ export const mutations: Mutation[] = [
     replace: "                js::ExprKind::Arrow(ref params, ref body) => (params.clone(), body.clone(), false),",
     tests: ["test/jsx.test.ts", "-t", "a closure a let names for a hook"],
   },
+  {
+    name: "truthy-pattern-explicit",
+    breaks: "`if let Some(e) = error` tests `error != null` where the original tests `error`",
+    file: "src/lower/patterns.rs",
+    find: "                    Some(inner) => self.present(subject.clone(), inner),\n",
+    replace: "                    Some(_) => Expr::bin(Op::LooseNe, subject.clone(), Expr::null()),\n",
+    tests: ["test/lowering.test.ts", "-t", "an Option of an object is tested by its truth"],
+  },
 ];

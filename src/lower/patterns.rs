@@ -1804,7 +1804,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => subject.clone(),
                 };
                 let inner = self.pattern_test(&field.pattern, &value, bindings)?;
-                let present = Expr::bin(Op::LooseNe, subject.clone(), Expr::null());
+                let present = match self.option_of(pat.ty) {
+                    Some(inner) => self.present(subject.clone(), inner),
+                    None => Expr::bin(Op::LooseNe, subject.clone(), Expr::null()),
+                };
                 // `d === "Up"` of a unit variant, or `o === 0` of `Ordering::Equal`:
                 // `undefined === "Up"` is false too (ADR 0193).
                 let names_value = |test: &Expr| {
@@ -2150,10 +2153,7 @@ fn reads_first(e: &Expr, name: &str) -> bool {
 /// `null`: `Some(s)` of an `Option<&Unknown>`, then `Kind::String(t)` of `s`.
 fn and(a: Expr, b: Expr) -> Expr {
     use js::ExprKind as K;
-    let not_null = |e: &Expr| match &e.kind {
-        K::Binary(Op::LooseNe, x, null) if matches!(null.kind, K::Null) => Some((**x).clone()),
-        _ => None,
-    };
+    let not_null = |e: &Expr| js::presence_of(e).cloned();
     let typed = |e: &Expr| match &e.kind {
         K::Binary(Op::Eq, of, kind) => match (&of.kind, &kind.kind) {
             (K::Unary(UnaryOp::Typeof, x), K::Str(kind)) if kind != "object" && kind != "undefined" => {

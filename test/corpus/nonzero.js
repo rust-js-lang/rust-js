@@ -14,7 +14,7 @@ const SEVEN = 7;
 
 function year(n) {
   const value = n === 0 ? undefined : n;
-  return value != null ? [value] : undefined;
+  return value ? [value] : undefined;
 }
 
 function main() {

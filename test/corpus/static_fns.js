@@ -29,7 +29,7 @@ function main() {
     console.log(`${name} ${arg}`);
   }
   const f$1 = MAYBE;
-  if (f$1 != null) {
+  if (f$1) {
     console.log(`${f$1(1)}`);
   }
   console.log(`${GREETER.impl.hi(GREETER.value)} ${SHOWN.impl.fmt(SHOWN.value)} ${ADD(1)}`);

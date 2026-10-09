@@ -146,7 +146,7 @@ fn param_name(ty: &Value) -> String {
 }
 
 /// What `#[rust_js::types]` says an item is to TypeScript.
-fn written_types(tcx: TyCtxt<'_>, did: DefId) -> Option<String> {
+pub(super) fn written_types(tcx: TyCtxt<'_>, did: DefId) -> Option<String> {
     let path = [Symbol::intern("rust_js"), Symbol::intern("types")];
     let declared = tcx.get_attrs_by_path(did, &path).next()?.value_str()?;
     Some(declared.to_string())

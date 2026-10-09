@@ -155,4 +155,12 @@ export const mutations: Mutation[] = [
     replace: "                && name == \"never\"\n",
     tests: ["test/lowering.test.ts", "-t", "cell in a field is the property"],
   },
+  {
+    name: "presence-truthy-unread",
+    breaks: "`!!o ? o.m(x) : undefined` isn't a presence test, so it isn't `o?.m(x)`",
+    file: "src/js.rs",
+    find: "        ExprKind::Unary(UnaryOp::Not, not) => match &not.kind {\n            ExprKind::Unary(UnaryOp::Not, x) => Some(x),\n            _ => None,\n        },\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "an option's method call ends where it's None"],
+  },
 ];

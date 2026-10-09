@@ -79,7 +79,7 @@ export function prepare(files, modules, styles, rootFile, test, run) {
   for (const item of sources) {
     for (const [, specifier] of Array.from(item[1].matchAll(cssImports))) {
       const value = styles.find(([name]) => name === specifier);
-      if (value != null && !css.includes(value[1])) {
+      if (value && !css.includes(value[1])) {
         css.push(value[1]);
       }
     }
@@ -151,10 +151,10 @@ export function outcome(report) {
   if (report.error != null) {
     return { TAG: "Failed", _0: report.error };
   }
-  if (report.ran === true) {
+  if (report.ran) {
     return "Ran";
   }
-  if (report.tested != null) {
+  if (report.tested) {
     return { TAG: "Tested", _0: report.tested };
   }
   return undefined;

@@ -12,13 +12,13 @@ function generic_size() {
 
 function classify(input) {
   const match = $splitOnce(input, "=");
-  if (match != null) {
+  if (match) {
     const n = $parseInt(match[1], -2147483648, 2147483647);
     if (n.TAG === "Ok") {
       return `${match[0]} is the number ${n._0}`;
     }
   }
-  if (match != null) {
+  if (match) {
     const rest = $stripPrefix(match[1], '"');
     if (rest != null) {
       const inner = $stripSuffix(rest, '"');
@@ -27,7 +27,7 @@ function classify(input) {
       }
     }
   }
-  if (match != null) {
+  if (match) {
     return `${match[0]} is something else`;
   }
   return "not a setting";

@@ -557,6 +557,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn eq_value(&mut self, a: Expr, b: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         let (a, _) = self.through_refs(a, ty);
         let (b, ty) = self.through_refs(b, ty);
+        // `o == Some(true)` of an `Option<bool>`: `!!o`, which a test reads
+        // as `o`, as JS tests a flag that may be missing (ADR 0298).
+        if self.option_of(ty).is_some_and(|inner| inner.is_bool()) {
+            match (&a.kind, &b.kind) {
+                (_, js::ExprKind::Bool(true)) => return Ok(Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, a))),
+                (js::ExprKind::Bool(true), _) => return Ok(Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, b))),
+                _ => {}
+            }
+        }
         if self.is_primitive_eq(ty) {
             return Ok(Expr::bin(Op::Eq, a, b));
         }

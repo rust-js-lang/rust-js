@@ -60,10 +60,10 @@ function main() {
     console.log(`${text(t)}`);
   }
   for (const item of [{ TAG: "Circle", _0: 0.5 }, { TAG: "Sphere", _0: 3 }, undefined]) {
-    if (item != null && (item.TAG === "Circle" || item.TAG === "Sphere") && item._0 > 1) {
+    if (item && (item.TAG === "Circle" || item.TAG === "Sphere") && item._0 > 1) {
       const r = item._0;
       console.log(`big ${$displayF64(r)}`);
-    } else if (item != null && (item.TAG === "Circle" || item.TAG === "Sphere")) {
+    } else if (item && (item.TAG === "Circle" || item.TAG === "Sphere")) {
       const r$1 = item._0;
       console.log(`small ${$displayF64(r$1)}`);
     } else {

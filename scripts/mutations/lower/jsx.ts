@@ -418,4 +418,12 @@ export const mutations: Mutation[] = [
     replace: "        if !matches!(none.kind, js::ExprKind::Undefined) || child == child {\n            return value;\n        }",
     tests: ["test/react.test.ts", "-t", "React components are hand-written JSX, and React runs them"],
   },
+  {
+    name: "jsx-truthy-shown-tested",
+    breaks: "JSX shows an Option of an object by `!!error && ..`, where the original writes `error && ..`",
+    file: "src/lower/jsx.rs",
+    find: "            js::ExprKind::Unary(js::UnaryOp::Not, not)\n                if let js::ExprKind::Unary(js::UnaryOp::Not, x) = &not.kind\n                    && self.maps_js_object(child) =>",
+    replace: "            js::ExprKind::Unary(js::UnaryOp::Not, not)\n                if let js::ExprKind::Unary(js::UnaryOp::Not, x) = &not.kind\n                    && false =>",
+    tests: ["test/jsx.test.ts", "-t", "JSX tests an Option of an object"],
+  },
 ];
