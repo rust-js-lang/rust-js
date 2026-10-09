@@ -1678,6 +1678,141 @@ export function $repeatItems(v, n) {
   return out;
 }
 
+// A map's or a set's own methods (ADR 0325): a `Map`, a `Set`, or a
+// `$KeyMap` or `$KeySet` of keys found by value, the same to each.
+
+// `m.retain(f)`: the entries `f` keeps, visited in `entries`' order, a
+// B-tree's sorted, `f` given a handle on a number's or a string's value.
+export function $retainMap(m, f, entries, handles) {
+  for (const [key, value] of handles ? $mutEntries(m, entries) : Array.from(entries)) {
+    if (!f(key, value)) m.delete(key);
+  }
+}
+
+export function $retainSet(s, f, items) {
+  for (const item of Array.from(items)) if (!f(item)) s.delete(item);
+}
+
+// `m.drain()`: its entries, or its items, and it empty.
+export function $drainAll(m) {
+  const items = Array.from(m);
+  m.clear();
+  return items;
+}
+
+export function $getKeyValue(m, key) {
+  return m.has(key) ? [key, m.get(key)] : undefined;
+}
+
+export function $removeEntry(m, key) {
+  if (!m.has(key)) return undefined;
+  const value = m.get(key);
+  m.delete(key);
+  return [key, value];
+}
+
+// `s.replace(x)`: the item equal to `x` that was there, or `None`, and `x`
+// in its place.
+export function $setReplace(s, x) {
+  const had = s.has(x);
+  s.delete(x);
+  s.add(x);
+  return had ? x : undefined;
+}
+
+// A B-tree's first or last entry, `[key, value]`, or a set's item, by its
+// keys' order `cmp`; `undefined` where it's empty. `pop`: taken out too.
+export function $treeEnd(m, cmp, last, set, pop) {
+  let found;
+  let seen = false;
+  for (const entry of m) {
+    const key = set ? entry : entry[0];
+    const order = seen ? cmp(key, set ? found : found[0]) : 0;
+    if (!seen || (last ? order > 0 : order < 0)) {
+      found = entry;
+      seen = true;
+    }
+  }
+  if (pop && seen) m.delete(set ? found : found[0]);
+  return found;
+}
+
+// `m.range(..)` of a B-tree: its entries, or items, whose keys are in the
+// bounds, in order; a start past the end panics, as std's does.
+export function $treeRange(m, cmp, set, name, hasStart, start, hasEnd, end, endIncluded) {
+  if (hasStart && hasEnd && cmp(start, end) > 0) {
+    throw new Error(`range start is greater than range end in ${name}`);
+  }
+  const sorted = set ? $sortedKeys(m, cmp) : $sortedEntries(m, cmp);
+  return sorted.filter((entry) => {
+    const key = set ? entry : entry[0];
+    if (hasStart && cmp(key, start) < 0) return false;
+    if (hasEnd && (endIncluded ? cmp(key, end) > 0 : cmp(key, end) >= 0)) return false;
+    return true;
+  });
+}
+
+// `m.split_off(&key)` of a B-tree: those from `key` on, taken out, in a map
+// of its own.
+export function $treeSplitOff(m, key, cmp, set) {
+  const rest = new m.constructor();
+  for (const entry of Array.from(m)) {
+    const k = set ? entry : entry[0];
+    if (cmp(k, key) >= 0) {
+      if (set) rest.add(entry);
+      else rest.set(k, entry[1]);
+      m.delete(k);
+    }
+  }
+  return rest;
+}
+
+// `m.append(&mut other)`: all of `other`'s in `m`, its values over `m`'s,
+// and `other` empty.
+export function $treeAppend(m, other, set) {
+  for (const entry of other) {
+    if (set) m.add(entry);
+    else m.set(entry[0], entry[1]);
+  }
+  other.clear();
+}
+
+// A set's `union`, `intersection`, `difference` or `symmetric_difference`:
+// its items, a B-tree's sorted by `cmp`.
+export function $setAlgebra(a, b, op, cmp) {
+  const only = (x, y) => Array.from(x).filter((item) => !y.has(item));
+  const items =
+    op === "union"
+      ? [...a, ...only(b, a)]
+      : op === "intersection"
+        ? Array.from(a).filter((item) => b.has(item))
+        : op === "difference"
+          ? only(a, b)
+          : [...only(a, b), ...only(b, a)];
+  return cmp ? items.sort(cmp) : items;
+}
+
+// `a.is_subset(&b)`, or `a.is_superset(&b)`: each of the one's in the other.
+export function $isSubset(a, b, superset) {
+  const [inner, outer] = superset ? [b, a] : [a, b];
+  for (const item of inner) if (!outer.has(item)) return false;
+  return true;
+}
+
+export function $isDisjoint(a, b) {
+  for (const item of a) if (b.has(item)) return false;
+  return true;
+}
+
+// `m.extend(items)`: each pair set, a later one's value over an earlier's,
+// or each item added.
+export function $extendMap(m, items, set) {
+  for (const item of items) {
+    if (set) m.add(item);
+    else m.set(item[0], item[1]);
+  }
+}
+
 // A `OnceLock`'s `get_or_init(f)`: what it holds, made by `f` the first
 // time. An `f` that sets it itself deadlocks in Rust, which JS can't do.
 export function $getOrInitLock(cell, f) {

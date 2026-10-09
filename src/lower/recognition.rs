@@ -1001,6 +1001,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if is_extend(tcx, trait_) && self.is_vec_like(ty.peel_refs()) {
             return Some(Std::Comb(Comb::Extend));
         }
+        // A map's or a set's: each pair set, or item added (ADR 0325).
+        if is_extend(tcx, trait_) && self.is_map(ty.peel_refs()) && !self.is_json_map(ty.peel_refs()) {
+            return Some(Std::Map(MapOp::Extend));
+        }
         // `VecDeque::from(v)` is a copy of `v`, which may be a clone that
         // was never made (ADR 0052); `BinaryHeap::from(v)` puts one in heap order.
         if tcx.is_diagnostic_item(sym::From, trait_)
@@ -1128,6 +1132,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let argument = self.is_lang_adt(owner, LangItem::FormatArgument);
         let map = adt("HashMap") || adt("BTreeMap") || self.is_json_map(owner);
         let set = adt("HashSet") || adt("BTreeSet");
+        // std's own maps, not serde_json's (ADR 0325).
+        let std_map = adt("HashMap") || adt("BTreeMap");
         let entry = adt("HashMapEntry") || adt("BTreeEntry");
         let name = tcx.item_name(def_id);
         // A `Duration`'s: of its nanoseconds (ADR 0188).
@@ -1183,7 +1189,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "make_contiguous" if deque => Some(Std::Same),
             // A JS array has no capacity: asking for some does nothing (ADR 0315).
             "with_capacity" if adt("Vec") => Some(Std::VecNew),
-            "reserve" | "reserve_exact" | "shrink_to" | "shrink_to_fit" if adt("Vec") || deque || heap => {
+            "reserve" | "reserve_exact" | "shrink_to" | "shrink_to_fit"
+                if adt("Vec") || deque || heap || map || set =>
+            {
                 Some(Std::Nothing)
             }
             "into_boxed_slice" if adt("Vec") => Some(Std::Same),
@@ -1247,6 +1255,33 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "remove" if map => Std::Map(MapOp::Remove),
             "remove" if set => Std::Map(MapOp::Delete),
             "len" if map || set => Std::Map(MapOp::Len),
+            "clear" if std_map || set => Std::Map(MapOp::Clear),
+            "retain" if std_map || set => Std::Map(MapOp::Retain),
+            "drain" if std_map || set => Std::Map(MapOp::DrainAll),
+            "get_key_value" if std_map => Std::Map(MapOp::GetKeyValue),
+            "remove_entry" if std_map => Std::Map(MapOp::RemoveEntry),
+            "into_keys" if std_map => Std::Map(MapOp::Iter(Part::Keys)),
+            "into_values" if std_map => Std::Map(MapOp::Iter(Part::Values)),
+            "get" if set => Std::Map(MapOp::SetGet),
+            "take" if set => Std::Map(MapOp::SetTake),
+            "replace" if set => Std::Map(MapOp::SetReplace),
+            "union" if set => Std::Map(MapOp::Algebra("union")),
+            "intersection" if set => Std::Map(MapOp::Algebra("intersection")),
+            "difference" if set => Std::Map(MapOp::Algebra("difference")),
+            "symmetric_difference" if set => Std::Map(MapOp::Algebra("symmetric")),
+            "is_subset" if set => Std::Map(MapOp::Subset { superset: false }),
+            "is_superset" if set => Std::Map(MapOp::Subset { superset: true }),
+            "is_disjoint" if set => Std::Map(MapOp::Disjoint),
+            "first_key_value" | "first" if std_map || set => Std::Map(MapOp::TreeEnd {
+                last: false,
+                pop: false,
+            }),
+            "last_key_value" | "last" if std_map || set => Std::Map(MapOp::TreeEnd { last: true, pop: false }),
+            "pop_first" if std_map || set => Std::Map(MapOp::TreeEnd { last: false, pop: true }),
+            "pop_last" if std_map || set => Std::Map(MapOp::TreeEnd { last: true, pop: true }),
+            "range" if std_map || set => Std::Map(MapOp::TreeRange),
+            "split_off" if std_map || set => Std::Map(MapOp::TreeSplitOff),
+            "append" if std_map || set => Std::Map(MapOp::TreeAppend),
             "is_empty" if map || set => Std::Map(MapOp::IsEmpty),
             "iter" | "iter_mut" if map || set => Std::Map(MapOp::Iter(Part::Entries)),
             "keys" if map => Std::Map(MapOp::Iter(Part::Keys)),

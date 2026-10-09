@@ -26,4 +26,20 @@ export const mutations: Mutation[] = [
     replace: ";",
     tests: ["test/semantics.test.ts", "-t", "BTreeMap rejects custom ordering even when equality is derived"],
   },
+  {
+    name: "retain-map-no-handles",
+    breaks: "a map's `retain` gives a number's value, so what `f` writes is lost",
+    file: "src/lower/std_types/map.rs",
+    find: "                        let handles = types.get(1).is_some_and(|&value| self.is_boxable(value));\n",
+    replace: "                        let handles = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "map_set_methods"],
+  },
+  {
+    name: "set-take-keeps",
+    breaks: "a set's `take` leaves the item in it",
+    file: "src/lower/std_types/map.rs",
+    find: "                    _ => method(s, \"delete\", vec![x.clone()]),\n",
+    replace: "                    _ => method(s, \"has\", vec![x.clone()]),\n",
+    tests: ["test/corpus.test.ts", "-t", "map_set_methods"],
+  },
 ];

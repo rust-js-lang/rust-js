@@ -6,6 +6,7 @@ use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use crate::lower::fn_def;
 use crate::lower::recognition::{Std, StdItem};
 use crate::lower::representation::{Num, is_fieldless_enum};
+use crate::lower::std_types::range::RangeKind;
 use crate::lower::{FnCx, R};
 use crate::runtime::Helper;
 use rustc_hir::attrs::lang_items::LangItem;
@@ -47,6 +48,31 @@ pub(in crate::lower) enum MapOp {
     From {
         set: bool,
     },
+    /// A map's or a set's own methods of ADR 0325.
+    Clear,
+    Retain,
+    DrainAll,
+    GetKeyValue,
+    RemoveEntry,
+    /// A set's `get`, `take` and `replace`: the item, or `None`.
+    SetGet,
+    SetTake,
+    SetReplace,
+    /// `union`, `intersection`, `difference` or `symmetric_difference`.
+    Algebra(&'static str),
+    Subset {
+        superset: bool,
+    },
+    Disjoint,
+    /// A B-tree's `first` or `last`, its entry's or its item, and `pop_*`.
+    TreeEnd {
+        last: bool,
+        pop: bool,
+    },
+    TreeRange,
+    TreeSplitOff,
+    TreeAppend,
+    Extend,
 }
 
 /// What an iterator of a map goes over.
@@ -132,9 +158,93 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let value = self.entry_value(op, args, generic_args, (map, key), span, out)?;
             return Ok(value);
         }
+        // A B-tree's range of its keys (ADR 0325).
+        if op == MapOp::TreeRange {
+            return self.tree_range(args, span, out);
+        }
+        // The map or set a method of ADR 0325's is of, its type's arguments, and
+        // a B-tree's keys' `cmp` where the method orders them.
+        let receiver = args
+            .first()
+            .map_or(self.tcx.types.unit, |&a| self.thir[a].ty.peel_refs());
+        let set = self.is_set(receiver);
+        let types: Vec<Ty<'tcx>> = match receiver.kind() {
+            ty::Adt(_, map) => map.types().collect(),
+            _ => Vec::new(),
+        };
+        // An item a set gives back, or `None`: refused where it could look
+        // like `None` (ADR 0051).
+        let gives_item = matches!(op, MapOp::SetGet | MapOp::SetTake | MapOp::SetReplace)
+            || matches!(op, MapOp::TreeEnd { .. }) && set;
+        if gives_item && types.first().is_some_and(|&item| self.boxed_payload(item)) {
+            return Err(self.unsupported(span, &format!("an item of a `{receiver}` that could look like `None`")));
+        }
+        let ordered = matches!(op, MapOp::Algebra(_) | MapOp::TreeEnd { .. } | MapOp::TreeSplitOff);
+        let cmp = match (ordered && self.is_sorted(receiver), types.first()) {
+            (true, Some(&key)) => Some(self.cmp_fn(key, false, span)?),
+            _ => None,
+        };
         let mut values = self.operands(args, out)?.into_iter();
         let mut arg = || values.next().expect("rustc checked the arguments");
+        let map_ops = |cx: &mut Self, name: &str, list: Vec<Expr>| {
+            cx.runtime.insert(Helper::MapOps);
+            Expr::call(Expr::var(name), list)
+        };
         Ok(match op {
+            MapOp::Clear => method(arg(), "clear", Vec::new()),
+            // Each entry in its order, a B-tree's its keys', `f` given a handle on
+            // a value that's a number or a string (ADR 0152).
+            MapOp::Retain => {
+                let (m, f) = (arg(), arg());
+                let m = if m.reads_same() { m } else { self.spill("map", m, out) };
+                let entries = self.in_order_of(m.clone(), receiver, span)?;
+                match set {
+                    true => map_ops(self, "$retainSet", vec![m, f, entries]),
+                    false => {
+                        let handles = types.get(1).is_some_and(|&value| self.is_boxable(value));
+                        if handles {
+                            self.runtime.insert(Helper::MutEntries);
+                        }
+                        map_ops(self, "$retainMap", vec![m, f, entries, Expr::bool(handles)])
+                    }
+                }
+            }
+            MapOp::DrainAll => map_ops(self, "$drainAll", vec![arg()]),
+            MapOp::GetKeyValue => map_ops(self, "$getKeyValue", vec![arg(), arg()]),
+            MapOp::RemoveEntry => map_ops(self, "$removeEntry", vec![arg(), arg()]),
+            MapOp::SetGet | MapOp::SetTake => {
+                let (s, x) = (arg(), arg());
+                let x = if x.reads_same() { x } else { self.spill("item", x, out) };
+                let test = match op {
+                    MapOp::SetGet => method(s, "has", vec![x.clone()]),
+                    _ => method(s, "delete", vec![x.clone()]),
+                };
+                Expr::cond(test, x, Expr::undefined())
+            }
+            MapOp::SetReplace => map_ops(self, "$setReplace", vec![arg(), arg()]),
+            MapOp::Algebra(name) => {
+                let mut list = vec![arg(), arg(), Expr::str(name)];
+                list.extend(cmp);
+                map_ops(self, "$setAlgebra", list)
+            }
+            MapOp::Subset { superset } => map_ops(self, "$isSubset", vec![arg(), arg(), Expr::bool(superset)]),
+            MapOp::Disjoint => map_ops(self, "$isDisjoint", vec![arg(), arg()]),
+            MapOp::TreeEnd { last, pop } => {
+                let cmp = cmp.expect("a B-tree's order");
+                map_ops(
+                    self,
+                    "$treeEnd",
+                    vec![arg(), cmp, Expr::bool(last), Expr::bool(set), Expr::bool(pop)],
+                )
+            }
+            MapOp::TreeSplitOff => {
+                let (m, key) = (arg(), arg());
+                let cmp = cmp.expect("a B-tree's order");
+                map_ops(self, "$treeSplitOff", vec![m, key, cmp, Expr::bool(set)])
+            }
+            MapOp::TreeAppend => map_ops(self, "$treeAppend", vec![arg(), arg(), Expr::bool(set)]),
+            MapOp::Extend => map_ops(self, "$extendMap", vec![arg(), arg(), Expr::bool(set)]),
+            MapOp::TreeRange => unreachable!("lowered above"),
             MapOp::New { set } => Expr::new_(self.made(set, generic_args), Vec::new()),
             MapOp::From { set } => {
                 let items = arg();
@@ -221,6 +331,48 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             MapOp::Entry => Expr::array(vec![arg(), arg()]),
             MapOp::OrInsert | MapOp::OrInsertWith | MapOp::OrDefault => unreachable!("taken apart above"),
         })
+    }
+
+    /// `m.range(a..b)` of a B-tree: its entries, or items, in the bounds, in
+    /// order, by its keys' `cmp` (ADR 0325).
+    fn tree_range(&mut self, args: &[ExprId], span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+        let receiver = self.thir[args[0]].ty.peel_refs();
+        let set = self.is_set(receiver);
+        let ty::Adt(adt, map) = receiver.kind() else {
+            unreachable!("a B-tree's `range` is of a B-tree")
+        };
+        let name = self.tcx.item_name(adt.did()).to_string();
+        let range = self.strip(args[1]);
+        let Some(kind) = self.range_kind(self.thir[range].ty) else {
+            return Err(self.unsupported(span, "a B-tree's range of bounds that aren't a range"));
+        };
+        let cmp = self.cmp_fn(map.type_at(0), false, span)?;
+        let [m, range]: [Expr; 2] = self.operands(&[args[0], args[1]], out)?.try_into().ok().unwrap();
+        let parts = self.range_parts(range, kind, out);
+        let none = Expr::undefined;
+        let (start, end, included) = match (kind, parts.as_slice()) {
+            (RangeKind::Exclusive, [start, end]) => (Some(start.clone()), Some(end.clone()), false),
+            (RangeKind::Inclusive, [start, end]) => (Some(start.clone()), Some(end.clone()), true),
+            (RangeKind::From, [start]) => (Some(start.clone()), None, false),
+            (RangeKind::To, [end]) => (None, Some(end.clone()), false),
+            (RangeKind::ToInclusive, [end]) => (None, Some(end.clone()), true),
+            _ => (None, None, false),
+        };
+        self.runtime.insert(Helper::MapOps);
+        Ok(Expr::call(
+            Expr::var("$treeRange"),
+            vec![
+                m,
+                cmp,
+                Expr::bool(set),
+                Expr::str(&name),
+                Expr::bool(start.is_some()),
+                start.unwrap_or_else(none),
+                Expr::bool(end.is_some()),
+                end.unwrap_or_else(none),
+                Expr::bool(included),
+            ],
+        ))
     }
 
     /// The map and the key of `m.entry(k)`, each read more than once.

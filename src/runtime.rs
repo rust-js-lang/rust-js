@@ -127,6 +127,7 @@ helpers! {
     StrEdits,
     StrSearch,
     SliceOps,
+    MapOps,
     GetOrInitLock,
     GetOrInit,
     Clamp,
@@ -353,6 +354,7 @@ impl Helper {
             Helper::StrTruncate => &[Helper::ByteLen, Helper::CharBoundary],
             Helper::StrEdits => &[Helper::ByteLen, Helper::CharBoundary],
             Helper::SliceOps => &[Helper::SliceStartsWith],
+            Helper::MapOps => &[Helper::SortedEntries, Helper::SortedKeys],
             Helper::StrSearch => &[
                 Helper::Rsplit,
                 Helper::MatchIndices,
@@ -539,6 +541,7 @@ impl Helper {
             Helper::StrEdits => include_str!("runtime/str_edits.js"),
             Helper::StrSearch => include_str!("runtime/str_search.js"),
             Helper::SliceOps => include_str!("runtime/slice_ops.js"),
+            Helper::MapOps => include_str!("runtime/map_ops.js"),
             Helper::GetOrInitLock => include_str!("runtime/get_or_init_lock.js"),
             Helper::GetOrInit => include_str!("runtime/get_or_init.js"),
             Helper::Clamp => include_str!("runtime/clamp.js"),
