@@ -771,3 +771,57 @@ pub fn or_not(o: Option<&js::RegExp>, x: &str) -> bool {
   expect([lib.tested(/a/, "a"), lib.tested(undefined, "a"), lib.ran(undefined, "a"), lib.added({ n: 1 }, 2), lib.added(undefined, 2), lib.or_not(undefined, "a")])
     .toEqual([true, undefined, undefined, 3, undefined, false]);
 });
+
+// ADR 0286: a component that renders nothing sometimes returns an
+// `Option<JSX::Element>`, `undefined` where it's None, as react.dev's
+// DownloadButton has `return null`, and `jsx!` takes it as it takes one
+// that always renders, memo's too. React gives it no dictionary, a
+// generic one's, as it gives none of a component (ADR 0201).
+test("a component of an optional element is a component", async () => {
+  const dir = fixture("optional-components");
+  writeFileSync(join(dir, "lib.rs"), `use react::{JSX, MemoExoticComponent, ReactNode, jsx, memo};
+
+pub struct LabelProps<'a> {
+    pub text: &'a str,
+    pub shown: bool,
+}
+
+pub fn Label(LabelProps { text, shown }: LabelProps) -> Option<JSX::Element> {
+    if !shown {
+        return None;
+    }
+    Some(jsx! { <b>{text}</b> })
+}
+
+thread_local! {
+    pub static Memoized: MemoExoticComponent<LabelProps<'static>> = memo(Label);
+}
+
+pub struct ShownProps<C> {
+    pub children: C,
+}
+
+pub fn Shown<C: ReactNode + Default>(ShownProps { children }: ShownProps<C>) -> Option<JSX::Element> {
+    Some(jsx! { <i>{children}</i> })
+}
+
+pub fn Page() -> JSX::Element {
+    jsx! {
+        <main>
+            <Label text="hi" shown={true} />
+            <Label text="no" shown={false} />
+            <Memoized text="memo" shown={true} />
+            <Shown>{"kid"}</Shown>
+        </main>
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(js).toContain('<Label text="hi" shown />');
+  expect(js).toContain("    return undefined;");
+  expect(js).toContain("export function Shown({ children }) {");
+  const { renderToStaticMarkup } = await import("react-dom/server");
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(lib.Page())).toBe("<main><b>hi</b><b>memo</b><i>kid</i></main>");
+});

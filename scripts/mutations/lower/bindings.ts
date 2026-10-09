@@ -106,4 +106,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/compiler.test.ts", "-t", "tested as JS tests it"],
   },
+  {
+    name: "optional-component-takes-dictionary",
+    breaks: "a generic component of an `Option<JSX::Element>` takes a dictionary, `Shown(props, CDefault)`, which React never gives",
+    file: "src/lower/bindings.rs",
+    find: "        ty::TyKind::Adt(adt, args) if tcx.is_lang_item(adt.did(), LangItem::Option) => args.type_at(0),\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "optional element"],
+  },
 ];

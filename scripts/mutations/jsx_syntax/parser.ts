@@ -194,4 +194,12 @@ export const mutations: Mutation[] = [
     replace: "                statics.push(name.clone());",
     tests: ["test/jsx.test.ts", "-t", "thread_local component takes props"],
   },
+  {
+    name: "optional-component-not-taken",
+    breaks: "a component of an `Option<JSX::Element>` has no props `macro`, so `<Label />` names no macro",
+    file: "src/jsx_syntax/parser.rs",
+    find: "        (\"Option\", Some(ast::GenericArgs::AngleBracketed(args))) if optional => matches!(",
+    replace: "        (\"Option\", Some(ast::GenericArgs::AngleBracketed(args))) if false => matches!(",
+    tests: ["test/lowering.test.ts", "-t", "optional element"],
+  },
 ];

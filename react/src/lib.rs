@@ -1058,16 +1058,23 @@ pub fn static_component<P: Lifetimes, M>(component: impl ComponentType<P::Static
     unreachable!()
 }
 
-/// A JSX component: a function from its props to an [`Element`], or
+/// A JSX component: a function from its props to what it renders, or
 /// one with no props, or one made by [`memo`], [`lazy`] or [`forward_ref`].
 /// `M` only tells them apart.
 pub trait ComponentType<P, M> {}
 
+/// What a component function renders: an [`Element`], or an `Option` of
+/// one, `undefined` where it renders nothing, JS's `return null` (ADR 0286).
+pub trait Rendered {}
+
+impl Rendered for Element {}
+impl Rendered for Option<Element> {}
+
 pub struct NoProps;
 pub struct WithProps;
 
-impl<F: Fn() -> Element> ComponentType<(), NoProps> for F {}
-impl<P, F: Fn(P) -> Element> ComponentType<P, WithProps> for F {}
+impl<R: Rendered, F: Fn() -> R> ComponentType<(), NoProps> for F {}
+impl<P, R: Rendered, F: Fn(P) -> R> ComponentType<P, WithProps> for F {}
 
 /// A DOM element's tag as a value, as JSX's `<Comp>` of `const Comp =
 /// "h1"`: a fieldless enum whose variants are named as tags are, `"h1"`,

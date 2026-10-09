@@ -662,6 +662,22 @@ fn method_call(sess: &Session, receiver: TokenStream, method: &str, args: Vec<To
     call(sess, function, args, span)
 }
 
+/// Whether a function returning `ty` renders, as a component does: an
+/// `Element`, or an `Option` of one, which renders nothing where it's
+/// `None` (ADR 0286).
+fn renders(ty: &ast::Ty, optional: bool) -> bool {
+    let TyKind::Path(_, path) = &ty.kind else { return false };
+    let Some(last) = path.segments.last() else { return false };
+    match (last.ident.as_str(), last.args.as_deref()) {
+        ("Element", _) => true,
+        ("Option", Some(ast::GenericArgs::AngleBracketed(args))) if optional => matches!(
+            args.args.as_slice(),
+            [ast::AngleBracketedArg::Arg(ast::GenericArg::Type(inner))] if renders(inner, false)
+        ),
+        _ => false,
+    }
+}
+
 /// A component's name, what it's called by, its props' type and, of a
 /// `ForwardRef`, its handle's: `None` of what's no component.
 fn signature(sess: &Session, item: &ast::Item) -> Option<(Ident, String, String, Option<String>)> {
@@ -671,8 +687,7 @@ fn signature(sess: &Session, item: &ast::Item) -> Option<(Ident, String, String,
             let FnRetTy::Ty(ret) = &f.sig.decl.output else {
                 return None;
             };
-            let TyKind::Path(_, path) = &ret.kind else { return None };
-            if path.segments.last()?.ident.as_str() != "Element" || f.sig.decl.inputs.len() > 1 {
+            if !renders(ret, true) || f.sig.decl.inputs.len() > 1 {
                 return None;
             }
             let props = match f.sig.decl.inputs.first() {

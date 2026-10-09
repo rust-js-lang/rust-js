@@ -349,8 +349,9 @@ pub(super) fn is_mark(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 
 /// Whether `def_id` is a React component, as `jsx!` takes one: a
 /// capitalized function of its props, or none, that returns react's
-/// `Element`. React calls it with its props and a value of its own, never a
-/// drop (ADR 0199) or a dictionary (ADR 0201).
+/// `Element`, or an `Option` of one (ADR 0286). React calls it with its
+/// props and a value of its own, never a drop (ADR 0199) or a dictionary
+/// (ADR 0201).
 pub(crate) fn is_component(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     if tcx.def_kind(def_id) != DefKind::Fn {
         return false;
@@ -366,8 +367,12 @@ pub(crate) fn is_component(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
         .skip_normalization()
         .skip_binder();
     let element = [Symbol::intern("rust_js"), Symbol::intern("jsx_element")];
-    sig.inputs().len() <= 1
-        && matches!(sig.output().kind(), ty::TyKind::Adt(adt, _) if tcx.get_attrs_by_path(adt.did(), &element).next().is_some())
+    let is_element = |ty: Ty<'_>| matches!(ty.kind(), ty::TyKind::Adt(adt, _) if tcx.get_attrs_by_path(adt.did(), &element).next().is_some());
+    let rendered = match sig.output().kind() {
+        ty::TyKind::Adt(adt, args) if tcx.is_lang_item(adt.did(), LangItem::Option) => args.type_at(0),
+        _ => sig.output(),
+    };
+    sig.inputs().len() <= 1 && is_element(rendered)
 }
 
 /// Whether `ty` is react's `Rest`, the props a component's struct doesn't
