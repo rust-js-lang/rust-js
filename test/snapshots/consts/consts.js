@@ -5,7 +5,6 @@ const GREETING = "hello";
 const RATIO = 0.25;
 const ON = true;
 const ORIGIN = { x: 0, y: 0 };
-
 const PAIR = [-3, 2048];
 const PRIMES = [2, 3, 5, 7];
 const NOTHING = undefined;

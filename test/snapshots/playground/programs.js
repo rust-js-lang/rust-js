@@ -5,7 +5,9 @@ import { $extend, $stripSuffix } from "@rust-js/runtime";
 
 const TEST_RUNNER =
   '\n    const results = registered.map(({ name, f }) => {\n      if (!f) return { name, outcome: "skip" };\n      try {\n        f();\n        return { name, outcome: "pass" };\n      } catch (e) {\n        return { name, outcome: "fail", message: e instanceof Error ? e.message : String(e) };\n      }\n    });\n    document.body.replaceChildren(...results.map(({ name, outcome, message }) => {\n      const line = document.createElement("div");\n      line.className = outcome;\n      line.textContent = { pass: "✓ ", fail: "✗ ", skip: "– " }[outcome] + name + (outcome === "skip" ? " (ignored)" : "");\n      if (message) {\n        const why = document.createElement("pre");\n        why.textContent = message;\n        line.append(why);\n      }\n      return line;\n    }));\n    const count = (outcome) => results.filter((r) => r.outcome === outcome).length;';
+
 const FRAME_HEAD = '<!doctype html>\n<meta charset="utf-8">\n<base href="about:srcdoc">';
+
 const FRAME_STYLE =
   "<style>\n  :root { color-scheme: light dark; font: 15px/1.5 system-ui, sans-serif; }\n  body { margin: 12px; }\n  button { font: inherit; min-width: 2.5em; padding: 2px 10px; }\n  output { display: inline-block; min-width: 3em; text-align: center; font-variant-numeric: tabular-nums; }\n  .pass { color: #2f6b3a; } .fail { color: #a3321f; } .skip { color: #6b6b66; }\n  @media (prefers-color-scheme: dark) { .pass { color: #8fcf98; } .fail { color: #ef8a78; } }\n  pre { margin: 2px 0 8px 1.5em; white-space: pre-wrap; font-size: 13px; }\n</style>";
 

@@ -8,9 +8,9 @@
 //!                           (source_text = the .rs file)
 //!
 //!   final .js  =  header, imports, helpers  (plain text, no mappings)
-//!              +  code, blank line between functions
-//!                                             (map shifted to match)
+//!              +  code                        (map shifted to match)
 //!   ──format.rs──► as oxfmt formats it, the map moved to match
+//!              +  a blank line between statements that span lines
 //!              +  //# sourceMappingURL=...
 //! ```
 //!
@@ -204,8 +204,7 @@ pub fn emit(
     }
     code.push('\n');
 
-    // oxc prints functions back to back; put a blank line between them.
-    // oxc also puts an object of one property on one line, so a type with one
+    // oxc puts an object of one property on one line, so a type with one
     // method comes out `const Tally = { doubled(tally) {`: lay that out as an
     // object of several, the method on its own lines. Record where each part
     // of each generated line ends up, to fix the map.
@@ -217,23 +216,8 @@ pub fn emit(
         .collect();
     let mut out_line = code.matches('\n').count() as u32;
     let mut places: Vec<Vec<Place>> = Vec::new();
-    let mut previous = None;
     let mut in_object = false;
-    for (i, line) in generated.code.lines().enumerate() {
-        // Only functions start at column 0, so this can't match nested code.
-        let top_level = [
-            "function ",
-            "async function ",
-            "export function ",
-            "export async function ",
-        ]
-        .iter()
-        .any(|p| line.starts_with(p));
-        // And after a type's methods, which end the object that holds them.
-        if i > 0 && (top_level || matches!(previous, Some("};" | "} };"))) {
-            code.push('\n');
-            out_line += 1;
-        }
+    for line in generated.code.lines() {
         let mut put = |text: &str, from_col: u32, delta: i64, parts: &mut Vec<Place>| {
             code.push_str(text);
             code.push('\n');
@@ -269,7 +253,6 @@ pub fn emit(
             _ => put(line, 0, 0, &mut parts),
         }
         places.push(parts);
-        previous = Some(line);
     }
     // After everything it maps, so the map's lines stay where they are.
     if let Some(function) = &module.default_export {
@@ -299,9 +282,71 @@ pub fn emit(
         code = formatted;
         map = formatted_map;
     }
+    (code, map) = spaced(code, map, js_file_name);
     (code, map) = layout(code, map);
     code.push_str(&format!("//# sourceMappingURL={js_file_name}.map\n"));
     Output { code, map }
+}
+
+/// `code`, laid out, with a blank line between two top-level statements
+/// where either is a function or spans lines, as a person separates them,
+/// and `map` moved to match. Its imports stay one block (ADR 0295). Read
+/// from its parse, so a line of a template literal is never taken for one.
+fn spaced(code: String, map: String, js_file_name: &str) -> (String, String) {
+    let blank = blank_lines_before(&code);
+    if blank.is_empty() {
+        return (code, map);
+    }
+    let mut spaced = String::with_capacity(code.len() + blank.len());
+    let mut places = Vec::new();
+    let mut added = 0;
+    for (i, line) in code.lines().enumerate() {
+        if blank.contains(&i) {
+            spaced.push('\n');
+            added += 1;
+        }
+        spaced.push_str(line);
+        spaced.push('\n');
+        places.push(vec![Place {
+            from_col: 0,
+            line: (i + added) as u32,
+            delta: 0,
+        }]);
+    }
+    let map = SourceMap::from_json_string(&map).expect("the map just built");
+    (spaced, shift_lines(&map, &places, js_file_name))
+}
+
+/// The lines of `code` that start a top-level statement to put a blank
+/// line before (`spaced`).
+fn blank_lines_before(code: &str) -> std::collections::HashSet<usize> {
+    let allocator = Allocator::default();
+    let parsed = Parser::new(&allocator, code, SourceType::mjs().with_jsx(true)).parse();
+    if parsed.diagnostics.errors().next().is_some() {
+        return Default::default();
+    }
+    let line_of = |offset: u32| code[..offset as usize].matches('\n').count();
+    let function = |statement: &Statement<'_>| match statement {
+        Statement::FunctionDeclaration(_) => true,
+        Statement::ExportDeclaration(export) => matches!(export.declaration, Declaration::FunctionDeclaration(_)),
+        _ => false,
+    };
+    let lines = |statement: &Statement<'_>| {
+        let span = oxc_span::GetSpan::span(statement);
+        (line_of(span.start), line_of(span.end))
+    };
+    parsed
+        .program
+        .body
+        .windows(2)
+        .filter_map(|pair| {
+            let ((first, last), (next, next_last)) = (lines(&pair[0]), lines(&pair[1]));
+            let imports = matches!(pair[0], Statement::ImportDeclaration(_))
+                || matches!(pair[1], Statement::ImportDeclaration(_));
+            let apart = function(&pair[0]) || function(&pair[1]) || first < last || next < next_last;
+            (apart && !imports && last + 1 == next).then_some(next)
+        })
+        .collect()
 }
 
 /// Where the part of a generated line from `from_col` on ends up: on output

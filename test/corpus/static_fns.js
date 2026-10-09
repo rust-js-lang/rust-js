@@ -4,14 +4,15 @@ var $enGreet;
 
 const F = double;
 const G = (x) => (x + 1) | 0;
+
 const TABLE = [
   ["double", double],
   ["triple", triple],
 ];
+
 const MAYBE = triple;
 const GREETER = { impl: enGreet() };
 const SHOWN = { value: 42, impl: { fmt: String } };
-
 const ADD = (x) => (x + 10) | 0;
 
 function double(x) {

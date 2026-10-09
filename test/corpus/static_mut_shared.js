@@ -4,7 +4,6 @@ import { $pow } from "@rust-js/runtime";
 
 const COUNT = { value: 0 };
 const STATS = { value: { calls: 0, last: -1n } };
-
 const NAME = { value: "start" };
 
 function show(n) {

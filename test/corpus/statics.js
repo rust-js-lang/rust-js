@@ -4,9 +4,7 @@ import { NAME, SIDES } from "./shapes.js";
 import { $debugF64, $debugStr, $print } from "@rust-js/runtime";
 
 const ORIGIN = { x: 0, y: 0 };
-
 const CORNER = { x: 2, y: -3 };
-
 const LIMIT = 1099511627776n;
 const GREETING = "hi";
 const NAMES = ["ann", "bo", "cy"];
@@ -16,7 +14,6 @@ const LEVELS = ["Low", { TAG: "High", _0: 9 }];
 const MAYBE = "z";
 const PAIR = [true, 2.5];
 const BOXED = { x: 3, y: 4 };
-
 const COMPUTED = -42;
 const WORDS = ["one", "two"];
 

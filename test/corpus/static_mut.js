@@ -5,7 +5,6 @@ import { $at } from "@rust-js/runtime";
 
 const COUNT = { value: 0 };
 const STATS = { value: { calls: 0, last: -1n } };
-
 const SLOTS = { value: [0, 0, 0] };
 const WRAP = { value: 250 };
 

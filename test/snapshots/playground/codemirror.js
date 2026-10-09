@@ -7,12 +7,14 @@ import { oneDark } from "@codemirror/theme-one-dark";
 import { EditorView, basicSetup } from "codemirror";
 
 const THEME = new Compartment();
+
 const SOURCE = [
   basicSetup,
   rust(),
   THEME.of(themeFor(false)),
   EditorView.contentAttributes.of({ "aria-label": "Rust source" }),
 ];
+
 const JS_OUTPUT = output(javascript());
 const PLAIN_OUTPUT = output(undefined);
 
