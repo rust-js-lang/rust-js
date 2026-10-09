@@ -227,6 +227,51 @@ pub unsafe fn cast<T>(this: Option<&Unknown>) -> T {
     unreachable!()
 }
 
+/// What JS takes as text where it wants text, which TypeScript's `string`
+/// is given: text, or any value, which JS makes text, `"undefined"` of
+/// `None` (ADR 0310).
+pub trait ToText {}
+
+impl ToText for &str {}
+impl ToText for &String {}
+impl ToText for String {}
+impl ToText for &Unknown {}
+impl ToText for Option<&Unknown> {}
+
+/// [`parseInt(text, radix)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/parseInt):
+/// the integer `text` starts with, in base `radix`, `NaN` of none: `"4x"` is 4,
+/// where Rust's `str::parse` is an `Err`. Of any value, of its text.
+#[cfg_attr(rust_js, rust_js::link_name = "parseInt")]
+#[allow(unused_variables)]
+pub fn parse_int<T: ToText>(text: T, radix: u32) -> f64 {
+    unreachable!()
+}
+
+/// [`parseFloat(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/parseFloat):
+/// the number `text` starts with, `NaN` of none. Of any value, of its text.
+#[cfg_attr(rust_js, rust_js::link_name = "parseFloat")]
+#[allow(unused_variables)]
+pub fn parse_float<T: ToText>(text: T) -> f64 {
+    unreachable!()
+}
+
+/// `value + ""`: any value as text, as JS's `+` makes it, `result += value`
+/// say: of an object, by its `valueOf` first, where `String(value)` asks its
+/// `toString`; and it throws of a symbol, which `String` names (ADR 0310).
+#[cfg_attr(rust_js, rust_js::link_name = "+ \"\"")]
+#[allow(unused_variables)]
+pub fn concat_text<T: ToText>(this: T) -> String {
+    unreachable!()
+}
+
+/// [`typeof value`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/typeof):
+/// what JS says it is, as text, `"undefined"` of `None` (ADR 0310).
+#[cfg_attr(rust_js, rust_js::link_name = "typeof")]
+#[allow(unused_variables)]
+pub fn type_of(this: Option<&Unknown>) -> String {
+    unreachable!()
+}
+
 /// [`String(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/String):
 /// any value as text, as JS makes it, `result += value` say: `"undefined"`
 /// of `None`, `"[object Object]"` of an object.
@@ -526,17 +571,6 @@ unsafe extern "Rust" {
     #[link_name = "decodeURI"]
     pub safe fn decode_uri(text: &str) -> Result<String, &'static JsError>;
 
-    /// [`parseInt(text, radix)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/parseInt):
-    /// the integer `text` starts with, in base `radix`, `NaN` of none: `"4x"` is 4,
-    /// where Rust's `str::parse` is an `Err`.
-    #[link_name = "parseInt"]
-    pub safe fn parse_int(text: &str, radix: u32) -> f64;
-
-    /// [`parseFloat(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/parseFloat):
-    /// the number `text` starts with, `NaN` of none.
-    #[link_name = "parseFloat"]
-    pub safe fn parse_float(text: &str) -> f64;
-
     /// [`isNaN(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/isNaN):
     /// whether `value` is NaN, as `f64::is_nan` says.
     #[link_name = "isNaN"]
@@ -730,13 +764,46 @@ pub mod reg_exp {
         /// `text` as a pattern that matches it as it is, as ReScript's Stdlib has it (ES2025).
         #[link_name = "RegExp.escape"]
         pub safe fn escape(text: &str) -> String;
-
-        /// [`text.replace(pattern, with)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/replace):
-        /// the first match, or with the `g` flag each, replaced with `with`,
-        /// in which `$1` is the first group and `$&` the match.
-        #[link_name = "replace"]
-        pub safe fn replace(this: &str, pattern: &RegExp, with: &str) -> String;
     }
+
+    /// [`text.replace(pattern, with)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/replace):
+    /// the first match, or with the `g` flag each, replaced with `with`:
+    /// text, in which `$1` is the first group and `$&` the match, or a
+    /// closure of the match and its groups, each `None` where it matched
+    /// nothing, giving the text, as TypeScript's overloads take either
+    /// (ADR 0310).
+    #[cfg_attr(rust_js, rust_js::link_name = "replace")]
+    #[allow(unused_variables)]
+    pub fn replace<A>(this: &str, pattern: &RegExp, with: impl Replacement<A>) -> String {
+        unreachable!()
+    }
+
+    /// What [`replace`] replaces a match with: text, or a closure of the
+    /// match and up to 9 of its groups, giving text or any value, which JS
+    /// makes text. `A` tells the closure's arity apart.
+    pub trait Replacement<A> {}
+
+    impl Replacement<()> for &str {}
+    impl Replacement<()> for &String {}
+
+    macro_rules! replacement {
+        ($($group:ident)*) => {
+            impl<F: FnMut(&str $(, replacement!(@group $group))*) -> R, R: ToText> Replacement<(R, $(replacement!(@marker $group),)*)> for F {}
+        };
+        (@group $group:ident) => { Option<&str> };
+        (@marker $group:ident) => { () };
+    }
+
+    replacement!();
+    replacement!(g1);
+    replacement!(g1 g2);
+    replacement!(g1 g2 g3);
+    replacement!(g1 g2 g3 g4);
+    replacement!(g1 g2 g3 g4 g5);
+    replacement!(g1 g2 g3 g4 g5 g6);
+    replacement!(g1 g2 g3 g4 g5 g6 g7);
+    replacement!(g1 g2 g3 g4 g5 g6 g7 g8);
+    replacement!(g1 g2 g3 g4 g5 g6 g7 g8 g9);
 }
 
 /// A JS string's methods, as ReScript's standard library names them, for
@@ -837,6 +904,13 @@ pub mod number {
         /// `format!`'s is `"inf"`. `digits` is 0 to 100: more throws a `RangeError`.
         #[link_name = "toFixed"]
         pub safe fn to_fixed(this: f64, digits: u32) -> String;
+
+        /// [`x.toString()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number/toString):
+        /// `x` as JS writes it: `1e21` is `"1e+21"` and `Infinity` `"Infinity"`,
+        /// where `f64::to_string`'s are `"1000000000000000000000"` and `"inf"`
+        /// (ADR 0310).
+        #[link_name = "toString"]
+        pub safe fn to_string(this: f64) -> String;
     }
 }
 
@@ -876,11 +950,29 @@ pub mod json {
     /// `value`'s JSON, each level indented by `space` spaces, up to 10, or
     /// on one line of 0. An object has only the properties `replacer` names,
     /// if it names any.
+    ///
+    /// Of any value, an [`Unknown`], what may throw, of a cycle or a
+    /// `BigInt`, or be `undefined`, of a function (ADR 0310).
     #[cfg_attr(rust_js, rust_js::link_name = "JSON.stringify")]
     #[cfg_attr(rust_js, rust_js::nullable(replacer))]
     #[allow(unused_variables)]
-    pub fn stringify_with<T: JsonText + ?Sized>(value: &T, replacer: Option<&[&str]>, space: u32) -> String {
+    pub fn stringify_with<T: Stringify + ?Sized>(value: &T, replacer: Option<&[&str]>, space: u32) -> T::Stringified {
         unreachable!()
+    }
+
+    /// What [`stringify_with`] gives of a value: the text of one whose JSON
+    /// is exact, a [`JsonText`]; of any value, what it may throw or leave
+    /// `undefined`.
+    pub trait Stringify {
+        type Stringified;
+    }
+
+    impl<T: JsonText + ?Sized> Stringify for T {
+        type Stringified = String;
+    }
+
+    impl Stringify for Unknown {
+        type Stringified = Result<Option<String>, &'static JsError>;
     }
 }
 
@@ -961,6 +1053,12 @@ pub mod object {
         /// [`get`] reads.
         #[link_name = "Object.keys"]
         pub safe fn keys(value: &Unknown) -> Vec<String>;
+
+        /// [`Object.prototype.toString.call(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/toString):
+        /// what JS names any value's kind, `"[object Array]"`; what it throws
+        /// of a value whose `Symbol.toStringTag` throws (ADR 0310).
+        #[link_name = "Object.prototype.toString.call"]
+        pub safe fn to_string(value: &Unknown) -> Result<String, &'static JsError>;
     }
 
     /// [`Object.fromEntries(entries)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/fromEntries):

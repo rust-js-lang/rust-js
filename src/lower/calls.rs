@@ -390,6 +390,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (JsForm::Truthy, Some(this)) if args.is_empty() => {
                     Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, this))
                 }
+                (JsForm::TypeOf, Some(this)) if args.is_empty() => Expr::unary(UnaryOp::Typeof, this),
+                (JsForm::Text, Some(this)) if args.is_empty() => Expr::bin(Op::Add, this, Expr::str("")),
                 (JsForm::SetIndex, Some(this)) if args.len() == 2 => {
                     let (key, value) = (args.remove(0), args.remove(0));
                     out.push(StmtKind::Assign(keyed(this, key), value).at(self.js_span(span)));
@@ -407,7 +409,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Err(self.unsupported(self.thir[fun].span, &what));
                 }
             };
-            return Ok(Some(self.catching(def_id, value)));
+            return Ok(Some(self.catching(def_id, generic_args, value)));
         }
         // Calling a closure, `f(a, b)`, is `Fn::call(&f, (a, b))`: in JS, `f(a, b)`.
         if let Some(fn_trait) = self.tcx.trait_of_assoc(def_id)
@@ -1155,8 +1157,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A JS call that says, in Rust, that it may throw (ADR 0035): one
     /// returning a `Result` runs in a `try`, `$try(() => f(x))`, and one
     /// returning a `Promise<Result<..>>` settles either way, `$settle(p)`.
-    pub(super) fn catching(&mut self, def_id: DefId, value: Expr) -> Expr {
-        match self.recognition().catching(def_id) {
+    pub(super) fn catching(&mut self, def_id: DefId, args: ty::GenericArgsRef<'tcx>, value: Expr) -> Expr {
+        match self.recognition().catching(def_id, args) {
             Catching::Result => {
                 self.runtime.insert(Helper::Try);
                 let span = value.span;

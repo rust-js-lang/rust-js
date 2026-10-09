@@ -123,7 +123,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(span, &what));
             }
         };
-        let body = self.catching(def_id, value);
+        let body = self.catching(def_id, args, value);
         Ok(Expr::arrow(
             params.into_iter().map(Into::into).collect(),
             vec![StmtKind::Return(Some(body)).at(self.js_span(span))],

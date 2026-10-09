@@ -1633,10 +1633,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `match` is a `try` of its statements (ADR 0035).
     fn is_value(&self, e: ExprId) -> bool {
         let thrown = match self.thir[self.strip(e)].kind {
-            ExprKind::Call { fun, .. } => super::fn_def(self.thir[fun].ty).is_some_and(|(def_id, _)| {
+            ExprKind::Call { fun, .. } => super::fn_def(self.thir[fun].ty).is_some_and(|(def_id, args)| {
                 super::bindings::is_binding(self.tcx, def_id)
                     && matches!(
-                        self.recognition().catching(def_id),
+                        self.recognition().catching(def_id, args),
                         super::recognition::Catching::Result
                     )
             }),

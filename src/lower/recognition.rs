@@ -2432,8 +2432,20 @@ pub(super) enum OrderingCall {
 }
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
-    pub(super) fn catching(&self, id: DefId) -> Catching {
-        let output = self.tcx.fn_sig(id).skip_binder().skip_binder().output();
+    /// Of the call's own types, as `json::stringify_with` of an `Unknown`
+    /// may throw where one of a `JsonText` can't (ADR 0310).
+    pub(super) fn catching(&self, id: DefId, args: ty::GenericArgsRef<'tcx>) -> Catching {
+        let output = self
+            .tcx
+            .fn_sig(id)
+            .instantiate(self.tcx, args)
+            .skip_normalization()
+            .skip_binder()
+            .output();
+        let output = self
+            .tcx
+            .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(output))
+            .unwrap_or(output);
         if self.is_std_adt(output, sym::Result) {
             Catching::Result
         } else if matches!(output.kind(), ty::Adt(adt, args) if self.is_js_object(output)

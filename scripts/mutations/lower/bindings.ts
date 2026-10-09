@@ -186,4 +186,20 @@ export const mutations: Mutation[] = [
     replace: "            JsForm::Call(name) | JsForm::New(name) if !is_method(tcx, def_id) => Some(name),\n",
     tests: ["test/bindings.test.ts", "-t", "a required binding"],
   },
+  {
+    name: "typeof-form-called",
+    breaks: "`#[link_name = \"typeof\"]` is a call, `typeof(value)`, not the operator",
+    file: "src/lower/bindings.rs",
+    find: "        \"typeof\" => return JsForm::TypeOf,\n",
+    replace: "",
+    tests: ["test/bindings.test.ts","-t","react.dev's Console"],
+  },
+  {
+    name: "text-form-called",
+    breaks: "`#[link_name = \"+ \\\"\\\"\"]` is a call of `+ \"\"`, not `value + \"\"`",
+    file: "src/lower/bindings.rs",
+    find: "        \"+ \\\"\\\"\" => return JsForm::Text,\n",
+    replace: "",
+    tests: ["test/bindings.test.ts","-t","react.dev's Console"],
+  },
 ];

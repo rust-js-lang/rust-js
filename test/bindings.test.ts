@@ -1200,3 +1200,74 @@ pub fn lint(errors: Vec<LintError>, diagnostics: Vec<Diagnostic>) -> (Vec<f64>, 
   const { lint } = await import(join(dir, "lib.js"));
   expect(lint([{ ruleId: "react-hooks/rules-of-hooks", line: 1 }, { ruleId: null, line: 2 }], [{ from: 3 }, { ruleId: "x", from: 4 }])).toEqual([[1], [4]]);
 });
+
+// ADR 0310: what react.dev's Console reads of any value a page logs, as
+// JS has it: a replace's callback of the match and its groups, `value + ""`,
+// `parseInt` and `parseFloat` of any value and a number's `toString`,
+// `JSON.stringify` of any value, which may throw or give `undefined`,
+// `typeof`, and `Object.prototype.toString.call`.
+test("any value is read as JS reads it, as react.dev's Console does", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("console-values");
+  writeFileSync(join(dir, "lib.rs"), `use js::{JsError, Unknown, json, number, object, reg_exp};
+
+pub fn formatted(text: &str) -> String {
+    let pattern = reg_exp::new("(%?)(%([jds]))", "g");
+    reg_exp::replace(text, pattern, |matched: &str, escaped: Option<&str>, _ptn: Option<&str>, flag: Option<&str>| {
+        if escaped.is_some_and(|e| !e.is_empty()) {
+            matched.to_string()
+        } else {
+            format!("<{}>", flag.unwrap_or(""))
+        }
+    })
+}
+
+pub fn unescaped(text: &str) -> String {
+    reg_exp::replace(text, reg_exp::new("%{2,2}", "g"), "%")
+}
+
+pub fn text_of(value: Option<&Unknown>) -> String {
+    js::concat_text(value)
+}
+
+pub fn int_of(value: Option<&Unknown>) -> String {
+    number::to_string(js::parse_int(value, 10))
+}
+
+pub fn float_of(value: &Unknown) -> String {
+    number::to_string(js::parse_float(value))
+}
+
+pub fn json_of(value: &Unknown) -> Result<Option<String>, &'static JsError> {
+    json::stringify_with(value, None, 2)
+}
+
+pub fn kind_of(value: Option<&Unknown>) -> String {
+    js::type_of(value)
+}
+
+pub fn tag_of(value: &Unknown) -> Result<String, &'static JsError> {
+    object::to_string(value)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("text.replace(pattern, (matched, escaped, _ptn, flag) => {");
+  expect(js).toContain('return text.replace(/%{2,2}/g, "%");');
+  expect(js).toContain('return value + "";');
+  expect(js).toContain("return parseInt(value, 10).toString();");
+  expect(js).toContain("return parseFloat(value).toString();");
+  expect(js).toContain("JSON.stringify(value, null, 2)");
+  expect(js).toContain("return typeof value;");
+  expect(js).toContain("Object.prototype.toString.call(value)");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.formatted("a %s b %%d"), lib.unescaped("100%% sure")]).toEqual(["a <s> b %%d", "100% sure"]);
+  expect([lib.text_of(undefined), lib.text_of(12), lib.text_of({})]).toEqual(["undefined", "12", "[object Object]"]);
+  expect([lib.int_of("42px"), lib.int_of(undefined), lib.float_of("1e21"), lib.float_of("x")]).toEqual(["42", "NaN", "1e+21", "NaN"]);
+  const cyclic: any = {};
+  cyclic.self = cyclic;
+  expect([lib.json_of({ a: 1 }), lib.json_of(() => 1)]).toEqual([{ TAG: "Ok", _0: '{\n  "a": 1\n}' }, { TAG: "Ok", _0: undefined }]);
+  expect(lib.json_of(cyclic).TAG).toBe("Err");
+  expect([lib.kind_of(undefined), lib.kind_of("s"), lib.kind_of(1n)]).toEqual(["undefined", "string", "bigint"]);
+  expect(lib.tag_of([]) ).toEqual({ TAG: "Ok", _0: "[object Array]" });
+});

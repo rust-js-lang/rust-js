@@ -739,4 +739,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "get_unchecked is the item"],
   },
+  {
+    name: "catching-generic-signature",
+    breaks: "whether a binding may throw is its generic signature's: `stringify_with` of an `Unknown` isn't in a `try`",
+    file: "src/lower/recognition.rs",
+    find: "            .instantiate(self.tcx, args)\n            .skip_normalization()\n            .skip_binder()\n            .output();\n        let output = self\n",
+    replace: "            .instantiate_identity()\n            .skip_normalization()\n            .skip_binder()\n            .output();\n        let _ = args;\n        let output = self\n",
+    tests: ["test/bindings.test.ts","-t","react.dev's Console"],
+  },
 ];

@@ -197,6 +197,10 @@ pub(super) enum JsForm {
     In,
     /// `!!`: `!!this`, whether it's truthy.
     Truthy,
+    /// `typeof`: `typeof this`, what it is, as text (ADR 0310).
+    TypeOf,
+    /// `+ ""`: `this + ""`, any value as JS's `+` makes it text (ADR 0310).
+    Text,
     /// `set []`: `this[key] = value`.
     SetIndex,
     /// `import()`: the item given, of its module loaded when it's asked
@@ -213,6 +217,8 @@ pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "get []" => return JsForm::GetIndex,
         "in []" => return JsForm::In,
         "!!" => return JsForm::Truthy,
+        "typeof" => return JsForm::TypeOf,
+        "+ \"\"" => return JsForm::Text,
         "set []" => return JsForm::SetIndex,
         "import()" => return JsForm::Import { module: false },
         "import(*)" => return JsForm::Import { module: true },
