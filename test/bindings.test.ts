@@ -1042,14 +1042,19 @@ pub fn first<T>(value: T, given: Option<u32>) -> Counted<T> {
     let n = unsafe { given.unwrap_unchecked() };
     Counted(n, value)
 }
+pub fn call<A: 'static>(value: A, given: Option<&'static dyn Fn(A) -> u32>) -> u32 {
+    let f = unsafe { given.unwrap_unchecked() };
+    f(value)
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--library", "--manifest", join(dir, "lib.manifest.json"),
     "--", "--crate-name", "counted", `--emit=metadata=${join(dir, "libcounted.rmeta")}`]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export function count(value) {\n  const n = globalThis.calls;\n  return [n, value];\n}");
   expect(js).toContain("export function first(value, given) {\n  const n = given;\n  return [n, value];\n}");
+  expect(js).toContain("export function call(value, given) {\n  const f = given;\n  return f(value);\n}");
   expect(js).toContain("export function count_unmarked(value, dropT) {");
   (globalThis as { calls?: number }).calls = 3;
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.count("a"), lib.count_unmarked("b"), lib.first("c", 4)]).toEqual([[3, "a"], [3, "b"], [4, "c"]]);
+  expect([lib.count("a"), lib.count_unmarked("b"), lib.first("c", 4), lib.call(5, (n: number) => n + 1)]).toEqual([[3, "a"], [3, "b"], [4, "c"], 6]);
 });

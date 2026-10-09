@@ -20,47 +20,13 @@ function main() {
     one.impl.$drop?.(one.value);
   }
   console.log("after one");
-  const box = { value: ["a"], impl: noisyShape() };
-  let box$live = true;
-  let tmp;
-  let box$1;
-  let box$1$live;
-  let tmp$1;
-  let box$2;
-  let box$2$live;
-  let arg;
-  let all;
-  let all$live;
-  try {
-    tmp = box;
-    box$1 = { value: [1], impl: quietShape() };
-    box$1$live = true;
-    try {
-      tmp$1 = box$1;
-      box$2 = { value: [[2]], impl: wrapShape(loudDebug(), loudDrop_drop) };
-      box$2$live = true;
-      try {
-        arg = { value: ["b"], impl: noisyShape() };
-        box$live = false;
-        box$1$live = false;
-        box$2$live = false;
-        all = [tmp, tmp$1, box$2, arg];
-        all$live = true;
-      } finally {
-        if (box$2$live) {
-          box$2.impl.$drop?.(box$2.value);
-        }
-      }
-    } finally {
-      if (box$1$live) {
-        box$1.impl.$drop?.(box$1.value);
-      }
-    }
-  } finally {
-    if (box$live) {
-      box.impl.$drop?.(box.value);
-    }
-  }
+  const all = [
+    { value: ["a"], impl: noisyShape() },
+    { value: [1], impl: quietShape() },
+    { value: [[2]], impl: wrapShape(loudDebug(), loudDrop_drop) },
+    { value: ["b"], impl: noisyShape() },
+  ];
+  let all$live = true;
   try {
     for (const shape of all) {
       console.log(`${shape.impl.name(shape.value)}`);
@@ -71,12 +37,12 @@ function main() {
     }
     console.log("after all");
     const lent = ["lent"];
+    const borrowed = { value: lent, impl: noisyShape() };
     try {
-      const borrowed = { value: lent, impl: noisyShape() };
       console.log(`${borrowed.impl.name(borrowed.value)}`);
       const loud$1 = [3];
+      const shown = loudDebug_fmt(loud$1);
       try {
-        const shown = loudDebug_fmt(loud$1);
         console.log(`${shown}`);
         const holder = { shape: { value: ["held"], impl: noisyShape() } };
         try {

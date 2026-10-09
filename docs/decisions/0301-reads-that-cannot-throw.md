@@ -43,6 +43,10 @@ f(args)
 - A `let` whose value is what ADR 0098's analysis says can't leave, a
   literal, a variable, a field, and the calls above, declares what may
   come first.
+- A pointer coercion can't leave either: the `&dyn Fn` a ref holds is
+  coerced to the closure's narrower lifetime as it's read, and a box to a
+  `Box<dyn ..>` as it's made. (Amended as it was done: react.dev's
+  `useEvent` kept its `try` until it was.)
 
 ## Why
 

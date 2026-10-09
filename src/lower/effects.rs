@@ -36,6 +36,8 @@ pub(super) fn cannot_leave_in<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: Exp
         | ExprKind::Deref { arg }
         | ExprKind::Unary { arg, .. }
         | ExprKind::Cast { source: arg } => pure(*arg),
+        // A coercion, `&dyn Fn` of a narrower lifetime say, is its value.
+        ExprKind::PointerCoercion { source, .. } => pure(*source),
         // Arithmetic wraps (ADR 0011), so only an integer's division can
         // panic, and not by a literal other than 0 or -1.
         ExprKind::Binary { op, lhs, rhs } => {

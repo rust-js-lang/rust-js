@@ -28,4 +28,12 @@ export const mutations: Mutation[] = [
     replace: "                    None => false,\n",
     tests: ["test/bindings.test.ts", "-t", "can't throw"],
   },
+  {
+    name: "coercion-may-leave",
+    breaks: "a pointer coercion, an `&dyn Fn` read for a narrower lifetime, is taken as what may leave, so `call` keeps a drop",
+    file: "src/lower/effects.rs",
+    find: "        ExprKind::PointerCoercion { source, .. } => pure(*source),\n",
+    replace: "",
+    tests: ["test/bindings.test.ts", "-t", "can't throw"],
+  },
 ];
