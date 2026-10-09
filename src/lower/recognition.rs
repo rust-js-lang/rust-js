@@ -971,7 +971,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         // `VecDeque::from(v)` is a copy of `v`, which may be a clone that
         // was never made (ADR 0052); `BinaryHeap::from(v)` puts one in heap order.
-        if tcx.is_diagnostic_item(sym::From, trait_) && self.is_std_adt(ty, Symbol::intern("VecDeque")) {
+        if tcx.is_diagnostic_item(sym::From, trait_)
+            && (self.is_std_adt(ty, Symbol::intern("VecDeque")) || self.is_std_adt(ty, Symbol::intern("LinkedList")))
+        {
             return Some(Std::ToVec);
         }
         if tcx.is_diagnostic_item(sym::From, trait_) && self.is_std_adt(ty, Symbol::intern("BinaryHeap")) {
@@ -997,7 +999,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             if self.is_std_adt(to, Symbol::intern("BinaryHeap")) {
                 return Some(Std::Heap(HeapOp::From));
             }
-            if self.is_std_adt(to, Symbol::intern("VecDeque")) || (self.is_std_adt(to, sym::Vec) && ty.is_array()) {
+            if self.is_std_adt(to, Symbol::intern("VecDeque"))
+                || self.is_std_adt(to, Symbol::intern("LinkedList"))
+                || (self.is_std_adt(to, sym::Vec) && ty.is_array())
+            {
                 return Some(Std::ToVec);
             }
         }
@@ -1110,7 +1115,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 _ => return None,
             }));
         }
-        let (deque, heap) = (adt("VecDeque"), adt("BinaryHeap"));
+        // A `LinkedList` is an array as a deque is (ADR 0316).
+        let (deque, heap) = (adt("VecDeque") || adt("LinkedList"), adt("BinaryHeap"));
         // Theirs first: `push` and `pop` keep a heap's order, and a deque's
         // `remove` is an `Option` (ADR 0068).
         let peekable = self.is_peekable(owner);
@@ -1379,7 +1385,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "to_ascii_lowercase" if owner.is_str() => Std::AsciiCase { upper: false },
             "to_ascii_uppercase" if owner.is_str() => Std::AsciiCase { upper: true },
             "eq_ignore_ascii_case" if owner.is_str() || owner.is_char() => Std::AsciiEq,
-            "append" if adt("Vec") || adt("VecDeque") => Std::Append,
+            "append" if adt("Vec") || adt("VecDeque") || adt("LinkedList") => Std::Append,
             "is_some" if option => Std::IsSome,
             "unwrap_unchecked" if option => Std::UnwrapUnchecked,
             "take" if option => Std::OptionTake,
@@ -1504,7 +1510,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     pub(super) fn is_vec_like(&self, ty: Ty<'tcx>) -> bool {
         self.is_std_adt(ty, sym::Vec)
-            || ["VecDeque", "BinaryHeap"]
+            || ["VecDeque", "BinaryHeap", "LinkedList"]
                 .into_iter()
                 .any(|name| self.is_std_adt(ty, Symbol::intern(name)))
     }

@@ -103,27 +103,27 @@
 - VecDeque::try_reserve
 - VecDeque::try_reserve_exact
 + VecDeque::with_capacity
-# LinkedList 0 of 20
-- LinkedList::append
-- LinkedList::back
+# LinkedList 15 of 20
++ LinkedList::append
++ LinkedList::back
 - LinkedList::back_mut
-- LinkedList::clear
-- LinkedList::contains
++ LinkedList::clear
++ LinkedList::contains
 - LinkedList::extract_if
-- LinkedList::front
++ LinkedList::front
 - LinkedList::front_mut
-- LinkedList::is_empty
-- LinkedList::iter
-- LinkedList::iter_mut
-- LinkedList::len
-- LinkedList::new
-- LinkedList::pop_back
-- LinkedList::pop_front
-- LinkedList::push_back
++ LinkedList::is_empty
++ LinkedList::iter
++ LinkedList::iter_mut
++ LinkedList::len
++ LinkedList::new
++ LinkedList::pop_back
++ LinkedList::pop_front
++ LinkedList::push_back
 - LinkedList::push_back_mut
-- LinkedList::push_front
++ LinkedList::push_front
 - LinkedList::push_front_mut
-- LinkedList::split_off
++ LinkedList::split_off
 # HashMap 15 of 33
 - HashMap::capacity
 - HashMap::clear

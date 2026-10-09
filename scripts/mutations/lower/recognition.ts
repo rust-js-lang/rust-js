@@ -763,4 +763,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","vec_edits"],
   },
+  {
+    name: "linked-list-not-array",
+    breaks: "a `LinkedList` is its nodes' raw pointers, refused, not an array",
+    file: "src/lower/recognition.rs",
+    find: "            || [\"VecDeque\", \"BinaryHeap\", \"LinkedList\"]\n",
+    replace: "            || [\"VecDeque\", \"BinaryHeap\"]\n",
+    tests: ["test/corpus.test.ts","-t","linked_lists"],
+  },
+  {
+    name: "linked-list-not-deque",
+    breaks: "a `LinkedList`'s `push_front` and `pop_back` are refused, not a deque's",
+    file: "src/lower/recognition.rs",
+    find: "        let (deque, heap) = (adt(\"VecDeque\") || adt(\"LinkedList\"), adt(\"BinaryHeap\"));\n",
+    replace: "        let (deque, heap) = (adt(\"VecDeque\"), adt(\"BinaryHeap\"));\n",
+    tests: ["test/corpus.test.ts","-t","linked_lists"],
+  },
 ];
