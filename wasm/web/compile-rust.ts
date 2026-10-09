@@ -20,7 +20,8 @@ import { mapManifestPaths, parseManifest } from "@rust-js/build/manifest";
 
 const rustDir = join(import.meta.dir, "rust");
 const cratesDir = join(import.meta.dir, "../../target/playground-crates");
-const virtual = "/wasm/web/rust";
+const web = "/wasm/web";
+const virtual = `${web}/rust`;
 
 let cratesBuilt = false;
 
@@ -96,9 +97,11 @@ export async function compileRust(job: { manifest?: string } = {}) {
   const manifest = out.dir.contents.get("manifest.json");
   if (!(manifest instanceof File)) throw new Error("rust-js wrote no manifest");
   const parsed = parseManifest(new TextDecoder().decode(manifest.data));
+  // The shim's /wasm/web is this directory, so a module the crate links,
+  // `../compiler-client.js` beside it, maps as the crate's own files do.
   const localPath = (path: string) => {
-    if (!path.startsWith(virtual + "/")) throw new Error("Unexpected virtual path: " + path);
-    return join(rustDir, path.slice(virtual.length + 1));
+    if (!path.startsWith(web + "/")) throw new Error("Unexpected virtual path: " + path);
+    return join(import.meta.dir, path.slice(web.length + 1));
   };
   const mapped = mapManifestPaths(parsed, localPath);
   const virtualFiles = filesIn(crateDir.dir);

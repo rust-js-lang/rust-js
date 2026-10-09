@@ -1003,3 +1003,49 @@ pub fn Page() -> JSX::Element {
     expect([props.onSubmit(), props.onNext(), props.onParse(), props.onRecord()]).toEqual([undefined, undefined, undefined, undefined]);
   } finally { globalThis.record = previous; }
 });
+
+// A RegExp of a pattern and flags written as they are is a literal, as JS
+// writes one, `/%s/g` (ADR 0243); one JS can't parse is made as it was,
+// to throw when it runs.
+test("a RegExp of a pattern as it is written is a literal", async () => {
+  const dir = fixture("regex-literals");
+  writeFileSync(join(dir, "lib.rs"), `use js::reg_exp;
+
+pub fn placeholders(text: &str) -> String {
+    reg_exp::replace(text, reg_exp::new("%s", "g"), "_")
+}
+
+// A literal's \`/\` is escaped, but in a class, where it needn't be.
+pub fn slashes(text: &str) -> String {
+    reg_exp::replace(text, reg_exp::new("a/b|[/]", "g"), "-")
+}
+
+// An empty pattern's literal is \`/(?:)/\`: \`//\` is a comment.
+pub fn emptied(text: &str) -> String {
+    reg_exp::replace(text, reg_exp::new("", ""), "^")
+}
+
+// A line break can't be in a literal.
+pub fn joined(text: &str) -> String {
+    reg_exp::replace(text, reg_exp::new("\\n", "g"), " ")
+}
+
+// One JS can't parse throws as it's made, not as the module is read.
+pub fn unparsed() -> bool {
+    reg_exp::new("(", "").test("(")
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('text.replace(/%s/g, "_")');
+  expect(js).toContain('text.replace(/a\\/b|[/]/g, "-")');
+  expect(js).toContain('text.replace(/(?:)/, "^")');
+  expect(js).toContain('new RegExp("\\n", "g")');
+  expect(js).toContain('new RegExp("(", "")');
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.placeholders("%s and %s")).toBe("_ and _");
+  expect(lib.slashes("a/b /")).toBe("- -");
+  expect(lib.emptied("x")).toBe("^x");
+  expect(lib.joined("a\nb")).toBe("a b");
+  expect(() => lib.unparsed()).toThrow(SyntaxError);
+});

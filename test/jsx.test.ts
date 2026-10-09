@@ -3028,7 +3028,8 @@ test("a component's props updated from a reference are spread", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{JSX, jsx};
 
-#[derive(Clone, Copy)]
+// Not \`Copy\`: the reference is captured, as the struct can't be moved out
+// of it.
 pub struct PanelProps<'a> {
     pub title: Option<&'a str>,
     pub wide: Option<bool>,

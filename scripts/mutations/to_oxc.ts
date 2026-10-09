@@ -152,7 +152,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "    if !matches!(&callee.kind, ExprKind::Var(name) if name == \"RegExp\") {",
     replace: "    if true {",
-    tests: ["test/compiler.test.ts","-t","RegExp of a pattern"],
+    tests: ["test/lowering.test.ts","-t","RegExp of a pattern"],
   },
   {
     name: "regex-slash-unescaped",
@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "            '/' if !escaped && !class => body.push('\\\\'),",
     replace: "            '/' if false => body.push('\\\\'),",
-    tests: ["test/compiler.test.ts","-t","RegExp of a pattern"],
+    tests: ["test/lowering.test.ts","-t","RegExp of a pattern"],
   },
   {
     name: "regex-class-unread",
@@ -168,7 +168,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "            '[' if !escaped => class = true,",
     replace: "            '[' if false => class = true,",
-    tests: ["test/compiler.test.ts","-t","RegExp of a pattern"],
+    tests: ["test/lowering.test.ts","-t","RegExp of a pattern"],
   },
   {
     name: "regex-empty-comment",
@@ -176,7 +176,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "    if body.is_empty() {\n        body.push_str(\"(?:)\");",
     replace: "    if false {\n        body.push_str(\"(?:)\");",
-    tests: ["test/compiler.test.ts","-t","RegExp of a pattern"],
+    tests: ["test/lowering.test.ts","-t","RegExp of a pattern"],
   },
   {
     name: "regex-unparsed-literal",
@@ -184,7 +184,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "        .parse()\n        .ok()?;\n    Some(format!(",
     replace: "        .parse()\n        .ok();\n    Some(format!(",
-    tests: ["test/compiler.test.ts","-t","RegExp of a pattern"],
+    tests: ["test/lowering.test.ts","-t","RegExp of a pattern"],
   },
   {
     name: "regex-line-break-literal",
@@ -192,7 +192,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "    if pattern.contains(['\\n', '\\r', '\\u{2028}', '\\u{2029}']) {",
     replace: "    if pattern.contains(['\\u{2028}', '\\u{2029}']) {",
-    tests: ["test/compiler.test.ts","-t","RegExp of a pattern"],
+    tests: ["test/lowering.test.ts","-t","RegExp of a pattern"],
   },
   {
     name: "default-import-braced",
