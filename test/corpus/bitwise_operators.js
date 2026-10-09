@@ -23,7 +23,7 @@ function main() {
   console.log(
     `${flagsDebug_fmt(flagsNot_not([rw[0]]))} ${flagsDebug_fmt(flagsShlU8_shl([READ[0]], 2))} ${flagsDebug_fmt(flagsShrU32_shr([RUN[0]], 1))}`,
   );
-  console.log(`${flagsDebug_fmt(refFlagsBitOr_bitor([READ[0]], [RUN[0]]))}`);
+  console.log(`${flagsDebug_fmt(refFlagsBitOr_bitor(READ, RUN))}`);
   const f = [READ[0]];
   flagsBitOrAssign_bitor_assign(f, [RUN[0]]);
   console.log(`${flagsDebug_fmt(f)}`);

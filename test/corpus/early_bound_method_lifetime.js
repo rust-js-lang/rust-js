@@ -12,10 +12,7 @@ function generic(p, PPicker) {
 
 function main() {
   console.log(
-    `${boxed({ value: undefined, impl: sevenPicker() })} ${boxed({
-      value: undefined,
-      impl: doublePicker(),
-    })} ${generic(undefined, sevenPicker())} ${generic(undefined, doublePicker())}`,
+    `${boxed({ impl: sevenPicker() })} ${boxed({ impl: doublePicker() })} ${generic(undefined, sevenPicker())} ${generic(undefined, doublePicker())}`,
   );
 }
 

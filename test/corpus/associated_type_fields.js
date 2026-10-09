@@ -27,9 +27,7 @@ function main() {
   );
   const c = a;
   console.log(`${$eq(c, a)} ${c.value != null ? (c.value + 1) >>> 0 : 0}`);
-  console.log(
-    `${fill({ TAG: "Full", _0: 5 })} ${fill({ TAG: "Full", _0: undefined })} ${fill("Empty")}`,
-  );
+  console.log(`${fill({ TAG: "Full", _0: 5 })} ${fill({ TAG: "Full" })} ${fill("Empty")}`);
 }
 
 export function entry() {
