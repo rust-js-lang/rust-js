@@ -282,4 +282,12 @@ export const mutations: Mutation[] = [
     replace: "        let tag = local && local_props.is_none();",
     tests: ["test/jsx.test.ts", "-t", "JSX grammar: spread precedence"],
   },
+  {
+    name: "companion-written-default",
+    breaks: "a struct with a Default written for it, React's attributes of any element, has no companion, so a flattened one isn't built",
+    file: "src/jsx_syntax/parser.rs",
+    find: "    let derives_default = derives_default || written_default.contains(&name);\n",
+    replace: "",
+    tests: ["test/jsx.test.ts", "-t", "JSX attributes take the values @types/react types them as"],
+  },
 ];

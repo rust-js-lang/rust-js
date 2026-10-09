@@ -82,3 +82,16 @@ export interface ButtonLinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorEle
   is given a string from Rust, and `crossOrigin`'s literals any string.
 - **@types/react 19.3's**: an attribute React 18 doesn't know is still a
   field, where `elements.rs`'s methods are gated by release.
+
+## Amendment: of the element they're given
+
+Each struct is of an element, `HTMLAttributes<'a, T = HTMLElement>`, its
+handlers' events of it too, as @types/react's `HTMLAttributes<T>` is:
+react.dev's LoadingOverlay takes `React.HTMLAttributes<HTMLDivElement>`,
+whose `onClick`'s `currentTarget` is the `<div>`. It was each interface's
+one element's. One element's is still the default, `AnchorHTMLAttributes<'a>`
+an `<a>`'s, and lib.dom's deprecated `HTMLTableDataCellElement` and
+`HTMLTableHeaderCellElement` are webapi's `HTMLTableCellElement`. Its
+`Default` is written, as a derived one would ask the element to have one,
+and a struct a `Default` is written for has a companion, as a derived
+one's does (ADR 0213).

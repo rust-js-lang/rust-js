@@ -894,8 +894,14 @@ fn thread_local_declarations(sess: &Session, item: &ast::Item) -> Option<Vec<Box
 /// flattened, is its literal with its `Default`.
 ///
 /// It's made for the crate's components' props structs, `props`, and for
-/// every `Default` struct, as a flattened one is.
-pub(super) fn props_companion(sess: &Session, item: &ast::Item, props: &HashSet<String>) -> Option<Box<ast::Item>> {
+/// every `Default` struct, as a flattened one is: derived, or written for
+/// it, `written_default`.
+pub(super) fn props_companion(
+    sess: &Session,
+    item: &ast::Item,
+    props: &HashSet<String>,
+    written_default: &HashSet<String>,
+) -> Option<Box<ast::Item>> {
     let ItemKind::Struct(ident, _, ast::VariantData::Struct { fields, .. }) = &item.kind else {
         return None;
     };
@@ -907,6 +913,7 @@ pub(super) fn props_companion(sess: &Session, item: &ast::Item, props: &HashSet<
                 .is_some_and(|list| list.iter().any(|m| m.ident().is_some_and(|i| i.as_str() == "Default")))
     });
     let name = ident.as_str().to_string();
+    let derives_default = derives_default || written_default.contains(&name);
     if !derives_default && !props.contains(&name) {
         return None;
     }

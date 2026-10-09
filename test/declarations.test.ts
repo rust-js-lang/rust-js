@@ -828,6 +828,56 @@ export const wrong = <ButtonLink href="/a" hrefLang={1}>Go</ButtonLink>;
   expect(renderToStaticMarkup(createElement(ButtonLink, { href: "/a", download: "f", className: "c" }))).toBe('<a href="/a" class="c" download="f"></a>');
 });
 
+// React's attributes are of an element, as @types/react's are: react.dev's
+// LoadingOverlay takes `React.HTMLAttributes<HTMLDivElement>`, whose
+// handlers' `currentTarget` is the `<div>` (ADR 0208).
+test("React's attributes are of the element they're given", () => {
+  buildReact();
+  const dir = fixture("declarations-attributes-element");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
+  writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
+use react::attributes::HTMLAttributes;
+use react::event::MouseEvent;
+use react::webapi::HTMLDivElement;
+use react::{JSX, jsx};
+
+pub struct PanelProps<'a> {
+    pub label: &'a str,
+    #[rust_js::flatten]
+    pub props: HTMLAttributes<'a, HTMLDivElement>,
+}
+
+pub fn Panel(PanelProps { label, props }: PanelProps) -> JSX::Element {
+    jsx! { <div {...props}>{label}</div> }
+}
+
+pub fn clicked(event: &MouseEvent<HTMLDivElement>) -> String {
+    event.current_target().align()
+}
+
+pub fn handler() -> HTMLAttributes<'static, HTMLDivElement> {
+    HTMLAttributes {
+        on_click: Some(Box::new(|event: &MouseEvent<HTMLDivElement>| {
+            clicked(event);
+        })),
+        ..Default::default()
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("export interface PanelProps extends HTMLAttributes<HTMLDivElement> {\n    label: string;\n}");
+  writeFileSync(join(dir, "use.tsx"), `import { Panel } from "./lib.jsx";
+export const ok = <Panel label="a" onClick={(event) => event.currentTarget.align} />;
+`);
+  writeFileSync(join(dir, "tsconfig.json"), JSON.stringify({
+    compilerOptions: { jsx: "react-jsx", strict: true, noEmit: true, module: "esnext", moduleResolution: "bundler", allowJs: true, skipLibCheck: false, typeRoots: [join(root, "node_modules/@types")] },
+    files: ["use.tsx"],
+  }));
+  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
+  expect(checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"))).toEqual([]);
+});
+
 // An `impl Fn(&Item, usize) -> R` parameter is the callback it says, as
 // react.dev's toCommaSeparatedList declares `renderCallback: (item: Item,
 // index: number) => React.ReactNode`: no `unknown`.

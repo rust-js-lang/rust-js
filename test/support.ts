@@ -298,8 +298,9 @@ export function unlessUnchanged(stamp: string, inputs: string[], outputs: string
 /** The js, webapi and react crates' metadata, in `target`: built once for
  * the run, as each of its workers is a process of its own, which would
  * otherwise write them again as others read them; and not again while their
- * sources and the toolchain are what they were made from. A compiler isn't
- * among those: `rust-js --rustc` is rustc, whose metadata it writes. */
+ * sources, the toolchain and the compiler are what they were made from:
+ * `rust-js --rustc` is rustc, but with rust-js's syntax pass, which writes
+ * the props companions in it (ADR 0213), a mutation's of it too. */
 let react = false;
 export function buildReact() {
   if (!react) {
@@ -307,7 +308,7 @@ export function buildReact() {
     const inputs = [
       "react/src", "react/build.sh", "react/cfg.js", "react/versions.json",
       "webapi/src", "webapi/build.sh", "builtins/src", "builtins/build.sh", "rust-toolchain.toml",
-    ].map((path) => join(root, path));
+    ].map((path) => join(root, path)).concat(compiler);
     const outputs = ["libreact.rmeta", "libwebapi.rmeta", "libjs.rmeta"].map((name) => join(target, name));
     once(join(target, "tests-react", thisRun()), () =>
       unlessUnchanged(join(target, "libreact.stamp"), inputs, outputs, () => run(["react/build.sh", "-o", join(target, "libreact.rmeta")])),

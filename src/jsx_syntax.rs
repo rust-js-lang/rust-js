@@ -275,11 +275,34 @@ impl Expand<'_> {
             .filter(|item| configured_attrs(self.sess, &item.attrs).is_some())
             .flat_map(|item| parser::props_names(self.sess, item))
             .collect();
+        // What has a `Default` written for it, as a derived one does: React's
+        // attributes, of any element (ADR 0208).
+        let written_default: HashSet<String> = (items.iter())
+            .filter(|item| configured_attrs(self.sess, &item.attrs).is_some())
+            .filter_map(|item| match &item.kind {
+                ItemKind::Impl(imp)
+                    if imp.of_trait.as_ref().is_some_and(|header| {
+                        header
+                            .trait_ref
+                            .path
+                            .segments
+                            .last()
+                            .is_some_and(|s| s.ident.as_str() == "Default")
+                    }) =>
+                {
+                    match &imp.self_ty.kind {
+                        ast::TyKind::Path(_, path) => path.segments.last().map(|s| s.ident.to_string()),
+                        _ => None,
+                    }
+                }
+                _ => None,
+            })
+            .collect();
         let mut companions = Vec::new();
         let mut built = HashSet::new();
         for item in items.iter() {
             if configured_attrs(self.sess, &item.attrs).is_some()
-                && let Some(companion) = parser::props_companion(self.sess, item, &props)
+                && let Some(companion) = parser::props_companion(self.sess, item, &props, &written_default)
             {
                 if let Some(ident) = companion.kind.ident() {
                     built.insert(ident.as_str().to_string());
