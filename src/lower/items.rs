@@ -32,6 +32,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
         }
         self.dependencies.borrow_mut().uses.push((self.item, def_id));
+        // A function a block makes and gives: itself, there (ADR 0296).
+        if self.krate.named_expressions.contains(&def_id) {
+            return Expr {
+                kind: js::ExprKind::FunctionHole(def_id.index.as_u32()),
+                span: js::Span::NONE,
+            };
+        }
         let target = &self.krate.fns[&def_id];
         if target.module != self.module {
             self.dependencies.borrow_mut().references.insert((self.module, def_id));

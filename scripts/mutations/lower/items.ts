@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "            Some((export, rest)) => {\n                global(",
     tests: ["test/traits.test.ts", "-t", "impls and default bodies retain their defining modules across cycles"],
   },
+  {
+    name: "named-expression-module-function",
+    breaks: "a function a block makes and gives is the module's, `memo(Label)` beside `function Label`, and the static is renamed",
+    file: "src/lower/items.rs",
+    find: "        if self.krate.named_expressions.contains(&def_id) {",
+    replace: "        if false {",
+    tests: ["test/jsx.test.ts", "-t", "a function a block makes and gives"],
+  },
 ];

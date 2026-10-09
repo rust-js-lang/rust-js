@@ -353,6 +353,9 @@ struct CrateFacts<'a, 'tcx> {
     plain_cells: &'a HashMap<LocalVarId, LocalVarId>,
     /// The `&Cell`s a `let` takes apart that are their value (ADR 0293).
     read_at_once: &'a HashSet<LocalVarId>,
+    /// The functions a block makes and gives, each a named function
+    /// expression there (ADR 0296).
+    named_expressions: &'a HashSet<DefId>,
 }
 
 /// Dependencies recorded by one function (including copied trait bodies and

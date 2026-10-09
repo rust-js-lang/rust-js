@@ -26,6 +26,9 @@ struct Pass {
     statements: HashMap<LocalModId, Vec<js::Stmt>>,
     /// `thread_local!`s' values, made from their lowered `init`s.
     local_consts: HashMap<LocalModId, Vec<js::Const>>,
+    /// The functions a block makes and gives, by their items' indices, for
+    /// their holes (ADR 0296).
+    holes: HashMap<u32, js::Function>,
     /// Which items each module uses from another, and which JS imports.
     references: HashSet<(LocalModId, DefId)>,
     package_uses: HashSet<(LocalModId, Export)>,
@@ -71,7 +74,8 @@ pub fn lower_crate<'tcx>(
         plain_locals,
         plain_cells,
         read_at_once,
-    } = analyze_crate(tcx, all_bodies, dependencies, export_library)?;
+        named_expressions,
+    } = analyze_crate(tcx, all_bodies, initializers, dependencies, export_library)?;
     // Each module's default export, which a module of the crate imports as
     // its default, not by a name of its own (ADR 0251).
     let defaults: HashMap<LocalModId, DefId> = (modules.iter())
@@ -195,6 +199,7 @@ pub fn lower_crate<'tcx>(
         plain_locals: &plain_locals,
         plain_cells: &plain_cells,
         read_at_once: &read_at_once,
+        named_expressions: &named_expressions,
     };
     let mut work: Vec<(DefId, Option<&Body<'tcx>>)> = bodies
         .iter()
@@ -402,6 +407,18 @@ pub fn lower_crate<'tcx>(
                     None if super::bindings::is_on_load(tcx, def_id) => {
                         pass.statements.entry(module).or_default().extend(lowered.function.body)
                     }
+                    // Named in itself alone, as the Rust names it, unless
+                    // what it reads is named so.
+                    None if named_expressions.contains(&def_id) => {
+                        let mut function = lowered.function;
+                        let mut read = HashSet::new();
+                        js::visit_stmts(&function.body, &mut |name| {
+                            read.insert(name.to_owned());
+                        });
+                        function.name = super::fresh_in(&mut read, &function.name);
+                        function.export = false;
+                        pass.holes.insert(def_id.index.as_u32(), function);
+                    }
                     None => pass.functions.entry(module).or_default().push(lowered.function),
                 }
                 pass.runtime.entry(module).or_default().extend(lowered.runtime);
@@ -410,6 +427,22 @@ pub fn lower_crate<'tcx>(
     }
     for (module, consts) in pass.local_consts.drain() {
         const_items.entry(module).or_default().extend(consts);
+    }
+    // Each function a block makes and gives, where its block was (ADR 0296).
+    let holes = &mut pass.holes;
+    for constant in const_items.values_mut().flatten() {
+        constant.value.each_mut(&mut |e| fill_hole(e, holes));
+    }
+    let methods = pass
+        .namespaces
+        .values_mut()
+        .flatten()
+        .flat_map(|n| n.methods.iter_mut());
+    for function in pass.functions.values_mut().flatten().chain(methods) {
+        fill_holes(&mut function.body, holes);
+    }
+    for statements in pass.statements.values_mut() {
+        fill_holes(statements, holes);
     }
 
     for &(_, id) in pass.references.iter() {
@@ -632,6 +665,20 @@ fn reexports(
         .into_iter()
         .map(|(path, named)| LoweredImport { path, named })
         .collect()
+}
+
+/// Each hole in `stmts` filled with its function, and each in that (ADR 0296).
+fn fill_holes(stmts: &mut [js::Stmt], holes: &mut HashMap<u32, js::Function>) {
+    js::each_expr_mut(stmts, &mut |e| fill_hole(e, holes));
+}
+
+fn fill_hole(e: &mut Expr, holes: &mut HashMap<u32, js::Function>) {
+    if let js::ExprKind::FunctionHole(index) = e.kind
+        && let Some(mut function) = holes.remove(&index)
+    {
+        fill_holes(&mut function.body, holes);
+        e.kind = js::ExprKind::Function(Box::new(function));
+    }
 }
 
 /// A thread-local's value, `{ value: 0 }`: of one only read and set, what

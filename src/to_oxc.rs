@@ -963,6 +963,26 @@ impl<'a> Cx<'a> {
                 };
                 Expression::new_arrow_function_expression(sp, is_async, None, params, None, body, b)
             }
+            // `function Label(props) { .. }`, named (ADR 0296).
+            ExprKind::Function(f) => {
+                let params = self.params(FormalParameterKind::FormalParameter, &f.params);
+                let body = FunctionBody::new(SPAN, ArenaVec::new_in(b), self.stmts(&f.body), b);
+                Expression::new_function_expression(
+                    span(f.span),
+                    FunctionType::FunctionExpression,
+                    Some(BindingIdentifier::new(span(f.name_span), self.name(&f.name), b)),
+                    false, // generator
+                    f.is_async,
+                    false, // declare
+                    None,  // type parameters
+                    None,  // this param
+                    ArenaBox::new_in(params, b),
+                    None, // return type
+                    Some(ArenaBox::new_in(body, b)),
+                    b,
+                )
+            }
+            ExprKind::FunctionHole(_) => unreachable!("the pipeline puts each function where its hole is"),
             ExprKind::Await(promise) => Expression::new_await_expression(sp, self.expr(promise), b),
             ExprKind::Spread(_) => unreachable!("`...items` is an array's item or a call's argument, which they write"),
             ExprKind::Call(callee, args) => {

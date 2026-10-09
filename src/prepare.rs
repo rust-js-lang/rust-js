@@ -385,6 +385,7 @@ fn entries_written_out(e: &Expr) -> Option<Expr> {
 fn expr(e: &mut Expr) {
     match &mut e.kind {
         ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => block(body),
+        ExprKind::Function(function) => block(&mut function.body),
         ExprKind::Jsx(jsx) => {
             if let JsxTag::Component(e) = &mut jsx.tag {
                 expr(e);
@@ -461,6 +462,7 @@ fn expr(e: &mut Expr) {
         | ExprKind::Null
         | ExprKind::Var(_)
         | ExprKind::Symbol(_)
+        | ExprKind::FunctionHole(_)
         | ExprKind::Regex(_) => {}
     }
 }

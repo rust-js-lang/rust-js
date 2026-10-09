@@ -110,10 +110,10 @@ pub fn returning_its_call(value: &mut Expr) {
 /// a closure's body too: for a pass that changes them.
 pub fn each_block_mut(stmts: &mut Vec<Stmt>, f: &mut dyn FnMut(&mut Vec<Stmt>)) {
     statement_lists(stmts, f);
-    each_expr_mut(stmts, &mut |e| {
-        if let ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) = &mut e.kind {
-            statement_lists(body, f);
-        }
+    each_expr_mut(stmts, &mut |e| match &mut e.kind {
+        ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => statement_lists(body, f),
+        ExprKind::Function(function) => statement_lists(&mut function.body, f),
+        _ => {}
     });
 }
 
@@ -206,7 +206,7 @@ pub fn mentions_in(stmts: &[Stmt], name: &str) -> usize {
 }
 
 /// Each variable `stmts` read, in every statement and expression.
-fn visit_stmts<'a>(stmts: &'a [Stmt], read: &mut dyn FnMut(&'a str)) {
+pub fn visit_stmts<'a>(stmts: &'a [Stmt], read: &mut dyn FnMut(&'a str)) {
     for stmt in stmts {
         match &stmt.kind {
             StmtKind::Const(_, value)
@@ -288,6 +288,7 @@ pub struct Package {
     pub namespace: Option<String>,
 }
 
+#[derive(Clone)]
 pub struct Function {
     pub name: String,
     pub params: Vec<Pattern>,
@@ -459,6 +460,12 @@ pub enum ExprKind {
     Arrow(Vec<Pattern>, Vec<Stmt>),
     /// `async (a) => { .. }`: an async closure or block (ADR 0029).
     AsyncArrow(Vec<Pattern>, Vec<Stmt>),
+    /// `function Label(props) { .. }`: a function a block makes and gives,
+    /// named, as an expression (ADR 0296).
+    Function(Box<Function>),
+    /// Where such a function goes until the pipeline puts it there: its
+    /// item's index.
+    FunctionHole(u32),
     /// `await p`: `.await` (ADR 0029).
     Await(Box<Expr>),
     /// `<div className="hero">..</div>`, `<Counter initial={1} />` or `<>..</>` (ADR 0040).
@@ -883,6 +890,7 @@ impl Expr {
             ExprKind::Array(items) | ExprKind::Template(_, items, _) => items.iter_mut().for_each(|a| a.each_mut(f)),
             ExprKind::Object(fields) => props(fields, f),
             ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => each_expr_mut(body, f),
+            ExprKind::Function(function) => each_expr_mut(&mut function.body, f),
             ExprKind::Jsx(jsx) => {
                 if let JsxTag::Component(tag) = &mut jsx.tag {
                     tag.each_mut(f);
@@ -900,6 +908,7 @@ impl Expr {
             | ExprKind::Undefined
             | ExprKind::Null
             | ExprKind::Symbol(_)
+            | ExprKind::FunctionHole(_)
             | ExprKind::Regex(_) => {}
         }
     }
@@ -938,6 +947,7 @@ impl Expr {
             ExprKind::Array(items) | ExprKind::Template(_, items, _) => items.iter().for_each(|a| a.visit_vars(read)),
             ExprKind::Object(fields) => props(fields, read),
             ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => visit_stmts(body, read),
+            ExprKind::Function(function) => visit_stmts(&function.body, read),
             ExprKind::Jsx(jsx) => {
                 if let JsxTag::Component(tag) = &jsx.tag {
                     tag.visit_vars(read);
@@ -954,6 +964,7 @@ impl Expr {
             | ExprKind::Undefined
             | ExprKind::Null
             | ExprKind::Symbol(_)
+            | ExprKind::FunctionHole(_)
             | ExprKind::Regex(_) => {}
         }
     }
@@ -992,6 +1003,8 @@ impl Expr {
             | ExprKind::Null
             | ExprKind::Var(_)
             | ExprKind::Symbol(_)
+            | ExprKind::FunctionHole(_)
+            | ExprKind::Function(_)
             | ExprKind::Regex(_) => false,
         }
     }
@@ -1036,7 +1049,7 @@ impl Expr {
             },
             // A closure reading none of the names replaced is the same
             // closure, whenever it runs.
-            ExprKind::Arrow(..) | ExprKind::AsyncArrow(..)
+            ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) | ExprKind::Function(_)
                 if {
                     let mut replaced = false;
                     self.visit_vars(&mut |name| replaced |= with(name).is_some());
@@ -1071,7 +1084,7 @@ impl Expr {
                 }
                 ExprKind::Arrow(params.clone(), vec![StmtKind::Return(Some(value)).at(*span)])
             }
-            ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) => return None,
+            ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) | ExprKind::Function(_) => return None,
             ExprKind::Member(a, field) => ExprKind::Member(one(a)?, field.clone()),
             ExprKind::OptionalMember(a, field) => ExprKind::OptionalMember(one(a)?, field.clone()),
             ExprKind::Handle(place) => ExprKind::Handle(one(place)?),
@@ -1105,6 +1118,7 @@ impl Expr {
             | ExprKind::Undefined
             | ExprKind::Null
             | ExprKind::Symbol(_)
+            | ExprKind::FunctionHole(_)
             | ExprKind::Regex(_) => self.kind.clone(),
         };
         Some(Expr { kind, span: self.span })
@@ -1177,7 +1191,12 @@ impl Expr {
             })
         };
         match &self.kind {
-            ExprKind::Var(_) | ExprKind::Symbol(_) | ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) => true,
+            ExprKind::Var(_)
+            | ExprKind::Symbol(_)
+            | ExprKind::FunctionHole(_)
+            | ExprKind::Arrow(..)
+            | ExprKind::AsyncArrow(..)
+            | ExprKind::Function(_) => true,
             ExprKind::Unary(_, a) | ExprKind::Spread(a) => a.reads_only_vars(),
             ExprKind::Binary(_, a, b) => a.reads_only_vars() && b.reads_only_vars(),
             ExprKind::Cond(a, b, c) => a.reads_only_vars() && b.reads_only_vars() && c.reads_only_vars(),
@@ -1208,8 +1227,10 @@ impl Expr {
             | ExprKind::Var(_)
             | ExprKind::Symbol(_)
             | ExprKind::Regex(_)
+            | ExprKind::FunctionHole(_)
             | ExprKind::Arrow(..)
-            | ExprKind::AsyncArrow(..) => false,
+            | ExprKind::AsyncArrow(..)
+            | ExprKind::Function(_) => false,
             // It lets other code run meanwhile.
             ExprKind::Await(_) => true,
             ExprKind::Spread(a) => a.has_effects(),

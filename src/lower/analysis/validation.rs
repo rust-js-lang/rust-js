@@ -171,6 +171,22 @@ pub(in crate::lower) fn is_thread_local(tcx: TyCtxt<'_>, d: LocalDefId) -> bool 
 }
 
 /// The thread-local whose block `d` is in, if any.
+/// The thread-local whose `init` `d` is: one inside it, with no function
+/// between, as a function the `init` makes is its own (ADR 0296).
+pub(super) fn init_of(tcx: TyCtxt<'_>, d: LocalDefId) -> Option<LocalDefId> {
+    let mut parent = tcx.opt_local_parent(d);
+    while let Some(p) = parent {
+        if is_thread_local(tcx, p) {
+            return Some(p);
+        }
+        if matches!(tcx.def_kind(p), DefKind::Fn | DefKind::AssocFn | DefKind::Closure) {
+            return None;
+        }
+        parent = tcx.opt_local_parent(p);
+    }
+    None
+}
+
 pub(super) fn in_thread_local(tcx: TyCtxt<'_>, d: LocalDefId) -> Option<LocalDefId> {
     let mut parent = tcx.opt_local_parent(d);
     while let Some(p) = parent {

@@ -21,7 +21,7 @@ use debug::{derived_debug, uses_format_options, uses_pretty_debug};
 use drops::drop_params;
 pub(super) use mutation::copies_by_callers;
 use mutation::{copied_params, mutated_types};
-use naming::{exported_across_modules, js_uses, name_imports, name_items};
+use naming::{exported_across_modules, js_uses, name_imports, name_items, named_expressions};
 use rustc_hir::def::DefKind;
 use rustc_hir::find_attr;
 use rustc_middle::mir::BorrowKind;
@@ -33,7 +33,7 @@ use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalDefId, LocalModId};
 use std::collections::{BTreeMap, HashMap, HashSet};
 use type_facts::type_fact_params;
 pub(super) use validation::is_thread_local;
-use validation::{in_thread_local, reject_flatten_misuse, reject_static_references, reject_unsupported};
+use validation::{in_thread_local, init_of, reject_flatten_misuse, reject_static_references, reject_unsupported};
 
 /// Made by serde's `#[derive(Serialize)]` or `#[derive(Deserialize)]`, or
 /// inside what they made (its `const _: () = { .. }`): left out, since
@@ -165,11 +165,15 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub plain_cells: HashMap<LocalVarId, LocalVarId>,
     /// The `&Cell`s a `let` takes apart that are their value (ADR 0293).
     pub read_at_once: HashSet<LocalVarId>,
+    /// The functions a block makes and gives, each a named function
+    /// expression there (ADR 0296).
+    pub named_expressions: HashSet<DefId>,
 }
 
 pub(super) fn analyze_crate<'a, 'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &'a [Body<'tcx>],
+    initializers: &[Body<'tcx>],
     dependencies: &crate::library::Dependencies,
     library: bool,
 ) -> Option<AnalyzedCrate<'a, 'tcx>> {
@@ -286,7 +290,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
                 .copied()
                 .filter(|&d| matches!(tcx.def_kind(d), DefKind::Const { .. })),
         )
-        .filter_map(|d| Some((d, in_thread_local(tcx, d)?)))
+        .filter_map(|d| Some((d, init_of(tcx, d)?)))
         .collect();
 
     let plain_locals = plain_locals::plain_thread_locals(tcx, all_bodies, thread_local_inits.values().copied());
@@ -339,7 +343,9 @@ pub(super) fn analyze_crate<'a, 'tcx>(
 
     // The crate's own names first: an export is what its consumers and JS
     // call it by. An import is named around every one of them.
-    let (mut taken, fns, failed) = name_items(tcx, &items, &modules, &uses.globals, &trait_impls);
+    // A function a block makes and gives is named in itself alone (ADR 0296).
+    let named_expressions = named_expressions(tcx, all_bodies.iter().copied().chain(initializers));
+    let (mut taken, fns, failed) = name_items(tcx, &items, &modules, &uses.globals, &trait_impls, &named_expressions);
     let import_names = name_imports(tcx, &uses, &taken);
     for (module, names) in taken.iter_mut() {
         names.extend(import_names[module].values().cloned());
@@ -389,6 +395,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         plain_locals,
         plain_cells,
         read_at_once,
+        named_expressions,
     })
 }
 

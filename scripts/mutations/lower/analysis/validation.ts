@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "                        && true =>",
     tests: ["test/jsx.test.ts", "-t", "flattened props with a field of them set"],
   },
+  {
+    name: "init-of-nested-function",
+    breaks: "a function a thread-local's `init` makes is taken for the `init`, its value the thread-local's",
+    file: "src/lower/analysis/validation.rs",
+    find: "        if matches!(tcx.def_kind(p), DefKind::Fn | DefKind::AssocFn | DefKind::Closure) {\n            return None;\n        }\n",
+    replace: "",
+    tests: ["test/jsx.test.ts", "-t", "a function a block makes and gives"],
+  },
 ];

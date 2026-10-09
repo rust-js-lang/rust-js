@@ -202,4 +202,12 @@ export const mutations: Mutation[] = [
     replace: "                cx.lower_dictionary(def_id, &cache).map(|function| super::LoweredFn {\n                    function,\n                    runtime: std::mem::take(&mut cx.runtime),\n                    jsx: false,",
     tests: ["test/traits.test.ts", "-t", "copied JSX defaults select the implementation module's JSX extension"],
   },
+  {
+    name: "named-expression-shadows",
+    breaks: "a named function expression reading what's named as it is reads itself: `<Count>` in `Count` renders the unmemoized function",
+    file: "src/lower/pipeline.rs",
+    find: "                        function.name = super::fresh_in(&mut read, &function.name);\n",
+    replace: "",
+    tests: ["test/jsx.test.ts", "-t", "a function a block makes and gives"],
+  },
 ];

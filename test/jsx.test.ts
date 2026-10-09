@@ -3493,3 +3493,81 @@ pub fn ErrorMessage(ErrorMessageProps { error, props }: ErrorMessageProps) -> JS
   expect(renderToStaticMarkup(createElement(ErrorMessage, { error: { title: "", message: "m" }, id: "e" })))
     .toBe('<div class="error" id="e"><h2 class="title">Error</h2><pre>m</pre></div>');
 });
+
+// ADR 0296: a function a block makes and gives, `{ fn Label(..) { .. } Label }`,
+// is JS's named function expression, as react.dev memoizes its components:
+// `export const IconCanary = memo(function IconCanary(..) { .. })`. Rust
+// can't name a module's function and its static alike; the block can.
+test("a function a block makes and gives is a named function expression", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case, non_upper_case_globals)]
+use react::{JSX, MemoExoticComponent, jsx, memo};
+pub struct LabelProps<'a> {
+    pub text: &'a str,
+}
+thread_local! {
+    pub static Label: MemoExoticComponent<LabelProps<'static>> = memo({
+        fn Label(LabelProps { text }: LabelProps) -> JSX::Element {
+            jsx! { <b>{text}</b> }
+        }
+        Label
+    });
+}
+pub struct CountProps {
+    pub n: u32,
+}
+thread_local! {
+    // A function it makes and doesn't give is the module's, as before.
+    pub static Shout: MemoExoticComponent<LabelProps<'static>> = memo({
+        fn Shout(LabelProps { text }: LabelProps) -> JSX::Element {
+            fn loud(text: &str) -> String {
+                text.to_uppercase()
+            }
+            jsx! { <i>{loud(text)}</i> }
+        }
+        Shout
+    });
+    // One reading what's named as it is, the static, is named apart.
+    pub static Count: MemoExoticComponent<CountProps> = memo({
+        fn Count(CountProps { n }: CountProps) -> JSX::Element {
+            jsx! { <b>{n}{(n > 0).then(|| jsx! { <Count n={n - 1} /> })}</b> }
+        }
+        Count
+    });
+}
+// One that calls itself is named twice: a function of the module.
+pub static FACT: fn(u32) -> u32 = {
+    fn fact(n: u32) -> u32 {
+        if n == 0 { 1 } else { n * fact(n - 1) }
+    }
+    fact
+};
+pub fn fact_of(n: u32) -> u32 {
+    FACT(n)
+}
+// A generic one, given its dictionaries where it's named: the module's.
+pub static DOUBLE: fn(u32) -> u32 = {
+    fn double<T: std::ops::Add<Output = T> + Copy>(x: T) -> T {
+        x + x
+    }
+    double::<u32>
+};
+pub fn doubled(n: u32) -> u32 {
+    DOUBLE(n)
+}
+pub fn Page() -> JSX::Element {
+    jsx! { <main><Label text="hi" /><Shout text="up" /><Count n={2} /></main> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("export const Label = memo(function Label({ text }) {");
+  expect(jsx).not.toContain("function Label$1");
+  expect(jsx).toContain("export const Shout = memo(function Shout({ text }) {");
+  expect(jsx).toContain("\nfunction loud(text) {");
+  expect(jsx).toContain("export const Count = memo(function Count$1({ n }) {");
+  expect(jsx).toContain("\nfunction fact(n) {");
+  expect(jsx).toContain("\nfunction double(x, TAdd) {");
+  const lib = await import(join(dir, "lib.jsx"));
+  expect([renderToStaticMarkup(lib.Page()), lib.Label.type.name, lib.fact_of(3), lib.doubled(4)])
+    .toEqual(["<main><b>hi</b><i>UP</i><b>2<b>1<b>0</b></b></b></main>", "Label", 6, 8]);
+});

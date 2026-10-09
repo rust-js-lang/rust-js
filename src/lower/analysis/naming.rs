@@ -6,7 +6,7 @@ use crate::lower::bindings::{Export, is_binding, js_import, js_path, module_bind
 use crate::lower::traits;
 use crate::lower::{Body, FnInfo, camel_case, fresh_in};
 use rustc_hir::def::{DefKind, Res};
-use rustc_hir::{ItemKind, UseKind};
+use rustc_hir::{self as hir, ItemKind, UseKind};
 use rustc_middle::thir::{ExprKind, Pat, PatKind, StmtKind};
 use rustc_middle::ty;
 use rustc_middle::ty::TyCtxt;
@@ -235,6 +235,7 @@ pub(super) fn name_items(
     modules: &[LocalModId],
     globals: &HashSet<String>,
     trait_impls: &[DefId],
+    named_expressions: &HashSet<DefId>,
 ) -> (HashMap<LocalModId, HashSet<String>>, HashMap<DefId, FnInfo>, bool) {
     let mut failed = false;
     let mut taken: HashMap<LocalModId, HashSet<String>> = modules.iter().map(|&m| (m, globals.clone())).collect();
@@ -274,6 +275,7 @@ pub(super) fn name_items(
                 };
                 (name, Some(owner.clone()))
             }
+            None if named_expressions.contains(&def_id.to_def_id()) => (js_name, None),
             None => (fresh_in(names, &js_name), None),
         };
         fns.insert(def_id.to_def_id(), FnInfo { module, name, owner });
@@ -306,4 +308,44 @@ pub(super) fn exported_across_modules<'tcx>(
         }
     }
     exported
+}
+
+/// The functions a block makes and gives, `{ fn Label(..) { .. } Label }`,
+/// that nothing else names: each is JS's named function expression where
+/// the block is, as react.dev's `memo(function Label(..) { .. })` (ADR 0296).
+pub(super) fn named_expressions<'a, 'tcx: 'a>(
+    tcx: TyCtxt<'tcx>,
+    bodies: impl Iterator<Item = &'a Body<'tcx>>,
+) -> HashSet<DefId> {
+    let mut named: HashMap<DefId, usize> = HashMap::new();
+    for body in bodies {
+        for expr in body.thir.exprs.iter() {
+            if let ExprKind::ZstLiteral { .. } = expr.kind
+                && let ty::FnDef(def_id, _) = *expr.ty.kind()
+                && def_id.is_local()
+            {
+                *named.entry(def_id).or_default() += 1;
+            }
+        }
+    }
+    named
+        .into_iter()
+        .filter(|&(def_id, uses)| uses == 1 && given_by_its_block(tcx, def_id.expect_local()))
+        .map(|(def_id, _)| def_id)
+        .collect()
+}
+
+/// Is `def_id` a function its block makes and then gives as its value?
+fn given_by_its_block(tcx: TyCtxt<'_>, def_id: LocalDefId) -> bool {
+    if tcx.def_kind(def_id) != DefKind::Fn || tcx.generics_of(def_id).count() != 0 {
+        return false;
+    }
+    let hir::Node::Stmt(stmt) = tcx.parent_hir_node(tcx.local_def_id_to_hir_id(def_id)) else {
+        return false;
+    };
+    let hir::Node::Block(block) = tcx.parent_hir_node(stmt.hir_id) else {
+        return false;
+    };
+    matches!(block.expr, Some(hir::Expr { kind: hir::ExprKind::Path(hir::QPath::Resolved(None, path)), .. })
+        if path.res == Res::Def(DefKind::Fn, def_id.to_def_id()))
 }

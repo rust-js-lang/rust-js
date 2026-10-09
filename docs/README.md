@@ -387,6 +387,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0293 A `Cell` a `let` takes apart and reads at once is its value](decisions/0293-cells-read-at-once.md)
 - [0294 `unwrap_unchecked()` is the value, as TypeScript's `x!` is](decisions/0294-unwrap-unchecked.md)
 - [0295 A module's imports are one block, packages first](decisions/0295-import-order.md)
+- [0296 A function a block makes and gives is a named function expression](decisions/0296-named-function-expressions.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)
