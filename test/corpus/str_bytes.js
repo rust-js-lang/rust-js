@@ -13,7 +13,7 @@ function fnv1a(text) {
 
 function leading_number(line) {
   const bytes = $iter(Array.from(new TextEncoder().encode(line)));
-  let value = undefined;
+  let value;
   while (true) {
     const value$1 = $peek(bytes);
     if (value$1 != null) {

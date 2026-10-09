@@ -2439,7 +2439,7 @@ pub fn Counter() -> JSX::Element {
   expect([badge.includes("const width"), badge.includes("= p.title")]).toEqual([false, false]);
   expect(badge).toContain('<svg width={p.size === "S" ? "12px" : "20px"}>');
   expect(jsx).toMatch(/= n\.textContent;\n  n\.textContent = "x";/);
-  expect(jsx).toMatch(/= count\.value;\n  count\.value = 5;/);
+  expect(jsx).toMatch(/= count;\n  count = 5;/);
   const { Badge, Counter, Edited } = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(Badge({ size: "S", title: "t" }))).toBe('<svg width="12px"><title>t</title>2</svg>');
   expect(renderToStaticMarkup(Counter())).toBe("<div><p>0</p>1</div>");

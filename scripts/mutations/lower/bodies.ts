@@ -138,4 +138,12 @@ export const mutations: Mutation[] = [
     replace: "                            ty::Adt(adt, _) if false && name.as_str() == \"self\" => {",
     tests: ["test/compiler.test.ts", "-t", "methods are their type's object of functions"],
   },
+  {
+    name: "plain-cell-snapshotted",
+    breaks: "a move closure copies a cell that's its function's `let`, `let timeout$1 = timeout`, so what it sets the other closures never see",
+    file: "src/lower/bodies.rs",
+    find: "        var.mutable && !self.only_use(u) && !self.krate.plain_cells.contains_key(&id)\n",
+    replace: "        var.mutable && !self.only_use(u)\n",
+    tests: ["test/lowering.test.ts", "-t", "cell only its function"],
+  },
 ];

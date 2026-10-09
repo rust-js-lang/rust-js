@@ -614,4 +614,12 @@ export const mutations: Mutation[] = [
     replace: "                if false && bindings::is_tagged_otherwise(self.tcx, adt_def.did(), variant) {\n",
     tests: ["test/lowering.test.ts", "-t", "otherwise variant is any other"],
   },
+  {
+    name: "plain-cell-unchanging",
+    breaks: "a cell that's its function's `let` is read where JSX shows it, after a `set` Rust runs later, `{count}` of 5",
+    file: "src/lower/patterns.rs",
+    find: "                let name = self.bind(var, name.as_str(), true);\n                out.push(StmtKind::Let(name, Some(value)).at(self.js_span(span)));\n",
+    replace: "                let name = self.bind(var, name.as_str(), false);\n                out.push(StmtKind::Let(name, Some(value)).at(self.js_span(span)));\n",
+    tests: ["test/jsx.test.ts", "-t", "keeps a field of what never changes in place"],
+  },
 ];

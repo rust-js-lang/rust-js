@@ -40,6 +40,13 @@ fn block(body: &mut Vec<Stmt>) {
         {
             *els = None;
         }
+        // `let timeout = undefined;` is `let timeout;`, as a person writes it:
+        // a `let` starts as `undefined`, each time it's run.
+        if let StmtKind::Let(_, value) = &mut stmt.kind
+            && value.as_ref().is_some_and(|v| matches!(v.kind, ExprKind::Undefined))
+        {
+            *value = None;
+        }
     }
     for stmt in body {
         match &mut stmt.kind {

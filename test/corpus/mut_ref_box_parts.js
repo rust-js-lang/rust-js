@@ -50,7 +50,7 @@ function main() {
   const o$1 = { value: s };
   text(o$1);
   s = o$1.value;
-  let n = undefined;
+  let n;
   const o$2 = { value: n };
   generic(o$2, { eq: (a, b) => a === b }, { fmt: (value) => String(value) });
   n = o$2.value;

@@ -61,15 +61,15 @@ export function expected(n) {
 }
 
 export function eager(n) {
-  const calls = { value: 0 };
+  let calls = 0;
   const bump = () => {
-    calls.value = (calls.value + 1) | 0;
+    calls = (calls + 1) | 0;
     return 7;
   };
   const option = half(n);
   const fallback = bump();
   const v = option ?? fallback;
-  return [v, calls.value];
+  return [v, calls];
 }
 
 export function fill(slot, n) {
@@ -115,16 +115,16 @@ export function mapped(n) {
 }
 
 export function mapped_more(n) {
-  const calls = { value: 0 };
+  let calls = 0;
   const h = half(n);
   const map = (h) => {
-    calls.value = (calls.value + 1) >>> 0;
+    calls = (calls + 1) >>> 0;
     return (h - 1) | 0;
   };
   const counted = h != null ? map(h) : undefined;
   const option = pair(n);
   const tmp = option != null ? Math.imul(option[0], option[1]) : undefined;
-  const tmp$1 = calls.value;
+  const tmp$1 = calls;
   const option$1 = half(n);
   return [tmp, counted, tmp$1, option$1 != null ? 7 : undefined];
 }
@@ -138,9 +138,9 @@ export function chained(n) {
 }
 
 export function chained_twice(n) {
-  const calls = { value: 0 };
+  let calls = 0;
   const counted = (m) => {
-    calls.value = (calls.value + 1) >>> 0;
+    calls = (calls + 1) >>> 0;
     return half(m);
   };
   let v;
@@ -155,13 +155,13 @@ export function chained_twice(n) {
   } else {
     v = 0;
   }
-  return [v, calls.value];
+  return [v, calls];
 }
 
 export function chained_long_else(n) {
-  const calls = { value: 0 };
+  let calls = 0;
   const counted = (m) => {
-    calls.value = (calls.value + 1) | 0;
+    calls = (calls + 1) | 0;
     return half(m);
   };
   chain: {
@@ -172,8 +172,8 @@ export function chained_long_else(n) {
         return q;
       }
     }
-    calls.value = (calls.value + 10) | 0;
-    return -calls.value | 0;
+    calls = (calls + 10) | 0;
+    return -calls | 0;
   }
 }
 

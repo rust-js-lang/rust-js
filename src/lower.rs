@@ -346,6 +346,9 @@ struct CrateFacts<'a, 'tcx> {
     /// The thread-locals that are their module's variable, each whether it's
     /// set, a `let` (ADR 0270).
     plain_locals: &'a HashMap<LocalDefId, bool>,
+    /// The cells that are their function's variable, each to the one it's a
+    /// clone of, or itself (ADR 0287).
+    plain_cells: &'a HashMap<LocalVarId, LocalVarId>,
 }
 
 /// Dependencies recorded by one function (including copied trait bodies and

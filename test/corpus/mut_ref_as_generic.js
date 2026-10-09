@@ -26,7 +26,7 @@ function main() {
   const x$1 = { value: x };
   via(x$1);
   x = x$1.value;
-  let unit = undefined;
+  let unit;
   const _t = { value: x };
   const result = pass(_t);
   x = _t.value;

@@ -2046,3 +2046,51 @@ pub fn all_made(objects: Vec<&'static js::JsObject>) -> Vec<Message> {
     .toEqual(["resize 3", "start true", "other"]);
   expect([lib.other(done), lib.other({ type: "resize", height: 1 }), lib.made(done) === done, lib.all_made([done])[0] === done]).toEqual([true, false, true, true]);
 });
+
+// ADR 0287: a `Cell`, or an `Rc` of one, that only its function and its
+// closures read and set is a `let`, as react.dev's Preview keeps `let
+// timeout` its listener sets and its cleanup clears: a clone of it is the
+// same variable. One that leaves, returned or given whole, is `{ value }`.
+test("a cell only its function reads and sets is a let", async () => {
+  const dir = fixture("plain-cells");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+use std::rc::Rc;
+
+pub fn local() -> u32 {
+    let n = Cell::new(1);
+    n.set(n.get() + 1);
+    n.get()
+}
+
+pub fn counted(each: impl Fn(&dyn Fn())) -> u32 {
+    let n = Cell::new(0);
+    each(&|| n.set(n.get() + 1));
+    n.get()
+}
+
+pub fn shared(listen: impl Fn(Box<dyn Fn(u32)>)) -> Box<dyn Fn() -> Option<u32>> {
+    let timeout: Rc<Cell<Option<u32>>> = Rc::new(Cell::new(None));
+    let started = timeout.clone();
+    listen(Box::new(move |n| started.set(Some(n))));
+    Box::new(move || timeout.get())
+}
+
+pub fn escaping() -> Rc<Cell<u32>> {
+    let n = Rc::new(Cell::new(1));
+    n.set(2);
+    n
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  let n = 1;\n  n = (n + 1) >>> 0;\n  return n;");
+  expect(js).toContain("  let n = 0;\n  each(() => {\n    n = (n + 1) >>> 0;\n  });\n  return n;");
+  expect(js).toContain("  let timeout;\n  listen((n) => {\n    timeout = n;\n  });\n  return () => timeout;");
+  expect(js).toContain("  const n = { value: 1 };\n  n.value = 2;\n  return n;");
+  const lib = await import(join(dir, "lib.js"));
+  let listener: (n: number) => void = () => {};
+  const read = lib.shared((f: (n: number) => void) => { listener = f; });
+  const before = read();
+  listener(7);
+  expect([lib.local(), lib.counted((f: () => void) => { f(); f(); }), before, read(), lib.escaping().value]).toEqual([2, 2, undefined, 7, 2]);
+});

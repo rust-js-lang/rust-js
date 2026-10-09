@@ -341,7 +341,7 @@ test("async code becomes async functions and await", async () => {
   expect(fetchJs).toContain('const URL = "data:text/plain,Hello from a fetch!";');
   expect(fetchJs).toContain("    load(URL, output);\n");
   // `spawn(Box::new(async move { .. }))` is the promise, unawaited.
-  expect(countdown).toContain("    (async () => {\n      await count_down(output, 3);\n      running$1.value = false;\n    })();");
+  expect(countdown).toContain("    (async () => {\n      await count_down(output, 3);\n      running = false;\n    })();");
 });
 
 // ADRs 0032 and 0044: the playground is Rust, React components one per file,
@@ -704,7 +704,7 @@ test("options are the value or undefined", async () => {
   // writes it;
   expect(js).toContain("  const h = half(n);\n  if (h != null && h !== 0) {\n    const q = counted(h);\n    if (q != null && q > 1) {\n      v = q;\n    } else {\n      v = 0;\n    }\n  } else {\n    v = 0;\n  }");
   // a longer one after both, in a block the `then` leaves.
-  expect(js).toContain("  chain: {\n    const h = half(n);\n    if (h != null) {\n      const q = counted(h);\n      if (q != null && q > 1) {\n        return q;\n      }\n    }\n    calls.value = (calls.value + 10) | 0;\n    return -calls.value | 0;\n  }");
+  expect(js).toContain("  chain: {\n    const h = half(n);\n    if (h != null) {\n      const q = counted(h);\n      if (q != null && q > 1) {\n        return q;\n      }\n    }\n    calls = (calls + 10) | 0;\n    return -calls | 0;\n  }");
   expect([options.chained_long_else(8), options.chained_long_else(4), options.chained_long_else(3)]).toEqual([2, -11, -10]);
   // A closure of statements is called, by a name.
   expect(js).toContain("  const counted = h != null ? map(h) : undefined;");

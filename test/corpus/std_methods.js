@@ -48,7 +48,7 @@ function main() {
   const old$1 = b;
   b = 5;
   const old$2 = old$1;
-  let slot = undefined;
+  let slot;
   const slot$1 = { value: slot };
   const result = swap_in(slot$1, "x");
   slot = slot$1.value;

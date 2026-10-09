@@ -18,10 +18,10 @@ export function mutable(button) {
 }
 
 export function shared_mutable(button) {
-  const count = { value: 0 };
+  let count = 0;
   const callback = () => {
-    count.value = (count.value + 1) | 0;
-    globalThis.record(count.value);
+    count = (count + 1) | 0;
+    globalThis.record(count);
   };
   button.addEventListener("click", callback);
   button.addEventListener("click", callback);

@@ -14,8 +14,7 @@ export function ResultFrame({ program, onOutcome }) {
   useEffect(() => {
     const controller = new AbortController();
     if (tmp[0] > 0) {
-      const reported = { value: false };
-      const heard = reported;
+      let reported = false;
       const told = onOutcome;
       listen(
         window,
@@ -43,7 +42,7 @@ export function ResultFrame({ program, onOutcome }) {
           }
           const outcome = outcome$1(report);
           if (outcome != null) {
-            heard.value = true;
+            reported = true;
             told(outcome);
           }
         },
@@ -52,7 +51,7 @@ export function ResultFrame({ program, onOutcome }) {
       const signal = controller.signal;
       const silent = onOutcome;
       setTimeout(() => {
-        if (!signal.aborted && !reported.value) {
+        if (!signal.aborted && !reported) {
           silent("Silent");
         }
       }, 3000);

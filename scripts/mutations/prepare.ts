@@ -170,4 +170,12 @@ export const mutations: Mutation[] = [
     replace: "                        if js::is_handler_name(name) {\n",
     tests: ["test/lowering.test.ts", "-t", "only a DOM element"],
   },
+  {
+    name: "let-undefined-kept",
+    breaks: "a `let` that starts `undefined` says so, `let timeout = undefined;`",
+    file: "src/prepare.rs",
+    find: "            && value.as_ref().is_some_and(|v| matches!(v.kind, ExprKind::Undefined))\n",
+    replace: "            && false\n",
+    tests: ["test/lowering.test.ts", "-t", "cell only its function"],
+  },
 ];

@@ -37,7 +37,7 @@ function main() {
   name += " lovelace";
   name = name.toUpperCase();
   console.log(`${name}`);
-  let o = undefined;
+  let o;
   o = 4;
   if (o != null) {
     o = (o + 1) >>> 0;

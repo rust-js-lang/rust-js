@@ -664,10 +664,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if matches!(self.thir[u].kind, ExprKind::Borrow { .. }) {
             return false;
         }
-        let Some(var) = self.body_query().root_var(u).and_then(|id| self.locals.vars.get(&id)) else {
+        let Some(id) = self.body_query().root_var(u) else {
             return false;
         };
-        var.mutable && !self.only_use(u)
+        let Some(var) = self.locals.vars.get(&id) else {
+            return false;
+        };
+        // A cell that's its function's variable is shared by what captures
+        // it, as the cell was (ADR 0287).
+        var.mutable && !self.only_use(u) && !self.krate.plain_cells.contains_key(&id)
     }
 
     /// Is `e` its variable's only use, outside any loop the variable isn't

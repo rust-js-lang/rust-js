@@ -264,6 +264,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             self.keep_chain(var, init);
         }
+        // A cell that's its function's variable (ADR 0287): `let n = 0` of
+        // what it starts as, and a clone of it the same variable.
+        if let PatKind::Binding {
+            name,
+            var,
+            mode: BindingMode(ByRef::No, _),
+            subpattern: None,
+            ..
+        } = pat.kind
+            && let Some(&first) = self.krate.plain_cells.get(&var)
+            && let Some(init) = init
+        {
+            if first != var
+                && let Some(place) = self.locals.vars.get(&first).map(|v| v.place.clone())
+            {
+                let depth = self.loops.len();
+                self.locals.vars.insert(
+                    var,
+                    Var {
+                        place,
+                        mutable: true,
+                        depth,
+                    },
+                );
+                return Ok(());
+            }
+            if let Some(start) = self.cell_start(init) {
+                let value = self.expr(start, out)?;
+                let name = self.bind(var, name.as_str(), true);
+                out.push(StmtKind::Let(name, Some(value)).at(self.js_span(span)));
+                return Ok(());
+            }
+        }
         // A local that `it.next()` steps through: what knows where it is,
         // `$iter(v)` or `Iterator.from(it)` (ADR 0071).
         if let PatKind::Binding {

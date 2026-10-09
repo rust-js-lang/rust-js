@@ -1,11 +1,11 @@
 //! What changes a place: `Cell`s, atomics, thread-locals, and `mem::drop` and `forget` (ADRs 0025, 0074, 0098).
 
 use super::calls::{Call, apply};
-use super::recognition::Std;
-use super::{FnCx, R};
+use super::recognition::{CellUse, Std, cell_use};
+use super::{FnCx, R, fn_def};
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
 use crate::runtime::Helper;
-use rustc_middle::thir::{ExprId, ExprKind};
+use rustc_middle::thir::{ExprId, ExprKind, LocalVarId};
 use rustc_middle::ty::{self};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -30,11 +30,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::CellNew => Expr::object(vec![Prop::Field("value".into(), arg())]),
             // A thread-local that's its module's `let` is what it holds
             // (ADR 0270).
-            Std::CellGet if self.plain_local(args[0]) => self.copy_if_needed(arg(), generic_args.type_at(0)),
+            // So is a cell that's its function's `let` (ADR 0287).
+            Std::CellGet if self.plain_local(args[0]) || self.plain_cell(args[0]).is_some() => {
+                self.copy_if_needed(arg(), generic_args.type_at(0))
+            }
             Std::CellGet => self.copy_if_needed(Expr::member(arg(), "value"), generic_args.type_at(0)),
             Std::CellSet => {
                 let (cell, value) = (arg(), arg());
-                let place = if self.plain_local(args[0]) {
+                let place = if self.plain_local(args[0]) || self.plain_cell(args[0]).is_some() {
                     cell
                 } else {
                     Expr::member(cell, "value")
@@ -191,6 +194,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => return Ok(None),
         }))
+    }
+
+    /// The cell `e` reads, through `&`, `*` and an `Rc`'s deref, if it's its
+    /// function's variable (ADR 0287): the clone it's of, or itself.
+    pub(super) fn plain_cell(&self, mut e: ExprId) -> Option<LocalVarId> {
+        loop {
+            e = self.strip(e);
+            match self.thir[e].kind {
+                ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => e = arg,
+                ExprKind::Call { fun, ref args, .. }
+                    if fn_def(self.thir[fun].ty).and_then(|(id, a)| cell_use(self.tcx, id, a))
+                        == Some(CellUse::Deref) =>
+                {
+                    e = args[0]
+                }
+                ExprKind::VarRef { id } => return self.krate.plain_cells.get(&id).copied(),
+                ExprKind::UpvarRef { var_hir_id, .. } => return self.krate.plain_cells.get(&var_hir_id).copied(),
+                _ => return None,
+            }
+        }
+    }
+
+    /// What a cell that's its function's variable starts as: `x` of
+    /// `Cell::new(x)` or `Rc::new(Cell::new(x))` (ADR 0287).
+    pub(super) fn cell_start(&self, init: ExprId) -> Option<ExprId> {
+        let mut e = self.strip(init);
+        loop {
+            let ExprKind::Call { fun, ref args, .. } = self.thir[e].kind else {
+                return None;
+            };
+            match fn_def(self.thir[fun].ty).and_then(|(id, a)| cell_use(self.tcx, id, a)) {
+                Some(CellUse::Shared) => e = self.strip(args[0]),
+                Some(CellUse::New) => return Some(args[0]),
+                _ => return None,
+            }
+        }
     }
 
     /// Is `key`, `&KEY`, a thread-local that's its module's `let` (ADR 0270)?

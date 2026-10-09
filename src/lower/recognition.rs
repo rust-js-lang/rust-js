@@ -3175,6 +3175,51 @@ pub(crate) fn is_from_str(tcx: TyCtxt<'_>, id: DefId) -> bool {
         && std_path(tcx, id).ends_with("str::FromStr")
 }
 
+/// What a std function does with a `Cell`, of those a cell that's its
+/// function's variable is used by (ADR 0287).
+#[derive(Clone, Copy, PartialEq)]
+pub(super) enum CellUse {
+    /// `Cell::new(x)`.
+    New,
+    /// `c.get()`.
+    Get,
+    /// `c.set(x)`.
+    Set,
+    /// `Rc::new(c)`, which shares it.
+    Shared,
+    /// `rc.clone()`, another `Rc` of it.
+    Cloned,
+    /// `*rc`, the cell an `Rc` holds.
+    Deref,
+}
+
+/// What `id`, called with `args`, does with a `Cell` (ADR 0287), if it's
+/// one of [`CellUse`]'s.
+pub(super) fn cell_use<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<CellUse> {
+    let rc = |ty: Ty<'tcx>| {
+        matches!(ty.kind(), ty::Adt(adt, _)
+            if tcx.is_diagnostic_item(sym::Rc, adt.did()) || tcx.is_diagnostic_item(sym::Arc, adt.did()))
+    };
+    if let Some(tr) = tcx.trait_of_assoc(id) {
+        let shared = args.types().next().is_some_and(rc);
+        return match () {
+            _ if shared && tcx.is_lang_item(tr, LangItem::Clone) => Some(CellUse::Cloned),
+            _ if shared && tcx.is_lang_item(tr, LangItem::Deref) => Some(CellUse::Deref),
+            _ => None,
+        };
+    }
+    let imp = tcx.inherent_impl_of_assoc(id)?;
+    let owner = tcx.type_of(imp).instantiate_identity().skip_normalization();
+    let ty::Adt(adt, _) = owner.kind() else { return None };
+    match tcx.item_name(id).as_str() {
+        "new" if rc(owner) => Some(CellUse::Shared),
+        "new" if is_std_def(tcx, adt.did(), StdItem::Cell) => Some(CellUse::New),
+        "get" if is_std_def(tcx, adt.did(), StdItem::Cell) => Some(CellUse::Get),
+        "set" if is_std_def(tcx, adt.did(), StdItem::Cell) => Some(CellUse::Set),
+        _ => None,
+    }
+}
+
 /// Is `id` a thread-local's `get`, `set`, `with_borrow` or
 /// `with_borrow_mut`, which only reads or sets what it holds (ADR 0270)?
 /// `Some(true)` of `set`, which sets it.

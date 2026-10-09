@@ -24,7 +24,7 @@ use naming::{exported_across_modules, js_uses, name_imports, name_items};
 use rustc_hir::def::DefKind;
 use rustc_hir::find_attr;
 use rustc_middle::mir::BorrowKind;
-use rustc_middle::thir::ExprKind;
+use rustc_middle::thir::{ExprKind, LocalVarId};
 use rustc_middle::ty;
 use rustc_middle::ty::{Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::Symbol;
@@ -157,6 +157,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// The thread-locals that are their module's variable, each whether it's
     /// set, a `let` (ADR 0270).
     pub plain_locals: HashMap<LocalDefId, bool>,
+    /// The cells that are their function's variable, each to the one it's a
+    /// clone of, or itself (ADR 0287).
+    pub plain_cells: HashMap<LocalVarId, LocalVarId>,
 }
 
 pub(super) fn analyze_crate<'a, 'tcx>(
@@ -282,6 +285,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         .collect();
 
     let plain_locals = plain_locals::plain_thread_locals(tcx, all_bodies, thread_local_inits.values().copied());
+    let plain_cells = plain_locals::plain_cells(tcx, all_bodies);
 
     // A derived `Serialize`'s `serialize` and `Deserialize`'s `deserialize`,
     // which rust-js writes (ADRs 0077 and 0078).
@@ -375,6 +379,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         pretty_debug,
         format_options,
         plain_locals,
+        plain_cells,
     })
 }
 

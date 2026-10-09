@@ -5,14 +5,14 @@ function main() {
   const add = (x) => (x + base) | 0;
   const add2 = add;
   console.log(`${add(1)} ${add2(2)}`);
-  const count = { value: 0 };
+  let count = 0;
   const counter = () => {
-    count.value = (count.value + 1) | 0;
+    count = (count + 1) | 0;
   };
   const counter2 = counter;
   counter();
   counter2();
-  console.log(`${count.value}`);
+  console.log(`${count}`);
 }
 
 export function entry() {

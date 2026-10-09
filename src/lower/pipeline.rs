@@ -68,6 +68,7 @@ pub fn lower_crate<'tcx>(
         pretty_debug,
         format_options,
         plain_locals,
+        plain_cells,
     } = analyze_crate(tcx, all_bodies, dependencies, export_library)?;
     // Each module's default export, which a module of the crate imports as
     // its default, not by a name of its own (ADR 0251).
@@ -189,6 +190,7 @@ pub fn lower_crate<'tcx>(
         pretty_debug,
         format_options,
         plain_locals: &plain_locals,
+        plain_cells: &plain_cells,
     };
     let mut work: Vec<(DefId, Option<&Body<'tcx>>)> = bodies
         .iter()

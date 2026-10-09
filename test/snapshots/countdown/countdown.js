@@ -23,16 +23,15 @@ export function main() {
   const start = document.createElement("button");
   start.textContent = "Start";
   const output = document.createElement("output");
-  const running = { value: false };
+  let running = false;
   start.addEventListener("click", () => {
-    if (running.value) {
+    if (running) {
       return;
     }
-    running.value = true;
-    const running$1 = running;
+    running = true;
     (async () => {
       await count_down(output, 3);
-      running$1.value = false;
+      running = false;
     })();
   });
   app.append(start);
