@@ -1,16 +1,16 @@
 //! What changes a place: `Cell`s, atomics, thread-locals, and `mem::drop` and `forget` (ADRs 0025, 0074, 0098).
 
-use super::calls::{Call, apply};
-use super::recognition::{CellUse, Std, cell_use};
-use super::{FnCx, R, fn_def};
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
+use crate::lower::calls::{Call, apply};
+use crate::lower::recognition::{CellUse, Std, cell_use};
+use crate::lower::{FnCx, R, fn_def};
 use crate::runtime::Helper;
 use rustc_middle::thir::{ExprId, ExprKind, LocalVarId};
 use rustc_middle::ty::{self};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What changes a place: `Cell`s, atomics, thread-locals, and `mem::drop` and `forget` (ADRs 0025, 0074, 0098): `None` if `known` is another.
-    pub(super) fn cell_call(
+    pub(in crate::lower) fn cell_call(
         &mut self,
         known: Std,
         call: Call<'_, 'tcx>,
@@ -181,7 +181,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Std::LocalWith => {
                 let (key, f) = (arg(), arg());
-                super::calls::apply_in(f, vec![key], out)
+                crate::lower::calls::apply_in(f, vec![key], out)
             }
             Std::LocalBorrow => {
                 let (key, f) = (arg(), arg());
@@ -198,7 +198,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The cell `e` reads, through `&`, `*` and an `Rc`'s deref, if it's its
     /// function's variable (ADR 0287): the clone it's of, or itself.
-    pub(super) fn plain_cell(&self, mut e: ExprId) -> Option<LocalVarId> {
+    pub(in crate::lower) fn plain_cell(&self, mut e: ExprId) -> Option<LocalVarId> {
         loop {
             e = self.strip(e);
             match self.thir[e].kind {
@@ -218,7 +218,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// What a cell that's its function's variable starts as: `x` of
     /// `Cell::new(x)` or `Rc::new(Cell::new(x))` (ADR 0287).
-    pub(super) fn cell_start(&self, init: ExprId) -> Option<ExprId> {
+    pub(in crate::lower) fn cell_start(&self, init: ExprId) -> Option<ExprId> {
         let mut e = self.strip(init);
         loop {
             let ExprKind::Call { fun, ref args, .. } = self.thir[e].kind else {

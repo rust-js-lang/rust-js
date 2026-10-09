@@ -5,11 +5,11 @@ pub(super) mod registry;
 
 use super::combinators::{Comb, HeapOp, IterComb, IterSource, StepOp};
 use super::format_spec::Radix;
-use super::maps::{MapOp, Part};
-use super::numbers::{DurationOp, NumOp};
-use super::ranges::{RangeKind, RangeOp};
 use super::representation::Num;
-use super::text::{StringEdit, TextOp};
+use super::std_types::map::{MapOp, Part};
+use super::std_types::number::{DurationOp, NumOp};
+use super::std_types::range::{RangeKind, RangeOp};
+use super::std_types::text::{StringEdit, TextOp};
 use rustc_ast::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;

@@ -1,18 +1,18 @@
 //! An `Option`'s or a `Result`'s method, and `bool::then` (ADRs 0030, 0062).
 
-use super::calls::Call;
-use super::patterns::same_place;
-use super::recognition::Std;
-use super::{FnCx, R};
 use crate::js;
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
+use crate::lower::calls::Call;
+use crate::lower::patterns::same_place;
+use crate::lower::recognition::Std;
+use crate::lower::{FnCx, R};
 use crate::runtime::Helper;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// An `Option`'s or a `Result`'s method, and `bool::then` (ADRs 0030, 0062): `None` if `known` is another.
-    pub(super) fn option_call(
+    pub(in crate::lower) fn option_call(
         &mut self,
         known: Std,
         call: Call<'_, 'tcx>,
@@ -155,12 +155,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // By a function giving each variant its own name, the option
                 // itself: `section.map(Section::as_str)` is `section` (ADR 0264).
                 // So by a binding that's the value itself, `map(js::unknown)`.
-                if let Some((function, _)) = super::fn_def(self.thir[args[1]].ty)
+                if let Some((function, _)) = crate::lower::fn_def(self.thir[args[1]].ty)
                     && (self.gives_own_name(function)
-                        || super::bindings::is_binding(self.tcx, function)
+                        || crate::lower::bindings::is_binding(self.tcx, function)
                             && matches!(
-                                super::bindings::js_form(self.tcx, function),
-                                super::bindings::JsForm::This
+                                crate::lower::bindings::js_form(self.tcx, function),
+                                crate::lower::bindings::JsForm::This
                             ))
                     && !self.boxed_payload(generic_args.type_at(0))
                     && !self.boxed_payload(generic_args.type_at(1))
@@ -317,14 +317,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `Some` of `items[index]`, or `None` if there's none (ADR 0051).
-    pub(super) fn some_at(&mut self, items: Expr, index: Expr) -> Expr {
+    pub(in crate::lower) fn some_at(&mut self, items: Expr, index: Expr) -> Expr {
         self.runtime.insert(Helper::SomeAt);
         Expr::call(Expr::var("$someAt"), vec![items, index])
     }
 
     /// `Some(value)` of what could look like `None` (ADR 0051): `$some(value)`,
     /// or a literal itself where it can't, as `$some(4)` is `4`.
-    pub(super) fn some(&mut self, value: Expr) -> Expr {
+    pub(in crate::lower) fn some(&mut self, value: Expr) -> Expr {
         let nullish = matches!(value.kind, js::ExprKind::Undefined | js::ExprKind::Null);
         let literal = matches!(
             value.kind,
@@ -339,7 +339,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// An `Option<T>`'s items, as its `iter()` gives them (ADR 0128):
     /// `option == null ? [] : [option]`.
-    pub(super) fn option_items(&mut self, option: Expr, item: Ty<'tcx>, out: &mut Vec<Stmt>) -> Expr {
+    pub(in crate::lower) fn option_items(&mut self, option: Expr, item: Ty<'tcx>, out: &mut Vec<Stmt>) -> Expr {
         let option = if option.reads_same() {
             option
         } else {
@@ -358,7 +358,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// What's in an `Option` of a generic `T` (ADR 0051): `$someValue(option)`.
-    pub(super) fn some_value(&mut self, option: Expr) -> Expr {
+    pub(in crate::lower) fn some_value(&mut self, option: Expr) -> Expr {
         self.runtime.insert(Helper::SomeValue);
         Expr::call(Expr::var("$someValue"), vec![option])
     }
@@ -366,7 +366,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
 /// `Some` of a constant, as `$some` makes it (ADR 0051): itself, or a box
 /// where it looks like `None`, `{ $someNone: 0 }`, one deeper for a box.
-pub(super) fn some_literal(inner: Expr) -> Expr {
+pub(in crate::lower) fn some_literal(inner: Expr) -> Expr {
     let depth = match &inner.kind {
         js::ExprKind::Undefined | js::ExprKind::Null => 0,
         js::ExprKind::Object(props) => match props.as_slice() {
@@ -383,7 +383,7 @@ pub(super) fn some_literal(inner: Expr) -> Expr {
 
 /// Is `value` the box of a `Some` that looks like `None` (ADR 0051), not
 /// what's in one: `value.$someNone !== undefined`.
-pub(super) fn is_some_box(value: Expr) -> Expr {
+pub(in crate::lower) fn is_some_box(value: Expr) -> Expr {
     Expr::bin(Op::Ne, Expr::member(value, "$someNone"), Expr::undefined())
 }
 
@@ -391,7 +391,7 @@ pub(super) fn is_some_box(value: Expr) -> Expr {
 /// undefined`, or `a || ` such text: `E` whose `E || d`
 /// is the option's `?? d`, as JS's text is falsy only where it's empty
 /// (ADR 0266). Its type says it's text: an empty array is truthy.
-pub(super) fn text_or(option: &Expr) -> Option<Expr> {
+pub(in crate::lower) fn text_or(option: &Expr) -> Option<Expr> {
     if let js::ExprKind::Binary(Op::Or, first, rest) = &option.kind {
         return Some(Expr::bin(Op::Or, (**first).clone(), text_or(rest)?));
     }
@@ -408,7 +408,7 @@ pub(super) fn text_or(option: &Expr) -> Option<Expr> {
 /// `e?.[1] ?? d`, which end where `e` is `None` and give `d` (ADR 0309).
 /// Its test is whether `m` is there, `m != null`, or `!!m` of a value
 /// never falsy: of text, `!!m` is also whether it isn't empty.
-pub(super) fn nullish_or(
+pub(in crate::lower) fn nullish_or(
     m: &str,
     option: &Expr,
     test: &Expr,
@@ -482,7 +482,7 @@ fn truthy_of(test: &Expr) -> Option<&Expr> {
 /// it: `filter(..).unwrap_or(d)` is `x != null && keep ? x : d`. A
 /// conditional of another `Option`, `c ? maybe() : undefined`, isn't one:
 /// its `maybe()` may be `None`.
-pub(super) fn filtered(option: &Expr) -> Option<(Expr, Expr)> {
+pub(in crate::lower) fn filtered(option: &Expr) -> Option<(Expr, Expr)> {
     let js::ExprKind::Cond(test, value, none) = &option.kind else {
         return None;
     };
@@ -506,10 +506,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether an `Option<ty>`'s value is never falsy in JS, an object, an
     /// array or a function, so its truth is whether it's there (ADR 0298).
     /// Not a binding's `unknown` or `any`, which may be `0` or `""`.
-    pub(super) fn never_falsy(&self, ty: Ty<'tcx>) -> bool {
+    pub(in crate::lower) fn never_falsy(&self, ty: Ty<'tcx>) -> bool {
         let ty = ty.peel_refs();
         let any = matches!(ty.kind(), ty::Adt(adt, _)
-            if matches!(super::declarations::written_types(self.tcx, adt.did()).as_deref(), Some("unknown" | "any")));
+            if matches!(crate::lower::declarations::written_types(self.tcx, adt.did()).as_deref(), Some("unknown" | "any")));
         self.option_of(ty).is_none()
             && !any
             && (self.is_object(ty) || matches!(ty.kind(), ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..)))
@@ -517,7 +517,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether an `Option<ty>` is `Some`: `o != null`, or `!!o` of a value
     /// never falsy, which a test reads as `o` (ADR 0298).
-    pub(super) fn present(&self, option: Expr, ty: Ty<'tcx>) -> Expr {
+    pub(in crate::lower) fn present(&self, option: Expr, ty: Ty<'tcx>) -> Expr {
         match self.never_falsy(ty) {
             true => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, option)),
             false => Expr::bin(Op::LooseNe, option, Expr::null()),
@@ -525,7 +525,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether it's `None`: `o == null`, or `!o`.
-    pub(super) fn absent(&self, option: Expr, ty: Ty<'tcx>) -> Expr {
+    pub(in crate::lower) fn absent(&self, option: Expr, ty: Ty<'tcx>) -> Expr {
         match self.never_falsy(ty) {
             true => Expr::unary(UnaryOp::Not, option),
             false => Expr::bin(Op::LooseEq, option, Expr::null()),

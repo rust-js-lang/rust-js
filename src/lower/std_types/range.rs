@@ -2,10 +2,10 @@
 //! and so is `a..=b`; `a..` is `{ start: a }`. Iterated, a range is its
 //! items: an array, or for `a..`, which never ends, a JS iterator.
 
-use super::display::{Pretty, join};
-use super::representation::Num;
-use super::{FnCx, R};
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
+use crate::lower::display::{Pretty, join};
+use crate::lower::representation::Num;
+use crate::lower::{FnCx, R};
 use crate::runtime::Helper;
 use rustc_middle::thir::ExprId;
 use rustc_middle::ty::{self, Ty};
@@ -13,7 +13,7 @@ use rustc_span::Span;
 
 /// Which of std's ranges a type is.
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub(super) enum RangeKind {
+pub(in crate::lower) enum RangeKind {
     /// `a..b`
     Exclusive,
     /// `a..=b`
@@ -30,7 +30,7 @@ pub(super) enum RangeKind {
 
 impl RangeKind {
     /// Its bounds, by the names of its fields.
-    pub(super) fn bounds(self) -> &'static [&'static str] {
+    pub(in crate::lower) fn bounds(self) -> &'static [&'static str] {
         match self {
             RangeKind::Exclusive | RangeKind::Inclusive => &["start", "end"],
             RangeKind::From => &["start"],
@@ -50,7 +50,7 @@ impl RangeKind {
 
 /// A range method rust-js knows.
 #[derive(Clone, Copy, PartialEq)]
-pub(super) enum RangeOp {
+pub(in crate::lower) enum RangeOp {
     /// `RangeInclusive::new(a, b)`, which `a..=b` is: `{ start: a, end: b }`.
     New,
     /// `r.contains(&x)`: `r.start <= x && x < r.end`.
@@ -71,7 +71,7 @@ pub(super) enum RangeOp {
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What a range's bounds are: the `u32` of a `Range<u32>`.
-    pub(super) fn range_index(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    pub(in crate::lower) fn range_index(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         match ty.kind() {
             ty::Adt(_, args) => args.types().next(),
             _ => None,
@@ -80,7 +80,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The bounds of `{ start: a, end: b }` itself, if each reads the same
     /// wherever it's read.
-    pub(super) fn range_literal_parts(&self, range: &Expr, kind: RangeKind) -> Option<Vec<Expr>> {
+    pub(in crate::lower) fn range_literal_parts(&self, range: &Expr, kind: RangeKind) -> Option<Vec<Expr>> {
         let js::ExprKind::Object(props) = &range.kind else {
             return None;
         };
@@ -101,7 +101,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A range's bounds, each to be read once or more: from `{ start: a,
     /// end: b }` itself, or from the range, a `const` first if reading it
     /// again would differ.
-    pub(super) fn range_parts(&mut self, range: Expr, kind: RangeKind, out: &mut Vec<Stmt>) -> Vec<Expr> {
+    pub(in crate::lower) fn range_parts(&mut self, range: Expr, kind: RangeKind, out: &mut Vec<Stmt>) -> Vec<Expr> {
         if let Some(parts) = self.range_literal_parts(&range, kind) {
             return parts;
         }
@@ -118,7 +118,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A range's items: `$range(r.start, r.end)`, `$range(a, b + 1)` of
     /// `a..=b`, and `$rangeFrom(a)` of `a..`, a JS iterator that never ends.
-    pub(super) fn range_items(&mut self, range: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+    pub(in crate::lower) fn range_items(
+        &mut self,
+        range: Expr,
+        ty: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
         let kind = self.range_kind(ty).expect("a range");
         let index = self.range_index(ty);
         if index.is_some_and(|index| index.is_char()) && matches!(kind, RangeKind::Exclusive | RangeKind::Inclusive) {
@@ -158,7 +164,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `{:?}` of a range: its bounds', around its dots, `1..4` or `..=4`.
-    pub(super) fn range_debug(&mut self, range: Expr, ty: Ty<'tcx>, span: Span, pretty: &Pretty) -> R<Expr> {
+    pub(in crate::lower) fn range_debug(&mut self, range: Expr, ty: Ty<'tcx>, span: Span, pretty: &Pretty) -> R<Expr> {
         let kind = self.range_kind(ty).expect("a range");
         let index = self.range_index(ty);
         let shown = |this: &mut Self, parts: Vec<Expr>| -> R<Expr> {
@@ -190,7 +196,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(self.applied(f, range))
     }
 
-    pub(super) fn range_call(&mut self, op: RangeOp, args: &[ExprId], span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+    pub(in crate::lower) fn range_call(
+        &mut self,
+        op: RangeOp,
+        args: &[ExprId],
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
         if op == RangeOp::New {
             let values = self.operands(args, out)?;
             let props = ["start", "end"]

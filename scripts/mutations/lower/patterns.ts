@@ -475,7 +475,7 @@ export const mutations: Mutation[] = [
     name: "filter-option-in-const",
     breaks: "`let Some(href) = href.filter(..)` keeps `const href$1 = href != null && .. ? href : undefined`",
     file: "src/lower/patterns.rs",
-    find: "let (test, kept) = super::options::filtered(value)?;",
+    find: "let (test, kept) = super::std_types::option::filtered(value)?;",
     replace: "let (test, kept) = None::<(Expr, Expr)>?;",
     tests: ["test/lowering.test.ts", "-t", "let-else of an Option's filter"],
   },

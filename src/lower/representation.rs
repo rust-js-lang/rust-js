@@ -699,7 +699,7 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
             let variant = adt.variant(index.try_to_leaf()?.to_u32().into());
             if tcx.is_lang_item(adt.did(), LangItem::Option) {
                 return match fields.first() {
-                    Some(&inner) => const_js(tcx, inner).map(super::options::some_literal),
+                    Some(&inner) => const_js(tcx, inner).map(super::std_types::option::some_literal),
                     None => Some(Expr::undefined()),
                 };
             }

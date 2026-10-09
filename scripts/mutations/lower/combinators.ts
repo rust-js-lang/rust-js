@@ -182,8 +182,8 @@ export const mutations: Mutation[] = [
     name: "kept-text-or-coalesced",
     breaks: "text kept where it isn't empty, or another option, is `const option = ..; option ?? ..`, not `title || other`",
     file: "src/lower/combinators.rs",
-    find: "&& let Some(text) = super::options::text_or(&subject)",
-    replace: "&& let Some(text) = super::options::text_or(&subject).filter(|_| false)",
+    find: "&& let Some(text) = super::std_types::option::text_or(&subject)",
+    replace: "&& let Some(text) = super::std_types::option::text_or(&subject).filter(|_| false)",
     tests: ["test/lowering.test.ts", "-t", "text kept where it isn't empty"],
   },
   {

@@ -1,11 +1,11 @@
-// Mutations of src/lower/options.rs (ADR 0093).
-import type { Mutation } from "../../mutations";
+// Mutations of src/lower/std_types/option.rs (ADR 0093).
+import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "flatten-unboxed",
     breaks: "`Some(None).flatten()` is the box `Some(None)` is, not `None`",
-    file: "src/lower/options.rs",
+    file: "src/lower/std_types/option.rs",
     find: "            Std::OptionFlatten => self.some_value(arg()),",
     replace: "            Std::OptionFlatten => arg(),",
     tests: ["test/corpus.test.ts", "-t", "nested_options"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "some-literal-boxed",
     breaks: "`Some(Some(4))` is `$some(4)`: right, but not the JS a person writes",
-    file: "src/lower/options.rs",
+    file: "src/lower/std_types/option.rs",
     find: "        if (value.is_constant() && !nullish) || literal {",
     replace: "        if false && ((value.is_constant() && !nullish) || literal) {",
     tests: ["test/corpus.test.ts", "-t", "nested_options"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
   {
     name: "some-undefined-folded",
     breaks: "`Some(None)` is `undefined`, folded as a literal, and reads as `None`",
-    file: "src/lower/options.rs",
+    file: "src/lower/std_types/option.rs",
     find: "        if (value.is_constant() && !nullish) || literal {",
     replace: "        if value.is_constant() || literal {",
     tests: ["test/corpus.test.ts", "-t", "nested_options"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
   {
     name: "unwrap-untyped-debug",
     breaks: "`unwrap()` of an `Err` of an enum shows `{ TAG: \"Missing\", .. }`, not `Missing { .. }`",
-    file: "src/lower/options.rs",
+    file: "src/lower/std_types/option.rs",
     find: "        let peeled = ty.peel_refs();\n        if peeled.is_integral()",
     replace: "        let peeled = ty.peel_refs();\n        if true || peeled.is_integral()",
     tests: ["test/corpus.test.ts", "-t", "unwrap_typed_debug"],
@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
   {
     name: "unwrap-debug-wrapped",
     breaks: "`unwrap()`'s debug is `(e) => stockErrorDebug_fmt(e)`, not the function itself",
-    file: "src/lower/options.rs",
+    file: "src/lower/std_types/option.rs",
     find: "                if matches!(callee.kind, js::ExprKind::Var(_))",
     replace: "                if false && matches!(callee.kind, js::ExprKind::Var(_))",
     tests: ["test/corpus.test.ts", "-t", "unwrap_typed_debug"],
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
   {
     name: "filter-map-unfused",
     breaks: "`excerpt.filter(..).map(..)` keeps the filter's `Option` in a `const`, which pulls what JSX reads before it out of the JSX",
-    file: "src/lower/options.rs",
+    file: "src/lower/std_types/option.rs",
     find: "                    false => filtered(&option),\n",
     replace: "                    false => None,\n",
     tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
   {
     name: "filter-unwrap-or-unfused",
     breaks: "`n.filter(|n| *n > 0).unwrap_or(1)` is `(n != null && n > 0 ? n : undefined) ?? 1`, not `n != null && n > 0 ? n : 1`",
-    file: "src/lower/options.rs",
+    file: "src/lower/std_types/option.rs",
     find: "                } else if let Some((kept, value)) = filtered(&option) {\n",
     replace: "                } else if let Some((kept, value)) = None::<(Expr, Expr)> {\n",
     tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
   {
     name: "map-field-spilled",
     breaks: "`p.title.map(|t| ..)` reads `p.title` into a `const t` first, where a field of a plain value is read as it is",
-    file: "src/lower/options.rs",
+    file: "src/lower/std_types/option.rs",
     find: "                            js::ExprKind::Member(object, _) if matches!(&object.kind, js::ExprKind::Var(name) if self.plain_value(name)) => {",
     replace: "                            js::ExprKind::Member(object, _) if false && matches!(&object.kind, js::ExprKind::Var(name) if self.plain_value(name)) => {",
     tests: [
@@ -75,7 +75,7 @@ export const mutations: Mutation[] = [
   {
     name: "kept-text-default-coalesced",
     breaks: "text kept where it isn't empty, or a default, is a conditional and `??`, not `title || \"\"`",
-    file: "src/lower/options.rs",
+    file: "src/lower/std_types/option.rs",
     find: "} else if let Some(text) = text_or(&option) {",
     replace: "} else if let Some(text) = text_or(&option).filter(|_| false) {",
     tests: ["test/lowering.test.ts", "-t", "text kept where it isn't empty"],
@@ -83,7 +83,7 @@ export const mutations: Mutation[] = [
   {
     name: "text-or-chain-unread",
     breaks: "`a || ` kept text, or a default, is `(a || ..) ?? \"\"`, not one `||` chain",
-    file: "src/lower/options.rs",
+    file: "src/lower/std_types/option.rs",
     find: "return Some(Expr::bin(Op::Or, (**first).clone(), text_or(rest)?));",
     replace: "return None;",
     tests: ["test/lowering.test.ts", "-t", "text kept where it isn't empty"],
@@ -91,7 +91,7 @@ export const mutations: Mutation[] = [
   {
     name: "own-name-map-called",
     breaks: "an option mapped by a function giving each variant its own name, `section.map(Section::as_str)`, is a conditional of a call, not `section`",
-    file: "src/lower/options.rs",
+    file: "src/lower/std_types/option.rs",
     find: "                    && (self.gives_own_name(function)\n",
     replace: "                    && (false && self.gives_own_name(function)\n",
     tests: ["test/lowering.test.ts", "-t", "enum's own names"],
@@ -99,7 +99,7 @@ export const mutations: Mutation[] = [
   {
     name: "text-or-of-truthy-unseen",
     breaks: "`filter(nonempty).unwrap_or(d)` of text is `!!x ? x : d`, not `x || d`",
-    file: "src/lower/options.rs",
+    file: "src/lower/std_types/option.rs",
     find: "    let tested = truthy_of(test)?;\n",
     replace: "    let tested = truthy_of(test).filter(|_| false)?;\n",
     tests: ["test/lowering.test.ts", "-t", "text kept where it isn't empty"],
@@ -107,7 +107,7 @@ export const mutations: Mutation[] = [
   {
     name: "filtered-of-truthy-unseen",
     breaks: "a `filter` of text's emptiness isn't fused: `const option` of it, then its test",
-    file: "src/lower/options.rs",
+    file: "src/lower/std_types/option.rs",
     find: "        _ => truthy_of(present)?,\n",
     replace: "        _ => None?,\n",
     tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
@@ -115,7 +115,7 @@ export const mutations: Mutation[] = [
   {
     name: "getter-option-chain-spilled",
     breaks: "`first_element_child(p).map(|c| id(c))` is `const child = ..; child?.id`, not `p.firstElementChild?.id`",
-    file: "src/lower/options.rs",
+    file: "src/lower/std_types/option.rs",
     find: "                            && let Some(chain) = optional_chain(&option, b, p)\n",
     replace: "                            && let Some(chain) = optional_chain(&option, b, p).filter(|_| false)\n",
     tests: ["test/lowering.test.ts", "-t", "mapped to a property is an optional chain"],
@@ -123,15 +123,15 @@ export const mutations: Mutation[] = [
   {
     name: "map-of-value-itself-called",
     breaks: "`text.map(js::unknown)` is `text != null ? text : undefined`, not `text`",
-    file: "src/lower/options.rs",
-    find: "                        || super::bindings::is_binding(self.tcx, function)\n",
-    replace: "                        || false && super::bindings::is_binding(self.tcx, function)\n",
+    file: "src/lower/std_types/option.rs",
+    find: "                        || crate::lower::bindings::is_binding(self.tcx, function)\n",
+    replace: "                        || false && crate::lower::bindings::is_binding(self.tcx, function)\n",
     tests: ["test/compiler.test.ts", "-t", "string functions are JS's"],
   },
   {
     name: "unwrap-unchecked-unboxed",
     breaks: "`unwrap_unchecked()` of an `Option<Option<T>>` is the box, so `Some(None)` unwrapped is `{ ... }`, not `undefined`",
-    file: "src/lower/options.rs",
+    file: "src/lower/std_types/option.rs",
     find: "                let value = arg();\n                if self.boxed_payload(generic_args.type_at(0)) {\n                    self.some_value(value)",
     replace: "                let value = arg();\n                if false {\n                    self.some_value(value)",
     tests: ["test/lowering.test.ts", "-t", "unwrap_unchecked is the value"],
@@ -139,7 +139,7 @@ export const mutations: Mutation[] = [
   {
     name: "truthy-everything",
     breaks: "an Option of a number or a string is tested by its truth, so `Some(0)` and `Some(\"\")` count as `None`",
-    file: "src/lower/options.rs",
+    file: "src/lower/std_types/option.rs",
     find: "        self.option_of(ty).is_none()\n            && !any\n",
     replace: "        true || self.option_of(ty).is_none()\n            && !any\n",
     tests: ["test/lowering.test.ts", "-t", "an Option of an object is tested by its truth"],
@@ -147,7 +147,7 @@ export const mutations: Mutation[] = [
   {
     name: "truthy-nothing",
     breaks: "an Option of an object is tested against null, `error != null && ..`, where the original writes `error && ..`",
-    file: "src/lower/options.rs",
+    file: "src/lower/std_types/option.rs",
     find: "        self.option_of(ty).is_none()\n            && !any\n",
     replace: "        false && self.option_of(ty).is_none()\n            && !any\n",
     tests: ["test/lowering.test.ts", "-t", "an Option of an object is tested by its truth"],
@@ -155,7 +155,7 @@ export const mutations: Mutation[] = [
   {
     name: "truthy-unknown",
     breaks: "an Option of a JS value of unknown kind is tested by its truth, so `Some(\"\")` counts as `None`",
-    file: "src/lower/options.rs",
+    file: "src/lower/std_types/option.rs",
     find: "            && !any\n",
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "an Option of an object is tested by its truth"],
@@ -163,7 +163,7 @@ export const mutations: Mutation[] = [
   {
     name: "truthy-map-explicit",
     breaks: "`error.map(..)` tests `error != null` where the original tests `error`",
-    file: "src/lower/options.rs",
+    file: "src/lower/std_types/option.rs",
     find: "                        let present = self.present(option.clone(), generic_args.type_at(0));",
     replace: "                        let present = Expr::bin(Op::LooseNe, option.clone(), Expr::null());",
     tests: ["test/lowering.test.ts", "-t", "an Option of an object is tested by its truth"],
@@ -171,7 +171,7 @@ export const mutations: Mutation[] = [
   {
     name: "nullish-part-kept",
     breaks: "a part of an option or a default is `m ? m[1] : d` of a `const m`, not `e?.[1] ?? d`",
-    file: "src/lower/options.rs",
+    file: "src/lower/std_types/option.rs",
     find: "        _ if part_never_nullish => optional_part(yes, m, option)?,\n",
     replace: "",
     tests: ["test/lowering.test.ts","-t","only gives a value"],
@@ -179,7 +179,7 @@ export const mutations: Mutation[] = [
   {
     name: "nullish-text-truthy",
     breaks: "`!!code` of text, which is also whether it isn't empty, is taken as whether it's there: `code ?? null` keeps `\"\"`",
-    file: "src/lower/options.rs",
+    file: "src/lower/std_types/option.rs",
     find: "        _ if never_falsy => truthy_of(test)?,\n",
     replace: "        _ => truthy_of(test)?,\n",
     tests: ["test/lowering.test.ts", "-t", "nullable field's None is null"],

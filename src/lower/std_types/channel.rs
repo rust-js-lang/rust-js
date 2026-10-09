@@ -1,15 +1,15 @@
 //! A channel on one thread, `mpsc::channel()`: a queue its two ends share
 //! (ADR 0142).
 
-use super::calls::Call;
-use super::recognition::{ChannelOp, Std};
-use super::{FnCx, R};
 use crate::js::{Expr, Stmt};
+use crate::lower::calls::Call;
+use crate::lower::recognition::{ChannelOp, Std};
+use crate::lower::{FnCx, R};
 use crate::runtime::Helper;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A channel's call (ADR 0142): `None` if `known` is another.
-    pub(super) fn channel_call(
+    pub(in crate::lower) fn channel_call(
         &mut self,
         known: Std,
         _call: Call<'_, 'tcx>,

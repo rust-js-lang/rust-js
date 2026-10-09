@@ -95,7 +95,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return once(place, &|o| {
                         let mut none = Expr::bin(Op::LooseEq, o.clone(), Expr::null());
                         if boxed {
-                            none = Expr::bin(Op::Or, none, super::options::is_some_box(o.clone()));
+                            none = Expr::bin(Op::Or, none, super::std_types::option::is_some_box(o.clone()));
                         }
                         Expr::cond(none, o.clone(), self.copy(o, item))
                     });

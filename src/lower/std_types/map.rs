@@ -2,11 +2,11 @@
 //! what JS compares by value: numbers, strings, `char`s, `bool`s and
 //! fieldless enums.
 
-use super::fn_def;
-use super::recognition::{Std, StdItem};
-use super::representation::{Num, is_fieldless_enum};
-use super::{FnCx, R};
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
+use crate::lower::fn_def;
+use crate::lower::recognition::{Std, StdItem};
+use crate::lower::representation::{Num, is_fieldless_enum};
+use crate::lower::{FnCx, R};
 use crate::runtime::Helper;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::thir::{ExprId, ExprKind};
@@ -15,7 +15,7 @@ use rustc_span::Span;
 
 /// A `HashMap` or `HashSet` method rust-js knows.
 #[derive(Clone, Copy, PartialEq)]
-pub(super) enum MapOp {
+pub(in crate::lower) enum MapOp {
     /// `HashMap::new()`, `new Map()`, and `HashSet::new()`, `new Set()`.
     New {
         set: bool,
@@ -51,7 +51,7 @@ pub(super) enum MapOp {
 
 /// What an iterator of a map goes over.
 #[derive(Clone, Copy, PartialEq)]
-pub(super) enum Part {
+pub(in crate::lower) enum Part {
     Entries,
     Keys,
     Values,
@@ -59,14 +59,14 @@ pub(super) enum Part {
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A `BTreeMap` or `BTreeSet`, whose order is its keys' (ADR 0059).
-    pub(super) fn is_sorted(&self, ty: Ty<'tcx>) -> bool {
+    pub(in crate::lower) fn is_sorted(&self, ty: Ty<'tcx>) -> bool {
         let ty = ty.peel_refs();
         self.is_std_type(ty, StdItem::BTreeMap) || self.is_std_type(ty, StdItem::BTreeSet) || self.is_json_map(ty)
     }
 
     /// What goes over a map or a set, in order: `m` itself for a hashed one,
     /// whose order is arbitrary, and `$sortedEntries(m, $cmp)` for a B-tree.
-    pub(super) fn in_order_of(&mut self, map: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub(in crate::lower) fn in_order_of(&mut self, map: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let ty = ty.peel_refs();
         let ty::Adt(_, args) = ty.kind() else { return Ok(map) };
         if !self.is_sorted(ty) {
@@ -85,7 +85,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What makes a map or a set of `key`s: `Map` and `Set`, or for a key
     /// that compares by value, `$KeyMap` and `$KeySet` (ADR 0121). One of no
     /// key type, serde_json's `Map`, is of strings.
-    pub(super) fn map_class(&mut self, set: bool, key: Option<Ty<'tcx>>) -> Expr {
+    pub(in crate::lower) fn map_class(&mut self, set: bool, key: Option<Ty<'tcx>>) -> Expr {
         let by_value = key.is_some_and(|key| self.is_value_key(key) && !self.is_js_key(key));
         let (helper, name) = match (set, by_value) {
             (false, false) => return Expr::var("Map"),
@@ -112,7 +112,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A call of one of `op`'s kind. `discarded`: its result isn't used, so
     /// `insert` is plain `m.set(k, v)`.
-    pub(super) fn map_call(
+    pub(in crate::lower) fn map_call(
         &mut self,
         op: MapOp,
         args: &[ExprId],
@@ -247,7 +247,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `*m.entry(k).or_insert(0) += 1`, or `*m.get_mut(&k).unwrap() = v`: a
     /// value in a map, written. `None` if `e` isn't one.
-    pub(super) fn map_slot(&self, e: ExprId) -> Option<ExprId> {
+    pub(in crate::lower) fn map_slot(&self, e: ExprId) -> Option<ExprId> {
         let ExprKind::Deref { arg } = self.thir[self.strip(e)].kind else {
             return None;
         };
@@ -267,7 +267,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Resolve a map target before writing it. Checks and entry initialization
     /// are statements, so overwriting the value cannot discard their effects.
-    pub(super) fn prepare_map_place(
+    pub(in crate::lower) fn prepare_map_place(
         &mut self,
         slot: ExprId,
         read: bool,
@@ -348,7 +348,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Eligibility for JS Map/Set equality. A string-shaped enum alone is
     /// not enough: user equality or ordering may equate distinct variants.
-    pub(super) fn is_key(&self, ty: Ty<'tcx>, ordered: bool) -> bool {
+    pub(in crate::lower) fn is_key(&self, ty: Ty<'tcx>, ordered: bool) -> bool {
         let peeled = ty.peel_refs();
         let primitive = !peeled.is_unit()
             && !Num::of(peeled).is_some_and(Num::float)
@@ -361,7 +361,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A key a `$KeyMap` finds by its value (ADR 0121): one that isn't its
     /// own JS key, and that a derived `Eq` compares field by field, as `$eq`
     /// and `$key` do.
-    pub(super) fn is_value_key(&self, ty: Ty<'tcx>) -> bool {
+    pub(in crate::lower) fn is_value_key(&self, ty: Ty<'tcx>) -> bool {
         let ty = ty.peel_refs();
         !ty.is_unit() && !self.is_primitive_key(ty) && self.compares_by_value(ty, &mut Vec::new())
     }
@@ -369,7 +369,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A key a JS `Map` finds as Rust does: a primitive one (ADR 0059), or
     /// an `Option` of one, `undefined` or the value (ADR 0030). One found by
     /// value that's one of these needs no `$KeyMap`.
-    pub(super) fn is_js_key(&self, ty: Ty<'tcx>) -> bool {
+    pub(in crate::lower) fn is_js_key(&self, ty: Ty<'tcx>) -> bool {
         let ty = ty.peel_refs();
         self.is_primitive_key(ty)
             || self.option_of(ty).is_some_and(|inner| {
@@ -378,14 +378,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
     }
 
-    pub(super) fn is_primitive_key(&self, ty: Ty<'tcx>) -> bool {
+    pub(in crate::lower) fn is_primitive_key(&self, ty: Ty<'tcx>) -> bool {
         self.is_string_like(ty)
             || Num::of(ty).is_some()
             || ty.is_bool()
             || matches!(ty.kind(), ty::Adt(adt, _) if is_fieldless_enum(*adt))
     }
 
-    pub(super) fn compares_by_value(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
+    pub(in crate::lower) fn compares_by_value(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
         let ty = ty.peel_refs();
         if seen.contains(&ty) {
             return true;
@@ -414,18 +414,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
 /// An already evaluated target. Its checks have run even when no old value
 /// is needed. Emission of the write never evaluates the Rust target again.
-pub(super) struct MapPlace {
+pub(in crate::lower) struct MapPlace {
     map: Expr,
     key: Expr,
     current: Option<Expr>,
 }
 
 impl MapPlace {
-    pub(super) fn read(&self) -> Expr {
+    pub(in crate::lower) fn read(&self) -> Expr {
         self.current.clone().expect("prepared for a read")
     }
 
-    pub(super) fn write(self, value: Expr, span: js::Span, out: &mut Vec<Stmt>) {
+    pub(in crate::lower) fn write(self, value: Expr, span: js::Span, out: &mut Vec<Stmt>) {
         out.push(StmtKind::Expr(Expr::call(Expr::member(self.map, "set"), vec![self.key, value])).at(span));
     }
 }

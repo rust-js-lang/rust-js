@@ -1323,7 +1323,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if held != name {
             return None;
         }
-        let (test, kept) = super::options::filtered(value)?;
+        let (test, kept) = super::std_types::option::filtered(value)?;
         out.pop();
         Some((test, kept, &field.pattern))
     }
@@ -1585,7 +1585,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some((name, option)) = option
             && yes.statements.is_empty()
             && no.statements.is_empty()
-            && let Some(nullish) = super::options::nullish_or(
+            && let Some(nullish) = super::std_types::option::nullish_or(
                 &name,
                 &option,
                 &test,

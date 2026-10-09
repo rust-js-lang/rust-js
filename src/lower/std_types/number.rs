@@ -4,13 +4,13 @@
 //! Rust's answer differs from JS's (`round` of a half, `pow` past 2^53),
 //! a helper gives Rust's.
 
-use super::calls::Call;
-use super::discriminants;
-use super::recognition::{Std, TypeFact};
-use super::representation::{Num, is_fieldless_enum};
-use super::{FnCx, R};
 use crate::js::StmtKind;
 use crate::js::{self, Expr, Op, Prop, Stmt, UnaryOp};
+use crate::lower::calls::Call;
+use crate::lower::discriminants;
+use crate::lower::recognition::{Std, TypeFact};
+use crate::lower::representation::{Num, is_fieldless_enum};
+use crate::lower::{FnCx, R};
 use crate::runtime::Helper;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::mir::{AssignOp, BinOp, UnOp};
@@ -21,7 +21,7 @@ use rustc_span::Span;
 /// A `Duration`'s own, of its nanoseconds, a BigInt (ADR 0188): each unit
 /// by how many nanoseconds it has.
 #[derive(Clone, Copy, PartialEq)]
-pub(super) enum DurationOp {
+pub(in crate::lower) enum DurationOp {
     /// `Duration::new(secs, nanos)`, which panics past `MAX`.
     New,
     /// `from_secs` and the like.
@@ -41,7 +41,7 @@ pub(super) enum DurationOp {
 }
 
 #[derive(Clone, Copy, PartialEq)]
-pub(super) enum NumOp {
+pub(in crate::lower) enum NumOp {
     /// The same in JS: `Math.floor(x)`, `Math.atan2(y, x)`.
     Math(&'static str),
     Abs,
@@ -238,7 +238,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `std::num::Wrapping`'s operator (ADR 0175): its number's, in its `[x]`,
     /// as release Rust wraps it; a shift's amount masked to the width, as
     /// `wrapping_shl` masks it; `a += b` a new `[x]` for `a`'s place.
-    pub(super) fn wrapping_op(
+    pub(in crate::lower) fn wrapping_op(
         &mut self,
         op: Result<BinOp, UnOp>,
         assign: bool,
@@ -283,7 +283,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `a op rhs` of a `Wrapping`'s number `a`, its `inner`: the result's
     /// number. `rhs` is another `Wrapping`, or a shift's `usize` amount,
     /// which the number's shift masks to its width, as `wrapping_shl` does.
-    pub(super) fn wrapping_result(&mut self, op: BinOp, a: Expr, rhs: Expr, inner: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub(in crate::lower) fn wrapping_result(
+        &mut self,
+        op: BinOp,
+        a: Expr,
+        rhs: Expr,
+        inner: Ty<'tcx>,
+        span: Span,
+    ) -> R<Expr> {
         let rhs = match op {
             BinOp::Shl | BinOp::Shr => rhs,
             _ => Expr::index(rhs, Expr::int(0)),
@@ -291,7 +298,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.binary(op, a, rhs, None, inner, span)
     }
 
-    pub(super) fn number_call(
+    pub(in crate::lower) fn number_call(
         &mut self,
         op: NumOp,
         args: &[ExprId],
@@ -869,7 +876,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `known` is `r`'s value, when rustc knows it and the JS doesn't show
     /// it: a named `const` (ADR 0031).
-    pub(super) fn binary(
+    pub(in crate::lower) fn binary(
         &mut self,
         op: BinOp,
         l: Expr,
@@ -996,7 +1003,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// An `i64`'s or a `u64`'s operator (ADR 0086): exact on BigInts, then
     /// wrapped. A quotient needs no wrap, but can panic as Rust's does.
-    pub(super) fn big_binary(
+    pub(in crate::lower) fn big_binary(
         &mut self,
         op: BinOp,
         l: Expr,
@@ -1043,17 +1050,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A shift of a narrower integer by an `i64` or a `u64`: the amount a
     /// number, `Number(n & 63n)`, as JS won't shift a number by a BigInt.
     /// 63 keeps every width's own mask, which the shift then applies.
-    pub(super) fn shift_amount(&self, op: BinOp, r: Expr, lhs: ExprId, rhs: ExprId) -> Expr {
+    pub(in crate::lower) fn shift_amount(&self, op: BinOp, r: Expr, lhs: ExprId, rhs: ExprId) -> Expr {
         shift_amount_of(op, r, self.thir[lhs].ty, self.thir[rhs].ty)
     }
 
-    pub(super) fn bitwise(&self, op: Op, l: Expr, r: Expr, num: Num) -> Expr {
+    pub(in crate::lower) fn bitwise(&self, op: Op, l: Expr, r: Expr, num: Num) -> Expr {
         // JS bitwise ops return signed 32-bit results; only u32 needs fixing.
         let e = Expr::bin(op, l, r);
         if num == Num::U32 { num.wrap(e) } else { e }
     }
 
-    pub(super) fn unary(&mut self, op: UnOp, a: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub(in crate::lower) fn unary(&mut self, op: UnOp, a: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         match op {
             UnOp::Not if ty.is_bool() => Ok(Expr::unary(UnaryOp::Not, a)),
             UnOp::Not => {
@@ -1081,7 +1088,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    pub(super) fn cast(&mut self, v: Expr, from: Ty<'tcx>, to: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub(in crate::lower) fn cast(&mut self, v: Expr, from: Ty<'tcx>, to: Ty<'tcx>, span: Span) -> R<Expr> {
         let target = self.num(to, span)?;
         if from.is_bool() && !target.float() {
             return Ok(Expr::cond(v, target.literal(1), target.literal(0)));
@@ -1205,13 +1212,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
-pub(super) fn mask_shift(r: Expr, num: Num) -> Expr {
+pub(in crate::lower) fn mask_shift(r: Expr, num: Num) -> Expr {
     Expr::bin(Op::BitAnd, r, Expr::num(num.bits() - 1))
 }
 
 /// `shift_amount`, by the two types: a trait's, `Shl<i64>` of a `u32`, where
 /// there are no expressions, as in a dictionary (ADR 0108).
-pub(super) fn shift_amount_of<'tcx>(op: BinOp, r: Expr, lhs: Ty<'tcx>, rhs: Ty<'tcx>) -> Expr {
+pub(in crate::lower) fn shift_amount_of<'tcx>(op: BinOp, r: Expr, lhs: Ty<'tcx>, rhs: Ty<'tcx>) -> Expr {
     let big = |ty: Ty<'tcx>| Num::of(ty.peel_refs()).is_some_and(Num::big);
     if !matches!(op, BinOp::Shl | BinOp::Shr) || big(lhs) || !big(rhs) {
         return r;
@@ -1223,7 +1230,7 @@ pub(super) fn shift_amount_of<'tcx>(op: BinOp, r: Expr, lhs: Ty<'tcx>, rhs: Ty<'
 }
 
 /// `BigInt(x)`, or of a literal, the BigInt literal.
-pub(super) fn to_bigint(e: Expr) -> Expr {
+pub(in crate::lower) fn to_bigint(e: Expr) -> Expr {
     match e.as_int() {
         Some(n) => Expr::bigint(n),
         None => Expr::call(Expr::var("BigInt"), vec![e]),
@@ -1232,7 +1239,7 @@ pub(super) fn to_bigint(e: Expr) -> Expr {
 
 /// A 64-bit or 128-bit shift's amount: masked to 63 or 127, as release
 /// Rust masks it, as a BigInt, `BigInt(n) & 63n`.
-pub(super) fn big_shift(r: Expr, num: Num) -> Expr {
+pub(in crate::lower) fn big_shift(r: Expr, num: Num) -> Expr {
     let mask = i128::from(num.bits()) - 1;
     match r.as_int().or_else(|| r.as_bigint()) {
         Some(n) => Expr::bigint(n & mask),
@@ -1243,7 +1250,7 @@ pub(super) fn big_shift(r: Expr, num: Num) -> Expr {
 /// `x + y` of `BigInt.asUintN(64, x + y)`: what's added, subtracted,
 /// multiplied or shifted left needn't be wrapped itself, as the result is,
 /// modulo the same 2^64, so `a + b + c` is wrapped once.
-pub(super) fn unwrapped(e: Expr) -> Expr {
+pub(in crate::lower) fn unwrapped(e: Expr) -> Expr {
     if let js::ExprKind::Call(callee, args) = &e.kind
         && let js::ExprKind::Member(object, name) = &callee.kind
         && matches!(&object.kind, js::ExprKind::Var(v) if v == "BigInt")
@@ -1257,14 +1264,14 @@ pub(super) fn unwrapped(e: Expr) -> Expr {
 }
 
 /// The mask of `x & 1023n`, which keeps it from 0 to 1023.
-pub(super) fn masked(e: &Expr) -> Option<i128> {
+pub(in crate::lower) fn masked(e: &Expr) -> Option<i128> {
     match &e.kind {
         js::ExprKind::Binary(Op::BitAnd, a, b) => b.as_bigint().or_else(|| a.as_bigint()),
         _ => None,
     }
 }
 
-pub(super) fn assign_op(op: AssignOp) -> BinOp {
+pub(in crate::lower) fn assign_op(op: AssignOp) -> BinOp {
     match op {
         AssignOp::AddAssign => BinOp::Add,
         AssignOp::SubAssign => BinOp::Sub,
@@ -1281,7 +1288,7 @@ pub(super) fn assign_op(op: AssignOp) -> BinOp {
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A number's conversion, comparison, operator or size (ADRs 0011, 0057): `None` if `known` is another.
-    pub(super) fn numeric_call(
+    pub(in crate::lower) fn numeric_call(
         &mut self,
         known: Std,
         call: Call<'_, 'tcx>,
@@ -1378,7 +1385,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
                 // A `NonZero`'s, an error of `0` (ADR 0177), its message as the
                 // others' is.
-                match super::recognition::is_non_zero_ty(target) {
+                match crate::lower::recognition::is_non_zero_ty(target) {
                     true => {
                         self.runtime.insert(Helper::NonZeroOk);
                         Expr::call(
@@ -1425,7 +1432,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (l, r) = (arg(), arg());
                 // `a << &n` of an `i64` `n`: its type, the trait's `Rhs`.
                 let r = match generic_args.types().nth(1) {
-                    Some(rhs) => super::numbers::shift_amount_of(op, r, ty, rhs),
+                    Some(rhs) => crate::lower::std_types::number::shift_amount_of(op, r, ty, rhs),
                     None => r,
                 };
                 self.binary(op, l, r, None, ty, span)?
@@ -1470,7 +1477,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A fact of `of` (ADR 0145): its size or alignment, as rustc works it out
     /// for the wasm32 target, or its name; of a type parameter, the one this
     /// function was given for it.
-    pub(super) fn type_fact_value(&self, of: Ty<'tcx>, fact: TypeFact, span: Span) -> R<Expr> {
+    pub(in crate::lower) fn type_fact_value(&self, of: Ty<'tcx>, fact: TypeFact, span: Span) -> R<Expr> {
         let (what, known) = match fact {
             TypeFact::Size => ("size_of", Std::SizeOf),
             TypeFact::Align => ("align_of", Std::AlignOf),
@@ -1494,7 +1501,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// The bytes `size_of`, `align_of` or `size_of_val` gives for `of`.
-    pub(super) fn layout_bytes(&self, known: Std, of: Ty<'tcx>, span: Span) -> R<i128> {
+    pub(in crate::lower) fn layout_bytes(&self, known: Std, of: Ty<'tcx>, span: Span) -> R<i128> {
         let name = match known {
             Std::SizeOf => "size_of",
             Std::AlignOf => "align_of",

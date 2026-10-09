@@ -6,10 +6,10 @@ use super::combinators::StepOp;
 use super::display::append_written;
 use super::drops::Drops;
 use super::fn_def;
-use super::numbers::NumOp;
 use super::recognition::{
     Catching, FmtResultAnswer, Std, StdItem, StreamOp, TypeFact, fmt_result_answer, is_std_def, std_item, trait_method,
 };
+use super::std_types::number::NumOp;
 use super::{Dest, FnCx, R};
 use crate::js;
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind, UnaryOp};

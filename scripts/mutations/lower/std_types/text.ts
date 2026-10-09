@@ -1,11 +1,11 @@
-// Mutations of src/lower/text.rs (ADR 0093).
-import type { Mutation } from "../../mutations";
+// Mutations of src/lower/std_types/text.rs (ADR 0093).
+import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "replacen-any-count",
     breaks: "`replacen(p, r, 2)` is JS's `replace`, of the first only",
-    file: "src/lower/text.rs",
+    file: "src/lower/std_types/text.rs",
     find: "                    if !matches!(rest[2].kind, js::ExprKind::Num(n) if n == 1.0) {",
     replace: "                    if false {",
     tests: ["test/diagnostics.test.ts", "-t", "replacen"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "replacen-count-given",
     breaks: "`replacen`'s count is given to JS's `replace`, which takes none",
-    file: "src/lower/text.rs",
+    file: "src/lower/std_types/text.rs",
     find: "                    rest.truncate(2);\n",
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "a replacement is the text it is"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "replacement-read-as-pattern",
     breaks: "a replacement's `$&` is what's matched, as JS reads a string's, not the text Rust has",
-    file: "src/lower/text.rs",
+    file: "src/lower/std_types/text.rs",
     find: '                if matches!(name, "replaceAll" | "replace") {\n                    rest[1] = replacement(rest[1].clone());',
     replace: '                if false {\n                    rest[1] = replacement(rest[1].clone());',
     tests: ["test/lowering.test.ts", "-t", "a replacement is the text it is"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "replacement-literal-as-function",
     breaks: "a replacement written out is a function's, `() => 'b'`, where a person writes `'b'`",
-    file: "src/lower/text.rs",
+    file: "src/lower/std_types/text.rs",
     find: "        js::ExprKind::Str(text) => Expr::str(text.replace('$', \"$$\")),\n",
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "a replacement is the text it is"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "as-bytes-utf16",
     breaks: "`s.as_bytes()` is each UTF-16 unit, `é` one byte where UTF-8 has two",
-    file: "src/lower/text.rs",
+    file: "src/lower/std_types/text.rs",
     find: "                Expr::call(Expr::member(Expr::var(\"Array\"), \"from\"), vec![encoded])\n            }",
     replace: "                let _ = encoded;\n                Expr::call(Expr::member(Expr::var(\"Array\"), \"from\"), vec![arg(), Expr::arrow(vec![\"c\".into()], vec![crate::js::StmtKind::Return(Some(Expr::call(Expr::member(Expr::var(\"c\"), \"charCodeAt\"), vec![Expr::int(0)]))).at(crate::js::Span::NONE)])])\n            }",
     tests: ["test/corpus.test.ts","-t","byte_strings"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-to-inclusive-end-dropped",
     breaks: "`&v[..=1]` stops before index 1",
-    file: "src/lower/text.rs",
+    file: "src/lower/std_types/text.rs",
     find: "                    (RangeKind::ToInclusive, [end]) => (Expr::int(0), Some(past(end))),",
     replace: "                    (RangeKind::ToInclusive, [end]) => (Expr::int(0), Some(end.clone())),",
     tests: ["test/corpus.test.ts","-t","range_values"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "str-full-slice-checked",
     breaks: "`&s[..]` of a string is checked by `$strSlice`: right, but not the JS a person writes",
-    file: "src/lower/text.rs",
+    file: "src/lower/std_types/text.rs",
     find: "        if matches!(op, TextOp::StrSlice | TextOp::StrGet) && start.is_none() && end.is_none() {",
     replace: "        if false {",
     tests: ["test/corpus.test.ts", "-t", "string_bytes"],
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
   {
     name: "ascii-whitespace-js",
     breaks: "`split_ascii_whitespace` splits at JS's `\\s`, a vertical tab and Unicode spaces too",
-    file: "src/lower/text.rs",
+    file: "src/lower/std_types/text.rs",
     find: "Expr::regex(\"/[\\\\t\\\\n\\\\f\\\\r ]+/\")",
     replace: "Expr::regex(\"/\\\\s+/\")",
     tests: ["test/corpus.test.ts", "-t", "text_predicates"],
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
   {
     name: "char-set-not-predicate",
     breaks: "a set of `char`s as a pattern is given as the array, which isn't called",
-    file: "src/lower/text.rs",
+    file: "src/lower/std_types/text.rs",
     find: "            && item.is_char()\n",
     replace: "            && !item.is_char()\n",
     tests: ["test/corpus.test.ts", "-t", "text_predicates"],
@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
   {
     name: "parse-skips-user-from-str",
     breaks: "`s.parse::<Role>()` of a type's own `FromStr` is an error",
-    file: "src/lower/text.rs",
+    file: "src/lower/std_types/text.rs",
     find: "        if let Some(from_str) = self.recognition().std_from_str()\n",
     replace: "        if let Some(from_str) = self.recognition().std_from_str().filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "user_from_str"],
@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
   {
     name: "parse-generic-target-refused",
     breaks: "`s.parse::<T>()` of a generic `T: FromStr` is an error, its dictionary unused",
-    file: "src/lower/text.rs",
+    file: "src/lower/std_types/text.rs",
     find: "            && (matches!(target.kind(), ty::Param(_)) || self.has_user_impl(from_str, target))",
     replace: "            && self.has_user_impl(from_str, target)",
     tests: ["test/corpus.test.ts", "-t", "generic_from_str"],
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-last-keeps-last",
     breaks: "`split_last()`'s rest keeps the last item too",
-    file: "src/lower/text.rs",
+    file: "src/lower/std_types/text.rs",
     find: "vec![Expr::int(0), Expr::int(-1)],",
     replace: "vec![Expr::int(0)],",
     tests: ["test/corpus.test.ts", "-t", "^slice_split.rs"],
@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-whitespace-js-s",
     breaks: "`split_whitespace()` splits by JS's `\\s`, at U+FEFF too, where Rust's whitespace is Unicode's `White_Space`",
-    file: "src/lower/text.rs",
+    file: "src/lower/std_types/text.rs",
     find: "                let words = method(arg(), \"split\", vec![Expr::regex(\"/\\\\p{White_Space}+/u\")]);",
     replace: "                let words = method(arg(), \"split\", vec![Expr::regex(\"/\\\\s+/\")]);",
     tests: ["test/compiler.test.ts", "-t", "chars, parse and slices are plain JS with Rust's answers"],

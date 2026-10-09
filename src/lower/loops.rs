@@ -3,9 +3,9 @@
 use super::body_queries::ForLoop;
 use super::combinators::IterSource;
 use super::drops::Drops;
-use super::ranges::RangeKind;
 use super::recognition::{StdItem, std_item, trait_method};
 use super::representation::Num;
+use super::std_types::range::RangeKind;
 use super::{Dest, FnCx, Loop, R, Std, Var, fresh_in, is_enumerate_pair, std_impls, without_refs};
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use crate::runtime::Helper;

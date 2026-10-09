@@ -1,11 +1,11 @@
-// Mutations of src/lower/numbers.rs (ADR 0093).
-import type { Mutation } from "../../mutations";
+// Mutations of src/lower/std_types/number.rs (ADR 0093).
+import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "f32-arithmetic-unrounded",
     breaks: "an `f32`'s `+` is a double's, which may be no `f32` at all: ten tenths are 1.0000000149011612",
-    file: "src/lower/numbers.rs",
+    file: "src/lower/std_types/number.rs",
     find: "            return Ok(if num == Num::F32 && op != BinOp::Rem {\n                num.wrap(e)\n",
     replace: "            return Ok(if false {\n                num.wrap(e)\n",
     tests: ["test/corpus.test.ts", "-t", "f32\\.rs"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "big-to-f32-through-f64",
     breaks: "`n as f32` of a `u64` is rounded to an `f64` first, and then can't be told from a tie",
-    file: "src/lower/numbers.rs",
+    file: "src/lower/std_types/number.rs",
     find: '                Ok(Expr::call(Expr::var("$bigToF32"), vec![v]))',
     replace: '                Ok(target.wrap(Expr::call(Expr::var("Number"), vec![v])))',
     tests: ["test/corpus.test.ts", "-t", "f32\\.rs"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "powi-f32-rounded-once",
     breaks: "`x.powi(n)` of an `f32` multiplies as doubles, where compiler-rt rounds each product",
-    file: "src/lower/numbers.rs",
+    file: "src/lower/std_types/number.rs",
     find: "            NumOp::Powi if num == Num::F32 =>",
     replace: "            NumOp::Powi if false && num == Num::F32 =>",
     tests: ["test/corpus.test.ts", "-t", "f32\\.rs"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "exp2-is-exp",
     breaks: "`x.exp2()` is `e ** x`",
-    file: "src/lower/numbers.rs",
+    file: "src/lower/std_types/number.rs",
     find: "            NumOp::Exp2 => rounded(Expr::bin(Op::Pow, Expr::num(2.0), arg())),",
     replace: "            NumOp::Exp2 => rounded(Expr::bin(Op::Pow, Expr::num(std::f64::consts::E), arg())),",
     tests: ["test/corpus.test.ts","-t","std_methods"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "size-align-swap",
     breaks: "`align_of` is the type's size",
-    file: "src/lower/numbers.rs",
+    file: "src/lower/std_types/number.rs",
     find: "        let bytes = if matches!(known, Std::AlignOf) {\n            layout.align.abi.bytes()",
     replace: "        let bytes = if matches!(known, Std::AlignOf) {\n            layout.size.bytes()",
     tests: ["test/corpus.test.ts", "-t", "size_of\\.rs"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "layout-in-function-environment",
     breaks: "`size_of_val` of a generic `async fn`'s future is laid out in the function's environment, where 1.98 finds it too generic, and is refused",
-    file: "src/lower/numbers.rs",
+    file: "src/lower/std_types/number.rs",
     find: "            .layout_of(ty::TypingEnv::fully_monomorphized().as_query_input(of))\n",
     replace: "            .layout_of(self.typing_env.as_query_input(of))\n",
     tests: ["test/corpus.test.ts","-t","future_sizes"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "type-name-unerased",
     breaks: "`type_name` names the type as written, `Vec<Option<&str>>`, not rustc's paths",
-    file: "src/lower/numbers.rs",
+    file: "src/lower/std_types/number.rs",
     find: "        Ok(Expr::str(rustc_const_eval::util::type_name(self.tcx, of)))",
     replace: "        Ok(Expr::str(of.to_string()))",
     tests: ["test/corpus.test.ts", "-t", "std_odds"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "signed-remainder-negative-zero",
     breaks: "`-2 % 2` of an `i32` is JS's `-0`, which an `f64` of it shows as `-0.0`",
-    file: "src/lower/numbers.rs",
+    file: "src/lower/std_types/number.rs",
     find: "                if op == BinOp::Rem && safe && num.signed() {",
     replace: "                if op == BinOp::Rem && safe && num.signed() && false {",
     tests: ["test/corpus.test.ts", "-t", "remainder_sign"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "compared-remainder-zero-sign",
     breaks: "a signed remainder compared keeps its `| 0`, `((x % 2) | 0) === 0`, where `x % 2 === 0` is the same",
-    file: "src/lower/numbers.rs",
+    file: "src/lower/std_types/number.rs",
     find: "            return Ok(Expr::bin(js_op, without_zero_sign(l), without_zero_sign(r)));",
     replace: "            return Ok(Expr::bin(js_op, l, r));",
     tests: ["test/compiler.test.ts", "-t", "iterators are array methods"],
@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
   {
     name: "float-signum-math-sign",
     breaks: "a float's `signum()` is JS's `Math.sign`, which gives 0 of 0, where Rust's gives 1",
-    file: "src/lower/numbers.rs",
+    file: "src/lower/std_types/number.rs",
     find: "            NumOp::Signum if num.float() => helper(self, Helper::FloatSignum, \"$signum\", vec![arg()]),",
     replace: "            NumOp::Signum if false && num.float() => helper(self, Helper::FloatSignum, \"$signum\", vec![arg()]),",
     tests: ["test/corpus.test.ts", "-t", "number_methods"],
@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
   {
     name: "midpoint-floor",
     breaks: "an integer's `midpoint` rounds down, where Rust's rounds toward zero: `(-7).midpoint(0)` is -4",
-    file: "src/lower/numbers.rs",
+    file: "src/lower/std_types/number.rs",
     find: "            NumOp::Midpoint => math(\n                \"trunc\",",
     replace: "            NumOp::Midpoint => math(\n                \"floor\",",
     tests: ["test/corpus.test.ts", "-t", "number_methods"],
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
   {
     name: "checked-shift-unchecked",
     breaks: "`checked_shl` past the width is the wrapped shift, not `None`",
-    file: "src/lower/numbers.rs",
+    file: "src/lower/std_types/number.rs",
     find: "                let fits = Expr::bin(Op::Lt, by.clone(), Expr::int(num.bits().into()));",
     replace: "                let fits = Expr::bool(true);",
     tests: ["test/corpus.test.ts", "-t", "integer_families"],
@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
   {
     name: "overflowing-neg-unsigned",
     breaks: "an unsigned `overflowing_neg` of 0 says it overflowed, and of anything else that it didn't",
-    file: "src/lower/numbers.rs",
+    file: "src/lower/std_types/number.rs",
     find: "                    Expr::bin(Op::Ne, x.clone(), Expr::int(0))",
     replace: "                    Expr::bin(Op::Eq, x.clone(), Expr::int(0))",
     tests: ["test/corpus.test.ts", "-t", "integer_families"],
@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
   {
     name: "rotate-signed-bits-unmasked",
     breaks: "a negative `i32`'s `rotate_left` rotates its JS number, not its 32 bits",
-    file: "src/lower/numbers.rs",
+    file: "src/lower/std_types/number.rs",
     find: "                    Num::I32 => Expr::bin(Op::UShr, arg(), Expr::int(0)),",
     replace: "                    Num::I32 => arg(),",
     tests: ["test/corpus.test.ts", "-t", "integer_bits"],
@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
   {
     name: "big-shift-masked-to-63",
     breaks: "a 128-bit shift's amount is masked to 63, `1u128 << 100` being `1 << 36`",
-    file: "src/lower/numbers.rs",
+    file: "src/lower/std_types/number.rs",
     find: "    let mask = i128::from(num.bits()) - 1;",
     replace: "    let mask = 63;",
     tests: ["test/corpus.test.ts", "-t", "integers_128"],
@@ -126,7 +126,7 @@ export const mutations: Mutation[] = [
   {
     name: "big-helpers-width-dropped",
     breaks: "a 128-bit `pow`, `leading_zeros` or `count_ones` counts 64 bits",
-    file: "src/lower/numbers.rs",
+    file: "src/lower/std_types/number.rs",
     find: "            if num.bits() == 128 {\n                list.push(Expr::int(128));",
     replace: "            if num.bits() == 0 {\n                list.push(Expr::int(128));",
     tests: ["test/corpus.test.ts", "-t", "integers_128"],
@@ -134,7 +134,7 @@ export const mutations: Mutation[] = [
   {
     name: "big-checked-shift-at-64",
     breaks: "a 128-bit `checked_shl` is `None` past 64",
-    file: "src/lower/numbers.rs",
+    file: "src/lower/std_types/number.rs",
     find: "                let fits = Expr::bin(Op::Lt, by.clone(), Expr::int(i128::from(num.bits())));",
     replace: "                let fits = Expr::bin(Op::Lt, by.clone(), Expr::int(64));",
     tests: ["test/corpus.test.ts", "-t", "integers_128"],
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
   {
     name: "f32-normal-by-f64",
     breaks: "an `f32`'s `is_normal()` is by an `f64`'s smallest normal",
-    file: "src/lower/numbers.rs",
+    file: "src/lower/std_types/number.rs",
     find: "                    Num::F32 => f64::from(f32::MIN_POSITIVE),",
     replace: "                    Num::F32 => f64::MIN_POSITIVE,",
     tests: ["test/corpus.test.ts", "-t", "float_normal"],
@@ -150,7 +150,7 @@ export const mutations: Mutation[] = [
   {
     name: "ascii-range-from-zero-open",
     breaks: "a byte's ASCII range from 0 leaves out its top, `is_ascii()` false of 127",
-    file: "src/lower/numbers.rs",
+    file: "src/lower/std_types/number.rs",
     find: "(0, _) => Expr::bin(Op::Le, b.clone(), int(hi)),",
     replace: "(0, _) => Expr::bin(Op::Lt, b.clone(), int(hi)),",
     tests: ["test/corpus.test.ts", "-t", "byte_ascii"],
@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
   {
     name: "ascii-upper-adds",
     breaks: "a byte's `to_ascii_uppercase()` moves a letter further from its case",
-    file: "src/lower/numbers.rs",
+    file: "src/lower/std_types/number.rs",
     find: "true => (b'a', b'z', Op::Sub),",
     replace: "true => (b'a', b'z', Op::Add),",
     tests: ["test/corpus.test.ts", "-t", "byte_ascii"],
@@ -166,7 +166,7 @@ export const mutations: Mutation[] = [
   {
     name: "powf-as-js-pow",
     breaks: "`1.0.powf(f64::INFINITY)` is NaN, as JS's `**` has it, where Rust's is 1",
-    file: "src/lower/numbers.rs",
+    file: "src/lower/std_types/number.rs",
     find: "                    _ => rounded(helper(self, Helper::Powf, \"$powf\", vec![a, b])),",
     replace: "                    _ => rounded(Expr::bin(Op::Pow, a, b)),",
     tests: ["test/corpus.test.ts", "-t", "matrix_floats"],
@@ -174,7 +174,7 @@ export const mutations: Mutation[] = [
   {
     name: "char-operator-by-units",
     breaks: "`c > '！'` of a `char` past U+FFFF is false, by UTF-16 units",
-    file: "src/lower/numbers.rs",
+    file: "src/lower/std_types/number.rs",
     find: "            && ty.is_char()\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "code_point_order"],
@@ -182,7 +182,7 @@ export const mutations: Mutation[] = [
   {
     name: "duration-subsec-whole",
     breaks: "`subsec_nanos()` is all of a `Duration`'s nanoseconds, not those under a second",
-    file: "src/lower/numbers.rs",
+    file: "src/lower/std_types/number.rs",
     find: "                        let part = Expr::bin(Op::Rem, arg(), nanos(1_000_000_000));",
     replace: "                        let part = arg();",
     tests: ["test/corpus.test.ts","-t","duration"],
@@ -190,7 +190,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-to-array-any-length",
     breaks: "a slice into an array of another length is `Ok`",
-    file: "src/lower/numbers.rs",
+    file: "src/lower/std_types/number.rs",
     find: "                let fits = Expr::bin(Op::Eq, Expr::member(slice.clone(), \"length\"), Expr::int(len as i128));",
     replace: "                let fits = Expr::bool(true || len > 0);",
     tests: ["test/corpus.test.ts","-t","slice_to_array"],
@@ -198,7 +198,7 @@ export const mutations: Mutation[] = [
   {
     name: "non-zero-try-from-kind",
     breaks: "`NonZeroU8::try_from(0u8)`'s error is its kind, `Zero`, which `{:?}` can't show, where each parse error is its message",
-    file: "src/lower/numbers.rs",
+    file: "src/lower/std_types/number.rs",
     find: "                            vec![tried, Expr::str(\"number would be zero for non-zero type\")],\n",
     replace: "                            vec![tried, Expr::str(\"Zero\")],\n",
     tests: ["test/corpus.test.ts","-t","nonzero"],
@@ -206,7 +206,7 @@ export const mutations: Mutation[] = [
   {
     name: "big-div-unknown-unchecked",
     breaks: "an `i64` division by what may be zero is `7n / zero`, which throws JS's `RangeError`, not Rust's panic",
-    file: "src/lower/numbers.rs",
+    file: "src/lower/std_types/number.rs",
     find: "                    .or_else(|| r.as_bigint())\n                    .is_some_and(|d| d != 0 && !(num.signed() && d == -1));",
     replace: "                    .or_else(|| r.as_bigint())\n                    .is_none_or(|d| d != 0 && !(num.signed() && d == -1));",
     tests: ["test/compiler.test.ts", "-t", "64-bit integers are BigInts, wrapped as release Rust wraps them"],

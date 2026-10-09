@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
     name: "constant-some-unboxed",
     breaks: "a constant `Some(None)` that rustc computed is `undefined`, and reads as `None`",
     file: "src/lower/representation.rs",
-    find: "                    Some(&inner) => const_js(tcx, inner).map(super::options::some_literal),",
+    find: "                    Some(&inner) => const_js(tcx, inner).map(super::std_types::option::some_literal),",
     replace: "                    Some(&inner) => const_js(tcx, inner),",
     tests: ["test/corpus.test.ts", "-t", "nested_options"],
   },

@@ -232,7 +232,8 @@ Each is checked to stay that way.
 | `copies.rs` | When a value is copied: where it's read, if something changes one of its kind in place |
 | `support.rs` | What rust-js can represent, and the error where a value it can't is made or bound |
 | `aggregates.rs` | Structs, variants and tuple structs made, by fields or a struct update, and constructors as values |
-| `results.rs` | `?`, and the `From` that converts its error |
+| `std_types/result.rs` | `?`, and the `From` that converts its error |
+| `std_types/` | std's data structures and values, one module each, as its `mod.rs` tables them: `vec.rs` (`Vec`, `VecDeque`, slices, arrays), `map.rs` (hashed and B-tree maps and sets), `text.rs`, `number.rs`, `option.rs`, `cell.rs`, `range.rs`, `channel.rs` (ADR 0314) |
 | `items.rs` | References to items: what a function or a binding is in JS, whether it's the crate's, which impl a call runs |
 | `traits.rs`, `std_impls.rs`, `ordering.rs` | Traits: dictionaries, evidence, `dyn`, calls of an impl's method; `Clone`, `Default`, `PartialEq`, `Ord` |
 | `display.rs`, `format_args.rs`, `format_spec.rs` | `Display` and `Debug`, `format_args!`, placeholders' options |
@@ -257,9 +258,9 @@ the rest.
 | What a function or a binding is in JS | `items.rs` | `fn_ref`, `js_ref`, `resolve_instance` |
 | Dictionaries and evidence: where a given one is, by its bound (`EvidenceQuery`), and its JS | `traits.rs` | `dictionary`, `evidence_for`, `has_evidence`, `impl_call` |
 | What a generic function was given: dictionaries, a copied default's arguments, type facts (ADRs 0049, 0145) | `traits.rs` | `in_impl_terms`, `given_evidence`, `given_type_fact`, `resolve_self_instance`, `enter_default` |
-| The box of a `Some` that looks like `None` (ADR 0051) | `options.rs` | `some`, `some_value`, `some_literal`, `is_some_box` |
+| The box of a `Some` that looks like `None` (ADR 0051) | `std_types/option.rs` | `some`, `some_value`, `some_literal`, `is_some_box` |
 | When a value is copied | `copies.rs` | `copy_if_needed`, `contains_mutated` |
-| A cell, a lock, and the place its guard names (ADRs 0025, 0144) | `cells.rs`; `places.rs` for the place | `ref_place`, `guarded_cell` |
+| A cell, a lock, and the place its guard names (ADRs 0025, 0144) | `std_types/cell.rs`; `places.rs` for the place | `ref_place`, `guarded_cell` |
 | Which std function a call is | `recognition.rs` | `classify`, and its answers through `shortcuts.rs` |
 | Std's names: which std item a type, trait or function is | `recognition.rs` | `StdItem`, `is_std_type`, `is_std_def`, `std_item`, `trait_method` |
 | Std's data structures, each by its name and where std defines it (ADR 0314) | `recognition/registry.rs` | `data_structures` |
@@ -275,9 +276,9 @@ what a function is in JS is `items.rs`'s, and a `&mut` given to one
    └─ one of std's: classify(f) = Some(known)
          └─► std_call(known): what every std call must keep (drops, Option boxing)
                └─► the domain that knows it, asked in turn:
-                     vecs.rs  options.rs  cells.rs  numbers.rs
-                     iterators.rs  text.rs  format_args.rs
-                     maps.rs  ranges.rs  combinators.rs  serde/value.rs ..
+                     std_types/vec.rs  std_types/option.rs  std_types/cell.rs  std_types/number.rs
+                     iterators.rs  std_types/text.rs  format_args.rs
+                     std_types/map.rs  std_types/range.rs  combinators.rs  serde/value.rs ..
 ```
 
 Each domain's function lowers its `Std` variants and says `None` to the
@@ -410,7 +411,7 @@ A std function or method rust-js doesn't know yet:
 
 1. **Recognize it**: a `Std` variant, and where `classify` finds it, in
    `recognition.rs` or `recognition/methods.rs`.
-2. **Lower it** in its domain's function: `vecs.rs` for a `Vec`'s, `text.rs`
+2. **Lower it** in its domain's function: `std_types/vec.rs` for a `Vec`'s, `std_types/text.rs`
    for a string's, and so on. If it needs a runtime helper, add
    `src/runtime/<name>.js` and name it in `runtime.rs`.
 3. **Prove it**: a corpus case in `test/corpus/`, compared with native Rust,

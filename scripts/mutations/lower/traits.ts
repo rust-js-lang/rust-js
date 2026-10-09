@@ -254,7 +254,7 @@ export const mutations: Mutation[] = [
     name: "dictionary-big-shift-amount",
     breaks: "a dictionary's `Shl<u64>` of a `u32` shifts a JS number by a BigInt, which JS throws at",
     file: "src/lower/traits.rs",
-    find: 'let b = super::numbers::shift_amount_of(op, b.expect("two operands"), ty, tr.args.type_at(1));',
+    find: 'let b = super::std_types::number::shift_amount_of(op, b.expect("two operands"), ty, tr.args.type_at(1));',
     replace: 'let b = b.expect("two operands");',
     tests: ["test/corpus.test.ts", "-t", "generic_bitwise_operators"],
   },

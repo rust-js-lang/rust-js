@@ -508,7 +508,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Text kept where it isn't empty, or another: `title || other` (ADR 0266).
         if comb == Comb::Or
             && self.option_of(subject_ty).is_some_and(|text| self.is_string_like(text))
-            && let Some(text) = super::options::text_or(&subject)
+            && let Some(text) = super::std_types::option::text_or(&subject)
         {
             let other = values.remove(0);
             let other = if other.has_effects() {
@@ -620,8 +620,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let never_nullish = !self.can_be_nullish(generic_args.type_at(1));
                 match option.filter(|_| !boxed).and_then(|(name, option, spilled)| {
-                    let nullish =
-                        super::options::nullish_or(&name, &option, &some, &mapped, &fallback, false, never_nullish)?;
+                    let nullish = super::std_types::option::nullish_or(
+                        &name,
+                        &option,
+                        &some,
+                        &mapped,
+                        &fallback,
+                        false,
+                        never_nullish,
+                    )?;
                     Some((nullish, spilled))
                 }) {
                     Some((nullish, spilled)) => {

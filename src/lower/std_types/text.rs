@@ -3,13 +3,13 @@
 //! questions are regular expressions of the Unicode properties Rust uses:
 //! `c.is_whitespace()` is `/^\p{White_Space}$/u.test(c)`.
 
-use super::calls::Call;
-use super::ranges::RangeKind;
-use super::recognition::{Std, trait_method};
-use super::representation::Num;
-use super::{FnCx, R};
 use crate::js;
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
+use crate::lower::calls::Call;
+use crate::lower::recognition::{Std, trait_method};
+use crate::lower::representation::Num;
+use crate::lower::std_types::range::RangeKind;
+use crate::lower::{FnCx, R};
 use crate::runtime::Helper;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::thir::{ExprId, ExprKind};
@@ -19,7 +19,7 @@ use rustc_span::Span;
 /// A `String` changed in place, its place given the new string, as JS
 /// strings don't change (ADR 0149).
 #[derive(Clone, Copy, PartialEq)]
-pub(super) enum StringEdit {
+pub(in crate::lower) enum StringEdit {
     /// `s.pop()`: the last `char`, or `None`.
     Pop,
     /// `s.remove(at)`: the `char` at a byte offset.
@@ -32,7 +32,7 @@ pub(super) enum StringEdit {
 }
 
 #[derive(Clone, Copy, PartialEq)]
-pub(super) enum TextOp {
+pub(in crate::lower) enum TextOp {
     /// A `char` question, as a regular expression it matches.
     Is(&'static str),
     IsAscii,
@@ -133,7 +133,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `s.trim()`, `trim_start()` or `trim_end()`, by Unicode's White_Space, as
     /// Rust's `char::is_whitespace` has it: `$trim(s)`, which trims U+0085
     /// and keeps U+FEFF, where JS's `trim()` does the other (ADR 0183).
-    pub(super) fn trimmed(&mut self, s: Expr, start: bool, end: bool) -> Expr {
+    pub(in crate::lower) fn trimmed(&mut self, s: Expr, start: bool, end: bool) -> Expr {
         self.runtime.insert(Helper::Trim);
         let name = match (start, end) {
             (true, true) => "$trim",
@@ -146,7 +146,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A `String` changed in place (ADR 0149): its place given the new
     /// string, `s = $insertStr(s, 0, "[")`, and what `pop` and `remove` take
     /// out, `popped[1]`. A JS string doesn't change; its place does.
-    pub(super) fn string_edit(
+    pub(in crate::lower) fn string_edit(
         &mut self,
         edit: StringEdit,
         args: &[ExprId],
@@ -196,7 +196,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(taken.unwrap_or_else(Expr::undefined))
     }
 
-    pub(super) fn text_call(
+    pub(in crate::lower) fn text_call(
         &mut self,
         op: TextOp,
         args: &[ExprId],
@@ -422,7 +422,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `s.parse::<T>()`: a `Result`, whose `Err` is the error's message,
     /// which is what its `to_string()` gives.
-    pub(super) fn parse_as(&mut self, text: Expr, target: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+    pub(in crate::lower) fn parse_as(
+        &mut self,
+        text: Expr,
+        target: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
         if let Some(num) = Num::of(target) {
             if num == Num::F64 {
                 self.runtime.insert(Helper::ParseF64);
@@ -444,7 +450,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.runtime.insert(helper);
             let parsed = Expr::call(Expr::var(name), vec![text, num.literal(lo), num.literal(hi as i128)]);
             // A `NonZero`'s, an error of `0` (ADR 0177).
-            if super::recognition::is_non_zero_ty(target) {
+            if crate::lower::recognition::is_non_zero_ty(target) {
                 self.runtime.insert(Helper::NonZeroOk);
                 let zero = Expr::str("number would be zero for non-zero type");
                 return Ok(Expr::call(Expr::var("$nonZeroOk"), vec![parsed, zero]));
@@ -561,7 +567,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A string's method (ADRs 0034, 0063): `None` if `known` is another.
-    pub(super) fn string_call(
+    pub(in crate::lower) fn string_call(
         &mut self,
         known: Std,
         call: Call<'_, 'tcx>,

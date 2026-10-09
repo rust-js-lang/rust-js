@@ -4,10 +4,10 @@
 
 use super::bindings::{JsForm, is_binding, is_method, js_form, js_import};
 use super::fn_def;
-use super::numbers::NumOp;
 use super::recognition::Std;
 use super::representation::Num;
-use super::text::TextOp;
+use super::std_types::number::NumOp;
+use super::std_types::text::TextOp;
 use super::{FnCx, R, camel_case, global};
 use crate::js;
 use crate::js::{Expr, Op, StmtKind};

@@ -1,7 +1,8 @@
 //! Read, borrow and write places. Prepared targets lower each operand once.
 
-use super::numbers::assign_op;
-use super::{Dest, FnCx, R, Std, is_union, js_name, maps};
+use super::std_types::map;
+use super::std_types::number::assign_op;
+use super::{Dest, FnCx, R, Std, is_union, js_name};
 use crate::js::{self, Expr, Stmt, StmtKind};
 use crate::runtime::Helper;
 use rustc_ast::Mutability;
@@ -13,7 +14,7 @@ use rustc_span::Span;
 /// Reading and writing this target never lower Rust expressions again.
 pub(super) enum PreparedPlace {
     Direct(Expr),
-    Map(maps::MapPlace),
+    Map(map::MapPlace),
     Slot { local: Expr, map: Expr, key: Expr },
 }
 

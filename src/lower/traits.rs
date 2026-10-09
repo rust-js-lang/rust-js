@@ -1358,7 +1358,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ty = tr.self_ty().peel_refs();
         match op {
             Ok(op) => {
-                let b = super::numbers::shift_amount_of(op, b.expect("two operands"), ty, tr.args.type_at(1));
+                let b = super::std_types::number::shift_amount_of(op, b.expect("two operands"), ty, tr.args.type_at(1));
                 self.binary(op, a, b, None, ty, span)
             }
             Err(op) => self.unary(op, a, ty, span),

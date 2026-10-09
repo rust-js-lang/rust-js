@@ -1,10 +1,10 @@
 //! A `Vec`'s or a slice's method (ADRs 0025, 0036).
 
-use super::calls::Call;
-use super::recognition::Std;
-use super::{FnCx, R};
 use crate::js;
 use crate::js::{Expr, Op, Stmt, StmtKind};
+use crate::lower::calls::Call;
+use crate::lower::recognition::Std;
+use crate::lower::{FnCx, R};
 use crate::runtime::Helper;
 use rustc_middle::thir::{ExprId, ExprKind};
 
@@ -13,7 +13,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `copied()` or `cloned()`: the JS read itself, `items.shift()` or
     /// `items[0]`, whose `undefined` is both no item and a `None` one, as
     /// `flatten` makes them one (ADR 0311).
-    pub(super) fn flattened_read(&mut self, read: ExprId, out: &mut Vec<Stmt>) -> R<Option<Expr>> {
+    pub(in crate::lower) fn flattened_read(&mut self, read: ExprId, out: &mut Vec<Stmt>) -> R<Option<Expr>> {
         let ExprKind::Call { fun, ref args, .. } = self.thir[self.strip(read)].kind else {
             return Ok(None);
         };
@@ -42,7 +42,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A `Vec`'s or a slice's method (ADRs 0025, 0036): `None` if `known` is another.
-    pub(super) fn vec_call(
+    pub(in crate::lower) fn vec_call(
         &mut self,
         known: Std,
         call: Call<'_, 'tcx>,

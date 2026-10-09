@@ -4,7 +4,7 @@
 
 use super::bindings::{self};
 use super::fn_def;
-use super::maps::{MapOp, Part};
+use super::std_types::map::{MapOp, Part};
 use super::{FnCx, R, Std, camel_case};
 use crate::js::{Expr, Prop, Stmt, StmtKind};
 use crate::runtime::Helper;

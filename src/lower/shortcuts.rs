@@ -3,8 +3,8 @@
 //! Each is answered there, and only shortened here.
 
 use super::FnCx;
-use super::ranges::RangeKind;
 use super::recognition::{Json, StdItem};
+use super::std_types::range::RangeKind;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Symbol;

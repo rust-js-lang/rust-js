@@ -1,9 +1,9 @@
 //! `?` of an `Option` or a `Result`, and the `From` that converts its error
 //! (ADRs 0052, 0141).
 
-use super::recognition::{StdItem, std_item};
-use super::{Dest, FnCx, R};
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
+use crate::lower::recognition::{StdItem, std_item};
+use crate::lower::{Dest, FnCx, R};
 use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty};
 
@@ -11,7 +11,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `e?`: the value inside, after returning early with an `Err` or `None`.
     /// Only when the `Err` is returned as it is: a `From` conversion isn't
     /// supported yet.
-    pub(super) fn question(
+    pub(in crate::lower) fn question(
         &mut self,
         question: ExprId,
         tried: ExprId,
@@ -116,7 +116,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The function `?` converts an error with, `<to as From<from>>::from`,
     /// if it's one of the crate's own (ADR 0052).
-    pub(super) fn error_from(&mut self, to: Ty<'tcx>, from: Ty<'tcx>) -> R<Option<Expr>> {
+    pub(in crate::lower) fn error_from(&mut self, to: Ty<'tcx>, from: Ty<'tcx>) -> R<Option<Expr>> {
         let from_trait = std_item(self.tcx, StdItem::From);
         let method = self.tcx.associated_item_def_ids(from_trait)[0];
         let args = self.tcx.mk_args(&[to.into(), from.into()]);
