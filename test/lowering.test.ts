@@ -3119,3 +3119,27 @@ pub fn counted(n: Option<u32>) -> Option<u32> {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.first({ n: 1 }), lib.first(undefined), lib.counted(0), lib.counted(undefined)]).toEqual([2, undefined, 1, undefined]);
 });
+
+// A nullable field given another's value, or a copy of it, is given it as
+// it is: it's `null` already where it's `None`, as react.dev's runESLint
+// gives `ruleId: error.ruleId` (ADR 0275).
+test("a nullable field given a nullable field's copy takes it as it is", async () => {
+  const dir = fixture("nullable-copied");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Message {
+    #[rust_js::nullable]
+    pub id: Option<String>,
+}
+pub struct Diagnostic {
+    #[rust_js::nullable]
+    pub id: Option<String>,
+}
+pub fn copied(message: &Message) -> Diagnostic {
+    Diagnostic { id: message.id.clone() }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return { id: message.id };");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.copied({ id: null }), lib.copied({ id: "x" })]).toEqual([{ id: null }, { id: "x" }]);
+});

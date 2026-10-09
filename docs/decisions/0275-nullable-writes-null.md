@@ -62,3 +62,9 @@ Its declaration stays `?: T | null`: a TypeScript caller may leave it out.
   `JSON.stringify(value, null, 2)`, as react.dev's Sandpack template
   writes it. Case A: rust-js reads `null` and `undefined` alike as `None`,
   and `JSON.stringify` takes either as no replacer.
+
+## Amendment: a copy of one
+
+A nullable field given a copy of another's value, `error.rule_id.clone()`,
+is given it as it is, as one given the field itself is: it's `null` where
+it's `None` already, react.dev's runESLint's `ruleId: error.ruleId`.

@@ -223,4 +223,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts","-t","flattened field made outside JSX"],
   },
+  {
+    name: "nullable-copy-coalesced",
+    breaks: "a nullable field given a nullable field's copy coalesces it, `message.id ?? null`",
+    file: "src/lower/aggregates.rs",
+    find: "                return self.nullable(value, arg);\n",
+    replace: "                return Expr::bin(js::Op::Coalesce, value, Expr::null());\n",
+    tests: ["test/lowering.test.ts", "-t", "nullable field given a nullable field's copy"],
+  },
 ];

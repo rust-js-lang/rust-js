@@ -301,6 +301,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
             // `Some(..)`, never `None`.
             thir::ExprKind::Adt(ref made) => made.fields.len() == 1,
+            // A copy of one, `error.rule_id.clone()`, is what it copies.
+            thir::ExprKind::Call { fun, ref args, .. }
+                if fn_def(self.thir[fun].ty).is_some_and(|(id, _)| {
+                    super::recognition::pure_std(self.tcx, id) == Some(super::recognition::PureStd::Copy)
+                }) && let [copied] = args[..]
+                    && let thir::ExprKind::Borrow { arg, .. } = self.thir[self.strip(copied)].kind =>
+            {
+                return self.nullable(value, arg);
+            }
             _ => false,
         };
         match value.kind {
