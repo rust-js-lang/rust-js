@@ -14,6 +14,26 @@ use rustc_span::{Span, Symbol, sym};
 pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
     let mut valid = true;
     for def in tcx.hir_crate_items(()).definitions() {
+        // A derive of a discriminated union with an `otherwise` would take
+        // the object it holds for a variant of its own (ADR 0284).
+        if matches!(tcx.def_kind(def), DefKind::Impl { of_trait: true })
+            && super::recognition::known_derive(tcx, def.to_def_id())
+            && let ty::Adt(adt, _) = tcx.type_of(def).instantiate_identity().skip_normalization().kind()
+            && adt.is_enum()
+            && adt.variants().iter().any(|v| is_tagged_otherwise(tcx, adt.did(), v))
+        {
+            let tr = tcx
+                .impl_trait_ref(def)
+                .instantiate_identity()
+                .skip_normalization()
+                .def_id;
+            let message = format!(
+                "rust-js does not support deriving `{}` of a discriminated union with an `otherwise` variant yet: it would take the object it holds for a variant of its own",
+                tcx.item_name(tr)
+            );
+            tcx.dcx().span_err(tcx.def_span(def), message);
+            valid = false;
+        }
         let attrs: Vec<_> = tcx
             .get_attrs_by_path(def.to_def_id(), &[Symbol::intern("rust_js"), sym::link_name])
             .collect();
@@ -50,12 +70,24 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
             }
         }
         // A discriminated union's variants are objects of named fields, none
-        // of them its tag's (ADR 0284).
+        // of them its tag's (ADR 0284), but its last, which may be any other
+        // object, `#[rust_js::otherwise]`, a variant of one field: the object.
         if matches!(tcx.def_kind(def), DefKind::Enum)
             && let Some(key) = declared_tag(tcx, def.to_def_id())
         {
-            for variant in tcx.adt_def(def).variants() {
+            let variants = tcx.adt_def(def).variants();
+            for (index, variant) in variants.iter().enumerate() {
                 let tuple = matches!(variant.ctor_kind(), Some(rustc_hir::def::CtorKind::Fn));
+                if is_otherwise(tcx, variant.def_id) {
+                    if index + 1 != variants.len() || !tuple || variant.fields.len() != 1 {
+                        let message = format!(
+                            "rust-js: `#[rust_js::tag = \"{key}\"]`'s `otherwise` variant is its last, of one field, `Other(&'static JsObject)`: the object whose tag is none of the others'"
+                        );
+                        tcx.dcx().span_err(tcx.def_span(variant.def_id), message);
+                        valid = false;
+                    }
+                    continue;
+                }
                 let clash = variant.fields.iter().any(|f| field_key(tcx, f) == key);
                 if tuple || clash {
                     let what = if tuple {
@@ -258,6 +290,12 @@ pub(super) fn tag_key(tcx: TyCtxt<'_>, adt: DefId) -> String {
 pub(super) fn declared_tag(tcx: TyCtxt<'_>, adt: DefId) -> Option<String> {
     let path = [Symbol::intern("rust_js"), Symbol::intern("tag")];
     Some(tcx.get_attrs_by_path(adt, &path).next()?.value_str()?.to_string())
+}
+
+/// Whether `variant` is a discriminated union's `otherwise`: any object
+/// whose tag is none of its others', the object itself (ADR 0284).
+pub(super) fn is_tagged_otherwise(tcx: TyCtxt<'_>, adt: DefId, variant: &VariantDef) -> bool {
+    declared_tag(tcx, adt).is_some() && is_otherwise(tcx, variant.def_id)
 }
 
 /// A variant without fields: its name (ADR 0013), or of a discriminated

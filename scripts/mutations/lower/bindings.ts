@@ -146,4 +146,20 @@ export const mutations: Mutation[] = [
     replace: "    field.name.to_string()",
     tests: ["test/bindings.test.ts", "-t", "a struct whose JS is its JSON is stringified as it is"],
   },
+  {
+    name: "tagged-otherwise-not-last",
+    breaks: "an `otherwise` variant before another is taken, so the one after it is never matched",
+    file: "src/lower/bindings.rs",
+    find: "                    if index + 1 != variants.len() || !tuple || variant.fields.len() != 1 {\n",
+    replace: "                    if !tuple || variant.fields.len() != 1 {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "otherwise variant not last"],
+  },
+  {
+    name: "open-union-derive-taken",
+    breaks: "`#[derive(Clone)]` of a union with an `otherwise` copies its object as a variant of its own",
+    file: "src/lower/bindings.rs",
+    find: "            && adt.variants().iter().any(|v| is_tagged_otherwise(tcx, adt.did(), v))\n",
+    replace: "            && false\n",
+    tests: ["test/diagnostics.test.ts", "-t", "derive of an open union"],
+  },
 ];

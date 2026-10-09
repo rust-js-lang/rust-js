@@ -1999,3 +1999,50 @@ pub fn first(items: Option<Vec<u32>>) -> Option<u32> {
   expect([lib.path_is("/learn", "/learn"), lib.path_is("/a", "/learn"), lib.path_is(undefined, "/learn")]).toEqual([true, false, false]);
   expect([lib.first([4, 5]), lib.first([]), lib.first(undefined)]).toEqual([4, undefined, undefined]);
 });
+
+// ADR 0284: a discriminated union a binding knows only some of, Sandpack's
+// messages say, ends in an `otherwise` variant: any object whose tag names
+// none of the others, the object itself. A match tests the others' tags,
+// whichever arm comes first, and `Other(o)` is `o`.
+test("a discriminated union's otherwise variant is any other object", async () => {
+  const dir = fixture("open-unions");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::tag = "type")]
+pub enum Message {
+    #[cfg_attr(rust_js, rust_js::name = "resize")]
+    Resize { height: f64 },
+    #[cfg_attr(rust_js, rust_js::name = "start")]
+    Start {
+        #[cfg_attr(rust_js, rust_js::name = "firstLoad")]
+        first_load: Option<bool>,
+    },
+    #[cfg_attr(rust_js, rust_js::otherwise)]
+    Other(&'static js::JsObject),
+}
+
+pub fn described(message: &Message) -> String {
+    match message {
+        Message::Resize { height } => format!("resize {height}"),
+        Message::Start { first_load } => format!("start {}", first_load.unwrap_or(false)),
+        Message::Other(_) => "other".to_string(),
+    }
+}
+
+pub fn other(message: &Message) -> bool {
+    matches!(message, Message::Other(_))
+}
+
+pub fn made(object: &'static js::JsObject) -> Message {
+    Message::Other(object)
+}
+
+pub fn all_made(objects: Vec<&'static js::JsObject>) -> Vec<Message> {
+    objects.into_iter().map(Message::Other).collect()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const lib = await import(join(dir, "lib.js"));
+  const done = { type: "done", compilatonError: false };
+  expect([lib.described({ type: "resize", height: 3 }), lib.described({ type: "start", firstLoad: true }), lib.described(done)])
+    .toEqual(["resize 3", "start true", "other"]);
+  expect([lib.other(done), lib.other({ type: "resize", height: 1 }), lib.made(done) === done, lib.all_made([done])[0] === done]).toEqual([true, false, true, true]);
+});

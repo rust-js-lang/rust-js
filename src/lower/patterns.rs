@@ -1743,6 +1743,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if let Some(n) = ordering_value(self.tcx, adt_def.did(), variant.name) {
                     return Ok(Some(Expr::bin(Op::Eq, subject.clone(), Expr::int(n))));
                 }
+                // A discriminated union's `otherwise`: an object whose tag is
+                // none of the others', and its field the object (ADR 0284).
+                if bindings::is_tagged_otherwise(self.tcx, adt_def.did(), variant) {
+                    let key = bindings::tag_key(self.tcx, adt_def.did());
+                    let mut tests: Vec<Expr> = (adt_def.variants().iter())
+                        .filter(|other| other.def_id != variant.def_id)
+                        .map(|other| {
+                            let name = Expr::str(bindings::variant_name(self.tcx, other));
+                            Expr::bin(Op::Ne, Expr::member(subject.clone(), &key), name)
+                        })
+                        .collect();
+                    for field in subpatterns {
+                        tests.extend(self.pattern_test(&field.pattern, subject, bindings)?);
+                    }
+                    return Ok(tests.into_iter().reduce(|a, b| Expr::bin(Op::And, a, b)));
+                }
                 let name = Expr::str(bindings::variant_name(self.tcx, variant));
                 let mut tests = Vec::new();
                 if adt_def.variants().len() > 1 {

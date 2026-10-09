@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "tagged-variant-test-tag",
     breaks: "a discriminated union's variant is tested by `TAG`, not its own tag",
     file: "src/lower/patterns.rs",
-    find: "                    let key = bindings::tag_key(self.tcx, adt_def.did());",
-    replace: "                    let key = String::from(\"TAG\");",
+    find: "                    let key = bindings::tag_key(self.tcx, adt_def.did());\n                    let unit",
+    replace: "                    let key = String::from(\"TAG\");\n                    let unit",
     tests: ["test/lowering.test.ts","-t","discriminated union"],
   },
   {
@@ -605,5 +605,13 @@ export const mutations: Mutation[] = [
     find: "        let place = self.matched_place(scrutinee).is_some();\n",
     replace: "        let place = self.stable_place(scrutinee).is_some();\n",
     tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
+  },
+  {
+    name: "otherwise-tested-by-name",
+    breaks: "a discriminated union's `otherwise` arm tests a tag of its own name, `message.type === \"Other\"`, so another message matches no arm",
+    file: "src/lower/patterns.rs",
+    find: "                if bindings::is_tagged_otherwise(self.tcx, adt_def.did(), variant) {\n",
+    replace: "                if false && bindings::is_tagged_otherwise(self.tcx, adt_def.did(), variant) {\n",
+    tests: ["test/lowering.test.ts", "-t", "otherwise variant is any other"],
   },
 ];

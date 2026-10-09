@@ -316,4 +316,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/declarations.test.ts", "-t", "impl Fn parameter"],
   },
+  {
+    name: "otherwise-declared-tagged",
+    breaks: "a discriminated union's `otherwise` is declared `{ kind: \"Other\"; _0: any }`, where it's the object",
+    file: "src/lower/declarations.rs",
+    find: "                            && is_otherwise(self.tcx, v.def_id)\n",
+    replace: "                            && false\n",
+    tests: ["test/declarations.test.ts", "-t", "declarations type what a module exports"],
+  },
 ];

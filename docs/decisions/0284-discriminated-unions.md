@@ -84,3 +84,34 @@ if (s.status === "fulfilled") { .. }   // match s { Settled::Fulfilled { value }
 - A tagged enum whose variants have no fields is declared as JS has it,
   `{ kind: "on" } | { kind: "Off" }`. (Amended: it was declared as an
   untagged one's names, `"on" | "Off"`.)
+
+## Amendment: a union a binding knows only some of
+
+Sandpack's `listen` gives each message of some forty kinds, `{ type:
+"resize", height }`, `{ type: "start", firstLoad }`, and react.dev's
+Preview reads three. An enum of those three would be wrong, not only
+narrow: a match's last arm is its `else`, so a message of another kind
+was the last arm's. So a discriminated union's last variant may be
+`#[rust_js::otherwise]`, of one field: any object whose tag is none of
+the others', the object itself, as an untagged enum's is (ADR 0214).
+
+```rust
+#[rust_js::tag = "type"]
+pub enum SandpackMessage {
+    #[rust_js::name = "resize"]
+    Resize { height: f64 },
+    #[rust_js::otherwise]
+    Other(&'static JsObject),
+}
+```
+
+```js
+if (message.type === "resize") { .. }   // SandpackMessage::Resize { height }
+message.type !== "resize"               // matches!(message, SandpackMessage::Other(_))
+```
+
+- `Other(o)` is `o`, made or taken apart, and its declaration is the
+  object's type beside the others'.
+- It's the last, so no variant after it is never matched, and a derive
+  of the enum is an error: `Clone`, `PartialEq` and the rest would take
+  its object for a variant of the enum's own.

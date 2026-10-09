@@ -18,8 +18,8 @@ use rustc_span::def_id::{DefId, LocalModId};
 use serde_json::{Value, json};
 
 use super::bindings::{
-    declared_tag, field_default, field_key, fn_name, is_binding, is_flatten, is_mark, is_nullable, is_rest,
-    is_untagged, tag_key, variant_name,
+    declared_tag, field_default, field_key, fn_name, is_binding, is_flatten, is_mark, is_nullable, is_otherwise,
+    is_rest, is_untagged, tag_key, variant_name,
 };
 use super::recognition::{StdItem, is_std_def};
 use super::representation::Num;
@@ -549,6 +549,13 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 let tagged = declared_tag(self.tcx, def_id).is_some();
                 let types: Vec<Value> = (adt.variants().iter())
                     .map(|v| {
+                        // An `otherwise`, the object it holds (ADR 0284).
+                        if tagged
+                            && is_otherwise(self.tcx, v.def_id)
+                            && let Some(field) = v.fields.iter().next()
+                        {
+                            return self.ts(field.ty(self.tcx, args).skip_normalization());
+                        }
                         let name = json!({ "kind": "literal", "value": variant_name(self.tcx, v) });
                         if v.fields.is_empty() && !tagged {
                             return name;
