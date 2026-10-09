@@ -184,4 +184,28 @@ export const mutations: Mutation[] = [
     replace: "        _ => truthy_of(test)?,\n",
     tests: ["test/lowering.test.ts", "-t", "nullable field's None is null"],
   },
+  {
+    name: "get-or-insert-overwrites",
+    breaks: "`get_or_insert` replaces what's there",
+    file: "src/lower/std_types/option.rs",
+    find: "                out.push(StmtKind::If(absent, vec![assign], None).at(js_span));\n",
+    replace: "                out.push(assign);\n",
+    tests: ["test/corpus.test.ts", "-t", "option_result_methods"],
+  },
+  {
+    name: "take-if-unasked",
+    breaks: "`take_if` takes without asking its predicate",
+    file: "src/lower/std_types/option.rs",
+    find: "                out.push(StmtKind::If(Expr::bin(Op::And, present, holds), take, None).at(js_span));\n",
+    replace: "                out.push(StmtKind::If(present, take, None).at(js_span));\n",
+    tests: ["test/corpus.test.ts", "-t", "option_result_methods"],
+  },
+  {
+    name: "option-place-no-handle",
+    breaks: "`*o.get_or_insert(0) += 1` writes a number's field",
+    file: "src/lower/std_types/option.rs",
+    find: "            true => Expr::handle(place.clone()),\n",
+    replace: "            true => place.clone(),\n",
+    tests: ["test/corpus.test.ts", "-t", "option_result_methods"],
+  },
 ];

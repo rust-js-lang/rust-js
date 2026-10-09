@@ -2,13 +2,16 @@
 
 use crate::js;
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
-use crate::lower::calls::Call;
+use crate::lower::calls::{Call, apply};
 use crate::lower::patterns::same_place;
+use crate::lower::places::PreparedPlace;
 use crate::lower::recognition::Std;
 use crate::lower::{FnCx, R};
 use crate::runtime::Helper;
 use rustc_hir::attrs::lang_items::LangItem;
+use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty};
+use rustc_span::Span;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// An `Option`'s or a `Result`'s method, and `bool::then` (ADRs 0030, 0062): `None` if `known` is another.
@@ -530,5 +533,75 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => Expr::unary(UnaryOp::Not, option),
             false => Expr::bin(Op::LooseEq, option, Expr::null()),
         }
+    }
+}
+
+/// An `Option`'s methods that write its place (ADR 0326).
+#[derive(Clone, Copy, PartialEq)]
+pub(in crate::lower) enum OptionPlaceOp {
+    /// `get_or_insert(v)`, `get_or_insert_with(f)` and
+    /// `get_or_insert_default()`: what it holds, made where it holds none.
+    GetOrInsert,
+    GetOrInsertWith,
+    GetOrInsertDefault,
+    Insert,
+    TakeIf,
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// One of `OptionPlaceOp`'s: its place given what it holds next, and
+    /// the `&mut` to what it holds, the object itself, or for a number or
+    /// text a handle on the place (ADR 0099); `take_if`'s what it took.
+    pub(in crate::lower) fn option_place(
+        &mut self,
+        op: OptionPlaceOp,
+        args: &[ExprId],
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let ExprKind::Borrow { arg: place, .. } = self.thir[self.strip(args[0])].kind else {
+            return Err(self.unsupported(span, "changing this `Option`"));
+        };
+        let item = self.option_of(self.thir[place].ty).expect("an `Option`");
+        if self.boxed_payload(item) {
+            return Err(self.unsupported(span, &format!("changing an `Option<{item}>` in place")));
+        }
+        let mut given = self.operands(&args[1..], out)?.into_iter();
+        let (target, _) = self.prepare_assignment_target(place, true, Expr::undefined(), span, out)?;
+        let PreparedPlace::Direct(place) = target else {
+            return Err(self.unsupported(span, "changing an `Option` in a map in place"));
+        };
+        let js_span = self.js_span(span);
+        let through = match self.is_boxable(item) {
+            true => Expr::handle(place.clone()),
+            false => place.clone(),
+        };
+        let value = match op {
+            OptionPlaceOp::GetOrInsert | OptionPlaceOp::Insert => given.next().expect("its value"),
+            OptionPlaceOp::GetOrInsertWith => apply(given.next().expect("its function"), Vec::new()),
+            OptionPlaceOp::GetOrInsertDefault => self.default_value(item, span)?,
+            // What it holds, taken where `p` of a `&mut` to it holds.
+            OptionPlaceOp::TakeIf => {
+                let taken = self.fresh("taken");
+                let holds = apply(given.next().expect("its predicate"), vec![through]);
+                let present = Expr::bin(Op::LooseNe, place.clone(), Expr::null());
+                let take = vec![
+                    StmtKind::Assign(Expr::var(&taken), place.clone()).at(js_span),
+                    StmtKind::Assign(place, Expr::undefined()).at(js_span),
+                ];
+                out.push(StmtKind::Let(taken.clone(), None).at(js_span));
+                out.push(StmtKind::If(Expr::bin(Op::And, present, holds), take, None).at(js_span));
+                return Ok(Expr::var(&taken));
+            }
+        };
+        let assign = StmtKind::Assign(place.clone(), value).at(js_span);
+        match op {
+            OptionPlaceOp::Insert => out.push(assign),
+            _ => {
+                let absent = Expr::bin(Op::LooseEq, place, Expr::null());
+                out.push(StmtKind::If(absent, vec![assign], None).at(js_span));
+            }
+        }
+        Ok(through)
     }
 }

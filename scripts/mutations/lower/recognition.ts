@@ -703,8 +703,8 @@ export const mutations: Mutation[] = [
     name: "as-deref-of-vec-unknown",
     breaks: "`Option<Vec<T>>::as_deref` isn't the option itself, as a `String`'s is",
     file: "src/lower/recognition.rs",
-    find: "                        .is_some_and(|t| self.is_lang_adt(t, LangItem::String) || self.is_std_adt(t, sym::Vec)) =>",
-    replace: "                        .is_some_and(|t| self.is_lang_adt(t, LangItem::String)) =>",
+    find: "                            || self.is_std_adt(t, sym::Vec)\n",
+    replace: "",
     tests: ["test/lowering.test.ts", "-t", "Option::as_deref of a String or a Vec is the option itself"],
   },
   {

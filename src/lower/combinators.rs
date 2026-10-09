@@ -39,6 +39,30 @@ pub(super) enum Comb {
     Err,
     IsOkAnd,
     IsErrAnd,
+    /// An `Option`'s `and`, `xor`, `zip`, `unzip`, `transpose`, `inspect`,
+    /// `map_or_default` and `as_slice` (ADR 0326).
+    And,
+    Xor,
+    Zip,
+    Unzip,
+    OptionTranspose,
+    Inspect,
+    MapOrDefault,
+    AsSlice,
+    /// A `Result`'s `and`, `or`, `or_else`, `flatten`, `inspect` and
+    /// `inspect_err`, `iter`, `map_or_default`, `transpose`, and `cloned`
+    /// and `copied` (ADR 0326).
+    ResultAnd,
+    ResultOr,
+    ResultOrElse,
+    ResultFlatten,
+    ResultInspect {
+        err: bool,
+    },
+    ResultIter,
+    ResultMapOrDefault,
+    ResultTranspose,
+    ResultCloned,
     Contains,
     BinarySearch,
     /// `binary_search_by(f)`, and `_by_key(&b, f)`: by a comparison.
@@ -712,6 +736,134 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::cond(tag("Ok"), inside(), fallback)
             }
             Comb::Err => Expr::cond(tag("Err"), inside(), Expr::undefined()),
+            // Rust works out `b` either way: in a `const` first if it has effects.
+            Comb::And => {
+                let other = next();
+                let other = eager(self, other, out);
+                Expr::cond(some, other, Expr::undefined())
+            }
+            // The one that's `Some`, where only one is.
+            Comb::Xor | Comb::Zip => {
+                let other = next();
+                let other = if other.reads_same() {
+                    other
+                } else {
+                    self.spill("other", other, out)
+                };
+                let other_some = Expr::bin(Op::LooseNe, other.clone(), Expr::null());
+                if comb == Comb::Xor {
+                    let other_none = Expr::bin(Op::LooseEq, other.clone(), Expr::null());
+                    Expr::cond(some, Expr::cond(other_none, subject, Expr::undefined()), other)
+                } else {
+                    let other_inner = self.option_of(self.thir[args[1]].ty).expect("an `Option`");
+                    let other_value = match self.boxed_payload(other_inner) {
+                        true => self.some_value(other),
+                        false => other,
+                    };
+                    let both = Expr::bin(Op::And, some, other_some);
+                    Expr::cond(both, Expr::array(vec![value, other_value]), Expr::undefined())
+                }
+            }
+            // A pair of `Option`s, each boxed where it looks like `None`.
+            Comb::Unzip => {
+                let ty::Tuple(parts) = self.option_of(subject_ty).expect("an `Option`").kind() else {
+                    return Err(self.unsupported(span, "`unzip` of this"));
+                };
+                let parts: Vec<Ty<'tcx>> = parts.to_vec();
+                let mut halves = Vec::new();
+                for (i, part) in parts.into_iter().enumerate() {
+                    let half = Expr::index(value.clone(), Expr::int(i as i128));
+                    halves.push(match self.boxed_payload(part) {
+                        true => self.some(half),
+                        false => half,
+                    });
+                }
+                Expr::cond(
+                    some,
+                    Expr::array(halves),
+                    Expr::array(vec![Expr::undefined(), Expr::undefined()]),
+                )
+            }
+            Comb::OptionTranspose => {
+                let result = self.option_of(subject_ty).expect("an `Option`");
+                let ok_ty = match result.kind() {
+                    ty::Adt(_, result) => result.type_at(0),
+                    _ => return Err(self.unsupported(span, "`transpose` of this")),
+                };
+                let ok_value = Expr::member(value.clone(), "_0");
+                let ok_value = match self.boxed_payload(ok_ty) {
+                    true => self.some(ok_value),
+                    false => ok_value,
+                };
+                let is_ok = Expr::bin(Op::Eq, Expr::member(value, "TAG"), Expr::str("Ok"));
+                let absent = none();
+                let inner = Expr::cond(is_ok, Self::ok(ok_value), subject);
+                Expr::cond(absent, Self::ok(Expr::undefined()), inner)
+            }
+            Comb::Inspect | Comb::ResultInspect { .. } => {
+                let f = next();
+                let (test, given) = match comb {
+                    Comb::Inspect => (some, value),
+                    Comb::ResultInspect { err } => (tag(if err { "Err" } else { "Ok" }), inside()),
+                    _ => unreachable!("an inspection"),
+                };
+                let mut call = Vec::new();
+                let called = self.call_with(f, vec![given], "inspected", &mut call);
+                call.push(StmtKind::Expr(called).at(self.js_span(span)));
+                out.push(StmtKind::If(test, call, None).at(self.js_span(span)));
+                subject
+            }
+            // `map_or_default<U, F>`: `U`'s default where there's nothing to map.
+            Comb::MapOrDefault | Comb::ResultMapOrDefault => {
+                let f = next();
+                let (test, given, mapped_ty) = match comb {
+                    Comb::MapOrDefault => (some, value, generic_args.types().nth(1)),
+                    _ => (tag("Ok"), inside(), generic_args.types().nth(2)),
+                };
+                let fallback = self.default_value(mapped_ty.expect("its result's type"), span)?;
+                let mapped = self.call_with(f, vec![given], "map", out);
+                Expr::cond(test, mapped, fallback)
+            }
+            Comb::AsSlice => Expr::cond(some, Expr::array(vec![value]), Expr::array(Vec::new())),
+            Comb::ResultAnd | Comb::ResultOr => {
+                let other = next();
+                let other = eager(self, other, out);
+                match comb {
+                    Comb::ResultAnd => Expr::cond(tag("Ok"), other, subject),
+                    _ => Expr::cond(tag("Ok"), subject, other),
+                }
+            }
+            Comb::ResultOrElse => {
+                let f = next();
+                let other = self.call_with(f, vec![inside()], "fallback", out);
+                Expr::cond(tag("Ok"), subject, other)
+            }
+            Comb::ResultFlatten => Expr::cond(tag("Ok"), inside(), subject),
+            Comb::ResultIter => Expr::cond(tag("Ok"), Expr::array(vec![inside()]), Expr::array(Vec::new())),
+            // `Ok(None)` is `None`, `Ok(Some(x))` `Some(Ok(x))`, `Err(e)` `Some(Err(e))`.
+            Comb::ResultTranspose => {
+                let inner = match subject_ty.kind() {
+                    ty::Adt(_, result) => self.option_of(result.type_at(0)).expect("an `Option`"),
+                    _ => return Err(self.unsupported(span, "`transpose` of this")),
+                };
+                let x = match self.boxed_payload(inner) {
+                    true => self.some_value(inside()),
+                    false => inside(),
+                };
+                let present = Expr::bin(Op::LooseEq, inside(), Expr::null());
+                Expr::cond(tag("Ok"), Expr::cond(present, Expr::undefined(), Self::ok(x)), subject)
+            }
+            // A clone of an `Ok`'s value where a clone is more than the value.
+            Comb::ResultCloned => {
+                let item = generic_args.types().next().expect("its value's type");
+                match self.needs_clone(item) {
+                    true => {
+                        let clone = self.clone_value(inside(), item, span, out)?;
+                        Expr::cond(tag("Ok"), Self::ok(clone), subject)
+                    }
+                    false => subject,
+                }
+            }
             Comb::IsOkAnd | Comb::IsErrAnd => {
                 let p = next();
                 let holds = self.call_with(p, vec![inside()], "holds", out);

@@ -12,6 +12,7 @@ use super::std_types::lazy::LazyOp;
 use super::std_types::map::{MapOp, Part};
 use super::std_types::number::{DurationOp, NumOp};
 use super::std_types::once::OnceOp;
+use super::std_types::option::OptionPlaceOp;
 use super::std_types::range::{RangeKind, RangeOp};
 use super::std_types::rc::RcOp;
 use super::std_types::slice::SliceOp;
@@ -254,6 +255,8 @@ pub(super) enum Std {
     Once(OnceOp),
     /// A `Cow`'s (ADR 0319).
     Cow(CowOp),
+    /// An `Option`'s methods that write its place (ADR 0326).
+    OptionPlace(OptionPlaceOp),
     /// A counted `Rc`'s or a `Weak`'s (ADR 0320).
     Rc(RcOp),
     /// A slice's fills, copies, order checks, chunks and splits (ADR 0324).
@@ -393,6 +396,12 @@ impl Std {
             Std::Once(OnceOp::GetMut)
                 | Std::Lazy(LazyOp::GetMut | LazyOp::ForceMut)
                 | Std::Rc(RcOp::GetMut | RcOp::MakeMut)
+                | Std::OptionPlace(
+                    OptionPlaceOp::GetOrInsert
+                        | OptionPlaceOp::GetOrInsertWith
+                        | OptionPlaceOp::GetOrInsertDefault
+                        | OptionPlaceOp::Insert
+                )
         )
     }
 
@@ -1532,14 +1541,29 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 Std::Range(RangeOp::IsEmpty)
             }
             "as_ref" | "as_mut" if option => Std::Pointee,
-            // A `String`'s `&str` is the string, a `Vec`'s slice the array
-            // (ADR 0211): of an `Option` of one, it's the option.
+            "get_or_insert" if option => Std::OptionPlace(OptionPlaceOp::GetOrInsert),
+            "get_or_insert_with" if option => Std::OptionPlace(OptionPlaceOp::GetOrInsertWith),
+            "get_or_insert_default" if option => Std::OptionPlace(OptionPlaceOp::GetOrInsertDefault),
+            "insert" if option => Std::OptionPlace(OptionPlaceOp::Insert),
+            "take_if" if option => Std::OptionPlace(OptionPlaceOp::TakeIf),
+            // A `String`'s `&str` is the string, a `Vec`'s slice the array, a
+            // box's or a reference's what it points at (ADRs 0211, 0326): of an
+            // `Option` of one, it's the option; of a `Result`, the `Result`.
+            // Another's `Deref` is refused.
             "as_deref" | "as_deref_mut"
-                if option
-                    && self_ty
-                        .is_some_and(|t| self.is_lang_adt(t, LangItem::String) || self.is_std_adt(t, sym::Vec)) =>
+                if (option || result)
+                    && self_ty.is_some_and(|t| {
+                        self.is_lang_adt(t, LangItem::String)
+                            || self.is_std_adt(t, sym::Vec)
+                            || t.is_box()
+                            || t.is_ref()
+                    }) =>
             {
-                Std::Pointee
+                if option {
+                    Std::Pointee
+                } else {
+                    Std::Same
+                }
             }
             // A reference is the value (ADR 0023): what's in the `Result` is.
             "as_ref" if result => Std::Same,
@@ -1656,8 +1680,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             {
                 Std::Stream(StreamOp::Nothing)
             }
-            "unwrap" | "expect" if result => Std::UnwrapOk,
-            "unwrap_err" | "expect_err" if result => Std::UnwrapErr,
+            // An unchecked one panics where std's would be undefined behavior.
+            "unwrap" | "expect" | "unwrap_unchecked" if result => Std::UnwrapOk,
+            "unwrap_err" | "expect_err" | "unwrap_err_unchecked" if result => Std::UnwrapErr,
             "unwrap_or" if result => Std::ResultOr,
             _ => return None,
         })

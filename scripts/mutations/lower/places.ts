@@ -198,4 +198,13 @@ export const mutations: Mutation[] = [
     replace: "        let steady = !mutable;",
     tests: ["test/lowering.test.ts", "-t", "a binding names a variable set again"],
   },
+  {
+    name: "place-handle-spilled",
+    breaks: "a handle on a variable is spilled before its `value` is read: right, but not the JS a person writes",
+    file: "src/lower/places.rs",
+    find: "                let cell = if cell.reads_same() || place_handle {\n",
+    replace: "                let cell = if cell.reads_same() {\n",
+    tests: ["test/corpus.test.ts", "-t", "option_result_methods"],
+    snapshots: true,
+  },
 ];

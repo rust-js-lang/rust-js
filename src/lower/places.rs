@@ -605,7 +605,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `*pick(a, b) = v` of a cell a call returns: its `value` (ADR 0099).
             ExprKind::Deref { arg } if self.is_cell_value(arg) && self.place(e).is_none() => {
                 let cell = self.expr(arg, out)?;
-                let cell = if cell.reads_same() {
+                // A handle on a place that reads the same is that place's `value`.
+                let place_handle = matches!(&cell.kind, js::ExprKind::Handle(place) if place.reads_same());
+                let cell = if cell.reads_same() || place_handle {
                     cell
                 } else {
                     self.spill("cell", cell, out)

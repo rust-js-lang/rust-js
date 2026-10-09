@@ -883,6 +883,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Std::StringEdit(edit) = known {
             return self.string_edit(edit, args, span, out);
         }
+        if let Std::OptionPlace(op) = known {
+            return self.option_place(op, args, span, out);
+        }
         // Its capacity is the engine's: what it's given runs, for what it does.
         if known == Std::StringWithCapacity {
             for &arg in args {
@@ -1168,6 +1171,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Cow(_) => unreachable!("lowered by cow_call"),
             Std::Rc(_) => unreachable!("lowered by rc_call"),
             Std::Slice(_) => unreachable!("lowered by slice_call"),
+            Std::OptionPlace(_) => unreachable!("lowered by option_place"),
             Std::PtrEq => unreachable!("lowered by ptr_eq"),
             Std::ToBig
             | Std::Duration(_)
