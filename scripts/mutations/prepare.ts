@@ -210,4 +210,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "a const only tests read"],
   },
+  {
+    name: "dynamic-import-then",
+    breaks: "`const run = await import(..).then((m) => m.run)`, not `const { run } = await import(..)`",
+    file: "src/prepare.rs",
+    find: "        js::each_block_mut(&mut function.body, &mut |stmts| imported(stmts));\n",
+    replace: "",
+    tests: ["test/bindings.test.ts", "-t", "js::import! loads a module"],
+  },
 ];

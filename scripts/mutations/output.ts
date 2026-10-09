@@ -118,8 +118,8 @@ export const mutations: Mutation[] = [
     name: "path-module-package-by-its-path",
     breaks: "a `#[path]` module's relative link name is seen from the root's directory, `./data.js` in `x/`",
     file: "src/output.rs",
-    find: "                    from: if self.located.contains_key(&module.path) {\n",
-    replace: "                    from: if false {\n",
+    find: "                if self.located.contains_key(&module.path) {\n",
+    replace: "                if false {\n",
     tests: ["test/modules.test.ts", "-t", "path. module's JS is beside"],
   },
   {

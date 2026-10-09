@@ -141,4 +141,5 @@ EditorState.create(config);
 - The playground can't load packages. It shows the JS, and says why it
   doesn't run it.
 - Not yet: import attributes (`with { type: "json" }`), exports whose names
-  aren't identifiers, and dynamic `import()`.
+  aren't identifiers, and dynamic `import()`. (Amended: `js::import!` of an item
+  is dynamic `import()`, ADR 0304.)

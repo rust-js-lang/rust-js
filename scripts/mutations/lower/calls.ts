@@ -374,4 +374,12 @@ export const mutations: Mutation[] = [
     replace: "                        *arg = Expr::bin(Op::And, (**test).clone(), (**value).clone());\n",
     tests: ["test/bindings.test.ts", "-t", "skips what's falsy"],
   },
+  {
+    name: "dynamic-import-default-named",
+    breaks: "a module's default export is imported by its function's name, so `import_module!` refuses it",
+    file: "src/lower/calls.rs",
+    find: "            let export = if default {\n",
+    replace: "            let export = if false && default {\n",
+    tests: ["test/bindings.test.ts", "-t", "js::import! loads a module"],
+  },
 ];

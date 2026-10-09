@@ -108,4 +108,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "a function a block makes and gives"],
   },
+  {
+    name: "dynamic-import-static-too",
+    breaks: "a binding `js::import!` loads is imported statically too, and its local renamed",
+    file: "src/lower/analysis/naming.rs",
+    find: "            if dynamic.contains(&id) {\n",
+    replace: "            if false && dynamic.contains(&id) {\n",
+    tests: ["test/bindings.test.ts", "-t", "js::import! loads a module"],
+  },
 ];

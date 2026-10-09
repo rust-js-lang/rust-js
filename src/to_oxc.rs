@@ -1026,6 +1026,13 @@ impl<'a> Cx<'a> {
                 )
             }
             ExprKind::FunctionHole(_) => unreachable!("the pipeline puts each function where its hole is"),
+            ExprKind::Import(js::ImportFrom::Specifier(from)) => {
+                let source = Expression::new_string_literal(SPAN, self.allocator.alloc_str(from), None, b);
+                Expression::new_import_expression(sp, source, None, None, b)
+            }
+            ExprKind::Import(js::ImportFrom::Module(_)) => {
+                unreachable!("its output plan gives a module of the crate's its specifier")
+            }
             ExprKind::DropArgument(..) => unreachable!("the pipeline keeps each drop argument or leaves it out"),
             ExprKind::Await(promise) => Expression::new_await_expression(sp, self.expr(promise), b),
             ExprKind::Spread(_) => unreachable!("`...items` is an array's item or a call's argument, which they write"),

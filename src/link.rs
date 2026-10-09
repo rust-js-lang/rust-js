@@ -243,7 +243,7 @@ fn expr(e: &mut Expr, visitor: &mut Visitor<'_>) {
             block(body, visitor);
         }
         ExprKind::Function(function) => function_names(function, visitor),
-        ExprKind::FunctionHole(_) => {}
+        ExprKind::FunctionHole(_) | ExprKind::Import(_) => {}
         ExprKind::Jsx(jsx) => {
             if let JsxTag::Component(e) = &mut jsx.tag {
                 expr(e, visitor);

@@ -22,11 +22,61 @@ pub fn module(module: &mut js::Module) {
         });
         constants(&mut function.body);
         tested_constants(&mut function.body);
+        js::each_block_mut(&mut function.body, &mut |stmts| imported(stmts));
     }
     for constant in &mut module.consts {
         expr(&mut constant.value);
     }
     block(&mut module.statements);
+}
+
+/// `const run = await import(spec).then((m) => m.run)` is `const { run } =
+/// await import(spec)`, and another name `{ run: next }` (ADR 0304).
+fn imported(stmts: &mut [Stmt]) {
+    for stmt in stmts {
+        let StmtKind::Const(name, value) = &stmt.kind else {
+            continue;
+        };
+        let ExprKind::Await(awaited) = &value.kind else {
+            continue;
+        };
+        let ExprKind::Call(then, args) = &awaited.kind else {
+            continue;
+        };
+        let (ExprKind::Member(import, method), [read]) = (&then.kind, args.as_slice()) else {
+            continue;
+        };
+        let (ExprKind::Import(_), "then", ExprKind::Arrow(params, body)) = (&import.kind, method.as_str(), &read.kind)
+        else {
+            continue;
+        };
+        let (
+            [js::Pattern::Name(m)],
+            [
+                Stmt {
+                    kind: StmtKind::Return(Some(got)),
+                    ..
+                },
+            ],
+        ) = (params.as_slice(), body.as_slice())
+        else {
+            continue;
+        };
+        let ExprKind::Member(of, export) = &got.kind else {
+            continue;
+        };
+        if !matches!(&of.kind, ExprKind::Var(v) if v == m) {
+            continue;
+        }
+        stmt.kind = StmtKind::Destructure {
+            pattern: js::Pattern::Object(vec![(export.clone(), name.clone(), None)], None),
+            value: Expr {
+                kind: ExprKind::Await(import.clone()),
+                span: value.span,
+            },
+            mutable: false,
+        };
+    }
 }
 
 fn block(body: &mut Vec<Stmt>) {
@@ -544,6 +594,7 @@ fn expr(e: &mut Expr) {
         | ExprKind::Var(_)
         | ExprKind::Symbol(_)
         | ExprKind::FunctionHole(_)
+        | ExprKind::Import(_)
         | ExprKind::Regex(_) => {}
     }
 }

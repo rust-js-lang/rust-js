@@ -1063,3 +1063,49 @@ pub fn call<A: 'static>(value: A, given: Option<&'static dyn Fn(A) -> u32>) -> u
   const lib = await import(join(dir, "lib.js"));
   expect([lib.count("a"), lib.count_unmarked("b"), lib.first("c", 4), lib.call(5, (n: number) => n + 1)]).toEqual([[3, "a"], [3, "b"], [4, "c"], 6]);
 });
+
+// ADR 0304: `js::import!(item)` loads the module that has it when it's asked
+// for, as react.dev's useSandpackLint does, `const { runESLint } = await
+// import("./runESLint")`: a crate's function or a binding's, which nothing
+// imports statically. `js::import_module!(item)`, of a module's default
+// export, is the module itself, for React's `lazy`.
+test("js::import! loads a module when it's asked for", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("dynamic-import");
+  writeFileSync(join(dir, "math.js"), "export const twice = (n) => n * 2;\n");
+  writeFileSync(join(dir, "lint.rs"), "pub fn run(n: u32) -> u32 {\n    n + 1\n}\n");
+  writeFileSync(join(dir, "root.rs"), "pub fn Root() -> u32 {\n    7\n}\njs::export_default!(Root);\n");
+  writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
+mod lint;
+mod root;
+unsafe extern "Rust" {
+    #[link_name = "./math.js#twice"]
+    safe fn twice(n: f64) -> f64;
+}
+pub async fn linted(n: u32) -> u32 {
+    let run = js::import!(lint::run).await;
+    run(n)
+}
+pub async fn doubled(n: f64) -> f64 {
+    let twice = js::import!(twice).await;
+    twice(n)
+}
+pub async fn named(n: u32) -> u32 {
+    let next = js::import!(lint::run).await;
+    next(n)
+}
+pub async fn rooted() -> u32 {
+    let module = js::import_module!(root::Root).await;
+    module.default()()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('const { run } = await import("./lint.js");');
+  expect(js).toContain('const { twice } = await import("./math.js");');
+  expect(js).toContain('const { run: next } = await import("./lint.js");');
+  expect(js).toContain('const module = await import("./root.js");');
+  expect(js).not.toMatch(/^import /m);
+  const lib = await import(join(dir, "lib.js"));
+  expect([await lib.linted(1), await lib.doubled(3), await lib.named(2), await lib.rooted()]).toEqual([2, 6, 3, 7]);
+});

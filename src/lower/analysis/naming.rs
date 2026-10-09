@@ -7,7 +7,7 @@ use crate::lower::traits;
 use crate::lower::{Body, FnInfo, camel_case, fresh_in};
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::{self as hir, ItemKind, UseKind};
-use rustc_middle::thir::{ExprKind, Pat, PatKind, StmtKind};
+use rustc_middle::thir::{ExprId, ExprKind, Pat, PatKind, StmtKind};
 use rustc_middle::ty;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
@@ -32,7 +32,25 @@ pub(super) fn js_uses<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> Js
     };
     for body in all_bodies {
         let module = tcx.parent_module_from_def_id(body.def_id);
-        for expr in body.thir.exprs.iter() {
+        // What `js::import!` imports when it's asked for, which nothing
+        // imports statically (ADR 0304).
+        let dynamic: HashSet<ExprId> = (body.thir.exprs.iter())
+            .filter_map(|expr| match expr.kind {
+                ExprKind::Call { fun, ref args, .. }
+                    if crate::lower::fn_def(body.thir[fun].ty).is_some_and(|(id, _)| {
+                        is_binding(tcx, id) && matches!(bindings::js_form(tcx, id), bindings::JsForm::Import { .. })
+                    }) =>
+                {
+                    args.first()
+                        .map(|&arg| crate::lower::body_queries::strip(&body.thir, arg))
+                }
+                _ => None,
+            })
+            .collect();
+        for (id, expr) in body.thir.exprs.iter_enumerated() {
+            if dynamic.contains(&id) {
+                continue;
+            }
             let def_id = match (&expr.kind, expr.ty.kind()) {
                 (ExprKind::ZstLiteral { .. }, ty::FnDef(def_id, _)) | (ExprKind::StaticRef { def_id, .. }, _) => {
                     *def_id

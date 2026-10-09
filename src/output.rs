@@ -63,19 +63,18 @@ impl OutputPlan {
             // A relative module in `#[link_name]` is relative to the root's
             // file (ADR 0028), so a file in a subdirectory climbs up to it.
             let dir = &module.path[..module.path.len().saturating_sub(1)];
+            let located = |from: &str| {
+                if self.located.contains_key(&module.path) {
+                    self.relative_specifier(&module.path, &parent_dir(&self.output).join(from), from)
+                } else {
+                    relocate(from, dir)
+                }
+            };
             let packages = module
                 .packages
                 .into_iter()
                 .map(|package| js::Package {
-                    from: if self.located.contains_key(&module.path) {
-                        self.relative_specifier(
-                            &module.path,
-                            &parent_dir(&self.output).join(&package.from),
-                            &package.from,
-                        )
-                    } else {
-                        relocate(&package.from, dir)
-                    },
+                    from: located(&package.from),
                     ..package
                 })
                 .collect();
@@ -94,6 +93,17 @@ impl OutputPlan {
                 default_export: module.default_export,
             };
 
+            // What it imports when it's asked for, from where its file is, a
+            // module of the crate's by its file's specifier (ADR 0304).
+            js_module.each_expr_mut(&mut |e| {
+                if let js::ExprKind::Import(from) = &mut e.kind {
+                    let specifier = match from {
+                        js::ImportFrom::Module(path) => self.specifier(&module.path, path),
+                        js::ImportFrom::Specifier(specifier) => located(specifier),
+                    };
+                    *from = js::ImportFrom::Specifier(specifier);
+                }
+            });
             crate::prepare::module(&mut js_module);
             // Of the helpers it asked for, and what they use, the names its
             // prepared tree reads (ADR 0103).

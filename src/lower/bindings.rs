@@ -199,6 +199,9 @@ pub(super) enum JsForm {
     Truthy,
     /// `set []`: `this[key] = value`.
     SetIndex,
+    /// `import()`: the item given, of its module loaded when it's asked
+    /// for; `import(*)`, the module whose default export it is (ADR 0304).
+    Import { module: bool },
 }
 
 pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
@@ -211,6 +214,8 @@ pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "in []" => return JsForm::In,
         "!!" => return JsForm::Truthy,
         "set []" => return JsForm::SetIndex,
+        "import()" => return JsForm::Import { module: false },
+        "import(*)" => return JsForm::Import { module: true },
         _ => {}
     }
     if let Some(tag) = name.strip_prefix('<').and_then(|t| t.strip_suffix('>')) {

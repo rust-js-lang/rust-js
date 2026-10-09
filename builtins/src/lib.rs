@@ -37,12 +37,57 @@ pub use weak::*;
 /// it's loaded, as a bundler's CSS does (ADRs 0039 and 0110): written where
 /// it's needed, `js::import!("./App.css");`, as stable Rust has no inner
 /// attribute of a tool. It's a `const _` rust-js reads, and writes nothing of.
+///
+/// Of an item, [`import(..)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/import):
+/// a promise of it, of its module loaded when it's asked for, a function of
+/// the crate's or a binding's of a JS module, which nothing then imports
+/// statically (ADR 0304): `let run = js::import!(lint::run).await;` is
+/// `const { run } = await import("./lint.js");`, as ReScript's `import(M.x)`.
 #[macro_export]
 macro_rules! import {
     ($path:literal) => {
         #[cfg_attr(rust_js, rust_js::import = $path)]
         const _: () = ();
     };
+    ($item:path) => {
+        $crate::import_item($item)
+    };
+}
+
+/// `js::import!`'s, of an item.
+#[doc(hidden)]
+#[cfg_attr(rust_js, rust_js::link_name = "import()")]
+pub fn import_item<T>(item: T) -> Promise<T> {
+    unreachable!()
+}
+
+/// The module whose default export is `item`, loaded when it's asked for:
+/// `js::import_module!(root::Root)` is `import("./root.js")`, the
+/// module's namespace, as React's `lazy` takes it (ADR 0304).
+#[macro_export]
+macro_rules! import_module {
+    ($item:path) => {
+        $crate::import_module_of($item)
+    };
+}
+
+/// `js::import_module!`'s.
+#[doc(hidden)]
+#[cfg_attr(rust_js, rust_js::link_name = "import(*)")]
+pub fn import_module_of<T>(item: T) -> Promise<Module<T>> {
+    unreachable!()
+}
+
+/// A JS module, loaded, whose default export is a `T`: what
+/// [`import_module!`] gives.
+pub struct Module<T>(PhantomData<JsObject>, PhantomData<T>);
+
+impl<T> Module<T> {
+    /// `module.default`.
+    #[cfg_attr(rust_js, rust_js::link_name = "get default")]
+    pub fn default(&self) -> T {
+        unreachable!()
+    }
 }
 
 /// What the module runs when it's loaded, its JS's own statements, as a

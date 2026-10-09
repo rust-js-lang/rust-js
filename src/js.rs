@@ -55,6 +55,19 @@ pub struct Module {
 }
 
 impl Module {
+    /// Each expression in it, outermost first: its functions', its types'
+    /// methods', its `const`s' and its statements'.
+    pub fn each_expr_mut(&mut self, f: &mut dyn FnMut(&mut Expr)) {
+        let methods = self.namespaces.iter_mut().flat_map(|n| n.methods.iter_mut());
+        for function in self.functions.iter_mut().chain(methods) {
+            each_expr_mut(&mut function.body, f);
+        }
+        for constant in &mut self.consts {
+            constant.value.each_mut(f);
+        }
+        each_expr_mut(&mut self.statements, f);
+    }
+
     /// Each variable its code reads, a helper's `$cmp` or its own: what it
     /// imports of the package is the helpers among them (ADR 0103), found
     /// in its tree, not in its text, where a string can spell one.
@@ -292,6 +305,14 @@ pub struct Import {
     pub from: String,
 }
 
+/// Where a dynamic `import()` loads from (ADR 0304): a specifier, or a
+/// module of the crate's by its path, until its file's specifier is known.
+#[derive(Clone)]
+pub enum ImportFrom {
+    Specifier(String),
+    Module(Vec<String>),
+}
+
 /// What one file imports from one JS module: its default export, named
 /// exports as `(export, local)`, and the module itself.
 pub struct Package {
@@ -479,6 +500,8 @@ pub enum ExprKind {
     /// Where such a function goes until the pipeline puts it there: its
     /// item's index.
     FunctionHole(u32),
+    /// `import("./lint.js")`: the module, loaded when it's asked for (ADR 0304).
+    Import(ImportFrom),
     /// A drop function given to one of the crate's functions for its type
     /// parameter, `(item, index, drop)`: until the pipeline keeps it, where
     /// that function uses it, or leaves it out (ADR 0300).
@@ -647,6 +670,10 @@ impl Expr {
 
     pub fn drop_argument(item: u32, index: u32, drop: Expr) -> Expr {
         Expr::new(ExprKind::DropArgument(item, index, Box::new(drop)))
+    }
+
+    pub fn import(from: ImportFrom) -> Expr {
+        Expr::new(ExprKind::Import(from))
     }
 
     pub fn handle(place: Expr) -> Expr {
@@ -928,6 +955,7 @@ impl Expr {
             | ExprKind::Null
             | ExprKind::Symbol(_)
             | ExprKind::FunctionHole(_)
+            | ExprKind::Import(_)
             | ExprKind::Regex(_) => {}
         }
     }
@@ -985,6 +1013,7 @@ impl Expr {
             | ExprKind::Null
             | ExprKind::Symbol(_)
             | ExprKind::FunctionHole(_)
+            | ExprKind::Import(_)
             | ExprKind::Regex(_) => {}
         }
     }
@@ -1025,6 +1054,7 @@ impl Expr {
             | ExprKind::Var(_)
             | ExprKind::Symbol(_)
             | ExprKind::FunctionHole(_)
+            | ExprKind::Import(_)
             | ExprKind::Function(_)
             | ExprKind::Regex(_) => false,
         }
@@ -1141,6 +1171,7 @@ impl Expr {
             | ExprKind::Null
             | ExprKind::Symbol(_)
             | ExprKind::FunctionHole(_)
+            | ExprKind::Import(_)
             | ExprKind::Regex(_) => self.kind.clone(),
         };
         Some(Expr { kind, span: self.span })
@@ -1269,8 +1300,8 @@ impl Expr {
             | ExprKind::Arrow(..)
             | ExprKind::AsyncArrow(..)
             | ExprKind::Function(_) => false,
-            // It lets other code run meanwhile.
-            ExprKind::Await(_) => true,
+            // It lets other code run meanwhile, and loads a module.
+            ExprKind::Await(_) | ExprKind::Import(_) => true,
             ExprKind::Spread(a) | ExprKind::DropArgument(_, _, a) => a.has_effects(),
             ExprKind::Member(object, _) | ExprKind::OptionalMember(object, _) => object.has_effects(),
             // Making one reads nothing: its getter does, later.
