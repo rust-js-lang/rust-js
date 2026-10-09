@@ -113,13 +113,19 @@ test("Rust f64 Display agrees with native output, including special values", () 
   }
 });
 
+// Its dictionary, empty, is written only where a `dyn` of it reads it
+// (ADR 0307).
 test("an empty trait implementation needs no function body", async () => {
   const dir = fixture("marker-trait");
   writeFileSync(join(dir, "lib.rs"), "pub trait Marker {} impl Marker for u32 {}");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).not.toContain("u32Marker");
+  writeFileSync(join(dir, "lib.rs"), "pub trait Marker {} impl Marker for u32 {} pub fn boxed() -> Box<dyn Marker> { Box::new(1u32) }");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const m = await import(join(dir, "lib.js"));
   expect(m.u32Marker()).toEqual({});
   expect(m.u32Marker()).toBe(m.u32Marker());
+  expect(m.boxed().impl).toBe(m.u32Marker());
 });
 
 // A bound of a trait with nothing in it, and supertraits with nothing,

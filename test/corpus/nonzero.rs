@@ -11,11 +11,17 @@ fn year(n: i32) -> Option<Year> {
     NonZeroI32::new(n).map(Year)
 }
 
+// `new` of a number known only when it runs, shown as it is.
+fn non_zero(n: u32) -> Option<NonZero<u32>> {
+    NonZero::new(n)
+}
+
 fn main() {
     let a = NonZeroU8::new(7).unwrap();
     let b = NonZero::new(0u32);
     println!("{} {:?} {:?} {}", a, a, b, a.get() + 1);
     println!("{:?} {:?}", year(2024), year(0));
+    println!("{:?} {:?}", non_zero(0), non_zero(3));
     let big = NonZeroU64::new(u64::MAX).unwrap();
     println!("{} {} {}", big, big.leading_zeros(), NonZeroU8::MIN.get());
     let c = a | 8;

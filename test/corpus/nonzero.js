@@ -23,6 +23,10 @@ function year(n) {
   return value ? [value] : undefined;
 }
 
+function non_zero(n) {
+  return n === 0 ? undefined : n;
+}
+
 const SEVEN = 7;
 
 function main() {
@@ -34,25 +38,30 @@ function main() {
   console.log(
     `${arg == null ? "None" : `Some(${yearDebug_fmt(arg)})`} ${arg$1 == null ? "None" : `Some(${yearDebug_fmt(arg$1)})`}`,
   );
+  const arg$2 = non_zero(0);
+  const arg$3 = non_zero(3);
+  console.log(
+    `${arg$2 == null ? "None" : `Some(${arg$2})`} ${arg$3 == null ? "None" : `Some(${arg$3})`}`,
+  );
   const big = $unwrap(18446744073709551615n);
   console.log(`${big} ${$bigLeadingZeros(big)} 1`);
   const c = a | 8;
   console.log(`${c} ${a < c} ${a === $unwrap(7)}`);
-  const arg$2 = $nonZeroOk($parseInt("12", 0, 255), "number would be zero for non-zero type");
-  const arg$3 = $nonZeroOk($parseInt("0", 0, 255), "number would be zero for non-zero type");
+  const arg$4 = $nonZeroOk($parseInt("12", 0, 255), "number would be zero for non-zero type");
+  const arg$5 = $nonZeroOk($parseInt("0", 0, 255), "number would be zero for non-zero type");
   console.log(
-    `${arg$2.TAG === "Ok" ? `Ok(${arg$2._0})` : `Err(${$debugParseError(arg$2._0, "ParseIntError")})`} ${arg$3.TAG === "Ok" ? `Ok(${arg$3._0})` : `Err(${$debugParseError(arg$3._0, "ParseIntError")})`}`,
+    `${arg$4.TAG === "Ok" ? `Ok(${arg$4._0})` : `Err(${$debugParseError(arg$4._0, "ParseIntError")})`} ${arg$5.TAG === "Ok" ? `Ok(${arg$5._0})` : `Err(${$debugParseError(arg$5._0, "ParseIntError")})`}`,
   );
   const result = $nonZeroOk($tryFromInt(3, 0, 255), "number would be zero for non-zero type");
-  const arg$4 = result.TAG === "Ok" ? result._0 : undefined;
-  const arg$5 = $nonZeroOk($tryFromInt(0, 0, 255), "number would be zero for non-zero type");
+  const arg$6 = result.TAG === "Ok" ? result._0 : undefined;
+  const arg$7 = $nonZeroOk($tryFromInt(0, 0, 255), "number would be zero for non-zero type");
   console.log(
-    `${arg$4 == null ? "None" : `Some(${arg$4})`} ${arg$5.TAG === "Ok" ? `Ok(${arg$5._0})` : `Err(${$debugParseError(arg$5._0, "TryFromIntError")})`}`,
+    `${arg$6 == null ? "None" : `Some(${arg$6})`} ${arg$7.TAG === "Ok" ? `Ok(${arg$7._0})` : `Err(${$debugParseError(arg$7._0, "TryFromIntError")})`}`,
   );
   const d = -5;
-  const arg$6 = Math.abs(d) | 0;
-  const arg$7 = $checked(d * $unwrap(2), -2147483648, 2147483647);
-  console.log(`${arg$6} ${arg$7 == null ? "None" : `Some(${arg$7})`}`);
+  const arg$8 = Math.abs(d) | 0;
+  const arg$9 = $checked(d * $unwrap(2), -2147483648, 2147483647);
+  console.log(`${arg$8} ${arg$9 == null ? "None" : `Some(${arg$9})`}`);
   const v = [$unwrap(9), a, $unwrap(1)];
   v.sort((a, b) => a - b);
   console.log(`[${v.map((item) => String(item)).join(", ")}] 8`);

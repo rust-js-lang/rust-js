@@ -3220,6 +3220,16 @@ impl Drop for Noisy {
     fn drop(&mut self) {}
 }
 
+pub fn nested() -> u32 {
+    fn outer() -> u32 {
+        fn inner() -> u32 {
+            4
+        }
+        inner()
+    }
+    outer()
+}
+
 pub fn listed(n: u32) -> Vec<u32> {
     fn list_of(n: u32) -> Vec<u32> {
         let mut list = Vec::new();
@@ -3248,7 +3258,9 @@ pub fn guarded() -> u32 {
   expect(js).toContain("  function list_of(n) {\n    const list = [];\n    list.push(n);");
   // Called before a destructor's `try`, it's written before it.
   expect(js).toMatch(/function later\(\) \{\n    return \(three\(\) \+ 4\) >>> 0;\n  \}\n  try \{/);
-  expect([lib.kept([1, undefined, 3]), lib.started(), lib.guarded()]).toEqual([[[1, 3], 2], 10, 14]);
+  // One in another's body is a declaration there too.
+  expect(js).toContain("  function outer() {\n    function inner() {");
+  expect([lib.kept([1, undefined, 3]), lib.started(), lib.guarded(), lib.nested()]).toEqual([[[1, 3], 2], 10, 14, 4]);
 });
 
 // ADR 0309: a match that only gives a value is one expression, as a person

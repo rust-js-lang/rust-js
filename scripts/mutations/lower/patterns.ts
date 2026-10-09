@@ -368,7 +368,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "                    in_place &= place\n",
     replace: "                    in_place &= true\n",
-    tests: ["test/snapshots.test.ts", "-t", "strings"],
+    tests: ["test/snapshots.test.ts", "-t", "structs: the generated JS"],
+    snapshots: true,
   },
   {
     name: "default-of-another-type",

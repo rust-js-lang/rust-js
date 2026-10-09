@@ -218,4 +218,12 @@ export const mutations: Mutation[] = [
     replace: "            super::recognition::known_derive(tcx, id)\n",
     tests: ["test/bindings.test.ts","-t","binding method is read of the value"],
   },
+  {
+    name: "local-function-nested-expression",
+    breaks: "a function written in a local function's body is a function expression, `(function test() {})`, which nothing can call",
+    file: "src/lower/pipeline.rs",
+    find: "                fill_holes(&mut function.body, holes);\n                stmt.kind = StmtKind::Function(Box::new(function));\n",
+    replace: "                stmt.kind = StmtKind::Function(Box::new(function));\n",
+    tests: ["test/lowering.test.ts", "-t", "local function there"],
+  },
 ];

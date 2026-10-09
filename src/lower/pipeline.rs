@@ -713,25 +713,20 @@ fn reexports(
 
 /// Each hole in `stmts` filled with its function, and each in that (ADR 0296).
 fn fill_holes(stmts: &mut Vec<js::Stmt>, holes: &mut HashMap<u32, js::Function>) {
-    // A function written in a body, a declaration there (ADR 0308).
+    // A function written in a body, a declaration there, and those written
+    // in it, before what's left is taken for an expression (ADR 0308).
     js::each_block_mut(stmts, &mut |stmts| {
         for stmt in stmts.iter_mut() {
             if let StmtKind::Expr(e) = &stmt.kind
                 && let js::ExprKind::FunctionHole(index) = e.kind
-                && let Some(function) = holes.remove(&index)
+                && let Some(mut function) = holes.remove(&index)
             {
+                fill_holes(&mut function.body, holes);
                 stmt.kind = StmtKind::Function(Box::new(function));
             }
         }
     });
     js::each_expr_mut(stmts, &mut |e| fill_hole(e, holes));
-    js::each_block_mut(stmts, &mut |stmts| {
-        for stmt in stmts.iter_mut() {
-            if let StmtKind::Function(function) = &mut stmt.kind {
-                fill_holes(&mut function.body, holes);
-            }
-        }
-    });
 }
 
 fn fill_hole(e: &mut Expr, holes: &mut HashMap<u32, js::Function>) {
