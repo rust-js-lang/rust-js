@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/logo/rust-js.png" alt="Rust.js logo" height=170>
+  <img src="docs/logo/rust-js.png" alt="Rust.js logo" width="235" height="170">
 </p>
 <h1 align="center">Rust.js</h1>
 <p align="center"><b>Rust in. <i>Readable</i> JavaScript out.</b></p>
