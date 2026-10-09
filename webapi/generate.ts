@@ -1199,9 +1199,10 @@ function module(name: string, all: Fn[], typed: string[] = [], constants: string
   line(`pub mod ${name} {`);
   // The crate's types, where its functions name one: `supports(type_: &str)`
   // names none, nor `supported_content_encodings() -> &'static [String]`,
-  // whose `String` is the prelude's.
+  // whose `String` is the prelude's, nor `&dyn core::any::Any`, a path, nor
+  // `debug<D>(data: D)`, whose `D` is its own.
   const named = [...all.flatMap((f) => [...f.params, f.result]), ...typed]
-    .some((t) => /\b(?!(?:String|Vec|Option|Box)\b)[A-Z]\w*/.test(t.replace(/\/\/\/.*$/gm, "")));
+    .some((t) => /(?<!::)\b(?!(?:String|Vec|Option|Box)\b)[A-Z]\w+/.test(t.replace(/\/\/.*$|"[^"]*"/gm, "")));
   if (named) line(`    use super::*;`);
   for (const c of constants) {
     line();

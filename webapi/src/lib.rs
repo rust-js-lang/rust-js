@@ -91039,7 +91039,6 @@ pub mod web_assembly {
 /// The [`console`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console) namespace.
 
 pub mod console {
-    use super::*;
 
     unsafe extern "Rust" {
         /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/assert)
