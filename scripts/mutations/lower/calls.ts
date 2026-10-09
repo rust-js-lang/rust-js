@@ -366,4 +366,12 @@ export const mutations: Mutation[] = [
     replace: "            if false {",
     tests: ["test/bindings.test.ts", "-t", "skips what's falsy"],
   },
+  {
+    name: "skips-falsy-test-kept",
+    breaks: "what skips what's falsy is given a test that keeps its `!!`, `(!!error || ready) && \"b\"`",
+    file: "src/lower/calls.rs",
+    find: "                        *arg = Expr::bin(Op::And, test.tested(), (**value).clone());\n",
+    replace: "                        *arg = Expr::bin(Op::And, (**test).clone(), (**value).clone());\n",
+    tests: ["test/bindings.test.ts", "-t", "skips what's falsy"],
+  },
 ];

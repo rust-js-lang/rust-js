@@ -163,4 +163,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "an option's method call ends where it's None"],
   },
+  {
+    name: "truthy-test-kept",
+    breaks: "`if js::truthy(value)` is `if (!!value)`, not `if (value)`",
+    file: "src/js.rs",
+    find: "                value.tested()\n",
+    replace: "                self.clone()\n",
+    tests: ["test/bindings.test.ts", "-t", "tested as JS tests it"],
+  },
+  {
+    name: "test-parts-kept",
+    breaks: "`if (a && !!text)`, not `if (a && text)`",
+    file: "src/js.rs",
+    find: "            ExprKind::Binary(op @ (Op::And | Op::Or), a, b) => Expr {\n",
+    replace: "            ExprKind::Binary(op @ (Op::And | Op::Or), a, b) if false => Expr {\n",
+    tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
+  },
 ];

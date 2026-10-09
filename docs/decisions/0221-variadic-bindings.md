@@ -56,4 +56,6 @@ as classnames does. An argument shown only if a test holds,
 `expanded.then_some("wide")`, is given as `expanded && "wide"`, where it was
 `expanded ? "wide" : undefined`: such a function skips `false` as it does
 `undefined`, and that's how react.dev writes `cn('a', isExpanded &&
-'sp-layout-expanded')`.
+'sp-layout-expanded')`. The test is read as a test, its `!!o` as `o` (ADR 0298):
+`(error || bundlerIsReady) && 'overflow-auto'`, as react.dev's Preview
+writes it.

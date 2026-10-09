@@ -1180,6 +1180,21 @@ impl Expr {
         }
     }
 
+    /// This as a test: `!!a` is `a`, in the parts of `&&` and `||` too,
+    /// whose value the test only asks the truth of.
+    pub fn tested(&self) -> Expr {
+        match &self.kind {
+            ExprKind::Unary(UnaryOp::Not, inner) if let ExprKind::Unary(UnaryOp::Not, value) = &inner.kind => {
+                value.tested()
+            }
+            ExprKind::Binary(op @ (Op::And | Op::Or), a, b) => Expr {
+                kind: ExprKind::Binary(*op, Box::new(a.tested()), Box::new(b.tested())),
+                span: self.span,
+            },
+            _ => self.clone(),
+        }
+    }
+
     /// Is this `(x) => x`?
     pub fn is_identity(&self) -> bool {
         let ExprKind::Arrow(params, body) = &self.kind else {

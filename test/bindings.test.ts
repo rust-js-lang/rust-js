@@ -1006,13 +1006,18 @@ pub fn classes(expanded: bool, shown: bool) -> String {
 pub fn listed(expanded: bool) -> String {
     plain(&[Some("a"), expanded.then_some("wide")])
 }
+pub struct Failure(pub u32);
+pub fn flagged(error: Option<&Failure>, ready: bool) -> String {
+    cn(&[Some("a"), (error.is_some() || ready).then_some("b")])
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('return cn("a", expanded && "wide", !expanded && shown && "tall");');
   expect(js).toContain('return cn("a", expanded ? "wide" : undefined);');
+  expect(js).toContain('return cn("a", (error || ready) && "b");');
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.classes(true, true), lib.classes(false, true), lib.classes(false, false), lib.listed(true)]).toEqual(["a wide", "a tall", "a", "a wide"]);
+  expect([lib.classes(true, true), lib.classes(false, true), lib.classes(false, false), lib.listed(true), lib.flagged([1], false), lib.flagged(undefined, false)]).toEqual(["a wide", "a tall", "a", "a wide", "a b", "a"]);
 });
 
 // ADR 0301: a binding that can't throw, `#[rust_js::cannot_throw]`, as reading

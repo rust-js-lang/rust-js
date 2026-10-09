@@ -290,13 +290,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
             // What skips what's falsy is given `test && value` for `test ?
-            // value : undefined`: `false` is skipped as `undefined` is.
+            // value : undefined`: `false` is skipped as `undefined` is, and
+            // the test read as one, `(error || ready) && "b"`.
             if super::bindings::skips_falsy(self.tcx, def_id) {
                 for arg in &mut args {
                     if let js::ExprKind::Cond(test, value, none) = &arg.kind
                         && matches!(none.kind, js::ExprKind::Undefined)
                     {
-                        *arg = Expr::bin(Op::And, (**test).clone(), (**value).clone());
+                        *arg = Expr::bin(Op::And, test.tested(), (**value).clone());
                     }
                 }
             }

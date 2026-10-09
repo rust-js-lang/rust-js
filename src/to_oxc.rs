@@ -492,7 +492,7 @@ impl<'a> Cx<'a> {
     /// A test, which JS makes a `bool` of itself: `!!a` is `a` there, and
     /// in what `&&` and `||` test of it.
     fn test(&self, e: &js::Expr) -> Expression<'a> {
-        self.expr(&tested(e))
+        self.expr(&e.tested())
     }
 
     /// `stmts`, each pushed to `out`. An `if` whose branch leaves has no
@@ -939,7 +939,7 @@ impl<'a> Cx<'a> {
             }
             // `a ? a : b` is `a || b`: `a` where it's truthy, else `b`.
             ExprKind::Cond(test, then, els)
-                if js::same_path(&tested(test), then) && !matches!(els.kind, ExprKind::Undefined) =>
+                if js::same_path(&test.tested(), then) && !matches!(els.kind, ExprKind::Undefined) =>
             {
                 Expression::new_logical_expression(sp, self.expr(then), LogicalOperator::Or, self.expr(els), b)
             }
@@ -1472,19 +1472,6 @@ fn member_name(property: &str) -> bool {
 fn js_identifier(name: &str) -> bool {
     name.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_' || c == '$')
         && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '$')
-}
-
-/// `e` as a test: `!!a` is `a`, in the parts of `&&` and `||` too, whose
-/// value the test only asks the truth of.
-fn tested(e: &js::Expr) -> js::Expr {
-    match &e.kind {
-        ExprKind::Unary(UnaryOp::Not, inner) if let ExprKind::Unary(UnaryOp::Not, value) = &inner.kind => tested(value),
-        ExprKind::Binary(op @ (Op::And | Op::Or), a, b) => js::Expr {
-            kind: ExprKind::Binary(*op, Box::new(tested(a)), Box::new(tested(b))),
-            span: e.span,
-        },
-        _ => e.clone(),
-    }
 }
 
 /// Where `code`, a module rust-js wrote, or its `declarations`, names another

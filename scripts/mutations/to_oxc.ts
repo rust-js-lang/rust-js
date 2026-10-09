@@ -211,14 +211,6 @@ export const mutations: Mutation[] = [
     tests: ["test/modules.test.ts", "-t", "js::on_load!"],
   },
   {
-    name: "truthy-test-kept",
-    breaks: "`if js::truthy(value)` is `if (!!value)`, not `if (value)`",
-    file: "src/to_oxc.rs",
-    find: "= &inner.kind => tested(value),\n",
-    replace: "= &inner.kind => e.clone(),\n",
-    tests: ["test/bindings.test.ts", "-t", "tested as JS tests it"],
-  },
-  {
     name: "let-undefined-written",
     breaks: "a module's variable set later is `let SEEN = undefined;`, not `let SEEN;`",
     file: "src/to_oxc.rs",
@@ -235,19 +227,11 @@ export const mutations: Mutation[] = [
     tests: ["test/modules.test.ts", "-t", "only read and set is the module's let"],
   },
   {
-    name: "test-parts-kept",
-    breaks: "`if (a && !!text)`, not `if (a && text)`",
-    file: "src/to_oxc.rs",
-    find: "        ExprKind::Binary(op @ (Op::And | Op::Or), a, b) => js::Expr {\n",
-    replace: "        ExprKind::Binary(op @ (Op::And | Op::Or), a, b) if false => js::Expr {\n",
-    tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
-  },
-  {
     name: "same-test-and-value-conditional",
     breaks: "`code ? code : null`, not `code || null`",
     file: "src/to_oxc.rs",
-    find: "                if js::same_path(&tested(test), then) && !matches!(els.kind, ExprKind::Undefined) =>\n",
-    replace: "                if false && js::same_path(&tested(test), then) && !matches!(els.kind, ExprKind::Undefined) =>\n",
+    find: "                if js::same_path(&test.tested(), then) && !matches!(els.kind, ExprKind::Undefined) =>\n",
+    replace: "                if false && js::same_path(&test.tested(), then) && !matches!(els.kind, ExprKind::Undefined) =>\n",
     tests: ["test/lowering.test.ts", "-t", "nullable field's None is null"],
   },
   {
