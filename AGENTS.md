@@ -40,15 +40,35 @@ milestone on the way.
 ## Ports drive rust-js
 
 We port TypeScript and JavaScript projects to Rust, react.dev first, to find
-what rust-js lacks. The port is not the goal; what it uncovers is.
+what rust-js lacks. The port is not the goal; what it uncovers is. A port
+that lands with a gap worked around has failed at its only job, however
+well it runs.
 
-- **A limit stops the port.** When a port needs a feature rust-js lacks, a
-  binding, or gets JavaScript that doesn't read as the original does, stop
-  porting and fix rust-js: a failing test, the fix, its mutations, an ADR.
-  Then write the port the natural way.
-- **Never work around rust-js in a port**: no local stand-in bindings, no
-  restructured Rust to dodge an error, no accepting noisy output. A
-  workaround hides the gap the port exists to find.
+- **Anything short stops the port.** Stop porting and fix rust-js, with a
+  failing test, the fix, its mutations and an ADR, when a port meets any of
+  these:
+  - a feature rust-js lacks, or an error where Rust is fine;
+  - a binding missing from the js, webapi or react crates, or one that
+    types a value more narrowly or loosely than TypeScript does (an
+    `any`, a missing `| undefined`);
+  - generated JavaScript that doesn't read as the original does: a
+    rename, a box, a helper, a cast, a copy, a lost name, a statement
+    where the original has an expression;
+  - Rust that has to be bent to get there: a narrower type than the
+    original's, a leak, a restructured function.
+
+  Then write the port the natural way, on the fixed rust-js.
+- **Never work around rust-js in a port**: no local stand-in bindings for
+  what a crate should bind, no `#[link_name = "this"]` casts, no
+  restructured or narrowed Rust to dodge an error, no accepting noisy
+  output. A workaround hides the gap the port exists to find.
+- **Don't decide alone that a gap is acceptable.** "Cosmetic", "correct
+  anyway" and "worth revisiting later" are not reasons to keep porting. If
+  fixing it seems out of proportion, stop and ask the user; record what
+  they decide.
+- **Read every generated file against its original before committing a
+  port**, line by line. Each difference is fixed in rust-js first, or the
+  user has accepted it by name.
 - **A port is faithful**: the same behavior, and output as close to the
   original as its Rust allows.
 
