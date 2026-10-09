@@ -12,20 +12,20 @@ export function Editor({ state, view, onSubmit }) {
   useEffect(() => {
     const editor = openView($unwrap(parent.current, "the editor's element is mounted"), state);
     made.current = editor;
-    if (view != null) {
+    if (view) {
       view.current = editor;
     }
     return () => {
       editor.destroy();
       made.current = undefined;
-      if (view != null) {
+      if (view) {
         view.current = undefined;
       }
     };
   }, []);
   useEffect(() => {
     const editor = made.current;
-    if (editor != null) {
+    if (editor) {
       show(editor, state);
       setTheme(editor, dark);
     }

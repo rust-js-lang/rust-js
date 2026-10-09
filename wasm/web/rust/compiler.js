@@ -121,7 +121,7 @@ function directoryOf(sources) {
     let folder = top;
     let name;
     const match = $rsplitOnce(path, "/");
-    if (match != null) {
+    if (match) {
       for (const part of match[0].split("/")) {
         if (!folder.has(part)) {
           folder.set(part, new Directory(new Map()));

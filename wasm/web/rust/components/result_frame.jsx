@@ -9,7 +9,7 @@ import { $displayF64, $f64Max, $f64Min } from "@rust-js/runtime";
 
 export function ResultFrame({ program, onOutcome }) {
   const frame = useRef(undefined);
-  const [run, page] = program != null ? [program.run, program.page] : [0, ""];
+  const [run, page] = program ? [program.run, program.page] : [0, ""];
   useEffect(() => {
     const controller = new AbortController();
     if (run > 0) {
@@ -21,20 +21,20 @@ export function ResultFrame({ program, onOutcome }) {
         (e) => {
           let fromFrame;
           const match = frame.current;
-          if (match != null) {
+          if (match) {
             fromFrame = Object.is(e.source, match.contentWindow);
           } else {
             fromFrame = false;
           }
           let report;
           const match$1 = readReport(e);
-          if (match$1 != null && fromFrame && match$1.run == run) {
+          if (match$1 && fromFrame && match$1.run == run) {
             report = match$1;
           } else {
             return;
           }
           const value = frame.current;
-          if (report.height != null && value != null) {
+          if (report.height != null && value) {
             const style = `height: ${$displayF64($f64Min($f64Max(report.height, 280), 4000))}px`;
             value.setAttribute("style", style);
             return;
@@ -60,7 +60,7 @@ export function ResultFrame({ program, onOutcome }) {
     };
   }, [run]);
   return (
-    <section id="result-section" className="mt-3" hidden={program == null}>
+    <section id="result-section" className="mt-3" hidden={!program}>
       <h2 className={HEADING}>
         Result{" "}
         <span className="font-normal">

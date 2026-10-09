@@ -8,14 +8,14 @@ export function buildTree(paths) {
     let folder = tree;
     let name;
     const match = $rsplitOnce(path, "/");
-    if (match != null) {
+    if (match) {
       for (const part of match[0].split("/")) {
         if (!folder.some(([n]) => n === part)) {
           folder.push([part, { TAG: "Folder", _0: [] }]);
         }
         let tmp;
         const match$1 = folder.find(([n]) => n === part);
-        if (match$1 != null && match$1[1].TAG === "Folder") {
+        if (match$1 && match$1[1].TAG === "Folder") {
           tmp = match$1[1]._0;
         } else {
           throw new Error("internal error: entered unreachable code: a folder, found or just made");
