@@ -3094,3 +3094,28 @@ pub fn less(xs: &[u32]) -> Vec<u32> {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.items([1, 2]), lib.words("a, ,b"), lib.less([0, 2])]).toEqual([[{ n: 2 }], ["a", "b"], [1]]);
 });
+
+// `?` of an Option of a value never falsy tests it by its truth, as
+// react.dev's runESLint writes `if (!error) return undefined;` (ADR 0298).
+// A number's tests it against `null`.
+test("? of an Option never falsy tests its truth", async () => {
+  const dir = fixture("question-truth");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Item {
+    pub n: u32,
+}
+pub fn first(item: Option<&Item>) -> Option<u32> {
+    let item = item?;
+    Some(item.n + 1)
+}
+pub fn counted(n: Option<u32>) -> Option<u32> {
+    let n = n?;
+    Some(n + 1)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("if (!item) {\n    return;\n  }");
+  expect(js).toContain("if (n == null) {\n    return;\n  }");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.first({ n: 1 }), lib.first(undefined), lib.counted(0), lib.counted(undefined)]).toEqual([2, undefined, 1, undefined]);
+});

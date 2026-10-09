@@ -15,7 +15,7 @@ function climb(d) {
   let d$live = true;
   try {
     const value = step(d);
-    if (value == null) {
+    if (!value) {
       return;
     }
     if (d$live) {
@@ -24,7 +24,7 @@ function climb(d) {
     d = value;
     d$live = true;
     const value$1 = step(d);
-    if (value$1 == null) {
+    if (!value$1) {
       return;
     }
     if (d$live) {
@@ -44,7 +44,7 @@ function climb(d) {
 function first(d) {
   try {
     const value = step(d);
-    if (value == null) {
+    if (!value) {
       return;
     }
     const e = value;
@@ -60,7 +60,7 @@ function first(d) {
 
 function discarded(d) {
   const value = step(d);
-  if (value == null) {
+  if (!value) {
     return;
   }
   dDrop_drop(value);

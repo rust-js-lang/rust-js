@@ -84,7 +84,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             } else {
                 subject.clone()
             };
-            (Expr::bin(Op::LooseEq, subject, Expr::null()), Expr::undefined(), value)
+            // Of a value never falsy, `!o` (ADR 0298).
+            let failed = match self.option_of(ty) {
+                Some(inner) => self.absent(subject, inner),
+                None => Expr::bin(Op::LooseEq, subject, Expr::null()),
+            };
+            (failed, Expr::undefined(), value)
         } else {
             let failed = Expr::bin(Op::Eq, Expr::member(subject.clone(), "TAG"), Expr::str("Err"));
             let error = Expr::member(subject.clone(), "_0");

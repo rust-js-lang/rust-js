@@ -55,4 +55,5 @@ What `filter_map` and `find_map` keep of a value never falsy is tested by
 its truth too, and a callback that only tests its argument's truth,
 `(x) => !!x`, is `Boolean`, which is `!!x` and reads no other argument:
 `.map(f).filter(Boolean)`, as react.dev's runESLint and TeamMember write
-it. A number's or a string's `Option` keeps `(item) => item != null`.
+it. A number's or a string's `Option` keeps `(item) => item != null`. And `?` of one is
+`if (!o) return;`, as react.dev's runESLint writes `if (!error)`.
