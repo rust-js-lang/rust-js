@@ -337,7 +337,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if state.graph.headers.contains(&block) {
             self.flush(state, &mut Vec::new())?;
             state.labels.push(block);
-            let body = self.mir_within(state, block, &merges)?;
+            let mut body = self.mir_statements(state, block)?;
+            body.extend(self.mir_within(state, block, &merges)?);
             state.labels.pop();
             return Ok(vec![
                 StmtKind::While {
@@ -348,14 +349,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .at(js::Span::NONE),
             ]);
         }
-        self.mir_within(state, block, &merges)
+        let mut out = self.mir_statements(state, block)?;
+        out.extend(self.mir_within(state, block, &merges)?);
+        Ok(out)
     }
 
-    /// `block`'s code, inside a labeled block for each of `merges`, each
-    /// followed by its own code (Ramsey's `nodeWithin`).
+    /// Where `block` goes, inside a labeled block for each of `merges`, each
+    /// followed by its own code (Ramsey's `nodeWithin`). Its statements come
+    /// before, as none of them branches: what they bind is seen where its
+    /// branches meet.
     fn mir_within(&mut self, state: &mut State<'_, 'tcx>, block: BasicBlock, merges: &[BasicBlock]) -> R<Vec<Stmt>> {
         let Some((&merge, inner)) = merges.split_first() else {
-            return self.mir_block(state, block);
+            return self.mir_terminator(state, block);
         };
         state.labels.push(merge);
         let mut within = self.mir_within(state, block, inner)?;
@@ -384,8 +389,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.mir_tree(state, to)
     }
 
-    /// A block's statements, then where it goes.
-    fn mir_block(&mut self, state: &mut State<'_, 'tcx>, block: BasicBlock) -> R<Vec<Stmt>> {
+    /// A block's statements.
+    fn mir_statements(&mut self, state: &mut State<'_, 'tcx>, block: BasicBlock) -> R<Vec<Stmt>> {
         let data = &state.body.basic_blocks[block];
         let mut out = Vec::new();
         for statement in &data.statements {
@@ -413,7 +418,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         }
-        let terminator = data.terminator();
+        Ok(out)
+    }
+
+    /// Where a block goes.
+    fn mir_terminator(&mut self, state: &mut State<'_, 'tcx>, block: BasicBlock) -> R<Vec<Stmt>> {
+        let mut out = Vec::new();
+        let terminator = state.body.basic_blocks[block].terminator();
         let span = terminator.source_info.span;
         match &terminator.kind {
             TerminatorKind::Goto { target } => out.extend(self.mir_branch(state, block, *target)?),

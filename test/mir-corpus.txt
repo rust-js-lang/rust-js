@@ -1,6 +1,7 @@
 assert_failure.rs
 begin_panic_str.rs
 begin_panic_string.rs
+bindings_before_branch.rs
 bit_methods.rs
 bitwise_operators.rs
 block_modules.rs
