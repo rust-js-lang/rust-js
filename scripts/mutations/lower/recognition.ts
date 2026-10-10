@@ -1132,4 +1132,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","slice_bytes_text"],
   },
+  {
+    name: "ties-always-unseen",
+    breaks: "an unstable sort of a type's own `Ord` is JS's stable sort",
+    file: "src/lower/recognition.rs",
+    find: "            _ => self.compares_by_value(ty) || ty.is_char(),",
+    replace: "            _ => true,",
+    tests: ["test/corpus.test.ts","-t","sort_unstable_ties"],
+  },
+  {
+    name: "select-not-cell",
+    breaks: "`select_nth_unstable`'s handle isn't the call's own cell",
+    file: "src/lower/recognition.rs",
+    find: "                        | SliceOp::SelectNth { .. }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","sort_unstable_ties"],
+  },
 ];

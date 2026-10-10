@@ -664,7 +664,7 @@
 + str::trim_right_matches
 + str::trim_start
 + str::trim_start_matches
-# slice 122 of 133
+# slice 125 of 133
 - slice::align_to
 - slice::align_to_mut
 + slice::array_windows
@@ -745,9 +745,9 @@
 + slice::rsplit_mut
 + slice::rsplitn
 + slice::rsplitn_mut
-- slice::select_nth_unstable
-- slice::select_nth_unstable_by
-- slice::select_nth_unstable_by_key
++ slice::select_nth_unstable
++ slice::select_nth_unstable_by
++ slice::select_nth_unstable_by_key
 + slice::sort
 + slice::sort_by
 + slice::sort_by_cached_key

@@ -17,6 +17,7 @@ import {
   $removeOpt,
   $retain,
   $someAt,
+  $sortUnstable,
   $traitImpl,
   $unwrap,
 } from "@rust-js/runtime";
@@ -258,7 +259,7 @@ export function report() {
     $orInsertWith(words, key, () => []).push(w$1);
   }
   const lens = Array.from(words.keys());
-  lens.sort((a, b) => $cmp(b, a));
+  $sortUnstable(lens, (a, b) => $cmp(b, a) < 0, "network");
   const arg$5 = $unwrap(words.get(5), "no entry found for key");
   out += `[${lens.map((item) => String(item)).join(", ")}] [${arg$5.map((item) => $debugStr(item)).join(", ")}]\n`;
   out += heaps();

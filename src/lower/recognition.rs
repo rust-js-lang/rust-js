@@ -18,7 +18,7 @@ use super::std_types::option::OptionPlaceOp;
 use super::std_types::pin::PinOp;
 use super::std_types::range::{RangeKind, RangeOp};
 use super::std_types::rc::RcOp;
-use super::std_types::slice::SliceOp;
+use super::std_types::slice::{SliceOp, SortWith};
 use super::std_types::text::{StringEdit, TextOp};
 use super::std_types::uninit::UninitOp;
 use rustc_ast::Mutability;
@@ -450,6 +450,7 @@ impl Std {
                         | SliceOp::SplitEndMut { .. }
                         | SliceOp::SplitOff { mutable: true, .. }
                         | SliceOp::GetDisjointMut { .. }
+                        | SliceOp::SelectNth { .. }
                 )
                 | Std::Any(AnyOp::DowncastMut)
                 | Std::Uninit(UninitOp::Write | UninitOp::InitMut)
@@ -1960,9 +1961,30 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 start: false,
                 end: true,
             }),
-            "sort" | "sort_unstable" if owner.is_slice() => Std::Sort,
-            "sort_by" | "sort_unstable_by" if owner.is_slice() => Std::SortBy,
-            "sort_by_key" | "sort_unstable_by_key" if owner.is_slice() => Std::SortByKey,
+            // An unstable sort is JS's stable one only where items that compare
+            // equal can't be told apart; else std's own (ADR 0342).
+            "sort" if owner.is_slice() => Std::Sort,
+            "sort_unstable" if owner.is_slice() && self_ty.is_some_and(|t| self.ties_unseen(t)) => Std::Sort,
+            "sort_by" if owner.is_slice() => Std::SortBy,
+            "sort_by_key" if owner.is_slice() => Std::SortByKey,
+            "sort_unstable"
+            | "sort_unstable_by"
+            | "sort_unstable_by_key"
+            | "select_nth_unstable"
+            | "select_nth_unstable_by"
+            | "select_nth_unstable_by_key"
+                if owner.is_slice() =>
+            {
+                let with = match name.as_str() {
+                    n if n.ends_with("_by") => SortWith::By,
+                    n if n.ends_with("_by_key") => SortWith::Key,
+                    _ => SortWith::Order,
+                };
+                Std::Slice(match name.as_str().starts_with("select") {
+                    true => SliceOp::SelectNth { with },
+                    false => SliceOp::SortUnstable { with },
+                })
+            }
             "reverse" if owner.is_slice() => Std::Method("reverse"),
             // An array's `map` is JS's: a new array of what `f` makes of each.
             "map" if owner.is_array() => Std::Method("map"),
@@ -2202,6 +2224,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// Does JS's `===` compare a `ty` as `==` does: a number, a string or a
     /// `bool`. A `&mut` to one is a cell, an object (ADR 0099): not by value.
+    /// Can no two `ty` items that `Ord` calls equal be told apart? Of
+    /// numbers, `bool`s, `char`s and text, and tuples and arrays of them.
+    fn ties_unseen(&self, ty: Ty<'tcx>) -> bool {
+        match ty.kind() {
+            ty::Tuple(items) => items.iter().all(|item| self.ties_unseen(item)),
+            ty::Array(item, _) => self.ties_unseen(*item),
+            _ => self.compares_by_value(ty) || ty.is_char(),
+        }
+    }
+
     fn compares_by_value(&self, ty: Ty<'tcx>) -> bool {
         !ty.walk()
             .any(|part| matches!(part.as_type().map(|p| *p.kind()), Some(ty::Ref(_, _, Mutability::Mut))))

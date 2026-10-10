@@ -113,3 +113,10 @@ Two things came with it:
   `==` never does (case C, `some` stays). The value is read once, so it
   must be a variable, a property or a constant. Found porting react.dev's
   `createFileMap`, `tokens.includes('hidden')`.
+
+## Since
+
+- **An unstable sort is JS's `sort` only where its ties can't be told
+  apart** (ADR 0342): of numbers, text, `bool`s and `char`s, and tuples
+  and arrays of them. Elsewhere, and for `select_nth_unstable`, it's std's
+  own algorithm, as its order of equal items is std's.

@@ -3,6 +3,7 @@
 
 use rustc_middle::thir::ExprId;
 use rustc_middle::ty;
+use rustc_middle::ty::TypeVisitableExt;
 use rustc_span::Span;
 
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
@@ -11,6 +12,15 @@ use crate::lower::representation::Num;
 use crate::lower::std_types::range::RangeKind;
 use crate::lower::{FnCx, R};
 use crate::runtime::Helper;
+
+/// What an unstable sort orders by: its items' own order, a comparator
+/// (`_by`), or a key (`_by_key`).
+#[derive(Clone, Copy, PartialEq)]
+pub(in crate::lower) enum SortWith {
+    Order,
+    By,
+    Key,
+}
 
 /// A slice's own methods, of those ADR 0324 takes.
 #[derive(Clone, Copy, PartialEq)]
@@ -114,6 +124,16 @@ pub(in crate::lower) enum SliceOp {
     },
     /// `assume_init_drop()` of `MaybeUninit`s: each item dropped.
     UninitDrop,
+    /// `sort_unstable`, `_by` and `_by_key`, where items that compare equal
+    /// can be told apart: std's own algorithm, which leaves them where it
+    /// does (ADR 0342).
+    SortUnstable {
+        with: SortWith,
+    },
+    /// `select_nth_unstable(index)`, `_by` and `_by_key`: std's introselect.
+    SelectNth {
+        with: SortWith,
+    },
     SortByCachedKey,
     /// A byte slice's `to_ascii_uppercase()` or `to_ascii_lowercase()`, and
     /// `make_ascii_*` in place.
@@ -174,6 +194,77 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         body.push(StmtKind::Return(Some(same)).at(js::Span::NONE));
         Ok(Some(Expr::arrow(vec!["a".into(), "b".into()], body)))
+    }
+
+    /// What std's unstable sort picks by an item's type (ADR 0342): its
+    /// small sort, by whether it's `Freeze` and `Copy` and its size, and a
+    /// Hoare partition of one of more than 96 bytes.
+    fn sort_kind(&self, item: ty::Ty<'tcx>, span: Span) -> R<&'static str> {
+        if item.has_param() {
+            return Err(self.unsupported(
+                span,
+                "an unstable sort of a type parameter's items, whose order std's algorithm picks by their layout",
+            ));
+        }
+        let layout = self
+            .tcx
+            .layout_of(ty::TypingEnv::fully_monomorphized().as_query_input(item))
+            .map_err(|_| self.unsupported(span, "an unstable sort of these items"))?;
+        let size = layout.size.bytes();
+        let freeze = item.is_freeze(self.tcx, self.typing_env);
+        Ok(if freeze && self.is_copy(item) && size <= 8 {
+            "network"
+        } else if freeze && size * 48 <= 4096 {
+            if size <= 16 { "general8" } else { "general" }
+        } else if size <= 96 {
+            "fallback"
+        } else {
+            "hoare"
+        })
+    }
+
+    /// `a < b` of `ty` values, as `PartialOrd::lt` has it: JS's `<` of
+    /// numbers and `bool`s, else of their `cmp`.
+    fn less_value(&mut self, a: Expr, b: Expr, ty: ty::Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+        let (_, inner) = self.through_refs(Expr::undefined(), ty);
+        if Num::of(inner).is_some() || inner.is_bool() {
+            let (a, _) = self.through_refs(a, ty);
+            let (b, _) = self.through_refs(b, ty);
+            return Ok(Expr::bin(Op::Lt, a, b));
+        }
+        let order = self.cmp_value(a, b, ty, false, span, out)?;
+        Ok(Expr::bin(Op::Lt, order, Expr::int(0)))
+    }
+
+    /// `$sortUnstable(items, isLess, kind)`, or `$selectNthUnstable` of an
+    /// `index`, a handle on a number or text it gives where `item` is one.
+    fn unstable_sort_call(
+        &mut self,
+        op: SliceOp,
+        items: Expr,
+        index: Option<Expr>,
+        is_less: Expr,
+        kind: &str,
+        item: ty::Ty<'tcx>,
+    ) -> Expr {
+        let select = matches!(op, SliceOp::SelectNth { .. });
+        let mut list = vec![items];
+        list.extend(index);
+        list.extend([is_less, Expr::str(kind)]);
+        if select && self.is_boxable(item) {
+            list.push(Expr::bool(true));
+        }
+        self.runtime.insert(Helper::SortUnstable);
+        let name = if select { "$selectNthUnstable" } else { "$sortUnstable" };
+        Expr::call(Expr::var(name), list)
+    }
+
+    /// `value` where it's read more than once: a variable, or a `const`.
+    fn named_once(&mut self, base: &str, value: Expr, out: &mut Vec<Stmt>) -> Expr {
+        match value.kind {
+            js::ExprKind::Var(_) => value,
+            _ => self.spill(base, value, out),
+        }
     }
 
     /// A chunk's `N`, as the call has it.
@@ -258,6 +349,50 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let ty = ty::Ty::new_slice(self.tcx, generic_args.type_at(0));
                 self.drop_value(slots, ty, span, out)?;
                 Expr::undefined()
+            }
+            // `$sortUnstable(v, isLess, kind)`: std's `is_less` and what std
+            // picks by the item's type (ADR 0342).
+            SliceOp::SortUnstable { with } | SliceOp::SelectNth { with } => {
+                let item = generic_args.type_at(0);
+                let kind = self.sort_kind(item, span)?;
+                let mut values = self.operands(args, out)?.into_iter();
+                let mut next = || values.next().expect("rustc checked the arguments");
+                let items = next();
+                let index = matches!(op, SliceOp::SelectNth { .. }).then(&mut next);
+                let mut body = Vec::new();
+                let (a, b) = (Expr::var("a"), Expr::var("b"));
+                let less = match with {
+                    SortWith::Order => self.less_value(a, b, item, span, &mut body)?,
+                    // `(a, b) => $cmp(b, a) < 0` of a closure of one expression.
+                    SortWith::By => {
+                        let compare = next();
+                        if let js::ExprKind::Arrow(params, stmts) = &compare.kind
+                            && params.len() == 2
+                            && let [
+                                Stmt {
+                                    kind: StmtKind::Return(Some(order)),
+                                    ..
+                                },
+                            ] = stmts.as_slice()
+                        {
+                            let less = Expr::bin(Op::Lt, order.clone(), Expr::int(0));
+                            let returned = vec![StmtKind::Return(Some(less)).at(js::Span::NONE)];
+                            let is_less = Expr::arrow(params.clone(), returned);
+                            return Ok(self.unstable_sort_call(op, items, index, is_less, kind, item));
+                        }
+                        let compare = self.named_once("compare", compare, out);
+                        Expr::bin(Op::Lt, Expr::call(compare, vec![a, b]), Expr::int(0))
+                    }
+                    SortWith::Key => {
+                        let key = self.named_once("key", next(), out);
+                        let key_ty = generic_args.type_at(1);
+                        let (a, b) = (Expr::call(key.clone(), vec![a]), Expr::call(key, vec![b]));
+                        self.less_value(a, b, key_ty, span, &mut body)?
+                    }
+                };
+                body.push(StmtKind::Return(Some(less)).at(js::Span::NONE));
+                let is_less = Expr::arrow(vec!["a".into(), "b".into()], body);
+                self.unstable_sort_call(op, items, index, is_less, kind, item)
             }
             SliceOp::View { checked } => {
                 let items = self.operands(&args[..1], out)?.remove(0);
@@ -388,6 +523,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                     }
                     SliceOp::View { .. }
+                    | SliceOp::SortUnstable { .. }
+                    | SliceOp::SelectNth { .. }
                     | SliceOp::SplitOff { .. }
                     | SliceOp::UninitWrite { .. }
                     | SliceOp::UninitDrop => unreachable!("lowered above"),

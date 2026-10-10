@@ -154,6 +154,7 @@ helpers! {
     StartsBy,
     StrGet,
     StrPart,
+    SortUnstable,
     View,
     SliceIndexFail,
     StripCircumfix,
@@ -363,6 +364,7 @@ impl Helper {
             Helper::StrTruncate => &[Helper::ByteLen, Helper::CharBoundary],
             Helper::StrEdits => &[Helper::ByteLen, Helper::CharBoundary, Helper::SliceIndexFail],
             Helper::SliceRange | Helper::SliceEnd | Helper::Drain | Helper::Splice => &[Helper::SliceIndexFail],
+            Helper::SortUnstable => &[Helper::View, Helper::MutAt],
             Helper::View => &[Helper::SliceIndexFail, Helper::MutAt, Helper::Chunks, Helper::SliceOps],
             Helper::SliceOps => &[
                 Helper::SliceStartsWith,
@@ -588,6 +590,7 @@ impl Helper {
             Helper::StartsBy => include_str!("runtime/starts_by.js"),
             Helper::StrGet => include_str!("runtime/str_get.js"),
             Helper::StrPart => include_str!("runtime/str_part.js"),
+            Helper::SortUnstable => include_str!("runtime/sort_unstable.js"),
             Helper::View => include_str!("runtime/slice_view.js"),
             Helper::SliceIndexFail => include_str!("runtime/slice_index_fail.js"),
             Helper::StripCircumfix => include_str!("runtime/strip_circumfix.js"),
