@@ -911,6 +911,11 @@ pub mod string {
         /// `text.trimEnd()`: without JS's white space at its end.
         #[link_name = "trimEnd"]
         pub safe fn trim_end(this: &str) -> String;
+
+        /// `text.localeCompare(that)`: how `text` sorts beside `that` in the
+        /// default locale, as an Intl collator gives it, -1, 0 or 1.
+        #[link_name = "localeCompare"]
+        pub safe fn locale_compare(this: &str, that: &str) -> core::cmp::Ordering;
     }
 }
 

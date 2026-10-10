@@ -1846,6 +1846,23 @@ pub fn tag_of(value: Option<&Unknown>) -> Result<String, &'static JsError> {
   expect([lib.tag_of([]), lib.tag_of(null)]).toEqual([{ TAG: "Ok", _0: "[object Array]" }, { TAG: "Ok", _0: "[object Null]" }]);
 });
 
+// `localeCompare`, an `Ordering`, as an Intl collator gives -1, 0 or 1: a
+// sort's comparator, as react.dev's LanguageList sorts languages by name.
+test("a string's localeCompare is a sort's comparator", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("locale-compare");
+  writeFileSync(join(dir, "lib.rs"), `use js::string;
+
+pub fn sorted(mut names: Vec<String>) -> Vec<String> {
+    names.sort_by(|a, b| string::locale_compare(a, b));
+    names
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("names.sort((a, b) => a.localeCompare(b));");
+  expect((await import(join(dir, "lib.js"))).sorted(["Ébène", "zèbre", "abeille", "Zoo"])).toEqual(["abeille", "Ébène", "zèbre", "Zoo"]);
+});
+
 // ADR 0312: any value shown as JS's template shows it, `${value}`, as
 // react.dev's Console keys what it logged by `${msg}-${index}`.
 test("js::shown is shown as a template shows any value", async () => {
